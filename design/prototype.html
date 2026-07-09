@@ -1,0 +1,495 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Den Browser Prototype</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg-a: #15181d;
+      --bg-b: #272a31;
+      --ink: #f4f7fb;
+      --muted: rgba(244, 247, 251, 0.64);
+      --hairline: rgba(255, 255, 255, 0.18);
+      --glass: rgba(255, 255, 255, 0.13);
+      --glass-strong: rgba(255, 255, 255, 0.2);
+      --shadow: rgba(0, 0, 0, 0.36);
+      --accent: #7dd3fc;
+      --warm: #f8c77e;
+      --green: #9ee6b8;
+      --surface: rgba(22, 24, 29, 0.5);
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      overflow: hidden;
+      color: var(--ink);
+      background:
+        linear-gradient(120deg, rgba(125, 211, 252, 0.18), transparent 34%),
+        linear-gradient(240deg, rgba(248, 199, 126, 0.16), transparent 36%),
+        linear-gradient(135deg, var(--bg-a), var(--bg-b));
+    }
+
+    .app {
+      height: 100vh;
+      display: grid;
+      grid-template-rows: 64px 1fr;
+    }
+
+    .chrome {
+      display: grid;
+      grid-template-columns: 260px 1fr 260px;
+      align-items: center;
+      gap: 20px;
+      padding: 12px 18px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+      width: max-content;
+      max-width: 100%;
+      height: 40px;
+      padding: 0 12px 0 4px;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      border-radius: 16px;
+      background: var(--surface);
+      backdrop-filter: blur(28px) saturate(160%);
+      box-shadow: inset 0 1px rgba(255, 255, 255, 0.16), 0 16px 32px rgba(0, 0, 0, 0.2);
+    }
+
+    .mark {
+      width: 36px;
+      height: 36px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.08);
+      position: relative;
+    }
+
+    .mark::before,
+    .mark::after {
+      content: "";
+      position: absolute;
+      left: 9px;
+      right: 9px;
+      height: 2px;
+      background: rgba(255, 255, 255, 0.72);
+      border-radius: 10px;
+    }
+
+    .mark::before {
+      top: 12px;
+    }
+
+    .mark::after {
+      top: 21px;
+    }
+
+    .brand-text {
+      min-width: 0;
+    }
+
+    .brand-text strong,
+    .desk-name {
+      display: block;
+      font-size: 14px;
+      line-height: 18px;
+      letter-spacing: 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .brand-text span,
+    .desk-meta,
+    .kbd {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 16px;
+      letter-spacing: 0;
+    }
+
+    .desks {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      min-width: 0;
+    }
+
+    .desk-pill {
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 999px;
+      padding: 7px 12px;
+      color: rgba(255, 255, 255, 0.72);
+      background: var(--surface);
+      backdrop-filter: blur(18px) saturate(150%);
+      box-shadow: inset 0 1px rgba(255, 255, 255, 0.13), 0 12px 26px rgba(0, 0, 0, 0.18);
+      font-size: 13px;
+      line-height: 16px;
+      white-space: nowrap;
+    }
+
+    .desk-pill.active {
+      color: var(--ink);
+      background: var(--glass-strong);
+      box-shadow: inset 0 1px rgba(255, 255, 255, 0.26);
+    }
+
+    .command {
+      justify-self: end;
+      width: 100%;
+      max-width: 250px;
+      height: 38px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      border-radius: 12px;
+      padding: 0 11px;
+      background: var(--surface);
+      backdrop-filter: blur(28px) saturate(160%);
+      box-shadow: inset 0 1px rgba(255, 255, 255, 0.16), 0 16px 32px rgba(0, 0, 0, 0.2);
+      color: var(--muted);
+    }
+
+    .main {
+      min-height: 0;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .desk {
+      height: 100%;
+      overflow: hidden;
+      padding: 22px 24px 28px;
+    }
+
+    .board-strip {
+      height: 100%;
+      display: flex;
+      align-items: stretch;
+      gap: 18px;
+      transform: translateX(-128px);
+    }
+
+    .board {
+      flex: 0 0 auto;
+      width: var(--w);
+      min-width: 280px;
+      max-width: 760px;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      border-radius: 18px;
+      overflow: hidden;
+      background: rgba(248, 250, 252, 0.92);
+      color: #16181d;
+      box-shadow: 0 24px 56px rgba(0, 0, 0, 0.34);
+      display: grid;
+      grid-template-rows: 46px 1fr;
+    }
+
+    .board.focused {
+      border-color: rgba(125, 211, 252, 0.72);
+      box-shadow:
+        0 0 0 1px rgba(125, 211, 252, 0.26),
+        0 30px 70px rgba(0, 0, 0, 0.44);
+    }
+
+    .board-head {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: center;
+      gap: 12px;
+      padding: 0 13px;
+      border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.82), rgba(255, 255, 255, 0.58)),
+        rgba(255, 255, 255, 0.74);
+      backdrop-filter: blur(24px) saturate(160%);
+    }
+
+    .label {
+      min-width: 0;
+    }
+
+    .label strong {
+      display: block;
+      font-size: 13px;
+      line-height: 17px;
+      letter-spacing: 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .label span {
+      display: block;
+      font-size: 11px;
+      line-height: 14px;
+      color: rgba(22, 24, 29, 0.55);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .stack {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+    }
+
+    .sheet-dot {
+      width: 18px;
+      height: 6px;
+      border-radius: 999px;
+      background: rgba(22, 24, 29, 0.18);
+    }
+
+    .sheet-dot.current {
+      background: #16181d;
+    }
+
+    .sheet {
+      min-height: 0;
+      background: #f8fafc;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+    }
+
+    .sitebar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 13px;
+      color: rgba(22, 24, 29, 0.6);
+      font-size: 12px;
+      line-height: 16px;
+      border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+    }
+
+    .lock {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--green);
+    }
+
+    .content {
+      min-height: 0;
+      padding: 18px 16px;
+      display: grid;
+      gap: 12px;
+      align-content: start;
+    }
+
+    .message {
+      width: min(100%, 360px);
+      border-radius: 14px;
+      padding: 12px;
+      font-size: 13px;
+      line-height: 18px;
+      background: #ffffff;
+      border: 1px solid rgba(0, 0, 0, 0.07);
+      box-shadow: 0 8px 18px rgba(21, 24, 29, 0.06);
+    }
+
+    .message.user {
+      justify-self: end;
+      background: #e6f6ff;
+      border-color: rgba(14, 116, 144, 0.16);
+    }
+
+    .input {
+      margin: 0 13px 13px;
+      min-height: 42px;
+      border: 1px solid rgba(0, 0, 0, 0.1);
+      border-radius: 13px;
+      display: flex;
+      align-items: center;
+      padding: 0 12px;
+      color: rgba(22, 24, 29, 0.52);
+      background: rgba(255, 255, 255, 0.9);
+      font-size: 13px;
+    }
+
+    .wide .message {
+      width: min(100%, 520px);
+    }
+
+    .narrow .content {
+      padding-inline: 12px;
+    }
+
+    .overlay {
+      position: absolute;
+      left: 50%;
+      bottom: 22px;
+      transform: translateX(-50%);
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 10px 14px;
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      border-radius: 16px;
+      background: rgba(22, 24, 29, 0.48);
+      backdrop-filter: blur(30px) saturate(170%);
+      box-shadow: inset 0 1px rgba(255, 255, 255, 0.18), 0 16px 34px rgba(0, 0, 0, 0.28);
+    }
+
+    .overlay strong {
+      font-size: 13px;
+      line-height: 16px;
+    }
+
+    @media (max-width: 760px) {
+      .chrome {
+        grid-template-columns: 1fr;
+        height: auto;
+      }
+
+      .app {
+        grid-template-rows: auto 1fr;
+      }
+
+      .desks,
+      .command {
+        display: none;
+      }
+
+      .board-strip {
+        transform: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header class="chrome">
+      <div class="brand">
+        <div class="mark" aria-hidden="true"></div>
+        <div class="brand-text">
+          <strong>Den Browser</strong>
+          <span>Personal web work den</span>
+        </div>
+      </div>
+
+      <nav class="desks" aria-label="Desks">
+        <div class="desk-pill">API Research</div>
+        <div class="desk-pill active">AI Wall</div>
+        <div class="desk-pill">Writing</div>
+        <div class="desk-pill">Docs</div>
+      </nav>
+
+      <div class="command">
+        <span>Open board</span>
+        <span class="kbd">⌃⌥ Space</span>
+      </div>
+    </header>
+
+    <main class="main">
+      <section class="desk" aria-label="AI Wall desk">
+        <div class="board-strip">
+          <article class="board narrow" style="--w: 320px">
+            <header class="board-head">
+              <div class="label">
+                <strong>Claude outline</strong>
+                <span>claude.ai</span>
+              </div>
+              <div class="stack" aria-label="Sheet stack">
+                <span class="sheet-dot"></span>
+                <span class="sheet-dot current"></span>
+              </div>
+            </header>
+            <div class="sheet">
+              <div class="sitebar"><span class="lock"></span> Current Sheet</div>
+              <div class="content">
+                <div class="message user">Compare the board and sheet metaphor against tabs.</div>
+                <div class="message">The board should stay task-scoped. The sheet stack can carry page movement without turning every link into a new task.</div>
+              </div>
+              <div class="input">Draft follow-up...</div>
+            </div>
+          </article>
+
+          <article class="board focused wide" style="--w: 560px">
+            <header class="board-head">
+              <div class="label">
+                <strong>Den interaction model</strong>
+                <span>chatgpt.com</span>
+              </div>
+              <div class="stack" aria-label="Sheet stack">
+                <span class="sheet-dot"></span>
+                <span class="sheet-dot"></span>
+                <span class="sheet-dot current"></span>
+              </div>
+            </header>
+            <div class="sheet">
+              <div class="sitebar"><span class="lock"></span> Current Sheet</div>
+              <div class="content">
+                <div class="message user">Stress-test Desk, Board, Sheet, and Sheet Stack.</div>
+                <div class="message">Desk is the broad context. Board is the focused task surface. Sheet is the web screen. Sheet Stack is local movement history inside one board.</div>
+                <div class="message user">Keyboard-first, pointer-supported.</div>
+              </div>
+              <div class="input">Ask about shortcut namespaces...</div>
+            </div>
+          </article>
+
+          <article class="board" style="--w: 420px">
+            <header class="board-head">
+              <div class="label">
+                <strong>Gemini counterpoint</strong>
+                <span>gemini.google.com</span>
+              </div>
+              <div class="stack" aria-label="Sheet stack">
+                <span class="sheet-dot current"></span>
+              </div>
+            </header>
+            <div class="sheet">
+              <div class="sitebar"><span class="lock"></span> Current Sheet</div>
+              <div class="content">
+                <div class="message user">Where does the metaphor break?</div>
+                <div class="message">The biggest risk is making the shell too ornamental. Keep glass around controls, not over reading surfaces.</div>
+              </div>
+              <div class="input">Continue...</div>
+            </div>
+          </article>
+
+          <article class="board" style="--w: 360px">
+            <header class="board-head">
+              <div class="label">
+                <strong>Reference notes</strong>
+                <span>developer.apple.com</span>
+              </div>
+              <div class="stack" aria-label="Sheet stack">
+                <span class="sheet-dot"></span>
+                <span class="sheet-dot current"></span>
+              </div>
+            </header>
+            <div class="sheet">
+              <div class="sitebar"><span class="lock"></span> Current Sheet</div>
+              <div class="content">
+                <div class="message">Liquid Glass-inspired controls sit above content. The sheet remains stable, readable, and opaque.</div>
+              </div>
+              <div class="input">Search or enter URL...</div>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <div class="overlay">
+        <strong>AI Wall</strong>
+        <span class="desk-meta">4 boards · focused: Den interaction model</span>
+        <span class="kbd">⌃⌥ ←/→ board · ⌃⌥ ↑/↓ desk</span>
+      </div>
+    </main>
+  </div>
+</body>
+</html>
