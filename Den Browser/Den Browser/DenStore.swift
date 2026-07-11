@@ -21,7 +21,14 @@ final class DenStore {
     }
 
     init() {
-        persistenceURL = Self.makePersistenceURL()
+        let persistenceURL = Self.makePersistenceURL()
+        self.persistenceURL = persistenceURL
+        state = Self.loadState(from: persistenceURL) ?? .sample
+        ensureFocusedObjects()
+    }
+
+    init(persistenceURL: URL) {
+        self.persistenceURL = persistenceURL
         state = Self.loadState(from: persistenceURL) ?? .sample
         ensureFocusedObjects()
     }

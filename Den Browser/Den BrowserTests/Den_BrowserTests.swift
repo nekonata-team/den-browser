@@ -1,68 +1,155 @@
-//
-//  Den_BrowserTests.swift
-//  Den BrowserTests
-//
-//  Created by 大澤弘明 on 2026/07/10.
-//
-
-import Testing
 import Foundation
+import Testing
 @testable import Den_Browser
 
 @MainActor
 struct Den_BrowserTests {
-
     @Test func createsEmptyDeskAfterFocusedDesk() {
-        let first = DeskState(label: "First", boards: [])
-        let second = DeskState(label: "Second", boards: [])
-        let store = makeStore(desks: [first, second], focusedDeskID: first.id)
+        withStore(desks: [desk("First"), desk("Second")]) { store in
+            store.createDesk(label: "  Writing  ", template: .empty)
 
-        store.createDesk(label: "  Writing  ", template: .empty)
-
-        #expect(store.state.desks.map(\.label) == ["First", "Writing", "Second"])
-        #expect(store.focusedDesk?.label == "Writing")
-        #expect(store.focusedDesk?.boards.isEmpty == true)
+            #expect(store.state.desks.map(\.label) == ["First", "Writing", "Second"])
+            #expect(store.focusedDesk?.label == "Writing")
+            #expect(store.focusedDesk?.boards.isEmpty == true)
+        }
     }
 
     @Test func createsChatGPTTemplateWithThreeBoards() {
-        let first = DeskState(label: "First", boards: [])
-        let store = makeStore(desks: [first], focusedDeskID: first.id)
+        withStore(desks: [desk("First")]) { store in
+            store.createDesk(label: "AI", template: .chatGPTThree)
 
-        store.createDesk(label: "AI", template: .chatGPTThree)
+            #expect(store.focusedDesk?.boards.count == 3)
+            #expect(store.focusedDesk?.boards.allSatisfy { $0.currentURLString == "https://chatgpt.com/" } == true)
+            #expect(store.focusedDesk?.boards.allSatisfy { $0.width == 520 } == true)
+            #expect(store.focusedDesk?.focusedBoardID == store.focusedDesk?.boards.first?.id)
+        }
+    }
 
-        #expect(store.focusedDesk?.boards.count == 3)
-        #expect(store.focusedDesk?.boards.allSatisfy { $0.currentURLString == "https://chatgpt.com/" } == true)
-        #expect(store.focusedDesk?.boards.allSatisfy { $0.width == 520 } == true)
-        #expect(store.focusedDesk?.focusedBoardID == store.focusedDesk?.boards.first?.id)
+    @Test func boardFocusMovesAndWrapsAtBothEdges() {
+        let boards = [board("A"), board("B"), board("C")]
+        withStore(desks: [desk("Desk", boards: boards, focusedBoardID: boards[0].id)]) { store in
+            store.focusNextBoard()
+            #expect(store.focusedDesk?.focusedBoardID == boards[1].id)
+
+            store.focusPreviousBoard()
+            store.focusPreviousBoard()
+            #expect(store.focusedDesk?.focusedBoardID == boards[2].id)
+
+            store.focusNextBoard()
+            #expect(store.focusedDesk?.focusedBoardID == boards[0].id)
+        }
+    }
+
+    @Test func reorderingBoardKeepsItFocusedAndStopsAtDeskEdge() {
+        let boards = [board("A"), board("B"), board("C")]
+        withStore(desks: [desk("Desk", boards: boards, focusedBoardID: boards[1].id)]) { store in
+            store.moveFocusedBoardLeft()
+            store.moveFocusedBoardLeft()
+
+            #expect(store.focusedDesk?.boards.map(\.id) == [boards[1].id, boards[0].id, boards[2].id])
+            #expect(store.focusedDesk?.focusedBoardID == boards[1].id)
+        }
+    }
+
+    @Test func movingBoardToDeskPlacesItAfterTargetAndFocusesIt() {
+        let moved = board("Moved")
+        let targetBoards = [board("Before"), board("Target"), board("After")]
+        let source = desk("Source", boards: [moved])
+        let target = desk("Target", boards: targetBoards, focusedBoardID: targetBoards[1].id)
+        withStore(desks: [source, target]) { store in
+            store.moveFocusedBoardToNextDesk()
+
+            #expect(store.state.desks[0].boards.isEmpty)
+            #expect(store.state.desks[0].focusedBoardID == nil)
+            #expect(store.state.desks[1].boards.map(\.id) == [targetBoards[0].id, targetBoards[1].id, moved.id, targetBoards[2].id])
+            #expect(store.focusedDesk?.id == target.id)
+            #expect(store.focusedDesk?.focusedBoardID == moved.id)
+        }
+    }
+
+    @Test func closingBoardFocusesBoardThatTakesItsPosition() {
+        let boards = [board("A"), board("B"), board("C")]
+        withStore(desks: [desk("Desk", boards: boards, focusedBoardID: boards[1].id)]) { store in
+            store.closeFocusedBoard()
+
+            #expect(store.focusedDesk?.boards.map(\.id) == [boards[0].id, boards[2].id])
+            #expect(store.focusedDesk?.focusedBoardID == boards[2].id)
+        }
+    }
+
+    @Test func closingLastBoardFocusesPreviousBoard() {
+        let boards = [board("A"), board("B")]
+        withStore(desks: [desk("Desk", boards: boards, focusedBoardID: boards[1].id)]) { store in
+            store.closeFocusedBoard()
+
+            #expect(store.focusedDesk?.focusedBoardID == boards[0].id)
+        }
+    }
+
+    @Test func placingHeldBoardInSameDeskUsesFocusedBoardAsTarget() {
+        let boards = [board("Held"), board("Target"), board("After")]
+        withStore(desks: [desk("Desk", boards: boards, focusedBoardID: boards[0].id)]) { store in
+            store.holdFocusedBoard()
+            store.placeHeldBoard()
+
+            #expect(store.heldBoardID == nil)
+            #expect(store.focusedDesk?.boards.map(\.id) == [boards[1].id, boards[0].id, boards[2].id])
+            #expect(store.focusedDesk?.focusedBoardID == boards[0].id)
+        }
     }
 
     @Test func cancelingHoldKeepsDeskCreatedAfterHold() {
-        let board = BoardState(label: "Source", width: 520, currentURLString: "https://example.com")
-        let first = DeskState(label: "First", boards: [board])
-        let store = makeStore(desks: [first], focusedDeskID: first.id)
+        let held = board("Source")
+        withStore(desks: [desk("First", boards: [held])]) { store in
+            store.holdFocusedBoard()
+            store.createDesk(label: "Destination", template: .empty)
+            store.cancelHeldBoard()
 
-        store.holdFocusedBoard()
-        store.createDesk(label: "Destination", template: .empty)
-        store.cancelHeldBoard()
-
-        #expect(store.heldBoardID == nil)
-        #expect(store.state.desks.count == 2)
-        #expect(store.focusedDesk?.label == "Destination")
-        #expect(store.state.desks[0].boards.first?.id == board.id)
+            #expect(store.heldBoardID == nil)
+            #expect(store.state.desks.count == 2)
+            #expect(store.focusedDesk?.label == "Destination")
+            #expect(store.state.desks[0].boards.first?.id == held.id)
+        }
     }
 
-    @Test func placesHeldBoardIntoNewDesk() {
-        let board = BoardState(label: "Source", width: 520, currentURLString: "https://example.com")
-        let first = DeskState(label: "First", boards: [board])
-        let store = makeStore(desks: [first], focusedDeskID: first.id)
+    @Test func placesHeldBoardIntoDifferentDesk() {
+        let held = board("Held")
+        let targetBoards = [board("Target"), board("After")]
+        let source = desk("Source", boards: [held])
+        let target = desk("Target", boards: targetBoards, focusedBoardID: targetBoards[0].id)
+        withStore(desks: [source, target]) { store in
+            store.holdFocusedBoard()
+            store.focusNextDesk()
+            store.placeHeldBoard()
 
-        store.holdFocusedBoard()
-        store.createDesk(label: "Destination", template: .empty)
-        store.placeHeldBoard()
+            #expect(store.heldBoardID == nil)
+            #expect(store.state.desks[0].boards.isEmpty)
+            #expect(store.state.desks[1].boards.map(\.id) == [targetBoards[0].id, held.id, targetBoards[1].id])
+            #expect(store.focusedDesk?.focusedBoardID == held.id)
+        }
+    }
 
-        #expect(store.heldBoardID == nil)
-        #expect(store.state.desks[0].boards.isEmpty)
-        #expect(store.focusedDesk?.boards.map(\.id) == [board.id])
+    @Test func persistedStateRestoresDeskAndBoardDataAndFocus() throws {
+        let firstBoards = [board("One", width: 440, url: "https://one.example/path"), board("Two", width: 760, url: "https://two.example/")]
+        let secondBoards = [board("Three", width: 980, url: "https://three.example/query?q=1")]
+        let first = desk("First", boards: firstBoards, focusedBoardID: firstBoards[1].id)
+        let second = desk("Second", boards: secondBoards, focusedBoardID: secondBoards[0].id)
+        let url = temporaryPersistenceURL()
+        defer { try? FileManager.default.removeItem(at: url.deletingLastPathComponent()) }
+        let writer = DenStore(state: DenState(desks: [first, second], focusedDeskID: second.id), persistenceURL: url)
+
+        writer.focusDesk(first.id)
+        let restored = DenStore(persistenceURL: url)
+
+        #expect(restored.state == writer.state)
+        #expect(restored.state.desks.map(\.id) == [first.id, second.id])
+        #expect(restored.state.desks[0].boards.map(\.id) == firstBoards.map(\.id))
+        #expect(restored.state.desks.map(\.label) == ["First", "Second"])
+        #expect(restored.state.desks[0].boards.map(\.label) == ["One", "Two"])
+        #expect(restored.state.desks[0].boards.map(\.width) == [440, 760])
+        #expect(restored.state.desks[0].boards.map(\.currentURLString) == ["https://one.example/path", "https://two.example/"])
+        #expect(restored.state.focusedDeskID == first.id)
+        #expect(restored.state.desks.map(\.focusedBoardID) == [firstBoards[1].id, secondBoards[0].id])
     }
 
     @Test func webPointerFocusSuppressesExplicitActivation() {
@@ -72,10 +159,9 @@ struct Den_BrowserTests {
         let activatedAfterPointer = state.updateFocus(true)
         #expect(handledPointer)
         #expect(!activatedAfterPointer)
-
         _ = state.updateFocus(false)
-        let activatedAfterNonPointerFocus = state.updateFocus(true)
-        #expect(activatedAfterNonPointerFocus)
+        let activatedAfterKeyboardFocus = state.updateFocus(true)
+        #expect(activatedAfterKeyboardFocus)
     }
 
     @Test func disabledWebPointerFocusHasNoCallbackOrSuppression() {
@@ -85,18 +171,29 @@ struct Den_BrowserTests {
 
         let handledPointer = state.handlePointerDown()
         #expect(!handledPointer)
-
         state.updateEnabled(true)
         let activated = state.updateFocus(true)
         #expect(activated)
     }
 
-    private func makeStore(desks: [DeskState], focusedDeskID: UUID) -> DenStore {
-        DenStore(
-            state: DenState(desks: desks, focusedDeskID: focusedDeskID),
-            persistenceURL: FileManager.default.temporaryDirectory
-                .appending(path: "den-browser-tests-\(UUID().uuidString).json")
-        )
+    private func withStore(desks: [DeskState], body: (DenStore) throws -> Void) rethrows {
+        let url = temporaryPersistenceURL()
+        defer { try? FileManager.default.removeItem(at: url.deletingLastPathComponent()) }
+        let store = DenStore(state: DenState(desks: desks, focusedDeskID: desks[0].id), persistenceURL: url)
+        try body(store)
     }
 
+    private func temporaryPersistenceURL() -> URL {
+        FileManager.default.temporaryDirectory
+            .appending(path: "den-browser-tests-\(UUID().uuidString)", directoryHint: .isDirectory)
+            .appending(path: "den-state.json")
+    }
+
+    private func desk(_ label: String, boards: [BoardState] = [], focusedBoardID: UUID? = nil) -> DeskState {
+        DeskState(label: label, boards: boards, focusedBoardID: focusedBoardID)
+    }
+
+    private func board(_ label: String, width: Double = 520, url: String = "https://example.com/") -> BoardState {
+        BoardState(label: label, width: width, currentURLString: url)
+    }
 }

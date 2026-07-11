@@ -38,6 +38,7 @@ Core PoC goals:
 - Verify Liquid Glass controls remain readable over live WKWebView content.
 
 See [docs/poc.md](./docs/poc.md) for the current PoC criteria.
+See [docs/testing.md](./docs/testing.md) for automated checks and the human PoC harness.
 
 ## Decisions
 
