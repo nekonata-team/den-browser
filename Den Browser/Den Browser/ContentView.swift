@@ -239,6 +239,7 @@ struct ContentView: View {
                             onFocus: { store.focusBoard(board.id) }
                         )
                         .id(board.id)
+                        .allowsHitTesting(isBoardPointerFocusEnabled)
                     }
                 }
                 .padding(.horizontal, boardHorizontalPadding)
