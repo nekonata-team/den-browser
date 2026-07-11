@@ -9,12 +9,16 @@ The full personal work environment that contains all desks.
 _Avoid_: Workspace, studio, office, space
 
 **Desk**:
-A broad work context that holds multiple boards in a horizontal work area.
+A broad work context that holds boards in a horizontal work area. A desk may exist before any boards are added.
 _Avoid_: Workspace, window, tab bar, deck
 
 **Desk Label**:
 A user-visible label for a desk's broad work context.
 _Avoid_: Workspace name, window title
+
+**Desk Template**:
+A reusable starting arrangement applied when creating a desk, including its initial boards and their layout. Once created, the desk is independent of the desk template.
+_Avoid_: Workspace template, preset, saved desk
 
 **Board**:
 A user-created work surface that holds one focused task context and its sheet stack within a desk.
@@ -44,12 +48,16 @@ _Avoid_: Active page, top page, visible sheet
 The board currently selected for work within a desk.
 _Avoid_: Active tab, current page
 
+**Overview Selection**:
+A temporary board selection inside overview. The overview selection becomes the focused board only when the user enters it.
+_Avoid_: Focused board, active board
+
 **Board Navigation**:
 Moving focus between boards in a desk. Board navigation is distinct from scrolling within a sheet.
 _Avoid_: Desk scrolling, tab switching
 
 **Held Board**:
-A board that has been picked up for placement in a desk or another desk.
+A board marked for later placement in a desk or another desk. It remains in its original position until placed, and canceling the hold leaves other Den changes intact.
 _Avoid_: Dragged tab, selected board
 
 **Board Placement**:
