@@ -235,6 +235,7 @@ struct ContentView: View {
                             isHeld: board.id == store.heldBoardID,
                             runtime: store.runtime(for: board),
                             height: boardHeight,
+                            isPointerFocusEnabled: isBoardPointerFocusEnabled,
                             onFocus: { store.focusBoard(board.id) }
                         )
                         .id(board.id)
@@ -259,6 +260,12 @@ struct ContentView: View {
                 }
             }
         }
+    }
+
+    private var isBoardPointerFocusEnabled: Bool {
+        !store.isOpenBoardPanelPresented
+            && !store.isNewDeskPanelPresented
+            && !store.isOverviewPresented
     }
 
     private func openBoard(defaultBoardWidth: Double) {

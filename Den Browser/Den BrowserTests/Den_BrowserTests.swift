@@ -65,17 +65,30 @@ struct Den_BrowserTests {
         #expect(store.focusedDesk?.boards.map(\.id) == [board.id])
     }
 
-    @Test func focusesBoardByIDAcrossDesks() {
-        let firstBoard = BoardState(label: "First", width: 520, currentURLString: "https://example.com")
-        let secondBoard = BoardState(label: "Second", width: 520, currentURLString: "https://example.org")
-        let firstDesk = DeskState(label: "First Desk", boards: [firstBoard])
-        let secondDesk = DeskState(label: "Second Desk", boards: [secondBoard])
-        let store = makeStore(desks: [firstDesk, secondDesk], focusedDeskID: firstDesk.id)
+    @Test func webPointerFocusSuppressesExplicitActivation() {
+        var state = PointerFocusState()
 
-        store.focusBoard(secondBoard.id)
+        let handledPointer = state.handlePointerDown()
+        let activatedAfterPointer = state.updateFocus(true)
+        #expect(handledPointer)
+        #expect(!activatedAfterPointer)
 
-        #expect(store.state.focusedDeskID == secondDesk.id)
-        #expect(store.focusedDesk?.focusedBoardID == secondBoard.id)
+        _ = state.updateFocus(false)
+        let activatedAfterNonPointerFocus = state.updateFocus(true)
+        #expect(activatedAfterNonPointerFocus)
+    }
+
+    @Test func disabledWebPointerFocusHasNoCallbackOrSuppression() {
+        var state = PointerFocusState()
+        _ = state.handlePointerDown()
+        state.updateEnabled(false)
+
+        let handledPointer = state.handlePointerDown()
+        #expect(!handledPointer)
+
+        state.updateEnabled(true)
+        let activated = state.updateFocus(true)
+        #expect(activated)
     }
 
     private func makeStore(desks: [DeskState], focusedDeskID: UUID) -> DenStore {

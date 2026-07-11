@@ -4,6 +4,7 @@ import WebKit
 struct BoardWebView: NSViewRepresentable {
     let webView: WKWebView
     let isFocused: Bool
+    let isPointerFocusEnabled: Bool
     let onFocus: () -> Void
 
     func makeCoordinator() -> Coordinator {
@@ -12,12 +13,14 @@ struct BoardWebView: NSViewRepresentable {
 
     func makeNSView(context: Context) -> WKWebView {
         context.coordinator.startMonitoring(webView: webView, onFocus: onFocus)
+        context.coordinator.updatePointerFocusEnabled(isPointerFocusEnabled)
         context.coordinator.updateFocus(isFocused, webView: webView)
         return webView
     }
 
     func updateNSView(_ nsView: WKWebView, context: Context) {
         context.coordinator.onFocus = onFocus
+        context.coordinator.updatePointerFocusEnabled(isPointerFocusEnabled)
         context.coordinator.updateFocus(isFocused, webView: nsView)
     }
 
@@ -26,7 +29,7 @@ struct BoardWebView: NSViewRepresentable {
     }
 
     final class Coordinator {
-        private var isFocused = false
+        private var pointerFocusState = PointerFocusState()
         private var activationWorkItem: DispatchWorkItem?
         private var mouseMonitor: Any?
         fileprivate var onFocus: (() -> Void)?
@@ -49,9 +52,14 @@ struct BoardWebView: NSViewRepresentable {
                     hitView === webView || hitView.isDescendant(of: webView)
                 else { return event }
 
+                guard self.pointerFocusState.handlePointerDown() else { return event }
                 self.onFocus?()
                 return event
             }
+        }
+
+        func updatePointerFocusEnabled(_ isEnabled: Bool) {
+            pointerFocusState.updateEnabled(isEnabled)
         }
 
         func stopMonitoring() {
@@ -63,11 +71,9 @@ struct BoardWebView: NSViewRepresentable {
         }
 
         func updateFocus(_ newValue: Bool, webView: WKWebView) {
-            guard newValue != isFocused else { return }
-            isFocused = newValue
+            guard newValue != pointerFocusState.isFocused else { return }
             activationWorkItem?.cancel()
-
-            guard newValue else { return }
+            guard pointerFocusState.updateFocus(newValue) else { return }
 
             let workItem = DispatchWorkItem { [weak webView] in
                 guard let webView else { return }
@@ -76,5 +82,42 @@ struct BoardWebView: NSViewRepresentable {
             activationWorkItem = workItem
             DispatchQueue.main.async(execute: workItem)
         }
+    }
+}
+
+struct PointerFocusState {
+    private(set) var isEnabled = true
+    private(set) var isFocused = false
+    private var suppressNextActivation = false
+
+    mutating func updateEnabled(_ newValue: Bool) {
+        isEnabled = newValue
+        if !newValue {
+            suppressNextActivation = false
+        }
+    }
+
+    mutating func handlePointerDown() -> Bool {
+        guard isEnabled else { return false }
+        if !isFocused {
+            suppressNextActivation = true
+        }
+        return true
+    }
+
+    mutating func updateFocus(_ newValue: Bool) -> Bool {
+        guard newValue != isFocused else { return false }
+        isFocused = newValue
+
+        guard newValue else {
+            suppressNextActivation = false
+            return false
+        }
+
+        if suppressNextActivation {
+            suppressNextActivation = false
+            return false
+        }
+        return true
     }
 }
