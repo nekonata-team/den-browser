@@ -65,6 +65,19 @@ struct Den_BrowserTests {
         #expect(store.focusedDesk?.boards.map(\.id) == [board.id])
     }
 
+    @Test func focusesBoardByIDAcrossDesks() {
+        let firstBoard = BoardState(label: "First", width: 520, currentURLString: "https://example.com")
+        let secondBoard = BoardState(label: "Second", width: 520, currentURLString: "https://example.org")
+        let firstDesk = DeskState(label: "First Desk", boards: [firstBoard])
+        let secondDesk = DeskState(label: "Second Desk", boards: [secondBoard])
+        let store = makeStore(desks: [firstDesk, secondDesk], focusedDeskID: firstDesk.id)
+
+        store.focusBoard(secondBoard.id)
+
+        #expect(store.state.focusedDeskID == secondDesk.id)
+        #expect(store.focusedDesk?.focusedBoardID == secondBoard.id)
+    }
+
     private func makeStore(desks: [DeskState], focusedDeskID: UUID) -> DenStore {
         DenStore(
             state: DenState(desks: desks, focusedDeskID: focusedDeskID),

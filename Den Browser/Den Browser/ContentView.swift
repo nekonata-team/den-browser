@@ -234,7 +234,8 @@ struct ContentView: View {
                             isFocused: board.id == store.focusedDesk?.focusedBoardID,
                             isHeld: board.id == store.heldBoardID,
                             runtime: store.runtime(for: board),
-                            height: boardHeight
+                            height: boardHeight,
+                            onFocus: { store.focusBoard(board.id) }
                         )
                         .id(board.id)
                     }

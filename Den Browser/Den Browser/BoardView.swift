@@ -7,11 +7,13 @@ struct BoardView: View {
     let isHeld: Bool
     let runtime: BoardRuntime
     let height: Double
+    let onFocus: () -> Void
 
     var body: some View {
         VStack(spacing: 0) {
             header
-            BoardWebView(webView: runtime.webView, isFocused: isFocused)
+                .onTapGesture(perform: onFocus)
+            BoardWebView(webView: runtime.webView, isFocused: isFocused, onFocus: onFocus)
         }
         .frame(width: board.width, height: height)
         .background(.white, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
