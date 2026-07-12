@@ -246,16 +246,8 @@ final class DenStore {
             let boardIndex = focusedBoardIndex(in: deskIndex)
         else { return }
 
-        let closedBoard = state.desks[deskIndex].boards.remove(at: boardIndex)
+        let closedBoard = removeBoard(at: (desk: deskIndex, board: boardIndex))
         runtimes.removeValue(forKey: closedBoard.id)
-
-        let boards = state.desks[deskIndex].boards
-        if boards.isEmpty {
-            state.desks[deskIndex].focusedBoardID = nil
-        } else {
-            let nextIndex = min(boardIndex, boards.count - 1)
-            state.desks[deskIndex].focusedBoardID = boards[nextIndex].id
-        }
 
         save()
     }
@@ -304,13 +296,7 @@ final class DenStore {
         else { return }
 
         let targetBoardID = state.desks[targetDeskIndex].focusedBoardID
-        let board = state.desks[source.desk].boards.remove(at: source.board)
-        if state.desks[source.desk].boards.isEmpty {
-            state.desks[source.desk].focusedBoardID = nil
-        } else if state.desks[source.desk].focusedBoardID == heldBoardID {
-            let nextIndex = min(source.board, state.desks[source.desk].boards.count - 1)
-            state.desks[source.desk].focusedBoardID = state.desks[source.desk].boards[nextIndex].id
-        }
+        let board = removeBoard(at: source)
 
         let insertIndex: Int
         if let targetBoardID,
@@ -419,13 +405,7 @@ final class DenStore {
             let sourceBoardIndex = focusedBoardIndex(in: sourceDeskIndex)
         else { return }
 
-        let board = state.desks[sourceDeskIndex].boards.remove(at: sourceBoardIndex)
-        if state.desks[sourceDeskIndex].boards.isEmpty {
-            state.desks[sourceDeskIndex].focusedBoardID = nil
-        } else {
-            let nextIndex = min(sourceBoardIndex, state.desks[sourceDeskIndex].boards.count - 1)
-            state.desks[sourceDeskIndex].focusedBoardID = state.desks[sourceDeskIndex].boards[nextIndex].id
-        }
+        let board = removeBoard(at: (desk: sourceDeskIndex, board: sourceBoardIndex))
 
         let targetDeskIndex = wrappedIndex(sourceDeskIndex + delta, count: state.desks.count)
         let insertIndex: Int
@@ -501,13 +481,7 @@ final class DenStore {
             let source = boardIndices(for: boardID)
         else { return }
 
-        let board = state.desks[source.desk].boards.remove(at: source.board)
-        if state.desks[source.desk].boards.isEmpty {
-            state.desks[source.desk].focusedBoardID = nil
-        } else if state.desks[source.desk].focusedBoardID == boardID {
-            let nextIndex = min(source.board, state.desks[source.desk].boards.count - 1)
-            state.desks[source.desk].focusedBoardID = state.desks[source.desk].boards[nextIndex].id
-        }
+        let board = removeBoard(at: source)
 
         let targetDeskIndex = wrappedIndex(source.desk + delta, count: state.desks.count)
         let insertIndex: Int
@@ -550,6 +524,18 @@ final class DenStore {
             }
         }
         return nil
+    }
+
+    @discardableResult
+    private func removeBoard(at indices: (desk: Int, board: Int)) -> BoardState {
+        let board = state.desks[indices.desk].boards.remove(at: indices.board)
+        let boards = state.desks[indices.desk].boards
+        guard state.desks[indices.desk].focusedBoardID == board.id else { return board }
+
+        state.desks[indices.desk].focusedBoardID = boards.indices.contains(indices.board)
+            ? boards[indices.board].id
+            : boards.last?.id
+        return board
     }
 
     private func ensureFocusedObjects() {

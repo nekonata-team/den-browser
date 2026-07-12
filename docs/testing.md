@@ -24,23 +24,12 @@ Human validation is exploratory, not a correctness guarantee. When it finds a re
 
 ## Automated commands
 
-Run from the repository root. Both commands use the shared `Den Browser` scheme, the local macOS destination, a repository-local DerivedData directory, and disabled code signing.
+Run from repository root. `just` commands use shared `Den Browser` scheme, local macOS destination, repository-local DerivedData, and disabled code signing.
 
 ```sh
-xcodebuild build \
-  -project "Den Browser/Den Browser.xcodeproj" \
-  -scheme "Den Browser" \
-  -destination 'platform=macOS' \
-  -derivedDataPath .derived-data \
-  CODE_SIGNING_ALLOWED=NO
-
-xcodebuild test \
-  -project "Den Browser/Den Browser.xcodeproj" \
-  -scheme "Den Browser" \
-  -destination 'platform=macOS' \
-  -derivedDataPath .derived-data \
-  -only-testing:'Den BrowserTests' \
-  CODE_SIGNING_ALLOWED=NO
+just build
+just test
+just check
 ```
 
 Before merge, use this standard order: build and unit tests, code review, then merge. Add exploratory validation when warranted, such as for UI behavior changes or milestone acceptance; use [poc.md](./poc.md) as the source of truth for concrete criteria.
