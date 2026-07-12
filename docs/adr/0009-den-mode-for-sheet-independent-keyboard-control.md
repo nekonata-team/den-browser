@@ -11,7 +11,7 @@ Den Browser uses persistent Den Mode instead of the shared `Control` + `Option` 
 - The titlebar shows Den Mode and, when applicable, Cut Board state. A cyan Den outer ring is a secondary visual signal; no mode overlay covers boards or sheets.
 - `o` opens Overview, a temporary screen within Den Mode. Its Escape returns to Den Mode; a second Escape returns to sheet input.
 - Overview accepts only movement, Shift plus movement, Return, and Escape. Movement changes the Overview Selection; Return makes it the Focused Board.
-- `n` opens a new board and Shift plus `n` opens a new desk. Their panels suspend Den Mode. Creating the Board or Desk returns to sheet input; canceling returns to Den Mode.
+- `n` opens a new board and Shift plus `n` opens a new desk. `Command` + `T` also opens the Open Board panel from every keyboard context, including Den Mode and Overview. Their panels suspend Den Mode. Creating the Board or Desk returns to sheet input; canceling returns to Den Mode.
 - Left and right arrows, or `h` and `l`, navigate boards. Up and down arrows, or `j` and `k`, navigate desks. Shift plus either movement key moves the focused board in that direction.
 - `-` narrows the focused board and `=` widens it. Shift is meaningful for board movement only with a movement key.
 - `[` and `]` move backward and forward in the focused board's sheet stack. Reload remains `Command` + `r` outside Den Mode.

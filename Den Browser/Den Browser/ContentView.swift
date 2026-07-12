@@ -29,15 +29,15 @@ struct ContentView: View {
 
                 if store.focusedDesk?.boards.isEmpty == false {
                     boardStrip(in: geometry.size)
-
-                    if shouldShowDeskSwitcher {
-                        deskSwitcher
-                            .padding(.top, 12)
-                    }
                 } else {
                     EmptyDenView {
                         store.showOpenBoardPanel()
                     }
+                }
+
+                if shouldShowDeskSwitcher {
+                    deskSwitcher
+                        .padding(.top, 12)
                 }
 
                 if store.isOpenBoardPanelPresented {

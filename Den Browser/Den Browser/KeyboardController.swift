@@ -20,7 +20,12 @@ final class KeyboardController {
         self.monitor = nil
     }
 
-    private static func handle(_ event: NSEvent, store: DenStore) -> Bool {
+    static func handle(_ event: NSEvent, store: DenStore) -> Bool {
+        if characterIgnoringModifiers(for: event) == "t", normalizedModifiers(for: event) == [.command] {
+            store.showOpenBoardPanel()
+            return true
+        }
+
         if store.isOverviewPresented {
             return handleOverview(event, store: store)
         }

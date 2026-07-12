@@ -1,3 +1,4 @@
+import AppKit
 import Foundation
 import Testing
 @testable import Den_Browser
@@ -239,6 +240,29 @@ struct Den_BrowserTests {
 
             store.resizeBoard(boards[1].id, to: 2_000)
             #expect(store.focusedDesk?.boards[1].width == 1400)
+        }
+    }
+
+    @Test func commandTOpensBoardPanelFromOverview() throws {
+        try withStore(desks: [desk("Desk")]) { store in
+            store.showOverview()
+            let event = try #require(
+                NSEvent.keyEvent(
+                    with: .keyDown,
+                    location: .zero,
+                    modifierFlags: .command,
+                    timestamp: 0,
+                    windowNumber: 0,
+                    context: nil,
+                    characters: "t",
+                    charactersIgnoringModifiers: "t",
+                    isARepeat: false,
+                    keyCode: 17
+                ))
+
+            #expect(KeyboardController.handle(event, store: store))
+            #expect(store.isOpenBoardPanelPresented)
+            #expect(!store.isOverviewPresented)
         }
     }
 

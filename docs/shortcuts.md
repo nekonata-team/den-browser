@@ -4,6 +4,7 @@ Den Mode makes Den operations available while a sheet has keyboard focus. Enter 
 
 | Shortcut | Action | Notes |
 | --- | --- | --- |
+| Command + `T` | New Board panel | Available in every keyboard context. |
 | `Control` + `.` | Enter Den Mode | Captures subsequent keys. |
 | Escape | Exit Den Mode | When overview or a panel is not open. |
 | Left / Right or `h` / `l` | Previous / next board | Board navigation. |
