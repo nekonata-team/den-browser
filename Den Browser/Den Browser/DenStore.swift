@@ -326,6 +326,10 @@ final class DenStore {
         focusedRuntime?.webView.goForward()
     }
 
+    func reloadFocusedBoard() {
+        focusedRuntime?.reload()
+    }
+
     func runtime(for board: BoardState) -> BoardRuntime {
         if let runtime = runtimes[board.id] {
             return runtime

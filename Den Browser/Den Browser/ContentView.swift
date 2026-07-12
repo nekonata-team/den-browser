@@ -331,6 +331,7 @@ private struct EmptyDenView: View {
                 ShortcutRow(keys: "⌃⌥⇧←/→", label: "Move board")
                 ShortcutRow(keys: "⌃⌥⇧↑/↓", label: "Move board to desk")
                 ShortcutRow(keys: "⌃⌥[/]", label: "Back / forward sheet")
+                ShortcutRow(keys: "⌘R", label: "Reload current sheet")
                 ShortcutRow(keys: "⌃⌥-/;", label: "Resize board")
                 ShortcutRow(keys: "⌃⌥W", label: "Close board")
                 ShortcutRow(keys: "⌃⌥H", label: "Hold board")

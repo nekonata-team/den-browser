@@ -94,6 +94,11 @@ final class KeyboardController {
     private static func handleCharacterShortcut(_ event: NSEvent, modifiers: NSEvent.ModifierFlags, store: DenStore) -> Bool {
         guard let character = event.charactersIgnoringModifiers?.lowercased() else { return false }
 
+        if modifiers == [.command], character == "r" {
+            store.reloadFocusedBoard()
+            return true
+        }
+
         guard modifiers == [.control, .option] else { return false }
 
         switch character {

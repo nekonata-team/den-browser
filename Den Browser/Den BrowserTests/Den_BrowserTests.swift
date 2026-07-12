@@ -152,6 +152,17 @@ struct Den_BrowserTests {
         #expect(restored.state.desks.map(\.focusedBoardID) == [firstBoards[1].id, secondBoards[0].id])
     }
 
+    @Test func reloadingFocusedBoardDoesNotChangeDenState() {
+        let current = board("Current", url: "https://example.com/path")
+        withStore(desks: [desk("Desk", boards: [current])]) { store in
+            let stateBeforeReload = store.state
+
+            store.reloadFocusedBoard()
+
+            #expect(store.state == stateBeforeReload)
+        }
+    }
+
     @Test func webPointerFocusSuppressesExplicitActivation() {
         var state = PointerFocusState()
 

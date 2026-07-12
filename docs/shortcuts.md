@@ -17,6 +17,7 @@ Den-owned shortcuts use `Control` + `Option` as the shared prefix. `Command` sho
 | `Control` + `Option` + Shift + Down | Move board to next desk | Moves the focused board to another desk. |
 | `Control` + `Option` + `[` | Back in sheet stack | Uses the focused board. |
 | `Control` + `Option` + `]` | Forward in sheet stack | Uses the focused board. |
+| `Command` + `R` | Reload current sheet | Uses the focused board. |
 | `Control` + `Option` + `-` | Narrow board | Adjusts focused board width. |
 | `Control` + `Option` + `;` | Widen board | Adjusts focused board width. |
 | `Control` + `Option` + `W` | Close board | Closes the focused board. |

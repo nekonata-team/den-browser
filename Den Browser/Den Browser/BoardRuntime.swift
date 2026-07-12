@@ -33,4 +33,8 @@ final class BoardRuntime: NSObject, WKNavigationDelegate {
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
         onChange(id, webView.url, webView.title)
     }
+
+    func reload() {
+        webView.reload()
+    }
 }

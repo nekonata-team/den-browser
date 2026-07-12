@@ -100,6 +100,11 @@ struct Den_BrowserApp: App {
                 }
                 .keyboardShortcut("]", modifiers: [.control, .option])
 
+                Button("Reload Current Sheet") {
+                    store.reloadFocusedBoard()
+                }
+                .keyboardShortcut("r", modifiers: [.command])
+
                 Divider()
 
                 Button("Widen Board") {
