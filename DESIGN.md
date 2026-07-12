@@ -11,6 +11,9 @@ Den controls feel like a calm desk laid over live web sheets. Web content remain
 - Boards stay white with rounded continuous corners. Focus uses cyan; held board uses orange.
 - Keep hierarchy visible: Desk switcher above board strip, board header above sheet, sheet stack indicator secondary.
 - Prefer SF Symbols and system typography. Preserve macOS accessibility defaults where possible.
+- Let SwiftUI semantic colors express standard hierarchy: use `primary`, `secondary`, and `tertiary` for Den text, icons, and neutral chrome.
+- Resolve Den chrome in its dark appearance so semantic colors stay legible. Do not hard-code black or white for standard text and icons.
+- Reserve fixed colors for Den-specific meaning and atmosphere: cyan for focus, orange for held boards, and the dark background gradient and shadows.
 
 ## Interaction rules
 

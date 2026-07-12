@@ -423,7 +423,7 @@ private struct OverviewView: View {
                         .frame(width: 6, height: 6)
                 }
             }
-            .foregroundStyle(.white.opacity(desk.id == store.overviewSelectionDeskID ? 0.96 : 0.58))
+            .foregroundStyle(Color.primary.opacity(desk.id == store.overviewSelectionDeskID ? 0.96 : 0.58))
 
             HStack(alignment: .top, spacing: 10) {
                 if desk.boards.isEmpty {
@@ -431,7 +431,7 @@ private struct OverviewView: View {
                         .font(.system(size: 12))
                         .foregroundStyle(.secondary)
                         .frame(width: 150, height: 88)
-                        .background(.white.opacity(0.06), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                        .background(Color.primary.opacity(0.06), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
                 } else {
                     ForEach(desk.boards) { board in
                         overviewBoard(board, in: desk)
@@ -474,11 +474,11 @@ private struct OverviewView: View {
             }
             .padding(10)
             .frame(width: 158, height: 96, alignment: .leading)
-            .foregroundStyle(.white)
-            .background(.white.opacity(isSelected ? 0.18 : 0.09), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+            .foregroundStyle(.primary)
+            .background(Color.primary.opacity(isSelected ? 0.18 : 0.09), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
             .overlay {
                 RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .stroke(isHeld ? .orange.opacity(0.86) : (isSelected ? .cyan.opacity(0.86) : .white.opacity(0.12)), lineWidth: isHeld || isSelected ? 2 : 1)
+                    .stroke(isHeld ? .orange.opacity(0.86) : (isSelected ? .cyan.opacity(0.86) : Color.primary.opacity(0.12)), lineWidth: isHeld || isSelected ? 2 : 1)
             }
         }
         .buttonStyle(.plain)

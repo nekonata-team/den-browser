@@ -16,6 +16,7 @@ struct Den_BrowserApp: App {
         WindowGroup {
             ContentView()
                 .environment(store)
+                .environment(\.colorScheme, .dark)
                 .containerBackground(.clear, for: .window)
                 .onAppear {
                     keyboardController.start(store: store)

@@ -43,14 +43,14 @@ struct BoardView: View {
         if isFocused {
             return .cyan.opacity(0.75)
         }
-        return .white.opacity(0.16)
+        return Color.primary.opacity(0.16)
     }
 
     private var header: some View {
         HStack(spacing: 8) {
             Text(board.label)
                 .font(.system(size: 12, weight: .semibold))
-                .foregroundStyle(.black.opacity(0.86))
+                .foregroundStyle(.primary)
                 .lineLimit(1)
                 .accessibilityLabel("Board: \(board.label), \(accessibilityState)")
 
@@ -71,6 +71,7 @@ struct BoardView: View {
                     .frame(width: 24, height: 24)
             }
             .buttonStyle(.borderless)
+            .foregroundStyle(.primary)
             .disabled(!runtime.webView.canGoBack)
             .help("Back in sheet stack")
             .accessibilityLabel("Back in sheet stack")
@@ -80,6 +81,7 @@ struct BoardView: View {
                     .frame(width: 24, height: 24)
             }
             .buttonStyle(.borderless)
+            .foregroundStyle(.primary)
             .disabled(!runtime.webView.canGoForward)
             .help("Forward in sheet stack")
             .accessibilityLabel("Forward in sheet stack")
