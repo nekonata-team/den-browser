@@ -1,3 +1,7 @@
+---
+status: accepted
+---
+
 # Den Browser uses a paper workspace metaphor
 
 Den Browser uses a personal paper-workspace metaphor: a den contains desks, desks hold boards, and boards hold stacks of sheets. We chose this over conventional browser language such as tabs, pages, and workspaces so the product can center intentional work surfaces and spatial memory instead of tab-list management. The metaphor also keeps navigation history inside a board as a sheet stack, while boards remain user-created task contexts.
