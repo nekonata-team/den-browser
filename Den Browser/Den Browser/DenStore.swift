@@ -326,6 +326,18 @@ final class DenStore {
         focusedRuntime?.webView.goForward()
     }
 
+    func goBackInBoard(_ boardID: UUID) {
+        guard boardIndices(for: boardID) != nil else { return }
+        focusBoard(boardID)
+        focusedRuntime?.webView.goBack()
+    }
+
+    func goForwardInBoard(_ boardID: UUID) {
+        guard boardIndices(for: boardID) != nil else { return }
+        focusBoard(boardID)
+        focusedRuntime?.webView.goForward()
+    }
+
     func reloadFocusedBoard() {
         focusedRuntime?.reload()
     }

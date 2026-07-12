@@ -9,6 +9,8 @@ struct BoardView: View {
     let height: Double
     let isPointerFocusEnabled: Bool
     let onFocus: () -> Void
+    let onGoBack: () -> Void
+    let onGoForward: () -> Void
 
     var body: some View {
         VStack(spacing: 0) {
@@ -25,7 +27,6 @@ struct BoardView: View {
             )
         }
         .frame(width: board.width, height: height)
-        .background(.white, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
         .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
         .overlay {
             RoundedRectangle(cornerRadius: 18, style: .continuous)
@@ -46,51 +47,52 @@ struct BoardView: View {
     }
 
     private var header: some View {
-        HStack(spacing: 10) {
-            VStack(alignment: .leading, spacing: 1) {
-                Text(board.label)
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(.black.opacity(0.86))
-                    .lineLimit(1)
-
-                Text(hostLabel)
-                    .font(.system(size: 10))
-                    .foregroundStyle(.black.opacity(0.52))
-                    .lineLimit(1)
-            }
+        HStack(spacing: 8) {
+            Text(board.label)
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(.black.opacity(0.86))
+                .lineLimit(1)
+                .accessibilityLabel("Board: \(board.label), \(accessibilityState)")
 
             Spacer(minLength: 8)
 
-            SheetStackIndicator(canGoBack: runtime.webView.canGoBack, canGoForward: runtime.webView.canGoForward)
+            navigationButtons
         }
         .padding(.horizontal, 12)
         .frame(height: 38)
         .background(.regularMaterial)
+        .contentShape(Rectangle())
     }
 
-    private var hostLabel: String {
-        URL(string: board.currentURLString)?.host(percentEncoded: false) ?? board.currentURLString
-    }
-}
+    private var navigationButtons: some View {
+        HStack(spacing: 2) {
+            Button(action: onGoBack) {
+                Image(systemName: "chevron.left")
+                    .frame(width: 24, height: 24)
+            }
+            .buttonStyle(.borderless)
+            .disabled(!runtime.webView.canGoBack)
+            .help("Back in sheet stack")
+            .accessibilityLabel("Back in sheet stack")
 
-private struct SheetStackIndicator: View {
-    let canGoBack: Bool
-    let canGoForward: Bool
-
-    var body: some View {
-        HStack(spacing: 3) {
-            Capsule()
-                .fill(canGoBack ? .black.opacity(0.28) : .black.opacity(0.12))
-                .frame(width: 16, height: 6)
-
-            Capsule()
-                .fill(.black.opacity(0.84))
-                .frame(width: 18, height: 6)
-
-            Capsule()
-                .fill(canGoForward ? .black.opacity(0.28) : .black.opacity(0.12))
-                .frame(width: 16, height: 6)
+            Button(action: onGoForward) {
+                Image(systemName: "chevron.right")
+                    .frame(width: 24, height: 24)
+            }
+            .buttonStyle(.borderless)
+            .disabled(!runtime.webView.canGoForward)
+            .help("Forward in sheet stack")
+            .accessibilityLabel("Forward in sheet stack")
         }
-        .accessibilityLabel("Sheet stack")
+    }
+
+    private var accessibilityState: String {
+        if isHeld {
+            return "Held board"
+        }
+        if isFocused {
+            return "Focused board"
+        }
+        return "Board"
     }
 }

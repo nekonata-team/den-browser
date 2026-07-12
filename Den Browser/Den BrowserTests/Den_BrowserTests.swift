@@ -163,6 +163,16 @@ struct Den_BrowserTests {
         }
     }
 
+    @Test func navigatingAnotherBoardFocusesIt() {
+        let first = board("First")
+        let second = board("Second")
+        withStore(desks: [desk("Desk", boards: [first, second], focusedBoardID: first.id)]) { store in
+            store.goBackInBoard(second.id)
+
+            #expect(store.focusedDesk?.focusedBoardID == second.id)
+        }
+    }
+
     @Test func webPointerFocusSuppressesExplicitActivation() {
         var state = PointerFocusState()
 

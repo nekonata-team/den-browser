@@ -236,7 +236,9 @@ struct ContentView: View {
                             runtime: store.runtime(for: board),
                             height: boardHeight,
                             isPointerFocusEnabled: isBoardPointerFocusEnabled,
-                            onFocus: { store.focusBoard(board.id) }
+                            onFocus: { store.focusBoard(board.id) },
+                            onGoBack: { store.goBackInBoard(board.id) },
+                            onGoForward: { store.goForwardInBoard(board.id) }
                         )
                         .id(board.id)
                         .allowsHitTesting(isBoardPointerFocusEnabled)
