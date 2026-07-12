@@ -11,7 +11,7 @@ Read [CONTEXT.md](./CONTEXT.md) before changing product behavior or user-visible
 1. Read `CONTEXT.md`, relevant ADRs in `docs/adr/`, and affected code/tests.
 2. Keep persisted `DenState` separate from live `BoardRuntime`/`WKWebView` objects.
 3. Add or update focused unit tests for stable `DenStore` behavior.
-4. Run `just check` before handoff. For UI/WebKit changes, also perform applicable steps in `docs/poc.md`.
+4. Swift code, Xcode settings, or validation tasks changed: run `just check` before handoff. For UI/WebKit changes, also perform applicable steps in `docs/poc.md`.
 5. Update `backlog.md` only when acting as manager; implementers leave it unchanged.
 
 ## Commands
