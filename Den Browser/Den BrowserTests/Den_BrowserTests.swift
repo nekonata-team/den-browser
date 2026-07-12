@@ -228,6 +228,20 @@ struct Den_BrowserTests {
         #expect(restored.state.desks.map(\.focusedBoardID) == [firstBoards[1].id, secondBoards[0].id])
     }
 
+    @Test func mouseResizeChangesTargetBoardWidthWithinBounds() {
+        let boards = [board("First"), board("Second")]
+        withStore(desks: [desk("Desk", boards: boards)]) { store in
+            store.resizeBoard(boards[1].id, to: 760)
+            #expect(store.focusedDesk?.boards.map(\.width) == [520, 760])
+
+            store.resizeBoard(boards[1].id, to: 100)
+            #expect(store.focusedDesk?.boards[1].width == 280)
+
+            store.resizeBoard(boards[1].id, to: 2_000)
+            #expect(store.focusedDesk?.boards[1].width == 1400)
+        }
+    }
+
     @Test func reloadingFocusedBoardDoesNotChangeDenState() {
         let current = board("Current", url: "https://example.com/path")
         withStore(desks: [desk("Desk", boards: [current])]) { store in

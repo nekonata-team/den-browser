@@ -289,6 +289,15 @@ final class DenStore {
         save()
     }
 
+    func resizeBoard(_ boardID: UUID, to width: Double) {
+        guard let indices = boardIndices(for: boardID) else { return }
+        state.desks[indices.desk].boards[indices.board].width = min(max(width, 280), 1400)
+    }
+
+    func saveBoardWidths() {
+        save()
+    }
+
     func closeFocusedBoard() {
         guard
             let deskIndex = focusedDeskIndex,

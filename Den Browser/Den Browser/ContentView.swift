@@ -5,6 +5,7 @@
 //  Created by 大澤弘明 on 2026/07/10.
 //
 
+import AppKit
 import SwiftUI
 
 struct ContentView: View {
@@ -17,6 +18,7 @@ struct ContentView: View {
     @State private var selectedDeskTemplate: DeskTemplate = .empty
     @State private var didAttemptDeskCreation = false
     @State private var focusedBoardScrollTask: Task<Void, Never>?
+    @State private var resizingBoardID: UUID?
     @FocusState private var isOpenPanelFocused: Bool
     @FocusState private var isNewDeskLabelFocused: Bool
 
@@ -262,7 +264,25 @@ struct ContentView: View {
                             onGoForward: { store.goForwardInBoard(board.id) }
                         )
                         .id(board.id)
+                        .overlay(alignment: .trailing) {
+                            BoardResizeHandle(
+                                board: board,
+                                height: boardHeight,
+                                width: boardSpacing,
+                                onResizeStart: {
+                                    resizingBoardID = board.id
+                                    store.focusBoard(board.id)
+                                },
+                                onResize: { store.resizeBoard(board.id, to: $0) },
+                                onResizeEnd: {
+                                    store.saveBoardWidths()
+                                    resizingBoardID = nil
+                                }
+                            )
+                            .offset(x: boardSpacing)
+                        }
                         .allowsHitTesting(isBoardPointerFocusEnabled)
+                        .zIndex(1)
                     }
                 }
                 .padding(.horizontal, boardHorizontalPadding)
@@ -272,7 +292,7 @@ struct ContentView: View {
             .scrollIndicators(.hidden)
             .onChange(of: store.focusedDesk?.focusedBoardID) { _, focusedBoardID in
                 focusedBoardScrollTask?.cancel()
-                guard let focusedBoardID else { return }
+                guard resizingBoardID == nil, let focusedBoardID else { return }
 
                 focusedBoardScrollTask = Task { @MainActor in
                     await Task.yield()
@@ -295,6 +315,51 @@ struct ContentView: View {
     private func openBoard(defaultBoardWidth: Double) {
         store.addBoard(urlString: urlText, preferredWidth: defaultBoardWidth)
         urlText = ""
+    }
+}
+
+private struct BoardResizeHandle: View {
+    @State private var isHovering = false
+    @State private var widthAtDragStart: Double?
+
+    let board: BoardState
+    let height: Double
+    let width: Double
+    let onResizeStart: () -> Void
+    let onResize: (Double) -> Void
+    let onResizeEnd: () -> Void
+
+    var body: some View {
+        Rectangle()
+            .fill(.clear)
+            .frame(width: width, height: height)
+            .contentShape(Rectangle())
+            .overlay {
+                Capsule()
+                    .fill(Color.primary.opacity(0.38))
+                    .frame(width: 2, height: 34)
+                    .opacity(isHovering || widthAtDragStart != nil ? 1 : 0)
+            }
+            .onHover { isHovering in
+                self.isHovering = isHovering
+                (isHovering ? NSCursor.resizeLeftRight : NSCursor.arrow).set()
+            }
+            .gesture(
+                DragGesture(minimumDistance: 1, coordinateSpace: .global)
+                    .onChanged { value in
+                        if widthAtDragStart == nil {
+                            widthAtDragStart = board.width
+                            onResizeStart()
+                        }
+                        onResize((widthAtDragStart ?? board.width) + value.translation.width)
+                    }
+                    .onEnded { _ in
+                        widthAtDragStart = nil
+                        onResizeEnd()
+                    }
+            )
+            .help("Drag to resize board")
+            .accessibilityLabel("Resize \(board.label) board")
     }
 }
 
