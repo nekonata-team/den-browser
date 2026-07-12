@@ -23,7 +23,7 @@ struct ContentView: View {
     var body: some View {
         GeometryReader { geometry in
             ZStack(alignment: .top) {
-                DenBackground()
+                DenBackground(isDenMode: store.isDenMode)
 
                 if store.focusedDesk?.boards.isEmpty == false {
                     boardStrip(in: geometry.size)
@@ -59,8 +59,22 @@ struct ContentView: View {
             .animation(.snappy(duration: 0.18), value: store.isOpenBoardPanelPresented)
             .animation(.snappy(duration: 0.18), value: store.isNewDeskPanelPresented)
             .animation(.snappy(duration: 0.18), value: store.isOverviewPresented)
+            .overlay {
+                if store.isDenMode {
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .stroke(.cyan.opacity(0.72), lineWidth: 1)
+                        .padding(6)
+                        .allowsHitTesting(false)
+                }
+            }
         }
         .frame(minWidth: 1100, minHeight: 720)
+        .navigationTitle(titlebarTitle)
+    }
+
+    private var titlebarTitle: String {
+        guard store.isDenMode else { return "Den Browser" }
+        return store.cutBoardLabel == nil ? "DEN MODE" : "DEN MODE · CUT"
     }
 
     private var deskSwitcher: some View {
@@ -133,7 +147,7 @@ struct ContentView: View {
                     Text("Enter a desk label")
                         .foregroundStyle(.red)
                 } else {
-                    Text("New desk opens after the focused desk")
+                    Text(newDeskPanelDescription)
                         .foregroundStyle(.secondary)
                 }
 
@@ -141,7 +155,7 @@ struct ContentView: View {
 
                 Button("Create", action: createDesk)
                     .buttonStyle(.glassProminent)
-                    .disabled(trimmedNewDeskLabel.isEmpty)
+                    .disabled(trimmedNewDeskLabel.isEmpty || !store.canCreateDesk)
             }
             .font(.system(size: 12))
         }
@@ -152,7 +166,9 @@ struct ContentView: View {
             newDeskLabel = ""
             selectedDeskTemplate = .empty
             didAttemptDeskCreation = false
-            isNewDeskLabelFocused = true
+            DispatchQueue.main.async {
+                isNewDeskLabelFocused = true
+            }
         }
         .onExitCommand {
             store.hideNewDeskPanel()
@@ -161,6 +177,10 @@ struct ContentView: View {
 
     private var trimmedNewDeskLabel: String {
         newDeskLabel.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private var newDeskPanelDescription: String {
+        store.canCreateDesk ? "New desk opens after the focused desk" : "A Den can contain up to 10 desks"
     }
 
     private func createDesk() {
@@ -204,7 +224,7 @@ struct ContentView: View {
                 Text("New board opens to the right of the focused board")
                     .foregroundStyle(.secondary)
                 Spacer()
-                Text("⌃⌥Space")
+                Text("n in Den Mode")
                     .foregroundStyle(.secondary)
             }
             .font(.system(size: 12))
@@ -213,7 +233,9 @@ struct ContentView: View {
         .frame(width: 520)
         .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
         .onAppear {
-            isOpenPanelFocused = true
+            DispatchQueue.main.async {
+                isOpenPanelFocused = true
+            }
         }
         .onExitCommand {
             store.hideOpenBoardPanel()
@@ -232,7 +254,6 @@ struct ContentView: View {
                         BoardView(
                             board: board,
                             isFocused: board.id == store.focusedDesk?.focusedBoardID,
-                            isHeld: board.id == store.heldBoardID,
                             runtime: store.runtime(for: board),
                             height: boardHeight,
                             isPointerFocusEnabled: isBoardPointerFocusEnabled,
@@ -283,6 +304,8 @@ struct ContentView: View {
 }
 
 private struct DenBackground: View {
+    let isDenMode: Bool
+
     var body: some View {
         LinearGradient(
             colors: [
@@ -294,14 +317,14 @@ private struct DenBackground: View {
         )
         .overlay(alignment: .topLeading) {
             Rectangle()
-                .fill(.cyan.opacity(0.12))
+                .fill(.cyan.opacity(isDenMode ? 0.22 : 0.12))
                 .blur(radius: 120)
                 .frame(width: 420, height: 280)
                 .offset(x: -120, y: -80)
         }
         .overlay(alignment: .topTrailing) {
             Rectangle()
-                .fill(.orange.opacity(0.10))
+                .fill(.orange.opacity(isDenMode ? 0.05 : 0.10))
                 .blur(radius: 140)
                 .frame(width: 420, height: 280)
                 .offset(x: 140, y: -90)
@@ -325,20 +348,16 @@ private struct EmptyDenView: View {
             }
 
             VStack(spacing: 10) {
-                ShortcutRow(keys: "⌃⌥N", label: "New desk")
-                ShortcutRow(keys: "⌃⌥Space", label: "Open board")
-                ShortcutRow(keys: "⌃⌥O", label: "Overview")
-                ShortcutRow(keys: "⌃⌥←/→", label: "Move between boards")
-                ShortcutRow(keys: "⌃⌥↑/↓", label: "Move between desks")
-                ShortcutRow(keys: "⌃⌥⇧←/→", label: "Move board")
-                ShortcutRow(keys: "⌃⌥⇧↑/↓", label: "Move board to desk")
-                ShortcutRow(keys: "⌃⌥[/]", label: "Back / forward sheet")
+                ShortcutRow(keys: "⌃.", label: "Enter Den Mode")
+                ShortcutRow(keys: "←/→", label: "Move between boards")
+                ShortcutRow(keys: "↑/↓", label: "Move between desks")
+                ShortcutRow(keys: "n / ⇧N", label: "New board / desk")
+                ShortcutRow(keys: "[/]", label: "Back / forward sheet")
                 ShortcutRow(keys: "⌘R", label: "Reload current sheet")
-                ShortcutRow(keys: "⌃⌥-/;", label: "Resize board")
-                ShortcutRow(keys: "⌃⌥W", label: "Close board")
-                ShortcutRow(keys: "⌃⌥H", label: "Hold board")
-                ShortcutRow(keys: "⌃⌥P", label: "Place held board")
-                ShortcutRow(keys: "⌃⌥Return", label: "Duplicate sheet")
+                ShortcutRow(keys: "- / =", label: "Resize board")
+                ShortcutRow(keys: "x / p / u", label: "Cut / place / restore")
+                ShortcutRow(keys: "d", label: "Delete board")
+                ShortcutRow(keys: "Return", label: "Duplicate sheet")
             }
             .padding(18)
             .frame(width: 360)
@@ -444,8 +463,6 @@ private struct OverviewView: View {
 
     private func overviewBoard(_ board: BoardState, in desk: DeskState) -> some View {
         let isSelected = desk.id == store.overviewSelectionDeskID && board.id == store.overviewSelectionBoardID
-        let isHeld = board.id == store.heldBoardID
-
         return Button {
             store.selectBoardInOverview(board.id)
         } label: {
@@ -466,11 +483,6 @@ private struct OverviewView: View {
                         .fill(.secondary.opacity(0.35))
                         .frame(width: max(24, min(92, board.width / 9)), height: 5)
 
-                    if isHeld {
-                        Text("Held")
-                            .font(.system(size: 10, weight: .medium))
-                            .foregroundStyle(.orange)
-                    }
                 }
             }
             .padding(10)
@@ -483,9 +495,8 @@ private struct OverviewView: View {
             .overlay {
                 RoundedRectangle(cornerRadius: 10, style: .continuous)
                     .stroke(
-                        isHeld
-                            ? .orange.opacity(0.86) : (isSelected ? .cyan.opacity(0.86) : Color.primary.opacity(0.12)),
-                        lineWidth: isHeld || isSelected ? 2 : 1)
+                        isSelected ? .cyan.opacity(0.86) : Color.primary.opacity(0.12),
+                        lineWidth: isSelected ? 2 : 1)
             }
         }
         .buttonStyle(.plain)

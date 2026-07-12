@@ -89,46 +89,113 @@ struct Den_BrowserTests {
         }
     }
 
-    @Test func placingHeldBoardInSameDeskUsesFocusedBoardAsTarget() {
-        let boards = [board("Held"), board("Target"), board("After")]
+    @Test func placingCutBoardInSameDeskUsesFocusedBoardAsTarget() {
+        let boards = [board("Cut"), board("Target"), board("After")]
         withStore(desks: [desk("Desk", boards: boards, focusedBoardID: boards[0].id)]) { store in
-            store.holdFocusedBoard()
-            store.placeHeldBoard()
+            store.cutFocusedBoard()
+            store.placeCutBoard()
 
-            #expect(store.heldBoardID == nil)
+            #expect(store.cutBoard == nil)
             #expect(store.focusedDesk?.boards.map(\.id) == [boards[1].id, boards[0].id, boards[2].id])
             #expect(store.focusedDesk?.focusedBoardID == boards[0].id)
         }
     }
 
-    @Test func cancelingHoldKeepsDeskCreatedAfterHold() {
-        let held = board("Source")
-        withStore(desks: [desk("First", boards: [held])]) { store in
-            store.holdFocusedBoard()
+    @Test func restoringCutBoardKeepsDeskCreatedAfterCut() {
+        let cut = board("Source")
+        withStore(desks: [desk("First", boards: [cut])]) { store in
+            store.cutFocusedBoard()
             store.createDesk(label: "Destination", template: .empty)
-            store.cancelHeldBoard()
+            store.restoreCutBoard()
 
-            #expect(store.heldBoardID == nil)
+            #expect(store.cutBoard == nil)
             #expect(store.state.desks.count == 2)
-            #expect(store.focusedDesk?.label == "Destination")
-            #expect(store.state.desks[0].boards.first?.id == held.id)
+            #expect(store.focusedDesk?.label == "First")
+            #expect(store.state.desks[0].boards.first?.id == cut.id)
         }
     }
 
-    @Test func placesHeldBoardIntoDifferentDesk() {
-        let held = board("Held")
+    @Test func placesCutBoardIntoDifferentDesk() {
+        let cut = board("Cut")
         let targetBoards = [board("Target"), board("After")]
-        let source = desk("Source", boards: [held])
+        let source = desk("Source", boards: [cut])
         let target = desk("Target", boards: targetBoards, focusedBoardID: targetBoards[0].id)
         withStore(desks: [source, target]) { store in
-            store.holdFocusedBoard()
+            store.cutFocusedBoard()
             store.focusNextDesk()
-            store.placeHeldBoard()
+            store.placeCutBoard()
 
-            #expect(store.heldBoardID == nil)
+            #expect(store.cutBoard == nil)
             #expect(store.state.desks[0].boards.isEmpty)
-            #expect(store.state.desks[1].boards.map(\.id) == [targetBoards[0].id, held.id, targetBoards[1].id])
-            #expect(store.focusedDesk?.focusedBoardID == held.id)
+            #expect(store.state.desks[1].boards.map(\.id) == [targetBoards[0].id, cut.id, targetBoards[1].id])
+            #expect(store.focusedDesk?.focusedBoardID == cut.id)
+        }
+    }
+
+    @Test func cutBoardPreventsAnotherCutUntilPlacedOrRestored() {
+        let boards = [board("First"), board("Second")]
+        withStore(desks: [desk("Desk", boards: boards, focusedBoardID: boards[0].id)]) { store in
+            store.cutFocusedBoard()
+            store.cutFocusedBoard()
+
+            #expect(store.cutBoard?.board.id == boards[0].id)
+            #expect(store.focusedDesk?.boards.map(\.id) == [boards[1].id])
+        }
+    }
+
+    @Test func deskCreationStopsAtTenDesks() {
+        let desks = (1...DenStore.maximumDeskCount).map { desk("Desk \($0)") }
+        withStore(desks: desks) { store in
+            store.createDesk(label: "Overflow", template: .empty)
+
+            #expect(store.state.desks.count == DenStore.maximumDeskCount)
+            #expect(!store.canCreateDesk)
+        }
+    }
+
+    @Test func deletingEmptyDeskFocusesDeskThatTakesItsPosition() {
+        let first = desk("First")
+        let empty = desk("Empty")
+        let third = desk("Third")
+        withStore(desks: [first, empty, third]) { store in
+            store.focusDesk(empty.id)
+            store.deleteFocusedDesk()
+
+            #expect(store.state.desks.map(\.id) == [first.id, third.id])
+            #expect(store.focusedDesk?.id == third.id)
+        }
+    }
+
+    @Test func deletingDeskWithBoardsOrLastDeskDoesNothing() {
+        let board = board("Board")
+        let populated = desk("Populated", boards: [board])
+        let empty = desk("Empty")
+        withStore(desks: [populated, empty]) { store in
+            store.deleteFocusedDesk()
+            #expect(store.state.desks.count == 2)
+
+            store.focusDesk(empty.id)
+            store.deleteFocusedDesk()
+            #expect(store.state.desks.count == 1)
+
+            store.deleteFocusedDesk()
+            #expect(store.state.desks.count == 1)
+        }
+    }
+
+    @Test func digitDeskMovementFocusesAndMovesToNumberedDesk() {
+        let moving = board("Moving")
+        let targetBoard = board("Target")
+        let source = desk("One", boards: [moving])
+        let target = desk("Two", boards: [targetBoard])
+        withStore(desks: [source, target]) { store in
+            store.moveFocusedBoard(toDeskNumber: 2)
+
+            #expect(store.focusedDesk?.id == target.id)
+            #expect(store.state.desks[1].boards.map(\.id) == [targetBoard.id, moving.id])
+
+            store.focusDesk(number: 1)
+            #expect(store.focusedDesk?.id == source.id)
         }
     }
 

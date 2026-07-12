@@ -4,7 +4,6 @@ import WebKit
 struct BoardView: View {
     let board: BoardState
     let isFocused: Bool
-    let isHeld: Bool
     let runtime: BoardRuntime
     let height: Double
     let isPointerFocusEnabled: Bool
@@ -30,19 +29,15 @@ struct BoardView: View {
         .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
         .overlay {
             RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .stroke(borderColor, lineWidth: isHeld || isFocused ? 2 : 1)
+                .stroke(borderColor, lineWidth: isFocused ? 2 : 1)
         }
         .shadow(
-            color: .black.opacity(isHeld ? 0.50 : (isFocused ? 0.42 : 0.30)),
-            radius: isHeld ? 42 : (isFocused ? 34 : 24), x: 0, y: isHeld ? 28 : 22
+            color: .black.opacity(isFocused ? 0.42 : 0.30),
+            radius: isFocused ? 34 : 24, x: 0, y: 22
         )
-        .offset(y: isHeld ? -6 : 0)
     }
 
     private var borderColor: Color {
-        if isHeld {
-            return .orange.opacity(0.86)
-        }
         if isFocused {
             return .cyan.opacity(0.75)
         }
@@ -92,9 +87,6 @@ struct BoardView: View {
     }
 
     private var accessibilityState: String {
-        if isHeld {
-            return "Held board"
-        }
         if isFocused {
             return "Focused board"
         }

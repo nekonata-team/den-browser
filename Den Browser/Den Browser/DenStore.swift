@@ -5,19 +5,34 @@ import WebKit
 @MainActor
 @Observable
 final class DenStore {
+    static let maximumDeskCount = 10
+
     var state: DenState
     var isOpenBoardPanelPresented = false
     var isNewDeskPanelPresented = false
     var isOverviewPresented = false
+    var isDenMode = false
     var overviewSelectionDeskID: UUID?
     var overviewSelectionBoardID: UUID?
-    var heldBoardID: UUID?
+    private(set) var cutBoard: CutBoard?
 
     @ObservationIgnored private var runtimes: [UUID: BoardRuntime] = [:]
     @ObservationIgnored private let persistenceURL: URL
 
     var focusedDesk: DeskState? {
         state.desks.first { $0.id == state.focusedDeskID }
+    }
+
+    var canCreateDesk: Bool {
+        state.desks.count < Self.maximumDeskCount
+    }
+
+    var canDeleteFocusedDesk: Bool {
+        state.desks.count > 1 && focusedDesk?.boards.isEmpty == true
+    }
+
+    var cutBoardLabel: String? {
+        cutBoard?.board.label
     }
 
     init() {
@@ -84,6 +99,28 @@ final class DenStore {
         moveFocusedBoardToDesk(by: 1)
     }
 
+    func focusDesk(number: Int) {
+        guard (1...Self.maximumDeskCount).contains(number), state.desks.indices.contains(number - 1) else { return }
+        state.focusedDeskID = state.desks[number - 1].id
+        ensureFocusedObjects()
+        save()
+    }
+
+    func moveFocusedBoard(toDeskNumber number: Int) {
+        guard (1...Self.maximumDeskCount).contains(number), state.desks.indices.contains(number - 1) else { return }
+        moveFocusedBoard(toDeskAt: number - 1)
+    }
+
+    func enterDenMode() {
+        guard !isOpenBoardPanelPresented, !isNewDeskPanelPresented, !isOverviewPresented else { return }
+        isDenMode = true
+    }
+
+    func exitDenMode() {
+        guard !isOpenBoardPanelPresented, !isNewDeskPanelPresented, !isOverviewPresented else { return }
+        isDenMode = false
+    }
+
     func showOpenBoardPanel() {
         isNewDeskPanelPresented = false
         hideOverview()
@@ -95,6 +132,7 @@ final class DenStore {
     }
 
     func showNewDeskPanel() {
+        guard canCreateDesk else { return }
         isOpenBoardPanelPresented = false
         hideOverview()
         isNewDeskPanelPresented = true
@@ -106,12 +144,21 @@ final class DenStore {
 
     func createDesk(label: String, template: DeskTemplate) {
         let trimmedLabel = label.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmedLabel.isEmpty, let focusedDeskIndex else { return }
+        guard !trimmedLabel.isEmpty, canCreateDesk, let focusedDeskIndex else { return }
 
         let desk = DeskState(label: trimmedLabel, boards: template.makeBoards())
         state.desks.insert(desk, at: focusedDeskIndex + 1)
         state.focusedDeskID = desk.id
         isNewDeskPanelPresented = false
+        isDenMode = false
+        save()
+    }
+
+    func deleteFocusedDesk() {
+        guard canDeleteFocusedDesk, let deskIndex = focusedDeskIndex else { return }
+
+        state.desks.remove(at: deskIndex)
+        state.focusedDeskID = state.desks[min(deskIndex, state.desks.count - 1)].id
         save()
     }
 
@@ -202,7 +249,8 @@ final class DenStore {
         isOverviewPresented = false
         overviewSelectionDeskID = nil
         overviewSelectionBoardID = nil
-        heldBoardID = nil
+        cutBoard = nil
+        isDenMode = false
         save()
     }
 
@@ -226,6 +274,7 @@ final class DenStore {
         state.desks[deskIndex].boards.insert(board, at: insertIndex)
         state.desks[deskIndex].focusedBoardID = board.id
         isOpenBoardPanelPresented = false
+        isDenMode = false
         save()
     }
 
@@ -241,8 +290,6 @@ final class DenStore {
     }
 
     func closeFocusedBoard() {
-        guard heldBoardID == nil else { return }
-
         guard
             let deskIndex = focusedDeskIndex,
             let boardIndex = focusedBoardIndex(in: deskIndex)
@@ -256,7 +303,6 @@ final class DenStore {
 
     func duplicateFocusedBoard() {
         guard
-            heldBoardID == nil,
             let deskIndex = focusedDeskIndex,
             let boardIndex = focusedBoardIndex(in: deskIndex)
         else { return }
@@ -269,40 +315,32 @@ final class DenStore {
         )
         state.desks[deskIndex].boards.insert(board, at: boardIndex + 1)
         state.desks[deskIndex].focusedBoardID = board.id
+        isDenMode = false
         save()
     }
 
-    func holdFocusedBoard() {
-        guard heldBoardID == nil else { return }
+    func cutFocusedBoard() {
+        guard cutBoard == nil else { return }
         guard
             let deskIndex = focusedDeskIndex,
-            let boardIndex = focusedBoardIndex(in: deskIndex),
-            let focusedBoardID = state.desks[deskIndex].focusedBoardID,
-            state.desks[deskIndex].boards.contains(where: { $0.id == focusedBoardID })
+            let boardIndex = focusedBoardIndex(in: deskIndex)
         else { return }
 
-        heldBoardID = focusedBoardID
-
-        let boards = state.desks[deskIndex].boards
-        if boards.count > 1 {
-            let targetIndex = boardIndex < boards.count - 1 ? boardIndex + 1 : boardIndex - 1
-            state.desks[deskIndex].focusedBoardID = boards[targetIndex].id
-        }
+        let board = removeBoard(at: (desk: deskIndex, board: boardIndex))
+        cutBoard = CutBoard(board: board, sourceDeskID: state.desks[deskIndex].id, sourceBoardIndex: boardIndex)
+        save()
     }
 
-    func placeHeldBoard() {
+    func placeCutBoard() {
         guard
-            let heldBoardID,
-            let source = boardIndices(for: heldBoardID),
+            let cutBoard,
             let targetDeskIndex = focusedDeskIndex
         else { return }
 
         let targetBoardID = state.desks[targetDeskIndex].focusedBoardID
-        let board = removeBoard(at: source)
 
         let insertIndex: Int
         if let targetBoardID,
-            targetBoardID != heldBoardID,
             let targetIndex = state.desks[targetDeskIndex].boards.firstIndex(where: { $0.id == targetBoardID })
         {
             insertIndex = targetIndex + 1
@@ -310,15 +348,25 @@ final class DenStore {
             insertIndex = state.desks[targetDeskIndex].boards.endIndex
         }
 
-        state.desks[targetDeskIndex].boards.insert(board, at: insertIndex)
-        state.desks[targetDeskIndex].focusedBoardID = heldBoardID
+        state.desks[targetDeskIndex].boards.insert(cutBoard.board, at: insertIndex)
+        state.desks[targetDeskIndex].focusedBoardID = cutBoard.board.id
         state.focusedDeskID = state.desks[targetDeskIndex].id
-        self.heldBoardID = nil
+        self.cutBoard = nil
         save()
     }
 
-    func cancelHeldBoard() {
-        heldBoardID = nil
+    func restoreCutBoard() {
+        guard
+            let cutBoard,
+            let deskIndex = state.desks.firstIndex(where: { $0.id == cutBoard.sourceDeskID })
+        else { return }
+
+        let insertIndex = min(cutBoard.sourceBoardIndex, state.desks[deskIndex].boards.endIndex)
+        state.desks[deskIndex].boards.insert(cutBoard.board, at: insertIndex)
+        state.desks[deskIndex].focusedBoardID = cutBoard.board.id
+        state.focusedDeskID = state.desks[deskIndex].id
+        self.cutBoard = nil
+        save()
     }
 
     func goBackInFocusedBoard() {
@@ -392,14 +440,13 @@ final class DenStore {
         let boards = state.desks[deskIndex].boards
         guard !boards.isEmpty else { return }
 
-        let nextIndex = nextFocusableBoardIndex(from: currentIndex, by: delta, in: boards)
+        let nextIndex = wrappedIndex(currentIndex + delta, count: boards.count)
         state.desks[deskIndex].focusedBoardID = boards[nextIndex].id
         save()
     }
 
     private func moveFocusedBoard(by delta: Int) {
         guard
-            heldBoardID == nil,
             let deskIndex = focusedDeskIndex,
             let boardIndex = focusedBoardIndex(in: deskIndex)
         else { return }
@@ -418,15 +465,22 @@ final class DenStore {
 
     private func moveFocusedBoardToDesk(by delta: Int) {
         guard
-            heldBoardID == nil,
             state.desks.count > 1,
+            let sourceDeskIndex = focusedDeskIndex
+        else { return }
+
+        moveFocusedBoard(toDeskAt: wrappedIndex(sourceDeskIndex + delta, count: state.desks.count))
+    }
+
+    private func moveFocusedBoard(toDeskAt targetDeskIndex: Int) {
+        guard
+            state.desks.indices.contains(targetDeskIndex),
             let sourceDeskIndex = focusedDeskIndex,
+            sourceDeskIndex != targetDeskIndex,
             let sourceBoardIndex = focusedBoardIndex(in: sourceDeskIndex)
         else { return }
 
         let board = removeBoard(at: (desk: sourceDeskIndex, board: sourceBoardIndex))
-
-        let targetDeskIndex = wrappedIndex(sourceDeskIndex + delta, count: state.desks.count)
         let insertIndex: Int
         if let focusedBoardID = state.desks[targetDeskIndex].focusedBoardID,
             let focusedIndex = state.desks[targetDeskIndex].boards.firstIndex(where: { $0.id == focusedBoardID })
@@ -440,19 +494,6 @@ final class DenStore {
         state.desks[targetDeskIndex].focusedBoardID = board.id
         state.focusedDeskID = state.desks[targetDeskIndex].id
         save()
-    }
-
-    private func nextFocusableBoardIndex(from currentIndex: Int, by delta: Int, in boards: [BoardState]) -> Int {
-        guard let heldBoardID, boards.count > 1 else {
-            return wrappedIndex(currentIndex + delta, count: boards.count)
-        }
-
-        var nextIndex = currentIndex
-        repeat {
-            nextIndex = wrappedIndex(nextIndex + delta, count: boards.count)
-        } while boards[nextIndex].id == heldBoardID
-
-        return nextIndex
     }
 
     private func moveOverviewBoardSelection(by delta: Int) {
@@ -621,6 +662,12 @@ final class DenStore {
         guard let data = try? Data(contentsOf: url) else { return nil }
         return try? JSONDecoder().decode(DenState.self, from: data)
     }
+}
+
+struct CutBoard {
+    let board: BoardState
+    let sourceDeskID: UUID
+    let sourceBoardIndex: Int
 }
 
 private extension JSONEncoder {

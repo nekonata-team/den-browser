@@ -1,44 +1,30 @@
 # Den Browser Shortcuts
 
-Den-owned shortcuts use `Control` + `Option` as the shared prefix. `Command` shortcuts are left to macOS and conventional app-level behavior.
+Den Mode makes Den operations available while a sheet has keyboard focus. Enter it with `Control` + `.`. The titlebar shows when Den Mode is active; Escape returns to sheet input.
 
 | Shortcut | Action | Notes |
 | --- | --- | --- |
-| `Control` + `Option` + `N` | New Desk panel | Creates a labeled desk from an Empty or built-in template. |
-| `Control` + `Option` + Space | Open Board panel | Creates a board from URL or search text. |
-| `Control` + `Option` + `O` | Toggle overview | Shows or hides the lightweight desk and board map. |
-| `Control` + `Option` + Left | Previous board | Moves focus. Used to choose placement target while holding. |
-| `Control` + `Option` + Right | Next board | Moves focus. Used to choose placement target while holding. |
-| `Control` + `Option` + Up | Previous desk | Moves focus. Used to choose placement target while holding. |
-| `Control` + `Option` + Down | Next desk | Moves focus. Used to choose placement target while holding. |
-| `Control` + `Option` + Shift + Left | Move board left | Swaps the focused board left in the current desk. |
-| `Control` + `Option` + Shift + Right | Move board right | Swaps the focused board right in the current desk. |
-| `Control` + `Option` + Shift + Up | Move board to previous desk | Moves the focused board to another desk. |
-| `Control` + `Option` + Shift + Down | Move board to next desk | Moves the focused board to another desk. |
-| `Control` + `Option` + `[` | Back in sheet stack | Uses the focused board. |
-| `Control` + `Option` + `]` | Forward in sheet stack | Uses the focused board. |
-| `Command` + `R` | Reload current sheet | Uses the focused board. |
-| `Control` + `Option` + `-` | Narrow board | Adjusts focused board width. |
-| `Control` + `Option` + `;` | Widen board | Adjusts focused board width. |
-| `Control` + `Option` + `W` | Close board | Closes the focused board. |
-| `Control` + `Option` + Return | Duplicate current sheet | Creates a new board to the right using the focused board's current sheet URL. |
-| `Control` + `Option` + `H` | Hold board | Picks up the focused board for placement. |
-| `Control` + `Option` + `P` | Place held board | Places the held board to the right of the focused board. |
-| Escape | Cancel board hold / dismiss panel | Clears the held-board reference without reverting other Den changes. |
-
-Reserved:
-
-- `Control` + `Option` + `Q` is unused. `Q` implies quitting a larger scope such as a desk or the app.
+| `Control` + `.` | Enter Den Mode | Captures subsequent keys. |
+| Escape | Exit Den Mode | When overview or a panel is not open. |
+| Left / Right or `h` / `l` | Previous / next board | Board navigation. |
+| Up / Down or `j` / `k` | Previous / next desk | Desk navigation. |
+| Shift + movement key | Move focused board | Moves in the same spatial direction. |
+| `1` through `9` | Focus desk 1 through 9 | Missing desks are a no-op. |
+| `0` | Focus desk 10 | Missing desk is a no-op. |
+| Shift + digit | Move focused board to desk | Places it after that desk's focused board, then focuses it. |
+| `n` | New Board panel | Creating enters sheet input; Escape returns to Den Mode. |
+| Shift + `n` | New Desk panel | Creating enters sheet input; Escape returns to Den Mode. |
+| `o` | Toggle overview | Overview is temporary within Den Mode. |
+| `[` / `]` | Back / forward in sheet stack | Uses focused board. |
+| `-` / `=` | Narrow / widen focused board | |
+| Return | Duplicate current sheet | Creates board to right, focuses it, then enters sheet input. |
+| `x` | Cut focused board | One Cut Board only. |
+| `p` | Place Cut Board | Places it to right of focused board. |
+| `u` | Restore Cut Board | Restores former placement. |
+| `d` | Permanently close focused board | Does not request site-provided confirmation in the MVP. |
+| Shift + `d` | Delete focused desk | Available only for an empty desk when another desk remains. |
+| Command + `R` | Reload current sheet | Available outside Den Mode. |
 
 ## Overview
 
-While overview is open, Den uses unprefixed movement keys because web content is not active. Movement changes the overview selection. Return commits the overview selection as the focused board; Escape closes overview without changing focus.
-
-| Shortcut | Action |
-| --- | --- |
-| Left / Right | Move overview selection between boards |
-| Up / Down | Move overview selection between desks |
-| Shift + Left / Right | Move the selected board within the current desk |
-| Shift + Up / Down | Move the selected board to another desk |
-| Return | Enter the selected board |
-| Escape | Close overview and keep the previous focus |
+Overview accepts only movement, Shift plus movement, Return, and Escape. Movement changes the Overview Selection; Shift moves its board. Return makes the selection the Focused Board. Escape closes overview back to Den Mode.

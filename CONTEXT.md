@@ -56,10 +56,14 @@ _Avoid_: Focused board, active board
 Moving focus between boards in a desk. Board navigation is distinct from scrolling within a sheet.
 _Avoid_: Desk scrolling, tab switching
 
-**Held Board**:
-A board marked for later placement in a desk or another desk. It remains in its original position until placed, and canceling the hold leaves other Den changes intact.
-_Avoid_: Dragged tab, selected board
+**Den Mode**:
+An explicit keyboard context in which Den receives navigation and board-management input instead of the current sheet. It persists until the user exits it.
+_Avoid_: Command mode, navigation mode
+
+**Cut Board**:
+A board temporarily removed from its desk for placement elsewhere or restoration to its former placement. Only one cut board may exist at a time.
+_Avoid_: Dragged tab, selected board, clipboard item
 
 **Board Placement**:
-Placing a held board into a desk.
-_Avoid_: Tab move, window move
+Placing a cut board into a desk.
+_Avoid_: Tab move, window move, paste
