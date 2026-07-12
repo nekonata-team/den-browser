@@ -91,7 +91,9 @@ final class KeyboardController {
         return true
     }
 
-    private static func handleCharacterShortcut(_ event: NSEvent, modifiers: NSEvent.ModifierFlags, store: DenStore) -> Bool {
+    private static func handleCharacterShortcut(_ event: NSEvent, modifiers: NSEvent.ModifierFlags, store: DenStore)
+        -> Bool
+    {
         guard let character = event.charactersIgnoringModifiers?.lowercased() else { return false }
 
         if modifiers == [.command], character == "r" {

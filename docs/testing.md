@@ -29,7 +29,11 @@ Run from repository root. `just` commands use shared `Den Browser` scheme, local
 ```sh
 just build
 just test
+just lint
+just format
 just check
 ```
+
+`just lint` runs Xcode-bundled `swift-format` in strict mode, including style and enabled safety rules. `just format` applies same configuration. Builds treat compiler warnings as errors.
 
 Before merge, use this standard order: build and unit tests, code review, then merge. Add exploratory validation when warranted, such as for UI behavior changes or milestone acceptance; use [poc.md](./poc.md) as the source of truth for concrete criteria.

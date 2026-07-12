@@ -287,7 +287,7 @@ private struct DenBackground: View {
         LinearGradient(
             colors: [
                 Color(red: 0.08, green: 0.10, blue: 0.12),
-                Color(red: 0.15, green: 0.16, blue: 0.19)
+                Color(red: 0.15, green: 0.16, blue: 0.19),
             ],
             startPoint: .topLeading,
             endPoint: .bottomTrailing
@@ -431,7 +431,8 @@ private struct OverviewView: View {
                         .font(.system(size: 12))
                         .foregroundStyle(.secondary)
                         .frame(width: 150, height: 88)
-                        .background(Color.primary.opacity(0.06), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                        .background(
+                            Color.primary.opacity(0.06), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
                 } else {
                     ForEach(desk.boards) { board in
                         overviewBoard(board, in: desk)
@@ -475,10 +476,16 @@ private struct OverviewView: View {
             .padding(10)
             .frame(width: 158, height: 96, alignment: .leading)
             .foregroundStyle(.primary)
-            .background(Color.primary.opacity(isSelected ? 0.18 : 0.09), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+            .background(
+                Color.primary.opacity(isSelected ? 0.18 : 0.09),
+                in: RoundedRectangle(cornerRadius: 10, style: .continuous)
+            )
             .overlay {
                 RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .stroke(isHeld ? .orange.opacity(0.86) : (isSelected ? .cyan.opacity(0.86) : Color.primary.opacity(0.12)), lineWidth: isHeld || isSelected ? 2 : 1)
+                    .stroke(
+                        isHeld
+                            ? .orange.opacity(0.86) : (isSelected ? .cyan.opacity(0.86) : Color.primary.opacity(0.12)),
+                        lineWidth: isHeld || isSelected ? 2 : 1)
             }
         }
         .buttonStyle(.plain)

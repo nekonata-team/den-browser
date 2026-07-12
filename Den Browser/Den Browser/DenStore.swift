@@ -148,7 +148,8 @@ final class DenStore {
 
         state.focusedDeskID = deskID
         if let boardID = overviewSelectionBoardID,
-           state.desks[deskIndex].boards.contains(where: { $0.id == boardID }) {
+            state.desks[deskIndex].boards.contains(where: { $0.id == boardID })
+        {
             state.desks[deskIndex].focusedBoardID = boardID
         }
         hideOverview()
@@ -215,7 +216,8 @@ final class DenStore {
         let focusedBoardID = state.desks[deskIndex].focusedBoardID
         let insertIndex: Int
         if let focusedBoardID,
-           let currentIndex = state.desks[deskIndex].boards.firstIndex(where: { $0.id == focusedBoardID }) {
+            let currentIndex = state.desks[deskIndex].boards.firstIndex(where: { $0.id == focusedBoardID })
+        {
             insertIndex = currentIndex + 1
         } else {
             insertIndex = state.desks[deskIndex].boards.endIndex
@@ -300,8 +302,9 @@ final class DenStore {
 
         let insertIndex: Int
         if let targetBoardID,
-           targetBoardID != heldBoardID,
-           let targetIndex = state.desks[targetDeskIndex].boards.firstIndex(where: { $0.id == targetBoardID }) {
+            targetBoardID != heldBoardID,
+            let targetIndex = state.desks[targetDeskIndex].boards.firstIndex(where: { $0.id == targetBoardID })
+        {
             insertIndex = targetIndex + 1
         } else {
             insertIndex = state.desks[targetDeskIndex].boards.endIndex
@@ -426,7 +429,8 @@ final class DenStore {
         let targetDeskIndex = wrappedIndex(sourceDeskIndex + delta, count: state.desks.count)
         let insertIndex: Int
         if let focusedBoardID = state.desks[targetDeskIndex].focusedBoardID,
-           let focusedIndex = state.desks[targetDeskIndex].boards.firstIndex(where: { $0.id == focusedBoardID }) {
+            let focusedIndex = state.desks[targetDeskIndex].boards.firstIndex(where: { $0.id == focusedBoardID })
+        {
             insertIndex = focusedIndex + 1
         } else {
             insertIndex = state.desks[targetDeskIndex].boards.endIndex
@@ -458,7 +462,8 @@ final class DenStore {
         else { return }
 
         let boards = state.desks[deskIndex].boards
-        let currentIndex = overviewSelectionBoardID
+        let currentIndex =
+            overviewSelectionBoardID
             .flatMap { boardID in boards.firstIndex { $0.id == boardID } } ?? 0
         let nextIndex = wrappedIndex(currentIndex + delta, count: boards.count)
         overviewSelectionBoardID = boards[nextIndex].id
@@ -502,10 +507,12 @@ final class DenStore {
         let targetDeskIndex = wrappedIndex(source.desk + delta, count: state.desks.count)
         let insertIndex: Int
         if let targetBoardID = overviewSelectionBoardID,
-           let targetIndex = state.desks[targetDeskIndex].boards.firstIndex(where: { $0.id == targetBoardID }) {
+            let targetIndex = state.desks[targetDeskIndex].boards.firstIndex(where: { $0.id == targetBoardID })
+        {
             insertIndex = targetIndex + 1
         } else if let focusedBoardID = state.desks[targetDeskIndex].focusedBoardID,
-                  let focusedIndex = state.desks[targetDeskIndex].boards.firstIndex(where: { $0.id == focusedBoardID }) {
+            let focusedIndex = state.desks[targetDeskIndex].boards.firstIndex(where: { $0.id == focusedBoardID })
+        {
             insertIndex = focusedIndex + 1
         } else {
             insertIndex = state.desks[targetDeskIndex].boards.endIndex
@@ -548,7 +555,8 @@ final class DenStore {
         let boards = state.desks[indices.desk].boards
         guard state.desks[indices.desk].focusedBoardID == board.id else { return board }
 
-        state.desks[indices.desk].focusedBoardID = boards.indices.contains(indices.board)
+        state.desks[indices.desk].focusedBoardID =
+            boards.indices.contains(indices.board)
             ? boards[indices.board].id
             : boards.last?.id
         return board
@@ -556,7 +564,8 @@ final class DenStore {
 
     private func ensureFocusedObjects() {
         if !state.desks.contains(where: { $0.id == state.focusedDeskID }),
-           let firstDeskID = state.desks.first?.id {
+            let firstDeskID = state.desks.first?.id
+        {
             state.focusedDeskID = firstDeskID
         }
 
@@ -602,7 +611,8 @@ final class DenStore {
 
     private static func makePersistenceURL() -> URL {
         let directory = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-        return directory
+        return
+            directory
             .appending(path: "Den Browser", directoryHint: .isDirectory)
             .appending(path: "den-state.json")
     }

@@ -32,7 +32,10 @@ struct BoardView: View {
             RoundedRectangle(cornerRadius: 18, style: .continuous)
                 .stroke(borderColor, lineWidth: isHeld || isFocused ? 2 : 1)
         }
-        .shadow(color: .black.opacity(isHeld ? 0.50 : (isFocused ? 0.42 : 0.30)), radius: isHeld ? 42 : (isFocused ? 34 : 24), x: 0, y: isHeld ? 28 : 22)
+        .shadow(
+            color: .black.opacity(isHeld ? 0.50 : (isFocused ? 0.42 : 0.30)),
+            radius: isHeld ? 42 : (isFocused ? 34 : 24), x: 0, y: isHeld ? 28 : 22
+        )
         .offset(y: isHeld ? -6 : 0)
     }
 

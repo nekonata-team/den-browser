@@ -42,7 +42,8 @@ struct BoardWebView: NSViewRepresentable {
             self.onFocus = onFocus
             guard mouseMonitor == nil else { return }
 
-            mouseMonitor = NSEvent.addLocalMonitorForEvents(matching: .leftMouseDown) { [weak self, weak webView] event in
+            mouseMonitor = NSEvent.addLocalMonitorForEvents(matching: .leftMouseDown) {
+                [weak self, weak webView] event in
                 guard
                     let self,
                     let webView,

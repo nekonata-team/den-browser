@@ -61,7 +61,10 @@ struct Den_BrowserTests {
 
             #expect(store.state.desks[0].boards.isEmpty)
             #expect(store.state.desks[0].focusedBoardID == nil)
-            #expect(store.state.desks[1].boards.map(\.id) == [targetBoards[0].id, targetBoards[1].id, moved.id, targetBoards[2].id])
+            #expect(
+                store.state.desks[1].boards.map(\.id) == [
+                    targetBoards[0].id, targetBoards[1].id, moved.id, targetBoards[2].id,
+                ])
             #expect(store.focusedDesk?.id == target.id)
             #expect(store.focusedDesk?.focusedBoardID == moved.id)
         }
@@ -130,7 +133,10 @@ struct Den_BrowserTests {
     }
 
     @Test func persistedStateRestoresDeskAndBoardDataAndFocus() throws {
-        let firstBoards = [board("One", width: 440, url: "https://one.example/path"), board("Two", width: 760, url: "https://two.example/")]
+        let firstBoards = [
+            board("One", width: 440, url: "https://one.example/path"),
+            board("Two", width: 760, url: "https://two.example/"),
+        ]
         let secondBoards = [board("Three", width: 980, url: "https://three.example/query?q=1")]
         let first = desk("First", boards: firstBoards, focusedBoardID: firstBoards[1].id)
         let second = desk("Second", boards: secondBoards, focusedBoardID: secondBoards[0].id)
@@ -147,7 +153,10 @@ struct Den_BrowserTests {
         #expect(restored.state.desks.map(\.label) == ["First", "Second"])
         #expect(restored.state.desks[0].boards.map(\.label) == ["One", "Two"])
         #expect(restored.state.desks[0].boards.map(\.width) == [440, 760])
-        #expect(restored.state.desks[0].boards.map(\.currentURLString) == ["https://one.example/path", "https://two.example/"])
+        #expect(
+            restored.state.desks[0].boards.map(\.currentURLString) == [
+                "https://one.example/path", "https://two.example/",
+            ])
         #expect(restored.state.focusedDeskID == first.id)
         #expect(restored.state.desks.map(\.focusedBoardID) == [firstBoards[1].id, secondBoards[0].id])
     }

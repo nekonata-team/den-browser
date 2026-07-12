@@ -1,0 +1,11 @@
+{
+  "indentation" : {
+    "spaces" : 4
+  },
+  "lineLength" : 120,
+  "rules" : {
+    "NeverForceUnwrap" : true,
+    "NeverUseImplicitlyUnwrappedOptionals" : false
+  },
+  "version" : 1
+}
