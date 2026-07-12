@@ -49,5 +49,9 @@ struct Den_BrowserApp: App {
                 Button("Reset Den") { store.resetDen() }
             }
         }
+
+        Settings {
+            SettingsView()
+        }
     }
 }
