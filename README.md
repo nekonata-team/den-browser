@@ -38,7 +38,7 @@ See [CONTEXT.md](./CONTEXT.md) for the complete product language.
 
 ## Keyboard operation
 
-Press `Control` + `.` to enter Den Mode. Den Mode receives Desk and Board commands independently of keyboard focus inside the Current Sheet. Press `Escape` to return to Sheet input.
+Press `Control` + `,` to toggle Den Mode. Den Mode receives Desk and Board commands independently of keyboard focus inside the Current Sheet. Press `Escape` to return to Sheet Input.
 
 See [docs/shortcuts.md](./docs/shortcuts.md) for the complete Den Mode shortcut map.
 

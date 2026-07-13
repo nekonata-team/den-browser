@@ -34,6 +34,13 @@ final class KeyboardController {
             return false
         }
 
+        if isDenModeToggle(event), normalizedModifiers(for: event) == [.control] {
+            if !event.isARepeat {
+                store.toggleDenMode()
+            }
+            return true
+        }
+
         if store.isDenMode {
             return handleDenMode(event, store: store)
         }
@@ -43,11 +50,6 @@ final class KeyboardController {
 
     private static func handleSheetInput(_ event: NSEvent, store: DenStore) -> Bool {
         let modifiers = normalizedModifiers(for: event)
-        if isDenModeLeader(event), modifiers == [.control] {
-            store.enterDenMode()
-            return true
-        }
-
         if characterIgnoringModifiers(for: event) == "r", modifiers == [.command] {
             store.reloadFocusedBoard()
             return true
@@ -236,8 +238,8 @@ final class KeyboardController {
         event.charactersIgnoringModifiers?.lowercased()
     }
 
-    private static func isDenModeLeader(_ event: NSEvent) -> Bool {
-        event.characters == "." || event.charactersIgnoringModifiers == "."
+    private static func isDenModeToggle(_ event: NSEvent) -> Bool {
+        event.characters == "," || event.charactersIgnoringModifiers == ","
     }
 
     private static func isEscape(_ event: NSEvent) -> Bool {

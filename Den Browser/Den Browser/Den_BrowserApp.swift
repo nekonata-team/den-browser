@@ -25,7 +25,7 @@ struct Den_BrowserApp: App {
         }
         .commands {
             CommandMenu("Den") {
-                Button("Enter Den Mode") { store.enterDenMode() }
+                Button("Toggle Den Mode") { store.toggleDenMode() }
                 Button("Open Board") { store.showOpenBoardPanel() }
                     .keyboardShortcut("t", modifiers: [.command])
                 Button("New Desk") { store.showNewDeskPanel() }

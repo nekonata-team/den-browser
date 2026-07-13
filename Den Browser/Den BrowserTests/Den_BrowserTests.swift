@@ -481,6 +481,50 @@ struct Den_BrowserTests {
         }
     }
 
+    @Test func controlCommaTogglesDenMode() throws {
+        try withStore(desks: [desk("Desk")]) { store in
+            let event = try #require(
+                NSEvent.keyEvent(
+                    with: .keyDown,
+                    location: .zero,
+                    modifierFlags: .control,
+                    timestamp: 0,
+                    windowNumber: 0,
+                    context: nil,
+                    characters: ",",
+                    charactersIgnoringModifiers: ",",
+                    isARepeat: false,
+                    keyCode: 43
+                ))
+
+            #expect(KeyboardController.handle(event, store: store))
+            #expect(store.isDenMode)
+            #expect(KeyboardController.handle(event, store: store))
+            #expect(!store.isDenMode)
+        }
+    }
+
+    @Test func controlPeriodPassesThroughToSheetInput() throws {
+        try withStore(desks: [desk("Desk")]) { store in
+            let event = try #require(
+                NSEvent.keyEvent(
+                    with: .keyDown,
+                    location: .zero,
+                    modifierFlags: .control,
+                    timestamp: 0,
+                    windowNumber: 0,
+                    context: nil,
+                    characters: ".",
+                    charactersIgnoringModifiers: ".",
+                    isARepeat: false,
+                    keyCode: 47
+                ))
+
+            #expect(!KeyboardController.handle(event, store: store))
+            #expect(!store.isDenMode)
+        }
+    }
+
     @Test func reloadingFocusedBoardDoesNotChangeDenState() {
         let current = board("Current", url: "https://example.com/path")
         withStore(desks: [desk("Desk", boards: [current])]) { store in

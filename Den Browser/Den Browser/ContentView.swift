@@ -413,7 +413,7 @@ private struct EmptyDenView: View {
             }
 
             VStack(spacing: 10) {
-                ShortcutRow(keys: "⌃.", label: "Enter Den Mode")
+                ShortcutRow(keys: "⌃,", label: "Toggle Den Mode")
                 ShortcutRow(keys: "←/→", label: "Move between boards")
                 ShortcutRow(keys: "↑/↓", label: "Move between desks")
                 ShortcutRow(keys: "n / ⇧N", label: "New board / desk")

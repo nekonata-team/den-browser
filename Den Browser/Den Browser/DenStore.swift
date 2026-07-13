@@ -134,9 +134,9 @@ final class DenStore {
         moveFocusedBoard(toDeskAt: number - 1)
     }
 
-    func enterDenMode() {
+    func toggleDenMode() {
         guard !isOpenBoardPanelPresented, !isNewDeskPanelPresented, !isOverviewPresented else { return }
-        isDenMode = true
+        isDenMode.toggle()
     }
 
     func exitDenMode() {
