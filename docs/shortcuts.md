@@ -1,5 +1,7 @@
 # Den Browser Shortcuts
 
+Vim-style commands for the Current Sheet are documented in [vim.md](./vim.md).
+
 Den Mode makes Den operations available while a sheet has keyboard focus. Enter it with `Control` + `.`. The titlebar shows when Den Mode is active; Escape returns to sheet input.
 
 | Shortcut | Action | Notes |

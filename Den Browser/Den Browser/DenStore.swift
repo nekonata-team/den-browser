@@ -15,6 +15,7 @@ final class DenStore {
     var overviewSelectionDeskID: UUID?
     var overviewSelectionBoardID: UUID?
     private(set) var cutBoard: CutBoard?
+    let sheetNavigation: SheetNavigationManager
 
     @ObservationIgnored private var runtimes: [UUID: BoardRuntime] = [:]
     @ObservationIgnored private let persistenceURL: URL
@@ -35,23 +36,45 @@ final class DenStore {
         cutBoard?.board.label
     }
 
-    init() {
+    convenience init() {
+        self.init(sheetNavigation: SheetNavigationManager())
+    }
+
+    init(sheetNavigation: SheetNavigationManager) {
         let persistenceURL = Self.makePersistenceURL()
+        self.sheetNavigation = sheetNavigation
         self.persistenceURL = persistenceURL
         state = Self.loadState(from: persistenceURL) ?? .sample
         ensureFocusedObjects()
+        connectSheetNavigation()
     }
 
-    init(persistenceURL: URL) {
+    convenience init(persistenceURL: URL) {
+        self.init(persistenceURL: persistenceURL, sheetNavigation: SheetNavigationManager())
+    }
+
+    init(persistenceURL: URL, sheetNavigation: SheetNavigationManager) {
+        self.sheetNavigation = sheetNavigation
         self.persistenceURL = persistenceURL
         state = Self.loadState(from: persistenceURL) ?? .sample
         ensureFocusedObjects()
+        connectSheetNavigation()
     }
 
-    init(state: DenState, persistenceURL: URL) {
+    convenience init(state: DenState, persistenceURL: URL) {
+        self.init(
+            state: state,
+            persistenceURL: persistenceURL,
+            sheetNavigation: SheetNavigationManager()
+        )
+    }
+
+    init(state: DenState, persistenceURL: URL, sheetNavigation: SheetNavigationManager) {
+        self.sheetNavigation = sheetNavigation
         self.persistenceURL = persistenceURL
         self.state = state
         ensureFocusedObjects()
+        connectSheetNavigation()
     }
 
     func focusDesk(_ deskID: UUID) {
@@ -242,6 +265,9 @@ final class DenStore {
     }
 
     func resetDen() {
+        for runtime in runtimes.values {
+            sheetNavigation.didClose(runtime.webView)
+        }
         runtimes.removeAll()
         state = .sample
         isOpenBoardPanelPresented = false
@@ -254,25 +280,31 @@ final class DenStore {
         save()
     }
 
-    func addBoard(urlString: String, preferredWidth: Double? = nil) {
+    func addBoard(urlString: String, preferredWidth: Double? = nil, afterBoardID: UUID? = nil) {
         guard let url = normalizedURL(from: urlString) else { return }
         let label = url.host(percentEncoded: false) ?? url.absoluteString
         let width = preferredWidth.map { min(max($0, 360), 980) } ?? 520
         let board = BoardState(label: label, width: width, currentURLString: url.absoluteString)
 
-        guard let deskIndex = focusedDeskIndex else { return }
-        let focusedBoardID = state.desks[deskIndex].focusedBoardID
+        let deskIndex: Int
         let insertIndex: Int
-        if let focusedBoardID,
-            let currentIndex = state.desks[deskIndex].boards.firstIndex(where: { $0.id == focusedBoardID })
-        {
-            insertIndex = currentIndex + 1
+        if let afterBoardID {
+            guard let indices = boardIndices(for: afterBoardID) else { return }
+            deskIndex = indices.desk
+            insertIndex = indices.board + 1
         } else {
-            insertIndex = state.desks[deskIndex].boards.endIndex
+            guard let focusedDeskIndex else { return }
+            deskIndex = focusedDeskIndex
+            if let focusedBoardIndex = focusedBoardIndex(in: deskIndex) {
+                insertIndex = focusedBoardIndex + 1
+            } else {
+                insertIndex = state.desks[deskIndex].boards.endIndex
+            }
         }
 
         state.desks[deskIndex].boards.insert(board, at: insertIndex)
         state.desks[deskIndex].focusedBoardID = board.id
+        state.focusedDeskID = state.desks[deskIndex].id
         isOpenBoardPanelPresented = false
         isDenMode = false
         save()
@@ -305,7 +337,9 @@ final class DenStore {
         else { return }
 
         let closedBoard = removeBoard(at: (desk: deskIndex, board: boardIndex))
-        runtimes.removeValue(forKey: closedBoard.id)
+        if let runtime = runtimes.removeValue(forKey: closedBoard.id) {
+            sheetNavigation.didClose(runtime.webView)
+        }
 
         save()
     }
@@ -407,7 +441,8 @@ final class DenStore {
             return runtime
         }
 
-        let runtime = BoardRuntime(board: board) { [weak self] boardID, url, title in
+        let runtime = BoardRuntime(board: board, sheetNavigation: sheetNavigation) {
+            [weak self] boardID, url, title in
             self?.updateBoard(boardID: boardID, url: url, title: title)
         }
         runtimes[board.id] = runtime
@@ -416,6 +451,16 @@ final class DenStore {
 
     private var focusedDeskIndex: Int? {
         state.desks.firstIndex { $0.id == state.focusedDeskID }
+    }
+
+    private func connectSheetNavigation() {
+        sheetNavigation.onOpenBoard = { [weak self] url, sourceWebView in
+            guard
+                let self,
+                let sourceBoardID = runtimes.first(where: { $0.value.webView === sourceWebView })?.key
+            else { return }
+            addBoard(urlString: url.absoluteString, afterBoardID: sourceBoardID)
+        }
     }
 
     private var focusedRuntime: BoardRuntime? {

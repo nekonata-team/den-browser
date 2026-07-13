@@ -56,6 +56,14 @@ _Avoid_: Focused board, active board
 Moving focus between boards in a desk. Board navigation is distinct from scrolling within a sheet.
 _Avoid_: Desk scrolling, tab switching
 
+**Vim-style Sheet Navigation**:
+An optional keyboard interaction style for navigating within the current sheet. It is distinct from Den Mode and board navigation.
+_Avoid_: Vimium C mode, extension mode, Den Mode
+
+**Ignored Site**:
+A hostname on which Vim-style Sheet Navigation remains dormant. Ignoring a hostname also ignores its subdomains.
+_Avoid_: Blocked site, disabled Sheet
+
 **Den Mode**:
 An explicit keyboard context in which Den receives navigation and board-management input instead of the current sheet. It persists until the user exits it.
 _Avoid_: Command mode, navigation mode

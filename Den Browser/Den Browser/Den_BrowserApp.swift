@@ -2,8 +2,13 @@ import SwiftUI
 
 @main
 struct Den_BrowserApp: App {
-    @State private var store = DenStore()
+    @State private var store: DenStore
     @State private var keyboardController = KeyboardController()
+
+    init() {
+        let sheetNavigation = SheetNavigationManager()
+        _store = State(initialValue: DenStore(sheetNavigation: sheetNavigation))
+    }
 
     var body: some Scene {
         WindowGroup("Den Browser") {
@@ -52,6 +57,7 @@ struct Den_BrowserApp: App {
 
         Settings {
             SettingsView()
+                .environment(store.sheetNavigation)
         }
     }
 }
