@@ -1,54 +1,76 @@
+[English](./README.md) | [日本語](./README.ja.md)
+
 # Den Browser
 
-Den Browser is a macOS-first companion browser for long-running parallel web work. It is not trying to replace a general-purpose browser; it is a personal work den for sessions that benefit from spatial memory, keyboard navigation, and long-lived context.
+**Web work, the Niri way.**
 
-The first MVP focuses on AI chat workflows because they naturally involve multiple independent web sessions that stay open for a long time. Den Browser should eventually support research, development, writing, documentation work, and other web-heavy workflows.
+A keyboard-first spatial browser for people working across multiple web tasks.
 
-## Concept
+> **Status:** Functional macOS proof of concept under active development.
 
-Den Browser uses a paper-workspace metaphor instead of conventional browser tabs.
+Den Browser is built for web work that stays open for a long time: AI chats, research, development, writing, documentation, and other workflows with several ongoing contexts. Instead of collecting those contexts in a tab list, Den Browser arranges them as persistent work surfaces that you can navigate and organize from the keyboard.
 
-- **Den**: the full personal work environment.
-- **Desk**: a broad work context within the den.
-- **Board**: a user-created work surface for one focused task context.
-- **Sheet**: a web screen held within a board.
-- **Sheet Stack**: the back-forward sequence of sheets within one board.
+Den Browser complements Safari, Chrome, or another general-purpose browser rather than replacing one. Use your usual browser for everyday browsing and Den Browser for work that benefits from spatial memory and long-lived context.
 
-The detailed project language lives in [CONTEXT.md](./CONTEXT.md).
+## Inspired by Niri
 
-## Product Principles
+Den Browser applies ideas from [Niri](https://github.com/niri-wm/niri)'s spatial window management to web work. Niri workspaces map loosely to Desks, and Niri windows map loosely to Boards. The mapping is intentionally not exact: Den Browser uses a paper-workspace model designed around web tasks, navigation history, and restoration.
 
-- Den operations are keyboard-first; pointer interactions are supporting tools.
-- Boards are intentional task contexts, not automatic byproducts of navigation.
-- Browser-like back and forward history stays inside a board as a sheet stack.
-- Desks and boards preserve spatial memory instead of reordering themselves by recency.
-- The MVP targets macOS 26 or later and uses Liquid Glass for Den controls, not for sheet content.
-- The MVP uses one shared persistent web profile; profile separation is a later feature.
+## Work model
 
-## MVP Direction
+- **Den**: Your full personal work environment.
+- **Desk**: A broad work context containing Boards in a horizontal work area.
+- **Board**: An intentional work surface for one focused task context.
+- **Sheet**: A web screen held within a Board.
+- **Sheet Stack**: The back-forward sequence of Sheets within a Board.
 
-The first implementation is a macOS desktop PoC using SwiftUI, AppKit bridges, and WKWebView.
+See [CONTEXT.md](./CONTEXT.md) for the complete product language.
 
-Core PoC goals:
+## Current features
 
-- Keep AI chat logins after app restart.
-- Open multiple boards at once.
-- Navigate desks and boards from the keyboard.
-- Preserve board labels, widths, order, focused state, and current sheet URLs.
-- Verify Liquid Glass controls remain readable over live WKWebView content.
+- Arrange Boards spatially across multiple Desks.
+- Navigate, move, resize, duplicate, cut, place, restore, and close Boards from Den Mode.
+- See and reorganize Boards across Desks in Overview.
+- Keep browser-like back-forward navigation inside each Board as a Sheet Stack.
+- Restore Desk and Board labels, order, widths, focus, and current Sheet URLs after relaunching the app.
+- Keep sign-ins across app launches with one shared persistent web profile across Sheets.
+- Optionally enable first-party Vim-style Sheet Navigation for scrolling, link hints, find, Sheet Stack navigation, and URL actions.
 
-See [docs/poc.md](./docs/poc.md) for the current PoC criteria.
-See [docs/testing.md](./docs/testing.md) for automated checks and the human PoC harness.
+## Keyboard operation
 
-## Decisions
+Press `Control` + `.` to enter Den Mode. Den Mode receives Desk and Board commands independently of keyboard focus inside the Current Sheet. Press `Escape` to return to Sheet input.
 
-Architecture and product decisions are recorded as ADRs in [docs/adr](./docs/adr):
+See [docs/shortcuts.md](./docs/shortcuts.md) for the complete Den Mode shortcut map.
 
-- Den Browser is a companion browser, not a browser replacement.
-- Den Browser uses a paper workspace metaphor inspired by Niri-style spatial window management.
-- Den operations are keyboard-first.
-- The MVP is a macOS-first desktop app.
-- The MVP uses one shared web profile.
-- The MVP PoC uses WKWebView.
-- The app is SwiftUI-first with AppKit bridges.
-- Persisted Den state is separate from live WebView runtime objects.
+Vim-style Sheet Navigation is a separate optional Feature. It controls content inside the Current Sheet and is disabled by default. See [docs/vim.md](./docs/vim.md) for supported commands.
+
+## Current scope
+
+- Requires macOS 26 or later.
+- Uses one shared persistent web profile; profile separation is not yet supported.
+- Focuses on long-running parallel web work, not the full feature set of a general-purpose browser.
+- Remains a proof of concept while WebKit compatibility, performance, accessibility, and visual behavior receive further validation.
+
+The current acceptance criteria and exploratory checks live in [docs/poc.md](./docs/poc.md).
+
+## Development
+
+Den Browser is a macOS app built with SwiftUI, AppKit bridges, and `WKWebView`.
+
+```sh
+just build
+just test
+just check
+```
+
+These commands disable code signing and write build output to `.derived-data`.
+
+## Project documentation
+
+- [CONTEXT.md](./CONTEXT.md): product language and domain model
+- [DESIGN.md](./DESIGN.md): visual and interaction rules
+- [docs/shortcuts.md](./docs/shortcuts.md): Den Mode keyboard commands
+- [docs/vim.md](./docs/vim.md): Vim-style Sheet Navigation
+- [docs/poc.md](./docs/poc.md): proof-of-concept criteria
+- [docs/testing.md](./docs/testing.md): automated and exploratory validation
+- [docs/adr](./docs/adr): product and architecture decisions

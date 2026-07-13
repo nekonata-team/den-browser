@@ -19,7 +19,10 @@ Use `just build`, `just test`, and `just check` from repository root. They disab
 
 ## Docs
 
-- `README.md`: product and PoC overview
+- `README.md`: English product and PoC overview
+- `README.ja.md`: Japanese product and PoC overview
 - `CONTEXT.md`: required domain language
 - `DESIGN.md`: UI design rules
 - `docs/testing.md`: automated and exploratory validation
+
+Keep `README.md` and `README.ja.md` aligned in structure and product facts. Update both when user-visible features, status, requirements, or documentation links change. Write natural copy in each language rather than translating literally.
