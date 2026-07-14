@@ -32,7 +32,7 @@ See [CONTEXT.md](./CONTEXT.md) for the complete product language.
 - Arrange Boards spatially across multiple Desks.
 - Create named, color-coded Profiles, each with one Den window and isolated website data.
 - See the current Profile in the titlebar, and open or find Profiles from the top-right icon, Profile menu, or `Control` + `Command` + `P`.
-- Navigate, move, resize, maximize, center, duplicate, hold, place, restore, and close Boards from Den Mode.
+- Navigate, move, resize, maximize, center, duplicate, hold, place, restore, and close Boards from Den Mode, with pointer controls for Sheet Stack navigation and closing Boards.
 - See and reorganize Boards across Desks in Overview.
 - Keep browser-like back-forward navigation inside each Board as a Sheet Stack.
 - Restore Desk and Board labels, order, widths, focus, and current Sheet URLs after relaunching the app, showing the Focused Board immediately without a scroll animation.

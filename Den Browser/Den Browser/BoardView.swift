@@ -11,6 +11,7 @@ struct BoardView: View {
     let onFocus: () -> Void
     let onGoBack: () -> Void
     let onGoForward: () -> Void
+    let onClose: () -> Void
 
     var body: some View {
         VStack(spacing: 0) {
@@ -84,6 +85,16 @@ struct BoardView: View {
             .disabled(!runtime.webView.canGoForward)
             .help("Forward in sheet stack")
             .accessibilityLabel("Forward in sheet stack")
+
+            Button(action: onClose) {
+                Image(systemName: "xmark")
+                    .frame(width: 24, height: 24)
+            }
+            .buttonStyle(.borderless)
+            .foregroundStyle(.primary)
+            .padding(.leading, 4)
+            .help("Close Board")
+            .accessibilityLabel("Close Board")
         }
     }
 

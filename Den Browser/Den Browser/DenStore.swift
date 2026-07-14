@@ -366,12 +366,13 @@ final class DenStore {
     }
 
     func closeFocusedBoard() {
-        guard
-            let deskIndex = focusedDeskIndex,
-            let boardIndex = focusedBoardIndex(in: deskIndex)
-        else { return }
+        guard let boardID = focusedDesk?.focusedBoardID else { return }
+        closeBoard(boardID)
+    }
 
-        let closedBoard = removeBoard(at: (desk: deskIndex, board: boardIndex))
+    func closeBoard(_ boardID: UUID) {
+        guard let indices = boardIndices(for: boardID) else { return }
+        let closedBoard = removeBoard(at: indices)
         if maximizedBoardID == closedBoard.id {
             maximizedBoardID = nil
         }

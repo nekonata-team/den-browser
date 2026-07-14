@@ -281,7 +281,8 @@ struct ContentView: View {
                             isPointerFocusEnabled: isBoardPointerFocusEnabled,
                             onFocus: { store.focusBoard(board.id) },
                             onGoBack: { store.goBackInBoard(board.id) },
-                            onGoForward: { store.goForwardInBoard(board.id) }
+                            onGoForward: { store.goForwardInBoard(board.id) },
+                            onClose: { store.closeBoard(board.id) }
                         )
                         .id(board.id)
                         .overlay(alignment: .trailing) {

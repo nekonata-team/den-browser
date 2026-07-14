@@ -284,6 +284,16 @@ struct Den_BrowserTests {
         }
     }
 
+    @Test func closingUnfocusedBoardKeepsFocus() {
+        let boards = [board("A"), board("B"), board("C")]
+        withStore(desks: [desk("Desk", boards: boards, focusedBoardID: boards[1].id)]) { store in
+            store.closeBoard(boards[0].id)
+
+            #expect(store.focusedDesk?.boards.map(\.id) == [boards[1].id, boards[2].id])
+            #expect(store.focusedDesk?.focusedBoardID == boards[1].id)
+        }
+    }
+
     @Test func placingHeldBoardInSameDeskUsesFocusedBoardAsTarget() {
         let boards = [board("Held"), board("Target"), board("After")]
         withStore(desks: [desk("Desk", boards: boards, focusedBoardID: boards[0].id)]) { store in
