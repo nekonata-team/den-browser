@@ -245,15 +245,26 @@ struct ContentView: View {
     }
 
     private func boardStrip(in size: CGSize) -> some View {
+        let boards = store.focusedDesk?.boards ?? []
         let topInset: CGFloat = shouldShowDeskSwitcher ? 48 : 10
         let bottomInset: CGFloat = 10
         let boardHeight = max(420, size.height - topInset - bottomInset)
         let maximizedBoardWidth = max(280, size.width - boardHorizontalPadding * 2)
+        let firstBoardWidth =
+            boards.first.map {
+                store.maximizedBoardID == $0.id ? maximizedBoardWidth : $0.width
+            } ?? size.width
+        let lastBoardWidth =
+            boards.last.map {
+                store.maximizedBoardID == $0.id ? maximizedBoardWidth : $0.width
+            } ?? size.width
+        let leadingPadding = max(boardHorizontalPadding, (size.width - firstBoardWidth) / 2)
+        let trailingPadding = max(boardHorizontalPadding, (size.width - lastBoardWidth) / 2)
 
         return ScrollViewReader { proxy in
             ScrollView(.horizontal) {
                 HStack(alignment: .top, spacing: boardSpacing) {
-                    ForEach(store.focusedDesk?.boards ?? []) { board in
+                    ForEach(boards) { board in
                         BoardView(
                             board: board,
                             isFocused: board.id == store.focusedDesk?.focusedBoardID,
@@ -289,7 +300,8 @@ struct ContentView: View {
                         .zIndex(1)
                     }
                 }
-                .padding(.horizontal, boardHorizontalPadding)
+                .padding(.leading, leadingPadding)
+                .padding(.trailing, trailingPadding)
                 .padding(.top, topInset)
                 .padding(.bottom, bottomInset)
             }

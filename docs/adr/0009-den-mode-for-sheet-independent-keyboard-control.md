@@ -22,7 +22,7 @@ Den Browser uses persistent Den Mode instead of the shared `Control` + `Option` 
 - `n` opens a new board and Shift plus `n` opens a new desk. `Command` + `T` also opens the Open Board panel from every keyboard context, including Den Mode and Overview. Their panels suspend Den Mode. Creating the Board or Desk returns to Sheet Input; canceling returns to Den Mode.
 - Left and right arrows, or `h` and `l`, navigate boards. Up and down arrows, or `j` and `k`, navigate desks. Shift plus either movement key moves the focused board in that direction.
 - `-` narrows the focused board and `=` widens it. Shift is meaningful for board movement only with a movement key.
-- `f` toggles the focused board between its persisted Board Width and the available Den width. Maximizing is temporary and does not change the persisted Board Width. `c` centers the focused board without changing its width. These bindings follow niri's full-width and center actions.
+- `f` toggles the focused board between its persisted Board Width and the available Den width. Maximizing is temporary and does not change the persisted Board Width. `c` centers the focused board without changing its width. The horizontal layout provides enough leading and trailing space to center the first and last Board. These bindings follow niri's full-width and center actions.
 - `[` and `]` move backward and forward in the focused board's sheet stack. Reload remains `Command` + `r` outside Den Mode.
 - Return duplicates the Focused Board's Current Sheet to a new board on its right, focuses it, and returns to Sheet Input.
 - A Den has at most ten desks. `1` through `9` focus desks one through nine, and `0` focuses desk ten. A missing desk is a no-op.
