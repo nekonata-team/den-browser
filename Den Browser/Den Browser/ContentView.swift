@@ -116,6 +116,7 @@ struct ContentView: View {
         } else {
             deskButton(desk)
                 .buttonStyle(.glass)
+                .tint(.clear)
                 .id(desk.id)
         }
     }

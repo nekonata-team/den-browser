@@ -22,6 +22,7 @@ struct ProfileWindowView: View {
                         .padding(.top, 64)
                 }
             }
+            .tint(profile.color.color)
             .environment(store)
             .focusedSceneValue(\.denStore, store)
             .background(WindowRegistration(profileID: profileID))
@@ -69,6 +70,7 @@ private struct ProfileChip: View {
                 .frame(width: 30, height: 30)
         }
         .menuStyle(.borderlessButton)
+        .tint(.secondary)
         .fixedSize()
         .accessibilityLabel("Profile: \(profile.name)")
         .help("Profile: \(profile.name)")
