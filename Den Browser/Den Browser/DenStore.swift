@@ -12,6 +12,8 @@ final class DenStore {
     var isNewDeskPanelPresented = false
     var isOverviewPresented = false
     var isDenMode = false
+    private(set) var maximizedBoardID: UUID?
+    private(set) var centerFocusedBoardRequest = 0
     var overviewSelectionDeskID: UUID?
     var overviewSelectionBoardID: UUID?
     private(set) var cutBoard: CutBoard?
@@ -120,6 +122,17 @@ final class DenStore {
 
     func moveFocusedBoardToNextDesk() {
         moveFocusedBoardToDesk(by: 1)
+    }
+
+    func toggleFocusedBoardMaximized() {
+        guard let focusedBoardID = focusedDesk?.focusedBoardID else { return }
+        maximizedBoardID = maximizedBoardID == focusedBoardID ? nil : focusedBoardID
+        centerFocusedBoard()
+    }
+
+    func centerFocusedBoard() {
+        guard focusedDesk?.focusedBoardID != nil else { return }
+        centerFocusedBoardRequest &+= 1
     }
 
     func focusDesk(number: Int) {
@@ -316,6 +329,7 @@ final class DenStore {
             let boardIndex = focusedBoardIndex(in: deskIndex)
         else { return }
 
+        maximizedBoardID = nil
         let width = state.desks[deskIndex].boards[boardIndex].width + delta
         state.desks[deskIndex].boards[boardIndex].width = min(max(width, 280), 1400)
         save()
@@ -337,6 +351,9 @@ final class DenStore {
         else { return }
 
         let closedBoard = removeBoard(at: (desk: deskIndex, board: boardIndex))
+        if maximizedBoardID == closedBoard.id {
+            maximizedBoardID = nil
+        }
         if let runtime = runtimes.removeValue(forKey: closedBoard.id) {
             sheetNavigation.didClose(runtime.webView)
         }
@@ -370,6 +387,9 @@ final class DenStore {
         else { return }
 
         let board = removeBoard(at: (desk: deskIndex, board: boardIndex))
+        if maximizedBoardID == board.id {
+            maximizedBoardID = nil
+        }
         cutBoard = CutBoard(board: board, sourceDeskID: state.desks[deskIndex].id, sourceBoardIndex: boardIndex)
         save()
     }

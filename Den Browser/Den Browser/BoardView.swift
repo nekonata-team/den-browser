@@ -5,6 +5,7 @@ struct BoardView: View {
     let board: BoardState
     let isFocused: Bool
     let runtime: BoardRuntime
+    let width: Double
     let height: Double
     let isPointerFocusEnabled: Bool
     let onFocus: () -> Void
@@ -25,7 +26,7 @@ struct BoardView: View {
                 onFocus: onFocus
             )
         }
-        .frame(width: board.width, height: height)
+        .frame(width: width, height: height)
         .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
         .overlay {
             RoundedRectangle(cornerRadius: 18, style: .continuous)

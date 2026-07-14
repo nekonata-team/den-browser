@@ -95,6 +95,14 @@ final class KeyboardController {
             store.adjustFocusedBoardWidth(by: -80)
         case ("=", []), ("=", [.shift]):
             store.adjustFocusedBoardWidth(by: 80)
+        case ("f", []):
+            if !event.isARepeat {
+                store.toggleFocusedBoardMaximized()
+            }
+        case ("c", []):
+            if !event.isARepeat {
+                store.centerFocusedBoard()
+            }
         case ("x", []):
             store.cutFocusedBoard()
         case ("p", []):

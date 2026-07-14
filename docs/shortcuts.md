@@ -20,6 +20,8 @@ Den Mode makes Den operations available while a Sheet has keyboard focus. Toggle
 | `o` | Toggle overview | Overview is temporary within Den Mode. |
 | `[` / `]` | Back / forward in sheet stack | Uses focused board. |
 | `-` / `=` | Narrow / widen focused board | |
+| `f` | Toggle maximized focused board | Uses the available Den width without changing its persisted Board Width. |
+| `c` | Center focused board | Changes only the horizontal scroll position. |
 | Return | Duplicate current sheet | Creates board to right, focuses it, then enters sheet input. |
 | `x` | Cut focused board | One Cut Board only. |
 | `p` | Place Cut Board | Places it to right of focused board. |

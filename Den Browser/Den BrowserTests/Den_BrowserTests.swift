@@ -536,6 +536,49 @@ struct Den_BrowserTests {
         }
     }
 
+    @Test func denModeMaximizesAndCentersFocusedBoardWithoutChangingDenState() throws {
+        let current = board("Current", width: 520)
+        try withStore(desks: [desk("Desk", boards: [current])]) { store in
+            store.isDenMode = true
+            let stateBeforeCommands = store.state
+            let maximize = try #require(
+                NSEvent.keyEvent(
+                    with: .keyDown,
+                    location: .zero,
+                    modifierFlags: [],
+                    timestamp: 0,
+                    windowNumber: 0,
+                    context: nil,
+                    characters: "f",
+                    charactersIgnoringModifiers: "f",
+                    isARepeat: false,
+                    keyCode: 3
+                ))
+            let center = try #require(
+                NSEvent.keyEvent(
+                    with: .keyDown,
+                    location: .zero,
+                    modifierFlags: [],
+                    timestamp: 0,
+                    windowNumber: 0,
+                    context: nil,
+                    characters: "c",
+                    charactersIgnoringModifiers: "c",
+                    isARepeat: false,
+                    keyCode: 8
+                ))
+
+            #expect(KeyboardController.handle(maximize, store: store))
+            #expect(store.maximizedBoardID == current.id)
+            let requestAfterMaximize = store.centerFocusedBoardRequest
+            #expect(KeyboardController.handle(center, store: store))
+            #expect(store.centerFocusedBoardRequest == requestAfterMaximize + 1)
+            #expect(KeyboardController.handle(maximize, store: store))
+            #expect(store.maximizedBoardID == nil)
+            #expect(store.state == stateBeforeCommands)
+        }
+    }
+
     @Test func navigatingAnotherBoardFocusesIt() {
         let first = board("First")
         let second = board("Second")

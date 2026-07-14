@@ -29,7 +29,7 @@ See [CONTEXT.md](./CONTEXT.md) for the complete product language.
 ## Current features
 
 - Arrange Boards spatially across multiple Desks.
-- Navigate, move, resize, duplicate, cut, place, restore, and close Boards from Den Mode.
+- Navigate, move, resize, maximize, center, duplicate, cut, place, restore, and close Boards from Den Mode.
 - See and reorganize Boards across Desks in Overview.
 - Keep browser-like back-forward navigation inside each Board as a Sheet Stack.
 - Restore Desk and Board labels, order, widths, focus, and current Sheet URLs after relaunching the app.

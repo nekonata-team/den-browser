@@ -248,6 +248,7 @@ struct ContentView: View {
         let topInset: CGFloat = shouldShowDeskSwitcher ? 48 : 10
         let bottomInset: CGFloat = 10
         let boardHeight = max(420, size.height - topInset - bottomInset)
+        let maximizedBoardWidth = max(280, size.width - boardHorizontalPadding * 2)
 
         return ScrollViewReader { proxy in
             ScrollView(.horizontal) {
@@ -257,6 +258,7 @@ struct ContentView: View {
                             board: board,
                             isFocused: board.id == store.focusedDesk?.focusedBoardID,
                             runtime: store.runtime(for: board),
+                            width: store.maximizedBoardID == board.id ? maximizedBoardWidth : board.width,
                             height: boardHeight,
                             isPointerFocusEnabled: isBoardPointerFocusEnabled,
                             onFocus: { store.focusBoard(board.id) },
@@ -265,21 +267,23 @@ struct ContentView: View {
                         )
                         .id(board.id)
                         .overlay(alignment: .trailing) {
-                            BoardResizeHandle(
-                                board: board,
-                                height: boardHeight,
-                                width: boardSpacing,
-                                onResizeStart: {
-                                    resizingBoardID = board.id
-                                    store.focusBoard(board.id)
-                                },
-                                onResize: { store.resizeBoard(board.id, to: $0) },
-                                onResizeEnd: {
-                                    store.saveBoardWidths()
-                                    resizingBoardID = nil
-                                }
-                            )
-                            .offset(x: boardSpacing)
+                            if store.maximizedBoardID != board.id {
+                                BoardResizeHandle(
+                                    board: board,
+                                    height: boardHeight,
+                                    width: boardSpacing,
+                                    onResizeStart: {
+                                        resizingBoardID = board.id
+                                        store.focusBoard(board.id)
+                                    },
+                                    onResize: { store.resizeBoard(board.id, to: $0) },
+                                    onResizeEnd: {
+                                        store.saveBoardWidths()
+                                        resizingBoardID = nil
+                                    }
+                                )
+                                .offset(x: boardSpacing)
+                            }
                         }
                         .allowsHitTesting(isBoardPointerFocusEnabled)
                         .zIndex(1)
@@ -291,17 +295,24 @@ struct ContentView: View {
             }
             .scrollIndicators(.hidden)
             .onChange(of: store.focusedDesk?.focusedBoardID) { _, focusedBoardID in
-                focusedBoardScrollTask?.cancel()
-                guard resizingBoardID == nil, let focusedBoardID else { return }
+                centerBoard(focusedBoardID, using: proxy)
+            }
+            .onChange(of: store.centerFocusedBoardRequest) { _, _ in
+                centerBoard(store.focusedDesk?.focusedBoardID, using: proxy)
+            }
+        }
+    }
 
-                focusedBoardScrollTask = Task { @MainActor in
-                    await Task.yield()
-                    guard !Task.isCancelled else { return }
+    private func centerBoard(_ boardID: UUID?, using proxy: ScrollViewProxy) {
+        focusedBoardScrollTask?.cancel()
+        guard resizingBoardID == nil, let boardID else { return }
 
-                    withAnimation(.snappy(duration: 0.22)) {
-                        proxy.scrollTo(focusedBoardID, anchor: .center)
-                    }
-                }
+        focusedBoardScrollTask = Task { @MainActor in
+            await Task.yield()
+            guard !Task.isCancelled else { return }
+
+            withAnimation(.snappy(duration: 0.22)) {
+                proxy.scrollTo(boardID, anchor: .center)
             }
         }
     }
@@ -420,6 +431,7 @@ private struct EmptyDenView: View {
                 ShortcutRow(keys: "[/]", label: "Back / forward sheet")
                 ShortcutRow(keys: "⌘R", label: "Reload current sheet")
                 ShortcutRow(keys: "- / =", label: "Resize board")
+                ShortcutRow(keys: "f / c", label: "Maximize / center board")
                 ShortcutRow(keys: "x / p / u", label: "Cut / place / restore")
                 ShortcutRow(keys: "d", label: "Delete board")
                 ShortcutRow(keys: "Return", label: "Duplicate sheet")
