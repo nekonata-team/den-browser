@@ -4,8 +4,12 @@
 
 Den Browser is a browser that manages web work as personal work areas instead of tab-list entries.
 
+**Profile**:
+An isolated web identity that has one Den and keeps its sign-ins and site data separate from other profiles.
+_Avoid_: Account, login
+
 **Den**:
-The full personal work environment that contains all desks.
+The full personal work environment for one Profile that contains all desks.
 _Avoid_: Workspace, studio, office, space
 
 **Desk**:
