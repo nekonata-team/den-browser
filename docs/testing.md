@@ -8,6 +8,8 @@ Automated unit tests own:
 
 - `DenStore` and other pure state transitions, including board focus, ordering, moving, holding, placing, canceling, and closing.
 - State persistence and restoration.
+- Profile model coding, ordering, CRUD, corruption recovery, per-Profile Den restoration, and app-wide preference persistence.
+- Routing Sheet Navigation callbacks and WebKit stores to their owning Profile.
 - The pointer-focus state machine used to coordinate board selection and WebKit focus.
 
 Stable product behavior should be covered by unit, integration, or end-to-end tests. Stable paths through Den Browser's own UI are candidates for future XCUITests.

@@ -6,6 +6,7 @@ Den Mode makes Den operations available while a Sheet has keyboard focus. Toggle
 
 | Shortcut | Action | Notes |
 | --- | --- | --- |
+| Control + Command + `P` | Open Profile panel | Searches Profiles and opens their existing Den window or creates it if closed. |
 | Command + `T` | New Board panel | Available in every keyboard context. |
 | Command + `Q` | Quit Den Browser | Restores a Held Board before exit. |
 | `Control` + `,` | Toggle Den Mode | Captures subsequent keys while active. |

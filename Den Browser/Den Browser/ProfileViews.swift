@@ -1,0 +1,175 @@
+import AppKit
+import SwiftUI
+
+struct ProfileWindowView: View {
+    let profileID: UUID
+
+    @Environment(ProfileManager.self) private var profileManager
+
+    var body: some View {
+        if let profile = profileManager.profile(id: profileID),
+            let store = profileManager.store(for: profileID)
+        {
+            ZStack(alignment: .topTrailing) {
+                ContentView(profileName: profile.name)
+
+                ProfileChip(profile: profile)
+                    .padding(12)
+
+                if profileManager.openProfilePanelProfileID == profileID {
+                    OpenProfilePanel()
+                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                        .padding(.top, 64)
+                }
+            }
+            .environment(store)
+            .focusedSceneValue(\.denStore, store)
+            .background(WindowRegistration(profileID: profileID))
+            .onReceive(NotificationCenter.default.publisher(for: NSApplication.willTerminateNotification)) { _ in
+                store.restoreHeldBoard()
+            }
+        } else {
+            ContentUnavailableView("Profile unavailable", systemImage: "person.crop.circle.badge.exclamationmark")
+        }
+    }
+}
+
+private struct ProfileChip: View {
+    let profile: ProfileState
+
+    @Environment(ProfileManager.self) private var profileManager
+    @Environment(\.openWindow) private var openWindow
+
+    var body: some View {
+        Menu {
+            ForEach(profileManager.profiles) { item in
+                Button {
+                    openWindow(value: item.id)
+                } label: {
+                    Label(item.name, systemImage: item.id == profile.id ? "checkmark" : "person.crop.circle")
+                }
+            }
+
+            Divider()
+
+            Button("Open Profile…") {
+                profileManager.openProfilePanelProfileID = profile.id
+            }
+            .keyboardShortcut("p", modifiers: [.control, .command])
+
+            SettingsLink {
+                Text("New Profile…")
+            }
+            SettingsLink {
+                Text("Manage Profiles…")
+            }
+        } label: {
+            Image(systemName: "person.fill")
+                .font(.system(size: 13, weight: .semibold))
+                .frame(width: 30, height: 30)
+        }
+        .menuStyle(.borderlessButton)
+        .fixedSize()
+        .accessibilityLabel("Profile: \(profile.name)")
+        .help("Profile: \(profile.name)")
+    }
+}
+
+private struct OpenProfilePanel: View {
+    @Environment(ProfileManager.self) private var profileManager
+    @Environment(\.openWindow) private var openWindow
+    @State private var query = ""
+    @FocusState private var isFocused: Bool
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            TextField("Open Profile", text: $query)
+                .textFieldStyle(.plain)
+                .font(.title3)
+                .focused($isFocused)
+
+            ForEach(filteredProfiles) { profile in
+                Button {
+                    profileManager.openProfilePanelProfileID = nil
+                    openWindow(value: profile.id)
+                } label: {
+                    HStack {
+                        Circle().fill(profile.color.color).frame(width: 10, height: 10)
+                        Text(profile.name)
+                        Spacer()
+                    }
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .padding(.vertical, 5)
+            }
+        }
+        .padding(16)
+        .frame(width: 380)
+        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .onAppear { isFocused = true }
+        .onExitCommand { profileManager.openProfilePanelProfileID = nil }
+    }
+
+    private var filteredProfiles: [ProfileState] {
+        guard !query.isEmpty else { return profileManager.profiles }
+        return profileManager.profiles.filter { $0.name.localizedCaseInsensitiveContains(query) }
+    }
+}
+
+private struct WindowRegistration: NSViewRepresentable {
+    let profileID: UUID
+    @Environment(ProfileManager.self) private var profileManager
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(profileID: profileID, profileManager: profileManager)
+    }
+
+    func makeNSView(context: Context) -> NSView {
+        let view = NSView()
+        DispatchQueue.main.async { context.coordinator.register(view.window) }
+        return view
+    }
+
+    func updateNSView(_ view: NSView, context: Context) {
+        DispatchQueue.main.async { context.coordinator.register(view.window) }
+    }
+
+    static func dismantleNSView(_ view: NSView, coordinator: Coordinator) {
+        coordinator.unregister()
+    }
+
+    @MainActor
+    final class Coordinator {
+        private let profileID: UUID
+        private weak var profileManager: ProfileManager?
+        private weak var window: NSWindow?
+
+        init(profileID: UUID, profileManager: ProfileManager) {
+            self.profileID = profileID
+            self.profileManager = profileManager
+        }
+
+        func register(_ window: NSWindow?) {
+            guard let window, self.window !== window else { return }
+            self.window = window
+            profileManager?.register(window: window, for: profileID)
+        }
+
+        func unregister() {
+            guard let window else { return }
+            profileManager?.unregister(window: window, for: profileID)
+        }
+    }
+}
+
+struct DenStoreFocusedValueKey: FocusedValueKey {
+    typealias Value = DenStore
+}
+
+extension FocusedValues {
+    var denStore: DenStore? {
+        get { self[DenStoreFocusedValueKey.self] }
+        set { self[DenStoreFocusedValueKey.self] = newValue }
+    }
+}

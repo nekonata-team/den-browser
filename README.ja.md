@@ -18,7 +18,8 @@ Den Browserは、[Niri](https://github.com/niri-wm/niri)の空間的なウィン
 
 ## 作業モデル
 
-- **Den**: すべての作業を含む、個人の作業環境全体。
+- **Profile**: 一つのDenを持ち、ログイン状態とサイトデータをほかから分離するWeb上の識別単位。
+- **Den**: 一つのProfileに属する作業環境全体。
 - **Desk**: Boardを水平に並べる、大きな作業文脈。
 - **Board**: 一つの作業文脈に集中するため、ユーザーが意図して作る作業面。
 - **Sheet**: Board内に保持されるWeb画面。
@@ -29,11 +30,13 @@ Den Browserは、[Niri](https://github.com/niri-wm/niri)の空間的なウィン
 ## 現在の機能
 
 - 複数のDeskにBoardを空間的に配置。
+- 名前と色を持つProfileを作成し、Profileごとに一つのDenウィンドウと分離されたWebサイトデータを保持。
+- タイトルバーで現在のProfileを確認し、右上のアイコン、Profileメニュー、`Control` + `Command` + `P`からProfileを開く・検索。
 - Den ModeからBoardの移動、サイズ変更、複製、保持、配置、復元、終了。
 - OverviewでDeskを跨いだBoardの確認と再配置。
 - ブラウザの戻る・進むに相当する履歴を、BoardごとのSheet Stackとして保持。
 - アプリ再起動後にDeskとBoardのラベル、並び順、幅、フォーカス、Current SheetのURLを復元し、Focused Boardをスクロールアニメーションなしで即座に表示。
-- Sheet間で共有される永続的なWebプロファイルにより、アプリ再起動後もログイン状態を維持。
+- Profile内のSheet間でログイン状態を維持しつつ、別Profileから分離。
 - スクロール、リンクヒント、検索、Sheet Stack操作、URL操作に対応する、任意のファーストパーティ製Vim-style Sheet Navigation。
 
 ## キーボード操作
@@ -47,7 +50,7 @@ Vim-style Sheet Navigationは、Den Modeと別の任意機能です。Current Sh
 ## 現在の対応範囲
 
 - macOS 26以降が必要です。
-- 永続的なWebプロファイルは一つだけです。プロファイルの分離にはまだ対応していません。
+- ProfileとDenの状態はApplication Supportへローカル保存し、アプリ設定はすべてのProfileで共有します。
 - 汎用ブラウザの全機能ではなく、長時間続くWebの並行作業に焦点を当てています。
 - WebKit互換性、性能、アクセシビリティ、表示の検証を続けているPoCです。
 

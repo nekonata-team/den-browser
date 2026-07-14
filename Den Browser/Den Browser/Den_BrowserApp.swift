@@ -3,67 +3,105 @@ import SwiftUI
 
 @main
 struct Den_BrowserApp: App {
-    @State private var store: DenStore
+    @State private var preferences: AppPreferences
+    @State private var sheetNavigation: SheetNavigationManager
+    @State private var profileManager: ProfileManager
     @State private var keyboardController = KeyboardController()
 
     init() {
-        let sheetNavigation = SheetNavigationManager()
-        _store = State(initialValue: DenStore(sheetNavigation: sheetNavigation))
+        let preferences = AppPreferences()
+        let sheetNavigation = SheetNavigationManager(preferences: preferences)
+        _preferences = State(initialValue: preferences)
+        _sheetNavigation = State(initialValue: sheetNavigation)
+        _profileManager = State(
+            initialValue: ProfileManager(sheetNavigation: sheetNavigation))
     }
 
     var body: some Scene {
-        WindowGroup("Den Browser") {
-            ContentView()
-                .environment(store)
+        WindowGroup("Den Browser", for: UUID.self) { $profileID in
+            ProfileWindowView(profileID: profileID)
+                .environment(profileManager)
                 .environment(\.colorScheme, .dark)
                 .containerBackground(.clear, for: .window)
                 .onAppear {
-                    keyboardController.start(store: store)
+                    keyboardController.start(profileManager: profileManager)
                 }
-                .onDisappear {
-                    keyboardController.stop()
-                }
-                .onReceive(NotificationCenter.default.publisher(for: NSApplication.willTerminateNotification)) { _ in
-                    store.restoreHeldBoard()
-                }
+        } defaultValue: {
+            profileManager.personalProfileID
         }
         .commands {
-            CommandMenu("Den") {
-                Button("Toggle Den Mode") { store.toggleDenMode() }
-                Button("Open Board") { store.showOpenBoardPanel() }
-                    .keyboardShortcut("t", modifiers: [.command])
-                Button("New Desk") { store.showNewDeskPanel() }
-                    .disabled(!store.canCreateDesk)
-                Button("Toggle Overview") { store.toggleOverview() }
-
-                Divider()
-
-                Button("Hold Board") { store.holdFocusedBoard() }
-                    .disabled(store.heldBoard != nil)
-                Button("Place Held Board Right") { store.placeHeldBoard() }
-                    .disabled(store.heldBoard == nil)
-                Button("Place Held Board Left") { store.placeHeldBoard(beforeFocusedBoard: true) }
-                    .disabled(store.heldBoard == nil)
-                Button("Restore Held Board") { store.restoreHeldBoard() }
-                    .disabled(store.heldBoard == nil)
-                Button("Delete Board") { store.closeFocusedBoard() }
-                Button("Delete Empty Desk") { store.deleteFocusedDesk() }
-                    .disabled(!store.canDeleteFocusedDesk)
-
-                Divider()
-
-                Button("Reload Current Sheet") { store.reloadFocusedBoard() }
-                    .keyboardShortcut("r", modifiers: [.command])
-
-                Divider()
-
-                Button("Reset Den") { store.resetDen() }
-            }
+            DenCommands(profileManager: profileManager)
         }
 
         Settings {
             SettingsView()
-                .environment(store.sheetNavigation)
+                .environment(profileManager)
+                .environment(sheetNavigation)
+        }
+    }
+}
+
+private struct DenCommands: Commands {
+    let profileManager: ProfileManager
+
+    @FocusedValue(\.denStore) private var store
+    @Environment(\.openWindow) private var openWindow
+
+    var body: some Commands {
+        CommandMenu("Profile") {
+            ForEach(profileManager.profiles) { profile in
+                Button(profile.name) {
+                    openWindow(value: profile.id)
+                }
+            }
+
+            Divider()
+
+            Button("Open Profile…") {
+                profileManager.openProfilePanelProfileID = profileManager.profileID(for: NSApp.keyWindow)
+            }
+            .keyboardShortcut("p", modifiers: [.control, .command])
+
+            SettingsLink { Text("New Profile…") }
+            SettingsLink { Text("Manage Profiles…") }
+        }
+
+        CommandMenu("Den") {
+            Button("Toggle Den Mode") { store?.toggleDenMode() }
+                .disabled(store == nil)
+            Button("Open Board") { store?.showOpenBoardPanel() }
+                .keyboardShortcut("t", modifiers: [.command])
+                .disabled(store == nil)
+            Button("New Desk") { store?.showNewDeskPanel() }
+                .disabled(store?.canCreateDesk != true)
+            Button("Toggle Overview") { store?.toggleOverview() }
+                .disabled(store == nil)
+
+            Divider()
+
+            Button("Hold Board") { store?.holdFocusedBoard() }
+                .disabled(store?.heldBoard != nil || store == nil)
+            Button("Place Held Board Right") { store?.placeHeldBoard() }
+                .disabled(store?.heldBoard == nil)
+            Button("Place Held Board Left") { store?.placeHeldBoard(beforeFocusedBoard: true) }
+                .disabled(store?.heldBoard == nil)
+            Button("Restore Held Board") { store?.restoreHeldBoard() }
+                .disabled(store?.heldBoard == nil)
+            Button("Delete Board") { store?.closeFocusedBoard() }
+                .disabled(store == nil)
+            Button("Delete Empty Desk") { store?.deleteFocusedDesk() }
+                .disabled(store?.canDeleteFocusedDesk != true)
+
+            Divider()
+
+            Button("Reload Current Sheet") { store?.reloadFocusedBoard() }
+                .keyboardShortcut("r", modifiers: [.command])
+                .disabled(store == nil)
+
+            Divider()
+
+            Button("Reset Den") { store?.resetDen() }
+                .disabled(store == nil)
         }
     }
 }

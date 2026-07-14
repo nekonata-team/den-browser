@@ -18,9 +18,11 @@ final class DenStore {
     var overviewSelectionBoardID: UUID?
     private(set) var heldBoard: HeldBoard?
     let sheetNavigation: SheetNavigationManager
+    let websiteDataStore: WKWebsiteDataStore
 
     @ObservationIgnored private var runtimes: [UUID: BoardRuntime] = [:]
-    @ObservationIgnored private let persistenceURL: URL
+    @ObservationIgnored private let persistenceURL: URL?
+    @ObservationIgnored private let onSave: ((DenState) -> Void)?
 
     var focusedDesk: DeskState? {
         state.desks.first { $0.id == state.focusedDeskID }
@@ -47,10 +49,11 @@ final class DenStore {
     init(sheetNavigation: SheetNavigationManager) {
         let persistenceURL = Self.makePersistenceURL()
         self.sheetNavigation = sheetNavigation
+        websiteDataStore = .default()
         self.persistenceURL = persistenceURL
+        onSave = nil
         state = Self.loadState(from: persistenceURL) ?? .sample
         ensureFocusedObjects()
-        connectSheetNavigation()
     }
 
     convenience init(persistenceURL: URL) {
@@ -59,10 +62,11 @@ final class DenStore {
 
     init(persistenceURL: URL, sheetNavigation: SheetNavigationManager) {
         self.sheetNavigation = sheetNavigation
+        websiteDataStore = .default()
         self.persistenceURL = persistenceURL
+        onSave = nil
         state = Self.loadState(from: persistenceURL) ?? .sample
         ensureFocusedObjects()
-        connectSheetNavigation()
     }
 
     convenience init(state: DenState, persistenceURL: URL) {
@@ -75,10 +79,25 @@ final class DenStore {
 
     init(state: DenState, persistenceURL: URL, sheetNavigation: SheetNavigationManager) {
         self.sheetNavigation = sheetNavigation
+        websiteDataStore = .default()
         self.persistenceURL = persistenceURL
+        onSave = nil
         self.state = state
         ensureFocusedObjects()
-        connectSheetNavigation()
+    }
+
+    init(
+        state: DenState,
+        websiteDataStore: WKWebsiteDataStore,
+        sheetNavigation: SheetNavigationManager,
+        onSave: @escaping (DenState) -> Void
+    ) {
+        self.state = state
+        self.websiteDataStore = websiteDataStore
+        self.sheetNavigation = sheetNavigation
+        persistenceURL = nil
+        self.onSave = onSave
+        ensureFocusedObjects()
     }
 
     func focusDesk(_ deskID: UUID) {
@@ -463,7 +482,14 @@ final class DenStore {
             return runtime
         }
 
-        let runtime = BoardRuntime(board: board, sheetNavigation: sheetNavigation) {
+        let runtime = BoardRuntime(
+            board: board,
+            websiteDataStore: websiteDataStore,
+            sheetNavigation: sheetNavigation
+        ) {
+            [weak self] url in
+            self?.addBoard(urlString: url.absoluteString, afterBoardID: board.id)
+        } onChange: {
             [weak self] boardID, url, title in
             self?.updateBoard(boardID: boardID, url: url, title: title)
         }
@@ -473,16 +499,6 @@ final class DenStore {
 
     private var focusedDeskIndex: Int? {
         state.desks.firstIndex { $0.id == state.focusedDeskID }
-    }
-
-    private func connectSheetNavigation() {
-        sheetNavigation.onOpenBoard = { [weak self] url, sourceWebView in
-            guard
-                let self,
-                let sourceBoardID = runtimes.first(where: { $0.value.webView === sourceWebView })?.key
-            else { return }
-            addBoard(urlString: url.absoluteString, afterBoardID: sourceBoardID)
-        }
     }
 
     private var focusedRuntime: BoardRuntime? {
@@ -695,6 +711,11 @@ final class DenStore {
     }
 
     private func save() {
+        if let onSave {
+            onSave(stateForPersistence)
+            return
+        }
+        guard let persistenceURL else { return }
         do {
             let directory = persistenceURL.deletingLastPathComponent()
             try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
@@ -703,6 +724,15 @@ final class DenStore {
         } catch {
             assertionFailure("Failed to save Den state: \(error)")
         }
+    }
+
+    func releaseRuntimes() {
+        for runtime in runtimes.values {
+            sheetNavigation.didClose(runtime.webView)
+            runtime.webView.stopLoading()
+            runtime.webView.navigationDelegate = nil
+        }
+        runtimes.removeAll()
     }
 
     private var stateForPersistence: DenState {
@@ -760,7 +790,7 @@ struct HeldBoard {
     let sourceBoardIndex: Int
 }
 
-private extension JSONEncoder {
+extension JSONEncoder {
     static var denEncoder: JSONEncoder {
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]

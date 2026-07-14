@@ -18,7 +18,8 @@ Den Browser applies ideas from [Niri](https://github.com/niri-wm/niri)'s spatial
 
 ## Work model
 
-- **Den**: Your full personal work environment.
+- **Profile**: An isolated web identity with its own Den, sign-ins, and site data.
+- **Den**: The full work environment for one Profile.
 - **Desk**: A broad work context containing Boards in a horizontal work area.
 - **Board**: An intentional work surface for one focused task context.
 - **Sheet**: A web screen held within a Board.
@@ -29,11 +30,13 @@ See [CONTEXT.md](./CONTEXT.md) for the complete product language.
 ## Current features
 
 - Arrange Boards spatially across multiple Desks.
+- Create named, color-coded Profiles, each with one Den window and isolated website data.
+- See the current Profile in the titlebar, and open or find Profiles from the top-right icon, Profile menu, or `Control` + `Command` + `P`.
 - Navigate, move, resize, maximize, center, duplicate, hold, place, restore, and close Boards from Den Mode.
 - See and reorganize Boards across Desks in Overview.
 - Keep browser-like back-forward navigation inside each Board as a Sheet Stack.
 - Restore Desk and Board labels, order, widths, focus, and current Sheet URLs after relaunching the app, showing the Focused Board immediately without a scroll animation.
-- Keep sign-ins across app launches with one shared persistent web profile across Sheets.
+- Keep sign-ins across app launches while isolating them between Profiles.
 - Optionally enable first-party Vim-style Sheet Navigation for scrolling, link hints, find, Sheet Stack navigation, and URL actions.
 
 ## Keyboard operation
@@ -47,7 +50,7 @@ Vim-style Sheet Navigation is a separate optional Feature. It controls content i
 ## Current scope
 
 - Requires macOS 26 or later.
-- Uses one shared persistent web profile; profile separation is not yet supported.
+- Stores Profile and Den state locally under Application Support; app preferences remain shared across Profiles.
 - Focuses on long-running parallel web work, not the full feature set of a general-purpose browser.
 - Remains a proof of concept while WebKit compatibility, performance, accessibility, and visual behavior receive further validation.
 

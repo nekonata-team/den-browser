@@ -7,6 +7,11 @@ struct SettingsView: View {
 
     var body: some View {
         TabView {
+            ProfilesSettingsView()
+                .tabItem {
+                    Label("Profiles", systemImage: "person.2")
+                }
+
             Form {
                 LabeledContent {
                     Toggle("", isOn: enabledBinding)
@@ -108,5 +113,123 @@ struct SettingsView: View {
     private func saveIgnoredSites() {
         guard sheetNavigation.setIgnoredSites(ignoredSitesDraft) else { return }
         ignoredSitesDraft = sheetNavigation.ignoredHosts.joined(separator: "\n")
+    }
+}
+
+private struct ProfilesSettingsView: View {
+    @Environment(ProfileManager.self) private var profileManager
+    @State private var newName = ""
+    @State private var newColor: ProfileColor = .purple
+    @State private var profileToDelete: ProfileState?
+
+    var body: some View {
+        Form {
+            Section("Profiles") {
+                ForEach(profileManager.profiles) { profile in
+                    ProfileSettingsRow(
+                        profile: profile,
+                        canDelete: profile.webProfileStore != .default,
+                        onDelete: { profileToDelete = profile })
+                }
+            }
+
+            Section("New Profile") {
+                TextField("Name", text: $newName)
+                Picker("Color", selection: $newColor) {
+                    ForEach(ProfileColor.allCases) { color in
+                        Label(color.label, systemImage: "circle.fill")
+                            .foregroundStyle(color.color)
+                            .tag(color)
+                    }
+                }
+                Button("Create Profile") {
+                    guard profileManager.createProfile(name: newName, color: newColor) != nil else { return }
+                    newName = ""
+                }
+                .disabled(newName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+            }
+        }
+        .formStyle(.grouped)
+        .padding()
+        .confirmationDialog(
+            "Delete \(profileToDelete?.name ?? "Profile")?",
+            isPresented: Binding(
+                get: { profileToDelete != nil },
+                set: { if !$0 { profileToDelete = nil } })
+        ) {
+            Button("Delete Profile", role: .destructive) {
+                guard let profileToDelete else { return }
+                Task {
+                    _ = await profileManager.deleteProfile(profileToDelete.id)
+                    self.profileToDelete = nil
+                }
+            }
+            Button("Cancel", role: .cancel) { profileToDelete = nil }
+        } message: {
+            Text("Its Den, open window, and website data will be removed.")
+        }
+        .alert(
+            "Profile Error",
+            isPresented: Binding(
+                get: { profileManager.errorMessage != nil },
+                set: { if !$0 { profileManager.clearError() } })
+        ) {
+            Button("OK") { profileManager.clearError() }
+        } message: {
+            Text(profileManager.errorMessage ?? "")
+        }
+    }
+}
+
+private struct ProfileSettingsRow: View {
+    let profile: ProfileState
+    let canDelete: Bool
+    let onDelete: () -> Void
+
+    @Environment(ProfileManager.self) private var profileManager
+    @State private var name: String
+
+    init(profile: ProfileState, canDelete: Bool, onDelete: @escaping () -> Void) {
+        self.profile = profile
+        self.canDelete = canDelete
+        self.onDelete = onDelete
+        _name = State(initialValue: profile.name)
+    }
+
+    var body: some View {
+        HStack {
+            Circle().fill(profile.color.color).frame(width: 11, height: 11)
+            TextField("Profile name", text: $name)
+                .onSubmit(saveName)
+            Picker("Color", selection: colorBinding) {
+                ForEach(ProfileColor.allCases) { color in
+                    Text(color.label).tag(color)
+                }
+            }
+            .labelsHidden()
+            .frame(width: 100)
+            if canDelete {
+                Button("Delete", role: .destructive, action: onDelete)
+            } else {
+                Text("Required").font(.caption).foregroundStyle(.secondary)
+            }
+        }
+        .onDisappear(perform: saveName)
+    }
+
+    private var colorBinding: Binding<ProfileColor> {
+        Binding {
+            profileManager.profile(id: profile.id)?.color ?? profile.color
+        } set: { color in
+            _ = profileManager.updateProfile(profile.id, color: color)
+        }
+    }
+
+    private func saveName() {
+        guard profileManager.updateProfile(profile.id, name: name) else {
+            name = profileManager.profile(id: profile.id)?.name ?? profile.name
+            return
+        }
+        name = profileManager.profile(id: profile.id)?.name ?? name
     }
 }

@@ -11,6 +11,7 @@ import SwiftUI
 struct ContentView: View {
     private let boardSpacing: CGFloat = 10
     private let boardHorizontalPadding: CGFloat = 10
+    private let profileName: String?
 
     @Environment(DenStore.self) private var store
     @State private var urlText = ""
@@ -22,6 +23,10 @@ struct ContentView: View {
     @State private var resizingBoardID: UUID?
     @FocusState private var isOpenPanelFocused: Bool
     @FocusState private var isNewDeskLabelFocused: Bool
+
+    init(profileName: String? = nil) {
+        self.profileName = profileName
+    }
 
     var body: some View {
         GeometryReader { geometry in
@@ -76,8 +81,9 @@ struct ContentView: View {
     }
 
     private var titlebarTitle: String {
-        guard store.isDenMode else { return "Den Browser" }
-        return store.heldBoardLabel == nil ? "DEN MODE" : "DEN MODE · HELD"
+        let profilePrefix = profileName.map { "\($0) · " } ?? ""
+        guard store.isDenMode else { return profileName.map { "\($0) — Den Browser" } ?? "Den Browser" }
+        return profilePrefix + (store.heldBoardLabel == nil ? "DEN MODE" : "DEN MODE · HELD")
     }
 
     private var deskSwitcher: some View {

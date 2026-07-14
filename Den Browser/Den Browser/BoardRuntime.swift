@@ -11,7 +11,9 @@ final class BoardRuntime: NSObject, WKNavigationDelegate {
 
     init(
         board: BoardState,
+        websiteDataStore: WKWebsiteDataStore,
         sheetNavigation: SheetNavigationManager,
+        onOpenBoard: @escaping (URL) -> Void,
         onChange: @escaping (UUID, URL?, String?) -> Void
     ) {
         id = board.id
@@ -19,7 +21,7 @@ final class BoardRuntime: NSObject, WKNavigationDelegate {
         self.onChange = onChange
 
         let configuration = WKWebViewConfiguration()
-        configuration.websiteDataStore = .default()
+        configuration.websiteDataStore = websiteDataStore
         configuration.userContentController = sheetNavigation.userContentController
 
         webView = WKWebView(frame: .zero, configuration: configuration)
@@ -28,10 +30,23 @@ final class BoardRuntime: NSObject, WKNavigationDelegate {
         super.init()
 
         webView.navigationDelegate = self
-        sheetNavigation.didOpen(webView)
+        sheetNavigation.didOpen(webView, onOpenBoard: onOpenBoard)
         if let url = URL(string: board.currentURLString) {
             webView.load(URLRequest(url: url))
         }
+    }
+
+    convenience init(
+        board: BoardState,
+        sheetNavigation: SheetNavigationManager,
+        onChange: @escaping (UUID, URL?, String?) -> Void
+    ) {
+        self.init(
+            board: board,
+            websiteDataStore: .default(),
+            sheetNavigation: sheetNavigation,
+            onOpenBoard: { _ in },
+            onChange: onChange)
     }
 
     func webView(_ webView: WKWebView, didCommit navigation: WKNavigation!) {

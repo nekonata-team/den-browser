@@ -15,7 +15,7 @@ private final class SheetNavigationMessageHandler: NSObject, WKScriptMessageHand
 @MainActor
 @Observable
 final class SheetNavigationManager {
-    static let defaultHintAlphabet = "asdfghjkl"
+    static let defaultHintAlphabet = AppPreferences.defaultHintAlphabet
     static let contentWorld = WKContentWorld.world(name: "dev.nekonata.denbrowser.sheet-navigation")
 
     let userContentController = WKUserContentController()
@@ -23,27 +23,34 @@ final class SheetNavigationManager {
     private(set) var hintAlphabet: String
     private(set) var ignoredHosts: [String]
 
-    @ObservationIgnored private let defaults: UserDefaults
+    @ObservationIgnored private let preferences: AppPreferences
     @ObservationIgnored private let scriptSource: String
     @ObservationIgnored private let webViews = NSHashTable<WKWebView>.weakObjects()
     @ObservationIgnored private let messageHandler = SheetNavigationMessageHandler()
-    @ObservationIgnored var onOpenBoard: ((URL, WKWebView) -> Void)?
-
-    private static let enabledKey = "features.vim-style-sheet-navigation.enabled"
-    private static let hintAlphabetKey = "features.vim-style-sheet-navigation.hint-alphabet"
-    private static let ignoredHostsKey = "features.vim-style-sheet-navigation.ignored-hosts"
+    @ObservationIgnored private var openBoardCallbacks: [ObjectIdentifier: (URL) -> Void] = [:]
 
     init(
         defaults: UserDefaults = .standard,
         scriptSource: String? = nil
     ) {
-        self.defaults = defaults
+        self.preferences = AppPreferences(defaults: defaults)
         self.scriptSource = scriptSource ?? Self.bundledScript
-        isEnabled = defaults.bool(forKey: Self.enabledKey)
-        hintAlphabet =
-            Self.normalizeHintAlphabet(defaults.string(forKey: Self.hintAlphabetKey) ?? "")
-            ?? Self.defaultHintAlphabet
-        ignoredHosts = defaults.stringArray(forKey: Self.ignoredHostsKey) ?? []
+        isEnabled = preferences.sheetNavigationEnabled
+        hintAlphabet = preferences.sheetNavigationHintAlphabet
+        ignoredHosts = preferences.sheetNavigationIgnoredHosts
+        configureMessageHandler()
+    }
+
+    init(preferences: AppPreferences, scriptSource: String? = nil) {
+        self.preferences = preferences
+        self.scriptSource = scriptSource ?? Self.bundledScript
+        isEnabled = preferences.sheetNavigationEnabled
+        hintAlphabet = preferences.sheetNavigationHintAlphabet
+        ignoredHosts = preferences.sheetNavigationIgnoredHosts
+        configureMessageHandler()
+    }
+
+    private func configureMessageHandler() {
         messageHandler.onMessage = { [weak self] message in
             self?.handleScriptMessage(message)
         }
@@ -58,7 +65,7 @@ final class SheetNavigationManager {
     func setEnabled(_ enabled: Bool) {
         guard enabled != isEnabled else { return }
         isEnabled = enabled
-        defaults.set(enabled, forKey: Self.enabledKey)
+        preferences.setSheetNavigationEnabled(enabled)
         applyConfiguration()
     }
 
@@ -67,7 +74,7 @@ final class SheetNavigationManager {
         guard let normalized = Self.normalizeHintAlphabet(alphabet) else { return false }
         guard normalized != hintAlphabet else { return true }
         hintAlphabet = normalized
-        defaults.set(normalized, forKey: Self.hintAlphabetKey)
+        preferences.setSheetNavigationHintAlphabet(normalized)
         applyConfiguration()
         return true
     }
@@ -77,17 +84,19 @@ final class SheetNavigationManager {
         guard let hosts = Self.normalizeIgnoredSites(sites) else { return false }
         guard hosts != ignoredHosts else { return true }
         ignoredHosts = hosts
-        defaults.set(hosts, forKey: Self.ignoredHostsKey)
+        preferences.setSheetNavigationIgnoredHosts(hosts)
         applyConfiguration()
         return true
     }
 
-    func didOpen(_ webView: WKWebView) {
+    func didOpen(_ webView: WKWebView, onOpenBoard: @escaping (URL) -> Void) {
         webViews.add(webView)
+        openBoardCallbacks[ObjectIdentifier(webView)] = onOpenBoard
     }
 
     func didClose(_ webView: WKWebView) {
         webViews.remove(webView)
+        openBoardCallbacks.removeValue(forKey: ObjectIdentifier(webView))
     }
 
     static func normalizeHintAlphabet(_ alphabet: String) -> String? {
@@ -149,9 +158,9 @@ final class SheetNavigationManager {
                 let url = URL(string: urlString),
                 ["http", "https"].contains(url.scheme?.lowercased()),
                 url.host != nil,
-                let onOpenBoard
+                let onOpenBoard = openBoardCallbacks[ObjectIdentifier(webView)]
             else { return false }
-            onOpenBoard(url, webView)
+            onOpenBoard(url)
             return true
         default:
             return false

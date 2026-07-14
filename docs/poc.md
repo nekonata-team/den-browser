@@ -5,6 +5,8 @@ Den Browser's first PoC validates whether a macOS WKWebView implementation can s
 ## Must pass
 
 - ChatGPT, Gemini, and Claude logins remain available after app restart.
+- Two Profiles can stay signed into different identities on the same site, and both identities survive restart.
+- Each Profile restores its own Den, including a Held Board at its former placement, and selecting an already-open Profile does not duplicate its window.
 - Six boards can be open at the same time.
 - Board navigation works from the keyboard without noticeable delay.
 - In-progress text inside each board remains available after moving between boards.
@@ -24,6 +26,16 @@ Den Browser's first PoC validates whether a macOS WKWebView implementation can s
 - Den controls use Liquid Glass as a floating navigation/control layer, not as decoration over sheet content.
 - Reduced transparency, increased contrast, and reduced motion settings keep the interface usable.
 - Focused board and keyboard focus indicators are clear without relying only on color.
+- The titlebar exposes the Profile name, and the top-right Profile icon exposes it through an accessibility label and help text; Profile identity does not depend on color.
+
+## Profile validation
+
+1. Create a second Profile, open the same site in both Profiles, and sign in as different identities.
+2. Quit and relaunch; confirm both sign-ins and each Profile's Desks, Boards, URLs, widths, and focus restore independently.
+3. Select the same Profile repeatedly from the chip, Profile menu, and `Control` + `Command` + `P`; confirm only one Den window exists.
+4. Change Vim-style Sheet Navigation settings and confirm open Sheets in both Profiles update without reloading.
+5. Delete the second Profile; confirm its window closes and its Den and website data disappear while Personal remains.
+6. With VoiceOver, confirm the Profile icon announces its name and does not rely on color alone.
 
 ## Vim-style Sheet navigation experiment
 

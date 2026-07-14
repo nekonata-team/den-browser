@@ -5,11 +5,11 @@ import Foundation
 final class KeyboardController {
     private var monitor: Any?
 
-    func start(store: DenStore) {
+    func start(profileManager: ProfileManager) {
         guard monitor == nil else { return }
 
-        monitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak store] event in
-            guard let store else { return event }
+        monitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak profileManager] event in
+            guard let store = profileManager?.activeStore() else { return event }
             return Self.handle(event, store: store) ? nil : event
         }
     }
