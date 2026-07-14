@@ -29,7 +29,7 @@ Den Browserは、[Niri](https://github.com/niri-wm/niri)の空間的なウィン
 ## 現在の機能
 
 - 複数のDeskにBoardを空間的に配置。
-- Den ModeからBoardの移動、サイズ変更、複製、カット、配置、復元、終了。
+- Den ModeからBoardの移動、サイズ変更、複製、保持、配置、復元、終了。
 - OverviewでDeskを跨いだBoardの確認と再配置。
 - ブラウザの戻る・進むに相当する履歴を、BoardごとのSheet Stackとして保持。
 - アプリ再起動後にDeskとBoardのラベル、並び順、幅、フォーカス、Current SheetのURLを復元。
@@ -38,7 +38,7 @@ Den Browserは、[Niri](https://github.com/niri-wm/niri)の空間的なウィン
 
 ## キーボード操作
 
-`Control` + `.` でDen Modeに入ります。Den ModeはCurrent Sheet内のキーボードフォーカスに関係なく、DeskとBoardのコマンドを受け取ります。`Escape`でSheet入力に戻ります。
+`Control` + `,` でDen Modeを切り替えます。Den ModeはCurrent Sheet内のキーボードフォーカスに関係なく、DeskとBoardのコマンドを受け取ります。Held Boardがある場合、`Escape`で元の位置へ戻します。それ以外ではSheet Inputへ戻ります。
 
 Den Modeの全ショートカットは[docs/shortcuts.md](./docs/shortcuts.md)を参照してください。
 

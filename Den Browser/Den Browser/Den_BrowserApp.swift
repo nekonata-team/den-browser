@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 @main
@@ -22,6 +23,9 @@ struct Den_BrowserApp: App {
                 .onDisappear {
                     keyboardController.stop()
                 }
+                .onReceive(NotificationCenter.default.publisher(for: NSApplication.willTerminateNotification)) { _ in
+                    store.restoreHeldBoard()
+                }
         }
         .commands {
             CommandMenu("Den") {
@@ -34,12 +38,12 @@ struct Den_BrowserApp: App {
 
                 Divider()
 
-                Button("Cut Board") { store.cutFocusedBoard() }
-                    .disabled(store.cutBoard != nil)
-                Button("Place Cut Board") { store.placeCutBoard() }
-                    .disabled(store.cutBoard == nil)
-                Button("Restore Cut Board") { store.restoreCutBoard() }
-                    .disabled(store.cutBoard == nil)
+                Button("Hold Board") { store.holdFocusedBoard() }
+                    .disabled(store.heldBoard != nil)
+                Button("Place Held Board") { store.placeHeldBoard() }
+                    .disabled(store.heldBoard == nil)
+                Button("Restore Held Board") { store.restoreHeldBoard() }
+                    .disabled(store.heldBoard == nil)
                 Button("Delete Board") { store.closeFocusedBoard() }
                 Button("Delete Empty Desk") { store.deleteFocusedDesk() }
                     .disabled(!store.canDeleteFocusedDesk)

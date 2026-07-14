@@ -76,7 +76,7 @@ struct ContentView: View {
 
     private var titlebarTitle: String {
         guard store.isDenMode else { return "Den Browser" }
-        return store.cutBoardLabel == nil ? "DEN MODE" : "DEN MODE · CUT"
+        return store.heldBoardLabel == nil ? "DEN MODE" : "DEN MODE · HELD"
     }
 
     private var deskSwitcher: some View {
@@ -444,7 +444,7 @@ private struct EmptyDenView: View {
                 ShortcutRow(keys: "⌘R", label: "Reload current sheet")
                 ShortcutRow(keys: "- / =", label: "Resize board")
                 ShortcutRow(keys: "f / c", label: "Maximize / center board")
-                ShortcutRow(keys: "x / p / u", label: "Cut / place / restore")
+                ShortcutRow(keys: "x / p / u", label: "Hold / place / restore")
                 ShortcutRow(keys: "d", label: "Delete board")
                 ShortcutRow(keys: "Return", label: "Duplicate sheet")
             }

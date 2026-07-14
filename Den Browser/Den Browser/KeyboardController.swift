@@ -60,8 +60,16 @@ final class KeyboardController {
 
     private static func handleDenMode(_ event: NSEvent, store: DenStore) -> Bool {
         let modifiers = normalizedModifiers(for: event)
+        if characterIgnoringModifiers(for: event) == "q", modifiers == [.command] {
+            return false
+        }
+
         if isEscape(event), modifiers == [] {
-            store.exitDenMode()
+            if store.heldBoard == nil {
+                store.exitDenMode()
+            } else {
+                store.restoreHeldBoard()
+            }
             return true
         }
 
@@ -104,11 +112,11 @@ final class KeyboardController {
                 store.centerFocusedBoard()
             }
         case ("x", []):
-            store.cutFocusedBoard()
+            store.holdFocusedBoard()
         case ("p", []):
-            store.placeCutBoard()
+            store.placeHeldBoard()
         case ("u", []):
-            store.restoreCutBoard()
+            store.restoreHeldBoard()
         case ("d", []):
             store.closeFocusedBoard()
         case ("d", [.shift]):

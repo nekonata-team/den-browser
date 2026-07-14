@@ -29,7 +29,7 @@ See [CONTEXT.md](./CONTEXT.md) for the complete product language.
 ## Current features
 
 - Arrange Boards spatially across multiple Desks.
-- Navigate, move, resize, maximize, center, duplicate, cut, place, restore, and close Boards from Den Mode.
+- Navigate, move, resize, maximize, center, duplicate, hold, place, restore, and close Boards from Den Mode.
 - See and reorganize Boards across Desks in Overview.
 - Keep browser-like back-forward navigation inside each Board as a Sheet Stack.
 - Restore Desk and Board labels, order, widths, focus, and current Sheet URLs after relaunching the app.
@@ -38,7 +38,7 @@ See [CONTEXT.md](./CONTEXT.md) for the complete product language.
 
 ## Keyboard operation
 
-Press `Control` + `,` to toggle Den Mode. Den Mode receives Desk and Board commands independently of keyboard focus inside the Current Sheet. Press `Escape` to return to Sheet Input.
+Press `Control` + `,` to toggle Den Mode. Den Mode receives Desk and Board commands independently of keyboard focus inside the Current Sheet. When a Board is held, `Escape` restores it; otherwise, `Escape` returns to Sheet Input.
 
 See [docs/shortcuts.md](./docs/shortcuts.md) for the complete Den Mode shortcut map.
 

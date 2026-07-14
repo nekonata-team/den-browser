@@ -284,57 +284,84 @@ struct Den_BrowserTests {
         }
     }
 
-    @Test func placingCutBoardInSameDeskUsesFocusedBoardAsTarget() {
-        let boards = [board("Cut"), board("Target"), board("After")]
+    @Test func placingHeldBoardInSameDeskUsesFocusedBoardAsTarget() {
+        let boards = [board("Held"), board("Target"), board("After")]
         withStore(desks: [desk("Desk", boards: boards, focusedBoardID: boards[0].id)]) { store in
-            store.cutFocusedBoard()
-            store.placeCutBoard()
+            store.holdFocusedBoard()
+            store.placeHeldBoard()
 
-            #expect(store.cutBoard == nil)
+            #expect(store.heldBoard == nil)
             #expect(store.focusedDesk?.boards.map(\.id) == [boards[1].id, boards[0].id, boards[2].id])
             #expect(store.focusedDesk?.focusedBoardID == boards[0].id)
         }
     }
 
-    @Test func restoringCutBoardKeepsDeskCreatedAfterCut() {
-        let cut = board("Source")
-        withStore(desks: [desk("First", boards: [cut])]) { store in
-            store.cutFocusedBoard()
+    @Test func restoringHeldBoardKeepsDeskCreatedWhileHeld() {
+        let held = board("Source")
+        withStore(desks: [desk("First", boards: [held])]) { store in
+            store.holdFocusedBoard()
             store.createDesk(label: "Destination", template: .empty)
-            store.restoreCutBoard()
+            store.restoreHeldBoard()
 
-            #expect(store.cutBoard == nil)
+            #expect(store.heldBoard == nil)
             #expect(store.state.desks.count == 2)
             #expect(store.focusedDesk?.label == "First")
-            #expect(store.state.desks[0].boards.first?.id == cut.id)
+            #expect(store.state.desks[0].boards.first?.id == held.id)
         }
     }
 
-    @Test func placesCutBoardIntoDifferentDesk() {
-        let cut = board("Cut")
+    @Test func placesHeldBoardIntoDifferentDesk() {
+        let held = board("Held")
         let targetBoards = [board("Target"), board("After")]
-        let source = desk("Source", boards: [cut])
+        let source = desk("Source", boards: [held])
         let target = desk("Target", boards: targetBoards, focusedBoardID: targetBoards[0].id)
         withStore(desks: [source, target]) { store in
-            store.cutFocusedBoard()
+            store.holdFocusedBoard()
             store.focusNextDesk()
-            store.placeCutBoard()
+            store.placeHeldBoard()
 
-            #expect(store.cutBoard == nil)
+            #expect(store.heldBoard == nil)
             #expect(store.state.desks[0].boards.isEmpty)
-            #expect(store.state.desks[1].boards.map(\.id) == [targetBoards[0].id, cut.id, targetBoards[1].id])
-            #expect(store.focusedDesk?.focusedBoardID == cut.id)
+            #expect(store.state.desks[1].boards.map(\.id) == [targetBoards[0].id, held.id, targetBoards[1].id])
+            #expect(store.focusedDesk?.focusedBoardID == held.id)
         }
     }
 
-    @Test func cutBoardPreventsAnotherCutUntilPlacedOrRestored() {
+    @Test func heldBoardPreventsAnotherHoldUntilPlacedOrRestored() {
         let boards = [board("First"), board("Second")]
         withStore(desks: [desk("Desk", boards: boards, focusedBoardID: boards[0].id)]) { store in
-            store.cutFocusedBoard()
-            store.cutFocusedBoard()
+            store.holdFocusedBoard()
+            store.holdFocusedBoard()
 
-            #expect(store.cutBoard?.board.id == boards[0].id)
+            #expect(store.heldBoard?.board.id == boards[0].id)
             #expect(store.focusedDesk?.boards.map(\.id) == [boards[1].id])
+        }
+    }
+
+    @Test func persistedStateRestoresHeldBoard() {
+        let held = board("Held")
+        let source = desk("Source", boards: [held])
+        let url = temporaryPersistenceURL()
+        defer { try? FileManager.default.removeItem(at: url.deletingLastPathComponent()) }
+        let store = DenStore(state: DenState(desks: [source], focusedDeskID: source.id), persistenceURL: url)
+
+        store.holdFocusedBoard()
+        let restored = DenStore(persistenceURL: url)
+
+        #expect(restored.focusedDesk?.boards.map(\.id) == [held.id])
+        #expect(restored.focusedDesk?.focusedBoardID == held.id)
+    }
+
+    @Test func sourceDeskCannotBeDeletedWhileItsBoardIsHeld() {
+        let held = board("Held")
+        let source = desk("Source", boards: [held])
+        let target = desk("Target")
+        withStore(desks: [source, target]) { store in
+            store.holdFocusedBoard()
+
+            #expect(!store.canDeleteFocusedDesk)
+            store.deleteFocusedDesk()
+            #expect(store.state.desks.map(\.id) == [source.id, target.id])
         }
     }
 
@@ -481,6 +508,35 @@ struct Den_BrowserTests {
         }
     }
 
+    @Test func escapeRestoresHeldBoardBeforeExitingDenMode() throws {
+        let held = board("Held")
+        try withStore(desks: [desk("Desk", boards: [held])]) { store in
+            store.isDenMode = true
+            store.holdFocusedBoard()
+            let event = try #require(
+                NSEvent.keyEvent(
+                    with: .keyDown,
+                    location: .zero,
+                    modifierFlags: [],
+                    timestamp: 0,
+                    windowNumber: 0,
+                    context: nil,
+                    characters: "\u{1B}",
+                    charactersIgnoringModifiers: "\u{1B}",
+                    isARepeat: false,
+                    keyCode: 53
+                ))
+
+            #expect(KeyboardController.handle(event, store: store))
+            #expect(store.heldBoard == nil)
+            #expect(store.focusedDesk?.boards.map(\.id) == [held.id])
+            #expect(store.isDenMode)
+
+            #expect(KeyboardController.handle(event, store: store))
+            #expect(!store.isDenMode)
+        }
+    }
+
     @Test func controlCommaTogglesDenMode() throws {
         try withStore(desks: [desk("Desk")]) { store in
             let event = try #require(
@@ -522,6 +578,28 @@ struct Den_BrowserTests {
 
             #expect(!KeyboardController.handle(event, store: store))
             #expect(!store.isDenMode)
+        }
+    }
+
+    @Test func commandQPassesThroughFromDenMode() throws {
+        try withStore(desks: [desk("Desk")]) { store in
+            store.isDenMode = true
+            let event = try #require(
+                NSEvent.keyEvent(
+                    with: .keyDown,
+                    location: .zero,
+                    modifierFlags: .command,
+                    timestamp: 0,
+                    windowNumber: 0,
+                    context: nil,
+                    characters: "q",
+                    charactersIgnoringModifiers: "q",
+                    isARepeat: false,
+                    keyCode: 12
+                ))
+
+            #expect(!KeyboardController.handle(event, store: store))
+            #expect(store.isDenMode)
         }
     }
 

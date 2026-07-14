@@ -76,10 +76,10 @@ _Avoid_: Command mode, navigation mode
 The action that switches keyboard ownership between Sheet Input and Den Mode.
 _Avoid_: Leader, prefix, mode key
 
-**Cut Board**:
-A board temporarily removed from its desk for placement elsewhere or restoration to its former placement. Only one cut board may exist at a time.
-_Avoid_: Dragged tab, selected board, clipboard item
+**Held Board**:
+A board temporarily lifted from its desk and held by Den for placement elsewhere or restoration to its former placement. Only one held board may exist at a time.
+_Avoid_: Cut board, dragged tab, selected board, clipboard item
 
 **Board Placement**:
-Placing a cut board into a desk.
+Placing a held board into a desk.
 _Avoid_: Tab move, window move, paste

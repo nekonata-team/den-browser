@@ -16,7 +16,7 @@ final class DenStore {
     private(set) var centerFocusedBoardRequest = 0
     var overviewSelectionDeskID: UUID?
     var overviewSelectionBoardID: UUID?
-    private(set) var cutBoard: CutBoard?
+    private(set) var heldBoard: HeldBoard?
     let sheetNavigation: SheetNavigationManager
 
     @ObservationIgnored private var runtimes: [UUID: BoardRuntime] = [:]
@@ -31,11 +31,13 @@ final class DenStore {
     }
 
     var canDeleteFocusedDesk: Bool {
-        state.desks.count > 1 && focusedDesk?.boards.isEmpty == true
+        state.desks.count > 1
+            && focusedDesk?.boards.isEmpty == true
+            && focusedDesk?.id != heldBoard?.sourceDeskID
     }
 
-    var cutBoardLabel: String? {
-        cutBoard?.board.label
+    var heldBoardLabel: String? {
+        heldBoard?.board.label
     }
 
     convenience init() {
@@ -288,7 +290,7 @@ final class DenStore {
         isOverviewPresented = false
         overviewSelectionDeskID = nil
         overviewSelectionBoardID = nil
-        cutBoard = nil
+        heldBoard = nil
         isDenMode = false
         save()
     }
@@ -379,8 +381,8 @@ final class DenStore {
         save()
     }
 
-    func cutFocusedBoard() {
-        guard cutBoard == nil else { return }
+    func holdFocusedBoard() {
+        guard heldBoard == nil else { return }
         guard
             let deskIndex = focusedDeskIndex,
             let boardIndex = focusedBoardIndex(in: deskIndex)
@@ -390,13 +392,13 @@ final class DenStore {
         if maximizedBoardID == board.id {
             maximizedBoardID = nil
         }
-        cutBoard = CutBoard(board: board, sourceDeskID: state.desks[deskIndex].id, sourceBoardIndex: boardIndex)
+        heldBoard = HeldBoard(board: board, sourceDeskID: state.desks[deskIndex].id, sourceBoardIndex: boardIndex)
         save()
     }
 
-    func placeCutBoard() {
+    func placeHeldBoard() {
         guard
-            let cutBoard,
+            let heldBoard,
             let targetDeskIndex = focusedDeskIndex
         else { return }
 
@@ -411,24 +413,24 @@ final class DenStore {
             insertIndex = state.desks[targetDeskIndex].boards.endIndex
         }
 
-        state.desks[targetDeskIndex].boards.insert(cutBoard.board, at: insertIndex)
-        state.desks[targetDeskIndex].focusedBoardID = cutBoard.board.id
+        state.desks[targetDeskIndex].boards.insert(heldBoard.board, at: insertIndex)
+        state.desks[targetDeskIndex].focusedBoardID = heldBoard.board.id
         state.focusedDeskID = state.desks[targetDeskIndex].id
-        self.cutBoard = nil
+        self.heldBoard = nil
         save()
     }
 
-    func restoreCutBoard() {
+    func restoreHeldBoard() {
         guard
-            let cutBoard,
-            let deskIndex = state.desks.firstIndex(where: { $0.id == cutBoard.sourceDeskID })
+            let heldBoard,
+            let deskIndex = state.desks.firstIndex(where: { $0.id == heldBoard.sourceDeskID })
         else { return }
 
-        let insertIndex = min(cutBoard.sourceBoardIndex, state.desks[deskIndex].boards.endIndex)
-        state.desks[deskIndex].boards.insert(cutBoard.board, at: insertIndex)
-        state.desks[deskIndex].focusedBoardID = cutBoard.board.id
+        let insertIndex = min(heldBoard.sourceBoardIndex, state.desks[deskIndex].boards.endIndex)
+        state.desks[deskIndex].boards.insert(heldBoard.board, at: insertIndex)
+        state.desks[deskIndex].focusedBoardID = heldBoard.board.id
         state.focusedDeskID = state.desks[deskIndex].id
-        self.cutBoard = nil
+        self.heldBoard = nil
         save()
     }
 
@@ -696,11 +698,25 @@ final class DenStore {
         do {
             let directory = persistenceURL.deletingLastPathComponent()
             try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
-            let data = try JSONEncoder.denEncoder.encode(state)
+            let data = try JSONEncoder.denEncoder.encode(stateForPersistence)
             try data.write(to: persistenceURL, options: [.atomic])
         } catch {
             assertionFailure("Failed to save Den state: \(error)")
         }
+    }
+
+    private var stateForPersistence: DenState {
+        guard
+            let heldBoard,
+            let deskIndex = state.desks.firstIndex(where: { $0.id == heldBoard.sourceDeskID })
+        else { return state }
+
+        var restoredState = state
+        let insertIndex = min(heldBoard.sourceBoardIndex, restoredState.desks[deskIndex].boards.endIndex)
+        restoredState.desks[deskIndex].boards.insert(heldBoard.board, at: insertIndex)
+        restoredState.desks[deskIndex].focusedBoardID = heldBoard.board.id
+        restoredState.focusedDeskID = heldBoard.sourceDeskID
+        return restoredState
     }
 
     private func normalizedURL(from text: String) -> URL? {
@@ -738,7 +754,7 @@ final class DenStore {
     }
 }
 
-struct CutBoard {
+struct HeldBoard {
     let board: BoardState
     let sourceDeskID: UUID
     let sourceBoardIndex: Int

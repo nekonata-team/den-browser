@@ -7,8 +7,9 @@ Den Mode makes Den operations available while a Sheet has keyboard focus. Toggle
 | Shortcut | Action | Notes |
 | --- | --- | --- |
 | Command + `T` | New Board panel | Available in every keyboard context. |
+| Command + `Q` | Quit Den Browser | Restores a Held Board before exit. |
 | `Control` + `,` | Toggle Den Mode | Captures subsequent keys while active. |
-| Escape | Exit Den Mode | When overview or a panel is not open. |
+| Escape | Restore Held Board / exit Den Mode | Restores a Held Board first; otherwise enters Sheet Input. |
 | Left / Right or `h` / `l` | Previous / next board | Board navigation. |
 | Up / Down or `j` / `k` | Previous / next desk | Desk navigation. |
 | Shift + movement key | Move focused board | Moves in the same spatial direction. |
@@ -23,9 +24,9 @@ Den Mode makes Den operations available while a Sheet has keyboard focus. Toggle
 | `f` | Toggle maximized focused board | Uses the available Den width without changing its persisted Board Width. |
 | `c` | Center focused board | Uses edge space to center the first and last Board too. |
 | Return | Duplicate current sheet | Creates board to right, focuses it, then enters sheet input. |
-| `x` | Cut focused board | One Cut Board only. |
-| `p` | Place Cut Board | Places it to right of focused board. |
-| `u` | Restore Cut Board | Restores former placement. |
+| `x` | Hold focused board | One Held Board only. |
+| `p` | Place Held Board | Places it to right of focused board. |
+| `u` | Restore Held Board | Restores former placement. |
 | `d` | Permanently close focused board | Does not request site-provided confirmation in the MVP. |
 | Shift + `d` | Delete focused desk | Available only for an empty desk when another desk remains. |
 | Command + `R` | Reload current sheet | Available outside Den Mode. |
