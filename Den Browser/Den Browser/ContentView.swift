@@ -12,6 +12,7 @@ struct ContentView: View {
     private let boardSpacing: CGFloat = 10
     private let boardHorizontalPadding: CGFloat = 10
     private let profileName: String?
+    private let profileColor: Color
 
     @Environment(DenStore.self) private var store
     @State private var urlText = ""
@@ -24,14 +25,15 @@ struct ContentView: View {
     @FocusState private var isOpenPanelFocused: Bool
     @FocusState private var isNewDeskLabelFocused: Bool
 
-    init(profileName: String? = nil) {
+    init(profileName: String? = nil, profileColor: Color = .blue) {
         self.profileName = profileName
+        self.profileColor = profileColor
     }
 
     var body: some View {
         GeometryReader { geometry in
             ZStack(alignment: .top) {
-                DenBackground(isDenMode: store.isDenMode)
+                DenBackground(isDenMode: store.isDenMode, profileColor: profileColor)
 
                 if store.focusedDesk?.boards.isEmpty == false {
                     boardStrip(in: geometry.size)
@@ -411,6 +413,7 @@ private struct BoardResizeHandle: View {
 
 private struct DenBackground: View {
     let isDenMode: Bool
+    let profileColor: Color
 
     var body: some View {
         LinearGradient(
@@ -430,7 +433,7 @@ private struct DenBackground: View {
         }
         .overlay(alignment: .topTrailing) {
             Rectangle()
-                .fill(.orange.opacity(isDenMode ? 0.05 : 0.10))
+                .fill(profileColor.opacity(isDenMode ? 0.05 : 0.10))
                 .blur(radius: 140)
                 .frame(width: 420, height: 280)
                 .offset(x: 140, y: -90)

@@ -11,7 +11,7 @@ struct ProfileWindowView: View {
             let store = profileManager.store(for: profileID)
         {
             ZStack(alignment: .topTrailing) {
-                ContentView(profileName: profile.name)
+                ContentView(profileName: profile.name, profileColor: profile.color.color)
 
                 ProfileChip(profile: profile)
                     .padding(12)
@@ -142,7 +142,7 @@ private struct WindowRegistration: NSViewRepresentable {
     }
 
     @MainActor
-    final class Coordinator {
+    final class Coordinator: NSObject {
         private let profileID: UUID
         private weak var profileManager: ProfileManager?
         private weak var window: NSWindow?
@@ -150,17 +150,34 @@ private struct WindowRegistration: NSViewRepresentable {
         init(profileID: UUID, profileManager: ProfileManager) {
             self.profileID = profileID
             self.profileManager = profileManager
+            super.init()
         }
 
         func register(_ window: NSWindow?) {
             guard let window, self.window !== window else { return }
             self.window = window
+            window.titlebarAppearsTransparent = true
+            window.styleMask.insert(.fullSizeContentView)
+            NotificationCenter.default.addObserver(
+                self, selector: #selector(windowFocusChanged), name: NSWindow.didBecomeKeyNotification, object: window)
+            NotificationCenter.default.addObserver(
+                self, selector: #selector(windowFocusChanged), name: NSWindow.didResignKeyNotification, object: window)
             profileManager?.register(window: window, for: profileID)
+        }
+
+        @objc private func windowFocusChanged(_ notification: Notification) {
+            guard let window = notification.object as? NSWindow else { return }
+            DispatchQueue.main.async { [weak window] in
+                window?.titlebarAppearsTransparent = true
+            }
         }
 
         func unregister() {
             guard let window else { return }
+            NotificationCenter.default.removeObserver(self, name: NSWindow.didBecomeKeyNotification, object: window)
+            NotificationCenter.default.removeObserver(self, name: NSWindow.didResignKeyNotification, object: window)
             profileManager?.unregister(window: window, for: profileID)
+            self.window = nil
         }
     }
 }
