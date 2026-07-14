@@ -32,7 +32,7 @@ See [CONTEXT.md](./CONTEXT.md) for the complete product language.
 - Navigate, move, resize, maximize, center, duplicate, hold, place, restore, and close Boards from Den Mode.
 - See and reorganize Boards across Desks in Overview.
 - Keep browser-like back-forward navigation inside each Board as a Sheet Stack.
-- Restore Desk and Board labels, order, widths, focus, and current Sheet URLs after relaunching the app.
+- Restore Desk and Board labels, order, widths, focus, and current Sheet URLs after relaunching the app, showing the Focused Board immediately without a scroll animation.
 - Keep sign-ins across app launches with one shared persistent web profile across Sheets.
 - Optionally enable first-party Vim-style Sheet Navigation for scrolling, link hints, find, Sheet Stack navigation, and URL actions.
 

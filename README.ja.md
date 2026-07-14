@@ -32,7 +32,7 @@ Den Browserは、[Niri](https://github.com/niri-wm/niri)の空間的なウィン
 - Den ModeからBoardの移動、サイズ変更、複製、保持、配置、復元、終了。
 - OverviewでDeskを跨いだBoardの確認と再配置。
 - ブラウザの戻る・進むに相当する履歴を、BoardごとのSheet Stackとして保持。
-- アプリ再起動後にDeskとBoardのラベル、並び順、幅、フォーカス、Current SheetのURLを復元。
+- アプリ再起動後にDeskとBoardのラベル、並び順、幅、フォーカス、Current SheetのURLを復元し、Focused Boardをスクロールアニメーションなしで即座に表示。
 - Sheet間で共有される永続的なWebプロファイルにより、アプリ再起動後もログイン状態を維持。
 - スクロール、リンクヒント、検索、Sheet Stack操作、URL操作に対応する、任意のファーストパーティ製Vim-style Sheet Navigation。
 

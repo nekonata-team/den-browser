@@ -9,7 +9,7 @@ Den Browser's first PoC validates whether a macOS WKWebView implementation can s
 - Board navigation works from the keyboard without noticeable delay.
 - In-progress text inside each board remains available after moving between boards.
 - Back and forward navigation can be treated as a sheet stack.
-- App restart restores desks, board order, board labels, board widths, current sheet URLs, and the focused board.
+- App restart restores desks, board order, board labels, board widths, current sheet URLs, and the focused board, then shows that board without a scroll animation.
 
 ## Performance targets
 

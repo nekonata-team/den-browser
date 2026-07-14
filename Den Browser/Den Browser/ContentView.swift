@@ -18,6 +18,7 @@ struct ContentView: View {
     @State private var selectedDeskTemplate: DeskTemplate = .empty
     @State private var didAttemptDeskCreation = false
     @State private var focusedBoardScrollTask: Task<Void, Never>?
+    @State private var didScrollToRestoredFocusedBoard = false
     @State private var resizingBoardID: UUID?
     @FocusState private var isOpenPanelFocused: Bool
     @FocusState private var isNewDeskLabelFocused: Bool
@@ -306,6 +307,11 @@ struct ContentView: View {
                 .padding(.bottom, bottomInset)
             }
             .scrollIndicators(.hidden)
+            .onAppear {
+                guard !didScrollToRestoredFocusedBoard else { return }
+                didScrollToRestoredFocusedBoard = true
+                centerBoard(store.focusedDesk?.focusedBoardID, using: proxy, animated: false)
+            }
             .onChange(of: store.focusedDesk?.focusedBoardID) { _, focusedBoardID in
                 centerBoard(focusedBoardID, using: proxy)
             }
@@ -315,7 +321,7 @@ struct ContentView: View {
         }
     }
 
-    private func centerBoard(_ boardID: UUID?, using proxy: ScrollViewProxy) {
+    private func centerBoard(_ boardID: UUID?, using proxy: ScrollViewProxy, animated: Bool = true) {
         focusedBoardScrollTask?.cancel()
         guard resizingBoardID == nil, let boardID else { return }
 
@@ -323,7 +329,11 @@ struct ContentView: View {
             await Task.yield()
             guard !Task.isCancelled else { return }
 
-            withAnimation(.snappy(duration: 0.22)) {
+            if animated {
+                withAnimation(.snappy(duration: 0.22)) {
+                    proxy.scrollTo(boardID, anchor: .center)
+                }
+            } else {
                 proxy.scrollTo(boardID, anchor: .center)
             }
         }
