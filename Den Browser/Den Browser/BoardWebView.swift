@@ -12,7 +12,7 @@ struct BoardWebView: NSViewRepresentable {
     }
 
     func makeNSView(context: Context) -> WKWebView {
-        context.coordinator.startMonitoring(webView: webView, onFocus: onFocus)
+        context.coordinator.startRecognizing(webView: webView, onFocus: onFocus)
         context.coordinator.updatePointerFocusEnabled(isPointerFocusEnabled)
         context.coordinator.updateFocus(isFocused, webView: webView)
         return webView
@@ -25,48 +25,45 @@ struct BoardWebView: NSViewRepresentable {
     }
 
     static func dismantleNSView(_ nsView: WKWebView, coordinator: Coordinator) {
-        coordinator.stopMonitoring()
+        coordinator.stopRecognizing()
     }
 
-    final class Coordinator {
+    final class Coordinator: NSGestureRecognizer {
         private var pointerFocusState = PointerFocusState()
         private var activationWorkItem: DispatchWorkItem?
-        private var mouseMonitor: Any?
         fileprivate var onFocus: (() -> Void)?
 
-        deinit {
-            stopMonitoring()
+        init() {
+            super.init(target: nil, action: nil)
         }
 
-        func startMonitoring(webView: WKWebView, onFocus: @escaping () -> Void) {
+        required init?(coder: NSCoder) {
+            super.init(coder: coder)
+        }
+
+        deinit {
+            activationWorkItem?.cancel()
+        }
+
+        func startRecognizing(webView: WKWebView, onFocus: @escaping () -> Void) {
             self.onFocus = onFocus
-            guard mouseMonitor == nil else { return }
+            guard view == nil else { return }
+            webView.addGestureRecognizer(self)
+        }
 
-            mouseMonitor = NSEvent.addLocalMonitorForEvents(matching: .leftMouseDown) {
-                [weak self, weak webView] event in
-                guard
-                    let self,
-                    let webView,
-                    let contentView = event.window?.contentView,
-                    event.window === webView.window,
-                    let hitView = contentView.hitTest(contentView.convert(event.locationInWindow, from: nil)),
-                    hitView === webView || hitView.isDescendant(of: webView)
-                else { return event }
-
-                guard self.pointerFocusState.handlePointerDown() else { return event }
-                self.onFocus?()
-                return event
+        override func mouseDown(with event: NSEvent) {
+            if pointerFocusState.handlePointerDown() {
+                onFocus?()
             }
+            state = .failed
         }
 
         func updatePointerFocusEnabled(_ isEnabled: Bool) {
             pointerFocusState.updateEnabled(isEnabled)
         }
 
-        func stopMonitoring() {
-            guard let mouseMonitor else { return }
-            NSEvent.removeMonitor(mouseMonitor)
-            self.mouseMonitor = nil
+        func stopRecognizing() {
+            view?.removeGestureRecognizer(self)
             onFocus = nil
             activationWorkItem?.cancel()
         }
