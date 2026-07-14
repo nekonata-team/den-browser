@@ -25,7 +25,8 @@ Den Mode makes Den operations available while a Sheet has keyboard focus. Toggle
 | `c` | Center focused board | Uses edge space to center the first and last Board too. |
 | Return | Duplicate current sheet | Creates board to right, focuses it, then enters sheet input. |
 | `x` | Hold focused board | One Held Board only. |
-| `p` | Place Held Board | Places it to right of focused board. |
+| `p` | Place Held Board right | Places it to right of focused board. |
+| Shift + `p` | Place Held Board left | Places it to left of focused board. |
 | `u` | Restore Held Board | Restores former placement. |
 | `d` | Permanently close focused board | Does not request site-provided confirmation in the MVP. |
 | Shift + `d` | Delete focused desk | Available only for an empty desk when another desk remains. |

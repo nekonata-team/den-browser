@@ -40,7 +40,9 @@ struct Den_BrowserApp: App {
 
                 Button("Hold Board") { store.holdFocusedBoard() }
                     .disabled(store.heldBoard != nil)
-                Button("Place Held Board") { store.placeHeldBoard() }
+                Button("Place Held Board Right") { store.placeHeldBoard() }
+                    .disabled(store.heldBoard == nil)
+                Button("Place Held Board Left") { store.placeHeldBoard(beforeFocusedBoard: true) }
                     .disabled(store.heldBoard == nil)
                 Button("Restore Held Board") { store.restoreHeldBoard() }
                     .disabled(store.heldBoard == nil)

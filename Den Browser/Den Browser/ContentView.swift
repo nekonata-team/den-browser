@@ -444,7 +444,8 @@ private struct EmptyDenView: View {
                 ShortcutRow(keys: "⌘R", label: "Reload current sheet")
                 ShortcutRow(keys: "- / =", label: "Resize board")
                 ShortcutRow(keys: "f / c", label: "Maximize / center board")
-                ShortcutRow(keys: "x / p / u", label: "Hold / place / restore")
+                ShortcutRow(keys: "p / ⇧P", label: "Place right / left")
+                ShortcutRow(keys: "x / u", label: "Hold / restore")
                 ShortcutRow(keys: "d", label: "Delete board")
                 ShortcutRow(keys: "Return", label: "Duplicate sheet")
             }

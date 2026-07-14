@@ -296,6 +296,36 @@ struct Den_BrowserTests {
         }
     }
 
+    @Test func shiftPPlacesHeldBoardLeftOfFocusedBoard() throws {
+        let held = board("Held")
+        let targetBoards = [board("Before"), board("Target")]
+        let source = desk("Source", boards: [held])
+        let target = desk("Target", boards: targetBoards, focusedBoardID: targetBoards[1].id)
+        try withStore(desks: [source, target]) { store in
+            store.isDenMode = true
+            store.holdFocusedBoard()
+            store.focusNextDesk()
+            let event = try #require(
+                NSEvent.keyEvent(
+                    with: .keyDown,
+                    location: .zero,
+                    modifierFlags: .shift,
+                    timestamp: 0,
+                    windowNumber: 0,
+                    context: nil,
+                    characters: "P",
+                    charactersIgnoringModifiers: "p",
+                    isARepeat: false,
+                    keyCode: 35
+                ))
+
+            #expect(KeyboardController.handle(event, store: store))
+            #expect(store.heldBoard == nil)
+            #expect(store.focusedDesk?.boards.map(\.id) == [targetBoards[0].id, held.id, targetBoards[1].id])
+            #expect(store.focusedDesk?.focusedBoardID == held.id)
+        }
+    }
+
     @Test func restoringHeldBoardKeepsDeskCreatedWhileHeld() {
         let held = board("Source")
         withStore(desks: [desk("First", boards: [held])]) { store in

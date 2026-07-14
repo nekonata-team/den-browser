@@ -396,7 +396,7 @@ final class DenStore {
         save()
     }
 
-    func placeHeldBoard() {
+    func placeHeldBoard(beforeFocusedBoard: Bool = false) {
         guard
             let heldBoard,
             let targetDeskIndex = focusedDeskIndex
@@ -408,7 +408,7 @@ final class DenStore {
         if let targetBoardID,
             let targetIndex = state.desks[targetDeskIndex].boards.firstIndex(where: { $0.id == targetBoardID })
         {
-            insertIndex = targetIndex + 1
+            insertIndex = targetIndex + (beforeFocusedBoard ? 0 : 1)
         } else {
             insertIndex = state.desks[targetDeskIndex].boards.endIndex
         }

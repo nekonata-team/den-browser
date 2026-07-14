@@ -115,6 +115,8 @@ final class KeyboardController {
             store.holdFocusedBoard()
         case ("p", []):
             store.placeHeldBoard()
+        case ("p", [.shift]):
+            store.placeHeldBoard(beforeFocusedBoard: true)
         case ("u", []):
             store.restoreHeldBoard()
         case ("d", []):
