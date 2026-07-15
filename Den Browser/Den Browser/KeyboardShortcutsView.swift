@@ -69,7 +69,7 @@ struct KeyboardShortcutsView: View {
                     item("p / ⇧  P", "Place Held Board right / left"),
                     item("u", "Restore Held Board"),
                     item("d", "Close Focused Board"),
-                    item("⇧  D", "Delete empty Focused Desk"),
+                    item("⇧  D", "Delete Focused Desk"),
                 ]),
             ShortcutGuideSection(
                 title: "Overview",

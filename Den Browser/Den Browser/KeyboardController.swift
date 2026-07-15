@@ -29,6 +29,10 @@ final class KeyboardController {
             return false
         }
 
+        if store.deskPendingDeletion != nil {
+            return false
+        }
+
         if character == "t", modifiers == [.command] {
             store.showOpenBoardPanel()
             return true

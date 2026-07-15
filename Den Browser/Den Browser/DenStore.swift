@@ -14,6 +14,7 @@ final class DenStore {
     var isKeyboardShortcutsPresented = false
     var isZenViewPresented = false
     var isDenMode = false
+    private(set) var deskPendingDeletion: DeskState?
     private(set) var maximizedBoardID: UUID?
     private(set) var centerFocusedBoardRequest = 0
     var overviewSelectionDeskID: UUID?
@@ -36,7 +37,6 @@ final class DenStore {
 
     var canDeleteFocusedDesk: Bool {
         state.desks.count > 1
-            && focusedDesk?.boards.isEmpty == true
             && focusedDesk?.id != heldBoard?.sourceDeskID
     }
 
@@ -241,10 +241,50 @@ final class DenStore {
     }
 
     func deleteFocusedDesk() {
-        guard canDeleteFocusedDesk, let deskIndex = focusedDeskIndex else { return }
+        guard canDeleteFocusedDesk, let focusedDesk else { return }
+
+        if focusedDesk.boards.isEmpty {
+            deleteDesk(focusedDesk.id)
+        } else {
+            deskPendingDeletion = focusedDesk
+        }
+    }
+
+    func confirmDeskDeletion() {
+        guard let deskID = deskPendingDeletion?.id else { return }
+        deskPendingDeletion = nil
+        deleteDesk(deskID)
+    }
+
+    func cancelDeskDeletion() {
+        deskPendingDeletion = nil
+    }
+
+    private func deleteDesk(_ deskID: UUID) {
+        guard
+            state.desks.count > 1,
+            deskID != heldBoard?.sourceDeskID,
+            let deskIndex = state.desks.firstIndex(where: { $0.id == deskID })
+        else { return }
+
+        let desk = state.desks[deskIndex]
+        for board in desk.boards {
+            if maximizedBoardID == board.id {
+                maximizedBoardID = nil
+            }
+            if let runtime = runtimes.removeValue(forKey: board.id) {
+                sheetNavigation.didClose(runtime.webView)
+            }
+        }
 
         state.desks.remove(at: deskIndex)
-        state.focusedDeskID = state.desks[min(deskIndex, state.desks.count - 1)].id
+        if state.focusedDeskID == deskID {
+            state.focusedDeskID = state.desks[min(deskIndex, state.desks.count - 1)].id
+        }
+        if isOverviewPresented {
+            overviewSelectionDeskID = state.focusedDeskID
+            overviewSelectionBoardID = focusedDesk?.focusedBoardID
+        }
         save()
     }
 

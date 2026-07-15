@@ -208,6 +208,7 @@ struct DenStoreTests {
             #expect(!store.canDeleteFocusedDesk)
             store.deleteFocusedDesk()
             #expect(store.state.desks.map(\.id) == [source.id, target.id])
+            #expect(store.deskPendingDeletion == nil)
         }
     }
 
@@ -234,20 +235,43 @@ struct DenStoreTests {
         }
     }
 
-    @Test func deletingDeskWithBoardsOrLastDeskDoesNothing() {
+    @Test func deletingDeskWithBoardsRequiresConfirmation() {
         let board = board("Board")
         let populated = desk("Populated", boards: [board])
         let empty = desk("Empty")
         withStore(desks: [populated, empty]) { store in
             store.deleteFocusedDesk()
+
             #expect(store.state.desks.count == 2)
+            #expect(store.deskPendingDeletion?.id == populated.id)
 
             store.focusDesk(empty.id)
-            store.deleteFocusedDesk()
-            #expect(store.state.desks.count == 1)
+            store.confirmDeskDeletion()
+            #expect(store.state.desks.map(\.id) == [empty.id])
+            #expect(store.focusedDesk?.id == empty.id)
+            #expect(store.deskPendingDeletion == nil)
+        }
+    }
 
+    @Test func cancellingDeskDeletionKeepsBoards() {
+        let populated = desk("Populated", boards: [board("Board")])
+        let empty = desk("Empty")
+        withStore(desks: [populated, empty]) { store in
             store.deleteFocusedDesk()
+            store.cancelDeskDeletion()
+
+            #expect(store.state.desks.map(\.id) == [populated.id, empty.id])
+            #expect(store.deskPendingDeletion == nil)
+        }
+    }
+
+    @Test func lastDeskCannotBeDeleted() {
+        let onlyDesk = desk("Only")
+        withStore(desks: [onlyDesk]) { store in
+            store.deleteFocusedDesk()
+
             #expect(store.state.desks.count == 1)
+            #expect(store.deskPendingDeletion == nil)
         }
     }
 

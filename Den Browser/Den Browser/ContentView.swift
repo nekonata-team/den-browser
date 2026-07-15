@@ -92,6 +92,26 @@ struct ContentView: View {
         }
         .frame(minWidth: 1100, minHeight: 720)
         .navigationTitle(titlebarTitle)
+        .confirmationDialog(
+            "Delete \(store.deskPendingDeletion?.label ?? "Desk")?",
+            isPresented: Binding(
+                get: { store.deskPendingDeletion != nil },
+                set: { if !$0 { store.cancelDeskDeletion() } })
+        ) {
+            Button("Delete Desk", role: .destructive) {
+                store.confirmDeskDeletion()
+            }
+            Button("Cancel", role: .cancel) {
+                store.cancelDeskDeletion()
+            }
+        } message: {
+            let boardCount = store.deskPendingDeletion?.boards.count ?? 0
+            Text(
+                boardCount == 1
+                    ? "Its Board and Sheet Stack will be permanently deleted."
+                    : "Its \(boardCount) Boards and their Sheet Stacks will be permanently deleted."
+            )
+        }
     }
 
     private var titlebarTitle: String {

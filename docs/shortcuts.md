@@ -38,7 +38,7 @@ The complete in-app guide is available from Settings, the Den menu, and `?` in D
 | Shift + `p` | Place Held Board left | Places it to left of focused board. |
 | `u` | Restore Held Board | Restores former placement. |
 | `d` | Permanently close focused board | Does not request site-provided confirmation in the MVP. |
-| Shift + `d` | Delete focused desk | Available only for an empty desk when another desk remains. |
+| Shift + `d` | Delete focused desk | Deletes an empty desk immediately. A desk with Boards requires confirmation. Unavailable for the last desk. |
 | Command + `R` | Reload current sheet | Available outside Den Mode. |
 
 ## Overview

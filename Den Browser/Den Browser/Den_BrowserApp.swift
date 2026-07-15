@@ -95,7 +95,7 @@ private struct DenCommands: Commands {
                 .disabled(store?.heldBoard == nil)
             Button("Delete Board") { store?.closeFocusedBoard() }
                 .disabled(store == nil)
-            Button("Delete Empty Desk") { store?.deleteFocusedDesk() }
+            Button("Delete Desk") { store?.deleteFocusedDesk() }
                 .disabled(store?.canDeleteFocusedDesk != true)
 
             Divider()

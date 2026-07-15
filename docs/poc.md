@@ -46,6 +46,12 @@ Den Browser's first PoC validates whether a macOS WKWebView implementation can s
 5. In Den Mode, confirm both `n` and Space open the Board panel.
 6. Press `z` in Den Mode. Confirm the Desk switcher and Profile control hide together, the titlebar stays visible, and pressing `z` again restores both. Confirm the choice is window-local and is not restored after relaunch.
 
+## Desk deletion validation
+
+1. Delete an empty Desk and confirm it disappears immediately.
+2. Delete a Desk containing Boards, cancel the confirmation, and confirm the Desk and its Boards remain.
+3. Delete it again, confirm the warning, and verify the Desk and its Boards disappear. Confirm the last Desk and the source Desk of a Held Board cannot be deleted.
+
 ## Vim-style Sheet navigation experiment
 
 The Vimium C 2.12.2 experiment using `WKWebExtension` did not produce usable keyboard navigation in sheets. Loading the extension context succeeded, but its Chrome-oriented background runtime did not provide working Vimium behavior in Den Browser.

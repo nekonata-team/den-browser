@@ -36,6 +36,7 @@ See [CONTEXT.md](./CONTEXT.md) for the complete product language.
 - Customize the five app-wide Den and Board shortcuts in Settings, reset them individually or together, and open the complete shortcut guide from Settings, the Den menu, or `?` in Den Mode.
 - Toggle Zen View with `z` in Den Mode to hide the Desk switcher and Profile control without hiding the titlebar.
 - See and reorganize Boards across Desks in Overview.
+- Delete empty Desks immediately, or delete a Desk containing Boards after confirming the permanent removal.
 - Keep browser-like back-forward navigation inside each Board as a Sheet Stack.
 - Restore Desk and Board labels, order, widths, focus, and current Sheet URLs after relaunching the app, showing the Focused Board immediately without a scroll animation.
 - Keep sign-ins across app launches while isolating them between Profiles.

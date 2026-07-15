@@ -36,6 +36,7 @@ Den Browserは、[Niri](https://github.com/niri-wm/niri)の空間的なウィン
 - アプリ全体で使うDenとBoardの5つのショートカットを設定で変更し、個別または一括で初期値に戻せる。全ショートカットは設定、Denメニュー、Den Mode中の`?`から確認可能。
 - Den Mode中に`z`でZen Viewを切り替え、タイトルバーを残したままDesk SwitcherとProfileコントロールを非表示。
 - OverviewでDeskを跨いだBoardの確認と再配置。
+- 空のDeskは即座に削除し、Boardを含むDeskは完全削除の確認後に削除。
 - ブラウザの戻る・進むに相当する履歴を、BoardごとのSheet Stackとして保持。
 - アプリ再起動後にDeskとBoardのラベル、並び順、幅、フォーカス、Current SheetのURLを復元し、Focused Boardをスクロールアニメーションなしで即座に表示。
 - Profile内のSheet間でログイン状態を維持しつつ、別Profileから分離。
