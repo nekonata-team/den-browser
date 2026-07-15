@@ -32,7 +32,7 @@ See [CONTEXT.md](./CONTEXT.md) for the complete product language.
 - Arrange Boards spatially across multiple Desks.
 - Create named, color-coded Profiles, each with one Den window and isolated website data.
 - See the current Profile in the titlebar, and open or find Profiles from the top-right icon, Profile menu, or `Control` + `Command` + `P`.
-- Navigate, move, resize, maximize, center, duplicate, hold, place, restore, and close Boards from Den Mode, with pointer controls for Sheet Stack navigation and closing Boards.
+- Navigate between neighboring Boards with `Command` + `Option` + Left / Right, add Shift to reorder them, and use Den Mode for the full set of Board operations. Pointer controls support Sheet Stack navigation and closing Boards.
 - See and reorganize Boards across Desks in Overview.
 - Keep browser-like back-forward navigation inside each Board as a Sheet Stack.
 - Restore Desk and Board labels, order, widths, focus, and current Sheet URLs after relaunching the app, showing the Focused Board immediately without a scroll animation.
@@ -43,7 +43,7 @@ See [CONTEXT.md](./CONTEXT.md) for the complete product language.
 
 Press `Control` + `,` to toggle Den Mode. Den Mode receives Desk and Board commands independently of keyboard focus inside the Current Sheet. When a Board is held, `Escape` restores it; otherwise, `Escape` returns to Sheet Input.
 
-See [docs/shortcuts.md](./docs/shortcuts.md) for the complete Den Mode shortcut map.
+See [docs/shortcuts.md](./docs/shortcuts.md) for the complete shortcut map.
 
 Vim-style Sheet Navigation is a separate optional Feature. It controls content inside the Current Sheet and is disabled by default. See [docs/vim.md](./docs/vim.md) for supported commands.
 

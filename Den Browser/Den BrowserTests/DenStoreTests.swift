@@ -427,6 +427,38 @@ struct DenStoreTests {
         }
     }
 
+    @Test func commandOptionArrowsNavigateBoardsWithoutEnteringDenMode() throws {
+        let boards = [board("First"), board("Second")]
+        try withStore(desks: [desk("Desk", boards: boards, focusedBoardID: boards[0].id)]) { store in
+            let right = try arrowEvent(.rightArrow, modifiers: [.command, .option])
+            let left = try arrowEvent(.leftArrow, modifiers: [.command, .option])
+
+            #expect(KeyboardController.handle(right, store: store))
+            #expect(store.focusedDesk?.focusedBoardID == boards[1].id)
+            #expect(!store.isDenMode)
+
+            #expect(KeyboardController.handle(left, store: store))
+            #expect(store.focusedDesk?.focusedBoardID == boards[0].id)
+            #expect(!store.isDenMode)
+        }
+    }
+
+    @Test func shiftCommandOptionArrowsMoveFocusedBoardWithoutEnteringDenMode() throws {
+        let boards = [board("First"), board("Second")]
+        try withStore(desks: [desk("Desk", boards: boards, focusedBoardID: boards[0].id)]) { store in
+            let right = try arrowEvent(.rightArrow, modifiers: [.command, .option, .shift])
+            let left = try arrowEvent(.leftArrow, modifiers: [.command, .option, .shift])
+
+            #expect(KeyboardController.handle(right, store: store))
+            #expect(store.focusedDesk?.boards.map(\.id) == [boards[1].id, boards[0].id])
+            #expect(!store.isDenMode)
+
+            #expect(KeyboardController.handle(left, store: store))
+            #expect(store.focusedDesk?.boards.map(\.id) == boards.map(\.id))
+            #expect(!store.isDenMode)
+        }
+    }
+
     @Test func commandQPassesThroughFromDenMode() throws {
         try withStore(desks: [desk("Desk")]) { store in
             store.isDenMode = true
@@ -524,6 +556,33 @@ struct DenStoreTests {
             .appending(path: "den-browser-tests-\(UUID().uuidString)", directoryHint: .isDirectory)
             .appending(path: "den-state.json")
     }
+
+    private func arrowEvent(
+        _ specialKey: NSEvent.SpecialKey,
+        modifiers: NSEvent.ModifierFlags
+    ) throws -> NSEvent {
+        let (characters, keyCode): (String, UInt16) =
+            switch specialKey {
+            case .leftArrow: ("\u{F702}", 123)
+            case .rightArrow: ("\u{F703}", 124)
+            default: ("", 0)
+            }
+
+        return try #require(
+            NSEvent.keyEvent(
+                with: .keyDown,
+                location: .zero,
+                modifierFlags: modifiers,
+                timestamp: 0,
+                windowNumber: 0,
+                context: nil,
+                characters: characters,
+                charactersIgnoringModifiers: characters,
+                isARepeat: false,
+                keyCode: keyCode
+            ))
+    }
+
     private func desk(_ label: String, boards: [BoardState] = [], focusedBoardID: UUID? = nil) -> DeskState {
         DeskState(label: label, boards: boards, focusedBoardID: focusedBoardID)
     }

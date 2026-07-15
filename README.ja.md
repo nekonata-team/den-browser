@@ -32,7 +32,7 @@ Den Browserは、[Niri](https://github.com/niri-wm/niri)の空間的なウィン
 - 複数のDeskにBoardを空間的に配置。
 - 名前と色を持つProfileを作成し、Profileごとに一つのDenウィンドウと分離されたWebサイトデータを保持。
 - タイトルバーで現在のProfileを確認し、右上のアイコン、Profileメニュー、`Control` + `Command` + `P`からProfileを開く・検索。
-- Den ModeからBoardの移動、サイズ変更、最大化、中央配置、複製、保持、配置、復元、終了。ポインターでもSheet Stackの移動とBoardの終了が可能。
+- `Command` + `Option` + 左右矢印で隣のBoardへ移動し、Shiftを加えて並べ替え。Den ModeではBoardの全操作が可能。ポインターでもSheet Stackの移動とBoardの終了に対応。
 - OverviewでDeskを跨いだBoardの確認と再配置。
 - ブラウザの戻る・進むに相当する履歴を、BoardごとのSheet Stackとして保持。
 - アプリ再起動後にDeskとBoardのラベル、並び順、幅、フォーカス、Current SheetのURLを復元し、Focused Boardをスクロールアニメーションなしで即座に表示。
@@ -43,7 +43,7 @@ Den Browserは、[Niri](https://github.com/niri-wm/niri)の空間的なウィン
 
 `Control` + `,` でDen Modeを切り替えます。Den ModeはCurrent Sheet内のキーボードフォーカスに関係なく、DeskとBoardのコマンドを受け取ります。Held Boardがある場合、`Escape`で元の位置へ戻します。それ以外ではSheet Inputへ戻ります。
 
-Den Modeの全ショートカットは[docs/shortcuts.md](./docs/shortcuts.md)を参照してください。
+全ショートカットは[docs/shortcuts.md](./docs/shortcuts.md)を参照してください。
 
 Vim-style Sheet Navigationは、Den Modeと別の任意機能です。Current Sheet内のコンテンツを操作し、デフォルトでは無効です。対応コマンドは[docs/vim.md](./docs/vim.md)を参照してください。
 

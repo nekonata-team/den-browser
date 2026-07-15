@@ -9,6 +9,8 @@ Den Mode makes Den operations available while a Sheet has keyboard focus. Toggle
 | Control + Command + `P` | Open Profile panel | Searches Profiles and opens their existing Den window or creates it if closed. |
 | Command + `T` | New Board panel | Available in every keyboard context. |
 | Command + `Q` | Quit Den Browser | Restores a Held Board before exit. |
+| Command + Option + Left / Right | Previous / next board | Available in Sheet Input and Den Mode. |
+| Shift + Command + Option + Left / Right | Move focused board | Moves left or right without entering Den Mode. |
 | `Control` + `,` | Toggle Den Mode | Captures subsequent keys while active. |
 | Escape | Restore Held Board / exit Den Mode | Restores a Held Board first; otherwise enters Sheet Input. |
 | Left / Right or `h` / `l` | Previous / next board | Board navigation. |

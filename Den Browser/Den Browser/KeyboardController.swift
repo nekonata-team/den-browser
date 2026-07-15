@@ -34,6 +34,10 @@ final class KeyboardController {
             return false
         }
 
+        if handleDirectBoardMovement(event, modifiers: normalizedModifiers(for: event), store: store) {
+            return true
+        }
+
         if isDenModeToggle(event), normalizedModifiers(for: event) == [.control] {
             if !event.isARepeat {
                 store.toggleDenMode()
@@ -127,6 +131,27 @@ final class KeyboardController {
             if isReturn(event), modifiers == [] {
                 store.duplicateFocusedBoard()
             }
+        }
+
+        return true
+    }
+
+    private static func handleDirectBoardMovement(
+        _ event: NSEvent,
+        modifiers: NSEvent.ModifierFlags,
+        store: DenStore
+    ) -> Bool {
+        switch (event.specialKey, modifiers) {
+        case (.leftArrow, [.command, .option]):
+            store.focusPreviousBoard()
+        case (.rightArrow, [.command, .option]):
+            store.focusNextBoard()
+        case (.leftArrow, [.command, .option, .shift]):
+            store.moveFocusedBoardLeft()
+        case (.rightArrow, [.command, .option, .shift]):
+            store.moveFocusedBoardRight()
+        default:
+            return false
         }
 
         return true
