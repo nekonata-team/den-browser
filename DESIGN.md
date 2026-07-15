@@ -23,9 +23,19 @@ Den controls feel like a calm desk laid over live web sheets. Web content remain
 - Do not make color the only state signal. Focus/hold differences need borders, elevation, and accessible labels.
 - Keep panel copy in product language from `CONTEXT.md`.
 
+## Zen View
+
+- Zen View hides the Desk switcher and Profile control together, without hiding controls inside Boards.
+- Boards expand into the upper area released by those controls.
+- Keep the native titlebar, current Profile name, Den Mode and Held Board title states, and cyan Den Mode ring visible.
+- Do not reveal hidden controls on pointer hover. Users toggle Zen View with `z` in Den Mode or the Den menu.
+- Treat Zen View as window-local runtime presentation. A recreated Den window starts with Zen View off.
+- Keep temporary panels, Overview, Empty Den guidance, and the Keyboard Shortcuts guide available while Zen View is active.
+
 ## Review checklist
 
 - Is `WKWebView` content readable beneath Den controls?
 - Are focused and held boards distinguishable without relying only on color?
 - Does keyboard focus still make sense after pointer interaction?
 - Does UI use Den, Desk, Board, and Sheet terminology correctly?
+- Does Zen View remove only Desk and Profile controls while preserving Profile and Den Mode orientation?

@@ -76,6 +76,10 @@ _Avoid_: Blocked site, disabled Sheet
 An explicit keyboard context in which Den receives navigation and board-management input instead of the Current Sheet. It persists until the user returns to Sheet Input.
 _Avoid_: Command mode, navigation mode
 
+**Zen View**:
+A temporary Den presentation that hides Desk and Profile controls so Boards receive more display area. It does not change keyboard ownership or Sheet behavior.
+_Avoid_: Zen Mode, Compact Mode
+
 **Den Mode Toggle**:
 The action that switches keyboard ownership between Sheet Input and Den Mode.
 _Avoid_: Leader, prefix, mode key
