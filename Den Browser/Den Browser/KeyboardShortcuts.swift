@@ -78,7 +78,7 @@ struct ShortcutModifiers: OptionSet, Codable, Hashable {
             contains(.option) ? "⌥" : nil,
             contains(.shift) ? "⇧" : nil,
             contains(.command) ? "⌘" : nil,
-        ].compactMap(\.self).joined()
+        ].compactMap(\.self).joined(separator: "  ")
     }
 
     var accessibilityLabel: String {
@@ -199,7 +199,11 @@ struct ShortcutBinding: Codable, Hashable {
 
     var isRecordable: Bool { modifiers.hasPrimaryModifier }
 
-    var displayName: String { modifiers.glyphs + key.displayName }
+    var displayName: String {
+        [modifiers.glyphs, key.displayName]
+            .filter { !$0.isEmpty }
+            .joined(separator: "  ")
+    }
 
     var accessibilityLabel: String {
         [modifiers.accessibilityLabel, key.displayName]

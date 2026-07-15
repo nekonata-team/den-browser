@@ -54,29 +54,48 @@ struct ShortcutsSettingsView: View {
                 Text(action.label)
                 Spacer()
 
-                Text(bindingLabel(for: action))
-                    .font(.system(.body, design: .monospaced, weight: .medium))
-                    .foregroundStyle(recordingAction == action ? Color.accentColor : Color.secondary)
-                    .accessibilityLabel(bindingAccessibilityLabel(for: action))
-
-                Button(recordingAction == action ? "Type Shortcut…" : "Record…") {
-                    startRecording(action)
+                Button {
+                    if recordingAction == action {
+                        stopRecording()
+                    } else {
+                        startRecording(action)
+                    }
+                } label: {
+                    ShortcutChip(
+                        label: bindingLabel(for: action),
+                        width: 124,
+                        isRecording: recordingAction == action
+                    )
                 }
-                .disabled(recordingAction == action)
+                .buttonStyle(.plain)
+                .accessibilityLabel(bindingAccessibilityLabel(for: action))
+                .help(recordingAction == action ? "Cancel recording" : "Record a new shortcut")
 
                 if action.canBeUnassigned {
-                    Button("Clear") {
+                    Button {
                         stopRecording()
                         preferences.clearShortcut(for: action)
+                    } label: {
+                        Image(systemName: "xmark")
+                            .frame(width: 14, height: 14)
                     }
+                    .buttonStyle(.borderless)
                     .disabled(preferences.shortcut(for: action) == nil)
+                    .accessibilityLabel("Clear shortcut for \(action.label)")
+                    .help("Clear shortcut")
                 }
 
-                Button("Reset") {
+                Button {
                     stopRecording()
                     preferences.resetShortcut(for: action)
+                } label: {
+                    Image(systemName: "arrow.counterclockwise")
+                        .frame(width: 14, height: 14)
                 }
+                .buttonStyle(.borderless)
                 .disabled(!preferences.hasShortcutOverride(for: action))
+                .accessibilityLabel("Reset shortcut for \(action.label)")
+                .help("Reset shortcut")
             }
 
             if recordingAction == action, let errorMessage {
@@ -159,12 +178,15 @@ struct ShortcutsSettingsView: View {
 
     private func bindingLabel(for action: ShortcutAction) -> String {
         if recordingAction == action { return "Type shortcut…" }
-        return preferences.shortcut(for: action)?.displayName ?? "Unassigned"
+        return preferences.shortcut(for: action)?.displayName ?? "Record shortcut"
     }
 
     private func bindingAccessibilityLabel(for action: ShortcutAction) -> String {
-        if recordingAction == action { return "Type shortcut" }
-        return preferences.shortcut(for: action)?.accessibilityLabel ?? "Unassigned"
+        if recordingAction == action { return "Cancel recording for \(action.label)" }
+        if let binding = preferences.shortcut(for: action) {
+            return "Record shortcut for \(action.label), current shortcut \(binding.accessibilityLabel)"
+        }
+        return "Record shortcut for \(action.label), unassigned"
     }
 
     private func optionCharacterWarning(for action: ShortcutAction) -> Bool {

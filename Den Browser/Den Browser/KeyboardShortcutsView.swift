@@ -37,10 +37,10 @@ struct KeyboardShortcutsView: View {
             ShortcutGuideSection(
                 title: "App and Sheet Input",
                 items: [
-                    item("⌃⌘P", "Open Profile panel"),
-                    item("⌘T", "Open Board"),
-                    item("⌘R", "Reload Current Sheet"),
-                    item("⌘Q", "Quit Den Browser"),
+                    item("⌃  ⌘  P", "Open Profile panel"),
+                    item("⌘  T", "Open Board"),
+                    item("⌘  R", "Reload Current Sheet"),
+                    item("⌘  Q", "Quit Den Browser"),
                 ] + ShortcutAction.allCases.map(customItem)),
             ShortcutGuideSection(
                 title: "Den Mode",
@@ -52,7 +52,7 @@ struct KeyboardShortcutsView: View {
                     item("1–9 / 0", "Focus Desk 1–10"),
                     item("Shift + digit", "Move Focused Board to Desk"),
                     item("n / Space", "Open Board"),
-                    item("⇧N", "New Desk"),
+                    item("⇧  N", "New Desk"),
                     item("o", "Overview"),
                     item("?", "Keyboard Shortcuts"),
                     item("z", "Toggle Zen View"),
@@ -66,10 +66,10 @@ struct KeyboardShortcutsView: View {
                     item("c", "Center Focused Board"),
                     item("Return", "Duplicate Current Sheet"),
                     item("x", "Hold Focused Board"),
-                    item("p / ⇧P", "Place Held Board right / left"),
+                    item("p / ⇧  P", "Place Held Board right / left"),
                     item("u", "Restore Held Board"),
                     item("d", "Close Focused Board"),
-                    item("⇧D", "Delete empty Focused Desk"),
+                    item("⇧  D", "Delete empty Focused Desk"),
                 ]),
             ShortcutGuideSection(
                 title: "Overview",
@@ -104,11 +104,8 @@ struct KeyboardShortcutsView: View {
                 .foregroundStyle(.secondary)
 
             ForEach(section.items) { item in
-                HStack(alignment: .firstTextBaseline, spacing: 10) {
-                    Text(item.keys)
-                        .font(.system(size: 12, weight: .medium, design: .monospaced))
-                        .foregroundStyle(.secondary)
-                        .frame(width: 112, alignment: .leading)
+                HStack(spacing: 10) {
+                    ShortcutChip(label: item.keys, width: 112)
                     Text(item.label)
                         .font(.system(size: 12))
                     Spacer(minLength: 0)
@@ -122,6 +119,35 @@ struct KeyboardShortcutsView: View {
         .background(
             Color.primary.opacity(0.055),
             in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+    }
+}
+
+struct ShortcutChip: View {
+    let label: String
+    let width: CGFloat
+    var isRecording = false
+
+    var body: some View {
+        Text(label)
+            .font(.system(size: 11, weight: .medium, design: .monospaced))
+            .foregroundStyle(isRecording ? Color.accentColor : Color.secondary)
+            .lineLimit(1)
+            .minimumScaleFactor(0.75)
+            .frame(width: width)
+            .frame(minHeight: 18)
+            .padding(.horizontal, 7)
+            .padding(.vertical, 4)
+            .background(
+                isRecording ? Color.accentColor.opacity(0.14) : Color.primary.opacity(0.07),
+                in: RoundedRectangle(cornerRadius: 6, style: .continuous)
+            )
+            .overlay {
+                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                    .stroke(
+                        isRecording ? Color.accentColor.opacity(0.8) : Color.primary.opacity(0.12),
+                        lineWidth: 1
+                    )
+            }
     }
 }
 
