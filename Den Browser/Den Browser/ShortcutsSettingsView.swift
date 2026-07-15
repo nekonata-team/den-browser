@@ -62,7 +62,7 @@ struct ShortcutsSettingsView: View {
                     }
                 } label: {
                     ShortcutChip(
-                        label: bindingLabel(for: action),
+                        tokens: bindingTokens(for: action),
                         width: 124,
                         isRecording: recordingAction == action
                     )
@@ -176,9 +176,9 @@ struct ShortcutsSettingsView: View {
         }
     }
 
-    private func bindingLabel(for action: ShortcutAction) -> String {
-        if recordingAction == action { return "Type shortcut…" }
-        return preferences.shortcut(for: action)?.displayName ?? "Record shortcut"
+    private func bindingTokens(for action: ShortcutAction) -> [String] {
+        if recordingAction == action { return ["Type shortcut…"] }
+        return preferences.shortcut(for: action)?.displayTokens ?? ["Record shortcut"]
     }
 
     private func bindingAccessibilityLabel(for action: ShortcutAction) -> String {

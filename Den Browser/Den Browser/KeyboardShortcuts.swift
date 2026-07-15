@@ -72,13 +72,13 @@ struct ShortcutModifiers: OptionSet, Codable, Hashable {
         !intersection([.control, .option, .command]).isEmpty
     }
 
-    var glyphs: String {
+    var displayTokens: [String] {
         [
             contains(.control) ? "⌃" : nil,
             contains(.option) ? "⌥" : nil,
             contains(.shift) ? "⇧" : nil,
             contains(.command) ? "⌘" : nil,
-        ].compactMap(\.self).joined(separator: "  ")
+        ].compactMap(\.self)
     }
 
     var accessibilityLabel: String {
@@ -199,11 +199,9 @@ struct ShortcutBinding: Codable, Hashable {
 
     var isRecordable: Bool { modifiers.hasPrimaryModifier }
 
-    var displayName: String {
-        [modifiers.glyphs, key.displayName]
-            .filter { !$0.isEmpty }
-            .joined(separator: "  ")
-    }
+    var displayTokens: [String] { modifiers.displayTokens + [key.displayName] }
+
+    var displayName: String { displayTokens.joined() }
 
     var accessibilityLabel: String {
         [modifiers.accessibilityLabel, key.displayName]

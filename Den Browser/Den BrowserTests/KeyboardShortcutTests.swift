@@ -78,7 +78,7 @@ struct KeyboardShortcutTests {
         #expect(
             ShortcutBinding(event: function)
                 == ShortcutBinding(key: .function(12), modifiers: [.control]))
-        #expect(ShortcutAction.moveFocusedBoardLeft.defaultBinding.displayName == "⌥  ⇧  ⌘  ←")
+        #expect(ShortcutAction.moveFocusedBoardLeft.defaultBinding.displayTokens == ["⌥", "⇧", "⌘", "←"])
     }
 
     @Test func customBindingsApplyImmediatelyAndCanBeUnassigned() throws {

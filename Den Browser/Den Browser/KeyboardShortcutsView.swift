@@ -37,64 +37,64 @@ struct KeyboardShortcutsView: View {
             ShortcutGuideSection(
                 title: "App and Sheet Input",
                 items: [
-                    item("⌃  ⌘  P", "Open Profile panel"),
-                    item("⌘  T", "Open Board"),
-                    item("⌘  R", "Reload Current Sheet"),
-                    item("⌘  Q", "Quit Den Browser"),
+                    item(["⌃", "⌘", "P"], "Open Profile panel"),
+                    item(["⌘", "T"], "Open Board"),
+                    item(["⌘", "R"], "Reload Current Sheet"),
+                    item(["⌘", "Q"], "Quit Den Browser"),
                 ] + ShortcutAction.allCases.map(customItem)),
             ShortcutGuideSection(
                 title: "Den Mode",
                 items: [
-                    item("Escape", "Restore Held Board / exit Den Mode"),
-                    item("← / → or h / l", "Focus previous / next Board"),
-                    item("↑ / ↓ or j / k", "Focus previous / next Desk"),
-                    item("Shift + movement", "Move Focused Board"),
-                    item("1–9 / 0", "Focus Desk 1–10"),
-                    item("Shift + digit", "Move Focused Board to Desk"),
-                    item("n / Space", "Open Board"),
-                    item("⇧  N", "New Desk"),
-                    item("o", "Overview"),
-                    item("?", "Keyboard Shortcuts"),
-                    item("z", "Toggle Zen View"),
+                    item(["Escape"], "Restore Held Board / exit Den Mode"),
+                    item(["←", "/", "→", "or", "h", "/", "l"], "Focus previous / next Board"),
+                    item(["↑", "/", "↓", "or", "j", "/", "k"], "Focus previous / next Desk"),
+                    item(["Shift", "+", "movement"], "Move Focused Board"),
+                    item(["1–9", "/", "0"], "Focus Desk 1–10"),
+                    item(["Shift", "+", "digit"], "Move Focused Board to Desk"),
+                    item(["n", "/", "Space"], "Open Board"),
+                    item(["⇧", "N"], "New Desk"),
+                    item(["o"], "Overview"),
+                    item(["?"], "Keyboard Shortcuts"),
+                    item(["z"], "Toggle Zen View"),
                 ]),
             ShortcutGuideSection(
                 title: "Board Actions",
                 items: [
-                    item("[ / ]", "Back / forward Sheet"),
-                    item("- / =", "Narrow / widen Board"),
-                    item("f", "Toggle maximized Board"),
-                    item("c", "Center Focused Board"),
-                    item("Return", "Duplicate Current Sheet"),
-                    item("x", "Hold Focused Board"),
-                    item("p / ⇧  P", "Place Held Board right / left"),
-                    item("u", "Restore Held Board"),
-                    item("d", "Close Focused Board"),
-                    item("⇧  D", "Delete Focused Desk"),
+                    item(["[", "/", "]"], "Back / forward Sheet"),
+                    item(["-", "/", "="], "Narrow / widen Board"),
+                    item(["f"], "Toggle maximized Board"),
+                    item(["c"], "Center Focused Board"),
+                    item(["Return"], "Duplicate Current Sheet"),
+                    item(["x"], "Hold Focused Board"),
+                    item(["p", "/", "⇧", "P"], "Place Held Board right / left"),
+                    item(["u"], "Restore Held Board"),
+                    item(["d"], "Close Focused Board"),
+                    item(["⇧", "D"], "Delete Focused Desk"),
                 ]),
             ShortcutGuideSection(
                 title: "Overview",
                 items: [
-                    item("← / → or h / l", "Select Board"),
-                    item("↑ / ↓ or j / k", "Select Desk"),
-                    item("Shift + movement", "Move selected Board"),
-                    item("Return", "Enter selection"),
-                    item("Escape", "Return to Den Mode"),
+                    item(["←", "/", "→", "or", "h", "/", "l"], "Select Board"),
+                    item(["↑", "/", "↓", "or", "j", "/", "k"], "Select Desk"),
+                    item(["Shift", "+", "movement"], "Move selected Board"),
+                    item(["Return"], "Enter selection"),
+                    item(["Escape"], "Return to Den Mode"),
                 ]),
         ]
     }
 
     private func customItem(_ action: ShortcutAction) -> ShortcutGuideItem {
         guard let binding = preferences.shortcut(for: action) else {
-            return item("Unassigned", action.label)
+            return item(["Unassigned"], action.label)
         }
         return ShortcutGuideItem(
-            keys: binding.displayName,
+            keys: binding.displayTokens,
             label: action.label,
             accessibilityKeys: binding.accessibilityLabel)
     }
 
-    private func item(_ keys: String, _ label: String) -> ShortcutGuideItem {
-        ShortcutGuideItem(keys: keys, label: label, accessibilityKeys: keys)
+    private func item(_ keys: [String], _ label: String) -> ShortcutGuideItem {
+        ShortcutGuideItem(keys: keys, label: label, accessibilityKeys: keys.joined(separator: " "))
     }
 
     private func shortcutSection(_ section: ShortcutGuideSection) -> some View {
@@ -105,7 +105,7 @@ struct KeyboardShortcutsView: View {
 
             ForEach(section.items) { item in
                 HStack(spacing: 10) {
-                    ShortcutChip(label: item.keys, width: 112)
+                    ShortcutChip(tokens: item.keys, width: 112)
                     Text(item.label)
                         .font(.system(size: 12))
                     Spacer(minLength: 0)
@@ -123,31 +123,35 @@ struct KeyboardShortcutsView: View {
 }
 
 struct ShortcutChip: View {
-    let label: String
+    let tokens: [String]
     let width: CGFloat
     var isRecording = false
 
     var body: some View {
-        Text(label)
-            .font(.system(size: 11, weight: .medium, design: .monospaced))
-            .foregroundStyle(isRecording ? Color.accentColor : Color.secondary)
-            .lineLimit(1)
-            .minimumScaleFactor(0.75)
-            .frame(width: width)
-            .frame(minHeight: 18)
-            .padding(.horizontal, 7)
-            .padding(.vertical, 4)
-            .background(
-                isRecording ? Color.accentColor.opacity(0.14) : Color.primary.opacity(0.07),
-                in: RoundedRectangle(cornerRadius: 6, style: .continuous)
-            )
-            .overlay {
-                RoundedRectangle(cornerRadius: 6, style: .continuous)
-                    .stroke(
-                        isRecording ? Color.accentColor.opacity(0.8) : Color.primary.opacity(0.12),
-                        lineWidth: 1
-                    )
+        HStack(spacing: 6) {
+            ForEach(Array(tokens.enumerated()), id: \.offset) { _, token in
+                Text(token)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.75)
             }
+        }
+        .font(.system(size: 11, weight: .medium, design: .monospaced))
+        .foregroundStyle(isRecording ? Color.accentColor : Color.secondary)
+        .frame(width: width)
+        .frame(minHeight: 18)
+        .padding(.horizontal, 7)
+        .padding(.vertical, 4)
+        .background(
+            isRecording ? Color.accentColor.opacity(0.14) : Color.primary.opacity(0.07),
+            in: RoundedRectangle(cornerRadius: 6, style: .continuous)
+        )
+        .overlay {
+            RoundedRectangle(cornerRadius: 6, style: .continuous)
+                .stroke(
+                    isRecording ? Color.accentColor.opacity(0.8) : Color.primary.opacity(0.12),
+                    lineWidth: 1
+                )
+        }
     }
 }
 
@@ -158,9 +162,9 @@ private struct ShortcutGuideSection: Identifiable {
 }
 
 private struct ShortcutGuideItem: Identifiable {
-    let keys: String
+    let keys: [String]
     let label: String
     let accessibilityKeys: String
     var id: String { titleKey }
-    private var titleKey: String { "\(label)-\(keys)" }
+    private var titleKey: String { "\(label)-\(keys.joined())" }
 }
