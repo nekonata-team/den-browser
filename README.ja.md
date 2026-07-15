@@ -33,6 +33,8 @@ Den Browserは、[Niri](https://github.com/niri-wm/niri)の空間的なウィン
 - 名前と色を持つProfileを作成し、Profileごとに一つのDenウィンドウと分離されたWebサイトデータを保持。
 - タイトルバーで現在のProfileを確認し、右上のアイコン、Profileメニュー、`Control` + `Command` + `P`からProfileを開く・検索。
 - `Command` + `Option` + 左右矢印で隣のBoardへ移動し、Shiftを加えて並べ替え。Den ModeではBoardの全操作が可能。ポインターでもSheet Stackの移動とBoardの終了に対応。
+- アプリ全体で使うDenとBoardの5つのショートカットを設定で変更し、個別または一括で初期値に戻せる。全ショートカットは設定、Denメニュー、Den Mode中の`?`から確認可能。
+- Den Mode中に`z`でZen Viewを切り替え、タイトルバーを残したままDesk SwitcherとProfileコントロールを非表示。
 - OverviewでDeskを跨いだBoardの確認と再配置。
 - ブラウザの戻る・進むに相当する履歴を、BoardごとのSheet Stackとして保持。
 - アプリ再起動後にDeskとBoardのラベル、並び順、幅、フォーカス、Current SheetのURLを復元し、Focused Boardをスクロールアニメーションなしで即座に表示。
@@ -41,7 +43,7 @@ Den Browserは、[Niri](https://github.com/niri-wm/niri)の空間的なウィン
 
 ## キーボード操作
 
-`Control` + `,` でDen Modeを切り替えます。Den ModeはCurrent Sheet内のキーボードフォーカスに関係なく、DeskとBoardのコマンドを受け取ります。Held Boardがある場合、`Escape`で元の位置へ戻します。それ以外ではSheet Inputへ戻ります。
+`Control` + `,` でDen Modeを切り替えます。Den ModeはCurrent Sheet内のキーボードフォーカスに関係なく、DeskとBoardのコマンドを受け取ります。`n`または`Space`でBoardを開き、`?`でショートカット一覧を表示し、`z`でZen Viewを切り替えます。Held Boardがある場合、`Escape`で元の位置へ戻します。それ以外ではSheet Inputへ戻ります。
 
 全ショートカットは[docs/shortcuts.md](./docs/shortcuts.md)を参照してください。
 

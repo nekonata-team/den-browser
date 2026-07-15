@@ -13,8 +13,10 @@ struct ProfileWindowView: View {
             ZStack(alignment: .topTrailing) {
                 ContentView(profileName: profile.name, profileColor: profile.color.color)
 
-                ProfileChip(profile: profile)
-                    .padding(12)
+                if !store.isZenViewPresented {
+                    ProfileChip(profile: profile)
+                        .padding(12)
+                }
 
                 if profileManager.openProfilePanelProfileID == profileID {
                     OpenProfilePanel()

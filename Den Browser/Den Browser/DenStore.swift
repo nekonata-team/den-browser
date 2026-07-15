@@ -11,6 +11,8 @@ final class DenStore {
     var isOpenBoardPanelPresented = false
     var isNewDeskPanelPresented = false
     var isOverviewPresented = false
+    var isKeyboardShortcutsPresented = false
+    var isZenViewPresented = false
     var isDenMode = false
     private(set) var maximizedBoardID: UUID?
     private(set) var centerFocusedBoardRequest = 0
@@ -169,17 +171,43 @@ final class DenStore {
     }
 
     func toggleDenMode() {
-        guard !isOpenBoardPanelPresented, !isNewDeskPanelPresented, !isOverviewPresented else { return }
+        guard
+            !isOpenBoardPanelPresented,
+            !isNewDeskPanelPresented,
+            !isOverviewPresented,
+            !isKeyboardShortcutsPresented
+        else { return }
         isDenMode.toggle()
     }
 
     func exitDenMode() {
-        guard !isOpenBoardPanelPresented, !isNewDeskPanelPresented, !isOverviewPresented else { return }
+        guard
+            !isOpenBoardPanelPresented,
+            !isNewDeskPanelPresented,
+            !isOverviewPresented,
+            !isKeyboardShortcutsPresented
+        else { return }
         isDenMode = false
+    }
+
+    func toggleZenView() {
+        isZenViewPresented.toggle()
+    }
+
+    func showKeyboardShortcuts() {
+        isOpenBoardPanelPresented = false
+        isNewDeskPanelPresented = false
+        hideOverview()
+        isKeyboardShortcutsPresented = true
+    }
+
+    func hideKeyboardShortcuts() {
+        isKeyboardShortcutsPresented = false
     }
 
     func showOpenBoardPanel() {
         isNewDeskPanelPresented = false
+        isKeyboardShortcutsPresented = false
         hideOverview()
         isOpenBoardPanelPresented = true
     }
@@ -191,6 +219,7 @@ final class DenStore {
     func showNewDeskPanel() {
         guard canCreateDesk else { return }
         isOpenBoardPanelPresented = false
+        isKeyboardShortcutsPresented = false
         hideOverview()
         isNewDeskPanelPresented = true
     }
@@ -231,6 +260,7 @@ final class DenStore {
         isOverviewPresented = true
         isOpenBoardPanelPresented = false
         isNewDeskPanelPresented = false
+        isKeyboardShortcutsPresented = false
         overviewSelectionDeskID = state.focusedDeskID
         overviewSelectionBoardID = focusedDesk?.focusedBoardID
     }
@@ -307,6 +337,8 @@ final class DenStore {
         isOpenBoardPanelPresented = false
         isNewDeskPanelPresented = false
         isOverviewPresented = false
+        isKeyboardShortcutsPresented = false
+        isZenViewPresented = false
         overviewSelectionDeskID = nil
         overviewSelectionBoardID = nil
         heldBoard = nil

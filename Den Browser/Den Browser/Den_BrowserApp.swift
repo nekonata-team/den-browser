@@ -21,10 +21,11 @@ struct Den_BrowserApp: App {
         WindowGroup("Den Browser", for: UUID.self) { $profileID in
             ProfileWindowView(profileID: profileID)
                 .environment(profileManager)
+                .environment(preferences)
                 .environment(\.colorScheme, .dark)
                 .containerBackground(.clear, for: .window)
                 .onAppear {
-                    keyboardController.start(profileManager: profileManager)
+                    keyboardController.start(profileManager: profileManager, preferences: preferences)
                 }
         } defaultValue: {
             profileManager.personalProfileID
@@ -36,6 +37,7 @@ struct Den_BrowserApp: App {
         Settings {
             SettingsView()
                 .environment(profileManager)
+                .environment(preferences)
                 .environment(sheetNavigation)
         }
     }
@@ -75,6 +77,10 @@ private struct DenCommands: Commands {
             Button("New Desk") { store?.showNewDeskPanel() }
                 .disabled(store?.canCreateDesk != true)
             Button("Toggle Overview") { store?.toggleOverview() }
+                .disabled(store == nil)
+            Button("Toggle Zen View") { store?.toggleZenView() }
+                .disabled(store == nil)
+            Button("Keyboard Shortcuts…") { store?.showKeyboardShortcuts() }
                 .disabled(store == nil)
 
             Divider()

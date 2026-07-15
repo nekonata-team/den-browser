@@ -65,10 +65,22 @@ struct ContentView: View {
                         .padding(.top, shouldShowDeskSwitcher ? 74 : 12)
                         .transition(.scale(scale: 0.96).combined(with: .opacity))
                 }
+
+                if store.isKeyboardShortcutsPresented,
+                    store.focusedDesk?.boards.isEmpty == false
+                {
+                    KeyboardShortcutsView(onClose: store.hideKeyboardShortcuts)
+                        .padding(18)
+                        .frame(width: 760, height: 560)
+                        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+                        .transition(.scale(scale: 0.98).combined(with: .opacity))
+                }
             }
             .animation(.snappy(duration: 0.18), value: store.isOpenBoardPanelPresented)
             .animation(.snappy(duration: 0.18), value: store.isNewDeskPanelPresented)
             .animation(.snappy(duration: 0.18), value: store.isOverviewPresented)
+            .animation(.snappy(duration: 0.18), value: store.isKeyboardShortcutsPresented)
+            .animation(.snappy(duration: 0.18), value: store.isZenViewPresented)
             .overlay {
                 if store.isDenMode {
                     RoundedRectangle(cornerRadius: 12, style: .continuous)
@@ -205,7 +217,7 @@ struct ContentView: View {
     }
 
     private var shouldShowDeskSwitcher: Bool {
-        stateHasMultipleDesks
+        stateHasMultipleDesks && !store.isZenViewPresented
     }
 
     private var stateHasMultipleDesks: Bool {
@@ -456,48 +468,16 @@ private struct EmptyDenView: View {
                     .foregroundStyle(.secondary)
             }
 
-            VStack(spacing: 10) {
-                ShortcutRow(keys: "⌃,", label: "Toggle Den Mode")
-                ShortcutRow(keys: "←/→", label: "Move between boards")
-                ShortcutRow(keys: "↑/↓", label: "Move between desks")
-                ShortcutRow(keys: "n / ⇧N", label: "New board / desk")
-                ShortcutRow(keys: "[/]", label: "Back / forward sheet")
-                ShortcutRow(keys: "⌘R", label: "Reload current sheet")
-                ShortcutRow(keys: "- / =", label: "Resize board")
-                ShortcutRow(keys: "f / c", label: "Maximize / center board")
-                ShortcutRow(keys: "p / ⇧P", label: "Place right / left")
-                ShortcutRow(keys: "x / u", label: "Hold / restore")
-                ShortcutRow(keys: "d", label: "Delete board")
-                ShortcutRow(keys: "Return", label: "Duplicate sheet")
-            }
-            .padding(18)
-            .frame(width: 360)
-            .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+            KeyboardShortcutsView()
+                .padding(18)
+                .frame(width: 760, height: 460)
+                .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
 
             Button("Open Board", action: openBoard)
                 .buttonStyle(.glassProminent)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .padding(.bottom, 24)
-    }
-}
-
-private struct ShortcutRow: View {
-    let keys: String
-    let label: String
-
-    var body: some View {
-        HStack {
-            Text(keys)
-                .font(.system(size: 13, weight: .medium, design: .monospaced))
-                .foregroundStyle(.secondary)
-                .frame(width: 92, alignment: .leading)
-
-            Text(label)
-                .font(.system(size: 13))
-
-            Spacer()
-        }
     }
 }
 

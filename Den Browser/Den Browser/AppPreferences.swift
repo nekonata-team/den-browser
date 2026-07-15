@@ -10,6 +10,7 @@ final class AppPreferences {
     private(set) var sheetNavigationEnabled: Bool
     private(set) var sheetNavigationHintAlphabet: String
     private(set) var sheetNavigationIgnoredHosts: [String]
+    private(set) var shortcutOverrides: [ShortcutAction: ShortcutOverride]
 
     @ObservationIgnored private let defaults: UserDefaults
 
@@ -17,6 +18,7 @@ final class AppPreferences {
     private static let enabledKey = "features.vim-style-sheet-navigation.enabled"
     private static let hintAlphabetKey = "features.vim-style-sheet-navigation.hint-alphabet"
     private static let ignoredHostsKey = "features.vim-style-sheet-navigation.ignored-hosts"
+    private static let shortcutKeyPrefix = "shortcuts."
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
@@ -26,6 +28,8 @@ final class AppPreferences {
             SheetNavigationManager.normalizeHintAlphabet(defaults.string(forKey: Self.hintAlphabetKey) ?? "")
             ?? Self.defaultHintAlphabet
         sheetNavigationIgnoredHosts = defaults.stringArray(forKey: Self.ignoredHostsKey) ?? []
+        shortcutOverrides = [:]
+        loadShortcutOverrides()
     }
 
     func setSheetNavigationEnabled(_ enabled: Bool) {
@@ -41,5 +45,94 @@ final class AppPreferences {
     func setSheetNavigationIgnoredHosts(_ hosts: [String]) {
         sheetNavigationIgnoredHosts = hosts
         defaults.set(hosts, forKey: Self.ignoredHostsKey)
+    }
+
+    func shortcut(for action: ShortcutAction) -> ShortcutBinding? {
+        guard let override = shortcutOverrides[action] else { return action.defaultBinding }
+        return override.binding
+    }
+
+    func hasShortcutOverride(for action: ShortcutAction) -> Bool {
+        shortcutOverrides[action] != nil
+    }
+
+    func setShortcut(_ binding: ShortcutBinding, for action: ShortcutAction) -> ShortcutValidationError? {
+        guard binding.isRecordable else { return .invalid }
+        if let conflict = conflictingAction(for: binding, excluding: action) {
+            return .conflict(conflict)
+        }
+
+        if binding == action.defaultBinding {
+            resetShortcut(for: action)
+        } else {
+            shortcutOverrides[action] = .assigned(binding)
+            persistShortcutOverride(for: action)
+        }
+        return nil
+    }
+
+    func clearShortcut(for action: ShortcutAction) {
+        guard action.canBeUnassigned else { return }
+        shortcutOverrides[action] = .unassigned
+        persistShortcutOverride(for: action)
+    }
+
+    func resetShortcut(for action: ShortcutAction) {
+        shortcutOverrides.removeValue(forKey: action)
+        defaults.removeObject(forKey: shortcutDefaultsKey(for: action))
+    }
+
+    func resetAllShortcuts() {
+        for action in ShortcutAction.allCases {
+            defaults.removeObject(forKey: shortcutDefaultsKey(for: action))
+        }
+        shortcutOverrides.removeAll()
+    }
+
+    func conflictingAction(for binding: ShortcutBinding, excluding action: ShortcutAction) -> ShortcutAction? {
+        ShortcutAction.allCases.first { candidate in
+            candidate != action && shortcut(for: candidate) == binding
+        }
+    }
+
+    private func loadShortcutOverrides() {
+        for action in ShortcutAction.allCases {
+            let key = shortcutDefaultsKey(for: action)
+            guard let data = defaults.data(forKey: key) else { continue }
+            guard
+                let override = try? PropertyListDecoder().decode(ShortcutOverride.self, from: data),
+                isValid(override, for: action)
+            else {
+                defaults.removeObject(forKey: key)
+                continue
+            }
+            shortcutOverrides[action] = override
+        }
+
+        for action in ShortcutAction.allCases {
+            guard let binding = shortcutOverrides[action]?.binding else { continue }
+            if conflictingAction(for: binding, excluding: action) != nil {
+                resetShortcut(for: action)
+            }
+        }
+    }
+
+    private func isValid(_ override: ShortcutOverride, for action: ShortcutAction) -> Bool {
+        switch override {
+        case .assigned(let binding): binding.isRecordable
+        case .unassigned: action.canBeUnassigned
+        }
+    }
+
+    private func persistShortcutOverride(for action: ShortcutAction) {
+        guard
+            let override = shortcutOverrides[action],
+            let data = try? PropertyListEncoder().encode(override)
+        else { return }
+        defaults.set(data, forKey: shortcutDefaultsKey(for: action))
+    }
+
+    private func shortcutDefaultsKey(for action: ShortcutAction) -> String {
+        Self.shortcutKeyPrefix + action.rawValue
     }
 }

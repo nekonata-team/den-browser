@@ -5,12 +5,13 @@ import Foundation
 final class KeyboardController {
     private var monitor: Any?
 
-    func start(profileManager: ProfileManager) {
+    func start(profileManager: ProfileManager, preferences: AppPreferences) {
         guard monitor == nil else { return }
 
-        monitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak profileManager] event in
-            guard let store = profileManager?.activeStore() else { return event }
-            return Self.handle(event, store: store) ? nil : event
+        monitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) {
+            [weak profileManager, weak preferences] event in
+            guard let store = profileManager?.activeStore(), let preferences else { return event }
+            return Self.handle(event, store: store, preferences: preferences) ? nil : event
         }
     }
 
@@ -20,9 +21,25 @@ final class KeyboardController {
         self.monitor = nil
     }
 
-    static func handle(_ event: NSEvent, store: DenStore) -> Bool {
-        if characterIgnoringModifiers(for: event) == "t", normalizedModifiers(for: event) == [.command] {
+    static func handle(_ event: NSEvent, store: DenStore, preferences: AppPreferences? = nil) -> Bool {
+        let modifiers = normalizedModifiers(for: event)
+        let character = characterIgnoringModifiers(for: event)
+
+        if character == "q", modifiers == [.command] {
+            return false
+        }
+
+        if character == "t", modifiers == [.command] {
             store.showOpenBoardPanel()
+            return true
+        }
+
+        if store.isKeyboardShortcutsPresented {
+            if (isEscape(event) && modifiers == [])
+                || isQuestionMark(event, modifiers: modifiers)
+            {
+                store.hideKeyboardShortcuts()
+            }
             return true
         }
 
@@ -34,14 +51,12 @@ final class KeyboardController {
             return false
         }
 
-        if handleDirectBoardMovement(event, modifiers: normalizedModifiers(for: event), store: store) {
+        if !store.isDenMode, character == "r", modifiers == [.command] {
+            store.reloadFocusedBoard()
             return true
         }
 
-        if isDenModeToggle(event), normalizedModifiers(for: event) == [.control] {
-            if !event.isARepeat {
-                store.toggleDenMode()
-            }
+        if handleCustomShortcut(event, store: store, preferences: preferences) {
             return true
         }
 
@@ -49,25 +64,41 @@ final class KeyboardController {
             return handleDenMode(event, store: store)
         }
 
-        return handleSheetInput(event, store: store)
+        return false
     }
 
-    private static func handleSheetInput(_ event: NSEvent, store: DenStore) -> Bool {
-        let modifiers = normalizedModifiers(for: event)
-        if characterIgnoringModifiers(for: event) == "r", modifiers == [.command] {
-            store.reloadFocusedBoard()
-            return true
+    private static func handleCustomShortcut(
+        _ event: NSEvent,
+        store: DenStore,
+        preferences: AppPreferences?
+    ) -> Bool {
+        guard let binding = ShortcutBinding(event: event) else { return false }
+        guard
+            let action = ShortcutAction.allCases.first(where: {
+                if let preferences { return preferences.shortcut(for: $0) == binding }
+                return $0.defaultBinding == binding
+            })
+        else {
+            return false
         }
 
-        return false
+        switch action {
+        case .toggleDenMode:
+            if !event.isARepeat { store.toggleDenMode() }
+        case .focusPreviousBoard:
+            store.focusPreviousBoard()
+        case .focusNextBoard:
+            store.focusNextBoard()
+        case .moveFocusedBoardLeft:
+            store.moveFocusedBoardLeft()
+        case .moveFocusedBoardRight:
+            store.moveFocusedBoardRight()
+        }
+        return true
     }
 
     private static func handleDenMode(_ event: NSEvent, store: DenStore) -> Bool {
         let modifiers = normalizedModifiers(for: event)
-        if characterIgnoringModifiers(for: event) == "q", modifiers == [.command] {
-            return false
-        }
-
         if isEscape(event), modifiers == [] {
             if store.heldBoard == nil {
                 store.exitDenMode()
@@ -78,6 +109,11 @@ final class KeyboardController {
         }
 
         if handleMovement(event, modifiers: modifiers, store: store) {
+            return true
+        }
+
+        if isQuestionMark(event, modifiers: modifiers) {
+            store.showKeyboardShortcuts()
             return true
         }
 
@@ -93,7 +129,7 @@ final class KeyboardController {
         }
 
         switch (character, modifiers) {
-        case ("n", []):
+        case ("n", []), (" ", []):
             store.showOpenBoardPanel()
         case ("n", [.shift]):
             store.showNewDeskPanel()
@@ -115,6 +151,10 @@ final class KeyboardController {
             if !event.isARepeat {
                 store.centerFocusedBoard()
             }
+        case ("z", []):
+            if !event.isARepeat {
+                store.toggleZenView()
+            }
         case ("x", []):
             store.holdFocusedBoard()
         case ("p", []):
@@ -131,27 +171,6 @@ final class KeyboardController {
             if isReturn(event), modifiers == [] {
                 store.duplicateFocusedBoard()
             }
-        }
-
-        return true
-    }
-
-    private static func handleDirectBoardMovement(
-        _ event: NSEvent,
-        modifiers: NSEvent.ModifierFlags,
-        store: DenStore
-    ) -> Bool {
-        switch (event.specialKey, modifiers) {
-        case (.leftArrow, [.command, .option]):
-            store.focusPreviousBoard()
-        case (.rightArrow, [.command, .option]):
-            store.focusNextBoard()
-        case (.leftArrow, [.command, .option, .shift]):
-            store.moveFocusedBoardLeft()
-        case (.rightArrow, [.command, .option, .shift]):
-            store.moveFocusedBoardRight()
-        default:
-            return false
         }
 
         return true
@@ -281,12 +300,13 @@ final class KeyboardController {
         event.charactersIgnoringModifiers?.lowercased()
     }
 
-    private static func isDenModeToggle(_ event: NSEvent) -> Bool {
-        event.characters == "," || event.charactersIgnoringModifiers == ","
-    }
-
     private static func isEscape(_ event: NSEvent) -> Bool {
         event.keyCode == 53
+    }
+
+    private static func isQuestionMark(_ event: NSEvent, modifiers: NSEvent.ModifierFlags) -> Bool {
+        modifiers == [.shift]
+            && (event.characters == "?" || event.charactersIgnoringModifiers == "/")
     }
 
     private static func isReturn(_ event: NSEvent) -> Bool {

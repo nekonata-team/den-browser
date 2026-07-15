@@ -12,6 +12,11 @@ struct SettingsView: View {
                     Label("Profiles", systemImage: "person.2")
                 }
 
+            ShortcutsSettingsView()
+                .tabItem {
+                    Label("Shortcuts", systemImage: "keyboard")
+                }
+
             Form {
                 LabeledContent {
                     Toggle("", isOn: enabledBinding)

@@ -37,6 +37,15 @@ Den Browser's first PoC validates whether a macOS WKWebView implementation can s
 5. Delete the second Profile; confirm its window closes and its Den and website data disappear while Personal remains.
 6. With VoiceOver, confirm the Profile icon announces its name and does not rely on color alone.
 
+## Shortcut and Zen View validation
+
+1. In Settings > Shortcuts, record a new binding for each app-wide action and confirm it applies immediately while the Den window is active.
+2. Confirm an unmodified key, an existing menu shortcut, and a binding already assigned to another action are rejected. Confirm Escape cancels recording.
+3. Clear each optional Board focus and movement shortcut. Confirm Toggle Den Mode cannot be cleared. Reset one shortcut, then Reset All, and confirm the defaults return.
+4. Open the complete shortcut guide from Settings, the Den menu, and `?` in Den Mode. Confirm it shows current custom bindings and that `?` or Escape closes the Den Mode guide.
+5. In Den Mode, confirm both `n` and Space open the Board panel.
+6. Press `z` in Den Mode. Confirm the Desk switcher and Profile control hide together, the titlebar stays visible, and pressing `z` again restores both. Confirm the choice is window-local and is not restored after relaunch.
+
 ## Vim-style Sheet navigation experiment
 
 The Vimium C 2.12.2 experiment using `WKWebExtension` did not produce usable keyboard navigation in sheets. Loading the extension context succeeded, but its Chrome-oriented background runtime did not provide working Vimium behavior in Den Browser.
