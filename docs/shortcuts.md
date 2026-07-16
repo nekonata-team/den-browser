@@ -32,6 +32,7 @@ The complete in-app guide is available from Settings, the Den menu, and `?` in D
 | `z` | Toggle Zen View | Hides the Desk switcher and Profile control for this window; the titlebar remains visible. |
 | `[` / `]` | Back / forward in sheet stack | Uses focused board. |
 | `-` / `=` | Narrow / widen focused board | |
+| `w`, then `1` through `9` | Resize all Boards to fit | Persistently resizes every Board in the Focused Desk using the current window width. Escape or `w` cancels. Unavailable while holding a Board. |
 | `f` | Toggle maximized focused board | Uses the available Den width without changing its persisted Board Width. |
 | `c` | Center focused board | Uses edge space to center the first and last Board too. |
 | Return | Duplicate current sheet | Creates board to right, focuses it, then enters sheet input. |

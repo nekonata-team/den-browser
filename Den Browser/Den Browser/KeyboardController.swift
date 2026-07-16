@@ -56,6 +56,10 @@ final class KeyboardController {
             return true
         }
 
+        if store.isBoardWidthPanelPresented {
+            return handleBoardWidthPanel(event, store: store)
+        }
+
         if store.isOverviewPresented {
             return handleOverview(event, store: store)
         }
@@ -148,6 +152,10 @@ final class KeyboardController {
             store.showNewDeskPanel()
         case ("o", []):
             store.showOverview()
+        case ("w", []):
+            if !event.isARepeat {
+                store.showBoardWidthPanel()
+            }
         case ("[", []):
             store.goBackInFocusedBoard()
         case ("]", []):
@@ -186,6 +194,22 @@ final class KeyboardController {
             }
         }
 
+        return true
+    }
+
+    private static func handleBoardWidthPanel(_ event: NSEvent, store: DenStore) -> Bool {
+        let modifiers = normalizedModifiers(for: event)
+        if isEscape(event), modifiers == [] {
+            store.hideBoardWidthPanel()
+            return true
+        }
+
+        let character = characterIgnoringModifiers(for: event)
+        if character == "w", modifiers == [], !event.isARepeat {
+            store.hideBoardWidthPanel()
+        } else if let count = character.flatMap(Int.init), (1...9).contains(count), modifiers == [] {
+            store.resizeFocusedDeskBoards(toFit: count)
+        }
         return true
     }
 

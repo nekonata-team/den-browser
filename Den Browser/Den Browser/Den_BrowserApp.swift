@@ -101,6 +101,18 @@ private struct DenCommands: Commands {
 
             Divider()
 
+            Menu("Resize Boards to Fit") {
+                ForEach(1...9, id: \.self) { count in
+                    Button(count == 1 ? "1 Board" : "\(count) Boards") {
+                        store?.resizeFocusedDeskBoards(toFit: count)
+                    }
+                    .disabled(store?.canResizeFocusedDeskBoards(toFit: count) != true)
+                }
+            }
+            .disabled(store == nil)
+
+            Divider()
+
             Button("Hold Board") { store?.holdFocusedBoard() }
                 .disabled(store?.heldBoard != nil || store == nil)
             Button("Place Held Board Right") { store?.placeHeldBoard() }

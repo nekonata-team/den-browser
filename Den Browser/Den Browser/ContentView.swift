@@ -50,6 +50,12 @@ struct ContentView: View {
                         .padding(.top, 12)
                 }
 
+                if store.isBoardWidthPanelPresented {
+                    boardWidthPanel
+                        .padding(.top, shouldShowDeskSwitcher ? 74 : 12)
+                        .transition(DenMotion.transition(reduceMotion: shouldReduceMotion, scale: 0.96))
+                }
+
                 if store.isOpenBoardPanelPresented {
                     openBoardPanel(defaultBoardWidth: defaultBoardWidth(in: geometry.size))
                         .padding(.top, shouldShowDeskSwitcher ? 74 : 12)
@@ -78,10 +84,17 @@ struct ContentView: View {
                         .transition(DenMotion.transition(reduceMotion: shouldReduceMotion, scale: 0.98))
                 }
             }
+            .onAppear {
+                updateBoardLayout(for: geometry.size)
+            }
+            .onChange(of: geometry.size.width) { _, _ in
+                updateBoardLayout(for: geometry.size)
+            }
             .animation(DenMotion.feedback(reduceMotion: shouldReduceMotion), value: store.isOpenBoardPanelPresented)
             .animation(DenMotion.feedback(reduceMotion: shouldReduceMotion), value: store.isNewDeskPanelPresented)
             .animation(DenMotion.feedback(reduceMotion: shouldReduceMotion), value: store.isOverviewPresented)
             .animation(DenMotion.feedback(reduceMotion: shouldReduceMotion), value: store.isKeyboardShortcutsPresented)
+            .animation(DenMotion.feedback(reduceMotion: shouldReduceMotion), value: store.isBoardWidthPanelPresented)
             .animation(DenMotion.spatial(reduceMotion: shouldReduceMotion), value: store.isZenViewPresented)
             .overlay {
                 if store.isDenMode {
@@ -288,6 +301,55 @@ struct ContentView: View {
         }
     }
 
+    private var boardWidthPanel: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text("Resize Boards to Fit")
+                    .font(.system(size: 17, weight: .semibold))
+                Spacer()
+                Button(action: store.hideBoardWidthPanel) {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 11, weight: .semibold))
+                }
+                .buttonStyle(.glass)
+                .accessibilityLabel("Close Board Width")
+            }
+
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 3), spacing: 8) {
+                ForEach(1...9, id: \.self) { count in
+                    let width = store.boardWidth(toFit: count)
+                    Button {
+                        store.resizeFocusedDeskBoards(toFit: count)
+                    } label: {
+                        VStack(spacing: 2) {
+                            Text(count == 1 ? "1 Board" : "\(count) Boards")
+                            Text(width.map { "\(Int($0.rounded())) pt" } ?? "Unavailable")
+                                .font(.system(size: 10))
+                                .foregroundStyle(.secondary)
+                        }
+                        .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.glass)
+                    .disabled(!store.canResizeFocusedDeskBoards(toFit: count))
+                    .accessibilityHint("Applies to every Board in the Focused Desk")
+                }
+            }
+
+            Text(
+                store.boardWidthPanelMessage
+                    ?? "Changes every Board in the Focused Desk. Press 1–9 or Escape."
+            )
+            .font(.system(size: 12))
+            .foregroundStyle(store.boardWidthPanelMessage == nil ? Color.secondary : Color.red)
+        }
+        .padding(16)
+        .frame(width: 420)
+        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .onExitCommand {
+            store.hideBoardWidthPanel()
+        }
+    }
+
     private func boardStrip(in size: CGSize) -> some View {
         let boards = store.focusedDesk?.boards ?? []
         let topInset: CGFloat = shouldShowDeskSwitcher ? 48 : 10
@@ -351,6 +413,7 @@ struct ContentView: View {
             .padding(.top, topInset)
             .padding(.bottom, bottomInset)
             .animation(DenMotion.spatial(reduceMotion: shouldReduceMotion), value: boards.map(\.id))
+            .animation(DenMotion.spatial(reduceMotion: shouldReduceMotion), value: boards.map(\.width))
             .animation(DenMotion.spatial(reduceMotion: shouldReduceMotion), value: store.maximizedBoardID)
         }
         .scrollPosition($boardScrollPosition, anchor: .center)
@@ -384,6 +447,7 @@ struct ContentView: View {
         !store.isOpenBoardPanelPresented
             && !store.isNewDeskPanelPresented
             && !store.isOverviewPresented
+            && !store.isBoardWidthPanelPresented
     }
 
     private var shouldReduceMotion: Bool {
@@ -396,6 +460,13 @@ struct ContentView: View {
     private func openBoard(defaultBoardWidth: Double) {
         store.addBoard(urlString: urlText, preferredWidth: defaultBoardWidth)
         urlText = ""
+    }
+
+    private func updateBoardLayout(for size: CGSize) {
+        store.updateBoardLayout(
+            availableWidth: size.width - boardHorizontalPadding * 2,
+            spacing: boardSpacing
+        )
     }
 }
 

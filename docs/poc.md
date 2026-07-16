@@ -36,6 +36,15 @@ Den Browser's first PoC validates whether a macOS WKWebView implementation can s
 4. Relaunch the app and switch Profiles; confirm the selected Motion preference persists and remains shared.
 5. Move focus across two or more Boards in quick succession; confirm scrolling retargets smoothly without snapping.
 
+## Board Width validation
+
+1. Open at least four Boards with different widths. In Den Mode, press `w`, then `3`; confirm every Board in the Focused Desk receives the same persistent width, three Boards and their gaps fit the current window, the Focused Board stays focused and centers, and other Desks remain unchanged.
+2. Move the window to a differently sized display and confirm Board Widths do not automatically change. Run `w`, then `3` again and confirm widths recalculate from the new window.
+3. Temporarily maximize the Focused Board with `f`, run the bulk resize, and confirm maximization clears. Hold a Board and confirm bulk resize options become unavailable until the Board is placed or restored.
+4. Resize the window while the Board Width panel is open and confirm available counts and displayed widths update. Confirm unsupported counts do not alter any Board.
+5. Repeat with Standard Motion and Reduced Motion. Confirm simultaneous `WKWebView` resizing stays responsive and Reduced Motion removes spatial animation.
+6. On a window wider than 1420 points, choose `1 Board` and confirm it remains available and uses the full width even though individual Board resizing retains its separate 1400-point safety limit.
+
 ## Profile validation
 
 1. Create a second Profile, open the same site in both Profiles, and sign in as different identities.

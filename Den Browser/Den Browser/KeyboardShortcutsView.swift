@@ -64,6 +64,7 @@ struct KeyboardShortcutsView: View {
                 items: [
                     item(["[", "/", "]"], "Back / forward Sheet"),
                     item(["-", "/", "="], "Narrow / widen Board"),
+                    item(["w", "then", "1–9"], "Resize all Boards to fit"),
                     item(["f"], "Toggle maximized Board"),
                     item(["c"], "Center Focused Board"),
                     item(["Return"], "Duplicate Current Sheet"),

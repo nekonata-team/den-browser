@@ -334,6 +334,53 @@ struct DenStoreTests {
         }
     }
 
+    @Test func resizesEveryBoardInFocusedDeskToFitCurrentWindow() {
+        let firstBoards = [board("First", width: 440), board("Second", width: 760)]
+        let otherBoard = board("Other", width: 980)
+        let firstDesk = desk("First", boards: firstBoards, focusedBoardID: firstBoards[0].id)
+        let secondDesk = desk("Second", boards: [otherBoard])
+        withStore(desks: [firstDesk, secondDesk]) { store in
+            store.updateBoardLayout(availableWidth: 1_180, spacing: 10)
+            store.toggleFocusedBoardMaximized()
+            let centerRequest = store.centerFocusedBoardRequest
+
+            #expect(store.resizeFocusedDeskBoards(toFit: 3))
+            #expect(
+                store.focusedDesk?.boards.allSatisfy {
+                    abs($0.width - 386.666_666_666_666_7) < 0.001
+                } == true)
+            #expect(store.state.desks[1].boards[0].width == 980)
+            #expect(store.maximizedBoardID == nil)
+            #expect(store.centerFocusedBoardRequest == centerRequest + 1)
+        }
+    }
+
+    @Test func rejectsBoardFitCountsOutsideCurrentWidthOrWhileHoldingBoard() {
+        let boards = [board("First"), board("Second")]
+        withStore(desks: [desk("Desk", boards: boards)]) { store in
+            store.updateBoardLayout(availableWidth: 1_080, spacing: 10)
+
+            #expect(store.boardWidth(toFit: 3) != nil)
+            #expect(store.boardWidth(toFit: 4) == nil)
+            #expect(!store.resizeFocusedDeskBoards(toFit: 4))
+            #expect(store.focusedDesk?.boards.map(\.width) == [520, 520])
+
+            store.holdFocusedBoard()
+            store.showBoardWidthPanel()
+            #expect(!store.canResizeFocusedDeskBoards(toFit: 3))
+            #expect(store.boardWidthPanelMessage == "Place or restore the Held Board first")
+        }
+    }
+
+    @Test func oneBoardFitUsesFullWindowBeyondManualResizeLimit() {
+        withStore(desks: [desk("Desk", boards: [board("Wide")])]) { store in
+            store.updateBoardLayout(availableWidth: 2_480, spacing: 10)
+
+            #expect(store.resizeFocusedDeskBoards(toFit: 1))
+            #expect(store.focusedDesk?.boards[0].width == 2_480)
+        }
+    }
+
     @Test func commandTOpensBoardPanelFromOverview() throws {
         try withStore(desks: [desk("Desk")]) { store in
             store.showOverview()
@@ -556,6 +603,53 @@ struct DenStoreTests {
             #expect(KeyboardController.handle(maximize, store: store))
             #expect(store.maximizedBoardID == nil)
             #expect(store.state == stateBeforeCommands)
+        }
+    }
+
+    @Test func denModeBoardWidthPanelAcceptsOnlyFitSelectionKeys() throws {
+        let boards = [board("First"), board("Second")]
+        try withStore(desks: [desk("Desk", boards: boards)]) { store in
+            store.isDenMode = true
+            store.updateBoardLayout(availableWidth: 1_180, spacing: 10)
+            let open = try #require(
+                NSEvent.keyEvent(
+                    with: .keyDown,
+                    location: .zero,
+                    modifierFlags: [],
+                    timestamp: 0,
+                    windowNumber: 0,
+                    context: nil,
+                    characters: "w",
+                    charactersIgnoringModifiers: "w",
+                    isARepeat: false,
+                    keyCode: 13
+                ))
+            let ignoredMovement = try arrowEvent(.rightArrow, modifiers: [])
+            let select = try #require(
+                NSEvent.keyEvent(
+                    with: .keyDown,
+                    location: .zero,
+                    modifierFlags: [],
+                    timestamp: 0,
+                    windowNumber: 0,
+                    context: nil,
+                    characters: "3",
+                    charactersIgnoringModifiers: "3",
+                    isARepeat: false,
+                    keyCode: 20
+                ))
+
+            #expect(KeyboardController.handle(open, store: store))
+            #expect(store.isBoardWidthPanelPresented)
+            #expect(KeyboardController.handle(ignoredMovement, store: store))
+            #expect(store.focusedDesk?.focusedBoardID == boards[0].id)
+            #expect(KeyboardController.handle(select, store: store))
+            #expect(!store.isBoardWidthPanelPresented)
+            #expect(store.isDenMode)
+            #expect(
+                store.focusedDesk?.boards.allSatisfy {
+                    abs($0.width - 386.666_666_666_666_7) < 0.001
+                } == true)
         }
     }
 

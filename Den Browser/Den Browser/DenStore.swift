@@ -12,8 +12,10 @@ final class DenStore {
     var isNewDeskPanelPresented = false
     var isOverviewPresented = false
     var isKeyboardShortcutsPresented = false
+    var isBoardWidthPanelPresented = false
     var isZenViewPresented = false
     var isDenMode = false
+    private(set) var boardWidthPanelMessage: String?
     private(set) var deskPendingDeletion: DeskState?
     private(set) var maximizedBoardID: UUID?
     private(set) var centerFocusedBoardRequest = 0
@@ -26,6 +28,8 @@ final class DenStore {
     @ObservationIgnored private var runtimes: [UUID: BoardRuntime] = [:]
     @ObservationIgnored private let persistenceURL: URL?
     @ObservationIgnored private let onSave: ((DenState) -> Void)?
+    private var availableBoardWidth = 0.0
+    private var boardSpacing = 0.0
 
     var focusedDesk: DeskState? {
         state.desks.first { $0.id == state.focusedDeskID }
@@ -175,7 +179,8 @@ final class DenStore {
             !isOpenBoardPanelPresented,
             !isNewDeskPanelPresented,
             !isOverviewPresented,
-            !isKeyboardShortcutsPresented
+            !isKeyboardShortcutsPresented,
+            !isBoardWidthPanelPresented
         else { return }
         isDenMode.toggle()
     }
@@ -185,7 +190,8 @@ final class DenStore {
             !isOpenBoardPanelPresented,
             !isNewDeskPanelPresented,
             !isOverviewPresented,
-            !isKeyboardShortcutsPresented
+            !isKeyboardShortcutsPresented,
+            !isBoardWidthPanelPresented
         else { return }
         isDenMode = false
     }
@@ -197,6 +203,7 @@ final class DenStore {
     func showKeyboardShortcuts() {
         isOpenBoardPanelPresented = false
         isNewDeskPanelPresented = false
+        hideBoardWidthPanel()
         hideOverview()
         isKeyboardShortcutsPresented = true
     }
@@ -208,6 +215,7 @@ final class DenStore {
     func showOpenBoardPanel() {
         isNewDeskPanelPresented = false
         isKeyboardShortcutsPresented = false
+        hideBoardWidthPanel()
         hideOverview()
         isOpenBoardPanelPresented = true
     }
@@ -220,6 +228,7 @@ final class DenStore {
         guard canCreateDesk else { return }
         isOpenBoardPanelPresented = false
         isKeyboardShortcutsPresented = false
+        hideBoardWidthPanel()
         hideOverview()
         isNewDeskPanelPresented = true
     }
@@ -301,6 +310,7 @@ final class DenStore {
         isOpenBoardPanelPresented = false
         isNewDeskPanelPresented = false
         isKeyboardShortcutsPresented = false
+        hideBoardWidthPanel()
         overviewSelectionDeskID = state.focusedDeskID
         overviewSelectionBoardID = focusedDesk?.focusedBoardID
     }
@@ -378,7 +388,9 @@ final class DenStore {
         isNewDeskPanelPresented = false
         isOverviewPresented = false
         isKeyboardShortcutsPresented = false
+        isBoardWidthPanelPresented = false
         isZenViewPresented = false
+        boardWidthPanelMessage = nil
         overviewSelectionDeskID = nil
         overviewSelectionBoardID = nil
         heldBoard = nil
@@ -426,6 +438,57 @@ final class DenStore {
         let width = state.desks[deskIndex].boards[boardIndex].width + delta
         state.desks[deskIndex].boards[boardIndex].width = min(max(width, 280), 1400)
         save()
+    }
+
+    func updateBoardLayout(availableWidth: Double, spacing: Double) {
+        self.availableBoardWidth = availableWidth
+        boardSpacing = spacing
+    }
+
+    func boardWidth(toFit count: Int) -> Double? {
+        guard (1...9).contains(count), availableBoardWidth > 0 else { return nil }
+        let width = (availableBoardWidth - boardSpacing * Double(count - 1)) / Double(count)
+        guard width >= 280 else { return nil }
+        return width
+    }
+
+    func canResizeFocusedDeskBoards(toFit count: Int) -> Bool {
+        heldBoard == nil
+            && focusedDesk?.boards.isEmpty == false
+            && boardWidth(toFit: count) != nil
+    }
+
+    func showBoardWidthPanel() {
+        guard focusedDesk?.boards.isEmpty == false else { return }
+        boardWidthPanelMessage =
+            heldBoard == nil ? nil : "Place or restore the Held Board first"
+        isBoardWidthPanelPresented = true
+    }
+
+    func hideBoardWidthPanel() {
+        isBoardWidthPanelPresented = false
+        boardWidthPanelMessage = nil
+    }
+
+    @discardableResult
+    func resizeFocusedDeskBoards(toFit count: Int) -> Bool {
+        guard heldBoard == nil else {
+            boardWidthPanelMessage = "Place or restore the Held Board first"
+            return false
+        }
+        guard let deskIndex = focusedDeskIndex, let width = boardWidth(toFit: count) else {
+            boardWidthPanelMessage = "\(count) Boards cannot fit at this window width"
+            return false
+        }
+
+        for boardIndex in state.desks[deskIndex].boards.indices {
+            state.desks[deskIndex].boards[boardIndex].width = width
+        }
+        maximizedBoardID = nil
+        hideBoardWidthPanel()
+        centerFocusedBoard()
+        save()
+        return true
     }
 
     func resizeBoard(_ boardID: UUID, to width: Double) {
