@@ -34,6 +34,7 @@ Den Browser's first PoC validates whether a macOS WKWebView implementation can s
 2. Select Standard Motion and confirm Board movement remains smooth even when macOS Reduce Motion is enabled.
 3. Select Reduced Motion and confirm spatial motion stops while brief opacity feedback remains.
 4. Relaunch the app and switch Profiles; confirm the selected Motion preference persists and remains shared.
+5. Move focus across two or more Boards in quick succession; confirm scrolling retargets smoothly without snapping.
 
 ## Profile validation
 

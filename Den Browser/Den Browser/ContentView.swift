@@ -21,7 +21,7 @@ struct ContentView: View {
     @State private var newDeskLabel = ""
     @State private var selectedDeskTemplate: DeskTemplate = .empty
     @State private var didAttemptDeskCreation = false
-    @State private var focusedBoardScrollTask: Task<Void, Never>?
+    @State private var boardScrollPosition = ScrollPosition(idType: UUID.self)
     @State private var didScrollToRestoredFocusedBoard = false
     @State private var resizingBoardID: UUID?
     @FocusState private var isOpenPanelFocused: Bool
@@ -305,84 +305,78 @@ struct ContentView: View {
         let leadingPadding = max(boardHorizontalPadding, (size.width - firstBoardWidth) / 2)
         let trailingPadding = max(boardHorizontalPadding, (size.width - lastBoardWidth) / 2)
 
-        return ScrollViewReader { proxy in
-            ScrollView(.horizontal) {
-                HStack(alignment: .top, spacing: boardSpacing) {
-                    ForEach(boards) { board in
-                        BoardView(
-                            board: board,
-                            isFocused: board.id == store.focusedDesk?.focusedBoardID,
-                            runtime: store.runtime(for: board),
-                            width: store.maximizedBoardID == board.id ? maximizedBoardWidth : board.width,
-                            height: boardHeight,
-                            isPointerFocusEnabled: isBoardPointerFocusEnabled,
-                            onFocus: { store.focusBoard(board.id) },
-                            onGoBack: { store.goBackInBoard(board.id) },
-                            onGoForward: { store.goForwardInBoard(board.id) },
-                            onClose: { store.closeBoard(board.id) }
-                        )
-                        .id(board.id)
-                        .transition(DenMotion.transition(reduceMotion: shouldReduceMotion, scale: 0.98))
-                        .overlay(alignment: .trailing) {
-                            if store.maximizedBoardID != board.id {
-                                BoardResizeHandle(
-                                    board: board,
-                                    height: boardHeight,
-                                    width: boardSpacing,
-                                    onResizeStart: {
-                                        resizingBoardID = board.id
-                                        store.focusBoard(board.id)
-                                    },
-                                    onResize: { store.resizeBoard(board.id, to: $0) },
-                                    onResizeEnd: {
-                                        store.saveBoardWidths()
-                                        resizingBoardID = nil
-                                    }
-                                )
-                                .offset(x: boardSpacing)
-                            }
+        return ScrollView(.horizontal) {
+            HStack(alignment: .top, spacing: boardSpacing) {
+                ForEach(boards) { board in
+                    BoardView(
+                        board: board,
+                        isFocused: board.id == store.focusedDesk?.focusedBoardID,
+                        runtime: store.runtime(for: board),
+                        width: store.maximizedBoardID == board.id ? maximizedBoardWidth : board.width,
+                        height: boardHeight,
+                        isPointerFocusEnabled: isBoardPointerFocusEnabled,
+                        onFocus: { store.focusBoard(board.id) },
+                        onGoBack: { store.goBackInBoard(board.id) },
+                        onGoForward: { store.goForwardInBoard(board.id) },
+                        onClose: { store.closeBoard(board.id) }
+                    )
+                    .id(board.id)
+                    .transition(DenMotion.transition(reduceMotion: shouldReduceMotion, scale: 0.98))
+                    .overlay(alignment: .trailing) {
+                        if store.maximizedBoardID != board.id {
+                            BoardResizeHandle(
+                                board: board,
+                                height: boardHeight,
+                                width: boardSpacing,
+                                onResizeStart: {
+                                    resizingBoardID = board.id
+                                    store.focusBoard(board.id)
+                                },
+                                onResize: { store.resizeBoard(board.id, to: $0) },
+                                onResizeEnd: {
+                                    store.saveBoardWidths()
+                                    resizingBoardID = nil
+                                }
+                            )
+                            .offset(x: boardSpacing)
                         }
-                        .allowsHitTesting(isBoardPointerFocusEnabled)
-                        .zIndex(1)
                     }
+                    .allowsHitTesting(isBoardPointerFocusEnabled)
+                    .zIndex(1)
                 }
-                .padding(.leading, leadingPadding)
-                .padding(.trailing, trailingPadding)
-                .padding(.top, topInset)
-                .padding(.bottom, bottomInset)
-                .animation(DenMotion.spatial(reduceMotion: shouldReduceMotion), value: boards.map(\.id))
-                .animation(DenMotion.spatial(reduceMotion: shouldReduceMotion), value: store.maximizedBoardID)
             }
-            .scrollIndicators(.hidden)
-            .onAppear {
-                guard !didScrollToRestoredFocusedBoard else { return }
-                didScrollToRestoredFocusedBoard = true
-                centerBoard(store.focusedDesk?.focusedBoardID, using: proxy, animated: false)
-            }
-            .onChange(of: store.focusedDesk?.focusedBoardID) { _, focusedBoardID in
-                centerBoard(focusedBoardID, using: proxy)
-            }
-            .onChange(of: store.centerFocusedBoardRequest) { _, _ in
-                centerBoard(store.focusedDesk?.focusedBoardID, using: proxy)
-            }
+            .scrollTargetLayout()
+            .padding(.leading, leadingPadding)
+            .padding(.trailing, trailingPadding)
+            .padding(.top, topInset)
+            .padding(.bottom, bottomInset)
+            .animation(DenMotion.spatial(reduceMotion: shouldReduceMotion), value: boards.map(\.id))
+            .animation(DenMotion.spatial(reduceMotion: shouldReduceMotion), value: store.maximizedBoardID)
+        }
+        .scrollPosition($boardScrollPosition, anchor: .center)
+        .scrollIndicators(.hidden)
+        .onAppear {
+            guard !didScrollToRestoredFocusedBoard else { return }
+            didScrollToRestoredFocusedBoard = true
+            centerBoard(store.focusedDesk?.focusedBoardID, animated: false)
+        }
+        .onChange(of: store.focusedDesk?.focusedBoardID) { _, focusedBoardID in
+            centerBoard(focusedBoardID)
+        }
+        .onChange(of: store.centerFocusedBoardRequest) { _, _ in
+            centerBoard(store.focusedDesk?.focusedBoardID)
         }
     }
 
-    private func centerBoard(_ boardID: UUID?, using proxy: ScrollViewProxy, animated: Bool = true) {
-        focusedBoardScrollTask?.cancel()
+    private func centerBoard(_ boardID: UUID?, animated: Bool = true) {
         guard resizingBoardID == nil, let boardID else { return }
 
-        focusedBoardScrollTask = Task { @MainActor in
-            await Task.yield()
-            guard !Task.isCancelled else { return }
-
-            if animated {
-                withAnimation(DenMotion.spatial(reduceMotion: shouldReduceMotion)) {
-                    proxy.scrollTo(boardID, anchor: .center)
-                }
-            } else {
-                proxy.scrollTo(boardID, anchor: .center)
+        if animated {
+            withAnimation(DenMotion.spatial(reduceMotion: shouldReduceMotion)) {
+                boardScrollPosition.scrollTo(id: boardID, anchor: .center)
             }
+        } else {
+            boardScrollPosition.scrollTo(id: boardID, anchor: .center)
         }
     }
 
