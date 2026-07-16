@@ -1,0 +1,149 @@
+import Foundation
+
+extension DenStore {
+    func focusDesk(_ deskID: UUID) {
+        guard state.desks.contains(where: { $0.id == deskID }) else { return }
+        state.focusedDeskID = deskID
+        save()
+    }
+
+    func focusBoard(_ boardID: UUID) {
+        guard let indices = boardIndices(for: boardID) else { return }
+        state.focusedDeskID = state.desks[indices.desk].id
+        state.desks[indices.desk].focusedBoardID = boardID
+        save()
+    }
+
+    func focusPreviousDesk() {
+        moveDeskFocus(by: -1)
+    }
+
+    func focusNextDesk() {
+        moveDeskFocus(by: 1)
+    }
+
+    func focusPreviousBoard() {
+        moveBoardFocus(by: -1)
+    }
+
+    func focusNextBoard() {
+        moveBoardFocus(by: 1)
+    }
+
+    func moveFocusedBoardLeft() {
+        moveFocusedBoard(by: -1)
+    }
+
+    func moveFocusedBoardRight() {
+        moveFocusedBoard(by: 1)
+    }
+
+    func moveFocusedBoardToPreviousDesk() {
+        moveFocusedBoardToDesk(by: -1)
+    }
+
+    func moveFocusedBoardToNextDesk() {
+        moveFocusedBoardToDesk(by: 1)
+    }
+
+    func toggleFocusedBoardMaximized() {
+        guard let focusedBoardID = focusedDesk?.focusedBoardID else { return }
+        maximizedBoardID = maximizedBoardID == focusedBoardID ? nil : focusedBoardID
+        centerFocusedBoard()
+    }
+
+    func centerFocusedBoard() {
+        guard focusedDesk?.focusedBoardID != nil else { return }
+        centerFocusedBoardRequest &+= 1
+    }
+
+    func focusDesk(number: Int) {
+        guard (1...Self.maximumDeskCount).contains(number), state.desks.indices.contains(number - 1) else { return }
+        state.focusedDeskID = state.desks[number - 1].id
+        ensureFocusedObjects()
+        save()
+    }
+
+    func moveFocusedBoard(toDeskNumber number: Int) {
+        guard (1...Self.maximumDeskCount).contains(number), state.desks.indices.contains(number - 1) else { return }
+        moveFocusedBoard(toDeskAt: number - 1)
+    }
+
+    func focusedBoardIndex(in deskIndex: Int) -> Int? {
+        guard let focusedBoardID = state.desks[deskIndex].focusedBoardID else { return nil }
+        return state.desks[deskIndex].boards.firstIndex { $0.id == focusedBoardID }
+    }
+
+    private func moveDeskFocus(by delta: Int) {
+        guard let currentIndex = focusedDeskIndex, !state.desks.isEmpty else { return }
+        let nextIndex = wrappedIndex(currentIndex + delta, count: state.desks.count)
+        state.focusedDeskID = state.desks[nextIndex].id
+        ensureFocusedObjects()
+        save()
+    }
+
+    private func moveBoardFocus(by delta: Int) {
+        guard
+            let deskIndex = focusedDeskIndex,
+            let currentIndex = focusedBoardIndex(in: deskIndex)
+        else { return }
+
+        let boards = state.desks[deskIndex].boards
+        guard !boards.isEmpty else { return }
+
+        let nextIndex = wrappedIndex(currentIndex + delta, count: boards.count)
+        state.desks[deskIndex].focusedBoardID = boards[nextIndex].id
+        save()
+    }
+
+    private func moveFocusedBoard(by delta: Int) {
+        guard
+            let deskIndex = focusedDeskIndex,
+            let boardIndex = focusedBoardIndex(in: deskIndex)
+        else { return }
+
+        var boards = state.desks[deskIndex].boards
+        guard boards.count > 1 else { return }
+
+        let board = boards.remove(at: boardIndex)
+        let targetIndex = min(max(boardIndex + delta, 0), boards.count)
+        boards.insert(board, at: targetIndex)
+
+        state.desks[deskIndex].boards = boards
+        state.desks[deskIndex].focusedBoardID = board.id
+        save()
+    }
+
+    private func moveFocusedBoardToDesk(by delta: Int) {
+        guard
+            state.desks.count > 1,
+            let sourceDeskIndex = focusedDeskIndex
+        else { return }
+
+        moveFocusedBoard(toDeskAt: wrappedIndex(sourceDeskIndex + delta, count: state.desks.count))
+    }
+
+    private func moveFocusedBoard(toDeskAt targetDeskIndex: Int) {
+        guard
+            state.desks.indices.contains(targetDeskIndex),
+            let sourceDeskIndex = focusedDeskIndex,
+            sourceDeskIndex != targetDeskIndex,
+            let sourceBoardIndex = focusedBoardIndex(in: sourceDeskIndex)
+        else { return }
+
+        let board = removeBoard(at: (desk: sourceDeskIndex, board: sourceBoardIndex))
+        let insertIndex: Int
+        if let focusedBoardID = state.desks[targetDeskIndex].focusedBoardID,
+            let focusedIndex = state.desks[targetDeskIndex].boards.firstIndex(where: { $0.id == focusedBoardID })
+        {
+            insertIndex = focusedIndex + 1
+        } else {
+            insertIndex = state.desks[targetDeskIndex].boards.endIndex
+        }
+
+        state.desks[targetDeskIndex].boards.insert(board, at: insertIndex)
+        state.desks[targetDeskIndex].focusedBoardID = board.id
+        state.focusedDeskID = state.desks[targetDeskIndex].id
+        save()
+    }
+}

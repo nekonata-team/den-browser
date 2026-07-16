@@ -609,11 +609,6 @@ private struct OverviewView: View {
             .buttonStyle(.glass)
             .padding(14)
         }
-        .overlay {
-            overviewKeyboardHandlers
-                .frame(width: 0, height: 0)
-                .opacity(0)
-        }
         .onExitCommand {
             store.hideOverview()
         }
@@ -691,52 +686,4 @@ private struct OverviewView: View {
         .buttonStyle(.plain)
     }
 
-    private var overviewKeyboardHandlers: some View {
-        Group {
-            Button("Previous Board") {
-                store.selectPreviousBoardInOverview()
-            }
-            .keyboardShortcut(.leftArrow, modifiers: [])
-
-            Button("Next Board") {
-                store.selectNextBoardInOverview()
-            }
-            .keyboardShortcut(.rightArrow, modifiers: [])
-
-            Button("Previous Desk") {
-                store.selectPreviousDeskInOverview()
-            }
-            .keyboardShortcut(.upArrow, modifiers: [])
-
-            Button("Next Desk") {
-                store.selectNextDeskInOverview()
-            }
-            .keyboardShortcut(.downArrow, modifiers: [])
-
-            Button("Move Board Left") {
-                store.moveOverviewSelectionBoardLeft()
-            }
-            .keyboardShortcut(.leftArrow, modifiers: [.shift])
-
-            Button("Move Board Right") {
-                store.moveOverviewSelectionBoardRight()
-            }
-            .keyboardShortcut(.rightArrow, modifiers: [.shift])
-
-            Button("Move Board to Previous Desk") {
-                store.moveOverviewSelectionBoardToPreviousDesk()
-            }
-            .keyboardShortcut(.upArrow, modifiers: [.shift])
-
-            Button("Move Board to Next Desk") {
-                store.moveOverviewSelectionBoardToNextDesk()
-            }
-            .keyboardShortcut(.downArrow, modifiers: [.shift])
-
-            Button("Enter Focused Board") {
-                store.enterOverviewSelection()
-            }
-            .keyboardShortcut(.return, modifiers: [])
-        }
-    }
 }

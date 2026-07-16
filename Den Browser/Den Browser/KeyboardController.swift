@@ -47,25 +47,22 @@ final class KeyboardController {
             return true
         }
 
-        if store.isKeyboardShortcutsPresented {
+        switch store.temporaryContext {
+        case .keyboardShortcuts:
             if (isEscape(event) && modifiers == [])
                 || isQuestionMark(event, modifiers: modifiers)
             {
                 store.hideKeyboardShortcuts()
             }
             return true
-        }
-
-        if store.isBoardWidthPanelPresented {
+        case .boardWidth:
             return handleBoardWidthPanel(event, store: store)
-        }
-
-        if store.isOverviewPresented {
+        case .overview:
             return handleOverview(event, store: store)
-        }
-
-        if store.isOpenBoardPanelPresented || store.isNewDeskPanelPresented {
+        case .openBoard, .newDesk:
             return false
+        case nil:
+            break
         }
 
         if !store.isDenMode, character == "r", modifiers == [.command] {
@@ -125,7 +122,7 @@ final class KeyboardController {
             return true
         }
 
-        if handleMovement(event, modifiers: modifiers, store: store) {
+        if handleMovement(event, modifiers: modifiers, store: store, overview: false) {
             return true
         }
 
@@ -220,113 +217,61 @@ final class KeyboardController {
             return true
         }
 
-        switch (event.specialKey, modifiers) {
-        case (.leftArrow, []):
-            store.selectPreviousBoardInOverview()
-        case (.rightArrow, []):
-            store.selectNextBoardInOverview()
-        case (.upArrow, []):
-            store.selectPreviousDeskInOverview()
-        case (.downArrow, []):
-            store.selectNextDeskInOverview()
-        case (.leftArrow, [.shift]):
-            store.moveOverviewSelectionBoardLeft()
-        case (.rightArrow, [.shift]):
-            store.moveOverviewSelectionBoardRight()
-        case (.upArrow, [.shift]):
-            store.moveOverviewSelectionBoardToPreviousDesk()
-        case (.downArrow, [.shift]):
-            store.moveOverviewSelectionBoardToNextDesk()
-        case (.carriageReturn, []):
+        if handleMovement(event, modifiers: modifiers, store: store, overview: true) {
+            return true
+        }
+        if isReturn(event), modifiers == [] {
             store.enterOverviewSelection()
-        default:
-            return handleOverviewCharacter(event, modifiers: modifiers, store: store)
         }
-
         return true
     }
 
-    private static func handleOverviewCharacter(
+    private static func handleMovement(
         _ event: NSEvent,
         modifiers: NSEvent.ModifierFlags,
-        store: DenStore
+        store: DenStore,
+        overview: Bool
     ) -> Bool {
-        switch (characterIgnoringModifiers(for: event), modifiers) {
-        case ("h", []):
-            store.selectPreviousBoardInOverview()
-        case ("l", []):
-            store.selectNextBoardInOverview()
-        case ("j", []):
-            store.selectNextDeskInOverview()
-        case ("k", []):
-            store.selectPreviousDeskInOverview()
-        case ("h", [.shift]):
-            store.moveOverviewSelectionBoardLeft()
-        case ("l", [.shift]):
-            store.moveOverviewSelectionBoardRight()
-        case ("j", [.shift]):
-            store.moveOverviewSelectionBoardToNextDesk()
-        case ("k", [.shift]):
-            store.moveOverviewSelectionBoardToPreviousDesk()
-        default:
-            break
-        }
-
-        return true
-    }
-
-    private static func handleMovement(_ event: NSEvent, modifiers: NSEvent.ModifierFlags, store: DenStore) -> Bool {
-        switch (event.specialKey, modifiers) {
-        case (.leftArrow, []):
-            store.focusPreviousBoard()
-        case (.rightArrow, []):
-            store.focusNextBoard()
-        case (.upArrow, []):
-            store.focusPreviousDesk()
-        case (.downArrow, []):
-            store.focusNextDesk()
-        case (.leftArrow, [.shift]):
-            store.moveFocusedBoardLeft()
-        case (.rightArrow, [.shift]):
-            store.moveFocusedBoardRight()
-        case (.upArrow, [.shift]):
-            store.moveFocusedBoardToPreviousDesk()
-        case (.downArrow, [.shift]):
-            store.moveFocusedBoardToNextDesk()
-        default:
-            return handleMovementCharacter(event, modifiers: modifiers, store: store)
-        }
-
-        return true
-    }
-
-    private static func handleMovementCharacter(
-        _ event: NSEvent,
-        modifiers: NSEvent.ModifierFlags,
-        store: DenStore
-    ) -> Bool {
-        switch (characterIgnoringModifiers(for: event), modifiers) {
-        case ("h", []):
-            store.focusPreviousBoard()
-        case ("l", []):
-            store.focusNextBoard()
-        case ("j", []):
-            store.focusNextDesk()
-        case ("k", []):
-            store.focusPreviousDesk()
-        case ("h", [.shift]):
-            store.moveFocusedBoardLeft()
-        case ("l", [.shift]):
-            store.moveFocusedBoardRight()
-        case ("j", [.shift]):
-            store.moveFocusedBoardToNextDesk()
-        case ("k", [.shift]):
-            store.moveFocusedBoardToPreviousDesk()
-        default:
+        guard modifiers == [] || modifiers == [.shift], let direction = movementDirection(for: event) else {
             return false
         }
 
+        switch (overview, modifiers == [.shift], direction) {
+        case (false, false, .left): store.focusPreviousBoard()
+        case (false, false, .right): store.focusNextBoard()
+        case (false, false, .up): store.focusPreviousDesk()
+        case (false, false, .down): store.focusNextDesk()
+        case (false, true, .left): store.moveFocusedBoardLeft()
+        case (false, true, .right): store.moveFocusedBoardRight()
+        case (false, true, .up): store.moveFocusedBoardToPreviousDesk()
+        case (false, true, .down): store.moveFocusedBoardToNextDesk()
+        case (true, false, .left): store.selectPreviousBoardInOverview()
+        case (true, false, .right): store.selectNextBoardInOverview()
+        case (true, false, .up): store.selectPreviousDeskInOverview()
+        case (true, false, .down): store.selectNextDeskInOverview()
+        case (true, true, .left): store.moveOverviewSelectionBoardLeft()
+        case (true, true, .right): store.moveOverviewSelectionBoardRight()
+        case (true, true, .up): store.moveOverviewSelectionBoardToPreviousDesk()
+        case (true, true, .down): store.moveOverviewSelectionBoardToNextDesk()
+        }
         return true
+    }
+
+    private static func movementDirection(for event: NSEvent) -> MovementDirection? {
+        switch event.specialKey {
+        case .leftArrow: return .left
+        case .rightArrow: return .right
+        case .upArrow: return .up
+        case .downArrow: return .down
+        default:
+            switch characterIgnoringModifiers(for: event) {
+            case "h": return .left
+            case "l": return .right
+            case "k": return .up
+            case "j": return .down
+            default: return nil
+            }
+        }
     }
 
     private static func normalizedModifiers(for event: NSEvent) -> NSEvent.ModifierFlags {
@@ -349,4 +294,11 @@ final class KeyboardController {
     private static func isReturn(_ event: NSEvent) -> Bool {
         event.specialKey == .carriageReturn
     }
+}
+
+private enum MovementDirection {
+    case left
+    case right
+    case up
+    case down
 }

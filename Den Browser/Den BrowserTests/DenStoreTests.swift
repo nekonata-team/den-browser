@@ -184,18 +184,19 @@ struct DenStoreTests {
         }
     }
 
-    @Test func persistedStateRestoresHeldBoard() {
+    @Test func persistedStateIncludesHeldBoardAtItsSource() throws {
         let held = board("Held")
         let source = desk("Source", boards: [held])
-        let url = temporaryPersistenceURL()
-        defer { try? FileManager.default.removeItem(at: url.deletingLastPathComponent()) }
-        let store = DenStore(state: DenState(desks: [source], focusedDeskID: source.id), persistenceURL: url)
+        var persistedState: DenState?
+        let store = DenStore(state: DenState(desks: [source], focusedDeskID: source.id)) {
+            persistedState = $0
+        }
 
         store.holdFocusedBoard()
-        let restored = DenStore(persistenceURL: url)
+        let restored = try #require(persistedState)
 
-        #expect(restored.focusedDesk?.boards.map(\.id) == [held.id])
-        #expect(restored.focusedDesk?.focusedBoardID == held.id)
+        #expect(restored.desks[0].boards.map(\.id) == [held.id])
+        #expect(restored.desks[0].focusedBoardID == held.id)
     }
 
     @Test func sourceDeskCannotBeDeletedWhileItsBoardIsHeld() {
@@ -299,25 +300,26 @@ struct DenStoreTests {
         let secondBoards = [board("Three", width: 980, url: "https://three.example/query?q=1")]
         let first = desk("First", boards: firstBoards, focusedBoardID: firstBoards[1].id)
         let second = desk("Second", boards: secondBoards, focusedBoardID: secondBoards[0].id)
-        let url = temporaryPersistenceURL()
-        defer { try? FileManager.default.removeItem(at: url.deletingLastPathComponent()) }
-        let writer = DenStore(state: DenState(desks: [first, second], focusedDeskID: second.id), persistenceURL: url)
+        var persistedState: DenState?
+        let writer = DenStore(state: DenState(desks: [first, second], focusedDeskID: second.id)) {
+            persistedState = $0
+        }
 
         writer.focusDesk(first.id)
-        let restored = DenStore(persistenceURL: url)
+        let restored = try #require(persistedState)
 
-        #expect(restored.state == writer.state)
-        #expect(restored.state.desks.map(\.id) == [first.id, second.id])
-        #expect(restored.state.desks[0].boards.map(\.id) == firstBoards.map(\.id))
-        #expect(restored.state.desks.map(\.label) == ["First", "Second"])
-        #expect(restored.state.desks[0].boards.map(\.label) == ["One", "Two"])
-        #expect(restored.state.desks[0].boards.map(\.width) == [440, 760])
+        #expect(restored == writer.state)
+        #expect(restored.desks.map(\.id) == [first.id, second.id])
+        #expect(restored.desks[0].boards.map(\.id) == firstBoards.map(\.id))
+        #expect(restored.desks.map(\.label) == ["First", "Second"])
+        #expect(restored.desks[0].boards.map(\.label) == ["One", "Two"])
+        #expect(restored.desks[0].boards.map(\.width) == [440, 760])
         #expect(
-            restored.state.desks[0].boards.map(\.currentURLString) == [
+            restored.desks[0].boards.map(\.currentURLString) == [
                 "https://one.example/path", "https://two.example/",
             ])
-        #expect(restored.state.focusedDeskID == first.id)
-        #expect(restored.state.desks.map(\.focusedBoardID) == [firstBoards[1].id, secondBoards[0].id])
+        #expect(restored.focusedDeskID == first.id)
+        #expect(restored.desks.map(\.focusedBoardID) == [firstBoards[1].id, secondBoards[0].id])
     }
 
     @Test func mouseResizeChangesTargetBoardWidthWithinBounds() {
@@ -400,6 +402,22 @@ struct DenStoreTests {
 
             #expect(KeyboardController.handle(event, store: store))
             #expect(store.isOpenBoardPanelPresented)
+            #expect(!store.isOverviewPresented)
+        }
+    }
+
+    @Test func temporaryContextsAreExclusiveAndClearOverviewSelection() {
+        let board = board("Board")
+        withStore(desks: [desk("Desk", boards: [board], focusedBoardID: board.id)]) { store in
+            store.showOverview()
+            #expect(store.temporaryContext == .overview)
+            #expect(store.overviewSelectionBoardID == board.id)
+
+            store.showOpenBoardPanel()
+
+            #expect(store.temporaryContext == .openBoard)
+            #expect(store.overviewSelectionDeskID == nil)
+            #expect(store.overviewSelectionBoardID == nil)
             #expect(!store.isOverviewPresented)
         }
     }
@@ -663,16 +681,8 @@ struct DenStoreTests {
         }
     }
     private func withStore(desks: [DeskState], body: (DenStore) throws -> Void) rethrows {
-        let url = temporaryPersistenceURL()
-        defer { try? FileManager.default.removeItem(at: url.deletingLastPathComponent()) }
-        let store = DenStore(state: DenState(desks: desks, focusedDeskID: desks[0].id), persistenceURL: url)
+        let store = DenStore(state: DenState(desks: desks, focusedDeskID: desks[0].id))
         try body(store)
-    }
-
-    private func temporaryPersistenceURL() -> URL {
-        FileManager.default.temporaryDirectory
-            .appending(path: "den-browser-tests-\(UUID().uuidString)", directoryHint: .isDirectory)
-            .appending(path: "den-state.json")
     }
 
     private func arrowEvent(

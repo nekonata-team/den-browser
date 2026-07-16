@@ -157,11 +157,8 @@ struct SheetNavigationTests {
         let source = board("Source", url: "https://source.example/")
         let focused = board("Focused", url: "https://focused.example/")
         let currentDesk = desk("Desk", boards: [source, focused], focusedBoardID: focused.id)
-        let url = temporaryPersistenceURL()
-        defer { try? FileManager.default.removeItem(at: url.deletingLastPathComponent()) }
         let store = DenStore(
             state: DenState(desks: [currentDesk], focusedDeskID: currentDesk.id),
-            persistenceURL: url,
             sheetNavigation: manager
         )
         let sourceWebView = store.runtime(for: source).webView
@@ -228,11 +225,6 @@ struct SheetNavigationTests {
                 + "{key: \(keyLiteral), shiftKey: \(shift), bubbles: true, cancelable: true}))")
     }
 
-    private func temporaryPersistenceURL() -> URL {
-        FileManager.default.temporaryDirectory
-            .appending(path: "den-browser-tests-\(UUID().uuidString)", directoryHint: .isDirectory)
-            .appending(path: "den-state.json")
-    }
     private func desk(_ label: String, boards: [BoardState] = [], focusedBoardID: UUID? = nil) -> DeskState {
         DeskState(label: label, boards: boards, focusedBoardID: focusedBoardID)
     }

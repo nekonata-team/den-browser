@@ -174,10 +174,7 @@ struct KeyboardShortcutTests {
 
     private func makeStore(boards: [BoardState]) -> DenStore {
         let desk = DeskState(label: "Desk", boards: boards, focusedBoardID: boards.first?.id)
-        let url = FileManager.default.temporaryDirectory
-            .appending(path: "keyboard-shortcut-tests-\(UUID())", directoryHint: .isDirectory)
-            .appending(path: "den-state.json")
-        return DenStore(state: DenState(desks: [desk], focusedDeskID: desk.id), persistenceURL: url)
+        return DenStore(state: DenState(desks: [desk], focusedDeskID: desk.id))
     }
 
     private func keyEvent(
