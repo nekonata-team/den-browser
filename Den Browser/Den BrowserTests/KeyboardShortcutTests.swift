@@ -119,6 +119,24 @@ struct KeyboardShortcutTests {
         #expect(store.focusedDesk?.focusedBoardID == focusedBoardID)
     }
 
+    @Test func commandWClosesFocusedBoardAndShiftCommandWPassesToWindow() throws {
+        let first = board("First")
+        let second = board("Second")
+        let store = makeStore(boards: [first, second])
+        let closeBoard = try keyEvent(
+            characters: "w", charactersIgnoringModifiers: "w", modifiers: [.command], keyCode: 13)
+        let closeWindow = try keyEvent(
+            characters: "W",
+            charactersIgnoringModifiers: "w",
+            modifiers: [.command, .shift],
+            keyCode: 13)
+
+        #expect(KeyboardController.handle(closeBoard, store: store))
+        #expect(store.focusedDesk?.boards.map(\.id) == [second.id])
+        #expect(!KeyboardController.handle(closeWindow, store: store))
+        #expect(store.focusedDesk?.boards.map(\.id) == [second.id])
+    }
+
     @Test func denModeAddsSpaceGuideAndZenViewWithoutPersistedStateChanges() throws {
         let preferences = try makePreferences()
         let store = makeStore(boards: [board("First")])

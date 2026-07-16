@@ -40,6 +40,8 @@ struct KeyboardShortcutsView: View {
                     item(["⌃", "⌘", "P"], "Open Profile panel"),
                     item(["⌘", "T"], "Open Board"),
                     item(["⌘", "R"], "Reload Current Sheet"),
+                    item(["⌘", "W"], "Close Focused Board"),
+                    item(["⇧", "⌘", "W"], "Close Profile Window"),
                     item(["⌘", "Q"], "Quit Den Browser"),
                 ] + ShortcutAction.allCases.map(customItem)),
             ShortcutGuideSection(

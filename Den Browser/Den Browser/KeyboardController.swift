@@ -33,6 +33,15 @@ final class KeyboardController {
             return false
         }
 
+        if character == "w", modifiers == [.command] {
+            store.closeFocusedBoard()
+            return true
+        }
+
+        if character == "w", modifiers == [.command, .shift] {
+            return false
+        }
+
         if character == "t", modifiers == [.command] {
             store.showOpenBoardPanel()
             return true

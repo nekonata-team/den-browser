@@ -45,6 +45,7 @@ Den Browser's first PoC validates whether a macOS WKWebView implementation can s
 4. Open the complete shortcut guide from Settings, the Den menu, and `?` in Den Mode. Confirm it shows current custom bindings and that `?` or Escape closes the Den Mode guide.
 5. In Den Mode, confirm both `n` and Space open the Board panel.
 6. Press `z` in Den Mode. Confirm the Desk switcher and Profile control hide together, the titlebar stays visible, and pressing `z` again restores both. Confirm the choice is window-local and is not restored after relaunch.
+7. Press `Command` + `W` from Sheet Input and Den Mode and confirm it closes the Focused Board. Press `Shift` + `Command` + `W` and confirm it closes the Profile window. Confirm `Command` + `W` still closes Settings.
 
 ## Desk deletion validation
 

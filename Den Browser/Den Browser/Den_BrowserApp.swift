@@ -50,6 +50,22 @@ private struct DenCommands: Commands {
     @Environment(\.openWindow) private var openWindow
 
     var body: some Commands {
+        CommandGroup(replacing: .saveItem) {
+            if store == nil {
+                Button("Close Window") { NSApp.keyWindow?.performClose(nil) }
+                    .keyboardShortcut("w", modifiers: [.command])
+            } else {
+                Button("Close Board") { store?.closeFocusedBoard() }
+                    .keyboardShortcut("w", modifiers: [.command])
+                    .disabled(
+                        store?.focusedDesk?.focusedBoardID == nil
+                            || store?.deskPendingDeletion != nil)
+                Button("Close Profile Window") { NSApp.keyWindow?.performClose(nil) }
+                    .keyboardShortcut("w", modifiers: [.command, .shift])
+                    .disabled(store?.deskPendingDeletion != nil)
+            }
+        }
+
         CommandMenu("Profile") {
             ForEach(profileManager.profiles) { profile in
                 Button(profile.name) {
@@ -93,7 +109,7 @@ private struct DenCommands: Commands {
                 .disabled(store?.heldBoard == nil)
             Button("Restore Held Board") { store?.restoreHeldBoard() }
                 .disabled(store?.heldBoard == nil)
-            Button("Delete Board") { store?.closeFocusedBoard() }
+            Button("Close Board") { store?.closeFocusedBoard() }
                 .disabled(store == nil)
             Button("Delete Desk") { store?.deleteFocusedDesk() }
                 .disabled(store?.canDeleteFocusedDesk != true)
