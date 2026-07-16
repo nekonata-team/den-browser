@@ -1,6 +1,22 @@
 import Foundation
 import Observation
 
+enum MotionPreference: String, CaseIterable, Identifiable {
+    case followSystem = "follow-system"
+    case standard
+    case reduced
+
+    var id: Self { self }
+
+    var label: String {
+        switch self {
+        case .followSystem: "Follow System"
+        case .standard: "Standard Motion"
+        case .reduced: "Reduced Motion"
+        }
+    }
+}
+
 @MainActor
 @Observable
 final class AppPreferences {
@@ -11,6 +27,7 @@ final class AppPreferences {
     private(set) var sheetNavigationHintAlphabet: String
     private(set) var sheetNavigationIgnoredHosts: [String]
     private(set) var shortcutOverrides: [ShortcutAction: ShortcutOverride]
+    private(set) var motionPreference: MotionPreference
 
     @ObservationIgnored private let defaults: UserDefaults
 
@@ -19,6 +36,7 @@ final class AppPreferences {
     private static let hintAlphabetKey = "features.vim-style-sheet-navigation.hint-alphabet"
     private static let ignoredHostsKey = "features.vim-style-sheet-navigation.ignored-hosts"
     private static let shortcutKeyPrefix = "shortcuts."
+    private static let motionKey = "appearance.motion"
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
@@ -29,6 +47,9 @@ final class AppPreferences {
             ?? Self.defaultHintAlphabet
         sheetNavigationIgnoredHosts = defaults.stringArray(forKey: Self.ignoredHostsKey) ?? []
         shortcutOverrides = [:]
+        motionPreference =
+            defaults.string(forKey: Self.motionKey).flatMap(MotionPreference.init(rawValue:))
+            ?? .followSystem
         loadShortcutOverrides()
     }
 
@@ -45,6 +66,11 @@ final class AppPreferences {
     func setSheetNavigationIgnoredHosts(_ hosts: [String]) {
         sheetNavigationIgnoredHosts = hosts
         defaults.set(hosts, forKey: Self.ignoredHostsKey)
+    }
+
+    func setMotionPreference(_ preference: MotionPreference) {
+        motionPreference = preference
+        defaults.set(preference.rawValue, forKey: Self.motionKey)
     }
 
     func shortcut(for action: ShortcutAction) -> ShortcutBinding? {

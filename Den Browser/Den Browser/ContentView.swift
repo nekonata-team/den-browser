@@ -15,6 +15,8 @@ struct ContentView: View {
     private let profileColor: Color
 
     @Environment(DenStore.self) private var store
+    @Environment(AppPreferences.self) private var preferences
+    @Environment(\.accessibilityReduceMotion) private var systemReduceMotion
     @State private var urlText = ""
     @State private var newDeskLabel = ""
     @State private var selectedDeskTemplate: DeskTemplate = .empty
@@ -51,19 +53,19 @@ struct ContentView: View {
                 if store.isOpenBoardPanelPresented {
                     openBoardPanel(defaultBoardWidth: defaultBoardWidth(in: geometry.size))
                         .padding(.top, shouldShowDeskSwitcher ? 74 : 12)
-                        .transition(.scale(scale: 0.96).combined(with: .opacity))
+                        .transition(DenMotion.transition(reduceMotion: shouldReduceMotion, scale: 0.96))
                 }
 
                 if store.isOverviewPresented {
                     OverviewView()
                         .padding(18)
-                        .transition(.scale(scale: 0.98).combined(with: .opacity))
+                        .transition(DenMotion.transition(reduceMotion: shouldReduceMotion, scale: 0.98))
                 }
 
                 if store.isNewDeskPanelPresented {
                     newDeskPanel
                         .padding(.top, shouldShowDeskSwitcher ? 74 : 12)
-                        .transition(.scale(scale: 0.96).combined(with: .opacity))
+                        .transition(DenMotion.transition(reduceMotion: shouldReduceMotion, scale: 0.96))
                 }
 
                 if store.isKeyboardShortcutsPresented,
@@ -73,14 +75,14 @@ struct ContentView: View {
                         .padding(18)
                         .frame(width: 760, height: 560)
                         .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
-                        .transition(.scale(scale: 0.98).combined(with: .opacity))
+                        .transition(DenMotion.transition(reduceMotion: shouldReduceMotion, scale: 0.98))
                 }
             }
-            .animation(.snappy(duration: 0.18), value: store.isOpenBoardPanelPresented)
-            .animation(.snappy(duration: 0.18), value: store.isNewDeskPanelPresented)
-            .animation(.snappy(duration: 0.18), value: store.isOverviewPresented)
-            .animation(.snappy(duration: 0.18), value: store.isKeyboardShortcutsPresented)
-            .animation(.snappy(duration: 0.18), value: store.isZenViewPresented)
+            .animation(DenMotion.feedback(reduceMotion: shouldReduceMotion), value: store.isOpenBoardPanelPresented)
+            .animation(DenMotion.feedback(reduceMotion: shouldReduceMotion), value: store.isNewDeskPanelPresented)
+            .animation(DenMotion.feedback(reduceMotion: shouldReduceMotion), value: store.isOverviewPresented)
+            .animation(DenMotion.feedback(reduceMotion: shouldReduceMotion), value: store.isKeyboardShortcutsPresented)
+            .animation(DenMotion.spatial(reduceMotion: shouldReduceMotion), value: store.isZenViewPresented)
             .overlay {
                 if store.isDenMode {
                     RoundedRectangle(cornerRadius: 12, style: .continuous)
@@ -134,7 +136,7 @@ struct ContentView: View {
             }
             .scrollIndicators(.hidden)
             .onChange(of: store.state.focusedDeskID) { _, deskID in
-                withAnimation(.snappy(duration: 0.22)) {
+                withAnimation(DenMotion.spatial(reduceMotion: shouldReduceMotion)) {
                     proxy.scrollTo(deskID, anchor: .center)
                 }
             }
@@ -320,6 +322,7 @@ struct ContentView: View {
                             onClose: { store.closeBoard(board.id) }
                         )
                         .id(board.id)
+                        .transition(DenMotion.transition(reduceMotion: shouldReduceMotion, scale: 0.98))
                         .overlay(alignment: .trailing) {
                             if store.maximizedBoardID != board.id {
                                 BoardResizeHandle(
@@ -347,6 +350,8 @@ struct ContentView: View {
                 .padding(.trailing, trailingPadding)
                 .padding(.top, topInset)
                 .padding(.bottom, bottomInset)
+                .animation(DenMotion.spatial(reduceMotion: shouldReduceMotion), value: boards.map(\.id))
+                .animation(DenMotion.spatial(reduceMotion: shouldReduceMotion), value: store.maximizedBoardID)
             }
             .scrollIndicators(.hidden)
             .onAppear {
@@ -372,7 +377,7 @@ struct ContentView: View {
             guard !Task.isCancelled else { return }
 
             if animated {
-                withAnimation(.snappy(duration: 0.22)) {
+                withAnimation(DenMotion.spatial(reduceMotion: shouldReduceMotion)) {
                     proxy.scrollTo(boardID, anchor: .center)
                 }
             } else {
@@ -385,6 +390,13 @@ struct ContentView: View {
         !store.isOpenBoardPanelPresented
             && !store.isNewDeskPanelPresented
             && !store.isOverviewPresented
+    }
+
+    private var shouldReduceMotion: Bool {
+        DenMotion.shouldReduceMotion(
+            preference: preferences.motionPreference,
+            systemReduceMotion: systemReduceMotion
+        )
     }
 
     private func openBoard(defaultBoardWidth: Double) {
@@ -441,6 +453,7 @@ private struct BoardResizeHandle: View {
 #Preview {
     ContentView()
         .environment(DenStore())
+        .environment(AppPreferences())
 }
 
 private struct DenBackground: View {

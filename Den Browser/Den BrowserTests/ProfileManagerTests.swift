@@ -54,12 +54,37 @@ struct ProfileManagerTests {
         preferences.setSheetNavigationEnabled(true)
         preferences.setSheetNavigationHintAlphabet("abc")
         preferences.setSheetNavigationIgnoredHosts(["example.com"])
+        preferences.setMotionPreference(.standard)
 
         let restored = AppPreferences(defaults: defaults)
         #expect(defaults.integer(forKey: "preferences.schemaVersion") == 1)
         #expect(restored.sheetNavigationEnabled)
         #expect(restored.sheetNavigationHintAlphabet == "abc")
         #expect(restored.sheetNavigationIgnoredHosts == ["example.com"])
+        #expect(restored.motionPreference == .standard)
+    }
+
+    @Test func motionPreferenceFollowsOrOverridesSystemSetting() {
+        #expect(
+            DenMotion.shouldReduceMotion(
+                preference: .followSystem,
+                systemReduceMotion: true
+            ))
+        #expect(
+            !DenMotion.shouldReduceMotion(
+                preference: .followSystem,
+                systemReduceMotion: false
+            ))
+        #expect(
+            !DenMotion.shouldReduceMotion(
+                preference: .standard,
+                systemReduceMotion: true
+            ))
+        #expect(
+            DenMotion.shouldReduceMotion(
+                preference: .reduced,
+                systemReduceMotion: false
+            ))
     }
 
     @Test func profileManagerCreatesPersonalAndPersistsProfileOrderAndDen() throws {

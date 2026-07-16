@@ -12,6 +12,11 @@ struct SettingsView: View {
                     Label("Profiles", systemImage: "person.2")
                 }
 
+            AppearanceSettingsView()
+                .tabItem {
+                    Label("Appearance", systemImage: "circle.lefthalf.filled")
+                }
+
             ShortcutsSettingsView()
                 .tabItem {
                     Label("Shortcuts", systemImage: "keyboard")
@@ -118,6 +123,49 @@ struct SettingsView: View {
     private func saveIgnoredSites() {
         guard sheetNavigation.setIgnoredSites(ignoredSitesDraft) else { return }
         ignoredSitesDraft = sheetNavigation.ignoredHosts.joined(separator: "\n")
+    }
+}
+
+private struct AppearanceSettingsView: View {
+    @Environment(AppPreferences.self) private var preferences
+    @Environment(\.accessibilityReduceMotion) private var systemReduceMotion
+
+    var body: some View {
+        Form {
+            Section("Motion") {
+                Picker("Motion", selection: motionBinding) {
+                    ForEach(MotionPreference.allCases) { preference in
+                        Text(preference.label).tag(preference)
+                    }
+                }
+                .pickerStyle(.radioGroup)
+
+                Text(motionDescription)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .formStyle(.grouped)
+        .padding()
+    }
+
+    private var motionBinding: Binding<MotionPreference> {
+        Binding {
+            preferences.motionPreference
+        } set: { preference in
+            preferences.setMotionPreference(preference)
+        }
+    }
+
+    private var motionDescription: String {
+        switch preferences.motionPreference {
+        case .followSystem:
+            "Use the macOS setting. Reduce Motion is currently \(systemReduceMotion ? "on" : "off")."
+        case .standard:
+            "Use Den’s standard smooth motion, even when Reduce Motion is enabled in macOS."
+        case .reduced:
+            "Remove spatial motion and use brief opacity changes."
+        }
     }
 }
 

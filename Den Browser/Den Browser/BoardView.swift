@@ -2,6 +2,9 @@ import SwiftUI
 import WebKit
 
 struct BoardView: View {
+    @Environment(AppPreferences.self) private var preferences
+    @Environment(\.accessibilityReduceMotion) private var systemReduceMotion
+
     let board: BoardState
     let isFocused: Bool
     let runtime: BoardRuntime
@@ -37,6 +40,7 @@ struct BoardView: View {
             color: .black.opacity(isFocused ? 0.42 : 0.30),
             radius: isFocused ? 34 : 24, x: 0, y: 22
         )
+        .animation(DenMotion.feedback(reduceMotion: shouldReduceMotion), value: isFocused)
     }
 
     private var borderColor: Color {
@@ -103,5 +107,12 @@ struct BoardView: View {
             return "Focused board"
         }
         return "Board"
+    }
+
+    private var shouldReduceMotion: Bool {
+        DenMotion.shouldReduceMotion(
+            preference: preferences.motionPreference,
+            systemReduceMotion: systemReduceMotion
+        )
     }
 }

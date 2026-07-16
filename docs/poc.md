@@ -28,6 +28,13 @@ Den Browser's first PoC validates whether a macOS WKWebView implementation can s
 - Focused board and keyboard focus indicators are clear without relying only on color.
 - The titlebar exposes the Profile name, and the top-right Profile icon exposes it through an accessibility label and help text; Profile identity does not depend on color.
 
+## Motion validation
+
+1. Select Follow System and confirm Den motion follows the current macOS Reduce Motion setting.
+2. Select Standard Motion and confirm Board movement remains smooth even when macOS Reduce Motion is enabled.
+3. Select Reduced Motion and confirm spatial motion stops while brief opacity feedback remains.
+4. Relaunch the app and switch Profiles; confirm the selected Motion preference persists and remains shared.
+
 ## Profile validation
 
 1. Create a second Profile, open the same site in both Profiles, and sign in as different identities.
