@@ -52,6 +52,40 @@ struct DenStoreTests {
         }
     }
 
+    @Test func boardDragPersistsOnlyItsFinalOrder() {
+        let boards = [board("A"), board("B"), board("C")]
+        let source = desk("Desk", boards: boards, focusedBoardID: boards[0].id)
+        var savedStates: [DenState] = []
+        let store = DenStore(state: DenState(desks: [source], focusedDeskID: source.id)) {
+            savedStates.append($0)
+        }
+
+        #expect(store.beginBoardDrag(boards[0].id))
+        store.previewBoardMove(boards[0].id, to: 2)
+        #expect(savedStates.isEmpty)
+
+        store.finishBoardDrag()
+        #expect(savedStates.count == 1)
+        #expect(savedStates[0].desks[0].boards.map(\.id) == [boards[1].id, boards[2].id, boards[0].id])
+    }
+
+    @Test func cancelledBoardDragRestoresAndPersistsOriginalOrder() {
+        let boards = [board("A"), board("B"), board("C")]
+        let source = desk("Desk", boards: boards, focusedBoardID: boards[0].id)
+        var persistedState: DenState?
+        let store = DenStore(state: DenState(desks: [source], focusedDeskID: source.id)) {
+            persistedState = $0
+        }
+
+        #expect(store.beginBoardDrag(boards[0].id))
+        store.previewBoardMove(boards[0].id, to: 2)
+        store.restoreBoardOrder(boards.map(\.id), in: source.id)
+        store.finishBoardDrag()
+
+        #expect(store.focusedDesk?.boards.map(\.id) == boards.map(\.id))
+        #expect(persistedState?.desks[0].boards.map(\.id) == boards.map(\.id))
+    }
+
     @Test func movingBoardToDeskPlacesItAfterTargetAndFocusesIt() {
         let moved = board("Moved")
         let targetBoards = [board("Before"), board("Target"), board("After")]
@@ -71,145 +105,97 @@ struct DenStoreTests {
         }
     }
 
-    @Test func closingBoardFocusesBoardThatTakesItsPosition() {
+    @Test func removingBoardFocusesBoardThatTakesItsPosition() {
         let boards = [board("A"), board("B"), board("C")]
         withStore(desks: [desk("Desk", boards: boards, focusedBoardID: boards[1].id)]) { store in
-            store.closeFocusedBoard()
+            store.removeFocusedBoard()
 
             #expect(store.focusedDesk?.boards.map(\.id) == [boards[0].id, boards[2].id])
             #expect(store.focusedDesk?.focusedBoardID == boards[2].id)
+            #expect(store.recentlyRemovedBoard?.board.id == boards[1].id)
         }
     }
 
-    @Test func closingLastBoardFocusesPreviousBoard() {
+    @Test func removingLastBoardFocusesPreviousBoard() {
         let boards = [board("A"), board("B")]
         withStore(desks: [desk("Desk", boards: boards, focusedBoardID: boards[1].id)]) { store in
-            store.closeFocusedBoard()
+            store.removeFocusedBoard()
 
             #expect(store.focusedDesk?.focusedBoardID == boards[0].id)
         }
     }
 
-    @Test func closingUnfocusedBoardKeepsFocus() {
+    @Test func removingUnfocusedBoardKeepsFocus() {
         let boards = [board("A"), board("B"), board("C")]
         withStore(desks: [desk("Desk", boards: boards, focusedBoardID: boards[1].id)]) { store in
-            store.closeBoard(boards[0].id)
+            store.removeBoard(boards[0].id)
 
             #expect(store.focusedDesk?.boards.map(\.id) == [boards[1].id, boards[2].id])
             #expect(store.focusedDesk?.focusedBoardID == boards[1].id)
         }
     }
 
-    @Test func placingHeldBoardInSameDeskUsesFocusedBoardAsTarget() {
-        let boards = [board("Held"), board("Target"), board("After")]
-        withStore(desks: [desk("Desk", boards: boards, focusedBoardID: boards[0].id)]) { store in
-            store.holdFocusedBoard()
-            store.placeHeldBoard()
-
-            #expect(store.heldBoard == nil)
-            #expect(store.focusedDesk?.boards.map(\.id) == [boards[1].id, boards[0].id, boards[2].id])
-            #expect(store.focusedDesk?.focusedBoardID == boards[0].id)
-        }
-    }
-
-    @Test func shiftPPlacesHeldBoardLeftOfFocusedBoard() throws {
-        let held = board("Held")
-        let targetBoards = [board("Before"), board("Target")]
-        let source = desk("Source", boards: [held])
-        let target = desk("Target", boards: targetBoards, focusedBoardID: targetBoards[1].id)
-        try withStore(desks: [source, target]) { store in
-            store.isDenMode = true
-            store.holdFocusedBoard()
-            store.focusNextDesk()
-            let event = try #require(
-                NSEvent.keyEvent(
-                    with: .keyDown,
-                    location: .zero,
-                    modifierFlags: .shift,
-                    timestamp: 0,
-                    windowNumber: 0,
-                    context: nil,
-                    characters: "P",
-                    charactersIgnoringModifiers: "p",
-                    isARepeat: false,
-                    keyCode: 35
-                ))
-
-            #expect(KeyboardController.handle(event, store: store))
-            #expect(store.heldBoard == nil)
-            #expect(store.focusedDesk?.boards.map(\.id) == [targetBoards[0].id, held.id, targetBoards[1].id])
-            #expect(store.focusedDesk?.focusedBoardID == held.id)
-        }
-    }
-
-    @Test func restoringHeldBoardKeepsDeskCreatedWhileHeld() {
-        let held = board("Source")
-        withStore(desks: [desk("First", boards: [held])]) { store in
-            store.holdFocusedBoard()
-            store.createDesk(label: "Destination", template: .empty)
-            store.restoreHeldBoard()
-
-            #expect(store.heldBoard == nil)
-            #expect(store.state.desks.count == 2)
-            #expect(store.focusedDesk?.label == "First")
-            #expect(store.state.desks[0].boards.first?.id == held.id)
-        }
-    }
-
-    @Test func placesHeldBoardIntoDifferentDesk() {
-        let held = board("Held")
-        let targetBoards = [board("Target"), board("After")]
-        let source = desk("Source", boards: [held])
-        let target = desk("Target", boards: targetBoards, focusedBoardID: targetBoards[0].id)
-        withStore(desks: [source, target]) { store in
-            store.holdFocusedBoard()
-            store.focusNextDesk()
-            store.placeHeldBoard()
-
-            #expect(store.heldBoard == nil)
-            #expect(store.state.desks[0].boards.isEmpty)
-            #expect(store.state.desks[1].boards.map(\.id) == [targetBoards[0].id, held.id, targetBoards[1].id])
-            #expect(store.focusedDesk?.focusedBoardID == held.id)
-        }
-    }
-
-    @Test func heldBoardPreventsAnotherHoldUntilPlacedOrRestored() {
+    @Test func removalReplacesRestoreCandidateAndDoesNotPersistIt() throws {
         let boards = [board("First"), board("Second")]
-        withStore(desks: [desk("Desk", boards: boards, focusedBoardID: boards[0].id)]) { store in
-            store.holdFocusedBoard()
-            store.holdFocusedBoard()
-
-            #expect(store.heldBoard?.board.id == boards[0].id)
-            #expect(store.focusedDesk?.boards.map(\.id) == [boards[1].id])
-        }
-    }
-
-    @Test func persistedStateIncludesHeldBoardAtItsSource() throws {
-        let held = board("Held")
-        let source = desk("Source", boards: [held])
+        let source = desk("Source", boards: boards, focusedBoardID: boards[0].id)
         var persistedState: DenState?
         let store = DenStore(state: DenState(desks: [source], focusedDeskID: source.id)) {
             persistedState = $0
         }
 
-        store.holdFocusedBoard()
-        let restored = try #require(persistedState)
+        store.removeFocusedBoard()
+        store.removeFocusedBoard()
+        let persisted = try #require(persistedState)
 
-        #expect(restored.desks[0].boards.map(\.id) == [held.id])
-        #expect(restored.desks[0].focusedBoardID == held.id)
+        #expect(store.recentlyRemovedBoard?.board.id == boards[1].id)
+        #expect(persisted.desks[0].boards.isEmpty)
+        #expect(DenStore(state: persisted).recentlyRemovedBoard == nil)
     }
 
-    @Test func sourceDeskCannotBeDeletedWhileItsBoardIsHeld() {
-        let held = board("Held")
-        let source = desk("Source", boards: [held])
-        let target = desk("Target")
-        withStore(desks: [source, target]) { store in
-            store.holdFocusedBoard()
+    @Test func restorationUsesOriginalDeskIndexAndBoardIdentity() {
+        let boards = [board("First"), board("Restored", width: 760), board("Last")]
+        let source = desk("Source", boards: boards, focusedBoardID: boards[1].id)
+        withStore(desks: [source]) { store in
+            store.removeFocusedBoard()
+            store.restoreRecentlyRemovedBoard()
 
-            #expect(!store.canDeleteFocusedDesk)
+            #expect(store.focusedDesk?.boards == boards)
+            #expect(store.focusedDesk?.focusedBoardID == boards[1].id)
+            #expect(store.recentlyRemovedBoard == nil)
+        }
+    }
+
+    @Test func restorationCreatesANewBoardRuntime() throws {
+        let removed = board("Removed")
+        try withStore(desks: [desk("Desk", boards: [removed])]) { store in
+            let originalRuntime = store.runtime(for: removed)
+
+            store.removeFocusedBoard()
+            #expect(store.runtimes[removed.id] == nil)
+
+            store.restoreRecentlyRemovedBoard()
+            let restoredBoard = try #require(store.focusedDesk?.boards.first)
+            let restoredRuntime = store.runtime(for: restoredBoard)
+            #expect(restoredRuntime !== originalRuntime)
+        }
+    }
+
+    @Test func restorationFallsBackRightOfFocusedBoardWhenSourceDeskIsGone() {
+        let removed = board("Removed")
+        let source = desk("Source", boards: [removed])
+        let targetBoards = [board("Before"), board("Focused"), board("After")]
+        let target = desk("Target", boards: targetBoards, focusedBoardID: targetBoards[1].id)
+        withStore(desks: [source, target]) { store in
+            store.removeFocusedBoard()
             store.deleteFocusedDesk()
-            #expect(store.state.desks.map(\.id) == [source.id, target.id])
-            #expect(store.deskPendingDeletion == nil)
+            store.restoreRecentlyRemovedBoard()
+
+            #expect(store.focusedDesk?.id == target.id)
+            #expect(
+                store.focusedDesk?.boards.map(\.id) == [
+                    targetBoards[0].id, targetBoards[1].id, removed.id, targetBoards[2].id,
+                ])
+            #expect(store.focusedDesk?.focusedBoardID == removed.id)
         }
     }
 
@@ -357,7 +343,7 @@ struct DenStoreTests {
         }
     }
 
-    @Test func rejectsBoardFitCountsOutsideCurrentWidthOrWhileHoldingBoard() {
+    @Test func rejectsBoardFitCountsOutsideCurrentWidth() {
         let boards = [board("First"), board("Second")]
         withStore(desks: [desk("Desk", boards: boards)]) { store in
             store.updateBoardLayout(availableWidth: 1_080, spacing: 10)
@@ -366,11 +352,6 @@ struct DenStoreTests {
             #expect(store.boardWidth(toFit: 4) == nil)
             #expect(!store.resizeFocusedDeskBoards(toFit: 4))
             #expect(store.focusedDesk?.boards.map(\.width) == [520, 520])
-
-            store.holdFocusedBoard()
-            store.showBoardWidthPanel()
-            #expect(!store.canResizeFocusedDeskBoards(toFit: 3))
-            #expect(store.boardWidthPanelMessage == "Place or restore the Held Board first")
         }
     }
 
@@ -443,11 +424,9 @@ struct DenStoreTests {
         }
     }
 
-    @Test func escapeRestoresHeldBoardBeforeExitingDenMode() throws {
-        let held = board("Held")
-        try withStore(desks: [desk("Desk", boards: [held])]) { store in
+    @Test func escapeExitsDenMode() throws {
+        try withStore(desks: [desk("Desk")]) { store in
             store.isDenMode = true
-            store.holdFocusedBoard()
             let event = try #require(
                 NSEvent.keyEvent(
                     with: .keyDown,
@@ -461,11 +440,6 @@ struct DenStoreTests {
                     isARepeat: false,
                     keyCode: 53
                 ))
-
-            #expect(KeyboardController.handle(event, store: store))
-            #expect(store.heldBoard == nil)
-            #expect(store.focusedDesk?.boards.map(\.id) == [held.id])
-            #expect(store.isDenMode)
 
             #expect(KeyboardController.handle(event, store: store))
             #expect(!store.isDenMode)

@@ -12,13 +12,13 @@ The complete in-app guide is available from Settings, the Den menu, and `?` in D
 | --- | --- | --- |
 | Control + Command + `P` | Open Profile panel | Searches Profiles and opens their existing Den window or creates it if closed. |
 | Command + `T` | New Board panel | Available in every keyboard context. |
-| Command + `W` | Close focused Board | Available in every keyboard context. |
+| Command + `W` | Remove focused Board | Available in every keyboard context. |
 | Shift + Command + `W` | Close Profile window | Settings and other non-Den windows retain Command + `W`. |
-| Command + `Q` | Quit Den Browser | Restores a Held Board before exit. |
+| Command + `Q` | Quit Den Browser | |
 | Command + Option + Left / Right | Previous / next board | Available in Sheet Input and Den Mode. |
 | Shift + Command + Option + Left / Right | Move focused board | Moves left or right without entering Den Mode. |
 | `Control` + `,` | Toggle Den Mode | Captures subsequent keys while active. |
-| Escape | Restore Held Board / exit Den Mode | Restores a Held Board first; otherwise enters Sheet Input. |
+| Escape | Exit Den Mode | Enters Sheet Input. |
 | Left / Right or `h` / `l` | Previous / next board | Board navigation. |
 | Up / Down or `j` / `k` | Previous / next desk | Desk navigation. |
 | Shift + movement key | Move focused board | Moves in the same spatial direction. |
@@ -32,18 +32,19 @@ The complete in-app guide is available from Settings, the Den menu, and `?` in D
 | `z` | Toggle Zen View | Hides the Desk switcher and Profile control for this window; the titlebar remains visible. |
 | `[` / `]` | Back / forward in sheet stack | Uses focused board. |
 | `-` / `=` | Narrow / widen focused board | |
-| `w`, then `1` through `9` | Resize all Boards to fit | Persistently resizes every Board in the Focused Desk using the current window width. Escape or `w` cancels. Unavailable while holding a Board. |
+| `w`, then `1` through `9` | Resize all Boards to fit | Persistently resizes every Board in the Focused Desk using the current window width. Escape or `w` cancels. |
 | `f` | Toggle maximized focused board | Uses the available Den width without changing its persisted Board Width. |
 | `c` | Center focused board | Uses edge space to center the first and last Board too. |
 | Return | Duplicate current sheet | Creates board to right, focuses it, then enters sheet input. |
-| `x` | Hold focused board | One Held Board only. |
-| `p` | Place Held Board right | Places it to right of focused board. |
-| Shift + `p` | Place Held Board left | Places it to left of focused board. |
-| `u` | Restore Held Board | Restores former placement. |
-| `d` | Permanently close focused board | Does not request site-provided confirmation in the MVP. |
+| `x` / `d` | Remove focused Board | Releases its live Sheet runtime. Key repeat is ignored. |
+| `u` | Restore Recently Removed Board | Available for the current app run. Key repeat is ignored. |
 | Shift + `d` | Delete focused desk | Deletes an empty desk immediately. A desk with Boards requires confirmation. Unavailable for the last desk. |
 | Command + `R` | Reload current sheet | Available outside Den Mode. |
 
 ## Overview
 
 Overview accepts only movement, Shift plus movement, Return, and Escape. Movement changes the Overview Selection; Shift moves its board. Return makes the selection the Focused Board. Escape closes overview back to Den Mode.
+
+## Pointer Board movement
+
+Drag a Board header's label or empty area to reorder it within the Focused Desk. Header buttons remain ordinary controls. Dropping outside the Board strip cancels the move; moving near the strip's horizontal edges scrolls it. Keyboard Board movement and Overview remain available without pointer input.

@@ -28,9 +28,6 @@ struct ProfileWindowView: View {
             .environment(store)
             .focusedSceneValue(\.denStore, store)
             .background(WindowRegistration(profileID: profileID))
-            .onReceive(NotificationCenter.default.publisher(for: NSApplication.willTerminateNotification)) { _ in
-                store.restoreHeldBoard()
-            }
         } else {
             ContentUnavailableView("Profile unavailable", systemImage: "person.crop.circle.badge.exclamationmark")
         }

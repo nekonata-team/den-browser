@@ -74,6 +74,53 @@ extension DenStore {
         return state.desks[deskIndex].boards.firstIndex { $0.id == focusedBoardID }
     }
 
+    func beginBoardDrag(_ boardID: UUID) -> Bool {
+        guard
+            !isBoardDragging,
+            temporaryContext == nil,
+            let indices = boardIndices(for: boardID),
+            indices.desk == focusedDeskIndex
+        else {
+            return false
+        }
+        state.desks[indices.desk].focusedBoardID = boardID
+        maximizedBoardID = nil
+        isBoardDragging = true
+        save()
+        return true
+    }
+
+    func previewBoardMove(_ boardID: UUID, to targetIndex: Int) {
+        guard
+            let deskIndex = focusedDeskIndex,
+            let boardIndex = state.desks[deskIndex].boards.firstIndex(where: { $0.id == boardID }),
+            (0..<state.desks[deskIndex].boards.count).contains(targetIndex)
+        else { return }
+
+        let board = state.desks[deskIndex].boards.remove(at: boardIndex)
+        state.desks[deskIndex].boards.insert(board, at: targetIndex)
+        state.desks[deskIndex].focusedBoardID = boardID
+    }
+
+    func restoreBoardOrder(_ boardIDs: [UUID], in deskID: UUID) {
+        guard let deskIndex = state.desks.firstIndex(where: { $0.id == deskID }) else { return }
+        let order = Dictionary(uniqueKeysWithValues: boardIDs.enumerated().map { ($1, $0) })
+        state.desks[deskIndex].boards.sort {
+            (order[$0.id] ?? Int.max) < (order[$1.id] ?? Int.max)
+        }
+    }
+
+    func finishBoardDrag() {
+        guard isBoardDragging else { return }
+        isBoardDragging = false
+        save()
+    }
+
+    func requestBoardDragCancellation() {
+        guard isBoardDragging else { return }
+        boardDragCancellationRequest &+= 1
+    }
+
     private func moveDeskFocus(by delta: Int) {
         guard let currentIndex = focusedDeskIndex, !state.desks.isEmpty else { return }
         let nextIndex = wrappedIndex(currentIndex + delta, count: state.desks.count)

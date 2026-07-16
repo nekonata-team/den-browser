@@ -119,7 +119,7 @@ struct KeyboardShortcutTests {
         #expect(store.focusedDesk?.focusedBoardID == focusedBoardID)
     }
 
-    @Test func commandWClosesFocusedBoardAndShiftCommandWPassesToWindow() throws {
+    @Test func commandWRemovesFocusedBoardAndShiftCommandWPassesToWindow() throws {
         let first = board("First")
         let second = board("Second")
         let store = makeStore(boards: [first, second])

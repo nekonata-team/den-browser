@@ -1,12 +1,15 @@
+import AppKit
 import SwiftUI
 import WebKit
 
 struct BoardView: View {
     @Environment(AppPreferences.self) private var preferences
     @Environment(\.accessibilityReduceMotion) private var systemReduceMotion
+    @State private var isDragHandleHovered = false
 
     let board: BoardState
     let isFocused: Bool
+    let isDragging: Bool
     let runtime: BoardRuntime
     let width: Double
     let height: Double
@@ -14,15 +17,13 @@ struct BoardView: View {
     let onFocus: () -> Void
     let onGoBack: () -> Void
     let onGoForward: () -> Void
-    let onClose: () -> Void
+    let onRemove: () -> Void
+    let onDragChanged: (DragGesture.Value) -> Void
+    let onDragEnded: (DragGesture.Value) -> Void
 
     var body: some View {
         VStack(spacing: 0) {
             header
-                .onTapGesture {
-                    guard isPointerFocusEnabled else { return }
-                    onFocus()
-                }
             BoardWebView(
                 webView: runtime.webView,
                 isFocused: isFocused,
@@ -37,10 +38,12 @@ struct BoardView: View {
                 .stroke(borderColor, lineWidth: isFocused ? 2 : 1)
         }
         .shadow(
-            color: .black.opacity(isFocused ? 0.42 : 0.30),
-            radius: isFocused ? 34 : 24, x: 0, y: 22
+            color: .black.opacity(isDragging ? 0.55 : (isFocused ? 0.42 : 0.30)),
+            radius: isDragging ? 42 : (isFocused ? 34 : 24), x: 0, y: isDragging ? 28 : 22
         )
+        .scaleEffect(isDragging && !shouldReduceMotion ? 1.02 : 1)
         .animation(DenMotion.feedback(reduceMotion: shouldReduceMotion), value: isFocused)
+        .animation(DenMotion.feedback(reduceMotion: shouldReduceMotion), value: isDragging)
     }
 
     private var borderColor: Color {
@@ -52,6 +55,17 @@ struct BoardView: View {
 
     private var header: some View {
         HStack(spacing: 8) {
+            dragHandle
+
+            navigationButtons
+        }
+        .padding(.horizontal, 12)
+        .frame(height: 38)
+        .background(.regularMaterial)
+    }
+
+    private var dragHandle: some View {
+        HStack(spacing: 8) {
             Text(board.label)
                 .font(.system(size: 12, weight: .semibold))
                 .foregroundStyle(.primary)
@@ -59,13 +73,34 @@ struct BoardView: View {
                 .accessibilityLabel("Board: \(board.label), \(accessibilityState)")
 
             Spacer(minLength: 8)
-
-            navigationButtons
         }
-        .padding(.horizontal, 12)
-        .frame(height: 38)
-        .background(.regularMaterial)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .contentShape(Rectangle())
+        .onTapGesture {
+            guard isPointerFocusEnabled else { return }
+            onFocus()
+        }
+        .gesture(
+            DragGesture(coordinateSpace: .named(BoardStripCoordinateSpace.name))
+                .onChanged { value in
+                    guard isPointerFocusEnabled else { return }
+                    onDragChanged(value)
+                }
+                .onEnded { value in
+                    guard isPointerFocusEnabled else { return }
+                    onDragEnded(value)
+                }
+        )
+        .onHover { isHovering in
+            isDragHandleHovered = isHovering
+            (isHovering ? (isDragging ? NSCursor.closedHand : NSCursor.openHand) : NSCursor.arrow).set()
+        }
+        .onChange(of: isDragging) { _, isDragging in
+            guard isDragHandleHovered else { return }
+            (isDragging ? NSCursor.closedHand : NSCursor.openHand).set()
+        }
+        .help("Drag to move Board")
+        .accessibilityHint("Drag to reorder this Board within the Focused Desk")
     }
 
     private var navigationButtons: some View {
@@ -90,15 +125,15 @@ struct BoardView: View {
             .help("Forward in sheet stack")
             .accessibilityLabel("Forward in sheet stack")
 
-            Button(action: onClose) {
+            Button(action: onRemove) {
                 Image(systemName: "xmark")
                     .frame(width: 24, height: 24)
             }
             .buttonStyle(.borderless)
             .foregroundStyle(.primary)
             .padding(.leading, 4)
-            .help("Close Board")
-            .accessibilityLabel("Close Board")
+            .help("Remove Board")
+            .accessibilityLabel("Remove Board")
         }
     }
 
@@ -115,4 +150,8 @@ struct BoardView: View {
             systemReduceMotion: systemReduceMotion
         )
     }
+}
+
+enum BoardStripCoordinateSpace {
+    static let name = "board-strip"
 }

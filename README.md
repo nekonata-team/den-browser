@@ -32,11 +32,12 @@ See [CONTEXT.md](./CONTEXT.md) for the complete product language.
 - Arrange Boards spatially across multiple Desks.
 - Create named, color-coded Profiles, each with one Den window and isolated website data.
 - See the current Profile in the titlebar, and open or find Profiles from the top-right icon, Profile menu, or `Control` + `Command` + `P`.
-- Navigate between neighboring Boards with `Command` + `Option` + Left / Right, add Shift to reorder them, close the Focused Board with `Command` + `W`, and use Den Mode for the full set of Board operations. `Shift` + `Command` + `W` closes the Profile window. Pointer controls support Sheet Stack navigation and closing Boards.
+- Navigate between neighboring Boards with `Command` + `Option` + Left / Right, add Shift to reorder them, remove the Focused Board with `Command` + `W`, and use Den Mode for the full set of Board operations. `Shift` + `Command` + `W` closes the Profile window. Pointer controls support Sheet Stack navigation, Board Removal, and same-Desk header dragging.
 - Customize the five app-wide Den and Board shortcuts in Settings, reset them individually or together, and open the complete shortcut guide from Settings, the Den menu, or `?` in Den Mode.
 - Choose whether Den follows the macOS motion setting, uses Standard Motion, or uses Reduced Motion in Appearance settings.
 - Toggle Zen View with `z` in Den Mode to hide the Desk switcher and Profile control without hiding the titlebar.
 - Resize every Board in the Focused Desk to fit a chosen count across the current window, using `w` then `1` through `9` in Den Mode or the Den menu.
+- Restore the most Recently Removed Board with `u` during the current app run.
 - See and reorganize Boards across Desks in Overview.
 - Delete empty Desks immediately, or delete a Desk containing Boards after confirming the permanent removal.
 - Keep browser-like back-forward navigation inside each Board as a Sheet Stack.
@@ -46,7 +47,7 @@ See [CONTEXT.md](./CONTEXT.md) for the complete product language.
 
 ## Keyboard operation
 
-Press `Control` + `,` to toggle Den Mode. Den Mode receives Desk and Board commands independently of keyboard focus inside the Current Sheet. `n` or `Space` opens a Board, `w` then a digit resizes all Boards in the Focused Desk to fit the current window, `?` opens the shortcut guide, and `z` toggles Zen View. When a Board is held, `Escape` restores it; otherwise, `Escape` returns to Sheet Input.
+Press `Control` + `,` to toggle Den Mode. Den Mode receives Desk and Board commands independently of keyboard focus inside the Current Sheet. `n` or `Space` opens a Board, `w` then a digit resizes all Boards in the Focused Desk to fit the current window, `x` or `d` removes the Focused Board, `u` restores the Recently Removed Board, `?` opens the shortcut guide, and `z` toggles Zen View. Escape returns to Sheet Input.
 
 See [docs/shortcuts.md](./docs/shortcuts.md) for the complete shortcut map.
 

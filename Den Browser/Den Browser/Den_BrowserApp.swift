@@ -55,7 +55,7 @@ private struct DenCommands: Commands {
                 Button("Close Window") { NSApp.keyWindow?.performClose(nil) }
                     .keyboardShortcut("w", modifiers: [.command])
             } else {
-                Button("Close Board") { store?.closeFocusedBoard() }
+                Button("Remove Board") { store?.removeFocusedBoard() }
                     .keyboardShortcut("w", modifiers: [.command])
                     .disabled(
                         store?.focusedDesk?.focusedBoardID == nil
@@ -113,16 +113,10 @@ private struct DenCommands: Commands {
 
             Divider()
 
-            Button("Hold Board") { store?.holdFocusedBoard() }
-                .disabled(store?.heldBoard != nil || store == nil)
-            Button("Place Held Board Right") { store?.placeHeldBoard() }
-                .disabled(store?.heldBoard == nil)
-            Button("Place Held Board Left") { store?.placeHeldBoard(beforeFocusedBoard: true) }
-                .disabled(store?.heldBoard == nil)
-            Button("Restore Held Board") { store?.restoreHeldBoard() }
-                .disabled(store?.heldBoard == nil)
-            Button("Close Board") { store?.closeFocusedBoard() }
+            Button("Remove Board") { store?.removeFocusedBoard() }
                 .disabled(store == nil)
+            Button("Restore Removed Board") { store?.restoreRecentlyRemovedBoard() }
+                .disabled(store?.recentlyRemovedBoard == nil)
             Button("Delete Desk") { store?.deleteFocusedDesk() }
                 .disabled(store?.canDeleteFocusedDesk != true)
 

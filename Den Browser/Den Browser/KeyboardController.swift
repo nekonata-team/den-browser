@@ -33,8 +33,17 @@ final class KeyboardController {
             return false
         }
 
+        if store.isBoardDragging {
+            if isEscape(event), modifiers == [] {
+                store.requestBoardDragCancellation()
+            }
+            return true
+        }
+
         if character == "w", modifiers == [.command] {
-            store.closeFocusedBoard()
+            if !event.isARepeat {
+                store.removeFocusedBoard()
+            }
             return true
         }
 
@@ -114,11 +123,7 @@ final class KeyboardController {
     private static func handleDenMode(_ event: NSEvent, store: DenStore) -> Bool {
         let modifiers = normalizedModifiers(for: event)
         if isEscape(event), modifiers == [] {
-            if store.heldBoard == nil {
-                store.exitDenMode()
-            } else {
-                store.restoreHeldBoard()
-            }
+            store.exitDenMode()
             return true
         }
 
@@ -174,15 +179,17 @@ final class KeyboardController {
                 store.toggleZenView()
             }
         case ("x", []):
-            store.holdFocusedBoard()
-        case ("p", []):
-            store.placeHeldBoard()
-        case ("p", [.shift]):
-            store.placeHeldBoard(beforeFocusedBoard: true)
+            if !event.isARepeat {
+                store.removeFocusedBoard()
+            }
         case ("u", []):
-            store.restoreHeldBoard()
+            if !event.isARepeat {
+                store.restoreRecentlyRemovedBoard()
+            }
         case ("d", []):
-            store.closeFocusedBoard()
+            if !event.isARepeat {
+                store.removeFocusedBoard()
+            }
         case ("d", [.shift]):
             store.deleteFocusedDesk()
         default:

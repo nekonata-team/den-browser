@@ -15,9 +15,11 @@ final class DenStore {
     private(set) var deskPendingDeletion: DeskState?
     var maximizedBoardID: UUID?
     var centerFocusedBoardRequest = 0
+    var isBoardDragging = false
+    var boardDragCancellationRequest = 0
     var overviewSelectionDeskID: UUID?
     var overviewSelectionBoardID: UUID?
-    private(set) var heldBoard: HeldBoard?
+    private(set) var recentlyRemovedBoard: RecentlyRemovedBoard?
     let sheetNavigation: SheetNavigationManager
     let websiteDataStore: WKWebsiteDataStore
 
@@ -36,11 +38,6 @@ final class DenStore {
 
     var canDeleteFocusedDesk: Bool {
         state.desks.count > 1
-            && focusedDesk?.id != heldBoard?.sourceDeskID
-    }
-
-    var heldBoardLabel: String? {
-        heldBoard?.board.label
     }
 
     var isOpenBoardPanelPresented: Bool { temporaryContext == .openBoard }
@@ -123,7 +120,6 @@ final class DenStore {
     private func deleteDesk(_ deskID: UUID) {
         guard
             state.desks.count > 1,
-            deskID != heldBoard?.sourceDeskID,
             let deskIndex = state.desks.firstIndex(where: { $0.id == deskID })
         else { return }
 
@@ -159,7 +155,7 @@ final class DenStore {
         boardWidthPanelMessage = nil
         overviewSelectionDeskID = nil
         overviewSelectionBoardID = nil
-        heldBoard = nil
+        recentlyRemovedBoard = nil
         isDenMode = false
         save()
     }
@@ -219,15 +215,13 @@ final class DenStore {
     }
 
     func canResizeFocusedDeskBoards(toFit count: Int) -> Bool {
-        heldBoard == nil
-            && focusedDesk?.boards.isEmpty == false
+        focusedDesk?.boards.isEmpty == false
             && boardWidth(toFit: count) != nil
     }
 
     func showBoardWidthPanel() {
         guard focusedDesk?.boards.isEmpty == false else { return }
-        boardWidthPanelMessage =
-            heldBoard == nil ? nil : "Place or restore the Held Board first"
+        boardWidthPanelMessage = nil
         setTemporaryContext(.boardWidth)
     }
 
@@ -239,10 +233,6 @@ final class DenStore {
 
     @discardableResult
     func resizeFocusedDeskBoards(toFit count: Int) -> Bool {
-        guard heldBoard == nil else {
-            boardWidthPanelMessage = "Place or restore the Held Board first"
-            return false
-        }
         guard let deskIndex = focusedDeskIndex, let width = boardWidth(toFit: count) else {
             boardWidthPanelMessage = "\(count) Boards cannot fit at this window width"
             return false
@@ -267,21 +257,53 @@ final class DenStore {
         save()
     }
 
-    func closeFocusedBoard() {
+    func removeFocusedBoard() {
         guard let boardID = focusedDesk?.focusedBoardID else { return }
-        closeBoard(boardID)
+        removeBoard(boardID)
     }
 
-    func closeBoard(_ boardID: UUID) {
+    func removeBoard(_ boardID: UUID) {
         guard let indices = boardIndices(for: boardID) else { return }
-        let closedBoard = removeBoard(at: indices)
-        if maximizedBoardID == closedBoard.id {
+        let board = removeBoard(at: indices)
+        recentlyRemovedBoard = RecentlyRemovedBoard(
+            board: board,
+            sourceDeskID: state.desks[indices.desk].id,
+            sourceBoardIndex: indices.board
+        )
+        if maximizedBoardID == board.id {
             maximizedBoardID = nil
         }
-        if let runtime = runtimes.removeValue(forKey: closedBoard.id) {
+        if let runtime = runtimes.removeValue(forKey: board.id) {
             sheetNavigation.didClose(runtime.webView)
+            runtime.webView.stopLoading()
+            runtime.webView.navigationDelegate = nil
         }
 
+        save()
+    }
+
+    func restoreRecentlyRemovedBoard() {
+        guard let recentlyRemovedBoard else { return }
+
+        let deskIndex: Int
+        let insertIndex: Int
+        if let sourceDeskIndex = state.desks.firstIndex(where: { $0.id == recentlyRemovedBoard.sourceDeskID }) {
+            deskIndex = sourceDeskIndex
+            insertIndex = min(recentlyRemovedBoard.sourceBoardIndex, state.desks[deskIndex].boards.endIndex)
+        } else {
+            guard let focusedDeskIndex else { return }
+            deskIndex = focusedDeskIndex
+            if let focusedBoardIndex = focusedBoardIndex(in: deskIndex) {
+                insertIndex = focusedBoardIndex + 1
+            } else {
+                insertIndex = state.desks[deskIndex].boards.endIndex
+            }
+        }
+
+        state.desks[deskIndex].boards.insert(recentlyRemovedBoard.board, at: insertIndex)
+        state.desks[deskIndex].focusedBoardID = recentlyRemovedBoard.board.id
+        state.focusedDeskID = state.desks[deskIndex].id
+        self.recentlyRemovedBoard = nil
         save()
     }
 
@@ -300,59 +322,6 @@ final class DenStore {
         state.desks[deskIndex].boards.insert(board, at: boardIndex + 1)
         state.desks[deskIndex].focusedBoardID = board.id
         isDenMode = false
-        save()
-    }
-
-    func holdFocusedBoard() {
-        guard heldBoard == nil else { return }
-        guard
-            let deskIndex = focusedDeskIndex,
-            let boardIndex = focusedBoardIndex(in: deskIndex)
-        else { return }
-
-        let board = removeBoard(at: (desk: deskIndex, board: boardIndex))
-        if maximizedBoardID == board.id {
-            maximizedBoardID = nil
-        }
-        heldBoard = HeldBoard(board: board, sourceDeskID: state.desks[deskIndex].id, sourceBoardIndex: boardIndex)
-        save()
-    }
-
-    func placeHeldBoard(beforeFocusedBoard: Bool = false) {
-        guard
-            let heldBoard,
-            let targetDeskIndex = focusedDeskIndex
-        else { return }
-
-        let targetBoardID = state.desks[targetDeskIndex].focusedBoardID
-
-        let insertIndex: Int
-        if let targetBoardID,
-            let targetIndex = state.desks[targetDeskIndex].boards.firstIndex(where: { $0.id == targetBoardID })
-        {
-            insertIndex = targetIndex + (beforeFocusedBoard ? 0 : 1)
-        } else {
-            insertIndex = state.desks[targetDeskIndex].boards.endIndex
-        }
-
-        state.desks[targetDeskIndex].boards.insert(heldBoard.board, at: insertIndex)
-        state.desks[targetDeskIndex].focusedBoardID = heldBoard.board.id
-        state.focusedDeskID = state.desks[targetDeskIndex].id
-        self.heldBoard = nil
-        save()
-    }
-
-    func restoreHeldBoard() {
-        guard
-            let heldBoard,
-            let deskIndex = state.desks.firstIndex(where: { $0.id == heldBoard.sourceDeskID })
-        else { return }
-
-        let insertIndex = min(heldBoard.sourceBoardIndex, state.desks[deskIndex].boards.endIndex)
-        state.desks[deskIndex].boards.insert(heldBoard.board, at: insertIndex)
-        state.desks[deskIndex].focusedBoardID = heldBoard.board.id
-        state.focusedDeskID = state.desks[deskIndex].id
-        self.heldBoard = nil
         save()
     }
 
@@ -422,21 +391,8 @@ final class DenStore {
     }
 
     func save() {
-        onSave?(stateForPersistence)
-    }
-
-    private var stateForPersistence: DenState {
-        guard
-            let heldBoard,
-            let deskIndex = state.desks.firstIndex(where: { $0.id == heldBoard.sourceDeskID })
-        else { return state }
-
-        var restoredState = state
-        let insertIndex = min(heldBoard.sourceBoardIndex, restoredState.desks[deskIndex].boards.endIndex)
-        restoredState.desks[deskIndex].boards.insert(heldBoard.board, at: insertIndex)
-        restoredState.desks[deskIndex].focusedBoardID = heldBoard.board.id
-        restoredState.focusedDeskID = heldBoard.sourceDeskID
-        return restoredState
+        guard !isBoardDragging else { return }
+        onSave?(state)
     }
 
     private func normalizedURL(from text: String) -> URL? {
@@ -472,7 +428,7 @@ final class DenStore {
     }
 }
 
-enum TemporaryContext {
+enum TemporaryContext: Equatable {
     case openBoard
     case newDesk
     case overview
@@ -480,7 +436,7 @@ enum TemporaryContext {
     case boardWidth
 }
 
-struct HeldBoard {
+struct RecentlyRemovedBoard {
     let board: BoardState
     let sourceDeskID: UUID
     let sourceBoardIndex: Int

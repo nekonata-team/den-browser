@@ -142,7 +142,7 @@ final class ProfileManager {
     func unregister(window: NSWindow, for profileID: UUID) {
         guard windows[profileID]?.window === window else { return }
         windows.removeValue(forKey: profileID)
-        stores.removeValue(forKey: profileID)?.releaseRuntimes()
+        stores[profileID]?.releaseRuntimes()
     }
 
     func profileID(for window: NSWindow?) -> UUID? {

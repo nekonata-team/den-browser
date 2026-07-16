@@ -6,7 +6,7 @@ Den Browser's first PoC validates whether a macOS WKWebView implementation can s
 
 - ChatGPT, Gemini, and Claude logins remain available after app restart.
 - Two Profiles can stay signed into different identities on the same site, and both identities survive restart.
-- Each Profile restores its own Den, including a Held Board at its former placement, and selecting an already-open Profile does not duplicate its window.
+- Each Profile restores its own Den, and selecting an already-open Profile does not duplicate its window.
 - Six boards can be open at the same time.
 - Board navigation works from the keyboard without noticeable delay.
 - In-progress text inside each board remains available after moving between boards.
@@ -40,7 +40,7 @@ Den Browser's first PoC validates whether a macOS WKWebView implementation can s
 
 1. Open at least four Boards with different widths. In Den Mode, press `w`, then `3`; confirm every Board in the Focused Desk receives the same persistent width, three Boards and their gaps fit the current window, the Focused Board stays focused and centers, and other Desks remain unchanged.
 2. Move the window to a differently sized display and confirm Board Widths do not automatically change. Run `w`, then `3` again and confirm widths recalculate from the new window.
-3. Temporarily maximize the Focused Board with `f`, run the bulk resize, and confirm maximization clears. Hold a Board and confirm bulk resize options become unavailable until the Board is placed or restored.
+3. Temporarily maximize the Focused Board with `f`, run the bulk resize, and confirm maximization clears.
 4. Resize the window while the Board Width panel is open and confirm available counts and displayed widths update. Confirm unsupported counts do not alter any Board.
 5. Repeat with Standard Motion and Reduced Motion. Confirm simultaneous `WKWebView` resizing stays responsive and Reduced Motion removes spatial animation.
 6. On a window wider than 1420 points, choose `1 Board` and confirm it remains available and uses the full width even though individual Board resizing retains its separate 1400-point safety limit.
@@ -64,11 +64,21 @@ Den Browser's first PoC validates whether a macOS WKWebView implementation can s
 6. Press `z` in Den Mode. Confirm the Desk switcher and Profile control hide together, the titlebar stays visible, and pressing `z` again restores both. Confirm the choice is window-local and is not restored after relaunch.
 7. Press `Command` + `W` from Sheet Input and Den Mode and confirm it closes the Focused Board. Press `Shift` + `Command` + `W` and confirm it closes the Profile window. Confirm `Command` + `W` still closes Settings.
 
+## Board movement and restoration validation
+
+1. Drag a Board by its header label or empty area. Confirm it lifts immediately, keeps focus, clears temporary maximization, and reorders only after its center crosses a neighboring Board's center.
+2. Confirm header navigation and remove buttons do not begin a drag. Confirm the cursor changes over draggable header space.
+3. Drag near both horizontal edges and confirm the Board strip auto-scrolls. Drop outside the strip, press Escape, switch Desk, and deactivate the window in separate attempts; confirm each cancels without saving an intermediate order.
+4. Repeat with Reduced Motion. Confirm the Board follows the pointer while neighboring Boards and cancellation do not use spatial animation.
+5. Remove Boards with `x`, `d`, `Command` + `W`, and the header button. Confirm each releases its `WKWebView`, replaces the Profile's single Recently Removed Board, and ignores key repeat.
+6. Press `u`; confirm the same Board identity, label, width, Current Sheet URL, former Desk, and former position return with a new `WKWebView`. Confirm the Sheet Stack, page state, and temporary maximization do not return.
+7. Delete the source Desk before restoration and confirm `u` restores the Board to the right of the Focused Board in the Focused Desk. Quit and relaunch and confirm the restoration candidate does not persist.
+
 ## Desk deletion validation
 
 1. Delete an empty Desk and confirm it disappears immediately.
 2. Delete a Desk containing Boards, cancel the confirmation, and confirm the Desk and its Boards remain.
-3. Delete it again, confirm the warning, and verify the Desk and its Boards disappear. Confirm the last Desk and the source Desk of a Held Board cannot be deleted.
+3. Delete it again, confirm the warning, and verify the Desk and its Boards disappear. Confirm the last Desk cannot be deleted.
 
 ## Vim-style Sheet navigation experiment
 

@@ -1,3 +1,4 @@
+import AppKit
 import Foundation
 import Testing
 import WebKit
@@ -176,7 +177,7 @@ struct ProfileManagerTests {
         #expect(names.contains { $0.hasPrefix("\(mismatchedURL.lastPathComponent).corrupt-") })
     }
 
-    @Test func heldBoardRestoresThroughProfilePersistence() throws {
+    @Test func removedBoardRestorationIsLimitedToCurrentAppRun() throws {
         let directory = temporaryProfileDirectory()
         defer { try? FileManager.default.removeItem(at: directory) }
         let manager = makeProfileManager(directory: directory)
@@ -185,10 +186,30 @@ struct ProfileManagerTests {
         store.addBoard(urlString: "https://example.com")
         let boardID = try #require(store.focusedDesk?.focusedBoardID)
 
-        store.holdFocusedBoard()
+        store.removeFocusedBoard()
         let restored = makeProfileManager(directory: directory)
 
-        #expect(restored.store(for: personalID)?.focusedDesk?.boards.first?.id == boardID)
+        #expect(store.recentlyRemovedBoard?.board.id == boardID)
+        #expect(restored.store(for: personalID)?.focusedDesk?.boards.contains { $0.id == boardID } == false)
+        #expect(restored.store(for: personalID)?.recentlyRemovedBoard == nil)
+    }
+
+    @Test func closingProfileWindowKeepsCurrentRunRestorationCandidate() throws {
+        let directory = temporaryProfileDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let manager = makeProfileManager(directory: directory)
+        let profileID = manager.personalProfileID
+        let store = try #require(manager.store(for: profileID))
+        store.addBoard(urlString: "https://example.com")
+        let boardID = try #require(store.focusedDesk?.focusedBoardID)
+        store.removeFocusedBoard()
+        let window = NSWindow()
+
+        manager.register(window: window, for: profileID)
+        manager.unregister(window: window, for: profileID)
+
+        #expect(manager.store(for: profileID) === store)
+        #expect(store.recentlyRemovedBoard?.board.id == boardID)
     }
 
     @Test func profileStoresUseSeparateWebKitStoresAndCallbacks() throws {

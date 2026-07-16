@@ -84,10 +84,14 @@ _Avoid_: Zen Mode, Compact Mode
 The action that switches keyboard ownership between Sheet Input and Den Mode.
 _Avoid_: Leader, prefix, mode key
 
-**Held Board**:
-A board temporarily lifted from its desk and held by Den for placement elsewhere or restoration to its former placement. Only one held board may exist at a time.
-_Avoid_: Cut board, dragged tab, selected board, clipboard item
+**Board Removal**:
+Taking a board off its desk and ending its live sheet runtime.
+_Avoid_: Close tab, delete page, trash
 
-**Board Placement**:
-Placing a held board into a desk.
-_Avoid_: Tab move, window move, paste
+**Recently Removed Board**:
+The most recent board removed from one Profile's Den during the current app run and still available for restoration.
+_Avoid_: Closed tab, trash, Held Board, undo history
+
+**Board Restoration**:
+Returning the Recently Removed Board to a desk with its saved board identity, label, width, and Current Sheet URL.
+_Avoid_: Undo, reopen tab, restore Sheet Stack
