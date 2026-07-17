@@ -65,14 +65,14 @@ extension DenStore {
         saveDeskTemplates()
     }
 
-    func moveDeskTemplate(_ id: UUID, before targetID: UUID) {
+    func moveDeskTemplate(_ id: UUID, to targetID: UUID) {
         guard
             id != targetID,
             let source = deskTemplates.firstIndex(where: { $0.id == id }),
             let target = deskTemplates.firstIndex(where: { $0.id == targetID })
         else { return }
         let template = deskTemplates.remove(at: source)
-        deskTemplates.insert(template, at: source < target ? target - 1 : target)
+        deskTemplates.insert(template, at: min(target, deskTemplates.endIndex))
         saveDeskTemplates()
     }
 

@@ -50,6 +50,11 @@ final class DenStore {
     var isKeyboardShortcutsPresented: Bool { temporaryContext == .keyboardShortcuts }
     var isBoardWidthPanelPresented: Bool { temporaryContext == .boardWidth }
     var isSaveDeskTemplatePanelPresented: Bool { temporaryContext == .saveDeskTemplate }
+    var hasPendingConfirmation: Bool {
+        deskPendingDeletion != nil
+            || deskTemplatePendingDeletion != nil
+            || deskTemplatePendingReplacement != nil
+    }
 
     convenience init() {
         self.init(state: .sample)

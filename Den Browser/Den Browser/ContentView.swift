@@ -629,6 +629,7 @@ struct ContentView: View {
                         }
                     }
                     .allowsHitTesting(isBoardPointerFocusEnabled(for: board.id))
+                    .accessibilityHidden(!isBoardPointerFocusEnabled(for: board.id))
                     .zIndex(boardDrag?.boardID == board.id ? 2 : 1)
                 }
             }
@@ -675,11 +676,7 @@ struct ContentView: View {
 
     private func isBoardPointerFocusEnabled(for boardID: UUID) -> Bool {
         (!store.isBoardDragging || boardDrag?.boardID == boardID)
-            && !store.isOpenBoardPanelPresented
-            && !store.isNewDeskPanelPresented
-            && !store.isSaveDeskTemplatePanelPresented
-            && !store.isOverviewPresented
-            && !store.isBoardWidthPanelPresented
+            && store.temporaryContext == nil
     }
 
     private var shouldReduceMotion: Bool {

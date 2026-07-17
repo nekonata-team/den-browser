@@ -29,7 +29,7 @@ final class KeyboardController {
             return false
         }
 
-        if store.deskPendingDeletion != nil {
+        if store.hasPendingConfirmation {
             return false
         }
 

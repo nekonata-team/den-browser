@@ -154,7 +154,7 @@ struct DeskTemplatePicker: View {
                         guard query.isEmpty, let value = items.first, let id = UUID(uuidString: value) else {
                             return false
                         }
-                        store.moveDeskTemplate(id, before: template.id)
+                        store.moveDeskTemplate(id, to: template.id)
                         return true
                     }
                 }

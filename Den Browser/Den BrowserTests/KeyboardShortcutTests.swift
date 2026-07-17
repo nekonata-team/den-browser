@@ -181,6 +181,23 @@ struct KeyboardShortcutTests {
         #expect(!empty.isSaveDeskTemplatePanelPresented)
     }
 
+    @Test func templateConfirmationsSuspendBoardRemovalShortcuts() throws {
+        let commandW = try keyEvent(
+            characters: "w", charactersIgnoringModifiers: "w", modifiers: [.command], keyCode: 13)
+        let store = makeStore(boards: [board("First")])
+
+        #expect(store.saveFocusedDeskAsTemplate(label: "Routine") == .created)
+        #expect(store.saveFocusedDeskAsTemplate(label: "Routine") == .replacementPending)
+        #expect(!KeyboardController.handle(commandW, store: store))
+        #expect(store.focusedDesk?.boards.count == 1)
+
+        store.cancelDeskTemplateReplacement()
+        let templateID = try #require(store.deskTemplates.first?.id)
+        store.requestDeskTemplateDeletion(templateID)
+        #expect(!KeyboardController.handle(commandW, store: store))
+        #expect(store.focusedDesk?.boards.count == 1)
+    }
+
     private func makePreferences() throws -> AppPreferences {
         let defaults = try #require(UserDefaults(suiteName: "KeyboardShortcutTests-\(UUID())"))
         return AppPreferences(defaults: defaults)

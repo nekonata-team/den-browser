@@ -59,10 +59,10 @@ private struct DenCommands: Commands {
                     .keyboardShortcut("w", modifiers: [.command])
                     .disabled(
                         store?.focusedDesk?.focusedBoardID == nil
-                            || store?.deskPendingDeletion != nil)
+                            || store?.hasPendingConfirmation == true)
                 Button("Close Profile Window") { NSApp.keyWindow?.performClose(nil) }
                     .keyboardShortcut("w", modifiers: [.command, .shift])
-                    .disabled(store?.deskPendingDeletion != nil)
+                    .disabled(store?.hasPendingConfirmation == true)
             }
         }
 
