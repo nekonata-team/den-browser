@@ -76,7 +76,7 @@ struct DenStoreTests {
         #expect(copy.focusedBoardID == copy.boards[1].id)
     }
 
-    @Test func personalTemplateValidationReplacementOrderingAndDeletion() throws {
+    @Test func personalTemplateValidationReplacementAndDeletion() throws {
         let source = desk("Desk", boards: [board("First")])
         var saves: [[PersonalDeskTemplate]] = []
         let store = DenStore(
@@ -98,30 +98,10 @@ struct DenStoreTests {
         #expect(store.deskTemplates.last?.id == routineID)
         #expect(store.deskTemplates.last?.boards[0].width == 900)
 
-        let otherID = try #require(store.deskTemplates.first?.id)
-        store.moveDeskTemplate(routineID, to: otherID)
-        #expect(store.deskTemplates.map(\.label) == ["Routine", "Other"])
-        store.moveDeskTemplate(routineID, by: 1)
-        #expect(store.deskTemplates.map(\.label) == ["Other", "Routine"])
         store.requestDeskTemplateDeletion(routineID)
         store.confirmDeskTemplateDeletion()
         #expect(store.deskTemplates.map(\.label) == ["Other"])
-        #expect(saves.count == 6)
-    }
-
-    @Test func pointerTemplateReorderingCanMoveDownAndToLastPosition() throws {
-        let source = desk("Desk", boards: [board("First")])
-        let templates = ["First", "Second", "Third"].map {
-            PersonalDeskTemplate(label: $0, desk: source)
-        }
-        let store = DenStore(
-            state: DenState(desks: [source], focusedDeskID: source.id),
-            deskTemplates: templates)
-
-        store.moveDeskTemplate(templates[0].id, to: templates[1].id)
-        #expect(store.deskTemplates.map(\.label) == ["Second", "First", "Third"])
-        store.moveDeskTemplate(templates[1].id, to: templates[2].id)
-        #expect(store.deskTemplates.map(\.label) == ["First", "Third", "Second"])
+        #expect(saves.count == 4)
     }
 
     @Test func emptyDeskCannotBecomePersonalTemplate() {

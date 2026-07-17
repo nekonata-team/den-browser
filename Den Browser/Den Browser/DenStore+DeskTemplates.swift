@@ -56,26 +56,6 @@ extension DenStore {
         deskTemplatePendingDeletion = nil
     }
 
-    func moveDeskTemplate(_ id: UUID, by offset: Int) {
-        guard
-            let source = deskTemplates.firstIndex(where: { $0.id == id }),
-            deskTemplates.indices.contains(source + offset)
-        else { return }
-        deskTemplates.swapAt(source, source + offset)
-        saveDeskTemplates()
-    }
-
-    func moveDeskTemplate(_ id: UUID, to targetID: UUID) {
-        guard
-            id != targetID,
-            let source = deskTemplates.firstIndex(where: { $0.id == id }),
-            let target = deskTemplates.firstIndex(where: { $0.id == targetID })
-        else { return }
-        let template = deskTemplates.remove(at: source)
-        deskTemplates.insert(template, at: min(target, deskTemplates.endIndex))
-        saveDeskTemplates()
-    }
-
     private func sameTemplateLabel(_ lhs: String, _ rhs: String) -> Bool {
         lhs.compare(rhs, options: [.caseInsensitive, .widthInsensitive]) == .orderedSame
     }

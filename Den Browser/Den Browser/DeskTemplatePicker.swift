@@ -13,7 +13,6 @@ struct DeskTemplatePicker: View {
     let onConfirm: (DeskTemplateSelection) -> Void
 
     @Environment(DenStore.self) private var store
-
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
@@ -126,20 +125,6 @@ struct DeskTemplatePicker: View {
                                 .foregroundStyle(.secondary)
                         }
                         Spacer()
-                        Button {
-                            store.moveDeskTemplate(template.id, by: -1)
-                        } label: {
-                            Image(systemName: "arrow.up")
-                        }
-                        .disabled(!query.isEmpty || store.deskTemplates.first?.id == template.id)
-                        .accessibilityLabel("Move \(template.label) Up")
-                        Button {
-                            store.moveDeskTemplate(template.id, by: 1)
-                        } label: {
-                            Image(systemName: "arrow.down")
-                        }
-                        .disabled(!query.isEmpty || store.deskTemplates.last?.id == template.id)
-                        .accessibilityLabel("Move \(template.label) Down")
                         Button(role: .destructive) {
                             store.requestDeskTemplateDeletion(template.id)
                         } label: {
@@ -149,14 +134,6 @@ struct DeskTemplatePicker: View {
                     }
                     .padding(8)
                     .background(Color.primary.opacity(0.055), in: RoundedRectangle(cornerRadius: 8))
-                    .draggable(template.id.uuidString)
-                    .dropDestination(for: String.self) { items, _ in
-                        guard query.isEmpty, let value = items.first, let id = UUID(uuidString: value) else {
-                            return false
-                        }
-                        store.moveDeskTemplate(id, to: template.id)
-                        return true
-                    }
                 }
             }
         }
