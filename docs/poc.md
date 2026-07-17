@@ -74,6 +74,16 @@ Den Browser's first PoC validates whether a macOS WKWebView implementation can s
 6. Press `u`; confirm the same Board identity, label, width, Current Sheet URL, former Desk, and former position return with a new `WKWebView`. Confirm the Sheet Stack, page state, and temporary maximization do not return.
 7. Delete the source Desk before restoration and confirm `u` restores the Board to the right of the Focused Board in the Focused Desk. Quit and relaunch and confirm the restoration candidate does not persist.
 
+## Board context menu validation
+
+1. Right-click and Control-click the label, empty area, and each button in an unfocused Board header. Confirm the Board becomes focused before the native context menu appears, remains focused after dismissal, and ordinary left-click and drag behavior stays unchanged.
+2. Confirm the menu is available in Sheet Input, Den Mode, Zen View, and while the Board is maximized. Confirm it is unavailable during Board dragging, Overview, and temporary panels.
+3. Exercise Duplicate Current Sheet, Reload Current Sheet, Maximize Board / Restore Board Size, and Center Board. Confirm every action targets the right-clicked Board even when it was previously unfocused.
+4. Confirm Move Board Left and Move Board Right remain visible but disable at their respective Desk edges and both disable for a one-Board Desk.
+5. With multiple Desks, confirm Move to Desk excludes the current Desk, labels destinations with their one-based number and label, inserts after the destination's Focused Board, then focuses the moved Board in that Desk.
+6. Confirm Remove Board is destructive-styled, does not ask for confirmation, and creates the normal Recently Removed Board candidate. Confirm the menu shows icons but no key equivalents.
+7. Right-click inside a Sheet and confirm the website's context menu remains unchanged.
+
 ## Desk deletion validation
 
 1. Delete an empty Desk and confirm it disappears immediately.

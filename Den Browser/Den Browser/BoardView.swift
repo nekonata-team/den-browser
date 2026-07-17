@@ -3,6 +3,7 @@ import SwiftUI
 import WebKit
 
 struct BoardView: View {
+    @Environment(DenStore.self) private var store
     @Environment(AppPreferences.self) private var preferences
     @Environment(\.accessibilityReduceMotion) private var systemReduceMotion
     @State private var isDragHandleHovered = false
@@ -53,7 +54,19 @@ struct BoardView: View {
         return Color.primary.opacity(0.16)
     }
 
+    @ViewBuilder
     private var header: some View {
+        if isContextMenuEnabled {
+            headerContent
+                .contextMenu {
+                    boardContextMenu
+                }
+        } else {
+            headerContent
+        }
+    }
+
+    private var headerContent: some View {
         HStack(spacing: 8) {
             dragHandle
 
@@ -62,6 +75,82 @@ struct BoardView: View {
         .padding(.horizontal, 12)
         .frame(height: 38)
         .background(.regularMaterial)
+    }
+
+    @ViewBuilder
+    private var boardContextMenu: some View {
+        Button {
+            store.focusBoard(board.id)
+            store.duplicateFocusedBoard()
+        } label: {
+            Label("Duplicate Current Sheet", systemImage: "plus.square.on.square")
+        }
+        .onAppear {
+            store.focusBoard(board.id)
+        }
+
+        Button {
+            runtime.reload()
+        } label: {
+            Label("Reload Current Sheet", systemImage: "arrow.clockwise")
+        }
+
+        Divider()
+
+        Button {
+            store.focusBoard(board.id)
+            store.toggleFocusedBoardMaximized()
+        } label: {
+            Label(maximizationLabel, systemImage: maximizationSystemImage)
+        }
+
+        Button {
+            store.focusBoard(board.id)
+            store.centerFocusedBoard()
+        } label: {
+            Label("Center Board", systemImage: "scope")
+        }
+
+        Divider()
+
+        Button {
+            store.focusBoard(board.id)
+            store.moveFocusedBoardLeft()
+        } label: {
+            Label("Move Board Left", systemImage: "arrow.left")
+        }
+        .disabled(!store.canMoveBoard(board.id, by: -1))
+
+        Button {
+            store.focusBoard(board.id)
+            store.moveFocusedBoardRight()
+        } label: {
+            Label("Move Board Right", systemImage: "arrow.right")
+        }
+        .disabled(!store.canMoveBoard(board.id, by: 1))
+
+        if store.state.desks.count > 1 {
+            Menu {
+                ForEach(Array(store.state.desks.enumerated()), id: \.element.id) { entry in
+                    if entry.element.id != boardDeskID {
+                        Button("\(entry.offset + 1). \(entry.element.label)") {
+                            store.focusBoard(board.id)
+                            store.moveFocusedBoard(toDeskNumber: entry.offset + 1)
+                        }
+                    }
+                }
+            } label: {
+                Label("Move to Desk", systemImage: "rectangle.stack")
+            }
+        }
+
+        Divider()
+
+        Button(role: .destructive) {
+            store.removeBoard(board.id)
+        } label: {
+            Label("Remove Board", systemImage: "xmark")
+        }
     }
 
     private var dragHandle: some View {
@@ -105,35 +194,52 @@ struct BoardView: View {
 
     private var navigationButtons: some View {
         HStack(spacing: 2) {
-            Button(action: onGoBack) {
-                Image(systemName: "chevron.left")
-                    .frame(width: 24, height: 24)
-            }
-            .buttonStyle(.borderless)
-            .foregroundStyle(.primary)
-            .disabled(!runtime.webView.canGoBack)
-            .help("Back in sheet stack")
-            .accessibilityLabel("Back in sheet stack")
+            withBoardContextMenu(
+                Button(action: onGoBack) {
+                    Image(systemName: "chevron.left")
+                        .frame(width: 24, height: 24)
+                }
+                .buttonStyle(.borderless)
+                .foregroundStyle(.primary)
+                .disabled(!runtime.webView.canGoBack)
+                .help("Back in sheet stack")
+                .accessibilityLabel("Back in sheet stack")
+            )
 
-            Button(action: onGoForward) {
-                Image(systemName: "chevron.right")
-                    .frame(width: 24, height: 24)
-            }
-            .buttonStyle(.borderless)
-            .foregroundStyle(.primary)
-            .disabled(!runtime.webView.canGoForward)
-            .help("Forward in sheet stack")
-            .accessibilityLabel("Forward in sheet stack")
+            withBoardContextMenu(
+                Button(action: onGoForward) {
+                    Image(systemName: "chevron.right")
+                        .frame(width: 24, height: 24)
+                }
+                .buttonStyle(.borderless)
+                .foregroundStyle(.primary)
+                .disabled(!runtime.webView.canGoForward)
+                .help("Forward in sheet stack")
+                .accessibilityLabel("Forward in sheet stack")
+            )
 
-            Button(action: onRemove) {
-                Image(systemName: "xmark")
-                    .frame(width: 24, height: 24)
+            withBoardContextMenu(
+                Button(action: onRemove) {
+                    Image(systemName: "xmark")
+                        .frame(width: 24, height: 24)
+                }
+                .buttonStyle(.borderless)
+                .foregroundStyle(.primary)
+                .padding(.leading, 4)
+                .help("Remove Board")
+                .accessibilityLabel("Remove Board")
+            )
+        }
+    }
+
+    @ViewBuilder
+    private func withBoardContextMenu<Content: View>(_ content: Content) -> some View {
+        if isContextMenuEnabled {
+            content.contextMenu {
+                boardContextMenu
             }
-            .buttonStyle(.borderless)
-            .foregroundStyle(.primary)
-            .padding(.leading, 4)
-            .help("Remove Board")
-            .accessibilityLabel("Remove Board")
+        } else {
+            content
         }
     }
 
@@ -142,6 +248,24 @@ struct BoardView: View {
             return "Focused board"
         }
         return "Board"
+    }
+
+    private var isContextMenuEnabled: Bool {
+        isPointerFocusEnabled && !store.isBoardDragging
+    }
+
+    private var boardDeskID: UUID? {
+        store.boardIndices(for: board.id).map { store.state.desks[$0.desk].id }
+    }
+
+    private var maximizationLabel: String {
+        store.maximizedBoardID == board.id ? "Restore Board Size" : "Maximize Board"
+    }
+
+    private var maximizationSystemImage: String {
+        store.maximizedBoardID == board.id
+            ? "arrow.down.right.and.arrow.up.left"
+            : "arrow.up.left.and.arrow.down.right"
     }
 
     private var shouldReduceMotion: Bool {

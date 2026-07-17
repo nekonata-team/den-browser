@@ -45,6 +45,8 @@ The complete in-app guide is available from Settings, the Den menu, and `?` in D
 
 Overview accepts only movement, Shift plus movement, Return, and Escape. Movement changes the Overview Selection; Shift moves its board. Return makes the selection the Focused Board. Escape closes overview back to Den Mode.
 
-## Pointer Board movement
+## Pointer Board actions
 
 Drag a Board header's label or empty area to reorder it within the Focused Desk. Header buttons remain ordinary controls. Dropping outside the Board strip cancels the move; moving near the strip's horizontal edges scrolls it. Keyboard Board movement and Overview remain available without pointer input.
+
+Right-click or Control-click anywhere in a Board header to focus that Board and open its native context menu. The menu can duplicate or reload the Current Sheet, maximize or center the Board, move it left, right, or to another numbered Desk, and remove it. Movement at a Desk edge remains visible but disabled. Right-clicking inside a Sheet continues to use the web content's own context menu.

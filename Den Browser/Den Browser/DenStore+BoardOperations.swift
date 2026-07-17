@@ -9,7 +9,9 @@ extension DenStore {
 
     func focusBoard(_ boardID: UUID) {
         guard let indices = boardIndices(for: boardID) else { return }
-        state.focusedDeskID = state.desks[indices.desk].id
+        let deskID = state.desks[indices.desk].id
+        guard state.focusedDeskID != deskID || state.desks[indices.desk].focusedBoardID != boardID else { return }
+        state.focusedDeskID = deskID
         state.desks[indices.desk].focusedBoardID = boardID
         save()
     }
@@ -72,6 +74,11 @@ extension DenStore {
     func focusedBoardIndex(in deskIndex: Int) -> Int? {
         guard let focusedBoardID = state.desks[deskIndex].focusedBoardID else { return nil }
         return state.desks[deskIndex].boards.firstIndex { $0.id == focusedBoardID }
+    }
+
+    func canMoveBoard(_ boardID: UUID, by delta: Int) -> Bool {
+        guard let indices = boardIndices(for: boardID) else { return false }
+        return state.desks[indices.desk].boards.indices.contains(indices.board + delta)
     }
 
     func beginBoardDrag(_ boardID: UUID) -> Bool {

@@ -41,6 +41,31 @@ struct DenStoreTests {
         }
     }
 
+    @Test func focusingAlreadyFocusedBoardDoesNotSaveAgain() {
+        let board = board("Focused")
+        let source = desk("Desk", boards: [board], focusedBoardID: board.id)
+        var saveCount = 0
+        let store = DenStore(state: DenState(desks: [source], focusedDeskID: source.id)) { _ in
+            saveCount += 1
+        }
+
+        store.focusBoard(board.id)
+
+        #expect(saveCount == 0)
+    }
+
+    @Test func boardMovementAvailabilityStopsAtDeskEdges() {
+        let boards = [board("A"), board("B"), board("C")]
+        withStore(desks: [desk("Desk", boards: boards)]) { store in
+            #expect(!store.canMoveBoard(boards[0].id, by: -1))
+            #expect(store.canMoveBoard(boards[0].id, by: 1))
+            #expect(store.canMoveBoard(boards[1].id, by: -1))
+            #expect(store.canMoveBoard(boards[1].id, by: 1))
+            #expect(store.canMoveBoard(boards[2].id, by: -1))
+            #expect(!store.canMoveBoard(boards[2].id, by: 1))
+        }
+    }
+
     @Test func reorderingBoardKeepsItFocusedAndStopsAtDeskEdge() {
         let boards = [board("A"), board("B"), board("C")]
         withStore(desks: [desk("Desk", boards: boards, focusedBoardID: boards[1].id)]) { store in

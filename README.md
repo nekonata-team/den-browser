@@ -32,7 +32,7 @@ See [CONTEXT.md](./CONTEXT.md) for the complete product language.
 - Arrange Boards spatially across multiple Desks.
 - Create named, color-coded Profiles, each with one Den window and isolated website data.
 - See the current Profile in the titlebar, and open or find Profiles from the top-right icon, Profile menu, or `Control` + `Command` + `P`.
-- Navigate between neighboring Boards with `Command` + `Option` + Left / Right, add Shift to reorder them, remove the Focused Board with `Command` + `W`, and use Den Mode for the full set of Board operations. `Shift` + `Command` + `W` closes the Profile window. Pointer controls support Sheet Stack navigation, Board Removal, and same-Desk header dragging.
+- Navigate between neighboring Boards with `Command` + `Option` + Left / Right, add Shift to reorder them, remove the Focused Board with `Command` + `W`, and use Den Mode for the full set of Board operations. `Shift` + `Command` + `W` closes the Profile window. Pointer controls support Sheet Stack navigation, Board Removal, same-Desk header dragging, and a Board action menu from any Board header.
 - Customize the five app-wide Den and Board shortcuts in Settings, reset them individually or together, and open the complete shortcut guide from Settings, the Den menu, or `?` in Den Mode.
 - Choose whether Den follows the macOS motion setting, uses Standard Motion, or uses Reduced Motion in Appearance settings.
 - Toggle Zen View with `z` in Den Mode to hide the Desk switcher and Profile control without hiding the titlebar.
