@@ -19,8 +19,14 @@ struct ContentView: View {
     @Environment(\.accessibilityReduceMotion) private var systemReduceMotion
     @State private var urlText = ""
     @State private var newDeskLabel = ""
-    @State private var selectedDeskTemplate: DeskTemplate = .empty
+    @State private var selectedDeskTemplate: DeskTemplateSelection = .builtIn(.empty)
+    @State private var activeDeskTemplate: DeskTemplateSelection = .builtIn(.empty)
+    @State private var deskTemplateQuery = ""
+    @State private var isManagingDeskTemplates = false
+    @State private var isChoosingDeskTemplate = true
     @State private var didAttemptDeskCreation = false
+    @State private var saveDeskTemplateLabel = ""
+    @State private var saveDeskTemplateMessage: String?
     @State private var boardScrollPosition = ScrollPosition(idType: UUID.self)
     @State private var didScrollToRestoredFocusedBoard = false
     @State private var resizingBoardID: UUID?
@@ -28,7 +34,9 @@ struct ContentView: View {
     @State private var boardDrag: BoardDragState?
     @State private var lastBoardAutoScrollTime = 0.0
     @FocusState private var isOpenPanelFocused: Bool
+    @FocusState private var isDeskTemplateSearchFocused: Bool
     @FocusState private var isNewDeskLabelFocused: Bool
+    @FocusState private var isSaveDeskTemplateLabelFocused: Bool
 
     init(profileName: String? = nil, profileColor: Color = .blue) {
         self.profileName = profileName
@@ -77,6 +85,12 @@ struct ContentView: View {
                         .transition(DenMotion.transition(reduceMotion: shouldReduceMotion, scale: 0.96))
                 }
 
+                if store.isSaveDeskTemplatePanelPresented {
+                    saveDeskTemplatePanel
+                        .padding(.top, shouldShowDeskSwitcher ? 74 : 12)
+                        .transition(DenMotion.transition(reduceMotion: shouldReduceMotion, scale: 0.96))
+                }
+
                 if store.isKeyboardShortcutsPresented,
                     store.focusedDesk?.boards.isEmpty == false
                 {
@@ -111,6 +125,9 @@ struct ContentView: View {
             }
             .animation(DenMotion.feedback(reduceMotion: shouldReduceMotion), value: store.isOpenBoardPanelPresented)
             .animation(DenMotion.feedback(reduceMotion: shouldReduceMotion), value: store.isNewDeskPanelPresented)
+            .animation(
+                DenMotion.feedback(reduceMotion: shouldReduceMotion), value: store.isSaveDeskTemplatePanelPresented
+            )
             .animation(DenMotion.feedback(reduceMotion: shouldReduceMotion), value: store.isOverviewPresented)
             .animation(DenMotion.feedback(reduceMotion: shouldReduceMotion), value: store.isKeyboardShortcutsPresented)
             .animation(DenMotion.feedback(reduceMotion: shouldReduceMotion), value: store.isBoardWidthPanelPresented)
@@ -145,6 +162,31 @@ struct ContentView: View {
                     ? "Its Board and Sheet Stack will be permanently deleted."
                     : "Its \(boardCount) Boards and their Sheet Stacks will be permanently deleted."
             )
+        }
+        .confirmationDialog(
+            "Replace \(store.deskTemplatePendingReplacement?.label ?? "Desk Template")?",
+            isPresented: Binding(
+                get: { store.deskTemplatePendingReplacement != nil },
+                set: { if !$0 { store.cancelDeskTemplateReplacement() } })
+        ) {
+            Button("Replace Template") {
+                store.confirmDeskTemplateReplacement()
+                store.hideSaveDeskTemplatePanel()
+            }
+            Button("Cancel", role: .cancel) { store.cancelDeskTemplateReplacement() }
+        } message: {
+            Text("Existing Desks will not be affected.")
+        }
+        .confirmationDialog(
+            "Delete \(store.deskTemplatePendingDeletion?.label ?? "Desk Template")?",
+            isPresented: Binding(
+                get: { store.deskTemplatePendingDeletion != nil },
+                set: { if !$0 { store.cancelDeskTemplateDeletion() } })
+        ) {
+            Button("Delete Template", role: .destructive) { confirmDeskTemplateDeletion() }
+            Button("Cancel", role: .cancel) { store.cancelDeskTemplateDeletion() }
+        } message: {
+            Text("Existing Desks will not be affected.")
         }
     }
 
@@ -204,53 +246,128 @@ struct ContentView: View {
             HStack(spacing: 10) {
                 Image(systemName: "rectangle.stack.badge.plus")
                     .foregroundStyle(.secondary)
-
-                TextField("Desk label", text: $newDeskLabel)
-                    .textFieldStyle(.plain)
-                    .font(.system(size: 18, weight: .medium))
-                    .focused($isNewDeskLabelFocused)
-                    .onSubmit(createDesk)
+                Text("New Desk")
+                    .font(.system(size: 18, weight: .semibold))
             }
             .frame(height: 38)
 
-            Picker("Template", selection: $selectedDeskTemplate) {
-                ForEach(DeskTemplate.allCases) { template in
-                    Text(template.label).tag(template)
+            if isChoosingDeskTemplate {
+                DeskTemplatePicker(
+                    selection: $activeDeskTemplate,
+                    query: $deskTemplateQuery,
+                    isManaging: $isManagingDeskTemplates,
+                    isSearchFocused: $isDeskTemplateSearchFocused,
+                    onConfirm: confirmDeskTemplate)
+            } else {
+                HStack(spacing: 10) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(deskTemplateLabel(for: selectedDeskTemplate))
+                            .font(.headline)
+                        Text(boardCountLabel(selectedDeskTemplateBoards.count))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    Button("Change Template") { beginDeskTemplateSelection() }
+                        .buttonStyle(.plain)
                 }
+                .padding(10)
+                .background(Color.primary.opacity(0.055), in: RoundedRectangle(cornerRadius: 8))
+
+                DeskTemplatePreview(boards: selectedDeskTemplateBoards)
+
+                TextField("Desk label", text: $newDeskLabel)
+                    .textFieldStyle(.roundedBorder)
+                    .font(.system(size: 16, weight: .medium))
+                    .focused($isNewDeskLabelFocused)
+                    .onSubmit(createDesk)
+                    .onKeyPress(phases: .down) { keyPress in
+                        let isBackTab = keyPress.key == .tab || keyPress.characters == "\u{19}"
+                        guard isBackTab, keyPress.modifiers.contains(.shift) else {
+                            return .ignored
+                        }
+                        beginDeskTemplateSelection()
+                        return .handled
+                    }
+
+                HStack(spacing: 12) {
+                    if didAttemptDeskCreation && trimmedNewDeskLabel.isEmpty {
+                        Text("Enter a desk label")
+                            .foregroundStyle(.red)
+                    } else {
+                        Text(newDeskPanelDescription)
+                            .foregroundStyle(.secondary)
+                    }
+
+                    Spacer()
+
+                    Button("Create", action: createDesk)
+                        .buttonStyle(.glassProminent)
+                        .disabled(trimmedNewDeskLabel.isEmpty || !store.canCreateDesk)
+                }
+                .font(.system(size: 12))
             }
-            .pickerStyle(.segmented)
+        }
+        .padding(16)
+        .frame(width: 620)
+        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .onAppear {
+            selectedDeskTemplate = .builtIn(.empty)
+            activeDeskTemplate = .builtIn(.empty)
+            newDeskLabel = BuiltInDeskTemplate.empty.label
+            deskTemplateQuery = ""
+            isManagingDeskTemplates = false
+            isChoosingDeskTemplate = true
+            didAttemptDeskCreation = false
+            DispatchQueue.main.async {
+                isDeskTemplateSearchFocused = true
+            }
+        }
+        .onExitCommand {
+            if isChoosingDeskTemplate {
+                store.hideNewDeskPanel()
+            } else {
+                beginDeskTemplateSelection()
+            }
+        }
+    }
 
-            HStack(spacing: 12) {
-                if didAttemptDeskCreation && trimmedNewDeskLabel.isEmpty {
-                    Text("Enter a desk label")
-                        .foregroundStyle(.red)
-                } else {
-                    Text(newDeskPanelDescription)
-                        .foregroundStyle(.secondary)
-                }
+    private var saveDeskTemplatePanel: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 10) {
+                Image(systemName: "bookmark")
+                    .foregroundStyle(.secondary)
+                Text("Save Desk as Template")
+                    .font(.system(size: 17, weight: .semibold))
+            }
 
+            TextField("Template label", text: $saveDeskTemplateLabel)
+                .textFieldStyle(.roundedBorder)
+                .focused($isSaveDeskTemplateLabelFocused)
+                .onSubmit(saveDeskTemplate)
+
+            DeskTemplatePreview(
+                boards: store.focusedDesk?.boards.map(DeskTemplateBoard.init) ?? [])
+
+            HStack {
+                Text(saveDeskTemplateMessage ?? "Captures the current Board arrangement")
+                    .font(.caption)
+                    .foregroundStyle(saveDeskTemplateMessage == nil ? Color.secondary : Color.red)
                 Spacer()
-
-                Button("Create", action: createDesk)
+                Button("Save Template", action: saveDeskTemplate)
                     .buttonStyle(.glassProminent)
-                    .disabled(trimmedNewDeskLabel.isEmpty || !store.canCreateDesk)
+                    .disabled(saveDeskTemplateLabel.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
             }
-            .font(.system(size: 12))
         }
         .padding(16)
         .frame(width: 520)
         .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
         .onAppear {
-            newDeskLabel = ""
-            selectedDeskTemplate = .empty
-            didAttemptDeskCreation = false
-            DispatchQueue.main.async {
-                isNewDeskLabelFocused = true
-            }
+            saveDeskTemplateLabel = store.focusedDesk?.label ?? ""
+            saveDeskTemplateMessage = nil
+            DispatchQueue.main.async { isSaveDeskTemplateLabelFocused = true }
         }
-        .onExitCommand {
-            store.hideNewDeskPanel()
-        }
+        .onExitCommand { store.hideSaveDeskTemplatePanel() }
     }
 
     private var trimmedNewDeskLabel: String {
@@ -264,10 +381,84 @@ struct ContentView: View {
     private func createDesk() {
         didAttemptDeskCreation = true
         guard !trimmedNewDeskLabel.isEmpty else { return }
-        store.createDesk(label: newDeskLabel, template: selectedDeskTemplate)
+        switch selectedDeskTemplate {
+        case .builtIn(let template):
+            store.createDesk(label: newDeskLabel, template: template)
+        case .personal(let id):
+            store.createDesk(label: newDeskLabel, personalTemplateID: id)
+        }
         newDeskLabel = ""
-        selectedDeskTemplate = .empty
+        selectedDeskTemplate = .builtIn(.empty)
         didAttemptDeskCreation = false
+    }
+
+    private func confirmDeskTemplate(_ selection: DeskTemplateSelection) {
+        activeDeskTemplate = selection
+        selectedDeskTemplate = selection
+        newDeskLabel = deskTemplateLabel(for: selection)
+        isChoosingDeskTemplate = false
+        didAttemptDeskCreation = false
+        DispatchQueue.main.async {
+            isNewDeskLabelFocused = true
+            NSApp.sendAction(#selector(NSText.selectAll(_:)), to: nil, from: nil)
+        }
+    }
+
+    private func beginDeskTemplateSelection() {
+        activeDeskTemplate = selectedDeskTemplate
+        isChoosingDeskTemplate = true
+        isManagingDeskTemplates = false
+        DispatchQueue.main.async { isDeskTemplateSearchFocused = true }
+    }
+
+    private func deskTemplateLabel(for selection: DeskTemplateSelection) -> String {
+        switch selection {
+        case .builtIn(let template):
+            template.label
+        case .personal(let id):
+            store.deskTemplates.first(where: { $0.id == id })?.label ?? BuiltInDeskTemplate.empty.label
+        }
+    }
+
+    private var selectedDeskTemplateBoards: [DeskTemplateBoard] {
+        switch selectedDeskTemplate {
+        case .builtIn(let template):
+            template.boards
+        case .personal(let id):
+            store.deskTemplates.first(where: { $0.id == id })?.boards ?? []
+        }
+    }
+
+    private func boardCountLabel(_ count: Int) -> String {
+        count == 1 ? "1 Board" : "\(count) Boards"
+    }
+
+    private func saveDeskTemplate() {
+        switch store.saveFocusedDeskAsTemplate(label: saveDeskTemplateLabel) {
+        case .created:
+            store.hideSaveDeskTemplatePanel()
+        case .replacementPending:
+            saveDeskTemplateMessage = nil
+        case .invalidLabel:
+            saveDeskTemplateMessage = "Enter a Template label"
+        case .emptyDesk:
+            saveDeskTemplateMessage = "A Personal Desk Template needs at least one Board"
+        case .reservedLabel:
+            saveDeskTemplateMessage = "Built-in Desk Template labels are reserved"
+        }
+    }
+
+    private func confirmDeskTemplateDeletion() {
+        if case .personal(let id) = selectedDeskTemplate,
+            let pending = store.deskTemplatePendingDeletion,
+            pending.id == id
+        {
+            if newDeskLabel == pending.label {
+                newDeskLabel = BuiltInDeskTemplate.empty.label
+            }
+            selectedDeskTemplate = .builtIn(.empty)
+        }
+        store.confirmDeskTemplateDeletion()
     }
 
     private var shouldShowDeskSwitcher: Bool {
@@ -486,6 +677,7 @@ struct ContentView: View {
         (!store.isBoardDragging || boardDrag?.boardID == boardID)
             && !store.isOpenBoardPanelPresented
             && !store.isNewDeskPanelPresented
+            && !store.isSaveDeskTemplatePanelPresented
             && !store.isOverviewPresented
             && !store.isBoardWidthPanelPresented
     }

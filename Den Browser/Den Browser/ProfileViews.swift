@@ -14,8 +14,25 @@ struct ProfileWindowView: View {
                 ContentView(profileName: profile.name, profileColor: profile.color.color)
 
                 if !store.isZenViewPresented {
-                    ProfileChip(profile: profile)
-                        .padding(12)
+                    HStack(spacing: 8) {
+                        if store.focusedDesk?.boards.isEmpty == false {
+                            Button {
+                                store.showSaveDeskTemplatePanel()
+                            } label: {
+                                Image(systemName: "bookmark")
+                                    .font(.system(size: 13, weight: .semibold))
+                                    .frame(width: 30, height: 30)
+                            }
+                            .buttonStyle(.borderless)
+                            .tint(.secondary)
+                            .fixedSize()
+                            .accessibilityLabel("Save Desk as Template")
+                            .help("Save Desk as Template")
+                        }
+
+                        ProfileChip(profile: profile)
+                    }
+                    .padding(12)
                 }
 
                 if profileManager.openProfilePanelProfileID == profileID {

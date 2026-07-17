@@ -37,32 +37,80 @@ struct DeskState: Codable, Equatable, Identifiable {
     }
 }
 
-enum DeskTemplate: String, CaseIterable, Identifiable {
+enum BuiltInDeskTemplate: String, CaseIterable, Identifiable {
     case empty
-    case chatGPTThree
+    case chatGPT
+    case gemini
+
+    static let boardWidth = 520.0
 
     var id: Self { self }
 
     var label: String {
         switch self {
         case .empty: "Empty"
-        case .chatGPTThree: "ChatGPT ×3"
+        case .chatGPT: "ChatGPT"
+        case .gemini: "Gemini"
         }
     }
 
-    func makeBoards() -> [BoardState] {
+    var boards: [DeskTemplateBoard] {
         switch self {
         case .empty:
             []
-        case .chatGPTThree:
+        case .chatGPT:
             (0..<3).map { _ in
-                BoardState(
+                DeskTemplateBoard(
                     label: "ChatGPT",
-                    width: 520,
+                    width: Self.boardWidth,
                     currentURLString: "https://chatgpt.com/"
                 )
             }
+        case .gemini:
+            (0..<3).map { _ in
+                DeskTemplateBoard(
+                    label: "Gemini",
+                    width: Self.boardWidth,
+                    currentURLString: "https://gemini.google.com/"
+                )
+            }
         }
+    }
+
+    var focusedBoardIndex: Int? { boards.isEmpty ? nil : 0 }
+}
+
+struct PersonalDeskTemplate: Codable, Equatable, Identifiable {
+    var id: UUID
+    var label: String
+    var boards: [DeskTemplateBoard]
+    var focusedBoardIndex: Int?
+
+    init(id: UUID = UUID(), label: String, desk: DeskState) {
+        self.id = id
+        self.label = label
+        boards = desk.boards.map(DeskTemplateBoard.init)
+        focusedBoardIndex = desk.boards.firstIndex { $0.id == desk.focusedBoardID }
+    }
+}
+
+struct DeskTemplateBoard: Codable, Equatable {
+    var label: String
+    var width: Double
+    var currentURLString: String
+
+    nonisolated init(label: String, width: Double, currentURLString: String) {
+        self.label = label
+        self.width = width
+        self.currentURLString = currentURLString
+    }
+
+    nonisolated init(board: BoardState) {
+        self.init(label: board.label, width: board.width, currentURLString: board.currentURLString)
+    }
+
+    func makeBoard() -> BoardState {
+        BoardState(label: label, width: width, currentURLString: currentURLString)
     }
 }
 

@@ -8,11 +8,14 @@ final class DenStore {
     static let maximumDeskCount = 10
 
     var state: DenState
+    var deskTemplates: [PersonalDeskTemplate]
     private(set) var temporaryContext: TemporaryContext?
     var isZenViewPresented = false
     var isDenMode = false
     private(set) var boardWidthPanelMessage: String?
     private(set) var deskPendingDeletion: DeskState?
+    var deskTemplatePendingDeletion: PersonalDeskTemplate?
+    var deskTemplatePendingReplacement: PersonalDeskTemplate?
     var maximizedBoardID: UUID?
     var centerFocusedBoardRequest = 0
     var isBoardDragging = false
@@ -25,6 +28,7 @@ final class DenStore {
 
     @ObservationIgnored var runtimes: [UUID: BoardRuntime] = [:]
     @ObservationIgnored private let onSave: ((DenState) -> Void)?
+    @ObservationIgnored private let onDeskTemplatesSave: (([PersonalDeskTemplate]) -> Void)?
     private var availableBoardWidth = 0.0
     private var boardSpacing = 0.0
 
@@ -45,6 +49,7 @@ final class DenStore {
     var isOverviewPresented: Bool { temporaryContext == .overview }
     var isKeyboardShortcutsPresented: Bool { temporaryContext == .keyboardShortcuts }
     var isBoardWidthPanelPresented: Bool { temporaryContext == .boardWidth }
+    var isSaveDeskTemplatePanelPresented: Bool { temporaryContext == .saveDeskTemplate }
 
     convenience init() {
         self.init(state: .sample)
@@ -59,6 +64,7 @@ final class DenStore {
             state: state,
             websiteDataStore: .default(),
             sheetNavigation: sheetNavigation,
+            deskTemplates: [],
             onSave: nil
         )
     }
@@ -68,7 +74,23 @@ final class DenStore {
             state: state,
             websiteDataStore: .default(),
             sheetNavigation: SheetNavigationManager(),
+            deskTemplates: [],
             onSave: onSave
+        )
+    }
+
+    convenience init(
+        state: DenState,
+        deskTemplates: [PersonalDeskTemplate],
+        onDeskTemplatesSave: (([PersonalDeskTemplate]) -> Void)? = nil
+    ) {
+        self.init(
+            state: state,
+            websiteDataStore: .default(),
+            sheetNavigation: SheetNavigationManager(),
+            deskTemplates: deskTemplates,
+            onSave: nil,
+            onDeskTemplatesSave: onDeskTemplatesSave
         )
     }
 
@@ -76,20 +98,35 @@ final class DenStore {
         state: DenState,
         websiteDataStore: WKWebsiteDataStore,
         sheetNavigation: SheetNavigationManager,
-        onSave: ((DenState) -> Void)?
+        deskTemplates: [PersonalDeskTemplate] = [],
+        onSave: ((DenState) -> Void)?,
+        onDeskTemplatesSave: (([PersonalDeskTemplate]) -> Void)? = nil
     ) {
         self.state = state
+        self.deskTemplates = deskTemplates
         self.websiteDataStore = websiteDataStore
         self.sheetNavigation = sheetNavigation
         self.onSave = onSave
+        self.onDeskTemplatesSave = onDeskTemplatesSave
         ensureFocusedObjects()
     }
 
-    func createDesk(label: String, template: DeskTemplate) {
+    func createDesk(label: String, template: BuiltInDeskTemplate) {
+        createDesk(label: label, boards: template.boards, focusedBoardIndex: template.focusedBoardIndex)
+    }
+
+    func createDesk(label: String, personalTemplateID: UUID) {
+        guard let template = deskTemplates.first(where: { $0.id == personalTemplateID }) else { return }
+        createDesk(label: label, boards: template.boards, focusedBoardIndex: template.focusedBoardIndex)
+    }
+
+    private func createDesk(label: String, boards: [DeskTemplateBoard], focusedBoardIndex: Int?) {
         let trimmedLabel = label.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedLabel.isEmpty, canCreateDesk, let focusedDeskIndex else { return }
 
-        let desk = DeskState(label: trimmedLabel, boards: template.makeBoards())
+        let boards = boards.map { $0.makeBoard() }
+        let focusedBoardID = focusedBoardIndex.flatMap { boards.indices.contains($0) ? boards[$0].id : nil }
+        let desk = DeskState(label: trimmedLabel, boards: boards, focusedBoardID: focusedBoardID)
         state.desks.insert(desk, at: focusedDeskIndex + 1)
         state.focusedDeskID = desk.id
         setTemporaryContext(nil)
@@ -153,6 +190,8 @@ final class DenStore {
         setTemporaryContext(nil)
         isZenViewPresented = false
         boardWidthPanelMessage = nil
+        deskTemplatePendingDeletion = nil
+        deskTemplatePendingReplacement = nil
         overviewSelectionDeskID = nil
         overviewSelectionBoardID = nil
         recentlyRemovedBoard = nil
@@ -395,6 +434,10 @@ final class DenStore {
         onSave?(state)
     }
 
+    func saveDeskTemplates() {
+        onDeskTemplatesSave?(deskTemplates)
+    }
+
     private func normalizedURL(from text: String) -> URL? {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return nil }
@@ -434,6 +477,7 @@ enum TemporaryContext: Equatable {
     case overview
     case keyboardShortcuts
     case boardWidth
+    case saveDeskTemplate
 }
 
 struct RecentlyRemovedBoard {

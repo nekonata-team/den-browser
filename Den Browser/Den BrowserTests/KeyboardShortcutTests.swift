@@ -167,6 +167,20 @@ struct KeyboardShortcutTests {
         #expect(store.state == state)
     }
 
+    @Test func denModeBOpensDeskTemplatePanelOnlyForDeskWithBoards() throws {
+        let save = try keyEvent(characters: "b", charactersIgnoringModifiers: "b", keyCode: 11)
+        let store = makeStore(boards: [board("First")])
+        store.isDenMode = true
+
+        #expect(KeyboardController.handle(save, store: store))
+        #expect(store.isSaveDeskTemplatePanelPresented)
+
+        let empty = makeStore(boards: [])
+        empty.isDenMode = true
+        #expect(KeyboardController.handle(save, store: empty))
+        #expect(!empty.isSaveDeskTemplatePanelPresented)
+    }
+
     private func makePreferences() throws -> AppPreferences {
         let defaults = try #require(UserDefaults(suiteName: "KeyboardShortcutTests-\(UUID())"))
         return AppPreferences(defaults: defaults)

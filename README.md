@@ -21,6 +21,7 @@ Den Browser applies ideas from [Niri](https://github.com/niri-wm/niri)'s spatial
 - **Profile**: An isolated web identity with its own Den, sign-ins, and site data.
 - **Den**: The full work environment for one Profile.
 - **Desk**: A broad work context containing Boards in a horizontal work area.
+- **Desk Template**: A reusable starting arrangement for creating a Desk.
 - **Board**: An intentional work surface for one focused task context.
 - **Sheet**: A web screen held within a Board.
 - **Sheet Stack**: The back-forward sequence of Sheets within a Board.
@@ -40,6 +41,7 @@ See [CONTEXT.md](./CONTEXT.md) for the complete product language.
 - Restore the most Recently Removed Board with `u` during the current app run.
 - See and reorganize Boards across Desks in Overview.
 - Delete empty Desks immediately, or delete a Desk containing Boards after confirming the permanent removal.
+- Save the Focused Desk as a Profile-owned Personal Desk Template, then use keyboard-first fuzzy search to choose and preview a template before naming another Desk. Templates can also be reordered, replaced, or deleted. Built-in Empty, ChatGPT, and Gemini templates provide ready-made starting points.
 - Keep browser-like back-forward navigation inside each Board as a Sheet Stack.
 - Restore Desk and Board labels, order, widths, focus, and current Sheet URLs after relaunching the app, showing the Focused Board immediately without a scroll animation.
 - Keep sign-ins across app launches while isolating them between Profiles.
@@ -47,7 +49,7 @@ See [CONTEXT.md](./CONTEXT.md) for the complete product language.
 
 ## Keyboard operation
 
-Press `Control` + `,` to toggle Den Mode. Den Mode receives Desk and Board commands independently of keyboard focus inside the Current Sheet. `n` or `Space` opens a Board, `w` then a digit resizes all Boards in the Focused Desk to fit the current window, `x` or `d` removes the Focused Board, `u` restores the Recently Removed Board, `?` opens the shortcut guide, and `z` toggles Zen View. Escape returns to Sheet Input.
+Press `Control` + `,` to toggle Den Mode. Den Mode receives Desk and Board commands independently of keyboard focus inside the Current Sheet. `n` or `Space` opens a Board, `b` saves the Focused Desk as a Desk Template, `w` then a digit resizes all Boards in the Focused Desk to fit the current window, `x` or `d` removes the Focused Board, `u` restores the Recently Removed Board, `?` opens the shortcut guide, and `z` toggles Zen View. Escape returns to Sheet Input.
 
 See [docs/shortcuts.md](./docs/shortcuts.md) for the complete shortcut map.
 
@@ -79,6 +81,7 @@ These commands disable code signing and write build output to `.derived-data`.
 - [CONTEXT.md](./CONTEXT.md): product language and domain model
 - [DESIGN.md](./DESIGN.md): visual and interaction rules
 - [docs/shortcuts.md](./docs/shortcuts.md): Den Mode keyboard commands
+- [docs/desk-templates.md](./docs/desk-templates.md): Desk Template behavior and scope
 - [docs/vim.md](./docs/vim.md): Vim-style Sheet Navigation
 - [docs/poc.md](./docs/poc.md): proof-of-concept criteria
 - [docs/testing.md](./docs/testing.md): automated and exploratory validation

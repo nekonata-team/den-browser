@@ -45,10 +45,14 @@ final class ProfileManager {
         let store = DenStore(
             state: persisted.den,
             websiteDataStore: persisted.profile.webProfileStore.websiteDataStore,
-            sheetNavigation: sheetNavigation
-        ) { [weak self] den in
-            self?.saveDen(den, for: profileID)
-        }
+            sheetNavigation: sheetNavigation,
+            deskTemplates: persisted.deskTemplates,
+            onSave: { [weak self] den in
+                self?.saveDen(den, for: profileID)
+            },
+            onDeskTemplatesSave: { [weak self] templates in
+                self?.saveDeskTemplates(templates, for: profileID)
+            })
         stores[profileID] = store
         return store
     }
@@ -228,6 +232,19 @@ final class ProfileManager {
         guard var persisted = persistedProfiles[profileID] else { return }
         let original = persisted
         persisted.den = den
+        persistedProfiles[profileID] = persisted
+        do {
+            try save(persisted)
+        } catch {
+            persistedProfiles[profileID] = original
+            reportSaveError(error)
+        }
+    }
+
+    private func saveDeskTemplates(_ deskTemplates: [PersonalDeskTemplate], for profileID: UUID) {
+        guard var persisted = persistedProfiles[profileID] else { return }
+        let original = persisted
+        persisted.deskTemplates = deskTemplates
         persistedProfiles[profileID] = persisted
         do {
             try save(persisted)

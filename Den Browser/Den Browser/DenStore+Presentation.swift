@@ -45,4 +45,15 @@ extension DenStore {
             setTemporaryContext(nil)
         }
     }
+
+    func showSaveDeskTemplatePanel() {
+        guard focusedDesk?.boards.isEmpty == false else { return }
+        setTemporaryContext(.saveDeskTemplate)
+    }
+
+    func hideSaveDeskTemplatePanel() {
+        if temporaryContext == .saveDeskTemplate {
+            setTemporaryContext(nil)
+        }
+    }
 }

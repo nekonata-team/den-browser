@@ -68,7 +68,7 @@ final class KeyboardController {
             return handleBoardWidthPanel(event, store: store)
         case .overview:
             return handleOverview(event, store: store)
-        case .openBoard, .newDesk:
+        case .openBoard, .newDesk, .saveDeskTemplate:
             return false
         case nil:
             break
@@ -152,6 +152,10 @@ final class KeyboardController {
             store.showOpenBoardPanel()
         case ("n", [.shift]):
             store.showNewDeskPanel()
+        case ("b", []):
+            if !event.isARepeat {
+                store.showSaveDeskTemplatePanel()
+            }
         case ("o", []):
             store.showOverview()
         case ("w", []):

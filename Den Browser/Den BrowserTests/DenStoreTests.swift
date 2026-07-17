@@ -17,12 +17,104 @@ struct DenStoreTests {
 
     @Test func createsChatGPTTemplateWithThreeBoards() {
         withStore(desks: [desk("First")]) { store in
-            store.createDesk(label: "AI", template: .chatGPTThree)
+            store.createDesk(label: "AI", template: .chatGPT)
 
             #expect(store.focusedDesk?.boards.count == 3)
             #expect(store.focusedDesk?.boards.allSatisfy { $0.currentURLString == "https://chatgpt.com/" } == true)
             #expect(store.focusedDesk?.boards.allSatisfy { $0.width == 520 } == true)
             #expect(store.focusedDesk?.focusedBoardID == store.focusedDesk?.boards.first?.id)
+        }
+    }
+
+    @Test func createsGeminiTemplateWithThreeBoards() {
+        withStore(desks: [desk("First")]) { store in
+            store.createDesk(label: "Gemini", template: .gemini)
+
+            #expect(store.focusedDesk?.boards.count == 3)
+            #expect(
+                store.focusedDesk?.boards.allSatisfy {
+                    $0.currentURLString == "https://gemini.google.com/" && $0.width == 520
+                } == true)
+        }
+    }
+
+    @Test func deskTemplateSearchRanksFuzzyLabelsBeforeBoardAndHostMatches() throws {
+        let boards = [
+            DeskTemplateBoard(label: "Gemini Research", width: 520, currentURLString: "https://docs.google.com/")
+        ]
+
+        let labelScore = try #require(
+            DeskTemplateSearch.score(query: "chat", label: "ChatGPT", boards: []))
+        let boardScore = try #require(
+            DeskTemplateSearch.score(query: "gemres", label: "Research", boards: boards))
+        let hostScore = try #require(
+            DeskTemplateSearch.score(query: "docs", label: "Research", boards: boards))
+
+        #expect(labelScore < boardScore)
+        #expect(boardScore < hostScore)
+        #expect(DeskTemplateSearch.score(query: "claude", label: "Research", boards: boards) == nil)
+    }
+
+    @Test func personalTemplateCapturesStableBoardStateAndCreatesIndependentDesk() throws {
+        let first = board("Mail", width: 420, url: "https://mail.example.com/inbox?label=work#today")
+        let second = board("Notes", width: 760, url: "")
+        let source = desk("Morning", boards: [first, second], focusedBoardID: second.id)
+        let store = DenStore(state: DenState(desks: [source], focusedDeskID: source.id))
+
+        #expect(store.saveFocusedDeskAsTemplate(label: "  Morning  ") == .created)
+        let template = try #require(store.deskTemplates.first)
+        #expect(template.label == "Morning")
+        #expect(template.boards.map(\.label) == ["Mail", "Notes"])
+        #expect(template.boards.map(\.width) == [420, 760])
+        #expect(template.boards[0].currentURLString == "https://mail.example.com/inbox?label=work#today")
+        #expect(template.focusedBoardIndex == 1)
+
+        store.createDesk(label: "Copy", personalTemplateID: template.id)
+        let copy = try #require(store.focusedDesk)
+        #expect(copy.boards.map(\.id) != source.boards.map(\.id))
+        #expect(copy.boards.map(\.label) == source.boards.map(\.label))
+        #expect(copy.focusedBoardID == copy.boards[1].id)
+    }
+
+    @Test func personalTemplateValidationReplacementOrderingAndDeletion() throws {
+        let source = desk("Desk", boards: [board("First")])
+        var saves: [[PersonalDeskTemplate]] = []
+        let store = DenStore(
+            state: DenState(desks: [source], focusedDeskID: source.id),
+            deskTemplates: [],
+            onDeskTemplatesSave: { saves.append($0) })
+
+        #expect(store.saveFocusedDeskAsTemplate(label: "Empty") == .reservedLabel)
+        #expect(store.saveFocusedDeskAsTemplate(label: "ChatGPT") == .reservedLabel)
+        #expect(store.saveFocusedDeskAsTemplate(label: "Routine") == .created)
+        #expect(store.saveFocusedDeskAsTemplate(label: "Other") == .created)
+        #expect(store.deskTemplates.map(\.label) == ["Other", "Routine"])
+
+        let routineID = try #require(store.deskTemplates.last?.id)
+        store.state.desks[0].boards[0].width = 900
+        #expect(store.saveFocusedDeskAsTemplate(label: " routine ") == .replacementPending)
+        #expect(store.deskTemplates.last?.boards[0].width == 520)
+        store.confirmDeskTemplateReplacement()
+        #expect(store.deskTemplates.last?.id == routineID)
+        #expect(store.deskTemplates.last?.boards[0].width == 900)
+
+        let otherID = try #require(store.deskTemplates.first?.id)
+        store.moveDeskTemplate(routineID, before: otherID)
+        #expect(store.deskTemplates.map(\.label) == ["Routine", "Other"])
+        store.moveDeskTemplate(routineID, by: 1)
+        #expect(store.deskTemplates.map(\.label) == ["Other", "Routine"])
+        store.requestDeskTemplateDeletion(routineID)
+        store.confirmDeskTemplateDeletion()
+        #expect(store.deskTemplates.map(\.label) == ["Other"])
+        #expect(saves.count == 6)
+    }
+
+    @Test func emptyDeskCannotBecomePersonalTemplate() {
+        withStore(desks: [desk("Empty")]) { store in
+            #expect(store.saveFocusedDeskAsTemplate(label: "Saved") == .emptyDesk)
+            #expect(store.deskTemplates.isEmpty)
+            store.showSaveDeskTemplatePanel()
+            #expect(!store.isSaveDeskTemplatePanelPresented)
         }
     }
 

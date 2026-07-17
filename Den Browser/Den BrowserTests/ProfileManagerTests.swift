@@ -29,6 +29,21 @@ struct ProfileManagerTests {
             })
     }
 
+    @Test func profileDocumentWithoutDeskTemplatesLoadsEmptyList() throws {
+        let profile = ProfileState(
+            id: UUID(), name: "Work", color: .purple, webProfileStore: .identified(UUID()))
+        let encoded = try JSONEncoder().encode(PersistedProfile(profile: profile, den: .sample))
+        var object = try #require(JSONSerialization.jsonObject(with: encoded) as? [String: Any])
+        object.removeValue(forKey: "deskTemplates")
+
+        let decoded = try JSONDecoder().decode(
+            PersistedProfile.self,
+            from: JSONSerialization.data(withJSONObject: object))
+
+        #expect(decoded.schemaVersion == 1)
+        #expect(decoded.deskTemplates.isEmpty)
+    }
+
     @Test func webProfileStoreRejectsInvalidKindIdentifierPairs() {
         #expect(
             throws: DecodingError.self,
@@ -108,6 +123,23 @@ struct ProfileManagerTests {
 
         #expect(restored.profiles.map(\.name) == ["Personal", "Office", "Work"])
         #expect(restored.store(for: work.id)?.focusedDesk?.label == "Restored")
+    }
+
+    @Test func profileManagerPersistsDeskTemplatesPerProfile() throws {
+        let directory = temporaryProfileDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let manager = makeProfileManager(directory: directory)
+        let personalStore = try #require(manager.store(for: manager.personalProfileID))
+        let work = try #require(manager.createProfile(name: "Work", color: .green))
+        let workStore = try #require(manager.store(for: work.id))
+
+        personalStore.addBoard(urlString: "https://example.com/bookmark?one=1")
+        #expect(personalStore.saveFocusedDeskAsTemplate(label: "Reading") == .created)
+
+        let restored = makeProfileManager(directory: directory)
+        #expect(restored.store(for: manager.personalProfileID)?.deskTemplates.map(\.label) == ["Reading"])
+        #expect(restored.store(for: work.id)?.deskTemplates.isEmpty == true)
+        #expect(workStore.deskTemplates.isEmpty)
     }
 
     @Test func personalCannotBeDeletedAndAdditionalProfileCan() async throws {

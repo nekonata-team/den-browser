@@ -10,7 +10,7 @@ Den controls feel like a calm desk laid over live web sheets. Web content remain
 - Use Liquid Glass for Den controls, panels, and desk switcher. Do not apply glass treatment to sheet content.
 - Boards stay white with rounded continuous corners. Focus uses cyan.
 - Keep hierarchy visible: Desk switcher above board strip, board header above sheet, sheet stack indicator secondary.
-- Show the current Profile name in the titlebar and a simple Profile icon at the top right. Give the icon a name-based accessibility label and help text; Profile identity must not depend on color.
+- Show the current Profile name in the titlebar and a simple Profile icon at the top right. Place the Desk Template bookmark action immediately to its left when the Focused Desk has Boards. Present both as compact borderless controls with matching secondary tint. Give both icons accessibility labels and help text; Profile identity must not depend on color.
 - Prefer SF Symbols and system typography. Preserve macOS accessibility defaults where possible.
 - Let SwiftUI semantic colors express standard hierarchy: use `primary`, `secondary`, and `tertiary` for Den text, icons, and neutral chrome.
 - Resolve Den chrome in its dark appearance so semantic colors stay legible. Do not hard-code black or white for standard text and icons.
@@ -23,6 +23,7 @@ Den controls feel like a calm desk laid over live web sheets. Web content remain
 - Use the native context menu on Board headers for concise, Board-specific actions. Keep Sheet context menus owned by web content, and focus the targeted Board when its header menu opens.
 - Keep context-menu ordering stable by disabling unavailable left/right movement instead of hiding it. Do not show Den Mode-only or configurable key equivalents there.
 - Do not make color the only state signal. Focus and direct manipulation need borders, elevation, motion, and accessible labels.
+- Keep New Desk keyboard-first: choose an active Desk Template through fuzzy search and arrow keys, confirm it, then edit the initialized Desk Label before creation. Do not treat search-driven active results as confirmed selections.
 - Keep panel copy in product language from `CONTEXT.md`.
 - Use brief, bounce-free motion to preserve spatial continuity when Boards move, resize, or change focus.
 - Let repeated keyboard input retarget motion immediately instead of waiting for an animation to finish.
@@ -31,7 +32,7 @@ Den controls feel like a calm desk laid over live web sheets. Web content remain
 
 ## Zen View
 
-- Zen View hides the Desk switcher and Profile control together, without hiding controls inside Boards.
+- Zen View hides the Desk switcher, Desk Template bookmark action, and Profile control together, without hiding controls inside Boards.
 - Boards expand into the upper area released by those controls.
 - Keep the native titlebar, current Profile name, Den Mode title state, and cyan Den Mode ring visible.
 - Do not reveal hidden controls on pointer hover. Users toggle Zen View with `z` in Den Mode or the Den menu.

@@ -21,6 +21,7 @@ Den Browserは、[Niri](https://github.com/niri-wm/niri)の空間的なウィン
 - **Profile**: 一つのDenを持ち、ログイン状態とサイトデータをほかから分離するWeb上の識別単位。
 - **Den**: 一つのProfileに属する作業環境全体。
 - **Desk**: Boardを水平に並べる、大きな作業文脈。
+- **Desk Template**: Desk作成時に使う、再利用可能な初期配置。
 - **Board**: 一つの作業文脈に集中するため、ユーザーが意図して作る作業面。
 - **Sheet**: Board内に保持されるWeb画面。
 - **Sheet Stack**: 一つのBoard内にある、Sheetの戻る・進むの連なり。
@@ -40,6 +41,7 @@ Den Browserは、[Niri](https://github.com/niri-wm/niri)の空間的なウィン
 - 現在のアプリ起動中、`u`でRecently Removed Boardを復活。
 - OverviewでDeskを跨いだBoardの確認と再配置。
 - 空のDeskは即座に削除し、Boardを含むDeskは完全削除の確認後に削除。
+- Focused DeskをProfile所有のPersonal Desk Templateとして保存し、新しいDeskの作成時はキーボード中心のファジー検索でTemplateを選択、プレビューしてからDesk Labelを入力。Templateの並べ替え、置換、削除にも対応。組み込みのEmpty、ChatGPT、Geminiをすぐ使える初期配置として提供。
 - ブラウザの戻る・進むに相当する履歴を、BoardごとのSheet Stackとして保持。
 - アプリ再起動後にDeskとBoardのラベル、並び順、幅、フォーカス、Current SheetのURLを復元し、Focused Boardをスクロールアニメーションなしで即座に表示。
 - Profile内のSheet間でログイン状態を維持しつつ、別Profileから分離。
@@ -47,7 +49,7 @@ Den Browserは、[Niri](https://github.com/niri-wm/niri)の空間的なウィン
 
 ## キーボード操作
 
-`Control` + `,` でDen Modeを切り替えます。Den ModeはCurrent Sheet内のキーボードフォーカスに関係なく、DeskとBoardのコマンドを受け取ります。`n`または`Space`でBoardを開き、`w`に続けて数字を押すとFocused Desk内の全Boardを現在のウィンドウ幅に合わせてリサイズします。`x`または`d`でFocused Boardを取り除き、`u`でRecently Removed Boardを復活します。`?`でショートカット一覧を表示し、`z`でZen Viewを切り替えます。`Escape`でSheet Inputへ戻ります。
+`Control` + `,` でDen Modeを切り替えます。Den ModeはCurrent Sheet内のキーボードフォーカスに関係なく、DeskとBoardのコマンドを受け取ります。`n`または`Space`でBoardを開き、`b`でFocused DeskをDesk Templateとして保存し、`w`に続けて数字を押すとFocused Desk内の全Boardを現在のウィンドウ幅に合わせてリサイズします。`x`または`d`でFocused Boardを取り除き、`u`でRecently Removed Boardを復活します。`?`でショートカット一覧を表示し、`z`でZen Viewを切り替えます。`Escape`でSheet Inputへ戻ります。
 
 全ショートカットは[docs/shortcuts.md](./docs/shortcuts.md)を参照してください。
 
@@ -79,6 +81,7 @@ just check
 - [CONTEXT.md](./CONTEXT.md): プロダクト用語とドメインモデル
 - [DESIGN.md](./DESIGN.md): 表示と操作のデザインルール
 - [docs/shortcuts.md](./docs/shortcuts.md): Den Modeのキーボードコマンド
+- [docs/desk-templates.md](./docs/desk-templates.md): Desk Templateの挙動と対応範囲
 - [docs/vim.md](./docs/vim.md): Vim-style Sheet Navigation
 - [docs/poc.md](./docs/poc.md): PoCの受け入れ基準
 - [docs/testing.md](./docs/testing.md): 自動テストと手動検証

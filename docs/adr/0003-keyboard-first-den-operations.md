@@ -14,6 +14,6 @@ Board and desk movement follow a spatial model: left/right moves focus across bo
 
 Creating a board from the Open Board panel inserts it to the right of the focused board and then focuses the new board. This keeps board creation spatial: a new task branches from the current work instead of being appended to an abstract tab list.
 
-Creating a desk from the New Desk panel inserts it after the focused desk and then focuses the new desk. `Control` + `Option` + `N` opens this panel globally, including while overview is visible; overview itself has no dedicated creation mode.
+Creating a desk from the New Desk panel inserts it after the focused desk and then focuses the new desk. The panel first focuses fuzzy Desk Template search; arrow keys move the active candidate, Return or Tab confirms it and advances to its initial Desk Label, and Return from the label creates the Desk. Search-driven active candidates remain distinct from the confirmed Desk Template. `Control` + `Option` + `N` opens this panel globally, including while overview is visible; overview itself has no dedicated creation mode.
 
 Held Board and Board Placement were later removed by ADR 0018 after Overview and direct movement proved sufficient for longer-distance organization.
