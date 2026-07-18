@@ -74,7 +74,16 @@ just test
 just check
 ```
 
-These commands disable code signing and write build output to `.derived-data`.
+These commands disable code signing.
+
+For optional Neovim SourceKit-LSP support:
+
+```sh
+brew install xcode-build-server
+just lsp-config
+```
+
+Build the project in Xcode first so SourceKit-LSP can use its build log and index.
 
 ## Project documentation
 

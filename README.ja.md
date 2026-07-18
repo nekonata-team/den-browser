@@ -74,7 +74,16 @@ just test
 just check
 ```
 
-これらのコマンドはコード署名を無効にし、ビルド出力を`.derived-data`に書き込みます。
+これらのコマンドはコード署名を無効にします。
+
+任意でNeovimのSourceKit-LSP連携を設定できます。
+
+```sh
+brew install xcode-build-server
+just lsp-config
+```
+
+SourceKit-LSPがビルドログとインデックスを利用できるよう、先にXcodeでプロジェクトをビルドしてください。
 
 ## プロジェクトドキュメント
 
