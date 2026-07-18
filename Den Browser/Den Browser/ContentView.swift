@@ -27,7 +27,6 @@ struct ContentView: View {
     @State private var didAttemptDeskCreation = false
     @State private var saveDeskPresetLabel = ""
     @State private var saveDeskPresetMessage: String?
-    @State private var boardScrollPosition = ScrollPosition(idType: UUID.self)
     @State private var didScrollToRestoredFocusedBoard = false
     @State private var resizingBoardID: UUID?
     @State private var boardFrames: [UUID: CGRect] = [:]
@@ -48,11 +47,14 @@ struct ContentView: View {
             ZStack(alignment: .top) {
                 DenBackground(isDenMode: store.isDenMode, profileColor: profileColor)
 
-                if store.focusedDesk?.boards.isEmpty == false {
-                    boardStrip(in: geometry.size, safeAreaTop: geometry.safeAreaInsets.top)
-                        .allowsHitTesting(store.temporaryContext == nil)
-                        .accessibilityHidden(store.temporaryContext != nil)
-                } else {
+                boardStrip(in: geometry.size, safeAreaTop: geometry.safeAreaInsets.top)
+                    .allowsHitTesting(
+                        store.temporaryContext == nil && store.focusedDesk?.boards.isEmpty == false
+                    )
+                    .accessibilityHidden(
+                        store.temporaryContext != nil || store.focusedDesk?.boards.isEmpty != false)
+
+                if store.focusedDesk?.boards.isEmpty != false {
                     EmptyDenView {
                         store.showOpenBoardPanel()
                     }
@@ -582,100 +584,102 @@ struct ContentView: View {
         let leadingPadding = max(boardHorizontalPadding, (size.width - firstBoardWidth) / 2)
         let trailingPadding = max(boardHorizontalPadding, (size.width - lastBoardWidth) / 2)
 
-        return ScrollView(.horizontal) {
-            HStack(alignment: .top, spacing: boardSpacing) {
-                ForEach(boards) { board in
-                    BoardView(
-                        board: board,
-                        isFocused: board.id == store.focusedDesk?.focusedBoardID,
-                        isDragging: boardDrag?.boardID == board.id,
-                        runtime: store.runtime(for: board),
-                        width: store.maximizedBoardID == board.id ? maximizedBoardWidth : board.width,
-                        height: boardHeight,
-                        isPointerFocusEnabled: isBoardPointerFocusEnabled(for: board.id),
-                        onFocus: { store.focusBoard(board.id) },
-                        onGoBack: { store.goBackInBoard(board.id) },
-                        onGoForward: { store.goForwardInBoard(board.id) },
-                        onRemove: { store.removeBoard(board.id) },
-                        onDragChanged: { updateBoardDrag(board, value: $0, in: size) },
-                        onDragEnded: { finishBoardDrag(value: $0, in: size) }
-                    )
-                    .id(board.id)
-                    .transition(DenMotion.transition(reduceMotion: shouldReduceMotion, scale: 0.98))
-                    .offset(
-                        x: boardDrag?.boardID == board.id ? boardDrag?.offset.width ?? 0 : 0,
-                        y: boardDrag?.boardID == board.id ? boardDrag?.offset.height ?? 0 : 0
-                    )
-                    .background {
-                        GeometryReader { proxy in
-                            Color.clear.preference(
-                                key: BoardFramePreferenceKey.self,
-                                value: [board.id: proxy.frame(in: .named(BoardStripCoordinateSpace.name))]
-                            )
+        return ScrollViewReader { scrollProxy in
+            ScrollView(.horizontal) {
+                HStack(alignment: .top, spacing: boardSpacing) {
+                    ForEach(boards) { board in
+                        BoardView(
+                            board: board,
+                            isFocused: board.id == store.focusedDesk?.focusedBoardID,
+                            isDragging: boardDrag?.boardID == board.id,
+                            runtime: store.runtime(for: board),
+                            width: store.maximizedBoardID == board.id ? maximizedBoardWidth : board.width,
+                            height: boardHeight,
+                            isPointerFocusEnabled: isBoardPointerFocusEnabled(for: board.id),
+                            onFocus: { store.focusBoard(board.id) },
+                            onGoBack: { store.goBackInBoard(board.id) },
+                            onGoForward: { store.goForwardInBoard(board.id) },
+                            onRemove: { store.removeBoard(board.id) },
+                            onDragChanged: {
+                                updateBoardDrag(board, value: $0, in: size, using: scrollProxy)
+                            },
+                            onDragEnded: { finishBoardDrag(value: $0, in: size) }
+                        )
+                        .id(board.id)
+                        .transition(DenMotion.transition(reduceMotion: shouldReduceMotion, scale: 0.98))
+                        .offset(
+                            x: boardDrag?.boardID == board.id ? boardDrag?.offset.width ?? 0 : 0,
+                            y: boardDrag?.boardID == board.id ? boardDrag?.offset.height ?? 0 : 0
+                        )
+                        .background {
+                            GeometryReader { proxy in
+                                Color.clear.preference(
+                                    key: BoardFramePreferenceKey.self,
+                                    value: [board.id: proxy.frame(in: .named(BoardStripCoordinateSpace.name))]
+                                )
+                            }
                         }
-                    }
-                    .overlay(alignment: .trailing) {
-                        if store.maximizedBoardID != board.id {
-                            BoardResizeHandle(
-                                board: board,
-                                height: boardHeight,
-                                width: boardSpacing,
-                                onResizeStart: {
-                                    resizingBoardID = board.id
-                                    store.focusBoard(board.id)
-                                },
-                                onResize: { store.resizeBoard(board.id, to: $0) },
-                                onResizeEnd: {
-                                    store.saveBoardWidths()
-                                    resizingBoardID = nil
-                                }
-                            )
-                            .offset(x: boardSpacing)
+                        .overlay(alignment: .trailing) {
+                            if store.maximizedBoardID != board.id {
+                                BoardResizeHandle(
+                                    board: board,
+                                    height: boardHeight,
+                                    width: boardSpacing,
+                                    onResizeStart: {
+                                        resizingBoardID = board.id
+                                        store.focusBoard(board.id)
+                                    },
+                                    onResize: { store.resizeBoard(board.id, to: $0) },
+                                    onResizeEnd: {
+                                        store.saveBoardWidths()
+                                        resizingBoardID = nil
+                                    }
+                                )
+                                .offset(x: boardSpacing)
+                            }
                         }
+                        .allowsHitTesting(isBoardPointerFocusEnabled(for: board.id))
+                        .accessibilityHidden(!isBoardPointerFocusEnabled(for: board.id))
+                        .zIndex(boardDrag?.boardID == board.id ? 2 : 1)
                     }
-                    .allowsHitTesting(isBoardPointerFocusEnabled(for: board.id))
-                    .accessibilityHidden(!isBoardPointerFocusEnabled(for: board.id))
-                    .zIndex(boardDrag?.boardID == board.id ? 2 : 1)
                 }
+                .padding(.leading, leadingPadding)
+                .padding(.trailing, trailingPadding)
+                .padding(.top, topInset)
+                .padding(.bottom, bottomInset)
+                .animation(DenMotion.spatial(reduceMotion: shouldReduceMotion), value: boards.map(\.id))
+                .animation(DenMotion.spatial(reduceMotion: shouldReduceMotion), value: boards.map(\.width))
+                .animation(DenMotion.spatial(reduceMotion: shouldReduceMotion), value: store.maximizedBoardID)
             }
-            .scrollTargetLayout()
-            .padding(.leading, leadingPadding)
-            .padding(.trailing, trailingPadding)
-            .padding(.top, topInset)
-            .padding(.bottom, bottomInset)
-            .animation(DenMotion.spatial(reduceMotion: shouldReduceMotion), value: boards.map(\.id))
-            .animation(DenMotion.spatial(reduceMotion: shouldReduceMotion), value: boards.map(\.width))
-            .animation(DenMotion.spatial(reduceMotion: shouldReduceMotion), value: store.maximizedBoardID)
-        }
-        .coordinateSpace(name: BoardStripCoordinateSpace.name)
-        .scrollPosition($boardScrollPosition, anchor: .center)
-        .scrollIndicators(.hidden)
-        .onPreferenceChange(BoardFramePreferenceKey.self) { frames in
-            boardFrames = frames
-            alignDraggedBoard(to: frames)
-        }
-        .onAppear {
-            guard !didScrollToRestoredFocusedBoard else { return }
-            didScrollToRestoredFocusedBoard = true
-            centerBoard(store.focusedDesk?.focusedBoardID, animated: false)
-        }
-        .onChange(of: store.focusedDesk?.focusedBoardID) { _, focusedBoardID in
-            centerBoard(focusedBoardID)
-        }
-        .onChange(of: store.centerFocusedBoardRequest) { _, _ in
-            centerBoard(store.focusedDesk?.focusedBoardID)
+            .coordinateSpace(name: BoardStripCoordinateSpace.name)
+            .scrollIndicators(.hidden)
+            .onPreferenceChange(BoardFramePreferenceKey.self) { frames in
+                boardFrames = frames
+                alignDraggedBoard(to: frames)
+            }
+            .onAppear {
+                guard !didScrollToRestoredFocusedBoard else { return }
+                didScrollToRestoredFocusedBoard = true
+                centerBoard(store.focusedDesk?.focusedBoardID, using: scrollProxy, animated: false)
+            }
+            .onChange(of: store.focusedDesk?.focusedBoardID) { _, focusedBoardID in
+                centerBoard(focusedBoardID, using: scrollProxy)
+            }
+            .onChange(of: store.centerFocusedBoardRequest) { _, _ in
+                centerBoard(store.focusedDesk?.focusedBoardID, using: scrollProxy)
+            }
         }
     }
 
-    private func centerBoard(_ boardID: UUID?, animated: Bool = true) {
+    private func centerBoard(_ boardID: UUID?, using proxy: ScrollViewProxy, animated: Bool = true) {
         guard resizingBoardID == nil, !store.isBoardDragging, let boardID else { return }
 
         if animated {
             withAnimation(DenMotion.spatial(reduceMotion: shouldReduceMotion)) {
-                boardScrollPosition.scrollTo(id: boardID, anchor: .center)
+                proxy.scrollTo(boardID, anchor: .center)
             }
         } else {
-            boardScrollPosition.scrollTo(id: boardID, anchor: .center)
+            proxy.scrollTo(boardID, anchor: .center)
         }
     }
 
@@ -703,7 +707,12 @@ struct ContentView: View {
         )
     }
 
-    private func updateBoardDrag(_ board: BoardState, value: DragGesture.Value, in size: CGSize) {
+    private func updateBoardDrag(
+        _ board: BoardState,
+        value: DragGesture.Value,
+        in size: CGSize,
+        using scrollProxy: ScrollViewProxy
+    ) {
         if boardDrag == nil {
             guard
                 let desk = store.focusedDesk,
@@ -726,7 +735,7 @@ struct ContentView: View {
         }
         boardDrag = drag
         updateBoardInsertion()
-        autoScrollBoardStrip(at: value.location, in: size)
+        autoScrollBoardStrip(at: value.location, in: size, using: scrollProxy)
     }
 
     private func updateBoardInsertion() {
@@ -767,7 +776,11 @@ struct ContentView: View {
         boardDrag = drag
     }
 
-    private func autoScrollBoardStrip(at location: CGPoint, in size: CGSize) {
+    private func autoScrollBoardStrip(
+        at location: CGPoint,
+        in size: CGSize,
+        using scrollProxy: ScrollViewProxy
+    ) {
         guard
             location.y >= 0,
             location.y <= size.height,
@@ -794,7 +807,7 @@ struct ContentView: View {
         guard now - lastBoardAutoScrollTime >= interval, let targetID else { return }
         lastBoardAutoScrollTime = now
         withAnimation(.linear(duration: shouldReduceMotion ? 0 : 0.14)) {
-            boardScrollPosition.scrollTo(id: targetID, anchor: .center)
+            scrollProxy.scrollTo(targetID, anchor: .center)
         }
     }
 
@@ -967,6 +980,8 @@ private struct EmptyDenView: View {
 
 private struct OverviewView: View {
     @Environment(DenStore.self) private var store
+    @Environment(AppPreferences.self) private var preferences
+    @Environment(\.accessibilityReduceMotion) private var systemReduceMotion
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -980,6 +995,9 @@ private struct OverviewView: View {
                     }
                 }
                 .padding(2)
+                .animation(
+                    DenMotion.spatial(reduceMotion: shouldReduceMotion),
+                    value: store.state.desks.map { $0.boards.map(\.id) })
             }
         }
         .padding(18)
@@ -1072,4 +1090,10 @@ private struct OverviewView: View {
         .buttonStyle(.plain)
     }
 
+    private var shouldReduceMotion: Bool {
+        DenMotion.shouldReduceMotion(
+            preference: preferences.motionPreference,
+            systemReduceMotion: systemReduceMotion
+        )
+    }
 }

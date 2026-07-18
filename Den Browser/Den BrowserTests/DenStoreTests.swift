@@ -161,6 +161,7 @@ struct DenStoreTests {
 
             #expect(store.focusedDesk?.boards.map(\.id) == [boards[1].id, boards[0].id, boards[2].id])
             #expect(store.focusedDesk?.focusedBoardID == boards[1].id)
+            #expect(store.centerFocusedBoardRequest == 1)
         }
     }
 

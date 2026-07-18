@@ -28,6 +28,7 @@ Den controls feel like a calm desk laid over live web sheets. Web content remain
 - Keep panel copy in product language from `CONTEXT.md`.
 - Use brief, bounce-free motion to preserve spatial continuity when Boards move, resize, or change focus.
 - Let repeated keyboard input retarget motion immediately instead of waiting for an animation to finish.
+- Route app-owned spatial and feedback animations through `DenMotion`. Direct pointer tracking and continuous drag auto-scroll may use interaction-specific motion.
 - Motion defaults to following the macOS Reduce Motion setting. Preferences can explicitly select Standard Motion or Reduced Motion for Den.
 - Reduced Motion removes spatial animation while preserving brief opacity feedback.
 

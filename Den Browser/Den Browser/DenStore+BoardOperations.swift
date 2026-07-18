@@ -153,18 +153,17 @@ extension DenStore {
     private func moveFocusedBoard(by delta: Int) {
         guard
             let deskIndex = focusedDeskIndex,
-            let boardIndex = focusedBoardIndex(in: deskIndex)
+            let boardIndex = focusedBoardIndex(in: deskIndex),
+            state.desks[deskIndex].boards.indices.contains(boardIndex + delta)
         else { return }
 
         var boards = state.desks[deskIndex].boards
-        guard boards.count > 1 else { return }
-
         let board = boards.remove(at: boardIndex)
-        let targetIndex = min(max(boardIndex + delta, 0), boards.count)
-        boards.insert(board, at: targetIndex)
+        boards.insert(board, at: boardIndex + delta)
 
         state.desks[deskIndex].boards = boards
         state.desks[deskIndex].focusedBoardID = board.id
+        centerFocusedBoard()
         save()
     }
 
