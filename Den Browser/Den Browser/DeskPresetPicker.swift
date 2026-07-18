@@ -267,7 +267,7 @@ enum DeskPresetSearch {
             [(label, 0)]
             + boards.map { ($0.label, 1_000) }
             + boards.compactMap { board in
-                URL(string: board.currentURLString)?.host(percentEncoded: false).map { ($0, 2_000) }
+                board.initialSheetURL?.host(percentEncoded: false).map { ($0, 2_000) }
             }
 
         var total = 0
@@ -329,7 +329,7 @@ struct DeskPresetPreview: View {
                         VStack(alignment: .leading, spacing: 3) {
                             Text(board.label)
                                 .lineLimit(1)
-                            Text(URL(string: board.currentURLString)?.host(percentEncoded: false) ?? "Empty Board")
+                            Text(board.initialSheetURL?.host(percentEncoded: false) ?? "Empty Board")
                                 .font(.caption2)
                                 .foregroundStyle(.secondary)
                                 .lineLimit(1)

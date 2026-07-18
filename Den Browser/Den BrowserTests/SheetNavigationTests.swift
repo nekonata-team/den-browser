@@ -173,10 +173,10 @@ struct SheetNavigationTests {
                     "url": "https://destination.example/path",
                 ], from: sourceWebView))
         #expect(
-            store.focusedDesk?.boards.map { $0.currentURLString } == [
-                "https://source.example/",
-                "https://destination.example/path",
-                "https://focused.example/",
+            store.focusedDesk?.boards.map(\.currentSheetURL) == [
+                URL(string: "https://source.example/"),
+                URL(string: "https://destination.example/path"),
+                URL(string: "https://focused.example/"),
             ])
         #expect(store.focusedDesk?.focusedBoardID == store.focusedDesk?.boards[1].id)
     }
@@ -232,6 +232,6 @@ struct SheetNavigationTests {
     }
 
     private func board(_ label: String, width: Double = 520, url: String = "https://example.com/") -> BoardState {
-        BoardState(label: label, width: width, currentURLString: url)
+        BoardState(label: label, width: width, currentSheetURL: URL(string: url))
     }
 }

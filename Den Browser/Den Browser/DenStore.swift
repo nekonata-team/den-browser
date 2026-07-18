@@ -220,7 +220,7 @@ final class DenStore {
         guard let url = normalizedURL(from: urlString) else { return }
         let label = url.host(percentEncoded: false) ?? url.absoluteString
         let width = preferredWidth.map { min(max($0, 360), 980) } ?? 520
-        let board = BoardState(label: label, width: width, currentURLString: url.absoluteString)
+        let board = BoardState(label: label, width: width, currentSheetURL: url)
 
         let deskIndex: Int
         let insertIndex: Int
@@ -373,7 +373,7 @@ final class DenStore {
         let board = BoardState(
             label: source.label,
             width: source.width,
-            currentURLString: source.currentURLString
+            currentSheetURL: source.currentSheetURL
         )
         state.desks[deskIndex].boards.insert(board, at: boardIndex + 1)
         state.desks[deskIndex].focusedBoardID = board.id

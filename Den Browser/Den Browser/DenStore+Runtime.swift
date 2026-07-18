@@ -43,7 +43,7 @@ extension DenStore {
     private func updateBoard(boardID: UUID, url: URL?, title: String?) {
         guard let indices = boardIndices(for: boardID) else { return }
         if let url {
-            state.desks[indices.desk].boards[indices.board].currentURLString = url.absoluteString
+            state.desks[indices.desk].boards[indices.board].currentSheetURL = url
         }
         if let title, !title.isEmpty {
             state.desks[indices.desk].boards[indices.board].label = title

@@ -1102,10 +1102,13 @@ private struct OverviewView: View {
                     .font(.system(size: 12, weight: .semibold))
                     .lineLimit(2)
 
-                Text(URL(string: board.currentURLString)?.host(percentEncoded: false) ?? board.currentURLString)
-                    .font(.system(size: 10))
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
+                Text(
+                    board.currentSheetURL?.host(percentEncoded: false)
+                        ?? board.currentSheetURL?.absoluteString ?? ""
+                )
+                .font(.system(size: 10))
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
 
                 Spacer(minLength: 0)
 

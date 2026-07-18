@@ -268,6 +268,6 @@ struct KeyboardShortcutTests {
     }
 
     private func board(_ label: String) -> BoardState {
-        BoardState(label: label, width: 520, currentURLString: "https://example.com/")
+        BoardState(label: label, width: 520, currentSheetURL: URL(string: "https://example.com/"))
     }
 }

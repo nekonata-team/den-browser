@@ -10,19 +10,22 @@ struct DenStoreTests {
         let store = DenStore(state: DenState(desks: [source], focusedDeskID: source.id))
 
         store.addBoard(urlString: "localhost:3000")
-        let localURL = try #require(URL(string: store.focusedDesk?.boards.last?.currentURLString ?? ""))
+        let localURL = try #require(store.focusedDesk?.boards.last?.currentSheetURL)
         #expect(localURL.scheme == "https")
         #expect(localURL.host == "localhost")
         #expect(localURL.port == 3000)
 
         store.addBoard(urlString: "swift: concurrency")
-        let searchURL = try #require(URLComponents(string: store.focusedDesk?.boards.last?.currentURLString ?? ""))
+        let searchURL = try #require(
+            store.focusedDesk?.boards.last?.currentSheetURL
+                .flatMap { URLComponents(url: $0, resolvingAgainstBaseURL: false) })
         #expect(searchURL.host == "www.google.com")
         #expect(searchURL.queryItems == [URLQueryItem(name: "q", value: "swift: concurrency")])
 
         store.addBoard(urlString: "https://")
         let invalidURLSearch = try #require(
-            URLComponents(string: store.focusedDesk?.boards.last?.currentURLString ?? ""))
+            store.focusedDesk?.boards.last?.currentSheetURL
+                .flatMap { URLComponents(url: $0, resolvingAgainstBaseURL: false) })
         #expect(invalidURLSearch.queryItems == [URLQueryItem(name: "q", value: "https://")])
     }
 
@@ -73,7 +76,10 @@ struct DenStoreTests {
             store.createDesk(label: "AI", preset: .chatGPT)
 
             #expect(store.focusedDesk?.boards.count == 3)
-            #expect(store.focusedDesk?.boards.allSatisfy { $0.currentURLString == "https://chatgpt.com/" } == true)
+            #expect(
+                store.focusedDesk?.boards.allSatisfy {
+                    $0.currentSheetURL == URL(string: "https://chatgpt.com/")
+                } == true)
             #expect(store.focusedDesk?.boards.allSatisfy { $0.width == 520 } == true)
             #expect(store.focusedDesk?.focusedBoardID == store.focusedDesk?.boards.first?.id)
         }
@@ -86,14 +92,17 @@ struct DenStoreTests {
             #expect(store.focusedDesk?.boards.count == 3)
             #expect(
                 store.focusedDesk?.boards.allSatisfy {
-                    $0.currentURLString == "https://gemini.google.com/" && $0.width == 520
+                    $0.currentSheetURL == URL(string: "https://gemini.google.com/") && $0.width == 520
                 } == true)
         }
     }
 
     @Test func deskPresetSearchRanksFuzzyLabelsBeforeBoardAndHostMatches() throws {
         let boards = [
-            DeskPresetBoard(label: "Gemini Research", width: 520, currentURLString: "https://docs.google.com/")
+            DeskPresetBoard(
+                label: "Gemini Research",
+                width: 520,
+                initialSheetURL: URL(string: "https://docs.google.com/"))
         ]
 
         let labelScore = try #require(
@@ -119,7 +128,10 @@ struct DenStoreTests {
         #expect(preset.label == "Morning")
         #expect(preset.boards.map(\.label) == ["Mail", "Notes"])
         #expect(preset.boards.map(\.width) == [420, 760])
-        #expect(preset.boards[0].currentURLString == "https://mail.example.com/inbox?label=work#today")
+        #expect(
+            preset.boards[0].initialSheetURL
+                == URL(string: "https://mail.example.com/inbox?label=work#today"))
+        #expect(preset.boards[1].initialSheetURL == nil)
         #expect(preset.focusedBoardIndex == 1)
 
         store.createDesk(label: "Copy", personalPresetID: preset.id)
@@ -467,8 +479,8 @@ struct DenStoreTests {
         #expect(restored.desks[0].boards.map(\.label) == ["One", "Two"])
         #expect(restored.desks[0].boards.map(\.width) == [440, 760])
         #expect(
-            restored.desks[0].boards.map(\.currentURLString) == [
-                "https://one.example/path", "https://two.example/",
+            restored.desks[0].boards.map(\.currentSheetURL) == [
+                URL(string: "https://one.example/path"), URL(string: "https://two.example/"),
             ])
         #expect(restored.focusedDeskID == first.id)
         #expect(restored.desks.map(\.focusedBoardID) == [firstBoards[1].id, secondBoards[0].id])
@@ -856,6 +868,6 @@ struct DenStoreTests {
     }
 
     private func board(_ label: String, width: Double = 520, url: String = "https://example.com/") -> BoardState {
-        BoardState(label: label, width: width, currentURLString: url)
+        BoardState(label: label, width: width, currentSheetURL: url.isEmpty ? nil : URL(string: url))
     }
 }

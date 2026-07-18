@@ -63,7 +63,7 @@ enum BuiltInDeskPreset: String, CaseIterable, Identifiable {
                 DeskPresetBoard(
                     label: "ChatGPT",
                     width: Self.boardWidth,
-                    currentURLString: "https://chatgpt.com/"
+                    initialSheetURL: URL(string: "https://chatgpt.com/")
                 )
             }
         case .gemini:
@@ -71,7 +71,7 @@ enum BuiltInDeskPreset: String, CaseIterable, Identifiable {
                 DeskPresetBoard(
                     label: "Gemini",
                     width: Self.boardWidth,
-                    currentURLString: "https://gemini.google.com/"
+                    initialSheetURL: URL(string: "https://gemini.google.com/")
                 )
             }
         }
@@ -97,20 +97,20 @@ struct PersonalDeskPreset: Codable, Equatable, Identifiable {
 struct DeskPresetBoard: Codable, Equatable {
     var label: String
     var width: Double
-    var currentURLString: String
+    var initialSheetURL: URL?
 
-    nonisolated init(label: String, width: Double, currentURLString: String) {
+    nonisolated init(label: String, width: Double, initialSheetURL: URL?) {
         self.label = label
         self.width = width
-        self.currentURLString = currentURLString
+        self.initialSheetURL = initialSheetURL
     }
 
     nonisolated init(board: BoardState) {
-        self.init(label: board.label, width: board.width, currentURLString: board.currentURLString)
+        self.init(label: board.label, width: board.width, initialSheetURL: board.currentSheetURL)
     }
 
     func makeBoard() -> BoardState {
-        BoardState(label: label, width: width, currentURLString: currentURLString)
+        BoardState(label: label, width: width, currentSheetURL: initialSheetURL)
     }
 }
 
@@ -118,12 +118,12 @@ struct BoardState: Codable, Equatable, Identifiable {
     var id: UUID
     var label: String
     var width: Double
-    var currentURLString: String
+    var currentSheetURL: URL?
 
-    init(id: UUID = UUID(), label: String, width: Double, currentURLString: String) {
+    init(id: UUID = UUID(), label: String, width: Double, currentSheetURL: URL?) {
         self.id = id
         self.label = label
         self.width = width
-        self.currentURLString = currentURLString
+        self.currentSheetURL = currentSheetURL
     }
 }

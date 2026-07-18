@@ -56,17 +56,17 @@ struct AppConfiguration {
             id: fixtureID("00000000-0000-0000-0000-000000000301"),
             label: "Alpha",
             width: 320,
-            currentURLString: fixtureSheetURL)
+            currentSheetURL: URL(string: fixtureSheetURL))
         let bravo = BoardState(
             id: fixtureID("00000000-0000-0000-0000-000000000302"),
             label: "Bravo",
             width: 320,
-            currentURLString: fixtureSheetURL)
+            currentSheetURL: URL(string: fixtureSheetURL))
         let charlie = BoardState(
             id: fixtureID("00000000-0000-0000-0000-000000000303"),
             label: "Charlie",
             width: 320,
-            currentURLString: fixtureSheetURL)
+            currentSheetURL: URL(string: fixtureSheetURL))
         let desk = DeskState(
             id: fixtureID("00000000-0000-0000-0000-000000000200"),
             label: "Main",

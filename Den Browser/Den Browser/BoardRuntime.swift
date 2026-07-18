@@ -31,7 +31,7 @@ final class BoardRuntime: NSObject, WKNavigationDelegate {
 
         webView.navigationDelegate = self
         sheetNavigation.didOpen(webView, onOpenBoard: onOpenBoard)
-        if let url = URL(string: board.currentURLString) {
+        if let url = board.currentSheetURL {
             webView.load(URLRequest(url: url))
         }
     }

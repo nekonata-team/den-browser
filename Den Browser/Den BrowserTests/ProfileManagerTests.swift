@@ -45,6 +45,27 @@ struct ProfileManagerTests {
         #expect(decoded.deskPresets.isEmpty)
     }
 
+    @Test func persistedSheetURLsUseDomainKeysAndSupportEmptyBoards() throws {
+        let board = BoardState(
+            label: "Research",
+            width: 520,
+            currentSheetURL: URL(string: "https://example.com/path?q=swift#results"))
+        let boardObject = try #require(
+            JSONSerialization.jsonObject(with: JSONEncoder().encode(board)) as? [String: Any])
+
+        #expect(boardObject["currentSheetURL"] as? String == "https://example.com/path?q=swift#results")
+        #expect(boardObject["currentURLString"] == nil)
+
+        let presetBoard = DeskPresetBoard(label: "Empty", width: 520, initialSheetURL: nil)
+        let presetObject = try #require(
+            JSONSerialization.jsonObject(with: JSONEncoder().encode(presetBoard)) as? [String: Any])
+        let restored = try JSONDecoder().decode(
+            DeskPresetBoard.self, from: JSONSerialization.data(withJSONObject: presetObject))
+
+        #expect(presetObject["initialSheetURL"] == nil)
+        #expect(restored.initialSheetURL == nil)
+    }
+
     @Test func webProfileStoreRejectsInvalidKindIdentifierPairs() {
         #expect(
             throws: DecodingError.self,
@@ -292,9 +313,18 @@ struct ProfileManagerTests {
         #expect(
             navigation.handleScriptMessage(
                 ["action": "openBoard", "url": "https://second.example/"], from: secondWebView))
-        #expect(firstStore.focusedDesk?.boards.contains { $0.currentURLString == "https://first.example/" } == true)
-        #expect(secondStore.focusedDesk?.boards.contains { $0.currentURLString == "https://second.example/" } == true)
-        #expect(firstStore.focusedDesk?.boards.contains { $0.currentURLString == "https://second.example/" } == false)
+        #expect(
+            firstStore.focusedDesk?.boards.contains {
+                $0.currentSheetURL == URL(string: "https://first.example/")
+            } == true)
+        #expect(
+            secondStore.focusedDesk?.boards.contains {
+                $0.currentSheetURL == URL(string: "https://second.example/")
+            } == true)
+        #expect(
+            firstStore.focusedDesk?.boards.contains {
+                $0.currentSheetURL == URL(string: "https://second.example/")
+            } == false)
     }
 
     @Test func corruptIndexIsQuarantinedAndRebuiltFromProfiles() throws {
@@ -334,6 +364,6 @@ struct ProfileManagerTests {
     }
 
     private func board(_ label: String, width: Double = 520, url: String = "https://example.com/") -> BoardState {
-        BoardState(label: label, width: width, currentURLString: url)
+        BoardState(label: label, width: width, currentSheetURL: URL(string: url))
     }
 }
