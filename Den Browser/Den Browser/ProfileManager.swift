@@ -187,15 +187,18 @@ final class ProfileManager {
             quarantine(indexURL)
         }
 
+        var newPersonalProfile: PersistedProfile?
         if !loaded.contains(where: { $0.profile.webProfileStore == .default }) {
-            loaded.insert(initialProfile ?? Self.personalProfile(), at: 0)
+            let personalProfile = initialProfile ?? Self.personalProfile()
+            loaded.insert(personalProfile, at: 0)
+            newPersonalProfile = personalProfile
         }
         loaded = deduplicated(loaded)
         persistedProfiles = Dictionary(uniqueKeysWithValues: loaded.map { ($0.profile.id, $0) })
         profiles = loaded.map(\.profile)
-        for persisted in loaded {
+        if let newPersonalProfile {
             do {
-                try save(persisted)
+                try save(newPersonalProfile)
             } catch {
                 reportSaveError(error)
             }

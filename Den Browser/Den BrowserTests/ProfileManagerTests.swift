@@ -120,6 +120,27 @@ struct ProfileManagerTests {
         #expect(restored.motionPreference == .standard)
     }
 
+    @Test func appPreferencesMigrateLegacyValuesAndDoNotDowngradeFutureSchema() {
+        let legacySuiteName = "AppPreferencesLegacyTests-\(UUID().uuidString)"
+        let legacyDefaults = UserDefaults(suiteName: legacySuiteName)!
+        defer { legacyDefaults.removePersistentDomain(forName: legacySuiteName) }
+        legacyDefaults.set("abc", forKey: "features.vim-style-sheet-navigation.hint-alphabet")
+
+        let migrated = AppPreferences(defaults: legacyDefaults)
+
+        #expect(migrated.sheetNavigationHintAlphabet == "abc")
+        #expect(legacyDefaults.integer(forKey: "preferences.schemaVersion") == 1)
+
+        let futureSuiteName = "AppPreferencesFutureTests-\(UUID().uuidString)"
+        let futureDefaults = UserDefaults(suiteName: futureSuiteName)!
+        defer { futureDefaults.removePersistentDomain(forName: futureSuiteName) }
+        futureDefaults.set(2, forKey: "preferences.schemaVersion")
+
+        _ = AppPreferences(defaults: futureDefaults)
+
+        #expect(futureDefaults.integer(forKey: "preferences.schemaVersion") == 2)
+    }
+
     @Test func motionPreferenceFollowsOrOverridesSystemSetting() {
         #expect(
             DenMotion.shouldReduceMotion(
@@ -163,6 +184,22 @@ struct ProfileManagerTests {
 
         #expect(restored.profiles.map(\.name) == ["Personal", "Office", "Work"])
         #expect(restored.store(for: work.id)?.focusedDesk?.label == "Restored")
+    }
+
+    @Test func loadingDoesNotRewriteExistingProfileDocuments() throws {
+        let directory = temporaryProfileDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let manager = makeProfileManager(directory: directory)
+        let profileURL = profileURL(manager.personalProfileID, in: directory)
+        var object = try #require(
+            JSONSerialization.jsonObject(with: Data(contentsOf: profileURL)) as? [String: Any])
+        object["futureField"] = "preserved"
+        let originalData = try JSONSerialization.data(withJSONObject: object, options: [.sortedKeys])
+        try originalData.write(to: profileURL)
+
+        _ = makeProfileManager(directory: directory)
+
+        #expect(try Data(contentsOf: profileURL) == originalData)
     }
 
     @Test func missingWindowProfileFallsBackToPersonalProfile() {

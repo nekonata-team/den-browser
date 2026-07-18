@@ -45,6 +45,8 @@ A missing optional Sheet URL means the Board has no Sheet. URLs encode using Fou
 - `shortcuts.<ShortcutAction raw value>`
 - `appearance.motion`
 
+The absence of `preferences.schemaVersion` means version 0. Preferences migrate one version at a time, preserve existing per-key values when adopting version 1, and update the version key only after each migration step completes. A schema version newer than the app supports is not overwritten or downgraded.
+
 ## Compatibility rules
 
 - Existing keys and enum raw values are never renamed or removed within version 1.

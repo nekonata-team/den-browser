@@ -40,7 +40,7 @@ final class AppPreferences {
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
-        defaults.set(Self.schemaVersion, forKey: Self.schemaVersionKey)
+        Self.migrateIfNeeded(defaults)
         sheetNavigationEnabled = defaults.bool(forKey: Self.enabledKey)
         sheetNavigationHintAlphabet =
             SheetNavigationManager.normalizeHintAlphabet(defaults.string(forKey: Self.hintAlphabetKey) ?? "")
@@ -51,6 +51,23 @@ final class AppPreferences {
             defaults.string(forKey: Self.motionKey).flatMap(MotionPreference.init(rawValue:))
             ?? .followSystem
         loadShortcutOverrides()
+    }
+
+    private static func migrateIfNeeded(_ defaults: UserDefaults) {
+        var version = defaults.object(forKey: schemaVersionKey) as? Int ?? 0
+        guard version <= schemaVersion else { return }
+
+        while version < schemaVersion {
+            switch version {
+            case 0:
+                // Version 1 adopts existing per-key preferences without changing them.
+                break
+            default:
+                return
+            }
+            version += 1
+            defaults.set(version, forKey: schemaVersionKey)
+        }
     }
 
     func setSheetNavigationEnabled(_ enabled: Bool) {
