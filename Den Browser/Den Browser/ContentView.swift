@@ -471,11 +471,7 @@ struct ContentView: View {
     }
 
     private var shouldShowDeskSwitcher: Bool {
-        stateHasMultipleDesks && !store.isZenViewPresented
-    }
-
-    private var stateHasMultipleDesks: Bool {
-        store.state.desks.count > 1
+        !store.isZenViewPresented
     }
 
     private func defaultBoardWidth(in size: CGSize) -> Double {
