@@ -54,16 +54,13 @@ struct BoardView: View {
         return Color.primary.opacity(0.16)
     }
 
-    @ViewBuilder
     private var header: some View {
-        if isContextMenuEnabled {
-            headerContent
-                .contextMenu {
+        headerContent
+            .contextMenu {
+                if isContextMenuEnabled {
                     boardContextMenu
                 }
-        } else {
-            headerContent
-        }
+            }
     }
 
     private var headerContent: some View {
@@ -239,14 +236,11 @@ struct BoardView: View {
         }
     }
 
-    @ViewBuilder
     private func withBoardContextMenu<Content: View>(_ content: Content) -> some View {
-        if isContextMenuEnabled {
-            content.contextMenu {
+        content.contextMenu {
+            if isContextMenuEnabled {
                 boardContextMenu
             }
-        } else {
-            content
         }
     }
 
