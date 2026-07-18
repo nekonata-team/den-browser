@@ -40,8 +40,12 @@ extension DenStore {
         setTemporaryContext(.newDesk)
     }
 
+    func showDeskTemplateManagement() {
+        setTemporaryContext(.deskTemplateManagement)
+    }
+
     func hideNewDeskPanel() {
-        if temporaryContext == .newDesk {
+        if temporaryContext == .newDesk || temporaryContext == .deskTemplateManagement {
             setTemporaryContext(nil)
         }
     }

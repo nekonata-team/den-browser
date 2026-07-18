@@ -56,6 +56,7 @@ struct KeyboardShortcutsView: View {
                     item(["n", "/", "Space"], "Open Board"),
                     item(["⇧", "N"], "New Desk"),
                     item(["b"], "Save Desk as Template"),
+                    item(["⇧", "B"], "Manage Desk Templates"),
                     item(["o"], "Overview"),
                     item(["?"], "Keyboard Shortcuts"),
                     item(["z"], "Toggle Zen View"),

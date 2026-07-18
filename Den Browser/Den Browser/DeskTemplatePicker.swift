@@ -17,8 +17,14 @@ struct DeskTemplatePicker: View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
                 if isManaging {
-                    Button("Back") { isManaging = false }
-                        .buttonStyle(.plain)
+                    Button(store.isDeskTemplateManagementPresented ? "Done" : "Back") {
+                        if store.isDeskTemplateManagementPresented {
+                            store.hideNewDeskPanel()
+                        } else {
+                            isManaging = false
+                        }
+                    }
+                    .buttonStyle(.plain)
                     Text("Manage Templates")
                         .font(.headline)
                 }
@@ -137,6 +143,7 @@ struct DeskTemplatePicker: View {
                 }
             }
         }
+        .frame(maxWidth: .infinity)
     }
 
     private func choiceRow(_ choice: DeskTemplateChoice, showsSource: Bool = false) -> some View {

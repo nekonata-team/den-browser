@@ -41,7 +41,7 @@ See [CONTEXT.md](./CONTEXT.md) for the complete product language.
 - Restore the most Recently Removed Board with `u` during the current app run.
 - See and reorganize Boards across Desks in Overview.
 - Delete empty Desks immediately, or delete a Desk containing Boards after confirming the permanent removal.
-- Save the Focused Desk as a Profile-owned Personal Desk Template, then use keyboard-first fuzzy search to choose and preview a template before naming another Desk. Templates can also be replaced or deleted. Built-in Empty, ChatGPT, and Gemini templates provide ready-made starting points.
+- Save the Focused Desk as a Profile-owned Personal Desk Template, then use keyboard-first fuzzy search to choose and preview a template before naming another Desk. Templates can also be replaced or deleted, with direct management available through Shift + `b` in Den Mode. Built-in Empty, ChatGPT, and Gemini templates provide ready-made starting points.
 - Keep browser-like back-forward navigation inside each Board as a Sheet Stack.
 - Restore Desk and Board labels, order, widths, focus, and current Sheet URLs after relaunching the app, showing the Focused Board immediately without a scroll animation.
 - Keep sign-ins across app launches while isolating them between Profiles.

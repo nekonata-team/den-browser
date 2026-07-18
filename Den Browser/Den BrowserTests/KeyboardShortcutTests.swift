@@ -181,6 +181,17 @@ struct KeyboardShortcutTests {
         #expect(!empty.isSaveDeskTemplatePanelPresented)
     }
 
+    @Test func denModeShiftBOpensDeskTemplateManagement() throws {
+        let manage = try keyEvent(
+            characters: "B", charactersIgnoringModifiers: "b", modifiers: [.shift], keyCode: 11)
+        let store = makeStore(boards: [])
+        store.isDenMode = true
+
+        #expect(KeyboardController.handle(manage, store: store))
+        #expect(store.isDeskTemplateManagementPresented)
+        #expect(store.isNewDeskPanelPresented)
+    }
+
     @Test func templateConfirmationsSuspendBoardRemovalShortcuts() throws {
         let commandW = try keyEvent(
             characters: "w", charactersIgnoringModifiers: "w", modifiers: [.command], keyCode: 13)

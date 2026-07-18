@@ -45,7 +45,10 @@ final class DenStore {
     }
 
     var isOpenBoardPanelPresented: Bool { temporaryContext == .openBoard }
-    var isNewDeskPanelPresented: Bool { temporaryContext == .newDesk }
+    var isNewDeskPanelPresented: Bool {
+        temporaryContext == .newDesk || temporaryContext == .deskTemplateManagement
+    }
+    var isDeskTemplateManagementPresented: Bool { temporaryContext == .deskTemplateManagement }
     var isOverviewPresented: Bool { temporaryContext == .overview }
     var isKeyboardShortcutsPresented: Bool { temporaryContext == .keyboardShortcuts }
     var isBoardWidthPanelPresented: Bool { temporaryContext == .boardWidth }
@@ -479,6 +482,7 @@ final class DenStore {
 enum TemporaryContext: Equatable {
     case openBoard
     case newDesk
+    case deskTemplateManagement
     case overview
     case keyboardShortcuts
     case boardWidth

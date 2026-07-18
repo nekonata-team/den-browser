@@ -38,7 +38,7 @@ ChatGPT and Gemini each create three 520-point Boards focused on the first Board
 
 ## Managing Personal Desk Templates
 
-`Manage Templates…` switches the New Desk panel to an inline management view. It supports search and deletion. Built-in Desk Templates are visible during selection but are not managed.
+`Manage Templates…` switches the New Desk panel to an inline management view. Shift + `b` in Den Mode opens the same management view directly. It supports search and deletion. Built-in Desk Templates are visible during selection but are not managed.
 
 Deleting always asks for confirmation and states that existing Desks are unaffected. Deleting the selected Personal Desk Template returns selection to Empty.
 

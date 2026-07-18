@@ -50,15 +50,21 @@ struct ContentView: View {
 
                 if store.focusedDesk?.boards.isEmpty == false {
                     boardStrip(in: geometry.size)
+                        .allowsHitTesting(store.temporaryContext == nil)
+                        .accessibilityHidden(store.temporaryContext != nil)
                 } else {
                     EmptyDenView {
                         store.showOpenBoardPanel()
                     }
+                    .allowsHitTesting(store.temporaryContext == nil)
+                    .accessibilityHidden(store.temporaryContext != nil)
                 }
 
                 if shouldShowDeskSwitcher {
                     deskSwitcher
                         .padding(.top, 12)
+                        .allowsHitTesting(store.temporaryContext == nil)
+                        .accessibilityHidden(store.temporaryContext != nil)
                 }
 
                 if store.isBoardWidthPanelPresented {
@@ -244,9 +250,12 @@ struct ContentView: View {
     private var newDeskPanel: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack(spacing: 10) {
-                Image(systemName: "rectangle.stack.badge.plus")
-                    .foregroundStyle(.secondary)
-                Text("New Desk")
+                Image(
+                    systemName: store.isDeskTemplateManagementPresented
+                        ? "bookmark" : "rectangle.stack.badge.plus"
+                )
+                .foregroundStyle(.secondary)
+                Text(store.isDeskTemplateManagementPresented ? "Manage Templates" : "New Desk")
                     .font(.system(size: 18, weight: .semibold))
             }
             .frame(height: 38)
@@ -316,7 +325,7 @@ struct ContentView: View {
             activeDeskTemplate = .builtIn(.empty)
             newDeskLabel = BuiltInDeskTemplate.empty.label
             deskTemplateQuery = ""
-            isManagingDeskTemplates = false
+            isManagingDeskTemplates = store.isDeskTemplateManagementPresented
             isChoosingDeskTemplate = true
             didAttemptDeskCreation = false
             DispatchQueue.main.async {
