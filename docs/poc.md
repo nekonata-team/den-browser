@@ -90,13 +90,13 @@ Den Browser's first PoC validates whether a macOS WKWebView implementation can s
 2. Delete a Desk containing Boards, cancel the confirmation, and confirm the Desk and its Boards remain.
 3. Delete it again, confirm the warning, and verify the Desk and its Boards disappear. Confirm the last Desk cannot be deleted.
 
-## Desk Template validation
+## Desk Preset validation
 
-1. Save a Desk containing Boards with different Labels, Widths, Current Sheet URLs, and a non-first Focused Board. Confirm the bookmark button, Den menu, and `b` in Den Mode open the same panel. Confirm an empty Desk exposes no save action.
-2. Relaunch and confirm the Personal Desk Template remains only in its owning Profile. Create a Desk from it and confirm Board order, Labels, Widths, exact URLs, and initial focus match while Desk and Board identities are new.
-3. Confirm New Desk focuses Template search with Empty active. Type fuzzy queries against Template Labels, Board Labels, and URL hosts; use Up and Down to change the active result. Confirm one remaining result becomes active without auto-confirming. Press Return or Tab to confirm it and focus its fully selected initial Desk Label, edit the label, then press Return to create. Confirm Escape from the label returns to Template selection and a second Escape closes the panel.
-4. Save another Desk under the same Personal Desk Template Label. Cancel replacement once, then confirm it. Verify the template keeps its list position while its captured Boards change and existing Desks remain unchanged.
-5. In Manage Templates, search for and delete a template after confirmation. Verify existing Desks remain unchanged and deleting the selected template returns selection to Empty.
+1. Save a Desk containing Boards with different Labels, Widths, Current Sheet URLs, and a non-first Focused Board. Confirm the bookmark button, Den menu, and `p` in Den Mode open the same panel. Confirm an empty Desk exposes no save action and `b` has no Preset action.
+2. Relaunch and confirm the Personal Desk Preset remains only in its owning Profile. Create a Desk from it and confirm Board order, Labels, Widths, exact URLs, and initial focus match while Desk and Board identities are new.
+3. Confirm New Desk focuses Preset search with Empty active. Type fuzzy queries against Preset Labels, Board Labels, and URL hosts; use Up and Down to change the active result. Confirm one remaining result becomes active without auto-confirming. Press Return or Tab to confirm it and focus its fully selected initial Desk Label, edit the label, then press Return to create. Confirm Escape from the label returns to Preset selection and a second Escape closes the panel.
+4. Save another Desk under the same Personal Desk Preset Label. Cancel replacement once, then confirm it. Verify the preset keeps its list position while its captured Boards change and existing Desks remain unchanged.
+5. In Manage Presets, search for and delete a preset after confirmation. Verify existing Desks remain unchanged and deleting the selected preset returns selection to Empty.
 6. Create ChatGPT and Gemini Desks. Confirm each creates three 520-point Boards, uses the expected site URL, and focuses the first Board.
 
 ## Vim-style Sheet navigation experiment

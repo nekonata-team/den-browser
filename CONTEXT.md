@@ -20,21 +20,21 @@ _Avoid_: Workspace, window, tab bar, deck
 A user-visible label for a desk's broad work context.
 _Avoid_: Workspace name, window title
 
-**Desk Template**:
-A reusable starting arrangement applied when creating a desk, including its initial boards, current sheets, and layout. A desk created from a desk template is independent of that template.
-_Avoid_: Workspace template, preset, saved desk
+**Desk Preset**:
+A reusable starting arrangement applied when creating a desk, including its initial boards, current sheets, and layout. A desk created from a desk preset is independent of that preset.
+_Avoid_: Workspace template, Desk Layout, saved desk
 
-**Personal Desk Template**:
-A Profile-owned desk template captured from an existing desk for repeated work or bookmark-like starting points.
-_Avoid_: Saved desk, bookmark folder, My Template
+**Personal Desk Preset**:
+A Profile-owned desk preset captured from an existing desk for repeated work or bookmark-like starting points.
+_Avoid_: Saved desk, bookmark folder
 
-**Built-in Desk Template**:
-An app-provided desk template available to every Profile as an example or common starting point.
+**Built-in Desk Preset**:
+An app-provided desk preset available to every Profile as an example or common starting point.
 _Avoid_: Default desk, system desk
 
-**Desk Template Label**:
-A user-visible label for a desk template. It becomes the initial Desk Label when the desk template is selected.
-_Avoid_: Desk Label, template name
+**Desk Preset Label**:
+A user-visible label for a desk preset. It becomes the initial Desk Label when the desk preset is selected.
+_Avoid_: Desk Label, preset name
 
 **Board**:
 A user-created work surface that holds one focused task context and its sheet stack within a desk.

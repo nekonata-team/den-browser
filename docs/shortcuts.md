@@ -27,8 +27,8 @@ The complete in-app guide is available from Settings, the Den menu, and `?` in D
 | Shift + digit | Move focused board to desk | Places it after that desk's focused board, then focuses it. |
 | `n` / Space | New Board panel | Creating enters Sheet Input; Escape returns to Den Mode. |
 | Shift + `n` | New Desk panel | Creating enters Sheet Input; Escape returns to Den Mode. |
-| `b` | Save Desk as Template panel | Available when the Focused Desk contains a Board. |
-| Shift + `b` | Manage Personal Desk Templates | Available even when the Focused Desk is empty. |
+| `p` | Save Desk as Preset panel | Available when the Focused Desk contains a Board. |
+| Shift + `p` | Manage Personal Desk Presets | Available even when the Focused Desk is empty. |
 | `o` | Toggle overview | Overview is temporary within Den Mode. |
 | `?` | Keyboard Shortcuts | Opens the complete guide; `?` or Escape closes it. |
 | `z` | Toggle Zen View | Hides the Desk switcher and Profile control for this window; the titlebar remains visible. |

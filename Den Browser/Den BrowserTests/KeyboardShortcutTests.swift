@@ -167,44 +167,54 @@ struct KeyboardShortcutTests {
         #expect(store.state == state)
     }
 
-    @Test func denModeBOpensDeskTemplatePanelOnlyForDeskWithBoards() throws {
-        let save = try keyEvent(characters: "b", charactersIgnoringModifiers: "b", keyCode: 11)
+    @Test func denModePOpensDeskPresetPanelOnlyForDeskWithBoards() throws {
+        let save = try keyEvent(characters: "p", charactersIgnoringModifiers: "p", keyCode: 35)
         let store = makeStore(boards: [board("First")])
         store.isDenMode = true
 
         #expect(KeyboardController.handle(save, store: store))
-        #expect(store.isSaveDeskTemplatePanelPresented)
+        #expect(store.isSaveDeskPresetPanelPresented)
 
         let empty = makeStore(boards: [])
         empty.isDenMode = true
         #expect(KeyboardController.handle(save, store: empty))
-        #expect(!empty.isSaveDeskTemplatePanelPresented)
+        #expect(!empty.isSaveDeskPresetPanelPresented)
     }
 
-    @Test func denModeShiftBOpensDeskTemplateManagement() throws {
+    @Test func denModeShiftPOpensDeskPresetManagement() throws {
         let manage = try keyEvent(
-            characters: "B", charactersIgnoringModifiers: "b", modifiers: [.shift], keyCode: 11)
+            characters: "P", charactersIgnoringModifiers: "p", modifiers: [.shift], keyCode: 35)
         let store = makeStore(boards: [])
         store.isDenMode = true
 
         #expect(KeyboardController.handle(manage, store: store))
-        #expect(store.isDeskTemplateManagementPresented)
+        #expect(store.isDeskPresetManagementPresented)
         #expect(store.isNewDeskPanelPresented)
     }
 
-    @Test func templateConfirmationsSuspendBoardRemovalShortcuts() throws {
+    @Test func denModeBHasNoPresetAction() throws {
+        let legacy = try keyEvent(characters: "b", charactersIgnoringModifiers: "b", keyCode: 11)
+        let store = makeStore(boards: [board("First")])
+        store.isDenMode = true
+
+        #expect(KeyboardController.handle(legacy, store: store))
+        #expect(!store.isSaveDeskPresetPanelPresented)
+        #expect(!store.isDeskPresetManagementPresented)
+    }
+
+    @Test func presetConfirmationsSuspendBoardRemovalShortcuts() throws {
         let commandW = try keyEvent(
             characters: "w", charactersIgnoringModifiers: "w", modifiers: [.command], keyCode: 13)
         let store = makeStore(boards: [board("First")])
 
-        #expect(store.saveFocusedDeskAsTemplate(label: "Routine") == .created)
-        #expect(store.saveFocusedDeskAsTemplate(label: "Routine") == .replacementPending)
+        #expect(store.saveFocusedDeskAsPreset(label: "Routine") == .created)
+        #expect(store.saveFocusedDeskAsPreset(label: "Routine") == .replacementPending)
         #expect(!KeyboardController.handle(commandW, store: store))
         #expect(store.focusedDesk?.boards.count == 1)
 
-        store.cancelDeskTemplateReplacement()
-        let templateID = try #require(store.deskTemplates.first?.id)
-        store.requestDeskTemplateDeletion(templateID)
+        store.cancelDeskPresetReplacement()
+        let presetID = try #require(store.deskPresets.first?.id)
+        store.requestDeskPresetDeletion(presetID)
         #expect(!KeyboardController.handle(commandW, store: store))
         #expect(store.focusedDesk?.boards.count == 1)
     }

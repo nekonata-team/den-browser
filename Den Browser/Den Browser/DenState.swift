@@ -37,7 +37,7 @@ struct DeskState: Codable, Equatable, Identifiable {
     }
 }
 
-enum BuiltInDeskTemplate: String, CaseIterable, Identifiable {
+enum BuiltInDeskPreset: String, CaseIterable, Identifiable {
     case empty
     case chatGPT
     case gemini
@@ -54,13 +54,13 @@ enum BuiltInDeskTemplate: String, CaseIterable, Identifiable {
         }
     }
 
-    var boards: [DeskTemplateBoard] {
+    var boards: [DeskPresetBoard] {
         switch self {
         case .empty:
             []
         case .chatGPT:
             (0..<3).map { _ in
-                DeskTemplateBoard(
+                DeskPresetBoard(
                     label: "ChatGPT",
                     width: Self.boardWidth,
                     currentURLString: "https://chatgpt.com/"
@@ -68,7 +68,7 @@ enum BuiltInDeskTemplate: String, CaseIterable, Identifiable {
             }
         case .gemini:
             (0..<3).map { _ in
-                DeskTemplateBoard(
+                DeskPresetBoard(
                     label: "Gemini",
                     width: Self.boardWidth,
                     currentURLString: "https://gemini.google.com/"
@@ -80,21 +80,21 @@ enum BuiltInDeskTemplate: String, CaseIterable, Identifiable {
     var focusedBoardIndex: Int? { boards.isEmpty ? nil : 0 }
 }
 
-struct PersonalDeskTemplate: Codable, Equatable, Identifiable {
+struct PersonalDeskPreset: Codable, Equatable, Identifiable {
     var id: UUID
     var label: String
-    var boards: [DeskTemplateBoard]
+    var boards: [DeskPresetBoard]
     var focusedBoardIndex: Int?
 
     init(id: UUID = UUID(), label: String, desk: DeskState) {
         self.id = id
         self.label = label
-        boards = desk.boards.map(DeskTemplateBoard.init)
+        boards = desk.boards.map(DeskPresetBoard.init)
         focusedBoardIndex = desk.boards.firstIndex { $0.id == desk.focusedBoardID }
     }
 }
 
-struct DeskTemplateBoard: Codable, Equatable {
+struct DeskPresetBoard: Codable, Equatable {
     var label: String
     var width: Double
     var currentURLString: String

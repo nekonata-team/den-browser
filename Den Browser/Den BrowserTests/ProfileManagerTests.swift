@@ -29,19 +29,20 @@ struct ProfileManagerTests {
             })
     }
 
-    @Test func profileDocumentWithoutDeskTemplatesLoadsEmptyList() throws {
+    @Test func profileDocumentWithoutDeskPresetsLoadsEmptyList() throws {
         let profile = ProfileState(
             id: UUID(), name: "Work", color: .purple, webProfileStore: .identified(UUID()))
         let encoded = try JSONEncoder().encode(PersistedProfile(profile: profile, den: .sample))
         var object = try #require(JSONSerialization.jsonObject(with: encoded) as? [String: Any])
-        object.removeValue(forKey: "deskTemplates")
+        #expect(object["deskPresets"] != nil)
+        object.removeValue(forKey: "deskPresets")
 
         let decoded = try JSONDecoder().decode(
             PersistedProfile.self,
             from: JSONSerialization.data(withJSONObject: object))
 
         #expect(decoded.schemaVersion == 1)
-        #expect(decoded.deskTemplates.isEmpty)
+        #expect(decoded.deskPresets.isEmpty)
     }
 
     @Test func webProfileStoreRejectsInvalidKindIdentifierPairs() {
@@ -118,14 +119,14 @@ struct ProfileManagerTests {
         #expect(manager.updateProfile(work.id, name: "Office", color: .yellow))
 
         let store = try #require(manager.store(for: work.id))
-        store.createDesk(label: "Restored", template: .empty)
+        store.createDesk(label: "Restored", preset: .empty)
         let restored = makeProfileManager(directory: directory)
 
         #expect(restored.profiles.map(\.name) == ["Personal", "Office", "Work"])
         #expect(restored.store(for: work.id)?.focusedDesk?.label == "Restored")
     }
 
-    @Test func profileManagerPersistsDeskTemplatesPerProfile() throws {
+    @Test func profileManagerPersistsDeskPresetsPerProfile() throws {
         let directory = temporaryProfileDirectory()
         defer { try? FileManager.default.removeItem(at: directory) }
         let manager = makeProfileManager(directory: directory)
@@ -134,12 +135,12 @@ struct ProfileManagerTests {
         let workStore = try #require(manager.store(for: work.id))
 
         personalStore.addBoard(urlString: "https://example.com/bookmark?one=1")
-        #expect(personalStore.saveFocusedDeskAsTemplate(label: "Reading") == .created)
+        #expect(personalStore.saveFocusedDeskAsPreset(label: "Reading") == .created)
 
         let restored = makeProfileManager(directory: directory)
-        #expect(restored.store(for: manager.personalProfileID)?.deskTemplates.map(\.label) == ["Reading"])
-        #expect(restored.store(for: work.id)?.deskTemplates.isEmpty == true)
-        #expect(workStore.deskTemplates.isEmpty)
+        #expect(restored.store(for: manager.personalProfileID)?.deskPresets.map(\.label) == ["Reading"])
+        #expect(restored.store(for: work.id)?.deskPresets.isEmpty == true)
+        #expect(workStore.deskPresets.isEmpty)
     }
 
     @Test func personalCannotBeDeletedAndAdditionalProfileCan() async throws {

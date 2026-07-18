@@ -19,14 +19,14 @@ struct ContentView: View {
     @Environment(\.accessibilityReduceMotion) private var systemReduceMotion
     @State private var urlText = ""
     @State private var newDeskLabel = ""
-    @State private var selectedDeskTemplate: DeskTemplateSelection = .builtIn(.empty)
-    @State private var activeDeskTemplate: DeskTemplateSelection = .builtIn(.empty)
-    @State private var deskTemplateQuery = ""
-    @State private var isManagingDeskTemplates = false
-    @State private var isChoosingDeskTemplate = true
+    @State private var selectedDeskPreset: DeskPresetSelection = .builtIn(.empty)
+    @State private var activeDeskPreset: DeskPresetSelection = .builtIn(.empty)
+    @State private var deskPresetQuery = ""
+    @State private var isManagingDeskPresets = false
+    @State private var isChoosingDeskPreset = true
     @State private var didAttemptDeskCreation = false
-    @State private var saveDeskTemplateLabel = ""
-    @State private var saveDeskTemplateMessage: String?
+    @State private var saveDeskPresetLabel = ""
+    @State private var saveDeskPresetMessage: String?
     @State private var boardScrollPosition = ScrollPosition(idType: UUID.self)
     @State private var didScrollToRestoredFocusedBoard = false
     @State private var resizingBoardID: UUID?
@@ -34,9 +34,9 @@ struct ContentView: View {
     @State private var boardDrag: BoardDragState?
     @State private var lastBoardAutoScrollTime = 0.0
     @FocusState private var isOpenPanelFocused: Bool
-    @FocusState private var isDeskTemplateSearchFocused: Bool
+    @FocusState private var isDeskPresetSearchFocused: Bool
     @FocusState private var isNewDeskLabelFocused: Bool
-    @FocusState private var isSaveDeskTemplateLabelFocused: Bool
+    @FocusState private var isSaveDeskPresetLabelFocused: Bool
 
     init(profileName: String? = nil, profileColor: Color = .blue) {
         self.profileName = profileName
@@ -91,8 +91,8 @@ struct ContentView: View {
                         .transition(DenMotion.transition(reduceMotion: shouldReduceMotion, scale: 0.96))
                 }
 
-                if store.isSaveDeskTemplatePanelPresented {
-                    saveDeskTemplatePanel
+                if store.isSaveDeskPresetPanelPresented {
+                    saveDeskPresetPanel
                         .padding(.top, shouldShowDeskSwitcher ? 74 : 12)
                         .transition(DenMotion.transition(reduceMotion: shouldReduceMotion, scale: 0.96))
                 }
@@ -132,7 +132,7 @@ struct ContentView: View {
             .animation(DenMotion.feedback(reduceMotion: shouldReduceMotion), value: store.isOpenBoardPanelPresented)
             .animation(DenMotion.feedback(reduceMotion: shouldReduceMotion), value: store.isNewDeskPanelPresented)
             .animation(
-                DenMotion.feedback(reduceMotion: shouldReduceMotion), value: store.isSaveDeskTemplatePanelPresented
+                DenMotion.feedback(reduceMotion: shouldReduceMotion), value: store.isSaveDeskPresetPanelPresented
             )
             .animation(DenMotion.feedback(reduceMotion: shouldReduceMotion), value: store.isOverviewPresented)
             .animation(DenMotion.feedback(reduceMotion: shouldReduceMotion), value: store.isKeyboardShortcutsPresented)
@@ -170,27 +170,27 @@ struct ContentView: View {
             )
         }
         .confirmationDialog(
-            "Replace \(store.deskTemplatePendingReplacement?.label ?? "Desk Template")?",
+            "Replace \(store.deskPresetPendingReplacement?.label ?? "Desk Preset")?",
             isPresented: Binding(
-                get: { store.deskTemplatePendingReplacement != nil },
-                set: { if !$0 { store.cancelDeskTemplateReplacement() } })
+                get: { store.deskPresetPendingReplacement != nil },
+                set: { if !$0 { store.cancelDeskPresetReplacement() } })
         ) {
-            Button("Replace Template") {
-                store.confirmDeskTemplateReplacement()
-                store.hideSaveDeskTemplatePanel()
+            Button("Replace Preset") {
+                store.confirmDeskPresetReplacement()
+                store.hideSaveDeskPresetPanel()
             }
-            Button("Cancel", role: .cancel) { store.cancelDeskTemplateReplacement() }
+            Button("Cancel", role: .cancel) { store.cancelDeskPresetReplacement() }
         } message: {
             Text("Existing Desks will not be affected.")
         }
         .confirmationDialog(
-            "Delete \(store.deskTemplatePendingDeletion?.label ?? "Desk Template")?",
+            "Delete \(store.deskPresetPendingDeletion?.label ?? "Desk Preset")?",
             isPresented: Binding(
-                get: { store.deskTemplatePendingDeletion != nil },
-                set: { if !$0 { store.cancelDeskTemplateDeletion() } })
+                get: { store.deskPresetPendingDeletion != nil },
+                set: { if !$0 { store.cancelDeskPresetDeletion() } })
         ) {
-            Button("Delete Template", role: .destructive) { confirmDeskTemplateDeletion() }
-            Button("Cancel", role: .cancel) { store.cancelDeskTemplateDeletion() }
+            Button("Delete Preset", role: .destructive) { confirmDeskPresetDeletion() }
+            Button("Cancel", role: .cancel) { store.cancelDeskPresetDeletion() }
         } message: {
             Text("Existing Desks will not be affected.")
         }
@@ -251,39 +251,39 @@ struct ContentView: View {
         VStack(alignment: .leading, spacing: 14) {
             HStack(spacing: 10) {
                 Image(
-                    systemName: store.isDeskTemplateManagementPresented
+                    systemName: store.isDeskPresetManagementPresented
                         ? "bookmark" : "rectangle.stack.badge.plus"
                 )
                 .foregroundStyle(.secondary)
-                Text(store.isDeskTemplateManagementPresented ? "Manage Templates" : "New Desk")
+                Text(store.isDeskPresetManagementPresented ? "Manage Presets" : "New Desk")
                     .font(.system(size: 18, weight: .semibold))
             }
             .frame(height: 38)
 
-            if isChoosingDeskTemplate {
-                DeskTemplatePicker(
-                    selection: $activeDeskTemplate,
-                    query: $deskTemplateQuery,
-                    isManaging: $isManagingDeskTemplates,
-                    isSearchFocused: $isDeskTemplateSearchFocused,
-                    onConfirm: confirmDeskTemplate)
+            if isChoosingDeskPreset {
+                DeskPresetPicker(
+                    selection: $activeDeskPreset,
+                    query: $deskPresetQuery,
+                    isManaging: $isManagingDeskPresets,
+                    isSearchFocused: $isDeskPresetSearchFocused,
+                    onConfirm: confirmDeskPreset)
             } else {
                 HStack(spacing: 10) {
                     VStack(alignment: .leading, spacing: 2) {
-                        Text(deskTemplateLabel(for: selectedDeskTemplate))
+                        Text(deskPresetLabel(for: selectedDeskPreset))
                             .font(.headline)
-                        Text(boardCountLabel(selectedDeskTemplateBoards.count))
+                        Text(boardCountLabel(selectedDeskPresetBoards.count))
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
                     Spacer()
-                    Button("Change Template") { beginDeskTemplateSelection() }
+                    Button("Change Preset") { beginDeskPresetSelection() }
                         .buttonStyle(.plain)
                 }
                 .padding(10)
                 .background(Color.primary.opacity(0.055), in: RoundedRectangle(cornerRadius: 8))
 
-                DeskTemplatePreview(boards: selectedDeskTemplateBoards)
+                DeskPresetPreview(boards: selectedDeskPresetBoards)
 
                 TextField("Desk label", text: $newDeskLabel)
                     .textFieldStyle(.roundedBorder)
@@ -295,7 +295,7 @@ struct ContentView: View {
                         guard isBackTab, keyPress.modifiers.contains(.shift) else {
                             return .ignored
                         }
-                        beginDeskTemplateSelection()
+                        beginDeskPresetSelection()
                         return .handled
                     }
 
@@ -321,62 +321,62 @@ struct ContentView: View {
         .frame(width: 620)
         .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
         .onAppear {
-            selectedDeskTemplate = .builtIn(.empty)
-            activeDeskTemplate = .builtIn(.empty)
-            newDeskLabel = BuiltInDeskTemplate.empty.label
-            deskTemplateQuery = ""
-            isManagingDeskTemplates = store.isDeskTemplateManagementPresented
-            isChoosingDeskTemplate = true
+            selectedDeskPreset = .builtIn(.empty)
+            activeDeskPreset = .builtIn(.empty)
+            newDeskLabel = BuiltInDeskPreset.empty.label
+            deskPresetQuery = ""
+            isManagingDeskPresets = store.isDeskPresetManagementPresented
+            isChoosingDeskPreset = true
             didAttemptDeskCreation = false
             DispatchQueue.main.async {
-                isDeskTemplateSearchFocused = true
+                isDeskPresetSearchFocused = true
             }
         }
         .onExitCommand {
-            if isChoosingDeskTemplate {
+            if isChoosingDeskPreset {
                 store.hideNewDeskPanel()
             } else {
-                beginDeskTemplateSelection()
+                beginDeskPresetSelection()
             }
         }
     }
 
-    private var saveDeskTemplatePanel: some View {
+    private var saveDeskPresetPanel: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(spacing: 10) {
                 Image(systemName: "bookmark")
                     .foregroundStyle(.secondary)
-                Text("Save Desk as Template")
+                Text("Save Desk as Preset")
                     .font(.system(size: 17, weight: .semibold))
             }
 
-            TextField("Template label", text: $saveDeskTemplateLabel)
+            TextField("Preset label", text: $saveDeskPresetLabel)
                 .textFieldStyle(.roundedBorder)
-                .focused($isSaveDeskTemplateLabelFocused)
-                .onSubmit(saveDeskTemplate)
+                .focused($isSaveDeskPresetLabelFocused)
+                .onSubmit(saveDeskPreset)
 
-            DeskTemplatePreview(
-                boards: store.focusedDesk?.boards.map(DeskTemplateBoard.init) ?? [])
+            DeskPresetPreview(
+                boards: store.focusedDesk?.boards.map(DeskPresetBoard.init) ?? [])
 
             HStack {
-                Text(saveDeskTemplateMessage ?? "Captures the current Board arrangement")
+                Text(saveDeskPresetMessage ?? "Captures the current Board arrangement")
                     .font(.caption)
-                    .foregroundStyle(saveDeskTemplateMessage == nil ? Color.secondary : Color.red)
+                    .foregroundStyle(saveDeskPresetMessage == nil ? Color.secondary : Color.red)
                 Spacer()
-                Button("Save Template", action: saveDeskTemplate)
+                Button("Save Preset", action: saveDeskPreset)
                     .buttonStyle(.glassProminent)
-                    .disabled(saveDeskTemplateLabel.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    .disabled(saveDeskPresetLabel.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
             }
         }
         .padding(16)
         .frame(width: 520)
         .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
         .onAppear {
-            saveDeskTemplateLabel = store.focusedDesk?.label ?? ""
-            saveDeskTemplateMessage = nil
-            DispatchQueue.main.async { isSaveDeskTemplateLabelFocused = true }
+            saveDeskPresetLabel = store.focusedDesk?.label ?? ""
+            saveDeskPresetMessage = nil
+            DispatchQueue.main.async { isSaveDeskPresetLabelFocused = true }
         }
-        .onExitCommand { store.hideSaveDeskTemplatePanel() }
+        .onExitCommand { store.hideSaveDeskPresetPanel() }
     }
 
     private var trimmedNewDeskLabel: String {
@@ -390,22 +390,22 @@ struct ContentView: View {
     private func createDesk() {
         didAttemptDeskCreation = true
         guard !trimmedNewDeskLabel.isEmpty else { return }
-        switch selectedDeskTemplate {
-        case .builtIn(let template):
-            store.createDesk(label: newDeskLabel, template: template)
+        switch selectedDeskPreset {
+        case .builtIn(let preset):
+            store.createDesk(label: newDeskLabel, preset: preset)
         case .personal(let id):
-            store.createDesk(label: newDeskLabel, personalTemplateID: id)
+            store.createDesk(label: newDeskLabel, personalPresetID: id)
         }
         newDeskLabel = ""
-        selectedDeskTemplate = .builtIn(.empty)
+        selectedDeskPreset = .builtIn(.empty)
         didAttemptDeskCreation = false
     }
 
-    private func confirmDeskTemplate(_ selection: DeskTemplateSelection) {
-        activeDeskTemplate = selection
-        selectedDeskTemplate = selection
-        newDeskLabel = deskTemplateLabel(for: selection)
-        isChoosingDeskTemplate = false
+    private func confirmDeskPreset(_ selection: DeskPresetSelection) {
+        activeDeskPreset = selection
+        selectedDeskPreset = selection
+        newDeskLabel = deskPresetLabel(for: selection)
+        isChoosingDeskPreset = false
         didAttemptDeskCreation = false
         DispatchQueue.main.async {
             isNewDeskLabelFocused = true
@@ -413,28 +413,28 @@ struct ContentView: View {
         }
     }
 
-    private func beginDeskTemplateSelection() {
-        activeDeskTemplate = selectedDeskTemplate
-        isChoosingDeskTemplate = true
-        isManagingDeskTemplates = false
-        DispatchQueue.main.async { isDeskTemplateSearchFocused = true }
+    private func beginDeskPresetSelection() {
+        activeDeskPreset = selectedDeskPreset
+        isChoosingDeskPreset = true
+        isManagingDeskPresets = false
+        DispatchQueue.main.async { isDeskPresetSearchFocused = true }
     }
 
-    private func deskTemplateLabel(for selection: DeskTemplateSelection) -> String {
+    private func deskPresetLabel(for selection: DeskPresetSelection) -> String {
         switch selection {
-        case .builtIn(let template):
-            template.label
+        case .builtIn(let preset):
+            preset.label
         case .personal(let id):
-            store.deskTemplates.first(where: { $0.id == id })?.label ?? BuiltInDeskTemplate.empty.label
+            store.deskPresets.first(where: { $0.id == id })?.label ?? BuiltInDeskPreset.empty.label
         }
     }
 
-    private var selectedDeskTemplateBoards: [DeskTemplateBoard] {
-        switch selectedDeskTemplate {
-        case .builtIn(let template):
-            template.boards
+    private var selectedDeskPresetBoards: [DeskPresetBoard] {
+        switch selectedDeskPreset {
+        case .builtIn(let preset):
+            preset.boards
         case .personal(let id):
-            store.deskTemplates.first(where: { $0.id == id })?.boards ?? []
+            store.deskPresets.first(where: { $0.id == id })?.boards ?? []
         }
     }
 
@@ -442,32 +442,32 @@ struct ContentView: View {
         count == 1 ? "1 Board" : "\(count) Boards"
     }
 
-    private func saveDeskTemplate() {
-        switch store.saveFocusedDeskAsTemplate(label: saveDeskTemplateLabel) {
+    private func saveDeskPreset() {
+        switch store.saveFocusedDeskAsPreset(label: saveDeskPresetLabel) {
         case .created:
-            store.hideSaveDeskTemplatePanel()
+            store.hideSaveDeskPresetPanel()
         case .replacementPending:
-            saveDeskTemplateMessage = nil
+            saveDeskPresetMessage = nil
         case .invalidLabel:
-            saveDeskTemplateMessage = "Enter a Template label"
+            saveDeskPresetMessage = "Enter a Preset label"
         case .emptyDesk:
-            saveDeskTemplateMessage = "A Personal Desk Template needs at least one Board"
+            saveDeskPresetMessage = "A Personal Desk Preset needs at least one Board"
         case .reservedLabel:
-            saveDeskTemplateMessage = "Built-in Desk Template labels are reserved"
+            saveDeskPresetMessage = "Built-in Desk Preset labels are reserved"
         }
     }
 
-    private func confirmDeskTemplateDeletion() {
-        if case .personal(let id) = selectedDeskTemplate,
-            let pending = store.deskTemplatePendingDeletion,
+    private func confirmDeskPresetDeletion() {
+        if case .personal(let id) = selectedDeskPreset,
+            let pending = store.deskPresetPendingDeletion,
             pending.id == id
         {
             if newDeskLabel == pending.label {
-                newDeskLabel = BuiltInDeskTemplate.empty.label
+                newDeskLabel = BuiltInDeskPreset.empty.label
             }
-            selectedDeskTemplate = .builtIn(.empty)
+            selectedDeskPreset = .builtIn(.empty)
         }
-        store.confirmDeskTemplateDeletion()
+        store.confirmDeskPresetDeletion()
     }
 
     private var shouldShowDeskSwitcher: Bool {

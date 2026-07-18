@@ -99,12 +99,12 @@ struct PersistedProfile: Codable, Equatable {
     var schemaVersion = currentSchemaVersion
     var profile: ProfileState
     var den: DenState
-    var deskTemplates: [PersonalDeskTemplate]
+    var deskPresets: [PersonalDeskPreset]
 
-    init(profile: ProfileState, den: DenState, deskTemplates: [PersonalDeskTemplate] = []) {
+    init(profile: ProfileState, den: DenState, deskPresets: [PersonalDeskPreset] = []) {
         self.profile = profile
         self.den = den
-        self.deskTemplates = deskTemplates
+        self.deskPresets = deskPresets
     }
 
     init(from decoder: Decoder) throws {
@@ -116,6 +116,6 @@ struct PersistedProfile: Codable, Equatable {
         }
         profile = try container.decode(ProfileState.self, forKey: .profile)
         den = try container.decode(DenState.self, forKey: .den)
-        deskTemplates = try container.decodeIfPresent([PersonalDeskTemplate].self, forKey: .deskTemplates) ?? []
+        deskPresets = try container.decodeIfPresent([PersonalDeskPreset].self, forKey: .deskPresets) ?? []
     }
 }

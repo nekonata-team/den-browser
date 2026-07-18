@@ -40,23 +40,23 @@ extension DenStore {
         setTemporaryContext(.newDesk)
     }
 
-    func showDeskTemplateManagement() {
-        setTemporaryContext(.deskTemplateManagement)
+    func showDeskPresetManagement() {
+        setTemporaryContext(.deskPresetManagement)
     }
 
     func hideNewDeskPanel() {
-        if temporaryContext == .newDesk || temporaryContext == .deskTemplateManagement {
+        if temporaryContext == .newDesk || temporaryContext == .deskPresetManagement {
             setTemporaryContext(nil)
         }
     }
 
-    func showSaveDeskTemplatePanel() {
+    func showSaveDeskPresetPanel() {
         guard focusedDesk?.boards.isEmpty == false else { return }
-        setTemporaryContext(.saveDeskTemplate)
+        setTemporaryContext(.saveDeskPreset)
     }
 
-    func hideSaveDeskTemplatePanel() {
-        if temporaryContext == .saveDeskTemplate {
+    func hideSaveDeskPresetPanel() {
+        if temporaryContext == .saveDeskPreset {
             setTemporaryContext(nil)
         }
     }

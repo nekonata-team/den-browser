@@ -7,7 +7,7 @@ import Testing
 struct DenStoreTests {
     @Test func createsEmptyDeskAfterFocusedDesk() {
         withStore(desks: [desk("First"), desk("Second")]) { store in
-            store.createDesk(label: "  Writing  ", template: .empty)
+            store.createDesk(label: "  Writing  ", preset: .empty)
 
             #expect(store.state.desks.map(\.label) == ["First", "Writing", "Second"])
             #expect(store.focusedDesk?.label == "Writing")
@@ -15,9 +15,9 @@ struct DenStoreTests {
         }
     }
 
-    @Test func createsChatGPTTemplateWithThreeBoards() {
+    @Test func createsChatGPTPresetWithThreeBoards() {
         withStore(desks: [desk("First")]) { store in
-            store.createDesk(label: "AI", template: .chatGPT)
+            store.createDesk(label: "AI", preset: .chatGPT)
 
             #expect(store.focusedDesk?.boards.count == 3)
             #expect(store.focusedDesk?.boards.allSatisfy { $0.currentURLString == "https://chatgpt.com/" } == true)
@@ -26,9 +26,9 @@ struct DenStoreTests {
         }
     }
 
-    @Test func createsGeminiTemplateWithThreeBoards() {
+    @Test func createsGeminiPresetWithThreeBoards() {
         withStore(desks: [desk("First")]) { store in
-            store.createDesk(label: "Gemini", template: .gemini)
+            store.createDesk(label: "Gemini", preset: .gemini)
 
             #expect(store.focusedDesk?.boards.count == 3)
             #expect(
@@ -38,78 +38,78 @@ struct DenStoreTests {
         }
     }
 
-    @Test func deskTemplateSearchRanksFuzzyLabelsBeforeBoardAndHostMatches() throws {
+    @Test func deskPresetSearchRanksFuzzyLabelsBeforeBoardAndHostMatches() throws {
         let boards = [
-            DeskTemplateBoard(label: "Gemini Research", width: 520, currentURLString: "https://docs.google.com/")
+            DeskPresetBoard(label: "Gemini Research", width: 520, currentURLString: "https://docs.google.com/")
         ]
 
         let labelScore = try #require(
-            DeskTemplateSearch.score(query: "chat", label: "ChatGPT", boards: []))
+            DeskPresetSearch.score(query: "chat", label: "ChatGPT", boards: []))
         let boardScore = try #require(
-            DeskTemplateSearch.score(query: "gemres", label: "Research", boards: boards))
+            DeskPresetSearch.score(query: "gemres", label: "Research", boards: boards))
         let hostScore = try #require(
-            DeskTemplateSearch.score(query: "docs", label: "Research", boards: boards))
+            DeskPresetSearch.score(query: "docs", label: "Research", boards: boards))
 
         #expect(labelScore < boardScore)
         #expect(boardScore < hostScore)
-        #expect(DeskTemplateSearch.score(query: "claude", label: "Research", boards: boards) == nil)
+        #expect(DeskPresetSearch.score(query: "claude", label: "Research", boards: boards) == nil)
     }
 
-    @Test func personalTemplateCapturesStableBoardStateAndCreatesIndependentDesk() throws {
+    @Test func personalPresetCapturesStableBoardStateAndCreatesIndependentDesk() throws {
         let first = board("Mail", width: 420, url: "https://mail.example.com/inbox?label=work#today")
         let second = board("Notes", width: 760, url: "")
         let source = desk("Morning", boards: [first, second], focusedBoardID: second.id)
         let store = DenStore(state: DenState(desks: [source], focusedDeskID: source.id))
 
-        #expect(store.saveFocusedDeskAsTemplate(label: "  Morning  ") == .created)
-        let template = try #require(store.deskTemplates.first)
-        #expect(template.label == "Morning")
-        #expect(template.boards.map(\.label) == ["Mail", "Notes"])
-        #expect(template.boards.map(\.width) == [420, 760])
-        #expect(template.boards[0].currentURLString == "https://mail.example.com/inbox?label=work#today")
-        #expect(template.focusedBoardIndex == 1)
+        #expect(store.saveFocusedDeskAsPreset(label: "  Morning  ") == .created)
+        let preset = try #require(store.deskPresets.first)
+        #expect(preset.label == "Morning")
+        #expect(preset.boards.map(\.label) == ["Mail", "Notes"])
+        #expect(preset.boards.map(\.width) == [420, 760])
+        #expect(preset.boards[0].currentURLString == "https://mail.example.com/inbox?label=work#today")
+        #expect(preset.focusedBoardIndex == 1)
 
-        store.createDesk(label: "Copy", personalTemplateID: template.id)
+        store.createDesk(label: "Copy", personalPresetID: preset.id)
         let copy = try #require(store.focusedDesk)
         #expect(copy.boards.map(\.id) != source.boards.map(\.id))
         #expect(copy.boards.map(\.label) == source.boards.map(\.label))
         #expect(copy.focusedBoardID == copy.boards[1].id)
     }
 
-    @Test func personalTemplateValidationReplacementAndDeletion() throws {
+    @Test func personalPresetValidationReplacementAndDeletion() throws {
         let source = desk("Desk", boards: [board("First")])
-        var saves: [[PersonalDeskTemplate]] = []
+        var saves: [[PersonalDeskPreset]] = []
         let store = DenStore(
             state: DenState(desks: [source], focusedDeskID: source.id),
-            deskTemplates: [],
-            onDeskTemplatesSave: { saves.append($0) })
+            deskPresets: [],
+            onDeskPresetsSave: { saves.append($0) })
 
-        #expect(store.saveFocusedDeskAsTemplate(label: "Empty") == .reservedLabel)
-        #expect(store.saveFocusedDeskAsTemplate(label: "ChatGPT") == .reservedLabel)
-        #expect(store.saveFocusedDeskAsTemplate(label: "Routine") == .created)
-        #expect(store.saveFocusedDeskAsTemplate(label: "Other") == .created)
-        #expect(store.deskTemplates.map(\.label) == ["Other", "Routine"])
+        #expect(store.saveFocusedDeskAsPreset(label: "Empty") == .reservedLabel)
+        #expect(store.saveFocusedDeskAsPreset(label: "ChatGPT") == .reservedLabel)
+        #expect(store.saveFocusedDeskAsPreset(label: "Routine") == .created)
+        #expect(store.saveFocusedDeskAsPreset(label: "Other") == .created)
+        #expect(store.deskPresets.map(\.label) == ["Other", "Routine"])
 
-        let routineID = try #require(store.deskTemplates.last?.id)
+        let routineID = try #require(store.deskPresets.last?.id)
         store.state.desks[0].boards[0].width = 900
-        #expect(store.saveFocusedDeskAsTemplate(label: " routine ") == .replacementPending)
-        #expect(store.deskTemplates.last?.boards[0].width == 520)
-        store.confirmDeskTemplateReplacement()
-        #expect(store.deskTemplates.last?.id == routineID)
-        #expect(store.deskTemplates.last?.boards[0].width == 900)
+        #expect(store.saveFocusedDeskAsPreset(label: " routine ") == .replacementPending)
+        #expect(store.deskPresets.last?.boards[0].width == 520)
+        store.confirmDeskPresetReplacement()
+        #expect(store.deskPresets.last?.id == routineID)
+        #expect(store.deskPresets.last?.boards[0].width == 900)
 
-        store.requestDeskTemplateDeletion(routineID)
-        store.confirmDeskTemplateDeletion()
-        #expect(store.deskTemplates.map(\.label) == ["Other"])
+        store.requestDeskPresetDeletion(routineID)
+        store.confirmDeskPresetDeletion()
+        #expect(store.deskPresets.map(\.label) == ["Other"])
         #expect(saves.count == 4)
     }
 
-    @Test func emptyDeskCannotBecomePersonalTemplate() {
+    @Test func emptyDeskCannotBecomePersonalPreset() {
         withStore(desks: [desk("Empty")]) { store in
-            #expect(store.saveFocusedDeskAsTemplate(label: "Saved") == .emptyDesk)
-            #expect(store.deskTemplates.isEmpty)
-            store.showSaveDeskTemplatePanel()
-            #expect(!store.isSaveDeskTemplatePanelPresented)
+            #expect(store.saveFocusedDeskAsPreset(label: "Saved") == .emptyDesk)
+            #expect(store.deskPresets.isEmpty)
+            store.showSaveDeskPresetPanel()
+            #expect(!store.isSaveDeskPresetPanelPresented)
         }
     }
 
@@ -314,7 +314,7 @@ struct DenStoreTests {
     @Test func deskCreationStopsAtTenDesks() {
         let desks = (1...DenStore.maximumDeskCount).map { desk("Desk \($0)") }
         withStore(desks: desks) { store in
-            store.createDesk(label: "Overflow", template: .empty)
+            store.createDesk(label: "Overflow", preset: .empty)
 
             #expect(store.state.desks.count == DenStore.maximumDeskCount)
             #expect(!store.canCreateDesk)

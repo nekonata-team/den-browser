@@ -1,34 +1,34 @@
 import SwiftUI
 
-enum DeskTemplateSelection: Hashable {
-    case builtIn(BuiltInDeskTemplate)
+enum DeskPresetSelection: Hashable {
+    case builtIn(BuiltInDeskPreset)
     case personal(UUID)
 }
 
-struct DeskTemplatePicker: View {
-    @Binding var selection: DeskTemplateSelection
+struct DeskPresetPicker: View {
+    @Binding var selection: DeskPresetSelection
     @Binding var query: String
     @Binding var isManaging: Bool
     let isSearchFocused: FocusState<Bool>.Binding
-    let onConfirm: (DeskTemplateSelection) -> Void
+    let onConfirm: (DeskPresetSelection) -> Void
 
     @Environment(DenStore.self) private var store
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
                 if isManaging {
-                    Button(store.isDeskTemplateManagementPresented ? "Done" : "Back") {
-                        if store.isDeskTemplateManagementPresented {
+                    Button(store.isDeskPresetManagementPresented ? "Done" : "Back") {
+                        if store.isDeskPresetManagementPresented {
                             store.hideNewDeskPanel()
                         } else {
                             isManaging = false
                         }
                     }
                     .buttonStyle(.plain)
-                    Text("Manage Templates")
+                    Text("Manage Presets")
                         .font(.headline)
                 }
-                TextField("Search Desk Templates", text: $query)
+                TextField("Search Desk Presets", text: $query)
                     .textFieldStyle(.roundedBorder)
                     .focused(isSearchFocused)
                     .onSubmit(confirmSelection)
@@ -53,25 +53,25 @@ struct DeskTemplatePicker: View {
 
             ScrollView {
                 if isManaging {
-                    personalTemplates
+                    personalPresets
                 } else {
-                    templateChoices
+                    presetChoices
                 }
             }
             .frame(maxHeight: 220)
 
             if !isManaging {
-                DeskTemplatePreview(boards: selectedBoards)
+                DeskPresetPreview(boards: selectedBoards)
 
                 HStack {
                     Spacer()
-                    Button("Manage Templates…") { isManaging = true }
+                    Button("Manage Presets…") { isManaging = true }
                         .buttonStyle(.plain)
-                        .disabled(store.deskTemplates.isEmpty)
+                        .disabled(store.deskPresets.isEmpty)
                 }
             }
         }
-        .onChange(of: store.deskTemplates.map(\.id)) { _, ids in
+        .onChange(of: store.deskPresets.map(\.id)) { _, ids in
             if case .personal(let id) = selection, !ids.contains(id) {
                 selection = .builtIn(.empty)
             }
@@ -80,12 +80,12 @@ struct DeskTemplatePicker: View {
         .onAppear { ensureValidSelection() }
     }
 
-    private var templateChoices: some View {
+    private var presetChoices: some View {
         VStack(alignment: .leading, spacing: 8) {
             if matchingChoices.isEmpty {
                 ContentUnavailableView.search(text: query)
             } else if query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                Text("Built-in Templates")
+                Text("Built-in Presets")
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(.secondary)
                 ForEach(builtInChoices, id: \.selection) { choice in
@@ -93,7 +93,7 @@ struct DeskTemplatePicker: View {
                 }
 
                 if !personalChoices.isEmpty {
-                    Text("My Templates")
+                    Text("My Presets")
                         .font(.caption.weight(.semibold))
                         .foregroundStyle(.secondary)
                         .padding(.top, 4)
@@ -113,30 +113,30 @@ struct DeskTemplatePicker: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    private var personalTemplates: some View {
+    private var personalPresets: some View {
         VStack(spacing: 6) {
-            if filteredPersonalTemplates.isEmpty {
+            if filteredPersonalPresets.isEmpty {
                 if query.isEmpty {
-                    ContentUnavailableView("No Personal Desk Templates", systemImage: "bookmark")
+                    ContentUnavailableView("No Personal Desk Presets", systemImage: "bookmark")
                 } else {
                     ContentUnavailableView.search(text: query)
                 }
             } else {
-                ForEach(filteredPersonalTemplates) { template in
+                ForEach(filteredPersonalPresets) { preset in
                     HStack {
                         VStack(alignment: .leading, spacing: 2) {
-                            Text(template.label)
-                            Text(boardCountLabel(template.boards.count))
+                            Text(preset.label)
+                            Text(boardCountLabel(preset.boards.count))
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                         }
                         Spacer()
                         Button(role: .destructive) {
-                            store.requestDeskTemplateDeletion(template.id)
+                            store.requestDeskPresetDeletion(preset.id)
                         } label: {
                             Image(systemName: "trash")
                         }
-                        .accessibilityLabel("Delete \(template.label)")
+                        .accessibilityLabel("Delete \(preset.label)")
                     }
                     .padding(8)
                     .background(Color.primary.opacity(0.055), in: RoundedRectangle(cornerRadius: 8))
@@ -146,7 +146,7 @@ struct DeskTemplatePicker: View {
         .frame(maxWidth: .infinity)
     }
 
-    private func choiceRow(_ choice: DeskTemplateChoice, showsSource: Bool = false) -> some View {
+    private func choiceRow(_ choice: DeskPresetChoice, showsSource: Bool = false) -> some View {
         Button {
             selection = choice.selection
             onConfirm(choice.selection)
@@ -175,30 +175,30 @@ struct DeskTemplatePicker: View {
             in: RoundedRectangle(cornerRadius: 8))
     }
 
-    private var builtInChoices: [DeskTemplateChoice] {
-        BuiltInDeskTemplate.allCases.map {
-            DeskTemplateChoice(selection: .builtIn($0), label: $0.label, boards: $0.boards, sourceLabel: "Built-in")
+    private var builtInChoices: [DeskPresetChoice] {
+        BuiltInDeskPreset.allCases.map {
+            DeskPresetChoice(selection: .builtIn($0), label: $0.label, boards: $0.boards, sourceLabel: "Built-in")
         }
     }
 
-    private var personalChoices: [DeskTemplateChoice] {
-        store.deskTemplates.map {
-            DeskTemplateChoice(
-                selection: .personal($0.id), label: $0.label, boards: $0.boards, sourceLabel: "My Template")
+    private var personalChoices: [DeskPresetChoice] {
+        store.deskPresets.map {
+            DeskPresetChoice(
+                selection: .personal($0.id), label: $0.label, boards: $0.boards, sourceLabel: "My Preset")
         }
     }
 
-    private var allChoices: [DeskTemplateChoice] {
+    private var allChoices: [DeskPresetChoice] {
         builtInChoices + personalChoices
     }
 
-    private var matchingChoices: [DeskTemplateChoice] {
+    private var matchingChoices: [DeskPresetChoice] {
         let trimmedQuery = query.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedQuery.isEmpty else { return allChoices }
 
-        var ranked: [(choice: DeskTemplateChoice, score: Int, index: Int)] = []
+        var ranked: [(choice: DeskPresetChoice, score: Int, index: Int)] = []
         for (index, choice) in allChoices.enumerated() {
-            if let score = DeskTemplateSearch.score(
+            if let score = DeskPresetSearch.score(
                 query: trimmedQuery,
                 label: choice.label,
                 boards: choice.boards
@@ -212,14 +212,14 @@ struct DeskTemplatePicker: View {
         return ranked.map(\.choice)
     }
 
-    private var filteredPersonalTemplates: [PersonalDeskTemplate] {
-        guard !query.isEmpty else { return store.deskTemplates }
-        return store.deskTemplates.filter {
-            DeskTemplateSearch.score(query: query, label: $0.label, boards: $0.boards) != nil
+    private var filteredPersonalPresets: [PersonalDeskPreset] {
+        guard !query.isEmpty else { return store.deskPresets }
+        return store.deskPresets.filter {
+            DeskPresetSearch.score(query: query, label: $0.label, boards: $0.boards) != nil
         }
     }
 
-    private var selectedBoards: [DeskTemplateBoard] {
+    private var selectedBoards: [DeskPresetBoard] {
         matchingChoices.first(where: { $0.selection == selection })?.boards ?? []
     }
 
@@ -251,15 +251,15 @@ struct DeskTemplatePicker: View {
     }
 }
 
-private struct DeskTemplateChoice {
-    let selection: DeskTemplateSelection
+private struct DeskPresetChoice {
+    let selection: DeskPresetSelection
     let label: String
-    let boards: [DeskTemplateBoard]
+    let boards: [DeskPresetBoard]
     let sourceLabel: String
 }
 
-enum DeskTemplateSearch {
-    static func score(query: String, label: String, boards: [DeskTemplateBoard]) -> Int? {
+enum DeskPresetSearch {
+    static func score(query: String, label: String, boards: [DeskPresetBoard]) -> Int? {
         let tokens = query.split(whereSeparator: \.isWhitespace).map(String.init)
         guard !tokens.isEmpty else { return 0 }
 
@@ -314,8 +314,8 @@ enum DeskTemplateSearch {
     }
 }
 
-struct DeskTemplatePreview: View {
-    let boards: [DeskTemplateBoard]
+struct DeskPresetPreview: View {
+    let boards: [DeskPresetBoard]
 
     var body: some View {
         if boards.isEmpty {

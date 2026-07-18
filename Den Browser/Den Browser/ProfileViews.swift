@@ -17,7 +17,7 @@ struct ProfileWindowView: View {
                     HStack(spacing: 8) {
                         if store.focusedDesk?.boards.isEmpty == false {
                             Button {
-                                store.showSaveDeskTemplatePanel()
+                                store.showSaveDeskPresetPanel()
                             } label: {
                                 Image(systemName: "bookmark")
                                     .font(.system(size: 13, weight: .semibold))
@@ -26,8 +26,8 @@ struct ProfileWindowView: View {
                             .buttonStyle(.borderless)
                             .tint(.secondary)
                             .fixedSize()
-                            .accessibilityLabel("Save Desk as Template")
-                            .help("Save Desk as Template")
+                            .accessibilityLabel("Save Desk as Preset")
+                            .help("Save Desk as Preset")
                         }
 
                         ProfileChip(profile: profile)

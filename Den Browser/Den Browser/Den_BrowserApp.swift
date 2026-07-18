@@ -92,7 +92,7 @@ private struct DenCommands: Commands {
                 .disabled(store == nil)
             Button("New Desk") { store?.showNewDeskPanel() }
                 .disabled(store?.canCreateDesk != true)
-            Button("Save Desk as Template…") { store?.showSaveDeskTemplatePanel() }
+            Button("Save Desk as Preset…") { store?.showSaveDeskPresetPanel() }
                 .disabled(store?.focusedDesk?.boards.isEmpty != false)
             Button("Toggle Overview") { store?.toggleOverview() }
                 .disabled(store == nil)

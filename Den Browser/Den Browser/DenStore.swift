@@ -8,14 +8,14 @@ final class DenStore {
     static let maximumDeskCount = 10
 
     var state: DenState
-    var deskTemplates: [PersonalDeskTemplate]
+    var deskPresets: [PersonalDeskPreset]
     private(set) var temporaryContext: TemporaryContext?
     var isZenViewPresented = false
     var isDenMode = false
     private(set) var boardWidthPanelMessage: String?
     private(set) var deskPendingDeletion: DeskState?
-    var deskTemplatePendingDeletion: PersonalDeskTemplate?
-    var deskTemplatePendingReplacement: PersonalDeskTemplate?
+    var deskPresetPendingDeletion: PersonalDeskPreset?
+    var deskPresetPendingReplacement: PersonalDeskPreset?
     var maximizedBoardID: UUID?
     var centerFocusedBoardRequest = 0
     var isBoardDragging = false
@@ -28,7 +28,7 @@ final class DenStore {
 
     @ObservationIgnored var runtimes: [UUID: BoardRuntime] = [:]
     @ObservationIgnored private let onSave: ((DenState) -> Void)?
-    @ObservationIgnored private let onDeskTemplatesSave: (([PersonalDeskTemplate]) -> Void)?
+    @ObservationIgnored private let onDeskPresetsSave: (([PersonalDeskPreset]) -> Void)?
     private var availableBoardWidth = 0.0
     private var boardSpacing = 0.0
 
@@ -46,17 +46,17 @@ final class DenStore {
 
     var isOpenBoardPanelPresented: Bool { temporaryContext == .openBoard }
     var isNewDeskPanelPresented: Bool {
-        temporaryContext == .newDesk || temporaryContext == .deskTemplateManagement
+        temporaryContext == .newDesk || temporaryContext == .deskPresetManagement
     }
-    var isDeskTemplateManagementPresented: Bool { temporaryContext == .deskTemplateManagement }
+    var isDeskPresetManagementPresented: Bool { temporaryContext == .deskPresetManagement }
     var isOverviewPresented: Bool { temporaryContext == .overview }
     var isKeyboardShortcutsPresented: Bool { temporaryContext == .keyboardShortcuts }
     var isBoardWidthPanelPresented: Bool { temporaryContext == .boardWidth }
-    var isSaveDeskTemplatePanelPresented: Bool { temporaryContext == .saveDeskTemplate }
+    var isSaveDeskPresetPanelPresented: Bool { temporaryContext == .saveDeskPreset }
     var hasPendingConfirmation: Bool {
         deskPendingDeletion != nil
-            || deskTemplatePendingDeletion != nil
-            || deskTemplatePendingReplacement != nil
+            || deskPresetPendingDeletion != nil
+            || deskPresetPendingReplacement != nil
     }
 
     convenience init() {
@@ -72,7 +72,7 @@ final class DenStore {
             state: state,
             websiteDataStore: .default(),
             sheetNavigation: sheetNavigation,
-            deskTemplates: [],
+            deskPresets: [],
             onSave: nil
         )
     }
@@ -82,23 +82,23 @@ final class DenStore {
             state: state,
             websiteDataStore: .default(),
             sheetNavigation: SheetNavigationManager(),
-            deskTemplates: [],
+            deskPresets: [],
             onSave: onSave
         )
     }
 
     convenience init(
         state: DenState,
-        deskTemplates: [PersonalDeskTemplate],
-        onDeskTemplatesSave: (([PersonalDeskTemplate]) -> Void)? = nil
+        deskPresets: [PersonalDeskPreset],
+        onDeskPresetsSave: (([PersonalDeskPreset]) -> Void)? = nil
     ) {
         self.init(
             state: state,
             websiteDataStore: .default(),
             sheetNavigation: SheetNavigationManager(),
-            deskTemplates: deskTemplates,
+            deskPresets: deskPresets,
             onSave: nil,
-            onDeskTemplatesSave: onDeskTemplatesSave
+            onDeskPresetsSave: onDeskPresetsSave
         )
     }
 
@@ -106,29 +106,29 @@ final class DenStore {
         state: DenState,
         websiteDataStore: WKWebsiteDataStore,
         sheetNavigation: SheetNavigationManager,
-        deskTemplates: [PersonalDeskTemplate] = [],
+        deskPresets: [PersonalDeskPreset] = [],
         onSave: ((DenState) -> Void)?,
-        onDeskTemplatesSave: (([PersonalDeskTemplate]) -> Void)? = nil
+        onDeskPresetsSave: (([PersonalDeskPreset]) -> Void)? = nil
     ) {
         self.state = state
-        self.deskTemplates = deskTemplates
+        self.deskPresets = deskPresets
         self.websiteDataStore = websiteDataStore
         self.sheetNavigation = sheetNavigation
         self.onSave = onSave
-        self.onDeskTemplatesSave = onDeskTemplatesSave
+        self.onDeskPresetsSave = onDeskPresetsSave
         ensureFocusedObjects()
     }
 
-    func createDesk(label: String, template: BuiltInDeskTemplate) {
-        createDesk(label: label, boards: template.boards, focusedBoardIndex: template.focusedBoardIndex)
+    func createDesk(label: String, preset: BuiltInDeskPreset) {
+        createDesk(label: label, boards: preset.boards, focusedBoardIndex: preset.focusedBoardIndex)
     }
 
-    func createDesk(label: String, personalTemplateID: UUID) {
-        guard let template = deskTemplates.first(where: { $0.id == personalTemplateID }) else { return }
-        createDesk(label: label, boards: template.boards, focusedBoardIndex: template.focusedBoardIndex)
+    func createDesk(label: String, personalPresetID: UUID) {
+        guard let preset = deskPresets.first(where: { $0.id == personalPresetID }) else { return }
+        createDesk(label: label, boards: preset.boards, focusedBoardIndex: preset.focusedBoardIndex)
     }
 
-    private func createDesk(label: String, boards: [DeskTemplateBoard], focusedBoardIndex: Int?) {
+    private func createDesk(label: String, boards: [DeskPresetBoard], focusedBoardIndex: Int?) {
         let trimmedLabel = label.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedLabel.isEmpty, canCreateDesk, let focusedDeskIndex else { return }
 
@@ -198,8 +198,8 @@ final class DenStore {
         setTemporaryContext(nil)
         isZenViewPresented = false
         boardWidthPanelMessage = nil
-        deskTemplatePendingDeletion = nil
-        deskTemplatePendingReplacement = nil
+        deskPresetPendingDeletion = nil
+        deskPresetPendingReplacement = nil
         overviewSelectionDeskID = nil
         overviewSelectionBoardID = nil
         recentlyRemovedBoard = nil
@@ -442,8 +442,8 @@ final class DenStore {
         onSave?(state)
     }
 
-    func saveDeskTemplates() {
-        onDeskTemplatesSave?(deskTemplates)
+    func saveDeskPresets() {
+        onDeskPresetsSave?(deskPresets)
     }
 
     private func normalizedURL(from text: String) -> URL? {
@@ -482,11 +482,11 @@ final class DenStore {
 enum TemporaryContext: Equatable {
     case openBoard
     case newDesk
-    case deskTemplateManagement
+    case deskPresetManagement
     case overview
     case keyboardShortcuts
     case boardWidth
-    case saveDeskTemplate
+    case saveDeskPreset
 }
 
 struct RecentlyRemovedBoard {
