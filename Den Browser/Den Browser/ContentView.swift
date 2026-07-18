@@ -27,6 +27,7 @@ struct ContentView: View {
     @State private var didAttemptDeskCreation = false
     @State private var saveDeskPresetLabel = ""
     @State private var saveDeskPresetMessage: String?
+    @State private var focusedBoardScrollTask: Task<Void, Never>?
     @State private var didScrollToRestoredFocusedBoard = false
     @State private var resizingBoardID: UUID?
     @State private var boardFrames: [UUID: CGRect] = [:]
@@ -676,14 +677,20 @@ struct ContentView: View {
     }
 
     private func centerBoard(_ boardID: UUID?, using proxy: ScrollViewProxy, animated: Bool = true) {
+        focusedBoardScrollTask?.cancel()
         guard resizingBoardID == nil, !store.isBoardDragging, let boardID else { return }
 
-        if animated {
-            withAnimation(DenMotion.spatial(reduceMotion: shouldReduceMotion)) {
+        focusedBoardScrollTask = Task { @MainActor in
+            await Task.yield()
+            guard !Task.isCancelled else { return }
+
+            if animated {
+                withAnimation(DenMotion.spatial(reduceMotion: shouldReduceMotion)) {
+                    proxy.scrollTo(boardID, anchor: .center)
+                }
+            } else {
                 proxy.scrollTo(boardID, anchor: .center)
             }
-        } else {
-            proxy.scrollTo(boardID, anchor: .center)
         }
     }
 
