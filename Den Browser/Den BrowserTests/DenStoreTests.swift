@@ -5,6 +5,59 @@ import Testing
 
 @MainActor
 struct DenStoreTests {
+    @Test func openBoardAcceptsWebHostsAndSearchesInvalidURLs() throws {
+        let source = desk("Desk")
+        let store = DenStore(state: DenState(desks: [source], focusedDeskID: source.id))
+
+        store.addBoard(urlString: "localhost:3000")
+        let localURL = try #require(URL(string: store.focusedDesk?.boards.last?.currentURLString ?? ""))
+        #expect(localURL.scheme == "https")
+        #expect(localURL.host == "localhost")
+        #expect(localURL.port == 3000)
+
+        store.addBoard(urlString: "swift: concurrency")
+        let searchURL = try #require(URLComponents(string: store.focusedDesk?.boards.last?.currentURLString ?? ""))
+        #expect(searchURL.host == "www.google.com")
+        #expect(searchURL.queryItems == [URLQueryItem(name: "q", value: "swift: concurrency")])
+
+        store.addBoard(urlString: "https://")
+        let invalidURLSearch = try #require(
+            URLComponents(string: store.focusedDesk?.boards.last?.currentURLString ?? ""))
+        #expect(invalidURLSearch.queryItems == [URLQueryItem(name: "q", value: "https://")])
+    }
+
+    @Test func resetDenClearsRuntimePresentationAndPersistsFreshState() {
+        let board = board("Board")
+        let populated = desk("Populated", boards: [board])
+        let empty = desk("Empty")
+        var savedState: DenState?
+        let store = DenStore(
+            state: DenState(desks: [populated, empty], focusedDeskID: populated.id),
+            onSave: { savedState = $0 })
+        store.deleteFocusedDesk()
+        store.toggleFocusedBoardMaximized()
+        #expect(store.beginBoardDrag(board.id))
+
+        store.resetDen()
+
+        #expect(store.state.desks.count == 1)
+        #expect(store.deskPendingDeletion == nil)
+        #expect(store.maximizedBoardID == nil)
+        #expect(!store.isBoardDragging)
+        #expect(savedState == store.state)
+    }
+
+    @Test func emptyPersistedDenRecoversAndSavesOneDesk() {
+        var savedState: DenState?
+        let store = DenStore(
+            state: DenState(desks: [], focusedDeskID: UUID()),
+            onSave: { savedState = $0 })
+
+        #expect(store.state.desks.count == 1)
+        #expect(store.focusedDesk != nil)
+        #expect(savedState == store.state)
+    }
+
     @Test func createsEmptyDeskAfterFocusedDesk() {
         withStore(desks: [desk("First"), desk("Second")]) { store in
             store.createDesk(label: "  Writing  ", preset: .empty)

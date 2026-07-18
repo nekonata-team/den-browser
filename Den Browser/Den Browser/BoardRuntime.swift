@@ -36,19 +36,6 @@ final class BoardRuntime: NSObject, WKNavigationDelegate {
         }
     }
 
-    convenience init(
-        board: BoardState,
-        sheetNavigation: SheetNavigationManager,
-        onChange: @escaping (UUID, URL?, String?) -> Void
-    ) {
-        self.init(
-            board: board,
-            websiteDataStore: .default(),
-            sheetNavigation: sheetNavigation,
-            onOpenBoard: { _ in },
-            onChange: onChange)
-    }
-
     func webView(_ webView: WKWebView, didCommit navigation: WKNavigation!) {
         onChange(id, webView.url, webView.title)
     }
@@ -57,7 +44,4 @@ final class BoardRuntime: NSObject, WKNavigationDelegate {
         onChange(id, webView.url, webView.title)
     }
 
-    func reload() {
-        webView.reload()
-    }
 }

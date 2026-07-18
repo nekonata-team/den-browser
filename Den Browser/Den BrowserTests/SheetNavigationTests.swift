@@ -145,8 +145,10 @@ struct SheetNavigationTests {
         let manager = SheetNavigationManager(scriptSource: "")
         let runtime = BoardRuntime(
             board: board("Navigation", url: "about:blank"),
-            sheetNavigation: manager
-        ) { _, _, _ in }
+            websiteDataStore: .default(),
+            sheetNavigation: manager,
+            onOpenBoard: { _ in },
+            onChange: { _, _, _ in })
 
         #expect(runtime.webView.configuration.userContentController === manager.userContentController)
         #expect(manager.userContentController.userScripts.count == 1)

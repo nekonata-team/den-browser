@@ -29,16 +29,11 @@ final class SheetNavigationManager {
     @ObservationIgnored private let messageHandler = SheetNavigationMessageHandler()
     @ObservationIgnored private var openBoardCallbacks: [ObjectIdentifier: (URL) -> Void] = [:]
 
-    init(
+    convenience init(
         defaults: UserDefaults = .standard,
         scriptSource: String? = nil
     ) {
-        self.preferences = AppPreferences(defaults: defaults)
-        self.scriptSource = scriptSource ?? Self.bundledScript
-        isEnabled = preferences.sheetNavigationEnabled
-        hintAlphabet = preferences.sheetNavigationHintAlphabet
-        ignoredHosts = preferences.sheetNavigationIgnoredHosts
-        configureMessageHandler()
+        self.init(preferences: AppPreferences(defaults: defaults), scriptSource: scriptSource)
     }
 
     init(preferences: AppPreferences, scriptSource: String? = nil) {

@@ -117,6 +117,9 @@ final class DenStore {
         self.onSave = onSave
         self.onDeskPresetsSave = onDeskPresetsSave
         ensureFocusedObjects()
+        if self.state != state {
+            onSave?(self.state)
+        }
     }
 
     func createDesk(label: String, preset: BuiltInDeskPreset) {
@@ -194,12 +197,18 @@ final class DenStore {
             sheetNavigation.didClose(runtime.webView)
         }
         runtimes.removeAll()
+        if isBoardDragging {
+            boardDragCancellationRequest &+= 1
+        }
         state = .sample
         setTemporaryContext(nil)
         isZenViewPresented = false
+        isBoardDragging = false
         boardWidthPanelMessage = nil
+        deskPendingDeletion = nil
         deskPresetPendingDeletion = nil
         deskPresetPendingReplacement = nil
+        maximizedBoardID = nil
         overviewSelectionDeskID = nil
         overviewSelectionBoardID = nil
         recentlyRemovedBoard = nil
@@ -393,7 +402,7 @@ final class DenStore {
     }
 
     func reloadFocusedBoard() {
-        focusedRuntime?.reload()
+        focusedRuntime?.webView.reload()
     }
 
     var focusedDeskIndex: Int? {
@@ -423,6 +432,11 @@ final class DenStore {
     }
 
     func ensureFocusedObjects() {
+        if state.desks.isEmpty {
+            state = .sample
+            return
+        }
+
         if !state.desks.contains(where: { $0.id == state.focusedDeskID }),
             let firstDeskID = state.desks.first?.id
         {
@@ -450,12 +464,20 @@ final class DenStore {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return nil }
 
-        if let url = URL(string: trimmed), url.scheme != nil {
+        if let url = URL(string: trimmed),
+            ["http", "https"].contains(url.scheme?.lowercased()),
+            url.host != nil
+        {
             return url
         }
 
-        if trimmed.contains(".") {
-            return URL(string: "https://\(trimmed)")
+        if !trimmed.contains("://"),
+            !trimmed.contains(where: \.isWhitespace),
+            let url = URL(string: "https://\(trimmed)"),
+            let host = url.host,
+            host == "localhost" || host.contains(".")
+        {
+            return url
         }
 
         var components = URLComponents(string: "https://www.google.com/search")

@@ -129,11 +129,7 @@ extension DenStore {
 
         let targetDeskIndex = wrappedIndex(source.desk + delta, count: state.desks.count)
         let insertIndex: Int
-        if let targetBoardID = overviewSelectionBoardID,
-            let targetIndex = state.desks[targetDeskIndex].boards.firstIndex(where: { $0.id == targetBoardID })
-        {
-            insertIndex = targetIndex + 1
-        } else if let focusedBoardID = state.desks[targetDeskIndex].focusedBoardID,
+        if let focusedBoardID = state.desks[targetDeskIndex].focusedBoardID,
             let focusedIndex = state.desks[targetDeskIndex].boards.firstIndex(where: { $0.id == focusedBoardID })
         {
             insertIndex = focusedIndex + 1

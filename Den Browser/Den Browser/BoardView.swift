@@ -94,7 +94,7 @@ struct BoardView: View {
         }
 
         Button {
-            runtime.reload()
+            runtime.webView.reload()
         } label: {
             Label("Reload Current Sheet", systemImage: "arrow.clockwise")
         }
