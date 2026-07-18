@@ -45,25 +45,34 @@ struct ProfileManagerTests {
         #expect(decoded.deskPresets.isEmpty)
     }
 
-    @Test func persistedSheetURLsUseDomainKeysAndSupportEmptyBoards() throws {
-        let board = BoardState(
-            label: "Research",
-            width: 520,
-            currentSheetURL: URL(string: "https://example.com/path?q=swift#results"))
-        let boardObject = try #require(
-            JSONSerialization.jsonObject(with: JSONEncoder().encode(board)) as? [String: Any])
+    @Test func versionOneFixturesRemainReadableAndStable() throws {
+        let profileData = try fixtureData("persisted-profile-v1")
+        let persisted = try JSONDecoder().decode(PersistedProfile.self, from: profileData)
+        let indexData = try fixtureData("profile-index-v1")
+        let index = try JSONDecoder().decode(ProfileIndex.self, from: indexData)
 
-        #expect(boardObject["currentSheetURL"] as? String == "https://example.com/path?q=swift#results")
-        #expect(boardObject["currentURLString"] == nil)
+        #expect(persisted.schemaVersion == 1)
+        #expect(persisted.den.desks[0].boards[1].currentSheetURL == nil)
+        #expect(persisted.deskPresets[0].boards[1].initialSheetURL == nil)
+        #expect(index == ProfileIndex(profileIDs: [persisted.profile.id]))
+        #expect(try jsonObject(JSONEncoder().encode(persisted)).isEqual(jsonObject(profileData)))
+        #expect(try jsonObject(JSONEncoder().encode(index)).isEqual(jsonObject(indexData)))
 
-        let presetBoard = DeskPresetBoard(label: "Empty", width: 520, initialSheetURL: nil)
-        let presetObject = try #require(
-            JSONSerialization.jsonObject(with: JSONEncoder().encode(presetBoard)) as? [String: Any])
-        let restored = try JSONDecoder().decode(
-            DeskPresetBoard.self, from: JSONSerialization.data(withJSONObject: presetObject))
+        var futureObject = try #require(JSONSerialization.jsonObject(with: profileData) as? [String: Any])
+        futureObject["futureField"] = true
+        #expect(
+            try JSONDecoder().decode(
+                PersistedProfile.self,
+                from: JSONSerialization.data(withJSONObject: futureObject)) == persisted)
 
-        #expect(presetObject["initialSheetURL"] == nil)
-        #expect(restored.initialSheetURL == nil)
+        futureObject.removeValue(forKey: "profile")
+        #expect(
+            throws: DecodingError.self,
+            performing: {
+                try JSONDecoder().decode(
+                    PersistedProfile.self,
+                    from: JSONSerialization.data(withJSONObject: futureObject))
+            })
     }
 
     @Test func webProfileStoreRejectsInvalidKindIdentifierPairs() {
@@ -95,6 +104,15 @@ struct ProfileManagerTests {
         preferences.setMotionPreference(.standard)
 
         let restored = AppPreferences(defaults: defaults)
+        let storedKeys = Set((defaults.persistentDomain(forName: suiteName) ?? [:]).keys)
+        #expect(
+            storedKeys == [
+                "preferences.schemaVersion",
+                "features.vim-style-sheet-navigation.enabled",
+                "features.vim-style-sheet-navigation.hint-alphabet",
+                "features.vim-style-sheet-navigation.ignored-hosts",
+                "appearance.motion",
+            ])
         #expect(defaults.integer(forKey: "preferences.schemaVersion") == 1)
         #expect(restored.sheetNavigationEnabled)
         #expect(restored.sheetNavigationHintAlphabet == "abc")
@@ -351,6 +369,17 @@ struct ProfileManagerTests {
         directory.appending(path: "\(id.uuidString.lowercased()).json")
     }
 
+    private func fixtureData(_ name: String) throws -> Data {
+        let url = try #require(
+            Bundle(for: PersistenceFixtureBundleToken.self)
+                .url(forResource: name, withExtension: "json"))
+        return try Data(contentsOf: url)
+    }
+
+    private func jsonObject(_ data: Data) throws -> NSDictionary {
+        try #require(JSONSerialization.jsonObject(with: data) as? NSDictionary)
+    }
+
     private func makeProfileManager(directory: URL) -> ProfileManager {
         let suiteName = "ProfileManagerPreferences-\(UUID().uuidString)"
         let preferences = AppPreferences(defaults: UserDefaults(suiteName: suiteName) ?? .standard)
@@ -367,3 +396,5 @@ struct ProfileManagerTests {
         BoardState(label: label, width: width, currentSheetURL: URL(string: url))
     }
 }
+
+private final class PersistenceFixtureBundleToken {}

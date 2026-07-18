@@ -1,0 +1,58 @@
+{
+  "den": {
+    "desks": [
+      {
+        "boards": [
+          {
+            "currentSheetURL": "https://example.com/research?q=swift#results",
+            "id": "00000000-0000-0000-0000-000000000301",
+            "label": "Research",
+            "width": 520
+          },
+          {
+            "id": "00000000-0000-0000-0000-000000000302",
+            "label": "Empty Board",
+            "width": 760
+          }
+        ],
+        "focusedBoardID": "00000000-0000-0000-0000-000000000302",
+        "id": "00000000-0000-0000-0000-000000000201",
+        "label": "Main"
+      },
+      {
+        "boards": [],
+        "id": "00000000-0000-0000-0000-000000000202",
+        "label": "Later"
+      }
+    ],
+    "focusedDeskID": "00000000-0000-0000-0000-000000000201"
+  },
+  "deskPresets": [
+    {
+      "boards": [
+        {
+          "initialSheetURL": "https://example.com/start",
+          "label": "Start",
+          "width": 520
+        },
+        {
+          "label": "Blank",
+          "width": 640
+        }
+      ],
+      "focusedBoardIndex": 0,
+      "id": "00000000-0000-0000-0000-000000000401",
+      "label": "Research"
+    }
+  ],
+  "profile": {
+    "color": "purple",
+    "id": "00000000-0000-0000-0000-000000000100",
+    "name": "Work",
+    "webProfileStore": {
+      "identifier": "00000000-0000-0000-0000-000000000501",
+      "kind": "identified"
+    }
+  },
+  "schemaVersion": 1
+}
