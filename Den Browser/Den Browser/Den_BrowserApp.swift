@@ -9,12 +9,20 @@ struct Den_BrowserApp: App {
     @State private var keyboardController = KeyboardController()
 
     init() {
-        let preferences = AppPreferences()
+        let configuration = AppConfiguration.current()
+        let preferences = AppPreferences(defaults: configuration.defaults)
+        if configuration.isUITesting {
+            preferences.setMotionPreference(.reduced)
+        }
         let sheetNavigation = SheetNavigationManager(preferences: preferences)
         _preferences = State(initialValue: preferences)
         _sheetNavigation = State(initialValue: sheetNavigation)
         _profileManager = State(
-            initialValue: ProfileManager(sheetNavigation: sheetNavigation))
+            initialValue: ProfileManager(
+                directoryURL: configuration.profileDirectoryURL,
+                sheetNavigation: sheetNavigation,
+                initialProfile: configuration.initialProfile,
+                websiteDataStore: configuration.websiteDataStore))
     }
 
     var body: some Scene {

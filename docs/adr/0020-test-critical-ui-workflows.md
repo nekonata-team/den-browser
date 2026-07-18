@@ -1,0 +1,3 @@
+# Test critical UI workflows instead of input permutations
+
+XCUITests cover independent, deterministic, user-visible workflows whose failure would block meaningful use of Den Browser. One UI test may verify a causal sequence of operations and its intermediate states, but unrelated behavior is not combined merely to amortize app launch; shared setup cost is only a secondary boundary signal. Exhaustive shortcut mappings, branches, and edge cases belong in focused unit tests, while UI tests prove representative routing across real Sheet, keyboard, pointer, accessibility, and app-state boundaries.

@@ -126,6 +126,23 @@ struct ProfileManagerTests {
         #expect(restored.store(for: work.id)?.focusedDesk?.label == "Restored")
     }
 
+    @Test func missingWindowProfileFallsBackToPersonalProfile() {
+        let directory = temporaryProfileDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let manager = makeProfileManager(directory: directory)
+        let personalID = manager.personalProfileID
+        let window = NSWindow()
+
+        #expect(manager.resolvedProfileID(personalID) == personalID)
+        let missingID = UUID()
+        #expect(manager.resolvedProfileID(missingID) == personalID)
+
+        manager.register(window: window, for: missingID)
+        #expect(manager.profileID(for: window) == personalID)
+        manager.unregister(window: window, for: missingID)
+        #expect(manager.profileID(for: window) == nil)
+    }
+
     @Test func profileManagerPersistsDeskPresetsPerProfile() throws {
         let directory = temporaryProfileDirectory()
         defer { try? FileManager.default.removeItem(at: directory) }

@@ -7,8 +7,9 @@ struct ProfileWindowView: View {
     @Environment(ProfileManager.self) private var profileManager
 
     var body: some View {
-        if let profile = profileManager.profile(id: profileID),
-            let store = profileManager.store(for: profileID)
+        let activeProfileID = profileManager.resolvedProfileID(profileID)
+        if let profile = profileManager.profile(id: activeProfileID),
+            let store = profileManager.store(for: activeProfileID)
         {
             ZStack(alignment: .topTrailing) {
                 ContentView(profileName: profile.name, profileColor: profile.color.color)
@@ -35,7 +36,7 @@ struct ProfileWindowView: View {
                     .padding(12)
                 }
 
-                if profileManager.openProfilePanelProfileID == profileID {
+                if profileManager.openProfilePanelProfileID == activeProfileID {
                     OpenProfilePanel()
                         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
                         .padding(.top, 64)
@@ -44,7 +45,7 @@ struct ProfileWindowView: View {
             .tint(profile.color.color)
             .environment(store)
             .focusedSceneValue(\.denStore, store)
-            .background(WindowRegistration(profileID: profileID))
+            .background(WindowRegistration(profileID: activeProfileID))
         } else {
             ContentUnavailableView("Profile unavailable", systemImage: "person.crop.circle.badge.exclamationmark")
         }

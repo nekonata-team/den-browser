@@ -151,6 +151,9 @@ struct ContentView: View {
         }
         .frame(minWidth: 1100, minHeight: 720)
         .navigationTitle(titlebarTitle)
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("den-content")
+        .accessibilityValue(store.isDenMode ? "Den Mode" : "Sheet Input")
         .confirmationDialog(
             "Delete \(store.deskPendingDeletion?.label ?? "Desk")?",
             isPresented: Binding(
@@ -653,6 +656,7 @@ struct ContentView: View {
             }
             .coordinateSpace(name: BoardStripCoordinateSpace.name)
             .scrollIndicators(.hidden)
+            .accessibilityIdentifier("board-strip")
             .onPreferenceChange(BoardFramePreferenceKey.self) { frames in
                 boardFrames = frames
                 alignDraggedBoard(to: frames)
@@ -743,23 +747,16 @@ struct ContentView: View {
 
         while let boards = store.focusedDesk?.boards,
             let index = deskIndex(of: drag.boardID),
-            index < boards.count - 1
+            let targetIndex = BoardDragInsertion.targetIndex(
+                draggedBoardID: drag.boardID,
+                orderedBoardIDs: boards.map(\.id),
+                desiredCenterX: drag.desiredCenterX,
+                frames: boardFrames)
         {
-            let next = boards[index + 1]
-            guard let frame = boardFrames[next.id], drag.desiredCenterX > frame.midX else { break }
-            store.previewBoardMove(drag.boardID, to: index + 1)
-            drag.offset.width -= next.width + boardSpacing
-            boardDrag = drag
-        }
-
-        while let boards = store.focusedDesk?.boards,
-            let index = deskIndex(of: drag.boardID),
-            index > 0
-        {
-            let previous = boards[index - 1]
-            guard let frame = boardFrames[previous.id], drag.desiredCenterX < frame.midX else { break }
-            store.previewBoardMove(drag.boardID, to: index - 1)
-            drag.offset.width += previous.width + boardSpacing
+            let crossedBoard = boards[targetIndex]
+            store.previewBoardMove(drag.boardID, to: targetIndex)
+            let direction = targetIndex > index ? -1.0 : 1.0
+            drag.offset.width += direction * (crossedBoard.width + boardSpacing)
             boardDrag = drag
         }
     }
@@ -840,6 +837,31 @@ struct ContentView: View {
             }
         }
         NSCursor.arrow.set()
+    }
+}
+
+enum BoardDragInsertion {
+    static func targetIndex(
+        draggedBoardID: UUID,
+        orderedBoardIDs: [UUID],
+        desiredCenterX: CGFloat,
+        frames: [UUID: CGRect]
+    ) -> Int? {
+        guard let index = orderedBoardIDs.firstIndex(of: draggedBoardID) else { return nil }
+
+        if orderedBoardIDs.indices.contains(index + 1),
+            let nextFrame = frames[orderedBoardIDs[index + 1]],
+            desiredCenterX > nextFrame.midX
+        {
+            return index + 1
+        }
+        if orderedBoardIDs.indices.contains(index - 1),
+            let previousFrame = frames[orderedBoardIDs[index - 1]],
+            desiredCenterX < previousFrame.midX
+        {
+            return index - 1
+        }
+        return nil
     }
 }
 

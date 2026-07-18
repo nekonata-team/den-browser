@@ -194,6 +194,9 @@ struct BoardView: View {
         }
         .help("Drag to move Board")
         .accessibilityHint("Drag to reorder this Board within the Focused Desk")
+        .accessibilityElement(children: .combine)
+        .accessibilityIdentifier("board-header.\(board.id.uuidString.lowercased())")
+        .accessibilityAddTraits(isFocused ? .isSelected : [])
     }
 
     private var navigationButtons: some View {

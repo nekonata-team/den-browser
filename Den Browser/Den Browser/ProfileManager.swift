@@ -16,6 +16,8 @@ final class ProfileManager {
     @ObservationIgnored private var windows: [UUID: WeakWindow] = [:]
     @ObservationIgnored private let sheetNavigation: SheetNavigationManager
     @ObservationIgnored private let removeDataStore: (UUID) async throws -> Void
+    @ObservationIgnored private let initialProfile: PersistedProfile?
+    @ObservationIgnored private let websiteDataStore: (WebProfileStore) -> WKWebsiteDataStore
 
     var personalProfileID: UUID {
         profiles.first(where: { $0.webProfileStore == .default })?.id
@@ -26,16 +28,24 @@ final class ProfileManager {
     init(
         directoryURL: URL = ProfileManager.defaultDirectoryURL(),
         sheetNavigation: SheetNavigationManager,
-        removeDataStore: @escaping (UUID) async throws -> Void = ProfileManager.removeWebsiteDataStore
+        removeDataStore: @escaping (UUID) async throws -> Void = ProfileManager.removeWebsiteDataStore,
+        initialProfile: PersistedProfile? = nil,
+        websiteDataStore: ((WebProfileStore) -> WKWebsiteDataStore)? = nil
     ) {
         self.directoryURL = directoryURL
         self.sheetNavigation = sheetNavigation
         self.removeDataStore = removeDataStore
+        self.initialProfile = initialProfile
+        self.websiteDataStore = websiteDataStore ?? { $0.websiteDataStore }
         load()
     }
 
     func profile(id: UUID) -> ProfileState? {
         profiles.first { $0.id == id }
+    }
+
+    func resolvedProfileID(_ requestedID: UUID) -> UUID {
+        profile(id: requestedID) == nil ? personalProfileID : requestedID
     }
 
     func store(for profileID: UUID) -> DenStore? {
@@ -44,7 +54,7 @@ final class ProfileManager {
 
         let store = DenStore(
             state: persisted.den,
-            websiteDataStore: persisted.profile.webProfileStore.websiteDataStore,
+            websiteDataStore: websiteDataStore(persisted.profile.webProfileStore),
             sheetNavigation: sheetNavigation,
             deskPresets: persisted.deskPresets,
             onSave: { [weak self] den in
@@ -140,10 +150,11 @@ final class ProfileManager {
     func clearError() { errorMessage = nil }
 
     func register(window: NSWindow, for profileID: UUID) {
-        windows[profileID] = WeakWindow(window)
+        windows[resolvedProfileID(profileID)] = WeakWindow(window)
     }
 
     func unregister(window: NSWindow, for profileID: UUID) {
+        let profileID = resolvedProfileID(profileID)
         guard windows[profileID]?.window === window else { return }
         windows.removeValue(forKey: profileID)
         stores[profileID]?.releaseRuntimes()
@@ -177,7 +188,7 @@ final class ProfileManager {
         }
 
         if !loaded.contains(where: { $0.profile.webProfileStore == .default }) {
-            loaded.insert(Self.personalProfile(), at: 0)
+            loaded.insert(initialProfile ?? Self.personalProfile(), at: 0)
         }
         loaded = deduplicated(loaded)
         persistedProfiles = Dictionary(uniqueKeysWithValues: loaded.map { ($0.profile.id, $0) })
