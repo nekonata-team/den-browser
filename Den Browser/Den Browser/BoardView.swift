@@ -75,6 +75,13 @@ struct BoardView: View {
         .padding(.horizontal, 12)
         .frame(height: 38)
         .background(.regularMaterial)
+        .overlay(alignment: .top) {
+            if store.isDenMode, isFocused {
+                Rectangle()
+                    .fill(.cyan.opacity(0.9))
+                    .frame(height: 3)
+            }
+        }
     }
 
     @ViewBuilder

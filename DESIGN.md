@@ -16,6 +16,7 @@ Den controls feel like a calm desk laid over live web sheets. Web content remain
 - Resolve Den chrome in its dark appearance so semantic colors stay legible. Do not hard-code black or white for standard text and icons.
 - Reserve fixed colors for Den-specific meaning and atmosphere: cyan for focus, plus the dark background gradient and shadows.
 - Profile palette colors identify Profiles only; they never replace cyan focus.
+- In Den Mode, shift the Den background to deep navy and cyan and add a cyan top edge to the Focused Board header. Keep Sheets unchanged and the outer ring secondary.
 
 ## Interaction rules
 

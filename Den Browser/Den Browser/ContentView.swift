@@ -49,7 +49,7 @@ struct ContentView: View {
                 DenBackground(isDenMode: store.isDenMode, profileColor: profileColor)
 
                 if store.focusedDesk?.boards.isEmpty == false {
-                    boardStrip(in: geometry.size)
+                    boardStrip(in: geometry.size, safeAreaTop: geometry.safeAreaInsets.top)
                         .allowsHitTesting(store.temporaryContext == nil)
                         .accessibilityHidden(store.temporaryContext != nil)
                 } else {
@@ -141,8 +141,8 @@ struct ContentView: View {
             .overlay {
                 if store.isDenMode {
                     RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .stroke(.cyan.opacity(0.72), lineWidth: 1)
-                        .padding(6)
+                        .strokeBorder(.cyan.opacity(0.48), lineWidth: 1)
+                        .padding(8)
                         .allowsHitTesting(false)
                 }
             }
@@ -569,11 +569,11 @@ struct ContentView: View {
         }
     }
 
-    private func boardStrip(in size: CGSize) -> some View {
+    private func boardStrip(in size: CGSize, safeAreaTop: CGFloat) -> some View {
         let boards = store.focusedDesk?.boards ?? []
         let topInset: CGFloat = shouldShowDeskSwitcher ? 48 : 10
         let bottomInset: CGFloat = 10
-        let boardHeight = max(420, size.height - topInset - bottomInset)
+        let boardHeight = max(420, size.height - safeAreaTop - topInset - bottomInset)
         let maximizedBoardWidth = max(280, size.width - boardHorizontalPadding * 2)
         let firstBoardWidth =
             boards.first.map {
@@ -912,10 +912,15 @@ private struct DenBackground: View {
 
     var body: some View {
         LinearGradient(
-            colors: [
-                Color(red: 0.08, green: 0.10, blue: 0.12),
-                Color(red: 0.15, green: 0.16, blue: 0.19),
-            ],
+            colors: isDenMode
+                ? [
+                    Color(red: 0.03, green: 0.18, blue: 0.23),
+                    Color(red: 0.06, green: 0.10, blue: 0.18),
+                ]
+                : [
+                    Color(red: 0.08, green: 0.10, blue: 0.12),
+                    Color(red: 0.15, green: 0.16, blue: 0.19),
+                ],
             startPoint: .topLeading,
             endPoint: .bottomTrailing
         )
