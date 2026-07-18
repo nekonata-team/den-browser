@@ -667,8 +667,11 @@ struct ContentView: View {
                 didScrollToRestoredFocusedBoard = true
                 centerBoard(store.focusedDesk?.focusedBoardID, using: scrollProxy, animated: false)
             }
-            .onChange(of: store.focusedDesk?.focusedBoardID) { _, focusedBoardID in
-                centerBoard(focusedBoardID, using: scrollProxy)
+            .onChange(of: boardFocusTarget) { previous, current in
+                centerBoard(
+                    current.boardID,
+                    using: scrollProxy,
+                    animated: previous.deskID == current.deskID)
             }
             .onChange(of: store.centerFocusedBoardRequest) { _, _ in
                 centerBoard(store.focusedDesk?.focusedBoardID, using: scrollProxy)
@@ -692,6 +695,12 @@ struct ContentView: View {
                 proxy.scrollTo(boardID, anchor: .center)
             }
         }
+    }
+
+    private var boardFocusTarget: BoardFocusTarget {
+        BoardFocusTarget(
+            deskID: store.state.focusedDeskID,
+            boardID: store.focusedDesk?.focusedBoardID)
     }
 
     private func isBoardPointerFocusEnabled(for boardID: UUID) -> Bool {
@@ -845,6 +854,11 @@ struct ContentView: View {
         }
         NSCursor.arrow.set()
     }
+}
+
+private struct BoardFocusTarget: Equatable {
+    let deskID: UUID?
+    let boardID: UUID?
 }
 
 enum BoardDragInsertion {
