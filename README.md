@@ -64,6 +64,16 @@ Vim-style Sheet Navigation is a separate optional Feature. It controls content i
 
 The current acceptance criteria and exploratory checks live in [docs/poc.md](./docs/poc.md).
 
+## Installation
+
+Den Browser requires macOS 26 or later.
+
+```sh
+brew install --cask nekonata-team/tap/den-browser
+```
+
+Upgrade with `brew upgrade --cask den-browser`.
+
 ## Development
 
 Den Browser is a macOS app built with SwiftUI, AppKit bridges, and `WKWebView`.
@@ -94,4 +104,5 @@ Build the project in Xcode first so SourceKit-LSP can use its build log and inde
 - [docs/vim.md](./docs/vim.md): Vim-style Sheet Navigation
 - [docs/poc.md](./docs/poc.md): proof-of-concept criteria
 - [docs/testing.md](./docs/testing.md): automated and exploratory validation
+- [docs/releasing.md](./docs/releasing.md): signed release and Homebrew Tap workflow
 - [docs/adr](./docs/adr): product and architecture decisions

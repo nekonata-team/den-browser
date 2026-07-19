@@ -7,6 +7,7 @@ test_derived_data := ".derived-data-test"
 ui_derived_data := ".derived-data-ui"
 swift_format := "xcrun swift-format"
 swift_sources := "Den Browser"
+fastlane := "bundle exec fastlane"
 
 # Format all Swift sources in place.
 [group("quality")]
@@ -41,3 +42,13 @@ ui-test:
 # Build then run unit tests.
 [group("test")]
 check: lint build test
+
+# Build, sign, notarize, and package a release candidate without publishing it.
+[group("release")]
+release-candidate tag:
+    {{fastlane}} release_candidate tag="{{tag}}"
+
+# Publish a tested release candidate and update the Homebrew Tap.
+[group("release")]
+release tag:
+    zsh scripts/release "{{tag}}"

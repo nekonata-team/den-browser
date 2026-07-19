@@ -1,0 +1,75 @@
+require "digest"
+require "fileutils"
+
+ROOT = File.expand_path("..", __dir__)
+PROJECT = File.join(ROOT, "Den Browser", "Den Browser.xcodeproj")
+SCHEME = "Den Browser"
+
+default_platform(:mac)
+
+platform :mac do
+  desc "Build, sign, notarize, and package a release candidate"
+  lane :release_candidate do |options|
+    tag = options[:tag].to_s
+    UI.user_error!("Pass tag=vX.Y.Z") unless tag.match?(/\Av\d+\.\d+\.\d+\z/)
+
+    version = tag.delete_prefix("v")
+    project_version = get_version_number(xcodeproj: PROJECT, target: SCHEME)
+    UI.user_error!("MARKETING_VERSION is #{project_version}, expected #{version}") unless project_version == version
+
+    %w[ASC_KEY_ID ASC_ISSUER_ID ASC_KEY_PATH].each do |name|
+      UI.user_error!("Set #{name}") if ENV[name].to_s.empty?
+    end
+
+    output = File.join(ROOT, ".release", tag)
+    archive = File.join(output, "Den Browser.xcarchive")
+    app = File.join(archive, "Products", "Applications", "Den Browser.app")
+    zip = File.join(output, "Den-Browser-#{version}-macOS.zip")
+
+    FileUtils.rm_rf(output)
+    FileUtils.mkdir_p(output)
+
+    sh("just", "check")
+    sh("just", "ui-test")
+    match(type: "developer_id", readonly: true, platform: "macos")
+    build_app(
+      project: PROJECT,
+      scheme: SCHEME,
+      configuration: "Release",
+      archive_path: archive,
+      export_method: "developer-id",
+      skip_package_pkg: true,
+      clean: true
+    )
+
+    sh("ditto", "-c", "-k", "--sequesterRsrc", "--keepParent", app, zip)
+    sh(
+      "xcrun", "notarytool", "submit", zip,
+      "--key", File.expand_path(ENV.fetch("ASC_KEY_PATH")),
+      "--key-id", ENV.fetch("ASC_KEY_ID"),
+      "--issuer", ENV.fetch("ASC_ISSUER_ID"),
+      "--wait"
+    )
+    sh("xcrun", "stapler", "staple", app)
+    FileUtils.rm_f(zip)
+    sh("ditto", "-c", "-k", "--sequesterRsrc", "--keepParent", app, zip)
+
+    File.write(File.join(output, "den-browser-local.rb"), <<~RUBY)
+      cask "den-browser" do
+        version "#{version}"
+        sha256 "#{Digest::SHA256.file(zip).hexdigest}"
+
+        url "file://#{zip}"
+        name "Den Browser"
+        desc "Niri-inspired spatial browser for persistent web work"
+        homepage "https://nekonata.dev/"
+
+        depends_on macos: ">= :tahoe"
+        app "Den Browser.app"
+        zap trash: "~/Library/Containers/dev.nekonata.denbrowser"
+      end
+    RUBY
+
+    UI.success("#{zip}\nSHA-256: #{Digest::SHA256.file(zip).hexdigest}")
+  end
+end
