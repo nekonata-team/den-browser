@@ -16,3 +16,4 @@ xcuserdata/
 *.p8
 *.p12
 *.provisionprofile
+fastlane/report.xml

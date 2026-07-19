@@ -46,7 +46,7 @@ check: lint build test
 # Build, sign, notarize, and package a release candidate without publishing it.
 [group("release")]
 release-candidate tag:
-    {{fastlane}} release_candidate tag="{{tag}}"
+    {{fastlane}} release_candidate tag:{{tag}}
 
 # Publish a tested release candidate and update the Homebrew Tap.
 [group("release")]
