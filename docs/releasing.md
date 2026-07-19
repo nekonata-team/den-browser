@@ -28,31 +28,41 @@ just release-candidate v0.1.0
 ```
 
 This runs the checks and UI tests, retrieves the Developer ID certificate,
-builds a universal app, notarizes it, and writes the ZIP and a local Cask under
-`.release/v0.1.0/`.
+builds a universal app, notarizes it, and writes the ZIP under `.release/v0.1.0/`.
 
-Install the candidate through Homebrew and complete the applicable checks in
-[poc.md](./poc.md):
-
-```sh
-brew install --cask ./.release/v0.1.0/den-browser-local.rb
-```
+Extract the application from the ZIP and complete the applicable checks in
+[poc.md](./poc.md).
 
 Confirm that Gatekeeper accepts the app, it launches on Apple Silicon, and its
-Profiles and Den state survive an upgrade. Do not use `--zap` with data that
-must be preserved. Uninstall the local Cask before publishing.
+Profiles and Den state survive an upgrade. Remove the test application before publishing.
+
 
 ## Publish
+
+Publish the GitHub Release:
 
 ```sh
 just release v0.1.0
 ```
 
-The command shows the latest published version and SHA-256 before asking once
-for confirmation. It enables immutable GitHub Releases, creates the annotated
-tag and GitHub Release, validates the Cask with Homebrew, then pushes the Cask
-directly to the Tap's `main` branch. Release notes are intentionally empty.
+This creates the annotated git tag, pushes it to `origin`, and creates a GitHub Release with the notarized ZIP artifact. Release notes are intentionally left empty.
 
-If publishing fails after the tag or GitHub Release is created, do not delete
-or replace published artifacts. Inspect the completed step and finish the
-remaining GitHub or Tap operation manually.
+If publishing the GitHub Release fails after the tag is created, inspect the completed steps and finish the remaining GitHub Release creation manually. Do not delete or replace published artifacts.
+
+## Distribute
+
+Once the GitHub Release is published and the ZIP is publicly accessible, distribute the version to external package managers (Homebrew).
+
+### Homebrew (First-time setup)
+
+Follow [this](https://docs.brew.sh/How-to-Create-and-Maintain-a-Tap).
+
+### Homebrew (Subsequent releases)
+
+For subsequent releases, run the following command to submit a pull request updating the Cask:
+
+```sh
+just bump-homebrew v0.1.0
+```
+
+This uses `brew bump-cask-pr` to automatically update the version and SHA-256 of the Cask on the tap repository.

@@ -48,7 +48,47 @@ check: lint build test
 release-candidate tag:
     {{fastlane}} release_candidate tag:{{tag}}
 
-# Publish a tested release candidate and update the Homebrew Tap.
+# Publish a tested release candidate to GitHub.
 [group("release")]
-release tag:
-    zsh scripts/release "{{tag}}"
+[script("zsh")]
+release $tag:
+    set -euo pipefail
+
+    version="${tag#v}"
+    archive="Den-Browser-${version}-macOS.zip"
+    zip=".release/${tag}/${archive}"
+
+    [[ -f "$zip" ]] || {
+        print -u2 "missing candidate: $zip"
+        exit 1
+    }
+
+    git tag -a "$tag" -m "Den Browser $version"
+    git push origin "$tag"
+
+    gh release create "$tag" "$zip" \
+        --repo nekonata-team/den-browser \
+        --verify-tag \
+        --title "$tag" \
+        --notes ""
+
+# Update the Homebrew Cask through a pull request.
+[group("release")]
+[script("zsh")]
+bump-homebrew $tag:
+    set -euo pipefail
+
+    [[ "$tag" =~ '^v[0-9]+\.[0-9]+\.[0-9]+$' ]] || {
+        print -u2 'usage: just bump-homebrew vX.Y.Z'
+        exit 1
+    }
+
+    version="${tag#v}"
+
+    brew tap nekonata-team/tap
+
+    brew bump-cask-pr \
+        --version "$version" \
+        --no-fork \
+        --no-browse \
+        nekonata-team/tap/den-browser
