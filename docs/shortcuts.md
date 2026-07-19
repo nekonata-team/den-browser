@@ -38,6 +38,7 @@ The complete in-app guide is available from Settings, the Den menu, and `?` in D
 | `f` | Toggle maximized focused board | Uses the available Den width without changing its persisted Board Width. |
 | `c` | Center focused board | Uses edge space to center the first and last Board too. |
 | Return | Duplicate current sheet | Creates board to right, focuses it, then enters sheet input. |
+| `r` | Rename focused Board | Opens the Rename Board panel; Return confirms, Escape returns to Den Mode. |
 | `x` / `d` | Remove focused Board | Releases its live Sheet runtime. Key repeat is ignored. |
 | `u` | Restore Recently Removed Board | Available for the current app run. Key repeat is ignored. |
 | Shift + `d` | Delete focused desk | Deletes an empty desk immediately. A desk with Boards requires confirmation. Unavailable for the last desk. |
@@ -45,7 +46,7 @@ The complete in-app guide is available from Settings, the Den menu, and `?` in D
 
 ## Overview
 
-Overview accepts only movement, Shift plus movement, Return, and Escape. Movement changes the Overview Selection; Shift moves its board. Return makes the selection the Focused Board. Escape closes overview back to Den Mode.
+Overview accepts movement, Shift plus movement, `/` (search/filter), Return, and Escape. Movement changes the Overview Selection; Shift moves its board. Pressing `/` enters Search Mode to dynamically filter desks and boards (Return confirms the query to allow navigation, Escape cancels and clears the query). Return in Normal Mode makes the selection the Focused Board. Escape in Normal Mode clears the query if active, or closes overview back to Den Mode.
 
 ## Pointer Board actions
 
