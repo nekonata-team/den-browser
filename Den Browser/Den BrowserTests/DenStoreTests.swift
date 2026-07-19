@@ -581,6 +581,63 @@ struct DenStoreTests {
         }
     }
 
+    @Test func overviewFilteringAndNavigation() {
+        let b1 = board("Google", url: "https://google.com")
+        let b2 = board("GitHub", url: "https://github.com")
+        let desk1 = desk("Main", boards: [b1])
+        let desk2 = desk("Dev", boards: [b2])
+
+        withStore(desks: [desk1, desk2]) { store in
+            // 1. Show overview
+            store.showOverview()
+            #expect(store.overviewQuery == "")
+            #expect(!store.isOverviewFilterMode)
+            #expect(store.overviewSelectionDeskID == desk1.id)
+            #expect(store.overviewSelectionBoardID == b1.id)
+
+            // 2. Set query matching b2
+            store.setOverviewQuery("git")
+            #expect(store.overviewQuery == "git")
+            // Selection should jump to first matching board (b2 in desk2)
+            #expect(store.overviewSelectionDeskID == desk2.id)
+            #expect(store.overviewSelectionBoardID == b2.id)
+
+            // 3. Re-set query matching b1
+            store.setOverviewQuery("oog")
+            #expect(store.overviewSelectionDeskID == desk1.id)
+            #expect(store.overviewSelectionBoardID == b1.id)
+
+            // 4. Test matchesOverviewFilter
+            #expect(store.matchesOverviewFilter(b1, in: desk1))
+            #expect(!store.matchesOverviewFilter(b2, in: desk2))
+
+            // 5. Non-matching query clears selection
+            store.setOverviewQuery("nonexistent")
+            #expect(store.overviewSelectionDeskID == nil)
+            #expect(store.overviewSelectionBoardID == nil)
+
+            // 6. Enter filter mode, type query, and confirm it
+            store.enterOverviewFilterMode()
+            #expect(store.isOverviewFilterMode)
+            store.setOverviewQuery("git")
+            store.confirmOverviewFilterQuery()
+            #expect(!store.isOverviewFilterMode)
+            #expect(store.overviewQuery == "git")
+
+            // 7. Clear query in normal mode
+            store.clearOverviewQuery()
+            #expect(store.overviewQuery == "")
+            #expect(store.overviewSelectionDeskID == desk1.id)
+            #expect(store.overviewSelectionBoardID == b1.id)
+
+            // 8. Escape clears filter mode and query
+            store.enterOverviewFilterMode()
+            store.exitOverviewFilterMode()
+            #expect(!store.isOverviewFilterMode)
+            #expect(store.overviewQuery == "")
+        }
+    }
+
     @Test func escapePassesThroughToSheetInput() throws {
         try withStore(desks: [desk("Desk")]) { store in
             let event = try #require(

@@ -1072,15 +1072,66 @@ private struct OverviewView: View {
     @Environment(AppPreferences.self) private var preferences
     @Environment(\.accessibilityReduceMotion) private var systemReduceMotion
 
+    @FocusState private var isSearchFocused: Bool
+
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("Overview")
-                .font(.system(size: 17, weight: .semibold))
+            VStack(spacing: 12) {
+                Text("Overview")
+                    .font(.system(size: 20, weight: .bold))
+
+                HStack(spacing: 8) {
+                    Image(systemName: "magnifyingglass")
+                        .foregroundStyle(store.isOverviewFilterMode ? .primary : .secondary)
+
+                    TextField(
+                        "Search desks and boards (/)",
+                        text: Binding(
+                            get: {
+                                store.overviewQuery
+                            },
+                            set: { newValue in
+                                store.setOverviewQuery(newValue)
+                            }
+                        )
+                    )
+                    .textFieldStyle(.plain)
+                    .focused($isSearchFocused)
+                    .disabled(!store.isOverviewFilterMode)
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+                .frame(width: 320)
+                .background(
+                    Color.primary.opacity(store.isOverviewFilterMode ? 0.08 : 0.04),
+                    in: RoundedRectangle(cornerRadius: 10, style: .continuous)
+                )
+                .overlay {
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .stroke(
+                            store.isOverviewFilterMode ? .cyan.opacity(0.86) : Color.primary.opacity(0.10),
+                            lineWidth: store.isOverviewFilterMode ? 1.5 : 1
+                        )
+                }
+                .onTapGesture {
+                    if !store.isOverviewFilterMode {
+                        store.enterOverviewFilterMode()
+                    }
+                }
+            }
+            .frame(maxWidth: .infinity)
 
             ScrollView([.horizontal, .vertical]) {
                 VStack(alignment: .leading, spacing: 18) {
                     ForEach(store.state.desks) { desk in
-                        deskRow(desk)
+                        let filtered = desk.boards.filter { board in
+                            store.matchesOverviewFilter(board, in: desk)
+                        }
+                        if store.overviewQuery.isEmpty {
+                            deskRow(desk, filteredBoards: filtered)
+                        } else if !filtered.isEmpty {
+                            deskRow(desk, filteredBoards: filtered)
+                        }
                     }
                 }
                 .padding(2)
@@ -1105,9 +1156,12 @@ private struct OverviewView: View {
         .onExitCommand {
             store.hideOverview()
         }
+        .onChange(of: store.isOverviewFilterMode) { _, newValue in
+            isSearchFocused = newValue
+        }
     }
 
-    private func deskRow(_ desk: DeskState) -> some View {
+    private func deskRow(_ desk: DeskState, filteredBoards: [BoardState]) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 8) {
                 Text(desk.label)
@@ -1122,7 +1176,7 @@ private struct OverviewView: View {
             .foregroundStyle(Color.primary.opacity(desk.id == store.overviewSelectionDeskID ? 0.96 : 0.58))
 
             HStack(alignment: .top, spacing: 10) {
-                if desk.boards.isEmpty {
+                if filteredBoards.isEmpty {
                     Text("Empty")
                         .font(.system(size: 12))
                         .foregroundStyle(.secondary)
@@ -1130,7 +1184,7 @@ private struct OverviewView: View {
                         .background(
                             Color.primary.opacity(0.06), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
                 } else {
-                    ForEach(desk.boards) { board in
+                    ForEach(filteredBoards) { board in
                         overviewBoard(board, in: desk)
                     }
                 }

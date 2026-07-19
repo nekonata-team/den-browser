@@ -11,6 +11,8 @@ extension DenStore {
 
     func showOverview() {
         setTemporaryContext(.overview)
+        overviewQuery = ""
+        isOverviewFilterMode = false
         overviewSelectionDeskID = state.focusedDeskID
         overviewSelectionBoardID = focusedDesk?.focusedBoardID
     }
@@ -18,7 +20,63 @@ extension DenStore {
     func hideOverview() {
         if temporaryContext == .overview {
             setTemporaryContext(nil)
+            overviewQuery = ""
+            isOverviewFilterMode = false
         }
+    }
+
+    func setOverviewQuery(_ query: String) {
+        overviewQuery = query
+        updateOverviewSelectionForFilter()
+    }
+
+    func enterOverviewFilterMode() {
+        isOverviewFilterMode = true
+        updateOverviewSelectionForFilter()
+    }
+
+    func exitOverviewFilterMode() {
+        isOverviewFilterMode = false
+        overviewQuery = ""
+    }
+
+    func confirmOverviewFilterQuery() {
+        isOverviewFilterMode = false
+    }
+
+    func clearOverviewQuery() {
+        overviewQuery = ""
+        updateOverviewSelectionForFilter()
+    }
+
+    func matchesOverviewFilter(_ board: BoardState, in desk: DeskState) -> Bool {
+        guard !overviewQuery.isEmpty else { return true }
+        return board.displayName.localizedCaseInsensitiveContains(overviewQuery)
+            || (board.currentSheetURL?.absoluteString.localizedCaseInsensitiveContains(overviewQuery) ?? false)
+            || desk.label.localizedCaseInsensitiveContains(overviewQuery)
+    }
+
+    private func updateOverviewSelectionForFilter() {
+        if let deskID = overviewSelectionDeskID,
+            let boardID = overviewSelectionBoardID,
+            let desk = state.desks.first(where: { $0.id == deskID }),
+            let board = desk.boards.first(where: { $0.id == boardID }),
+            matchesOverviewFilter(board, in: desk)
+        {
+            return
+        }
+
+        for desk in state.desks {
+            let matchingBoards = desk.boards.filter { matchesOverviewFilter($0, in: desk) }
+            if let firstBoard = matchingBoards.first {
+                overviewSelectionDeskID = desk.id
+                overviewSelectionBoardID = firstBoard.id
+                return
+            }
+        }
+
+        overviewSelectionDeskID = nil
+        overviewSelectionBoardID = nil
     }
 
     func enterOverviewSelection() {
@@ -84,11 +142,12 @@ extension DenStore {
 
     private func moveOverviewBoardSelection(by delta: Int) {
         guard
-            let deskIndex = overviewSelectionDeskIndex,
-            !state.desks[deskIndex].boards.isEmpty
+            let deskIndex = overviewSelectionDeskIndex
         else { return }
 
-        let boards = state.desks[deskIndex].boards
+        let boards = state.desks[deskIndex].boards.filter { matchesOverviewFilter($0, in: state.desks[deskIndex]) }
+        guard !boards.isEmpty else { return }
+
         let currentIndex =
             overviewSelectionBoardID
             .flatMap { boardID in boards.firstIndex { $0.id == boardID } } ?? 0
@@ -97,11 +156,19 @@ extension DenStore {
     }
 
     private func moveOverviewDeskSelection(by delta: Int) {
-        guard !state.desks.isEmpty else { return }
-        let currentIndex = overviewSelectionDeskIndex ?? focusedDeskIndex ?? 0
-        let nextIndex = wrappedIndex(currentIndex + delta, count: state.desks.count)
-        overviewSelectionDeskID = state.desks[nextIndex].id
-        overviewSelectionBoardID = state.desks[nextIndex].focusedBoardID ?? state.desks[nextIndex].boards.first?.id
+        let matchingDesks = state.desks.filter { desk in
+            desk.boards.contains { matchesOverviewFilter($0, in: desk) }
+        }
+        guard !matchingDesks.isEmpty else { return }
+
+        let currentIndex = matchingDesks.firstIndex { $0.id == overviewSelectionDeskID } ?? 0
+        let nextIndex = wrappedIndex(currentIndex + delta, count: matchingDesks.count)
+
+        let targetDesk = matchingDesks[nextIndex]
+        overviewSelectionDeskID = targetDesk.id
+
+        let targetBoards = targetDesk.boards.filter { matchesOverviewFilter($0, in: targetDesk) }
+        overviewSelectionBoardID = targetBoards.first?.id
     }
 
     private func moveOverviewSelectionBoard(by delta: Int) {

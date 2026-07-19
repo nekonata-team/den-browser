@@ -12,6 +12,8 @@ final class DenStore {
     private(set) var temporaryContext: TemporaryContext?
     var isZenViewPresented = false
     var isDenMode = false
+    var overviewQuery = ""
+    var isOverviewFilterMode = false
     private(set) var boardWidthPanelMessage: String?
     private(set) var deskPendingDeletion: DeskState?
     var deskPresetPendingDeletion: PersonalDeskPreset?

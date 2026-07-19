@@ -231,18 +231,40 @@ final class KeyboardController {
 
     private static func handleOverview(_ event: NSEvent, store: DenStore) -> Bool {
         let modifiers = normalizedModifiers(for: event)
-        if isEscape(event), modifiers == [] {
-            store.hideOverview()
-            return true
-        }
+        let character = event.charactersIgnoringModifiers?.first
 
-        if handleMovement(event, modifiers: modifiers, store: store, overview: true) {
+        if store.isOverviewFilterMode {
+            if isEscape(event), modifiers == [] {
+                store.exitOverviewFilterMode()
+                return true
+            }
+            if isReturn(event), modifiers == [] {
+                store.confirmOverviewFilterQuery()
+                return true
+            }
+            return false
+        } else {
+            if isEscape(event), modifiers == [] {
+                if !store.overviewQuery.isEmpty {
+                    store.clearOverviewQuery()
+                } else {
+                    store.hideOverview()
+                }
+                return true
+            }
+            if isReturn(event), modifiers == [] {
+                store.enterOverviewSelection()
+                return true
+            }
+            if character == "/", modifiers == [] {
+                store.enterOverviewFilterMode()
+                return true
+            }
+            if handleMovement(event, modifiers: modifiers, store: store, overview: true) {
+                return true
+            }
             return true
         }
-        if isReturn(event), modifiers == [] {
-            store.enterOverviewSelection()
-        }
-        return true
     }
 
     private static func handleMovement(

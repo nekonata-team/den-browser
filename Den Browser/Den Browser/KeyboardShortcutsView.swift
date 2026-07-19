@@ -80,6 +80,7 @@ struct KeyboardShortcutsView: View {
                 items: [
                     item(["←", "/", "→", "or", "h", "/", "l"], "Select Board"),
                     item(["↑", "/", "↓", "or", "j", "/", "k"], "Select Desk"),
+                    item(["/"], "Search / Filter"),
                     item(["Shift", "+", "movement"], "Move selected Board"),
                     item(["Return"], "Enter selection"),
                     item(["Escape"], "Return to Den Mode"),
