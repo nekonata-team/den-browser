@@ -624,6 +624,60 @@ struct DenStoreTests {
         }
     }
 
+    @Test func deskSwitchingExitsDenMode() {
+        let first = desk("First")
+        let second = desk("Second")
+        let third = desk("Third")
+        withStore(desks: [first, second, third]) { store in
+            // 1. focusDesk(number:) exits DenMode on actual switch
+            store.isDenMode = true
+            store.focusDesk(number: 2)
+            #expect(!store.isDenMode)
+            #expect(store.focusedDesk?.id == second.id)
+
+            // focusDesk(number:) on the same desk does NOT exit DenMode
+            store.isDenMode = true
+            store.focusDesk(number: 2)
+            #expect(store.isDenMode)
+
+            // 2. focusDesk(_:) exits DenMode on actual switch
+            store.focusDesk(third.id)
+            #expect(!store.isDenMode)
+            #expect(store.focusedDesk?.id == third.id)
+
+            // focusDesk(_:) on the same desk does NOT exit DenMode
+            store.isDenMode = true
+            store.focusDesk(third.id)
+            #expect(store.isDenMode)
+
+            // 3. focusPreviousDesk() / focusNextDesk() exits DenMode on actual switch
+            store.isDenMode = true
+            store.focusPreviousDesk()
+            #expect(!store.isDenMode)
+            #expect(store.focusedDesk?.id == second.id)
+
+            store.isDenMode = true
+            store.focusNextDesk()
+            #expect(!store.isDenMode)
+            #expect(store.focusedDesk?.id == third.id)
+
+            // 4. enterOverviewSelection() exits DenMode on actual switch
+            store.showOverview()
+            store.isDenMode = true
+            store.overviewSelectionDeskID = first.id
+            store.enterOverviewSelection()
+            #expect(!store.isDenMode)
+            #expect(store.focusedDesk?.id == first.id)
+
+            // enterOverviewSelection() on same desk does NOT exit DenMode
+            store.showOverview()
+            store.isDenMode = true
+            store.overviewSelectionDeskID = first.id
+            store.enterOverviewSelection()
+            #expect(store.isDenMode)
+        }
+    }
+
     @Test func controlCommaTogglesDenMode() throws {
         try withStore(desks: [desk("Desk")]) { store in
             let event = try #require(

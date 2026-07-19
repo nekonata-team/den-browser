@@ -3,7 +3,11 @@ import Foundation
 extension DenStore {
     func focusDesk(_ deskID: UUID) {
         guard state.desks.contains(where: { $0.id == deskID }) else { return }
+        let changed = state.focusedDeskID != deskID
         state.focusedDeskID = deskID
+        if changed {
+            isDenMode = false
+        }
         save()
     }
 
@@ -61,7 +65,12 @@ extension DenStore {
 
     func focusDesk(number: Int) {
         guard (1...Self.maximumDeskCount).contains(number), state.desks.indices.contains(number - 1) else { return }
-        state.focusedDeskID = state.desks[number - 1].id
+        let targetDeskID = state.desks[number - 1].id
+        let changed = state.focusedDeskID != targetDeskID
+        state.focusedDeskID = targetDeskID
+        if changed {
+            isDenMode = false
+        }
         ensureFocusedObjects()
         save()
     }
@@ -131,7 +140,12 @@ extension DenStore {
     private func moveDeskFocus(by delta: Int) {
         guard let currentIndex = focusedDeskIndex, !state.desks.isEmpty else { return }
         let nextIndex = wrappedIndex(currentIndex + delta, count: state.desks.count)
-        state.focusedDeskID = state.desks[nextIndex].id
+        let targetDeskID = state.desks[nextIndex].id
+        let changed = state.focusedDeskID != targetDeskID
+        state.focusedDeskID = targetDeskID
+        if changed {
+            isDenMode = false
+        }
         ensureFocusedObjects()
         save()
     }
