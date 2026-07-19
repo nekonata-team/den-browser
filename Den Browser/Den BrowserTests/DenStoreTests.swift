@@ -678,6 +678,56 @@ struct DenStoreTests {
         }
     }
 
+    @Test func boardRenamingAndCustomLabelStickiness() {
+        let b1 = board("Google", url: "https://google.com")
+        withStore(desks: [desk("Main", boards: [b1])]) { store in
+            // 1. Initially, customLabel is nil, displayName returns page title
+            let boardID = b1.id
+            guard
+                let deskIndex = store.focusedDeskIndex,
+                let boardIndex = store.focusedBoardIndex(in: deskIndex)
+            else {
+                Issue.record("Failed to find focused board indices")
+                return
+            }
+            #expect(store.state.desks[deskIndex].boards[boardIndex].customLabel == nil)
+            #expect(store.state.desks[deskIndex].boards[boardIndex].displayName == "Google")
+
+            // 2. Rename the board to a custom name
+            store.renameFocusedBoard(to: "Search Tasks")
+            #expect(store.state.desks[deskIndex].boards[boardIndex].customLabel == "Search Tasks")
+            #expect(store.state.desks[deskIndex].boards[boardIndex].displayName == "Search Tasks")
+            #expect(!store.isDenMode)
+
+            // 3. Navigation doesn't overwrite customLabel, but updates label
+            store.updateBoard(
+                boardID: boardID,
+                url: URL(string: "https://google.com/search"),
+                title: "Google Search Result"
+            )
+            // Original label is updated in the background
+            #expect(store.state.desks[deskIndex].boards[boardIndex].label == "Google Search Result")
+            // customLabel is untouched
+            #expect(store.state.desks[deskIndex].boards[boardIndex].customLabel == "Search Tasks")
+            // displayName still shows custom label
+            #expect(store.state.desks[deskIndex].boards[boardIndex].displayName == "Search Tasks")
+
+            // 4. Duplicate the board (duplicate should copy customLabel)
+            store.isDenMode = true
+            store.duplicateFocusedBoard()
+            let boards = store.focusedDesk?.boards ?? []
+            #expect(boards.count == 2)
+            #expect(boards[1].customLabel == "Search Tasks")
+            #expect(boards[1].displayName == "Search Tasks")
+
+            // 5. Focus original board and clear the label
+            store.focusBoard(boardID)
+            store.renameFocusedBoard(to: "")
+            #expect(store.state.desks[deskIndex].boards[boardIndex].customLabel == nil)
+            #expect(store.state.desks[deskIndex].boards[boardIndex].displayName == "Google Search Result")
+        }
+    }
+
     @Test func controlCommaTogglesDenMode() throws {
         try withStore(desks: [desk("Desk")]) { store in
             let event = try #require(

@@ -373,10 +373,28 @@ final class DenStore {
         let board = BoardState(
             label: source.label,
             width: source.width,
-            currentSheetURL: source.currentSheetURL
+            currentSheetURL: source.currentSheetURL,
+            customLabel: source.customLabel
         )
         state.desks[deskIndex].boards.insert(board, at: boardIndex + 1)
         state.desks[deskIndex].focusedBoardID = board.id
+        isDenMode = false
+        save()
+    }
+
+    func renameFocusedBoard(to newLabel: String) {
+        guard
+            let deskIndex = focusedDeskIndex,
+            let boardIndex = focusedBoardIndex(in: deskIndex)
+        else { return }
+
+        let trimmed = newLabel.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmed.isEmpty {
+            state.desks[deskIndex].boards[boardIndex].customLabel = nil
+        } else {
+            state.desks[deskIndex].boards[boardIndex].customLabel = trimmed
+        }
+        setTemporaryContext(nil)
         isDenMode = false
         save()
     }
@@ -509,6 +527,7 @@ enum TemporaryContext: Equatable {
     case keyboardShortcuts
     case boardWidth
     case saveDeskPreset
+    case renameBoard
 }
 
 struct RecentlyRemovedBoard {

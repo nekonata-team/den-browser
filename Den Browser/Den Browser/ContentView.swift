@@ -30,6 +30,8 @@ struct ContentView: View {
     @FocusState private var isDeskPresetSearchFocused: Bool
     @FocusState private var isNewDeskLabelFocused: Bool
     @FocusState private var isSaveDeskPresetLabelFocused: Bool
+    @State private var renameText = ""
+    @FocusState private var isRenamePanelFocused: Bool
 
     init(profileName: String? = nil, profileColor: Color = .blue) {
         self.profileName = profileName
@@ -87,6 +89,12 @@ struct ContentView: View {
 
                 if store.isSaveDeskPresetPanelPresented {
                     saveDeskPresetPanel
+                        .padding(.top, shouldShowDeskSwitcher ? 74 : 12)
+                        .transition(DenMotion.transition(reduceMotion: shouldReduceMotion, scale: 0.96))
+                }
+
+                if store.isRenameBoardPanelPresented {
+                    renameBoardPanel
                         .padding(.top, shouldShowDeskSwitcher ? 74 : 12)
                         .transition(DenMotion.transition(reduceMotion: shouldReduceMotion, scale: 0.96))
                 }
@@ -511,6 +519,52 @@ struct ContentView: View {
         }
         .onExitCommand {
             store.hideOpenBoardPanel()
+        }
+    }
+
+    private var renameBoardPanel: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 10) {
+                Image(systemName: "pencil")
+                    .foregroundStyle(.secondary)
+
+                TextField("Rename board", text: $renameText)
+                    .textFieldStyle(.plain)
+                    .font(.system(size: 18, weight: .medium))
+                    .focused($isRenamePanelFocused)
+                    .onSubmit {
+                        store.renameFocusedBoard(to: renameText)
+                    }
+            }
+            .frame(height: 38)
+
+            HStack(spacing: 12) {
+                Text("Leave empty to restore page-provided title")
+                    .foregroundStyle(.secondary)
+                Spacer()
+                Text("r in Den Mode")
+                    .foregroundStyle(.secondary)
+            }
+            .font(.system(size: 12))
+        }
+        .padding(16)
+        .frame(width: 520)
+        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .onAppear {
+            if let desk = store.focusedDesk,
+                let focusedBoardID = desk.focusedBoardID,
+                let board = desk.boards.first(where: { $0.id == focusedBoardID })
+            {
+                renameText = board.customLabel ?? board.label
+            } else {
+                renameText = ""
+            }
+            DispatchQueue.main.async {
+                isRenamePanelFocused = true
+            }
+        }
+        .onExitCommand {
+            store.hideRenameBoardPanel()
         }
     }
 
@@ -940,7 +994,7 @@ private struct BoardResizeHandle: View {
                     }
             )
             .help("Drag to resize board")
-            .accessibilityLabel("Resize \(board.label) board")
+            .accessibilityLabel("Resize \(board.displayName) board")
     }
 }
 
@@ -1090,7 +1144,7 @@ private struct OverviewView: View {
             store.selectBoardInOverview(board.id)
         } label: {
             VStack(alignment: .leading, spacing: 6) {
-                Text(board.label)
+                Text(board.displayName)
                     .font(.system(size: 12, weight: .semibold))
                     .lineLimit(2)
 

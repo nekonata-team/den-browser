@@ -40,7 +40,7 @@ extension DenStore {
         return runtime(for: board)
     }
 
-    private func updateBoard(boardID: UUID, url: URL?, title: String?) {
+    func updateBoard(boardID: UUID, url: URL?, title: String?) {
         guard let indices = boardIndices(for: boardID) else { return }
         if let url {
             state.desks[indices.desk].boards[indices.board].currentSheetURL = url

@@ -98,19 +98,26 @@ struct DeskPresetBoard: Codable, Equatable {
     var label: String
     var width: Double
     var initialSheetURL: URL?
+    var customLabel: String?
 
-    nonisolated init(label: String, width: Double, initialSheetURL: URL?) {
+    nonisolated init(label: String, width: Double, initialSheetURL: URL?, customLabel: String? = nil) {
         self.label = label
         self.width = width
         self.initialSheetURL = initialSheetURL
+        self.customLabel = customLabel
     }
 
     nonisolated init(board: BoardState) {
-        self.init(label: board.label, width: board.width, initialSheetURL: board.currentSheetURL)
+        self.init(
+            label: board.label,
+            width: board.width,
+            initialSheetURL: board.currentSheetURL,
+            customLabel: board.customLabel
+        )
     }
 
     func makeBoard() -> BoardState {
-        BoardState(label: label, width: width, currentSheetURL: initialSheetURL)
+        BoardState(label: label, width: width, currentSheetURL: initialSheetURL, customLabel: customLabel)
     }
 }
 
@@ -119,11 +126,17 @@ struct BoardState: Codable, Equatable, Identifiable {
     var label: String
     var width: Double
     var currentSheetURL: URL?
+    var customLabel: String?
 
-    init(id: UUID = UUID(), label: String, width: Double, currentSheetURL: URL?) {
+    var displayName: String {
+        customLabel ?? label
+    }
+
+    init(id: UUID = UUID(), label: String, width: Double, currentSheetURL: URL?, customLabel: String? = nil) {
         self.id = id
         self.label = label
         self.width = width
         self.currentSheetURL = currentSheetURL
+        self.customLabel = customLabel
     }
 }

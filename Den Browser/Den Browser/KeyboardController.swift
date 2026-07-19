@@ -68,7 +68,7 @@ final class KeyboardController {
             return handleBoardWidthPanel(event, store: store)
         case .overview:
             return handleOverview(event, store: store)
-        case .openBoard, .newDesk, .deskPresetManagement, .saveDeskPreset:
+        case .openBoard, .newDesk, .deskPresetManagement, .saveDeskPreset, .renameBoard:
             return false
         case nil:
             break
@@ -193,6 +193,10 @@ final class KeyboardController {
         case ("u", []):
             if !event.isARepeat {
                 store.restoreRecentlyRemovedBoard()
+            }
+        case ("r", []):
+            if !event.isARepeat {
+                store.showRenameBoardPanel()
             }
         case ("d", []):
             if !event.isARepeat {
