@@ -39,8 +39,6 @@ struct ContentView: View {
     var body: some View {
         GeometryReader { geometry in
             ZStack(alignment: .top) {
-                DenBackground(isDenMode: store.isDenMode, profileColor: profileColor)
-
                 boardStrip(in: geometry.size, safeAreaTop: geometry.safeAreaInsets.top)
                     .allowsHitTesting(
                         store.temporaryContext == nil && store.focusedDesk?.boards.isEmpty == false
@@ -143,6 +141,7 @@ struct ContentView: View {
                 }
             }
         }
+        .background(DenBackground(isDenMode: store.isDenMode, profileColor: profileColor))
         .frame(minWidth: 1100, minHeight: 720)
         .navigationTitle(titlebarTitle)
         .accessibilityElement(children: .contain)
@@ -568,7 +567,7 @@ struct ContentView: View {
         let boards = store.focusedDesk?.boards ?? []
         let topInset: CGFloat = shouldShowDeskSwitcher ? 48 : 10
         let bottomInset: CGFloat = 10
-        let boardHeight = max(420, size.height - safeAreaTop - topInset - bottomInset)
+        let boardHeight = max(420, size.height - topInset - bottomInset)
         let maximizedBoardWidth = max(280, size.width - boardHorizontalPadding * 2)
         let firstBoardWidth =
             boards.first.map {
@@ -649,7 +648,7 @@ struct ContentView: View {
                 .animation(DenMotion.spatial(reduceMotion: shouldReduceMotion), value: store.maximizedBoardID)
             }
             .coordinateSpace(name: BoardStripCoordinateSpace.name)
-            .scrollIndicators(.hidden)
+            .scrollIndicators(.never)
             .accessibilityIdentifier("board-strip")
             .onPreferenceChange(BoardFramePreferenceKey.self) { frames in
                 boardFrames = frames
