@@ -17,7 +17,8 @@ Den Browser complements Safari, Chrome, or another general-purpose browser rathe
 Den Browser requires macOS 26 or later.
 
 ```sh
-brew install --cask nekonata-team/tap/den-browser
+brew tap nekonata-team/tap
+brew install --cask den-browser
 ```
 
 Upgrade with `brew upgrade --cask den-browser`.
