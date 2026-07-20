@@ -37,6 +37,14 @@ run: build
 clean:
     rm -rf "{{derived_data}}"
 
+[group("development")]
+precommit:
+    lefthook run pre-commit
+
+[group("development")]
+prepush:
+    lefthook run pre-push
+
 # Run unit tests without code signing.
 [group("test")]
 test:

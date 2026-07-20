@@ -80,12 +80,13 @@ Vim-style Sheet Navigationは、Den Modeと別の任意機能です。Current Sh
 Den BrowserはSwiftUI、AppKitブリッジ、`WKWebView`で構築されたmacOSアプリです。
 
 ```sh
+mise install
 just build
 just test
 just check
 ```
 
-これらのコマンドはコード署名を無効にします。
+これらのコマンドはコード署名を無効にします。Lefthook はコミット前に `just format` と `just lint` を実行し、整形による変更を自動でステージします。プッシュ前には `just check` を実行します。
 
 任意でNeovimのSourceKit-LSP連携を設定できます。
 

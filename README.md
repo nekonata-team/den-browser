@@ -80,12 +80,13 @@ The current acceptance criteria and exploratory checks live in [docs/poc.md](./d
 Den Browser is a macOS app built with SwiftUI, AppKit bridges, and `WKWebView`.
 
 ```sh
+mise install
 just build
 just test
 just check
 ```
 
-These commands disable code signing.
+These commands disable code signing. Lefthook runs `just format` and `just lint` before commits, automatically stages formatting changes, and runs `just check` before pushes.
 
 For optional Neovim SourceKit-LSP support:
 
