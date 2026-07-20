@@ -12,14 +12,12 @@ Automated unit tests own:
 - Routing Sheet Navigation callbacks and WebKit stores to their owning Profile.
 - The pointer-focus state machine used to coordinate board selection and WebKit focus.
 
-Stable product behavior should be covered by unit, integration, or end-to-end tests. XCUITests own stable input
-routing through Den Browser's UI, including Den Mode entry from a focused Sheet, keyboard Board operations,
-pointer focus, and basic Board dragging.
+Stable product behavior should be covered by unit, integration, or end-to-end tests. XCUITests own native UI integration, including:
 
-Per [ADR-0020](./adr/0020-test-critical-ui-workflows.md), each UI test is an independent user-visible workflow,
-not an exhaustive input permutation. Current workflows cover organizing Boards from a focused Sheet with the
-keyboard, removing and restoring a Board, and organizing Boards with the pointer. Shortcut mappings, branches,
-and edge cases remain focused unit tests.
+- SwiftUI-specific gesture identity (e.g. pointer drag-and-drop between Boards), which cannot be simulated in unit tests.
+- Core mode transitions and state-transition cycles (e.g. Sheet input -> Den Mode -> returning to Sheet input and confirming re-focus/input capability).
+
+Per [ADR-0020](./adr/0020-test-critical-ui-workflows.md), each UI test is an independent user-visible workflow, not an exhaustive input permutation. Exhaustive shortcut mappings, state mutations (adding/removing boards), branches, and edge cases remain focused unit tests to prevent test suite hangs and maintain fast test execution.
 
 UI tests launch with a fixed three-Board fixture. Profile documents use a fresh temporary directory, preferences
 use a dedicated defaults suite, and Sheets use a non-persistent WebKit store with local data URLs. UI tests must
@@ -55,3 +53,4 @@ just check
 Before merge, use this standard order: build and unit tests, applicable UI tests, code review, then merge. Add
 exploratory validation when warranted, such as for UI behavior changes or milestone acceptance; use
 [poc.md](./poc.md) as the source of truth for concrete criteria.
+

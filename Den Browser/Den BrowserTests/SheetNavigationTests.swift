@@ -17,6 +17,22 @@ private final class WebViewLoadWaiter: NSObject, WKNavigationDelegate {
     }
 
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+        resume()
+    }
+
+    func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
+        resume()
+    }
+
+    func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
+        resume()
+    }
+
+    func webViewWebContentProcessDidTerminate(_ webView: WKWebView) {
+        resume()
+    }
+
+    private func resume() {
         continuation?.resume()
         continuation = nil
     }

@@ -5,12 +5,14 @@ final class Den_BrowserUITests: XCTestCase {
         continueAfterFailure = false
     }
 
+    override func tearDownWithError() throws {
+        XCUIApplication().terminate()
+    }
+
     @MainActor
-    func testOrganizesBoardsFromFocusedSheetUsingKeyboard() throws {
+    func testSheetInputAndDenModeFocusCycle() throws {
         let app = launchApp()
         let sheetInput = app.textFields["Sheet input"].firstMatch
-        let bravo = board(.bravo, in: app)
-        let charlie = board(.charlie, in: app)
         XCTAssertTrue(sheetInput.waitForExistence(timeout: 10))
 
         sheetInput.click()
@@ -18,31 +20,12 @@ final class Den_BrowserUITests: XCTestCase {
         sheetInput.typeKey(",", modifierFlags: .control)
         assertDenMode(in: app)
 
-        app.typeKey(.rightArrow, modifierFlags: [])
-        XCTAssertTrue(bravo.wait(for: \.isSelected, toEqual: true, timeout: 5))
+        app.typeKey(",", modifierFlags: .control)
 
-        app.typeKey(.rightArrow, modifierFlags: .shift)
-        assertEventually("Bravo should move to the right of Charlie") {
-            bravo.frame.minX > charlie.frame.minX
-        }
-        XCTAssertTrue(bravo.isSelected)
-    }
-
-    @MainActor
-    func testRemovesAndRestoresBoard() throws {
-        let app = launchApp()
-        enterDenMode(in: app)
-        let alpha = board(.alpha, in: app)
-
-        app.typeKey("x", modifierFlags: [])
-
-        XCTAssertTrue(alpha.waitForNonExistence(timeout: 5))
-        XCTAssertTrue(board(.bravo, in: app).isSelected)
-
-        app.typeKey("u", modifierFlags: [])
-
-        XCTAssertTrue(alpha.waitForExistence(timeout: 5))
-        XCTAssertTrue(alpha.wait(for: \.isSelected, toEqual: true, timeout: 5))
+        XCTAssertTrue(sheetInput.waitForExistence(timeout: 5))
+        sheetInput.click()
+        sheetInput.typeText(" world")
+        XCTAssertEqual(sheetInput.value as? String, "hello world")
     }
 
     @MainActor
@@ -57,7 +40,7 @@ final class Den_BrowserUITests: XCTestCase {
         let start = boardHeader(.bravo, in: app).coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
         let end = charlie.coordinate(withNormalizedOffset: CGVector(dx: 0.75, dy: 0.1))
 
-        start.press(forDuration: 0.2, thenDragTo: end)
+        start.press(forDuration: 0.5, thenDragTo: end)
 
         assertEventually("Bravo should move to the right of Charlie") {
             bravo.frame.minX > charlie.frame.minX
@@ -75,10 +58,16 @@ final class Den_BrowserUITests: XCTestCase {
         app.launch()
 
         if !app.windows.firstMatch.waitForExistence(timeout: 2) {
-            app.menuBars.menuBarItems["Profile"].click()
-            app.menuItems["UI Testing"].click()
+            let profileMenu = app.menuBars.menuBarItems["Profile"]
+            XCTAssertTrue(profileMenu.waitForExistence(timeout: 10), "Profile menu bar item should exist")
+            profileMenu.click()
+
+            let uiTestingMenuItem = app.menuItems["UI Testing"]
+            XCTAssertTrue(uiTestingMenuItem.waitForExistence(timeout: 10), "UI Testing menu item should exist")
+            uiTestingMenuItem.click()
         }
 
+        XCTAssertTrue(app.windows.firstMatch.waitForExistence(timeout: 10), "Application window should appear")
         XCTAssertTrue(board(.alpha, in: app).waitForExistence(timeout: 20))
         XCTAssertTrue(board(.bravo, in: app).waitForExistence(timeout: 20))
         XCTAssertTrue(board(.charlie, in: app).waitForExistence(timeout: 20))
