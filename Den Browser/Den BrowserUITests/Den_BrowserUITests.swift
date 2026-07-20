@@ -75,7 +75,11 @@ final class Den_BrowserUITests: XCTestCase {
 
         let allHeaders = headersQuery.allElementsBoundByIndex
 
-        guard let newBoardHeader = allHeaders.first(where: { !FixtureBoard.allHeaderIdentifiers.contains($0.identifier) }) else {
+        guard
+            let newBoardHeader = allHeaders.first(where: {
+                !FixtureBoard.allHeaderIdentifiers.contains($0.identifier)
+            })
+        else {
             XCTFail("Failed to find the newly created board header")
             return
         }

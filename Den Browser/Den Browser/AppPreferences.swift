@@ -29,6 +29,7 @@ final class AppPreferences {
     private(set) var shortcutOverrides: [ShortcutAction: ShortcutOverride]
     private(set) var motionPreference: MotionPreference
     private(set) var nativePictureInPictureEnabled: Bool
+    private(set) var boardCentering: FocusedBoardCentering
 
     @ObservationIgnored private let defaults: UserDefaults
 
@@ -40,6 +41,7 @@ final class AppPreferences {
     private static let motionKey = "appearance.motion"
     private static let nativePictureInPictureEnabledKey =
         "features.native-picture-in-picture.enabled"
+    private static let boardCenteringKey = "appearance.board-centering"
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
@@ -55,6 +57,9 @@ final class AppPreferences {
             ?? .followSystem
         nativePictureInPictureEnabled = defaults.bool(
             forKey: Self.nativePictureInPictureEnabledKey)
+        boardCentering =
+            defaults.string(forKey: Self.boardCenteringKey).flatMap(FocusedBoardCentering.init(rawValue:))
+            ?? .never
         loadShortcutOverrides()
     }
 
@@ -98,6 +103,11 @@ final class AppPreferences {
     func setMotionPreference(_ preference: MotionPreference) {
         motionPreference = preference
         defaults.set(preference.rawValue, forKey: Self.motionKey)
+    }
+
+    func setBoardCentering(_ mode: FocusedBoardCentering) {
+        boardCentering = mode
+        defaults.set(mode.rawValue, forKey: Self.boardCenteringKey)
     }
 
     func shortcut(for action: ShortcutAction) -> ShortcutBinding? {

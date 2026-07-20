@@ -157,6 +157,19 @@ private struct AppearanceSettingsView: View {
 
     var body: some View {
         Form {
+            Section("Board Centering") {
+                Picker("Centering", selection: boardCenteringBinding) {
+                    ForEach(FocusedBoardCentering.allCases) { mode in
+                        Text(mode.label).tag(mode)
+                    }
+                }
+                .pickerStyle(.radioGroup)
+
+                Text(boardCenteringDescription)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
             Section("Motion") {
                 Picker("Motion", selection: motionBinding) {
                     ForEach(MotionPreference.allCases) { preference in
@@ -172,6 +185,25 @@ private struct AppearanceSettingsView: View {
         }
         .formStyle(.grouped)
         .padding()
+    }
+
+    private var boardCenteringBinding: Binding<FocusedBoardCentering> {
+        Binding {
+            preferences.boardCentering
+        } set: { mode in
+            preferences.setBoardCentering(mode)
+        }
+    }
+
+    private var boardCenteringDescription: String {
+        switch preferences.boardCentering {
+        case .always:
+            "Keep the focused board centered in the window, even at the ends."
+        case .never:
+            "Align boards to the left and right edges. No extra scroll space is added."
+        case .onOverflow:
+            "Center boards when they exceed the window width. Otherwise, display them in the center without scrolling."
+        }
     }
 
     private var motionBinding: Binding<MotionPreference> {

@@ -723,17 +723,17 @@ struct ContentView: View {
         let bottomInset: CGFloat = 10
         let boardHeight = max(420, size.height - topInset - bottomInset)
         let maximizedBoardWidth = max(280, size.width - boardHorizontalPadding * 2)
-        let firstBoardWidth =
-            boards.first.map {
-                store.maximizedBoardID == $0.id ? maximizedBoardWidth : $0.width
-            } ?? size.width
-        let lastBoardWidth =
-            boards.last.map {
-                store.maximizedBoardID == $0.id ? maximizedBoardWidth : $0.width
-            } ?? size.width
-        let leadingPadding = max(boardHorizontalPadding, (size.width - firstBoardWidth) / 2)
-        let trailingPadding = max(boardHorizontalPadding, (size.width - lastBoardWidth) / 2)
-
+        let layoutParams = BoardLayout.Parameters(
+            centering: preferences.boardCentering,
+            boards: boards,
+            maximizedBoardID: store.maximizedBoardID,
+            windowWidth: size.width,
+            horizontalPadding: boardHorizontalPadding,
+            spacing: boardSpacing
+        )
+        let paddings = BoardLayout.calculatePaddings(for: layoutParams)
+        let leadingPadding = paddings.leading
+        let trailingPadding = paddings.trailing
         return ScrollViewReader { scrollProxy in
             ScrollView(.horizontal) {
                 HStack(alignment: .top, spacing: boardSpacing) {
