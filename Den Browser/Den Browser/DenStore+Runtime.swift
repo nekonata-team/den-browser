@@ -13,7 +13,11 @@ extension DenStore {
             sheetNavigation: sheetNavigation
         ) {
             [weak self] url in
-            self?.addBoard(urlString: url.absoluteString, afterBoardID: board.id)
+            self?.addBoard(
+                urlString: url.absoluteString,
+                preferredWidth: board.width,
+                afterBoardID: board.id
+            )
         } onChange: {
             [weak self] boardID, url, title in
             self?.updateBoard(boardID: boardID, url: url, title: title)

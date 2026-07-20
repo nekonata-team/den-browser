@@ -38,6 +38,14 @@ final class DenStore {
         state.desks.first { $0.id == state.focusedDeskID }
     }
 
+    var focusedBoard: BoardState? {
+        guard
+            let deskIndex = focusedDeskIndex,
+            let boardIndex = focusedBoardIndex(in: deskIndex)
+        else { return nil }
+        return state.desks[deskIndex].boards[boardIndex]
+    }
+
     var canCreateDesk: Bool {
         state.desks.count < Self.maximumDeskCount
     }

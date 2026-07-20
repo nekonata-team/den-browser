@@ -481,7 +481,10 @@ struct ContentView: View {
     }
 
     private func defaultBoardWidth(in size: CGSize) -> Double {
-        (size.width - boardHorizontalPadding * 2 - boardSpacing) / 2
+        if let focusedBoard = store.focusedBoard {
+            return focusedBoard.width
+        }
+        return (size.width - boardHorizontalPadding * 2 - boardSpacing) / 2
     }
 
     private func openBoardPanel(defaultBoardWidth: Double) -> some View {
