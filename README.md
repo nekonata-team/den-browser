@@ -12,6 +12,16 @@ Den Browser is built for web work that stays open for a long time: AI chats, res
 
 Den Browser complements Safari, Chrome, or another general-purpose browser rather than replacing one. Use your usual browser for everyday browsing and Den Browser for work that benefits from spatial memory and long-lived context.
 
+## Installation
+
+Den Browser requires macOS 26 or later.
+
+```sh
+brew install --cask nekonata-team/tap/den-browser
+```
+
+Upgrade with `brew upgrade --cask den-browser`.
+
 ## Inspired by Niri
 
 Den Browser applies ideas from [Niri](https://github.com/niri-wm/niri)'s spatial window management to web work. Niri workspaces map loosely to Desks, and Niri windows map loosely to Boards. The mapping is intentionally not exact: Den Browser uses a paper-workspace model designed around web tasks, navigation history, and restoration.
@@ -63,16 +73,6 @@ Vim-style Sheet Navigation is a separate optional Feature. It controls content i
 - Remains a proof of concept while WebKit compatibility, performance, accessibility, and visual behavior receive further validation.
 
 The current acceptance criteria and exploratory checks live in [docs/poc.md](./docs/poc.md).
-
-## Installation
-
-Den Browser requires macOS 26 or later.
-
-```sh
-brew install --cask nekonata-team/tap/den-browser
-```
-
-Upgrade with `brew upgrade --cask den-browser`.
 
 ## Development
 
