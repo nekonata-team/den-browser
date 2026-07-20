@@ -21,6 +21,9 @@ extension DenStore {
         } onChange: {
             [weak self] boardID, url, title in
             self?.updateBoard(boardID: boardID, url: url, title: title)
+        } onFullscreenChange: {
+            [weak self] boardID, isFullscreen in
+            self?.updateFullscreenStatus(boardID: boardID, isFullscreen: isFullscreen)
         }
         runtimes[board.id] = runtime
         return runtime

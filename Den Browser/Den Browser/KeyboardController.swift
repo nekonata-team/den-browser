@@ -22,6 +22,10 @@ final class KeyboardController {
     }
 
     static func handle(_ event: NSEvent, store: DenStore, preferences: AppPreferences? = nil) -> Bool {
+        if store.isFullscreenActive {
+            return false
+        }
+
         let modifiers = normalizedModifiers(for: event)
         let character = characterIgnoringModifiers(for: event)
 

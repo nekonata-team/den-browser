@@ -219,6 +219,19 @@ struct KeyboardShortcutTests {
         #expect(store.focusedDesk?.boards.count == 1)
     }
 
+    @Test func fullscreenBypassesAllShortcutsAndClearsDenMode() throws {
+        let store = makeStore(boards: [board("First")])
+        store.isDenMode = true
+
+        store.updateFullscreenStatus(boardID: UUID(), isFullscreen: true)
+        #expect(!store.isDenMode)
+        #expect(store.isFullscreenActive)
+
+        let commandW = try keyEvent(
+            characters: "w", charactersIgnoringModifiers: "w", modifiers: [.command], keyCode: 13)
+        #expect(!KeyboardController.handle(commandW, store: store))
+    }
+
     private func makePreferences() throws -> AppPreferences {
         let defaults = try #require(UserDefaults(suiteName: "KeyboardShortcutTests-\(UUID())"))
         return AppPreferences(defaults: defaults)

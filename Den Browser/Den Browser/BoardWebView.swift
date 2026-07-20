@@ -73,6 +73,8 @@ struct BoardWebView: NSViewRepresentable {
             activationWorkItem?.cancel()
             guard pointerFocusState.updateFocus(newValue) else { return }
 
+            guard webView.fullscreenState == .notInFullscreen else { return }
+
             let workItem = DispatchWorkItem { [weak webView] in
                 guard let webView else { return }
                 webView.window?.makeFirstResponder(webView)

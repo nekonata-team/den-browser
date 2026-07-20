@@ -8,26 +8,31 @@ final class BoardRuntime: NSObject, WKNavigationDelegate, WKUIDelegate {
 
     private let onOpenBoard: (URL) -> Void
     private let onChange: (UUID, URL?, String?) -> Void
+    private let onFullscreenChange: ((UUID, Bool) -> Void)?
     private unowned let sheetNavigation: SheetNavigationManager
 
     private var urlObservation: NSKeyValueObservation?
     private var titleObservation: NSKeyValueObservation?
+    private var fullscreenObservation: NSKeyValueObservation?
 
     init(
         board: BoardState,
         websiteDataStore: WKWebsiteDataStore,
         sheetNavigation: SheetNavigationManager,
         onOpenBoard: @escaping (URL) -> Void,
-        onChange: @escaping (UUID, URL?, String?) -> Void
+        onChange: @escaping (UUID, URL?, String?) -> Void,
+        onFullscreenChange: ((UUID, Bool) -> Void)? = nil
     ) {
         id = board.id
         self.sheetNavigation = sheetNavigation
         self.onOpenBoard = onOpenBoard
         self.onChange = onChange
+        self.onFullscreenChange = onFullscreenChange
 
         let configuration = WKWebViewConfiguration()
         configuration.websiteDataStore = websiteDataStore
         configuration.userContentController = sheetNavigation.userContentController
+        configuration.preferences.isElementFullscreenEnabled = true
 
         Self.configureNativePictureInPicture(
             preferences: configuration.preferences,
@@ -54,6 +59,16 @@ final class BoardRuntime: NSObject, WKNavigationDelegate, WKUIDelegate {
             Task { @MainActor [weak self] in
                 guard let self else { return }
                 self.onChange(self.id, self.webView.url, self.webView.title)
+            }
+        }
+
+        fullscreenObservation = webView.observe(\.fullscreenState, options: [.new]) { [weak self] _, _ in
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+                let isFullscreen =
+                    self.webView.fullscreenState == .inFullscreen
+                    || self.webView.fullscreenState == .enteringFullscreen
+                self.onFullscreenChange?(self.id, isFullscreen)
             }
         }
 

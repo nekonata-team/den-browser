@@ -12,6 +12,7 @@ final class DenStore {
     private(set) var temporaryContext: TemporaryContext?
     var isZenViewPresented = false
     var isDenMode = false
+    var isFullscreenActive = false
     var overviewQuery = ""
     var isOverviewFilterMode = false
     private(set) var boardWidthPanelMessage: String?
@@ -526,6 +527,18 @@ final class DenStore {
 
     func wrappedIndex(_ index: Int, count: Int) -> Int {
         ((index % count) + count) % count
+    }
+
+    func updateFullscreenStatus(boardID: UUID, isFullscreen: Bool) {
+        if isFullscreen {
+            isDenMode = false
+            isFullscreenActive = true
+        } else {
+            isFullscreenActive = runtimes.values.contains {
+                $0.webView.fullscreenState == .inFullscreen
+                    || $0.webView.fullscreenState == .enteringFullscreen
+            }
+        }
     }
 
     func setTemporaryContext(_ context: TemporaryContext?) {
