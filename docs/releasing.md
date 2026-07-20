@@ -74,7 +74,7 @@ Follow [this](https://docs.brew.sh/How-to-Create-and-Maintain-a-Tap).
 For subsequent releases, run the following command to submit a pull request updating the Cask:
 
 ```sh
-just bump-homebrew vX.Y.Z
+just bump-homebrew X.Y.Z
 ```
 
 This uses `brew bump-cask-pr` to automatically update the version and SHA-256 of the Cask on the tap repository.

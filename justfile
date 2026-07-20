@@ -7,6 +7,12 @@ swift_format := "xcrun swift-format"
 swift_sources := "Den Browser"
 fastlane := "bundle exec fastlane"
 
+_validate-version $version:
+    [[ "$version" =~ '^[0-9]+\.[0-9]+\.[0-9]+$' ]] || { print -u2 'usage: version must be X.Y.Z'; exit 1; }
+
+_validate-tag $tag:
+    [[ "$tag" =~ '^v[0-9]+\.[0-9]+\.[0-9]+$' ]] || { print -u2 'usage: tag must be vX.Y.Z'; exit 1; }
+
 # Format all Swift sources in place.
 [group("quality")]
 format:
@@ -61,19 +67,24 @@ check: lint build test
 
 # Set version and auto-increment build number via Fastlane.
 [group("release")]
-set-version version:
+set-version version: (_validate-version version)
     {{fastlane}} bump_version version:{{version}}
 
 # Build, sign, notarize, and package a release candidate without publishing it.
 [group("release")]
-release-candidate tag:
+release-candidate tag: (_validate-tag tag)
     {{fastlane}} release_candidate tag:{{tag}}
 
 # Publish a tested release candidate to GitHub.
 [group("release")]
-[script("zsh")]
-release $tag:
+[script]
+release $tag: (_validate-tag tag)
     set -euo pipefail
+
+    [[ -z "$(git status --porcelain)" ]] || {
+        print -u2 "working tree has uncommitted changes"
+        exit 1
+    }
 
     version="${tag#v}"
     archive="Den-Browser-${version}-macOS.zip"
@@ -95,16 +106,9 @@ release $tag:
 
 # Update the Homebrew Cask through a pull request.
 [group("release")]
-[script("zsh")]
-bump-homebrew $tag:
+[script]
+bump-homebrew $version: (_validate-version version)
     set -euo pipefail
-
-    [[ "$tag" =~ '^v[0-9]+\.[0-9]+\.[0-9]+$' ]] || {
-        print -u2 'usage: just bump-homebrew vX.Y.Z'
-        exit 1
-    }
-
-    version="${tag#v}"
 
     brew tap nekonata-team/tap
 
