@@ -99,6 +99,12 @@ struct ContentView: View {
                         .transition(DenMotion.transition(reduceMotion: shouldReduceMotion, scale: 0.96))
                 }
 
+                if store.isRenameDeskPanelPresented {
+                    renameDeskPanel
+                        .padding(.top, shouldShowDeskSwitcher ? 74 : 12)
+                        .transition(DenMotion.transition(reduceMotion: shouldReduceMotion, scale: 0.96))
+                }
+
                 if store.isKeyboardShortcutsPresented,
                     store.focusedDesk?.boards.isEmpty == false
                 {
@@ -138,6 +144,12 @@ struct ContentView: View {
             )
             .animation(DenMotion.feedback(reduceMotion: shouldReduceMotion), value: store.isOverviewPresented)
             .animation(DenMotion.feedback(reduceMotion: shouldReduceMotion), value: store.isKeyboardShortcutsPresented)
+            .animation(
+                DenMotion.feedback(reduceMotion: shouldReduceMotion), value: store.isRenameBoardPanelPresented
+            )
+            .animation(
+                DenMotion.feedback(reduceMotion: shouldReduceMotion), value: store.isRenameDeskPanelPresented
+            )
             .animation(DenMotion.feedback(reduceMotion: shouldReduceMotion), value: store.isBoardWidthPanelPresented)
             .animation(DenMotion.spatial(reduceMotion: shouldReduceMotion), value: store.isZenViewPresented)
             .overlay {
@@ -250,6 +262,47 @@ struct ContentView: View {
             Text(desk.label)
                 .lineLimit(1)
                 .frame(maxWidth: 180)
+        }
+        .contextMenu {
+            Button {
+                store.focusDesk(desk.id)
+                store.showRenameDeskPanel()
+            } label: {
+                Label("Rename Desk", systemImage: "pencil")
+            }
+
+            Button(role: .destructive) {
+                store.focusDesk(desk.id)
+                store.deleteFocusedDesk()
+            } label: {
+                Label("Delete Desk", systemImage: "trash")
+            }
+            .disabled(!store.canDeleteFocusedDesk)
+
+            Divider()
+
+            Button {
+                store.focusDesk(desk.id)
+                store.showSaveDeskPresetPanel()
+            } label: {
+                Label("Save Desk as Preset...", systemImage: "square.and.arrow.down")
+            }
+            .disabled(desk.boards.isEmpty)
+
+            Button {
+                store.showDeskPresetManagement()
+            } label: {
+                Label("Manage Presets...", systemImage: "slider.horizontal.3")
+            }
+
+            Divider()
+
+            Button {
+                store.showNewDeskPanel()
+            } label: {
+                Label("New Desk...", systemImage: "plus")
+            }
+            .disabled(!store.canCreateDesk)
         }
     }
 
@@ -568,6 +621,49 @@ struct ContentView: View {
         }
         .onExitCommand {
             store.hideRenameBoardPanel()
+        }
+    }
+
+    private var renameDeskPanel: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 10) {
+                Image(systemName: "pencil")
+                    .foregroundStyle(.secondary)
+
+                TextField("Rename desk", text: $renameText)
+                    .textFieldStyle(.plain)
+                    .font(.system(size: 18, weight: .medium))
+                    .focused($isRenamePanelFocused)
+                    .onSubmit {
+                        store.renameFocusedDesk(to: renameText)
+                    }
+            }
+            .frame(height: 38)
+
+            HStack(spacing: 12) {
+                Text("Press Return to confirm, Escape to cancel")
+                    .foregroundStyle(.secondary)
+                Spacer()
+                Text("R in Den Mode")
+                    .foregroundStyle(.secondary)
+            }
+            .font(.system(size: 12))
+        }
+        .padding(16)
+        .frame(width: 520)
+        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .onAppear {
+            if let desk = store.focusedDesk {
+                renameText = desk.label
+            } else {
+                renameText = ""
+            }
+            DispatchQueue.main.async {
+                isRenamePanelFocused = true
+            }
+        }
+        .onExitCommand {
+            store.hideRenameDeskPanel()
         }
     }
 

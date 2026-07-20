@@ -74,6 +74,7 @@ struct KeyboardShortcutsView: View {
                     item(["x", "/", "d"], "Remove Focused Board"),
                     item(["u"], "Restore Removed Board"),
                     item(["⇧", "D"], "Delete Focused Desk"),
+                    item(["⇧", "R"], "Rename Desk"),
                 ]),
             ShortcutGuideSection(
                 title: "Overview",

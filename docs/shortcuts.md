@@ -42,6 +42,7 @@ The complete in-app guide is available from Settings, the Den menu, and `?` in D
 | `x` / `d` | Remove focused Board | Releases its live Sheet runtime. Key repeat is ignored. |
 | `u` | Restore Recently Removed Board | Available for the current app run. Key repeat is ignored. |
 | Shift + `d` | Delete focused desk | Deletes an empty desk immediately. A desk with Boards requires confirmation. Unavailable for the last desk. |
+| Shift + `r` | Rename focused Desk | Opens the Rename Desk panel; Return confirms, Escape returns to Den Mode. |
 | Command + `R` | Reload current sheet | Available outside Den Mode. |
 
 ## Overview

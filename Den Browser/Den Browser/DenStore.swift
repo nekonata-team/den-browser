@@ -409,6 +409,17 @@ final class DenStore {
         save()
     }
 
+    func renameFocusedDesk(to newLabel: String) {
+        guard let deskIndex = focusedDeskIndex else { return }
+        let trimmed = newLabel.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !trimmed.isEmpty {
+            state.desks[deskIndex].label = trimmed
+        }
+        setTemporaryContext(nil)
+        isDenMode = false
+        save()
+    }
+
     func goBackInFocusedBoard() {
         focusedRuntime?.webView.goBack()
     }
@@ -538,6 +549,7 @@ enum TemporaryContext: Equatable {
     case boardWidth
     case saveDeskPreset
     case renameBoard
+    case renameDesk
 }
 
 struct RecentlyRemovedBoard {

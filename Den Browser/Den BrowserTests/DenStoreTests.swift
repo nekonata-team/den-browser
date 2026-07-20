@@ -795,6 +795,29 @@ struct DenStoreTests {
         }
     }
 
+    @Test func deskRenaming() {
+        let b1 = board("Google")
+        let desk1 = desk("Main", boards: [b1], focusedBoardID: b1.id)
+
+        withStore(desks: [desk1]) { store in
+            // 1. Enter Den Mode, show rename panel
+            store.isDenMode = true
+            store.showRenameDeskPanel()
+            #expect(store.isRenameDeskPanelPresented)
+
+            // 2. Rename the desk to a custom name
+            store.renameFocusedDesk(to: "Web Search")
+            #expect(!store.isRenameDeskPanelPresented)
+            #expect(store.focusedDesk?.label == "Web Search")
+
+            // 3. Rename with empty name should be ignored (keep old name)
+            store.showRenameDeskPanel()
+            store.renameFocusedDesk(to: "")
+            #expect(!store.isRenameDeskPanelPresented)
+            #expect(store.focusedDesk?.label == "Web Search")
+        }
+    }
+
     @Test func controlCommaTogglesDenMode() throws {
         try withStore(desks: [desk("Desk")]) { store in
             let event = try #require(

@@ -75,4 +75,19 @@ extension DenStore {
             setTemporaryContext(nil)
         }
     }
+
+    var isRenameDeskPanelPresented: Bool {
+        temporaryContext == .renameDesk
+    }
+
+    func showRenameDeskPanel() {
+        guard focusedDesk != nil else { return }
+        setTemporaryContext(.renameDesk)
+    }
+
+    func hideRenameDeskPanel() {
+        if temporaryContext == .renameDesk {
+            setTemporaryContext(nil)
+        }
+    }
 }
