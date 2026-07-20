@@ -2,10 +2,11 @@ import Foundation
 import WebKit
 
 @MainActor
-final class BoardRuntime: NSObject, WKNavigationDelegate {
+final class BoardRuntime: NSObject, WKNavigationDelegate, WKUIDelegate {
     let id: UUID
     let webView: WKWebView
 
+    private let onOpenBoard: (URL) -> Void
     private let onChange: (UUID, URL?, String?) -> Void
     private unowned let sheetNavigation: SheetNavigationManager
 
@@ -18,6 +19,7 @@ final class BoardRuntime: NSObject, WKNavigationDelegate {
     ) {
         id = board.id
         self.sheetNavigation = sheetNavigation
+        self.onOpenBoard = onOpenBoard
         self.onChange = onChange
 
         let configuration = WKWebViewConfiguration()
@@ -30,6 +32,7 @@ final class BoardRuntime: NSObject, WKNavigationDelegate {
         super.init()
 
         webView.navigationDelegate = self
+        webView.uiDelegate = self
         sheetNavigation.didOpen(webView, onOpenBoard: onOpenBoard)
         if let url = board.currentSheetURL {
             webView.load(URLRequest(url: url))
@@ -42,6 +45,18 @@ final class BoardRuntime: NSObject, WKNavigationDelegate {
 
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
         onChange(id, webView.url, webView.title)
+    }
+
+    func webView(
+        _ webView: WKWebView,
+        createWebViewWith configuration: WKWebViewConfiguration,
+        for navigationAction: WKNavigationAction,
+        windowFeatures: WKWindowFeatures
+    ) -> WKWebView? {
+        if navigationAction.targetFrame == nil, let url = navigationAction.request.url {
+            onOpenBoard(url)
+        }
+        return nil
     }
 
 }
