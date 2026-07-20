@@ -154,13 +154,13 @@ struct ContentView: View {
             .animation(DenMotion.feedback(reduceMotion: shouldReduceMotion), value: store.isBoardWidthPanelPresented)
             .animation(DenMotion.spatial(reduceMotion: shouldReduceMotion), value: store.isZenViewPresented)
             .overlay {
-                if store.isDenMode {
-                    RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .strokeBorder(.cyan.opacity(0.48), lineWidth: 1)
-                        .padding(8)
-                        .allowsHitTesting(false)
-                }
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .strokeBorder(.cyan.opacity(0.48), lineWidth: 1)
+                    .padding(8)
+                    .opacity(store.isDenMode ? 1 : 0)
+                    .allowsHitTesting(false)
             }
+            .animation(DenMotion.feedback(reduceMotion: shouldReduceMotion), value: store.isDenMode)
         }
         .background(DenBackground(isDenMode: store.isDenMode, profileColor: profileColor))
         .frame(minWidth: 1100, minHeight: 720)
