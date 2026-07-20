@@ -36,6 +36,10 @@ struct AppConfiguration {
         }
         defaults.removePersistentDomain(forName: suiteName)
 
+        if let centeringValue = argumentValue(after: "--board-centering", in: processInfo.arguments) {
+            defaults.set(centeringValue, forKey: "appearance.board-centering")
+        }
+
         return AppConfiguration(
             profileDirectoryURL: directoryURL,
             defaults: defaults,

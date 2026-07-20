@@ -48,20 +48,18 @@ final class Den_BrowserUITests: XCTestCase {
     }
 
     @MainActor
-    func testNewBoardIsCenteredAfterCreation() throws {
-        let app = launchApp()
+    func testNewBoardIsCenteredAfterCreation_Always() throws {
+        let app = launchApp(centering: "always")
 
-        // 1. Enter Den Mode
+        // 1. Alpha is focused. Enter Den Mode and resize 3 boards to fit the strip.
+        XCTAssertTrue(board(.alpha, in: app).wait(for: \.isSelected, toEqual: true, timeout: 5))
         enterDenMode(in: app)
+        resizeBoardsToFit(3, in: app)
 
-        // 2. Focus is initially on Alpha. Record its center X.
-        let alphaHeader = boardHeader(.alpha, in: app)
-        let initialAlphaMidX = alphaHeader.frame.midX
-
-        // 3. Press Return to duplicate Alpha. The duplicate is created to its right and focused.
+        // 2. Press Return to duplicate Alpha. The duplicate is created to its right and focused.
         app.typeKey("\r", modifierFlags: [])
 
-        // 4. Find the new board header. Its identifier starts with "board-header."
+        // 3. Find the new board header. Its identifier starts with "board-header."
         let boardStrip = app.scrollViews["board-strip"].firstMatch
         XCTAssertTrue(boardStrip.waitForExistence(timeout: 5))
 
@@ -83,21 +81,128 @@ final class Den_BrowserUITests: XCTestCase {
             XCTFail("Failed to find the newly created board header")
             return
         }
+        XCTAssertTrue(newBoardHeader.wait(for: \.isSelected, toEqual: true, timeout: 5))
 
-        // 5. Assert that the new board is centered at the same X coordinate as the previous focused board
-        assertEventually("New board should be centered at the same X coordinate as the previous focused board") {
-            let newBoardMidX = newBoardHeader.frame.midX
-            return abs(newBoardMidX - initialAlphaMidX) < 15
-        }
+        // 4. Assert that the new board is centered in the viewport in Always mode
+        assertEventuallyEqual(
+            actual: { newBoardHeader.frame.midX },
+            expected: boardStrip.frame.midX,
+            tolerance: 50,
+            message: "New board should be centered in the viewport in Always mode"
+        )
     }
 
     @MainActor
-    private func launchApp() -> XCUIApplication {
+    func testNewBoardIsRightAlignedAfterCreation_Never() throws {
+        let app = launchApp(centering: "never")
+
+        // 1. Alpha is focused. Enter Den Mode and resize 3 boards to fit the strip.
+        XCTAssertTrue(board(.alpha, in: app).wait(for: \.isSelected, toEqual: true, timeout: 5))
+        enterDenMode(in: app)
+        resizeBoardsToFit(3, in: app)
+
+        // 2. Press Return to duplicate Alpha. The duplicate is created to its right and focused.
+        app.typeKey("\r", modifierFlags: [])
+
+        // 3. Find the new board header. Its identifier starts with "board-header."
+        let boardStrip = app.scrollViews["board-strip"].firstMatch
+        XCTAssertTrue(boardStrip.waitForExistence(timeout: 5))
+
+        let headerPredicate = NSPredicate(format: "identifier BEGINSWITH 'board-header.'")
+        let headersQuery = boardStrip.descendants(matching: .any).matching(headerPredicate)
+
+        // Wait for the new header to appear
+        assertEventually("New board header should appear") {
+            headersQuery.allElementsBoundByIndex.count == 4
+        }
+
+        let allHeaders = headersQuery.allElementsBoundByIndex
+
+        guard
+            let newBoardHeader = allHeaders.first(where: {
+                !FixtureBoard.allHeaderIdentifiers.contains($0.identifier)
+            })
+        else {
+            XCTFail("Failed to find the newly created board header")
+            return
+        }
+        XCTAssertTrue(newBoardHeader.wait(for: \.isSelected, toEqual: true, timeout: 5))
+
+        // 4. Without trailing centering padding, the new last board stops at the right edge.
+        assertEventuallyEqual(
+            actual: { newBoardHeader.frame.maxX },
+            expected: boardStrip.frame.maxX - 10,
+            tolerance: 15,
+            message: "New board should remain right-aligned in Never mode"
+        )
+    }
+
+    @MainActor
+    func testNewBoardIsCenteredAfterCreation_OnOverflow() throws {
+        let app = launchApp(centering: "on-overflow")
+
+        // 1. Alpha is focused. Enter Den Mode and resize 3 boards to fit the strip.
+        XCTAssertTrue(board(.alpha, in: app).wait(for: \.isSelected, toEqual: true, timeout: 5))
+        enterDenMode(in: app)
+        resizeBoardsToFit(3, in: app)
+
+        let boardStrip = app.scrollViews["board-strip"].firstMatch
+        XCTAssertTrue(boardStrip.waitForExistence(timeout: 5))
+
+        // Verify that initially (with 3 boards under fit-3 config), it is NOT overflowed,
+        // meaning no centering scroll occurs. Alpha should be on the left part of the viewport.
+        let alphaHeader = boardHeader(.alpha, in: app)
+        XCTAssertTrue(alphaHeader.waitForExistence(timeout: 5))
+        XCTAssertLessThan(
+            alphaHeader.frame.midX,
+            boardStrip.frame.midX - 50,
+            "Initially Alpha should not be centered in OnOverflow mode since it hasn't overflowed"
+        )
+
+        // 2. Press Return to duplicate Alpha. The duplicate is created to its right and focused.
+        app.typeKey("\r", modifierFlags: [])
+
+        // 3. Find the new board header. Its identifier starts with "board-header."
+        let headerPredicate = NSPredicate(format: "identifier BEGINSWITH 'board-header.'")
+        let headersQuery = boardStrip.descendants(matching: .any).matching(headerPredicate)
+
+        // Wait for the new header to appear
+        assertEventually("New board header should appear") {
+            headersQuery.allElementsBoundByIndex.count == 4
+        }
+
+        let allHeaders = headersQuery.allElementsBoundByIndex
+
+        guard
+            let newBoardHeader = allHeaders.first(where: {
+                !FixtureBoard.allHeaderIdentifiers.contains($0.identifier)
+            })
+        else {
+            XCTFail("Failed to find the newly created board header")
+            return
+        }
+        XCTAssertTrue(newBoardHeader.wait(for: \.isSelected, toEqual: true, timeout: 5))
+
+        // 4. The fourth board overflows, so the new focused board is centered.
+        assertEventuallyEqual(
+            actual: { newBoardHeader.frame.midX },
+            expected: boardStrip.frame.midX,
+            tolerance: 50,
+            message: "New board should be centered after overflow in OnOverflow mode"
+        )
+    }
+
+    @MainActor
+    private func launchApp(centering: String? = nil) -> XCUIApplication {
         let app = XCUIApplication()
-        app.launchArguments = [
+        var args = [
             "-ApplePersistenceIgnoreState", "YES",
             "--ui-testing", "--fixture", "interaction-basics",
         ]
+        if let centering {
+            args.append(contentsOf: ["--board-centering", centering])
+        }
+        app.launchArguments = args
         app.launchEnvironment["DEN_UI_TEST_RUN_ID"] = UUID().uuidString
         app.launch()
 
@@ -116,6 +221,15 @@ final class Den_BrowserUITests: XCTestCase {
         XCTAssertTrue(board(.bravo, in: app).waitForExistence(timeout: 20))
         XCTAssertTrue(board(.charlie, in: app).waitForExistence(timeout: 20))
         return app
+    }
+
+    @MainActor
+    private func resizeBoardsToFit(_ count: Int, in app: XCUIApplication) {
+        app.typeKey("w", modifierFlags: [])
+        Thread.sleep(forTimeInterval: 0.1)  // Wait for panel to open
+        app.typeKey(String(count), modifierFlags: [])
+        // Successful resize automatically closes the panel, wait for layout and focus to settle
+        Thread.sleep(forTimeInterval: 0.2)
     }
 
     @MainActor
@@ -151,6 +265,27 @@ final class Den_BrowserUITests: XCTestCase {
             predicate: NSPredicate { _, _ in condition() },
             object: nil)
         XCTAssertEqual(XCTWaiter.wait(for: [expectation], timeout: timeout), .completed, message)
+    }
+
+    @MainActor
+    private func assertEventuallyEqual(
+        actual: @escaping () -> CGFloat,
+        expected: CGFloat,
+        tolerance: CGFloat,
+        message: String,
+        timeout: TimeInterval = 5
+    ) {
+        let start = Date()
+        while Date().timeIntervalSince(start) < timeout {
+            let actVal = actual()
+            if abs(actVal - expected) < tolerance {
+                return
+            }
+            // Run loop spin to allow UI updates
+            RunLoop.current.run(mode: .default, before: Date(timeIntervalSinceNow: 0.05))
+        }
+        let actVal = actual()
+        XCTAssertEqual(actVal, expected, accuracy: tolerance, message)
     }
 }
 

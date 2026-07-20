@@ -809,6 +809,14 @@ struct ContentView: View {
                 alignDraggedBoard(to: frames)
 
                 if let pending = pendingScroll, frames[pending.boardID] != nil {
+                    // Ensure the updated padding layout is applied before scrolling.
+                    if let firstBoardID = boards.first?.id, let firstFrame = frames[firstBoardID] {
+                        let expectedMinX = leadingPadding
+                        let actualMinX = firstFrame.minX
+                        if abs(actualMinX - expectedMinX) > 2.0 {
+                            return  // Wait until layout changes are committed
+                        }
+                    }
                     pendingScroll = nil
                     centerBoard(pending.boardID, using: scrollProxy, animated: pending.animated)
                 }
@@ -845,12 +853,16 @@ struct ContentView: View {
     private func centerBoard(_ boardID: UUID?, using proxy: ScrollViewProxy, animated: Bool = true) {
         guard resizingBoardID == nil, !store.isBoardDragging, let boardID else { return }
 
-        if animated {
-            withAnimation(DenMotion.spatial(reduceMotion: shouldReduceMotion)) {
+        Task { @MainActor in
+            // Sleep briefly to allow SwiftUI layout updates and content size changes to settle
+            try? await Task.sleep(for: .milliseconds(100))
+            if animated {
+                withAnimation(DenMotion.spatial(reduceMotion: shouldReduceMotion)) {
+                    proxy.scrollTo(boardID, anchor: .center)
+                }
+            } else {
                 proxy.scrollTo(boardID, anchor: .center)
             }
-        } else {
-            proxy.scrollTo(boardID, anchor: .center)
         }
     }
 
