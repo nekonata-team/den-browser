@@ -48,6 +48,46 @@ final class Den_BrowserUITests: XCTestCase {
     }
 
     @MainActor
+    func testNewBoardIsCenteredAfterCreation() throws {
+        let app = launchApp()
+
+        // 1. Enter Den Mode
+        enterDenMode(in: app)
+
+        // 2. Focus is initially on Alpha. Record its center X.
+        let alphaHeader = boardHeader(.alpha, in: app)
+        let initialAlphaMidX = alphaHeader.frame.midX
+
+        // 3. Press Return to duplicate Alpha. The duplicate is created to its right and focused.
+        app.typeKey("\r", modifierFlags: [])
+
+        // 4. Find the new board header. Its identifier starts with "board-header."
+        let boardStrip = app.scrollViews["board-strip"].firstMatch
+        XCTAssertTrue(boardStrip.waitForExistence(timeout: 5))
+
+        let headerPredicate = NSPredicate(format: "identifier BEGINSWITH 'board-header.'")
+        let headersQuery = boardStrip.descendants(matching: .any).matching(headerPredicate)
+
+        // Wait for the new header to appear
+        assertEventually("New board header should appear") {
+            headersQuery.allElementsBoundByIndex.count == 4
+        }
+
+        let allHeaders = headersQuery.allElementsBoundByIndex
+
+        guard let newBoardHeader = allHeaders.first(where: { !FixtureBoard.allHeaderIdentifiers.contains($0.identifier) }) else {
+            XCTFail("Failed to find the newly created board header")
+            return
+        }
+
+        // 5. Assert that the new board is centered at the same X coordinate as the previous focused board
+        assertEventually("New board should be centered at the same X coordinate as the previous focused board") {
+            let newBoardMidX = newBoardHeader.frame.midX
+            return abs(newBoardMidX - initialAlphaMidX) < 15
+        }
+    }
+
+    @MainActor
     private func launchApp() -> XCUIApplication {
         let app = XCUIApplication()
         app.launchArguments = [
@@ -110,8 +150,12 @@ final class Den_BrowserUITests: XCTestCase {
     }
 }
 
-private enum FixtureBoard: String {
+private enum FixtureBoard: String, CaseIterable {
     case alpha = "00000000-0000-0000-0000-000000000301"
     case bravo = "00000000-0000-0000-0000-000000000302"
     case charlie = "00000000-0000-0000-0000-000000000303"
+
+    static var allHeaderIdentifiers: Set<String> {
+        Set(allCases.map { "board-header.\($0.rawValue)" })
+    }
 }
