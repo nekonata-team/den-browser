@@ -453,9 +453,9 @@ final class DenStore {
         guard state.desks[indices.desk].focusedBoardID == board.id else { return board }
 
         state.desks[indices.desk].focusedBoardID =
-            boards.indices.contains(indices.board)
-            ? boards[indices.board].id
-            : boards.last?.id
+            indices.board > 0
+            ? boards[indices.board - 1].id
+            : boards.first?.id
         return board
     }
 

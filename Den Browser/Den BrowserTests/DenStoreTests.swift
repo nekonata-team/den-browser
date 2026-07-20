@@ -283,14 +283,24 @@ struct DenStoreTests {
         }
     }
 
-    @Test func removingBoardFocusesBoardThatTakesItsPosition() {
+    @Test func removingBoardFocusesPreviousBoard() {
         let boards = [board("A"), board("B"), board("C")]
         withStore(desks: [desk("Desk", boards: boards, focusedBoardID: boards[1].id)]) { store in
             store.removeFocusedBoard()
 
             #expect(store.focusedDesk?.boards.map(\.id) == [boards[0].id, boards[2].id])
-            #expect(store.focusedDesk?.focusedBoardID == boards[2].id)
+            #expect(store.focusedDesk?.focusedBoardID == boards[0].id)
             #expect(store.recentlyRemovedBoard?.board.id == boards[1].id)
+        }
+    }
+
+    @Test func removingFirstBoardFocusesNextBoard() {
+        let boards = [board("A"), board("B"), board("C")]
+        withStore(desks: [desk("Desk", boards: boards, focusedBoardID: boards[0].id)]) { store in
+            store.removeFocusedBoard()
+
+            #expect(store.focusedDesk?.boards.map(\.id) == [boards[1].id, boards[2].id])
+            #expect(store.focusedDesk?.focusedBoardID == boards[1].id)
         }
     }
 
@@ -584,8 +594,8 @@ struct DenStoreTests {
     @Test func overviewFilteringAndNavigation() {
         let b1 = board("Google", url: "https://google.com")
         let b2 = board("GitHub", url: "https://github.com")
-        let desk1 = desk("Main", boards: [b1])
-        let desk2 = desk("Dev", boards: [b2])
+        let desk1 = desk("Main", boards: [b1], focusedBoardID: b1.id)
+        let desk2 = desk("Dev", boards: [b2], focusedBoardID: b2.id)
 
         withStore(desks: [desk1, desk2]) { store in
             // 1. Show overview
@@ -627,8 +637,8 @@ struct DenStoreTests {
             // 7. Clear query in normal mode
             store.clearOverviewQuery()
             #expect(store.overviewQuery == "")
-            #expect(store.overviewSelectionDeskID == desk1.id)
-            #expect(store.overviewSelectionBoardID == b1.id)
+            #expect(store.overviewSelectionDeskID == desk2.id)
+            #expect(store.overviewSelectionBoardID == b2.id)
 
             // 8. Escape clears filter mode and query
             store.enterOverviewFilterMode()
