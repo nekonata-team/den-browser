@@ -75,4 +75,18 @@ platform :mac do
 
     UI.success("#{zip}\nSHA-256: #{sha256}")
   end
+
+  desc "Bump version and auto-increment build number"
+  lane :bump_version do |options|
+    version = options[:version]
+    UI.user_error!("Pass version=X.Y.Z") if version.to_s.empty?
+
+    increment_version_number(
+      version_number: version,
+      xcodeproj: PROJECT
+    )
+    increment_build_number(
+      xcodeproj: PROJECT
+    )
+  end
 end

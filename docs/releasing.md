@@ -20,15 +20,27 @@ Releases are notarized Developer ID builds published through the
 
 ## Create a candidate
 
-Update and commit `MARKETING_VERSION` and `CURRENT_PROJECT_VERSION`, then push
-`main`. The version must match the tag without its `v` prefix.
+1. Set the new marketing version and auto-increment the build number using:
 
-```sh
-just release-candidate v0.1.0
-```
+   ```sh
+   just set-version X.Y.Z
+   ```
 
-This runs the checks and UI tests, retrieves the Developer ID certificate,
-builds a universal app, notarizes it, and writes the ZIP under `.release/v0.1.0/`.
+2. Review the modifications to the Xcode project configuration and commit them:
+
+   ```sh
+   git diff "Den Browser/Den Browser.xcodeproj/project.pbxproj"
+   git commit -am "Release vX.Y.Z"
+   git push origin main
+   ```
+
+3. Build and package the release candidate:
+
+   ```sh
+   just release-candidate vX.Y.Z
+   ```
+
+This runs the checks, retrieves the Developer ID certificate from match, builds a universal app, notarizes it, and writes the ZIP under `.release/vX.Y.Z/`.
 
 Extract the application from the ZIP and complete the applicable checks in
 [poc.md](./poc.md).
@@ -42,7 +54,7 @@ Profiles and Den state survive an upgrade. Remove the test application before pu
 Publish the GitHub Release:
 
 ```sh
-just release v0.1.0
+just release vX.Y.Z
 ```
 
 This creates the annotated git tag, pushes it to `origin`, and creates a GitHub Release with the notarized ZIP artifact. Release notes are intentionally left empty.
@@ -62,7 +74,7 @@ Follow [this](https://docs.brew.sh/How-to-Create-and-Maintain-a-Tap).
 For subsequent releases, run the following command to submit a pull request updating the Cask:
 
 ```sh
-just bump-homebrew v0.1.0
+just bump-homebrew vX.Y.Z
 ```
 
 This uses `brew bump-cask-pr` to automatically update the version and SHA-256 of the Cask on the tap repository.

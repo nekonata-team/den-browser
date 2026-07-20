@@ -23,6 +23,14 @@ For _fastlane_ installation instructions, see [Installing _fastlane_](https://do
 
 Build, sign, notarize, and package a release candidate
 
+### mac bump_version
+
+```sh
+[bundle exec] fastlane mac bump_version
+```
+
+Bump version and auto-increment build number
+
 ----
 
 This README.md is auto-generated and will be re-generated every time [_fastlane_](https://fastlane.tools) is run.
