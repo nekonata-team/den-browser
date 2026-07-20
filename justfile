@@ -103,5 +103,4 @@ bump-homebrew $tag:
     brew bump-cask-pr \
         --version "$version" \
         --no-fork \
-        --no-browse \
         nekonata-team/tap/den-browser
