@@ -26,6 +26,11 @@ final class BoardRuntime: NSObject, WKNavigationDelegate, WKUIDelegate {
         configuration.websiteDataStore = websiteDataStore
         configuration.userContentController = sheetNavigation.userContentController
 
+        Self.configureNativePictureInPicture(
+            preferences: configuration.preferences,
+            enabled: sheetNavigation.preferences.nativePictureInPictureEnabled
+        )
+
         webView = WKWebView(frame: .zero, configuration: configuration)
         webView.allowsBackForwardNavigationGestures = true
 
@@ -37,6 +42,28 @@ final class BoardRuntime: NSObject, WKNavigationDelegate, WKUIDelegate {
         if let url = board.currentSheetURL {
             webView.load(URLRequest(url: url))
         }
+    }
+
+    private static func configureNativePictureInPicture(
+        preferences: WKPreferences,
+        enabled: Bool
+    ) {
+        guard enabled else {
+            return
+        }
+
+        let selector = NSSelectorFromString("_setAllowsPictureInPictureMediaPlayback:")
+
+        guard preferences.responds(to: selector) else {
+            #if DEBUG
+                print(
+                    "[DenBrowser] Warning: nativePictureInPictureEnabled is true, but WKPreferences does not respond to _setAllowsPictureInPictureMediaPlayback:"
+                )
+            #endif
+            return
+        }
+
+        preferences._allowsPictureInPictureMediaPlayback = true
     }
 
     func webView(_ webView: WKWebView, didCommit navigation: WKNavigation!) {
@@ -59,4 +86,60 @@ final class BoardRuntime: NSObject, WKNavigationDelegate, WKUIDelegate {
         return nil
     }
 
+    func togglePictureInPicture() {
+        let js = """
+            (async () => {
+                const videos = Array.from(document.querySelectorAll("video"));
+
+                const video =
+                    videos.find(video =>
+                        !video.paused &&
+                        !video.ended &&
+                        video.readyState >= 2
+                    ) ??
+                    videos.sort((a, b) =>
+                        (b.clientWidth * b.clientHeight) -
+                        (a.clientWidth * a.clientHeight)
+                    )[0];
+
+                if (!video) {
+                    throw new Error("NO_VIDEO");
+                }
+
+                if (document.pictureInPictureElement) {
+                    await document.exitPictureInPicture();
+                    return "exited";
+                }
+
+                if (
+                    document.pictureInPictureEnabled &&
+                    typeof video.requestPictureInPicture === "function"
+                ) {
+                    await video.requestPictureInPicture();
+                    return "entered-standard";
+                }
+
+                if (
+                    typeof video.webkitSupportsPresentationMode === "function" &&
+                    video.webkitSupportsPresentationMode("picture-in-picture") &&
+                    typeof video.webkitSetPresentationMode === "function"
+                ) {
+                    video.webkitSetPresentationMode("picture-in-picture");
+                    return "entered-webkit";
+                }
+
+                throw new Error("PIP_UNSUPPORTED");
+            })();
+            """
+
+        webView.evaluateJavaScript(js) { result, error in
+            #if DEBUG
+                if let error {
+                    print("[DenBrowser] PiP script error: \(error.localizedDescription)")
+                } else if let result {
+                    print("[DenBrowser] PiP script success: \(result)")
+                }
+            #endif
+        }
+    }
 }

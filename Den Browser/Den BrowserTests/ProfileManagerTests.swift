@@ -102,6 +102,7 @@ struct ProfileManagerTests {
         preferences.setSheetNavigationHintAlphabet("abc")
         preferences.setSheetNavigationIgnoredHosts(["example.com"])
         preferences.setMotionPreference(.standard)
+        preferences.setNativePictureInPictureEnabled(true)
 
         let restored = AppPreferences(defaults: defaults)
         let storedKeys = Set((defaults.persistentDomain(forName: suiteName) ?? [:]).keys)
@@ -112,12 +113,14 @@ struct ProfileManagerTests {
                 "features.vim-style-sheet-navigation.hint-alphabet",
                 "features.vim-style-sheet-navigation.ignored-hosts",
                 "appearance.motion",
+                "features.native-picture-in-picture.enabled",
             ])
         #expect(defaults.integer(forKey: "preferences.schemaVersion") == 1)
         #expect(restored.sheetNavigationEnabled)
         #expect(restored.sheetNavigationHintAlphabet == "abc")
         #expect(restored.sheetNavigationIgnoredHosts == ["example.com"])
         #expect(restored.motionPreference == .standard)
+        #expect(restored.nativePictureInPictureEnabled)
     }
 
     @Test func appPreferencesMigrateLegacyValuesAndDoNotDowngradeFutureSchema() {

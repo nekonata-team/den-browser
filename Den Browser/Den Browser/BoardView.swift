@@ -99,6 +99,14 @@ struct BoardView: View {
             Label("Reload Current Sheet", systemImage: "arrow.clockwise")
         }
 
+        if preferences.nativePictureInPictureEnabled {
+            Button {
+                runtime.togglePictureInPicture()
+            } label: {
+                Label("Toggle Picture in Picture", systemImage: "pictureinpicture")
+            }
+        }
+
         Divider()
 
         Button {

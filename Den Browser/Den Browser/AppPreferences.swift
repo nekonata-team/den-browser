@@ -28,6 +28,7 @@ final class AppPreferences {
     private(set) var sheetNavigationIgnoredHosts: [String]
     private(set) var shortcutOverrides: [ShortcutAction: ShortcutOverride]
     private(set) var motionPreference: MotionPreference
+    private(set) var nativePictureInPictureEnabled: Bool
 
     @ObservationIgnored private let defaults: UserDefaults
 
@@ -37,6 +38,8 @@ final class AppPreferences {
     private static let ignoredHostsKey = "features.vim-style-sheet-navigation.ignored-hosts"
     private static let shortcutKeyPrefix = "shortcuts."
     private static let motionKey = "appearance.motion"
+    private static let nativePictureInPictureEnabledKey =
+        "features.native-picture-in-picture.enabled"
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
@@ -50,6 +53,8 @@ final class AppPreferences {
         motionPreference =
             defaults.string(forKey: Self.motionKey).flatMap(MotionPreference.init(rawValue:))
             ?? .followSystem
+        nativePictureInPictureEnabled = defaults.bool(
+            forKey: Self.nativePictureInPictureEnabledKey)
         loadShortcutOverrides()
     }
 
@@ -73,6 +78,11 @@ final class AppPreferences {
     func setSheetNavigationEnabled(_ enabled: Bool) {
         sheetNavigationEnabled = enabled
         defaults.set(enabled, forKey: Self.enabledKey)
+    }
+
+    func setNativePictureInPictureEnabled(_ enabled: Bool) {
+        nativePictureInPictureEnabled = enabled
+        defaults.set(enabled, forKey: Self.nativePictureInPictureEnabledKey)
     }
 
     func setSheetNavigationHintAlphabet(_ alphabet: String) {

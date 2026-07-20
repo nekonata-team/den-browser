@@ -23,7 +23,7 @@ final class SheetNavigationManager {
     private(set) var hintAlphabet: String
     private(set) var ignoredHosts: [String]
 
-    @ObservationIgnored private let preferences: AppPreferences
+    @ObservationIgnored let preferences: AppPreferences
     @ObservationIgnored private let scriptSource: String
     @ObservationIgnored private let webViews = NSHashTable<WKWebView>.weakObjects()
     @ObservationIgnored private let messageHandler = SheetNavigationMessageHandler()

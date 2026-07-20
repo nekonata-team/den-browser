@@ -2,6 +2,7 @@ import SwiftUI
 
 struct SettingsView: View {
     @Environment(SheetNavigationManager.self) private var sheetNavigation
+    @Environment(AppPreferences.self) private var preferences
     @State private var hintAlphabetDraft = ""
     @State private var ignoredSitesDraft = ""
 
@@ -23,60 +24,76 @@ struct SettingsView: View {
                 }
 
             Form {
-                LabeledContent {
-                    Toggle("", isOn: enabledBinding)
-                        .labelsHidden()
-                } label: {
-                    VStack(alignment: .leading, spacing: 3) {
-                        Text("Vim-style Sheet Navigation")
-                        Text("Use j / k and Space hints within Sheets")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                }
-
-                if sheetNavigation.isEnabled {
-                    LabeledContent("Hint alphabet") {
-                        TextField("asdfghjkl", text: $hintAlphabetDraft)
+                Section("Vim-style Sheet Navigation") {
+                    LabeledContent {
+                        Toggle("", isOn: enabledBinding)
                             .labelsHidden()
-                            .frame(width: 180)
-                            .onSubmit(saveHintAlphabet)
+                    } label: {
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text("Use j / k and Space hints within Sheets")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
                     }
 
-                    if hintAlphabetIsInvalid {
-                        Text("Use at least two distinct ASCII letters or digits.")
-                            .font(.caption)
-                            .foregroundStyle(.red)
+                    if sheetNavigation.isEnabled {
+                        LabeledContent("Hint alphabet") {
+                            TextField("asdfghjkl", text: $hintAlphabetDraft)
+                                .labelsHidden()
+                                .frame(width: 180)
+                                .onSubmit(saveHintAlphabet)
+                        }
+
+                        if hintAlphabetIsInvalid {
+                            Text("Use at least two distinct ASCII letters or digits.")
+                                .font(.caption)
+                                .foregroundStyle(.red)
+                        }
+
+                        Button("Save Hint Alphabet", action: saveHintAlphabet)
+                            .disabled(hintAlphabetIsInvalid || normalizedHintAlphabet == sheetNavigation.hintAlphabet)
+
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("Ignored sites")
+                            TextEditor(text: $ignoredSitesDraft)
+                                .font(.body.monospaced())
+                                .frame(height: 80)
+                                .accessibilityLabel("Ignored sites")
+                            Text("One host per line. A host also ignores its subdomains.")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+
+                        if ignoredSitesAreInvalid {
+                            Text("Enter hostnames or URLs, one per line.")
+                                .font(.caption)
+                                .foregroundStyle(.red)
+                        }
+
+                        Button("Save Ignored Sites", action: saveIgnoredSites)
+                            .disabled(
+                                ignoredSitesAreInvalid || normalizedIgnoredSites == sheetNavigation.ignoredHosts)
                     }
-
-                    Button("Save Hint Alphabet", action: saveHintAlphabet)
-                        .disabled(hintAlphabetIsInvalid || normalizedHintAlphabet == sheetNavigation.hintAlphabet)
-
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text("Ignored sites")
-                        TextEditor(text: $ignoredSitesDraft)
-                            .font(.body.monospaced())
-                            .frame(height: 80)
-                            .accessibilityLabel("Ignored sites")
-                        Text("One host per line. A host also ignores its subdomains.")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-
-                    if ignoredSitesAreInvalid {
-                        Text("Enter hostnames or URLs, one per line.")
-                            .font(.caption)
-                            .foregroundStyle(.red)
-                    }
-
-                    Button("Save Ignored Sites", action: saveIgnoredSites)
-                        .disabled(
-                            ignoredSitesAreInvalid || normalizedIgnoredSites == sheetNavigation.ignoredHosts)
                 }
 
-                Text("Navigation runs locally in each Sheet and sends no browsing data elsewhere.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                Section("Experimental Picture in Picture") {
+                    LabeledContent {
+                        Toggle("", isOn: pipBinding)
+                            .labelsHidden()
+                    } label: {
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text("Allows playing video in a Picture-in-Picture window.")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                            Text(
+                                "Note: Uses private APIs. Future macOS updates may break it. Changes apply to new sheets or after restart."
+                            )
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                        }
+                    }
+                }
+
             }
             .formStyle(.grouped)
             .padding()
@@ -96,6 +113,14 @@ struct SettingsView: View {
             sheetNavigation.isEnabled
         } set: { enabled in
             sheetNavigation.setEnabled(enabled)
+        }
+    }
+
+    private var pipBinding: Binding<Bool> {
+        Binding {
+            preferences.nativePictureInPictureEnabled
+        } set: { enabled in
+            preferences.setNativePictureInPictureEnabled(enabled)
         }
     }
 

@@ -32,22 +32,16 @@
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		530E9DDD2FFFFED90033427C /* Den Browser */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-			);
 			path = "Den Browser";
 			sourceTree = "<group>";
 		};
 		530E9DEB2FFFFEDB0033427C /* Den BrowserTests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-			);
 			path = "Den BrowserTests";
 			sourceTree = "<group>";
 		};
 		530E9DF52FFFFEDB0033427C /* Den BrowserUITests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-			);
 			path = "Den BrowserUITests";
 			sourceTree = "<group>";
 		};
@@ -430,6 +424,7 @@
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_OBJC_BRIDGING_HEADER = "Den Browser/DenBrowser-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
 			};
 			name = Debug;
@@ -466,6 +461,7 @@
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_OBJC_BRIDGING_HEADER = "Den Browser/DenBrowser-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
 			};
 			name = Release;
