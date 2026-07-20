@@ -10,6 +10,9 @@ final class BoardRuntime: NSObject, WKNavigationDelegate, WKUIDelegate {
     private let onChange: (UUID, URL?, String?) -> Void
     private unowned let sheetNavigation: SheetNavigationManager
 
+    private var urlObservation: NSKeyValueObservation?
+    private var titleObservation: NSKeyValueObservation?
+
     init(
         board: BoardState,
         websiteDataStore: WKWebsiteDataStore,
@@ -39,6 +42,21 @@ final class BoardRuntime: NSObject, WKNavigationDelegate, WKUIDelegate {
         webView.navigationDelegate = self
         webView.uiDelegate = self
         sheetNavigation.didOpen(webView, onOpenBoard: onOpenBoard)
+
+        urlObservation = webView.observe(\.url, options: [.new]) { [weak self] _, _ in
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+                self.onChange(self.id, self.webView.url, self.webView.title)
+            }
+        }
+
+        titleObservation = webView.observe(\.title, options: [.new]) { [weak self] _, _ in
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+                self.onChange(self.id, self.webView.url, self.webView.title)
+            }
+        }
+
         if let url = board.currentSheetURL {
             webView.load(URLRequest(url: url))
         }

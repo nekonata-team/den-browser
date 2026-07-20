@@ -213,6 +213,37 @@ struct SheetNavigationTests {
                 ["action": "unknown", "url": "https://example.com/"], from: webView))
         #expect(!manager.handleScriptMessage(["action": "openBoard"], from: webView))
     }
+
+    @Test func boardRuntimeObservesUrlAndTitleChanges() async throws {
+        let manager = SheetNavigationManager(scriptSource: "")
+        var updatedURL: URL?
+        var updatedTitle: String?
+
+        let runtime = BoardRuntime(
+            board: board("Initial", url: "about:blank"),
+            websiteDataStore: .default(),
+            sheetNavigation: manager,
+            onOpenBoard: { _ in },
+            onChange: { _, url, title in
+                updatedURL = url
+                updatedTitle = title
+            })
+
+        let waiter = WebViewLoadWaiter()
+        let testURL = URL(string: "https://example.com/test-page")!
+
+        await waiter.load(
+            "<html><head><title>Test Page Title</title></head><body>Hello</body></html>",
+            baseURL: testURL,
+            in: runtime.webView
+        )
+
+        try? await Task.sleep(for: .milliseconds(100))
+
+        #expect(updatedURL == testURL)
+        #expect(updatedTitle == "Test Page Title")
+    }
+
     private var sheetNavigationTestHTML: String {
         """
         <!doctype html>
