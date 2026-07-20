@@ -24,6 +24,7 @@ struct ContentView: View {
     @State private var didScrollToRestoredFocusedBoard = false
     @State private var resizingBoardID: UUID?
     @State private var boardFrames: [UUID: CGRect] = [:]
+    @State private var pendingScroll: PendingScroll?
     @State private var boardDrag: BoardDragState?
     @State private var lastBoardAutoScrollTime = 0.0
     @FocusState private var isOpenPanelFocused: Bool
@@ -806,17 +807,34 @@ struct ContentView: View {
             .onPreferenceChange(BoardFramePreferenceKey.self) { frames in
                 boardFrames = frames
                 alignDraggedBoard(to: frames)
+
+                if let pending = pendingScroll, frames[pending.boardID] != nil {
+                    pendingScroll = nil
+                    centerBoard(pending.boardID, using: scrollProxy, animated: pending.animated)
+                }
             }
             .onAppear {
                 guard !didScrollToRestoredFocusedBoard else { return }
                 didScrollToRestoredFocusedBoard = true
-                centerBoard(store.focusedDesk?.focusedBoardID, using: scrollProxy, animated: false)
+                if let boardID = store.focusedDesk?.focusedBoardID {
+                    if boardFrames[boardID] != nil {
+                        centerBoard(boardID, using: scrollProxy, animated: false)
+                    } else {
+                        pendingScroll = PendingScroll(boardID: boardID, animated: false)
+                    }
+                }
             }
             .onChange(of: boardFocusTarget) { previous, current in
-                centerBoard(
-                    current.boardID,
-                    using: scrollProxy,
-                    animated: previous.deskID == current.deskID)
+                guard let boardID = current.boardID else { return }
+                if boardFrames[boardID] != nil {
+                    centerBoard(
+                        boardID,
+                        using: scrollProxy,
+                        animated: previous.deskID == current.deskID
+                    )
+                } else {
+                    pendingScroll = PendingScroll(boardID: boardID, animated: previous.deskID == current.deskID)
+                }
             }
             .onChange(of: store.centerFocusedBoardRequest) { _, _ in
                 centerBoard(store.focusedDesk?.focusedBoardID, using: scrollProxy)
@@ -999,6 +1017,11 @@ struct ContentView: View {
         }
         NSCursor.arrow.set()
     }
+}
+
+private struct PendingScroll {
+    let boardID: UUID
+    let animated: Bool
 }
 
 private struct BoardFocusTarget: Equatable {
