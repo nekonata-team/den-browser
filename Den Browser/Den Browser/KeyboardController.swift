@@ -152,7 +152,7 @@ final class KeyboardController {
             return true
         }
 
-        let character = characterIgnoringModifiers(for: event)
+        let character = baseCharacter(for: event)
         if let digit = character.flatMap(Int.init), (0...9).contains(digit) {
             let deskNumber = digit == 0 ? 10 : digit
             if modifiers == [] {
@@ -349,6 +349,10 @@ final class KeyboardController {
 
     private static func characterIgnoringModifiers(for event: NSEvent) -> String? {
         event.charactersIgnoringModifiers?.lowercased()
+    }
+
+    private static func baseCharacter(for event: NSEvent) -> String? {
+        event.characters(byApplyingModifiers: [])?.lowercased()
     }
 
     private static func isEscape(_ event: NSEvent) -> Bool {

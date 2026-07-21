@@ -114,7 +114,7 @@ enum ShortcutKey: Codable, Hashable {
         }
 
         guard
-            let characters = event.charactersIgnoringModifiers?.lowercased(),
+            let characters = event.characters(byApplyingModifiers: [])?.lowercased(),
             characters.count == 1,
             characters.unicodeScalars.allSatisfy({ !CharacterSet.controlCharacters.contains($0) })
         else { return nil }

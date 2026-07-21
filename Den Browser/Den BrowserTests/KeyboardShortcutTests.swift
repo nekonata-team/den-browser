@@ -69,6 +69,15 @@ struct KeyboardShortcutTests {
             ShortcutBinding(event: letter)
                 == ShortcutBinding(key: .character("a"), modifiers: [.command]))
 
+        let shiftedDigit = try keyEvent(
+            characters: "!",
+            charactersIgnoringModifiers: "!",
+            modifiers: [.shift],
+            keyCode: 18)
+        #expect(
+            ShortcutBinding(event: shiftedDigit)
+                == ShortcutBinding(key: .character("1"), modifiers: [.shift]))
+
         let functionCharacter = String(try #require(UnicodeScalar(NSEvent.SpecialKey.f12.rawValue)))
         let function = try keyEvent(
             characters: functionCharacter,
@@ -79,6 +88,32 @@ struct KeyboardShortcutTests {
             ShortcutBinding(event: function)
                 == ShortcutBinding(key: .function(12), modifiers: [.control]))
         #expect(ShortcutAction.moveFocusedBoardLeft.defaultBinding.displayTokens == ["⌥", "⇧", "⌘", "←"])
+    }
+
+    @Test func denModeShiftDigitMovesFocusedBoardToDesk() throws {
+        let movedBoard = board("Moved")
+        let firstDesk = DeskState(label: "First", boards: [], focusedBoardID: nil)
+        let secondDesk = DeskState(
+            label: "Second",
+            boards: [movedBoard],
+            focusedBoardID: movedBoard.id)
+        let store = DenStore(
+            state: DenState(
+                desks: [firstDesk, secondDesk],
+                focusedDeskID: secondDesk.id))
+        store.isDenMode = true
+
+        let shiftOne = try keyEvent(
+            characters: "!",
+            charactersIgnoringModifiers: "!",
+            modifiers: [.shift],
+            keyCode: 18)
+
+        #expect(KeyboardController.handle(shiftOne, store: store))
+        #expect(store.state.focusedDeskID == firstDesk.id)
+        #expect(store.focusedDesk?.focusedBoardID == movedBoard.id)
+        #expect(store.state.desks[0].boards.map(\.id) == [movedBoard.id])
+        #expect(store.isDenMode)
     }
 
     @Test func customBindingsApplyImmediatelyAndCanBeUnassigned() throws {
