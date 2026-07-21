@@ -42,6 +42,7 @@ Den Browserは、[Niri](https://github.com/niri-wm/niri)の空間的なウィン
 ## 現在の機能
 
 - 複数のDeskにBoardを空間的に配置。
+- Desk Switcher のDeskボタンをドラッグしてDeskを並べ替え。
 - 名前と色を持つProfileを作成し、Profileごとに一つのDenウィンドウと分離されたWebサイトデータを保持。
 - タイトルバーで現在のProfileを確認し、右上のアイコン、Profileメニュー、`Control` + `Command` + `P`からProfileを開く・検索。
 - `Command` + `Option` + 左右矢印で隣のBoardへ移動し、Shiftを加えて並べ替え。`Command` + `L`でFocused BoardのCurrent SheetをURLまたは検索語に置き換え、`Command` + `W`でFocused Boardを取り除く。`Shift` + `Command` + `W`でProfileウィンドウを閉じる。Den ModeではBoardの全操作が可能。ポインターでもSheet Stack操作、Board Removal、同じDesk内でのヘッダードラッグ、Boardヘッダーからのアクションメニューに対応。

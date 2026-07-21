@@ -56,3 +56,7 @@ Overview accepts movement, Shift plus movement, `/` (search/filter), Return, and
 Drag a Board header's label or empty area to reorder it within the Focused Desk. Header buttons remain ordinary controls. Dropping outside the Board strip cancels the move; moving near the strip's horizontal edges scrolls it. Keyboard Board movement and Overview remain available without pointer input.
 
 Right-click or Control-click anywhere in a Board header to focus that Board and open its native context menu. The menu can duplicate or reload the Current Sheet, maximize or center the Board, move it left, right, or to another numbered Desk, and remove it. Movement at a Desk edge remains visible but disabled. Right-clicking inside a Sheet continues to use the web content's own context menu.
+
+## Pointer Desk actions
+
+Drag a Desk button in the Desk switcher to reorder Desks. Clicking still focuses that Desk, and its context menu remains available. Dropping outside the switcher cancels the move; moving near its horizontal edges scrolls it. Desk reordering has no keyboard shortcut.

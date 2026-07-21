@@ -76,13 +76,21 @@ struct AppConfiguration {
             label: "Main",
             boards: [alpha, bravo, charlie],
             focusedBoardID: alpha.id)
+        let secondDesk = DeskState(
+            id: fixtureID("00000000-0000-0000-0000-000000000201"),
+            label: "Second",
+            boards: [])
+        let thirdDesk = DeskState(
+            id: fixtureID("00000000-0000-0000-0000-000000000202"),
+            label: "Third",
+            boards: [])
         return PersistedProfile(
             profile: ProfileState(
                 id: fixtureID("00000000-0000-0000-0000-000000000100"),
                 name: "UI Testing",
                 color: .blue,
                 webProfileStore: .default),
-            den: DenState(desks: [desk], focusedDeskID: desk.id))
+            den: DenState(desks: [desk, secondDesk, thirdDesk], focusedDeskID: desk.id))
     }
 
     private static let fixtureSheetURL =

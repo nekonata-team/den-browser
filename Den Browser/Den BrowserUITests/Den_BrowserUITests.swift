@@ -48,6 +48,21 @@ final class Den_BrowserUITests: XCTestCase {
     }
 
     @MainActor
+    func testReordersDesksUsingPointer() throws {
+        let app = launchApp()
+        let second = desk(.second, in: app)
+        let third = desk(.third, in: app)
+
+        let start = second.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+        let end = third.coordinate(withNormalizedOffset: CGVector(dx: 0.8, dy: 0.5))
+        start.press(forDuration: 0.5, thenDragTo: end)
+
+        assertEventually("Second should move to the right of Third") {
+            second.frame.minX > third.frame.minX
+        }
+    }
+
+    @MainActor
     func testNewBoardIsCenteredAfterCreation() throws {
         let app = launchApp(centering: "always")
 
@@ -146,6 +161,11 @@ final class Den_BrowserUITests: XCTestCase {
     }
 
     @MainActor
+    private func desk(_ desk: FixtureDesk, in app: XCUIApplication) -> XCUIElement {
+        app.descendants(matching: .any).matching(identifier: "desk-switcher.\(desk.rawValue)").firstMatch
+    }
+
+    @MainActor
     private func assertEventually(
         _ message: String,
         timeout: TimeInterval = 5,
@@ -187,4 +207,9 @@ private enum FixtureBoard: String, CaseIterable {
     static var allHeaderIdentifiers: Set<String> {
         Set(allCases.map { "board-header.\($0.rawValue)" })
     }
+}
+
+private enum FixtureDesk: String {
+    case second = "00000000-0000-0000-0000-000000000201"
+    case third = "00000000-0000-0000-0000-000000000202"
 }

@@ -23,6 +23,8 @@ final class DenStore {
     var centerFocusedBoardRequest = 0
     var isBoardDragging = false
     var boardDragCancellationRequest = 0
+    var isDeskDragging = false
+    var deskDragCancellationRequest = 0
     var overviewSelectionDeskID: UUID?
     var overviewSelectionBoardID: UUID?
     private(set) var recentlyRemovedBoard: RecentlyRemovedBoard?
@@ -211,10 +213,14 @@ final class DenStore {
         if isBoardDragging {
             boardDragCancellationRequest &+= 1
         }
+        if isDeskDragging {
+            deskDragCancellationRequest &+= 1
+        }
         state = .sample
         setTemporaryContext(nil)
         isZenViewPresented = false
         isBoardDragging = false
+        isDeskDragging = false
         boardWidthPanelMessage = nil
         deskPendingDeletion = nil
         deskPresetPendingDeletion = nil

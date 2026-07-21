@@ -137,6 +137,49 @@ extension DenStore {
         boardDragCancellationRequest &+= 1
     }
 
+    func beginDeskDrag(_ deskID: UUID) -> Bool {
+        guard
+            !isDeskDragging,
+            !isBoardDragging,
+            temporaryContext == nil,
+            state.desks.contains(where: { $0.id == deskID })
+        else {
+            return false
+        }
+
+        isDeskDragging = true
+        return true
+    }
+
+    func previewDeskMove(_ deskID: UUID, to targetIndex: Int) {
+        guard
+            let sourceIndex = state.desks.firstIndex(where: { $0.id == deskID }),
+            state.desks.indices.contains(targetIndex),
+            sourceIndex != targetIndex
+        else { return }
+
+        let desk = state.desks.remove(at: sourceIndex)
+        state.desks.insert(desk, at: targetIndex)
+    }
+
+    func restoreDeskOrder(_ deskIDs: [UUID]) {
+        let order = Dictionary(uniqueKeysWithValues: deskIDs.enumerated().map { ($1, $0) })
+        state.desks.sort {
+            (order[$0.id] ?? Int.max) < (order[$1.id] ?? Int.max)
+        }
+    }
+
+    func finishDeskDrag() {
+        guard isDeskDragging else { return }
+        isDeskDragging = false
+        save()
+    }
+
+    func requestDeskDragCancellation() {
+        guard isDeskDragging else { return }
+        deskDragCancellationRequest &+= 1
+    }
+
     private func moveDeskFocus(by delta: Int) {
         guard let currentIndex = focusedDeskIndex, !state.desks.isEmpty else { return }
         let nextIndex = wrappedIndex(currentIndex + delta, count: state.desks.count)

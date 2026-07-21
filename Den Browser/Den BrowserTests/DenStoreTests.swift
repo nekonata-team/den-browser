@@ -444,6 +444,31 @@ struct DenStoreTests {
         }
     }
 
+    @Test func deskDragReordersPersistedDesksWithoutChangingTheirContents() {
+        let firstBoard = board("First Board")
+        let secondBoard = board("Second Board")
+        let first = desk("First", boards: [firstBoard], focusedBoardID: firstBoard.id)
+        let second = desk("Second", boards: [secondBoard], focusedBoardID: secondBoard.id)
+        let third = desk("Third")
+        var savedState: DenState?
+        let store = DenStore(
+            state: DenState(desks: [first, second, third], focusedDeskID: first.id),
+            onSave: { savedState = $0 })
+
+        #expect(store.beginDeskDrag(second.id))
+        store.previewDeskMove(second.id, to: 2)
+        store.finishDeskDrag()
+
+        #expect(store.state.desks.map(\.id) == [first.id, third.id, second.id])
+        #expect(store.focusedDesk?.id == first.id)
+        #expect(store.state.desks[2].boards.map(\.id) == [secondBoard.id])
+        #expect(store.state.desks[2].focusedBoardID == secondBoard.id)
+        #expect(savedState == store.state)
+
+        store.previewDeskMove(second.id, to: 2)
+        #expect(store.state.desks.map(\.id) == [first.id, third.id, second.id])
+    }
+
     @Test func deletingDeskWithBoardsRequiresConfirmation() {
         let board = board("Board")
         let populated = desk("Populated", boards: [board])

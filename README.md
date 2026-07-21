@@ -42,6 +42,7 @@ See [CONTEXT.md](./CONTEXT.md) for the complete product language.
 ## Current features
 
 - Arrange Boards spatially across multiple Desks.
+- Drag Desk buttons in the Desk switcher to reorder Desks.
 - Create named, color-coded Profiles, each with one Den window and isolated website data.
 - See the current Profile in the titlebar, and open or find Profiles from the top-right icon, Profile menu, or `Control` + `Command` + `P`.
 - Navigate between neighboring Boards with `Command` + `Option` + Left / Right, add Shift to reorder them, replace the Focused Board's Current Sheet with `Command` + `L`, remove the Focused Board with `Command` + `W`, and use Den Mode for the full set of Board operations. `Shift` + `Command` + `W` closes the Profile window. Pointer controls support Sheet Stack navigation, Board Removal, same-Desk header dragging, and a Board action menu from any Board header.

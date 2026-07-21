@@ -44,6 +44,13 @@ final class KeyboardController {
             return true
         }
 
+        if store.isDeskDragging {
+            if isEscape(event), modifiers == [] {
+                store.requestDeskDragCancellation()
+            }
+            return true
+        }
+
         if character == "w", modifiers == [.command] {
             if !event.isARepeat {
                 store.removeFocusedBoard()
