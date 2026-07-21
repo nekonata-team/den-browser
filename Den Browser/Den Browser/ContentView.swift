@@ -88,7 +88,7 @@ struct ContentView: View {
                 }
 
                 if store.isOverviewPresented {
-                    OverviewView()
+                    OverviewView(profileColor: profileColor)
                         .padding(18)
                         .transition(DenMotion.transition(reduceMotion: shouldReduceMotion, scale: 0.98))
                 }
@@ -175,7 +175,7 @@ struct ContentView: View {
             .animation(DenMotion.spatial(reduceMotion: shouldReduceMotion), value: store.isZenViewPresented)
             .overlay {
                 RoundedRectangle(cornerRadius: DenRadius.large, style: .continuous)
-                    .strokeBorder(.cyan.opacity(0.48), lineWidth: 1)
+                    .strokeBorder(profileColor.opacity(0.48), lineWidth: 1)
                     .padding(8)
                     .opacity(store.isDenMode ? 1 : 0)
                     .allowsHitTesting(false)
@@ -840,6 +840,7 @@ struct ContentView: View {
                             isFocused: board.id == store.focusedDesk?.focusedBoardID,
                             isDragging: boardDrag?.boardID == board.id,
                             runtime: store.runtime(for: board),
+                            profileColor: profileColor,
                             width: store.maximizedBoardID == board.id ? maximizedBoardWidth : board.width,
                             height: boardHeight,
                             isPointerFocusEnabled: isBoardPointerFocusEnabled(for: board.id),
@@ -1436,7 +1437,7 @@ private struct DenBackground: View {
         )
         .overlay(alignment: .topLeading) {
             Rectangle()
-                .fill(.cyan.opacity(isDenMode ? 0.22 : 0.12))
+                .fill(profileColor.opacity(isDenMode ? 0.22 : 0.12))
                 .blur(radius: 120)
                 .frame(width: 420, height: 280)
                 .offset(x: -120, y: -80)
@@ -1480,6 +1481,8 @@ private struct EmptyDenView: View {
 }
 
 private struct OverviewView: View {
+    let profileColor: Color
+
     @Environment(DenStore.self) private var store
     @Environment(AppPreferences.self) private var preferences
     @Environment(\.accessibilityReduceMotion) private var systemReduceMotion
@@ -1521,7 +1524,7 @@ private struct OverviewView: View {
                 .overlay {
                     RoundedRectangle(cornerRadius: DenRadius.medium, style: .continuous)
                         .stroke(
-                            store.isOverviewFilterMode ? .cyan.opacity(0.86) : Color.primary.opacity(0.10),
+                            store.isOverviewFilterMode ? profileColor.opacity(0.86) : Color.primary.opacity(0.10),
                             lineWidth: store.isOverviewFilterMode ? 1.5 : 1
                         )
                 }
@@ -1581,7 +1584,7 @@ private struct OverviewView: View {
 
                 if desk.id == store.overviewSelectionDeskID {
                     Circle()
-                        .fill(.cyan)
+                        .fill(profileColor)
                         .frame(width: 6, height: 6)
                 }
             }
@@ -1642,7 +1645,7 @@ private struct OverviewView: View {
             .overlay {
                 RoundedRectangle(cornerRadius: DenRadius.medium, style: .continuous)
                     .stroke(
-                        isSelected ? .cyan.opacity(0.86) : Color.primary.opacity(0.12),
+                        isSelected ? profileColor.opacity(0.86) : Color.primary.opacity(0.12),
                         lineWidth: isSelected ? 2 : 1)
             }
         }

@@ -12,6 +12,7 @@ struct BoardView: View {
     let isFocused: Bool
     let isDragging: Bool
     let runtime: BoardRuntime
+    let profileColor: Color
     let width: Double
     let height: Double
     let isPointerFocusEnabled: Bool
@@ -49,7 +50,7 @@ struct BoardView: View {
 
     private var borderColor: Color {
         if isFocused {
-            return .cyan.opacity(0.75)
+            return profileColor.opacity(0.75)
         }
         return Color.primary.opacity(0.16)
     }
@@ -75,7 +76,7 @@ struct BoardView: View {
         .overlay(alignment: .top) {
             if store.isDenMode, isFocused {
                 Rectangle()
-                    .fill(.cyan.opacity(0.9))
+                    .fill(profileColor.opacity(0.9))
                     .frame(height: 3)
             }
         }

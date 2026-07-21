@@ -6,18 +6,18 @@ Den controls feel like a calm desk laid over live web sheets. Web content remain
 
 ## Visual rules
 
-- Use dark, low-contrast Den background with restrained cyan and Profile-colored ambient light.
+- Use dark, low-contrast Den background with restrained Profile-colored ambient light.
 - Use Liquid Glass for Den controls, panels, and desk switcher. Do not apply glass treatment to sheet content.
-- Boards stay white with rounded continuous corners. Focus uses cyan.
+- Boards stay white with rounded continuous corners. Focus uses the active Profile color.
 - Use only continuous 8pt, 12pt, and 18pt corner radii: small controls use 8pt, inner cards and inputs use 12pt, and Boards, panels, Overview, and the Den Mode ring use 18pt.
 - Keep hierarchy visible: Desk switcher above board strip, board header above sheet, sheet stack indicator secondary.
 - Show the current Profile name in the titlebar and a simple Profile icon at the top right. Place the Desk Preset bookmark action immediately to its left when the Focused Desk has Boards. Present both as compact borderless controls with matching secondary tint. Give both icons accessibility labels and help text; Profile identity must not depend on color.
 - Prefer SF Symbols and system typography. Preserve macOS accessibility defaults where possible.
 - Let SwiftUI semantic colors express standard hierarchy: use `primary`, `secondary`, and `tertiary` for Den text, icons, and neutral chrome.
 - Resolve Den chrome in its dark appearance so semantic colors stay legible. Do not hard-code black or white for standard text and icons.
-- Reserve fixed colors for Den-specific meaning and atmosphere: cyan for focus, plus the dark background gradient and shadows.
-- Profile palette colors identify Profiles only; they never replace cyan focus.
-- In Den Mode, shift the Den background to deep navy and cyan and add a cyan top edge to the Focused Board header. Keep Sheets unchanged and the outer ring secondary.
+- Reserve fixed colors for semantic meaning such as errors; use the active Profile color for Den atmosphere and focus, plus the dark background gradient and shadows.
+- Profile palette colors identify Profiles and tint the active Den context. They may appear on the Focused Board, Den Mode ring, Overview Selection, Desk switcher, and ambient background.
+- In Den Mode, shift the Den background darker and add a Profile-colored top edge to the Focused Board header. Keep Sheets unchanged and the outer ring secondary.
 
 ## Interaction rules
 
@@ -37,7 +37,7 @@ Den controls feel like a calm desk laid over live web sheets. Web content remain
 
 - Zen View hides the native titlebar, Desk switcher, Desk Preset bookmark action, and Profile control together, without hiding controls inside Boards.
 - Boards expand into the released upper area, keeping a 10-point inset from the window edge.
-- Do not add alternate window dragging, traffic-light controls, or titlebar feedback in Zen View. The cyan Den Mode ring remains visible.
+- Do not add alternate window dragging, traffic-light controls, or titlebar feedback in Zen View. The Profile-colored Den Mode ring remains visible.
 - Do not reveal hidden controls on pointer hover. Users toggle Zen View with `z` in Den Mode or the Den menu.
 - Treat Zen View as window-local runtime presentation. A recreated Den window starts with Zen View off.
 - Keep temporary panels, Overview, Empty Den guidance, and the Keyboard Shortcuts guide available while Zen View is active.
@@ -48,4 +48,4 @@ Den controls feel like a calm desk laid over live web sheets. Web content remain
 - Are focus and direct manipulation distinguishable without relying only on color?
 - Does keyboard focus still make sense after pointer interaction?
 - Does UI use Den, Desk, Board, and Sheet terminology correctly?
-- Does Zen View remove native window and Den chrome while preserving Board controls and the cyan Den Mode ring?
+- Does Zen View remove native window and Den chrome while preserving Board controls and the Profile-colored Den Mode ring?
