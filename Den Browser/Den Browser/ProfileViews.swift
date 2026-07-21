@@ -46,6 +46,8 @@ struct ProfileWindowView: View {
             .environment(store)
             .focusedSceneValue(\.denStore, store)
             .background(WindowRegistration(profileID: activeProfileID))
+            .toolbarVisibility(store.isZenViewPresented ? .hidden : .visible, for: .windowToolbar)
+            .ignoresSafeArea(.container, edges: store.isZenViewPresented ? .top : [])
         } else {
             ContentUnavailableView("Profile unavailable", systemImage: "person.crop.circle.badge.exclamationmark")
         }

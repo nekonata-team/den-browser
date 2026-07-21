@@ -48,7 +48,7 @@ See [CONTEXT.md](./CONTEXT.md) for the complete product language.
 - Navigate between neighboring Boards with `Command` + `Option` + Left / Right, add Shift to reorder them, replace the Focused Board's Current Sheet with `Command` + `L`, remove the Focused Board with `Command` + `W`, and use Den Mode for the full set of Board operations. `Shift` + `Command` + `W` closes the Profile window. Pointer controls support Sheet Stack navigation, Board Removal, same-Desk header dragging, and a Board action menu from any Board header.
 - Customize the five app-wide Den and Board shortcuts in Settings, reset them individually or together, and open the complete shortcut guide from Settings, the Den menu, or `?` in Den Mode.
 - Choose whether Den follows the macOS motion setting, uses Standard Motion, or uses Reduced Motion in Appearance settings; set Sheet Scale from 50% to 200% for every Profile; and configure the board centering layout (Always, Never, or When Overflowing).
-- Toggle Zen View with `z` in Den Mode to hide the Desk switcher and Profile control without hiding the titlebar.
+- Toggle Zen View with `z` in Den Mode to hide the native titlebar, Desk switcher, and Profile control for focused Board work.
 - Resize every Board in the Focused Desk by 80pt or to fit a chosen count across the current window, using `w` then `-`, `=`, or `1` through `9` in Den Mode or the Den menu.
 - Restore the most Recently Removed Board with `u` during the current app run.
 - See and reorganize Boards across Desks in Overview.

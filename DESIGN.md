@@ -34,9 +34,9 @@ Den controls feel like a calm desk laid over live web sheets. Web content remain
 
 ## Zen View
 
-- Zen View hides the Desk switcher, Desk Preset bookmark action, and Profile control together, without hiding controls inside Boards.
-- Boards expand into the upper area released by those controls.
-- Keep the native titlebar, current Profile name, Den Mode title state, and cyan Den Mode ring visible.
+- Zen View hides the native titlebar, Desk switcher, Desk Preset bookmark action, and Profile control together, without hiding controls inside Boards.
+- Boards expand into the released upper area, keeping a 10-point inset from the window edge.
+- Do not add alternate window dragging, traffic-light controls, or titlebar feedback in Zen View. The cyan Den Mode ring remains visible.
 - Do not reveal hidden controls on pointer hover. Users toggle Zen View with `z` in Den Mode or the Den menu.
 - Treat Zen View as window-local runtime presentation. A recreated Den window starts with Zen View off.
 - Keep temporary panels, Overview, Empty Den guidance, and the Keyboard Shortcuts guide available while Zen View is active.
@@ -47,4 +47,4 @@ Den controls feel like a calm desk laid over live web sheets. Web content remain
 - Are focus and direct manipulation distinguishable without relying only on color?
 - Does keyboard focus still make sense after pointer interaction?
 - Does UI use Den, Desk, Board, and Sheet terminology correctly?
-- Does Zen View remove only Desk and Profile controls while preserving Profile and Den Mode orientation?
+- Does Zen View remove native window and Den chrome while preserving Board controls and the cyan Den Mode ring?
