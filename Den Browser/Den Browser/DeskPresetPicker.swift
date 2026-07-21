@@ -139,7 +139,10 @@ struct DeskPresetPicker: View {
                         .accessibilityLabel("Delete \(preset.label)")
                     }
                     .padding(8)
-                    .background(Color.primary.opacity(0.055), in: RoundedRectangle(cornerRadius: 8))
+                    .background(
+                        Color.primary.opacity(0.055),
+                        in: RoundedRectangle(cornerRadius: DenRadius.small, style: .continuous)
+                    )
                 }
             }
         }
@@ -172,7 +175,7 @@ struct DeskPresetPicker: View {
         .padding(8)
         .background(
             Color.primary.opacity(selection == choice.selection ? 0.11 : 0.045),
-            in: RoundedRectangle(cornerRadius: 8))
+            in: RoundedRectangle(cornerRadius: DenRadius.small, style: .continuous))
     }
 
     private var builtInChoices: [DeskPresetChoice] {
@@ -339,7 +342,10 @@ struct DeskPresetPreview: View {
                         }
                         .padding(7)
                         .frame(width: max(90, min(150, board.width / 4)), alignment: .leading)
-                        .background(Color.primary.opacity(0.055), in: RoundedRectangle(cornerRadius: 7))
+                        .background(
+                            Color.primary.opacity(0.055),
+                            in: RoundedRectangle(cornerRadius: DenRadius.small, style: .continuous)
+                        )
                     }
                 }
             }

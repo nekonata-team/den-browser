@@ -9,6 +9,7 @@ Den controls feel like a calm desk laid over live web sheets. Web content remain
 - Use dark, low-contrast Den background with restrained cyan and Profile-colored ambient light.
 - Use Liquid Glass for Den controls, panels, and desk switcher. Do not apply glass treatment to sheet content.
 - Boards stay white with rounded continuous corners. Focus uses cyan.
+- Use only continuous 8pt, 12pt, and 18pt corner radii: small controls use 8pt, inner cards and inputs use 12pt, and Boards, panels, Overview, and the Den Mode ring use 18pt.
 - Keep hierarchy visible: Desk switcher above board strip, board header above sheet, sheet stack indicator secondary.
 - Show the current Profile name in the titlebar and a simple Profile icon at the top right. Place the Desk Preset bookmark action immediately to its left when the Focused Desk has Boards. Present both as compact borderless controls with matching secondary tint. Give both icons accessibility labels and help text; Profile identity must not depend on color.
 - Prefer SF Symbols and system typography. Preserve macOS accessibility defaults where possible.

@@ -126,7 +126,7 @@ struct KeyboardShortcutsView: View {
         .frame(maxWidth: .infinity, alignment: .topLeading)
         .background(
             Color.primary.opacity(0.055),
-            in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+            in: RoundedRectangle(cornerRadius: DenRadius.medium, style: .continuous))
     }
 }
 
@@ -151,10 +151,10 @@ struct ShortcutChip: View {
         .padding(.vertical, 4)
         .background(
             isRecording ? Color.accentColor.opacity(0.14) : Color.primary.opacity(0.07),
-            in: RoundedRectangle(cornerRadius: 6, style: .continuous)
+            in: RoundedRectangle(cornerRadius: DenRadius.small, style: .continuous)
         )
         .overlay {
-            RoundedRectangle(cornerRadius: 6, style: .continuous)
+            RoundedRectangle(cornerRadius: DenRadius.small, style: .continuous)
                 .stroke(
                     isRecording ? Color.accentColor.opacity(0.8) : Color.primary.opacity(0.12),
                     lineWidth: 1

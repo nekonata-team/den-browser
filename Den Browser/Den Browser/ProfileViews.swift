@@ -127,7 +127,7 @@ private struct OpenProfilePanel: View {
         }
         .padding(16)
         .frame(width: 380)
-        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: DenRadius.large, style: .continuous))
         .onAppear { isFocused = true }
         .onExitCommand { profileManager.openProfilePanelProfileID = nil }
     }

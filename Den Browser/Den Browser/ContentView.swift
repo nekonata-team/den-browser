@@ -123,7 +123,7 @@ struct ContentView: View {
                     KeyboardShortcutsView(onClose: store.hideKeyboardShortcuts)
                         .padding(18)
                         .frame(width: 760, height: 560)
-                        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+                        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: DenRadius.large, style: .continuous))
                         .transition(DenMotion.transition(reduceMotion: shouldReduceMotion, scale: 0.98))
                 }
             }
@@ -174,7 +174,7 @@ struct ContentView: View {
             .animation(DenMotion.feedback(reduceMotion: shouldReduceMotion), value: store.isBoardWidthPanelPresented)
             .animation(DenMotion.spatial(reduceMotion: shouldReduceMotion), value: store.isZenViewPresented)
             .overlay {
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                RoundedRectangle(cornerRadius: DenRadius.large, style: .continuous)
                     .strokeBorder(.cyan.opacity(0.48), lineWidth: 1)
                     .padding(8)
                     .opacity(store.isDenMode ? 1 : 0)
@@ -396,7 +396,10 @@ struct ContentView: View {
                         .buttonStyle(.plain)
                 }
                 .padding(10)
-                .background(Color.primary.opacity(0.055), in: RoundedRectangle(cornerRadius: 8))
+                .background(
+                    Color.primary.opacity(0.055),
+                    in: RoundedRectangle(cornerRadius: DenRadius.small, style: .continuous)
+                )
 
                 DeskPresetPreview(boards: selectedDeskPresetBoards)
 
@@ -434,7 +437,7 @@ struct ContentView: View {
         }
         .padding(16)
         .frame(width: 620)
-        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: DenRadius.large, style: .continuous))
         .onAppear {
             selectedDeskPreset = .builtIn(.empty)
             activeDeskPreset = .builtIn(.empty)
@@ -485,7 +488,7 @@ struct ContentView: View {
         }
         .padding(16)
         .frame(width: 520)
-        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: DenRadius.large, style: .continuous))
         .onAppear {
             saveDeskPresetLabel = store.focusedDesk?.label ?? ""
             saveDeskPresetMessage = nil
@@ -623,7 +626,7 @@ struct ContentView: View {
         }
         .padding(16)
         .frame(width: 520)
-        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: DenRadius.large, style: .continuous))
         .onAppear {
             DispatchQueue.main.async {
                 isOpenPanelFocused = true
@@ -661,7 +664,7 @@ struct ContentView: View {
         }
         .padding(16)
         .frame(width: 520)
-        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: DenRadius.large, style: .continuous))
         .onAppear {
             editBoardLinkText = store.focusedBoard?.currentSheetURL?.absoluteString ?? ""
             DispatchQueue.main.async {
@@ -700,7 +703,7 @@ struct ContentView: View {
         }
         .padding(16)
         .frame(width: 520)
-        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: DenRadius.large, style: .continuous))
         .onAppear {
             if let desk = store.focusedDesk,
                 let focusedBoardID = desk.focusedBoardID,
@@ -746,7 +749,7 @@ struct ContentView: View {
         }
         .padding(16)
         .frame(width: 520)
-        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: DenRadius.large, style: .continuous))
         .onAppear {
             if let desk = store.focusedDesk {
                 renameText = desk.label
@@ -805,7 +808,7 @@ struct ContentView: View {
         }
         .padding(16)
         .frame(width: 420)
-        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: DenRadius.large, style: .continuous))
         .onExitCommand {
             store.hideBoardWidthPanel()
         }
@@ -1466,7 +1469,7 @@ private struct EmptyDenView: View {
             KeyboardShortcutsView()
                 .padding(18)
                 .frame(width: 760, height: 460)
-                .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+                .glassEffect(.regular, in: RoundedRectangle(cornerRadius: DenRadius.large, style: .continuous))
 
             Button("Open Board", action: openBoard)
                 .buttonStyle(.glassProminent)
@@ -1513,10 +1516,10 @@ private struct OverviewView: View {
                 .frame(width: 320)
                 .background(
                     Color.primary.opacity(store.isOverviewFilterMode ? 0.08 : 0.04),
-                    in: RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    in: RoundedRectangle(cornerRadius: DenRadius.medium, style: .continuous)
                 )
                 .overlay {
-                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    RoundedRectangle(cornerRadius: DenRadius.medium, style: .continuous)
                         .stroke(
                             store.isOverviewFilterMode ? .cyan.opacity(0.86) : Color.primary.opacity(0.10),
                             lineWidth: store.isOverviewFilterMode ? 1.5 : 1
@@ -1551,7 +1554,7 @@ private struct OverviewView: View {
         }
         .padding(18)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: DenRadius.large, style: .continuous))
         .overlay(alignment: .topTrailing) {
             Button {
                 store.hideOverview()
@@ -1591,7 +1594,8 @@ private struct OverviewView: View {
                         .foregroundStyle(.secondary)
                         .frame(width: 150, height: 88)
                         .background(
-                            Color.primary.opacity(0.06), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                            Color.primary.opacity(0.06),
+                            in: RoundedRectangle(cornerRadius: DenRadius.medium, style: .continuous))
                 } else {
                     ForEach(filteredBoards) { board in
                         overviewBoard(board, in: desk)
@@ -1633,10 +1637,10 @@ private struct OverviewView: View {
             .foregroundStyle(.primary)
             .background(
                 Color.primary.opacity(isSelected ? 0.18 : 0.09),
-                in: RoundedRectangle(cornerRadius: 10, style: .continuous)
+                in: RoundedRectangle(cornerRadius: DenRadius.medium, style: .continuous)
             )
             .overlay {
-                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                RoundedRectangle(cornerRadius: DenRadius.medium, style: .continuous)
                     .stroke(
                         isSelected ? .cyan.opacity(0.86) : Color.primary.opacity(0.12),
                         lineWidth: isSelected ? 2 : 1)

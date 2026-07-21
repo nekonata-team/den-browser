@@ -33,9 +33,9 @@ struct BoardView: View {
             )
         }
         .frame(width: width, height: height)
-        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: DenRadius.large, style: .continuous))
         .overlay {
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
+            RoundedRectangle(cornerRadius: DenRadius.large, style: .continuous)
                 .stroke(borderColor, lineWidth: isFocused ? 2 : 1)
         }
         .shadow(
