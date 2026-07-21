@@ -60,7 +60,7 @@ Den Browserは、[Niri](https://github.com/niri-wm/niri)の空間的なウィン
 
 ## キーボード操作
 
-`Control` + `,` でDen Modeを切り替えます。`Command` + `L`でFocused BoardのCurrent SheetをURLまたは検索語に置き換えます。Den ModeはCurrent Sheet内のキーボードフォーカスに関係なく、DeskとBoardのコマンドを受け取ります。`n`または`Space`でBoardを開き、`p`でFocused DeskをDesk Presetとして保存し、`w`に続けて数字を押すとFocused Desk内の全Boardを現在のウィンドウ幅に合わせてリサイズします。`x`または`d`でFocused Boardを取り除き、`u`でRecently Removed Boardを復活します。`?`でショートカット一覧を表示し、`z`でZen Viewを切り替えます。`Escape`でSheet Inputへ戻ります。
+`Control` + `,` でDen Modeを切り替えます。`Command` + `L`でFocused BoardのCurrent SheetをURLまたは検索語に置き換え、Den Modeでは`e`でも同じ操作を行えます。Den ModeはCurrent Sheet内のキーボードフォーカスに関係なく、DeskとBoardのコマンドを受け取ります。`n`または`Space`でBoardを開き、`p`でFocused DeskをDesk Presetとして保存し、`w`に続けて数字を押すとFocused Desk内の全Boardを現在のウィンドウ幅に合わせてリサイズします。`x`または`d`でFocused Boardを取り除き、`u`でRecently Removed Boardを復活します。`?`でショートカット一覧を表示し、`z`でZen Viewを切り替えます。`Escape`でSheet Inputへ戻ります。
 
 全ショートカットは[docs/shortcuts.md](./docs/shortcuts.md)を参照してください。
 

@@ -71,6 +71,7 @@ struct KeyboardShortcutsView: View {
                     item(["f"], "Toggle maximized Board"),
                     item(["c"], "Center Focused Board"),
                     item(["Return"], "Duplicate Current Sheet"),
+                    item(["e"], "Edit Focused Board Link"),
                     item(["r"], "Rename Board"),
                     item(["x", "/", "d"], "Remove Focused Board"),
                     item(["u"], "Restore Removed Board"),

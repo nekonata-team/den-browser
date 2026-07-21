@@ -27,7 +27,7 @@ Den Browser uses persistent Den Mode instead of the shared `Control` + `Option` 
 - `-` narrows the focused board and `=` widens it. Shift is meaningful for board movement only with a movement key.
 - `w` opens a temporary Board Width panel. `1` through `9` persistently resize every Board in the Focused Desk so that the chosen number of Boards, their gaps, and the Den's horizontal padding fit the current window width. The width is calculated when the command runs and does not track later window changes. Escape or `w` closes the panel without changing widths; other Den operations remain suspended while it is open.
 - `f` toggles the focused board between its persisted Board Width and the available Den width. Maximizing is temporary and does not change the persisted Board Width. `c` centers the focused board without changing its width. The horizontal layout provides enough leading and trailing space to center the first and last Board. These bindings follow niri's full-width and center actions.
-- `[` and `]` move backward and forward in the focused board's sheet stack. Reload remains `Command` + `r` outside Den Mode.
+- `[` and `]` move backward and forward in the focused board's sheet stack. `e` opens the Edit Focused Board Link panel, which replaces the Current Sheet on confirmation. Reload remains `Command` + `r` outside Den Mode.
 - Return duplicates the Focused Board's Current Sheet to a new board on its right, focuses it, and returns to Sheet Input.
 - A Den has at most ten desks. `1` through `9` focus desks one through nine, and `0` focuses desk ten. A missing desk is a no-op.
 - Shift plus a digit moves the focused board to that desk, immediately after its focused board, then focuses the moved board.

@@ -39,6 +39,7 @@ The complete in-app guide is available from Settings, the Den menu, and `?` in D
 | `f` | Toggle maximized focused board | Uses the available Den width without changing its persisted Board Width. |
 | `c` | Center focused board | Uses edge space to center the first and last Board too. |
 | Return | Duplicate current sheet | Creates board to right, focuses it, then enters sheet input. |
+| `e` | Edit Focused Board Link panel | Replaces the Current Sheet with a URL or search on Return. Escape returns to Den Mode. |
 | `r` | Rename focused Board | Opens the Rename Board panel; Return confirms, Escape returns to Den Mode. |
 | `x` / `d` | Remove focused Board | Releases its live Sheet runtime. Key repeat is ignored. |
 | `u` | Restore Recently Removed Board | Available for the current app run. Key repeat is ignored. |

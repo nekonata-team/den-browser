@@ -60,7 +60,7 @@ See [CONTEXT.md](./CONTEXT.md) for the complete product language.
 
 ## Keyboard operation
 
-Press `Control` + `,` to toggle Den Mode. `Command` + `L` replaces the Focused Board's Current Sheet with a URL or search. Den Mode receives Desk and Board commands independently of keyboard focus inside the Current Sheet. `n` or `Space` opens a Board, `p` saves the Focused Desk as a Desk Preset, `w` then a digit resizes all Boards in the Focused Desk to fit the current window, `x` or `d` removes the Focused Board, `u` restores the Recently Removed Board, `?` opens the shortcut guide, and `z` toggles Zen View. Escape returns to Sheet Input.
+Press `Control` + `,` to toggle Den Mode. `Command` + `L` replaces the Focused Board's Current Sheet with a URL or search; `e` does the same in Den Mode. Den Mode receives Desk and Board commands independently of keyboard focus inside the Current Sheet. `n` or `Space` opens a Board, `p` saves the Focused Desk as a Desk Preset, `w` then a digit resizes all Boards in the Focused Desk to fit the current window, `x` or `d` removes the Focused Board, `u` restores the Recently Removed Board, `?` opens the shortcut guide, and `z` toggles Zen View. Escape returns to Sheet Input.
 
 See [docs/shortcuts.md](./docs/shortcuts.md) for the complete shortcut map.
 

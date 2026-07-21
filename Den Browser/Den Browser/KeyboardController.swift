@@ -217,6 +217,10 @@ final class KeyboardController {
             }
         case ("d", [.shift]):
             store.deleteFocusedDesk()
+        case ("e", []):
+            if !event.isARepeat {
+                store.showEditBoardLinkPanel()
+            }
         default:
             if isReturn(event), modifiers == [] {
                 store.duplicateFocusedBoard()

@@ -146,6 +146,15 @@ struct KeyboardShortcutTests {
         #expect(store.isEditBoardLinkPanelPresented)
     }
 
+    @Test func denModeEOpensFocusedBoardLinkEditor() throws {
+        let store = makeStore(boards: [board("First")])
+        store.isDenMode = true
+        let editLink = try keyEvent(characters: "e", charactersIgnoringModifiers: "e", keyCode: 14)
+
+        #expect(KeyboardController.handle(editLink, store: store))
+        #expect(store.isEditBoardLinkPanelPresented)
+    }
+
     @Test func denModeAddsSpaceGuideAndZenViewWithoutPersistedStateChanges() throws {
         let preferences = try makePreferences()
         let store = makeStore(boards: [board("First")])
