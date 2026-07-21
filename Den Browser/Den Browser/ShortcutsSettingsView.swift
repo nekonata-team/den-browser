@@ -4,6 +4,7 @@ import SwiftUI
 struct ShortcutsSettingsView: View {
     @Environment(AppPreferences.self) private var preferences
     @State private var recordingAction: ShortcutAction?
+    @State private var recordingDeskNumberShortcut = false
     @State private var recordingMonitor: Any?
     @State private var errorMessage: String?
     @State private var isGuidePresented = false
@@ -14,6 +15,7 @@ struct ShortcutsSettingsView: View {
                 ForEach(ShortcutAction.allCases) { action in
                     shortcutRow(action)
                 }
+                deskNumberShortcutRow
             }
 
             Section {
@@ -27,7 +29,9 @@ struct ShortcutsSettingsView: View {
                         stopRecording()
                         preferences.resetAllShortcuts()
                     }
-                    .disabled(preferences.shortcutOverrides.isEmpty)
+                    .disabled(
+                        preferences.shortcutOverrides.isEmpty
+                            && !preferences.hasDeskNumberBindingOverride())
                 }
             }
 
@@ -45,6 +49,67 @@ struct ShortcutsSettingsView: View {
             KeyboardShortcutsView { isGuidePresented = false }
                 .padding(18)
                 .frame(width: 760, height: 560)
+        }
+    }
+
+    private var deskNumberShortcutRow: some View {
+        VStack(alignment: .leading, spacing: 5) {
+            HStack(spacing: 8) {
+                Text("Focus Desk 1–10 (enter a digit, e.g. 1)")
+                Spacer()
+
+                Button {
+                    if recordingDeskNumberShortcut {
+                        stopRecording()
+                    } else {
+                        startRecordingDeskNumberShortcut()
+                    }
+                } label: {
+                    ShortcutChip(
+                        tokens: recordingDeskNumberShortcut
+                            ? ["Type shortcut…"]
+                            : preferences.deskNumberBinding?.displayTokens ?? ["Unassigned"],
+                        width: 124,
+                        isRecording: recordingDeskNumberShortcut)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(
+                    recordingDeskNumberShortcut
+                        ? "Cancel recording for Focus Desk 1 through 10"
+                        : "Record shortcut for Focus Desk 1 through 10, current shortcut \(preferences.deskNumberBinding?.accessibilityLabel ?? "unassigned")"
+                )
+                .help(recordingDeskNumberShortcut ? "Cancel recording" : "Record a new shortcut")
+
+                Button {
+                    stopRecording()
+                    preferences.clearDeskNumberBinding()
+                } label: {
+                    Image(systemName: "xmark")
+                        .frame(width: 14, height: 14)
+                }
+                .buttonStyle(.borderless)
+                .disabled(preferences.deskNumberBinding == nil)
+                .accessibilityLabel("Clear shortcut for Focus Desk 1 through 10")
+                .help("Clear shortcut")
+
+                Button {
+                    stopRecording()
+                    preferences.resetDeskNumberBinding()
+                } label: {
+                    Image(systemName: "arrow.counterclockwise")
+                        .frame(width: 14, height: 14)
+                }
+                .buttonStyle(.borderless)
+                .disabled(!preferences.hasDeskNumberBindingOverride())
+                .accessibilityLabel("Reset shortcut for Focus Desk 1 through 10")
+                .help("Reset shortcut")
+            }
+
+            if recordingDeskNumberShortcut, let errorMessage {
+                Text(errorMessage)
+                    .font(.caption)
+                    .foregroundStyle(.red)
+            }
         }
     }
 
@@ -120,6 +185,16 @@ struct ShortcutsSettingsView: View {
         }
     }
 
+    private func startRecordingDeskNumberShortcut() {
+        stopRecording()
+        recordingDeskNumberShortcut = true
+        errorMessage = nil
+        recordingMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
+            captureDeskNumberShortcut(event)
+            return nil
+        }
+    }
+
     private func capture(_ event: NSEvent, for action: ShortcutAction) {
         if event.keyCode == 53,
             event.modifierFlags.intersection([.command, .control, .option, .shift]).isEmpty
@@ -144,6 +219,45 @@ struct ShortcutsSettingsView: View {
                 errorMessage = "Use Control, Option, or Command with a supported key."
             case .conflict(let conflictingAction):
                 errorMessage = "\(binding.displayName) is already assigned to \(conflictingAction.label)."
+            case .conflictWithDeskNumber:
+                errorMessage = "This shortcut is already used for Desk navigation."
+            }
+            return
+        }
+
+        stopRecording()
+    }
+
+    private func captureDeskNumberShortcut(_ event: NSEvent) {
+        if event.keyCode == 53,
+            event.modifierFlags.intersection([.command, .control, .option, .shift]).isEmpty
+        {
+            stopRecording()
+            return
+        }
+
+        guard let recordedBinding = ShortcutBinding(event: event),
+            recordedBinding.key.deskNumber != nil
+        else {
+            errorMessage = "Type a digit with Control, Option, or Command."
+            return
+        }
+
+        // The digit is selected at runtime; only its modifier combination is configurable.
+        let binding = ShortcutBinding(key: .character("1"), modifiers: recordedBinding.modifiers)
+        if let menuItem = conflictingMenuItem(for: binding) {
+            errorMessage = "\(binding.displayName) is already used by \(menuItem.title)."
+            return
+        }
+
+        if let error = preferences.setDeskNumberBinding(binding) {
+            switch error {
+            case .invalid:
+                errorMessage = "Use Control, Option, or Command."
+            case .conflict(let conflictingAction):
+                errorMessage = "This shortcut conflicts with \(conflictingAction.label)."
+            case .conflictWithDeskNumber:
+                errorMessage = "This shortcut is already used for Desk navigation."
             }
             return
         }
@@ -157,6 +271,7 @@ struct ShortcutsSettingsView: View {
             self.recordingMonitor = nil
         }
         recordingAction = nil
+        recordingDeskNumberShortcut = false
         errorMessage = nil
     }
 

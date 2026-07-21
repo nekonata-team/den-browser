@@ -90,6 +90,16 @@ final class KeyboardController {
             break
         }
 
+        if !store.isDenMode,
+            let deskNumberBinding = preferences?.deskNumberBinding,
+            modifiers == deskNumberBinding.modifiers.eventFlags,
+            let digit = baseCharacter(for: event).flatMap(Int.init),
+            (0...9).contains(digit)
+        {
+            store.focusDesk(number: digit == 0 ? 10 : digit)
+            return true
+        }
+
         if !store.isDenMode, character == "r", modifiers == [.command] {
             store.reloadFocusedBoard()
             return true

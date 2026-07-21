@@ -18,6 +18,7 @@ The complete in-app guide is available from Settings, the Den menu, and `?` in D
 | Command + `Q` | Quit Den Browser | |
 | Command + Option + Left / Right | Previous / next board | Available in Sheet Input and Den Mode. |
 | Shift + Command + Option + Left / Right | Move focused board | Moves left or right without entering Den Mode. |
+| Command + Option + `1` through `9`, `0` | Focus Desk 1 through 10 | Available in Sheet Input. The modifier combination is configurable in Settings > Shortcuts; Shift alone is not allowed. |
 | `Control` + `,` | Toggle Den Mode | Captures subsequent keys while active. |
 | Escape | Exit Den Mode | Enters Sheet Input. |
 | Left / Right or `h` / `l` | Previous / next board | Board navigation. |

@@ -11,21 +11,31 @@ struct KeyboardShortcutTests {
         defer { defaults.removePersistentDomain(forName: suiteName) }
         let preferences = AppPreferences(defaults: defaults)
         let customToggle = ShortcutBinding(key: .character("."), modifiers: [.control])
+        let customDeskNumber = ShortcutBinding(
+            key: .character("1"), modifiers: [.control, .option])
 
         #expect(preferences.shortcut(for: .toggleDenMode) == ShortcutAction.toggleDenMode.defaultBinding)
+        #expect(preferences.deskNumberBinding == AppPreferences.defaultDeskNumberBinding)
         #expect(preferences.setShortcut(customToggle, for: .toggleDenMode) == nil)
+        #expect(preferences.setDeskNumberBinding(customDeskNumber) == nil)
         preferences.clearShortcut(for: .focusPreviousBoard)
 
         let restored = AppPreferences(defaults: defaults)
         #expect(defaults.integer(forKey: "preferences.schemaVersion") == 1)
         #expect(restored.shortcut(for: .toggleDenMode) == customToggle)
         #expect(restored.shortcut(for: .focusPreviousBoard) == nil)
+        #expect(restored.deskNumberBinding == customDeskNumber)
 
         restored.resetShortcut(for: .toggleDenMode)
         #expect(restored.shortcut(for: .toggleDenMode) == ShortcutAction.toggleDenMode.defaultBinding)
+        restored.clearDeskNumberBinding()
+        #expect(restored.deskNumberBinding == nil)
+        #expect(AppPreferences(defaults: defaults).deskNumberBinding == nil)
+        restored.resetDeskNumberBinding()
         restored.resetAllShortcuts()
         #expect(restored.shortcutOverrides.isEmpty)
         #expect(restored.shortcut(for: .focusPreviousBoard) == ShortcutAction.focusPreviousBoard.defaultBinding)
+        #expect(restored.deskNumberBinding == AppPreferences.defaultDeskNumberBinding)
     }
 
     @Test func shortcutValidationRejectsMissingModifierAndDuplicate() throws {
@@ -37,6 +47,16 @@ struct KeyboardShortcutTests {
             preferences.setShortcut(
                 ShortcutAction.focusPreviousBoard.defaultBinding,
                 for: .focusNextBoard) == .conflict(.focusPreviousBoard))
+        #expect(
+            preferences.setShortcut(
+                ShortcutBinding(key: .character("1"), modifiers: [.command, .option]),
+                for: .focusNextBoard) == .conflictWithDeskNumber)
+        #expect(
+            preferences.setDeskNumberBinding(
+                ShortcutBinding(key: .character("1"), modifiers: [.shift, .command, .option])) == nil)
+        #expect(
+            preferences.setDeskNumberBinding(
+                ShortcutBinding(key: .character("1"), modifiers: [.shift])) == .invalid)
         preferences.clearShortcut(for: .toggleDenMode)
         #expect(preferences.shortcut(for: .toggleDenMode) == ShortcutAction.toggleDenMode.defaultBinding)
     }
@@ -114,6 +134,29 @@ struct KeyboardShortcutTests {
         #expect(store.focusedDesk?.focusedBoardID == movedBoard.id)
         #expect(store.state.desks[0].boards.map(\.id) == [movedBoard.id])
         #expect(store.isDenMode)
+    }
+
+    @Test func sheetInputCommandOptionDigitFocusesDesk() throws {
+        let movedBoard = board("Moved")
+        let firstDesk = DeskState(label: "First", boards: [], focusedBoardID: nil)
+        let secondDesk = DeskState(
+            label: "Second",
+            boards: [movedBoard],
+            focusedBoardID: movedBoard.id)
+        let store = DenStore(
+            state: DenState(
+                desks: [firstDesk, secondDesk],
+                focusedDeskID: secondDesk.id))
+        let preferences = try makePreferences()
+        let commandOptionOne = try keyEvent(
+            characters: "1",
+            charactersIgnoringModifiers: "1",
+            modifiers: [.command, .option],
+            keyCode: 18)
+
+        #expect(KeyboardController.handle(commandOptionOne, store: store, preferences: preferences))
+        #expect(store.state.focusedDeskID == firstDesk.id)
+        #expect(!store.isDenMode)
     }
 
     @Test func customBindingsApplyImmediatelyAndCanBeUnassigned() throws {

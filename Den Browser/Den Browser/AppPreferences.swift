@@ -21,6 +21,8 @@ enum MotionPreference: String, CaseIterable, Identifiable {
 @Observable
 final class AppPreferences {
     static let schemaVersion = 1
+    static let defaultDeskNumberBinding = ShortcutBinding(
+        key: .character("1"), modifiers: [.command, .option])
     static let defaultHintAlphabet = "asdfghjkl"
     static let defaultSheetScale = 100
     static let sheetScaleRange = 50...200
@@ -29,6 +31,7 @@ final class AppPreferences {
     private(set) var sheetNavigationHintAlphabet: String
     private(set) var sheetNavigationIgnoredHosts: [String]
     private(set) var shortcutOverrides: [ShortcutAction: ShortcutOverride]
+    private(set) var deskNumberBinding: ShortcutBinding?
     private(set) var motionPreference: MotionPreference
     private(set) var nativePictureInPictureEnabled: Bool
     private(set) var boardCentering: FocusedBoardCentering
@@ -41,6 +44,8 @@ final class AppPreferences {
     private static let hintAlphabetKey = "features.vim-style-sheet-navigation.hint-alphabet"
     private static let ignoredHostsKey = "features.vim-style-sheet-navigation.ignored-hosts"
     private static let shortcutKeyPrefix = "shortcuts."
+    private static let deskNumberShortcutKey = "shortcuts.desk-number"
+    private static let deskNumberShortcutDisabledKey = "shortcuts.desk-number.disabled"
     private static let motionKey = "appearance.motion"
     private static let nativePictureInPictureEnabledKey =
         "features.native-picture-in-picture.enabled"
@@ -56,6 +61,7 @@ final class AppPreferences {
             ?? Self.defaultHintAlphabet
         sheetNavigationIgnoredHosts = defaults.stringArray(forKey: Self.ignoredHostsKey) ?? []
         shortcutOverrides = [:]
+        deskNumberBinding = Self.loadDeskNumberBinding(defaults)
         motionPreference =
             defaults.string(forKey: Self.motionKey).flatMap(MotionPreference.init(rawValue:))
             ?? .followSystem
@@ -128,12 +134,58 @@ final class AppPreferences {
         return override.binding
     }
 
+    func setDeskNumberBinding(_ binding: ShortcutBinding) -> ShortcutValidationError? {
+        guard binding.key.deskNumber != nil,
+            binding.modifiers.hasPrimaryModifier
+        else { return .invalid }
+
+        if let conflict = ShortcutAction.allCases.first(where: {
+            guard let actionBinding = shortcut(for: $0) else { return false }
+            return actionBinding.key.deskNumber != nil
+                && actionBinding.modifiers == binding.modifiers
+        }) {
+            return .conflict(conflict)
+        }
+
+        if binding == Self.defaultDeskNumberBinding {
+            resetDeskNumberBinding()
+        } else {
+            deskNumberBinding = binding
+            defaults.removeObject(forKey: Self.deskNumberShortcutDisabledKey)
+            persistDeskNumberBinding()
+        }
+        return nil
+    }
+
+    func hasDeskNumberBindingOverride() -> Bool {
+        defaults.data(forKey: Self.deskNumberShortcutKey) != nil
+            || defaults.bool(forKey: Self.deskNumberShortcutDisabledKey)
+    }
+
+    func resetDeskNumberBinding() {
+        deskNumberBinding = Self.defaultDeskNumberBinding
+        defaults.removeObject(forKey: Self.deskNumberShortcutKey)
+        defaults.removeObject(forKey: Self.deskNumberShortcutDisabledKey)
+    }
+
+    func clearDeskNumberBinding() {
+        deskNumberBinding = nil
+        defaults.removeObject(forKey: Self.deskNumberShortcutKey)
+        defaults.set(true, forKey: Self.deskNumberShortcutDisabledKey)
+    }
+
     func hasShortcutOverride(for action: ShortcutAction) -> Bool {
         shortcutOverrides[action] != nil
     }
 
     func setShortcut(_ binding: ShortcutBinding, for action: ShortcutAction) -> ShortcutValidationError? {
         guard binding.isRecordable else { return .invalid }
+        if let deskNumberBinding,
+            binding.key.deskNumber != nil,
+            binding.modifiers == deskNumberBinding.modifiers
+        {
+            return .conflictWithDeskNumber
+        }
         if let conflict = conflictingAction(for: binding, excluding: action) {
             return .conflict(conflict)
         }
@@ -163,6 +215,7 @@ final class AppPreferences {
             defaults.removeObject(forKey: shortcutDefaultsKey(for: action))
         }
         shortcutOverrides.removeAll()
+        resetDeskNumberBinding()
     }
 
     func conflictingAction(for binding: ShortcutBinding, excluding action: ShortcutAction) -> ShortcutAction? {
@@ -206,6 +259,31 @@ final class AppPreferences {
             let data = try? PropertyListEncoder().encode(override)
         else { return }
         defaults.set(data, forKey: shortcutDefaultsKey(for: action))
+    }
+
+    private func persistDeskNumberBinding() {
+        guard let deskNumberBinding,
+            let data = try? PropertyListEncoder().encode(deskNumberBinding)
+        else { return }
+        defaults.set(data, forKey: Self.deskNumberShortcutKey)
+    }
+
+    private static func loadDeskNumberBinding(_ defaults: UserDefaults) -> ShortcutBinding? {
+        if defaults.bool(forKey: deskNumberShortcutDisabledKey) {
+            return nil
+        }
+        guard let data = defaults.data(forKey: deskNumberShortcutKey) else {
+            return defaultDeskNumberBinding
+        }
+        guard
+            let binding = try? PropertyListDecoder().decode(ShortcutBinding.self, from: data),
+            binding.key.deskNumber != nil,
+            binding.modifiers.hasPrimaryModifier
+        else {
+            defaults.removeObject(forKey: deskNumberShortcutKey)
+            return defaultDeskNumberBinding
+        }
+        return binding
     }
 
     private func shortcutDefaultsKey(for action: ShortcutAction) -> String {

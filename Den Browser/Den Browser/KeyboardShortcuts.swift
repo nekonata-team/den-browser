@@ -176,6 +176,14 @@ enum ShortcutKey: Codable, Hashable {
         case .function(let number): "F\(number)"
         }
     }
+
+    var deskNumber: Int? {
+        guard case .character(let character) = self else { return nil }
+        guard character.count == 1, let number = Int(character), (0...9).contains(number) else {
+            return nil
+        }
+        return number
+    }
 }
 
 struct ShortcutBinding: Codable, Hashable {
@@ -225,4 +233,5 @@ enum ShortcutOverride: Codable, Equatable {
 enum ShortcutValidationError: Equatable {
     case invalid
     case conflict(ShortcutAction)
+    case conflictWithDeskNumber
 }
