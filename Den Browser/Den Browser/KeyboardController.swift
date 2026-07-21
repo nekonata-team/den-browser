@@ -240,6 +240,10 @@ final class KeyboardController {
         let character = characterIgnoringModifiers(for: event)
         if character == "w", modifiers == [], !event.isARepeat {
             store.hideBoardWidthPanel()
+        } else if character == "-", modifiers == [] {
+            store.adjustFocusedDeskBoardWidths(by: -80)
+        } else if character == "=", modifiers == [] || modifiers == [.shift] {
+            store.adjustFocusedDeskBoardWidths(by: 80)
         } else if let count = character.flatMap(Int.init), (1...9).contains(count), modifiers == [] {
             store.resizeFocusedDeskBoards(toFit: count)
         }

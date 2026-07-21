@@ -755,7 +755,7 @@ struct ContentView: View {
 
             Text(
                 store.boardWidthPanelMessage
-                    ?? "Changes every Board in the Focused Desk. Press 1–9 or Escape."
+                    ?? "Changes every Board in the Focused Desk. Press - / = or 1–9, then Escape."
             )
             .font(.system(size: 12))
             .foregroundStyle(store.boardWidthPanelMessage == nil ? Color.secondary : Color.red)

@@ -48,7 +48,7 @@ See [CONTEXT.md](./CONTEXT.md) for the complete product language.
 - Customize the five app-wide Den and Board shortcuts in Settings, reset them individually or together, and open the complete shortcut guide from Settings, the Den menu, or `?` in Den Mode.
 - Choose whether Den follows the macOS motion setting, uses Standard Motion, or uses Reduced Motion in Appearance settings; set Sheet Scale from 50% to 200% for every Profile; and configure the board centering layout (Always, Never, or When Overflowing).
 - Toggle Zen View with `z` in Den Mode to hide the Desk switcher and Profile control without hiding the titlebar.
-- Resize every Board in the Focused Desk to fit a chosen count across the current window, using `w` then `1` through `9` in Den Mode or the Den menu.
+- Resize every Board in the Focused Desk by 80pt or to fit a chosen count across the current window, using `w` then `-`, `=`, or `1` through `9` in Den Mode or the Den menu.
 - Restore the most Recently Removed Board with `u` during the current app run.
 - See and reorganize Boards across Desks in Overview.
 - Delete empty Desks immediately, or delete a Desk containing Boards after confirming the permanent removal.
@@ -60,7 +60,7 @@ See [CONTEXT.md](./CONTEXT.md) for the complete product language.
 
 ## Keyboard operation
 
-Press `Control` + `,` to toggle Den Mode. `Command` + `L` replaces the Focused Board's Current Sheet with a URL or search; `e` does the same in Den Mode. Den Mode receives Desk and Board commands independently of keyboard focus inside the Current Sheet. `n` or `Space` opens a Board, `p` saves the Focused Desk as a Desk Preset, `w` then a digit resizes all Boards in the Focused Desk to fit the current window, `x` or `d` removes the Focused Board, `u` restores the Recently Removed Board, `?` opens the shortcut guide, and `z` toggles Zen View. Escape returns to Sheet Input.
+Press `Control` + `,` to toggle Den Mode. `Command` + `L` replaces the Focused Board's Current Sheet with a URL or search; `e` does the same in Den Mode. Den Mode receives Desk and Board commands independently of keyboard focus inside the Current Sheet. `n` or `Space` opens a Board, `p` saves the Focused Desk as a Desk Preset, and `w` then `-` or `=` adjusts all Boards in the Focused Desk by 80pt; a digit instead resizes them to fit the current window. `x` or `d` removes the Focused Board, `u` restores the Recently Removed Board, `?` opens the shortcut guide, and `z` toggles Zen View. Escape returns to Sheet Input.
 
 See [docs/shortcuts.md](./docs/shortcuts.md) for the complete shortcut map.
 

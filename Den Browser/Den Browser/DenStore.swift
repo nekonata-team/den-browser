@@ -286,6 +286,17 @@ final class DenStore {
         save()
     }
 
+    func adjustFocusedDeskBoardWidths(by delta: Double) {
+        guard let deskIndex = focusedDeskIndex else { return }
+
+        maximizedBoardID = nil
+        for boardIndex in state.desks[deskIndex].boards.indices {
+            let width = state.desks[deskIndex].boards[boardIndex].width + delta
+            state.desks[deskIndex].boards[boardIndex].width = min(max(width, 280), 1400)
+        }
+        save()
+    }
+
     func updateBoardLayout(availableWidth: Double, spacing: Double) {
         self.availableBoardWidth = availableWidth
         boardSpacing = spacing

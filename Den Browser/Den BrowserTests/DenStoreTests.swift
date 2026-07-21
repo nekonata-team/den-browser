@@ -544,6 +544,24 @@ struct DenStoreTests {
         }
     }
 
+    @Test func adjustsEveryBoardInFocusedDeskWithinBounds() {
+        let boards = [board("Narrow", width: 280), board("Wide", width: 1_400)]
+        let otherBoard = board("Other", width: 760)
+        let firstDesk = desk("First", boards: boards, focusedBoardID: boards[0].id)
+        let secondDesk = desk("Second", boards: [otherBoard])
+        withStore(desks: [firstDesk, secondDesk]) { store in
+            store.toggleFocusedBoardMaximized()
+
+            store.adjustFocusedDeskBoardWidths(by: -80)
+            #expect(store.focusedDesk?.boards.map(\.width) == [280, 1_320])
+            #expect(store.state.desks[1].boards.map(\.width) == [760])
+            #expect(store.maximizedBoardID == nil)
+
+            store.adjustFocusedDeskBoardWidths(by: 160)
+            #expect(store.focusedDesk?.boards.map(\.width) == [440, 1_400])
+        }
+    }
+
     @Test func resizesEveryBoardInFocusedDeskToFitCurrentWindow() {
         let firstBoards = [board("First", width: 440), board("Second", width: 760)]
         let otherBoard = board("Other", width: 980)
@@ -1004,7 +1022,7 @@ struct DenStoreTests {
         }
     }
 
-    @Test func denModeBoardWidthPanelAcceptsOnlyFitSelectionKeys() throws {
+    @Test func denModeBoardWidthPanelAdjustsAllBoardsAndAcceptsFitSelectionKeys() throws {
         let boards = [board("First"), board("Second")]
         try withStore(desks: [desk("Desk", boards: boards)]) { store in
             store.isDenMode = true
@@ -1023,6 +1041,32 @@ struct DenStoreTests {
                     keyCode: 13
                 ))
             let ignoredMovement = try arrowEvent(.rightArrow, modifiers: [])
+            let narrow = try #require(
+                NSEvent.keyEvent(
+                    with: .keyDown,
+                    location: .zero,
+                    modifierFlags: [],
+                    timestamp: 0,
+                    windowNumber: 0,
+                    context: nil,
+                    characters: "-",
+                    charactersIgnoringModifiers: "-",
+                    isARepeat: false,
+                    keyCode: 27
+                ))
+            let widen = try #require(
+                NSEvent.keyEvent(
+                    with: .keyDown,
+                    location: .zero,
+                    modifierFlags: [],
+                    timestamp: 0,
+                    windowNumber: 0,
+                    context: nil,
+                    characters: "=",
+                    charactersIgnoringModifiers: "=",
+                    isARepeat: false,
+                    keyCode: 24
+                ))
             let select = try #require(
                 NSEvent.keyEvent(
                     with: .keyDown,
@@ -1041,6 +1085,12 @@ struct DenStoreTests {
             #expect(store.isBoardWidthPanelPresented)
             #expect(KeyboardController.handle(ignoredMovement, store: store))
             #expect(store.focusedDesk?.focusedBoardID == boards[0].id)
+            #expect(KeyboardController.handle(narrow, store: store))
+            #expect(store.focusedDesk?.boards.map(\.width) == [440, 440])
+            #expect(store.isBoardWidthPanelPresented)
+            #expect(KeyboardController.handle(widen, store: store))
+            #expect(store.focusedDesk?.boards.map(\.width) == [520, 520])
+            #expect(store.isBoardWidthPanelPresented)
             #expect(KeyboardController.handle(select, store: store))
             #expect(!store.isBoardWidthPanelPresented)
             #expect(store.isDenMode)

@@ -48,7 +48,7 @@ Den Browserは、[Niri](https://github.com/niri-wm/niri)の空間的なウィン
 - アプリ全体で使うDenとBoardの5つのショートカットを設定で変更し、個別または一括で初期値に戻せる。全ショートカットは設定、Denメニュー、Den Mode中の`?`から確認可能。
 - Appearance設定で、macOSのモーション設定への追従、Standard Motion、Reduced Motionを選択可能。全ProfileのSheetへ適用する50%〜200%のSheet Scaleも設定できる。また、フォーカスされたBoardの配置アライメント（常に中央配置、端に詰める、画面からはみ出た時のみ中央配置）を選択可能。
 - Den Mode中に`z`でZen Viewを切り替え、タイトルバーを残したままDesk SwitcherとProfileコントロールを非表示。
-- Den Modeで`w`に続けて`1`〜`9`を押すかDenメニューを使い、現在のウィンドウ幅へ指定数が収まるようFocused Desk内の全Boardをリサイズ。
+- Den Modeで`w`に続けて`-`、`=`、または`1`〜`9`を押すかDenメニューを使い、Focused Desk内の全Boardを80ptずつ、または現在のウィンドウ幅へ指定数が収まるようリサイズ。
 - 現在のアプリ起動中、`u`でRecently Removed Boardを復活。
 - OverviewでDeskを跨いだBoardの確認と再配置。
 - 空のDeskは即座に削除し、Boardを含むDeskは完全削除の確認後に削除。
@@ -60,7 +60,7 @@ Den Browserは、[Niri](https://github.com/niri-wm/niri)の空間的なウィン
 
 ## キーボード操作
 
-`Control` + `,` でDen Modeを切り替えます。`Command` + `L`でFocused BoardのCurrent SheetをURLまたは検索語に置き換え、Den Modeでは`e`でも同じ操作を行えます。Den ModeはCurrent Sheet内のキーボードフォーカスに関係なく、DeskとBoardのコマンドを受け取ります。`n`または`Space`でBoardを開き、`p`でFocused DeskをDesk Presetとして保存し、`w`に続けて数字を押すとFocused Desk内の全Boardを現在のウィンドウ幅に合わせてリサイズします。`x`または`d`でFocused Boardを取り除き、`u`でRecently Removed Boardを復活します。`?`でショートカット一覧を表示し、`z`でZen Viewを切り替えます。`Escape`でSheet Inputへ戻ります。
+`Control` + `,` でDen Modeを切り替えます。`Command` + `L`でFocused BoardのCurrent SheetをURLまたは検索語に置き換え、Den Modeでは`e`でも同じ操作を行えます。Den ModeはCurrent Sheet内のキーボードフォーカスに関係なく、DeskとBoardのコマンドを受け取ります。`n`または`Space`でBoardを開き、`p`でFocused DeskをDesk Presetとして保存し、`w`に続けて`-`または`=`を押すとFocused Desk内の全Boardを80ptずつ調整し、数字を押すと現在のウィンドウ幅に合わせてリサイズします。`x`または`d`でFocused Boardを取り除き、`u`でRecently Removed Boardを復活します。`?`でショートカット一覧を表示し、`z`でZen Viewを切り替えます。`Escape`でSheet Inputへ戻ります。
 
 全ショートカットは[docs/shortcuts.md](./docs/shortcuts.md)を参照してください。
 
