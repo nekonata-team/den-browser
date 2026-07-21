@@ -143,6 +143,9 @@ struct ContentView: View {
                     cancelBoardDrag()
                 }
             }
+            .onChange(of: preferences.sheetScale) { _, scale in
+                store.applySheetScale(scale)
+            }
             .onReceive(NotificationCenter.default.publisher(for: NSApplication.didResignActiveNotification)) { _ in
                 cancelBoardDrag()
             }

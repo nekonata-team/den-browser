@@ -42,6 +42,27 @@ struct DenStoreTests {
         #expect(!store.isDenMode)
     }
 
+    @Test func sheetScaleAppliesToNewAndLiveBoardRuntimes() {
+        let suiteName = "SheetScaleTests-\(UUID())"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let preferences = AppPreferences(defaults: defaults)
+        preferences.setSheetScale(80)
+        let sheetNavigation = SheetNavigationManager(preferences: preferences)
+        let board = board("Board")
+        let source = desk("Desk", boards: [board], focusedBoardID: board.id)
+        let store = DenStore(
+            state: DenState(desks: [source], focusedDeskID: source.id),
+            sheetNavigation: sheetNavigation)
+
+        let runtime = store.runtime(for: board)
+        #expect(runtime.webView.pageZoom == 0.8)
+
+        preferences.setSheetScale(90)
+        store.applySheetScale(preferences.sheetScale)
+        #expect(runtime.webView.pageZoom == 0.9)
+    }
+
     @Test func resetDenClearsRuntimePresentationAndPersistsFreshState() {
         let board = board("Board")
         let populated = desk("Populated", boards: [board])

@@ -10,7 +10,8 @@ extension DenStore {
         let runtime = BoardRuntime(
             board: board,
             websiteDataStore: websiteDataStore,
-            sheetNavigation: sheetNavigation
+            sheetNavigation: sheetNavigation,
+            sheetScale: sheetNavigation.preferences.sheetScale
         ) {
             [weak self] url in
             self?.addBoard(
@@ -27,6 +28,12 @@ extension DenStore {
         }
         runtimes[board.id] = runtime
         return runtime
+    }
+
+    func applySheetScale(_ scale: Int) {
+        for runtime in runtimes.values {
+            runtime.webView.pageZoom = CGFloat(scale) / 100
+        }
     }
 
     func releaseRuntimes() {

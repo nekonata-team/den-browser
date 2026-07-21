@@ -163,6 +163,7 @@ struct SheetNavigationTests {
             board: board("Navigation", url: "about:blank"),
             websiteDataStore: .default(),
             sheetNavigation: manager,
+            sheetScale: AppPreferences.defaultSheetScale,
             onOpenBoard: { _ in },
             onChange: { _, _, _ in })
 
@@ -223,6 +224,7 @@ struct SheetNavigationTests {
             board: board("Initial", url: "about:blank"),
             websiteDataStore: .default(),
             sheetNavigation: manager,
+            sheetScale: AppPreferences.defaultSheetScale,
             onOpenBoard: { _ in },
             onChange: { _, url, title in
                 updatedURL = url

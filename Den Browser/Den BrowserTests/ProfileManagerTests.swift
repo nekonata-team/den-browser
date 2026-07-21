@@ -98,11 +98,17 @@ struct ProfileManagerTests {
         defer { defaults.removePersistentDomain(forName: suiteName) }
         let preferences = AppPreferences(defaults: defaults)
 
+        #expect(preferences.sheetScale == AppPreferences.defaultSheetScale)
+        preferences.setSheetScale(49)
+        preferences.setSheetScale(201)
+        #expect(preferences.sheetScale == AppPreferences.defaultSheetScale)
+
         preferences.setSheetNavigationEnabled(true)
         preferences.setSheetNavigationHintAlphabet("abc")
         preferences.setSheetNavigationIgnoredHosts(["example.com"])
         preferences.setMotionPreference(.standard)
         preferences.setNativePictureInPictureEnabled(true)
+        preferences.setSheetScale(80)
 
         let restored = AppPreferences(defaults: defaults)
         let storedKeys = Set((defaults.persistentDomain(forName: suiteName) ?? [:]).keys)
@@ -114,6 +120,7 @@ struct ProfileManagerTests {
                 "features.vim-style-sheet-navigation.ignored-hosts",
                 "appearance.motion",
                 "features.native-picture-in-picture.enabled",
+                "appearance.sheet-scale",
             ])
         #expect(defaults.integer(forKey: "preferences.schemaVersion") == 1)
         #expect(restored.sheetNavigationEnabled)
@@ -121,6 +128,7 @@ struct ProfileManagerTests {
         #expect(restored.sheetNavigationIgnoredHosts == ["example.com"])
         #expect(restored.motionPreference == .standard)
         #expect(restored.nativePictureInPictureEnabled)
+        #expect(restored.sheetScale == 80)
     }
 
     @Test func appPreferencesMigrateLegacyValuesAndDoNotDowngradeFutureSchema() {

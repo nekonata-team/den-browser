@@ -170,6 +170,37 @@ private struct AppearanceSettingsView: View {
                     .foregroundStyle(.secondary)
             }
 
+            Section("Sheet Scale") {
+                HStack(spacing: 12) {
+                    Text("50%")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Slider(
+                        value: sheetScaleBinding,
+                        in: Double(
+                            AppPreferences.sheetScaleRange.lowerBound)...Double(
+                                AppPreferences.sheetScaleRange.upperBound),
+                        step: 1)
+                    Text("200%")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+
+                LabeledContent("Scale") {
+                    Text("\(preferences.sheetScale)%")
+                        .monospacedDigit()
+                }
+
+                Text("Applies to every Sheet across Profiles immediately.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                Button("Reset Sheet Scale") {
+                    preferences.setSheetScale(AppPreferences.defaultSheetScale)
+                }
+                .disabled(preferences.sheetScale == AppPreferences.defaultSheetScale)
+            }
+
             Section("Motion") {
                 Picker("Motion", selection: motionBinding) {
                     ForEach(MotionPreference.allCases) { preference in
@@ -211,6 +242,14 @@ private struct AppearanceSettingsView: View {
             preferences.motionPreference
         } set: { preference in
             preferences.setMotionPreference(preference)
+        }
+    }
+
+    private var sheetScaleBinding: Binding<Double> {
+        Binding {
+            Double(preferences.sheetScale)
+        } set: { scale in
+            preferences.setSheetScale(Int(scale.rounded()))
         }
     }
 

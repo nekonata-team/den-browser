@@ -19,6 +19,7 @@ final class BoardRuntime: NSObject, WKNavigationDelegate, WKUIDelegate {
         board: BoardState,
         websiteDataStore: WKWebsiteDataStore,
         sheetNavigation: SheetNavigationManager,
+        sheetScale: Int,
         onOpenBoard: @escaping (URL) -> Void,
         onChange: @escaping (UUID, URL?, String?) -> Void,
         onFullscreenChange: ((UUID, Bool) -> Void)? = nil
@@ -40,6 +41,7 @@ final class BoardRuntime: NSObject, WKNavigationDelegate, WKUIDelegate {
         )
 
         webView = WKWebView(frame: .zero, configuration: configuration)
+        webView.pageZoom = CGFloat(sheetScale) / 100
         webView.allowsBackForwardNavigationGestures = true
 
         super.init()

@@ -22,6 +22,8 @@ enum MotionPreference: String, CaseIterable, Identifiable {
 final class AppPreferences {
     static let schemaVersion = 1
     static let defaultHintAlphabet = "asdfghjkl"
+    static let defaultSheetScale = 100
+    static let sheetScaleRange = 50...200
 
     private(set) var sheetNavigationEnabled: Bool
     private(set) var sheetNavigationHintAlphabet: String
@@ -30,6 +32,7 @@ final class AppPreferences {
     private(set) var motionPreference: MotionPreference
     private(set) var nativePictureInPictureEnabled: Bool
     private(set) var boardCentering: FocusedBoardCentering
+    private(set) var sheetScale: Int
 
     @ObservationIgnored private let defaults: UserDefaults
 
@@ -42,6 +45,7 @@ final class AppPreferences {
     private static let nativePictureInPictureEnabledKey =
         "features.native-picture-in-picture.enabled"
     private static let boardCenteringKey = "appearance.board-centering"
+    private static let sheetScaleKey = "appearance.sheet-scale"
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
@@ -60,6 +64,9 @@ final class AppPreferences {
         boardCentering =
             defaults.string(forKey: Self.boardCenteringKey).flatMap(FocusedBoardCentering.init(rawValue:))
             ?? .never
+        sheetScale =
+            Self.normalizedSheetScale(defaults.object(forKey: Self.sheetScaleKey) as? Int)
+            ?? Self.defaultSheetScale
         loadShortcutOverrides()
     }
 
@@ -108,6 +115,12 @@ final class AppPreferences {
     func setBoardCentering(_ mode: FocusedBoardCentering) {
         boardCentering = mode
         defaults.set(mode.rawValue, forKey: Self.boardCenteringKey)
+    }
+
+    func setSheetScale(_ scale: Int) {
+        guard Self.sheetScaleRange.contains(scale) else { return }
+        sheetScale = scale
+        defaults.set(scale, forKey: Self.sheetScaleKey)
     }
 
     func shortcut(for action: ShortcutAction) -> ShortcutBinding? {
@@ -197,5 +210,10 @@ final class AppPreferences {
 
     private func shortcutDefaultsKey(for action: ShortcutAction) -> String {
         Self.shortcutKeyPrefix + action.rawValue
+    }
+
+    private static func normalizedSheetScale(_ scale: Int?) -> Int? {
+        guard let scale, sheetScaleRange.contains(scale) else { return nil }
+        return scale
     }
 }
