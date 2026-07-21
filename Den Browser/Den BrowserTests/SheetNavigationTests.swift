@@ -217,8 +217,10 @@ struct SheetNavigationTests {
 
     @Test func boardRuntimeObservesUrlAndTitleChanges() async throws {
         let manager = SheetNavigationManager(scriptSource: "")
-        var updatedURL: URL?
-        var updatedTitle: String?
+        var changeContinuation: AsyncStream<(URL?, String?)>.Continuation?
+        let changes = AsyncStream<(URL?, String?)> { continuation in
+            changeContinuation = continuation
+        }
 
         let runtime = BoardRuntime(
             board: board("Initial", url: "about:blank"),
@@ -227,8 +229,7 @@ struct SheetNavigationTests {
             sheetScale: AppPreferences.defaultSheetScale,
             onOpenBoard: { _ in },
             onChange: { _, url, title in
-                updatedURL = url
-                updatedTitle = title
+                changeContinuation?.yield((url, title))
             })
 
         let waiter = WebViewLoadWaiter()
@@ -240,10 +241,29 @@ struct SheetNavigationTests {
             in: runtime.webView
         )
 
-        try? await Task.sleep(for: .milliseconds(100))
+        let observedChange = try await withThrowingTaskGroup(of: (URL?, String?)?.self) { group in
+            group.addTask {
+                for await change in changes {
+                    if change.0 == testURL && change.1 == "Test Page Title" {
+                        return change
+                    }
+                }
+                return nil
+            }
 
-        #expect(updatedURL == testURL)
-        #expect(updatedTitle == "Test Page Title")
+            group.addTask {
+                try await Task.sleep(for: .seconds(2))
+                return nil
+            }
+
+            let result = try await group.next()!
+            group.cancelAll()
+            return result
+        }
+        changeContinuation?.finish()
+
+        #expect(observedChange?.0 == testURL)
+        #expect(observedChange?.1 == "Test Page Title")
     }
 
     private var sheetNavigationTestHTML: String {
