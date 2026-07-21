@@ -14,7 +14,7 @@ struct ProfileWindowView: View {
             ZStack(alignment: .topTrailing) {
                 ContentView(profileName: profile.name, profileColor: profile.color.color)
 
-                if !store.isZenViewPresented {
+                if !store.isZenViewPresented && !store.isOverviewPresented {
                     HStack(spacing: 8) {
                         if store.focusedDesk?.boards.isEmpty == false {
                             Button {
