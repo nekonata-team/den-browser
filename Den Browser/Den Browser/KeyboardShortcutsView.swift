@@ -39,6 +39,7 @@ struct KeyboardShortcutsView: View {
                 items: [
                     item(["⌃", "⌘", "P"], "Open Profile panel"),
                     item(["⌘", "T"], "Open Board"),
+                    item(["⌘", "L"], "Edit Focused Board Link"),
                     item(["⌘", "R"], "Reload Current Sheet"),
                     item(["⌘", "W"], "Remove Focused Board"),
                     item(["⇧", "⌘", "W"], "Close Profile Window"),

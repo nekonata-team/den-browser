@@ -35,6 +35,21 @@ extension DenStore {
         }
     }
 
+    var isEditBoardLinkPanelPresented: Bool {
+        temporaryContext == .editBoardLink
+    }
+
+    func showEditBoardLinkPanel() {
+        guard focusedBoard != nil else { return }
+        setTemporaryContext(.editBoardLink)
+    }
+
+    func hideEditBoardLinkPanel() {
+        if temporaryContext == .editBoardLink {
+            setTemporaryContext(nil)
+        }
+    }
+
     func showNewDeskPanel() {
         guard canCreateDesk else { return }
         setTemporaryContext(.newDesk)

@@ -29,6 +29,19 @@ struct DenStoreTests {
         #expect(invalidURLSearch.queryItems == [URLQueryItem(name: "q", value: "https://")])
     }
 
+    @Test func editingFocusedBoardLinkReplacesCurrentSheet() throws {
+        let board = board("Board", url: "https://before.example/")
+        let source = desk("Desk", boards: [board], focusedBoardID: board.id)
+        let store = DenStore(state: DenState(desks: [source], focusedDeskID: source.id))
+
+        store.showEditBoardLinkPanel()
+
+        #expect(store.navigateFocusedBoard(urlString: "after.example/path"))
+        #expect(store.focusedBoard?.currentSheetURL == URL(string: "https://after.example/path"))
+        #expect(store.temporaryContext == nil)
+        #expect(!store.isDenMode)
+    }
+
     @Test func resetDenClearsRuntimePresentationAndPersistsFreshState() {
         let board = board("Board")
         let populated = desk("Populated", boards: [board])

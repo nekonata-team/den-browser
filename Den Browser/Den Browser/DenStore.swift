@@ -257,6 +257,23 @@ final class DenStore {
         save()
     }
 
+    @discardableResult
+    func navigateFocusedBoard(urlString: String) -> Bool {
+        guard
+            let url = normalizedURL(from: urlString),
+            let deskIndex = focusedDeskIndex,
+            let boardIndex = focusedBoardIndex(in: deskIndex)
+        else { return false }
+
+        let boardID = state.desks[deskIndex].boards[boardIndex].id
+        state.desks[deskIndex].boards[boardIndex].currentSheetURL = url
+        setTemporaryContext(nil)
+        isDenMode = false
+        save()
+        runtimes[boardID]?.webView.load(URLRequest(url: url))
+        return true
+    }
+
     func adjustFocusedBoardWidth(by delta: Double) {
         guard
             let deskIndex = focusedDeskIndex,
@@ -555,6 +572,7 @@ final class DenStore {
 
 enum TemporaryContext: Equatable {
     case openBoard
+    case editBoardLink
     case newDesk
     case deskPresetManagement
     case overview

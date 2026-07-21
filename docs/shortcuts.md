@@ -12,6 +12,7 @@ The complete in-app guide is available from Settings, the Den menu, and `?` in D
 | --- | --- | --- |
 | Control + Command + `P` | Open Profile panel | Searches Profiles and opens their existing Den window or creates it if closed. |
 | Command + `T` | New Board panel | Available in every keyboard context. |
+| Command + `L` | Edit Focused Board Link panel | Replaces the Current Sheet with a URL or search on Return. Available in every keyboard context. |
 | Command + `W` | Remove focused Board | Available in every keyboard context. |
 | Shift + Command + `W` | Close Profile window | Settings and other non-Den windows retain Command + `W`. |
 | Command + `Q` | Quit Den Browser | |

@@ -60,6 +60,11 @@ final class KeyboardController {
             return true
         }
 
+        if character == "l", modifiers == [.command] {
+            store.showEditBoardLinkPanel()
+            return true
+        }
+
         switch store.temporaryContext {
         case .keyboardShortcuts:
             if (isEscape(event) && modifiers == [])
@@ -72,7 +77,7 @@ final class KeyboardController {
             return handleBoardWidthPanel(event, store: store)
         case .overview:
             return handleOverview(event, store: store)
-        case .openBoard, .newDesk, .deskPresetManagement, .saveDeskPreset, .renameBoard, .renameDesk:
+        case .openBoard, .editBoardLink, .newDesk, .deskPresetManagement, .saveDeskPreset, .renameBoard, .renameDesk:
             return false
         case nil:
             break

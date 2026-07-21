@@ -11,6 +11,7 @@ struct ContentView: View {
     @Environment(AppPreferences.self) private var preferences
     @Environment(\.accessibilityReduceMotion) private var systemReduceMotion
     @State private var urlText = ""
+    @State private var editBoardLinkText = ""
     @State private var newDeskLabel = ""
     @State private var selectedDeskPreset: DeskPresetSelection = .builtIn(.empty)
     @State private var activeDeskPreset: DeskPresetSelection = .builtIn(.empty)
@@ -28,6 +29,7 @@ struct ContentView: View {
     @State private var boardDrag: BoardDragState?
     @State private var lastBoardAutoScrollTime = 0.0
     @FocusState private var isOpenPanelFocused: Bool
+    @FocusState private var isEditBoardLinkPanelFocused: Bool
     @FocusState private var isDeskPresetSearchFocused: Bool
     @FocusState private var isNewDeskLabelFocused: Bool
     @FocusState private var isSaveDeskPresetLabelFocused: Bool
@@ -72,6 +74,12 @@ struct ContentView: View {
 
                 if store.isOpenBoardPanelPresented {
                     openBoardPanel(defaultBoardWidth: defaultBoardWidth(in: geometry.size))
+                        .padding(.top, shouldShowDeskSwitcher ? 74 : 12)
+                        .transition(DenMotion.transition(reduceMotion: shouldReduceMotion, scale: 0.96))
+                }
+
+                if store.isEditBoardLinkPanelPresented {
+                    editBoardLinkPanel
                         .padding(.top, shouldShowDeskSwitcher ? 74 : 12)
                         .transition(DenMotion.transition(reduceMotion: shouldReduceMotion, scale: 0.96))
                 }
@@ -139,6 +147,7 @@ struct ContentView: View {
                 cancelBoardDrag()
             }
             .animation(DenMotion.feedback(reduceMotion: shouldReduceMotion), value: store.isOpenBoardPanelPresented)
+            .animation(DenMotion.feedback(reduceMotion: shouldReduceMotion), value: store.isEditBoardLinkPanelPresented)
             .animation(DenMotion.feedback(reduceMotion: shouldReduceMotion), value: store.isNewDeskPanelPresented)
             .animation(
                 DenMotion.feedback(reduceMotion: shouldReduceMotion), value: store.isSaveDeskPresetPanelPresented
@@ -579,6 +588,45 @@ struct ContentView: View {
         }
     }
 
+    private var editBoardLinkPanel: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 10) {
+                Image(systemName: "link")
+                    .foregroundStyle(.secondary)
+
+                TextField("Open URL or search", text: $editBoardLinkText)
+                    .textFieldStyle(.plain)
+                    .font(.system(size: 18, weight: .medium))
+                    .focused($isEditBoardLinkPanelFocused)
+                    .onSubmit {
+                        editFocusedBoardLink()
+                    }
+            }
+            .frame(height: 38)
+
+            HStack(spacing: 12) {
+                Text("Replace the Current Sheet in the focused Board")
+                    .foregroundStyle(.secondary)
+                Spacer()
+                Text("⌘L")
+                    .foregroundStyle(.secondary)
+            }
+            .font(.system(size: 12))
+        }
+        .padding(16)
+        .frame(width: 520)
+        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .onAppear {
+            editBoardLinkText = store.focusedBoard?.currentSheetURL?.absoluteString ?? ""
+            DispatchQueue.main.async {
+                isEditBoardLinkPanelFocused = true
+            }
+        }
+        .onExitCommand {
+            store.hideEditBoardLinkPanel()
+        }
+    }
+
     private var renameBoardPanel: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(spacing: 10) {
@@ -887,6 +935,12 @@ struct ContentView: View {
     private func openBoard(defaultBoardWidth: Double) {
         store.addBoard(urlString: urlText, preferredWidth: defaultBoardWidth)
         urlText = ""
+    }
+
+    private func editFocusedBoardLink() {
+        if store.navigateFocusedBoard(urlString: editBoardLinkText) {
+            editBoardLinkText = ""
+        }
     }
 
     private func updateBoardLayout(for size: CGSize) {

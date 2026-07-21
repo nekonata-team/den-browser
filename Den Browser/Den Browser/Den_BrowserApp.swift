@@ -98,6 +98,9 @@ private struct DenCommands: Commands {
             Button("Open Board") { store?.showOpenBoardPanel() }
                 .keyboardShortcut("t", modifiers: [.command])
                 .disabled(store == nil)
+            Button("Edit Focused Board Link") { store?.showEditBoardLinkPanel() }
+                .keyboardShortcut("l", modifiers: [.command])
+                .disabled(store?.focusedBoard == nil)
             Button("New Desk") { store?.showNewDeskPanel() }
                 .disabled(store?.canCreateDesk != true)
             Button("Save Desk as Preset…") { store?.showSaveDeskPresetPanel() }
