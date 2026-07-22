@@ -268,7 +268,13 @@ enum DeskPresetSearch {
 
         let fields =
             [(label, 0)]
-            + boards.map { ($0.label, 1_000) }
+            + boards.flatMap { board -> [(String, Int)] in
+                var fields = [(board.label, 1_000)]
+                if let customLabel = board.customLabel {
+                    fields.append((customLabel, 1_000))
+                }
+                return fields
+            }
             + boards.compactMap { board in
                 board.initialSheetURL?.host(percentEncoded: false).map { ($0, 2_000) }
             }
@@ -330,7 +336,7 @@ struct DeskPresetPreview: View {
                 HStack(alignment: .top, spacing: 6) {
                     ForEach(Array(boards.enumerated()), id: \.offset) { _, board in
                         VStack(alignment: .leading, spacing: 3) {
-                            Text(board.label)
+                            Text(board.customLabel ?? board.label)
                                 .lineLimit(1)
                             Text(board.initialSheetURL?.host(percentEncoded: false) ?? "Empty Board")
                                 .font(.caption2)

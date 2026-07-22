@@ -154,7 +154,8 @@ struct DenStoreTests {
             DeskPresetBoard(
                 label: "Gemini Research",
                 width: 520,
-                initialSheetURL: URL(string: "https://docs.google.com/"))
+                initialSheetURL: URL(string: "https://docs.google.com/"),
+                customLabel: "Project Chat")
         ]
 
         let labelScore = try #require(
@@ -163,9 +164,12 @@ struct DenStoreTests {
             DeskPresetSearch.score(query: "gemres", label: "Research", boards: boards))
         let hostScore = try #require(
             DeskPresetSearch.score(query: "docs", label: "Research", boards: boards))
+        let customLabelScore = try #require(
+            DeskPresetSearch.score(query: "project", label: "Research", boards: boards))
 
         #expect(labelScore < boardScore)
         #expect(boardScore < hostScore)
+        #expect(customLabelScore < hostScore)
         #expect(DeskPresetSearch.score(query: "claude", label: "Research", boards: boards) == nil)
     }
 
