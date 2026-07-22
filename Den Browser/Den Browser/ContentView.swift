@@ -198,33 +198,16 @@ struct ContentView: View {
     }
 
     private var deskSwitcher: some View {
-        ScrollViewReader { proxy in
-            GeometryReader { geometry in
-                ScrollView(.horizontal) {
-                    GlassEffectContainer(spacing: 8) {
-                        HStack(spacing: 8) {
-                            ForEach(store.state.desks) { desk in
-                                deskSwitcherItem(desk, in: geometry.size, using: proxy)
-                            }
-                        }
-                    }
-                    .padding(.horizontal, 12)
-                    .animation(DenMotion.spatial(reduceMotion: shouldReduceMotion), value: store.state.desks.map(\.id))
-                }
-                .coordinateSpace(name: DeskSwitcherCoordinateSpace.name)
-                .scrollIndicators(.hidden)
-                .onChange(of: store.state.focusedDeskID) { _, deskID in
-                    withAnimation(DenMotion.spatial(reduceMotion: shouldReduceMotion)) {
-                        proxy.scrollTo(deskID, anchor: .center)
-                    }
-                }
-                .onPreferenceChange(DeskFramePreferenceKey.self) { frames in
-                    deskFrames = frames
-                    alignDraggedDesk(to: frames)
-                }
+        DeskSwitcher(
+            shouldReduceMotion: shouldReduceMotion,
+            item: { desk, size, proxy in
+                AnyView(deskSwitcherItem(desk, in: size, using: proxy))
+            },
+            onFramesChange: { frames in
+                deskFrames = frames
+                alignDraggedDesk(to: frames)
             }
-            .frame(height: 36)
-        }
+        )
     }
 
     @ViewBuilder
@@ -1268,7 +1251,7 @@ enum DeskDragInsertion {
     }
 }
 
-private struct DeskFramePreferenceKey: PreferenceKey {
+struct DeskFramePreferenceKey: PreferenceKey {
     static let defaultValue: [UUID: CGRect] = [:]
 
     static func reduce(value: inout [UUID: CGRect], nextValue: () -> [UUID: CGRect]) {
