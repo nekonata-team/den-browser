@@ -302,138 +302,32 @@ struct ContentView: View {
     }
 
     private var newDeskPanel: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            HStack(spacing: 10) {
-                Image(
-                    systemName: store.isDeskPresetManagementPresented
-                        ? "bookmark" : "rectangle.stack.badge.plus"
-                )
-                .foregroundStyle(.secondary)
-                Text(store.isDeskPresetManagementPresented ? "Manage Presets" : "New Desk")
-                    .font(.system(size: 18, weight: .semibold))
-            }
-            .frame(height: 38)
-
-            if isChoosingDeskPreset {
-                DeskPresetPicker(
-                    selection: $activeDeskPreset,
-                    query: $deskPresetQuery,
-                    isManaging: $isManagingDeskPresets,
-                    isSearchFocused: $isDeskPresetSearchFocused,
-                    onConfirm: confirmDeskPreset)
-            } else {
-                HStack(spacing: 10) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(deskPresetLabel(for: selectedDeskPreset))
-                            .font(.headline)
-                        Text(boardCountLabel(selectedDeskPresetBoards.count))
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                    Spacer()
-                    Button("Change Preset") { beginDeskPresetSelection() }
-                        .buttonStyle(.plain)
-                }
-                .padding(10)
-                .background(
-                    Color.primary.opacity(0.055),
-                    in: RoundedRectangle(cornerRadius: DenRadius.small, style: .continuous)
-                )
-
-                DeskPresetPreview(boards: selectedDeskPresetBoards)
-
-                TextField("Desk label", text: $newDeskLabel)
-                    .textFieldStyle(.roundedBorder)
-                    .font(.system(size: 16, weight: .medium))
-                    .focused($isNewDeskLabelFocused)
-                    .onSubmit(createDesk)
-                    .onKeyPress(phases: .down) { keyPress in
-                        let isBackTab = keyPress.key == .tab || keyPress.characters == "\u{19}"
-                        guard isBackTab, keyPress.modifiers.contains(.shift) else {
-                            return .ignored
-                        }
-                        beginDeskPresetSelection()
-                        return .handled
-                    }
-
-                HStack(spacing: 12) {
-                    if didAttemptDeskCreation && trimmedNewDeskLabel.isEmpty {
-                        Text("Enter a desk label")
-                            .foregroundStyle(.red)
-                    } else {
-                        Text(newDeskPanelDescription)
-                            .foregroundStyle(.secondary)
-                    }
-
-                    Spacer()
-
-                    Button("Create", action: createDesk)
-                        .buttonStyle(.glassProminent)
-                        .disabled(trimmedNewDeskLabel.isEmpty || !store.canCreateDesk)
-                }
-                .font(.system(size: 12))
-            }
-        }
-        .padding(16)
-        .frame(width: 620)
-        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: DenRadius.large, style: .continuous))
-        .onAppear {
-            selectedDeskPreset = .builtIn(.empty)
-            activeDeskPreset = .builtIn(.empty)
-            newDeskLabel = BuiltInDeskPreset.empty.label
-            deskPresetQuery = ""
-            isManagingDeskPresets = store.isDeskPresetManagementPresented
-            isChoosingDeskPreset = true
-            didAttemptDeskCreation = false
-            DispatchQueue.main.async {
-                isDeskPresetSearchFocused = true
-            }
-        }
-        .onExitCommand {
-            if isChoosingDeskPreset {
-                store.hideNewDeskPanel()
-            } else {
-                beginDeskPresetSelection()
-            }
-        }
+        NewDeskPanel(
+            selectedDeskPreset: $selectedDeskPreset,
+            activeDeskPreset: $activeDeskPreset,
+            query: $deskPresetQuery,
+            isManaging: $isManagingDeskPresets,
+            isChoosing: $isChoosingDeskPreset,
+            didAttemptCreation: $didAttemptDeskCreation,
+            newDeskLabel: $newDeskLabel,
+            isSearchFocused: $isDeskPresetSearchFocused,
+            isLabelFocused: $isNewDeskLabelFocused,
+            selectedBoards: selectedDeskPresetBoards,
+            presetLabel: deskPresetLabel(for: selectedDeskPreset),
+            boardCountLabel: boardCountLabel(selectedDeskPresetBoards.count),
+            trimmedLabel: trimmedNewDeskLabel,
+            description: newDeskPanelDescription,
+            onConfirmPreset: confirmDeskPreset,
+            onBeginSelection: beginDeskPresetSelection,
+            onCreate: createDesk)
     }
 
     private var saveDeskPresetPanel: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack(spacing: 10) {
-                Image(systemName: "bookmark")
-                    .foregroundStyle(.secondary)
-                Text("Save Desk as Preset")
-                    .font(.system(size: 17, weight: .semibold))
-            }
-
-            TextField("Preset label", text: $saveDeskPresetLabel)
-                .textFieldStyle(.roundedBorder)
-                .focused($isSaveDeskPresetLabelFocused)
-                .onSubmit(saveDeskPreset)
-
-            DeskPresetPreview(
-                boards: store.focusedDesk?.boards.map(DeskPresetBoard.init) ?? [])
-
-            HStack {
-                Text(saveDeskPresetMessage ?? "Captures the current Board arrangement")
-                    .font(.caption)
-                    .foregroundStyle(saveDeskPresetMessage == nil ? Color.secondary : Color.red)
-                Spacer()
-                Button("Save Preset", action: saveDeskPreset)
-                    .buttonStyle(.glassProminent)
-                    .disabled(saveDeskPresetLabel.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-            }
-        }
-        .padding(16)
-        .frame(width: 520)
-        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: DenRadius.large, style: .continuous))
-        .onAppear {
-            saveDeskPresetLabel = store.focusedDesk?.label ?? ""
-            saveDeskPresetMessage = nil
-            DispatchQueue.main.async { isSaveDeskPresetLabelFocused = true }
-        }
-        .onExitCommand { store.hideSaveDeskPresetPanel() }
+        SaveDeskPresetPanel(
+            label: $saveDeskPresetLabel,
+            message: $saveDeskPresetMessage,
+            isFocused: $isSaveDeskPresetLabelFocused,
+            onSave: saveDeskPreset)
     }
 
     private var trimmedNewDeskLabel: String {
