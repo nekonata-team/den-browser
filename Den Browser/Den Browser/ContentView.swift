@@ -549,42 +549,12 @@ struct ContentView: View {
     }
 
     private var editBoardLinkPanel: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack(spacing: 10) {
-                Image(systemName: "link")
-                    .foregroundStyle(.secondary)
-
-                TextField("Open URL or search", text: $editBoardLinkText)
-                    .textFieldStyle(.plain)
-                    .font(.system(size: 18, weight: .medium))
-                    .focused($isEditBoardLinkPanelFocused)
-                    .onSubmit {
-                        editFocusedBoardLink()
-                    }
-            }
-            .frame(height: 38)
-
-            HStack(spacing: 12) {
-                Text("Replace the Current Sheet in the focused Board")
-                    .foregroundStyle(.secondary)
-                Spacer()
-                Text("⌘L")
-                    .foregroundStyle(.secondary)
-            }
-            .font(.system(size: 12))
-        }
-        .padding(16)
-        .frame(width: 520)
-        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: DenRadius.large, style: .continuous))
-        .onAppear {
-            editBoardLinkText = store.focusedBoard?.currentSheetURL?.absoluteString ?? ""
-            DispatchQueue.main.async {
-                isEditBoardLinkPanelFocused = true
-            }
-        }
-        .onExitCommand {
-            store.hideEditBoardLinkPanel()
-        }
+        EditBoardLinkPanel(
+            text: $editBoardLinkText,
+            isFocused: $isEditBoardLinkPanelFocused,
+            onSubmit: editFocusedBoardLink,
+            onDismiss: store.hideEditBoardLinkPanel
+        )
     }
 
     private var renameBoardPanel: some View {

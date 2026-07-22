@@ -40,3 +40,45 @@ struct OpenBoardPanel: View {
         .onExitCommand(perform: onDismiss)
     }
 }
+
+struct EditBoardLinkPanel: View {
+    @Environment(DenStore.self) private var store
+
+    @Binding var text: String
+    @FocusState.Binding var isFocused: Bool
+    let onSubmit: () -> Void
+    let onDismiss: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 10) {
+                Image(systemName: "link")
+                    .foregroundStyle(.secondary)
+
+                TextField("Open URL or search", text: $text)
+                    .textFieldStyle(.plain)
+                    .font(.system(size: 18, weight: .medium))
+                    .focused($isFocused)
+                    .onSubmit { onSubmit() }
+            }
+            .frame(height: 38)
+
+            HStack(spacing: 12) {
+                Text("Replace the Current Sheet in the focused Board")
+                    .foregroundStyle(.secondary)
+                Spacer()
+                Text("⌘L")
+                    .foregroundStyle(.secondary)
+            }
+            .font(.system(size: 12))
+        }
+        .padding(16)
+        .frame(width: 520)
+        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: DenRadius.large, style: .continuous))
+        .onAppear {
+            text = store.focusedBoard?.currentSheetURL?.absoluteString ?? ""
+            DispatchQueue.main.async { isFocused = true }
+        }
+        .onExitCommand(perform: onDismiss)
+    }
+}
