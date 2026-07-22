@@ -2,6 +2,7 @@ import Testing
 
 @testable import Den_Browser
 
+@MainActor
 struct BoardLayoutTests {
     @Test func appliesCenteringPaddingForEachMode() {
         #expect(paddings(for: .always, boardCount: 3) == (leading: 340, trailing: 340))

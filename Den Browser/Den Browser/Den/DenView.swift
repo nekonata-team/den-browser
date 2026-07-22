@@ -873,7 +873,7 @@ private struct DeskDragState {
     }
 }
 
-enum DeskDragInsertion {
+nonisolated enum DeskDragInsertion {
     static func targetIndex(
         draggedDeskID: UUID,
         orderedDeskIDs: [UUID],
@@ -906,7 +906,7 @@ struct DeskFramePreferenceKey: PreferenceKey {
     }
 }
 
-enum BoardDragInsertion {
+nonisolated enum BoardDragInsertion {
     static func targetIndex(
         draggedBoardID: UUID,
         orderedBoardIDs: [UUID],

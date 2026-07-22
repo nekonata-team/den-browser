@@ -1,6 +1,7 @@
 import Testing
 @testable import Den_Browser
 
+@MainActor
 struct DeskDragInsertionTests {
     private let first = UUID.fixture(1)
     private let second = UUID.fixture(2)

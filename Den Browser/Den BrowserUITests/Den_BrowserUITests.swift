@@ -6,7 +6,9 @@ final class Den_BrowserUITests: XCTestCase {
     }
 
     override func tearDownWithError() throws {
-        XCUIApplication().terminate()
+        MainActor.assumeIsolated {
+            XCUIApplication().terminate()
+        }
     }
 
     @MainActor

@@ -4,6 +4,7 @@ import Testing
 
 @testable import Den_Browser
 
+@MainActor
 struct BoardDragInsertionTests {
     private let alpha = UUID.fixture(1)
     private let bravo = UUID.fixture(2)
