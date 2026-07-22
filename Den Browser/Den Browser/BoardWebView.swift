@@ -30,7 +30,7 @@ struct BoardWebView: NSViewRepresentable {
 
     final class Coordinator: NSGestureRecognizer {
         private var pointerFocusState = PointerFocusState()
-        private var activationWorkItem: DispatchWorkItem?
+        private var activationTask: Task<Void, Never>?
         fileprivate var onFocus: (() -> Void)?
 
         init() {
@@ -42,7 +42,7 @@ struct BoardWebView: NSViewRepresentable {
         }
 
         deinit {
-            activationWorkItem?.cancel()
+            activationTask?.cancel()
         }
 
         func startRecognizing(webView: WKWebView, onFocus: @escaping () -> Void) {
@@ -65,22 +65,23 @@ struct BoardWebView: NSViewRepresentable {
         func stopRecognizing() {
             view?.removeGestureRecognizer(self)
             onFocus = nil
-            activationWorkItem?.cancel()
+            activationTask?.cancel()
+            activationTask = nil
         }
 
         func updateFocus(_ newValue: Bool, webView: WKWebView) {
             guard newValue != pointerFocusState.isFocused else { return }
-            activationWorkItem?.cancel()
+            activationTask?.cancel()
+            activationTask = nil
             guard pointerFocusState.updateFocus(newValue) else { return }
 
             guard webView.fullscreenState == .notInFullscreen else { return }
 
-            let workItem = DispatchWorkItem { [weak webView] in
-                guard let webView else { return }
+            activationTask = Task { @MainActor [weak webView] in
+                await Task.yield()
+                guard !Task.isCancelled, let webView else { return }
                 webView.window?.makeFirstResponder(webView)
             }
-            activationWorkItem = workItem
-            DispatchQueue.main.async(execute: workItem)
         }
     }
 }
