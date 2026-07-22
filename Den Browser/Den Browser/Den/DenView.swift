@@ -558,8 +558,7 @@ struct DenView: View {
     }
 
     private func isBoardPointerFocusEnabled(for boardID: UUID) -> Bool {
-        (!store.isBoardDragging || boardDrag?.boardID == boardID)
-            && store.temporaryContext == nil
+        (boardDrag == nil || boardDrag?.boardID == boardID) && store.temporaryContext == nil
     }
 
     private var shouldReduceMotion: Bool {
