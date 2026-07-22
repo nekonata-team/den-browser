@@ -526,7 +526,7 @@ final class DenStore {
     }
 
     func save() {
-        guard !isBoardDragging else { return }
+        guard !isBoardDragging, !isDeskDragging else { return }
         onSave?(state)
     }
 

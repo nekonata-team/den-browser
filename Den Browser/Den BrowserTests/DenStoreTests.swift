@@ -457,16 +457,53 @@ struct DenStoreTests {
 
         #expect(store.beginDeskDrag(second.id))
         store.previewDeskMove(second.id, to: 2)
+        store.updateBoard(
+            boardID: secondBoard.id,
+            url: URL(string: "https://updated.example/"),
+            title: "Updated title")
+
+        #expect(savedState == nil)
+
         store.finishDeskDrag()
 
         #expect(store.state.desks.map(\.id) == [first.id, third.id, second.id])
         #expect(store.focusedDesk?.id == first.id)
         #expect(store.state.desks[2].boards.map(\.id) == [secondBoard.id])
         #expect(store.state.desks[2].focusedBoardID == secondBoard.id)
+        #expect(store.state.desks[2].boards[0].currentSheetURL == URL(string: "https://updated.example/"))
+        #expect(store.state.desks[2].boards[0].label == "Updated title")
         #expect(savedState == store.state)
 
         store.previewDeskMove(second.id, to: 2)
         #expect(store.state.desks.map(\.id) == [first.id, third.id, second.id])
+    }
+
+    @Test func cancellingDeskDragPersistsRestoredOrderAfterBoardUpdate() {
+        let firstBoard = board("First Board")
+        let secondBoard = board("Second Board")
+        let first = desk("First", boards: [firstBoard], focusedBoardID: firstBoard.id)
+        let second = desk("Second", boards: [secondBoard], focusedBoardID: secondBoard.id)
+        let third = desk("Third")
+        var savedState: DenState?
+        let store = DenStore(
+            state: DenState(desks: [first, second, third], focusedDeskID: first.id),
+            onSave: { savedState = $0 })
+
+        #expect(store.beginDeskDrag(second.id))
+        store.previewDeskMove(second.id, to: 2)
+        store.updateBoard(
+            boardID: secondBoard.id,
+            url: URL(string: "https://updated.example/"),
+            title: "Updated title")
+        #expect(savedState == nil)
+
+        store.restoreDeskOrder([first.id, second.id, third.id])
+        store.finishDeskDrag()
+
+        #expect(store.state.desks.map(\.id) == [first.id, second.id, third.id])
+        #expect(store.state.desks[1].boards[0].currentSheetURL == URL(string: "https://updated.example/"))
+        #expect(store.state.desks[1].boards[0].label == "Updated title")
+        #expect(savedState == store.state)
     }
 
     @Test func deletingDeskWithBoardsRequiresConfirmation() {
