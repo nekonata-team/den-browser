@@ -239,7 +239,7 @@ final class KeyboardController {
                 store.showEditBoardLinkPanel()
             }
         default:
-            if isReturn(event), modifiers == [] {
+            if isReturn(event), modifiers == [], !event.isARepeat {
                 store.duplicateFocusedBoard()
             }
         }
