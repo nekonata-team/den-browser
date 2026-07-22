@@ -102,6 +102,44 @@ struct DenStoreTests {
         #expect(savedState == store.state)
     }
 
+    @Test func resetDenRequiresConfirmationBeforeChangingState() {
+        let board = board("Board")
+        let populated = desk("Populated", boards: [board])
+        var savedState: DenState?
+        let store = DenStore(
+            state: DenState(desks: [populated], focusedDeskID: populated.id),
+            onSave: { savedState = $0 })
+        let originalState = store.state
+
+        store.requestResetDenConfirmation()
+
+        #expect(store.isResetDenPending)
+        #expect(store.state == originalState)
+        #expect(savedState == nil)
+
+        store.cancelResetDen()
+
+        #expect(!store.isResetDenPending)
+        #expect(store.state == originalState)
+        #expect(savedState == nil)
+    }
+
+    @Test func confirmingResetDenUsesExistingResetBehavior() {
+        let board = board("Board")
+        let populated = desk("Populated", boards: [board])
+        var savedState: DenState?
+        let store = DenStore(
+            state: DenState(desks: [populated], focusedDeskID: populated.id),
+            onSave: { savedState = $0 })
+
+        store.requestResetDenConfirmation()
+        store.confirmResetDen()
+
+        #expect(!store.isResetDenPending)
+        #expect(store.state == .sample)
+        #expect(savedState == store.state)
+    }
+
     @Test func emptyPersistedDenRecoversAndSavesOneDesk() {
         var savedState: DenState?
         let store = DenStore(

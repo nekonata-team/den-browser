@@ -141,8 +141,8 @@ private struct DenCommands: Commands {
 
             Divider()
 
-            Button("Reset Den") { store?.resetDen() }
-                .disabled(store == nil)
+            Button("Reset Den") { store?.requestResetDenConfirmation() }
+                .disabled(store == nil || store?.hasPendingConfirmation == true)
         }
     }
 }

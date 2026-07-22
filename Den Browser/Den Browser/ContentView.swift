@@ -223,6 +223,21 @@ struct ContentView: View {
             Text("Existing Desks will not be affected.")
         }
         .confirmationDialog(
+            "Reset Den?",
+            isPresented: Binding(
+                get: { store.isResetDenPending },
+                set: { if !$0 { store.cancelResetDen() } })
+        ) {
+            Button("Reset Den", role: .destructive) {
+                store.confirmResetDen()
+            }
+            Button("Cancel", role: .cancel) {
+                store.cancelResetDen()
+            }
+        } message: {
+            Text("All Desks, Boards, and Sheet Stacks in this Den will be permanently deleted.")
+        }
+        .confirmationDialog(
             "Delete \(store.deskPresetPendingDeletion?.label ?? "Desk Preset")?",
             isPresented: Binding(
                 get: { store.deskPresetPendingDeletion != nil },

@@ -19,6 +19,7 @@ final class DenStore {
     private(set) var deskPendingDeletion: DeskState?
     var deskPresetPendingDeletion: PersonalDeskPreset?
     var deskPresetPendingReplacement: PersonalDeskPreset?
+    private(set) var isResetDenPending = false
     var maximizedBoardID: UUID?
     var centerFocusedBoardRequest = 0
     var isBoardDragging = false
@@ -70,6 +71,7 @@ final class DenStore {
         deskPendingDeletion != nil
             || deskPresetPendingDeletion != nil
             || deskPresetPendingReplacement != nil
+            || isResetDenPending
     }
 
     convenience init() {
@@ -225,12 +227,26 @@ final class DenStore {
         deskPendingDeletion = nil
         deskPresetPendingDeletion = nil
         deskPresetPendingReplacement = nil
+        isResetDenPending = false
         maximizedBoardID = nil
         overviewSelectionDeskID = nil
         overviewSelectionBoardID = nil
         recentlyRemovedBoard = nil
         isDenMode = false
         save()
+    }
+
+    func requestResetDenConfirmation() {
+        isResetDenPending = true
+    }
+
+    func confirmResetDen() {
+        guard isResetDenPending else { return }
+        resetDen()
+    }
+
+    func cancelResetDen() {
+        isResetDenPending = false
     }
 
     func addBoard(urlString: String, preferredWidth: Double? = nil, afterBoardID: UUID? = nil) {
