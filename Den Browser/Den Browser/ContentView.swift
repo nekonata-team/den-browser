@@ -464,137 +464,60 @@ struct ContentView: View {
     }
 
     private func boardStrip(in size: CGSize, safeAreaTop: CGFloat) -> some View {
-        let boards = store.focusedDesk?.boards ?? []
-        let topInset: CGFloat = shouldShowDeskSwitcher ? 48 : 10
-        let bottomInset: CGFloat = 10
-        let boardHeight = max(420, size.height - topInset - bottomInset)
-        let maximizedBoardWidth = max(280, size.width - boardHorizontalPadding * 2)
-        let layoutParams = BoardLayout.Parameters(
-            centering: preferences.boardCentering,
-            boards: boards,
-            maximizedBoardID: store.maximizedBoardID,
-            windowWidth: size.width,
-            horizontalPadding: boardHorizontalPadding,
-            spacing: boardSpacing
-        )
-        let paddings = BoardLayout.calculatePaddings(for: layoutParams)
-        let leadingPadding = paddings.leading
-        let trailingPadding = paddings.trailing
-        return ScrollViewReader { scrollProxy in
-            ScrollView(.horizontal) {
-                HStack(alignment: .top, spacing: boardSpacing) {
-                    ForEach(boards) { board in
-                        BoardView(
-                            board: board,
-                            isFocused: board.id == store.focusedDesk?.focusedBoardID,
-                            isDragging: boardDrag?.boardID == board.id,
-                            runtime: store.runtime(for: board),
-                            profileColor: profileColor,
-                            width: store.maximizedBoardID == board.id ? maximizedBoardWidth : board.width,
-                            height: boardHeight,
-                            isPointerFocusEnabled: isBoardPointerFocusEnabled(for: board.id),
-                            onFocus: { store.focusBoard(board.id) },
-                            onGoBack: { store.goBackInBoard(board.id) },
-                            onGoForward: { store.goForwardInBoard(board.id) },
-                            onRemove: { store.removeBoard(board.id) },
-                            onDragChanged: {
-                                updateBoardDrag(board, value: $0, in: size, using: scrollProxy)
-                            },
-                            onDragEnded: { finishBoardDrag(value: $0, in: size) }
-                        )
-                        .id(board.id)
-                        .transition(DenMotion.transition(reduceMotion: shouldReduceMotion, scale: 0.98))
-                        .offset(
-                            x: boardDrag?.boardID == board.id ? boardDrag?.offset.width ?? 0 : 0,
-                            y: boardDrag?.boardID == board.id ? boardDrag?.offset.height ?? 0 : 0
-                        )
-                        .background {
-                            GeometryReader { proxy in
-                                Color.clear.preference(
-                                    key: BoardFramePreferenceKey.self,
-                                    value: [board.id: proxy.frame(in: .named(BoardStripCoordinateSpace.name))]
-                                )
-                            }
-                        }
-                        .overlay(alignment: .trailing) {
-                            if store.maximizedBoardID != board.id {
-                                BoardResizeHandle(
-                                    board: board,
-                                    height: boardHeight,
-                                    width: boardSpacing,
-                                    onResizeStart: {
-                                        resizingBoardID = board.id
-                                        store.focusBoard(board.id)
-                                    },
-                                    onResize: { store.resizeBoard(board.id, to: $0) },
-                                    onResizeEnd: {
-                                        store.saveBoardWidths()
-                                        resizingBoardID = nil
-                                    }
-                                )
-                                .offset(x: boardSpacing)
-                            }
-                        }
-                        .allowsHitTesting(isBoardPointerFocusEnabled(for: board.id))
-                        .accessibilityHidden(!isBoardPointerFocusEnabled(for: board.id))
-                        .zIndex(boardDrag?.boardID == board.id ? 2 : 1)
-                    }
-                }
-                .padding(.leading, leadingPadding)
-                .padding(.trailing, trailingPadding)
-                .padding(.top, topInset)
-                .padding(.bottom, bottomInset)
-                .animation(DenMotion.spatial(reduceMotion: shouldReduceMotion), value: boards.map(\.id))
-                .animation(DenMotion.spatial(reduceMotion: shouldReduceMotion), value: boards.map(\.width))
-                .animation(DenMotion.spatial(reduceMotion: shouldReduceMotion), value: store.maximizedBoardID)
-            }
-            .coordinateSpace(name: BoardStripCoordinateSpace.name)
-            .scrollIndicators(.never)
-            .accessibilityIdentifier("board-strip")
-            .onPreferenceChange(BoardFramePreferenceKey.self) { frames in
+        BoardStrip(
+            boardDrag: $boardDrag,
+            resizingBoardID: $resizingBoardID,
+            size: size,
+            shouldShowDeskSwitcher: shouldShowDeskSwitcher,
+            profileColor: profileColor,
+            boardSpacing: boardSpacing,
+            boardHorizontalPadding: boardHorizontalPadding,
+            isPointerFocusEnabled: isBoardPointerFocusEnabled,
+            onDragChanged: { board, value, size, proxy in
+                updateBoardDrag(board, value: value, in: size, using: proxy)
+            },
+            onDragEnded: { value, size in
+                finishBoardDrag(value: value, in: size)
+            },
+            onFramesChanged: { frames, boards, leadingPadding, proxy in
                 boardFrames = frames
                 alignDraggedBoard(to: frames)
-
                 if let pending = pendingScroll, frames[pending.boardID] != nil {
-                    // Ensure the updated padding layout is applied before scrolling.
-                    if let firstBoardID = boards.first?.id, let firstFrame = frames[firstBoardID] {
-                        let expectedMinX = leadingPadding
-                        let actualMinX = firstFrame.minX
-                        if abs(actualMinX - expectedMinX) > 2.0 {
-                            return  // Wait until layout changes are committed
-                        }
+                    if let firstBoardID = boards.first?.id, let firstFrame = frames[firstBoardID],
+                        abs(firstFrame.minX - leadingPadding) > 2.0
+                    {
+                        return
                     }
                     pendingScroll = nil
-                    centerBoard(pending.boardID, using: scrollProxy, animated: pending.animated)
+                    centerBoard(pending.boardID, using: proxy, animated: pending.animated)
                 }
-            }
-            .onAppear {
+            },
+            onAppear: { proxy in
                 guard !didScrollToRestoredFocusedBoard else { return }
                 didScrollToRestoredFocusedBoard = true
                 if let boardID = store.focusedDesk?.focusedBoardID {
                     if boardFrames[boardID] != nil {
-                        centerBoard(boardID, using: scrollProxy, animated: false)
+                        centerBoard(boardID, using: proxy, animated: false)
                     } else {
                         pendingScroll = PendingScroll(boardID: boardID, animated: false)
                     }
                 }
-            }
-            .onChange(of: boardFocusTarget) { previous, current in
+            },
+            onFocusChanged: { previous, current, proxy in
                 guard let boardID = current.boardID else { return }
                 if boardFrames[boardID] != nil {
-                    centerBoard(
-                        boardID,
-                        using: scrollProxy,
+                    centerBoard(boardID, using: proxy, animated: previous.deskID == current.deskID)
+                } else {
+                    pendingScroll = PendingScroll(
+                        boardID: boardID,
                         animated: previous.deskID == current.deskID
                     )
-                } else {
-                    pendingScroll = PendingScroll(boardID: boardID, animated: previous.deskID == current.deskID)
                 }
+            },
+            onCenterRequest: { proxy in
+                centerBoard(store.focusedDesk?.focusedBoardID, using: proxy)
             }
-            .onChange(of: store.centerFocusedBoardRequest) { _, _ in
-                centerBoard(store.focusedDesk?.focusedBoardID, using: scrollProxy)
-            }
-        }
+        )
     }
 
     private func centerBoard(_ boardID: UUID?, using proxy: ScrollViewProxy, animated: Bool = true) {
@@ -915,7 +838,7 @@ private struct PendingScroll {
     let animated: Bool
 }
 
-private struct BoardFocusTarget: Equatable {
+struct BoardFocusTarget: Equatable {
     let deskID: UUID?
     let boardID: UUID?
 }
@@ -994,7 +917,7 @@ enum BoardDragInsertion {
     }
 }
 
-private struct BoardDragState {
+struct BoardDragState {
     let boardID: UUID
     let deskID: UUID
     let originalOrder: [UUID]
@@ -1007,7 +930,7 @@ private struct BoardDragState {
     }
 }
 
-private struct BoardFramePreferenceKey: PreferenceKey {
+struct BoardFramePreferenceKey: PreferenceKey {
     static let defaultValue: [UUID: CGRect] = [:]
 
     static func reduce(value: inout [UUID: CGRect], nextValue: () -> [UUID: CGRect]) {
