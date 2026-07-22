@@ -151,8 +151,7 @@ final class SheetNavigationManager {
             guard
                 let urlString = message["url"] as? String,
                 let url = URL(string: urlString),
-                ["http", "https"].contains(url.scheme?.lowercased()),
-                url.host != nil,
+                SheetURLPolicy.isSupported(url),
                 let onOpenBoard = openBoardCallbacks[ObjectIdentifier(webView)]
             else { return false }
             onOpenBoard(url)

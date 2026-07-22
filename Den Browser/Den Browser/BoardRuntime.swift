@@ -115,7 +115,10 @@ final class BoardRuntime: NSObject, WKNavigationDelegate, WKUIDelegate {
         for navigationAction: WKNavigationAction,
         windowFeatures: WKWindowFeatures
     ) -> WKWebView? {
-        if navigationAction.targetFrame == nil, let url = navigationAction.request.url {
+        if navigationAction.targetFrame == nil,
+            let url = navigationAction.request.url,
+            SheetURLPolicy.isSupported(url)
+        {
             onOpenBoard(url)
         }
         return nil

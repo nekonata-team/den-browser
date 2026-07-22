@@ -538,10 +538,7 @@ final class DenStore {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return nil }
 
-        if let url = URL(string: trimmed),
-            ["http", "https"].contains(url.scheme?.lowercased()),
-            url.host != nil
-        {
+        if let url = URL(string: trimmed), SheetURLPolicy.isSupported(url) {
             return url
         }
 

@@ -42,6 +42,24 @@ struct DenStoreTests {
         #expect(!store.isDenMode)
     }
 
+    @Test func updateBoardKeepsCurrentSheetForUnsupportedURL() throws {
+        let board = board("Board", url: "https://before.example/")
+        let source = desk("Desk", boards: [board], focusedBoardID: board.id)
+        var savedState: DenState?
+        let store = DenStore(
+            state: DenState(desks: [source], focusedDeskID: source.id),
+            onSave: { savedState = $0 })
+
+        store.updateBoard(
+            boardID: board.id,
+            url: URL(string: "mailto:user@example.com"),
+            title: "Updated title")
+
+        #expect(store.focusedBoard?.currentSheetURL == URL(string: "https://before.example/"))
+        #expect(store.focusedBoard?.label == "Updated title")
+        #expect(savedState == store.state)
+    }
+
     @Test func sheetScaleAppliesToNewAndLiveBoardRuntimes() {
         let suiteName = "SheetScaleTests-\(UUID())"
         let defaults = UserDefaults(suiteName: suiteName)!

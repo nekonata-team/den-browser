@@ -40,6 +40,23 @@ private final class WebViewLoadWaiter: NSObject, WKNavigationDelegate {
 
 @MainActor
 struct SheetNavigationTests {
+    @Test func sheetURLPolicyAcceptsOnlyHTTPWithHost() {
+        let supported = [
+            URL(string: "http://example.com/")!,
+            URL(string: "HTTPS://EXAMPLE.COM/path")!,
+        ]
+        let unsupported = [
+            URL(string: "https://")!,
+            URL(string: "file:///tmp/example")!,
+            URL(string: "data:text/plain,example")!,
+            URL(string: "about:blank")!,
+            URL(string: "mailto:user@example.com")!,
+        ]
+
+        #expect(supported.allSatisfy(SheetURLPolicy.isSupported))
+        #expect(unsupported.allSatisfy { !SheetURLPolicy.isSupported($0) })
+    }
+
     @Test func sheetNavigationPreferencesPersist() {
         let suiteName = "SheetNavigationManagerTests-\(UUID().uuidString)"
         let defaults = UserDefaults(suiteName: suiteName)!

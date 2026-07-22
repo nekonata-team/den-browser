@@ -57,7 +57,10 @@ extension DenStore {
     func updateBoard(boardID: UUID, url: URL?, title: String?) {
         guard let indices = boardIndices(for: boardID) else { return }
         var changed = false
-        if let url, state.desks[indices.desk].boards[indices.board].currentSheetURL != url {
+        if let url,
+            SheetURLPolicy.isSupported(url),
+            state.desks[indices.desk].boards[indices.board].currentSheetURL != url
+        {
             state.desks[indices.desk].boards[indices.board].currentSheetURL = url
             changed = true
         }
