@@ -12,7 +12,7 @@ struct ProfileWindowView: View {
             let store = profileManager.store(for: activeProfileID)
         {
             ZStack(alignment: .topTrailing) {
-                ContentView(profileName: profile.name, profileColor: profile.color.color)
+                DenView(profileName: profile.name, profileColor: profile.color.color)
 
                 if !store.isZenViewPresented && !store.isOverviewPresented {
                     HStack(spacing: 8) {

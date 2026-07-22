@@ -1,7 +1,7 @@
 import AppKit
 import SwiftUI
 
-struct ContentView: View {
+struct DenView: View {
     private let boardSpacing: CGFloat = 10
     private let boardHorizontalPadding: CGFloat = 10
     private let profileName: String?
@@ -939,7 +939,7 @@ struct BoardFramePreferenceKey: PreferenceKey {
 }
 
 #Preview {
-    ContentView()
+    DenView()
         .environment(DenStore())
         .environment(AppPreferences())
 }
