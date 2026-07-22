@@ -26,6 +26,7 @@ struct DenView: View {
     @State private var resizingBoardID: UUID?
     @State private var boardFrames: [UUID: CGRect] = [:]
     @State private var pendingScroll: PendingScroll?
+    @State private var boardCenteringTask: Task<Void, Never>?
     @State private var boardDrag: BoardDragState?
     @State private var lastBoardAutoScrollTime = 0.0
     @State private var deskFrames: [UUID: CGRect] = [:]
@@ -129,6 +130,9 @@ struct DenView: View {
             }
             .onAppear {
                 updateBoardLayout(for: geometry.size)
+            }
+            .onDisappear {
+                cancelBoardCentering()
             }
             .onChange(of: geometry.size.width) { _, _ in
                 updateBoardLayout(for: geometry.size)
@@ -521,11 +525,17 @@ struct DenView: View {
     }
 
     private func centerBoard(_ boardID: UUID?, using proxy: ScrollViewProxy, animated: Bool = true) {
+        cancelBoardCentering()
         guard resizingBoardID == nil, !store.isBoardDragging, let boardID else { return }
 
-        Task { @MainActor in
+        boardCenteringTask = Task { @MainActor in
             // Sleep briefly to allow SwiftUI layout updates and content size changes to settle
-            try? await Task.sleep(for: .milliseconds(100))
+            do {
+                try await Task.sleep(for: .milliseconds(100))
+            } catch {
+                return
+            }
+            guard !Task.isCancelled else { return }
             if animated {
                 withAnimation(DenMotion.spatial(reduceMotion: shouldReduceMotion)) {
                     proxy.scrollTo(boardID, anchor: .center)
@@ -534,6 +544,11 @@ struct DenView: View {
                 proxy.scrollTo(boardID, anchor: .center)
             }
         }
+    }
+
+    private func cancelBoardCentering() {
+        boardCenteringTask?.cancel()
+        boardCenteringTask = nil
     }
 
     private var boardFocusTarget: BoardFocusTarget {
