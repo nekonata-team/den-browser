@@ -539,41 +539,13 @@ struct ContentView: View {
     }
 
     private func openBoardPanel(defaultBoardWidth: Double) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack(spacing: 10) {
-                Image(systemName: "plus.rectangle.on.rectangle")
-                    .foregroundStyle(.secondary)
-
-                TextField("Open URL or search", text: $urlText)
-                    .textFieldStyle(.plain)
-                    .font(.system(size: 18, weight: .medium))
-                    .focused($isOpenPanelFocused)
-                    .onSubmit {
-                        openBoard(defaultBoardWidth: defaultBoardWidth)
-                    }
-            }
-            .frame(height: 38)
-
-            HStack(spacing: 12) {
-                Text("New board opens to the right of the focused board")
-                    .foregroundStyle(.secondary)
-                Spacer()
-                Text("n in Den Mode")
-                    .foregroundStyle(.secondary)
-            }
-            .font(.system(size: 12))
-        }
-        .padding(16)
-        .frame(width: 520)
-        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: DenRadius.large, style: .continuous))
-        .onAppear {
-            DispatchQueue.main.async {
-                isOpenPanelFocused = true
-            }
-        }
-        .onExitCommand {
-            store.hideOpenBoardPanel()
-        }
+        OpenBoardPanel(
+            urlText: $urlText,
+            isFocused: $isOpenPanelFocused,
+            defaultBoardWidth: defaultBoardWidth,
+            onSubmit: { openBoard(defaultBoardWidth: $0) },
+            onDismiss: store.hideOpenBoardPanel
+        )
     }
 
     private var editBoardLinkPanel: some View {
