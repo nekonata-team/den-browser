@@ -25,8 +25,7 @@ struct DenView: View {
     @State private var didScrollToRestoredFocusedBoard = false
     @State private var resizingBoardID: UUID?
     @State private var boardFrames: [UUID: CGRect] = [:]
-    @State private var pendingScroll: PendingScroll?
-    @State private var boardCenteringTask: Task<Void, Never>?
+    @State private var boardScrollPosition = ScrollPosition(idType: UUID.self)
     @State private var boardDrag: BoardDragState?
     @State private var lastBoardAutoScrollTime = 0.0
     @State private var deskFrames: [UUID: CGRect] = [:]
@@ -130,9 +129,6 @@ struct DenView: View {
             }
             .onAppear {
                 updateBoardLayout(for: geometry.size)
-            }
-            .onDisappear {
-                cancelBoardCentering()
             }
             .onChange(of: geometry.size.width) { _, _ in
                 updateBoardLayout(for: geometry.size)
@@ -471,84 +467,47 @@ struct DenView: View {
         BoardStrip(
             boardDrag: $boardDrag,
             resizingBoardID: $resizingBoardID,
+            scrollPosition: $boardScrollPosition,
             size: size,
             shouldShowDeskSwitcher: shouldShowDeskSwitcher,
             profileColor: profileColor,
             boardSpacing: boardSpacing,
             boardHorizontalPadding: boardHorizontalPadding,
             isPointerFocusEnabled: isBoardPointerFocusEnabled,
-            onDragChanged: { board, value, size, proxy in
-                updateBoardDrag(board, value: value, in: size, using: proxy)
+            onDragChanged: { board, value, size in
+                updateBoardDrag(board, value: value, in: size)
             },
             onDragEnded: { value, size in
                 finishBoardDrag(value: value, in: size)
             },
-            onFramesChanged: { frames, boards, leadingPadding, proxy in
+            onFramesChanged: { frames in
                 boardFrames = frames
                 alignDraggedBoard(to: frames)
-                if let pending = pendingScroll, frames[pending.boardID] != nil {
-                    if let firstBoardID = boards.first?.id, let firstFrame = frames[firstBoardID],
-                        abs(firstFrame.minX - leadingPadding) > 2.0
-                    {
-                        return
-                    }
-                    pendingScroll = nil
-                    centerBoard(pending.boardID, using: proxy, animated: pending.animated)
-                }
             },
-            onAppear: { proxy in
+            onAppear: {
                 guard !didScrollToRestoredFocusedBoard else { return }
                 didScrollToRestoredFocusedBoard = true
-                if let boardID = store.focusedDesk?.focusedBoardID {
-                    if boardFrames[boardID] != nil {
-                        centerBoard(boardID, using: proxy, animated: false)
-                    } else {
-                        pendingScroll = PendingScroll(boardID: boardID, animated: false)
-                    }
-                }
+                centerBoard(store.focusedDesk?.focusedBoardID, animated: false)
             },
-            onFocusChanged: { previous, current, proxy in
-                guard let boardID = current.boardID else { return }
-                if boardFrames[boardID] != nil {
-                    centerBoard(boardID, using: proxy, animated: previous.deskID == current.deskID)
-                } else {
-                    pendingScroll = PendingScroll(
-                        boardID: boardID,
-                        animated: previous.deskID == current.deskID
-                    )
-                }
+            onFocusChanged: { previous, current in
+                centerBoard(current.boardID, animated: previous.deskID == current.deskID)
             },
-            onCenterRequest: { proxy in
-                centerBoard(store.focusedDesk?.focusedBoardID, using: proxy)
+            onCenterRequest: {
+                centerBoard(store.focusedDesk?.focusedBoardID)
             }
         )
     }
 
-    private func centerBoard(_ boardID: UUID?, using proxy: ScrollViewProxy, animated: Bool = true) {
-        cancelBoardCentering()
+    private func centerBoard(_ boardID: UUID?, animated: Bool = true) {
         guard resizingBoardID == nil, !store.isBoardDragging, let boardID else { return }
 
-        boardCenteringTask = Task { @MainActor in
-            // Sleep briefly to allow SwiftUI layout updates and content size changes to settle
-            do {
-                try await Task.sleep(for: .milliseconds(100))
-            } catch {
-                return
+        if animated {
+            withAnimation(DenMotion.spatial(reduceMotion: shouldReduceMotion)) {
+                boardScrollPosition.scrollTo(id: boardID, anchor: .center)
             }
-            guard !Task.isCancelled else { return }
-            if animated {
-                withAnimation(DenMotion.spatial(reduceMotion: shouldReduceMotion)) {
-                    proxy.scrollTo(boardID, anchor: .center)
-                }
-            } else {
-                proxy.scrollTo(boardID, anchor: .center)
-            }
+        } else {
+            boardScrollPosition.scrollTo(id: boardID, anchor: .center)
         }
-    }
-
-    private func cancelBoardCentering() {
-        boardCenteringTask?.cancel()
-        boardCenteringTask = nil
     }
 
     private var boardFocusTarget: BoardFocusTarget {
@@ -721,8 +680,7 @@ struct DenView: View {
     private func updateBoardDrag(
         _ board: BoardState,
         value: DragGesture.Value,
-        in size: CGSize,
-        using scrollProxy: ScrollViewProxy
+        in size: CGSize
     ) {
         if boardDrag == nil {
             guard
@@ -746,7 +704,7 @@ struct DenView: View {
         }
         boardDrag = drag
         updateBoardInsertion()
-        autoScrollBoardStrip(at: value.location, in: size, using: scrollProxy)
+        autoScrollBoardStrip(at: value.location, in: size)
     }
 
     private func updateBoardInsertion() {
@@ -782,8 +740,7 @@ struct DenView: View {
 
     private func autoScrollBoardStrip(
         at location: CGPoint,
-        in size: CGSize,
-        using scrollProxy: ScrollViewProxy
+        in size: CGSize
     ) {
         guard
             location.y >= 0,
@@ -811,7 +768,7 @@ struct DenView: View {
         guard now - lastBoardAutoScrollTime >= interval, let targetID else { return }
         lastBoardAutoScrollTime = now
         withAnimation(.linear(duration: shouldReduceMotion ? 0 : 0.14)) {
-            scrollProxy.scrollTo(targetID, anchor: .center)
+            boardScrollPosition.scrollTo(id: targetID, anchor: .center)
         }
     }
 
@@ -845,11 +802,6 @@ struct DenView: View {
         }
         NSCursor.arrow.set()
     }
-}
-
-private struct PendingScroll {
-    let boardID: UUID
-    let animated: Bool
 }
 
 struct BoardFocusTarget: Equatable {
