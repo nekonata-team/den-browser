@@ -21,6 +21,8 @@ struct SettingsView: View {
                 }
 
             Form {
+                DefaultBrowserSettingsSection()
+
                 SheetNavigationSettingsSection()
 
                 Section("Experimental Picture in Picture") {
