@@ -13,6 +13,8 @@ struct DeskPresetPicker: View {
     let onConfirm: (DeskPresetSelection) -> Void
 
     @Environment(DenStore.self) private var store
+    @State private var scrollPosition = ScrollPosition()
+
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
@@ -52,12 +54,16 @@ struct DeskPresetPicker: View {
             }
 
             ScrollView {
-                if isManaging {
-                    personalPresets
-                } else {
-                    presetChoices
+                Group {
+                    if isManaging {
+                        personalPresets
+                    } else {
+                        presetChoices
+                    }
                 }
+                .scrollTargetLayout()
             }
+            .scrollPosition($scrollPosition, anchor: .center)
             .frame(maxHeight: 220)
 
             if !isManaging {
@@ -77,6 +83,9 @@ struct DeskPresetPicker: View {
             }
         }
         .onChange(of: query) { _, _ in ensureValidSelection() }
+        .onChange(of: selection) { _, selection in
+            scrollPosition.scrollTo(id: scrollID(for: selection), anchor: .center)
+        }
         .onAppear { ensureValidSelection() }
     }
 
@@ -175,7 +184,16 @@ struct DeskPresetPicker: View {
         .padding(8)
         .background(
             Color.primary.opacity(selection == choice.selection ? 0.11 : 0.045),
-            in: RoundedRectangle(cornerRadius: DenRadius.small, style: .continuous))
+            in: RoundedRectangle(cornerRadius: DenRadius.small, style: .continuous)
+        )
+        .id(scrollID(for: choice.selection))
+    }
+
+    private func scrollID(for selection: DeskPresetSelection) -> String {
+        switch selection {
+        case .builtIn(let preset): "builtIn:\(preset.rawValue)"
+        case .personal(let id): "personal:\(id.uuidString)"
+        }
     }
 
     private var builtInChoices: [DeskPresetChoice] {

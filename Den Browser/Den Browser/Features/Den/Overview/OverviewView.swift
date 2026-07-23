@@ -8,6 +8,7 @@ struct OverviewView: View {
     @Environment(\.accessibilityReduceMotion) private var systemReduceMotion
 
     @FocusState private var isSearchFocused: Bool
+    @State private var scrollPosition = ScrollPosition()
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -65,11 +66,13 @@ struct OverviewView: View {
                         }
                     }
                 }
+                .scrollTargetLayout()
                 .padding(2)
                 .animation(
                     DenMotion.spatial(reduceMotion: shouldReduceMotion),
                     value: store.state.desks.map { $0.boards.map(\.id) })
             }
+            .scrollPosition($scrollPosition, anchor: .center)
         }
         .padding(18)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
@@ -89,6 +92,19 @@ struct OverviewView: View {
         }
         .onChange(of: store.isOverviewFilterMode) { _, newValue in
             isSearchFocused = newValue
+        }
+        .onChange(of: store.overviewSelectionBoardID) { _, boardID in
+            scrollToSelection(boardID)
+        }
+        .onAppear {
+            scrollToSelection(store.overviewSelectionBoardID)
+        }
+    }
+
+    private func scrollToSelection(_ boardID: UUID?) {
+        guard let boardID else { return }
+        withAnimation(DenMotion.spatial(reduceMotion: shouldReduceMotion)) {
+            scrollPosition.scrollTo(id: boardID, anchor: .center)
         }
     }
 
@@ -165,6 +181,7 @@ struct OverviewView: View {
             }
         }
         .buttonStyle(.plain)
+        .id(board.id)
     }
 
     private var shouldReduceMotion: Bool {
