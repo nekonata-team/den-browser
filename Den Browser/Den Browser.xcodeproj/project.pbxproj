@@ -29,25 +29,32 @@
 		530E9DF22FFFFEDB0033427C /* Den BrowserUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "Den BrowserUITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		531DA46B3012544F00589CAD /* Exceptions for "Den Browser" folder in "Den Browser" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				"Den-Browser-Info.plist",
+			);
+			target = 530E9DDA2FFFFED90033427C /* Den Browser */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		530E9DDD2FFFFED90033427C /* Den Browser */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
+				531DA46B3012544F00589CAD /* Exceptions for "Den Browser" folder in "Den Browser" target */,
 			);
 			path = "Den Browser";
 			sourceTree = "<group>";
 		};
 		530E9DEB2FFFFEDB0033427C /* Den BrowserTests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-			);
 			path = "Den BrowserTests";
 			sourceTree = "<group>";
 		};
 		530E9DF52FFFFEDB0033427C /* Den BrowserUITests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-			);
 			path = "Den BrowserUITests";
 			sourceTree = "<group>";
 		};
@@ -414,6 +421,7 @@
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "Den-Browser-Info.plist";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright © 2026 nekonata. All rights reserved.";
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -451,6 +459,7 @@
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "Den-Browser-Info.plist";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright © 2026 nekonata. All rights reserved.";
 				LD_RUNPATH_SEARCH_PATHS = (

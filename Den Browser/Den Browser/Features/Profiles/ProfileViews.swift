@@ -48,6 +48,9 @@ struct ProfileWindowView: View {
             .background(WindowRegistration(profileID: activeProfileID))
             .toolbarVisibility(store.isZenViewPresented ? .hidden : .visible, for: .windowToolbar)
             .ignoresSafeArea(.container, edges: store.isZenViewPresented ? .top : [])
+            .onOpenURL { url in
+                store.addBoard(urlString: url.absoluteString)
+            }
         } else {
             ContentUnavailableView("Profile unavailable", systemImage: "person.crop.circle.badge.exclamationmark")
         }

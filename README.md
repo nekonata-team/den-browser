@@ -56,6 +56,7 @@ See [CONTEXT.md](./CONTEXT.md) for the complete product language.
 - Save the Focused Desk as a Profile-owned Personal Desk Preset, then use keyboard-first fuzzy search to choose and preview a preset before naming another Desk. Presets can also be replaced or deleted, with direct management available through Shift + `p` in Den Mode. Built-in Empty, ChatGPT, and Gemini presets provide ready-made starting points.
 - Keep browser-like back-forward navigation inside each Board as a Sheet Stack.
 - Restore Desk and Board labels, order, widths, focus, and current Sheet URLs after relaunching the app, showing the Focused Board immediately without a scroll animation.
+- Register as an `http` / `https` browser handler; URLs opened from other apps become a new Board in the active Profile. macOS controls the user's default-browser choice.
 - Keep sign-ins across app launches while isolating them between Profiles.
 - Optionally enable first-party Vim-style Sheet Navigation for scrolling, link hints, find, Sheet Stack navigation, and URL actions.
 
