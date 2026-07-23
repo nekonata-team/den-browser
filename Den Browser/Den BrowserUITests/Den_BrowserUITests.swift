@@ -84,26 +84,32 @@ final class Den_BrowserUITests: XCTestCase {
     }
 
     @MainActor
-    func testNewBoardIsCenteredAfterCreation() throws {
-        let app = launchApp(centering: "always")
+    func testNewBoardAnimatesIntoBoardStrip() throws {
+        let app = launchApp(singleBoard: true)
 
-        // 1. Alpha is focused.
+        // Start from one Board sized to the viewport.
         XCTAssertTrue(board(.alpha, in: app).wait(for: \.isSelected, toEqual: true, timeout: 5))
         enterDenMode(in: app)
+        app.typeText("w1")
+        app.typeKey(.escape, modifierFlags: [])
 
-        // 2. Press Return to duplicate Alpha. The duplicate is created to its right and focused.
-        app.typeKey("\r", modifierFlags: [])
-
-        // 3. Find the new board header. Its identifier starts with "board-header."
         let boardStrip = app.scrollViews["board-strip"].firstMatch
         XCTAssertTrue(boardStrip.waitForExistence(timeout: 5))
+        assertEventually("The initial Board should fill most of the Board Strip") {
+            self.board(.alpha, in: app).frame.width > boardStrip.frame.width * 0.85
+        }
+
+        // Duplicate Alpha. The new Board must become visible and finish centered.
+        if !app.windows["UI Testing · DEN MODE"].exists {
+            enterDenMode(in: app)
+        }
+        app.typeKey("\r", modifierFlags: [])
 
         let headerPredicate = NSPredicate(format: "identifier BEGINSWITH 'board-header.'")
         let headersQuery = boardStrip.descendants(matching: .any).matching(headerPredicate)
 
-        // Wait for the new header to appear
         assertEventually("New board header should appear") {
-            headersQuery.allElementsBoundByIndex.count == 4
+            headersQuery.allElementsBoundByIndex.count == 2
         }
 
         let allHeaders = headersQuery.allElementsBoundByIndex
@@ -118,24 +124,23 @@ final class Den_BrowserUITests: XCTestCase {
         }
         XCTAssertTrue(newBoardHeader.wait(for: \.isSelected, toEqual: true, timeout: 5))
 
-        // 4. Assert that the new board is centered in the viewport in Always mode
         assertEventuallyEqual(
             actual: { newBoardHeader.frame.midX },
             expected: boardStrip.frame.midX,
             tolerance: 50,
-            message: "New board should be centered in the viewport in Always mode"
+            message: "New Board should finish centered after its insertion animation"
         )
     }
 
     @MainActor
-    private func launchApp(centering: String? = nil) -> XCUIApplication {
+    private func launchApp(singleBoard: Bool = false) -> XCUIApplication {
         let app = XCUIApplication()
         var args = [
             "-ApplePersistenceIgnoreState", "YES",
             "--ui-testing", "--fixture", "interaction-basics",
         ]
-        if let centering {
-            args.append(contentsOf: ["--board-centering", centering])
+        if singleBoard {
+            args.append("--single-board")
         }
         app.launchArguments = args
         app.launchEnvironment["DEN_UI_TEST_RUN_ID"] = UUID().uuidString
@@ -153,8 +158,10 @@ final class Den_BrowserUITests: XCTestCase {
 
         XCTAssertTrue(app.windows.firstMatch.waitForExistence(timeout: 10), "Application window should appear")
         XCTAssertTrue(board(.alpha, in: app).waitForExistence(timeout: 20))
-        XCTAssertTrue(board(.bravo, in: app).waitForExistence(timeout: 20))
-        XCTAssertTrue(board(.charlie, in: app).waitForExistence(timeout: 20))
+        if !singleBoard {
+            XCTAssertTrue(board(.bravo, in: app).waitForExistence(timeout: 20))
+            XCTAssertTrue(board(.charlie, in: app).waitForExistence(timeout: 20))
+        }
         return app
     }
 

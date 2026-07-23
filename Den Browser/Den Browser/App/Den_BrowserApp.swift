@@ -11,9 +11,6 @@ struct Den_BrowserApp: App {
     init() {
         let configuration = AppConfiguration.current()
         let preferences = AppPreferences(defaults: configuration.defaults)
-        if configuration.isUITesting {
-            preferences.setMotionPreference(.reduced)
-        }
         let sheetNavigation = SheetNavigationManager(defaults: configuration.defaults)
         _preferences = State(initialValue: preferences)
         _sheetNavigation = State(initialValue: sheetNavigation)

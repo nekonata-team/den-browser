@@ -26,6 +26,8 @@ struct DenView: View {
     @State private var resizingBoardID: UUID?
     @State private var boardFrames: [UUID: CGRect] = [:]
     @State private var boardScrollPosition = ScrollPosition(idType: UUID.self)
+    @State private var pendingBoardCentering: PendingBoardCentering?
+    @State private var boardCenteringTask: Task<Void, Never>?
     @State private var boardDrag: BoardDragState?
     @State private var lastBoardAutoScrollTime = 0.0
     @State private var deskFrames: [UUID: CGRect] = [:]
@@ -503,6 +505,19 @@ struct DenView: View {
             onFramesChanged: { frames in
                 boardFrames = frames
                 alignDraggedBoard(to: frames)
+                if let pendingBoardCentering,
+                    frames[pendingBoardCentering.boardID] != nil
+                {
+                    self.pendingBoardCentering = nil
+                    boardCenteringTask?.cancel()
+                    boardCenteringTask = Task { @MainActor in
+                        try? await Task.sleep(for: .milliseconds(100))
+                        guard !Task.isCancelled else { return }
+                        performBoardCentering(
+                            pendingBoardCentering.boardID,
+                            animated: pendingBoardCentering.animated)
+                    }
+                }
             },
             onAppear: {
                 guard !didScrollToRestoredFocusedBoard else { return }
@@ -520,7 +535,17 @@ struct DenView: View {
 
     private func centerBoard(_ boardID: UUID?, animated: Bool = true) {
         guard resizingBoardID == nil, !store.isBoardDragging, let boardID else { return }
+        guard boardFrames[boardID] != nil else {
+            pendingBoardCentering = PendingBoardCentering(
+                boardID: boardID,
+                animated: animated)
+            return
+        }
+        pendingBoardCentering = nil
+        performBoardCentering(boardID, animated: animated)
+    }
 
+    private func performBoardCentering(_ boardID: UUID, animated: Bool) {
         if animated {
             withAnimation(DenMotion.spatial(reduceMotion: shouldReduceMotion)) {
                 boardScrollPosition.scrollTo(id: boardID, anchor: .center)
@@ -820,6 +845,11 @@ struct DenView: View {
         }
         NSCursor.arrow.set()
     }
+}
+
+private struct PendingBoardCentering {
+    let boardID: UUID
+    let animated: Bool
 }
 
 struct BoardFocusTarget: Equatable {

@@ -19,9 +19,10 @@ Stable product behavior should be covered by unit, integration, or end-to-end te
 
 Per [ADR-0020](./adr/0020-test-critical-ui-workflows.md), each UI test is an independent user-visible workflow, not an exhaustive input permutation. Exhaustive shortcut mappings, state mutations (adding/removing boards), branches, and edge cases remain focused unit tests to prevent test suite hangs and maintain fast test execution.
 
-UI tests launch with a fixed three-Board fixture. Profile documents use a fresh temporary directory, preferences
-use a dedicated defaults suite, and Sheets use a non-persistent WebKit store with local data URLs. UI tests must
-not read or write the user's Profiles, preferences, website data, window restoration, or external services.
+UI tests launch with a fixed three-Board fixture, except focused workflows that request its one-Board variant.
+Profile documents use a fresh temporary directory, preferences use a dedicated defaults suite, and Sheets use a
+non-persistent WebKit store with local data URLs. UI tests must not read or write the user's Profiles, preferences,
+website data, window restoration, or external services.
 
 Exploratory human validation is reserved for milestone checks that depend on macOS, WebKit, remote services, or visual judgment:
 
@@ -53,4 +54,3 @@ just check
 Before merge, use this standard order: build and unit tests, applicable UI tests, code review, then merge. Add
 exploratory validation when warranted, such as for UI behavior changes or milestone acceptance; use
 [poc.md](./poc.md) as the source of truth for concrete criteria.
-

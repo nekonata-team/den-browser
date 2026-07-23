@@ -6,7 +6,6 @@ struct AppConfiguration {
     let defaults: UserDefaults
     let initialProfile: PersistedProfile?
     let websiteDataStore: (WebProfileStore) -> WKWebsiteDataStore
-    let isUITesting: Bool
 
     static func current(processInfo: ProcessInfo = .processInfo) -> AppConfiguration {
         guard processInfo.arguments.contains("--ui-testing") else {
@@ -14,8 +13,7 @@ struct AppConfiguration {
                 profileDirectoryURL: ProfileManager.defaultDirectoryURL(),
                 defaults: .standard,
                 initialProfile: nil,
-                websiteDataStore: { $0.websiteDataStore },
-                isUITesting: false)
+                websiteDataStore: { $0.websiteDataStore })
         }
 
         guard argumentValue(after: "--fixture", in: processInfo.arguments) == "interaction-basics" else {
@@ -36,16 +34,12 @@ struct AppConfiguration {
         }
         defaults.removePersistentDomain(forName: suiteName)
 
-        if let centeringValue = argumentValue(after: "--board-centering", in: processInfo.arguments) {
-            defaults.set(centeringValue, forKey: "appearance.board-centering")
-        }
-
         return AppConfiguration(
             profileDirectoryURL: directoryURL,
             defaults: defaults,
-            initialProfile: interactionBasicsProfile,
-            websiteDataStore: { _ in .nonPersistent() },
-            isUITesting: true)
+            initialProfile: interactionBasicsProfile(
+                singleBoard: processInfo.arguments.contains("--single-board")),
+            websiteDataStore: { _ in .nonPersistent() })
     }
 
     private static func argumentValue(after name: String, in arguments: [String]) -> String? {
@@ -55,7 +49,7 @@ struct AppConfiguration {
         return arguments[index + 1]
     }
 
-    private static var interactionBasicsProfile: PersistedProfile {
+    private static func interactionBasicsProfile(singleBoard: Bool) -> PersistedProfile {
         let alpha = BoardState(
             id: fixtureID("00000000-0000-0000-0000-000000000301"),
             label: "Alpha",
@@ -74,7 +68,7 @@ struct AppConfiguration {
         let desk = DeskState(
             id: fixtureID("00000000-0000-0000-0000-000000000200"),
             label: "Main",
-            boards: [alpha, bravo, charlie],
+            boards: singleBoard ? [alpha] : [alpha, bravo, charlie],
             focusedBoardID: alpha.id)
         let secondDesk = DeskState(
             id: fixtureID("00000000-0000-0000-0000-000000000201"),
