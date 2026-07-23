@@ -11,7 +11,8 @@ extension DenStore {
             board: board,
             websiteDataStore: websiteDataStore,
             sheetNavigation: sheetNavigation,
-            sheetScale: sheetNavigation.preferences.sheetScale
+            sheetScale: preferences.sheetScale,
+            nativePictureInPictureEnabled: preferences.nativePictureInPictureEnabled
         ) {
             [weak self] url in
             self?.addBoard(

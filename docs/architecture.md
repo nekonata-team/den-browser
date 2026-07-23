@@ -23,19 +23,23 @@ Den Browser/Den Browser/
       Sheet/
       Overview/
     Profiles/
+    SheetNavigation/
+      settings UI, preferences, WebKit controller, and bundled script
   Platform/
     feature-independent OS integration, when it emerges
   Resources/
 ```
 
-`Den` and `Profiles` are the top-level Features. `Features/Den` is intentionally the largest Feature because a Den owns the workflows and invariants connecting Desks, Boards, Sheets, and Overview. Those folders are subfeatures or components, not independent top-level Features. A large cohesive Feature is preferable to false boundaries that make `DenStore` dependencies cyclic or scatter one workflow across the source tree.
+`Den`, `Profiles`, and `SheetNavigation` are the top-level Features. `Features/Den` is intentionally the largest Feature because a Den owns the workflows and invariants connecting Desks, Boards, Sheets, and Overview. Those folders are subfeatures or components, not independent top-level Features. A large cohesive Feature is preferable to false boundaries that make `DenStore` dependencies cyclic or scatter one workflow across the source tree.
 
 ## Dependency direction
 
 ```text
-App -> Profiles -> Den -> Platform
+App -> Profiles -> Den -> SheetNavigation
 App -------------> Den
-App ---------------------> Platform
+App ---------------------> SheetNavigation
+Profiles ----------------> SheetNavigation
+App ------------------------------> Platform
 ```
 
 - `App` assembles dependencies and owns application entry points. It does not contain feature behavior.
@@ -73,13 +77,17 @@ Owns Den composition and the workflows connecting Desks, Boards, Sheets, and Ove
 
 Owns Profile identity, Profile-scoped persistence, website-data isolation, and Profile window lifecycle. A Profile owns one Den, so this Feature may depend on the Den Feature to create, restore, and present that Den. WebKit storage mechanics may live in `Platform`, while Profile policy remains in the feature.
 
+### SheetNavigation
+
+Owns optional Vim-style interaction within the Current Sheet: preferences, validation, settings UI, WebKit content-controller integration, and the bundled script. It does not own Board lifecycle or persisted Sheet state. Den injects the shared controller into each Board runtime and handles requests to open a link as another Board.
+
 ### Settings
 
-Settings is not a Feature. `App/Settings` owns the Settings scene and its navigation. Feature-owned settings state and UI stay with the Feature that controls the behavior: Profile management belongs to `Features/Profiles`, while appearance, shortcuts, Board layout, and Sheet Navigation preferences belong to `Features/Den`. The Settings scene assembles those screens without taking ownership of their behavior.
+Settings is not a Feature. `App/Settings` owns the Settings scene and its navigation. Feature-owned settings state and UI stay with the Feature that controls the behavior: Profile management belongs to `Features/Profiles`, Sheet Navigation settings belong to `Features/SheetNavigation`, and appearance, shortcuts, and Board layout preferences belong to `Features/Den`. The Settings scene assembles those screens without taking ownership of their behavior.
 
 ### Platform
 
-Contains reusable operating-system integration rather than product concepts. Do not create a global Platform folder merely because code imports AppKit or WebKit. `BoardRuntime`, `BoardWebView`, and `SheetNavigationManager` remain in the Den Feature while they are specific to its Board and Sheet lifecycle. `KeyboardController` remains in `App` while it routes app-wide commands into Den behavior. A component moves to `Platform` only when its API is feature-independent and no reverse dependency on a Feature is required.
+Contains reusable operating-system integration rather than product concepts. Do not create a global Platform folder merely because code imports AppKit or WebKit. `BoardRuntime` and `BoardWebView` remain in Den because they own Board lifecycle. `SheetNavigationManager` remains in SheetNavigation because its WebKit integration implements that Feature. `KeyboardController` remains in `App` while it routes app-wide commands into Den behavior. A component moves to `Platform` only when its API is feature-independent and no reverse dependency on a Feature is required.
 
 ## Folder rules
 

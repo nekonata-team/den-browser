@@ -15,6 +15,7 @@ final class ProfileManager {
     @ObservationIgnored private var stores: [UUID: DenStore] = [:]
     @ObservationIgnored private var windows: [UUID: WeakWindow] = [:]
     @ObservationIgnored private let sheetNavigation: SheetNavigationManager
+    @ObservationIgnored private let preferences: AppPreferences
     @ObservationIgnored private let removeDataStore: (UUID) async throws -> Void
     @ObservationIgnored private let initialProfile: PersistedProfile?
     @ObservationIgnored private let websiteDataStore: (WebProfileStore) -> WKWebsiteDataStore
@@ -28,12 +29,14 @@ final class ProfileManager {
     init(
         directoryURL: URL = ProfileManager.defaultDirectoryURL(),
         sheetNavigation: SheetNavigationManager,
+        preferences: AppPreferences = AppPreferences(),
         removeDataStore: @escaping (UUID) async throws -> Void = ProfileManager.removeWebsiteDataStore,
         initialProfile: PersistedProfile? = nil,
         websiteDataStore: ((WebProfileStore) -> WKWebsiteDataStore)? = nil
     ) {
         self.directoryURL = directoryURL
         self.sheetNavigation = sheetNavigation
+        self.preferences = preferences
         self.removeDataStore = removeDataStore
         self.initialProfile = initialProfile
         self.websiteDataStore = websiteDataStore ?? { $0.websiteDataStore }
@@ -56,6 +59,7 @@ final class ProfileManager {
             state: persisted.den,
             websiteDataStore: websiteDataStore(persisted.profile.webProfileStore),
             sheetNavigation: sheetNavigation,
+            preferences: preferences,
             deskPresets: persisted.deskPresets,
             onSave: { [weak self] den in
                 self?.saveDen(den, for: profileID)

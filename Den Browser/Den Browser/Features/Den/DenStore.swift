@@ -30,6 +30,7 @@ final class DenStore {
     var overviewSelectionBoardID: UUID?
     var recentlyRemovedBoard: RecentlyRemovedBoard?
     let sheetNavigation: SheetNavigationManager
+    let preferences: AppPreferences
     let websiteDataStore: WKWebsiteDataStore
 
     @ObservationIgnored var runtimes: [UUID: BoardRuntime] = [:]
@@ -82,11 +83,16 @@ final class DenStore {
         self.init(state: state, sheetNavigation: SheetNavigationManager())
     }
 
-    convenience init(state: DenState, sheetNavigation: SheetNavigationManager) {
+    convenience init(
+        state: DenState,
+        sheetNavigation: SheetNavigationManager,
+        preferences: AppPreferences = AppPreferences()
+    ) {
         self.init(
             state: state,
             websiteDataStore: .default(),
             sheetNavigation: sheetNavigation,
+            preferences: preferences,
             deskPresets: [],
             onSave: nil
         )
@@ -97,6 +103,7 @@ final class DenStore {
             state: state,
             websiteDataStore: .default(),
             sheetNavigation: SheetNavigationManager(),
+            preferences: AppPreferences(),
             deskPresets: [],
             onSave: onSave
         )
@@ -111,6 +118,7 @@ final class DenStore {
             state: state,
             websiteDataStore: .default(),
             sheetNavigation: SheetNavigationManager(),
+            preferences: AppPreferences(),
             deskPresets: deskPresets,
             onSave: nil,
             onDeskPresetsSave: onDeskPresetsSave
@@ -121,6 +129,7 @@ final class DenStore {
         state: DenState,
         websiteDataStore: WKWebsiteDataStore,
         sheetNavigation: SheetNavigationManager,
+        preferences: AppPreferences = AppPreferences(),
         deskPresets: [PersonalDeskPreset] = [],
         onSave: ((DenState) -> Void)?,
         onDeskPresetsSave: (([PersonalDeskPreset]) -> Void)? = nil
@@ -129,6 +138,7 @@ final class DenStore {
         self.deskPresets = deskPresets
         self.websiteDataStore = websiteDataStore
         self.sheetNavigation = sheetNavigation
+        self.preferences = preferences
         self.onSave = onSave
         self.onDeskPresetsSave = onDeskPresetsSave
         ensureFocusedObjects()

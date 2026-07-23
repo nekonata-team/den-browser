@@ -14,13 +14,14 @@ struct Den_BrowserApp: App {
         if configuration.isUITesting {
             preferences.setMotionPreference(.reduced)
         }
-        let sheetNavigation = SheetNavigationManager(preferences: preferences)
+        let sheetNavigation = SheetNavigationManager(defaults: configuration.defaults)
         _preferences = State(initialValue: preferences)
         _sheetNavigation = State(initialValue: sheetNavigation)
         _profileManager = State(
             initialValue: ProfileManager(
                 directoryURL: configuration.profileDirectoryURL,
                 sheetNavigation: sheetNavigation,
+                preferences: preferences,
                 initialProfile: configuration.initialProfile,
                 websiteDataStore: configuration.websiteDataStore))
     }

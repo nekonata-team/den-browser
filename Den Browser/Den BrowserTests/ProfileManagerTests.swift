@@ -103,9 +103,6 @@ struct ProfileManagerTests {
         preferences.setSheetScale(201)
         #expect(preferences.sheetScale == AppPreferences.defaultSheetScale)
 
-        preferences.setSheetNavigationEnabled(true)
-        preferences.setSheetNavigationHintAlphabet("abc")
-        preferences.setSheetNavigationIgnoredHosts(["example.com"])
         preferences.setMotionPreference(.standard)
         preferences.setNativePictureInPictureEnabled(true)
         preferences.setSheetScale(80)
@@ -115,17 +112,11 @@ struct ProfileManagerTests {
         #expect(
             storedKeys == [
                 "preferences.schemaVersion",
-                "features.vim-style-sheet-navigation.enabled",
-                "features.vim-style-sheet-navigation.hint-alphabet",
-                "features.vim-style-sheet-navigation.ignored-hosts",
                 "appearance.motion",
                 "features.native-picture-in-picture.enabled",
                 "appearance.sheet-scale",
             ])
         #expect(defaults.integer(forKey: "preferences.schemaVersion") == 1)
-        #expect(restored.sheetNavigationEnabled)
-        #expect(restored.sheetNavigationHintAlphabet == "abc")
-        #expect(restored.sheetNavigationIgnoredHosts == ["example.com"])
         #expect(restored.motionPreference == .standard)
         #expect(restored.nativePictureInPictureEnabled)
         #expect(restored.sheetScale == 80)
@@ -135,11 +126,7 @@ struct ProfileManagerTests {
         let legacySuiteName = "AppPreferencesLegacyTests-\(UUID().uuidString)"
         let legacyDefaults = UserDefaults(suiteName: legacySuiteName)!
         defer { legacyDefaults.removePersistentDomain(forName: legacySuiteName) }
-        legacyDefaults.set("abc", forKey: "features.vim-style-sheet-navigation.hint-alphabet")
-
-        let migrated = AppPreferences(defaults: legacyDefaults)
-
-        #expect(migrated.sheetNavigationHintAlphabet == "abc")
+        _ = AppPreferences(defaults: legacyDefaults)
         #expect(legacyDefaults.integer(forKey: "preferences.schemaVersion") == 1)
 
         let futureSuiteName = "AppPreferencesFutureTests-\(UUID().uuidString)"
@@ -264,8 +251,9 @@ struct ProfileManagerTests {
 
         let directory = temporaryProfileDirectory()
         defer { try? FileManager.default.removeItem(at: directory) }
-        let preferences = AppPreferences(defaults: UserDefaults(suiteName: UUID().uuidString) ?? .standard)
-        let navigation = SheetNavigationManager(preferences: preferences, scriptSource: "")
+        let navigation = SheetNavigationManager(
+            defaults: UserDefaults(suiteName: UUID().uuidString) ?? .standard,
+            scriptSource: "")
         let manager = ProfileManager(
             directoryURL: directory,
             sheetNavigation: navigation,
@@ -356,10 +344,13 @@ struct ProfileManagerTests {
         let defaults = UserDefaults(suiteName: suiteName)!
         defer { defaults.removePersistentDomain(forName: suiteName) }
         let preferences = AppPreferences(defaults: defaults)
-        let navigation = SheetNavigationManager(preferences: preferences, scriptSource: "")
+        let navigation = SheetNavigationManager(defaults: defaults, scriptSource: "")
         navigation.setEnabled(true)
         let manager = ProfileManager(
-            directoryURL: directory, sheetNavigation: navigation, removeDataStore: { _ in })
+            directoryURL: directory,
+            sheetNavigation: navigation,
+            preferences: preferences,
+            removeDataStore: { _ in })
         let second = try #require(manager.createProfile(name: "Second", color: .pink))
         let firstStore = try #require(manager.store(for: manager.personalProfileID))
         let secondStore = try #require(manager.store(for: second.id))
@@ -431,9 +422,14 @@ struct ProfileManagerTests {
     private func makeProfileManager(directory: URL) -> ProfileManager {
         let suiteName = "ProfileManagerPreferences-\(UUID().uuidString)"
         let preferences = AppPreferences(defaults: UserDefaults(suiteName: suiteName) ?? .standard)
-        let navigation = SheetNavigationManager(preferences: preferences, scriptSource: "")
+        let navigation = SheetNavigationManager(
+            defaults: UserDefaults(suiteName: suiteName) ?? .standard,
+            scriptSource: "")
         return ProfileManager(
-            directoryURL: directory, sheetNavigation: navigation, removeDataStore: { _ in })
+            directoryURL: directory,
+            sheetNavigation: navigation,
+            preferences: preferences,
+            removeDataStore: { _ in })
     }
 
     private func desk(_ label: String, boards: [BoardState] = [], focusedBoardID: UUID? = nil) -> DeskState {

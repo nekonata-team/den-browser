@@ -20,6 +20,7 @@ final class BoardRuntime: NSObject, WKNavigationDelegate, WKUIDelegate {
         websiteDataStore: WKWebsiteDataStore,
         sheetNavigation: SheetNavigationManager,
         sheetScale: Int,
+        nativePictureInPictureEnabled: Bool = false,
         onOpenBoard: @escaping (URL) -> Void,
         onChange: @escaping (UUID, URL?, String?) -> Void,
         onFullscreenChange: ((UUID, Bool) -> Void)? = nil
@@ -37,7 +38,7 @@ final class BoardRuntime: NSObject, WKNavigationDelegate, WKUIDelegate {
 
         Self.configureNativePictureInPicture(
             preferences: configuration.preferences,
-            enabled: sheetNavigation.preferences.nativePictureInPictureEnabled
+            enabled: nativePictureInPictureEnabled
         )
 
         webView = WKWebView(frame: .zero, configuration: configuration)

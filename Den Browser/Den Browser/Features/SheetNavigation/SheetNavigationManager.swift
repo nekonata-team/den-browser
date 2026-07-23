@@ -15,7 +15,7 @@ private final class SheetNavigationMessageHandler: NSObject, WKScriptMessageHand
 @MainActor
 @Observable
 final class SheetNavigationManager {
-    static let defaultHintAlphabet = AppPreferences.defaultHintAlphabet
+    static let defaultHintAlphabet = "asdfghjkl"
     static let contentWorld = WKContentWorld.world(name: "dev.nekonata.denbrowser.sheet-navigation")
 
     let userContentController = WKUserContentController()
@@ -23,25 +23,23 @@ final class SheetNavigationManager {
     private(set) var hintAlphabet: String
     private(set) var ignoredHosts: [String]
 
-    @ObservationIgnored let preferences: AppPreferences
+    @ObservationIgnored private let defaults: UserDefaults
     @ObservationIgnored private let scriptSource: String
     @ObservationIgnored private let webViews = NSHashTable<WKWebView>.weakObjects()
     @ObservationIgnored private let messageHandler = SheetNavigationMessageHandler()
     @ObservationIgnored private var openBoardCallbacks: [ObjectIdentifier: (URL) -> Void] = [:]
 
-    convenience init(
+    init(
         defaults: UserDefaults = .standard,
         scriptSource: String? = nil
     ) {
-        self.init(preferences: AppPreferences(defaults: defaults), scriptSource: scriptSource)
-    }
-
-    init(preferences: AppPreferences, scriptSource: String? = nil) {
-        self.preferences = preferences
+        self.defaults = defaults
         self.scriptSource = scriptSource ?? Self.bundledScript
-        isEnabled = preferences.sheetNavigationEnabled
-        hintAlphabet = preferences.sheetNavigationHintAlphabet
-        ignoredHosts = preferences.sheetNavigationIgnoredHosts
+        isEnabled = defaults.bool(forKey: Self.enabledKey)
+        hintAlphabet =
+            Self.normalizeHintAlphabet(defaults.string(forKey: Self.hintAlphabetKey) ?? "")
+            ?? Self.defaultHintAlphabet
+        ignoredHosts = defaults.stringArray(forKey: Self.ignoredHostsKey) ?? []
         configureMessageHandler()
     }
 
@@ -60,7 +58,7 @@ final class SheetNavigationManager {
     func setEnabled(_ enabled: Bool) {
         guard enabled != isEnabled else { return }
         isEnabled = enabled
-        preferences.setSheetNavigationEnabled(enabled)
+        defaults.set(enabled, forKey: Self.enabledKey)
         applyConfiguration()
     }
 
@@ -69,7 +67,7 @@ final class SheetNavigationManager {
         guard let normalized = Self.normalizeHintAlphabet(alphabet) else { return false }
         guard normalized != hintAlphabet else { return true }
         hintAlphabet = normalized
-        preferences.setSheetNavigationHintAlphabet(normalized)
+        defaults.set(normalized, forKey: Self.hintAlphabetKey)
         applyConfiguration()
         return true
     }
@@ -79,7 +77,7 @@ final class SheetNavigationManager {
         guard let hosts = Self.normalizeIgnoredSites(sites) else { return false }
         guard hosts != ignoredHosts else { return true }
         ignoredHosts = hosts
-        preferences.setSheetNavigationIgnoredHosts(hosts)
+        defaults.set(hosts, forKey: Self.ignoredHostsKey)
         applyConfiguration()
         return true
     }
@@ -151,7 +149,7 @@ final class SheetNavigationManager {
             guard
                 let urlString = message["url"] as? String,
                 let url = URL(string: urlString),
-                SheetURLPolicy.isSupported(url),
+                Self.isSupported(url),
                 let onOpenBoard = openBoardCallbacks[ObjectIdentifier(webView)]
             else { return false }
             onOpenBoard(url)
@@ -173,6 +171,16 @@ final class SheetNavigationManager {
     private func isIgnored(_ url: URL?) -> Bool {
         guard let hostname = url?.host(percentEncoded: false)?.lowercased() else { return false }
         return ignoredHosts.contains { hostname == $0 || hostname.hasSuffix(".\($0)") }
+    }
+
+    private static func isSupported(_ url: URL) -> Bool {
+        guard
+            let scheme = url.scheme?.lowercased(),
+            scheme == "http" || scheme == "https",
+            let host = url.host,
+            !host.isEmpty
+        else { return false }
+        return true
     }
 
     private func applyConfiguration() {
@@ -216,4 +224,8 @@ final class SheetNavigationManager {
         else { return "" }
         return source
     }()
+
+    private static let enabledKey = "features.vim-style-sheet-navigation.enabled"
+    private static let hintAlphabetKey = "features.vim-style-sheet-navigation.hint-alphabet"
+    private static let ignoredHostsKey = "features.vim-style-sheet-navigation.ignored-hosts"
 }

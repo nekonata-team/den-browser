@@ -23,13 +23,9 @@ final class AppPreferences {
     static let schemaVersion = 1
     static let defaultDeskNumberBinding = ShortcutBinding(
         key: .character("1"), modifiers: [.command, .option])
-    static let defaultHintAlphabet = "asdfghjkl"
     static let defaultSheetScale = 100
     static let sheetScaleRange = 50...200
 
-    private(set) var sheetNavigationEnabled: Bool
-    private(set) var sheetNavigationHintAlphabet: String
-    private(set) var sheetNavigationIgnoredHosts: [String]
     private(set) var shortcutOverrides: [ShortcutAction: ShortcutOverride]
     private(set) var deskNumberBinding: ShortcutBinding?
     private(set) var motionPreference: MotionPreference
@@ -40,9 +36,6 @@ final class AppPreferences {
     @ObservationIgnored private let defaults: UserDefaults
 
     private static let schemaVersionKey = "preferences.schemaVersion"
-    private static let enabledKey = "features.vim-style-sheet-navigation.enabled"
-    private static let hintAlphabetKey = "features.vim-style-sheet-navigation.hint-alphabet"
-    private static let ignoredHostsKey = "features.vim-style-sheet-navigation.ignored-hosts"
     private static let shortcutKeyPrefix = "shortcuts."
     private static let deskNumberShortcutKey = "shortcuts.desk-number"
     private static let deskNumberShortcutDisabledKey = "shortcuts.desk-number.disabled"
@@ -55,11 +48,6 @@ final class AppPreferences {
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
         Self.migrateIfNeeded(defaults)
-        sheetNavigationEnabled = defaults.bool(forKey: Self.enabledKey)
-        sheetNavigationHintAlphabet =
-            SheetNavigationManager.normalizeHintAlphabet(defaults.string(forKey: Self.hintAlphabetKey) ?? "")
-            ?? Self.defaultHintAlphabet
-        sheetNavigationIgnoredHosts = defaults.stringArray(forKey: Self.ignoredHostsKey) ?? []
         shortcutOverrides = [:]
         deskNumberBinding = Self.loadDeskNumberBinding(defaults)
         motionPreference =
@@ -93,24 +81,9 @@ final class AppPreferences {
         }
     }
 
-    func setSheetNavigationEnabled(_ enabled: Bool) {
-        sheetNavigationEnabled = enabled
-        defaults.set(enabled, forKey: Self.enabledKey)
-    }
-
     func setNativePictureInPictureEnabled(_ enabled: Bool) {
         nativePictureInPictureEnabled = enabled
         defaults.set(enabled, forKey: Self.nativePictureInPictureEnabledKey)
-    }
-
-    func setSheetNavigationHintAlphabet(_ alphabet: String) {
-        sheetNavigationHintAlphabet = alphabet
-        defaults.set(alphabet, forKey: Self.hintAlphabetKey)
-    }
-
-    func setSheetNavigationIgnoredHosts(_ hosts: [String]) {
-        sheetNavigationIgnoredHosts = hosts
-        defaults.set(hosts, forKey: Self.ignoredHostsKey)
     }
 
     func setMotionPreference(_ preference: MotionPreference) {
