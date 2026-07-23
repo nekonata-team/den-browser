@@ -101,6 +101,7 @@ Build the project in Xcode first so SourceKit-LSP can use its build log and inde
 ## Project documentation
 
 - [CONTEXT.md](./CONTEXT.md): product language and domain model
+- [docs/architecture.md](./docs/architecture.md): source organization and dependency boundaries
 - [DESIGN.md](./DESIGN.md): visual and interaction rules
 - [docs/shortcuts.md](./docs/shortcuts.md): Den Mode keyboard commands
 - [docs/desk-presets.md](./docs/desk-presets.md): Desk Preset behavior and scope

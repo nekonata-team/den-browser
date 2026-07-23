@@ -8,7 +8,7 @@ Read [CONTEXT.md](./CONTEXT.md) before changing product behavior or user-visible
 
 ## Implementation flow
 
-1. Read `CONTEXT.md`, relevant ADRs in `docs/adr/`, and affected code/tests.
+1. Read `CONTEXT.md`, `docs/architecture.md`, relevant ADRs in `docs/adr/`, and affected code/tests.
 2. Keep persisted `DenState` separate from live `BoardRuntime`/`WKWebView` objects.
 3. Add or update focused unit tests for stable `DenStore` behavior.
 4. Choose validation in proportion to the change. Run `just check` before handoff for Swift source, Xcode settings, or test and validation configuration changes. Otherwise, run focused validation that exercises the changed behavior.
