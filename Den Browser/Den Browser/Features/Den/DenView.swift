@@ -202,8 +202,8 @@ struct DenView: View {
         DeskSwitcher(
             scrollPosition: $deskScrollPosition,
             shouldReduceMotion: shouldReduceMotion,
-            item: { desk, size in
-                AnyView(deskSwitcherItem(desk, in: size))
+            item: { desk, number, size in
+                AnyView(deskSwitcherItem(desk, number: number, in: size))
             },
             onFramesChange: { frames in
                 deskFrames = frames
@@ -213,22 +213,22 @@ struct DenView: View {
     }
 
     @ViewBuilder
-    private func deskSwitcherButton(_ desk: DeskState, in size: CGSize) -> some View {
-        deskButton(desk, in: size)
+    private func deskSwitcherButton(_ desk: DeskState, number: Int, in size: CGSize) -> some View {
+        deskButton(desk, number: number, in: size)
             .id(desk.id)
     }
 
-    private func deskSwitcherItem(_ desk: DeskState, in size: CGSize) -> some View {
+    private func deskSwitcherItem(_ desk: DeskState, number: Int, in size: CGSize) -> some View {
         let isDragged = deskDrag?.deskID == desk.id
         let offset = isDragged ? deskDrag?.offset ?? 0 : 0
-        return deskSwitcherButton(desk, in: size)
+        return deskSwitcherButton(desk, number: number, in: size)
             .offset(x: offset)
             .background(deskFrameBackground(for: desk.id))
             .zIndex(isDragged ? 2 : 1)
     }
 
-    private func deskButton(_ desk: DeskState, in size: CGSize) -> some View {
-        Text(desk.label)
+    private func deskButton(_ desk: DeskState, number: Int, in size: CGSize) -> some View {
+        Text("\(number). \(desk.label)")
             .lineLimit(1)
             .frame(maxWidth: 180)
             .padding(.horizontal, 12)

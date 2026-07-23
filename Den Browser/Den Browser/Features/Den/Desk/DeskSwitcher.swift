@@ -5,7 +5,7 @@ struct DeskSwitcher: View {
 
     @Binding var scrollPosition: ScrollPosition
     let shouldReduceMotion: Bool
-    let item: (DeskState, CGSize) -> AnyView
+    let item: (DeskState, Int, CGSize) -> AnyView
     let onFramesChange: ([UUID: CGRect]) -> Void
 
     var body: some View {
@@ -13,8 +13,8 @@ struct DeskSwitcher: View {
             ScrollView(.horizontal) {
                 GlassEffectContainer(spacing: 8) {
                     HStack(spacing: 8) {
-                        ForEach(store.state.desks) { desk in
-                            item(desk, geometry.size)
+                        ForEach(Array(store.state.desks.enumerated()), id: \.element.id) { index, desk in
+                            item(desk, index + 1, geometry.size)
                         }
                     }
                     .scrollTargetLayout()
