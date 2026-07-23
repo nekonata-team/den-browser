@@ -15,6 +15,13 @@ private final class SheetNavigationMessageHandler: NSObject, WKScriptMessageHand
 @MainActor
 @Observable
 final class SheetNavigationManager {
+    struct Actions {
+        let onOpenBoard: (URL) -> Void
+        let onEditCurrentSheet: () -> Void
+        let onOpenCurrentSheetInNewBoard: (URL) -> Void
+        let onPasteURLInNewBoard: (URL) -> Void
+    }
+
     static let defaultHintAlphabet = "asdfghjkl"
     static let contentWorld = WKContentWorld.world(name: "dev.nekonata.denbrowser.sheet-navigation")
 
@@ -27,7 +34,7 @@ final class SheetNavigationManager {
     @ObservationIgnored private let scriptSource: String
     @ObservationIgnored private let webViews = NSHashTable<WKWebView>.weakObjects()
     @ObservationIgnored private let messageHandler = SheetNavigationMessageHandler()
-    @ObservationIgnored private var openBoardCallbacks: [ObjectIdentifier: (URL) -> Void] = [:]
+    @ObservationIgnored private var actionsByWebView: [ObjectIdentifier: Actions] = [:]
 
     init(
         defaults: UserDefaults = .standard,
@@ -82,14 +89,14 @@ final class SheetNavigationManager {
         return true
     }
 
-    func didOpen(_ webView: WKWebView, onOpenBoard: @escaping (URL) -> Void) {
+    func didOpen(_ webView: WKWebView, actions: Actions) {
         webViews.add(webView)
-        openBoardCallbacks[ObjectIdentifier(webView)] = onOpenBoard
+        actionsByWebView[ObjectIdentifier(webView)] = actions
     }
 
     func didClose(_ webView: WKWebView) {
         webViews.remove(webView)
-        openBoardCallbacks.removeValue(forKey: ObjectIdentifier(webView))
+        actionsByWebView.removeValue(forKey: ObjectIdentifier(webView))
     }
 
     static func normalizeHintAlphabet(_ alphabet: String) -> String? {
@@ -150,9 +157,39 @@ final class SheetNavigationManager {
                 let urlString = message["url"] as? String,
                 let url = URL(string: urlString),
                 Self.isSupported(url),
-                let onOpenBoard = openBoardCallbacks[ObjectIdentifier(webView)]
+                let onOpenBoard = actionsByWebView[ObjectIdentifier(webView)]?.onOpenBoard
             else { return false }
             onOpenBoard(url)
+            return true
+        case "editCurrentSheet":
+            guard
+                let url = webView.url,
+                Self.isSupported(url),
+                let action = actionsByWebView[ObjectIdentifier(webView)]?.onEditCurrentSheet
+            else { return false }
+            action()
+            return true
+        case "openCurrentSheetInNewBoard":
+            guard
+                let url = webView.url,
+                Self.isSupported(url),
+                let action = actionsByWebView[ObjectIdentifier(webView)]?.onOpenCurrentSheetInNewBoard
+            else { return false }
+            action(url)
+            return true
+        case "pasteURL", "pasteURLInNewBoard":
+            guard
+                let value = NSPasteboard.general.string(forType: .string),
+                let url = URL(string: value.trimmingCharacters(in: .whitespacesAndNewlines)),
+                Self.isSupported(url)
+            else { return false }
+            if action == "pasteURL" {
+                webView.load(URLRequest(url: url))
+            } else if let action = actionsByWebView[ObjectIdentifier(webView)]?.onPasteURLInNewBoard {
+                action(url)
+            } else {
+                return false
+            }
             return true
         default:
             return false

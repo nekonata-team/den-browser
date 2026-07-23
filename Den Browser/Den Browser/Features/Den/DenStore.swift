@@ -16,6 +16,7 @@ final class DenStore {
     var overviewQuery = ""
     var isOverviewFilterMode = false
     var boardWidthPanelMessage: String?
+    var openBoardPanelInitialURL: URL?
     var deskPendingDeletion: DeskState?
     var deskPresetPendingDeletion: PersonalDeskPreset?
     var deskPresetPendingReplacement: PersonalDeskPreset?
@@ -159,6 +160,7 @@ final class DenStore {
             deskDragCancellationRequest &+= 1
         }
         state = .sample
+        openBoardPanelInitialURL = nil
         setTemporaryContext(nil)
         isZenViewPresented = false
         isBoardDragging = false
@@ -261,6 +263,9 @@ final class DenStore {
     }
 
     func setTemporaryContext(_ context: TemporaryContext?) {
+        if temporaryContext == .openBoard, context != .openBoard {
+            openBoardPanelInitialURL = nil
+        }
         if temporaryContext == .overview, context != .overview {
             overviewSelectionDeskID = nil
             overviewSelectionBoardID = nil

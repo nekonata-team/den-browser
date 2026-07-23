@@ -25,12 +25,14 @@ extension DenStore {
         }
     }
 
-    func showOpenBoardPanel() {
+    func showOpenBoardPanel(initialURL: URL? = nil) {
+        openBoardPanelInitialURL = initialURL
         setTemporaryContext(.openBoard)
     }
 
     func hideOpenBoardPanel() {
         if temporaryContext == .openBoard {
+            openBoardPanelInitialURL = nil
             setTemporaryContext(nil)
         }
     }

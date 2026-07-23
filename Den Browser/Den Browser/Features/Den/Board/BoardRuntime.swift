@@ -7,6 +7,9 @@ final class BoardRuntime: NSObject, WKNavigationDelegate, WKUIDelegate {
     let webView: WKWebView
 
     private let onOpenBoard: (URL) -> Void
+    private let onEditCurrentSheet: () -> Void
+    private let onOpenCurrentSheetInNewBoard: (URL) -> Void
+    private let onPasteURLInNewBoard: (URL) -> Void
     private let onChange: (UUID, URL?, String?) -> Void
     private let onFullscreenChange: ((UUID, Bool) -> Void)?
     private unowned let sheetNavigation: SheetNavigationManager
@@ -23,11 +26,17 @@ final class BoardRuntime: NSObject, WKNavigationDelegate, WKUIDelegate {
         nativePictureInPictureEnabled: Bool = false,
         onOpenBoard: @escaping (URL) -> Void,
         onChange: @escaping (UUID, URL?, String?) -> Void,
-        onFullscreenChange: ((UUID, Bool) -> Void)? = nil
+        onFullscreenChange: ((UUID, Bool) -> Void)? = nil,
+        onEditCurrentSheet: @escaping () -> Void = {},
+        onOpenCurrentSheetInNewBoard: @escaping (URL) -> Void = { _ in },
+        onPasteURLInNewBoard: @escaping (URL) -> Void = { _ in }
     ) {
         id = board.id
         self.sheetNavigation = sheetNavigation
         self.onOpenBoard = onOpenBoard
+        self.onEditCurrentSheet = onEditCurrentSheet
+        self.onOpenCurrentSheetInNewBoard = onOpenCurrentSheetInNewBoard
+        self.onPasteURLInNewBoard = onPasteURLInNewBoard
         self.onChange = onChange
         self.onFullscreenChange = onFullscreenChange
 
@@ -49,7 +58,15 @@ final class BoardRuntime: NSObject, WKNavigationDelegate, WKUIDelegate {
 
         webView.navigationDelegate = self
         webView.uiDelegate = self
-        sheetNavigation.didOpen(webView, onOpenBoard: onOpenBoard)
+        sheetNavigation.didOpen(
+            webView,
+            actions: .init(
+                onOpenBoard: onOpenBoard,
+                onEditCurrentSheet: onEditCurrentSheet,
+                onOpenCurrentSheetInNewBoard: onOpenCurrentSheetInNewBoard,
+                onPasteURLInNewBoard: onPasteURLInNewBoard
+            )
+        )
 
         urlObservation = webView.observe(\.url, options: [.new]) { [weak self] _, _ in
             Task { @MainActor [weak self] in

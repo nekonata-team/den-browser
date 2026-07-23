@@ -5,6 +5,7 @@ struct OpenBoardPanel: View {
     @FocusState.Binding var isFocused: Bool
 
     let defaultBoardWidth: Double
+    let initialURL: URL?
     let onSubmit: (Double) -> Void
     let onDismiss: () -> Void
 
@@ -35,6 +36,9 @@ struct OpenBoardPanel: View {
         .frame(width: 520)
         .glassEffect(.regular, in: RoundedRectangle(cornerRadius: DenRadius.large, style: .continuous))
         .onAppear {
+            if let initialURL {
+                urlText = initialURL.absoluteString
+            }
             DispatchQueue.main.async { isFocused = true }
         }
         .onExitCommand(perform: onDismiss)

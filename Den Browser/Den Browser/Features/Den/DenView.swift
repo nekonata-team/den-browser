@@ -439,8 +439,9 @@ struct DenView: View {
             urlText: $urlText,
             isFocused: $isOpenPanelFocused,
             defaultBoardWidth: defaultBoardWidth,
+            initialURL: store.openBoardPanelInitialURL,
             onSubmit: { openBoard(defaultBoardWidth: $0) },
-            onDismiss: store.hideOpenBoardPanel
+            onDismiss: dismissOpenBoardPanel
         )
     }
 
@@ -449,8 +450,25 @@ struct DenView: View {
             text: $editBoardLinkText,
             isFocused: $isEditBoardLinkPanelFocused,
             onSubmit: editFocusedBoardLink,
-            onDismiss: store.hideEditBoardLinkPanel
+            onDismiss: dismissEditBoardLinkPanel
         )
+    }
+
+    private func dismissOpenBoardPanel() {
+        store.hideOpenBoardPanel()
+        restoreFocusedSheetFirstResponder()
+    }
+
+    private func dismissEditBoardLinkPanel() {
+        store.hideEditBoardLinkPanel()
+        restoreFocusedSheetFirstResponder()
+    }
+
+    private func restoreFocusedSheetFirstResponder() {
+        DispatchQueue.main.async {
+            guard let webView = store.focusedRuntime?.webView else { return }
+            webView.window?.makeFirstResponder(webView)
+        }
     }
 
     private var renameBoardPanel: some View {

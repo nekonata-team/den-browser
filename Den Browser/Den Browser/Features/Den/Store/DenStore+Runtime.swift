@@ -26,6 +26,21 @@ extension DenStore {
         } onFullscreenChange: {
             [weak self] boardID, isFullscreen in
             self?.updateFullscreenStatus(boardID: boardID, isFullscreen: isFullscreen)
+        } onEditCurrentSheet: {
+            [weak self] in
+            self?.focusBoard(board.id)
+            self?.showEditBoardLinkPanel()
+        } onOpenCurrentSheetInNewBoard: {
+            [weak self] url in
+            self?.focusBoard(board.id)
+            self?.showOpenBoardPanel(initialURL: url)
+        } onPasteURLInNewBoard: {
+            [weak self] url in
+            self?.addBoard(
+                urlString: url.absoluteString,
+                preferredWidth: board.width,
+                afterBoardID: board.id
+            )
         }
         runtimes[board.id] = runtime
         return runtime

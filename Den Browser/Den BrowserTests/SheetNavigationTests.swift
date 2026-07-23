@@ -150,6 +150,42 @@ struct SheetNavigationTests {
         #expect(hasFindBar)
     }
 
+    @Test func sheetNavigationFocusesEditableControlsInDocumentOrder() async throws {
+        let source = try sheetNavigationScriptSource().replacingOccurrences(
+            of: "if (!event.isTrusted ||",
+            with: "if (")
+        let manager = SheetNavigationManager(scriptSource: source)
+        manager.setEnabled(true)
+        let webView = makeSheetNavigationWebView(manager: manager)
+        let waiter = WebViewLoadWaiter()
+
+        await waiter.load(editableControlsTestHTML, baseURL: URL(string: "https://example.com/")!, in: webView)
+
+        try await dispatchSheetKey("g", in: webView)
+        try await dispatchSheetKey("i", in: webView)
+        let firstFocused = try #require(
+            await webView.evaluateJavaScript("document.activeElement.id") as? String)
+        #expect(firstFocused == "first-text")
+
+        try await dispatchSheetKey("Escape", in: webView)
+        try await dispatchSheetKey("2", in: webView)
+        try await dispatchSheetKey("g", in: webView)
+        try await dispatchSheetKey("i", in: webView)
+        let secondFocused = try #require(
+            await webView.evaluateJavaScript("document.activeElement.id") as? String)
+        #expect(secondFocused == "message")
+
+        try await dispatchSheetKey("Escape", in: webView)
+        try await dispatchSheetKey("3", in: webView)
+        try await dispatchSheetKey("g", in: webView)
+        try await dispatchSheetKey("i", in: webView)
+        let thirdFocused = try #require(
+            await webView.evaluateJavaScript("document.activeElement.id") as? String)
+        let scrollY = try #require(await webView.evaluateJavaScript("scrollY") as? Int)
+        #expect(thirdFocused == "composer")
+        #expect(scrollY > 0)
+    }
+
     @Test func invalidHintAlphabetIsNotPersisted() {
         let suiteName = "SheetNavigationAlphabetTests-\(UUID().uuidString)"
         let defaults = UserDefaults(suiteName: suiteName)!
@@ -232,6 +268,35 @@ struct SheetNavigationTests {
         #expect(!manager.handleScriptMessage(["action": "openBoard"], from: webView))
     }
 
+    @Test func sheetNavigationRoutesCurrentSheetActionsToDenPanels() async throws {
+        let source = try sheetNavigationScriptSource().replacingOccurrences(
+            of: "if (!event.isTrusted ||",
+            with: "if (")
+        let manager = SheetNavigationManager(scriptSource: source)
+        let board = board("Source", url: "https://source.example/")
+        let desk = desk("Desk", boards: [board], focusedBoardID: board.id)
+        let store = DenStore(
+            state: DenState(desks: [desk], focusedDeskID: desk.id),
+            sheetNavigation: manager
+        )
+        let webView = store.runtime(for: board).webView
+        let waiter = WebViewLoadWaiter()
+        let url = URL(string: "https://source.example/current")!
+
+        manager.setEnabled(true)
+        await waiter.load("<html>Current Sheet</html>", baseURL: url, in: webView)
+
+        #expect(manager.handleScriptMessage(["action": "editCurrentSheet"], from: webView))
+        #expect(store.isEditBoardLinkPanelPresented)
+
+        store.hideEditBoardLinkPanel()
+        try await dispatchSheetKey("g", in: webView)
+        try await dispatchSheetKey("Shift", shift: true, in: webView)
+        try await dispatchSheetKey("E", shift: true, in: webView)
+        #expect(store.isOpenBoardPanelPresented)
+        #expect(store.openBoardPanelInitialURL == url)
+    }
+
     @Test func boardRuntimeObservesUrlAndTitleChanges() async throws {
         let manager = SheetNavigationManager(scriptSource: "")
         var changeContinuation: AsyncStream<(URL?, String?)>.Continuation?
@@ -291,6 +356,23 @@ struct SheetNavigationTests {
         </style>
         <a href="https://destination.example/">Destination</a>
         <p>find target</p>
+        """
+    }
+
+    private var editableControlsTestHTML: String {
+        """
+        <!doctype html>
+        <style>
+          body { margin: 0; height: 4000px; }
+          #composer { margin-top: 3800px; }
+        </style>
+        <input id="first-text" type="text">
+        <input id="hidden-input" type="text" hidden>
+        <input id="disabled-input" type="text" disabled>
+        <input id="readonly-input" type="text" readonly>
+        <input id="file-input" type="file">
+        <textarea id="message"></textarea>
+        <div id="composer" contenteditable="true" role="textbox"></div>
         """
     }
 

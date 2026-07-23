@@ -16,6 +16,8 @@
 
   const actionableSelector =
     'a[href],button,input:not([type="hidden"]),select,textarea,[role="button"]';
+  const editableSelector =
+    'input:not([type="hidden"]):not([type="file"]):not([type="checkbox"]):not([type="radio"]),textarea,[contenteditable="true"]';
 
   function isEditable(element) {
     return element instanceof HTMLInputElement ||
@@ -57,15 +59,20 @@
     return count;
   }
 
-  function isVisibleAndEnabled(element) {
+  function isRenderedAndEnabled(element) {
     if (element.matches(":disabled") || element.getAttribute("aria-disabled") === "true") return false;
     for (let ancestor = element; ancestor; ancestor = ancestor.parentElement) {
       const style = getComputedStyle(ancestor);
       if (style.display === "none" || style.visibility === "hidden" || style.opacity === "0") return false;
     }
     const rect = element.getBoundingClientRect();
-    return rect.width > 0 && rect.height > 0 &&
-      rect.bottom > 0 && rect.right > 0 &&
+    return rect.width > 0 && rect.height > 0;
+  }
+
+  function isVisibleAndEnabled(element) {
+    if (!isRenderedAndEnabled(element)) return false;
+    const rect = element.getBoundingClientRect();
+    return rect.bottom > 0 && rect.right > 0 &&
       rect.top < innerHeight && rect.left < innerWidth;
   }
 
@@ -263,6 +270,9 @@
       case "gg": scrollToEdge("y", false); break;
       case "gu": goUp(false); break;
       case "gU": goUp(true); break;
+      case "gi": focusEditable(count); break;
+      case "ge": postMessage({ action: "editCurrentSheet" }); break;
+      case "gE": postMessage({ action: "openCurrentSheetInNewBoard" }); break;
       case "zH": scrollToEdge("x", false); break;
       case "zL": scrollToEdge("x", true); break;
       case "yy":
@@ -274,6 +284,17 @@
     }
     consume(event);
     return true;
+  }
+
+  function focusEditable(index) {
+    const targets = Array.from(document.querySelectorAll(editableSelector)).filter((target) => {
+      if (!isRenderedAndEnabled(target)) return false;
+      return !target.readOnly && !target.disabled;
+    });
+    const target = targets[index - 1];
+    if (!target) return;
+    target.focus();
+    target.scrollIntoView({ block: "nearest", inline: "nearest" });
   }
 
   function runCommand(key, event) {
@@ -292,6 +313,8 @@
       case "F": openHints("openBoard"); break;
       case "H": history.back(); break;
       case "L": history.forward(); break;
+      case "p": postMessage({ action: "pasteURL" }); break;
+      case "P": postMessage({ action: "pasteURLInNewBoard" }); break;
       case "r": location.reload(); break;
       case "/": openFind(); break;
       case "n": runFind(false); break;
@@ -304,6 +327,7 @@
 
   function onKeyDown(event) {
     if (!event.isTrusted || !enabled || ignored || hasDisallowedModifier(event)) return;
+    if (["Shift", "Control", "Alt", "Meta"].includes(event.key)) return;
 
     if (findBar) {
       if (event.key === "Escape") {

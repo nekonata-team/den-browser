@@ -37,6 +37,10 @@ A numeric prefix repeats relative scrolling commands. For example, `5j`, `3k`, a
 | `r` | Reload the Current Sheet. |
 | `gu` | Move one level up the Current Sheet URL. |
 | `gU` | Move to the Current Sheet URL root. |
+| `gi` | Focus the next editable control in document order; counts select later controls. |
+| `ge` | Open the Current Sheet URL editor for the focused Board. |
+| `gE` | Open the Open Board panel with the Current Sheet URL prefilled. |
+| `p` / `P` | Open the clipboard URL in the Current Sheet / a new Board. |
 | `yy` | Copy the Current Sheet URL. |
 
 ### Find
@@ -50,13 +54,12 @@ A numeric prefix repeats relative scrolling commands. For example, `5j`, `3k`, a
 
 ## Deliberately deferred
 
-- `p` / `P`: opening clipboard text requires URL-versus-search behavior and pasteboard permission UX.
 - `o` / `O`: an Omnibox needs a Den-native URL and search surface.
-- `i`: editable focus already enters Insert state automatically.
+- `i`: editable focus already enters Insert state automatically; `gi` provides explicit focus traversal.
 - `v`: Visual mode needs a separate text-selection design.
 - `t`, `x`, `J`, and `K`: Vimium tab operations overlap with Den's Board and Desk operations and belong in Den Mode, if added.
 - bookmarks and arbitrary custom mappings: outside the first-party Feature's current scope.
 
 ## Implementation boundary
 
-The injected script owns key sequences, counts, scrolling, hints, and find presentation. It and its native message bridge run in a dedicated `WKContentWorld`; the bridge accepts only main-frame requests while the Feature is enabled and the Sheet is not ignored. Swift owns privileged app operations: copying a URL and opening a link as a new Board. Settings and Ignored Sites apply immediately to open and future Sheets.
+The injected script owns key sequences, counts, scrolling, hints, and find presentation. It and its native message bridge run in a dedicated `WKContentWorld`; the bridge accepts only main-frame requests while the Feature is enabled and the Sheet is not ignored. Swift owns privileged pasteboard and Board operations. Settings and Ignored Sites apply immediately to open and future Sheets.
