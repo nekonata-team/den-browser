@@ -30,9 +30,9 @@ Nested objects use these keys:
 - `WebProfileStore`: `kind`, optional `identifier`
 - `DenState`: `desks`, `focusedDeskID`
 - `DeskState`: `id`, `label`, `boards`, optional `focusedBoardID`
-- `BoardState`: `id`, `label`, `width`, optional `currentSheetURL`
+- `BoardState`: `id`, `label`, `width`, optional `customLabel`, optional `currentSheetURL`
 - `PersonalDeskPreset`: `id`, `label`, `boards`, optional `focusedBoardIndex`
-- `DeskPresetBoard`: `label`, `width`, optional `initialSheetURL`
+- `DeskPresetBoard`: `label`, `width`, optional `customLabel`, optional `initialSheetURL`
 
 A missing optional Sheet URL means the Board has no Sheet. URLs encode using Foundation `URL`'s `Codable` representation.
 
@@ -43,7 +43,11 @@ A missing optional Sheet URL means the Board has no Sheet. URLs encode using Fou
 - `features.vim-style-sheet-navigation.hint-alphabet`
 - `features.vim-style-sheet-navigation.ignored-hosts`
 - `shortcuts.<ShortcutAction raw value>`
+- `shortcuts.desk-number`, optional `shortcuts.desk-number.disabled`
 - `appearance.motion`
+- `appearance.board-centering`
+- `appearance.sheet-scale`
+- `features.native-picture-in-picture.enabled`
 
 The absence of `preferences.schemaVersion` means version 0. Preferences migrate one version at a time, preserve existing per-key values when adopting version 1, and update the version key only after each migration step completes. A schema version newer than the app supports is not overwritten or downgraded.
 
