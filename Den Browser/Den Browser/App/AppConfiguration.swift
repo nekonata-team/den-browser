@@ -93,9 +93,31 @@ struct AppConfiguration {
             den: DenState(desks: [desk, secondDesk, thirdDesk], focusedDeskID: desk.id))
     }
 
-    private static let fixtureSheetURL =
-        "data:text/html,%3Clabel%20for%3D%22sheet-input%22%3ESheet%20input%3C%2Flabel%3E"
-        + "%3Cinput%20id%3D%22sheet-input%22%20aria-label%3D%22Sheet%20input%22%3E"
+    private static let fixtureSheetURL: String = {
+        let html = """
+            <label for="sheet-input">Sheet input</label>
+            <input id="sheet-input" aria-label="Sheet input">
+            <button onclick="alert('Alert message'); result.textContent = 'alert:done'">
+              Show alert
+            </button>
+            <button onclick="result.textContent = 'confirm:' + confirm('Continue with this action?')">
+              Confirm action
+            </button>
+            <button onclick="result.textContent = 'prompt:' + prompt('Value?', 'default')">
+              Show prompt
+            </button>
+            <button onclick="fileInput.click()">Open file</button>
+            <input id="fileInput" type="file" hidden>
+            <button onclick="folderInput.click()">Open folder</button>
+            <input id="folderInput" type="file" webkitdirectory hidden>
+            <div id="result" aria-live="polite">result:pending</div>
+            """
+        let allowed = CharacterSet.urlQueryAllowed.subtracting(CharacterSet(charactersIn: "#"))
+        guard let encoded = html.addingPercentEncoding(withAllowedCharacters: allowed) else {
+            preconditionFailure("Could not encode UI test fixture")
+        }
+        return "data:text/html,\(encoded)"
+    }()
 
     private static func fixtureID(_ value: String) -> UUID {
         guard let id = UUID(uuidString: value) else {
