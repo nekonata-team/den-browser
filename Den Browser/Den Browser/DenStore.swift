@@ -15,8 +15,8 @@ final class DenStore {
     var isFullscreenActive = false
     var overviewQuery = ""
     var isOverviewFilterMode = false
-    private(set) var boardWidthPanelMessage: String?
-    private(set) var deskPendingDeletion: DeskState?
+    var boardWidthPanelMessage: String?
+    var deskPendingDeletion: DeskState?
     var deskPresetPendingDeletion: PersonalDeskPreset?
     var deskPresetPendingReplacement: PersonalDeskPreset?
     private(set) var isResetDenPending = false
@@ -28,15 +28,15 @@ final class DenStore {
     var deskDragCancellationRequest = 0
     var overviewSelectionDeskID: UUID?
     var overviewSelectionBoardID: UUID?
-    private(set) var recentlyRemovedBoard: RecentlyRemovedBoard?
+    var recentlyRemovedBoard: RecentlyRemovedBoard?
     let sheetNavigation: SheetNavigationManager
     let websiteDataStore: WKWebsiteDataStore
 
     @ObservationIgnored var runtimes: [UUID: BoardRuntime] = [:]
     @ObservationIgnored private let onSave: ((DenState) -> Void)?
     @ObservationIgnored private let onDeskPresetsSave: (([PersonalDeskPreset]) -> Void)?
-    private var availableBoardWidth = 0.0
-    private var boardSpacing = 0.0
+    var availableBoardWidth = 0.0
+    var boardSpacing = 0.0
 
     var focusedDesk: DeskState? {
         state.desks.first { $0.id == state.focusedDeskID }
@@ -137,76 +137,6 @@ final class DenStore {
         }
     }
 
-    func createDesk(label: String, preset: BuiltInDeskPreset) {
-        createDesk(label: label, boards: preset.boards, focusedBoardIndex: preset.focusedBoardIndex)
-    }
-
-    func createDesk(label: String, personalPresetID: UUID) {
-        guard let preset = deskPresets.first(where: { $0.id == personalPresetID }) else { return }
-        createDesk(label: label, boards: preset.boards, focusedBoardIndex: preset.focusedBoardIndex)
-    }
-
-    private func createDesk(label: String, boards: [DeskPresetBoard], focusedBoardIndex: Int?) {
-        let trimmedLabel = label.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmedLabel.isEmpty, canCreateDesk, let focusedDeskIndex else { return }
-
-        let boards = boards.map { $0.makeBoard() }
-        let focusedBoardID = focusedBoardIndex.flatMap { boards.indices.contains($0) ? boards[$0].id : nil }
-        let desk = DeskState(label: trimmedLabel, boards: boards, focusedBoardID: focusedBoardID)
-        state.desks.insert(desk, at: focusedDeskIndex + 1)
-        state.focusedDeskID = desk.id
-        setTemporaryContext(nil)
-        isDenMode = false
-        save()
-    }
-
-    func deleteFocusedDesk() {
-        guard canDeleteFocusedDesk, let focusedDesk else { return }
-
-        if focusedDesk.boards.isEmpty {
-            deleteDesk(focusedDesk.id)
-        } else {
-            deskPendingDeletion = focusedDesk
-        }
-    }
-
-    func confirmDeskDeletion() {
-        guard let deskID = deskPendingDeletion?.id else { return }
-        deskPendingDeletion = nil
-        deleteDesk(deskID)
-    }
-
-    func cancelDeskDeletion() {
-        deskPendingDeletion = nil
-    }
-
-    private func deleteDesk(_ deskID: UUID) {
-        guard
-            state.desks.count > 1,
-            let deskIndex = state.desks.firstIndex(where: { $0.id == deskID })
-        else { return }
-
-        let desk = state.desks[deskIndex]
-        for board in desk.boards {
-            if maximizedBoardID == board.id {
-                maximizedBoardID = nil
-            }
-            if let runtime = runtimes.removeValue(forKey: board.id) {
-                sheetNavigation.didClose(runtime.webView)
-            }
-        }
-
-        state.desks.remove(at: deskIndex)
-        if state.focusedDeskID == deskID {
-            state.focusedDeskID = state.desks[min(deskIndex, state.desks.count - 1)].id
-        }
-        if isOverviewPresented {
-            overviewSelectionDeskID = state.focusedDeskID
-            overviewSelectionBoardID = focusedDesk?.focusedBoardID
-        }
-        save()
-    }
-
     func resetDen() {
         for runtime in runtimes.values {
             sheetNavigation.didClose(runtime.webView)
@@ -247,252 +177,6 @@ final class DenStore {
 
     func cancelResetDen() {
         isResetDenPending = false
-    }
-
-    func addBoard(urlString: String, preferredWidth: Double? = nil, afterBoardID: UUID? = nil) {
-        guard let url = normalizedURL(from: urlString) else { return }
-        let label = url.host(percentEncoded: false) ?? url.absoluteString
-        let width = preferredWidth.map { min(max($0, 360), 980) } ?? 520
-        let board = BoardState(label: label, width: width, currentSheetURL: url)
-
-        let deskIndex: Int
-        let insertIndex: Int
-        if let afterBoardID {
-            guard let indices = boardIndices(for: afterBoardID) else { return }
-            deskIndex = indices.desk
-            insertIndex = indices.board + 1
-        } else {
-            guard let focusedDeskIndex else { return }
-            deskIndex = focusedDeskIndex
-            if let focusedBoardIndex = focusedBoardIndex(in: deskIndex) {
-                insertIndex = focusedBoardIndex + 1
-            } else {
-                insertIndex = state.desks[deskIndex].boards.endIndex
-            }
-        }
-
-        state.desks[deskIndex].boards.insert(board, at: insertIndex)
-        state.desks[deskIndex].focusedBoardID = board.id
-        state.focusedDeskID = state.desks[deskIndex].id
-        setTemporaryContext(nil)
-        isDenMode = false
-        save()
-    }
-
-    @discardableResult
-    func navigateFocusedBoard(urlString: String) -> Bool {
-        guard
-            let url = normalizedURL(from: urlString),
-            let deskIndex = focusedDeskIndex,
-            let boardIndex = focusedBoardIndex(in: deskIndex)
-        else { return false }
-
-        let boardID = state.desks[deskIndex].boards[boardIndex].id
-        state.desks[deskIndex].boards[boardIndex].currentSheetURL = url
-        setTemporaryContext(nil)
-        isDenMode = false
-        save()
-        runtimes[boardID]?.webView.load(URLRequest(url: url))
-        return true
-    }
-
-    func adjustFocusedBoardWidth(by delta: Double) {
-        guard
-            let deskIndex = focusedDeskIndex,
-            let boardIndex = focusedBoardIndex(in: deskIndex)
-        else { return }
-
-        maximizedBoardID = nil
-        let width = state.desks[deskIndex].boards[boardIndex].width + delta
-        state.desks[deskIndex].boards[boardIndex].width = min(max(width, 280), 1400)
-        save()
-    }
-
-    func adjustFocusedDeskBoardWidths(by delta: Double) {
-        guard let deskIndex = focusedDeskIndex else { return }
-
-        maximizedBoardID = nil
-        for boardIndex in state.desks[deskIndex].boards.indices {
-            let width = state.desks[deskIndex].boards[boardIndex].width + delta
-            state.desks[deskIndex].boards[boardIndex].width = min(max(width, 280), 1400)
-        }
-        save()
-    }
-
-    func updateBoardLayout(availableWidth: Double, spacing: Double) {
-        self.availableBoardWidth = availableWidth
-        boardSpacing = spacing
-    }
-
-    func boardWidth(toFit count: Int) -> Double? {
-        guard (1...9).contains(count), availableBoardWidth > 0 else { return nil }
-        let width = (availableBoardWidth - boardSpacing * Double(count - 1)) / Double(count)
-        guard width >= 280 else { return nil }
-        return width
-    }
-
-    func canResizeFocusedDeskBoards(toFit count: Int) -> Bool {
-        focusedDesk?.boards.isEmpty == false
-            && boardWidth(toFit: count) != nil
-    }
-
-    func showBoardWidthPanel() {
-        guard focusedDesk?.boards.isEmpty == false else { return }
-        boardWidthPanelMessage = nil
-        setTemporaryContext(.boardWidth)
-    }
-
-    func hideBoardWidthPanel() {
-        if temporaryContext == .boardWidth {
-            setTemporaryContext(nil)
-        }
-    }
-
-    @discardableResult
-    func resizeFocusedDeskBoards(toFit count: Int) -> Bool {
-        guard let deskIndex = focusedDeskIndex, let width = boardWidth(toFit: count) else {
-            boardWidthPanelMessage = "\(count) Boards cannot fit at this window width"
-            return false
-        }
-
-        for boardIndex in state.desks[deskIndex].boards.indices {
-            state.desks[deskIndex].boards[boardIndex].width = width
-        }
-        maximizedBoardID = nil
-        hideBoardWidthPanel()
-        centerFocusedBoard()
-        save()
-        return true
-    }
-
-    func resizeBoard(_ boardID: UUID, to width: Double) {
-        guard let indices = boardIndices(for: boardID) else { return }
-        state.desks[indices.desk].boards[indices.board].width = min(max(width, 280), 1400)
-    }
-
-    func saveBoardWidths() {
-        save()
-    }
-
-    func removeFocusedBoard() {
-        guard let boardID = focusedDesk?.focusedBoardID else { return }
-        removeBoard(boardID)
-    }
-
-    func removeBoard(_ boardID: UUID) {
-        guard let indices = boardIndices(for: boardID) else { return }
-        let board = removeBoard(at: indices)
-        recentlyRemovedBoard = RecentlyRemovedBoard(
-            board: board,
-            sourceDeskID: state.desks[indices.desk].id,
-            sourceBoardIndex: indices.board
-        )
-        if maximizedBoardID == board.id {
-            maximizedBoardID = nil
-        }
-        if let runtime = runtimes.removeValue(forKey: board.id) {
-            sheetNavigation.didClose(runtime.webView)
-            runtime.webView.stopLoading()
-            runtime.webView.navigationDelegate = nil
-        }
-
-        save()
-    }
-
-    func restoreRecentlyRemovedBoard() {
-        guard let recentlyRemovedBoard else { return }
-
-        let deskIndex: Int
-        let insertIndex: Int
-        if let sourceDeskIndex = state.desks.firstIndex(where: { $0.id == recentlyRemovedBoard.sourceDeskID }) {
-            deskIndex = sourceDeskIndex
-            insertIndex = min(recentlyRemovedBoard.sourceBoardIndex, state.desks[deskIndex].boards.endIndex)
-        } else {
-            guard let focusedDeskIndex else { return }
-            deskIndex = focusedDeskIndex
-            if let focusedBoardIndex = focusedBoardIndex(in: deskIndex) {
-                insertIndex = focusedBoardIndex + 1
-            } else {
-                insertIndex = state.desks[deskIndex].boards.endIndex
-            }
-        }
-
-        state.desks[deskIndex].boards.insert(recentlyRemovedBoard.board, at: insertIndex)
-        state.desks[deskIndex].focusedBoardID = recentlyRemovedBoard.board.id
-        state.focusedDeskID = state.desks[deskIndex].id
-        self.recentlyRemovedBoard = nil
-        save()
-    }
-
-    func duplicateFocusedBoard() {
-        guard
-            let deskIndex = focusedDeskIndex,
-            let boardIndex = focusedBoardIndex(in: deskIndex)
-        else { return }
-
-        let source = state.desks[deskIndex].boards[boardIndex]
-        let board = BoardState(
-            label: source.label,
-            width: source.width,
-            currentSheetURL: source.currentSheetURL,
-            customLabel: source.customLabel
-        )
-        state.desks[deskIndex].boards.insert(board, at: boardIndex + 1)
-        state.desks[deskIndex].focusedBoardID = board.id
-        isDenMode = false
-        save()
-    }
-
-    func renameFocusedBoard(to newLabel: String) {
-        guard
-            let deskIndex = focusedDeskIndex,
-            let boardIndex = focusedBoardIndex(in: deskIndex)
-        else { return }
-
-        let trimmed = newLabel.trimmingCharacters(in: .whitespacesAndNewlines)
-        if trimmed.isEmpty {
-            state.desks[deskIndex].boards[boardIndex].customLabel = nil
-        } else {
-            state.desks[deskIndex].boards[boardIndex].customLabel = trimmed
-        }
-        setTemporaryContext(nil)
-        isDenMode = false
-        save()
-    }
-
-    func renameFocusedDesk(to newLabel: String) {
-        guard let deskIndex = focusedDeskIndex else { return }
-        let trimmed = newLabel.trimmingCharacters(in: .whitespacesAndNewlines)
-        if !trimmed.isEmpty {
-            state.desks[deskIndex].label = trimmed
-        }
-        setTemporaryContext(nil)
-        isDenMode = false
-        save()
-    }
-
-    func goBackInFocusedBoard() {
-        focusedRuntime?.webView.goBack()
-    }
-
-    func goForwardInFocusedBoard() {
-        focusedRuntime?.webView.goForward()
-    }
-
-    func goBackInBoard(_ boardID: UUID) {
-        guard boardIndices(for: boardID) != nil else { return }
-        focusBoard(boardID)
-        focusedRuntime?.webView.goBack()
-    }
-
-    func goForwardInBoard(_ boardID: UUID) {
-        guard boardIndices(for: boardID) != nil else { return }
-        focusBoard(boardID)
-        focusedRuntime?.webView.goForward()
-    }
-
-    func reloadFocusedBoard() {
-        focusedRuntime?.webView.reload()
     }
 
     var focusedDeskIndex: Int? {
@@ -548,28 +232,6 @@ final class DenStore {
 
     func saveDeskPresets() {
         onDeskPresetsSave?(deskPresets)
-    }
-
-    private func normalizedURL(from text: String) -> URL? {
-        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return nil }
-
-        if let url = URL(string: trimmed), SheetURLPolicy.isSupported(url) {
-            return url
-        }
-
-        if !trimmed.contains("://"),
-            !trimmed.contains(where: \.isWhitespace),
-            let url = URL(string: "https://\(trimmed)"),
-            let host = url.host,
-            host == "localhost" || host.contains(".")
-        {
-            return url
-        }
-
-        var components = URLComponents(string: "https://www.google.com/search")
-        components?.queryItems = [URLQueryItem(name: "q", value: trimmed)]
-        return components?.url
     }
 
     func wrappedIndex(_ index: Int, count: Int) -> Int {
