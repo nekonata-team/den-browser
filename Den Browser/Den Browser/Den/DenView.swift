@@ -29,6 +29,7 @@ struct DenView: View {
     @State private var boardDrag: BoardDragState?
     @State private var lastBoardAutoScrollTime = 0.0
     @State private var deskFrames: [UUID: CGRect] = [:]
+    @State private var deskScrollPosition = ScrollPosition(idType: UUID.self)
     @State private var deskDrag: DeskDragState?
     @State private var lastDeskAutoScrollTime = 0.0
     @FocusState private var isOpenPanelFocused: Bool
@@ -199,9 +200,10 @@ struct DenView: View {
 
     private var deskSwitcher: some View {
         DeskSwitcher(
+            scrollPosition: $deskScrollPosition,
             shouldReduceMotion: shouldReduceMotion,
-            item: { desk, size, proxy in
-                AnyView(deskSwitcherItem(desk, in: size, using: proxy))
+            item: { desk, size in
+                AnyView(deskSwitcherItem(desk, in: size))
             },
             onFramesChange: { frames in
                 deskFrames = frames
@@ -211,21 +213,21 @@ struct DenView: View {
     }
 
     @ViewBuilder
-    private func deskSwitcherButton(_ desk: DeskState, in size: CGSize, using proxy: ScrollViewProxy) -> some View {
-        deskButton(desk, in: size, using: proxy)
+    private func deskSwitcherButton(_ desk: DeskState, in size: CGSize) -> some View {
+        deskButton(desk, in: size)
             .id(desk.id)
     }
 
-    private func deskSwitcherItem(_ desk: DeskState, in size: CGSize, using proxy: ScrollViewProxy) -> some View {
+    private func deskSwitcherItem(_ desk: DeskState, in size: CGSize) -> some View {
         let isDragged = deskDrag?.deskID == desk.id
         let offset = isDragged ? deskDrag?.offset ?? 0 : 0
-        return deskSwitcherButton(desk, in: size, using: proxy)
+        return deskSwitcherButton(desk, in: size)
             .offset(x: offset)
             .background(deskFrameBackground(for: desk.id))
             .zIndex(isDragged ? 2 : 1)
     }
 
-    private func deskButton(_ desk: DeskState, in size: CGSize, using proxy: ScrollViewProxy) -> some View {
+    private func deskButton(_ desk: DeskState, in size: CGSize) -> some View {
         Text(desk.label)
             .lineLimit(1)
             .frame(maxWidth: 180)
@@ -281,7 +283,7 @@ struct DenView: View {
             }
             .gesture(
                 DragGesture(minimumDistance: 0, coordinateSpace: .named(DeskSwitcherCoordinateSpace.name))
-                    .onChanged { updateDeskDrag(desk, value: $0, in: size, using: proxy) }
+                    .onChanged { updateDeskDrag(desk, value: $0, in: size) }
                     .onEnded { finishDeskGesture(desk, value: $0, in: size) }
             )
             .allowsHitTesting(!store.isDeskDragging || deskDrag?.deskID == desk.id)
@@ -541,8 +543,7 @@ struct DenView: View {
     private func updateDeskDrag(
         _ desk: DeskState,
         value: DragGesture.Value,
-        in size: CGSize,
-        using scrollProxy: ScrollViewProxy
+        in size: CGSize
     ) {
         if deskDrag == nil {
             guard deskDragDistance(value.translation) >= 4 else { return }
@@ -561,7 +562,7 @@ struct DenView: View {
         }
         deskDrag = drag
         updateDeskInsertion()
-        autoScrollDeskSwitcher(at: value.location, in: size, using: scrollProxy)
+        autoScrollDeskSwitcher(at: value.location, in: size)
     }
 
     private func finishDeskGesture(_ desk: DeskState, value: DragGesture.Value, in size: CGSize) {
@@ -608,8 +609,7 @@ struct DenView: View {
 
     private func autoScrollDeskSwitcher(
         at location: CGPoint,
-        in size: CGSize,
-        using scrollProxy: ScrollViewProxy
+        in size: CGSize
     ) {
         guard
             location.y >= 0,
@@ -637,7 +637,7 @@ struct DenView: View {
         guard now - lastDeskAutoScrollTime >= interval, let targetID else { return }
         lastDeskAutoScrollTime = now
         withAnimation(.linear(duration: shouldReduceMotion ? 0 : 0.14)) {
-            scrollProxy.scrollTo(targetID, anchor: .center)
+            deskScrollPosition.scrollTo(id: targetID, anchor: .center)
         }
     }
 
