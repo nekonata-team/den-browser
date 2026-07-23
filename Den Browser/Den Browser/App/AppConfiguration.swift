@@ -94,24 +94,12 @@ struct AppConfiguration {
     }
 
     private static let fixtureSheetURL: String = {
-        let html = """
-            <label for="sheet-input">Sheet input</label>
-            <input id="sheet-input" aria-label="Sheet input">
-            <button onclick="alert('Alert message'); result.textContent = 'alert:done'">
-              Show alert
-            </button>
-            <button onclick="result.textContent = 'confirm:' + confirm('Continue with this action?')">
-              Confirm action
-            </button>
-            <button onclick="result.textContent = 'prompt:' + prompt('Value?', 'default')">
-              Show prompt
-            </button>
-            <button onclick="fileInput.click()">Open file</button>
-            <input id="fileInput" type="file" hidden>
-            <button onclick="folderInput.click()">Open folder</button>
-            <input id="folderInput" type="file" webkitdirectory hidden>
-            <div id="result" aria-live="polite">result:pending</div>
-            """
+        guard
+            let url = Bundle.main.url(forResource: "interaction-basics", withExtension: "html"),
+            let html = try? String(contentsOf: url, encoding: .utf8)
+        else {
+            preconditionFailure("Could not load UI test fixture")
+        }
         let allowed = CharacterSet.urlQueryAllowed.subtracting(CharacterSet(charactersIn: "#"))
         guard let encoded = html.addingPercentEncoding(withAllowedCharacters: allowed) else {
             preconditionFailure("Could not encode UI test fixture")

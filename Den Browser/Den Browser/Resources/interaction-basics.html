@@ -1,0 +1,16 @@
+<label for="sheet-input">Sheet input</label>
+<input id="sheet-input" aria-label="Sheet input">
+<button onclick="alert('Alert message'); result.textContent = 'alert:done'">
+  Show alert
+</button>
+<button onclick="result.textContent = 'confirm:' + confirm('Continue with this action?')">
+  Confirm action
+</button>
+<button onclick="result.textContent = 'prompt:' + prompt('Value?', 'default')">
+  Show prompt
+</button>
+<button onclick="fileInput.click()">Open file</button>
+<input id="fileInput" type="file" hidden>
+<button onclick="folderInput.click()">Open folder</button>
+<input id="folderInput" type="file" webkitdirectory hidden>
+<div id="result" aria-live="polite">result:pending</div>
