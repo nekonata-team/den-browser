@@ -1,14 +1,33 @@
+import Carbon.HIToolbox
 import XCTest
 
 final class Den_BrowserUITests: XCTestCase {
+    private var previousInputSource: TISInputSource?
+
     override func setUpWithError() throws {
         continueAfterFailure = false
+        // Keep synthetic text input on Apple's ABC layout; restore user's IME in tearDown.
+        previousInputSource = TISCopyCurrentKeyboardInputSource().takeRetainedValue()
+        try selectInputSource(id: "com.apple.keylayout.ABC")
     }
 
     override func tearDownWithError() throws {
         MainActor.assumeIsolated {
             XCUIApplication().terminate()
         }
+        if let previousInputSource {
+            XCTAssertEqual(TISSelectInputSource(previousInputSource), noErr)
+        }
+    }
+
+    private func selectInputSource(id: String) throws {
+        let sources =
+            TISCreateInputSourceList(
+                [kTISPropertyInputSourceID: id] as CFDictionary,
+                false
+            ).takeRetainedValue() as Array
+        let source = try XCTUnwrap(sources.first as! TISInputSource?)
+        XCTAssertEqual(TISSelectInputSource(source), noErr)
     }
 
     @MainActor
