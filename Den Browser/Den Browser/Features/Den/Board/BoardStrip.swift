@@ -32,8 +32,8 @@ struct BoardStrip: View {
 
     var body: some View {
         let boards = store.focusedDesk?.boards ?? []
-        let topInset: CGFloat = shouldShowDeskSwitcher ? 48 : 10
-        let bottomInset: CGFloat = 10
+        let topInset = shouldShowDeskSwitcher ? DenLayout.boardTopInsetWithDeskSwitcher : DenLayout.outerInset
+        let bottomInset = DenLayout.outerInset
         let boardHeight = max(420, size.height - topInset - bottomInset)
         let maximizedBoardWidth = max(280, size.width - boardHorizontalPadding * 2)
         let layoutParams = BoardLayout.Parameters(

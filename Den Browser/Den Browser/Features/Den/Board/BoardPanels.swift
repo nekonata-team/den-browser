@@ -10,8 +10,8 @@ struct OpenBoardPanel: View {
     let onDismiss: () -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack(spacing: 10) {
+        VStack(alignment: .leading, spacing: DenPanelLayout.contentSpacing) {
+            HStack(spacing: DenPanelLayout.controlSpacing) {
                 Image(systemName: "plus.rectangle.on.rectangle")
                     .foregroundStyle(.secondary)
 
@@ -21,9 +21,9 @@ struct OpenBoardPanel: View {
                     .focused($isFocused)
                     .onSubmit { onSubmit(defaultBoardWidth) }
             }
-            .frame(height: 38)
+            .frame(height: DenPanelLayout.titleHeight)
 
-            HStack(spacing: 12) {
+            HStack(spacing: DenPanelLayout.contentSpacing) {
                 Text("New board opens to the right of the focused board")
                     .foregroundStyle(.secondary)
                 Spacer()
@@ -32,8 +32,8 @@ struct OpenBoardPanel: View {
             }
             .font(.system(size: 12))
         }
-        .padding(16)
-        .frame(width: 520)
+        .padding(DenPanelLayout.padding)
+        .frame(width: DenPanelLayout.standardWidth)
         .glassEffect(.regular, in: RoundedRectangle(cornerRadius: DenRadius.large, style: .continuous))
         .onAppear {
             if let initialURL {
@@ -54,8 +54,8 @@ struct EditBoardLinkPanel: View {
     let onDismiss: () -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack(spacing: 10) {
+        VStack(alignment: .leading, spacing: DenPanelLayout.contentSpacing) {
+            HStack(spacing: DenPanelLayout.controlSpacing) {
                 Image(systemName: "link")
                     .foregroundStyle(.secondary)
 
@@ -65,9 +65,9 @@ struct EditBoardLinkPanel: View {
                     .focused($isFocused)
                     .onSubmit { onSubmit() }
             }
-            .frame(height: 38)
+            .frame(height: DenPanelLayout.titleHeight)
 
-            HStack(spacing: 12) {
+            HStack(spacing: DenPanelLayout.contentSpacing) {
                 Text("Replace the Current Sheet in the focused Board")
                     .foregroundStyle(.secondary)
                 Spacer()
@@ -76,8 +76,8 @@ struct EditBoardLinkPanel: View {
             }
             .font(.system(size: 12))
         }
-        .padding(16)
-        .frame(width: 520)
+        .padding(DenPanelLayout.padding)
+        .frame(width: DenPanelLayout.standardWidth)
         .glassEffect(.regular, in: RoundedRectangle(cornerRadius: DenRadius.large, style: .continuous))
         .onAppear {
             text = store.focusedBoard?.currentSheetURL?.absoluteString ?? ""
@@ -93,8 +93,8 @@ struct RenameBoardPanel: View {
     @FocusState.Binding var isFocused: Bool
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack(spacing: 10) {
+        VStack(alignment: .leading, spacing: DenPanelLayout.contentSpacing) {
+            HStack(spacing: DenPanelLayout.controlSpacing) {
                 Image(systemName: "pencil").foregroundStyle(.secondary)
                 TextField("Rename board", text: $text)
                     .textFieldStyle(.plain)
@@ -102,16 +102,16 @@ struct RenameBoardPanel: View {
                     .focused($isFocused)
                     .onSubmit { store.renameFocusedBoard(to: text) }
             }
-            .frame(height: 38)
-            HStack(spacing: 12) {
+            .frame(height: DenPanelLayout.titleHeight)
+            HStack(spacing: DenPanelLayout.contentSpacing) {
                 Text("Leave empty to restore page-provided title").foregroundStyle(.secondary)
                 Spacer()
                 Text("r in Den Mode").foregroundStyle(.secondary)
             }
             .font(.system(size: 12))
         }
-        .padding(16)
-        .frame(width: 520)
+        .padding(DenPanelLayout.padding)
+        .frame(width: DenPanelLayout.standardWidth)
         .glassEffect(.regular, in: RoundedRectangle(cornerRadius: DenRadius.large, style: .continuous))
         .onAppear {
             if let board = store.focusedBoard { text = board.customLabel ?? board.label } else { text = "" }
@@ -125,7 +125,7 @@ struct BoardWidthPanel: View {
     @Environment(DenStore.self) private var store
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: DenPanelLayout.contentSpacing) {
             HStack {
                 Text("Resize Boards to Fit").font(.system(size: 17, weight: .semibold))
                 Spacer()
@@ -160,8 +160,8 @@ struct BoardWidthPanel: View {
             .font(.system(size: 12))
             .foregroundStyle(store.boardWidthPanelMessage == nil ? Color.secondary : Color.red)
         }
-        .padding(16)
-        .frame(width: 420)
+        .padding(DenPanelLayout.padding)
+        .frame(width: DenPanelLayout.compactWidth)
         .glassEffect(.regular, in: RoundedRectangle(cornerRadius: DenRadius.large, style: .continuous))
         .onExitCommand { store.hideBoardWidthPanel() }
     }

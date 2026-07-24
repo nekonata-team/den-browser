@@ -65,13 +65,13 @@ struct BoardView: View {
     }
 
     private var headerContent: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: DenLayout.outerInset) {
             dragHandle
 
             navigationButtons
         }
-        .padding(.horizontal, 12)
-        .frame(height: 38)
+        .padding(.horizontal, DenLayout.chromeHorizontalPadding)
+        .frame(height: DenLayout.boardHeaderHeight)
         .background(.regularMaterial)
         .overlay(alignment: .top) {
             if store.isDenMode, isFocused {
@@ -213,7 +213,7 @@ struct BoardView: View {
             withBoardContextMenu(
                 Button(action: onGoBack) {
                     Image(systemName: "chevron.left")
-                        .frame(width: 24, height: 24)
+                        .frame(width: DenLayout.boardControlSize, height: DenLayout.boardControlSize)
                 }
                 .buttonStyle(.borderless)
                 .foregroundStyle(.primary)
@@ -225,7 +225,7 @@ struct BoardView: View {
             withBoardContextMenu(
                 Button(action: onGoForward) {
                     Image(systemName: "chevron.right")
-                        .frame(width: 24, height: 24)
+                        .frame(width: DenLayout.boardControlSize, height: DenLayout.boardControlSize)
                 }
                 .buttonStyle(.borderless)
                 .foregroundStyle(.primary)
@@ -237,7 +237,7 @@ struct BoardView: View {
             withBoardContextMenu(
                 Button(action: onRemove) {
                     Image(systemName: "xmark")
-                        .frame(width: 24, height: 24)
+                        .frame(width: DenLayout.boardControlSize, height: DenLayout.boardControlSize)
                 }
                 .buttonStyle(.borderless)
                 .foregroundStyle(.primary)

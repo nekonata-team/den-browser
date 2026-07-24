@@ -11,15 +11,15 @@ struct DeskSwitcher: View {
     var body: some View {
         GeometryReader { geometry in
             ScrollView(.horizontal) {
-                GlassEffectContainer(spacing: 8) {
-                    HStack(spacing: 8) {
+                GlassEffectContainer(spacing: DenLayout.outerInset) {
+                    HStack(spacing: DenLayout.outerInset) {
                         ForEach(Array(store.state.desks.enumerated()), id: \.element.id) { index, desk in
                             item(desk, index + 1, geometry.size)
                         }
                     }
                     .scrollTargetLayout()
                 }
-                .padding(.horizontal, 12)
+                .padding(.horizontal, DenLayout.chromeHorizontalPadding)
                 .animation(DenMotion.spatial(reduceMotion: shouldReduceMotion), value: store.state.desks.map(\.id))
             }
             .scrollPosition($scrollPosition, anchor: .center)
@@ -32,6 +32,6 @@ struct DeskSwitcher: View {
             }
             .onPreferenceChange(DeskFramePreferenceKey.self, perform: onFramesChange)
         }
-        .frame(height: 36)
+        .frame(height: DenLayout.deskSwitcherHeight)
     }
 }

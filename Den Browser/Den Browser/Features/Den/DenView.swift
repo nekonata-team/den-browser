@@ -2,8 +2,6 @@ import AppKit
 import SwiftUI
 
 struct DenView: View {
-    private let boardSpacing: CGFloat = 10
-    private let boardHorizontalPadding: CGFloat = 10
     private let profileName: String?
     private let profileColor: Color
 
@@ -67,68 +65,12 @@ struct DenView: View {
 
                 if shouldShowDeskSwitcher {
                     deskSwitcher
-                        .padding(.top, 12)
+                        .padding(.top, DenLayout.outerInset)
                         .allowsHitTesting(store.temporaryContext == nil)
                         .accessibilityHidden(store.temporaryContext != nil)
                 }
 
-                if store.isBoardWidthPanelPresented {
-                    boardWidthPanel
-                        .padding(.top, shouldShowDeskSwitcher ? 74 : 12)
-                        .transition(DenMotion.transition(reduceMotion: shouldReduceMotion, scale: 0.96))
-                }
-
-                if store.isOpenBoardPanelPresented {
-                    openBoardPanel(defaultBoardWidth: defaultBoardWidth(in: geometry.size))
-                        .padding(.top, shouldShowDeskSwitcher ? 74 : 12)
-                        .transition(DenMotion.transition(reduceMotion: shouldReduceMotion, scale: 0.96))
-                }
-
-                if store.isEditBoardLinkPanelPresented {
-                    editBoardLinkPanel
-                        .padding(.top, shouldShowDeskSwitcher ? 74 : 12)
-                        .transition(DenMotion.transition(reduceMotion: shouldReduceMotion, scale: 0.96))
-                }
-
-                if store.isOverviewPresented {
-                    OverviewView(profileColor: profileColor)
-                        .padding(18)
-                        .transition(DenMotion.transition(reduceMotion: shouldReduceMotion, scale: 0.98))
-                }
-
-                if store.isNewDeskPanelPresented {
-                    newDeskPanel
-                        .padding(.top, shouldShowDeskSwitcher ? 74 : 12)
-                        .transition(DenMotion.transition(reduceMotion: shouldReduceMotion, scale: 0.96))
-                }
-
-                if store.isSaveDeskPresetPanelPresented {
-                    saveDeskPresetPanel
-                        .padding(.top, shouldShowDeskSwitcher ? 74 : 12)
-                        .transition(DenMotion.transition(reduceMotion: shouldReduceMotion, scale: 0.96))
-                }
-
-                if store.isRenameBoardPanelPresented {
-                    renameBoardPanel
-                        .padding(.top, shouldShowDeskSwitcher ? 74 : 12)
-                        .transition(DenMotion.transition(reduceMotion: shouldReduceMotion, scale: 0.96))
-                }
-
-                if store.isRenameDeskPanelPresented {
-                    renameDeskPanel
-                        .padding(.top, shouldShowDeskSwitcher ? 74 : 12)
-                        .transition(DenMotion.transition(reduceMotion: shouldReduceMotion, scale: 0.96))
-                }
-
-                if store.isKeyboardShortcutsPresented,
-                    store.focusedDesk?.boards.isEmpty == false
-                {
-                    KeyboardShortcutsView(onClose: store.hideKeyboardShortcuts)
-                        .padding(18)
-                        .frame(width: 760, height: 560)
-                        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: DenRadius.large, style: .continuous))
-                        .transition(DenMotion.transition(reduceMotion: shouldReduceMotion, scale: 0.98))
-                }
+                activePanel(defaultBoardWidth: defaultBoardWidth(in: geometry.size))
             }
             .onAppear {
                 updateBoardLayout(for: geometry.size)
@@ -160,21 +102,7 @@ struct DenView: View {
                 cancelBoardDrag()
                 cancelDeskDrag()
             }
-            .animation(DenMotion.feedback(reduceMotion: shouldReduceMotion), value: store.isOpenBoardPanelPresented)
-            .animation(DenMotion.feedback(reduceMotion: shouldReduceMotion), value: store.isEditBoardLinkPanelPresented)
-            .animation(DenMotion.feedback(reduceMotion: shouldReduceMotion), value: store.isNewDeskPanelPresented)
-            .animation(
-                DenMotion.feedback(reduceMotion: shouldReduceMotion), value: store.isSaveDeskPresetPanelPresented
-            )
-            .animation(DenMotion.feedback(reduceMotion: shouldReduceMotion), value: store.isOverviewPresented)
-            .animation(DenMotion.feedback(reduceMotion: shouldReduceMotion), value: store.isKeyboardShortcutsPresented)
-            .animation(
-                DenMotion.feedback(reduceMotion: shouldReduceMotion), value: store.isRenameBoardPanelPresented
-            )
-            .animation(
-                DenMotion.feedback(reduceMotion: shouldReduceMotion), value: store.isRenameDeskPanelPresented
-            )
-            .animation(DenMotion.feedback(reduceMotion: shouldReduceMotion), value: store.isBoardWidthPanelPresented)
+            .animation(DenMotion.feedback(reduceMotion: shouldReduceMotion), value: store.temporaryContext)
             .animation(DenMotion.spatial(reduceMotion: shouldReduceMotion), value: store.isZenViewPresented)
             .overlay {
                 RoundedRectangle(cornerRadius: DenRadius.large, style: .continuous)
@@ -215,6 +143,49 @@ struct DenView: View {
     }
 
     @ViewBuilder
+    private func activePanel(defaultBoardWidth: CGFloat) -> some View {
+        switch store.temporaryContext {
+        case .openBoard:
+            panelOverlay(openBoardPanel(defaultBoardWidth: defaultBoardWidth))
+        case .editBoardLink:
+            panelOverlay(editBoardLinkPanel)
+        case .newDesk, .deskPresetManagement:
+            panelOverlay(newDeskPanel)
+        case .boardWidth:
+            panelOverlay(boardWidthPanel)
+        case .saveDeskPreset:
+            panelOverlay(saveDeskPresetPanel)
+        case .renameBoard:
+            panelOverlay(renameBoardPanel)
+        case .renameDesk:
+            panelOverlay(renameDeskPanel)
+        case .overview:
+            OverviewView(profileColor: profileColor)
+                .padding(DenLayout.overlayInset)
+                .transition(DenMotion.transition(reduceMotion: shouldReduceMotion, scale: 0.98))
+        case .keyboardShortcuts:
+            if store.focusedDesk?.boards.isEmpty == false {
+                KeyboardShortcutsView(onClose: store.hideKeyboardShortcuts)
+                    .padding(DenLayout.overlayInset)
+                    .frame(width: 760, height: 560)
+                    .glassEffect(
+                        .regular,
+                        in: RoundedRectangle(cornerRadius: DenRadius.large, style: .continuous)
+                    )
+                    .transition(DenMotion.transition(reduceMotion: shouldReduceMotion, scale: 0.98))
+            }
+        case nil:
+            EmptyView()
+        }
+    }
+
+    private func panelOverlay<Content: View>(_ content: Content) -> some View {
+        content
+            .padding(.top, shouldShowDeskSwitcher ? DenLayout.panelTopInset : DenLayout.outerInset)
+            .transition(DenMotion.transition(reduceMotion: shouldReduceMotion, scale: 0.96))
+    }
+
+    @ViewBuilder
     private func deskSwitcherButton(_ desk: DeskState, number: Int, in size: CGSize) -> some View {
         deskButton(desk, number: number, in: size)
             .id(desk.id)
@@ -232,9 +203,9 @@ struct DenView: View {
     private func deskButton(_ desk: DeskState, number: Int, in size: CGSize) -> some View {
         Text("\(number). \(desk.label)")
             .lineLimit(1)
-            .frame(maxWidth: 180)
-            .padding(.horizontal, 12)
-            .frame(height: 28)
+            .frame(maxWidth: DenLayout.deskButtonMaxWidth)
+            .padding(.horizontal, DenLayout.chromeHorizontalPadding)
+            .frame(height: DenLayout.deskButtonHeight)
             .background {
                 if desk.id == store.state.focusedDeskID {
                     Capsule().fill(profileColor.opacity(0.35))
@@ -433,7 +404,7 @@ struct DenView: View {
         if let focusedBoard = store.focusedBoard {
             return focusedBoard.width
         }
-        return (size.width - boardHorizontalPadding * 2 - boardSpacing) / 2
+        return (size.width - DenLayout.outerInset * 2 - DenLayout.outerInset) / 2
     }
 
     private func openBoardPanel(defaultBoardWidth: Double) -> some View {
@@ -493,8 +464,8 @@ struct DenView: View {
             size: size,
             shouldShowDeskSwitcher: shouldShowDeskSwitcher,
             profileColor: profileColor,
-            boardSpacing: boardSpacing,
-            boardHorizontalPadding: boardHorizontalPadding,
+            boardSpacing: DenLayout.outerInset,
+            boardHorizontalPadding: DenLayout.outerInset,
             isPointerFocusEnabled: isBoardPointerFocusEnabled,
             onDragChanged: { board, value, size in
                 updateBoardDrag(board, value: value, in: size)
@@ -715,8 +686,8 @@ struct DenView: View {
 
     private func updateBoardLayout(for size: CGSize) {
         store.updateBoardLayout(
-            availableWidth: size.width - boardHorizontalPadding * 2,
-            spacing: boardSpacing
+            availableWidth: size.width - DenLayout.outerInset * 2,
+            spacing: DenLayout.outerInset
         )
     }
 
@@ -764,7 +735,7 @@ struct DenView: View {
             let crossedBoard = boards[targetIndex]
             store.previewBoardMove(drag.boardID, to: targetIndex)
             let direction = targetIndex > index ? -1.0 : 1.0
-            drag.offset.width += direction * (crossedBoard.width + boardSpacing)
+            drag.offset.width += direction * (crossedBoard.width + DenLayout.outerInset)
             boardDrag = drag
         }
     }

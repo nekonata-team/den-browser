@@ -36,7 +36,7 @@ Den controls feel like a calm desk laid over live web sheets. Web content remain
 ## Zen View
 
 - Zen View hides the native titlebar, Desk switcher, Desk Preset bookmark action, and Profile control together, without hiding controls inside Boards.
-- Boards expand into the released upper area, keeping a 10-point inset from the window edge.
+- Boards expand into the released upper area, keeping an 8-point inset from the window edge.
 - Do not add alternate window dragging, traffic-light controls, or titlebar feedback in Zen View. The Profile-colored Den Mode ring remains visible.
 - Do not reveal hidden controls on pointer hover. Users toggle Zen View with `z` in Den Mode or the Den menu.
 - Treat Zen View as window-local runtime presentation. A recreated Den window starts with Zen View off.
