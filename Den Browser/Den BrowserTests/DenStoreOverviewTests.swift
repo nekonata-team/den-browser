@@ -6,26 +6,22 @@ import Testing
 @MainActor
 struct DenStoreOverviewTests {
 
-    @Test func commandTOpensBoardPanelFromOverview() throws {
-        try withStore(desks: [desk("Desk")]) { store in
+    @Test func denCommandsAreSuspendedByOverview() throws {
+        let first = board("First")
+        let second = board("Second")
+        try withStore(desks: [desk("Desk", boards: [first, second], focusedBoardID: first.id)]) { store in
             store.showOverview()
-            let event = try #require(
-                NSEvent.keyEvent(
-                    with: .keyDown,
-                    location: .zero,
-                    modifierFlags: .command,
-                    timestamp: 0,
-                    windowNumber: 0,
-                    context: nil,
-                    characters: "t",
-                    charactersIgnoringModifiers: "t",
-                    isARepeat: false,
-                    keyCode: 17
-                ))
+            let openBoard = try #require(keyEvent("t", keyCode: 17))
+            let editLink = try #require(keyEvent("l", keyCode: 37))
+            let removeBoard = try #require(keyEvent("w", keyCode: 13))
 
-            #expect(KeyboardController.handle(event, store: store))
-            #expect(store.isOpenBoardPanelPresented)
-            #expect(!store.isOverviewPresented)
+            #expect(KeyboardController.handle(openBoard, store: store))
+            #expect(KeyboardController.handle(editLink, store: store))
+            #expect(KeyboardController.handle(removeBoard, store: store))
+            #expect(store.isOverviewPresented)
+            #expect(!store.isOpenBoardPanelPresented)
+            #expect(!store.isEditBoardLinkPanelPresented)
+            #expect(store.focusedDesk?.boards.map(\.id) == [first.id, second.id])
         }
     }
 
@@ -105,6 +101,20 @@ struct DenStoreOverviewTests {
     private func withStore(desks: [DeskState], body: (DenStore) throws -> Void) rethrows {
         let store = DenStore(state: DenState(desks: desks, focusedDeskID: desks[0].id))
         try body(store)
+    }
+
+    private func keyEvent(_ character: String, keyCode: UInt16) -> NSEvent? {
+        NSEvent.keyEvent(
+            with: .keyDown,
+            location: .zero,
+            modifierFlags: .command,
+            timestamp: 0,
+            windowNumber: 0,
+            context: nil,
+            characters: character,
+            charactersIgnoringModifiers: character,
+            isARepeat: false,
+            keyCode: keyCode)
     }
 
     private func desk(_ label: String, boards: [BoardState] = [], focusedBoardID: UUID? = nil) -> DeskState {

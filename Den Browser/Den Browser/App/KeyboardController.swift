@@ -51,25 +51,8 @@ final class KeyboardController {
             return true
         }
 
-        if character == "w", modifiers == [.command] {
-            if !event.isARepeat {
-                store.removeFocusedBoard()
-            }
-            return true
-        }
-
         if character == "w", modifiers == [.command, .shift] {
             return false
-        }
-
-        if character == "t", modifiers == [.command] {
-            store.showOpenBoardPanel()
-            return true
-        }
-
-        if character == "l", modifiers == [.command] {
-            store.showEditBoardLinkPanel()
-            return true
         }
 
         switch store.temporaryContext {
@@ -88,6 +71,23 @@ final class KeyboardController {
             return false
         case nil:
             break
+        }
+
+        if character == "w", modifiers == [.command] {
+            if !event.isARepeat {
+                store.removeFocusedBoard()
+            }
+            return true
+        }
+
+        if character == "t", modifiers == [.command] {
+            store.showOpenBoardPanel()
+            return true
+        }
+
+        if character == "l", modifiers == [.command] {
+            store.showEditBoardLinkPanel()
+            return true
         }
 
         if !store.isDenMode,
