@@ -58,7 +58,7 @@ struct BoardStrip: View {
                         width: store.maximizedBoardID == board.id ? maximizedBoardWidth : board.width,
                         height: boardHeight,
                         isPointerFocusEnabled: isPointerFocusEnabled(board.id),
-                        onFocus: { store.focusBoard(board.id) },
+                        onFocus: { store.focusBoard(board.id, exitsDenMode: true) },
                         onGoBack: { store.goBackInBoard(board.id) },
                         onGoForward: { store.goForwardInBoard(board.id) },
                         onRemove: { store.removeBoard(board.id) },

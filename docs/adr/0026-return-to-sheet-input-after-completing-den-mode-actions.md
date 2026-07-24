@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: accepted
 ---
 
 # Return to Sheet Input after completing Den Mode actions

@@ -21,7 +21,7 @@ struct DeskPresetPicker: View {
                 if isManaging {
                     Button(store.isDeskPresetManagementPresented ? "Done" : "Back") {
                         if store.isDeskPresetManagementPresented {
-                            store.hideNewDeskPanel()
+                            store.hideNewDeskPanel(exitsDenMode: true)
                         } else {
                             isManaging = false
                         }

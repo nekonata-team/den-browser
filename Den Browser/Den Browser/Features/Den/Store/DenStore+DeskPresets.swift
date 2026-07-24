@@ -23,6 +23,7 @@ extension DenStore {
         }
 
         deskPresets.insert(PersonalDeskPreset(label: label, desk: desk), at: 0)
+        isDenMode = false
         saveDeskPresets()
         return .created
     }
@@ -34,6 +35,7 @@ extension DenStore {
         else { return }
         deskPresets[index] = replacement
         deskPresetPendingReplacement = nil
+        isDenMode = false
         saveDeskPresets()
     }
 

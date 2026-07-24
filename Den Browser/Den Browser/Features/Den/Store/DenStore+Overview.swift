@@ -88,16 +88,13 @@ extension DenStore {
             return
         }
 
-        let changed = state.focusedDeskID != deskID
         state.focusedDeskID = deskID
         if let boardID = overviewSelectionBoardID,
             state.desks[deskIndex].boards.contains(where: { $0.id == boardID })
         {
             state.desks[deskIndex].focusedBoardID = boardID
         }
-        if changed {
-            isDenMode = false
-        }
+        isDenMode = false
         hideOverview()
         save()
     }

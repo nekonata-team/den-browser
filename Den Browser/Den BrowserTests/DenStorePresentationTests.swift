@@ -108,7 +108,7 @@ struct DenStorePresentationTests {
         }
     }
 
-    @Test func deskSwitchingExitsDenMode() {
+    @Test func directDeskSelectionExitsButRelativeNavigationKeepsDenMode() {
         let first = desk("First")
         let second = desk("Second")
         let third = desk("Third")
@@ -119,33 +119,33 @@ struct DenStorePresentationTests {
             #expect(!store.isDenMode)
             #expect(store.focusedDesk?.id == second.id)
 
-            // focusDesk(number:) on the same desk does NOT exit DenMode
+            // focusDesk(number:) exits even when the target is already focused
             store.isDenMode = true
             store.focusDesk(number: 2)
-            #expect(store.isDenMode)
+            #expect(!store.isDenMode)
 
-            // 2. focusDesk(_:) exits DenMode on actual switch
+            // 2. focusDesk(_:) is direct selection
             store.focusDesk(third.id)
             #expect(!store.isDenMode)
             #expect(store.focusedDesk?.id == third.id)
 
-            // focusDesk(_:) on the same desk does NOT exit DenMode
+            // focusDesk(_:) exits even when the target is already focused
             store.isDenMode = true
             store.focusDesk(third.id)
-            #expect(store.isDenMode)
+            #expect(!store.isDenMode)
 
-            // 3. focusPreviousDesk() / focusNextDesk() exits DenMode on actual switch
+            // 3. Relative Desk Navigation keeps Den Mode active
             store.isDenMode = true
             store.focusPreviousDesk()
-            #expect(!store.isDenMode)
+            #expect(store.isDenMode)
             #expect(store.focusedDesk?.id == second.id)
 
             store.isDenMode = true
             store.focusNextDesk()
-            #expect(!store.isDenMode)
+            #expect(store.isDenMode)
             #expect(store.focusedDesk?.id == third.id)
 
-            // 4. enterOverviewSelection() exits DenMode on actual switch
+            // 4. Overview confirmation exits even on the same Desk
             store.showOverview()
             store.isDenMode = true
             store.overviewSelectionDeskID = first.id
@@ -153,12 +153,12 @@ struct DenStorePresentationTests {
             #expect(!store.isDenMode)
             #expect(store.focusedDesk?.id == first.id)
 
-            // enterOverviewSelection() on same desk does NOT exit DenMode
+            // enterOverviewSelection() exits when the target is already focused
             store.showOverview()
             store.isDenMode = true
             store.overviewSelectionDeskID = first.id
             store.enterOverviewSelection()
-            #expect(store.isDenMode)
+            #expect(!store.isDenMode)
         }
     }
 

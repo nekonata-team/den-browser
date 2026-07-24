@@ -3,20 +3,26 @@ import Foundation
 extension DenStore {
     func focusDesk(_ deskID: UUID) {
         guard state.desks.contains(where: { $0.id == deskID }) else { return }
-        let changed = state.focusedDeskID != deskID
         state.focusedDeskID = deskID
-        if changed {
-            isDenMode = false
-        }
+        isDenMode = false
         save()
     }
 
-    func focusBoard(_ boardID: UUID) {
+    func focusBoard(_ boardID: UUID, exitsDenMode: Bool = false) {
         guard let indices = boardIndices(for: boardID) else { return }
         let deskID = state.desks[indices.desk].id
-        guard state.focusedDeskID != deskID || state.desks[indices.desk].focusedBoardID != boardID else { return }
+        let changed = state.focusedDeskID != deskID || state.desks[indices.desk].focusedBoardID != boardID
+        if !changed {
+            if exitsDenMode {
+                isDenMode = false
+            }
+            return
+        }
         state.focusedDeskID = deskID
         state.desks[indices.desk].focusedBoardID = boardID
+        if exitsDenMode {
+            isDenMode = false
+        }
         save()
     }
 
@@ -66,11 +72,8 @@ extension DenStore {
     func focusDesk(number: Int) {
         guard (1...Self.maximumDeskCount).contains(number), state.desks.indices.contains(number - 1) else { return }
         let targetDeskID = state.desks[number - 1].id
-        let changed = state.focusedDeskID != targetDeskID
         state.focusedDeskID = targetDeskID
-        if changed {
-            isDenMode = false
-        }
+        isDenMode = false
         ensureFocusedObjects()
         save()
     }
@@ -184,11 +187,7 @@ extension DenStore {
         guard let currentIndex = focusedDeskIndex, !state.desks.isEmpty else { return }
         let nextIndex = wrappedIndex(currentIndex + delta, count: state.desks.count)
         let targetDeskID = state.desks[nextIndex].id
-        let changed = state.focusedDeskID != targetDeskID
         state.focusedDeskID = targetDeskID
-        if changed {
-            isDenMode = false
-        }
         ensureFocusedObjects()
         save()
     }
@@ -254,6 +253,7 @@ extension DenStore {
         state.desks[targetDeskIndex].boards.insert(board, at: insertIndex)
         state.desks[targetDeskIndex].focusedBoardID = board.id
         state.focusedDeskID = state.desks[targetDeskIndex].id
+        isDenMode = false
         save()
     }
 }

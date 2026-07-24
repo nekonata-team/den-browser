@@ -36,7 +36,9 @@ struct DenStoreDeskPresetTests {
         let source = desk("Morning", boards: [first, second], focusedBoardID: second.id)
         let store = DenStore(state: DenState(desks: [source], focusedDeskID: source.id))
 
+        store.isDenMode = true
         #expect(store.saveFocusedDeskAsPreset(label: "  Morning  ") == .created)
+        #expect(!store.isDenMode)
         let preset = try #require(store.deskPresets.first)
         #expect(preset.label == "Morning")
         #expect(preset.boards.map(\.label) == ["Mail", "Notes"])
@@ -70,9 +72,11 @@ struct DenStoreDeskPresetTests {
 
         let routineID = try #require(store.deskPresets.last?.id)
         store.state.desks[0].boards[0].width = 900
+        store.isDenMode = true
         #expect(store.saveFocusedDeskAsPreset(label: " routine ") == .replacementPending)
         #expect(store.deskPresets.last?.boards[0].width == 520)
         store.confirmDeskPresetReplacement()
+        #expect(!store.isDenMode)
         #expect(store.deskPresets.last?.id == routineID)
         #expect(store.deskPresets.last?.boards[0].width == 900)
 
@@ -80,6 +84,18 @@ struct DenStoreDeskPresetTests {
         store.confirmDeskPresetDeletion()
         #expect(store.deskPresets.map(\.label) == ["Other"])
         #expect(saves.count == 4)
+    }
+
+    @Test func finishingPresetManagementExitsDenMode() {
+        let source = desk("Desk", boards: [board("Board")])
+        let store = DenStore(state: DenState(desks: [source], focusedDeskID: source.id))
+        store.isDenMode = true
+        store.showDeskPresetManagement()
+
+        store.hideNewDeskPanel(exitsDenMode: true)
+
+        #expect(store.temporaryContext == nil)
+        #expect(!store.isDenMode)
     }
 
     @Test func emptyDeskCannotBecomePersonalPreset() {

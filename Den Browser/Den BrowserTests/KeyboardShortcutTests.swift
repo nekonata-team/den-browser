@@ -133,7 +133,7 @@ struct KeyboardShortcutTests {
         #expect(store.state.focusedDeskID == firstDesk.id)
         #expect(store.focusedDesk?.focusedBoardID == movedBoard.id)
         #expect(store.state.desks[0].boards.map(\.id) == [movedBoard.id])
-        #expect(store.isDenMode)
+        #expect(!store.isDenMode)
     }
 
     @Test func denModeEqualsWidensFocusedBoardWithOrWithoutShift() throws {
