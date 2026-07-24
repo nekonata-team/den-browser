@@ -8,10 +8,10 @@ swift_sources := "Den Browser"
 fastlane := "bundle exec fastlane"
 
 _validate-version $version:
-    [[ "$version" =~ '^[0-9]+\.[0-9]+\.[0-9]+$' ]] || { print -u2 'usage: version must be X.Y.Z'; exit 1; }
+    @[[ "$version" =~ '^[0-9]+\.[0-9]+\.[0-9]+$' ]] || { printf '%s\n' 'usage: version must be X.Y.Z' >&2; exit 1; }
 
 _validate-tag $tag:
-    [[ "$tag" =~ '^v[0-9]+\.[0-9]+\.[0-9]+$' ]] || { print -u2 'usage: tag must be vX.Y.Z'; exit 1; }
+    @[[ "$tag" =~ '^v[0-9]+\.[0-9]+\.[0-9]+$' ]] || { printf '%s\n' 'usage: tag must be vX.Y.Z' >&2; exit 1; }
 
 # Format all Swift sources in place.
 [group("quality")]
@@ -82,7 +82,7 @@ release $tag: (_validate-tag tag)
     set -euo pipefail
 
     [[ -z "$(git status --porcelain)" ]] || {
-        print -u2 "working tree has uncommitted changes"
+        printf '%s\n' "working tree has uncommitted changes" >&2
         exit 1
     }
 
@@ -91,7 +91,7 @@ release $tag: (_validate-tag tag)
     zip=".release/${tag}/${archive}"
 
     [[ -f "$zip" ]] || {
-        print -u2 "missing candidate: $zip"
+        printf '%s\n' "missing candidate: $zip" >&2
         exit 1
     }
 
