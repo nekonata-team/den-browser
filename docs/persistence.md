@@ -4,7 +4,7 @@ Den Browser persists only state needed to restore user-owned work. Version 1 is 
 
 ## Ownership
 
-- Each Profile owns one versioned JSON `PersistedProfile` document containing `ProfileState`, `DenState`, and Personal Desk Presets.
+- Each Profile owns one versioned JSON `PersistedProfile` document containing `ProfileState`, `DenState`, Personal Desk Presets, and Recent.
 - A versioned JSON `ProfileIndex` stores Profile order.
 - App-wide preferences use typed, independent `UserDefaults` keys.
 - WebKit owns website data in each Profile's `WKWebsiteDataStore`.
@@ -23,6 +23,7 @@ Den Browser persists only state needed to restore user-owned work. Version 1 is 
 - `profile`
 - `den`
 - `deskPresets`
+- optional `recentItems`
 
 Nested objects use these keys:
 
@@ -33,6 +34,7 @@ Nested objects use these keys:
 - `BoardState`: `id`, `label`, `width`, optional `customLabel`, optional `currentSheetURL`
 - `PersonalDeskPreset`: `id`, `label`, `boards`, optional `focusedBoardIndex`
 - `DeskPresetBoard`: `label`, `width`, optional `customLabel`, optional `initialSheetURL`
+- `RecentItem`: `kind`, plus `url` for a URL or `query` for a search term used by Open Board
 
 A missing optional Sheet URL means the Board has no Sheet. URLs encode using Foundation `URL`'s `Codable` representation.
 

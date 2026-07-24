@@ -72,6 +72,89 @@ struct ProfileState: Codable, Equatable, Identifiable {
     var webProfileStore: WebProfileStore
 }
 
+enum RecentItem: Codable, Equatable, Hashable, Identifiable {
+    case url(URL)
+    case search(String)
+
+    private enum CodingKeys: String, CodingKey { case kind, url, query }
+    private enum Kind: String, Codable { case url, search }
+
+    var id: Self { self }
+
+    var displayText: String {
+        switch self {
+        case .url(let url): url.absoluteString
+        case .search(let query): query
+        }
+    }
+
+    var systemImage: String {
+        switch self {
+        case .url: "link"
+        case .search: "magnifyingglass"
+        }
+    }
+
+    private var normalizedValue: String {
+        switch self {
+        case .url(let url):
+            guard var components = URLComponents(url: url, resolvingAgainstBaseURL: false) else {
+                return url.absoluteString
+            }
+            components.scheme = components.scheme?.lowercased()
+            components.host = components.host?.lowercased()
+            if (components.scheme == "https" && components.port == 443)
+                || (components.scheme == "http" && components.port == 80)
+            {
+                components.port = nil
+            }
+            if components.path.isEmpty { components.path = "/" }
+            return components.string ?? url.absoluteString
+        case .search(let query):
+            return query.split(whereSeparator: \.isWhitespace).joined(separator: " ").lowercased()
+        }
+    }
+
+    static func == (lhs: Self, rhs: Self) -> Bool {
+        switch (lhs, rhs) {
+        case (.url, .url), (.search, .search):
+            lhs.normalizedValue == rhs.normalizedValue
+        default:
+            false
+        }
+    }
+
+    func hash(into hasher: inout Hasher) {
+        switch self {
+        case .url: hasher.combine(0)
+        case .search: hasher.combine(1)
+        }
+        hasher.combine(normalizedValue)
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        switch try container.decode(Kind.self, forKey: .kind) {
+        case .url:
+            self = .url(try container.decode(URL.self, forKey: .url))
+        case .search:
+            self = .search(try container.decode(String.self, forKey: .query))
+        }
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        switch self {
+        case .url(let url):
+            try container.encode(Kind.url, forKey: .kind)
+            try container.encode(url, forKey: .url)
+        case .search(let query):
+            try container.encode(Kind.search, forKey: .kind)
+            try container.encode(query, forKey: .query)
+        }
+    }
+}
+
 struct ProfileIndex: Codable, Equatable {
     static let currentSchemaVersion = 1
 
@@ -95,16 +178,26 @@ struct ProfileIndex: Codable, Equatable {
 
 struct PersistedProfile: Codable, Equatable {
     static let currentSchemaVersion = 1
+    private enum CodingKeys: String, CodingKey {
+        case schemaVersion, profile, den, deskPresets, recentItems
+    }
 
     var schemaVersion = currentSchemaVersion
     var profile: ProfileState
     var den: DenState
     var deskPresets: [PersonalDeskPreset]
+    var recentItems: [RecentItem]
 
-    init(profile: ProfileState, den: DenState, deskPresets: [PersonalDeskPreset] = []) {
+    init(
+        profile: ProfileState,
+        den: DenState,
+        deskPresets: [PersonalDeskPreset] = [],
+        recentItems: [RecentItem] = []
+    ) {
         self.profile = profile
         self.den = den
         self.deskPresets = deskPresets
+        self.recentItems = recentItems
     }
 
     init(from decoder: Decoder) throws {
@@ -117,5 +210,17 @@ struct PersistedProfile: Codable, Equatable {
         profile = try container.decode(ProfileState.self, forKey: .profile)
         den = try container.decode(DenState.self, forKey: .den)
         deskPresets = try container.decodeIfPresent([PersonalDeskPreset].self, forKey: .deskPresets) ?? []
+        recentItems = try container.decodeIfPresent([RecentItem].self, forKey: .recentItems) ?? []
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(schemaVersion, forKey: .schemaVersion)
+        try container.encode(profile, forKey: .profile)
+        try container.encode(den, forKey: .den)
+        try container.encode(deskPresets, forKey: .deskPresets)
+        if !recentItems.isEmpty {
+            try container.encode(recentItems, forKey: .recentItems)
+        }
     }
 }

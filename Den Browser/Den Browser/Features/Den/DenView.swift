@@ -413,7 +413,13 @@ struct DenView: View {
             isFocused: $isOpenPanelFocused,
             defaultBoardWidth: defaultBoardWidth,
             initialURL: store.openBoardPanelInitialURL,
+            recentItems: store.recentItems,
             onSubmit: { openBoard(defaultBoardWidth: $0) },
+            onOpenRecent: { item, width in
+                store.openBoard(recentItem: item, preferredWidth: width)
+                urlText = ""
+            },
+            onClearRecent: store.clearRecent,
             onDismiss: dismissOpenBoardPanel
         )
     }
@@ -544,7 +550,7 @@ struct DenView: View {
     }
 
     private func openBoard(defaultBoardWidth: Double) {
-        store.addBoard(urlString: urlText, preferredWidth: defaultBoardWidth)
+        store.openBoard(input: urlText, preferredWidth: defaultBoardWidth)
         urlText = ""
     }
 

@@ -60,6 +60,14 @@ _Avoid_: Browser history, tab stack, card stack
 The sheet currently shown from a board's sheet stack.
 _Avoid_: Active page, top page, visible sheet
 
+**Recent**:
+A Profile-owned list of URLs and search terms recently used to open new boards. It is ordered by most recent use and lets the Profile open another board from the same input.
+_Avoid_: History, Used Board, Recent Board, Starting Point, Board Start
+
+**Recent Item**:
+A URL or search term retained in Recent.
+_Avoid_: Recent Entry
+
 **Focused Board**:
 The board currently selected for work within a desk.
 _Avoid_: Active tab, current page

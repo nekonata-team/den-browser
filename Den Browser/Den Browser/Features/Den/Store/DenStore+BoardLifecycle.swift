@@ -1,6 +1,26 @@
 import Foundation
 
 extension DenStore {
+    func openBoard(input: String, preferredWidth: Double? = nil) {
+        guard let resolution = resolveOpenBoardInput(input) else { return }
+        addBoard(urlString: input, preferredWidth: preferredWidth)
+        guard input.count <= Self.maximumPersistedRecentInputLength else { return }
+        saveRecentItem(resolution.item)
+    }
+
+    func openBoard(recentItem: RecentItem, preferredWidth: Double? = nil) {
+        openBoard(input: recentItem.displayText, preferredWidth: preferredWidth)
+    }
+
+    func clearRecent() {
+        guard !recentItems.isEmpty else { return }
+        let original = recentItems
+        recentItems = []
+        if onRecentItemsSave?([]) == false {
+            recentItems = original
+        }
+    }
+
     func addBoard(urlString: String, preferredWidth: Double? = nil, afterBoardID: UUID? = nil) {
         guard let url = normalizedURL(from: urlString) else { return }
         let label = url.host(percentEncoded: false) ?? url.absoluteString
@@ -159,11 +179,15 @@ extension DenStore {
     }
 
     private func normalizedURL(from text: String) -> URL? {
+        resolveOpenBoardInput(text)?.url
+    }
+
+    private func resolveOpenBoardInput(_ text: String) -> (url: URL, item: RecentItem)? {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return nil }
 
         if let url = URL(string: trimmed), SheetURLPolicy.isSupported(url) {
-            return url
+            return (url, .url(url))
         }
 
         if !trimmed.contains("://"),
@@ -172,11 +196,24 @@ extension DenStore {
             let host = url.host,
             host == "localhost" || host.contains(".")
         {
-            return url
+            return (url, .url(url))
         }
 
         var components = URLComponents(string: "https://www.google.com/search")
         components?.queryItems = [URLQueryItem(name: "q", value: trimmed)]
-        return components?.url
+        guard let url = components?.url else { return nil }
+        return (url, .search(trimmed))
+    }
+
+    private func saveRecentItem(_ item: RecentItem) {
+        let original = recentItems
+        recentItems.removeAll { $0 == item }
+        recentItems.insert(item, at: 0)
+        if recentItems.count > Self.maximumRecentItemCount {
+            recentItems.removeLast(recentItems.count - Self.maximumRecentItemCount)
+        }
+        if onRecentItemsSave?(recentItems) == false {
+            recentItems = original
+        }
     }
 }

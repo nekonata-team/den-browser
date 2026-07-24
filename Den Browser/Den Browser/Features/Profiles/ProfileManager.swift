@@ -61,11 +61,15 @@ final class ProfileManager {
             sheetNavigation: sheetNavigation,
             preferences: preferences,
             deskPresets: persisted.deskPresets,
+            recentItems: persisted.recentItems,
             onSave: { [weak self] den in
                 self?.saveDen(den, for: profileID)
             },
             onDeskPresetsSave: { [weak self] presets in
                 self?.saveDeskPresets(presets, for: profileID)
+            },
+            onRecentItemsSave: { [weak self] items in
+                self?.saveRecentItems(items, for: profileID) ?? false
             })
         stores[profileID] = store
         return store
@@ -269,6 +273,21 @@ final class ProfileManager {
         } catch {
             persistedProfiles[profileID] = original
             reportSaveError(error)
+        }
+    }
+
+    private func saveRecentItems(_ recentItems: [RecentItem], for profileID: UUID) -> Bool {
+        guard var persisted = persistedProfiles[profileID] else { return false }
+        let original = persisted
+        persisted.recentItems = recentItems
+        persistedProfiles[profileID] = persisted
+        do {
+            try save(persisted)
+            return true
+        } catch {
+            persistedProfiles[profileID] = original
+            reportSaveError(error)
+            return false
         }
     }
 

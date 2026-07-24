@@ -6,9 +6,12 @@ import WebKit
 @Observable
 final class DenStore {
     static let maximumDeskCount = 10
+    static let maximumRecentItemCount = 100
+    static let maximumPersistedRecentInputLength = 2_048
 
     var state: DenState
     var deskPresets: [PersonalDeskPreset]
+    var recentItems: [RecentItem]
     private(set) var temporaryContext: TemporaryContext?
     var isZenViewPresented = false
     var isDenMode = false
@@ -37,6 +40,7 @@ final class DenStore {
     @ObservationIgnored var runtimes: [UUID: BoardRuntime] = [:]
     @ObservationIgnored private let onSave: ((DenState) -> Void)?
     @ObservationIgnored private let onDeskPresetsSave: (([PersonalDeskPreset]) -> Void)?
+    @ObservationIgnored let onRecentItemsSave: (([RecentItem]) -> Bool)?
     var availableBoardWidth = 0.0
     var boardSpacing = 0.0
 
@@ -95,7 +99,8 @@ final class DenStore {
             sheetNavigation: sheetNavigation,
             preferences: preferences,
             deskPresets: [],
-            onSave: nil
+            onSave: nil,
+            onRecentItemsSave: nil
         )
     }
 
@@ -106,7 +111,8 @@ final class DenStore {
             sheetNavigation: SheetNavigationManager(),
             preferences: AppPreferences(),
             deskPresets: [],
-            onSave: onSave
+            onSave: onSave,
+            onRecentItemsSave: nil
         )
     }
 
@@ -122,7 +128,8 @@ final class DenStore {
             preferences: AppPreferences(),
             deskPresets: deskPresets,
             onSave: nil,
-            onDeskPresetsSave: onDeskPresetsSave
+            onDeskPresetsSave: onDeskPresetsSave,
+            onRecentItemsSave: nil
         )
     }
 
@@ -132,16 +139,20 @@ final class DenStore {
         sheetNavigation: SheetNavigationManager,
         preferences: AppPreferences = AppPreferences(),
         deskPresets: [PersonalDeskPreset] = [],
+        recentItems: [RecentItem] = [],
         onSave: ((DenState) -> Void)?,
-        onDeskPresetsSave: (([PersonalDeskPreset]) -> Void)? = nil
+        onDeskPresetsSave: (([PersonalDeskPreset]) -> Void)? = nil,
+        onRecentItemsSave: (([RecentItem]) -> Bool)? = nil
     ) {
         self.state = state
         self.deskPresets = deskPresets
+        self.recentItems = recentItems
         self.websiteDataStore = websiteDataStore
         self.sheetNavigation = sheetNavigation
         self.preferences = preferences
         self.onSave = onSave
         self.onDeskPresetsSave = onDeskPresetsSave
+        self.onRecentItemsSave = onRecentItemsSave
         ensureFocusedObjects()
         if self.state != state {
             onSave?(self.state)

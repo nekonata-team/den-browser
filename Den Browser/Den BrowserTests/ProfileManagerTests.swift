@@ -45,6 +45,27 @@ struct ProfileManagerTests {
         #expect(decoded.deskPresets.isEmpty)
     }
 
+    @Test func profileDocumentWithoutRecentItemsLoadsEmptyList() throws {
+        let profile = ProfileState(
+            id: UUID(), name: "Work", color: .purple, webProfileStore: .identified(UUID()))
+        let encoded = try JSONEncoder().encode(
+            PersistedProfile(
+                profile: profile,
+                den: .sample,
+                recentItems: [.url(URL(string: "https://example.com")!), .search("Swift")]))
+        #expect(
+            try JSONDecoder().decode(PersistedProfile.self, from: encoded).recentItems
+                == [.url(URL(string: "https://example.com")!), .search("Swift")])
+        var object = try #require(JSONSerialization.jsonObject(with: encoded) as? [String: Any])
+        object.removeValue(forKey: "recentItems")
+
+        let decoded = try JSONDecoder().decode(
+            PersistedProfile.self,
+            from: JSONSerialization.data(withJSONObject: object))
+
+        #expect(decoded.recentItems.isEmpty)
+    }
+
     @Test func versionOneFixturesRemainReadableAndStable() throws {
         let profileData = try fixtureData("persisted-profile-v1")
         let persisted = try JSONDecoder().decode(PersistedProfile.self, from: profileData)
