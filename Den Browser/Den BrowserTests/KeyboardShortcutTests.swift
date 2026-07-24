@@ -136,6 +136,21 @@ struct KeyboardShortcutTests {
         #expect(store.isDenMode)
     }
 
+    @Test func denModeEqualsWidensFocusedBoardWithOrWithoutShift() throws {
+        for (characters, modifiers) in [("=", NSEvent.ModifierFlags()), ("+", NSEvent.ModifierFlags.shift)] {
+            let store = makeStore(boards: [board("Focused")])
+            store.isDenMode = true
+            let event = try keyEvent(
+                characters: characters,
+                charactersIgnoringModifiers: "=",
+                modifiers: modifiers,
+                keyCode: 24)
+
+            #expect(KeyboardController.handle(event, store: store))
+            #expect(store.focusedBoard?.width == 600)
+        }
+    }
+
     @Test func sheetInputCommandOptionDigitFocusesDesk() throws {
         let movedBoard = board("Moved")
         let firstDesk = DeskState(label: "First", boards: [], focusedBoardID: nil)

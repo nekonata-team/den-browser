@@ -162,8 +162,8 @@ final class KeyboardController {
             return true
         }
 
-        let character = baseCharacter(for: event)
-        if let digit = character.flatMap(Int.init), (0...9).contains(digit) {
+        let baseCharacter = baseCharacter(for: event)
+        if let digit = baseCharacter.flatMap(Int.init), (0...9).contains(digit) {
             let deskNumber = digit == 0 ? 10 : digit
             if modifiers == [] {
                 store.focusDesk(number: deskNumber)
@@ -173,6 +173,7 @@ final class KeyboardController {
             return true
         }
 
+        let character = characterIgnoringModifiers(for: event)
         switch (character, modifiers) {
         case ("n", []), (" ", []):
             store.showOpenBoardPanel()
