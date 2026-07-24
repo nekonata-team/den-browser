@@ -26,12 +26,10 @@ Releases are notarized Developer ID builds published through the
    just set-version X.Y.Z
    ```
 
-2. Review the modifications to the Xcode project configuration and commit them:
+2. Review the modifications to the Xcode project configuration:
 
    ```sh
    git diff "Den Browser/Den Browser.xcodeproj/project.pbxproj"
-   git commit -am "Release vX.Y.Z"
-   git push origin main
    ```
 
 3. Build and package the release candidate:
@@ -47,6 +45,14 @@ Extract the application from the ZIP and complete the applicable checks in
 
 Confirm that Gatekeeper accepts the app, it launches on Apple Silicon, and its
 Profiles and Den state survive an upgrade. Remove the test application before publishing.
+
+Once the candidate passes, commit and push the version change:
+
+```sh
+git add "Den Browser/Den Browser.xcodeproj/project.pbxproj"
+git commit -m "bump: バージョンを更新"
+git push origin main
+```
 
 
 ## Publish
@@ -71,10 +77,13 @@ Follow [this](https://docs.brew.sh/How-to-Create-and-Maintain-a-Tap).
 
 ### Homebrew (Subsequent releases)
 
-For subsequent releases, run the following command to submit a pull request updating the Cask:
+For subsequent releases, run the following command to submit a pull request
+updating the Cask:
 
 ```sh
 just bump-homebrew X.Y.Z
 ```
 
-This uses `brew bump-cask-pr` to automatically update the version and SHA-256 of the Cask on the tap repository.
+This uses `brew bump-cask-pr` without opening a browser, then enables rebase
+auto-merge. The tap's required checks must pass before GitHub merges the pull
+request.

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Release Den Browser"
+  short_description: "Den Browser の署名・公証済みリリースを公開"
+  default_prompt: "$release-den-browser を使って次のバージョンをリリースしてください。"

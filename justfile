@@ -104,7 +104,7 @@ release $tag: (_validate-tag tag)
         --title "$tag" \
         --notes ""
 
-# Update the Homebrew Cask through a pull request.
+# Update the Homebrew Cask and enable auto-merge after required checks pass.
 [group("release")]
 [script]
 bump-homebrew $version: (_validate-version version)
@@ -115,4 +115,10 @@ bump-homebrew $version: (_validate-version version)
     brew bump-cask-pr \
         --version "$version" \
         --no-fork \
+        --no-browse \
         nekonata-team/tap/den-browser
+
+    gh pr merge "bump-den-browser-${version}" \
+        --repo nekonata-team/homebrew-tap \
+        --auto \
+        --rebase
