@@ -82,6 +82,20 @@ struct DenView: View {
                 .allowsHitTesting(store.isDrawerOpen && store.temporaryContext == nil)
                 .accessibilityHidden(!store.isDrawerOpen || store.temporaryContext != nil)
                 .zIndex(3)
+
+                if let toast = store.toastMessage {
+                    ToastView(toast: toast)
+                        .padding(.trailing, 20)
+                        .padding(.bottom, 20)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
+                        .transition(
+                            systemReduceMotion
+                                ? .opacity
+                                : .move(edge: .bottom).combined(with: .opacity)
+                        )
+                        .allowsHitTesting(false)
+                        .zIndex(10)
+                }
             }
             .onAppear {
                 updateBoardLayout(for: geometry.size)

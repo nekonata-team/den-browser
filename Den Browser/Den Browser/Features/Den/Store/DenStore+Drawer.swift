@@ -7,7 +7,10 @@ extension DenStore {
     }
 
     func captureInDrawer(_ url: URL, title: String? = nil) {
-        guard SheetURLPolicy.isSupported(url) else { return }
+        guard SheetURLPolicy.isSupported(url) else {
+            showToast("Only HTTP and HTTPS URLs are supported.", style: .warning)
+            return
+        }
         releaseDrawerPreview()
         let item = DrawerItem(url: url, title: title)
         state.drawerItems.insert(item, at: 0)
@@ -15,6 +18,7 @@ extension DenStore {
         expandedDrawerItemID = item.id
         isDrawerOpen = true
         save()
+        showToast("Captured in Drawer.", style: .success)
     }
 
     func captureFocusedSheetInDrawer() {

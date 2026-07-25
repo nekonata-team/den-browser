@@ -25,6 +25,7 @@ extension DenStore {
         deskPresets.insert(PersonalDeskPreset(label: label, desk: desk), at: 0)
         isDenMode = false
         saveDeskPresets()
+        showToast("Saved Desk Preset.", style: .success)
         return .created
     }
 
@@ -37,6 +38,7 @@ extension DenStore {
         deskPresetPendingReplacement = nil
         isDenMode = false
         saveDeskPresets()
+        showToast("Saved Desk Preset.", style: .success)
     }
 
     func cancelDeskPresetReplacement() {

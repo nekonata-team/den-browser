@@ -94,7 +94,10 @@ extension DenStore {
     }
 
     func restoreRecentlyRemovedBoard() {
-        guard let recentlyRemovedBoard else { return }
+        guard let recentlyRemovedBoard else {
+            showToast("No removed board to restore.", style: .warning)
+            return
+        }
 
         let deskIndex: Int
         let insertIndex: Int

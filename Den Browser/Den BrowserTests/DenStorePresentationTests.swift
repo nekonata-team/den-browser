@@ -25,6 +25,32 @@ struct DenStorePresentationTests {
         #expect(store.maximizedBoardID == nil)
         #expect(!store.isBoardDragging)
         #expect(savedState == store.state)
+        #expect(store.toastMessage?.message == "Reset Den completed.")
+        #expect(store.toastMessage?.style == .success)
+    }
+
+    @Test func restoreRecentlyRemovedBoardShowsToastWhenNoneExists() {
+        let store = DenStore(state: .sample)
+        store.restoreRecentlyRemovedBoard()
+        #expect(store.toastMessage?.message == "No removed board to restore.")
+        #expect(store.toastMessage?.style == .warning)
+    }
+
+    @Test func invalidDeskNumberShowsToast() {
+        let store = DenStore(state: .sample)
+        store.focusDesk(number: 5)
+        #expect(store.toastMessage?.message == "Desk 5 does not exist.")
+        #expect(store.toastMessage?.style == .warning)
+    }
+
+    @Test func showToastSetsToastMessageWithStyle() {
+        let store = DenStore(state: .sample)
+        #expect(store.toastMessage == nil)
+
+        store.showToast("Test Toast", style: .warning)
+
+        #expect(store.toastMessage?.message == "Test Toast")
+        #expect(store.toastMessage?.style == .warning)
     }
 
     @Test func resetDenRequiresConfirmationBeforeChangingState() {

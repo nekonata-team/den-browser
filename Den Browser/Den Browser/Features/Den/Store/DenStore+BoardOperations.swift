@@ -70,7 +70,11 @@ extension DenStore {
     }
 
     func focusDesk(number: Int) {
-        guard (1...Self.maximumDeskCount).contains(number), state.desks.indices.contains(number - 1) else { return }
+        guard (1...Self.maximumDeskCount).contains(number) else { return }
+        guard state.desks.indices.contains(number - 1) else {
+            showToast("Desk \(number) does not exist.", style: .warning)
+            return
+        }
         let targetDeskID = state.desks[number - 1].id
         state.focusedDeskID = targetDeskID
         isDenMode = false
@@ -79,7 +83,11 @@ extension DenStore {
     }
 
     func moveFocusedBoard(toDeskNumber number: Int) {
-        guard (1...Self.maximumDeskCount).contains(number), state.desks.indices.contains(number - 1) else { return }
+        guard (1...Self.maximumDeskCount).contains(number) else { return }
+        guard state.desks.indices.contains(number - 1) else {
+            showToast("Desk \(number) does not exist.", style: .warning)
+            return
+        }
         moveFocusedBoard(toDeskAt: number - 1)
     }
 

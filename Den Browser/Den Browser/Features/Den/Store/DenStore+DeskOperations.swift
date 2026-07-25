@@ -25,7 +25,11 @@ extension DenStore {
     }
 
     func deleteFocusedDesk() {
-        guard canDeleteFocusedDesk, let focusedDesk else { return }
+        guard canDeleteFocusedDesk else {
+            showToast("The last desk cannot be deleted.", style: .warning)
+            return
+        }
+        guard let focusedDesk else { return }
 
         if focusedDesk.boards.isEmpty {
             deleteDesk(focusedDesk.id)

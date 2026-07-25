@@ -42,7 +42,10 @@ extension DenStore {
     }
 
     func showEditBoardLinkPanel() {
-        guard focusedBoard != nil else { return }
+        guard focusedBoard != nil else {
+            showToast("No focused board.", style: .warning)
+            return
+        }
         setTemporaryContext(.editBoardLink)
     }
 
@@ -53,7 +56,10 @@ extension DenStore {
     }
 
     func showNewDeskPanel() {
-        guard canCreateDesk else { return }
+        guard canCreateDesk else {
+            showToast("Desks are limited to 10.", style: .warning)
+            return
+        }
         setTemporaryContext(.newDesk)
     }
 
@@ -71,7 +77,10 @@ extension DenStore {
     }
 
     func showSaveDeskPresetPanel() {
-        guard focusedDesk?.boards.isEmpty == false else { return }
+        guard focusedDesk?.boards.isEmpty == false else {
+            showToast("Desk has no boards to save as a preset.", style: .warning)
+            return
+        }
         setTemporaryContext(.saveDeskPreset)
     }
 

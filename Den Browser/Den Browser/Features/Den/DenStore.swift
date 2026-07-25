@@ -1,5 +1,6 @@
 import Foundation
 import Observation
+import SwiftUI
 import WebKit
 
 @MainActor
@@ -36,12 +37,14 @@ final class DenStore {
     var isDrawerOpen = false
     var selectedDrawerItemID: UUID?
     var expandedDrawerItemID: UUID?
+    private(set) var toastMessage: ToastMessage?
     let sheetNavigation: SheetNavigationManager
     let preferences: AppPreferences
     let websiteDataStore: WKWebsiteDataStore
 
     @ObservationIgnored var runtimes: [UUID: BoardRuntime] = [:]
     @ObservationIgnored var drawerPreviewRuntime: DrawerPreviewRuntime?
+    @ObservationIgnored private var toastTask: Task<Void, Never>?
     @ObservationIgnored private let onSave: ((DenState) -> Void)?
     @ObservationIgnored private let onDeskPresetsSave: (([PersonalDeskPreset]) -> Void)?
     @ObservationIgnored let onRecentItemsSave: (([RecentItem]) -> Bool)?
@@ -193,8 +196,25 @@ final class DenStore {
         isDrawerOpen = false
         selectedDrawerItemID = nil
         expandedDrawerItemID = nil
+        toastTask?.cancel()
+        toastMessage = nil
         isDenMode = false
         save()
+        showToast("Reset Den completed.", style: .success)
+    }
+
+    func showToast(_ message: String, style: ToastMessage.ToastStyle = .info) {
+        toastTask?.cancel()
+        withAnimation(.easeOut(duration: 0.15)) {
+            toastMessage = ToastMessage(message: message, style: style)
+        }
+        toastTask = Task { @MainActor [weak self] in
+            try? await Task.sleep(for: .milliseconds(2500))
+            guard !Task.isCancelled else { return }
+            withAnimation(.easeIn(duration: 0.15)) {
+                self?.toastMessage = nil
+            }
+        }
     }
 
     func requestResetDenConfirmation() {
