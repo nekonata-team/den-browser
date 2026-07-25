@@ -176,7 +176,7 @@ struct BoardView: View {
     private var dragHandle: some View {
         HStack(spacing: 8) {
             Text(board.displayName)
-                .font(.system(size: 12, weight: .semibold))
+                .font(.caption.weight(.semibold))
                 .foregroundStyle(.primary)
                 .lineLimit(1)
                 .accessibilityLabel("Board: \(board.displayName), \(accessibilityState)")

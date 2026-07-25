@@ -41,7 +41,7 @@ struct DrawerView: View {
     private var header: some View {
         ZStack {
             Text("Drawer")
-                .font(.system(size: 20, weight: .bold))
+                .font(.title3.bold())
 
             HStack {
                 Spacer()

@@ -10,7 +10,7 @@ struct ToastView: View {
                 .foregroundStyle(toast.style.iconColor)
 
             Text(toast.message)
-                .font(.system(size: 13, weight: .medium))
+                .font(.caption.weight(.medium))
                 .foregroundStyle(.primary)
         }
         .padding(.horizontal, 14)

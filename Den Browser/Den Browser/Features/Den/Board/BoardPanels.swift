@@ -31,7 +31,7 @@ struct OpenBoardPanel: View {
 
                 TextField("Open URL or search", text: $urlText)
                     .textFieldStyle(.plain)
-                    .font(.system(size: 18, weight: .medium))
+                    .font(.title3.weight(.medium))
                     .focused($isFocused)
                     .onKeyPress(.downArrow) {
                         moveRecentSelection(by: 1)
@@ -54,12 +54,12 @@ struct OpenBoardPanel: View {
             if !filteredRecentItems.isEmpty {
                 HStack {
                     Text("Recent")
-                        .font(.system(size: 12, weight: .semibold))
+                        .font(.caption.weight(.semibold))
                         .foregroundStyle(.secondary)
                     Spacer()
                     Button("Clear", action: onClearRecent)
                         .buttonStyle(.plain)
-                        .font(.system(size: 12))
+                        .font(.caption)
                         .foregroundStyle(.secondary)
                         .accessibilityLabel("Clear Recent")
                 }
@@ -95,7 +95,7 @@ struct OpenBoardPanel: View {
                 Text("n in Den Mode")
                     .foregroundStyle(.secondary)
             }
-            .font(.system(size: 12))
+            .font(.caption)
         }
         .padding(DenPanelLayout.padding)
         .frame(width: DenPanelLayout.standardWidth)
@@ -137,7 +137,7 @@ struct EditBoardLinkPanel: View {
 
                 TextField("Open URL or search", text: $text)
                     .textFieldStyle(.plain)
-                    .font(.system(size: 18, weight: .medium))
+                    .font(.title3.weight(.medium))
                     .focused($isFocused)
                     .onSubmit { onSubmit() }
             }
@@ -150,7 +150,7 @@ struct EditBoardLinkPanel: View {
                 Text("⌘L")
                     .foregroundStyle(.secondary)
             }
-            .font(.system(size: 12))
+            .font(.caption)
         }
         .padding(DenPanelLayout.padding)
         .frame(width: DenPanelLayout.standardWidth)
@@ -174,7 +174,7 @@ struct RenameBoardPanel: View {
                 Image(systemName: "pencil").foregroundStyle(.secondary)
                 TextField("Rename board", text: $text)
                     .textFieldStyle(.plain)
-                    .font(.system(size: 18, weight: .medium))
+                    .font(.title3.weight(.medium))
                     .focused($isFocused)
                     .onSubmit { store.renameFocusedBoard(to: text) }
             }
@@ -184,7 +184,7 @@ struct RenameBoardPanel: View {
                 Spacer()
                 Text("r in Den Mode").foregroundStyle(.secondary)
             }
-            .font(.system(size: 12))
+            .font(.caption)
         }
         .padding(DenPanelLayout.padding)
         .frame(width: DenPanelLayout.standardWidth)
@@ -203,7 +203,7 @@ struct BoardWidthPanel: View {
     var body: some View {
         VStack(alignment: .leading, spacing: DenPanelLayout.contentSpacing) {
             HStack {
-                Text("Resize Boards to Fit").font(.system(size: 17, weight: .semibold))
+                Text("Resize Boards to Fit").font(.headline)
                 Spacer()
                 Button(action: store.hideBoardWidthPanel) {
                     Image(systemName: "xmark").font(.system(size: 11, weight: .semibold))
@@ -220,7 +220,7 @@ struct BoardWidthPanel: View {
                         VStack(spacing: 2) {
                             Text(count == 1 ? "1 Board" : "\(count) Boards")
                             Text(width.map { "\(Int($0.rounded())) pt" } ?? "Unavailable")
-                                .font(.system(size: 10)).foregroundStyle(.secondary)
+                                .font(.caption2).foregroundStyle(.secondary)
                         }
                         .frame(maxWidth: .infinity)
                     }
@@ -233,7 +233,7 @@ struct BoardWidthPanel: View {
                 store.boardWidthPanelMessage
                     ?? "Changes every Board in the Focused Desk. Press - / = or 1–9, then Escape."
             )
-            .font(.system(size: 12))
+            .font(.caption)
             .foregroundStyle(store.boardWidthPanelMessage == nil ? Color.secondary : Color.red)
         }
         .padding(DenPanelLayout.padding)

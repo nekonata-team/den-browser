@@ -27,7 +27,7 @@ struct NewDeskPanel: View {
                 Image(systemName: store.isDeskPresetManagementPresented ? "bookmark" : "rectangle.stack.badge.plus")
                     .foregroundStyle(.secondary)
                 Text(store.isDeskPresetManagementPresented ? "Manage Presets" : "New Desk")
-                    .font(.system(size: 18, weight: .semibold))
+                    .font(.headline)
             }
             .frame(height: DenPanelLayout.titleHeight)
 
@@ -56,7 +56,7 @@ struct NewDeskPanel: View {
 
                 TextField("Desk label", text: $newDeskLabel)
                     .textFieldStyle(.roundedBorder)
-                    .font(.system(size: 16, weight: .medium))
+                    .font(.body.weight(.medium))
                     .focused($isLabelFocused)
                     .onSubmit(onCreate)
                     .onKeyPress(phases: .down) { keyPress in
@@ -77,7 +77,7 @@ struct NewDeskPanel: View {
                         .buttonStyle(.glassProminent)
                         .disabled(trimmedLabel.isEmpty || !store.canCreateDesk)
                 }
-                .font(.system(size: 12))
+                .font(.caption)
             }
         }
         .padding(DenPanelLayout.padding)
@@ -110,7 +110,7 @@ struct SaveDeskPresetPanel: View {
         VStack(alignment: .leading, spacing: DenPanelLayout.contentSpacing) {
             HStack(spacing: DenPanelLayout.controlSpacing) {
                 Image(systemName: "bookmark").foregroundStyle(.secondary)
-                Text("Save Desk as Preset").font(.system(size: 17, weight: .semibold))
+                Text("Save Desk as Preset").font(.headline)
             }
             TextField("Preset label", text: $label)
                 .textFieldStyle(.roundedBorder)
@@ -150,7 +150,7 @@ struct RenameDeskPanel: View {
                 Image(systemName: "pencil").foregroundStyle(.secondary)
                 TextField("Rename desk", text: $text)
                     .textFieldStyle(.plain)
-                    .font(.system(size: 18, weight: .medium))
+                    .font(.title3.weight(.medium))
                     .focused($isFocused)
                     .onSubmit { store.renameFocusedDesk(to: text) }
             }
@@ -160,7 +160,7 @@ struct RenameDeskPanel: View {
                 Spacer()
                 Text("R in Den Mode").foregroundStyle(.secondary)
             }
-            .font(.system(size: 12))
+            .font(.caption)
         }
         .padding(DenPanelLayout.padding)
         .frame(width: DenPanelLayout.standardWidth)

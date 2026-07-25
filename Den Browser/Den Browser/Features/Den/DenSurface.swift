@@ -43,10 +43,10 @@ struct EmptyDenView: View {
         VStack(spacing: 22) {
             VStack(spacing: 8) {
                 Text("Den Browser")
-                    .font(.system(size: 28, weight: .semibold))
+                    .font(.title.weight(.semibold))
 
                 Text("Open a board to start arranging web work.")
-                    .font(.system(size: 14))
+                    .font(.body)
                     .foregroundStyle(.secondary)
             }
 

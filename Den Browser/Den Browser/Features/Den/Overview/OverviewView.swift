@@ -14,7 +14,7 @@ struct OverviewView: View {
         VStack(alignment: .leading, spacing: 16) {
             VStack(spacing: 12) {
                 Text("Overview")
-                    .font(.system(size: 20, weight: .bold))
+                    .font(.title3.bold())
 
                 HStack(spacing: 8) {
                     Image(systemName: "magnifyingglass")
@@ -112,7 +112,7 @@ struct OverviewView: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 8) {
                 Text(desk.label)
-                    .font(.system(size: 13, weight: .semibold))
+                    .font(.caption.weight(.semibold))
 
                 if desk.id == store.overviewSelectionDeskID {
                     Circle()
@@ -127,7 +127,7 @@ struct OverviewView: View {
             HStack(alignment: .top, spacing: 10) {
                 if filteredBoards.isEmpty {
                     Text("Empty")
-                        .font(.system(size: 12))
+                        .font(.caption)
                         .foregroundStyle(.secondary)
                         .frame(
                             width: DenOverviewLayout.emptyBoardSize.width,
@@ -152,14 +152,14 @@ struct OverviewView: View {
         } label: {
             VStack(alignment: .leading, spacing: 6) {
                 Text(board.displayName)
-                    .font(.system(size: 12, weight: .semibold))
+                    .font(.caption.weight(.semibold))
                     .lineLimit(2)
 
                 Text(
                     board.currentSheetURL?.host(percentEncoded: false)
                         ?? board.currentSheetURL?.absoluteString ?? ""
                 )
-                .font(.system(size: 10))
+                .font(.caption2)
                 .foregroundStyle(.secondary)
                 .lineLimit(1)
 

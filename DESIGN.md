@@ -13,6 +13,10 @@ Den controls feel like a calm desk laid over live web sheets. Web content remain
 - Keep hierarchy visible: Desk switcher above board strip, board header above sheet, sheet stack indicator secondary.
 - Show the current Profile name in the titlebar and a simple Profile icon at the top right. Place the Desk Preset bookmark action immediately to its left when the Focused Desk has Boards. Present both as compact borderless controls with matching secondary tint. Give both icons accessibility labels and help text; Profile identity must not depend on color.
 - Prefer SF Symbols and system typography. Preserve macOS accessibility defaults where possible.
+- Use SwiftUI semantic text styles such as `title`, `headline`, `body`, `caption`, and `caption2` for app-owned
+  text. Apply weight, design, and monospaced variants to a semantic style instead of specifying a point size.
+- Avoid `.system(size:)` for app-owned text. Fixed sizes remain appropriate for geometry-bound symbols and
+  controls, or when a documented visual requirement cannot be expressed with a semantic text style.
 - Let SwiftUI semantic colors express standard hierarchy: use `primary`, `secondary`, and `tertiary` for Den text, icons, and neutral chrome.
 - Resolve Den chrome in its dark appearance so semantic colors stay legible. Do not hard-code black or white for standard text and icons.
 - Reserve fixed colors for semantic meaning such as errors; use the active Profile color for Den atmosphere and focus, plus the dark background gradient and shadows.

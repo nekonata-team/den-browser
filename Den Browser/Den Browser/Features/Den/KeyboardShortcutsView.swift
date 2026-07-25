@@ -9,7 +9,7 @@ struct KeyboardShortcutsView: View {
         VStack(alignment: .leading, spacing: 14) {
             HStack {
                 Text("Keyboard Shortcuts")
-                    .font(.system(size: 17, weight: .semibold))
+                    .font(.headline)
                 Spacer()
                 if let onClose {
                     Button(action: onClose) {
@@ -127,14 +127,14 @@ struct KeyboardShortcutsView: View {
     private func shortcutSection(_ section: ShortcutGuideSection) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(section.title)
-                .font(.system(size: 13, weight: .semibold))
+                .font(.caption.weight(.semibold))
                 .foregroundStyle(.secondary)
 
             ForEach(section.items) { item in
                 HStack(spacing: DenPanelLayout.controlSpacing) {
                     ShortcutChip(tokens: item.keys, width: 112)
                     Text(item.label)
-                        .font(.system(size: 12))
+                        .font(.caption)
                     Spacer(minLength: 0)
                 }
                 .accessibilityElement(children: .ignore)
@@ -162,7 +162,7 @@ struct ShortcutChip: View {
                     .minimumScaleFactor(0.75)
             }
         }
-        .font(.system(size: 11, weight: .medium, design: .monospaced))
+        .font(.caption2.monospaced().weight(.medium))
         .foregroundStyle(isRecording ? Color.accentColor : Color.secondary)
         .frame(width: width)
         .frame(minHeight: 18)
