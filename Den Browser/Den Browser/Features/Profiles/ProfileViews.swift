@@ -51,6 +51,18 @@ struct ProfileWindowView: View {
             .onOpenURL { url in
                 store.captureInDrawer(url)
             }
+            .sheet(
+                isPresented: Binding(
+                    get: { profileManager.clearBrowsingDataProfileID != nil },
+                    set: { if !$0 { profileManager.clearBrowsingDataProfileID = nil } }
+                )
+            ) {
+                if let id = profileManager.clearBrowsingDataProfileID {
+                    ClearBrowsingDataView(profileID: id) {
+                        profileManager.clearBrowsingDataProfileID = nil
+                    }
+                }
+            }
         } else {
             ContentUnavailableView("Profile unavailable", systemImage: "person.crop.circle.badge.exclamationmark")
         }
@@ -79,6 +91,10 @@ private struct ProfileChip: View {
                 profileManager.openProfilePanelProfileID = profile.id
             }
             .keyboardShortcut("p", modifiers: [.control, .command])
+
+            Button("Clear Browsing Data…") {
+                profileManager.clearBrowsingDataProfileID = profile.id
+            }
 
             SettingsLink {
                 Text("New Profile…")

@@ -88,6 +88,12 @@ private struct DenCommands: Commands {
             }
             .keyboardShortcut("p", modifiers: [.control, .command])
 
+            Button("Clear Browsing Data…") {
+                let targetID = profileManager.profileID(for: NSApp.keyWindow) ?? profileManager.personalProfileID
+                profileManager.clearBrowsingDataProfileID = targetID
+            }
+            .keyboardShortcut(.delete, modifiers: [.command, .shift])
+
             SettingsLink { Text("New Profile…") }
             SettingsLink { Text("Manage Profiles…") }
         }

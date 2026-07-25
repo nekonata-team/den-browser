@@ -239,6 +239,18 @@ private struct ProfilesSettingsView: View {
         } message: {
             Text(profileManager.errorMessage ?? "")
         }
+        .sheet(
+            isPresented: Binding(
+                get: { profileManager.clearBrowsingDataProfileID != nil },
+                set: { if !$0 { profileManager.clearBrowsingDataProfileID = nil } }
+            )
+        ) {
+            if let id = profileManager.clearBrowsingDataProfileID {
+                ClearBrowsingDataView(profileID: id) {
+                    profileManager.clearBrowsingDataProfileID = nil
+                }
+            }
+        }
     }
 }
 
@@ -269,10 +281,31 @@ private struct ProfileSettingsRow: View {
             }
             .labelsHidden()
             .frame(width: 100)
+            Button {
+                profileManager.clearBrowsingDataProfileID = profile.id
+            } label: {
+                Image(systemName: "eraser")
+            }
+            .buttonStyle(.borderless)
+            .help("Clear Browsing Data…")
+            .accessibilityLabel("Clear Browsing Data for \(profile.name)")
+
             if canDelete {
-                Button("Delete", role: .destructive, action: onDelete)
+                Button(role: .destructive, action: onDelete) {
+                    Image(systemName: "trash")
+                }
+                .buttonStyle(.borderless)
+                .help("Delete Profile")
+                .accessibilityLabel("Delete Profile \(profile.name)")
             } else {
-                Text("Required").font(.caption).foregroundStyle(.secondary)
+                Button {
+                } label: {
+                    Image(systemName: "trash")
+                }
+                .buttonStyle(.borderless)
+                .disabled(true)
+                .help("Default Profile (Personal) cannot be deleted")
+                .accessibilityLabel("Default Profile (Personal) cannot be deleted")
             }
         }
         .onDisappear(perform: saveName)

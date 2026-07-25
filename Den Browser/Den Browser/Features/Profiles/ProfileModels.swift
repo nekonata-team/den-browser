@@ -224,3 +224,48 @@ struct PersistedProfile: Codable, Equatable {
         }
     }
 }
+
+enum BrowsingDataCategory: String, CaseIterable, Identifiable, Hashable, Codable, Sendable {
+    case cookies
+    case cache
+    case localData
+
+    var id: Self { self }
+
+    var label: String {
+        switch self {
+        case .cookies: "Cookies and Site Data"
+        case .cache: "Cached Images and Files"
+        case .localData: "Local Storage and Databases"
+        }
+    }
+
+    var description: String {
+        switch self {
+        case .cookies: "Signs you out of most web sites."
+        case .cache: "Frees up disk space and forces fresh site resources to load."
+        case .localData: "Clears offline site data and saved web application states."
+        }
+    }
+
+    var websiteDataTypes: Set<String> {
+        switch self {
+        case .cookies:
+            [WKWebsiteDataTypeCookies]
+        case .cache:
+            [WKWebsiteDataTypeDiskCache, WKWebsiteDataTypeMemoryCache]
+        case .localData:
+            [
+                WKWebsiteDataTypeLocalStorage,
+                WKWebsiteDataTypeIndexedDBDatabases,
+                WKWebsiteDataTypeWebSQLDatabases,
+            ]
+        }
+    }
+}
+
+extension Collection where Element == BrowsingDataCategory {
+    var websiteDataTypes: Set<String> {
+        Set(flatMap(\.websiteDataTypes))
+    }
+}

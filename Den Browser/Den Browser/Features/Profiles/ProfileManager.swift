@@ -9,6 +9,7 @@ final class ProfileManager {
     private(set) var profiles: [ProfileState] = []
     private(set) var errorMessage: String?
     var openProfilePanelProfileID: UUID?
+    var clearBrowsingDataProfileID: UUID?
 
     @ObservationIgnored private let directoryURL: URL
     @ObservationIgnored private var persistedProfiles: [UUID: PersistedProfile] = [:]
@@ -17,6 +18,7 @@ final class ProfileManager {
     @ObservationIgnored private let sheetNavigation: SheetNavigationManager
     @ObservationIgnored private let preferences: AppPreferences
     @ObservationIgnored private let removeDataStore: (UUID) async throws -> Void
+    @ObservationIgnored private let removeWebsiteDataTypes: (WKWebsiteDataStore, Set<String>) async throws -> Void
     @ObservationIgnored private let initialProfile: PersistedProfile?
     @ObservationIgnored private let websiteDataStore: (WebProfileStore) -> WKWebsiteDataStore
 
@@ -31,6 +33,8 @@ final class ProfileManager {
         sheetNavigation: SheetNavigationManager,
         preferences: AppPreferences = AppPreferences(),
         removeDataStore: @escaping (UUID) async throws -> Void = ProfileManager.removeWebsiteDataStore,
+        removeWebsiteDataTypes: @escaping (WKWebsiteDataStore, Set<String>) async throws -> Void = ProfileManager
+            .removeWebsiteDataTypes,
         initialProfile: PersistedProfile? = nil,
         websiteDataStore: ((WebProfileStore) -> WKWebsiteDataStore)? = nil
     ) {
@@ -38,6 +42,7 @@ final class ProfileManager {
         self.sheetNavigation = sheetNavigation
         self.preferences = preferences
         self.removeDataStore = removeDataStore
+        self.removeWebsiteDataTypes = removeWebsiteDataTypes
         self.initialProfile = initialProfile
         self.websiteDataStore = websiteDataStore ?? { $0.websiteDataStore }
         load()
@@ -151,6 +156,22 @@ final class ProfileManager {
                 }
             }
             errorMessage = "Could not delete Profile: \(error.localizedDescription)"
+            return false
+        }
+    }
+
+    @discardableResult
+    func clearBrowsingData(categories: Set<BrowsingDataCategory>, profileID: UUID) async -> Bool {
+        guard let profile = profile(id: profileID) else { return false }
+        let types = categories.websiteDataTypes
+        guard !types.isEmpty else { return true }
+
+        let store = websiteDataStore(profile.webProfileStore)
+        do {
+            try await removeWebsiteDataTypes(store, types)
+            return true
+        } catch {
+            errorMessage = "Could not clear browsing data: \(error.localizedDescription)"
             return false
         }
     }
@@ -352,6 +373,21 @@ final class ProfileManager {
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
             WKWebsiteDataStore.remove(forIdentifier: identifier) { error in
                 if let error { continuation.resume(throwing: error) } else { continuation.resume() }
+            }
+        }
+    }
+
+    private static func removeWebsiteDataTypes(from store: WKWebsiteDataStore, types: Set<String>) async throws {
+        let records = await withCheckedContinuation {
+            (continuation: CheckedContinuation<[WKWebsiteDataRecord], Never>) in
+            store.fetchDataRecords(ofTypes: types) { records in
+                continuation.resume(returning: records)
+            }
+        }
+        guard !records.isEmpty else { return }
+        await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
+            store.removeData(ofTypes: types, for: records) {
+                continuation.resume()
             }
         }
     }

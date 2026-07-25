@@ -434,6 +434,36 @@ struct ProfileManagerTests {
         #expect(store.isDrawerOpen)
         #expect(store.state.drawerItems.first?.url == targetURL)
     }
+
+    @Test func clearBrowsingDataRequestsSelectedWebsiteDataTypes() async throws {
+        let directory = temporaryProfileDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let navigation = SheetNavigationManager(
+            defaults: UserDefaults(suiteName: UUID().uuidString) ?? .standard,
+            scriptSource: "")
+
+        var removedTypes: Set<String>?
+        let manager = ProfileManager(
+            directoryURL: directory,
+            sheetNavigation: navigation,
+            removeWebsiteDataTypes: { _, types in
+                removedTypes = types
+            })
+        let personalID = manager.personalProfileID
+
+        let success = await manager.clearBrowsingData(
+            categories: [.cookies, .cache], profileID: personalID)
+
+        #expect(success)
+        #expect(
+            removedTypes
+                == Set([
+                    WKWebsiteDataTypeCookies,
+                    WKWebsiteDataTypeDiskCache,
+                    WKWebsiteDataTypeMemoryCache,
+                ]))
+    }
+
     private func temporaryProfileDirectory() -> URL {
         FileManager.default.temporaryDirectory
             .appending(path: "den-browser-profile-tests-\(UUID().uuidString)", directoryHint: .isDirectory)
