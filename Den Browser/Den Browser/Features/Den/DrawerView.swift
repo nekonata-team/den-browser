@@ -143,7 +143,7 @@ struct DrawerView: View {
                 .help("Discard")
             }
 
-            if store.expandedDrawerItemID == item.id {
+            if store.isDrawerOpen, store.expandedDrawerItemID == item.id {
                 let runtime = store.drawerRuntime(for: item)
                 DrawerWebView(webView: runtime.webView)
                     .frame(height: previewHeight)

@@ -16,6 +16,7 @@ extension DenStore {
         state.drawerItems.insert(item, at: 0)
         selectedDrawerItemID = item.id
         expandedDrawerItemID = item.id
+        state.expandedDrawerItemID = item.id
         isDrawerOpen = true
         save()
         showToast("Captured in Drawer.", style: .success)
@@ -37,8 +38,6 @@ extension DenStore {
 
     func closeDrawer() {
         isDrawerOpen = false
-        expandedDrawerItemID = nil
-        releaseDrawerPreview()
     }
 
     func toggleDrawerItem(_ itemID: UUID) {
@@ -46,11 +45,14 @@ extension DenStore {
         selectedDrawerItemID = itemID
         if expandedDrawerItemID == itemID {
             expandedDrawerItemID = nil
+            state.expandedDrawerItemID = nil
             releaseDrawerPreview()
         } else {
             expandedDrawerItemID = itemID
+            state.expandedDrawerItemID = itemID
             releaseDrawerPreview()
         }
+        save()
     }
 
     func selectDrawerItem(by offset: Int) {
@@ -64,7 +66,9 @@ extension DenStore {
         selectedDrawerItemID = targetID
         if expandedDrawerItemID != nil {
             expandedDrawerItemID = targetID
+            state.expandedDrawerItemID = targetID
             releaseDrawerPreview()
+            save()
         }
     }
 
@@ -78,6 +82,7 @@ extension DenStore {
         let wasSelected = selectedDrawerItemID == itemID
         if expandedDrawerItemID == itemID {
             expandedDrawerItemID = nil
+            state.expandedDrawerItemID = nil
             releaseDrawerPreview()
         }
         state.drawerItems.remove(at: index)

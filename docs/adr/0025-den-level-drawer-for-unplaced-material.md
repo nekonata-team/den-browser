@@ -48,10 +48,10 @@ Future media support must not turn the initial design into a speculative generic
 - The Drawer appears from the bottom of the Den without changing Desk layout. It has no edge-hover target, handle, or drag interaction, and keeps an outer inset on both sides.
 - Drawer Items form a vertical accordion. One item at a time expands into a live `WKWebView` Drawer Preview.
 - Opening an external URL captures, selects, and expands a new Drawer Item.
-- Closing the Drawer or collapsing a Preview keeps the Drawer Item.
+- Closing the Drawer keeps its expanded Preview identity and live runtime for the next open during the current app run. Collapsing a Preview clears that identity and releases the runtime. Both operations keep the Drawer Item.
 - Placement creates a Board to the right of the Focused Board, focuses it, removes the Drawer Item, and closes the Drawer.
 - Keeping a Current Sheet in the Drawer copies its URL and label with independent identity. The source Board remains unchanged.
-- URL and title persist. Live WebKit state does not.
+- URL, title, and the expanded Drawer Item identity persist. Live WebKit state does not; opening a Drawer after relaunch creates a new runtime from the persisted URL.
 - New items appear first. Duplicate URLs remain separate items.
 - The expanded Preview remains selected across Desk changes.
 - An open Drawer uses most of the Den height and gives its Preview the remaining panel width and height.

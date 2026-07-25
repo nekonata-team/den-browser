@@ -61,7 +61,7 @@ Den Browser's first PoC validates whether a macOS WKWebView implementation can s
 3. Switch Desks while a Preview is expanded. Confirm the same Drawer Item remains visible and no Board moves between Desks.
 4. In Den Mode, use Tab, Up / Down or `k` / `j`, Return, `p`, Delete, and Escape to open the Drawer, select items, expand a Preview, place an item as a Board, discard an item, and close the Drawer.
 5. Keep a Current Sheet in the Drawer from its Board header menu. Confirm the source Board remains unchanged.
-6. Quit and relaunch. Confirm Drawer Items restore only in their owning Profile, while their live Preview runtime is recreated on demand.
+6. Enter transient state in a Preview, then close and reopen the Drawer; confirm the same live Preview and its state continue. Quit, relaunch, and open that Profile's Drawer; confirm a new live Preview runtime is created from the persisted URL. Repeat after collapsing the Preview and confirm it stays collapsed.
 
 ## Shortcut and Zen View validation
 

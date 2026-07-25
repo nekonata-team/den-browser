@@ -92,7 +92,92 @@ struct DenStoreDrawerTests {
         let object = try #require(JSONSerialization.jsonObject(with: encoded) as? [String: Any])
 
         #expect(object["drawerItems"] == nil)
-        #expect(try JSONDecoder().decode(DenState.self, from: encoded).drawerItems.isEmpty)
+        #expect(object["expandedDrawerItemID"] == nil)
+        let decoded = try JSONDecoder().decode(DenState.self, from: encoded)
+        #expect(decoded.drawerItems.isEmpty)
+        #expect(decoded.expandedDrawerItemID == nil)
+    }
+
+    @Test func expandedPreviewRestoresWhenDrawerNextOpensWithoutPersistingItsRuntime() throws {
+        let source = desk("Desk")
+        let item = DrawerItem(url: try #require(URL(string: "https://preview.example/")))
+        let state = DenState(
+            desks: [source],
+            focusedDeskID: source.id,
+            drawerItems: [item],
+            expandedDrawerItemID: item.id)
+
+        let restoredState = try JSONDecoder().decode(
+            DenState.self,
+            from: JSONEncoder().encode(state))
+        let store = DenStore(state: restoredState)
+
+        #expect(store.state.expandedDrawerItemID == item.id)
+        #expect(store.selectedDrawerItemID == item.id)
+        #expect(store.expandedDrawerItemID == item.id)
+        #expect(!store.isDrawerOpen)
+        #expect(store.drawerPreviewRuntime == nil)
+
+        store.toggleDrawer()
+
+        #expect(store.isDrawerOpen)
+        #expect(store.expandedDrawerItemID == item.id)
+    }
+
+    @Test func missingExpandedDrawerItemIsClearedOnRestore() throws {
+        let source = desk("Desk")
+        var savedState: DenState?
+        let store = DenStore(
+            state: DenState(
+                desks: [source],
+                focusedDeskID: source.id,
+                expandedDrawerItemID: UUID()),
+            onSave: { savedState = $0 })
+
+        #expect(store.state.expandedDrawerItemID == nil)
+        #expect(store.expandedDrawerItemID == nil)
+        #expect(!store.isDrawerOpen)
+        #expect(savedState == store.state)
+    }
+
+    @Test func closingDrawerKeepsExpandedPreviewForNextOpen() throws {
+        let source = desk("Desk")
+        var savedState: DenState?
+        let store = DenStore(
+            state: DenState(desks: [source], focusedDeskID: source.id),
+            onSave: { savedState = $0 })
+        store.captureInDrawer(try #require(URL(string: "https://preview.example/")))
+        let itemID = try #require(store.expandedDrawerItemID)
+
+        store.toggleDrawerItem(itemID)
+
+        #expect(store.state.expandedDrawerItemID == nil)
+        #expect(savedState == store.state)
+
+        store.toggleDrawerItem(itemID)
+
+        #expect(store.state.expandedDrawerItemID == itemID)
+        #expect(savedState == store.state)
+        let item = try #require(store.selectedDrawerItem)
+        let runtime = store.drawerRuntime(for: item)
+
+        store.closeDrawer()
+
+        #expect(!store.isDrawerOpen)
+        #expect(store.expandedDrawerItemID == itemID)
+        #expect(store.state.expandedDrawerItemID == itemID)
+        #expect(store.drawerPreviewRuntime === runtime)
+        #expect(savedState == store.state)
+
+        store.toggleDrawer()
+
+        #expect(store.isDrawerOpen)
+        #expect(store.expandedDrawerItemID == itemID)
+        #expect(store.drawerRuntime(for: item) === runtime)
+
+        store.toggleDrawerItem(itemID)
+
+        #expect(store.drawerPreviewRuntime == nil)
     }
 
     @Test func denModeKeyboardControlsOpenDrawer() throws {
@@ -104,10 +189,17 @@ struct DenStoreDrawerTests {
 
         #expect(KeyboardController.handle(try keyEvent(.downArrow, keyCode: 125), store: store))
         #expect(store.selectedDrawerItemID == store.state.drawerItems[1].id)
+        #expect(store.state.expandedDrawerItemID == store.state.drawerItems[1].id)
         #expect(KeyboardController.handle(try keyEvent(.carriageReturn, keyCode: 36), store: store))
         #expect(store.expandedDrawerItemID == nil)
+        #expect(store.state.expandedDrawerItemID == nil)
         #expect(KeyboardController.handle(try keyEvent(.tab, keyCode: 48), store: store))
         #expect(!store.isDrawerOpen)
+
+        store.toggleDrawer()
+
+        #expect(store.isDrawerOpen)
+        #expect(store.expandedDrawerItemID == nil)
     }
 
     private func keyEvent(_ specialKey: NSEvent.SpecialKey, keyCode: UInt16) throws -> NSEvent {

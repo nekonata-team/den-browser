@@ -262,9 +262,8 @@ final class KeyboardController {
         guard modifiers == [] else { return true }
 
         if isEscape(event) {
-            if store.expandedDrawerItemID != nil {
-                store.expandedDrawerItemID = nil
-                store.releaseDrawerPreview()
+            if let expandedDrawerItemID = store.expandedDrawerItemID {
+                store.toggleDrawerItem(expandedDrawerItemID)
             } else {
                 store.closeDrawer()
             }

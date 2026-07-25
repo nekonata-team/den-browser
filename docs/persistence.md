@@ -8,7 +8,7 @@ Den Browser persists only state needed to restore user-owned work. Version 1 is 
 - A versioned JSON `ProfileIndex` stores Profile order.
 - App-wide preferences use typed, independent `UserDefaults` keys.
 - WebKit owns website data in each Profile's `WKWebsiteDataStore`.
-- Live `BoardRuntime`, `WKWebView`, presentation state, and the Recently Removed Board are not persisted.
+- Live `BoardRuntime`, `DrawerPreviewRuntime`, `WKWebView`, transient presentation state, and the Recently Removed Board are not persisted. The expanded Drawer Item identity is persisted only to recreate its Preview runtime when the Drawer first opens after relaunch.
 
 ## Version 1 JSON keys
 
@@ -29,7 +29,7 @@ Nested objects use these keys:
 
 - `ProfileState`: `id`, `name`, `color`, `webProfileStore`
 - `WebProfileStore`: `kind`, optional `identifier`
-- `DenState`: `desks`, `focusedDeskID`, optional `drawerItems`
+- `DenState`: `desks`, `focusedDeskID`, optional `drawerItems`, optional `expandedDrawerItemID`
 - `DrawerItem`: `id`, `url`, optional `title`
 - `DeskState`: `id`, `label`, `boards`, optional `focusedBoardID`
 - `BoardState`: `id`, `label`, `width`, optional `customLabel`, optional `currentSheetURL`

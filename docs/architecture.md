@@ -60,7 +60,7 @@ When a dependency would create a cycle, do not hide it behind an App coordinator
 
 Persisted `DenState` remains separate from live `BoardRuntime` and `WKWebView` objects.
 
-- `DenState` is the source of truth for Desk and Board identity, order, labels, widths, focus, Current Sheet URLs, and Drawer Items.
+- `DenState` is the source of truth for Desk and Board identity, order, labels, widths, focus, Current Sheet URLs, Drawer Items, and the expanded Drawer Item identity used to restore a Preview.
 - `BoardRuntime` owns live WebKit state, including each Board's in-memory Sheet Stack.
 - Switching Desks detaches and reattaches live web views; it does not reconstruct persisted state or reload the Sheet Stack.
 - Persistence never serializes `BoardRuntime`, `DrawerPreviewRuntime`, or `WKWebView`.

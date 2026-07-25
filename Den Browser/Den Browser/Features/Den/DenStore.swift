@@ -161,6 +161,14 @@ final class DenStore {
         self.onDeskPresetsSave = onDeskPresetsSave
         self.onRecentItemsSave = onRecentItemsSave
         ensureFocusedObjects()
+        if let restoredDrawerItemID = self.state.expandedDrawerItemID,
+            self.state.drawerItems.contains(where: { $0.id == restoredDrawerItemID })
+        {
+            selectedDrawerItemID = restoredDrawerItemID
+            expandedDrawerItemID = restoredDrawerItemID
+        } else {
+            self.state.expandedDrawerItemID = nil
+        }
         if self.state != state {
             onSave?(self.state)
         }
