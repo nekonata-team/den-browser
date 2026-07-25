@@ -15,7 +15,7 @@ Read [CONTEXT.md](./CONTEXT.md) before changing product behavior or user-visible
 
 ## Commands
 
-Use `just build`, `just test`, and `just check` from repository root. They disable code signing and write build output to `.derived-data`.
+Run `just --list`. These commands are preferred for use in this project.
 
 ## Docs
 
