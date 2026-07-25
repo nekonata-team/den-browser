@@ -95,6 +95,13 @@ struct BoardView: View {
         }
 
         Button {
+            store.focusBoard(board.id)
+            store.captureFocusedSheetInDrawer()
+        } label: {
+            Label("Keep Current Sheet in Drawer", systemImage: "tray.and.arrow.down")
+        }
+
+        Button {
             runtime.webView.reload()
         } label: {
             Label("Reload Current Sheet", systemImage: "arrow.clockwise")

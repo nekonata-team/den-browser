@@ -50,6 +50,7 @@ extension DenStore {
         for runtime in runtimes.values {
             runtime.webView.pageZoom = CGFloat(scale) / 100
         }
+        drawerPreviewRuntime?.webView.pageZoom = CGFloat(scale) / 100
     }
 
     func releaseRuntimes() {
@@ -59,6 +60,7 @@ extension DenStore {
             runtime.webView.navigationDelegate = nil
         }
         runtimes.removeAll()
+        releaseDrawerPreview()
     }
 
     var focusedRuntime: BoardRuntime? {

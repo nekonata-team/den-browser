@@ -109,6 +109,8 @@ private struct DenCommands: Commands {
                 .disabled(store == nil)
             Button("Keyboard Shortcuts…") { store?.showKeyboardShortcuts() }
                 .disabled(store == nil)
+            Button("Toggle Drawer") { store?.toggleDrawer() }
+                .disabled(store == nil)
 
             Divider()
 

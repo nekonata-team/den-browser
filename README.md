@@ -52,18 +52,19 @@ See [CONTEXT.md](./CONTEXT.md) for the complete product language.
 - Resize every Board in the Focused Desk by 80pt or to fit a chosen count across the current window, using `w` then `-`, `=`, or `1` through `9` in Den Mode or the Den menu.
 - Restore the most Recently Removed Board with `u` during the current app run.
 - Reopen a URL or search from Recent in the Open Board panel.
+- Hold web material in a Profile-owned Den-level Drawer, expand one live preview at a time, and later place it as a Board or discard it. Links opened from other apps enter the Drawer without changing the current Desk layout.
 - See and reorganize Boards across Desks in Overview.
 - Delete empty Desks immediately, or delete a Desk containing Boards after confirming the permanent removal.
 - Save the Focused Desk as a Profile-owned Personal Desk Preset, then use keyboard-first fuzzy search to choose and preview a preset before naming another Desk. Presets can also be replaced or deleted, with direct management available through Shift + `p` in Den Mode. Built-in Empty, ChatGPT, and Gemini presets provide ready-made starting points.
 - Keep browser-like back-forward navigation inside each Board as a Sheet Stack.
 - Restore Desk and Board labels, order, widths, focus, and current Sheet URLs after relaunching the app, showing the Focused Board immediately without a scroll animation.
-- Register as an `http` / `https` browser handler; URLs opened from other apps become a new Board in the active Profile. macOS controls the user's default-browser choice.
+- Register as an `http` / `https` browser handler; URLs opened from other apps become previewable Drawer Items in the active Profile. macOS controls the user's default-browser choice.
 - Keep sign-ins across app launches while isolating them between Profiles.
 - Optionally enable first-party Vim-style Sheet Navigation for scrolling, link hints, find, Sheet Stack navigation, and URL actions.
 
 ## Keyboard operation
 
-Press `Control` + `,` to toggle Den Mode. `Command` + `L` replaces the Focused Board's Current Sheet with a URL or search; `e` does the same in Den Mode. Den Mode receives Desk and Board commands independently of keyboard focus inside the Current Sheet. `n` or `Space` opens a Board, `p` saves the Focused Desk as a Desk Preset, and `w` then `-` or `=` adjusts all Boards in the Focused Desk by 80pt; a digit instead resizes them to fit the current window. `x` or `d` removes the Focused Board, `u` restores the Recently Removed Board, `?` opens the shortcut guide, and `z` toggles Zen View. Escape returns to Sheet Input.
+Press `Control` + `,` to toggle Den Mode. `Command` + `L` replaces the Focused Board's Current Sheet with a URL or search; `e` does the same in Den Mode. Den Mode receives Desk and Board commands independently of keyboard focus inside the Current Sheet. `n` or `Space` opens a Board, Tab opens the Drawer, `p` saves the Focused Desk as a Desk Preset, and `w` then `-` or `=` adjusts all Boards in the Focused Desk by 80pt; a digit instead resizes them to fit the current window. `x` or `d` removes the Focused Board, `u` restores the Recently Removed Board, `?` opens the shortcut guide, and `z` toggles Zen View. Escape returns to Sheet Input.
 
 See [docs/shortcuts.md](./docs/shortcuts.md) for the complete shortcut map.
 

@@ -33,11 +33,15 @@ final class DenStore {
     var overviewSelectionDeskID: UUID?
     var overviewSelectionBoardID: UUID?
     var recentlyRemovedBoard: RecentlyRemovedBoard?
+    var isDrawerOpen = false
+    var selectedDrawerItemID: UUID?
+    var expandedDrawerItemID: UUID?
     let sheetNavigation: SheetNavigationManager
     let preferences: AppPreferences
     let websiteDataStore: WKWebsiteDataStore
 
     @ObservationIgnored var runtimes: [UUID: BoardRuntime] = [:]
+    @ObservationIgnored var drawerPreviewRuntime: DrawerPreviewRuntime?
     @ObservationIgnored private let onSave: ((DenState) -> Void)?
     @ObservationIgnored private let onDeskPresetsSave: (([PersonalDeskPreset]) -> Void)?
     @ObservationIgnored let onRecentItemsSave: (([RecentItem]) -> Bool)?
@@ -164,6 +168,7 @@ final class DenStore {
             sheetNavigation.didClose(runtime.webView)
         }
         runtimes.removeAll()
+        releaseDrawerPreview()
         if isBoardDragging {
             boardDragCancellationRequest &+= 1
         }
@@ -185,6 +190,9 @@ final class DenStore {
         overviewSelectionDeskID = nil
         overviewSelectionBoardID = nil
         recentlyRemovedBoard = nil
+        isDrawerOpen = false
+        selectedDrawerItemID = nil
+        expandedDrawerItemID = nil
         isDenMode = false
         save()
     }

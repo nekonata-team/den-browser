@@ -1,0 +1,144 @@
+import AppKit
+import Foundation
+import Testing
+@testable import Den_Browser
+
+@MainActor
+struct DenStoreDrawerTests {
+    @Test func captureKeepsDeskLayoutAndOpensNewestItem() throws {
+        let existingBoard = board("Existing", url: "https://desk.example/")
+        let source = desk("Desk", boards: [existingBoard], focusedBoardID: existingBoard.id)
+        var savedState: DenState?
+        let store = DenStore(
+            state: DenState(desks: [source], focusedDeskID: source.id),
+            onSave: { savedState = $0 })
+        let url = try #require(URL(string: "https://drawer.example/first"))
+
+        store.captureInDrawer(url)
+
+        #expect(store.focusedDesk == source)
+        #expect(store.state.drawerItems.map(\.url) == [url])
+        #expect(store.selectedDrawerItemID == store.state.drawerItems[0].id)
+        #expect(store.expandedDrawerItemID == store.state.drawerItems[0].id)
+        #expect(store.isDrawerOpen)
+        #expect(savedState == store.state)
+    }
+
+    @Test func duplicateURLsRemainDistinctAndNewestComesFirst() throws {
+        let source = desk("Desk")
+        let store = DenStore(state: DenState(desks: [source], focusedDeskID: source.id))
+        let url = try #require(URL(string: "https://example.com/"))
+
+        store.captureInDrawer(url)
+        let firstID = try #require(store.state.drawerItems.first?.id)
+        store.captureInDrawer(url)
+
+        #expect(store.state.drawerItems.count == 2)
+        #expect(store.state.drawerItems[0].id != firstID)
+        #expect(store.state.drawerItems[1].id == firstID)
+    }
+
+    @Test func captureCurrentSheetCopiesWithoutChangingBoard() {
+        let existingBoard = board("Reference", url: "https://example.com/reference")
+        let source = desk("Desk", boards: [existingBoard], focusedBoardID: existingBoard.id)
+        let store = DenStore(state: DenState(desks: [source], focusedDeskID: source.id))
+
+        store.captureFocusedSheetInDrawer()
+
+        #expect(store.focusedBoard == existingBoard)
+        #expect(store.state.drawerItems.first?.url == existingBoard.currentSheetURL)
+        #expect(store.state.drawerItems.first?.title == existingBoard.displayName)
+    }
+
+    @Test func placementCreatesFocusedBoardAndRemovesItem() throws {
+        let existingBoard = board("Existing")
+        let source = desk("Desk", boards: [existingBoard], focusedBoardID: existingBoard.id)
+        let store = DenStore(state: DenState(desks: [source], focusedDeskID: source.id))
+        let url = try #require(URL(string: "https://placed.example/"))
+        store.captureInDrawer(url)
+        let itemID = try #require(store.selectedDrawerItemID)
+
+        store.placeDrawerItemAsBoard(itemID)
+
+        #expect(store.state.drawerItems.isEmpty)
+        #expect(store.focusedDesk?.boards.map(\.currentSheetURL) == [existingBoard.currentSheetURL, url])
+        #expect(store.focusedBoard?.currentSheetURL == url)
+        #expect(!store.isDrawerOpen)
+    }
+
+    @Test func discardingSelectedItemSelectsItsNeighborAndClosesWhenEmpty() throws {
+        let source = desk("Desk")
+        let store = DenStore(state: DenState(desks: [source], focusedDeskID: source.id))
+        store.captureInDrawer(try #require(URL(string: "https://first.example/")))
+        store.captureInDrawer(try #require(URL(string: "https://second.example/")))
+
+        store.discardSelectedDrawerItem()
+
+        #expect(store.state.drawerItems.count == 1)
+        #expect(store.selectedDrawerItemID == store.state.drawerItems[0].id)
+        #expect(store.isDrawerOpen)
+
+        store.discardSelectedDrawerItem()
+
+        #expect(store.state.drawerItems.isEmpty)
+        #expect(!store.isDrawerOpen)
+        #expect(store.selectedDrawerItemID == nil)
+    }
+
+    @Test func legacyDenStateLoadsWithEmptyDrawerAndEmptyDrawerStaysOmitted() throws {
+        let source = desk("Desk")
+        let state = DenState(desks: [source], focusedDeskID: source.id)
+        let encoded = try JSONEncoder().encode(state)
+        let object = try #require(JSONSerialization.jsonObject(with: encoded) as? [String: Any])
+
+        #expect(object["drawerItems"] == nil)
+        #expect(try JSONDecoder().decode(DenState.self, from: encoded).drawerItems.isEmpty)
+    }
+
+    @Test func denModeKeyboardControlsOpenDrawer() throws {
+        let source = desk("Desk")
+        let store = DenStore(state: DenState(desks: [source], focusedDeskID: source.id))
+        store.captureInDrawer(try #require(URL(string: "https://first.example/")))
+        store.captureInDrawer(try #require(URL(string: "https://second.example/")))
+        store.isDenMode = true
+
+        #expect(KeyboardController.handle(try keyEvent(.downArrow, keyCode: 125), store: store))
+        #expect(store.selectedDrawerItemID == store.state.drawerItems[1].id)
+        #expect(KeyboardController.handle(try keyEvent(.carriageReturn, keyCode: 36), store: store))
+        #expect(store.expandedDrawerItemID == nil)
+        #expect(KeyboardController.handle(try keyEvent(.tab, keyCode: 48), store: store))
+        #expect(!store.isDrawerOpen)
+    }
+
+    private func keyEvent(_ specialKey: NSEvent.SpecialKey, keyCode: UInt16) throws -> NSEvent {
+        let scalar = try #require(UnicodeScalar(specialKey.rawValue))
+        return try #require(
+            NSEvent.keyEvent(
+                with: .keyDown,
+                location: .zero,
+                modifierFlags: [],
+                timestamp: 0,
+                windowNumber: 0,
+                context: nil,
+                characters: String(scalar),
+                charactersIgnoringModifiers: String(scalar),
+                isARepeat: false,
+                keyCode: keyCode
+            ))
+    }
+
+    private func board(_ label: String, url: String? = nil) -> BoardState {
+        BoardState(
+            label: label,
+            width: 520,
+            currentSheetURL: url.flatMap(URL.init(string:)))
+    }
+
+    private func desk(
+        _ label: String,
+        boards: [BoardState] = [],
+        focusedBoardID: UUID? = nil
+    ) -> DeskState {
+        DeskState(label: label, boards: boards, focusedBoardID: focusedBoardID)
+    }
+}

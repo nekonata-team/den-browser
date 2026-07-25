@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: accepted
 ---
 
 # Add a Den-level Drawer for material without a settled work context
@@ -41,42 +41,18 @@ The Drawer may later hold text, images, files, selections, quotations, or groups
 
 Future media support must not turn the initial design into a speculative generic content model. Start with web material and extract a broader Drawer Item model only when another material type is implemented. Images in particular require separate decisions about file ownership, storage limits, export, drag and drop, and privacy.
 
-## Open questions
+## Initial interaction decisions
 
-- Is web material in the Drawer canonically a `Sheet`, a `Drawer Item` containing Sheet data, or another term? `CONTEXT.md` currently defines a Sheet as a web screen held within a Board, so calling Desk-independent material a Sheet would broaden that definition.
-- Does opening an external URL both capture it and show a temporary preview, or capture it without changing the visible work?
-- What exact fallback selects the receiving Profile when no Profile window is active?
-- Does closing a preview keep its material in the Drawer by default?
-- When placing web material, is the primary action “create a Board,” “add to the Focused Board,” or a destination chooser?
-- Does “keep Current Sheet in Drawer” copy its recallable state, share identity, or detach it from the Board? The initial recommendation is a copy-like capture with independent identity.
-- Which metadata survives: URL, title, favicon, capture time, source application, last viewed time, scroll position, or form state?
-- How are duplicate captures represented?
-- Is ordering manual, recency-based, or both?
-- What retention and bulk-discard controls become necessary as the Drawer grows?
-- Where does the cross-Desk preview appear, and does it remain visible while the Focused Desk changes?
-
-## Candidate `CONTEXT.md` language
-
-This glossary text is a draft, not adopted terminology. Move it into `CONTEXT.md` only after the open naming and lifecycle questions are resolved.
-
-```md
-**Drawer**:
-A Den-wide place for material whose Desk or Board context is not yet settled. It remains available across Desk changes without becoming part of a Desk layout.
-_Avoid_: Inbox, Temporary Desk, scratch workspace, clipboard
-
-**Drawer Item**:
-Material held in the Drawer before it is placed into an established work context or discarded. A Drawer Item is not implicitly unread, actionable, or temporary in storage.
-_Avoid_: Inbox item, task, bookmark, history entry
-
-**Drawer Preview**:
-A temporary presentation of a Drawer Item for recall or comparison that does not place the item into a Desk or Board.
-_Avoid_: Board, floating Board, temporary Desk
-
-**Drawer Placement**:
-Incorporating a Drawer Item into an established Desk or Board context. Placement may create a Board or add material to an existing Board, according to the material type and chosen destination.
-_Avoid_: Restore, open tab, move to workspace
-
-**Drawer Discard**:
-Releasing material from the Drawer without placing it into a Desk or Board context.
-_Avoid_: Complete, archive, close tab
-```
+- Web material is a `Drawer Item`, separate from `Sheet`.
+- `Tab` opens and closes the Drawer in Den Mode. The initial implementation has no pointer entry point.
+- The Drawer appears from the bottom of the Den without changing Desk layout. It has no edge-hover target, handle, or drag interaction, and keeps an outer inset on both sides.
+- Drawer Items form a vertical accordion. One item at a time expands into a live `WKWebView` Drawer Preview.
+- Opening an external URL captures, selects, and expands a new Drawer Item.
+- Closing the Drawer or collapsing a Preview keeps the Drawer Item.
+- Placement creates a Board to the right of the Focused Board, focuses it, removes the Drawer Item, and closes the Drawer.
+- Keeping a Current Sheet in the Drawer copies its URL and label with independent identity. The source Board remains unchanged.
+- URL and title persist. Live WebKit state does not.
+- New items appear first. Duplicate URLs remain separate items.
+- The expanded Preview remains selected across Desk changes.
+- An open Drawer uses most of the Den height and gives its Preview the remaining panel width and height.
+- Profile fallback when no Profile window is active remains an application-level routing decision.

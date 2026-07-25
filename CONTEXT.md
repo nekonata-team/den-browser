@@ -68,6 +68,26 @@ _Avoid_: History, Used Board, Recent Board, Starting Point, Board Start
 A URL or search term retained in Recent.
 _Avoid_: Recent Entry
 
+**Drawer**:
+A Den-wide place for material whose Desk or Board context is not yet settled. It remains available across Desk changes without becoming part of a Desk layout.
+_Avoid_: Inbox, Temporary Desk, scratch workspace, clipboard
+
+**Drawer Item**:
+Web material held in the Drawer before it is placed into an established context or discarded. A Drawer Item is not implicitly unread, actionable, or temporary in storage.
+_Avoid_: Inbox item, task, bookmark, history entry
+
+**Drawer Preview**:
+The temporary live web presentation expanded beneath a Drawer Item. It does not place the item into a Desk or Board and is not persisted as a live runtime.
+_Avoid_: Board, floating Board, temporary Desk
+
+**Drawer Placement**:
+Creating a Board from a Drawer Item in the Focused Desk. The placed item leaves the Drawer.
+_Avoid_: Restore, open tab, move to workspace
+
+**Drawer Discard**:
+Releasing a Drawer Item without placing it into a Desk or Board context.
+_Avoid_: Complete, archive, close tab
+
 **Focused Board**:
 The board currently selected for work within a desk.
 _Avoid_: Active tab, current page

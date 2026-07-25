@@ -60,6 +60,7 @@ struct KeyboardShortcutsView: View {
                     item(["p"], "Save Desk as Preset"),
                     item(["⇧", "P"], "Manage Desk Presets"),
                     item(["o"], "Overview"),
+                    item(["Tab"], "Toggle Drawer"),
                     item(["?"], "Keyboard Shortcuts"),
                     item(["z"], "Toggle Zen View"),
                 ]),
@@ -88,6 +89,15 @@ struct KeyboardShortcutsView: View {
                     item(["Shift", "+", "movement"], "Move selected Board"),
                     item(["Return"], "Enter selection"),
                     item(["Escape"], "Return to Den Mode"),
+                ]),
+            ShortcutGuideSection(
+                title: "Drawer",
+                items: [
+                    item(["↑", "/", "↓", "or", "k", "/", "j"], "Select Drawer Item"),
+                    item(["Return"], "Toggle Drawer Preview"),
+                    item(["p"], "Place as Board"),
+                    item(["Delete"], "Discard Drawer Item"),
+                    item(["Escape"], "Collapse Preview / close Drawer"),
                 ]),
         ]
     }

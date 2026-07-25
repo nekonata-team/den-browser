@@ -148,6 +148,15 @@ final class KeyboardController {
 
     private static func handleDenMode(_ event: NSEvent, store: DenStore) -> Bool {
         let modifiers = normalizedModifiers(for: event)
+        if isTab(event), modifiers == [], !event.isARepeat {
+            store.toggleDrawer()
+            return true
+        }
+
+        if store.isDrawerOpen {
+            return handleDrawer(event, store: store)
+        }
+
         if isEscape(event), modifiers == [] {
             store.exitDenMode()
             return true
@@ -245,6 +254,51 @@ final class KeyboardController {
             }
         }
 
+        return true
+    }
+
+    private static func handleDrawer(_ event: NSEvent, store: DenStore) -> Bool {
+        let modifiers = normalizedModifiers(for: event)
+        guard modifiers == [] else { return true }
+
+        if isEscape(event) {
+            if store.expandedDrawerItemID != nil {
+                store.expandedDrawerItemID = nil
+                store.releaseDrawerPreview()
+            } else {
+                store.closeDrawer()
+            }
+            return true
+        }
+
+        if isReturn(event), !event.isARepeat {
+            store.toggleSelectedDrawerItem()
+            return true
+        }
+
+        if event.specialKey == .backspace || event.specialKey == .deleteForward {
+            if !event.isARepeat {
+                store.discardSelectedDrawerItem()
+            }
+            return true
+        }
+
+        switch characterIgnoringModifiers(for: event) {
+        case "j":
+            store.selectDrawerItem(by: 1)
+        case "k":
+            store.selectDrawerItem(by: -1)
+        case "p":
+            if !event.isARepeat {
+                store.placeSelectedDrawerItemAsBoard()
+            }
+        default:
+            switch event.specialKey {
+            case .downArrow: store.selectDrawerItem(by: 1)
+            case .upArrow: store.selectDrawerItem(by: -1)
+            default: break
+            }
+        }
         return true
     }
 
@@ -377,6 +431,10 @@ final class KeyboardController {
 
     private static func isReturn(_ event: NSEvent) -> Bool {
         event.specialKey == .carriageReturn
+    }
+
+    private static func isTab(_ event: NSEvent) -> Bool {
+        event.specialKey == .tab
     }
 }
 

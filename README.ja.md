@@ -52,18 +52,19 @@ Den Browserは、[Niri](https://github.com/niri-wm/niri)の空間的なウィン
 - Den Modeで`w`に続けて`-`、`=`、または`1`〜`9`を押すかDenメニューを使い、Focused Desk内の全Boardを80ptずつ、または現在のウィンドウ幅へ指定数が収まるようリサイズ。
 - 現在のアプリ起動中、`u`でRecently Removed Boardを復活。
 - Open BoardパネルのRecentから、以前のURLまたは検索語を再利用。
+- Profile所有のDen-level DrawerへWeb materialを保持し、一度に一つのライブPreviewを展開。後からBoardとして配置、または破棄。ほかのアプリから開いたリンクは現在のDesk配置を変えずにDrawerへ入る。
 - OverviewでDeskを跨いだBoardの確認と再配置。
 - 空のDeskは即座に削除し、Boardを含むDeskは完全削除の確認後に削除。
 - Focused DeskをProfile所有のPersonal Desk Presetとして保存し、新しいDeskの作成時はキーボード中心のファジー検索でPresetを選択、プレビューしてからDesk Labelを入力。Presetの置換、削除に対応し、Den ModeではShift + `p`から管理画面を直接表示。組み込みのEmpty、ChatGPT、Geminiをすぐ使える初期配置として提供。
 - ブラウザの戻る・進むに相当する履歴を、BoardごとのSheet Stackとして保持。
 - アプリ再起動後にDeskとBoardのラベル、並び順、幅、フォーカス、Current SheetのURLを復元し、Focused Boardをスクロールアニメーションなしで即座に表示。
-- `http` / `https` のブラウザハンドラーとして登録し、ほかのアプリから開いたURLを現在のProfileの新しいBoardで開く。既定のブラウザにするかどうかはmacOS側で選択。
+- `http` / `https` のブラウザハンドラーとして登録し、ほかのアプリから開いたURLを現在のProfileでPreview可能なDrawer Itemとして保持。既定のブラウザにするかどうかはmacOS側で選択。
 - Profile内のSheet間でログイン状態を維持しつつ、別Profileから分離。
 - スクロール、リンクヒント、検索、Sheet Stack操作、URL操作に対応する、任意のファーストパーティ製Vim-style Sheet Navigation。
 
 ## キーボード操作
 
-`Control` + `,` でDen Modeを切り替えます。`Command` + `L`でFocused BoardのCurrent SheetをURLまたは検索語に置き換え、Den Modeでは`e`でも同じ操作を行えます。Den ModeはCurrent Sheet内のキーボードフォーカスに関係なく、DeskとBoardのコマンドを受け取ります。`n`または`Space`でBoardを開き、`p`でFocused DeskをDesk Presetとして保存し、`w`に続けて`-`または`=`を押すとFocused Desk内の全Boardを80ptずつ調整し、数字を押すと現在のウィンドウ幅に合わせてリサイズします。`x`または`d`でFocused Boardを取り除き、`u`でRecently Removed Boardを復活します。`?`でショートカット一覧を表示し、`z`でZen Viewを切り替えます。`Escape`でSheet Inputへ戻ります。
+`Control` + `,` でDen Modeを切り替えます。`Command` + `L`でFocused BoardのCurrent SheetをURLまたは検索語に置き換え、Den Modeでは`e`でも同じ操作を行えます。Den ModeはCurrent Sheet内のキーボードフォーカスに関係なく、DeskとBoardのコマンドを受け取ります。`n`または`Space`でBoardを開き、`Tab`でDrawerを開き、`p`でFocused DeskをDesk Presetとして保存します。`w`に続けて`-`または`=`を押すとFocused Desk内の全Boardを80ptずつ調整し、数字を押すと現在のウィンドウ幅に合わせてリサイズします。`x`または`d`でFocused Boardを取り除き、`u`でRecently Removed Boardを復活します。`?`でショートカット一覧を表示し、`z`でZen Viewを切り替えます。`Escape`でSheet Inputへ戻ります。
 
 全ショートカットは[docs/shortcuts.md](./docs/shortcuts.md)を参照してください。
 

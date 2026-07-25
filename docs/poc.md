@@ -54,6 +54,15 @@ Den Browser's first PoC validates whether a macOS WKWebView implementation can s
 5. Delete the second Profile; confirm its window closes and its Den and website data disappear while Personal remains.
 6. With VoiceOver, confirm the Profile icon announces its name and does not rely on color alone.
 
+## Drawer validation
+
+1. Open two links from another application. Confirm both enter the active Profile's Drawer newest-first, the latest item expands into a live Preview, and the Focused Desk layout does not change.
+2. In Den Mode, use Tab to open and close the bottom Drawer. Confirm a closed Drawer does not cover or intercept a Board, then expand each accordion item and confirm only one live Preview remains at a time.
+3. Switch Desks while a Preview is expanded. Confirm the same Drawer Item remains visible and no Board moves between Desks.
+4. In Den Mode, use Tab, Up / Down or `k` / `j`, Return, `p`, Delete, and Escape to open the Drawer, select items, expand a Preview, place an item as a Board, discard an item, and close the Drawer.
+5. Keep a Current Sheet in the Drawer from its Board header menu. Confirm the source Board remains unchanged.
+6. Quit and relaunch. Confirm Drawer Items restore only in their owning Profile, while their live Preview runtime is recreated on demand.
+
 ## Shortcut and Zen View validation
 
 1. In Settings > Shortcuts, record a new binding for each app-wide action and confirm it applies immediately while the Den window is active.

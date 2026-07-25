@@ -31,6 +31,7 @@ The complete in-app guide is available from Settings, the Den menu, and `?` in D
 | Shift + `n` | New Desk panel | Creating enters Sheet Input; Escape returns to Den Mode. |
 | `p` | Save Desk as Preset panel | Available when the Focused Desk contains a Board. |
 | Shift + `p` | Manage Personal Desk Presets | Available even when the Focused Desk is empty. |
+| Tab | Toggle Drawer | Available in Den Mode. While open, Up / Down or `k` / `j` selects a Drawer Item, Return expands or collapses its Preview, `p` places it as a Board, Delete discards it, and Escape first collapses the Preview and then closes the Drawer. |
 | `o` | Toggle overview | Overview is temporary within Den Mode. |
 | `?` | Keyboard Shortcuts | Opens the complete guide; `?` or Escape closes it. |
 | `z` | Toggle Zen View | Hides the native titlebar, Desk switcher, and Profile control for this window. Press `z` again to restore them. |
@@ -56,7 +57,7 @@ Overview accepts movement, Shift plus movement, `/` (search/filter), Return, and
 
 Drag a Board header's label or empty area to reorder it within the Focused Desk. Header buttons remain ordinary controls. Dropping outside the Board strip cancels the move; moving near the strip's horizontal edges scrolls it. Keyboard Board movement and Overview remain available without pointer input.
 
-Right-click or Control-click anywhere in a Board header to focus that Board and open its native context menu. The menu can duplicate or reload the Current Sheet, maximize or center the Board, move it left, right, or to another numbered Desk, and remove it. Movement at a Desk edge remains visible but disabled. Right-clicking inside a Sheet continues to use the web content's own context menu.
+Right-click or Control-click anywhere in a Board header to focus that Board and open its native context menu. The menu can keep a copy of the Current Sheet in the Drawer, duplicate or reload it, maximize or center the Board, move it left, right, or to another numbered Desk, and remove it. Movement at a Desk edge remains visible but disabled. Right-clicking inside a Sheet continues to use the web content's own context menu.
 
 ## Pointer Desk actions
 

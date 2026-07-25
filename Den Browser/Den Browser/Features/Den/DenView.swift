@@ -71,6 +71,17 @@ struct DenView: View {
                 }
 
                 activePanel(defaultBoardWidth: defaultBoardWidth(in: geometry.size))
+
+                DrawerView(
+                    availableHeight: geometry.size.height,
+                    profileColor: profileColor
+                )
+                .padding(.horizontal, DenLayout.outerInset)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
+                .offset(y: store.isDrawerOpen ? 0 : geometry.size.height)
+                .allowsHitTesting(store.isDrawerOpen && store.temporaryContext == nil)
+                .accessibilityHidden(!store.isDrawerOpen || store.temporaryContext != nil)
+                .zIndex(3)
             }
             .onAppear {
                 updateBoardLayout(for: geometry.size)
@@ -104,6 +115,7 @@ struct DenView: View {
             }
             .animation(DenMotion.feedback(reduceMotion: shouldReduceMotion), value: store.temporaryContext)
             .animation(DenMotion.spatial(reduceMotion: shouldReduceMotion), value: store.isZenViewPresented)
+            .animation(DenMotion.spatial(reduceMotion: shouldReduceMotion), value: store.isDrawerOpen)
             .overlay {
                 RoundedRectangle(cornerRadius: DenRadius.large, style: .continuous)
                     .strokeBorder(profileColor.opacity(0.48), lineWidth: 1)

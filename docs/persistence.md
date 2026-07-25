@@ -4,7 +4,7 @@ Den Browser persists only state needed to restore user-owned work. Version 1 is 
 
 ## Ownership
 
-- Each Profile owns one versioned JSON `PersistedProfile` document containing `ProfileState`, `DenState`, Personal Desk Presets, and Recent.
+- Each Profile owns one versioned JSON `PersistedProfile` document containing `ProfileState`, `DenState`, Drawer Items, Personal Desk Presets, and Recent.
 - A versioned JSON `ProfileIndex` stores Profile order.
 - App-wide preferences use typed, independent `UserDefaults` keys.
 - WebKit owns website data in each Profile's `WKWebsiteDataStore`.
@@ -29,7 +29,8 @@ Nested objects use these keys:
 
 - `ProfileState`: `id`, `name`, `color`, `webProfileStore`
 - `WebProfileStore`: `kind`, optional `identifier`
-- `DenState`: `desks`, `focusedDeskID`
+- `DenState`: `desks`, `focusedDeskID`, optional `drawerItems`
+- `DrawerItem`: `id`, `url`, optional `title`
 - `DeskState`: `id`, `label`, `boards`, optional `focusedBoardID`
 - `BoardState`: `id`, `label`, `width`, optional `customLabel`, optional `currentSheetURL`
 - `PersonalDeskPreset`: `id`, `label`, `boards`, optional `focusedBoardIndex`
