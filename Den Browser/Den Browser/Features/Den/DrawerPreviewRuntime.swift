@@ -24,6 +24,7 @@ final class DrawerPreviewRuntime: NSObject, WKNavigationDelegate, WKUIDelegate {
         configuration.websiteDataStore = websiteDataStore
         configuration.userContentController = sheetNavigation.userContentController
         webView = WKWebView(frame: .zero, configuration: configuration)
+        webView.customUserAgent = BoardRuntime.defaultUserAgent
         webView.pageZoom = CGFloat(sheetScale) / 100
         webView.allowsBackForwardNavigationGestures = true
 

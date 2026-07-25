@@ -4,6 +4,14 @@ import WebKit
 
 @MainActor
 final class BoardRuntime: NSObject, WKNavigationDelegate, WKUIDelegate {
+    static var defaultUserAgent: String {
+        let os = ProcessInfo.processInfo.operatingSystemVersion
+        let versionString = "\(os.majorVersion).\(os.minorVersion)"
+        return "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+            + "AppleWebKit/605.1.15 (KHTML, like Gecko) "
+            + "Version/\(versionString) Safari/605.1.15"
+    }
+
     let id: UUID
     let webView: WKWebView
 
@@ -52,6 +60,7 @@ final class BoardRuntime: NSObject, WKNavigationDelegate, WKUIDelegate {
         )
 
         webView = WKWebView(frame: .zero, configuration: configuration)
+        webView.customUserAgent = Self.defaultUserAgent
         webView.pageZoom = CGFloat(sheetScale) / 100
         webView.allowsBackForwardNavigationGestures = true
 

@@ -57,6 +57,25 @@ struct SheetNavigationTests {
         #expect(unsupported.allSatisfy { !SheetURLPolicy.isSupported($0) })
     }
 
+    @Test func boardRuntimeAppliesSafariUserAgent() {
+        let navigation = SheetNavigationManager(
+            defaults: UserDefaults(suiteName: "UserAgentTest-\(UUID().uuidString)") ?? .standard,
+            scriptSource: "")
+        let board = BoardState(label: "Test", width: 520, currentSheetURL: nil)
+        let runtime = BoardRuntime(
+            board: board,
+            websiteDataStore: .nonPersistent(),
+            sheetNavigation: navigation,
+            sheetScale: 100,
+            onOpenBoard: { _ in },
+            onChange: { _, _, _ in }
+        )
+
+        #expect(runtime.webView.customUserAgent == BoardRuntime.defaultUserAgent)
+        #expect(runtime.webView.customUserAgent?.contains("Version/") == true)
+        #expect(runtime.webView.customUserAgent?.contains("Safari/") == true)
+    }
+
     @Test func sheetNavigationPreferencesPersist() {
         let suiteName = "SheetNavigationManagerTests-\(UUID().uuidString)"
         let defaults = UserDefaults(suiteName: suiteName)!
