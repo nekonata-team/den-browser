@@ -77,7 +77,7 @@ struct BoardView: View {
             if store.isDenMode, isFocused {
                 Rectangle()
                     .fill(profileColor.opacity(0.9))
-                    .frame(height: 3)
+                    .frame(height: DenLayout.denModeBoardEdgeHeight)
             }
         }
     }

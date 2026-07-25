@@ -206,3 +206,16 @@ struct OverviewView: View {
         )
     }
 }
+
+private enum DenOverviewLayout {
+    static let contentPadding: CGFloat = 18
+    static let closeButtonInset: CGFloat = 14
+    static let searchFieldWidth: CGFloat = 320
+    static let selectionIndicatorSize: CGFloat = 6
+    static let emptyBoardSize = CGSize(width: 150, height: 88)
+    static let boardSize = CGSize(width: 158, height: 96)
+    static let boardPadding: CGFloat = 10
+    static let widthIndicatorRange: ClosedRange<CGFloat> = 24...92
+    static let widthIndicatorHeight: CGFloat = 5
+    static let widthIndicatorScale: CGFloat = 9
+}

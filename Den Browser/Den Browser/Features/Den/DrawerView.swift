@@ -176,6 +176,16 @@ struct DrawerView: View {
     }
 }
 
+private enum DenDrawerLayout {
+    static let headerHeight: CGFloat = 58
+    static let headerHorizontalPadding: CGFloat = 14
+    static let itemHeight: CGFloat = 52
+    static let discardButtonWidth: CGFloat = 32
+    static let minimumHeight: CGFloat = 360
+    static let windowClearance: CGFloat = 72
+    static let previewReservedHeight: CGFloat = 160
+}
+
 private struct DrawerWebView: NSViewRepresentable {
     let webView: WKWebView
 

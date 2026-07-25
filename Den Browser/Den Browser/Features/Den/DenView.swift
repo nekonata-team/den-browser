@@ -192,8 +192,11 @@ struct DenView: View {
         case .keyboardShortcuts:
             if store.focusedDesk?.boards.isEmpty == false {
                 KeyboardShortcutsView(onClose: store.hideKeyboardShortcuts)
-                    .padding(DenLayout.overlayInset)
-                    .frame(width: 760, height: 560)
+                    .padding(DenKeyboardShortcutsLayout.guidePadding)
+                    .frame(
+                        width: DenKeyboardShortcutsLayout.guideSize.width,
+                        height: DenKeyboardShortcutsLayout.guideSize.height
+                    )
                     .glassEffect(
                         .regular,
                         in: RoundedRectangle(cornerRadius: DenRadius.large, style: .continuous)

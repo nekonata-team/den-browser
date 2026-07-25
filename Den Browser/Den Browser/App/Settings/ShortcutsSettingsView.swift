@@ -47,8 +47,11 @@ struct ShortcutsSettingsView: View {
         }
         .sheet(isPresented: $isGuidePresented) {
             KeyboardShortcutsView { isGuidePresented = false }
-                .padding(18)
-                .frame(width: 760, height: 560)
+                .padding(DenKeyboardShortcutsLayout.guidePadding)
+                .frame(
+                    width: DenKeyboardShortcutsLayout.guideSize.width,
+                    height: DenKeyboardShortcutsLayout.guideSize.height
+                )
         }
     }
 

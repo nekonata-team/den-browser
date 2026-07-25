@@ -5,6 +5,9 @@ enum DenLayout {
     static let chromeHorizontalPadding: CGFloat = 12
     static let boardHeaderHeight: CGFloat = 38
     static let boardControlSize: CGFloat = 24
+    static let minimumBoardHeight: CGFloat = 420
+    static let minimumMaximizedBoardWidth: CGFloat = 280
+    static let denModeBoardEdgeHeight: CGFloat = 3
     static let deskSwitcherHeight: CGFloat = 36
     static let deskButtonHeight: CGFloat = 28
     static let deskButtonMaxWidth: CGFloat = 180
@@ -25,25 +28,7 @@ enum DenPanelLayout {
     static let wideWidth: CGFloat = 620
 }
 
-enum DenDrawerLayout {
-    static let headerHeight: CGFloat = 58
-    static let headerHorizontalPadding: CGFloat = 14
-    static let itemHeight: CGFloat = 52
-    static let discardButtonWidth: CGFloat = 32
-    static let minimumHeight: CGFloat = 360
-    static let windowClearance: CGFloat = 72
-    static let previewReservedHeight: CGFloat = 160
-}
-
-enum DenOverviewLayout {
-    static let contentPadding: CGFloat = 18
-    static let closeButtonInset: CGFloat = 14
-    static let searchFieldWidth: CGFloat = 320
-    static let selectionIndicatorSize: CGFloat = 6
-    static let emptyBoardSize = CGSize(width: 150, height: 88)
-    static let boardSize = CGSize(width: 158, height: 96)
-    static let boardPadding: CGFloat = 10
-    static let widthIndicatorRange: ClosedRange<CGFloat> = 24...92
-    static let widthIndicatorHeight: CGFloat = 5
-    static let widthIndicatorScale: CGFloat = 9
+enum DenKeyboardShortcutsLayout {
+    static let guideSize = CGSize(width: 760, height: 560)
+    static let guidePadding: CGFloat = 18
 }

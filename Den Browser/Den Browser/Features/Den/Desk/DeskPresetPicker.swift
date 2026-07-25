@@ -365,7 +365,10 @@ struct DeskPresetPreview: View {
                                 .foregroundStyle(.tertiary)
                         }
                         .padding(7)
-                        .frame(width: max(90, min(150, board.width / 4)), alignment: .leading)
+                        .frame(
+                            width: max(90, min(150, board.width / 4)),
+                            alignment: .leading
+                        )
                         .background(
                             Color.primary.opacity(0.055),
                             in: RoundedRectangle(cornerRadius: DenRadius.small, style: .continuous)

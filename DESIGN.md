@@ -17,9 +17,12 @@ Den controls feel like a calm desk laid over live web sheets. Web content remain
   text. Apply weight, design, and monospaced variants to a semantic style instead of specifying a point size.
 - Avoid `.system(size:)` for app-owned text. Fixed sizes remain appropriate for geometry-bound symbols and
   controls, or when a documented visual requirement cannot be expressed with a semantic text style.
-- Keep app-owned Den layout metrics in `Features/Den/DenLayout.swift`. 
+- Keep shared app-owned Den layout metrics in `Features/Den/DenLayout.swift`. Keep component-specific metrics close
+  to their component, and introduce a private layout type only when values are reused or participate in a layout
+  calculation.
 - Share a layout metric only when its uses have the same visual meaning and should change together. Equal numeric
-  values alone are not a reason to couple unrelated spacing or dimensions.
+  values alone are not a reason to couple unrelated spacing or dimensions. Local literals are appropriate when a
+  name would not add design intent.
 - Let SwiftUI semantic colors express standard hierarchy: use `primary`, `secondary`, and `tertiary` for Den text, icons, and neutral chrome.
 - Resolve Den chrome in its dark appearance so semantic colors stay legible. Do not hard-code black or white for standard text and icons.
 - Reserve fixed colors for semantic meaning such as errors; use the active Profile color for Den atmosphere and focus, plus the dark background gradient and shadows.
