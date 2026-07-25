@@ -45,8 +45,8 @@ final class Den_BrowserUITests: XCTestCase {
 
         XCTAssertTrue(sheetInput.waitForExistence(timeout: 5))
         sheetInput.click()
-        sheetInput.typeText(" world")
-        XCTAssertEqual(sheetInput.value as? String, "hello world")
+        sheetInput.typeText("!")
+        XCTAssertEqual(sheetInput.value as? String, "hello!")
     }
 
     @MainActor
@@ -136,7 +136,6 @@ final class Den_BrowserUITests: XCTestCase {
     private func launchApp(singleBoard: Bool = false) -> XCUIApplication {
         let app = XCUIApplication()
         var args = [
-            "-ApplePersistenceIgnoreState", "YES",
             "--ui-testing", "--fixture", "interaction-basics",
         ]
         if singleBoard {
@@ -146,21 +145,11 @@ final class Den_BrowserUITests: XCTestCase {
         app.launchEnvironment["DEN_UI_TEST_RUN_ID"] = UUID().uuidString
         app.launch()
 
-        if !app.windows.firstMatch.waitForExistence(timeout: 2) {
-            let profileMenu = app.menuBars.menuBarItems["Profile"]
-            XCTAssertTrue(profileMenu.waitForExistence(timeout: 10), "Profile menu bar item should exist")
-            profileMenu.click()
-
-            let uiTestingMenuItem = app.menuItems["UI Testing"]
-            XCTAssertTrue(uiTestingMenuItem.waitForExistence(timeout: 10), "UI Testing menu item should exist")
-            uiTestingMenuItem.click()
-        }
-
         XCTAssertTrue(app.windows.firstMatch.waitForExistence(timeout: 10), "Application window should appear")
         XCTAssertTrue(board(.alpha, in: app).waitForExistence(timeout: 20))
         if !singleBoard {
-            XCTAssertTrue(board(.bravo, in: app).waitForExistence(timeout: 20))
-            XCTAssertTrue(board(.charlie, in: app).waitForExistence(timeout: 20))
+            XCTAssertTrue(board(.bravo, in: app).exists)
+            XCTAssertTrue(board(.charlie, in: app).exists)
         }
         return app
     }
