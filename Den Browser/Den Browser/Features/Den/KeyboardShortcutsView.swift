@@ -22,7 +22,10 @@ struct KeyboardShortcutsView: View {
             }
 
             ScrollView {
-                LazyVGrid(columns: [GridItem(.adaptive(minimum: 300), alignment: .top)], spacing: 12) {
+                LazyVGrid(
+                    columns: [GridItem(.adaptive(minimum: 300), alignment: .top)],
+                    spacing: DenPanelLayout.contentSpacing
+                ) {
                     ForEach(sections) { section in
                         shortcutSection(section)
                     }
@@ -128,7 +131,7 @@ struct KeyboardShortcutsView: View {
                 .foregroundStyle(.secondary)
 
             ForEach(section.items) { item in
-                HStack(spacing: 10) {
+                HStack(spacing: DenPanelLayout.controlSpacing) {
                     ShortcutChip(tokens: item.keys, width: 112)
                     Text(item.label)
                         .font(.system(size: 12))
@@ -138,7 +141,7 @@ struct KeyboardShortcutsView: View {
                 .accessibilityLabel("\(item.label), \(item.accessibilityKeys)")
             }
         }
-        .padding(12)
+        .padding(DenPanelLayout.contentSpacing)
         .frame(maxWidth: .infinity, alignment: .topLeading)
         .background(
             Color.primary.opacity(0.055),

@@ -55,8 +55,8 @@ struct DrawerView: View {
                 .accessibilityLabel("Close Drawer")
             }
         }
-        .padding(.horizontal, 14)
-        .frame(height: 58)
+        .padding(.horizontal, DenDrawerLayout.headerHorizontalPadding)
+        .frame(height: DenDrawerLayout.headerHeight)
     }
 
     private var drawerContents: some View {
@@ -114,7 +114,7 @@ struct DrawerView: View {
                     }
                     .padding(.leading, 12)
                     .padding(.trailing, 8)
-                    .frame(maxWidth: .infinity, minHeight: 52)
+                    .frame(maxWidth: .infinity, minHeight: DenDrawerLayout.itemHeight)
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
@@ -134,7 +134,9 @@ struct DrawerView: View {
                     Image(systemName: "trash")
                         .font(.system(size: 12, weight: .semibold))
                         .foregroundStyle(.secondary)
-                        .frame(width: 32, height: 52)
+                        .frame(
+                            width: DenDrawerLayout.discardButtonWidth,
+                            height: DenDrawerLayout.itemHeight)
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel("Discard \(item.displayName)")
@@ -159,11 +161,11 @@ struct DrawerView: View {
     }
 
     private var drawerHeight: CGFloat {
-        max(360, availableHeight - 72)
+        max(DenDrawerLayout.minimumHeight, availableHeight - DenDrawerLayout.windowClearance)
     }
 
     private var previewHeight: CGFloat {
-        max(360, drawerHeight - 160)
+        max(DenDrawerLayout.minimumHeight, drawerHeight - DenDrawerLayout.previewReservedHeight)
     }
 
     private var shouldReduceMotion: Bool {

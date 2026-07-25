@@ -33,7 +33,7 @@ struct OverviewView: View {
                 }
                 .padding(.horizontal, 12)
                 .padding(.vertical, 8)
-                .frame(width: 320)
+                .frame(width: DenOverviewLayout.searchFieldWidth)
                 .background(
                     Color.primary.opacity(store.isOverviewFilterMode ? 0.08 : 0.04),
                     in: RoundedRectangle(cornerRadius: DenRadius.medium, style: .continuous)
@@ -74,7 +74,7 @@ struct OverviewView: View {
             }
             .scrollPosition($scrollPosition, anchor: .center)
         }
-        .padding(18)
+        .padding(DenOverviewLayout.contentPadding)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .glassEffect(.regular, in: RoundedRectangle(cornerRadius: DenRadius.large, style: .continuous))
         .overlay(alignment: .topTrailing) {
@@ -85,7 +85,7 @@ struct OverviewView: View {
                     .font(.system(size: 12, weight: .semibold))
             }
             .buttonStyle(.glass)
-            .padding(14)
+            .padding(DenOverviewLayout.closeButtonInset)
         }
         .onExitCommand {
             store.hideOverview()
@@ -117,7 +117,9 @@ struct OverviewView: View {
                 if desk.id == store.overviewSelectionDeskID {
                     Circle()
                         .fill(profileColor)
-                        .frame(width: 6, height: 6)
+                        .frame(
+                            width: DenOverviewLayout.selectionIndicatorSize,
+                            height: DenOverviewLayout.selectionIndicatorSize)
                 }
             }
             .foregroundStyle(Color.primary.opacity(desk.id == store.overviewSelectionDeskID ? 0.96 : 0.58))
@@ -127,7 +129,10 @@ struct OverviewView: View {
                     Text("Empty")
                         .font(.system(size: 12))
                         .foregroundStyle(.secondary)
-                        .frame(width: 150, height: 88)
+                        .frame(
+                            width: DenOverviewLayout.emptyBoardSize.width,
+                            height: DenOverviewLayout.emptyBoardSize.height
+                        )
                         .background(
                             Color.primary.opacity(0.06),
                             in: RoundedRectangle(cornerRadius: DenRadius.medium, style: .continuous))
@@ -163,11 +168,21 @@ struct OverviewView: View {
                 HStack(spacing: 5) {
                     Capsule()
                         .fill(.secondary.opacity(0.35))
-                        .frame(width: max(24, min(92, board.width / 9)), height: 5)
+                        .frame(
+                            width: min(
+                                max(
+                                    board.width / DenOverviewLayout.widthIndicatorScale,
+                                    DenOverviewLayout.widthIndicatorRange.lowerBound),
+                                DenOverviewLayout.widthIndicatorRange.upperBound),
+                            height: DenOverviewLayout.widthIndicatorHeight)
                 }
             }
-            .padding(10)
-            .frame(width: 158, height: 96, alignment: .leading)
+            .padding(DenOverviewLayout.boardPadding)
+            .frame(
+                width: DenOverviewLayout.boardSize.width,
+                height: DenOverviewLayout.boardSize.height,
+                alignment: .leading
+            )
             .foregroundStyle(.primary)
             .background(
                 Color.primary.opacity(isSelected ? 0.18 : 0.09),

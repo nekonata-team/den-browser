@@ -39,7 +39,7 @@ struct NewDeskPanel: View {
                     isSearchFocused: $isSearchFocused,
                     onConfirm: onConfirmPreset)
             } else {
-                HStack(spacing: 10) {
+                HStack(spacing: DenPanelLayout.controlSpacing) {
                     VStack(alignment: .leading, spacing: 2) {
                         Text(presetLabel).font(.headline)
                         Text(boardCountLabel).font(.caption).foregroundStyle(.secondary)
@@ -66,7 +66,7 @@ struct NewDeskPanel: View {
                         return .handled
                     }
 
-                HStack(spacing: 12) {
+                HStack(spacing: DenPanelLayout.contentSpacing) {
                     if didAttemptCreation && trimmedLabel.isEmpty {
                         Text("Enter a desk label").foregroundStyle(.red)
                     } else {

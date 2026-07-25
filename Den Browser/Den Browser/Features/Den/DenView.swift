@@ -133,7 +133,7 @@ struct DenView: View {
             .overlay {
                 RoundedRectangle(cornerRadius: DenRadius.large, style: .continuous)
                     .strokeBorder(profileColor.opacity(0.48), lineWidth: 1)
-                    .padding(8)
+                    .padding(DenLayout.outerInset)
                     .opacity(store.isDenMode ? 1 : 0)
                     .allowsHitTesting(false)
             }
