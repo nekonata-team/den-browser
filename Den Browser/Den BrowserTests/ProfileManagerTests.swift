@@ -420,6 +420,20 @@ struct ProfileManagerTests {
         #expect(names.contains { $0.hasPrefix("profile-index.json.corrupt-") })
         #expect((try JSONDecoder().decode(ProfileIndex.self, from: Data(contentsOf: indexURL))).profileIDs.count == 2)
     }
+
+    @Test func handleExternalURLCapturesInActiveStoreDrawer() throws {
+        let directory = temporaryProfileDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let manager = makeProfileManager(directory: directory)
+        let personalID = manager.personalProfileID
+        let store = try #require(manager.store(for: personalID))
+
+        let targetURL = try #require(URL(string: "https://external.example/"))
+        manager.handleExternalURL(targetURL)
+
+        #expect(store.isDrawerOpen)
+        #expect(store.state.drawerItems.first?.url == targetURL)
+    }
     private func temporaryProfileDirectory() -> URL {
         FileManager.default.temporaryDirectory
             .appending(path: "den-browser-profile-tests-\(UUID().uuidString)", directoryHint: .isDirectory)

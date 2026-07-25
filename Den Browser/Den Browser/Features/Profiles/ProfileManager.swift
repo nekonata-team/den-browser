@@ -177,6 +177,19 @@ final class ProfileManager {
         profileID(for: NSApp.keyWindow).flatMap(store(for:))
     }
 
+    func handleExternalURL(_ url: URL) {
+        guard SheetURLPolicy.isSupported(url) else { return }
+        let targetProfileID = profileID(for: NSApp.keyWindow) ?? personalProfileID
+        guard let targetStore = store(for: targetProfileID) else { return }
+
+        targetStore.captureInDrawer(url)
+
+        if let window = windows[targetProfileID]?.window {
+            window.makeKeyAndOrderFront(nil)
+            NSApp.activate(ignoringOtherApps: true)
+        }
+    }
+
     func closeWindow(for profileID: UUID) {
         windows[profileID]?.window?.close()
         windows.removeValue(forKey: profileID)

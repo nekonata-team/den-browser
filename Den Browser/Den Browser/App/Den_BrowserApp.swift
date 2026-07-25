@@ -14,13 +14,13 @@ struct Den_BrowserApp: App {
         let sheetNavigation = SheetNavigationManager(defaults: configuration.defaults)
         _preferences = State(initialValue: preferences)
         _sheetNavigation = State(initialValue: sheetNavigation)
-        _profileManager = State(
-            initialValue: ProfileManager(
-                directoryURL: configuration.profileDirectoryURL,
-                sheetNavigation: sheetNavigation,
-                preferences: preferences,
-                initialProfile: configuration.initialProfile,
-                websiteDataStore: configuration.websiteDataStore))
+        let manager = ProfileManager(
+            directoryURL: configuration.profileDirectoryURL,
+            sheetNavigation: sheetNavigation,
+            preferences: preferences,
+            initialProfile: configuration.initialProfile,
+            websiteDataStore: configuration.websiteDataStore)
+        _profileManager = State(initialValue: manager)
     }
 
     var body: some Scene {
@@ -33,9 +33,11 @@ struct Den_BrowserApp: App {
                 .onAppear {
                     keyboardController.start(profileManager: profileManager, preferences: preferences)
                 }
+                .handlesExternalEvents(preferring: ["*"], allowing: ["*"])
         } defaultValue: {
             profileManager.personalProfileID
         }
+        .handlesExternalEvents(matching: ["*"])
         .commands {
             DenCommands(profileManager: profileManager)
         }
