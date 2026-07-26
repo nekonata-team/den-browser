@@ -1,4 +1,5 @@
 import AppKit
+import Combine
 import Foundation
 import Testing
 import WebKit
@@ -365,6 +366,47 @@ struct SheetNavigationTests {
 
         #expect(observedChange?.0 == testURL)
         #expect(observedChange?.1 == "Test Page Title")
+    }
+
+    @Test func boardRuntimeFindsPageFavicon() async throws {
+        let runtime = BoardRuntime(
+            board: BoardState(label: "Initial", width: 520, currentSheetURL: nil),
+            websiteDataStore: .nonPersistent(),
+            sheetNavigation: SheetNavigationManager(scriptSource: ""),
+            sheetScale: AppPreferences.defaultSheetScale,
+            onOpenBoard: { _ in },
+            onChange: { _, _, _ in })
+        let expectedURL = URL(string: "https://example.com/assets/favicon.png")!
+        var continuation: AsyncStream<URL?>.Continuation?
+        let faviconURLs = AsyncStream<URL?> { continuation = $0 }
+        let observation = runtime.$faviconURL.sink { continuation?.yield($0) }
+
+        runtime.webView.loadHTMLString(
+            """
+            <html><head><link rel="icon" href="/assets/favicon.png"></head></html>
+            """,
+            baseURL: URL(string: "https://example.com/"))
+
+        let observedURL = try await withThrowingTaskGroup(of: URL?.self) { group in
+            group.addTask {
+                for await url in faviconURLs where url == expectedURL {
+                    return url
+                }
+                return nil
+            }
+            group.addTask {
+                try await Task.sleep(for: .seconds(2))
+                return nil
+            }
+
+            let result = try await group.next()!
+            group.cancelAll()
+            return result
+        }
+        observation.cancel()
+        continuation?.finish()
+
+        #expect(observedURL == expectedURL)
     }
 
     private var sheetNavigationTestHTML: String {

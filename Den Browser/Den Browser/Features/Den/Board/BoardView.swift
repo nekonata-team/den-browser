@@ -11,7 +11,7 @@ struct BoardView: View {
     let board: BoardState
     let isFocused: Bool
     let isDragging: Bool
-    let runtime: BoardRuntime
+    @ObservedObject var runtime: BoardRuntime
     let profileColor: Color
     let width: Double
     let height: Double
@@ -175,6 +175,15 @@ struct BoardView: View {
 
     private var dragHandle: some View {
         HStack(spacing: 8) {
+            AsyncImage(url: runtime.faviconURL) { image in
+                image.resizable().scaledToFit()
+            } placeholder: {
+                Image(systemName: "globe")
+                    .foregroundStyle(.secondary)
+            }
+            .frame(width: 16, height: 16)
+            .accessibilityHidden(true)
+
             Text(board.displayName)
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(.primary)

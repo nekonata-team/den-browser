@@ -1,9 +1,10 @@
 import AppKit
+import Combine
 import Foundation
 import WebKit
 
 @MainActor
-final class BoardRuntime: NSObject, WKNavigationDelegate, WKUIDelegate {
+final class BoardRuntime: NSObject, ObservableObject, WKNavigationDelegate, WKUIDelegate {
     static var defaultUserAgent: String {
         let os = ProcessInfo.processInfo.operatingSystemVersion
         let versionString = "\(os.majorVersion).\(os.minorVersion)"
@@ -14,6 +15,7 @@ final class BoardRuntime: NSObject, WKNavigationDelegate, WKUIDelegate {
 
     let id: UUID
     let webView: WKWebView
+    @Published private(set) var faviconURL: URL?
 
     private let onOpenBoard: (URL) -> Void
     private let onEditCurrentSheet: () -> Void
@@ -135,6 +137,33 @@ final class BoardRuntime: NSObject, WKNavigationDelegate, WKUIDelegate {
 
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
         onChange(id, webView.url, webView.title)
+        updateFavicon()
+    }
+
+    func webView(
+        _ webView: WKWebView,
+        didStartProvisionalNavigation navigation: WKNavigation!
+    ) {
+        faviconURL = nil
+    }
+
+    private func updateFavicon() {
+        let sheetURL = webView.url
+        let script =
+            """
+            document.querySelector('link[rel~="icon"][href]')?.href
+                ?? new URL('/favicon.ico', document.baseURI).href
+            """
+
+        webView.evaluateJavaScript(script) { [weak self] result, _ in
+            guard let self,
+                self.webView.url == sheetURL,
+                let value = result as? String
+            else {
+                return
+            }
+            self.faviconURL = URL(string: value)
+        }
     }
 
     func webView(
