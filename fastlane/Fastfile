@@ -17,6 +17,13 @@ platform :mac do
     project_version = get_version_number(xcodeproj: PROJECT, target: SCHEME)
     UI.user_error!("MARKETING_VERSION is #{project_version}, expected #{version}") unless project_version == version
 
+    latest_tag = sh("git", "tag", "--list", "v*", log: false).lines.map(&:strip)
+      .select { |existing_tag| existing_tag.match?(/\Av\d+\.\d+\.\d+\z/) }
+      .max_by { |existing_tag| Gem::Version.new(existing_tag.delete_prefix("v")) }
+    if latest_tag && Gem::Version.new(version) <= Gem::Version.new(latest_tag.delete_prefix("v"))
+      UI.user_error!("#{tag} must be newer than #{latest_tag}")
+    end
+
     %w[ASC_KEY_ID ASC_ISSUER_ID ASC_KEY_PATH].each do |name|
       UI.user_error!("Set #{name}") if ENV[name].to_s.empty?
     end
