@@ -33,7 +33,6 @@ struct Den_BrowserApp: App {
                 .onAppear {
                     keyboardController.start(profileManager: profileManager, preferences: preferences)
                 }
-                .handlesExternalEvents(preferring: ["*"], allowing: ["*"])
         } defaultValue: {
             profileManager.personalProfileID
         }
@@ -55,6 +54,8 @@ private struct DenCommands: Commands {
     let profileManager: ProfileManager
 
     @FocusedValue(\.denStore) private var store
+    @FocusedValue(\.profileID) private var profileID
+    @Environment(\.dismissWindow) private var dismissWindow
     @Environment(\.openWindow) private var openWindow
 
     var body: some Commands {
@@ -70,9 +71,13 @@ private struct DenCommands: Commands {
                     .disabled(
                         store?.focusedDesk?.focusedBoardID == nil
                             || store?.hasPendingConfirmation == true)
-                Button("Close Profile Window") { NSApp.keyWindow?.performClose(nil) }
-                    .keyboardShortcut("w", modifiers: [.command, .shift])
-                    .disabled(store?.hasPendingConfirmation == true)
+                Button("Close Profile Window") {
+                    if let profileID {
+                        dismissWindow(value: profileID)
+                    }
+                }
+                .keyboardShortcut("w", modifiers: [.command, .shift])
+                .disabled(store?.hasPendingConfirmation == true)
             }
         }
 
@@ -86,12 +91,12 @@ private struct DenCommands: Commands {
             Divider()
 
             Button("Open Profile…") {
-                profileManager.openProfilePanelProfileID = profileManager.profileID(for: NSApp.keyWindow)
+                profileManager.openProfilePanelProfileID = profileID
             }
             .keyboardShortcut("p", modifiers: [.control, .command])
 
             Button("Clear Browsing Data…") {
-                let targetID = profileManager.profileID(for: NSApp.keyWindow) ?? profileManager.personalProfileID
+                let targetID = profileID ?? profileManager.personalProfileID
                 profileManager.clearBrowsingDataProfileID = targetID
             }
             .keyboardShortcut(.delete, modifiers: [.command, .shift])

@@ -5,8 +5,23 @@ struct ProfileWindowView: View {
     let profileID: UUID
 
     @Environment(ProfileManager.self) private var profileManager
+    @Environment(\.appearsActive) private var appearsActive
 
     var body: some View {
+        content
+            .onChange(of: appearsActive, initial: true) { _, isActive in
+                profileManager.setProfileActive(profileID, isActive: isActive)
+            }
+            .onDisappear {
+                profileManager.profileWindowDisappeared(profileID)
+            }
+            .handlesExternalEvents(
+                preferring: appearsActive ? ["*"] : [],
+                allowing: appearsActive ? [] : ["*"])
+    }
+
+    @ViewBuilder
+    private var content: some View {
         let activeProfileID = profileManager.resolvedProfileID(profileID)
         if let profile = profileManager.profile(id: activeProfileID),
             let store = profileManager.store(for: activeProfileID)
@@ -45,7 +60,8 @@ struct ProfileWindowView: View {
             .tint(profile.color.color)
             .environment(store)
             .focusedSceneValue(\.denStore, store)
-            .background(WindowRegistration(profileID: activeProfileID))
+            .focusedSceneValue(\.profileID, activeProfileID)
+            .background(WindowAppearance())
             .toolbarVisibility(store.isZenViewPresented ? .hidden : .visible, for: .windowToolbar)
             .ignoresSafeArea(.container, edges: store.isZenViewPresented ? .top : [])
             .onOpenURL { url in
@@ -157,65 +173,22 @@ private struct OpenProfilePanel: View {
     }
 }
 
-private struct WindowRegistration: NSViewRepresentable {
-    let profileID: UUID
-    @Environment(ProfileManager.self) private var profileManager
-
-    func makeCoordinator() -> Coordinator {
-        Coordinator(profileID: profileID, profileManager: profileManager)
-    }
-
+private struct WindowAppearance: NSViewRepresentable {
     func makeNSView(context: Context) -> NSView {
         let view = NSView()
-        DispatchQueue.main.async { context.coordinator.register(view.window) }
+        apply(to: view)
         return view
     }
 
     func updateNSView(_ view: NSView, context: Context) {
-        DispatchQueue.main.async { context.coordinator.register(view.window) }
+        apply(to: view)
     }
 
-    static func dismantleNSView(_ view: NSView, coordinator: Coordinator) {
-        coordinator.unregister()
-    }
-
-    @MainActor
-    final class Coordinator: NSObject {
-        private let profileID: UUID
-        private weak var profileManager: ProfileManager?
-        private weak var window: NSWindow?
-
-        init(profileID: UUID, profileManager: ProfileManager) {
-            self.profileID = profileID
-            self.profileManager = profileManager
-            super.init()
-        }
-
-        func register(_ window: NSWindow?) {
-            guard let window, self.window !== window else { return }
-            self.window = window
+    private func apply(to view: NSView) {
+        DispatchQueue.main.async { [weak view] in
+            guard let window = view?.window else { return }
             window.titlebarAppearsTransparent = true
             window.styleMask.insert(.fullSizeContentView)
-            NotificationCenter.default.addObserver(
-                self, selector: #selector(windowFocusChanged), name: NSWindow.didBecomeKeyNotification, object: window)
-            NotificationCenter.default.addObserver(
-                self, selector: #selector(windowFocusChanged), name: NSWindow.didResignKeyNotification, object: window)
-            profileManager?.register(window: window, for: profileID)
-        }
-
-        @objc private func windowFocusChanged(_ notification: Notification) {
-            guard let window = notification.object as? NSWindow else { return }
-            DispatchQueue.main.async { [weak window] in
-                window?.titlebarAppearsTransparent = true
-            }
-        }
-
-        func unregister() {
-            guard let window else { return }
-            NotificationCenter.default.removeObserver(self, name: NSWindow.didBecomeKeyNotification, object: window)
-            NotificationCenter.default.removeObserver(self, name: NSWindow.didResignKeyNotification, object: window)
-            profileManager?.unregister(window: window, for: profileID)
-            self.window = nil
         }
     }
 }
@@ -224,9 +197,18 @@ struct DenStoreFocusedValueKey: FocusedValueKey {
     typealias Value = DenStore
 }
 
+struct ProfileIDFocusedValueKey: FocusedValueKey {
+    typealias Value = UUID
+}
+
 extension FocusedValues {
     var denStore: DenStore? {
         get { self[DenStoreFocusedValueKey.self] }
         set { self[DenStoreFocusedValueKey.self] = newValue }
+    }
+
+    var profileID: UUID? {
+        get { self[ProfileIDFocusedValueKey.self] }
+        set { self[ProfileIDFocusedValueKey.self] = newValue }
     }
 }

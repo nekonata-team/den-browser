@@ -179,6 +179,7 @@ private struct AppearanceSettingsView: View {
 
 private struct ProfilesSettingsView: View {
     @Environment(ProfileManager.self) private var profileManager
+    @Environment(\.dismissWindow) private var dismissWindow
     @State private var newName = ""
     @State private var newColor: ProfileColor = .purple
     @State private var profileToDelete: ProfileState?
@@ -221,7 +222,9 @@ private struct ProfilesSettingsView: View {
             Button("Delete Profile", role: .destructive) {
                 guard let profileToDelete else { return }
                 Task {
-                    _ = await profileManager.deleteProfile(profileToDelete.id)
+                    if await profileManager.deleteProfile(profileToDelete.id) {
+                        dismissWindow(value: profileToDelete.id)
+                    }
                     self.profileToDelete = nil
                 }
             }

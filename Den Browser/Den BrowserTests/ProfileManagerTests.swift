@@ -221,36 +221,35 @@ struct ProfileManagerTests {
         #expect(try Data(contentsOf: profileURL) == originalData)
     }
 
-    @Test func missingWindowProfileFallsBackToPersonalProfile() {
+    @Test func missingProfileFallsBackToPersonalProfile() {
         let directory = temporaryProfileDirectory()
         defer { try? FileManager.default.removeItem(at: directory) }
         let manager = makeProfileManager(directory: directory)
         let personalID = manager.personalProfileID
-        let window = NSWindow()
 
         #expect(manager.resolvedProfileID(personalID) == personalID)
         let missingID = UUID()
         #expect(manager.resolvedProfileID(missingID) == personalID)
-
-        manager.register(window: window, for: missingID)
-        #expect(manager.profileID(for: window) == personalID)
-        manager.unregister(window: window, for: missingID)
-        #expect(manager.profileID(for: window) == nil)
     }
 
-    @Test func registeringAnotherWindowForSameProfileKeepsExistingWindow() {
-        let manager = ProfileManager(
-            directoryURL: temporaryProfileDirectory(),
-            sheetNavigation: SheetNavigationManager())
-        let profileID = manager.personalProfileID
-        let existingWindow = NSWindow()
-        let duplicateWindow = NSWindow()
+    @Test func activeProfileTracksSwiftUIWindowActivity() throws {
+        let directory = temporaryProfileDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let manager = makeProfileManager(directory: directory)
+        let personalID = manager.personalProfileID
+        let personalStore = try #require(manager.store(for: personalID))
+        let work = try #require(manager.createProfile(name: "Work", color: .green))
+        let workStore = try #require(manager.store(for: work.id))
 
-        manager.register(window: existingWindow, for: profileID)
-        manager.register(window: duplicateWindow, for: profileID)
+        manager.setProfileActive(personalID, isActive: true)
+        #expect(manager.activeStore() === personalStore)
 
-        #expect(manager.profileID(for: existingWindow) == profileID)
-        #expect(manager.profileID(for: duplicateWindow) == nil)
+        manager.setProfileActive(work.id, isActive: true)
+        manager.setProfileActive(personalID, isActive: false)
+        #expect(manager.activeStore() === workStore)
+
+        manager.setProfileActive(work.id, isActive: false)
+        #expect(manager.activeStore() == nil)
     }
 
     @Test func profileManagerPersistsDeskPresetsPerProfile() throws {
@@ -364,10 +363,8 @@ struct ProfileManagerTests {
         store.addBoard(urlString: "https://example.com")
         let boardID = try #require(store.focusedDesk?.focusedBoardID)
         store.removeFocusedBoard()
-        let window = NSWindow()
 
-        manager.register(window: window, for: profileID)
-        manager.unregister(window: window, for: profileID)
+        manager.profileWindowDisappeared(profileID)
 
         #expect(manager.store(for: profileID) === store)
         #expect(store.recentlyRemovedBoard?.board.id == boardID)
@@ -434,20 +431,6 @@ struct ProfileManagerTests {
         #expect(restored.profiles.contains { $0.id == work.id })
         #expect(names.contains { $0.hasPrefix("profile-index.json.corrupt-") })
         #expect((try JSONDecoder().decode(ProfileIndex.self, from: Data(contentsOf: indexURL))).profileIDs.count == 2)
-    }
-
-    @Test func handleExternalURLCapturesInActiveStoreDrawer() throws {
-        let directory = temporaryProfileDirectory()
-        defer { try? FileManager.default.removeItem(at: directory) }
-        let manager = makeProfileManager(directory: directory)
-        let personalID = manager.personalProfileID
-        let store = try #require(manager.store(for: personalID))
-
-        let targetURL = try #require(URL(string: "https://external.example/"))
-        manager.handleExternalURL(targetURL)
-
-        #expect(store.isDrawerOpen)
-        #expect(store.state.drawerItems.first?.url == targetURL)
     }
 
     @Test func clearBrowsingDataRequestsSelectedWebsiteDataTypes() async throws {

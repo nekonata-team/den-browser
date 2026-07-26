@@ -1,4 +1,3 @@
-import AppKit
 import Foundation
 import Observation
 import WebKit
@@ -8,13 +7,13 @@ import WebKit
 final class ProfileManager {
     private(set) var profiles: [ProfileState] = []
     private(set) var errorMessage: String?
+    private(set) var activeProfileID: UUID?
     var openProfilePanelProfileID: UUID?
     var clearBrowsingDataProfileID: UUID?
 
     @ObservationIgnored private let directoryURL: URL
     @ObservationIgnored private var persistedProfiles: [UUID: PersistedProfile] = [:]
     @ObservationIgnored private var stores: [UUID: DenStore] = [:]
-    @ObservationIgnored private var windows: [UUID: WeakWindow] = [:]
     @ObservationIgnored private let sheetNavigation: SheetNavigationManager
     @ObservationIgnored private let preferences: AppPreferences
     @ObservationIgnored private let removeDataStore: (UUID) async throws -> Void
@@ -131,7 +130,9 @@ final class ProfileManager {
             case .identified(let dataStoreID) = profile.webProfileStore
         else { return false }
 
-        closeWindow(for: profileID)
+        if activeProfileID == profileID {
+            activeProfileID = nil
+        }
         stores.removeValue(forKey: profileID)?.releaseRuntimes()
         let profileURL = profileURL(for: profileID)
         let hadDocument = FileManager.default.fileExists(atPath: profileURL.path)
@@ -178,50 +179,23 @@ final class ProfileManager {
 
     func clearError() { errorMessage = nil }
 
-    func register(window: NSWindow, for profileID: UUID) {
-        let profileID = resolvedProfileID(profileID)
-        if let existingWindow = windows[profileID]?.window, existingWindow !== window {
-            existingWindow.makeKeyAndOrderFront(nil)
-            DispatchQueue.main.async { [weak window] in
-                window?.close()
-            }
-            return
+    func setProfileActive(_ profileID: UUID, isActive: Bool) {
+        if isActive {
+            activeProfileID = resolvedProfileID(profileID)
+        } else if activeProfileID == profileID {
+            activeProfileID = nil
         }
-        windows[profileID] = WeakWindow(window)
-    }
-
-    func unregister(window: NSWindow, for profileID: UUID) {
-        let profileID = resolvedProfileID(profileID)
-        guard windows[profileID]?.window === window else { return }
-        windows.removeValue(forKey: profileID)
-        stores[profileID]?.releaseRuntimes()
-    }
-
-    func profileID(for window: NSWindow?) -> UUID? {
-        guard let window else { return nil }
-        return windows.first(where: { $0.value.window === window })?.key
     }
 
     func activeStore() -> DenStore? {
-        profileID(for: NSApp.keyWindow).flatMap(store(for:))
+        activeProfileID.flatMap(store(for:))
     }
 
-    func handleExternalURL(_ url: URL) {
-        guard SheetURLPolicy.isSupported(url) else { return }
-        let targetProfileID = profileID(for: NSApp.keyWindow) ?? personalProfileID
-        guard let targetStore = store(for: targetProfileID) else { return }
-
-        targetStore.captureInDrawer(url)
-
-        if let window = windows[targetProfileID]?.window {
-            window.makeKeyAndOrderFront(nil)
-            NSApp.activate(ignoringOtherApps: true)
+    func profileWindowDisappeared(_ profileID: UUID) {
+        if activeProfileID == profileID {
+            activeProfileID = nil
         }
-    }
-
-    func closeWindow(for profileID: UUID) {
-        windows[profileID]?.window?.close()
-        windows.removeValue(forKey: profileID)
+        stores[profileID]?.releaseRuntimes()
     }
 
     private func load() {
@@ -399,9 +373,4 @@ final class ProfileManager {
             }
         }
     }
-}
-
-private final class WeakWindow {
-    weak var window: NSWindow?
-    init(_ window: NSWindow) { self.window = window }
 }
