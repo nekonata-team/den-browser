@@ -19,6 +19,7 @@ struct BoardStrip: View {
     let onDragChanged: (BoardState, DragGesture.Value, CGSize) -> Void
     let onDragEnded: (DragGesture.Value, CGSize) -> Void
     let onFramesChanged: ([UUID: CGRect]) -> Void
+    let onOpenBoardAtEnd: (UUID) -> Void
     let onAppear: () -> Void
     let onFocusChanged: (BoardFocusTarget, BoardFocusTarget) -> Void
     let onCenterRequest: () -> Void
@@ -103,6 +104,23 @@ struct BoardStrip: View {
                     .allowsHitTesting(isPointerFocusEnabled(board.id))
                     .accessibilityHidden(!isPointerFocusEnabled(board.id))
                     .zIndex(boardDrag?.boardID == board.id ? 2 : 1)
+                }
+
+                if let lastBoardID = boards.last?.id {
+                    Button {
+                        onOpenBoardAtEnd(lastBoardID)
+                    } label: {
+                        Image(systemName: "plus")
+                            .font(.headline)
+                            .frame(width: 48, height: 48)
+                            .contentShape(Circle())
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(.primary)
+                    .glassEffect(.regular, in: Circle())
+                    .frame(height: boardHeight)
+                    .help("Open Board at End of Desk")
+                    .accessibilityLabel("Open Board at End of Desk")
                 }
             }
             .scrollTargetLayout()

@@ -9,6 +9,7 @@ struct DenView: View {
     @Environment(AppPreferences.self) private var preferences
     @Environment(\.accessibilityReduceMotion) private var systemReduceMotion
     @State private var urlText = ""
+    @State private var openBoardAfterBoardID: UUID?
     @State private var editBoardLinkText = ""
     @State private var newDeskLabel = ""
     @State private var selectedDeskPreset: DeskPresetSelection = .builtIn(.empty)
@@ -445,8 +446,7 @@ struct DenView: View {
             recentItems: store.recentItems,
             onSubmit: { openBoard(defaultBoardWidth: $0) },
             onOpenRecent: { item, width in
-                store.openBoard(recentItem: item, preferredWidth: width)
-                urlText = ""
+                openBoard(item, defaultBoardWidth: width)
             },
             onClearRecent: store.clearRecent,
             onDismiss: dismissOpenBoardPanel
@@ -464,6 +464,7 @@ struct DenView: View {
 
     private func dismissOpenBoardPanel() {
         store.hideOpenBoardPanel()
+        openBoardAfterBoardID = nil
         restoreFocusedSheetFirstResponder()
     }
 
@@ -525,6 +526,10 @@ struct DenView: View {
                     }
                 }
             },
+            onOpenBoardAtEnd: { boardID in
+                openBoardAfterBoardID = boardID
+                store.showOpenBoardPanel()
+            },
             onAppear: {
                 guard !didScrollToRestoredFocusedBoard else { return }
                 didScrollToRestoredFocusedBoard = true
@@ -579,8 +584,23 @@ struct DenView: View {
     }
 
     private func openBoard(defaultBoardWidth: Double) {
-        store.openBoard(input: urlText, preferredWidth: defaultBoardWidth)
+        store.openBoard(
+            input: urlText,
+            preferredWidth: defaultBoardWidth,
+            afterBoardID: openBoardAfterBoardID)
+        guard !store.isOpenBoardPanelPresented else { return }
         urlText = ""
+        openBoardAfterBoardID = nil
+    }
+
+    private func openBoard(_ item: RecentItem, defaultBoardWidth: Double) {
+        store.openBoard(
+            recentItem: item,
+            preferredWidth: defaultBoardWidth,
+            afterBoardID: openBoardAfterBoardID)
+        guard !store.isOpenBoardPanelPresented else { return }
+        urlText = ""
+        openBoardAfterBoardID = nil
     }
 
     private func editFocusedBoardLink() {

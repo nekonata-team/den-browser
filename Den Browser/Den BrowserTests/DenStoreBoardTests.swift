@@ -43,6 +43,17 @@ struct DenStoreBoardTests {
         #expect(!store.isDenMode)
     }
 
+    @Test func openBoardCanInsertAfterSpecifiedBoard() {
+        let boards = [board("First"), board("Focused"), board("Last")]
+        let source = desk("Desk", boards: boards, focusedBoardID: boards[1].id)
+        let store = DenStore(state: DenState(desks: [source], focusedDeskID: source.id))
+
+        store.openBoard(input: "example.com", afterBoardID: boards.last?.id)
+
+        #expect(store.focusedDesk?.boards.map(\.label) == ["First", "Focused", "Last", "example.com"])
+        #expect(store.focusedDesk?.focusedBoardID == store.focusedDesk?.boards.last?.id)
+    }
+
     @Test func updateBoardKeepsCurrentSheetForUnsupportedURL() throws {
         let board = board("Board", url: "https://before.example/")
         let source = desk("Desk", boards: [board], focusedBoardID: board.id)

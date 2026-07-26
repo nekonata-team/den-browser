@@ -1,15 +1,15 @@
 import Foundation
 
 extension DenStore {
-    func openBoard(input: String, preferredWidth: Double? = nil) {
+    func openBoard(input: String, preferredWidth: Double? = nil, afterBoardID: UUID? = nil) {
         guard let resolution = resolveOpenBoardInput(input) else { return }
-        addBoard(urlString: input, preferredWidth: preferredWidth)
+        addBoard(urlString: input, preferredWidth: preferredWidth, afterBoardID: afterBoardID)
         guard input.count <= Self.maximumPersistedRecentInputLength else { return }
         saveRecentItem(resolution.item)
     }
 
-    func openBoard(recentItem: RecentItem, preferredWidth: Double? = nil) {
-        openBoard(input: recentItem.displayText, preferredWidth: preferredWidth)
+    func openBoard(recentItem: RecentItem, preferredWidth: Double? = nil, afterBoardID: UUID? = nil) {
+        openBoard(input: recentItem.displayText, preferredWidth: preferredWidth, afterBoardID: afterBoardID)
     }
 
     func clearRecent() {
