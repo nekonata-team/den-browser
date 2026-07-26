@@ -11,19 +11,40 @@ struct BoardLayoutTests {
         #expect(paddings(for: .onOverflow, boardCount: 4) == (leading: 340, trailing: 340))
     }
 
+    @Test func centersFocusedBoardOnlyWhenRequestedOrBoardsOverflow() {
+        #expect(shouldCenterFocusedBoard(for: .always, boardCount: 3))
+        #expect(!shouldCenterFocusedBoard(for: .never, boardCount: 3))
+        #expect(!shouldCenterFocusedBoard(for: .onOverflow, boardCount: 3))
+        #expect(shouldCenterFocusedBoard(for: .never, boardCount: 4))
+        #expect(shouldCenterFocusedBoard(for: .onOverflow, boardCount: 4))
+    }
+
     private func paddings(
         for centering: FocusedBoardCentering,
         boardCount: Int
     ) -> (leading: CGFloat, trailing: CGFloat) {
-        BoardLayout.calculatePaddings(
-            for: .init(
-                centering: centering,
-                boards: (0..<boardCount).map {
-                    BoardState(label: "Board \($0)", width: 320, currentSheetURL: nil)
-                },
-                maximizedBoardID: nil,
-                windowWidth: 1_000,
-                horizontalPadding: 10,
-                spacing: 8))
+        BoardLayout.calculatePaddings(for: parameters(centering: centering, boardCount: boardCount))
+    }
+
+    private func shouldCenterFocusedBoard(
+        for centering: FocusedBoardCentering,
+        boardCount: Int
+    ) -> Bool {
+        BoardLayout.shouldCenterFocusedBoard(for: parameters(centering: centering, boardCount: boardCount))
+    }
+
+    private func parameters(
+        centering: FocusedBoardCentering,
+        boardCount: Int
+    ) -> BoardLayout.Parameters {
+        .init(
+            centering: centering,
+            boards: (0..<boardCount).map {
+                BoardState(label: "Board \($0)", width: 320, currentSheetURL: nil)
+            },
+            maximizedBoardID: nil,
+            windowWidth: 1_000,
+            horizontalPadding: 10,
+            spacing: 8)
     }
 }

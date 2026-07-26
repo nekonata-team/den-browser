@@ -29,6 +29,22 @@ struct BoardLayout {
         var maximizedBoardWidth: CGFloat {
             max(280, windowWidth - horizontalPadding * 2)
         }
+
+        var requiredBoardsWidth: CGFloat {
+            let totalBoardsWidth = boards.reduce(0.0) { sum, board in
+                sum + (maximizedBoardID == board.id ? maximizedBoardWidth : board.width)
+            }
+            let totalSpacing = CGFloat(max(0, boards.count - 1)) * spacing
+            return totalBoardsWidth + totalSpacing
+        }
+
+        var boardsOverflow: Bool {
+            requiredBoardsWidth > windowWidth - horizontalPadding * 2 + 1
+        }
+    }
+
+    static func shouldCenterFocusedBoard(for params: Parameters) -> Bool {
+        params.centering == .always || params.boardsOverflow
     }
 
     static func calculatePaddings(
@@ -57,15 +73,10 @@ struct BoardLayout {
             trailingPadding = params.horizontalPadding
 
         case .onOverflow:
-            let totalBoardsWidth = params.boards.reduce(0.0) { sum, board in
-                let w = params.maximizedBoardID == board.id ? params.maximizedBoardWidth : board.width
-                return sum + w
-            }
-            let totalSpacing = CGFloat(max(0, params.boards.count - 1)) * params.spacing
-            let totalRequiredWidth = totalBoardsWidth + totalSpacing
-
-            if totalRequiredWidth <= params.windowWidth - params.horizontalPadding * 2 + 1 {
-                let centerPadding = max(params.horizontalPadding, (params.windowWidth - totalRequiredWidth) / 2)
+            if !params.boardsOverflow {
+                let centerPadding = max(
+                    params.horizontalPadding,
+                    (params.windowWidth - params.requiredBoardsWidth) / 2)
                 leadingPadding = centerPadding
                 trailingPadding = centerPadding
             } else {

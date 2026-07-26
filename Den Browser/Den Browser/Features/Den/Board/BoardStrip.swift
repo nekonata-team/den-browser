@@ -20,8 +20,9 @@ struct BoardStrip: View {
     let onDragEnded: (DragGesture.Value, CGSize) -> Void
     let onFramesChanged: ([UUID: CGRect]) -> Void
     let onOpenBoardAtEnd: (UUID) -> Void
-    let onAppear: () -> Void
-    let onFocusChanged: (BoardFocusTarget, BoardFocusTarget) -> Void
+    let onAppear: (Bool) -> Void
+    let onFocusChanged: (BoardFocusTarget, BoardFocusTarget, Bool) -> Void
+    let onAutomaticCenteringChanged: (Bool) -> Void
     let onCenterRequest: () -> Void
 
     private var shouldReduceMotion: Bool {
@@ -48,6 +49,7 @@ struct BoardStrip: View {
             spacing: boardSpacing
         )
         let paddings = BoardLayout.calculatePaddings(for: layoutParams)
+        let shouldCenterFocusedBoard = BoardLayout.shouldCenterFocusedBoard(for: layoutParams)
 
         return ScrollView(.horizontal) {
             HStack(alignment: .top, spacing: boardSpacing) {
@@ -137,14 +139,19 @@ struct BoardStrip: View {
         .scrollIndicators(.never)
         .accessibilityIdentifier("board-strip")
         .onPreferenceChange(BoardFramePreferenceKey.self, perform: onFramesChanged)
-        .onAppear(perform: onAppear)
+        .onAppear {
+            onAppear(shouldCenterFocusedBoard)
+        }
         .onChange(
             of: BoardFocusTarget(
                 deskID: store.state.focusedDeskID,
                 boardID: store.focusedDesk?.focusedBoardID
             )
         ) { previous, current in
-            onFocusChanged(previous, current)
+            onFocusChanged(previous, current, shouldCenterFocusedBoard)
+        }
+        .onChange(of: shouldCenterFocusedBoard) { _, shouldCenterFocusedBoard in
+            onAutomaticCenteringChanged(shouldCenterFocusedBoard)
         }
         .onChange(of: store.centerFocusedBoardRequest) { _, _ in
             onCenterRequest()

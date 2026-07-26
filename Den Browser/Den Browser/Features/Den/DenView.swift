@@ -530,18 +530,48 @@ struct DenView: View {
                 openBoardAfterBoardID = boardID
                 store.showOpenBoardPanel()
             },
-            onAppear: {
+            onAppear: { shouldCenterFocusedBoard in
                 guard !didScrollToRestoredFocusedBoard else { return }
                 didScrollToRestoredFocusedBoard = true
-                centerBoard(store.focusedDesk?.focusedBoardID, animated: false)
+                alignBoardStrip(centersFocusedBoard: shouldCenterFocusedBoard, animated: false)
             },
-            onFocusChanged: { previous, current in
-                centerBoard(current.boardID, animated: previous.deskID == current.deskID)
+            onFocusChanged: { previous, current, shouldCenterFocusedBoard in
+                alignBoardStrip(
+                    centersFocusedBoard: shouldCenterFocusedBoard,
+                    boardID: current.boardID,
+                    animated: previous.deskID == current.deskID)
+            },
+            onAutomaticCenteringChanged: { shouldCenterFocusedBoard in
+                alignBoardStrip(centersFocusedBoard: shouldCenterFocusedBoard)
             },
             onCenterRequest: {
                 centerBoard(store.focusedDesk?.focusedBoardID)
             }
         )
+    }
+
+    private func alignBoardStrip(
+        centersFocusedBoard: Bool,
+        boardID: UUID? = nil,
+        animated: Bool = true
+    ) {
+        if centersFocusedBoard {
+            centerBoard(boardID ?? store.focusedDesk?.focusedBoardID, animated: animated)
+        } else {
+            resetBoardStripPosition(animated: animated)
+        }
+    }
+
+    private func resetBoardStripPosition(animated: Bool) {
+        pendingBoardCentering = nil
+        boardCenteringTask?.cancel()
+        if animated {
+            withAnimation(DenMotion.spatial(reduceMotion: shouldReduceMotion)) {
+                boardScrollPosition.scrollTo(x: 0)
+            }
+        } else {
+            boardScrollPosition.scrollTo(x: 0)
+        }
     }
 
     private func centerBoard(_ boardID: UUID?, animated: Bool = true) {
