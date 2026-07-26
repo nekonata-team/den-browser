@@ -138,7 +138,7 @@ extension DenStore {
 
     func placeDrawerItemAsBoard(_ itemID: UUID) {
         guard let item = state.drawerItems.first(where: { $0.id == itemID }) else { return }
-        addBoard(urlString: item.url.absoluteString)
+        addBoard(urlString: item.url.absoluteString, preferredWidth: focusedBoard?.width)
         discardDrawerItem(itemID)
         closeDrawer()
     }

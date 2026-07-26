@@ -90,7 +90,7 @@ struct DenStoreDrawerTests {
     }
 
     @Test func placementCreatesFocusedBoardAndRemovesItem() throws {
-        let existingBoard = board("Existing")
+        let existingBoard = board("Existing", width: 740)
         let source = desk("Desk", boards: [existingBoard], focusedBoardID: existingBoard.id)
         let store = DenStore(state: DenState(desks: [source], focusedDeskID: source.id))
         let url = try #require(URL(string: "https://placed.example/"))
@@ -102,6 +102,7 @@ struct DenStoreDrawerTests {
         #expect(store.state.drawerItems.isEmpty)
         #expect(store.focusedDesk?.boards.map(\.currentSheetURL) == [existingBoard.currentSheetURL, url])
         #expect(store.focusedBoard?.currentSheetURL == url)
+        #expect(store.focusedBoard?.width == existingBoard.width)
         #expect(!store.isDrawerOpen)
     }
 
@@ -305,10 +306,10 @@ struct DenStoreDrawerTests {
             ))
     }
 
-    private func board(_ label: String, url: String? = nil) -> BoardState {
+    private func board(_ label: String, width: Double = 520, url: String? = nil) -> BoardState {
         BoardState(
             label: label,
-            width: 520,
+            width: width,
             currentSheetURL: url.flatMap(URL.init(string:)))
     }
 
