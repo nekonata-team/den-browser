@@ -261,8 +261,22 @@ final class KeyboardController {
         let modifiers = normalizedModifiers(for: event)
         guard modifiers == [] else { return true }
 
+        if store.isDrawerFilterMode {
+            if isEscape(event) {
+                store.exitDrawerFilterMode()
+                return true
+            }
+            if isReturn(event) {
+                store.confirmDrawerFilterAndToggleSelection()
+                return true
+            }
+            return false
+        }
+
         if isEscape(event) {
-            if let expandedDrawerItemID = store.expandedDrawerItemID {
+            if !store.drawerQuery.isEmpty {
+                store.clearDrawerQuery()
+            } else if let expandedDrawerItemID = store.expandedDrawerItemID {
                 store.toggleDrawerItem(expandedDrawerItemID)
             } else {
                 store.closeDrawer()
@@ -283,6 +297,8 @@ final class KeyboardController {
         }
 
         switch characterIgnoringModifiers(for: event) {
+        case "/":
+            store.enterDrawerFilterMode()
         case "j":
             store.selectDrawerItem(by: 1)
         case "k":

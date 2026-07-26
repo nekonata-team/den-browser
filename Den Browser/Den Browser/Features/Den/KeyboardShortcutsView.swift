@@ -96,6 +96,7 @@ struct KeyboardShortcutsView: View {
             ShortcutGuideSection(
                 title: "Drawer",
                 items: [
+                    item(["/"], "Search Drawer Items"),
                     item(["↑", "/", "↓", "or", "k", "/", "j"], "Select Drawer Item"),
                     item(["Return"], "Toggle Drawer Preview"),
                     item(["p"], "Place as Board"),

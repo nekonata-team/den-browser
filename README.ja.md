@@ -52,7 +52,7 @@ Den Browserは、[Niri](https://github.com/niri-wm/niri)の空間的なウィン
 - Den Modeで`w`に続けて`-`、`=`、または`1`〜`9`を押すかDenメニューを使い、Focused Desk内の全Boardを80ptずつ、または現在のウィンドウ幅へ指定数が収まるようリサイズ。
 - 現在のアプリ起動中、`u`でRecently Removed Boardを復活。
 - Open BoardパネルのRecentから、以前のURLまたは検索語を再利用。
-- Profile所有のDen-level DrawerへWeb materialを保持し、一度に一つのライブPreviewを展開。後からBoardとして配置、または破棄。ほかのアプリから開いたリンクは現在のDesk配置を変えずにDrawerへ入る。展開中のPreviewは現在のアプリ起動中、Drawerを閉じてもライブ状態を保ち、再起動後は最初にDrawerを開いたとき新しいライブruntimeで再表示。
+- Profile所有のDen-level DrawerへWeb materialを保持し、Item数を確認しながら`/`でtitleまたはURLから絞り込み、一度に一つのライブPreviewを展開。後からBoardとして配置、または破棄。ほかのアプリから開いたリンクは現在のDesk配置を変えずにDrawerへ入る。展開中のPreviewは現在のアプリ起動中、Drawerを閉じてもライブ状態を保ち、再起動後は最初にDrawerを開いたとき新しいライブruntimeで再表示。
 - OverviewでDeskを跨いだBoardの確認と再配置。
 - 空のDeskは即座に削除し、Boardを含むDeskは完全削除の確認後に削除。
 - Focused DeskをProfile所有のPersonal Desk Presetとして保存し、新しいDeskの作成時はキーボード中心のファジー検索でPresetを選択、プレビューしてからDesk Labelを入力。Presetの置換、削除に対応し、Den ModeではShift + `p`から管理画面を直接表示。組み込みのEmpty、ChatGPT、Geminiをすぐ使える初期配置として提供。

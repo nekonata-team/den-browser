@@ -52,7 +52,7 @@ See [CONTEXT.md](./CONTEXT.md) for the complete product language.
 - Resize every Board in the Focused Desk by 80pt or to fit a chosen count across the current window, using `w` then `-`, `=`, or `1` through `9` in Den Mode or the Den menu.
 - Restore the most Recently Removed Board with `u` during the current app run.
 - Reopen a URL or search from Recent in the Open Board panel.
-- Hold web material in a Profile-owned Den-level Drawer, expand one live preview at a time, and later place it as a Board or discard it. Links opened from other apps enter the Drawer without changing the current Desk layout. An expanded preview stays live when the Drawer closes during the current app run, and returns with a new live runtime when first opened after relaunch.
+- Hold web material in a Profile-owned Den-level Drawer, see its item count, filter Items by title or URL with `/`, expand one live preview at a time, and later place it as a Board or discard it. Links opened from other apps enter the Drawer without changing the current Desk layout. An expanded preview stays live when the Drawer closes during the current app run, and returns with a new live runtime when first opened after relaunch.
 - See and reorganize Boards across Desks in Overview.
 - Delete empty Desks immediately, or delete a Desk containing Boards after confirming the permanent removal.
 - Save the Focused Desk as a Profile-owned Personal Desk Preset, then use keyboard-first fuzzy search to choose and preview a preset before naming another Desk. Presets can also be replaced or deleted, with direct management available through Shift + `p` in Den Mode. Built-in Empty, ChatGPT, and Gemini presets provide ready-made starting points.

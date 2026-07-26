@@ -35,6 +35,8 @@ final class DenStore {
     var overviewSelectionBoardID: UUID?
     var recentlyRemovedBoard: RecentlyRemovedBoard?
     var isDrawerOpen = false
+    var drawerQuery = ""
+    var isDrawerFilterMode = false
     var selectedDrawerItemID: UUID?
     var expandedDrawerItemID: UUID? { state.expandedDrawerItemID }
     private(set) var toastMessage: ToastMessage?
@@ -201,6 +203,8 @@ final class DenStore {
         overviewSelectionBoardID = nil
         recentlyRemovedBoard = nil
         isDrawerOpen = false
+        drawerQuery = ""
+        isDrawerFilterMode = false
         selectedDrawerItemID = nil
         toastTask?.cancel()
         toastMessage = nil

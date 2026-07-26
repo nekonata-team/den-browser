@@ -38,6 +38,45 @@ struct DenStoreDrawerTests {
         #expect(store.state.drawerItems[1].id == firstID)
     }
 
+    @Test func filteringMatchesTitleHostAndURLAndKeepsSelectionInResults() throws {
+        let source = desk("Desk")
+        let items = [
+            DrawerItem(
+                url: try #require(URL(string: "https://example.com/reference")),
+                title: "Swift Guide"),
+            DrawerItem(url: try #require(URL(string: "https://news.example.org/releases"))),
+        ]
+        let store = DenStore(
+            state: DenState(desks: [source], focusedDeskID: source.id, drawerItems: items))
+        store.selectedDrawerItemID = items[1].id
+
+        store.setDrawerQuery("swift")
+        #expect(store.filteredDrawerItems.map(\.id) == [items[0].id])
+        #expect(store.selectedDrawerItemID == items[0].id)
+
+        store.setDrawerQuery("example.org")
+        #expect(store.filteredDrawerItems.map(\.id) == [items[1].id])
+
+        store.setDrawerQuery("releases")
+        #expect(store.filteredDrawerItems.map(\.id) == [items[1].id])
+    }
+
+    @Test func closingDrawerClearsFilterState() throws {
+        let source = desk("Desk")
+        let item = DrawerItem(url: try #require(URL(string: "https://example.com/")))
+        let store = DenStore(
+            state: DenState(desks: [source], focusedDeskID: source.id, drawerItems: [item]))
+        store.toggleDrawer()
+        store.enterDrawerFilterMode()
+        store.setDrawerQuery("example")
+
+        store.closeDrawer()
+
+        #expect(!store.isDrawerOpen)
+        #expect(!store.isDrawerFilterMode)
+        #expect(store.drawerQuery.isEmpty)
+    }
+
     @Test func captureCurrentSheetCopiesWithoutChangingBoard() {
         let existingBoard = board("Reference", url: "https://example.com/reference")
         let source = desk("Desk", boards: [existingBoard], focusedBoardID: existingBoard.id)
@@ -202,6 +241,37 @@ struct DenStoreDrawerTests {
         #expect(store.expandedDrawerItemID == nil)
     }
 
+    @Test func slashSearchAndReturnToggleFilteredSelectionPreview() throws {
+        let source = desk("Desk")
+        let first = DrawerItem(
+            url: try #require(URL(string: "https://first.example/")),
+            title: "First")
+        let second = DrawerItem(
+            url: try #require(URL(string: "https://second.example/")),
+            title: "Second")
+        let store = DenStore(
+            state: DenState(
+                desks: [source],
+                focusedDeskID: source.id,
+                drawerItems: [first, second]))
+        store.isDenMode = true
+        store.toggleDrawer()
+
+        #expect(KeyboardController.handle(try keyEvent("/", keyCode: 44), store: store))
+        #expect(store.isDrawerFilterMode)
+
+        store.setDrawerQuery("second")
+        #expect(store.selectedDrawerItemID == second.id)
+        #expect(KeyboardController.handle(try keyEvent(.carriageReturn, keyCode: 36), store: store))
+        #expect(!store.isDrawerFilterMode)
+        #expect(store.expandedDrawerItemID == second.id)
+        #expect(store.drawerQuery == "second")
+
+        #expect(KeyboardController.handle(try keyEvent("\u{1B}", keyCode: 53), store: store))
+        #expect(store.drawerQuery.isEmpty)
+        #expect(store.expandedDrawerItemID == second.id)
+    }
+
     private func keyEvent(_ specialKey: NSEvent.SpecialKey, keyCode: UInt16) throws -> NSEvent {
         let scalar = try #require(UnicodeScalar(specialKey.rawValue))
         return try #require(
@@ -214,6 +284,22 @@ struct DenStoreDrawerTests {
                 context: nil,
                 characters: String(scalar),
                 charactersIgnoringModifiers: String(scalar),
+                isARepeat: false,
+                keyCode: keyCode
+            ))
+    }
+
+    private func keyEvent(_ character: String, keyCode: UInt16) throws -> NSEvent {
+        try #require(
+            NSEvent.keyEvent(
+                with: .keyDown,
+                location: .zero,
+                modifierFlags: [],
+                timestamp: 0,
+                windowNumber: 0,
+                context: nil,
+                characters: character,
+                charactersIgnoringModifiers: character,
                 isARepeat: false,
                 keyCode: keyCode
             ))

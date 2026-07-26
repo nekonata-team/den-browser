@@ -8,6 +8,8 @@ struct DrawerView: View {
     let availableHeight: CGFloat
     let profileColor: Color
 
+    @FocusState private var isSearchFocused: Bool
+
     var body: some View {
         VStack(spacing: 0) {
             header
@@ -39,24 +41,70 @@ struct DrawerView: View {
     }
 
     private var header: some View {
-        ZStack {
-            Text("Drawer")
-                .font(.title3.bold())
-
-            HStack {
-                Spacer()
-                Button {
-                    store.closeDrawer()
-                } label: {
-                    Image(systemName: "xmark")
-                        .font(.system(size: 12, weight: .semibold))
+        VStack(spacing: 10) {
+            ZStack {
+                HStack(spacing: 6) {
+                    Text("Drawer")
+                        .font(.title3.bold())
+                    Text(itemCountLabel)
+                        .font(.caption.monospacedDigit())
+                        .foregroundStyle(.secondary)
                 }
-                .buttonStyle(.glass)
-                .accessibilityLabel("Close Drawer")
+
+                HStack {
+                    Spacer()
+                    Button {
+                        store.closeDrawer()
+                    } label: {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 12, weight: .semibold))
+                    }
+                    .buttonStyle(.glass)
+                    .accessibilityLabel("Close Drawer")
+                }
+            }
+
+            HStack(spacing: 8) {
+                Image(systemName: "magnifyingglass")
+                    .foregroundStyle(store.isDrawerFilterMode ? .primary : .secondary)
+                TextField(
+                    "Search Drawer Items (/)",
+                    text: Binding(
+                        get: { store.drawerQuery },
+                        set: { store.setDrawerQuery($0) }
+                    )
+                )
+                .textFieldStyle(.plain)
+                .focused($isSearchFocused)
+                .disabled(!store.isDrawerFilterMode)
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .frame(width: DenDrawerLayout.searchFieldWidth)
+            .background(
+                Color.primary.opacity(store.isDrawerFilterMode ? 0.08 : 0.04),
+                in: RoundedRectangle(cornerRadius: DenRadius.medium, style: .continuous)
+            )
+            .overlay {
+                RoundedRectangle(cornerRadius: DenRadius.medium, style: .continuous)
+                    .stroke(
+                        store.isDrawerFilterMode
+                            ? profileColor.opacity(0.86)
+                            : Color.primary.opacity(0.10),
+                        lineWidth: store.isDrawerFilterMode ? 1.5 : 1
+                    )
+            }
+            .onTapGesture {
+                if !store.isDrawerFilterMode {
+                    store.enterDrawerFilterMode()
+                }
             }
         }
         .padding(.horizontal, DenDrawerLayout.headerHorizontalPadding)
-        .frame(height: DenDrawerLayout.headerHeight)
+        .padding(.vertical, 12)
+        .onChange(of: store.isDrawerFilterMode) { _, newValue in
+            isSearchFocused = newValue
+        }
     }
 
     private var drawerContents: some View {
@@ -67,10 +115,12 @@ struct DrawerView: View {
                     systemImage: "tray",
                     description: Text("Keep a Current Sheet here before its work context is settled.")
                 )
+            } else if store.filteredDrawerItems.isEmpty {
+                ContentUnavailableView.search(text: store.drawerQuery)
             } else {
                 ScrollView {
                     LazyVStack(spacing: 0) {
-                        ForEach(store.state.drawerItems) { item in
+                        ForEach(store.filteredDrawerItems) { item in
                             drawerSection(item)
                         }
                     }
@@ -174,11 +224,17 @@ struct DrawerView: View {
             systemReduceMotion: systemReduceMotion
         )
     }
+
+    private var itemCountLabel: String {
+        let total = store.state.drawerItems.count
+        guard !store.drawerQuery.isEmpty else { return "\(total)" }
+        return "\(store.filteredDrawerItems.count) of \(total)"
+    }
 }
 
 private enum DenDrawerLayout {
-    static let headerHeight: CGFloat = 58
     static let headerHorizontalPadding: CGFloat = 14
+    static let searchFieldWidth: CGFloat = 320
     static let itemHeight: CGFloat = 52
     static let discardButtonWidth: CGFloat = 32
     static let minimumHeight: CGFloat = 360

@@ -1,6 +1,10 @@
 import Foundation
 
 extension DenStore {
+    var filteredDrawerItems: [DrawerItem] {
+        state.drawerItems.filter(matchesDrawerFilter)
+    }
+
     var selectedDrawerItem: DrawerItem? {
         guard let selectedDrawerItemID else { return nil }
         return state.drawerItems.first { $0.id == selectedDrawerItemID }
@@ -12,6 +16,8 @@ extension DenStore {
             return
         }
         releaseDrawerPreview()
+        drawerQuery = ""
+        isDrawerFilterMode = false
         let item = DrawerItem(url: url, title: title)
         state.drawerItems.insert(item, at: 0)
         selectedDrawerItemID = item.id
@@ -37,6 +43,40 @@ extension DenStore {
 
     func closeDrawer() {
         isDrawerOpen = false
+        drawerQuery = ""
+        isDrawerFilterMode = false
+    }
+
+    func setDrawerQuery(_ query: String) {
+        drawerQuery = query
+        updateDrawerSelectionForFilter()
+    }
+
+    func enterDrawerFilterMode() {
+        isDrawerFilterMode = true
+        updateDrawerSelectionForFilter()
+    }
+
+    func exitDrawerFilterMode() {
+        isDrawerFilterMode = false
+        drawerQuery = ""
+        updateDrawerSelectionForFilter()
+    }
+
+    func confirmDrawerFilterAndToggleSelection() {
+        isDrawerFilterMode = false
+        toggleSelectedDrawerItem()
+    }
+
+    func clearDrawerQuery() {
+        drawerQuery = ""
+        updateDrawerSelectionForFilter()
+    }
+
+    func matchesDrawerFilter(_ item: DrawerItem) -> Bool {
+        guard !drawerQuery.isEmpty else { return true }
+        return item.displayName.localizedCaseInsensitiveContains(drawerQuery)
+            || item.url.absoluteString.localizedCaseInsensitiveContains(drawerQuery)
     }
 
     func toggleDrawerItem(_ itemID: UUID) {
@@ -53,12 +93,13 @@ extension DenStore {
     }
 
     func selectDrawerItem(by offset: Int) {
-        guard !state.drawerItems.isEmpty else { return }
+        let items = filteredDrawerItems
+        guard !items.isEmpty else { return }
         let currentIndex =
-            selectedDrawerItemID.flatMap { id in state.drawerItems.firstIndex { $0.id == id } }
+            selectedDrawerItemID.flatMap { id in items.firstIndex { $0.id == id } }
             ?? 0
-        let targetIndex = min(max(currentIndex + offset, 0), state.drawerItems.count - 1)
-        let targetID = state.drawerItems[targetIndex].id
+        let targetIndex = min(max(currentIndex + offset, 0), items.count - 1)
+        let targetID = items[targetIndex].id
         guard selectedDrawerItemID != targetID else { return }
         selectedDrawerItemID = targetID
         if expandedDrawerItemID != nil {
@@ -82,10 +123,7 @@ extension DenStore {
         }
         state.drawerItems.remove(at: index)
         if wasSelected {
-            selectedDrawerItemID =
-                state.drawerItems.indices.contains(index)
-                ? state.drawerItems[index].id
-                : state.drawerItems.last?.id
+            selectedDrawerItemID = filteredDrawerItems.first?.id
         }
         if state.drawerItems.isEmpty {
             closeDrawer()
@@ -150,5 +188,13 @@ extension DenStore {
         if changed {
             save()
         }
+    }
+
+    private func updateDrawerSelectionForFilter() {
+        let items = filteredDrawerItems
+        if let selectedDrawerItemID, items.contains(where: { $0.id == selectedDrawerItemID }) {
+            return
+        }
+        selectedDrawerItemID = items.first?.id
     }
 }
