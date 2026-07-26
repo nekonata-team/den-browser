@@ -119,7 +119,7 @@ struct DrawerView: View {
                 ContentUnavailableView.search(text: store.drawerQuery)
             } else {
                 ScrollView {
-                    LazyVStack(spacing: 0) {
+                    LazyVStack(spacing: 6) {
                         ForEach(store.filteredDrawerItems) { item in
                             drawerSection(item)
                         }
@@ -144,10 +144,11 @@ struct DrawerView: View {
 
                         VStack(alignment: .leading, spacing: 2) {
                             Text(item.displayName)
+                                .font(.callout)
                                 .lineLimit(1)
 
                             Text(item.url.host(percentEncoded: false) ?? item.url.absoluteString)
-                                .font(.caption)
+                                .font(.caption2)
                                 .foregroundStyle(.secondary)
                                 .lineLimit(1)
                         }
@@ -178,6 +179,19 @@ struct DrawerView: View {
                 }
                 .accessibilityAddTraits(store.selectedDrawerItemID == item.id ? .isSelected : [])
 
+                Button {
+                    store.placeDrawerItemAsBoard(item.id)
+                } label: {
+                    Image(systemName: "rectangle.stack.badge.plus")
+                        .foregroundStyle(.primary)
+                        .frame(
+                            width: DenDrawerLayout.itemButtonWidth,
+                            height: DenDrawerLayout.itemHeight)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Place \(item.displayName) as Board")
+                .help("Place as Board")
+
                 Button(role: .destructive) {
                     store.discardDrawerItem(item.id)
                 } label: {
@@ -185,7 +199,7 @@ struct DrawerView: View {
                         .font(.system(size: 12, weight: .semibold))
                         .foregroundStyle(.secondary)
                         .frame(
-                            width: DenDrawerLayout.discardButtonWidth,
+                            width: DenDrawerLayout.itemButtonWidth,
                             height: DenDrawerLayout.itemHeight)
                 }
                 .buttonStyle(.plain)
@@ -197,17 +211,26 @@ struct DrawerView: View {
                 let runtime = store.drawerRuntime(for: item)
                 DrawerWebView(webView: runtime.webView)
                     .frame(height: previewHeight)
-                    .clipShape(RoundedRectangle(cornerRadius: DenRadius.medium, style: .continuous))
+                    .clipShape(RoundedRectangle(cornerRadius: DenRadius.small, style: .continuous))
                     .padding([.horizontal, .bottom], DenLayout.outerInset)
             }
-
-            Divider()
         }
         .background(
-            store.selectedDrawerItemID == item.id
-                ? profileColor.opacity(0.18)
-                : Color.clear
+            RoundedRectangle(cornerRadius: DenRadius.medium, style: .continuous)
+                .fill(
+                    store.selectedDrawerItemID == item.id
+                        ? profileColor.opacity(0.18)
+                        : Color.primary.opacity(0.04)
+                )
         )
+        .overlay {
+            RoundedRectangle(cornerRadius: DenRadius.medium, style: .continuous)
+                .stroke(
+                    store.selectedDrawerItemID == item.id
+                        ? profileColor.opacity(0.38)
+                        : Color.primary.opacity(0.08)
+                )
+        }
     }
 
     private var drawerHeight: CGFloat {
@@ -235,8 +258,8 @@ struct DrawerView: View {
 private enum DenDrawerLayout {
     static let headerHorizontalPadding: CGFloat = 14
     static let searchFieldWidth: CGFloat = 320
-    static let itemHeight: CGFloat = 52
-    static let discardButtonWidth: CGFloat = 32
+    static let itemHeight: CGFloat = 46
+    static let itemButtonWidth: CGFloat = 28
     static let minimumHeight: CGFloat = 360
     static let windowClearance: CGFloat = 72
     static let previewReservedHeight: CGFloat = 160
