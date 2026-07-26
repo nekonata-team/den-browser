@@ -36,7 +36,7 @@ final class DenStore {
     var recentlyRemovedBoard: RecentlyRemovedBoard?
     var isDrawerOpen = false
     var selectedDrawerItemID: UUID?
-    var expandedDrawerItemID: UUID?
+    var expandedDrawerItemID: UUID? { state.expandedDrawerItemID }
     private(set) var toastMessage: ToastMessage?
     let sheetNavigation: SheetNavigationManager
     let preferences: AppPreferences
@@ -165,7 +165,6 @@ final class DenStore {
             self.state.drawerItems.contains(where: { $0.id == restoredDrawerItemID })
         {
             selectedDrawerItemID = restoredDrawerItemID
-            expandedDrawerItemID = restoredDrawerItemID
         } else {
             self.state.expandedDrawerItemID = nil
         }
@@ -203,7 +202,6 @@ final class DenStore {
         recentlyRemovedBoard = nil
         isDrawerOpen = false
         selectedDrawerItemID = nil
-        expandedDrawerItemID = nil
         toastTask?.cancel()
         toastMessage = nil
         isDenMode = false

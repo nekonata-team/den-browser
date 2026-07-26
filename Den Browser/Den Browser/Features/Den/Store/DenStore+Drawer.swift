@@ -15,7 +15,6 @@ extension DenStore {
         let item = DrawerItem(url: url, title: title)
         state.drawerItems.insert(item, at: 0)
         selectedDrawerItemID = item.id
-        expandedDrawerItemID = item.id
         state.expandedDrawerItemID = item.id
         isDrawerOpen = true
         save()
@@ -44,11 +43,9 @@ extension DenStore {
         guard state.drawerItems.contains(where: { $0.id == itemID }) else { return }
         selectedDrawerItemID = itemID
         if expandedDrawerItemID == itemID {
-            expandedDrawerItemID = nil
             state.expandedDrawerItemID = nil
             releaseDrawerPreview()
         } else {
-            expandedDrawerItemID = itemID
             state.expandedDrawerItemID = itemID
             releaseDrawerPreview()
         }
@@ -65,7 +62,6 @@ extension DenStore {
         guard selectedDrawerItemID != targetID else { return }
         selectedDrawerItemID = targetID
         if expandedDrawerItemID != nil {
-            expandedDrawerItemID = targetID
             state.expandedDrawerItemID = targetID
             releaseDrawerPreview()
             save()
@@ -81,7 +77,6 @@ extension DenStore {
         guard let index = state.drawerItems.firstIndex(where: { $0.id == itemID }) else { return }
         let wasSelected = selectedDrawerItemID == itemID
         if expandedDrawerItemID == itemID {
-            expandedDrawerItemID = nil
             state.expandedDrawerItemID = nil
             releaseDrawerPreview()
         }
