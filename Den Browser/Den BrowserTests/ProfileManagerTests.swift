@@ -238,6 +238,21 @@ struct ProfileManagerTests {
         #expect(manager.profileID(for: window) == nil)
     }
 
+    @Test func registeringAnotherWindowForSameProfileKeepsExistingWindow() {
+        let manager = ProfileManager(
+            directoryURL: temporaryProfileDirectory(),
+            sheetNavigation: SheetNavigationManager())
+        let profileID = manager.personalProfileID
+        let existingWindow = NSWindow()
+        let duplicateWindow = NSWindow()
+
+        manager.register(window: existingWindow, for: profileID)
+        manager.register(window: duplicateWindow, for: profileID)
+
+        #expect(manager.profileID(for: existingWindow) == profileID)
+        #expect(manager.profileID(for: duplicateWindow) == nil)
+    }
+
     @Test func profileManagerPersistsDeskPresetsPerProfile() throws {
         let directory = temporaryProfileDirectory()
         defer { try? FileManager.default.removeItem(at: directory) }

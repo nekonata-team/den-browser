@@ -179,7 +179,15 @@ final class ProfileManager {
     func clearError() { errorMessage = nil }
 
     func register(window: NSWindow, for profileID: UUID) {
-        windows[resolvedProfileID(profileID)] = WeakWindow(window)
+        let profileID = resolvedProfileID(profileID)
+        if let existingWindow = windows[profileID]?.window, existingWindow !== window {
+            existingWindow.makeKeyAndOrderFront(nil)
+            DispatchQueue.main.async { [weak window] in
+                window?.close()
+            }
+            return
+        }
+        windows[profileID] = WeakWindow(window)
     }
 
     func unregister(window: NSWindow, for profileID: UUID) {

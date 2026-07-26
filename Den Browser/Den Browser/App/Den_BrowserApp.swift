@@ -58,6 +58,8 @@ private struct DenCommands: Commands {
     @Environment(\.openWindow) private var openWindow
 
     var body: some Commands {
+        CommandGroup(replacing: .newItem) {}
+
         CommandGroup(replacing: .saveItem) {
             if store == nil {
                 Button("Close Window") { NSApp.keyWindow?.performClose(nil) }
