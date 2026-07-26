@@ -131,14 +131,6 @@ struct DenView: View {
             .animation(DenMotion.feedback(reduceMotion: shouldReduceMotion), value: store.temporaryContext)
             .animation(DenMotion.spatial(reduceMotion: shouldReduceMotion), value: store.isZenViewPresented)
             .animation(DenMotion.spatial(reduceMotion: shouldReduceMotion), value: store.isDrawerOpen)
-            .overlay {
-                RoundedRectangle(cornerRadius: DenRadius.large, style: .continuous)
-                    .strokeBorder(profileColor.opacity(0.48), lineWidth: 1)
-                    .padding(DenLayout.outerInset)
-                    .opacity(store.isDenMode ? 1 : 0)
-                    .allowsHitTesting(false)
-            }
-            .animation(DenMotion.feedback(reduceMotion: shouldReduceMotion), value: store.isDenMode)
         }
         .background(DenBackground(isDenMode: store.isDenMode, profileColor: profileColor))
         .frame(minWidth: 1100, minHeight: 720)

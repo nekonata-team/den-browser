@@ -72,14 +72,8 @@ struct BoardView: View {
         }
         .padding(.horizontal, DenLayout.chromeHorizontalPadding)
         .frame(height: DenLayout.boardHeaderHeight)
+        .background(store.isDenMode && isFocused ? profileColor.opacity(0.12) : Color.clear)
         .background(.regularMaterial)
-        .overlay(alignment: .top) {
-            if store.isDenMode, isFocused {
-                Rectangle()
-                    .fill(profileColor.opacity(0.9))
-                    .frame(height: DenLayout.denModeBoardEdgeHeight)
-            }
-        }
     }
 
     @ViewBuilder
