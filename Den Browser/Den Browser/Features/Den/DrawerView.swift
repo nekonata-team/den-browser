@@ -261,7 +261,7 @@ private enum DenDrawerLayout {
     static let itemHeight: CGFloat = 46
     static let itemButtonWidth: CGFloat = 28
     static let minimumHeight: CGFloat = 360
-    static let windowClearance: CGFloat = 72
+    static let windowClearance: CGFloat = 52
     static let previewReservedHeight: CGFloat = 160
 }
 
