@@ -73,21 +73,8 @@ final class KeyboardController {
             break
         }
 
-        if character == "w", modifiers == [.command] {
-            if !event.isARepeat {
-                store.removeFocusedBoard()
-            }
-            return true
-        }
-
-        if character == "t", modifiers == [.command] {
-            store.showOpenBoardPanel()
-            return true
-        }
-
-        if character == "l", modifiers == [.command] {
-            store.showEditBoardLinkPanel()
-            return true
+        if let character, ["l", "t", "w"].contains(character), modifiers == [.command] {
+            return false
         }
 
         if !store.isDenMode,
@@ -101,8 +88,7 @@ final class KeyboardController {
         }
 
         if !store.isDenMode, character == "r", modifiers == [.command] {
-            store.reloadFocusedBoard()
-            return true
+            return false
         }
 
         if handleCustomShortcut(event, store: store, preferences: preferences) {

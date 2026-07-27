@@ -212,31 +212,32 @@ struct KeyboardShortcutTests {
         #expect(store.focusedDesk?.focusedBoardID == focusedBoardID)
     }
 
-    @Test func commandWRemovesFocusedBoardAndShiftCommandWPassesToWindow() throws {
+    @Test func nativeCommandShortcutsPassThroughWithoutExecuting() throws {
         let first = board("First")
         let second = board("Second")
         let store = makeStore(boards: [first, second])
-        let closeBoard = try keyEvent(
-            characters: "w", charactersIgnoringModifiers: "w", modifiers: [.command], keyCode: 13)
+        let commands = [
+            try keyEvent(
+                characters: "w", charactersIgnoringModifiers: "w", modifiers: [.command], keyCode: 13),
+            try keyEvent(
+                characters: "t", charactersIgnoringModifiers: "t", modifiers: [.command], keyCode: 17),
+            try keyEvent(
+                characters: "l", charactersIgnoringModifiers: "l", modifiers: [.command], keyCode: 37),
+            try keyEvent(
+                characters: "r", charactersIgnoringModifiers: "r", modifiers: [.command], keyCode: 15),
+        ]
         let closeWindow = try keyEvent(
             characters: "W",
             charactersIgnoringModifiers: "w",
             modifiers: [.command, .shift],
             keyCode: 13)
 
-        #expect(KeyboardController.handle(closeBoard, store: store))
-        #expect(store.focusedDesk?.boards.map(\.id) == [second.id])
+        for command in commands {
+            #expect(!KeyboardController.handle(command, store: store))
+        }
         #expect(!KeyboardController.handle(closeWindow, store: store))
-        #expect(store.focusedDesk?.boards.map(\.id) == [second.id])
-    }
-
-    @Test func commandLOpensFocusedBoardLinkEditor() throws {
-        let store = makeStore(boards: [board("First")])
-        let editLink = try keyEvent(
-            characters: "l", charactersIgnoringModifiers: "l", modifiers: [.command], keyCode: 37)
-
-        #expect(KeyboardController.handle(editLink, store: store))
-        #expect(store.isEditBoardLinkPanelPresented)
+        #expect(store.focusedDesk?.boards.map(\.id) == [first.id, second.id])
+        #expect(store.temporaryContext == nil)
     }
 
     @Test func denModeEOpensFocusedBoardLinkEditor() throws {
