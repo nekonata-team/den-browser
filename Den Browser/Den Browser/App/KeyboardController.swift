@@ -206,9 +206,13 @@ final class KeyboardController {
             store.goBackInFocusedBoard()
         case ("]", []):
             store.goForwardInFocusedBoard()
+        case ("[", [.shift]), ("{", [.shift]):
+            store.goToFirstSheetInFocusedBoard()
+        case ("]", [.shift]), ("}", [.shift]):
+            store.goToLatestSheetInFocusedBoard()
         case ("-", []):
             store.adjustFocusedBoardWidth(by: -80)
-        case ("=", []), ("=", [.shift]):
+        case ("=", []), ("=", [.shift]), ("+", [.shift]):
             store.adjustFocusedBoardWidth(by: 80)
         case ("f", []):
             if !event.isARepeat {

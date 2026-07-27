@@ -278,6 +278,19 @@ struct KeyboardShortcutTests {
         #expect(store.state == state)
     }
 
+    @Test func denModeShiftBracketsJumpToSheetStackEdges() throws {
+        let store = makeStore(boards: [board("First")])
+        store.isDenMode = true
+        let first = try keyEvent(
+            characters: "{", charactersIgnoringModifiers: "{", modifiers: [.shift], keyCode: 33)
+        let latest = try keyEvent(
+            characters: "}", charactersIgnoringModifiers: "}", modifiers: [.shift], keyCode: 30)
+
+        #expect(KeyboardController.handle(first, store: store))
+        #expect(KeyboardController.handle(latest, store: store))
+        #expect(store.isDenMode)
+    }
+
     @Test func denModePOpensDeskPresetPanelOnlyForDeskWithBoards() throws {
         let save = try keyEvent(characters: "p", charactersIgnoringModifiers: "p", keyCode: 35)
         let store = makeStore(boards: [board("First")])

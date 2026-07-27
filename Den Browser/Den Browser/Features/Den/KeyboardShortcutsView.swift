@@ -71,6 +71,7 @@ struct KeyboardShortcutsView: View {
                 title: "Board Actions",
                 items: [
                     item(["[", "/", "]"], "Back / forward Sheet"),
+                    item(["⇧", "[", "/", "⇧", "]"], "First / latest Sheet"),
                     item(["-", "/", "="], "Narrow / widen Board"),
                     item(["w", "then", "- / = / 1–9"], "Resize all Boards"),
                     item(["f"], "Toggle maximized Board"),

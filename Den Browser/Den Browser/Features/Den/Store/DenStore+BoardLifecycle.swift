@@ -165,6 +165,22 @@ extension DenStore {
         focusedRuntime?.webView.goForward()
     }
 
+    func goToFirstSheetInFocusedBoard() {
+        guard
+            let webView = focusedRuntime?.webView,
+            let firstSheet = webView.backForwardList.backList.first
+        else { return }
+        webView.go(to: firstSheet)
+    }
+
+    func goToLatestSheetInFocusedBoard() {
+        guard
+            let webView = focusedRuntime?.webView,
+            let latestSheet = webView.backForwardList.forwardList.last
+        else { return }
+        webView.go(to: latestSheet)
+    }
+
     func goBackInBoard(_ boardID: UUID) {
         guard boardIndices(for: boardID) != nil else { return }
         focusBoard(boardID)
