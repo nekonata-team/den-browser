@@ -54,6 +54,15 @@ Den Browser's first PoC validates whether a macOS WKWebView implementation can s
 5. Delete the second Profile; confirm its window closes and its Den and website data disappear while Personal remains.
 6. With VoiceOver, confirm the Profile icon announces its name and does not rely on color alone.
 
+## Download validation
+
+1. Download an ordinary linked file from a Current Sheet. Confirm the macOS save panel uses the suggested filename, the file is written to the chosen location, and Den reports completion.
+2. Repeat with an HTML `download` attribute, a Blob URL, a `Content-Disposition: attachment` response, and a MIME type WebKit cannot display.
+3. Cancel the save panel and confirm no file or error notification appears.
+4. Choose an existing filename, confirm replacement, and verify the new file replaces it.
+5. Trigger a failed download and confirm Den reports the failure without changing the Current Sheet or persisted `DenState`.
+6. Download from an authenticated site and confirm the Current Sheet's Profile session is used.
+
 ## Drawer validation
 
 1. Open two links from another application. Confirm both enter the active Profile's Drawer newest-first, the latest item expands into a live Preview, and the Focused Desk layout does not change.

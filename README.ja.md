@@ -57,6 +57,7 @@ Den Browserは、[Niri](https://github.com/niri-wm/niri)の空間的なウィン
 - 空のDeskは即座に削除し、Boardを含むDeskは完全削除の確認後に削除。
 - Focused DeskをProfile所有のPersonal Desk Presetとして保存し、新しいDeskの作成時はキーボード中心のファジー検索でPresetを選択、プレビューしてからDesk Labelを入力。Presetの置換、削除に対応し、Den ModeではShift + `p`から管理画面を直接表示。組み込みのEmpty、ChatGPT、Geminiをすぐ使える初期配置として提供。
 - ブラウザの戻る・進むに相当する履歴を、BoardごとのSheet Stackとして保持。
+- Current Sheetからのファイルダウンロード時に、サイト指定のファイル名を引き継いだmacOSの保存パネルを表示し、完了結果を通知。
 - アプリ再起動後にDeskとBoardのラベル、並び順、幅、フォーカス、Current SheetのURLを復元し、Focused Boardをスクロールアニメーションなしで即座に表示。
 - `http` / `https` のブラウザハンドラーとして登録し、ほかのアプリから開いたURLを現在のProfileでPreview可能なDrawer Itemとして保持。既定のブラウザにするかどうかはmacOS側で選択。
 - Profile内のSheet間でログイン状態を維持しつつ、別Profileから分離。

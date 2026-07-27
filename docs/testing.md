@@ -27,6 +27,7 @@ website data, window restoration, or external services.
 Exploratory human validation is reserved for milestone checks that depend on macOS, WebKit, remote services, or visual judgment:
 
 - Real interaction with `WKWebView`, including navigation and text entry.
+- WebKit downloads, native save-panel access, Blob responses, and authenticated responses.
 - First-responder handoff between Den controls and web content.
 - External web compatibility and authentication persistence.
 - Performance and resource use.

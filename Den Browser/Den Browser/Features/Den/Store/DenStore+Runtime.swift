@@ -41,6 +41,12 @@ extension DenStore {
                 preferredWidth: board.width,
                 afterBoardID: board.id
             )
+        } onDownloadFinished: {
+            [weak self] filename in
+            self?.showToast("Downloaded \(filename).", style: .success)
+        } onDownloadFailed: {
+            [weak self] message in
+            self?.showToast("Download failed: \(message)", style: .error)
         }
         runtimes[board.id] = runtime
         return runtime

@@ -4,7 +4,9 @@ import Foundation
 import WebKit
 
 @MainActor
-final class BoardRuntime: NSObject, ObservableObject, WKNavigationDelegate, WKUIDelegate {
+final class BoardRuntime: NSObject, ObservableObject, WKDownloadDelegate, WKNavigationDelegate,
+    WKUIDelegate
+{
     static var defaultUserAgent: String {
         let os = ProcessInfo.processInfo.operatingSystemVersion
         let versionString = "\(os.majorVersion).\(os.minorVersion)"
@@ -23,8 +25,11 @@ final class BoardRuntime: NSObject, ObservableObject, WKNavigationDelegate, WKUI
     private let onPasteURLInNewBoard: (URL) -> Void
     private let onChange: (UUID, URL?, String?) -> Void
     private let onFullscreenChange: ((UUID, Bool) -> Void)?
+    private let onDownloadFinished: (String) -> Void
+    private let onDownloadFailed: (String) -> Void
     private unowned let sheetNavigation: SheetNavigationManager
 
+    private var downloadFilenames: [ObjectIdentifier: String] = [:]
     private var urlObservation: NSKeyValueObservation?
     private var titleObservation: NSKeyValueObservation?
     private var fullscreenObservation: NSKeyValueObservation?
@@ -40,7 +45,9 @@ final class BoardRuntime: NSObject, ObservableObject, WKNavigationDelegate, WKUI
         onFullscreenChange: ((UUID, Bool) -> Void)? = nil,
         onEditCurrentSheet: @escaping () -> Void = {},
         onOpenCurrentSheetInNewBoard: @escaping (URL) -> Void = { _ in },
-        onPasteURLInNewBoard: @escaping (URL) -> Void = { _ in }
+        onPasteURLInNewBoard: @escaping (URL) -> Void = { _ in },
+        onDownloadFinished: @escaping (String) -> Void = { _ in },
+        onDownloadFailed: @escaping (String) -> Void = { _ in }
     ) {
         id = board.id
         self.sheetNavigation = sheetNavigation
@@ -50,6 +57,8 @@ final class BoardRuntime: NSObject, ObservableObject, WKNavigationDelegate, WKUI
         self.onPasteURLInNewBoard = onPasteURLInNewBoard
         self.onChange = onChange
         self.onFullscreenChange = onFullscreenChange
+        self.onDownloadFinished = onDownloadFinished
+        self.onDownloadFailed = onDownloadFailed
 
         let configuration = WKWebViewConfiguration()
         configuration.websiteDataStore = websiteDataStore
@@ -145,6 +154,84 @@ final class BoardRuntime: NSObject, ObservableObject, WKNavigationDelegate, WKUI
         didStartProvisionalNavigation navigation: WKNavigation!
     ) {
         faviconURL = nil
+    }
+
+    func webView(
+        _ webView: WKWebView,
+        decidePolicyFor navigationAction: WKNavigationAction,
+        decisionHandler: @escaping @MainActor @Sendable (WKNavigationActionPolicy) -> Void
+    ) {
+        decisionHandler(navigationAction.shouldPerformDownload ? .download : .allow)
+    }
+
+    func webView(
+        _ webView: WKWebView,
+        decidePolicyFor navigationResponse: WKNavigationResponse,
+        decisionHandler: @escaping @MainActor @Sendable (WKNavigationResponsePolicy) -> Void
+    ) {
+        decisionHandler(navigationResponse.canShowMIMEType ? .allow : .download)
+    }
+
+    func webView(
+        _ webView: WKWebView,
+        navigationAction: WKNavigationAction,
+        didBecome download: WKDownload
+    ) {
+        download.delegate = self
+    }
+
+    func webView(
+        _ webView: WKWebView,
+        navigationResponse: WKNavigationResponse,
+        didBecome download: WKDownload
+    ) {
+        download.delegate = self
+    }
+
+    func download(
+        _ download: WKDownload,
+        decideDestinationUsing response: URLResponse,
+        suggestedFilename: String,
+        completionHandler: @escaping @MainActor @Sendable (URL?) -> Void
+    ) {
+        let panel = NSSavePanel()
+        panel.canCreateDirectories = true
+        panel.nameFieldStringValue = suggestedFilename
+
+        let complete: @MainActor @Sendable (NSApplication.ModalResponse) -> Void = {
+            [weak self] response in
+            guard response == .OK, let destination = panel.url else {
+                completionHandler(nil)
+                return
+            }
+
+            do {
+                if FileManager.default.fileExists(atPath: destination.path) {
+                    try FileManager.default.removeItem(at: destination)
+                }
+                self?.downloadFilenames[ObjectIdentifier(download)] = destination.lastPathComponent
+                completionHandler(destination)
+            } catch {
+                self?.onDownloadFailed(error.localizedDescription)
+                completionHandler(nil)
+            }
+        }
+
+        if let window = webView.window {
+            panel.beginSheetModal(for: window, completionHandler: complete)
+        } else {
+            panel.begin(completionHandler: complete)
+        }
+    }
+
+    func downloadDidFinish(_ download: WKDownload) {
+        let filename = downloadFilenames.removeValue(forKey: ObjectIdentifier(download)) ?? "File"
+        onDownloadFinished(filename)
+    }
+
+    func download(_ download: WKDownload, didFailWithError error: Error, resumeData: Data?) {
+        downloadFilenames.removeValue(forKey: ObjectIdentifier(download))
+        onDownloadFailed(error.localizedDescription)
     }
 
     private func updateFavicon() {
