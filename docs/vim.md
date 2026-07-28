@@ -42,6 +42,8 @@ A numeric prefix repeats relative scrolling commands. For example, `5j`, `3k`, a
 | `gE` | Open the Open Board panel with the Current Sheet URL prefilled. |
 | `p` / `P` | Open the clipboard URL in the Current Sheet / a new Board. |
 | `yy` | Copy the Current Sheet URL. |
+| `x` | Remove the focused Board. |
+| `X` | Restore the recently removed Board. |
 
 ### Find
 
@@ -57,7 +59,7 @@ A numeric prefix repeats relative scrolling commands. For example, `5j`, `3k`, a
 - `o` / `O`: an Omnibox needs a Den-native URL and search surface.
 - `i`: editable focus already enters Insert state automatically; `gi` provides explicit focus traversal.
 - `v`: Visual mode needs a separate text-selection design.
-- `t`, `x`, `J`, and `K`: Vimium tab operations overlap with Den's Board and Desk operations and belong in Den Mode, if added.
+- `t`, `J`, and `K`: Vimium tab creation and movement operations overlap with Den's Board and Desk operations and belong in Den Mode, if added.
 - bookmarks and arbitrary custom mappings: outside the first-party Feature's current scope.
 
 ## Implementation boundary

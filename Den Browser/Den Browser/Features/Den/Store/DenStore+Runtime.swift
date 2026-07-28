@@ -41,6 +41,12 @@ extension DenStore {
                 preferredWidth: board.width,
                 afterBoardID: board.id
             )
+        } onRemoveBoard: {
+            [weak self] in
+            self?.removeBoard(board.id)
+        } onRestoreBoard: {
+            [weak self] in
+            self?.restoreRecentlyRemovedBoard()
         } onDownloadFinished: {
             [weak self] filename in
             self?.showToast("Downloaded \(filename).", style: .success)

@@ -67,6 +67,8 @@ final class KeyboardController {
             return handleBoardWidthPanel(event, store: store)
         case .overview:
             return handleOverview(event, store: store)
+        case .drawer:
+            return handleDrawer(event, store: store)
         case .openBoard, .editBoardLink, .newDesk, .deskPresetManagement, .saveDeskPreset, .renameBoard, .renameDesk:
             return false
         case nil:
@@ -137,10 +139,6 @@ final class KeyboardController {
         if isTab(event), modifiers == [], !event.isARepeat {
             store.toggleDrawer()
             return true
-        }
-
-        if store.isDrawerOpen {
-            return handleDrawer(event, store: store)
         }
 
         if isEscape(event), modifiers == [] {
@@ -263,6 +261,11 @@ final class KeyboardController {
             return false
         }
 
+        if store.isDenMode, isTab(event) {
+            store.closeDrawer()
+            return true
+        }
+
         if isEscape(event) {
             if !store.drawerQuery.isEmpty {
                 store.clearDrawerQuery()
@@ -296,6 +299,14 @@ final class KeyboardController {
         case "p":
             if !event.isARepeat {
                 store.placeSelectedDrawerItemAsBoard()
+            }
+        case "x":
+            if !event.isARepeat {
+                store.discardSelectedDrawerItem()
+            }
+        case "d":
+            if store.isDenMode, !event.isARepeat {
+                store.discardSelectedDrawerItem()
             }
         default:
             switch event.specialKey {

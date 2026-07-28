@@ -271,6 +271,27 @@ struct SheetNavigationTests {
         #expect(store.focusedDesk?.focusedBoardID == store.focusedDesk?.boards[1].id)
     }
 
+    @Test func sheetNavigationRoutesRemoveAndRestoreBoardActions() {
+        let manager = SheetNavigationManager(scriptSource: "")
+        let source = board("First", url: "https://first.example/")
+        let second = board("Second", url: "https://second.example/")
+        let currentDesk = desk("Desk", boards: [source, second], focusedBoardID: source.id)
+        let store = DenStore(
+            state: DenState(desks: [currentDesk], focusedDeskID: currentDesk.id),
+            sheetNavigation: manager
+        )
+        let sourceWebView = store.runtime(for: source).webView
+        let secondWebView = store.runtime(for: second).webView
+        manager.setEnabled(true)
+
+        #expect(store.focusedDesk?.boards.count == 2)
+        #expect(manager.handleScriptMessage(["action": "removeBoard"], from: sourceWebView))
+        #expect(store.focusedDesk?.boards.count == 1)
+
+        #expect(manager.handleScriptMessage(["action": "restoreBoard"], from: secondWebView))
+        #expect(store.focusedDesk?.boards.count == 2)
+    }
+
     @Test func sheetNavigationRejectsUnsupportedMessages() {
         let manager = SheetNavigationManager(scriptSource: "")
         let webView = WKWebView()

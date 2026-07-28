@@ -316,6 +316,8 @@
       case "p": postMessage({ action: "pasteURL" }); break;
       case "P": postMessage({ action: "pasteURLInNewBoard" }); break;
       case "r": location.reload(); break;
+      case "x": postMessage({ action: "removeBoard" }); break;
+      case "X": postMessage({ action: "restoreBoard" }); break;
       case "/": openFind(); break;
       case "n": runFind(false); break;
       case "N": runFind(true); break;

@@ -20,6 +20,8 @@ final class SheetNavigationManager {
         let onEditCurrentSheet: () -> Void
         let onOpenCurrentSheetInNewBoard: (URL) -> Void
         let onPasteURLInNewBoard: (URL) -> Void
+        let onRemoveBoard: () -> Void
+        let onRestoreBoard: () -> Void
     }
 
     static let defaultHintAlphabet = "asdfghjkl"
@@ -190,6 +192,14 @@ final class SheetNavigationManager {
             } else {
                 return false
             }
+            return true
+        case "removeBoard":
+            guard let action = actionsByWebView[ObjectIdentifier(webView)]?.onRemoveBoard else { return false }
+            action()
+            return true
+        case "restoreBoard":
+            guard let action = actionsByWebView[ObjectIdentifier(webView)]?.onRestoreBoard else { return false }
+            action()
             return true
         default:
             return false

@@ -34,7 +34,7 @@ final class DenStore {
     var overviewSelectionDeskID: UUID?
     var overviewSelectionBoardID: UUID?
     var recentlyRemovedBoard: RecentlyRemovedBoard?
-    var isDrawerOpen = false
+    var isDrawerOpen: Bool { temporaryContext == .drawer }
     var drawerQuery = ""
     var isDrawerFilterMode = false
     var selectedDrawerItemID: UUID?
@@ -202,7 +202,6 @@ final class DenStore {
         overviewSelectionDeskID = nil
         overviewSelectionBoardID = nil
         recentlyRemovedBoard = nil
-        isDrawerOpen = false
         drawerQuery = ""
         isDrawerFilterMode = false
         selectedDrawerItemID = nil
@@ -322,6 +321,10 @@ final class DenStore {
         if temporaryContext == .boardWidth, context != .boardWidth {
             boardWidthPanelMessage = nil
         }
+        if temporaryContext == .drawer, context != .drawer {
+            drawerQuery = ""
+            isDrawerFilterMode = false
+        }
         temporaryContext = context
     }
 }
@@ -337,6 +340,7 @@ enum TemporaryContext: Equatable {
     case saveDeskPreset
     case renameBoard
     case renameDesk
+    case drawer
 }
 
 struct RecentlyRemovedBoard {

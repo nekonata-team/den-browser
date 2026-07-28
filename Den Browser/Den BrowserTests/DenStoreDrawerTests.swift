@@ -273,6 +273,41 @@ struct DenStoreDrawerTests {
         #expect(store.expandedDrawerItemID == second.id)
     }
 
+    @Test func denModeKeyboardControlsDiscardDrawerItemWithXAndD() throws {
+        let source = desk("Desk")
+        let store = DenStore(state: DenState(desks: [source], focusedDeskID: source.id))
+        store.captureInDrawer(try #require(URL(string: "https://first.example/")))
+        store.captureInDrawer(try #require(URL(string: "https://second.example/")))
+        store.isDenMode = true
+
+        #expect(store.isDrawerOpen)
+        #expect(store.state.drawerItems.count == 2)
+        #expect(KeyboardController.handle(try keyEvent("x", keyCode: 7), store: store))
+        #expect(store.state.drawerItems.count == 1)
+        #expect(KeyboardController.handle(try keyEvent("d", keyCode: 2), store: store))
+        #expect(store.state.drawerItems.isEmpty)
+        #expect(!store.isDrawerOpen)
+    }
+
+    @Test func sheetInputKeyboardDiscardsDrawerItemWithXButNotD() throws {
+        let source = desk("Desk")
+        let store = DenStore(state: DenState(desks: [source], focusedDeskID: source.id))
+        store.captureInDrawer(try #require(URL(string: "https://first.example/")))
+        store.captureInDrawer(try #require(URL(string: "https://second.example/")))
+
+        #expect(store.state.drawerItems.count == 2)
+        #expect(store.isDrawerOpen)
+        #expect(!store.isDenMode)
+
+        #expect(KeyboardController.handle(try keyEvent("d", keyCode: 2), store: store))
+        #expect(store.state.drawerItems.count == 2)
+        #expect(store.isDrawerOpen)
+
+        #expect(KeyboardController.handle(try keyEvent("x", keyCode: 7), store: store))
+        #expect(store.state.drawerItems.count == 1)
+        #expect(store.isDrawerOpen)
+    }
+
     private func keyEvent(_ specialKey: NSEvent.SpecialKey, keyCode: UInt16) throws -> NSEvent {
         let scalar = try #require(UnicodeScalar(specialKey.rawValue))
         return try #require(

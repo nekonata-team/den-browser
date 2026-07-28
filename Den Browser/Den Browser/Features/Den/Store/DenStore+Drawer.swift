@@ -22,7 +22,7 @@ extension DenStore {
         state.drawerItems.insert(item, at: 0)
         selectedDrawerItemID = item.id
         state.expandedDrawerItemID = item.id
-        isDrawerOpen = true
+        setTemporaryContext(.drawer)
         save()
         showToast("Captured in Drawer.", style: .success)
     }
@@ -36,15 +36,20 @@ extension DenStore {
         if isDrawerOpen {
             closeDrawer()
         } else {
-            isDrawerOpen = true
-            selectedDrawerItemID = selectedDrawerItemID ?? state.drawerItems.first?.id
+            openDrawer()
         }
     }
 
+    func openDrawer() {
+        guard !state.drawerItems.isEmpty else { return }
+        setTemporaryContext(.drawer)
+        selectedDrawerItemID = selectedDrawerItemID ?? state.drawerItems.first?.id
+    }
+
     func closeDrawer() {
-        isDrawerOpen = false
-        drawerQuery = ""
-        isDrawerFilterMode = false
+        if temporaryContext == .drawer {
+            setTemporaryContext(nil)
+        }
     }
 
     func setDrawerQuery(_ query: String) {

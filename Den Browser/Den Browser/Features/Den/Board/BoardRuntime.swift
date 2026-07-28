@@ -46,6 +46,8 @@ final class BoardRuntime: NSObject, ObservableObject, WKDownloadDelegate, WKNavi
         onEditCurrentSheet: @escaping () -> Void = {},
         onOpenCurrentSheetInNewBoard: @escaping (URL) -> Void = { _ in },
         onPasteURLInNewBoard: @escaping (URL) -> Void = { _ in },
+        onRemoveBoard: @escaping () -> Void = {},
+        onRestoreBoard: @escaping () -> Void = {},
         onDownloadFinished: @escaping (String) -> Void = { _ in },
         onDownloadFailed: @escaping (String) -> Void = { _ in }
     ) {
@@ -85,7 +87,9 @@ final class BoardRuntime: NSObject, ObservableObject, WKDownloadDelegate, WKNavi
                 onOpenBoard: onOpenBoard,
                 onEditCurrentSheet: onEditCurrentSheet,
                 onOpenCurrentSheetInNewBoard: onOpenCurrentSheetInNewBoard,
-                onPasteURLInNewBoard: onPasteURLInNewBoard
+                onPasteURLInNewBoard: onPasteURLInNewBoard,
+                onRemoveBoard: onRemoveBoard,
+                onRestoreBoard: onRestoreBoard
             )
         )
 

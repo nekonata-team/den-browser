@@ -80,8 +80,8 @@ struct DenView: View {
                 .padding(.horizontal, DenLayout.outerInset)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
                 .offset(y: store.isDrawerOpen ? 0 : geometry.size.height)
-                .allowsHitTesting(store.isDrawerOpen && store.temporaryContext == nil)
-                .accessibilityHidden(!store.isDrawerOpen || store.temporaryContext != nil)
+                .allowsHitTesting(store.isDrawerOpen)
+                .accessibilityHidden(!store.isDrawerOpen)
                 .zIndex(3)
 
                 if let toast = store.toastMessage {
@@ -196,7 +196,7 @@ struct DenView: View {
                     )
                     .transition(DenMotion.transition(reduceMotion: shouldReduceMotion, scale: 0.98))
             }
-        case nil:
+        case .drawer, nil:
             EmptyView()
         }
     }
