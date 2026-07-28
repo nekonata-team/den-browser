@@ -306,15 +306,16 @@ struct KeyboardShortcutTests {
         #expect(!empty.isSaveDeskPresetPanelPresented)
     }
 
-    @Test func denModeShiftPOpensDeskPresetManagement() throws {
-        let manage = try keyEvent(
+    @Test func denModeShiftPOpensDeskReplacement() throws {
+        let replace = try keyEvent(
             characters: "P", charactersIgnoringModifiers: "p", modifiers: [.shift], keyCode: 35)
         let store = makeStore(boards: [])
         store.isDenMode = true
 
-        #expect(KeyboardController.handle(manage, store: store))
-        #expect(store.isDeskPresetManagementPresented)
+        #expect(KeyboardController.handle(replace, store: store))
+        #expect(store.isReplaceDeskPanelPresented)
         #expect(store.isNewDeskPanelPresented)
+        #expect(!store.isDeskPresetManagementPresented)
     }
 
     @Test func denModeBHasNoPresetAction() throws {

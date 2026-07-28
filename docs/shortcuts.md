@@ -30,7 +30,7 @@ The complete in-app guide is available from Settings, the Den menu, and `?` in D
 | `n` / Space | New Board panel | Creating enters Sheet Input; Escape returns to Den Mode. |
 | Shift + `n` | New Desk panel | Creating enters Sheet Input; Escape returns to Den Mode. |
 | `p` | Save Desk as Preset panel | Available when the Focused Desk contains a Board. |
-| Shift + `p` | Manage Personal Desk Presets | Available even when the Focused Desk is empty. |
+| Shift + `p` | Replace Focused Desk from a Desk Preset | Empty Preset is excluded; replacing an empty Desk applies immediately. |
 | Tab | Toggle Drawer | Available in Den Mode. While open, `/` searches Drawer Items by title or URL, Up / Down or `k` / `j` selects a visible Item, Return expands or collapses its Preview, `p` places it as a Board, and `x`, `d`, or Delete discards it. Escape first cancels search, then collapses the Preview, then closes the Drawer. |
 | `o` | Toggle overview | Overview is temporary within Den Mode. |
 | `?` | Keyboard Shortcuts | Opens the complete guide; `?` or Escape closes it. |

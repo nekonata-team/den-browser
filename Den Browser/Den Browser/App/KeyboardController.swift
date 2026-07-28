@@ -182,7 +182,7 @@ final class KeyboardController {
         binding("n", modifiers: [.shift]): KeyboardCommand(action: .showNewDeskPanel),
         binding("p"): KeyboardCommand(action: .showSaveDeskPresetPanel, repeatPolicy: .ignore),
         binding("p", modifiers: [.shift]): KeyboardCommand(
-            action: .showDeskPresetManagement,
+            action: .showReplaceDeskPanel,
             repeatPolicy: .ignore),
         binding("o"): KeyboardCommand(action: .showOverview),
         binding("w"): KeyboardCommand(action: .showBoardWidthPanel, repeatPolicy: .ignore),
@@ -225,7 +225,7 @@ final class KeyboardController {
         case .showOpenBoardPanel: store.showOpenBoardPanel()
         case .showNewDeskPanel: store.showNewDeskPanel()
         case .showSaveDeskPresetPanel: store.showSaveDeskPresetPanel()
-        case .showDeskPresetManagement: store.showDeskPresetManagement()
+        case .showReplaceDeskPanel: store.showReplaceDeskPanel()
         case .showOverview: store.showOverview()
         case .showBoardWidthPanel: store.showBoardWidthPanel()
         case .goBack: store.goBackInFocusedBoard()
@@ -502,7 +502,7 @@ private enum KeyboardAction {
     case showOpenBoardPanel
     case showNewDeskPanel
     case showSaveDeskPresetPanel
-    case showDeskPresetManagement
+    case showReplaceDeskPanel
     case showOverview
     case showBoardWidthPanel
     case goBack

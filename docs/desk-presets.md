@@ -38,7 +38,7 @@ ChatGPT and Gemini each create three 520-point Boards focused on the first Board
 
 ## Replacing a Desk
 
-`Replace Desk…` is available from each Desk button's context menu and focuses that Desk before opening the shared Desk Preset picker. Empty is not offered because replacement must install at least one Board. Confirming a Preset initializes an editable Desk Label from its Desk Preset Label.
+`Replace Desk…` is available from each Desk button's context menu. Shift + `p` opens the same action for the Focused Desk in Den Mode. Empty is not offered because replacement must install at least one Board. Confirming a Preset initializes an editable Desk Label from its Desk Preset Label.
 
 Replacing preserves the Desk identity and its position in the Den. It releases every existing Board runtime, creates independent Boards from the selected Desk Preset, applies the Preset's order, widths, Current Sheet URLs, and focus, and clears temporary Board maximization. Drawer contents and the Recently Removed Board remain unchanged.
 
@@ -46,7 +46,7 @@ An empty Desk is replaced immediately. A Desk containing Boards asks for confirm
 
 ## Managing Personal Desk Presets
 
-`Manage Presets…` switches the Desk Preset picker to an inline management view. Shift + `p` in Den Mode opens the same management view directly. It supports search and deletion. Built-in Desk Presets are visible during selection but are not managed.
+`Manage Presets…` switches the Desk Preset picker to an inline management view. Preset management has no dedicated Den Mode shortcut; it remains available from the picker and each Desk button's context menu. It supports search and deletion. Built-in Desk Presets are visible during selection but are not managed.
 
 Deleting always asks for confirmation and states that existing Desks are unaffected. Deleting the selected Personal Desk Preset returns selection to Empty during creation, or to the first available non-empty Preset during replacement.
 
