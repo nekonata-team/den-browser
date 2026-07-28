@@ -32,7 +32,7 @@ Den Browserは、[Niri](https://github.com/niri-wm/niri)の空間的なウィン
 - **Profile**: 一つのDenを持ち、ログイン状態とサイトデータをほかから分離するWeb上の識別単位。
 - **Den**: 一つのProfileに属する作業環境全体。
 - **Desk**: Boardを水平に並べる、大きな作業文脈。
-- **Desk Preset**: Desk作成時に使う、再利用可能な初期配置。
+- **Desk Preset**: Deskの作成または内容の置換に使う、再利用可能な初期配置。
 - **Board**: 一つの作業文脈に集中するため、ユーザーが意図して作る作業面。
 - **Sheet**: Board内に保持されるWeb画面。
 - **Sheet Stack**: 一つのBoard内にある、Sheetの戻る・進むの連なり。
@@ -55,7 +55,7 @@ Den Browserは、[Niri](https://github.com/niri-wm/niri)の空間的なウィン
 - Profile所有のDen-level DrawerへWeb materialを保持し、Item数を確認しながら`/`でtitleまたはURLから絞り込み、一度に一つのライブPreviewを展開。後からBoardとして配置、または破棄。ほかのアプリから開いたリンクは現在のDesk配置を変えずにDrawerへ入る。展開中のPreviewは現在のアプリ起動中、Drawerを閉じてもライブ状態を保ち、再起動後は最初にDrawerを開いたとき新しいライブruntimeで再表示。
 - OverviewでDeskを跨いだBoardの確認と再配置。
 - 空のDeskは即座に削除し、Boardを含むDeskは完全削除の確認後に削除。
-- Focused DeskをProfile所有のPersonal Desk Presetとして保存し、新しいDeskの作成時はキーボード中心のファジー検索でPresetを選択、プレビューしてからDesk Labelを入力。Presetの置換、削除に対応し、Den ModeではShift + `p`から管理画面を直接表示。組み込みのEmpty、ChatGPT、Geminiをすぐ使える初期配置として提供。
+- Focused DeskをProfile所有のPersonal Desk Presetとして保存し、キーボード中心のファジー検索でPresetを選択、プレビューしてから、新しいDeskを作成またはコンテキストメニューから現在のDeskの内容を置換。Deskの置換ではDeskの同一性と位置を維持し、Boardを作り直す。Preset自体の置換、削除に対応し、Den ModeではShift + `p`から管理画面を直接表示。組み込みのEmpty、ChatGPT、Geminiをすぐ使える初期配置として提供。
 - ブラウザの戻る・進むに相当する履歴を、BoardごとのSheet Stackとして保持。
 - Current Sheetからのファイルダウンロード時に、サイト指定のファイル名を引き継いだmacOSの保存パネルを表示し、完了結果を通知。
 - アプリ再起動後にDeskとBoardのラベル、並び順、幅、フォーカス、Current SheetのURLを復元し、Focused Boardをスクロールアニメーションなしで即座に表示。

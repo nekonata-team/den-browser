@@ -32,7 +32,7 @@ Den Browser applies ideas from [Niri](https://github.com/niri-wm/niri)'s spatial
 - **Profile**: An isolated web identity with its own Den, sign-ins, and site data.
 - **Den**: The full work environment for one Profile.
 - **Desk**: A broad work context containing Boards in a horizontal work area.
-- **Desk Preset**: A reusable starting arrangement for creating a Desk.
+- **Desk Preset**: A reusable starting arrangement for creating a Desk or replacing its contents.
 - **Board**: An intentional work surface for one focused task context.
 - **Sheet**: A web screen held within a Board.
 - **Sheet Stack**: The back-forward sequence of Sheets within a Board.
@@ -55,7 +55,7 @@ See [CONTEXT.md](./CONTEXT.md) for the complete product language.
 - Hold web material in a Profile-owned Den-level Drawer, see its item count, filter Items by title or URL with `/`, expand one live preview at a time, and later place it as a Board or discard it. Links opened from other apps enter the Drawer without changing the current Desk layout. An expanded preview stays live when the Drawer closes during the current app run, and returns with a new live runtime when first opened after relaunch.
 - See and reorganize Boards across Desks in Overview.
 - Delete empty Desks immediately, or delete a Desk containing Boards after confirming the permanent removal.
-- Save the Focused Desk as a Profile-owned Personal Desk Preset, then use keyboard-first fuzzy search to choose and preview a preset before naming another Desk. Presets can also be replaced or deleted, with direct management available through Shift + `p` in Den Mode. Built-in Empty, ChatGPT, and Gemini presets provide ready-made starting points.
+- Save the Focused Desk as a Profile-owned Personal Desk Preset, then use keyboard-first fuzzy search to choose and preview a preset before creating another Desk or replacing the contents of the current Desk from its context menu. Desk replacement preserves the Desk identity and position while recreating its Boards. Presets can also be replaced or deleted, with direct management available through Shift + `p` in Den Mode. Built-in Empty, ChatGPT, and Gemini presets provide ready-made starting points.
 - Keep browser-like back-forward navigation inside each Board as a Sheet Stack.
 - Download files from a Current Sheet through the macOS save panel, with the site-provided filename and completion feedback.
 - Restore Desk and Board labels, order, widths, focus, and current Sheet URLs after relaunching the app, showing the Focused Board immediately without a scroll animation.

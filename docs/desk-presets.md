@@ -14,7 +14,7 @@ Saving the Focused Desk as a Personal Desk Preset captures:
 
 At least one Board is required. A Board without a Current Sheet URL remains valid because its Label, Width, and position can still carry meaning. Sheet Stacks, live `WKWebView` state, scroll positions, input, and sign-in state are not captured.
 
-Creating a Desk from any Desk Preset creates new Desk and Board identities. The new Desk does not remain linked to the Desk Preset. Profile-owned WebKit data still supplies that Profile's existing site sessions.
+Creating a Desk from any Desk Preset creates new Desk and Board identities. Replacing a Desk preserves its Desk identity and position while creating new Board identities. Neither operation leaves the Desk linked to the Desk Preset. Profile-owned WebKit data still supplies that Profile's existing site sessions.
 
 ## Saving
 
@@ -36,11 +36,19 @@ Empty search keeps Built-in Presets and My Presets grouped. Typed search ranks f
 
 ChatGPT and Gemini each create three 520-point Boards focused on the first Board. Site-specific built-in widths may be tuned later.
 
+## Replacing a Desk
+
+`Replace Desk…` is available from each Desk button's context menu and focuses that Desk before opening the shared Desk Preset picker. Empty is not offered because replacement must install at least one Board. Confirming a Preset initializes an editable Desk Label from its Desk Preset Label.
+
+Replacing preserves the Desk identity and its position in the Den. It releases every existing Board runtime, creates independent Boards from the selected Desk Preset, applies the Preset's order, widths, Current Sheet URLs, and focus, and clears temporary Board maximization. Drawer contents and the Recently Removed Board remain unchanged.
+
+An empty Desk is replaced immediately. A Desk containing Boards asks for confirmation and reports that its live Sheet state will be removed. Canceling returns to the configured replacement without changing the Desk. Successful replacement enters Sheet Input.
+
 ## Managing Personal Desk Presets
 
-`Manage Presets…` switches the New Desk panel to an inline management view. Shift + `p` in Den Mode opens the same management view directly. It supports search and deletion. Built-in Desk Presets are visible during selection but are not managed.
+`Manage Presets…` switches the Desk Preset picker to an inline management view. Shift + `p` in Den Mode opens the same management view directly. It supports search and deletion. Built-in Desk Presets are visible during selection but are not managed.
 
-Deleting always asks for confirmation and states that existing Desks are unaffected. Deleting the selected Personal Desk Preset returns selection to Empty.
+Deleting always asks for confirmation and states that existing Desks are unaffected. Deleting the selected Personal Desk Preset returns selection to Empty during creation, or to the first available non-empty Preset during replacement.
 
 Personal Desk Presets have no artificial count limit. They are deleted with their owning Profile. Profile documents without the optional list load with no Personal Desk Presets.
 

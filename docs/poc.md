@@ -116,6 +116,8 @@ Den Browser's first PoC validates whether a macOS WKWebView implementation can s
 4. Save another Desk under the same Personal Desk Preset Label. Cancel replacement once, then confirm it. Verify the preset keeps its list position while its captured Boards change and existing Desks remain unchanged.
 5. In Manage Presets, search for and delete a preset after confirmation. Verify existing Desks remain unchanged and deleting the selected preset returns selection to Empty.
 6. Create ChatGPT and Gemini Desks. Confirm each creates three 520-point Boards, uses the expected site URL, and focuses the first Board.
+7. Open `Replace Desk…` from a populated Desk's context menu. Confirm Empty is absent, choose a Preset, edit the Desk Label, cancel the destructive confirmation once, then confirm it. Verify the Desk identity and position remain, old Board runtimes and live Sheet state end, new Board identities and Preset layout appear, and Drawer plus Recently Removed Board remain unchanged.
+8. Replace an empty Desk and confirm the Preset applies without a destructive confirmation.
 
 ## Vim-style Sheet navigation experiment
 

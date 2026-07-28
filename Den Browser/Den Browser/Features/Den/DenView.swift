@@ -17,7 +17,7 @@ struct DenView: View {
     @State private var deskPresetQuery = ""
     @State private var isManagingDeskPresets = false
     @State private var isChoosingDeskPreset = true
-    @State private var didAttemptDeskCreation = false
+    @State private var didAttemptDeskAction = false
     @State private var saveDeskPresetLabel = ""
     @State private var saveDeskPresetMessage: String?
 
@@ -168,7 +168,7 @@ struct DenView: View {
             panelOverlay(openBoardPanel(defaultBoardWidth: defaultBoardWidth))
         case .editBoardLink:
             panelOverlay(editBoardLinkPanel)
-        case .newDesk, .deskPresetManagement:
+        case .newDesk, .replaceDesk, .deskPresetManagement:
             panelOverlay(newDeskPanel)
         case .boardWidth:
             panelOverlay(boardWidthPanel)
@@ -262,6 +262,13 @@ struct DenView: View {
                 .disabled(desk.boards.isEmpty)
 
                 Button {
+                    store.focusDesk(desk.id)
+                    store.showReplaceDeskPanel()
+                } label: {
+                    Label("Replace Desk...", systemImage: "rectangle.stack.badge.minus")
+                }
+
+                Button {
                     store.showDeskPresetManagement()
                 } label: {
                     Label("Manage Presets...", systemImage: "slider.horizontal.3")
@@ -305,7 +312,7 @@ struct DenView: View {
             query: $deskPresetQuery,
             isManaging: $isManagingDeskPresets,
             isChoosing: $isChoosingDeskPreset,
-            didAttemptCreation: $didAttemptDeskCreation,
+            didAttemptAction: $didAttemptDeskAction,
             newDeskLabel: $newDeskLabel,
             isSearchFocused: $isDeskPresetSearchFocused,
             isLabelFocused: $isNewDeskLabelFocused,
@@ -316,7 +323,7 @@ struct DenView: View {
             description: newDeskPanelDescription,
             onConfirmPreset: confirmDeskPreset,
             onBeginSelection: beginDeskPresetSelection,
-            onCreate: createDesk)
+            onSubmit: submitDeskPreset)
     }
 
     private var saveDeskPresetPanel: some View {
@@ -332,21 +339,44 @@ struct DenView: View {
     }
 
     private var newDeskPanelDescription: String {
-        store.canCreateDesk ? "New desk opens after the focused desk" : "A Den can contain up to 10 desks"
+        if store.isReplaceDeskPanelPresented {
+            return store.focusedDesk?.boards.isEmpty == false
+                ? "Existing Boards will be removed after confirmation"
+                : "Applies this arrangement to the focused Desk"
+        }
+        return store.canCreateDesk ? "New desk opens after the focused desk" : "A Den can contain up to 10 desks"
     }
 
-    private func createDesk() {
-        didAttemptDeskCreation = true
+    private func submitDeskPreset() {
+        didAttemptDeskAction = true
         guard !trimmedNewDeskLabel.isEmpty else { return }
+        if store.isReplaceDeskPanelPresented {
+            let result: DeskReplacementResult?
+            switch selectedDeskPreset {
+            case .builtIn(let preset):
+                result = store.replaceFocusedDesk(label: newDeskLabel, preset: preset)
+            case .personal(let id):
+                result = store.replaceFocusedDesk(label: newDeskLabel, personalPresetID: id)
+            }
+            if result == .applied {
+                resetDeskPresetPanel()
+            }
+            return
+        }
+
         switch selectedDeskPreset {
         case .builtIn(let preset):
             store.createDesk(label: newDeskLabel, preset: preset)
         case .personal(let id):
             store.createDesk(label: newDeskLabel, personalPresetID: id)
         }
+        resetDeskPresetPanel()
+    }
+
+    private func resetDeskPresetPanel() {
         newDeskLabel = ""
         selectedDeskPreset = .builtIn(.empty)
-        didAttemptDeskCreation = false
+        didAttemptDeskAction = false
     }
 
     private func confirmDeskPreset(_ selection: DeskPresetSelection) {
@@ -354,7 +384,7 @@ struct DenView: View {
         selectedDeskPreset = selection
         newDeskLabel = deskPresetLabel(for: selection)
         isChoosingDeskPreset = false
-        didAttemptDeskCreation = false
+        didAttemptDeskAction = false
         DispatchQueue.main.async {
             isNewDeskLabelFocused = true
             NSApp.sendAction(#selector(NSText.selectAll(_:)), to: nil, from: nil)
@@ -410,10 +440,12 @@ struct DenView: View {
             let pending = store.deskPresetPendingDeletion,
             pending.id == id
         {
+            let fallback: DeskPresetSelection =
+                store.isReplaceDeskPanelPresented ? .builtIn(.chatGPT) : .builtIn(.empty)
             if newDeskLabel == pending.label {
-                newDeskLabel = BuiltInDeskPreset.empty.label
+                newDeskLabel = deskPresetLabel(for: fallback)
             }
-            selectedDeskPreset = .builtIn(.empty)
+            selectedDeskPreset = fallback
         }
         store.confirmDeskPresetDeletion()
     }

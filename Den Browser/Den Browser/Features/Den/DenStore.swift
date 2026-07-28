@@ -22,6 +22,7 @@ final class DenStore {
     var boardWidthPanelMessage: String?
     var openBoardPanelInitialURL: URL?
     var deskPendingDeletion: DeskState?
+    var deskPendingReplacement: PendingDeskReplacement?
     var deskPresetPendingDeletion: PersonalDeskPreset?
     var deskPresetPendingReplacement: PersonalDeskPreset?
     private(set) var isResetDenPending = false
@@ -75,8 +76,11 @@ final class DenStore {
 
     var isOpenBoardPanelPresented: Bool { temporaryContext == .openBoard }
     var isNewDeskPanelPresented: Bool {
-        temporaryContext == .newDesk || temporaryContext == .deskPresetManagement
+        temporaryContext == .newDesk
+            || temporaryContext == .replaceDesk
+            || temporaryContext == .deskPresetManagement
     }
+    var isReplaceDeskPanelPresented: Bool { temporaryContext == .replaceDesk }
     var isDeskPresetManagementPresented: Bool { temporaryContext == .deskPresetManagement }
     var isOverviewPresented: Bool { temporaryContext == .overview }
     var isKeyboardShortcutsPresented: Bool { temporaryContext == .keyboardShortcuts }
@@ -84,6 +88,7 @@ final class DenStore {
     var isSaveDeskPresetPanelPresented: Bool { temporaryContext == .saveDeskPreset }
     var hasPendingConfirmation: Bool {
         deskPendingDeletion != nil
+            || deskPendingReplacement != nil
             || deskPresetPendingDeletion != nil
             || deskPresetPendingReplacement != nil
             || isResetDenPending
@@ -191,6 +196,7 @@ final class DenStore {
         isDeskDragging = false
         boardWidthPanelMessage = nil
         deskPendingDeletion = nil
+        deskPendingReplacement = nil
         deskPresetPendingDeletion = nil
         deskPresetPendingReplacement = nil
         isResetDenPending = false
@@ -329,6 +335,7 @@ enum TemporaryContext: Equatable {
     case openBoard
     case editBoardLink
     case newDesk
+    case replaceDesk
     case deskPresetManagement
     case overview
     case keyboardShortcuts
@@ -343,6 +350,16 @@ struct RecentlyRemovedBoard {
     let board: BoardState
     let sourceDeskID: UUID
     let sourceBoardIndex: Int
+}
+
+struct PendingDeskReplacement {
+    let deskID: UUID
+    let originalLabel: String
+    let originalBoardCount: Int
+    let presetLabel: String
+    let label: String
+    let boards: [DeskPresetBoard]
+    let focusedBoardIndex: Int?
 }
 
 extension JSONEncoder {

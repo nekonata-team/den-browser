@@ -52,6 +52,82 @@ struct DenStoreDeskTests {
         }
     }
 
+    @Test func replacingPopulatedDeskRequiresConfirmationAndReleasesItsBoards() throws {
+        let oldBoards = [board("First"), board("Second")]
+        let replacing = desk("Research", boards: oldBoards, focusedBoardID: oldBoards[1].id)
+        let other = desk("Other")
+        var savedState: DenState?
+        let store = DenStore(
+            state: DenState(desks: [replacing, other], focusedDeskID: replacing.id),
+            onSave: { savedState = $0 })
+        let runtime = store.runtime(for: oldBoards[0])
+        let restorationCandidate = RecentlyRemovedBoard(
+            board: board("Removed"),
+            sourceDeskID: other.id,
+            sourceBoardIndex: 0)
+        store.recentlyRemovedBoard = restorationCandidate
+        store.toggleFocusedBoardMaximized()
+        store.showReplaceDeskPanel()
+
+        let result = store.replaceFocusedDesk(label: "  Morning  ", preset: .chatGPT)
+
+        #expect(result == .confirmationPending)
+        #expect(store.focusedDesk == replacing)
+        #expect(store.deskPendingReplacement?.presetLabel == BuiltInDeskPreset.chatGPT.label)
+        #expect(store.isReplaceDeskPanelPresented)
+        #expect(savedState == nil)
+
+        store.confirmDeskReplacement()
+
+        let replaced = try #require(store.focusedDesk)
+        #expect(replaced.id == replacing.id)
+        #expect(store.state.desks.map(\.id) == [replacing.id, other.id])
+        #expect(replaced.label == "Morning")
+        #expect(replaced.boards.count == 3)
+        #expect(replaced.boards.allSatisfy { $0.currentSheetURL == URL(string: "https://chatgpt.com/") })
+        #expect(Set(replaced.boards.map(\.id)).isDisjoint(with: oldBoards.map(\.id)))
+        #expect(replaced.focusedBoardID == replaced.boards.first?.id)
+        #expect(store.runtimes[oldBoards[0].id] == nil)
+        #expect(runtime.webView.navigationDelegate == nil)
+        #expect(runtime.webView.uiDelegate == nil)
+        #expect(store.maximizedBoardID == nil)
+        #expect(store.recentlyRemovedBoard?.board.id == restorationCandidate.board.id)
+        #expect(!store.isReplaceDeskPanelPresented)
+        #expect(!store.isDenMode)
+        #expect(savedState == store.state)
+    }
+
+    @Test func cancellingDeskReplacementKeepsDeskAndPanel() {
+        let existing = board("Existing")
+        let original = desk("Original", boards: [existing])
+        withStore(desks: [original]) { store in
+            store.showReplaceDeskPanel()
+            #expect(store.replaceFocusedDesk(label: "AI", preset: .gemini) == .confirmationPending)
+
+            store.cancelDeskReplacement()
+
+            #expect(store.focusedDesk == original)
+            #expect(store.deskPendingReplacement == nil)
+            #expect(store.isReplaceDeskPanelPresented)
+        }
+    }
+
+    @Test func replacingEmptyDeskAppliesImmediatelyAndEmptyPresetIsUnavailable() {
+        let empty = desk("Empty")
+        withStore(desks: [empty]) { store in
+            store.showReplaceDeskPanel()
+
+            #expect(store.replaceFocusedDesk(label: "Still Empty", preset: .empty) == .unavailable)
+            #expect(store.focusedDesk == empty)
+            #expect(store.replaceFocusedDesk(label: "Gemini", preset: .gemini) == .applied)
+
+            #expect(store.focusedDesk?.id == empty.id)
+            #expect(store.focusedDesk?.label == "Gemini")
+            #expect(store.focusedDesk?.boards.count == 3)
+            #expect(!store.isReplaceDeskPanelPresented)
+        }
+    }
+
     @Test func deletingEmptyDeskFocusesDeskThatTakesItsPosition() {
         let first = desk("First")
         let empty = desk("Empty")

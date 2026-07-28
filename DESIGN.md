@@ -35,7 +35,7 @@ Den controls feel like a calm desk laid over live web sheets. Web content remain
 - Use the native context menu on Board headers for concise, Board-specific actions. Keep Sheet context menus owned by web content, and focus the targeted Board when its header menu opens.
 - Keep context-menu ordering stable by disabling unavailable left/right movement instead of hiding it. Do not show Den Mode-only or configurable key equivalents there.
 - Do not make color the only state signal. Focus and direct manipulation need borders, elevation, motion, and accessible labels.
-- Keep New Desk keyboard-first: choose an active Desk Preset through fuzzy search and arrow keys, confirm it, then edit the initialized Desk Label before creation. Do not treat search-driven active results as confirmed selections.
+- Keep New Desk and Replace Desk keyboard-first: choose an active Desk Preset through fuzzy search and arrow keys, confirm it, then edit the initialized Desk Label before applying it. Do not treat search-driven active results as confirmed selections.
 - Keep panel copy in product language from `CONTEXT.md`.
 - Use brief, bounce-free motion to preserve spatial continuity when Boards move, resize, or change focus.
 - Let repeated keyboard input retarget motion immediately instead of waiting for an animation to finish.

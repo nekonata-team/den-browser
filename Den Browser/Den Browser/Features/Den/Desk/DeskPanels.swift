@@ -7,7 +7,7 @@ struct NewDeskPanel: View {
     @Binding var query: String
     @Binding var isManaging: Bool
     @Binding var isChoosing: Bool
-    @Binding var didAttemptCreation: Bool
+    @Binding var didAttemptAction: Bool
     @Binding var newDeskLabel: String
     @FocusState.Binding var isSearchFocused: Bool
     @FocusState.Binding var isLabelFocused: Bool
@@ -19,15 +19,24 @@ struct NewDeskPanel: View {
     let description: String
     let onConfirmPreset: (DeskPresetSelection) -> Void
     let onBeginSelection: () -> Void
-    let onCreate: () -> Void
+    let onSubmit: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack(spacing: DenPanelLayout.controlSpacing) {
-                Image(systemName: store.isDeskPresetManagementPresented ? "bookmark" : "rectangle.stack.badge.plus")
-                    .foregroundStyle(.secondary)
-                Text(store.isDeskPresetManagementPresented ? "Manage Presets" : "New Desk")
-                    .font(.headline)
+                Image(
+                    systemName: store.isDeskPresetManagementPresented
+                        ? "bookmark"
+                        : store.isReplaceDeskPanelPresented
+                            ? "rectangle.stack.badge.minus" : "rectangle.stack.badge.plus"
+                )
+                .foregroundStyle(.secondary)
+                Text(
+                    store.isDeskPresetManagementPresented
+                        ? "Manage Presets"
+                        : store.isReplaceDeskPanelPresented ? "Replace Desk" : "New Desk"
+                )
+                .font(.headline)
             }
             .frame(height: DenPanelLayout.titleHeight)
 
@@ -36,6 +45,7 @@ struct NewDeskPanel: View {
                     selection: $activeDeskPreset,
                     query: $query,
                     isManaging: $isManaging,
+                    allowsEmptyPreset: !store.isReplaceDeskPanelPresented,
                     isSearchFocused: $isSearchFocused,
                     onConfirm: onConfirmPreset)
             } else {
@@ -58,7 +68,7 @@ struct NewDeskPanel: View {
                     .textFieldStyle(.roundedBorder)
                     .font(.body.weight(.medium))
                     .focused($isLabelFocused)
-                    .onSubmit(onCreate)
+                    .onSubmit(onSubmit)
                     .onKeyPress(phases: .down) { keyPress in
                         let isBackTab = keyPress.key == .tab || keyPress.characters == "\u{19}"
                         guard isBackTab, keyPress.modifiers.contains(.shift) else { return .ignored }
@@ -67,15 +77,17 @@ struct NewDeskPanel: View {
                     }
 
                 HStack(spacing: DenPanelLayout.contentSpacing) {
-                    if didAttemptCreation && trimmedLabel.isEmpty {
+                    if didAttemptAction && trimmedLabel.isEmpty {
                         Text("Enter a desk label").foregroundStyle(.red)
                     } else {
                         Text(description).foregroundStyle(.secondary)
                     }
                     Spacer()
-                    Button("Create", action: onCreate)
+                    Button(store.isReplaceDeskPanelPresented ? "Replace Desk" : "Create", action: onSubmit)
                         .buttonStyle(.glassProminent)
-                        .disabled(trimmedLabel.isEmpty || !store.canCreateDesk)
+                        .disabled(
+                            trimmedLabel.isEmpty
+                                || (!store.isReplaceDeskPanelPresented && !store.canCreateDesk))
                 }
                 .font(.caption)
             }
@@ -84,13 +96,16 @@ struct NewDeskPanel: View {
         .frame(width: DenPanelLayout.wideWidth)
         .glassEffect(.regular, in: RoundedRectangle(cornerRadius: DenRadius.large, style: .continuous))
         .onAppear {
-            selectedDeskPreset = .builtIn(.empty)
-            activeDeskPreset = .builtIn(.empty)
-            newDeskLabel = BuiltInDeskPreset.empty.label
+            let initialPreset: DeskPresetSelection =
+                store.isReplaceDeskPanelPresented ? .builtIn(.chatGPT) : .builtIn(.empty)
+            selectedDeskPreset = initialPreset
+            activeDeskPreset = initialPreset
+            newDeskLabel =
+                store.isReplaceDeskPanelPresented ? BuiltInDeskPreset.chatGPT.label : BuiltInDeskPreset.empty.label
             query = ""
             isManaging = store.isDeskPresetManagementPresented
             isChoosing = true
-            didAttemptCreation = false
+            didAttemptAction = false
             DispatchQueue.main.async { isSearchFocused = true }
         }
         .onExitCommand {

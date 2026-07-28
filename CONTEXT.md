@@ -21,7 +21,7 @@ A user-visible label for a desk's broad work context.
 _Avoid_: Workspace name, window title
 
 **Desk Preset**:
-A reusable starting arrangement applied when creating a desk, including its initial boards, current sheets, and layout. A desk created from a desk preset is independent of that preset.
+A reusable starting arrangement applied when creating a desk or replacing a desk's contents, including its initial boards, current sheets, and layout. A desk remains independent of the desk preset after it is applied.
 _Avoid_: Workspace template, Desk Layout, saved desk
 
 **Personal Desk Preset**:
@@ -33,7 +33,7 @@ An app-provided desk preset available to every Profile as an example or common s
 _Avoid_: Default desk, system desk
 
 **Desk Preset Label**:
-A user-visible label for a desk preset. It becomes the initial Desk Label when the desk preset is selected.
+A user-visible label for a desk preset. It becomes the initial Desk Label when the desk preset is selected for creation or replacement.
 _Avoid_: Desk Label, preset name
 
 **Board**:

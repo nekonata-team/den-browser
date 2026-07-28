@@ -69,7 +69,8 @@ final class KeyboardController {
             return handleOverview(event, store: store)
         case .drawer:
             return handleDrawer(event, store: store)
-        case .openBoard, .editBoardLink, .newDesk, .deskPresetManagement, .saveDeskPreset, .renameBoard, .renameDesk:
+        case .openBoard, .editBoardLink, .newDesk, .replaceDesk, .deskPresetManagement, .saveDeskPreset, .renameBoard,
+            .renameDesk:
             return false
         case nil:
             break

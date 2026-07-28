@@ -9,6 +9,7 @@ struct DeskPresetPicker: View {
     @Binding var selection: DeskPresetSelection
     @Binding var query: String
     @Binding var isManaging: Bool
+    let allowsEmptyPreset: Bool
     let isSearchFocused: FocusState<Bool>.Binding
     let onConfirm: (DeskPresetSelection) -> Void
 
@@ -79,7 +80,7 @@ struct DeskPresetPicker: View {
         }
         .onChange(of: store.deskPresets.map(\.id)) { _, ids in
             if case .personal(let id) = selection, !ids.contains(id) {
-                selection = .builtIn(.empty)
+                selection = matchingChoices.first?.selection ?? .builtIn(.empty)
             }
         }
         .onChange(of: query) { _, _ in ensureValidSelection() }
@@ -197,7 +198,7 @@ struct DeskPresetPicker: View {
     }
 
     private var builtInChoices: [DeskPresetChoice] {
-        BuiltInDeskPreset.allCases.map {
+        BuiltInDeskPreset.allCases.filter { allowsEmptyPreset || $0 != .empty }.map {
             DeskPresetChoice(selection: .builtIn($0), label: $0.label, boards: $0.boards, sourceLabel: "Built-in")
         }
     }

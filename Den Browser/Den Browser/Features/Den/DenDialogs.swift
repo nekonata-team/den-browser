@@ -28,6 +28,27 @@ struct DenDialogs: ViewModifier {
                 )
             }
             .confirmationDialog(
+                "Replace \(store.deskPendingReplacement?.originalLabel ?? "Desk")?",
+                isPresented: Binding(
+                    get: { store.deskPendingReplacement != nil },
+                    set: { if !$0 { store.cancelDeskReplacement() } })
+            ) {
+                Button("Replace Desk", role: .destructive) {
+                    store.confirmDeskReplacement()
+                }
+                Button("Cancel", role: .cancel) {
+                    store.cancelDeskReplacement()
+                }
+            } message: {
+                let boardCount = store.deskPendingReplacement?.originalBoardCount ?? 0
+                let presetLabel = store.deskPendingReplacement?.presetLabel ?? "selected"
+                Text(
+                    boardCount == 1
+                        ? "Its Board and live Sheet state will be removed and replaced with the \(presetLabel) arrangement."
+                        : "Its \(boardCount) Boards and live Sheet state will be removed and replaced with the \(presetLabel) arrangement."
+                )
+            }
+            .confirmationDialog(
                 "Replace \(store.deskPresetPendingReplacement?.label ?? "Desk Preset")?",
                 isPresented: Binding(
                     get: { store.deskPresetPendingReplacement != nil },

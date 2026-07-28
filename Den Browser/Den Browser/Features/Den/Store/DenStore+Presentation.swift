@@ -63,12 +63,20 @@ extension DenStore {
         setTemporaryContext(.newDesk)
     }
 
+    func showReplaceDeskPanel() {
+        guard focusedDesk != nil else { return }
+        setTemporaryContext(.replaceDesk)
+    }
+
     func showDeskPresetManagement() {
         setTemporaryContext(.deskPresetManagement)
     }
 
     func hideNewDeskPanel(exitsDenMode: Bool = false) {
-        if temporaryContext == .newDesk || temporaryContext == .deskPresetManagement {
+        if temporaryContext == .newDesk
+            || temporaryContext == .replaceDesk
+            || temporaryContext == .deskPresetManagement
+        {
             setTemporaryContext(nil)
             if exitsDenMode {
                 isDenMode = false

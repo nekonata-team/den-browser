@@ -1,5 +1,11 @@
 import Foundation
 
+enum DeskReplacementResult: Equatable {
+    case applied
+    case confirmationPending
+    case unavailable
+}
+
 extension DenStore {
     func createDesk(label: String, preset: BuiltInDeskPreset) {
         createDesk(label: label, boards: preset.boards, focusedBoardIndex: preset.focusedBoardIndex)
@@ -22,6 +28,81 @@ extension DenStore {
         setTemporaryContext(nil)
         isDenMode = false
         save()
+    }
+
+    func replaceFocusedDesk(label: String, preset: BuiltInDeskPreset) -> DeskReplacementResult {
+        requestFocusedDeskReplacement(
+            label: label,
+            presetLabel: preset.label,
+            boards: preset.boards,
+            focusedBoardIndex: preset.focusedBoardIndex)
+    }
+
+    func replaceFocusedDesk(label: String, personalPresetID: UUID) -> DeskReplacementResult? {
+        guard let preset = deskPresets.first(where: { $0.id == personalPresetID }) else { return nil }
+        return requestFocusedDeskReplacement(
+            label: label,
+            presetLabel: preset.label,
+            boards: preset.boards,
+            focusedBoardIndex: preset.focusedBoardIndex)
+    }
+
+    func confirmDeskReplacement() {
+        guard let replacement = deskPendingReplacement else { return }
+        deskPendingReplacement = nil
+        applyDeskReplacement(replacement)
+    }
+
+    func cancelDeskReplacement() {
+        deskPendingReplacement = nil
+    }
+
+    private func requestFocusedDeskReplacement(
+        label: String,
+        presetLabel: String,
+        boards: [DeskPresetBoard],
+        focusedBoardIndex: Int?
+    ) -> DeskReplacementResult {
+        let label = label.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard
+            !label.isEmpty,
+            !boards.isEmpty,
+            let desk = focusedDesk
+        else { return .unavailable }
+
+        let replacement = PendingDeskReplacement(
+            deskID: desk.id,
+            originalLabel: desk.label,
+            originalBoardCount: desk.boards.count,
+            presetLabel: presetLabel,
+            label: label,
+            boards: boards,
+            focusedBoardIndex: focusedBoardIndex)
+        guard !desk.boards.isEmpty else {
+            applyDeskReplacement(replacement)
+            return .applied
+        }
+        deskPendingReplacement = replacement
+        return .confirmationPending
+    }
+
+    private func applyDeskReplacement(_ replacement: PendingDeskReplacement) {
+        guard let deskIndex = state.desks.firstIndex(where: { $0.id == replacement.deskID }) else { return }
+
+        for board in state.desks[deskIndex].boards {
+            runtimes.removeValue(forKey: board.id)?.dispose()
+        }
+        let boards = replacement.boards.map { $0.makeBoard() }
+        state.desks[deskIndex].label = replacement.label
+        state.desks[deskIndex].boards = boards
+        state.desks[deskIndex].focusedBoardID =
+            replacement.focusedBoardIndex.flatMap { boards.indices.contains($0) ? boards[$0].id : nil }
+            ?? boards.first?.id
+        maximizedBoardID = nil
+        setTemporaryContext(nil)
+        isDenMode = false
+        save()
+        showToast("Replaced Desk with Preset.", style: .success)
     }
 
     func deleteFocusedDesk() {
