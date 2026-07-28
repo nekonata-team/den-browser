@@ -144,6 +144,21 @@ final class BoardRuntime: NSObject, ObservableObject, WKDownloadDelegate, WKNavi
         preferences._allowsPictureInPictureMediaPlayback = true
     }
 
+    func dispose() {
+        sheetNavigation.didClose(webView)
+        webView.closeAllMediaPresentations(completionHandler: nil)
+        webView.setAllMediaPlaybackSuspended(true, completionHandler: nil)
+        webView.stopLoading()
+        webView.navigationDelegate = nil
+        webView.uiDelegate = nil
+        urlObservation?.invalidate()
+        titleObservation?.invalidate()
+        fullscreenObservation?.invalidate()
+        urlObservation = nil
+        titleObservation = nil
+        fullscreenObservation = nil
+    }
+
     func webView(_ webView: WKWebView, didCommit navigation: WKNavigation!) {
         onChange(id, webView.url, webView.title)
     }

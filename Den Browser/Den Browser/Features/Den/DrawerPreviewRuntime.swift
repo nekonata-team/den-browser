@@ -7,6 +7,7 @@ final class DrawerPreviewRuntime: NSObject, WKNavigationDelegate, WKUIDelegate {
     let webView: WKWebView
 
     private let onChange: (UUID, URL?, String?) -> Void
+    private unowned let sheetNavigation: SheetNavigationManager
     private var urlObservation: NSKeyValueObservation?
     private var titleObservation: NSKeyValueObservation?
 
@@ -19,6 +20,7 @@ final class DrawerPreviewRuntime: NSObject, WKNavigationDelegate, WKUIDelegate {
     ) {
         id = item.id
         self.onChange = onChange
+        self.sheetNavigation = sheetNavigation
 
         let configuration = WKWebViewConfiguration()
         configuration.websiteDataStore = websiteDataStore
@@ -58,6 +60,19 @@ final class DrawerPreviewRuntime: NSObject, WKNavigationDelegate, WKUIDelegate {
         }
 
         webView.load(URLRequest(url: item.url))
+    }
+
+    func dispose() {
+        sheetNavigation.didClose(webView)
+        webView.closeAllMediaPresentations(completionHandler: nil)
+        webView.setAllMediaPlaybackSuspended(true, completionHandler: nil)
+        webView.stopLoading()
+        webView.navigationDelegate = nil
+        webView.uiDelegate = nil
+        urlObservation?.invalidate()
+        titleObservation?.invalidate()
+        urlObservation = nil
+        titleObservation = nil
     }
 
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {

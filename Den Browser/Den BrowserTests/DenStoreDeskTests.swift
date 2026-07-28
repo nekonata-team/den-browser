@@ -157,6 +157,22 @@ struct DenStoreDeskTests {
         }
     }
 
+    @Test func deletingDeskDisposesItsBoardRuntimes() {
+        let board = board("Board")
+        let populated = desk("Populated", boards: [board])
+        let empty = desk("Empty")
+        withStore(desks: [populated, empty]) { store in
+            let runtime = store.runtime(for: board)
+            store.deleteFocusedDesk()
+
+            store.confirmDeskDeletion()
+
+            #expect(store.runtimes[board.id] == nil)
+            #expect(runtime.webView.navigationDelegate == nil)
+            #expect(runtime.webView.uiDelegate == nil)
+        }
+    }
+
     @Test func lastDeskCannotBeDeleted() {
         let onlyDesk = desk("Only")
         withStore(desks: [onlyDesk]) { store in

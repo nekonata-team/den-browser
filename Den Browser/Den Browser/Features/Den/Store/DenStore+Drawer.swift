@@ -174,10 +174,7 @@ extension DenStore {
 
     func releaseDrawerPreview() {
         guard let runtime = drawerPreviewRuntime else { return }
-        sheetNavigation.didClose(runtime.webView)
-        runtime.webView.stopLoading()
-        runtime.webView.navigationDelegate = nil
-        runtime.webView.uiDelegate = nil
+        runtime.dispose()
         drawerPreviewRuntime = nil
     }
 

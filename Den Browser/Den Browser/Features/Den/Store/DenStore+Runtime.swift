@@ -67,9 +67,7 @@ extension DenStore {
 
     func releaseRuntimes() {
         for runtime in runtimes.values {
-            sheetNavigation.didClose(runtime.webView)
-            runtime.webView.stopLoading()
-            runtime.webView.navigationDelegate = nil
+            runtime.dispose()
         }
         runtimes.removeAll()
         releaseDrawerPreview()

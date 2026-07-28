@@ -59,9 +59,7 @@ extension DenStore {
             if maximizedBoardID == board.id {
                 maximizedBoardID = nil
             }
-            if let runtime = runtimes.removeValue(forKey: board.id) {
-                sheetNavigation.didClose(runtime.webView)
-            }
+            runtimes.removeValue(forKey: board.id)?.dispose()
         }
 
         state.desks.remove(at: deskIndex)

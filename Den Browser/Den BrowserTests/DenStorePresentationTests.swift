@@ -14,6 +14,7 @@ struct DenStorePresentationTests {
         let store = DenStore(
             state: DenState(desks: [populated, empty], focusedDeskID: populated.id),
             onSave: { savedState = $0 })
+        let runtime = store.runtime(for: board)
         store.deleteFocusedDesk()
         store.toggleFocusedBoardMaximized()
         #expect(store.beginBoardDrag(board.id))
@@ -27,6 +28,9 @@ struct DenStorePresentationTests {
         #expect(savedState == store.state)
         #expect(store.toastMessage?.message == "Reset Den completed.")
         #expect(store.toastMessage?.style == .success)
+        #expect(store.runtimes.isEmpty)
+        #expect(runtime.webView.navigationDelegate == nil)
+        #expect(runtime.webView.uiDelegate == nil)
     }
 
     @Test func restoreRecentlyRemovedBoardShowsToastWhenNoneExists() {

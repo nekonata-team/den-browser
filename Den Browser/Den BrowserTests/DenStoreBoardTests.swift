@@ -262,6 +262,19 @@ struct DenStoreBoardTests {
         }
     }
 
+    @Test func removingBoardDisposesItsRuntime() {
+        let removed = board("Removed")
+        withStore(desks: [desk("Desk", boards: [removed])]) { store in
+            let runtime = store.runtime(for: removed)
+
+            store.removeFocusedBoard()
+
+            #expect(store.runtimes[removed.id] == nil)
+            #expect(runtime.webView.navigationDelegate == nil)
+            #expect(runtime.webView.uiDelegate == nil)
+        }
+    }
+
     @Test func restorationFallsBackRightOfFocusedBoardWhenSourceDeskIsGone() {
         let removed = board("Removed")
         let source = desk("Source", boards: [removed])

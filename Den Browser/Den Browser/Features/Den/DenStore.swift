@@ -176,11 +176,7 @@ final class DenStore {
     }
 
     func resetDen() {
-        for runtime in runtimes.values {
-            sheetNavigation.didClose(runtime.webView)
-        }
-        runtimes.removeAll()
-        releaseDrawerPreview()
+        releaseRuntimes()
         if isBoardDragging {
             boardDragCancellationRequest &+= 1
         }

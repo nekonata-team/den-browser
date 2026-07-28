@@ -127,6 +127,20 @@ struct DenStoreDrawerTests {
         #expect(store.selectedDrawerItemID == nil)
     }
 
+    @Test func discardingExpandedItemDisposesItsPreviewRuntime() throws {
+        let source = desk("Desk")
+        let store = DenStore(state: DenState(desks: [source], focusedDeskID: source.id))
+        store.captureInDrawer(try #require(URL(string: "https://preview.example/")))
+        let item = try #require(store.selectedDrawerItem)
+        let runtime = store.drawerRuntime(for: item)
+
+        store.discardDrawerItem(item.id)
+
+        #expect(store.drawerPreviewRuntime == nil)
+        #expect(runtime.webView.navigationDelegate == nil)
+        #expect(runtime.webView.uiDelegate == nil)
+    }
+
     @Test func legacyDenStateLoadsWithEmptyDrawerAndEmptyDrawerStaysOmitted() throws {
         let source = desk("Desk")
         let state = DenState(desks: [source], focusedDeskID: source.id)
