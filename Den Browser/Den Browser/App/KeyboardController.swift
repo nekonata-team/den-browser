@@ -168,83 +168,83 @@ final class KeyboardController {
             return true
         }
 
-        let character = characterIgnoringModifiers(for: event)
-        switch (character, modifiers) {
-        case ("n", []), (" ", []):
-            store.showOpenBoardPanel()
-        case ("n", [.shift]):
-            store.showNewDeskPanel()
-        case ("p", []):
-            if !event.isARepeat {
-                store.showSaveDeskPresetPanel()
-            }
-        case ("p", [.shift]):
-            if !event.isARepeat {
-                store.showDeskPresetManagement()
-            }
-        case ("o", []):
-            store.showOverview()
-        case ("w", []):
-            if !event.isARepeat {
-                store.showBoardWidthPanel()
-            }
-        case ("[", []):
-            store.goBackInFocusedBoard()
-        case ("]", []):
-            store.goForwardInFocusedBoard()
-        case ("[", [.shift]), ("{", [.shift]):
-            store.goToFirstSheetInFocusedBoard()
-        case ("]", [.shift]), ("}", [.shift]):
-            store.goToLatestSheetInFocusedBoard()
-        case ("-", []):
-            store.adjustFocusedBoardWidth(by: -80)
-        case ("=", []), ("=", [.shift]), ("+", [.shift]):
-            store.adjustFocusedBoardWidth(by: 80)
-        case ("f", []):
-            if !event.isARepeat {
-                store.toggleFocusedBoardMaximized()
-            }
-        case ("c", []):
-            if !event.isARepeat {
-                store.centerFocusedBoard()
-            }
-        case ("z", []):
-            if !event.isARepeat {
-                store.toggleZenView()
-            }
-        case ("x", []):
-            if !event.isARepeat {
-                store.removeFocusedBoard()
-            }
-        case ("u", []):
-            if !event.isARepeat {
-                store.restoreRecentlyRemovedBoard()
-            }
-        case ("r", []):
-            if !event.isARepeat {
-                store.showRenameBoardPanel()
-            }
-        case ("r", [.shift]):
-            if !event.isARepeat {
-                store.showRenameDeskPanel()
-            }
-        case ("d", []):
-            if !event.isARepeat {
-                store.removeFocusedBoard()
-            }
-        case ("d", [.shift]):
-            store.deleteFocusedDesk()
-        case ("e", []):
-            if !event.isARepeat {
-                store.showEditBoardLinkPanel()
-            }
-        default:
-            if isReturn(event), modifiers == [], !event.isARepeat {
-                store.duplicateFocusedBoard()
+        if let stroke = KeyStroke(event: event), let command = denModeCommands[stroke.binding] {
+            if command.repeatPolicy == .allow || !stroke.isRepeat {
+                perform(command.action, store: store)
             }
         }
 
         return true
+    }
+
+    private static let denModeCommands: [ShortcutBinding: KeyboardCommand] = [
+        binding("n"): KeyboardCommand(action: .showOpenBoardPanel),
+        binding(" "): KeyboardCommand(action: .showOpenBoardPanel),
+        binding("n", modifiers: [.shift]): KeyboardCommand(action: .showNewDeskPanel),
+        binding("p"): KeyboardCommand(action: .showSaveDeskPresetPanel, repeatPolicy: .ignore),
+        binding("p", modifiers: [.shift]): KeyboardCommand(
+            action: .showDeskPresetManagement,
+            repeatPolicy: .ignore),
+        binding("o"): KeyboardCommand(action: .showOverview),
+        binding("w"): KeyboardCommand(action: .showBoardWidthPanel, repeatPolicy: .ignore),
+        binding("["): KeyboardCommand(action: .goBack),
+        binding("]"): KeyboardCommand(action: .goForward),
+        binding("[", modifiers: [.shift]): KeyboardCommand(action: .goToFirstSheet),
+        binding("{", modifiers: [.shift]): KeyboardCommand(action: .goToFirstSheet),
+        binding("]", modifiers: [.shift]): KeyboardCommand(action: .goToLatestSheet),
+        binding("}", modifiers: [.shift]): KeyboardCommand(action: .goToLatestSheet),
+        binding("-"): KeyboardCommand(action: .adjustBoardWidth(-80)),
+        binding("="): KeyboardCommand(action: .adjustBoardWidth(80)),
+        binding("=", modifiers: [.shift]): KeyboardCommand(action: .adjustBoardWidth(80)),
+        binding("+", modifiers: [.shift]): KeyboardCommand(action: .adjustBoardWidth(80)),
+        binding("f"): KeyboardCommand(action: .toggleBoardMaximized, repeatPolicy: .ignore),
+        binding("c"): KeyboardCommand(action: .centerBoard, repeatPolicy: .ignore),
+        binding("z"): KeyboardCommand(action: .toggleZenView, repeatPolicy: .ignore),
+        binding("x"): KeyboardCommand(action: .removeBoard, repeatPolicy: .ignore),
+        binding("u"): KeyboardCommand(action: .restoreBoard, repeatPolicy: .ignore),
+        binding("r"): KeyboardCommand(action: .showRenameBoardPanel, repeatPolicy: .ignore),
+        binding("r", modifiers: [.shift]): KeyboardCommand(
+            action: .showRenameDeskPanel,
+            repeatPolicy: .ignore),
+        binding("d"): KeyboardCommand(action: .removeBoard, repeatPolicy: .ignore),
+        binding("d", modifiers: [.shift]): KeyboardCommand(action: .deleteDesk),
+        binding("e"): KeyboardCommand(action: .showEditBoardLinkPanel, repeatPolicy: .ignore),
+        ShortcutBinding(key: .returnKey, modifiers: []): KeyboardCommand(
+            action: .duplicateBoard,
+            repeatPolicy: .ignore),
+    ]
+
+    private static func binding(
+        _ character: String,
+        modifiers: ShortcutModifiers = []
+    ) -> ShortcutBinding {
+        ShortcutBinding(key: .character(character), modifiers: modifiers)
+    }
+
+    private static func perform(_ action: KeyboardAction, store: DenStore) {
+        switch action {
+        case .showOpenBoardPanel: store.showOpenBoardPanel()
+        case .showNewDeskPanel: store.showNewDeskPanel()
+        case .showSaveDeskPresetPanel: store.showSaveDeskPresetPanel()
+        case .showDeskPresetManagement: store.showDeskPresetManagement()
+        case .showOverview: store.showOverview()
+        case .showBoardWidthPanel: store.showBoardWidthPanel()
+        case .goBack: store.goBackInFocusedBoard()
+        case .goForward: store.goForwardInFocusedBoard()
+        case .goToFirstSheet: store.goToFirstSheetInFocusedBoard()
+        case .goToLatestSheet: store.goToLatestSheetInFocusedBoard()
+        case .adjustBoardWidth(let amount): store.adjustFocusedBoardWidth(by: amount)
+        case .toggleBoardMaximized: store.toggleFocusedBoardMaximized()
+        case .centerBoard: store.centerFocusedBoard()
+        case .toggleZenView: store.toggleZenView()
+        case .removeBoard: store.removeFocusedBoard()
+        case .restoreBoard: store.restoreRecentlyRemovedBoard()
+        case .showRenameBoardPanel: store.showRenameBoardPanel()
+        case .showRenameDeskPanel: store.showRenameDeskPanel()
+        case .deleteDesk: store.deleteFocusedDesk()
+        case .showEditBoardLinkPanel: store.showEditBoardLinkPanel()
+        case .duplicateBoard: store.duplicateFocusedBoard()
+        }
     }
 
     private static func handleDrawer(_ event: NSEvent, store: DenStore) -> Bool {
@@ -448,4 +448,64 @@ private enum MovementDirection {
     case right
     case up
     case down
+}
+
+private struct KeyStroke {
+    let binding: ShortcutBinding
+    let isRepeat: Bool
+
+    init?(event: NSEvent) {
+        let modifiers = ShortcutModifiers(event.modifierFlags)
+        if let character = event.charactersIgnoringModifiers?.lowercased(),
+            character.count == 1,
+            character.unicodeScalars.allSatisfy({
+                !CharacterSet.controlCharacters.contains($0)
+            })
+        {
+            binding = ShortcutBinding(key: .character(character), modifiers: modifiers)
+        } else {
+            guard let binding = ShortcutBinding(event: event) else { return nil }
+            self.binding = binding
+        }
+        isRepeat = event.isARepeat
+    }
+}
+
+private struct KeyboardCommand {
+    let action: KeyboardAction
+    let repeatPolicy: KeyRepeatPolicy
+
+    init(action: KeyboardAction, repeatPolicy: KeyRepeatPolicy = .allow) {
+        self.action = action
+        self.repeatPolicy = repeatPolicy
+    }
+}
+
+private enum KeyRepeatPolicy {
+    case allow
+    case ignore
+}
+
+private enum KeyboardAction {
+    case showOpenBoardPanel
+    case showNewDeskPanel
+    case showSaveDeskPresetPanel
+    case showDeskPresetManagement
+    case showOverview
+    case showBoardWidthPanel
+    case goBack
+    case goForward
+    case goToFirstSheet
+    case goToLatestSheet
+    case adjustBoardWidth(Double)
+    case toggleBoardMaximized
+    case centerBoard
+    case toggleZenView
+    case removeBoard
+    case restoreBoard
+    case showRenameBoardPanel
+    case showRenameDeskPanel
+    case deleteDesk
+    case showEditBoardLinkPanel
+    case duplicateBoard
 }
