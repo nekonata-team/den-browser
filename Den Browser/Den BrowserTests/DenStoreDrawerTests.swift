@@ -77,7 +77,7 @@ struct DenStoreDrawerTests {
         #expect(store.drawerQuery.isEmpty)
     }
 
-    @Test func captureCurrentSheetCopiesWithoutChangingBoard() {
+    @Test func captureCurrentSheetCopiesWithoutOpeningDrawerOrChangingBoard() {
         let existingBoard = board("Reference", url: "https://example.com/reference")
         let source = desk("Desk", boards: [existingBoard], focusedBoardID: existingBoard.id)
         let store = DenStore(state: DenState(desks: [source], focusedDeskID: source.id))
@@ -87,6 +87,8 @@ struct DenStoreDrawerTests {
         #expect(store.focusedBoard == existingBoard)
         #expect(store.state.drawerItems.first?.url == existingBoard.currentSheetURL)
         #expect(store.state.drawerItems.first?.title == existingBoard.displayName)
+        #expect(!store.isDrawerOpen)
+        #expect(store.temporaryContext == nil)
     }
 
     @Test func placementCreatesFocusedBoardAndRemovesItem() throws {

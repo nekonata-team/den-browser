@@ -50,7 +50,7 @@ Future media support must not turn the initial design into a speculative generic
 - Opening an external URL captures, selects, and expands a new Drawer Item.
 - Closing the Drawer keeps its expanded Preview identity and live runtime for the next open during the current app run. Collapsing a Preview clears that identity and releases the runtime. Both operations keep the Drawer Item.
 - Placement creates a Board to the right of the Focused Board, focuses it, removes the Drawer Item, and closes the Drawer.
-- Keeping a Current Sheet in the Drawer copies its URL and label with independent identity. The source Board remains unchanged.
+- Keeping a Current Sheet in the Drawer copies its URL and label with independent identity without opening the Drawer. The source Board remains unchanged.
 - URL, title, and the expanded Drawer Item identity persist. Live WebKit state does not; opening a Drawer after relaunch creates a new runtime from the persisted URL.
 - New items appear first. Duplicate URLs remain separate items.
 - The expanded Preview remains selected across Desk changes.

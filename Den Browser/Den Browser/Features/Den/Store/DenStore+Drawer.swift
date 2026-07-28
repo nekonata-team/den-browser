@@ -10,7 +10,7 @@ extension DenStore {
         return state.drawerItems.first { $0.id == selectedDrawerItemID }
     }
 
-    func captureInDrawer(_ url: URL, title: String? = nil) {
+    func captureInDrawer(_ url: URL, title: String? = nil, opensDrawer: Bool = true) {
         guard SheetURLPolicy.isSupported(url) else {
             showToast("Only HTTP and HTTPS URLs are supported.", style: .warning)
             return
@@ -22,14 +22,16 @@ extension DenStore {
         state.drawerItems.insert(item, at: 0)
         selectedDrawerItemID = item.id
         state.expandedDrawerItemID = item.id
-        setTemporaryContext(.drawer)
+        if opensDrawer {
+            setTemporaryContext(.drawer)
+        }
         save()
         showToast("Captured in Drawer.", style: .success)
     }
 
     func captureFocusedSheetInDrawer() {
         guard let board = focusedBoard, let url = board.currentSheetURL else { return }
-        captureInDrawer(url, title: board.displayName)
+        captureInDrawer(url, title: board.displayName, opensDrawer: false)
     }
 
     func toggleDrawer() {
