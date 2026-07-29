@@ -33,7 +33,10 @@ struct BoardStrip: View {
     }
 
     var body: some View {
-        let boards = store.focusedDesk?.boards ?? []
+        let boards =
+            store.isDeskFilterPresented
+            ? store.filteredDeskBoards
+            : store.focusedDesk?.boards ?? []
         let topInset = shouldShowDeskSwitcher ? DenLayout.boardTopInsetWithDeskSwitcher : DenLayout.outerInset
         let bottomInset = DenLayout.outerInset
         let boardHeight = max(DenLayout.minimumBoardHeight, size.height - topInset - bottomInset)
@@ -56,20 +59,43 @@ struct BoardStrip: View {
                 ForEach(boards) { board in
                     BoardView(
                         board: board,
-                        isFocused: board.id == store.focusedDesk?.focusedBoardID,
+                        isFocused:
+                            store.isDeskFilterPresented
+                            ? board.id == store.deskFilterSelectionBoardID
+                            : board.id == store.focusedDesk?.focusedBoardID,
                         isDragging: boardDrag?.boardID == board.id,
                         runtime: store.runtime(for: board),
                         profileColor: profileColor,
                         width: store.maximizedBoardID == board.id ? maximizedBoardWidth : board.width,
                         height: boardHeight,
-                        isPointerFocusEnabled: isPointerFocusEnabled(board.id),
-                        onFocus: { store.focusBoard(board.id, exitsDenMode: true) },
+                        isPointerFocusEnabled:
+                            !store.isDeskFilterPresented && isPointerFocusEnabled(board.id),
+                        onFocus: {
+                            if store.isDeskFilterPresented {
+                                store.confirmDeskFilterSelection(board.id)
+                            } else {
+                                store.focusBoard(board.id, exitsDenMode: true)
+                            }
+                        },
                         onGoBack: { store.goBackInBoard(board.id) },
                         onGoForward: { store.goForwardInBoard(board.id) },
                         onRemove: { store.removeBoard(board.id) },
                         onDragChanged: { onDragChanged(board, $0, size) },
                         onDragEnded: { onDragEnded($0, size) }
                     )
+                    .disabled(store.isDeskFilterPresented)
+                    .overlay {
+                        if store.isDeskFilterPresented {
+                            Button {
+                                store.confirmDeskFilterSelection(board.id)
+                            } label: {
+                                Color.clear
+                                    .contentShape(Rectangle())
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityLabel("Enter \(board.displayName) Board")
+                        }
+                    }
                     .id(board.id)
                     .transition(DenMotion.transition(reduceMotion: shouldReduceMotion, scale: 0.98))
                     .offset(
@@ -85,7 +111,7 @@ struct BoardStrip: View {
                         }
                     }
                     .overlay(alignment: .trailing) {
-                        if store.maximizedBoardID != board.id {
+                        if !store.isDeskFilterPresented && store.maximizedBoardID != board.id {
                             BoardResizeHandle(
                                 board: board,
                                 height: boardHeight,
@@ -108,7 +134,7 @@ struct BoardStrip: View {
                     .zIndex(boardDrag?.boardID == board.id ? 2 : 1)
                 }
 
-                if let lastBoardID = boards.last?.id {
+                if !store.isDeskFilterPresented, let lastBoardID = boards.last?.id {
                     Button {
                         onOpenBoardAtEnd(lastBoardID)
                     } label: {
@@ -155,6 +181,12 @@ struct BoardStrip: View {
         }
         .onChange(of: store.centerFocusedBoardRequest) { _, _ in
             onCenterRequest()
+        }
+        .onChange(of: store.deskFilterSelectionBoardID) { _, boardID in
+            guard store.isDeskFilterPresented, let boardID else { return }
+            withAnimation(DenMotion.spatial(reduceMotion: shouldReduceMotion)) {
+                scrollPosition.scrollTo(id: boardID, anchor: .center)
+            }
         }
     }
 }

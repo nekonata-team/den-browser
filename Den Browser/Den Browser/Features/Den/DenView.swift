@@ -40,6 +40,7 @@ struct DenView: View {
     @FocusState private var isSaveDeskPresetLabelFocused: Bool
     @State private var renameText = ""
     @FocusState private var isRenamePanelFocused: Bool
+    @FocusState private var isDeskFilterFocused: Bool
 
     init(profileName: String? = nil, profileColor: Color = .blue) {
         self.profileName = profileName
@@ -69,6 +70,23 @@ struct DenView: View {
                         .padding(.top, DenLayout.outerInset)
                         .allowsHitTesting(store.temporaryContext == nil)
                         .accessibilityHidden(store.temporaryContext != nil)
+                }
+
+                if store.isDeskFilterPresented && store.filteredDeskBoards.isEmpty {
+                    ContentUnavailableView.search(text: store.deskFilterQuery)
+                        .allowsHitTesting(false)
+                }
+
+                if store.isDeskFilterPresented {
+                    deskFilterOverlay
+                        .padding(
+                            .top,
+                            shouldShowDeskSwitcher
+                                ? DenLayout.boardTopInsetWithDeskSwitcher + DenLayout.outerInset
+                                : DenLayout.outerInset
+                        )
+                        .transition(DenMotion.transition(reduceMotion: shouldReduceMotion, scale: 0.96))
+                        .zIndex(2)
                 }
 
                 activePanel(defaultBoardWidth: defaultBoardWidth(in: geometry.size))
@@ -129,6 +147,7 @@ struct DenView: View {
                 cancelDeskDrag()
             }
             .animation(DenMotion.feedback(reduceMotion: shouldReduceMotion), value: store.temporaryContext)
+            .animation(DenMotion.feedback(reduceMotion: shouldReduceMotion), value: store.isDeskFilterPresented)
             .animation(DenMotion.spatial(reduceMotion: shouldReduceMotion), value: store.isZenViewPresented)
             .animation(DenMotion.spatial(reduceMotion: shouldReduceMotion), value: store.isDrawerOpen)
         }
@@ -159,6 +178,58 @@ struct DenView: View {
                 alignDraggedDesk(to: frames)
             }
         )
+    }
+
+    private var deskFilterOverlay: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "magnifyingglass")
+                .foregroundStyle(store.isDeskFilterInputActive ? .primary : .secondary)
+
+            TextField(
+                "Filter Boards (/)",
+                text: Binding(
+                    get: { store.deskFilterQuery },
+                    set: { store.setDeskFilterQuery($0) }
+                )
+            )
+            .textFieldStyle(.plain)
+            .focused($isDeskFilterFocused)
+            .disabled(!store.isDeskFilterInputActive)
+            .accessibilityIdentifier("desk-filter-input")
+
+            Text("\(store.filteredDeskBoards.count)/\(store.focusedDesk?.boards.count ?? 0)")
+                .font(.caption.monospacedDigit())
+                .foregroundStyle(.secondary)
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .frame(width: DenLayout.deskFilterWidth)
+        .background(
+            .regularMaterial,
+            in: RoundedRectangle(cornerRadius: DenRadius.medium, style: .continuous)
+        )
+        .overlay {
+            RoundedRectangle(cornerRadius: DenRadius.medium, style: .continuous)
+                .stroke(
+                    store.isDeskFilterInputActive
+                        ? profileColor.opacity(0.86)
+                        : Color.primary.opacity(0.16),
+                    lineWidth: store.isDeskFilterInputActive ? 1.5 : 1
+                )
+        }
+        .shadow(color: .black.opacity(0.25), radius: 16, y: 8)
+        .onTapGesture {
+            store.enterDeskFilter()
+        }
+        .onAppear {
+            DispatchQueue.main.async {
+                isDeskFilterFocused = store.isDeskFilterInputActive
+            }
+        }
+        .onChange(of: store.isDeskFilterInputActive) { _, isActive in
+            isDeskFilterFocused = isActive
+        }
+        .accessibilityIdentifier("desk-filter")
     }
 
     @ViewBuilder

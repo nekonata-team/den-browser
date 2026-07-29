@@ -3,6 +3,7 @@ import Foundation
 extension DenStore {
     func focusDesk(_ deskID: UUID) {
         guard state.desks.contains(where: { $0.id == deskID }) else { return }
+        dismissDeskFilter()
         state.focusedDeskID = deskID
         isDenMode = false
         save()
@@ -75,6 +76,7 @@ extension DenStore {
             showToast("Desk \(number) does not exist.", style: .warning)
             return
         }
+        dismissDeskFilter()
         let targetDeskID = state.desks[number - 1].id
         state.focusedDeskID = targetDeskID
         isDenMode = false
@@ -104,6 +106,7 @@ extension DenStore {
     func beginBoardDrag(_ boardID: UUID) -> Bool {
         guard
             !isBoardDragging,
+            !isDeskFilterPresented,
             temporaryContext == nil,
             let indices = boardIndices(for: boardID),
             indices.desk == focusedDeskIndex
@@ -193,6 +196,7 @@ extension DenStore {
 
     private func moveDeskFocus(by delta: Int) {
         guard let currentIndex = focusedDeskIndex, !state.desks.isEmpty else { return }
+        dismissDeskFilter()
         let nextIndex = wrappedIndex(currentIndex + delta, count: state.desks.count)
         let targetDeskID = state.desks[nextIndex].id
         state.focusedDeskID = targetDeskID

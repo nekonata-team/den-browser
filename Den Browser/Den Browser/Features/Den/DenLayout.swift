@@ -12,6 +12,7 @@ enum DenLayout {
     static let deskButtonMaxWidth: CGFloat = 180
     static let panelGap: CGFloat = 26
     static let overlayInset: CGFloat = 18
+    static let deskFilterWidth: CGFloat = 320
 
     static let boardTopInsetWithDeskSwitcher = outerInset + deskSwitcherHeight
     static let panelTopInset = boardTopInsetWithDeskSwitcher + panelGap

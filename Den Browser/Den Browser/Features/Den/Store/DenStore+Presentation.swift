@@ -4,10 +4,14 @@ extension DenStore {
     func toggleDenMode() {
         guard temporaryContext == nil else { return }
         isDenMode.toggle()
+        if !isDenMode {
+            dismissDeskFilter()
+        }
     }
 
     func exitDenMode() {
         guard temporaryContext == nil else { return }
+        dismissDeskFilter()
         isDenMode = false
     }
 

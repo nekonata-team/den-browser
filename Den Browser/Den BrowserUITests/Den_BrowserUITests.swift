@@ -133,6 +133,31 @@ final class Den_BrowserUITests: XCTestCase {
     }
 
     @MainActor
+    func testFiltersBoardsInFocusedDeskAndEntersSelection() throws {
+        let app = launchApp()
+        enterDenMode(in: app)
+
+        app.typeText("/")
+        let filter = app.descendants(matching: .any).matching(identifier: "desk-filter").firstMatch
+        XCTAssertTrue(filter.waitForExistence(timeout: 5))
+        app.typeText("Bravo")
+
+        assertEventually("Only the matching Board should remain visible") {
+            self.board(.bravo, in: app).exists
+                && !self.board(.alpha, in: app).exists
+                && !self.board(.charlie, in: app).exists
+        }
+
+        app.typeKey("\r", modifierFlags: [])
+        app.typeKey("\r", modifierFlags: [])
+
+        XCTAssertTrue(board(.bravo, in: app).wait(for: \.isSelected, toEqual: true, timeout: 5))
+        XCTAssertTrue(app.windows["UI Testing — Den Browser"].waitForExistence(timeout: 5))
+        XCTAssertTrue(board(.alpha, in: app).waitForExistence(timeout: 5))
+        XCTAssertTrue(board(.charlie, in: app).waitForExistence(timeout: 5))
+    }
+
+    @MainActor
     private func launchApp(singleBoard: Bool = false) -> XCUIApplication {
         let app = XCUIApplication()
         var args = [

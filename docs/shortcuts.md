@@ -24,6 +24,7 @@ The complete in-app guide is available from Settings, the Den menu, and `?` in D
 | Left / Right or `h` / `l` | Previous / next board | Board navigation. |
 | Up / Down or `j` / `k` | Previous / next desk | Desk navigation. |
 | Shift + movement key | Move focused board | Moves in the same spatial direction. |
+| `/` | Filter Boards in Focused Desk | Filters by Board Label or Current Sheet URL. Return confirms the query; Left / Right or `h` / `l` selects a match; Return enters it. Escape cancels. |
 | `1` through `9` | Focus desk 1 through 9 | Missing desks are a no-op. |
 | `0` | Focus desk 10 | Missing desk is a no-op. |
 | Shift + digit | Move focused board to desk | Places it after that desk's focused board, then focuses it. |
@@ -53,6 +54,10 @@ The complete in-app guide is available from Settings, the Den menu, and `?` in D
 ## Overview
 
 Overview accepts movement, Shift plus movement, `/` (search/filter), Return, and Escape. Movement changes the Overview Selection; Shift moves its board. Pressing `/` enters Search Mode to dynamically filter desks and boards (Return confirms the query to allow navigation, Escape cancels and clears the query). Return in Normal Mode makes the selection the Focused Board. Escape in Normal Mode clears the query if active, or closes overview back to Den Mode.
+
+## Focused Desk filter
+
+In Den Mode, `/` opens a floating filter over the current Board strip. It dynamically matches Board Labels and Current Sheet URLs without changing the Focused Board. Return confirms text input; Left / Right or `h` / `l` moves the temporary selection among matching Boards; Return enters the selection and returns to Sheet Input. Escape clears the filter and keeps Den Mode active. Other Den commands remain suspended while the filter is visible.
 
 ## Pointer Board actions
 

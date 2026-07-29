@@ -17,6 +17,10 @@ final class DenStore {
     var isZenViewPresented = false
     var isDenMode = false
     var isFullscreenActive = false
+    var isDeskFilterPresented = false
+    var isDeskFilterInputActive = false
+    var deskFilterQuery = ""
+    var deskFilterSelectionBoardID: UUID?
     var overviewQuery = ""
     var isOverviewFilterMode = false
     var boardWidthPanelMessage: String?
@@ -201,6 +205,10 @@ final class DenStore {
         deskPresetPendingReplacement = nil
         isResetDenPending = false
         maximizedBoardID = nil
+        isDeskFilterPresented = false
+        isDeskFilterInputActive = false
+        deskFilterQuery = ""
+        deskFilterSelectionBoardID = nil
         overviewSelectionDeskID = nil
         overviewSelectionBoardID = nil
         recentlyRemovedBoard = nil
@@ -313,6 +321,9 @@ final class DenStore {
     }
 
     func setTemporaryContext(_ context: TemporaryContext?) {
+        if context != nil {
+            dismissDeskFilter()
+        }
         if temporaryContext == .openBoard, context != .openBoard {
             openBoardPanelInitialURL = nil
         }

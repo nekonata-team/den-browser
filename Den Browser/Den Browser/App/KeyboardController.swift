@@ -94,6 +94,10 @@ final class KeyboardController {
             return false
         }
 
+        if store.isDenMode, store.isDeskFilterPresented {
+            return handleDenMode(event, store: store)
+        }
+
         if handleCustomShortcut(event, store: store, preferences: preferences) {
             return true
         }
@@ -137,6 +141,10 @@ final class KeyboardController {
 
     private static func handleDenMode(_ event: NSEvent, store: DenStore) -> Bool {
         let modifiers = normalizedModifiers(for: event)
+        if store.isDeskFilterPresented {
+            return handleDeskFilter(event, store: store)
+        }
+
         if isTab(event), modifiers == [], !event.isARepeat {
             store.toggleDrawer()
             return true
@@ -144,6 +152,11 @@ final class KeyboardController {
 
         if isEscape(event), modifiers == [] {
             store.exitDenMode()
+            return true
+        }
+
+        if characterIgnoringModifiers(for: event) == "/", modifiers == [] {
+            store.enterDeskFilter()
             return true
         }
 
@@ -173,6 +186,48 @@ final class KeyboardController {
             }
         }
 
+        return true
+    }
+
+    private static func handleDeskFilter(_ event: NSEvent, store: DenStore) -> Bool {
+        let modifiers = normalizedModifiers(for: event)
+        guard modifiers == [] else { return true }
+
+        if store.isDeskFilterInputActive {
+            if hasMarkedText(in: event) {
+                return false
+            }
+            if isEscape(event) {
+                store.dismissDeskFilter()
+                return true
+            }
+            if isReturn(event) {
+                store.confirmDeskFilterQuery()
+                return true
+            }
+            return false
+        }
+
+        if isEscape(event) {
+            store.dismissDeskFilter()
+        } else if isReturn(event) {
+            store.confirmDeskFilterSelection()
+        } else if characterIgnoringModifiers(for: event) == "/" {
+            store.enterDeskFilter()
+        } else {
+            switch event.specialKey {
+            case .leftArrow:
+                store.selectDeskFilterBoard(by: -1)
+            case .rightArrow:
+                store.selectDeskFilterBoard(by: 1)
+            default:
+                switch characterIgnoringModifiers(for: event) {
+                case "h": store.selectDeskFilterBoard(by: -1)
+                case "l": store.selectDeskFilterBoard(by: 1)
+                default: break
+                }
+            }
+        }
         return true
     }
 
@@ -251,6 +306,9 @@ final class KeyboardController {
         guard modifiers == [] else { return true }
 
         if store.isDrawerFilterMode {
+            if hasMarkedText(in: event) {
+                return false
+            }
             if isEscape(event) {
                 store.exitDrawerFilterMode()
                 return true
@@ -344,6 +402,9 @@ final class KeyboardController {
         let character = event.charactersIgnoringModifiers?.first
 
         if store.isOverviewFilterMode {
+            if hasMarkedText(in: event) {
+                return false
+            }
             if isEscape(event), modifiers == [] {
                 store.exitOverviewFilterMode()
                 return true
@@ -375,6 +436,10 @@ final class KeyboardController {
             }
             return true
         }
+    }
+
+    private static func hasMarkedText(in event: NSEvent) -> Bool {
+        (event.window?.firstResponder as? NSTextView)?.hasMarkedText() == true
     }
 
     private static func handleMovement(
