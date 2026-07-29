@@ -79,6 +79,27 @@ struct DenStorePresentationTests {
         #expect(savedState == nil)
     }
 
+    @Test func pendingConfirmationsAreExclusiveAndStaleCancellationKeepsCurrentRequest() {
+        let board = board("Board")
+        let populated = desk("Populated", boards: [board])
+        let empty = desk("Empty")
+        let store = DenStore(
+            state: DenState(desks: [populated, empty], focusedDeskID: populated.id))
+
+        store.deleteFocusedDesk()
+        #expect(store.deskPendingDeletion?.id == populated.id)
+
+        store.requestResetDenConfirmation()
+        #expect(store.deskPendingDeletion == nil)
+        #expect(store.isResetDenPending)
+
+        store.cancelDeskDeletion()
+        #expect(store.isResetDenPending)
+
+        store.cancelResetDen()
+        #expect(!store.hasPendingConfirmation)
+    }
+
     @Test func confirmingResetDenUsesExistingResetBehavior() {
         let board = board("Board")
         let populated = desk("Populated", boards: [board])

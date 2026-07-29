@@ -8,8 +8,7 @@ extension DenStore {
 
     func enterDeskFilter() {
         guard focusedDesk?.boards.isEmpty == false else { return }
-        isDeskFilterPresented = true
-        isDeskFilterInputActive = true
+        deskFilterPhase = .filtering
         updateDeskFilterSelection()
     }
 
@@ -19,12 +18,12 @@ extension DenStore {
     }
 
     func confirmDeskFilterQuery() {
-        isDeskFilterInputActive = false
+        guard deskFilterPhase == .filtering else { return }
+        deskFilterPhase = .selecting
     }
 
     func dismissDeskFilter() {
-        isDeskFilterPresented = false
-        isDeskFilterInputActive = false
+        deskFilterPhase = .inactive
         deskFilterQuery = ""
         deskFilterSelectionBoardID = nil
     }

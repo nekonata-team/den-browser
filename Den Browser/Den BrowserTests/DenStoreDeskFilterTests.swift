@@ -37,12 +37,14 @@ struct DenStoreDeskFilterTests {
         #expect(KeyboardController.handle(try keyEvent("/", keyCode: 44), store: store))
         #expect(store.isDeskFilterPresented)
         #expect(store.isDeskFilterInputActive)
+        #expect(store.deskFilterPhase == .filtering)
 
         store.setDeskFilterQuery("a")
         #expect(store.filteredDeskBoards.map(\.id) == [alpha.id, bravo.id, charlie.id])
 
         #expect(KeyboardController.handle(try keyEvent(.carriageReturn, keyCode: 36), store: store))
         #expect(!store.isDeskFilterInputActive)
+        #expect(store.deskFilterPhase == .selecting)
         #expect(store.focusedBoard?.id == alpha.id)
 
         #expect(KeyboardController.handle(try keyEvent(.rightArrow, keyCode: 124), store: store))
@@ -52,6 +54,7 @@ struct DenStoreDeskFilterTests {
         #expect(KeyboardController.handle(try keyEvent(.carriageReturn, keyCode: 36), store: store))
         #expect(store.focusedBoard?.id == bravo.id)
         #expect(!store.isDeskFilterPresented)
+        #expect(store.deskFilterPhase == .inactive)
         #expect(store.deskFilterQuery.isEmpty)
         #expect(!store.isDenMode)
     }

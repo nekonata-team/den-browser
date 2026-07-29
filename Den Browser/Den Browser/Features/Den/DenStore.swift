@@ -17,19 +17,14 @@ final class DenStore {
     var isZenViewPresented = false
     var isDenMode = false
     var isFullscreenActive = false
-    var isDeskFilterPresented = false
-    var isDeskFilterInputActive = false
+    var deskFilterPhase: DeskFilterPhase = .inactive
     var deskFilterQuery = ""
     var deskFilterSelectionBoardID: UUID?
     var overviewQuery = ""
     var isOverviewFilterMode = false
     var boardWidthPanelMessage: String?
     var openBoardPanelInitialURL: URL?
-    var deskPendingDeletion: DeskState?
-    var deskPendingReplacement: PendingDeskReplacement?
-    var deskPresetPendingDeletion: PersonalDeskPreset?
-    var deskPresetPendingReplacement: PersonalDeskPreset?
-    private(set) var isResetDenPending = false
+    var pendingConfirmation: PendingConfirmation?
     var maximizedBoardID: UUID?
     var centerFocusedBoardRequest = 0
     var isBoardDragging = false
@@ -40,6 +35,8 @@ final class DenStore {
     var overviewSelectionBoardID: UUID?
     var recentlyRemovedBoard: RecentlyRemovedBoard?
     var isDrawerOpen: Bool { temporaryContext == .drawer }
+    var isDeskFilterPresented: Bool { deskFilterPhase != .inactive }
+    var isDeskFilterInputActive: Bool { deskFilterPhase == .filtering }
     var drawerQuery = ""
     var isDrawerFilterMode = false
     var selectedDrawerItemID: UUID?
@@ -90,13 +87,27 @@ final class DenStore {
     var isKeyboardShortcutsPresented: Bool { temporaryContext == .keyboardShortcuts }
     var isBoardWidthPanelPresented: Bool { temporaryContext == .boardWidth }
     var isSaveDeskPresetPanelPresented: Bool { temporaryContext == .saveDeskPreset }
-    var hasPendingConfirmation: Bool {
-        deskPendingDeletion != nil
-            || deskPendingReplacement != nil
-            || deskPresetPendingDeletion != nil
-            || deskPresetPendingReplacement != nil
-            || isResetDenPending
+    var deskPendingDeletion: DeskState? {
+        guard case .deleteDesk(let desk)? = pendingConfirmation else { return nil }
+        return desk
     }
+    var deskPendingReplacement: PendingDeskReplacement? {
+        guard case .replaceDesk(let replacement)? = pendingConfirmation else { return nil }
+        return replacement
+    }
+    var deskPresetPendingDeletion: PersonalDeskPreset? {
+        guard case .deleteDeskPreset(let preset)? = pendingConfirmation else { return nil }
+        return preset
+    }
+    var deskPresetPendingReplacement: PersonalDeskPreset? {
+        guard case .replaceDeskPreset(let preset)? = pendingConfirmation else { return nil }
+        return preset
+    }
+    var isResetDenPending: Bool {
+        guard case .resetDen? = pendingConfirmation else { return false }
+        return true
+    }
+    var hasPendingConfirmation: Bool { pendingConfirmation != nil }
 
     convenience init() {
         self.init(state: .sample)
@@ -199,16 +210,9 @@ final class DenStore {
         isBoardDragging = false
         isDeskDragging = false
         boardWidthPanelMessage = nil
-        deskPendingDeletion = nil
-        deskPendingReplacement = nil
-        deskPresetPendingDeletion = nil
-        deskPresetPendingReplacement = nil
-        isResetDenPending = false
+        pendingConfirmation = nil
         maximizedBoardID = nil
-        isDeskFilterPresented = false
-        isDeskFilterInputActive = false
-        deskFilterQuery = ""
-        deskFilterSelectionBoardID = nil
+        dismissDeskFilter()
         overviewSelectionDeskID = nil
         overviewSelectionBoardID = nil
         recentlyRemovedBoard = nil
@@ -237,7 +241,7 @@ final class DenStore {
     }
 
     func requestResetDenConfirmation() {
-        isResetDenPending = true
+        pendingConfirmation = .resetDen
     }
 
     func confirmResetDen() {
@@ -246,7 +250,9 @@ final class DenStore {
     }
 
     func cancelResetDen() {
-        isResetDenPending = false
+        if isResetDenPending {
+            pendingConfirmation = nil
+        }
     }
 
     var focusedDeskIndex: Int? {
@@ -355,6 +361,20 @@ enum TemporaryContext: Equatable {
     case renameBoard
     case renameDesk
     case drawer
+}
+
+enum DeskFilterPhase: Equatable {
+    case inactive
+    case filtering
+    case selecting
+}
+
+enum PendingConfirmation {
+    case deleteDesk(DeskState)
+    case replaceDesk(PendingDeskReplacement)
+    case deleteDeskPreset(PersonalDeskPreset)
+    case replaceDeskPreset(PersonalDeskPreset)
+    case resetDen
 }
 
 struct RecentlyRemovedBoard {

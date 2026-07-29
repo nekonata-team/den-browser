@@ -49,12 +49,14 @@ extension DenStore {
 
     func confirmDeskReplacement() {
         guard let replacement = deskPendingReplacement else { return }
-        deskPendingReplacement = nil
+        pendingConfirmation = nil
         applyDeskReplacement(replacement)
     }
 
     func cancelDeskReplacement() {
-        deskPendingReplacement = nil
+        if deskPendingReplacement != nil {
+            pendingConfirmation = nil
+        }
     }
 
     private func requestFocusedDeskReplacement(
@@ -82,7 +84,7 @@ extension DenStore {
             applyDeskReplacement(replacement)
             return .applied
         }
-        deskPendingReplacement = replacement
+        pendingConfirmation = .replaceDesk(replacement)
         return .confirmationPending
     }
 
@@ -115,18 +117,20 @@ extension DenStore {
         if focusedDesk.boards.isEmpty {
             deleteDesk(focusedDesk.id)
         } else {
-            deskPendingDeletion = focusedDesk
+            pendingConfirmation = .deleteDesk(focusedDesk)
         }
     }
 
     func confirmDeskDeletion() {
         guard let deskID = deskPendingDeletion?.id else { return }
-        deskPendingDeletion = nil
+        pendingConfirmation = nil
         deleteDesk(deskID)
     }
 
     func cancelDeskDeletion() {
-        deskPendingDeletion = nil
+        if deskPendingDeletion != nil {
+            pendingConfirmation = nil
+        }
     }
 
     private func deleteDesk(_ deskID: UUID) {

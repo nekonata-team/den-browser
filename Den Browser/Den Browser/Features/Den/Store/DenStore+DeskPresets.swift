@@ -18,7 +18,8 @@ extension DenStore {
         }
 
         if let existing = deskPresets.first(where: { samePresetLabel($0.label, label) }) {
-            deskPresetPendingReplacement = PersonalDeskPreset(id: existing.id, label: existing.label, desk: desk)
+            pendingConfirmation = .replaceDeskPreset(
+                PersonalDeskPreset(id: existing.id, label: existing.label, desk: desk))
             return .replacementPending
         }
 
@@ -35,29 +36,34 @@ extension DenStore {
             let index = deskPresets.firstIndex(where: { $0.id == replacement.id })
         else { return }
         deskPresets[index] = replacement
-        deskPresetPendingReplacement = nil
+        pendingConfirmation = nil
         isDenMode = false
         saveDeskPresets()
         showToast("Saved Desk Preset.", style: .success)
     }
 
     func cancelDeskPresetReplacement() {
-        deskPresetPendingReplacement = nil
+        if deskPresetPendingReplacement != nil {
+            pendingConfirmation = nil
+        }
     }
 
     func requestDeskPresetDeletion(_ id: UUID) {
-        deskPresetPendingDeletion = deskPresets.first { $0.id == id }
+        guard let preset = deskPresets.first(where: { $0.id == id }) else { return }
+        pendingConfirmation = .deleteDeskPreset(preset)
     }
 
     func confirmDeskPresetDeletion() {
         guard let id = deskPresetPendingDeletion?.id else { return }
-        deskPresetPendingDeletion = nil
+        pendingConfirmation = nil
         deskPresets.removeAll { $0.id == id }
         saveDeskPresets()
     }
 
     func cancelDeskPresetDeletion() {
-        deskPresetPendingDeletion = nil
+        if deskPresetPendingDeletion != nil {
+            pendingConfirmation = nil
+        }
     }
 
     private func samePresetLabel(_ lhs: String, _ rhs: String) -> Bool {
