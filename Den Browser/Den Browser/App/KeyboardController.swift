@@ -302,6 +302,10 @@ final class KeyboardController {
     }
 
     private static func handleDrawer(_ event: NSEvent, store: DenStore) -> Bool {
+        if isDrawerPreviewFirstResponder(event, store: store) {
+            return false
+        }
+
         let modifiers = normalizedModifiers(for: event)
         guard modifiers == [] else { return true }
 
@@ -373,6 +377,19 @@ final class KeyboardController {
             case .upArrow: store.selectDrawerItem(by: -1)
             default: break
             }
+        }
+        return true
+    }
+
+    private static func isDrawerPreviewFirstResponder(_ event: NSEvent, store: DenStore) -> Bool {
+        guard
+            let webView = store.drawerPreviewRuntime?.webView,
+            var view = event.window?.firstResponder as? NSView
+        else { return false }
+
+        while view !== webView {
+            guard let superview = view.superview else { return false }
+            view = superview
         }
         return true
     }

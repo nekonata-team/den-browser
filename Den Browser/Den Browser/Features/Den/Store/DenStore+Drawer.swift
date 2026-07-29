@@ -164,10 +164,13 @@ extension DenStore {
             item: item,
             websiteDataStore: websiteDataStore,
             sheetNavigation: sheetNavigation,
-            sheetScale: preferences.sheetScale
-        ) { [weak self] itemID, url, title in
-            self?.updateDrawerItem(itemID: itemID, url: url, title: title)
-        }
+            sheetScale: preferences.sheetScale,
+            onDiscard: { [weak self] in
+                self?.discardDrawerItem(item.id)
+            },
+            onChange: { [weak self] itemID, url, title in
+                self?.updateDrawerItem(itemID: itemID, url: url, title: title)
+            })
         drawerPreviewRuntime = runtime
         return runtime
     }

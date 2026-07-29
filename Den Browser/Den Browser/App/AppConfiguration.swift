@@ -33,6 +33,9 @@ struct AppConfiguration {
             preconditionFailure("Could not create UI test preferences")
         }
         defaults.removePersistentDomain(forName: suiteName)
+        if processInfo.arguments.contains("--enable-sheet-navigation") {
+            defaults.set(true, forKey: SheetNavigationManager.enabledKey)
+        }
 
         return AppConfiguration(
             profileDirectoryURL: directoryURL,
@@ -78,13 +81,21 @@ struct AppConfiguration {
             id: fixtureID("00000000-0000-0000-0000-000000000202"),
             label: "Third",
             boards: [])
+        let drawerItem = DrawerItem(
+            id: fixtureID("00000000-0000-0000-0000-000000000401"),
+            url: fixtureSheetURLValue(),
+            title: "Drawer Fixture")
         return PersistedProfile(
             profile: ProfileState(
                 id: fixtureID("00000000-0000-0000-0000-000000000100"),
                 name: "UI Testing",
                 color: .blue,
                 webProfileStore: .default),
-            den: DenState(desks: [desk, secondDesk, thirdDesk], focusedDeskID: desk.id))
+            den: DenState(
+                desks: [desk, secondDesk, thirdDesk],
+                focusedDeskID: desk.id,
+                drawerItems: [drawerItem],
+                expandedDrawerItemID: drawerItem.id))
     }
 
     private static let fixtureSheetURL: String = {
@@ -106,5 +117,12 @@ struct AppConfiguration {
             preconditionFailure("Invalid UI test fixture UUID: \(value)")
         }
         return id
+    }
+
+    private static func fixtureSheetURLValue() -> URL {
+        guard let url = URL(string: fixtureSheetURL) else {
+            preconditionFailure("Invalid UI test fixture URL")
+        }
+        return url
     }
 }

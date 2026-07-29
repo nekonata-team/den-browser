@@ -50,6 +50,30 @@ final class Den_BrowserUITests: XCTestCase {
     }
 
     @MainActor
+    func testDrawerPreviewReceivesVimAndFormInput() throws {
+        let app = launchApp(sheetNavigationEnabled: true)
+        enterDenMode(in: app)
+        app.typeKey(.tab, modifierFlags: [])
+
+        let drawer = app.descendants(matching: .any).matching(identifier: "drawer").firstMatch
+        XCTAssertTrue(drawer.waitForExistence(timeout: 5))
+
+        let previewContent = app.staticTexts["result:pending"].firstMatch
+        XCTAssertTrue(previewContent.waitForExistence(timeout: 10))
+        previewContent.click()
+        app.typeText("gi")
+
+        let sheetInput = app.textFields["Sheet input"].firstMatch
+        XCTAssertTrue(sheetInput.waitForExistence(timeout: 5))
+        app.typeText("drawer input")
+        XCTAssertEqual(sheetInput.value as? String, "drawer input")
+
+        app.typeKey(.escape, modifierFlags: [])
+        app.typeText("x")
+        XCTAssertTrue(drawer.waitForNonExistence(timeout: 5))
+    }
+
+    @MainActor
     func testOrganizesBoardsUsingPointer() throws {
         let app = launchApp()
         let bravo = board(.bravo, in: app)
@@ -158,13 +182,19 @@ final class Den_BrowserUITests: XCTestCase {
     }
 
     @MainActor
-    private func launchApp(singleBoard: Bool = false) -> XCUIApplication {
+    private func launchApp(
+        singleBoard: Bool = false,
+        sheetNavigationEnabled: Bool = false
+    ) -> XCUIApplication {
         let app = XCUIApplication()
         var args = [
             "--ui-testing", "--fixture", "interaction-basics",
         ]
         if singleBoard {
             args.append("--single-board")
+        }
+        if sheetNavigationEnabled {
+            args.append("--enable-sheet-navigation")
         }
         app.launchArguments = args
         app.launchEnvironment["DEN_UI_TEST_RUN_ID"] = UUID().uuidString
