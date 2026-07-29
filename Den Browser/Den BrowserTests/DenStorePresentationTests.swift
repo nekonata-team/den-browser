@@ -199,7 +199,7 @@ struct DenStorePresentationTests {
             // 4. Overview confirmation exits even on the same Desk
             store.showOverview()
             store.isDenMode = true
-            store.overviewSelectionDeskID = first.id
+            store.overviewSelection = OverviewSelection(deskID: first.id, boardID: nil)
             store.enterOverviewSelection()
             #expect(!store.isDenMode)
             #expect(store.focusedDesk?.id == first.id)
@@ -207,7 +207,7 @@ struct DenStorePresentationTests {
             // enterOverviewSelection() exits when the target is already focused
             store.showOverview()
             store.isDenMode = true
-            store.overviewSelectionDeskID = first.id
+            store.overviewSelection = OverviewSelection(deskID: first.id, boardID: nil)
             store.enterOverviewSelection()
             #expect(!store.isDenMode)
         }

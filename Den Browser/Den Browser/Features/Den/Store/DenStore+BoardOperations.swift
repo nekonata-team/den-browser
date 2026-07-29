@@ -105,7 +105,7 @@ extension DenStore {
 
     func beginBoardDrag(_ boardID: UUID) -> Bool {
         guard
-            !isBoardDragging,
+            activeDrag == nil,
             !isDeskFilterPresented,
             temporaryContext == nil,
             let indices = boardIndices(for: boardID),
@@ -115,7 +115,7 @@ extension DenStore {
         }
         state.desks[indices.desk].focusedBoardID = boardID
         maximizedBoardID = nil
-        isBoardDragging = true
+        activeDrag = .board(boardID)
         save()
         return true
     }
@@ -141,27 +141,26 @@ extension DenStore {
     }
 
     func finishBoardDrag() {
-        guard isBoardDragging else { return }
-        isBoardDragging = false
+        guard case .board? = activeDrag else { return }
+        activeDrag = nil
         save()
     }
 
     func requestBoardDragCancellation() {
-        guard isBoardDragging else { return }
+        guard case .board? = activeDrag else { return }
         boardDragCancellationRequest &+= 1
     }
 
     func beginDeskDrag(_ deskID: UUID) -> Bool {
         guard
-            !isDeskDragging,
-            !isBoardDragging,
+            activeDrag == nil,
             temporaryContext == nil,
             state.desks.contains(where: { $0.id == deskID })
         else {
             return false
         }
 
-        isDeskDragging = true
+        activeDrag = .desk(deskID)
         return true
     }
 
@@ -184,13 +183,13 @@ extension DenStore {
     }
 
     func finishDeskDrag() {
-        guard isDeskDragging else { return }
-        isDeskDragging = false
+        guard case .desk? = activeDrag else { return }
+        activeDrag = nil
         save()
     }
 
     func requestDeskDragCancellation() {
-        guard isDeskDragging else { return }
+        guard case .desk? = activeDrag else { return }
         deskDragCancellationRequest &+= 1
     }
 

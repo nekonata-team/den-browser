@@ -141,6 +141,27 @@ struct DenStoreBoardTests {
         #expect(savedStates[0].desks[0].boards.map(\.id) == [boards[1].id, boards[2].id, boards[0].id])
     }
 
+    @Test func boardAndDeskDragAreMutuallyExclusive() {
+        let board = board("Board")
+        let first = desk("First", boards: [board], focusedBoardID: board.id)
+        let second = desk("Second")
+        let store = DenStore(
+            state: DenState(desks: [first, second], focusedDeskID: first.id))
+
+        #expect(store.beginDeskDrag(second.id))
+        #expect(store.activeDrag == .desk(second.id))
+        #expect(!store.beginBoardDrag(board.id))
+        #expect(!store.isBoardDragging)
+        #expect(store.isDeskDragging)
+
+        store.finishDeskDrag()
+        #expect(store.beginBoardDrag(board.id))
+        #expect(store.activeDrag == .board(board.id))
+        #expect(!store.beginDeskDrag(second.id))
+        #expect(store.isBoardDragging)
+        #expect(!store.isDeskDragging)
+    }
+
     @Test func cancelledBoardDragRestoresAndPersistsOriginalOrder() {
         let boards = [board("A"), board("B"), board("C")]
         let source = desk("Desk", boards: boards, focusedBoardID: boards[0].id)
@@ -350,8 +371,14 @@ struct DenStoreBoardTests {
     @Test func rejectsBoardFitCountsOutsideCurrentWidth() {
         let boards = [board("First"), board("Second")]
         withStore(desks: [desk("Desk", boards: boards)]) { store in
+            #expect(store.boardLayoutMetrics == nil)
+            #expect(store.boardWidth(toFit: 3) == nil)
+
             store.updateBoardLayout(availableWidth: 1_080, spacing: 10)
 
+            #expect(
+                store.boardLayoutMetrics
+                    == BoardLayoutMetrics(availableWidth: 1_080, spacing: 10))
             #expect(store.boardWidth(toFit: 3) != nil)
             #expect(store.boardWidth(toFit: 4) == nil)
             #expect(!store.resizeFocusedDeskBoards(toFit: 4))

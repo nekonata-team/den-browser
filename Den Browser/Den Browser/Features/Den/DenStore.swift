@@ -27,16 +27,24 @@ final class DenStore {
     var pendingConfirmation: PendingConfirmation?
     var maximizedBoardID: UUID?
     var centerFocusedBoardRequest = 0
-    var isBoardDragging = false
+    var activeDrag: ActiveDrag?
     var boardDragCancellationRequest = 0
-    var isDeskDragging = false
     var deskDragCancellationRequest = 0
-    var overviewSelectionDeskID: UUID?
-    var overviewSelectionBoardID: UUID?
+    var overviewSelection: OverviewSelection?
     var recentlyRemovedBoard: RecentlyRemovedBoard?
     var isDrawerOpen: Bool { temporaryContext == .drawer }
     var isDeskFilterPresented: Bool { deskFilterPhase != .inactive }
     var isDeskFilterInputActive: Bool { deskFilterPhase == .filtering }
+    var isBoardDragging: Bool {
+        guard case .board? = activeDrag else { return false }
+        return true
+    }
+    var isDeskDragging: Bool {
+        guard case .desk? = activeDrag else { return false }
+        return true
+    }
+    var overviewSelectionDeskID: UUID? { overviewSelection?.deskID }
+    var overviewSelectionBoardID: UUID? { overviewSelection?.boardID }
     var drawerQuery = ""
     var isDrawerFilterMode = false
     var selectedDrawerItemID: UUID?
@@ -52,8 +60,7 @@ final class DenStore {
     @ObservationIgnored private let onSave: ((DenState) -> Void)?
     @ObservationIgnored private let onDeskPresetsSave: (([PersonalDeskPreset]) -> Void)?
     @ObservationIgnored let onRecentItemsSave: (([RecentItem]) -> Bool)?
-    var availableBoardWidth = 0.0
-    var boardSpacing = 0.0
+    var boardLayoutMetrics: BoardLayoutMetrics?
 
     var focusedDesk: DeskState? {
         state.desks.first { $0.id == state.focusedDeskID }
@@ -207,14 +214,12 @@ final class DenStore {
         openBoardPanelInitialURL = nil
         setTemporaryContext(nil)
         isZenViewPresented = false
-        isBoardDragging = false
-        isDeskDragging = false
+        activeDrag = nil
         boardWidthPanelMessage = nil
         pendingConfirmation = nil
         maximizedBoardID = nil
         dismissDeskFilter()
-        overviewSelectionDeskID = nil
-        overviewSelectionBoardID = nil
+        overviewSelection = nil
         recentlyRemovedBoard = nil
         drawerQuery = ""
         isDrawerFilterMode = false
@@ -302,7 +307,7 @@ final class DenStore {
     }
 
     func save() {
-        guard !isBoardDragging, !isDeskDragging else { return }
+        guard activeDrag == nil else { return }
         onSave?(state)
     }
 
@@ -334,8 +339,7 @@ final class DenStore {
             openBoardPanelInitialURL = nil
         }
         if temporaryContext == .overview, context != .overview {
-            overviewSelectionDeskID = nil
-            overviewSelectionBoardID = nil
+            overviewSelection = nil
         }
         if temporaryContext == .boardWidth, context != .boardWidth {
             boardWidthPanelMessage = nil
@@ -375,6 +379,21 @@ enum PendingConfirmation {
     case deleteDeskPreset(PersonalDeskPreset)
     case replaceDeskPreset(PersonalDeskPreset)
     case resetDen
+}
+
+enum ActiveDrag: Equatable {
+    case board(UUID)
+    case desk(UUID)
+}
+
+struct OverviewSelection: Equatable {
+    let deskID: UUID
+    let boardID: UUID?
+}
+
+struct BoardLayoutMetrics: Equatable {
+    let availableWidth: Double
+    let spacing: Double
 }
 
 struct RecentlyRemovedBoard {

@@ -13,8 +13,9 @@ extension DenStore {
         setTemporaryContext(.overview)
         overviewQuery = ""
         isOverviewFilterMode = false
-        overviewSelectionDeskID = state.focusedDeskID
-        overviewSelectionBoardID = focusedDesk?.focusedBoardID
+        overviewSelection = OverviewSelection(
+            deskID: state.focusedDeskID,
+            boardID: focusedDesk?.focusedBoardID)
     }
 
     func hideOverview() {
@@ -57,9 +58,9 @@ extension DenStore {
     }
 
     private func updateOverviewSelectionForFilter() {
-        if let deskID = overviewSelectionDeskID,
-            let boardID = overviewSelectionBoardID,
-            let desk = state.desks.first(where: { $0.id == deskID }),
+        if let selection = overviewSelection,
+            let boardID = selection.boardID,
+            let desk = state.desks.first(where: { $0.id == selection.deskID }),
             let board = desk.boards.first(where: { $0.id == boardID }),
             matchesOverviewFilter(board, in: desk)
         {
@@ -69,27 +70,27 @@ extension DenStore {
         for desk in state.desks {
             let matchingBoards = desk.boards.filter { matchesOverviewFilter($0, in: desk) }
             if let firstBoard = matchingBoards.first {
-                overviewSelectionDeskID = desk.id
-                overviewSelectionBoardID = firstBoard.id
+                overviewSelection = OverviewSelection(
+                    deskID: desk.id,
+                    boardID: firstBoard.id)
                 return
             }
         }
 
-        overviewSelectionDeskID = nil
-        overviewSelectionBoardID = nil
+        overviewSelection = nil
     }
 
     func enterOverviewSelection() {
         guard
-            let deskID = overviewSelectionDeskID,
-            let deskIndex = state.desks.firstIndex(where: { $0.id == deskID })
+            let selection = overviewSelection,
+            let deskIndex = state.desks.firstIndex(where: { $0.id == selection.deskID })
         else {
             hideOverview()
             return
         }
 
-        state.focusedDeskID = deskID
-        if let boardID = overviewSelectionBoardID,
+        state.focusedDeskID = selection.deskID
+        if let boardID = selection.boardID,
             state.desks[deskIndex].boards.contains(where: { $0.id == boardID })
         {
             state.desks[deskIndex].focusedBoardID = boardID
@@ -101,8 +102,9 @@ extension DenStore {
 
     func selectBoardInOverview(_ boardID: UUID) {
         guard let indices = boardIndices(for: boardID) else { return }
-        overviewSelectionDeskID = state.desks[indices.desk].id
-        overviewSelectionBoardID = boardID
+        overviewSelection = OverviewSelection(
+            deskID: state.desks[indices.desk].id,
+            boardID: boardID)
     }
 
     func selectPreviousBoardInOverview() {
@@ -149,7 +151,9 @@ extension DenStore {
             overviewSelectionBoardID
             .flatMap { boardID in boards.firstIndex { $0.id == boardID } } ?? 0
         let nextIndex = wrappedIndex(currentIndex + delta, count: boards.count)
-        overviewSelectionBoardID = boards[nextIndex].id
+        overviewSelection = OverviewSelection(
+            deskID: state.desks[deskIndex].id,
+            boardID: boards[nextIndex].id)
     }
 
     private func moveOverviewDeskSelection(by delta: Int) {
@@ -162,10 +166,10 @@ extension DenStore {
         let nextIndex = wrappedIndex(currentIndex + delta, count: matchingDesks.count)
 
         let targetDesk = matchingDesks[nextIndex]
-        overviewSelectionDeskID = targetDesk.id
-
         let targetBoards = targetDesk.boards.filter { matchesOverviewFilter($0, in: targetDesk) }
-        overviewSelectionBoardID = targetBoards.first?.id
+        overviewSelection = OverviewSelection(
+            deskID: targetDesk.id,
+            boardID: targetBoards.first?.id)
     }
 
     private func moveOverviewSelectionBoard(by delta: Int) {
@@ -181,8 +185,9 @@ extension DenStore {
         let targetIndex = min(max(indices.board + delta, 0), boards.count)
         boards.insert(board, at: targetIndex)
         state.desks[indices.desk].boards = boards
-        overviewSelectionDeskID = state.desks[indices.desk].id
-        overviewSelectionBoardID = board.id
+        overviewSelection = OverviewSelection(
+            deskID: state.desks[indices.desk].id,
+            boardID: board.id)
         save()
     }
 
@@ -206,13 +211,14 @@ extension DenStore {
         }
 
         state.desks[targetDeskIndex].boards.insert(board, at: insertIndex)
-        overviewSelectionDeskID = state.desks[targetDeskIndex].id
-        overviewSelectionBoardID = board.id
+        overviewSelection = OverviewSelection(
+            deskID: state.desks[targetDeskIndex].id,
+            boardID: board.id)
         save()
     }
 
     private var overviewSelectionDeskIndex: Int? {
-        guard let overviewSelectionDeskID else { return nil }
-        return state.desks.firstIndex { $0.id == overviewSelectionDeskID }
+        guard let overviewSelection else { return nil }
+        return state.desks.firstIndex { $0.id == overviewSelection.deskID }
     }
 }

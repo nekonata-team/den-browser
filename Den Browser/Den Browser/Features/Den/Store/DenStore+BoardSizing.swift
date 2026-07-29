@@ -25,13 +25,17 @@ extension DenStore {
     }
 
     func updateBoardLayout(availableWidth: Double, spacing: Double) {
-        self.availableBoardWidth = availableWidth
-        boardSpacing = spacing
+        boardLayoutMetrics =
+            availableWidth > 0
+            ? BoardLayoutMetrics(availableWidth: availableWidth, spacing: spacing)
+            : nil
     }
 
     func boardWidth(toFit count: Int) -> Double? {
-        guard (1...9).contains(count), availableBoardWidth > 0 else { return nil }
-        let width = (availableBoardWidth - boardSpacing * Double(count - 1)) / Double(count)
+        guard (1...9).contains(count), let boardLayoutMetrics else { return nil }
+        let width =
+            (boardLayoutMetrics.availableWidth - boardLayoutMetrics.spacing * Double(count - 1))
+            / Double(count)
         guard width >= 280 else { return nil }
         return width
     }

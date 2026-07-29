@@ -152,8 +152,9 @@ extension DenStore {
             state.focusedDeskID = state.desks[min(deskIndex, state.desks.count - 1)].id
         }
         if isOverviewPresented {
-            overviewSelectionDeskID = state.focusedDeskID
-            overviewSelectionBoardID = focusedDesk?.focusedBoardID
+            overviewSelection = OverviewSelection(
+                deskID: state.focusedDeskID,
+                boardID: focusedDesk?.focusedBoardID)
         }
         save()
     }
