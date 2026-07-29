@@ -41,7 +41,7 @@ struct BoardStrip: View {
         let bottomInset = DenLayout.outerInset
         let boardHeight = max(DenLayout.minimumBoardHeight, size.height - topInset - bottomInset)
         let maximizedBoardWidth = max(
-            DenLayout.minimumMaximizedBoardWidth,
+            CGFloat(BoardState.minimumWidth),
             size.width - boardHorizontalPadding * 2)
         let layoutParams = BoardLayout.Parameters(
             centering: preferences.boardCentering,

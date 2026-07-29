@@ -24,7 +24,7 @@ extension DenStore {
     func addBoard(urlString: String, preferredWidth: Double? = nil, afterBoardID: UUID? = nil) {
         guard let url = normalizedURL(from: urlString) else { return }
         let label = url.host(percentEncoded: false) ?? url.absoluteString
-        let width = preferredWidth.map { min(max($0, 360), 980) } ?? 520
+        let width = preferredWidth ?? 520
         let board = BoardState(label: label, width: width, currentSheetURL: url)
 
         let deskIndex: Int

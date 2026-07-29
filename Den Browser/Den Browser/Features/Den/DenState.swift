@@ -176,6 +176,9 @@ struct DeskPresetBoard: Codable, Equatable {
 }
 
 struct BoardState: Codable, Equatable, Identifiable {
+    static let minimumWidth = 280.0
+    static let maximumWidth = 1_400.0
+
     var id: UUID
     var label: String
     var width: Double
@@ -184,6 +187,10 @@ struct BoardState: Codable, Equatable, Identifiable {
 
     var displayName: String {
         customLabel ?? label
+    }
+
+    static func constrainedWidth(_ width: Double) -> Double {
+        min(max(width, minimumWidth), maximumWidth)
     }
 
     init(id: UUID = UUID(), label: String, width: Double, currentSheetURL: URL?, customLabel: String? = nil) {

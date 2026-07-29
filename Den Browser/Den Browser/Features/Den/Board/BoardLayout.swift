@@ -27,7 +27,7 @@ struct BoardLayout {
         let spacing: CGFloat
 
         var maximizedBoardWidth: CGFloat {
-            max(280, windowWidth - horizontalPadding * 2)
+            max(CGFloat(BoardState.minimumWidth), windowWidth - horizontalPadding * 2)
         }
 
         var requiredBoardsWidth: CGFloat {

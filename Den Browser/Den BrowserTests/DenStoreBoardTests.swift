@@ -54,6 +54,17 @@ struct DenStoreBoardTests {
         #expect(store.focusedDesk?.focusedBoardID == store.focusedDesk?.boards.last?.id)
     }
 
+    @Test func newBoardKeepsPreferredWidthBeyondManualResizeLimit() {
+        for width in [BoardState.minimumWidth, BoardState.maximumWidth, 2_480] {
+            let source = desk("Desk")
+            let store = DenStore(state: DenState(desks: [source], focusedDeskID: source.id))
+
+            store.addBoard(urlString: "https://example.com", preferredWidth: width)
+
+            #expect(store.focusedBoard?.width == width)
+        }
+    }
+
     @Test func updateBoardKeepsCurrentSheetForUnsupportedURL() throws {
         let board = board("Board", url: "https://before.example/")
         let source = desk("Desk", boards: [board], focusedBoardID: board.id)

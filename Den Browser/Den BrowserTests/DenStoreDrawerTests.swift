@@ -92,7 +92,7 @@ struct DenStoreDrawerTests {
     }
 
     @Test func placementCreatesFocusedBoardAndRemovesItem() throws {
-        let existingBoard = board("Existing", width: 740)
+        let existingBoard = board("Existing", width: 2_480)
         let source = desk("Desk", boards: [existingBoard], focusedBoardID: existingBoard.id)
         let store = DenStore(state: DenState(desks: [source], focusedDeskID: source.id))
         let url = try #require(URL(string: "https://placed.example/"))
