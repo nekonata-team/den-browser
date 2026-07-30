@@ -157,6 +157,26 @@ final class Den_BrowserUITests: XCTestCase {
     }
 
     @MainActor
+    func testRemovingFocusedBoardSettlesAtLeadingEdge() throws {
+        let app = launchApp()
+        let boardStrip = app.scrollViews["board-strip"].firstMatch
+        let alpha = board(.alpha, in: app)
+        let bravo = board(.bravo, in: app)
+
+        boardHeader(.bravo, in: app).click()
+        XCTAssertTrue(bravo.wait(for: \.isSelected, toEqual: true, timeout: 5))
+
+        enterDenMode(in: app)
+        app.typeText("x")
+
+        XCTAssertTrue(bravo.waitForNonExistence(timeout: 5))
+        XCTAssertTrue(alpha.wait(for: \.isSelected, toEqual: true, timeout: 5))
+        assertEventually("Remaining Boards should settle at the leading edge") {
+            abs(alpha.frame.minX - boardStrip.frame.minX) < 30
+        }
+    }
+
+    @MainActor
     func testFiltersBoardsInFocusedDeskAndEntersSelection() throws {
         let app = launchApp()
         enterDenMode(in: app)

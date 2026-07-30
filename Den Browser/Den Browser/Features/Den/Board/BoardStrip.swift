@@ -21,8 +21,7 @@ struct BoardStrip: View {
     let onFramesChanged: ([UUID: CGRect]) -> Void
     let onOpenBoardAtEnd: (UUID) -> Void
     let onAppear: (Bool) -> Void
-    let onFocusChanged: (BoardFocusTarget, BoardFocusTarget, Bool) -> Void
-    let onAutomaticCenteringChanged: (Bool) -> Void
+    let onAlignmentChanged: (BoardStripAlignmentTarget, BoardStripAlignmentTarget) -> Void
     let onCenterRequest: () -> Void
 
     private var shouldReduceMotion: Bool {
@@ -53,6 +52,11 @@ struct BoardStrip: View {
         )
         let paddings = BoardLayout.calculatePaddings(for: layoutParams)
         let shouldCenterFocusedBoard = BoardLayout.shouldCenterFocusedBoard(for: layoutParams)
+        let alignmentTarget = BoardStripAlignmentTarget(
+            deskID: store.state.focusedDeskID,
+            boardID: store.focusedDesk?.focusedBoardID,
+            centersFocusedBoard: shouldCenterFocusedBoard
+        )
 
         return ScrollView(.horizontal) {
             HStack(alignment: .top, spacing: boardSpacing) {
@@ -97,7 +101,7 @@ struct BoardStrip: View {
                         }
                     }
                     .id(board.id)
-                    .transition(DenMotion.transition(reduceMotion: shouldReduceMotion, scale: 0.98))
+                    .transition(DenMotion.boardTransition(reduceMotion: shouldReduceMotion))
                     .offset(
                         x: boardDrag?.boardID == board.id ? boardDrag?.offset.width ?? 0 : 0,
                         y: boardDrag?.boardID == board.id ? boardDrag?.offset.height ?? 0 : 0
@@ -168,16 +172,8 @@ struct BoardStrip: View {
         .onAppear {
             onAppear(shouldCenterFocusedBoard)
         }
-        .onChange(
-            of: BoardFocusTarget(
-                deskID: store.state.focusedDeskID,
-                boardID: store.focusedDesk?.focusedBoardID
-            )
-        ) { previous, current in
-            onFocusChanged(previous, current, shouldCenterFocusedBoard)
-        }
-        .onChange(of: shouldCenterFocusedBoard) { _, shouldCenterFocusedBoard in
-            onAutomaticCenteringChanged(shouldCenterFocusedBoard)
+        .onChange(of: alignmentTarget) { previous, current in
+            onAlignmentChanged(previous, current)
         }
         .onChange(of: store.centerFocusedBoardRequest) { _, _ in
             onCenterRequest()
@@ -189,6 +185,12 @@ struct BoardStrip: View {
             }
         }
     }
+}
+
+struct BoardStripAlignmentTarget: Equatable {
+    let deskID: UUID?
+    let boardID: UUID?
+    let centersFocusedBoard: Bool
 }
 
 struct BoardResizeHandle: View {

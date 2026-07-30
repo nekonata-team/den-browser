@@ -26,7 +26,6 @@ struct DenView: View {
     @State private var boardFrames: [UUID: CGRect] = [:]
     @State private var boardScrollPosition = ScrollPosition(idType: UUID.self)
     @State private var pendingBoardCentering: PendingBoardCentering?
-    @State private var boardCenteringTask: Task<Void, Never>?
     @State private var boardDrag: BoardDragState?
     @State private var lastBoardAutoScrollTime = 0.0
     @State private var deskFrames: [UUID: CGRect] = [:]
@@ -611,14 +610,9 @@ struct DenView: View {
                     frames[pendingBoardCentering.boardID] != nil
                 {
                     self.pendingBoardCentering = nil
-                    boardCenteringTask?.cancel()
-                    boardCenteringTask = Task { @MainActor in
-                        try? await Task.sleep(for: .milliseconds(100))
-                        guard !Task.isCancelled else { return }
-                        performBoardCentering(
-                            pendingBoardCentering.boardID,
-                            animated: pendingBoardCentering.animated)
-                    }
+                    performBoardCentering(
+                        pendingBoardCentering.boardID,
+                        animated: pendingBoardCentering.animated)
                 }
             },
             onOpenBoardAtEnd: { boardID in
@@ -630,14 +624,11 @@ struct DenView: View {
                 didScrollToRestoredFocusedBoard = true
                 alignBoardStrip(centersFocusedBoard: shouldCenterFocusedBoard, animated: false)
             },
-            onFocusChanged: { previous, current, shouldCenterFocusedBoard in
+            onAlignmentChanged: { previous, current in
                 alignBoardStrip(
-                    centersFocusedBoard: shouldCenterFocusedBoard,
+                    centersFocusedBoard: current.centersFocusedBoard,
                     boardID: current.boardID,
                     animated: previous.deskID == current.deskID)
-            },
-            onAutomaticCenteringChanged: { shouldCenterFocusedBoard in
-                alignBoardStrip(centersFocusedBoard: shouldCenterFocusedBoard)
             },
             onCenterRequest: {
                 centerBoard(store.focusedDesk?.focusedBoardID)
@@ -659,7 +650,6 @@ struct DenView: View {
 
     private func resetBoardStripPosition(animated: Bool) {
         pendingBoardCentering = nil
-        boardCenteringTask?.cancel()
         if animated {
             withAnimation(DenMotion.spatial(reduceMotion: shouldReduceMotion)) {
                 boardScrollPosition.scrollTo(x: 0)
@@ -689,12 +679,6 @@ struct DenView: View {
         } else {
             boardScrollPosition.scrollTo(id: boardID, anchor: .center)
         }
-    }
-
-    private var boardFocusTarget: BoardFocusTarget {
-        BoardFocusTarget(
-            deskID: store.state.focusedDeskID,
-            boardID: store.focusedDesk?.focusedBoardID)
     }
 
     private func isBoardPointerFocusEnabled(for boardID: UUID) -> Bool {
@@ -1001,11 +985,6 @@ struct DenView: View {
 private struct PendingBoardCentering {
     let boardID: UUID
     let animated: Bool
-}
-
-struct BoardFocusTarget: Equatable {
-    let deskID: UUID?
-    let boardID: UUID?
 }
 
 private enum DeskSwitcherCoordinateSpace {
