@@ -8,6 +8,7 @@ struct DenView: View {
     @Environment(DenStore.self) private var store
     @Environment(AppPreferences.self) private var preferences
     @Environment(\.accessibilityReduceMotion) private var systemReduceMotion
+    @Environment(\.appearsActive) private var appearsActive
     @State private var urlText = ""
     @State private var openBoardAfterBoardID: UUID?
     @State private var editBoardLinkText = ""
@@ -142,9 +143,11 @@ struct DenView: View {
             .onChange(of: preferences.sheetScale) { _, scale in
                 store.applySheetScale(scale)
             }
-            .onReceive(NotificationCenter.default.publisher(for: NSApplication.didResignActiveNotification)) { _ in
-                cancelBoardDrag()
-                cancelDeskDrag()
+            .onChange(of: appearsActive) { _, isActive in
+                if !isActive {
+                    cancelBoardDrag()
+                    cancelDeskDrag()
+                }
             }
             .animation(DenMotion.feedback(reduceMotion: shouldReduceMotion), value: store.temporaryContext)
             .animation(DenMotion.feedback(reduceMotion: shouldReduceMotion), value: store.isDeskFilterPresented)

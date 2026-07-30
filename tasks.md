@@ -23,7 +23,7 @@ AppKitをゼロにすることは目的にしない。
 ## 実装順
 
 - [x] S1. Pointer表示を`PointerStyle`へ移す
-- [ ] S2. App非アクティブ時の処理を`ScenePhase`へ移す
+- [x] S2. Window非アクティブ時の処理を`appearsActive`へ移す
 - [ ] S3. Desk labelの全選択を`TextSelection`へ移す
 - [ ] S4. Window外観bridgeをSwiftUIの`WindowStyle`へ移す
 - [ ] S5. `WebKit for SwiftUI`との互換性を調査する
@@ -64,7 +64,7 @@ AppKitをゼロにすることは目的にしない。
 
 - <https://developer.apple.com/documentation/swiftui/pointerstyle>
 
-### S2. App非アクティブ時の処理を`ScenePhase`へ移す
+### S2. Window非アクティブ時の処理を`appearsActive`へ移す
 
 対象:
 
@@ -72,16 +72,16 @@ AppKitをゼロにすることは目的にしない。
 
 実装:
 
-- `@Environment(\.scenePhase)`を追加する。
-- `NSApplication.didResignActiveNotification`の購読を`scenePhase`の監視へ置き換える。
-- phaseが`.active`以外へ変わったとき、進行中のBoard dragとDesk dragをcancelする。
+- `@Environment(\.appearsActive)`を追加する。
+- `NSApplication.didResignActiveNotification`の購読を`appearsActive`の監視へ置き換える。
+- Windowがactiveでなくなったとき、進行中のBoard dragとDesk dragをcancelする。
 - activeなProfile Windowを切り替えた場合も、操作中のWindowに仮の並び順が残らないことを確認する。
 - drag以外のpresentation stateは変更しない。
 
 テスト:
 
 - 必要なら、phase変化からdrag cancelを呼ぶ判断を小さな関数へ抽出してunit testする。
-- production codeから`ScenePhase`を模倣する型は追加しない。
+- production codeからWindowのactive状態を模倣する型は追加しない。
 
 検証:
 
@@ -93,13 +93,19 @@ AppKitをゼロにすることは目的にしない。
 
 受け入れ条件:
 
-- Appまたは対象sceneが非アクティブになるとdragがcancelされる。
+- 対象Windowが非アクティブになるとdragがcancelされる。
 - `NSApplication.didResignActiveNotification`への依存がなくなる。
 - drag以外の操作へ影響しない。
 
+検証結果:
+
+- `just check`成功。
+- Board pointer UI test成功。
+- Desk pointer UI testは変更前のAppKit通知へ戻しても同じ位置判定で失敗するため、S2の回帰ではない。
+
 参考:
 
-- <https://developer.apple.com/documentation/swiftui/scenephase>
+- <https://developer.apple.com/documentation/swiftui/environmentvalues/appearsactive>
 
 ### S3. Desk labelの全選択を`TextSelection`へ移す
 
