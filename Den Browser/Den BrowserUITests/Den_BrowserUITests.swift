@@ -177,6 +177,64 @@ final class Den_BrowserUITests: XCTestCase {
     }
 
     @MainActor
+    func testOnOverflowKeepsBoardCoordinatesStableAcrossBoundary() throws {
+        let app = launchApp(centerBoardsOnOverflow: true)
+        let boardStrip = app.scrollViews["board-strip"].firstMatch
+        let alpha = board(.alpha, in: app)
+        let charlie = board(.charlie, in: app)
+
+        enterDenMode(in: app)
+        app.typeText("w3")
+        app.typeKey(.escape, modifierFlags: [])
+        boardHeader(.bravo, in: app).click()
+
+        let initialAlphaX = alpha.frame.minX
+        assertEventuallyEqual(
+            actual: { (alpha.frame.minX + charlie.frame.maxX) / 2 },
+            expected: boardStrip.frame.midX,
+            tolerance: 50,
+            message: "Boards should start centered without overflowing"
+        )
+
+        if !app.windows["UI Testing · DEN MODE"].exists {
+            enterDenMode(in: app)
+        }
+        app.typeKey(.return, modifierFlags: [])
+
+        let headerPredicate = NSPredicate(format: "identifier BEGINSWITH 'board-header.'")
+        let headersQuery = boardStrip.descendants(matching: .any).matching(headerPredicate)
+        assertEventually("New board header should appear") {
+            headersQuery.allElementsBoundByIndex.count == 4
+        }
+
+        let newBoard = headersQuery.allElementsBoundByIndex.first {
+            !FixtureBoard.allHeaderIdentifiers.contains($0.identifier)
+        }
+        let newBoardIdentifier = try XCTUnwrap(newBoard?.identifier)
+        let newBoardHeader =
+            app.descendants(matching: .any)
+            .matching(identifier: newBoardIdentifier)
+            .firstMatch
+        assertEventuallyEqual(
+            actual: { newBoardHeader.frame.midX },
+            expected: boardStrip.frame.midX,
+            tolerance: 50,
+            message: "New Board should center after crossing the overflow boundary"
+        )
+
+        enterDenMode(in: app)
+        app.typeText("x")
+
+        XCTAssertTrue(newBoardHeader.waitForNonExistence(timeout: 5))
+        assertEventuallyEqual(
+            actual: { alpha.frame.minX },
+            expected: initialAlphaX,
+            tolerance: 30,
+            message: "Boards should return to the same centered coordinates"
+        )
+    }
+
+    @MainActor
     func testFiltersBoardsInFocusedDeskAndEntersSelection() throws {
         let app = launchApp()
         enterDenMode(in: app)
@@ -204,7 +262,8 @@ final class Den_BrowserUITests: XCTestCase {
     @MainActor
     private func launchApp(
         singleBoard: Bool = false,
-        sheetNavigationEnabled: Bool = false
+        sheetNavigationEnabled: Bool = false,
+        centerBoardsOnOverflow: Bool = false
     ) -> XCUIApplication {
         let app = XCUIApplication()
         var args = [
@@ -215,6 +274,9 @@ final class Den_BrowserUITests: XCTestCase {
         }
         if sheetNavigationEnabled {
             args.append("--enable-sheet-navigation")
+        }
+        if centerBoardsOnOverflow {
+            args.append("--center-boards-on-overflow")
         }
         app.launchArguments = args
         app.launchEnvironment["DEN_UI_TEST_RUN_ID"] = UUID().uuidString

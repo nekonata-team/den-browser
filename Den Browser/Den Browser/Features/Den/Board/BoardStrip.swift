@@ -20,7 +20,7 @@ struct BoardStrip: View {
     let onDragEnded: (DragGesture.Value, CGSize) -> Void
     let onFramesChanged: ([UUID: CGRect]) -> Void
     let onOpenBoardAtEnd: (UUID) -> Void
-    let onAppear: (Bool) -> Void
+    let onAppear: (Bool, CGFloat) -> Void
     let onAlignmentChanged: (BoardStripAlignmentTarget, BoardStripAlignmentTarget) -> Void
     let onCenterRequest: () -> Void
 
@@ -52,10 +52,12 @@ struct BoardStrip: View {
         )
         let paddings = BoardLayout.calculatePaddings(for: layoutParams)
         let shouldCenterFocusedBoard = BoardLayout.shouldCenterFocusedBoard(for: layoutParams)
+        let restingScrollX = BoardLayout.restingScrollX(for: layoutParams)
         let alignmentTarget = BoardStripAlignmentTarget(
             deskID: store.state.focusedDeskID,
             boardID: store.focusedDesk?.focusedBoardID,
-            centersFocusedBoard: shouldCenterFocusedBoard
+            centersFocusedBoard: shouldCenterFocusedBoard,
+            restingScrollX: restingScrollX
         )
 
         return ScrollView(.horizontal) {
@@ -170,7 +172,7 @@ struct BoardStrip: View {
         .accessibilityIdentifier("board-strip")
         .onPreferenceChange(BoardFramePreferenceKey.self, perform: onFramesChanged)
         .onAppear {
-            onAppear(shouldCenterFocusedBoard)
+            onAppear(shouldCenterFocusedBoard, restingScrollX)
         }
         .onChange(of: alignmentTarget) { previous, current in
             onAlignmentChanged(previous, current)
@@ -191,6 +193,7 @@ struct BoardStripAlignmentTarget: Equatable {
     let deskID: UUID?
     let boardID: UUID?
     let centersFocusedBoard: Bool
+    let restingScrollX: CGFloat
 }
 
 struct BoardResizeHandle: View {

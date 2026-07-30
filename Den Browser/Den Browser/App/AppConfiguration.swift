@@ -36,6 +36,9 @@ struct AppConfiguration {
         if processInfo.arguments.contains("--enable-sheet-navigation") {
             defaults.set(true, forKey: SheetNavigationManager.enabledKey)
         }
+        if processInfo.arguments.contains("--center-boards-on-overflow") {
+            AppPreferences(defaults: defaults).setBoardCentering(.onOverflow)
+        }
 
         return AppConfiguration(
             profileDirectoryURL: directoryURL,

@@ -47,7 +47,26 @@ struct BoardLayout {
         params.centering == .always || params.boardsOverflow
     }
 
+    static func restingScrollX(for params: Parameters) -> CGFloat {
+        guard params.centering == .onOverflow, !params.boardsOverflow else { return 0 }
+        let centeredPadding = max(
+            params.horizontalPadding,
+            (params.windowWidth - params.requiredBoardsWidth) / 2)
+        return max(0, edgePaddings(for: params).leading - centeredPadding)
+    }
+
     static func calculatePaddings(
+        for params: Parameters
+    ) -> (leading: CGFloat, trailing: CGFloat) {
+        switch params.centering {
+        case .always, .onOverflow:
+            edgePaddings(for: params)
+        case .never:
+            (params.horizontalPadding, params.horizontalPadding)
+        }
+    }
+
+    private static func edgePaddings(
         for params: Parameters
     ) -> (leading: CGFloat, trailing: CGFloat) {
         let firstBoardWidth =
@@ -60,31 +79,9 @@ struct BoardLayout {
                 params.maximizedBoardID == $0.id ? params.maximizedBoardWidth : $0.width
             } ?? params.windowWidth
 
-        let leadingPadding: CGFloat
-        let trailingPadding: CGFloat
-
-        switch params.centering {
-        case .always:
-            leadingPadding = max(params.horizontalPadding, (params.windowWidth - firstBoardWidth) / 2)
-            trailingPadding = max(params.horizontalPadding, (params.windowWidth - lastBoardWidth) / 2)
-
-        case .never:
-            leadingPadding = params.horizontalPadding
-            trailingPadding = params.horizontalPadding
-
-        case .onOverflow:
-            if !params.boardsOverflow {
-                let centerPadding = max(
-                    params.horizontalPadding,
-                    (params.windowWidth - params.requiredBoardsWidth) / 2)
-                leadingPadding = centerPadding
-                trailingPadding = centerPadding
-            } else {
-                leadingPadding = max(params.horizontalPadding, (params.windowWidth - firstBoardWidth) / 2)
-                trailingPadding = max(params.horizontalPadding, (params.windowWidth - lastBoardWidth) / 2)
-            }
-        }
-
-        return (leadingPadding, trailingPadding)
+        return (
+            max(params.horizontalPadding, (params.windowWidth - firstBoardWidth) / 2),
+            max(params.horizontalPadding, (params.windowWidth - lastBoardWidth) / 2)
+        )
     }
 }
