@@ -974,7 +974,6 @@ struct DenView: View {
         } else {
             cancelBoardDrag(drag)
         }
-        NSCursor.arrow.set()
     }
 
     private func cancelBoardDrag(_ drag: BoardDragState? = nil) {
@@ -991,7 +990,6 @@ struct DenView: View {
                 restore()
             }
         }
-        NSCursor.arrow.set()
     }
 }
 

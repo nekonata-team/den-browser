@@ -1,4 +1,3 @@
-import AppKit
 import SwiftUI
 
 struct BoardStrip: View {
@@ -218,10 +217,8 @@ struct BoardResizeHandle: View {
                     .frame(width: 2, height: 34)
                     .opacity(isHovering || widthAtDragStart != nil ? 1 : 0)
             }
-            .onHover { isHovering in
-                self.isHovering = isHovering
-                (isHovering ? NSCursor.resizeLeftRight : NSCursor.arrow).set()
-            }
+            .onHover { isHovering = $0 }
+            .pointerStyle(.columnResize)
             .gesture(
                 DragGesture(minimumDistance: 1, coordinateSpace: .global)
                     .onChanged { value in

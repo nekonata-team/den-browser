@@ -22,7 +22,7 @@ AppKitをゼロにすることは目的にしない。
 
 ## 実装順
 
-- [ ] S1. Pointer表示を`PointerStyle`へ移す
+- [x] S1. Pointer表示を`PointerStyle`へ移す
 - [ ] S2. App非アクティブ時の処理を`ScenePhase`へ移す
 - [ ] S3. Desk labelの全選択を`TextSelection`へ移す
 - [ ] S4. Window外観bridgeをSwiftUIの`WindowStyle`へ移す

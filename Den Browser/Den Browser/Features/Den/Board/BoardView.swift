@@ -1,4 +1,3 @@
-import AppKit
 import SwiftUI
 import WebKit
 
@@ -6,8 +5,6 @@ struct BoardView: View {
     @Environment(DenStore.self) private var store
     @Environment(AppPreferences.self) private var preferences
     @Environment(\.accessibilityReduceMotion) private var systemReduceMotion
-    @State private var isDragHandleHovered = false
-
     let board: BoardState
     let isFocused: Bool
     let isDragging: Bool
@@ -203,14 +200,7 @@ struct BoardView: View {
                     onDragEnded(value)
                 }
         )
-        .onHover { isHovering in
-            isDragHandleHovered = isHovering
-            (isHovering ? (isDragging ? NSCursor.closedHand : NSCursor.openHand) : NSCursor.arrow).set()
-        }
-        .onChange(of: isDragging) { _, isDragging in
-            guard isDragHandleHovered else { return }
-            (isDragging ? NSCursor.closedHand : NSCursor.openHand).set()
-        }
+        .pointerStyle(isDragging ? .grabActive : .grabIdle)
         .help("Drag to move Board")
         .accessibilityHint("Drag to reorder this Board within the Focused Desk")
         .accessibilityElement(children: .combine)
