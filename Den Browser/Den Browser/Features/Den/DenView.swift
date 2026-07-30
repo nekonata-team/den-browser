@@ -1,4 +1,3 @@
-import AppKit
 import SwiftUI
 
 struct DenView: View {
@@ -13,6 +12,7 @@ struct DenView: View {
     @State private var openBoardAfterBoardID: UUID?
     @State private var editBoardLinkText = ""
     @State private var newDeskLabel = ""
+    @State private var newDeskLabelSelection: TextSelection?
     @State private var selectedDeskPreset: DeskPresetSelection = .builtIn(.empty)
     @State private var activeDeskPreset: DeskPresetSelection = .builtIn(.empty)
     @State private var deskPresetQuery = ""
@@ -388,6 +388,7 @@ struct DenView: View {
             isChoosing: $isChoosingDeskPreset,
             didAttemptAction: $didAttemptDeskAction,
             newDeskLabel: $newDeskLabel,
+            newDeskLabelSelection: $newDeskLabelSelection,
             isSearchFocused: $isDeskPresetSearchFocused,
             isLabelFocused: $isNewDeskLabelFocused,
             selectedBoards: selectedDeskPresetBoards,
@@ -454,15 +455,14 @@ struct DenView: View {
     }
 
     private func confirmDeskPreset(_ selection: DeskPresetSelection) {
+        let label = deskPresetLabel(for: selection)
         activeDeskPreset = selection
         selectedDeskPreset = selection
-        newDeskLabel = deskPresetLabel(for: selection)
+        newDeskLabel = label
+        newDeskLabelSelection = TextSelection(range: label.startIndex..<label.endIndex)
         isChoosingDeskPreset = false
         didAttemptDeskAction = false
-        DispatchQueue.main.async {
-            isNewDeskLabelFocused = true
-            NSApp.sendAction(#selector(NSText.selectAll(_:)), to: nil, from: nil)
-        }
+        DispatchQueue.main.async { isNewDeskLabelFocused = true }
     }
 
     private func beginDeskPresetSelection() {

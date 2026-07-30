@@ -9,6 +9,7 @@ struct NewDeskPanel: View {
     @Binding var isChoosing: Bool
     @Binding var didAttemptAction: Bool
     @Binding var newDeskLabel: String
+    @Binding var newDeskLabelSelection: TextSelection?
     @FocusState.Binding var isSearchFocused: Bool
     @FocusState.Binding var isLabelFocused: Bool
 
@@ -61,7 +62,7 @@ struct NewDeskPanel: View {
 
                 DeskPresetPreview(boards: selectedBoards)
 
-                TextField("Desk label", text: $newDeskLabel)
+                TextField("Desk label", text: $newDeskLabel, selection: $newDeskLabelSelection)
                     .textFieldStyle(.roundedBorder)
                     .font(.body.weight(.medium))
                     .focused($isLabelFocused)

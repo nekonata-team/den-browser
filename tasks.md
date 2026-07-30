@@ -24,7 +24,7 @@ AppKitをゼロにすることは目的にしない。
 
 - [x] S1. Pointer表示を`PointerStyle`へ移す
 - [x] S2. Window非アクティブ時の処理を`appearsActive`へ移す
-- [ ] S3. Desk labelの全選択を`TextSelection`へ移す
+- [x] S3. Desk labelの全選択を`TextSelection`へ移す
 - [ ] S4. Window外観bridgeをSwiftUIの`WindowStyle`へ移す
 - [ ] S5. `WebKit for SwiftUI`との互換性を調査する
 
