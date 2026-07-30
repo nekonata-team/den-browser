@@ -165,6 +165,9 @@ extension DenStore {
             websiteDataStore: websiteDataStore,
             sheetNavigation: sheetNavigation,
             sheetScale: preferences.sheetScale,
+            onCaptureInDrawer: { [weak self] url in
+                self?.captureInDrawer(url, opensDrawer: false)
+            },
             onDiscard: { [weak self] in
                 self?.discardDrawerItem(item.id)
             },

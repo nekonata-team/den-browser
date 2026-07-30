@@ -163,8 +163,11 @@
   }
 
   function onClick(event) {
-    if (!event.isTrusted || event.button !== 0 || !event.metaKey ||
-      event.altKey || event.ctrlKey) return;
+    if (!event.isTrusted || event.button !== 0 || event.ctrlKey) return;
+
+    const opensBoard = event.metaKey && !event.altKey;
+    const capturesInDrawer = event.altKey && !event.metaKey && !event.shiftKey;
+    if (!opensBoard && !capturesInDrawer) return;
 
     const link = event.composedPath().find(
       (target) => target instanceof Element && target.matches("a[href]"),
@@ -180,6 +183,10 @@
     if (!["http:", "https:"].includes(url.protocol)) return;
 
     consume(event);
+    if (capturesInDrawer) {
+      postMessage({ action: "captureInDrawer", url: url.href });
+      return;
+    }
     postMessage({
       action: "commandOpenBoard",
       url: url.href,

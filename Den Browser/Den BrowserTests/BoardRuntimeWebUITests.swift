@@ -86,4 +86,33 @@ struct BoardRuntimeWebUITests {
             )
         )
     }
+
+    @Test func optionPrimaryClickCapturesSupportedLinkInDrawer() {
+        let url = URL(string: "https://example.com/page")
+
+        #expect(
+            BoardRuntime.shouldCaptureLinkInDrawer(
+                navigationType: .linkActivated,
+                modifierFlags: .option,
+                buttonNumber: 0,
+                url: url
+            )
+        )
+        #expect(
+            !BoardRuntime.shouldCaptureLinkInDrawer(
+                navigationType: .linkActivated,
+                modifierFlags: [.option, .shift],
+                buttonNumber: 0,
+                url: url
+            )
+        )
+        #expect(
+            !BoardRuntime.shouldCaptureLinkInDrawer(
+                navigationType: .linkActivated,
+                modifierFlags: .option,
+                buttonNumber: 0,
+                url: URL(string: "mailto:test@example.com")
+            )
+        )
+    }
 }

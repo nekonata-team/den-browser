@@ -28,6 +28,9 @@ extension DenStore {
                 afterBoardID: board.id,
                 focus: false
             )
+        } onCaptureInDrawer: {
+            [weak self] url in
+            self?.captureInDrawer(url, opensDrawer: false)
         } onChange: {
             [weak self] boardID, url, title in
             self?.updateBoard(boardID: boardID, url: url, title: title)

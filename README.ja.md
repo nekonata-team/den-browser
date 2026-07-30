@@ -42,7 +42,7 @@ Den Browserは、[Niri](https://github.com/niri-wm/niri)の空間的なウィン
 ## 現在の機能
 
 - 複数のDeskにBoardを空間的に配置。
-- HTTPまたはHTTPSリンクをCommandクリックし、現在のFocusを保ったまま隣の新しいBoardで開く。Shiftを加えると新しいBoardへFocusを移す。
+- HTTPまたはHTTPSリンクをCommandクリックし、現在のFocusを保ったまま隣の新しいBoardで開く。Shiftを加えると新しいBoardへFocusを移す。OptionクリックではCurrent Sheetを変えず、Drawerを開かずにリンクを保持する。
 - Desk Switcher のDeskボタンをドラッグしてDeskを並べ替え。
 - 名前と色を持つProfileを作成し、Profileごとに一つのDenウィンドウと分離されたWebサイトデータを保持。
 - タイトルバーで現在のProfileを確認し、右上のアイコン、Profileメニュー、`Control` + `Command` + `P`からProfileを開く・検索。

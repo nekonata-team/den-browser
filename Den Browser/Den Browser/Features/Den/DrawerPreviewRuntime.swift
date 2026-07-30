@@ -16,6 +16,7 @@ final class DrawerPreviewRuntime: NSObject, WKNavigationDelegate, WKUIDelegate {
         websiteDataStore: WKWebsiteDataStore,
         sheetNavigation: SheetNavigationManager,
         sheetScale: Int,
+        onCaptureInDrawer: @escaping (URL) -> Void,
         onDiscard: @escaping () -> Void,
         onChange: @escaping (UUID, URL?, String?) -> Void
     ) {
@@ -40,6 +41,7 @@ final class DrawerPreviewRuntime: NSObject, WKNavigationDelegate, WKUIDelegate {
             actions: .init(
                 onOpenBoard: { [weak webView] url in webView?.load(URLRequest(url: url)) },
                 onOpenBoardInBackground: { [weak webView] url in webView?.load(URLRequest(url: url)) },
+                onCaptureInDrawer: onCaptureInDrawer,
                 onEditCurrentSheet: {},
                 onOpenCurrentSheetInNewBoard: { [weak webView] url in webView?.load(URLRequest(url: url)) },
                 onPasteURLInNewBoard: { [weak webView] url in webView?.load(URLRequest(url: url)) },

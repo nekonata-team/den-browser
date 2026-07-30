@@ -21,6 +21,7 @@ final class BoardRuntime: NSObject, ObservableObject, WKDownloadDelegate, WKNavi
 
     private let onOpenBoard: (URL) -> Void
     private let onOpenBoardInBackground: (URL) -> Void
+    private let onCaptureInDrawer: (URL) -> Void
     private let onEditCurrentSheet: () -> Void
     private let onOpenCurrentSheetInNewBoard: (URL) -> Void
     private let onPasteURLInNewBoard: (URL) -> Void
@@ -43,6 +44,7 @@ final class BoardRuntime: NSObject, ObservableObject, WKDownloadDelegate, WKNavi
         nativePictureInPictureEnabled: Bool = false,
         onOpenBoard: @escaping (URL) -> Void,
         onOpenBoardInBackground: @escaping (URL) -> Void = { _ in },
+        onCaptureInDrawer: @escaping (URL) -> Void = { _ in },
         onChange: @escaping (UUID, URL?, String?) -> Void,
         onFullscreenChange: ((UUID, Bool) -> Void)? = nil,
         onEditCurrentSheet: @escaping () -> Void = {},
@@ -57,6 +59,7 @@ final class BoardRuntime: NSObject, ObservableObject, WKDownloadDelegate, WKNavi
         self.sheetNavigation = sheetNavigation
         self.onOpenBoard = onOpenBoard
         self.onOpenBoardInBackground = onOpenBoardInBackground
+        self.onCaptureInDrawer = onCaptureInDrawer
         self.onEditCurrentSheet = onEditCurrentSheet
         self.onOpenCurrentSheetInNewBoard = onOpenCurrentSheetInNewBoard
         self.onPasteURLInNewBoard = onPasteURLInNewBoard
@@ -89,6 +92,7 @@ final class BoardRuntime: NSObject, ObservableObject, WKDownloadDelegate, WKNavi
             actions: .init(
                 onOpenBoard: onOpenBoard,
                 onOpenBoardInBackground: onOpenBoardInBackground,
+                onCaptureInDrawer: onCaptureInDrawer,
                 onEditCurrentSheet: onEditCurrentSheet,
                 onOpenCurrentSheetInNewBoard: onOpenCurrentSheetInNewBoard,
                 onPasteURLInNewBoard: onPasteURLInNewBoard,
@@ -184,6 +188,17 @@ final class BoardRuntime: NSObject, ObservableObject, WKDownloadDelegate, WKNavi
         decidePolicyFor navigationAction: WKNavigationAction,
         decisionHandler: @escaping @MainActor @Sendable (WKNavigationActionPolicy) -> Void
     ) {
+        if Self.shouldCaptureLinkInDrawer(
+            navigationType: navigationAction.navigationType,
+            modifierFlags: navigationAction.modifierFlags,
+            buttonNumber: navigationAction.buttonNumber,
+            url: navigationAction.request.url
+        ), let url = navigationAction.request.url {
+            onCaptureInDrawer(url)
+            decisionHandler(.cancel)
+            return
+        }
+
         if Self.shouldOpenLinkInNewBoard(
             navigationType: navigationAction.navigationType,
             modifierFlags: navigationAction.modifierFlags,
@@ -212,6 +227,19 @@ final class BoardRuntime: NSObject, ObservableObject, WKDownloadDelegate, WKNavi
         return navigationType == .linkActivated
             && buttonNumber == 0
             && (clickModifiers == .command || clickModifiers == [.command, .shift])
+            && url.map(SheetURLPolicy.isSupported) == true
+    }
+
+    static func shouldCaptureLinkInDrawer(
+        navigationType: WKNavigationType,
+        modifierFlags: NSEvent.ModifierFlags,
+        buttonNumber: Int,
+        url: URL?
+    ) -> Bool {
+        let clickModifiers = modifierFlags.intersection([.command, .control, .option, .shift])
+        return navigationType == .linkActivated
+            && buttonNumber == 0
+            && clickModifiers == .option
             && url.map(SheetURLPolicy.isSupported) == true
     }
 

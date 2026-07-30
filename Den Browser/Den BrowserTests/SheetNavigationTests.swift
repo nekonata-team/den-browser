@@ -131,7 +131,7 @@ struct SheetNavigationTests {
         #expect(hintCount == 0)
     }
 
-    @Test func commandClickIsCapturedWhenSheetNavigationIsDisabled() async throws {
+    @Test func modifiedLinkClicksAreCapturedWhenSheetNavigationIsDisabled() async throws {
         let source = try sheetNavigationScriptSource().replacingOccurrences(
             of: "if (!event.isTrusted || event.button",
             with: "if (event.button"
@@ -147,7 +147,7 @@ struct SheetNavigationTests {
             baseURL: URL(string: "https://example.com/")!,
             in: webView
         )
-        let clickWasAllowed =
+        let commandClickWasAllowed =
             try await webView.evaluateJavaScript(
                 """
                 document.querySelector("a").dispatchEvent(new MouseEvent("click", {
@@ -158,8 +158,20 @@ struct SheetNavigationTests {
                   composed: true
                 }))
                 """) as? Bool
+        let optionClickWasAllowed =
+            try await webView.evaluateJavaScript(
+                """
+                document.querySelector("a").dispatchEvent(new MouseEvent("click", {
+                  altKey: true,
+                  button: 0,
+                  bubbles: true,
+                  cancelable: true,
+                  composed: true
+                }))
+                """) as? Bool
 
-        #expect(clickWasAllowed == false)
+        #expect(commandClickWasAllowed == false)
+        #expect(optionClickWasAllowed == false)
     }
 
     @Test func sheetNavigationScriptHandlesCoreMotionsAndModes() async throws {
@@ -339,6 +351,29 @@ struct SheetNavigationTests {
                 URL(string: "https://destination.example/path"),
             ])
         #expect(store.focusedDesk?.focusedBoardID == store.focusedDesk?.boards[1].id)
+    }
+
+    @Test func optionClickCapturesLinkInDrawerWithoutOpeningIt() {
+        let manager = SheetNavigationManager(scriptSource: "")
+        let source = board("Source", url: "https://source.example/")
+        let currentDesk = desk("Desk", boards: [source], focusedBoardID: source.id)
+        let store = DenStore(
+            state: DenState(desks: [currentDesk], focusedDeskID: currentDesk.id),
+            sheetNavigation: manager
+        )
+        let sourceWebView = store.runtime(for: source).webView
+        let destination = URL(string: "https://destination.example/path")!
+
+        #expect(
+            manager.handleScriptMessage(
+                [
+                    "action": "captureInDrawer",
+                    "url": destination.absoluteString,
+                ], from: sourceWebView))
+        #expect(store.state.drawerItems.map(\.url) == [destination])
+        #expect(!store.isDrawerOpen)
+        #expect(store.focusedDesk?.focusedBoardID == source.id)
+        #expect(store.focusedBoard?.currentSheetURL == source.currentSheetURL)
     }
 
     @Test func sheetNavigationRoutesRemoveAndRestoreBoardActions() {
