@@ -269,7 +269,11 @@ private struct DrawerWebView: NSViewRepresentable {
     let webView: WKWebView
 
     func makeNSView(context: Context) -> WKWebView {
-        webView
+        DispatchQueue.main.async { [weak webView] in
+            guard let webView else { return }
+            webView.window?.makeFirstResponder(webView)
+        }
+        return webView
     }
 
     func updateNSView(_ nsView: WKWebView, context: Context) {}

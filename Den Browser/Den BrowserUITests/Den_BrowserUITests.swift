@@ -60,7 +60,6 @@ final class Den_BrowserUITests: XCTestCase {
 
         let previewContent = app.staticTexts["result:pending"].firstMatch
         XCTAssertTrue(previewContent.waitForExistence(timeout: 10))
-        previewContent.click()
         app.typeText("gi")
 
         let sheetInput = app.textFields["Sheet input"].firstMatch
