@@ -61,6 +61,7 @@ struct ProfileWindowView: View {
             .focusedSceneValue(\.denStore, store)
             .focusedSceneValue(\.profileID, activeProfileID)
             .toolbarVisibility(store.isZenViewPresented ? .hidden : .visible, for: .windowToolbar)
+            .toolbarBackgroundVisibility(.hidden, for: .windowToolbar)
             .ignoresSafeArea(.container, edges: store.isZenViewPresented ? .top : [])
             .onOpenURL { url in
                 store.captureInDrawer(url)
