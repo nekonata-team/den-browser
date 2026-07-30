@@ -41,7 +41,7 @@ struct DrawerView: View {
     }
 
     private var header: some View {
-        VStack(spacing: 10) {
+        VStack(spacing: isSearchPresented ? 10 : 0) {
             ZStack {
                 HStack(spacing: 6) {
                     Text("Drawer")
@@ -51,8 +51,18 @@ struct DrawerView: View {
                         .foregroundStyle(.secondary)
                 }
 
-                HStack {
+                HStack(spacing: 8) {
                     Spacer()
+                    Button {
+                        store.enterDrawerFilterMode()
+                    } label: {
+                        Image(systemName: "magnifyingglass")
+                            .font(.system(size: 12, weight: .semibold))
+                    }
+                    .buttonStyle(.glass)
+                    .accessibilityLabel("Search Drawer Items")
+                    .help("Search Drawer Items (/)")
+
                     Button {
                         store.closeDrawer()
                     } label: {
@@ -77,6 +87,7 @@ struct DrawerView: View {
                 .textFieldStyle(.plain)
                 .focused($isSearchFocused)
                 .disabled(!store.isDrawerFilterMode)
+                .accessibilityIdentifier("drawer-search")
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 8)
@@ -94,6 +105,11 @@ struct DrawerView: View {
                         lineWidth: store.isDrawerFilterMode ? 1.5 : 1
                     )
             }
+            .opacity(isSearchPresented ? 1 : 0)
+            .frame(height: isSearchPresented ? nil : 0)
+            .clipped()
+            .allowsHitTesting(isSearchPresented)
+            .accessibilityHidden(!isSearchPresented)
             .onTapGesture {
                 if !store.isDrawerFilterMode {
                     store.enterDrawerFilterMode()
@@ -246,6 +262,10 @@ struct DrawerView: View {
             preference: store.preferences.motionPreference,
             systemReduceMotion: systemReduceMotion
         )
+    }
+
+    private var isSearchPresented: Bool {
+        store.isDrawerFilterMode || !store.drawerQuery.isEmpty
     }
 
     private var itemCountLabel: String {

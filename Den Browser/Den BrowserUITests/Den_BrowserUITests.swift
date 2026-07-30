@@ -73,6 +73,29 @@ final class Den_BrowserUITests: XCTestCase {
     }
 
     @MainActor
+    func testDrawerSearchAppearsOnDemand() throws {
+        let app = launchApp()
+        enterDenMode(in: app)
+        app.typeKey(.tab, modifierFlags: [])
+
+        let drawer = app.descendants(matching: .any).matching(identifier: "drawer").firstMatch
+        XCTAssertTrue(drawer.waitForExistence(timeout: 5))
+
+        let search = app.textFields["drawer-search"].firstMatch
+        XCTAssertFalse(search.exists)
+
+        app.buttons["Search Drawer Items"].click()
+        XCTAssertTrue(search.waitForExistence(timeout: 5))
+        app.typeText("drawer")
+        XCTAssertEqual(search.value as? String, "drawer")
+        app.typeKey(.return, modifierFlags: [])
+        XCTAssertTrue(search.exists)
+
+        app.typeKey(.escape, modifierFlags: [])
+        XCTAssertTrue(search.waitForNonExistence(timeout: 5))
+    }
+
+    @MainActor
     func testOrganizesBoardsUsingPointer() throws {
         let app = launchApp()
         let bravo = board(.bravo, in: app)
