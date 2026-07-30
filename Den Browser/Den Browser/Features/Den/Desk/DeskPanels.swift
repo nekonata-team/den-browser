@@ -23,14 +23,12 @@ struct NewDeskPanel: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            HStack(spacing: DenPanelLayout.controlSpacing) {
-                Image(
-                    systemName: store.isDeskPresetManagementPresented
-                        ? "bookmark"
-                        : store.isReplaceDeskPanelPresented
-                            ? "rectangle.stack.badge.minus" : "rectangle.stack.badge.plus"
-                )
-                .foregroundStyle(.secondary)
+            DenPanelHeader(
+                systemImage: store.isDeskPresetManagementPresented
+                    ? "bookmark"
+                    : store.isReplaceDeskPanelPresented
+                        ? "rectangle.stack.badge.minus" : "rectangle.stack.badge.plus"
+            ) {
                 Text(
                     store.isDeskPresetManagementPresented
                         ? "Manage Presets"
@@ -38,7 +36,6 @@ struct NewDeskPanel: View {
                 )
                 .font(.headline)
             }
-            .frame(height: DenPanelLayout.titleHeight)
 
             if isChoosing {
                 DeskPresetPicker(
@@ -92,9 +89,7 @@ struct NewDeskPanel: View {
                 .font(.caption)
             }
         }
-        .padding(DenPanelLayout.padding)
-        .frame(width: DenPanelLayout.wideWidth)
-        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: DenRadius.large, style: .continuous))
+        .denPanel(width: DenPanelLayout.wideWidth)
         .onAppear {
             let initialPreset: DeskPresetSelection =
                 store.isReplaceDeskPanelPresented ? .builtIn(.chatGPT) : .builtIn(.empty)
@@ -142,9 +137,7 @@ struct SaveDeskPresetPanel: View {
                     .disabled(label.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
             }
         }
-        .padding(DenPanelLayout.padding)
-        .frame(width: DenPanelLayout.standardWidth)
-        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: DenRadius.large, style: .continuous))
+        .denPanel()
         .onAppear {
             label = store.focusedDesk?.label ?? ""
             message = nil
@@ -161,15 +154,13 @@ struct RenameDeskPanel: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: DenPanelLayout.contentSpacing) {
-            HStack(spacing: DenPanelLayout.controlSpacing) {
-                Image(systemName: "pencil").foregroundStyle(.secondary)
+            DenPanelHeader(systemImage: "pencil") {
                 TextField("Rename desk", text: $text)
                     .textFieldStyle(.plain)
                     .font(.title3.weight(.medium))
                     .focused($isFocused)
                     .onSubmit { store.renameFocusedDesk(to: text) }
             }
-            .frame(height: DenPanelLayout.titleHeight)
             HStack(spacing: DenPanelLayout.contentSpacing) {
                 Text("Press Return to confirm, Escape to cancel").foregroundStyle(.secondary)
                 Spacer()
@@ -177,9 +168,7 @@ struct RenameDeskPanel: View {
             }
             .font(.caption)
         }
-        .padding(DenPanelLayout.padding)
-        .frame(width: DenPanelLayout.standardWidth)
-        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: DenRadius.large, style: .continuous))
+        .denPanel()
         .onAppear {
             text = store.focusedDesk?.label ?? ""
             DispatchQueue.main.async { isFocused = true }
