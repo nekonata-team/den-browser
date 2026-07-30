@@ -18,27 +18,24 @@ Releases are notarized Developer ID builds published through the
    ASC_KEY_PATH=/absolute/path/to/AuthKey_....p8
    ```
 
-## Create a candidate
+## Prepare a candidate
 
-1. Set the new marketing version and auto-increment the build number using:
+Prepare the version bump and release candidate together:
 
-   ```sh
-   just set-version X.Y.Z
-   ```
+```sh
+just release prepare X.Y.Z
+```
 
-2. Review the modifications to the Xcode project configuration:
+This requires a clean working tree, updates the marketing version and build
+number, runs the checks, retrieves the Developer ID certificate from match,
+builds a universal app, notarizes it, and writes the ZIP under
+`.release/vX.Y.Z/`.
 
-   ```sh
-   git diff "Den Browser/Den Browser.xcodeproj/project.pbxproj"
-   ```
+Review the Xcode project version change:
 
-3. Build and package the release candidate:
-
-   ```sh
-   just release-candidate vX.Y.Z
-   ```
-
-This runs the checks, retrieves the Developer ID certificate from match, builds a universal app, notarizes it, and writes the ZIP under `.release/vX.Y.Z/`.
+```sh
+git diff "Den Browser/Den Browser.xcodeproj/project.pbxproj"
+```
 
 Extract the application from the ZIP and complete the applicable checks in
 [poc.md](./poc.md).
@@ -46,44 +43,33 @@ Extract the application from the ZIP and complete the applicable checks in
 Confirm that Gatekeeper accepts the app, it launches on Apple Silicon, and its
 Profiles and Den state survive an upgrade. Remove the test application before publishing.
 
-Once the candidate passes, commit and push the version change:
-
-```sh
-git add "Den Browser/Den Browser.xcodeproj/project.pbxproj"
-git commit -m "bump: バージョンを更新"
-git push origin main
-```
-
-
 ## Publish
 
-Publish the GitHub Release:
+After verifying the candidate, publish it:
 
 ```sh
-just release vX.Y.Z
+just release publish X.Y.Z
 ```
 
-This creates the annotated git tag, pushes it to `origin`, and creates a GitHub Release with the notarized ZIP artifact. Release notes are intentionally left empty.
+This commits and pushes the version change, creates and pushes the annotated
+tag, creates a GitHub Release with the notarized ZIP artifact, opens the
+Homebrew Cask pull request, and enables rebase auto-merge. Release notes are
+intentionally left empty.
 
-If publishing the GitHub Release fails after the tag is created, inspect the completed steps and finish the remaining GitHub Release creation manually. Do not delete or replace published artifacts.
+Both orchestration commands stop at the first failure. The component commands
+remain available:
 
-## Distribute
+```sh
+just release set-version X.Y.Z
+just release candidate vX.Y.Z
+just release github vX.Y.Z
+just release homebrew X.Y.Z
+```
 
-Once the GitHub Release is published and the ZIP is publicly accessible, distribute the version to external package managers (Homebrew).
+After a partial publish, inspect what already exists before using a component
+command to continue. Do not delete or replace a tag, Release, artifact, or pull
+request.
 
 ### Homebrew (First-time setup)
 
 Follow [this](https://docs.brew.sh/How-to-Create-and-Maintain-a-Tap).
-
-### Homebrew (Subsequent releases)
-
-For subsequent releases, run the following command to submit a pull request
-updating the Cask:
-
-```sh
-just bump-homebrew X.Y.Z
-```
-
-This uses `brew bump-cask-pr` without opening a browser, then enables rebase
-auto-merge. The tap's required checks must pass before GitHub merges the pull
-request.

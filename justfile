@@ -5,13 +5,9 @@ scheme := "Den Browser"
 derived_data := ".derived-data"
 swift_format := "xcrun swift-format"
 swift_sources := "Den Browser"
-fastlane := "bundle exec fastlane"
 
-_validate-version $version:
-    @[[ "$version" =~ '^[0-9]+\.[0-9]+\.[0-9]+$' ]] || { printf '%s\n' 'usage: version must be X.Y.Z' >&2; exit 1; }
-
-_validate-tag $tag:
-    @[[ "$tag" =~ '^v[0-9]+\.[0-9]+\.[0-9]+$' ]] || { printf '%s\n' 'usage: tag must be vX.Y.Z' >&2; exit 1; }
+# Prepare and publish signed releases.
+mod release
 
 # Format all Swift sources in place.
 [group("quality")]
@@ -64,61 +60,3 @@ ui-test target="":
 # Build then run unit tests.
 [group("test")]
 check: lint build test
-
-# Set version and auto-increment build number via Fastlane.
-[group("release")]
-set-version version: (_validate-version version)
-    {{fastlane}} bump_version version:{{version}}
-
-# Build, sign, notarize, and package a release candidate without publishing it.
-[group("release")]
-release-candidate tag: (_validate-tag tag)
-    {{fastlane}} release_candidate tag:{{tag}}
-
-# Publish a tested release candidate to GitHub.
-[group("release")]
-[script]
-release $tag: (_validate-tag tag)
-    set -euo pipefail
-
-    [[ -z "$(git status --porcelain)" ]] || {
-        printf '%s\n' "working tree has uncommitted changes" >&2
-        exit 1
-    }
-
-    version="${tag#v}"
-    archive="Den-Browser-${version}-macOS.zip"
-    zip=".release/${tag}/${archive}"
-
-    [[ -f "$zip" ]] || {
-        printf '%s\n' "missing candidate: $zip" >&2
-        exit 1
-    }
-
-    git tag -a "$tag" -m "Den Browser $version"
-    git push origin "$tag"
-
-    gh release create "$tag" "$zip" \
-        --repo nekonata-team/den-browser \
-        --verify-tag \
-        --title "$tag" \
-        --notes ""
-
-# Update the Homebrew Cask and enable auto-merge after required checks pass.
-[group("release")]
-[script]
-bump-homebrew $version: (_validate-version version)
-    set -euo pipefail
-
-    brew tap nekonata-team/tap
-
-    brew bump-cask-pr \
-        --version "$version" \
-        --no-fork \
-        --no-browse \
-        nekonata-team/tap/den-browser
-
-    gh pr merge "bump-den-browser-${version}" \
-        --repo nekonata-team/homebrew-tap \
-        --auto \
-        --rebase

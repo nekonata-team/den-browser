@@ -17,6 +17,11 @@ Read [CONTEXT.md](./CONTEXT.md) before changing product behavior or user-visible
 
 Run `just --list`. These commands are preferred for use in this project.
 
+## Release
+
+Read `docs/releasing.md`, then use `just release prepare X.Y.Z` and, after
+manual candidate verification, `just release publish X.Y.Z`.
+
 ## Docs
 
 - `README.md`: English product and PoC overview
