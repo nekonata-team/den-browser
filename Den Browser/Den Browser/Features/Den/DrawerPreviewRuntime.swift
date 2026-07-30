@@ -39,6 +39,7 @@ final class DrawerPreviewRuntime: NSObject, WKNavigationDelegate, WKUIDelegate {
             webView,
             actions: .init(
                 onOpenBoard: { [weak webView] url in webView?.load(URLRequest(url: url)) },
+                onOpenBoardInBackground: { [weak webView] url in webView?.load(URLRequest(url: url)) },
                 onEditCurrentSheet: {},
                 onOpenCurrentSheetInNewBoard: { [weak webView] url in webView?.load(URLRequest(url: url)) },
                 onPasteURLInNewBoard: { [weak webView] url in webView?.load(URLRequest(url: url)) },

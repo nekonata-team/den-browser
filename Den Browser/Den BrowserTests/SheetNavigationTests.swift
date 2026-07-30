@@ -131,6 +131,37 @@ struct SheetNavigationTests {
         #expect(hintCount == 0)
     }
 
+    @Test func commandClickIsCapturedWhenSheetNavigationIsDisabled() async throws {
+        let source = try sheetNavigationScriptSource().replacingOccurrences(
+            of: "if (!event.isTrusted || event.button",
+            with: "if (event.button"
+        )
+        let manager = SheetNavigationManager(scriptSource: source)
+        let webView = makeSheetNavigationWebView(manager: manager)
+        let waiter = WebViewLoadWaiter()
+
+        await waiter.load(
+            """
+            <a href="https://destination.example/">Destination</a>
+            """,
+            baseURL: URL(string: "https://example.com/")!,
+            in: webView
+        )
+        let clickWasAllowed =
+            try await webView.evaluateJavaScript(
+                """
+                document.querySelector("a").dispatchEvent(new MouseEvent("click", {
+                  metaKey: true,
+                  button: 0,
+                  bubbles: true,
+                  cancelable: true,
+                  composed: true
+                }))
+                """) as? Bool
+
+        #expect(clickWasAllowed == false)
+    }
+
     @Test func sheetNavigationScriptHandlesCoreMotionsAndModes() async throws {
         let source = try sheetNavigationScriptSource().replacingOccurrences(
             of: "if (!event.isTrusted ||",
@@ -267,6 +298,45 @@ struct SheetNavigationTests {
                 URL(string: "https://source.example/"),
                 URL(string: "https://destination.example/path"),
                 URL(string: "https://focused.example/"),
+            ])
+        #expect(store.focusedDesk?.focusedBoardID == store.focusedDesk?.boards[1].id)
+    }
+
+    @Test func commandClickCanOpenLinkWhenSheetNavigationIsDisabled() {
+        let manager = SheetNavigationManager(scriptSource: "")
+        let source = board("Source", url: "https://source.example/")
+        let currentDesk = desk("Desk", boards: [source], focusedBoardID: source.id)
+        let store = DenStore(
+            state: DenState(desks: [currentDesk], focusedDeskID: currentDesk.id),
+            sheetNavigation: manager
+        )
+        let sourceWebView = store.runtime(for: source).webView
+
+        #expect(
+            manager.handleScriptMessage(
+                [
+                    "action": "commandOpenBoard",
+                    "url": "https://destination.example/path",
+                ], from: sourceWebView))
+        #expect(
+            store.focusedDesk?.boards.map(\.currentSheetURL) == [
+                URL(string: "https://source.example/"),
+                URL(string: "https://destination.example/path"),
+            ])
+        #expect(store.focusedDesk?.focusedBoardID == source.id)
+
+        #expect(
+            manager.handleScriptMessage(
+                [
+                    "action": "commandOpenBoard",
+                    "url": "https://focused.example/path",
+                    "focused": true,
+                ], from: sourceWebView))
+        #expect(
+            store.focusedDesk?.boards.map(\.currentSheetURL) == [
+                URL(string: "https://source.example/"),
+                URL(string: "https://focused.example/path"),
+                URL(string: "https://destination.example/path"),
             ])
         #expect(store.focusedDesk?.focusedBoardID == store.focusedDesk?.boards[1].id)
     }

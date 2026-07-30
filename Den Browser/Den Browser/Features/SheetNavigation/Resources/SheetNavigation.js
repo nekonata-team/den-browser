@@ -162,6 +162,31 @@
     }
   }
 
+  function onClick(event) {
+    if (!event.isTrusted || event.button !== 0 || !event.metaKey ||
+      event.altKey || event.ctrlKey) return;
+
+    const link = event.composedPath().find(
+      (target) => target instanceof Element && target.matches("a[href]"),
+    );
+    if (!link) return;
+
+    let url;
+    try {
+      url = new URL(link.getAttribute("href"), document.baseURI);
+    } catch {
+      return;
+    }
+    if (!["http:", "https:"].includes(url.protocol)) return;
+
+    consume(event);
+    postMessage({
+      action: "commandOpenBoard",
+      url: url.href,
+      focused: event.shiftKey,
+    });
+  }
+
   function scrollTarget(axis) {
     let element = document.elementFromPoint(innerWidth / 2, innerHeight * 0.75);
     while (element && element !== document.documentElement) {
@@ -397,6 +422,7 @@
     runCommand(event.key, event);
   }
 
+  window.addEventListener("click", onClick, true);
   document.addEventListener("keydown", onKeyDown, true);
   window.__denSheetNavigation = {
     configure(configuration) {

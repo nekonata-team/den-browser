@@ -21,7 +21,12 @@ extension DenStore {
         }
     }
 
-    func addBoard(urlString: String, preferredWidth: Double? = nil, afterBoardID: UUID? = nil) {
+    func addBoard(
+        urlString: String,
+        preferredWidth: Double? = nil,
+        afterBoardID: UUID? = nil,
+        focus: Bool = true
+    ) {
         guard let url = normalizedURL(from: urlString) else { return }
         let label = url.host(percentEncoded: false) ?? url.absoluteString
         let width = preferredWidth ?? 520
@@ -44,10 +49,12 @@ extension DenStore {
         }
 
         state.desks[deskIndex].boards.insert(board, at: insertIndex)
-        state.desks[deskIndex].focusedBoardID = board.id
-        state.focusedDeskID = state.desks[deskIndex].id
-        setTemporaryContext(nil)
-        isDenMode = false
+        if focus {
+            state.desks[deskIndex].focusedBoardID = board.id
+            state.focusedDeskID = state.desks[deskIndex].id
+            setTemporaryContext(nil)
+            isDenMode = false
+        }
         save()
     }
 

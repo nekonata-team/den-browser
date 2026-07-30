@@ -17,6 +17,7 @@ private final class SheetNavigationMessageHandler: NSObject, WKScriptMessageHand
 final class SheetNavigationManager {
     struct Actions {
         let onOpenBoard: (URL) -> Void
+        let onOpenBoardInBackground: (URL) -> Void
         let onEditCurrentSheet: () -> Void
         let onOpenCurrentSheetInNewBoard: (URL) -> Void
         let onPasteURLInNewBoard: (URL) -> Void
@@ -143,25 +144,33 @@ final class SheetNavigationManager {
     @discardableResult
     func handleScriptMessage(_ body: Any, from webView: WKWebView) -> Bool {
         guard
-            isEnabled,
-            !isIgnored(webView.url),
             let message = body as? [String: Any],
             let action = message["action"] as? String
         else { return false }
+
+        guard action == "commandOpenBoard" || (isEnabled && !isIgnored(webView.url)) else {
+            return false
+        }
 
         switch action {
         case "copyURL":
             guard let url = webView.url else { return false }
             NSPasteboard.general.clearContents()
             return NSPasteboard.general.setString(url.absoluteString, forType: .string)
-        case "openBoard":
+        case "openBoard", "commandOpenBoard":
             guard
                 let urlString = message["url"] as? String,
                 let url = URL(string: urlString),
                 Self.isSupported(url),
-                let onOpenBoard = actionsByWebView[ObjectIdentifier(webView)]?.onOpenBoard
+                let actions = actionsByWebView[ObjectIdentifier(webView)]
             else { return false }
-            onOpenBoard(url)
+            if action == "commandOpenBoard",
+                message["focused"] as? Bool != true
+            {
+                actions.onOpenBoardInBackground(url)
+            } else {
+                actions.onOpenBoard(url)
+            }
             return true
         case "editCurrentSheet":
             guard

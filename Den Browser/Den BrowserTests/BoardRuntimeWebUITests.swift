@@ -33,4 +33,57 @@ struct BoardRuntimeWebUITests {
         ]
         #expect(selectors.allSatisfy { runtime.responds(to: NSSelectorFromString($0)) })
     }
+
+    @Test func commandPrimaryClickOpensSupportedLinkInNewBoard() {
+        let url = URL(string: "https://example.com/page")
+
+        #expect(
+            BoardRuntime.shouldOpenLinkInNewBoard(
+                navigationType: .linkActivated,
+                modifierFlags: .command,
+                buttonNumber: 0,
+                url: url
+            )
+        )
+        #expect(
+            !BoardRuntime.shouldOpenLinkInNewBoard(
+                navigationType: .linkActivated,
+                modifierFlags: [.option, .command],
+                buttonNumber: 0,
+                url: url
+            )
+        )
+        #expect(
+            !BoardRuntime.shouldOpenLinkInNewBoard(
+                navigationType: .linkActivated,
+                modifierFlags: .command,
+                buttonNumber: 1,
+                url: url
+            )
+        )
+        #expect(
+            !BoardRuntime.shouldOpenLinkInNewBoard(
+                navigationType: .other,
+                modifierFlags: .command,
+                buttonNumber: 0,
+                url: url
+            )
+        )
+        #expect(
+            !BoardRuntime.shouldOpenLinkInNewBoard(
+                navigationType: .linkActivated,
+                modifierFlags: .command,
+                buttonNumber: 0,
+                url: URL(string: "mailto:test@example.com")
+            )
+        )
+        #expect(
+            BoardRuntime.shouldOpenLinkInNewBoard(
+                navigationType: .linkActivated,
+                modifierFlags: [.command, .shift],
+                buttonNumber: 0,
+                url: url
+            )
+        )
+    }
 }
