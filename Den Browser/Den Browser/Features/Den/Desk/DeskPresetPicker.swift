@@ -34,19 +34,24 @@ struct DeskPresetPicker: View {
                 TextField("Search Desk Presets", text: $query)
                     .textFieldStyle(.roundedBorder)
                     .focused(isSearchFocused)
-                    .onSubmit(confirmSelection)
+                    .onSubmit { TextInputComposition.performUnlessActive(confirmSelection) }
                     .onKeyPress(.upArrow) {
-                        guard !isManaging else { return .ignored }
+                        guard !isManaging, !TextInputComposition.isActive else { return .ignored }
                         moveSelection(by: -1)
                         return .handled
                     }
                     .onKeyPress(.downArrow) {
-                        guard !isManaging else { return .ignored }
+                        guard !isManaging, !TextInputComposition.isActive else { return .ignored }
                         moveSelection(by: 1)
                         return .handled
                     }
                     .onKeyPress(phases: .down) { keyPress in
-                        guard !isManaging, keyPress.key == .tab, !keyPress.modifiers.contains(.shift) else {
+                        guard
+                            !isManaging,
+                            keyPress.key == .tab,
+                            !keyPress.modifiers.contains(.shift),
+                            !TextInputComposition.isActive
+                        else {
                             return .ignored
                         }
                         confirmSelection()

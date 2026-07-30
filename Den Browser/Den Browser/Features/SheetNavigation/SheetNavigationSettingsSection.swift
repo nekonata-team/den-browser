@@ -21,7 +21,9 @@ struct SheetNavigationSettingsSection: View {
                     TextField("asdfghjkl", text: $hintAlphabetDraft)
                         .labelsHidden()
                         .frame(width: 180)
-                        .onSubmit(saveHintAlphabet)
+                        .onSubmit {
+                            TextInputComposition.performUnlessActive(saveHintAlphabet)
+                        }
                 }
 
                 if hintAlphabetIsInvalid {

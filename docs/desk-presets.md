@@ -26,7 +26,7 @@ Labels are trimmed, cannot be empty, and compare case-insensitively. A Desk with
 
 ## Creating a Desk
 
-The New Desk panel starts with keyboard focus in Desk Preset search and treats Empty as the initial active candidate. Up and Down move the active candidate. Return or Tab confirms it, initializes the Desk Label from its Desk Preset Label, selects that label for editing, and advances focus to the Desk Label. Return from the label creates the Desk. Escape from the label returns to Preset selection; Escape there closes the panel. Changing the Desk Label does not change the confirmed Desk Preset.
+The New Desk panel starts with keyboard focus in Desk Preset search and treats Empty as the initial active candidate. Up and Down move the active candidate. Return or Tab confirms it, initializes the Desk Label from its Desk Preset Label, selects that label for editing, and advances focus to the Desk Label. Return from the label creates the Desk. Escape from the label returns to Preset selection; Escape there closes the panel. While IME conversion is active, Return, Tab, Shift-Tab, Up, and Down remain available to the input method instead of triggering these panel actions. Changing the Desk Label does not change the confirmed Desk Preset.
 
 Empty search keeps Built-in Presets and My Presets grouped. Typed search ranks fuzzy subsequence matches across both groups, prioritizing Desk Preset Labels, then Board Labels, then Current Sheet URL hosts. A single result becomes active but still requires Return or Tab for confirmation. The active candidate drives the preview without becoming the confirmed Desk Preset. The preview shows Board Labels, URL hosts, and relative Board Widths without capturing Sheet images. The built-in order is:
 

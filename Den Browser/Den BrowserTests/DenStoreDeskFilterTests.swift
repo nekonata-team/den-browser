@@ -99,6 +99,7 @@ struct DenStoreDeskFilterTests {
             selectedRange: NSRange(location: 3, length: 0),
             replacementRange: NSRange(location: NSNotFound, length: 0))
         #expect(textView.hasMarkedText())
+        #expect(TextInputComposition.isActive(in: window))
 
         let returnEvent = try keyEvent(
             String(try #require(UnicodeScalar(NSEvent.SpecialKey.carriageReturn.rawValue))),
@@ -110,6 +111,19 @@ struct DenStoreDeskFilterTests {
         #expect(!KeyboardController.handle(escapeEvent, store: store))
         #expect(store.isDeskFilterInputActive)
         #expect(store.isDeskFilterPresented)
+
+        var didPerform = false
+        TextInputComposition.performUnlessActive(in: window) {
+            didPerform = true
+        }
+        #expect(!didPerform)
+
+        textView.unmarkText()
+        #expect(!TextInputComposition.isActive(in: window))
+        TextInputComposition.performUnlessActive(in: window) {
+            didPerform = true
+        }
+        #expect(didPerform)
     }
 
     private func keyEvent(_ specialKey: NSEvent.SpecialKey, keyCode: UInt16) throws -> NSEvent {

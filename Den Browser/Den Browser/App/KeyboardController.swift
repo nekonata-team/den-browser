@@ -494,7 +494,7 @@ final class KeyboardController {
     }
 
     private static func hasMarkedText(in event: NSEvent) -> Bool {
-        (event.window?.firstResponder as? NSTextView)?.hasMarkedText() == true
+        TextInputComposition.isActive(in: event.window)
     }
 
     private static func handleMovement(

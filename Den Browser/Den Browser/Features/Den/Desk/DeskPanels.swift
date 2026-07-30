@@ -66,10 +66,14 @@ struct NewDeskPanel: View {
                     .textFieldStyle(.roundedBorder)
                     .font(.body.weight(.medium))
                     .focused($isLabelFocused)
-                    .onSubmit(onSubmit)
+                    .onSubmit { TextInputComposition.performUnlessActive(onSubmit) }
                     .onKeyPress(phases: .down) { keyPress in
                         let isBackTab = keyPress.key == .tab || keyPress.characters == "\u{19}"
-                        guard isBackTab, keyPress.modifiers.contains(.shift) else { return .ignored }
+                        guard
+                            isBackTab,
+                            keyPress.modifiers.contains(.shift),
+                            !TextInputComposition.isActive
+                        else { return .ignored }
                         onBeginSelection()
                         return .handled
                     }
@@ -126,7 +130,7 @@ struct SaveDeskPresetPanel: View {
             TextField("Preset label", text: $label)
                 .textFieldStyle(.roundedBorder)
                 .focused($isFocused)
-                .onSubmit(onSave)
+                .onSubmit { TextInputComposition.performUnlessActive(onSave) }
             DeskPresetPreview(boards: store.focusedDesk?.boards.map(DeskPresetBoard.init) ?? [])
             HStack {
                 Text(message ?? "Captures the current Board arrangement")
@@ -160,7 +164,11 @@ struct RenameDeskPanel: View {
                     .textFieldStyle(.plain)
                     .font(.title3.weight(.medium))
                     .focused($isFocused)
-                    .onSubmit { store.renameFocusedDesk(to: text) }
+                    .onSubmit {
+                        TextInputComposition.performUnlessActive {
+                            store.renameFocusedDesk(to: text)
+                        }
+                    }
             }
             HStack(spacing: DenPanelLayout.contentSpacing) {
                 Text("Press Return to confirm, Escape to cancel").foregroundStyle(.secondary)

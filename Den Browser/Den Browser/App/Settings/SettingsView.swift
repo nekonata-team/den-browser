@@ -276,7 +276,7 @@ private struct ProfileSettingsRow: View {
         HStack {
             Circle().fill(profile.color.color).frame(width: 11, height: 11)
             TextField("Profile name", text: $name)
-                .onSubmit(saveName)
+                .onSubmit { TextInputComposition.performUnlessActive(saveName) }
             Picker("Color", selection: colorBinding) {
                 ForEach(ProfileColor.allCases) { color in
                     Text(color.label).tag(color)

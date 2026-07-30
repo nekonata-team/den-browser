@@ -31,18 +31,22 @@ struct OpenBoardPanel: View {
                     .font(.title3.weight(.medium))
                     .focused($isFocused)
                     .onKeyPress(.downArrow) {
+                        guard !TextInputComposition.isActive else { return .ignored }
                         moveRecentSelection(by: 1)
                         return filteredRecentItems.isEmpty ? .ignored : .handled
                     }
                     .onKeyPress(.upArrow) {
+                        guard !TextInputComposition.isActive else { return .ignored }
                         moveRecentSelection(by: -1)
                         return filteredRecentItems.isEmpty ? .ignored : .handled
                     }
                     .onSubmit {
-                        if let selected = filteredRecentItems.first(where: { $0.id == selectedRecentItemID }) {
-                            onOpenRecent(selected, defaultBoardWidth)
-                        } else {
-                            onSubmit(defaultBoardWidth)
+                        TextInputComposition.performUnlessActive {
+                            if let selected = filteredRecentItems.first(where: { $0.id == selectedRecentItemID }) {
+                                onOpenRecent(selected, defaultBoardWidth)
+                            } else {
+                                onSubmit(defaultBoardWidth)
+                            }
                         }
                     }
             }
@@ -130,7 +134,7 @@ struct EditBoardLinkPanel: View {
                     .textFieldStyle(.plain)
                     .font(.title3.weight(.medium))
                     .focused($isFocused)
-                    .onSubmit { onSubmit() }
+                    .onSubmit { TextInputComposition.performUnlessActive(onSubmit) }
             }
 
             HStack(spacing: DenPanelLayout.contentSpacing) {
@@ -163,7 +167,11 @@ struct RenameBoardPanel: View {
                     .textFieldStyle(.plain)
                     .font(.title3.weight(.medium))
                     .focused($isFocused)
-                    .onSubmit { store.renameFocusedBoard(to: text) }
+                    .onSubmit {
+                        TextInputComposition.performUnlessActive {
+                            store.renameFocusedBoard(to: text)
+                        }
+                    }
             }
             HStack(spacing: DenPanelLayout.contentSpacing) {
                 Text("Leave empty to restore page-provided title").foregroundStyle(.secondary)
