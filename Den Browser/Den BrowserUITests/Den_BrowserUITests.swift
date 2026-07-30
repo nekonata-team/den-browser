@@ -67,6 +67,18 @@ final class Den_BrowserUITests: XCTestCase {
         app.typeText("drawer input")
         XCTAssertEqual(sheetInput.value as? String, "drawer input")
 
+        app.typeKey(",", modifierFlags: .control)
+        assertDenMode(in: app)
+
+        app.typeText("/")
+        let search = app.textFields["drawer-search"].firstMatch
+        XCTAssertTrue(search.waitForExistence(timeout: 5))
+        app.typeKey(.escape, modifierFlags: [])
+
+        app.typeKey(",", modifierFlags: .control)
+        app.typeText("!")
+        XCTAssertEqual(sheetInput.value as? String, "drawer input!")
+
         app.typeKey(.escape, modifierFlags: [])
         app.typeText("x")
         XCTAssertTrue(drawer.waitForNonExistence(timeout: 5))

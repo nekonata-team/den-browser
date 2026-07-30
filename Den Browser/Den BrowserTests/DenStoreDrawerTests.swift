@@ -258,6 +258,26 @@ struct DenStoreDrawerTests {
         #expect(store.expandedDrawerItemID == nil)
     }
 
+    @Test func openingDrawerExitsDenModeOnlyForExpandedPreview() throws {
+        let source = desk("Desk")
+        let item = DrawerItem(url: try #require(URL(string: "https://example.com/")))
+        let store = DenStore(
+            state: DenState(
+                desks: [source],
+                focusedDeskID: source.id,
+                drawerItems: [item]))
+
+        store.isDenMode = true
+        store.openDrawer()
+        #expect(store.isDenMode)
+
+        store.closeDrawer()
+        store.toggleDrawerItem(item.id)
+        store.isDenMode = true
+        store.openDrawer()
+        #expect(!store.isDenMode)
+    }
+
     @Test func slashSearchAndReturnToggleFilteredSelectionPreview() throws {
         let source = desk("Desk")
         let first = DrawerItem(
@@ -283,9 +303,10 @@ struct DenStoreDrawerTests {
         #expect(!store.isDrawerFilterMode)
         #expect(store.expandedDrawerItemID == second.id)
         #expect(store.drawerQuery == "second")
+        #expect(!store.isDenMode)
 
         #expect(KeyboardController.handle(try keyEvent("\u{1B}", keyCode: 53), store: store))
-        #expect(store.drawerQuery.isEmpty)
+        #expect(!store.isDrawerOpen)
         #expect(store.expandedDrawerItemID == second.id)
     }
 
@@ -305,7 +326,7 @@ struct DenStoreDrawerTests {
         #expect(!store.isDrawerOpen)
     }
 
-    @Test func sheetInputKeyboardDiscardsDrawerItemWithXButNotD() throws {
+    @Test func sheetInputLeavesVimStyleDrawerKeysUnclaimed() throws {
         let source = desk("Desk")
         let store = DenStore(state: DenState(desks: [source], focusedDeskID: source.id))
         store.captureInDrawer(try #require(URL(string: "https://first.example/")))
@@ -315,12 +336,11 @@ struct DenStoreDrawerTests {
         #expect(store.isDrawerOpen)
         #expect(!store.isDenMode)
 
-        #expect(KeyboardController.handle(try keyEvent("d", keyCode: 2), store: store))
+        for (key, keyCode) in [("d", 2), ("x", 7), ("j", 38), ("k", 40), ("p", 35), ("/", 44)] {
+            #expect(!KeyboardController.handle(try keyEvent(key, keyCode: UInt16(keyCode)), store: store))
+        }
+        #expect(!KeyboardController.handle(try keyEvent(.tab, keyCode: 48), store: store))
         #expect(store.state.drawerItems.count == 2)
-        #expect(store.isDrawerOpen)
-
-        #expect(KeyboardController.handle(try keyEvent("x", keyCode: 7), store: store))
-        #expect(store.state.drawerItems.count == 1)
         #expect(store.isDrawerOpen)
     }
 

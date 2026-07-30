@@ -37,6 +37,12 @@ final class KeyboardController {
             return false
         }
 
+        if store.isDrawerOpen,
+            handleDrawerDenModeToggle(event, store: store, preferences: preferences)
+        {
+            return true
+        }
+
         if store.isBoardDragging {
             if isEscape(event), modifiers == [] {
                 store.requestBoardDragCancellation()
@@ -135,6 +141,22 @@ final class KeyboardController {
             store.moveFocusedBoardLeft()
         case .moveFocusedBoardRight:
             store.moveFocusedBoardRight()
+        }
+        return true
+    }
+
+    private static func handleDrawerDenModeToggle(
+        _ event: NSEvent,
+        store: DenStore,
+        preferences: AppPreferences?
+    ) -> Bool {
+        guard let binding = ShortcutBinding(event: event) else { return false }
+        let toggleBinding =
+            preferences?.shortcut(for: .toggleDenMode)
+            ?? ShortcutAction.toggleDenMode.defaultBinding
+        guard binding == toggleBinding else { return false }
+        if !event.isARepeat {
+            store.toggleDenMode()
         }
         return true
     }
@@ -302,7 +324,7 @@ final class KeyboardController {
     }
 
     private static func handleDrawer(_ event: NSEvent, store: DenStore) -> Bool {
-        if isDrawerPreviewFirstResponder(event, store: store) {
+        if !store.isDenMode, isDrawerPreviewFirstResponder(event, store: store) {
             return false
         }
 
@@ -324,19 +346,56 @@ final class KeyboardController {
             return false
         }
 
-        if store.isDenMode, isTab(event) {
-            store.closeDrawer()
+        if store.isDenMode {
+            if isTab(event) {
+                store.closeDrawer()
+                return true
+            }
+
+            if isEscape(event) {
+                store.exitDenMode()
+                return true
+            }
+
+            if isReturn(event), !event.isARepeat {
+                store.toggleSelectedDrawerItem()
+                return true
+            }
+
+            if event.specialKey == .backspace || event.specialKey == .deleteForward {
+                if !event.isARepeat {
+                    store.discardSelectedDrawerItem()
+                }
+                return true
+            }
+
+            switch characterIgnoringModifiers(for: event) {
+            case "/":
+                store.enterDrawerFilterMode()
+            case "j":
+                store.selectDrawerItem(by: 1)
+            case "k":
+                store.selectDrawerItem(by: -1)
+            case "p":
+                if !event.isARepeat {
+                    store.placeSelectedDrawerItemAsBoard()
+                }
+            case "x", "d":
+                if !event.isARepeat {
+                    store.discardSelectedDrawerItem()
+                }
+            default:
+                switch event.specialKey {
+                case .downArrow: store.selectDrawerItem(by: 1)
+                case .upArrow: store.selectDrawerItem(by: -1)
+                default: break
+                }
+            }
             return true
         }
 
         if isEscape(event) {
-            if !store.drawerQuery.isEmpty {
-                store.clearDrawerQuery()
-            } else if let expandedDrawerItemID = store.expandedDrawerItemID {
-                store.toggleDrawerItem(expandedDrawerItemID)
-            } else {
-                store.closeDrawer()
-            }
+            store.closeDrawer()
             return true
         }
 
@@ -352,31 +411,10 @@ final class KeyboardController {
             return true
         }
 
-        switch characterIgnoringModifiers(for: event) {
-        case "/":
-            store.enterDrawerFilterMode()
-        case "j":
-            store.selectDrawerItem(by: 1)
-        case "k":
-            store.selectDrawerItem(by: -1)
-        case "p":
-            if !event.isARepeat {
-                store.placeSelectedDrawerItemAsBoard()
-            }
-        case "x":
-            if !event.isARepeat {
-                store.discardSelectedDrawerItem()
-            }
-        case "d":
-            if store.isDenMode, !event.isARepeat {
-                store.discardSelectedDrawerItem()
-            }
-        default:
-            switch event.specialKey {
-            case .downArrow: store.selectDrawerItem(by: 1)
-            case .upArrow: store.selectDrawerItem(by: -1)
-            default: break
-            }
+        switch event.specialKey {
+        case .downArrow: store.selectDrawerItem(by: 1)
+        case .upArrow: store.selectDrawerItem(by: -1)
+        default: return false
         }
         return true
     }

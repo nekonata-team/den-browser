@@ -23,7 +23,7 @@ extension DenStore {
         selectedDrawerItemID = item.id
         state.expandedDrawerItemID = item.id
         if opensDrawer {
-            setTemporaryContext(.drawer)
+            openDrawer()
         }
         save()
         showToast("Captured in Drawer.", style: .success)
@@ -46,6 +46,9 @@ extension DenStore {
         guard !state.drawerItems.isEmpty else { return }
         setTemporaryContext(.drawer)
         selectedDrawerItemID = selectedDrawerItemID ?? state.drawerItems.first?.id
+        if expandedDrawerItemID != nil {
+            isDenMode = false
+        }
     }
 
     func closeDrawer() {
@@ -94,6 +97,7 @@ extension DenStore {
             releaseDrawerPreview()
         } else {
             state.expandedDrawerItemID = itemID
+            isDenMode = false
             releaseDrawerPreview()
         }
         save()

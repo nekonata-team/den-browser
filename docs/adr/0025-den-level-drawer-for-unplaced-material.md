@@ -45,6 +45,8 @@ Future media support must not turn the initial design into a speculative generic
 
 - Web material is a `Drawer Item`, separate from `Sheet`.
 - `Tab` opens and closes the Drawer in Den Mode. The initial implementation has no pointer entry point.
+- Den Mode remains independently toggleable while the Drawer is open. Entering Den Mode returns keyboard focus to Drawer Items without collapsing an expanded Preview; returning to Sheet Input focuses that Preview again.
+- Opening a Drawer with an expanded Preview enters Sheet Input and focuses its Sheet. Opening one without an expanded Preview keeps Den Mode, and expanding a Preview from Den Mode enters Sheet Input.
 - The Drawer appears from the bottom of the Den without changing Desk layout. It has no edge-hover target, handle, or drag interaction, and keeps an outer inset on both sides.
 - Drawer Items form a vertical accordion. One item at a time expands into a live `WKWebView` Drawer Preview.
 - Opening an external URL captures, selects, and expands a new Drawer Item.

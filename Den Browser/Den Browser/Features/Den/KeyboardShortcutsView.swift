@@ -98,12 +98,13 @@ struct KeyboardShortcutsView: View {
             ShortcutGuideSection(
                 title: "Drawer",
                 items: [
-                    item(["/"], "Search Drawer Items"),
+                    item(["Tab"], "Close Drawer in Den Mode"),
+                    item(["/"], "Search Drawer Items in Den Mode"),
                     item(["↑", "/", "↓", "or", "k", "/", "j"], "Select Drawer Item"),
                     item(["Return"], "Toggle Drawer Preview"),
                     item(["p"], "Place as Board"),
-                    item(["Delete"], "Discard Drawer Item"),
-                    item(["Escape"], "Collapse Preview / close Drawer"),
+                    item(["x", "/", "d", "or", "Delete"], "Discard Drawer Item"),
+                    item(["Escape"], "Exit Den Mode / close Drawer"),
                 ]),
         ]
     }

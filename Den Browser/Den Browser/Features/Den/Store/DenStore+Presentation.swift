@@ -2,7 +2,7 @@ import Foundation
 
 extension DenStore {
     func toggleDenMode() {
-        guard temporaryContext == nil else { return }
+        guard temporaryContext == nil || temporaryContext == .drawer else { return }
         isDenMode.toggle()
         if !isDenMode {
             dismissDeskFilter()
@@ -10,7 +10,7 @@ extension DenStore {
     }
 
     func exitDenMode() {
-        guard temporaryContext == nil else { return }
+        guard temporaryContext == nil || temporaryContext == .drawer else { return }
         dismissDeskFilter()
         isDenMode = false
     }

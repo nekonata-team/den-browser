@@ -32,7 +32,7 @@ The complete in-app guide is available from Settings, the Den menu, and `?` in D
 | Shift + `n` | New Desk panel | Creating enters Sheet Input; Escape returns to Den Mode. |
 | `p` | Save Desk as Preset panel | Available when the Focused Desk contains a Board. |
 | Shift + `p` | Replace Focused Desk from a Desk Preset | Empty Preset is excluded; replacing an empty Desk applies immediately. |
-| Tab | Toggle Drawer | Available in Den Mode. While open, `/` searches Drawer Items by title or URL, Up / Down or `k` / `j` selects a visible Item, Return expands or collapses its Preview, `p` places it as a Board, and `x`, `d`, or Delete discards it. Escape first cancels search, then collapses the Preview, then closes the Drawer. |
+| Tab | Toggle Drawer | Available in Den Mode. Opening an expanded Preview enters Sheet Input and focuses its Sheet; opening a Drawer without a Preview keeps Den Mode. The Den Mode Toggle remains available inside the Drawer: entering Den Mode preserves the Preview and returns focus to Drawer Items, while returning to Sheet Input focuses the Preview again. In Den Mode, `/` searches Drawer Items by title or URL, Up / Down or `k` / `j` selects a visible Item, Return expands or collapses its Preview, `p` places it as a Board, and `x`, `d`, or Delete discards it. In Sheet Input, Drawer Items accept only standard arrow, Return, Delete, and Escape controls; a focused Preview keeps its web and Vim-style Sheet Navigation keys, including Escape. |
 | `o` | Toggle overview | Overview is temporary within Den Mode. |
 | `?` | Keyboard Shortcuts | Opens the complete guide; `?` or Escape closes it. |
 | `z` | Toggle Zen View | Hides the native titlebar, Desk switcher, and Profile control for this window. Press `z` again to restore them. |

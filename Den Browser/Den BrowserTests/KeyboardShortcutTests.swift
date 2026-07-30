@@ -212,6 +212,23 @@ struct KeyboardShortcutTests {
         #expect(store.focusedDesk?.focusedBoardID == focusedBoardID)
     }
 
+    @Test func denModeToggleRemainsAvailableInDrawer() throws {
+        let preferences = try makePreferences()
+        let store = makeStore(boards: [board("First")])
+        store.captureInDrawer(try #require(URL(string: "https://example.com/")))
+        let previewID = store.expandedDrawerItemID
+        let toggle = try keyEvent(
+            characters: ",", charactersIgnoringModifiers: ",", modifiers: [.control], keyCode: 43)
+
+        #expect(KeyboardController.handle(toggle, store: store, preferences: preferences))
+        #expect(store.isDenMode)
+        #expect(store.expandedDrawerItemID == previewID)
+
+        #expect(KeyboardController.handle(toggle, store: store, preferences: preferences))
+        #expect(!store.isDenMode)
+        #expect(store.expandedDrawerItemID == previewID)
+    }
+
     @Test func nativeCommandShortcutsPassThroughWithoutExecuting() throws {
         let first = board("First")
         let second = board("Second")

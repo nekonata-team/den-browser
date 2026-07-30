@@ -9,6 +9,7 @@ struct DrawerView: View {
     let profileColor: Color
 
     @FocusState private var isSearchFocused: Bool
+    @FocusState private var focusedDrawerItemID: UUID?
 
     var body: some View {
         VStack(spacing: 0) {
@@ -38,6 +39,20 @@ struct DrawerView: View {
         .animation(DenMotion.feedback(reduceMotion: shouldReduceMotion), value: store.expandedDrawerItemID)
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("drawer")
+        .onAppear {
+            restoreKeyboardFocus()
+        }
+        .onChange(of: store.isDenMode) { _, _ in
+            restoreKeyboardFocus()
+        }
+        .onChange(of: store.selectedDrawerItemID) { _, itemID in
+            if store.isDenMode, !store.isDrawerFilterMode {
+                focusedDrawerItemID = itemID
+            }
+        }
+        .onChange(of: store.expandedDrawerItemID) { _, _ in
+            restoreKeyboardFocus()
+        }
     }
 
     private var header: some View {
@@ -119,7 +134,11 @@ struct DrawerView: View {
         .padding(.horizontal, DenDrawerLayout.headerHorizontalPadding)
         .padding(.vertical, 12)
         .onChange(of: store.isDrawerFilterMode) { _, newValue in
-            isSearchFocused = newValue
+            if newValue {
+                isSearchFocused = true
+            } else {
+                restoreKeyboardFocus()
+            }
         }
     }
 
@@ -185,6 +204,7 @@ struct DrawerView: View {
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
+                .focused($focusedDrawerItemID, equals: item.id)
                 .contextMenu {
                     Button("Place as Board") {
                         store.placeDrawerItemAsBoard(item.id)
@@ -225,10 +245,13 @@ struct DrawerView: View {
 
             if store.isDrawerOpen, store.expandedDrawerItemID == item.id {
                 let runtime = store.drawerRuntime(for: item)
-                DrawerWebView(webView: runtime.webView)
-                    .frame(height: previewHeight)
-                    .clipShape(RoundedRectangle(cornerRadius: DenRadius.small, style: .continuous))
-                    .padding([.horizontal, .bottom], DenLayout.outerInset)
+                DrawerWebView(
+                    webView: runtime.webView,
+                    isFocused: !store.isDenMode
+                )
+                .frame(height: previewHeight)
+                .clipShape(RoundedRectangle(cornerRadius: DenRadius.small, style: .continuous))
+                .padding([.horizontal, .bottom], DenLayout.outerInset)
             }
         }
         .background(
@@ -273,6 +296,19 @@ struct DrawerView: View {
         guard !store.drawerQuery.isEmpty else { return "\(total)" }
         return "\(store.filteredDrawerItems.count) of \(total)"
     }
+
+    private func restoreKeyboardFocus() {
+        guard !store.isDrawerFilterMode else { return }
+        if !store.isDenMode, store.expandedDrawerItemID != nil {
+            if let webView = store.drawerPreviewRuntime?.webView {
+                DispatchQueue.main.async {
+                    webView.window?.makeFirstResponder(webView)
+                }
+            }
+            return
+        }
+        focusedDrawerItemID = store.selectedDrawerItemID
+    }
 }
 
 private enum DenDrawerLayout {
@@ -287,14 +323,33 @@ private enum DenDrawerLayout {
 
 private struct DrawerWebView: NSViewRepresentable {
     let webView: WKWebView
+    let isFocused: Bool
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator()
+    }
 
     func makeNSView(context: Context) -> WKWebView {
-        DispatchQueue.main.async { [weak webView] in
-            guard let webView else { return }
-            webView.window?.makeFirstResponder(webView)
-        }
+        context.coordinator.updateFocus(isFocused, webView: webView)
         return webView
     }
 
-    func updateNSView(_ nsView: WKWebView, context: Context) {}
+    func updateNSView(_ nsView: WKWebView, context: Context) {
+        context.coordinator.updateFocus(isFocused, webView: nsView)
+    }
+
+    final class Coordinator {
+        private var isFocused = false
+
+        func updateFocus(_ newValue: Bool, webView: WKWebView) {
+            guard newValue != isFocused else { return }
+            isFocused = newValue
+            if newValue {
+                DispatchQueue.main.async { [weak webView] in
+                    guard let webView else { return }
+                    webView.window?.makeFirstResponder(webView)
+                }
+            }
+        }
+    }
 }
