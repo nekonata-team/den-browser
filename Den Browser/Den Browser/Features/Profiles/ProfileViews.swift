@@ -1,4 +1,3 @@
-import AppKit
 import SwiftUI
 
 struct ProfileWindowView: View {
@@ -61,7 +60,6 @@ struct ProfileWindowView: View {
             .environment(store)
             .focusedSceneValue(\.denStore, store)
             .focusedSceneValue(\.profileID, activeProfileID)
-            .background(WindowAppearance())
             .toolbarVisibility(store.isZenViewPresented ? .hidden : .visible, for: .windowToolbar)
             .ignoresSafeArea(.container, edges: store.isZenViewPresented ? .top : [])
             .onOpenURL { url in
@@ -170,26 +168,6 @@ private struct OpenProfilePanel: View {
     private var filteredProfiles: [ProfileState] {
         guard !query.isEmpty else { return profileManager.profiles }
         return profileManager.profiles.filter { $0.name.localizedCaseInsensitiveContains(query) }
-    }
-}
-
-private struct WindowAppearance: NSViewRepresentable {
-    func makeNSView(context: Context) -> NSView {
-        let view = NSView()
-        apply(to: view)
-        return view
-    }
-
-    func updateNSView(_ view: NSView, context: Context) {
-        apply(to: view)
-    }
-
-    private func apply(to view: NSView) {
-        DispatchQueue.main.async { [weak view] in
-            guard let window = view?.window else { return }
-            window.titlebarAppearsTransparent = true
-            window.styleMask.insert(.fullSizeContentView)
-        }
     }
 }
 

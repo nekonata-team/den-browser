@@ -36,6 +36,7 @@ struct Den_BrowserApp: App {
         } defaultValue: {
             profileManager.personalProfileID
         }
+        .windowStyle(.hiddenTitleBar)
         .handlesExternalEvents(matching: ["*"])
         .commands {
             DenCommands(profileManager: profileManager)
