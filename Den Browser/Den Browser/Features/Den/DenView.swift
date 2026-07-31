@@ -156,7 +156,7 @@ struct DenView: View {
             .animation(DenMotion.spatial(reduceMotion: shouldReduceMotion), value: store.isDrawerOpen)
         }
         .background(DenBackground(isDenMode: store.isDenMode, profileColor: profileColor))
-        .frame(minWidth: 1100, minHeight: 720)
+        .frame(minWidth: 800, minHeight: 720)
         .navigationTitle(titlebarTitle)
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("den-content")
