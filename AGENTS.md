@@ -31,3 +31,5 @@ manual candidate verification, `just release publish X.Y.Z`.
 - `docs/testing.md`: automated and exploratory validation
 
 Keep `README.md` and `README.ja.md` aligned in structure and product facts. Update both when user-visible features, status, requirements, or documentation links change. Write natural copy in each language rather than translating literally.
+
+@RTK.md
