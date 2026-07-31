@@ -141,6 +141,28 @@ struct DenStoreDrawerTests {
         #expect(runtime.webView.uiDelegate == nil)
     }
 
+    @Test func clearingDrawerRequiresConfirmationAndDisposesAllItems() throws {
+        let source = desk("Desk")
+        let store = DenStore(state: DenState(desks: [source], focusedDeskID: source.id))
+        store.captureInDrawer(try #require(URL(string: "https://first.example/")))
+        store.captureInDrawer(try #require(URL(string: "https://second.example/")))
+        _ = store.drawerRuntime(for: try #require(store.selectedDrawerItem))
+
+        store.requestDrawerClearConfirmation()
+
+        #expect(store.state.drawerItems.count == 2)
+        #expect(store.drawerPendingDeletionCount == 2)
+
+        store.confirmDrawerClear()
+
+        #expect(store.state.drawerItems.isEmpty)
+        #expect(store.drawerPendingDeletionCount == nil)
+        #expect(store.selectedDrawerItemID == nil)
+        #expect(store.expandedDrawerItemID == nil)
+        #expect(store.drawerPreviewRuntime == nil)
+        #expect(!store.isDrawerOpen)
+    }
+
     @Test func legacyDenStateLoadsWithEmptyDrawerAndEmptyDrawerStaysOmitted() throws {
         let source = desk("Desk")
         let state = DenState(desks: [source], focusedDeskID: source.id)

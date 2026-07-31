@@ -110,6 +110,10 @@ final class DenStore {
         guard case .replaceDeskPreset(let preset)? = pendingConfirmation else { return nil }
         return preset
     }
+    var drawerPendingDeletionCount: Int? {
+        guard case .clearDrawer(let count)? = pendingConfirmation else { return nil }
+        return count
+    }
     var isResetDenPending: Bool {
         guard case .resetDen? = pendingConfirmation else { return false }
         return true
@@ -378,6 +382,7 @@ enum PendingConfirmation {
     case replaceDesk(PendingDeskReplacement)
     case deleteDeskPreset(PersonalDeskPreset)
     case replaceDeskPreset(PersonalDeskPreset)
+    case clearDrawer(Int)
     case resetDen
 }
 

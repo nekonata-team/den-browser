@@ -147,6 +147,30 @@ extension DenStore {
         discardDrawerItem(selectedDrawerItemID)
     }
 
+    func requestDrawerClearConfirmation() {
+        guard !state.drawerItems.isEmpty else { return }
+        pendingConfirmation = .clearDrawer(state.drawerItems.count)
+    }
+
+    func confirmDrawerClear() {
+        guard drawerPendingDeletionCount != nil else { return }
+        releaseDrawerPreview()
+        state.drawerItems = []
+        state.expandedDrawerItemID = nil
+        selectedDrawerItemID = nil
+        drawerQuery = ""
+        isDrawerFilterMode = false
+        closeDrawer()
+        pendingConfirmation = nil
+        save()
+    }
+
+    func cancelDrawerClear() {
+        if drawerPendingDeletionCount != nil {
+            pendingConfirmation = nil
+        }
+    }
+
     func placeDrawerItemAsBoard(_ itemID: UUID) {
         guard let item = state.drawerItems.first(where: { $0.id == itemID }) else { return }
         addBoard(urlString: item.url.absoluteString, preferredWidth: focusedBoard?.width)

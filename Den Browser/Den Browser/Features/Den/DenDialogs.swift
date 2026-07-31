@@ -90,5 +90,21 @@ struct DenDialogs: ViewModifier {
             } message: {
                 Text("Existing Desks will not be affected.")
             }
+            .confirmationDialog(
+                "Discard all Drawer items?",
+                isPresented: Binding(
+                    get: { store.drawerPendingDeletionCount != nil },
+                    set: { if !$0 { store.cancelDrawerClear() } })
+            ) {
+                Button("Discard All", role: .destructive) {
+                    store.confirmDrawerClear()
+                }
+                Button("Cancel", role: .cancel) {
+                    store.cancelDrawerClear()
+                }
+            } message: {
+                let count = store.drawerPendingDeletionCount ?? 0
+                Text("All \(count) Drawer items will be discarded.")
+            }
     }
 }

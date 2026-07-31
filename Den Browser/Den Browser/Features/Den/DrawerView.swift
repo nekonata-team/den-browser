@@ -69,6 +69,17 @@ struct DrawerView: View {
 
                 HStack(spacing: 8) {
                     Spacer()
+                    Button(role: .destructive) {
+                        store.requestDrawerClearConfirmation()
+                    } label: {
+                        Image(systemName: "trash")
+                            .font(.system(size: 12, weight: .semibold))
+                    }
+                    .buttonStyle(.glass)
+                    .disabled(store.state.drawerItems.isEmpty)
+                    .accessibilityLabel("Discard All Drawer Items")
+                    .help("Discard All Drawer Items")
+
                     Button {
                         store.enterDrawerFilterMode()
                     } label: {
