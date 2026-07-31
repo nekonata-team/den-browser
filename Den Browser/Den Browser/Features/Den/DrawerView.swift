@@ -10,6 +10,7 @@ struct DrawerView: View {
 
     @FocusState private var isSearchFocused: Bool
     @FocusState private var focusedDrawerItemID: UUID?
+    @State private var hoveredDiscardItemID: UUID?
 
     var body: some View {
         VStack(spacing: 0) {
@@ -233,12 +234,15 @@ struct DrawerView: View {
                 } label: {
                     Image(systemName: "trash")
                         .font(.system(size: 12, weight: .semibold))
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(hoveredDiscardItemID == item.id ? .red : .primary)
                         .frame(
                             width: DenDrawerLayout.itemButtonWidth,
                             height: DenDrawerLayout.itemHeight)
                 }
                 .buttonStyle(.plain)
+                .onHover { isHovering in
+                    hoveredDiscardItemID = isHovering ? item.id : nil
+                }
                 .accessibilityLabel("Discard \(item.displayName)")
                 .help("Discard")
             }
