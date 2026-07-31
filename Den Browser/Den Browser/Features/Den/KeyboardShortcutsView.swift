@@ -12,12 +12,7 @@ struct KeyboardShortcutsView: View {
                     .font(.headline)
                 Spacer()
                 if let onClose {
-                    Button(action: onClose) {
-                        Image(systemName: "xmark")
-                            .font(.system(size: 11, weight: .semibold))
-                    }
-                    .buttonStyle(.glass)
-                    .accessibilityLabel("Close Keyboard Shortcuts")
+                    DenCloseButton(label: "Close Keyboard Shortcuts", action: onClose)
                 }
             }
 

@@ -36,6 +36,23 @@ struct DenBackground: View {
     }
 }
 
+struct DenCloseButton: View {
+    let label: String
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: "xmark")
+                .font(.system(size: 12, weight: .semibold))
+                .frame(width: 30, height: 30)
+        }
+        .buttonStyle(.plain)
+        .glassEffect(.regular, in: Circle())
+        .contentShape(Circle())
+        .accessibilityLabel(label)
+    }
+}
+
 struct EmptyDenView: View {
     let openBoard: () -> Void
 

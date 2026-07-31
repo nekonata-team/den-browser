@@ -78,13 +78,9 @@ struct OverviewView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .glassEffect(.regular, in: RoundedRectangle(cornerRadius: DenRadius.large, style: .continuous))
         .overlay(alignment: .topTrailing) {
-            Button {
+            DenCloseButton(label: "Close Overview") {
                 store.hideOverview()
-            } label: {
-                Image(systemName: "xmark")
-                    .font(.system(size: 12, weight: .semibold))
             }
-            .buttonStyle(.glass)
             .padding(DenOverviewLayout.closeButtonInset)
         }
         .onExitCommand {

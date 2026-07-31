@@ -197,11 +197,7 @@ struct BoardWidthPanel: View {
             HStack {
                 Text("Resize Boards to Fit").font(.headline)
                 Spacer()
-                Button(action: store.hideBoardWidthPanel) {
-                    Image(systemName: "xmark").font(.system(size: 11, weight: .semibold))
-                }
-                .buttonStyle(.glass)
-                .accessibilityLabel("Close Board Width")
+                DenCloseButton(label: "Close Board Width", action: store.hideBoardWidthPanel)
             }
             LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 3), spacing: 8) {
                 ForEach(1...9, id: \.self) { count in

@@ -74,8 +74,9 @@ struct DrawerView: View {
                     } label: {
                         Image(systemName: "trash")
                             .font(.system(size: 12, weight: .semibold))
+                            .frame(width: 30, height: 30)
                     }
-                    .buttonStyle(.glass)
+                    .buttonStyle(.plain)
                     .disabled(store.state.drawerItems.isEmpty)
                     .accessibilityLabel("Discard All Drawer Items")
                     .help("Discard All Drawer Items")
@@ -85,19 +86,15 @@ struct DrawerView: View {
                     } label: {
                         Image(systemName: "magnifyingglass")
                             .font(.system(size: 12, weight: .semibold))
+                            .frame(width: 30, height: 30)
                     }
-                    .buttonStyle(.glass)
+                    .buttonStyle(.plain)
                     .accessibilityLabel("Search Drawer Items")
                     .help("Search Drawer Items (/)")
 
-                    Button {
+                    DenCloseButton(label: "Close Drawer") {
                         store.closeDrawer()
-                    } label: {
-                        Image(systemName: "xmark")
-                            .font(.system(size: 12, weight: .semibold))
                     }
-                    .buttonStyle(.glass)
-                    .accessibilityLabel("Close Drawer")
                 }
             }
 
