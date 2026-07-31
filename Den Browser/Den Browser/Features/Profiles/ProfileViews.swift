@@ -80,6 +80,7 @@ struct ProfileWindowView: View {
             }
         } else {
             ContentUnavailableView("Profile unavailable", systemImage: "person.crop.circle.badge.exclamationmark")
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
     }
 }

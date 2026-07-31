@@ -99,6 +99,7 @@ struct DeskPresetPicker: View {
         VStack(alignment: .leading, spacing: 8) {
             if matchingChoices.isEmpty {
                 ContentUnavailableView.search(text: query)
+                    .frame(maxWidth: .infinity, minHeight: 220)
             } else if query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                 Text("Built-in Presets")
                     .font(.caption.weight(.semibold))
@@ -133,8 +134,10 @@ struct DeskPresetPicker: View {
             if filteredPersonalPresets.isEmpty {
                 if query.isEmpty {
                     ContentUnavailableView("No Personal Desk Presets", systemImage: "bookmark")
+                        .frame(maxWidth: .infinity, minHeight: 220)
                 } else {
                     ContentUnavailableView.search(text: query)
+                        .frame(maxWidth: .infinity, minHeight: 220)
                 }
             } else {
                 ForEach(filteredPersonalPresets) { preset in

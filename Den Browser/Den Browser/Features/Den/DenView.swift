@@ -75,6 +75,7 @@ struct DenView: View {
 
                 if store.isDeskFilterPresented && store.filteredDeskBoards.isEmpty {
                     ContentUnavailableView.search(text: store.deskFilterQuery)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
                         .allowsHitTesting(false)
                 }
 
