@@ -441,6 +441,14 @@ struct SheetNavigationTests {
         try await dispatchSheetKey("E", shift: true, in: webView)
         #expect(store.isOpenBoardPanelPresented)
         #expect(store.openBoardPanelInitialURL == url)
+
+        store.hideOpenBoardPanel()
+        try await dispatchSheetKey("t", in: webView)
+        #expect(store.isOpenBoardPanelPresented)
+
+        store.hideOpenBoardPanel()
+        try await dispatchSheetKey("T", shift: true, in: webView)
+        #expect(store.isOverviewPresented)
     }
 
     @Test func boardRuntimeObservesUrlAndTitleChanges() async throws {

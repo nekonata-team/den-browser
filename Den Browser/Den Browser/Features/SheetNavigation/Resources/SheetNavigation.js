@@ -347,6 +347,8 @@
       case "L": history.forward(); break;
       case "p": postMessage({ action: "pasteURL" }); break;
       case "P": postMessage({ action: "pasteURLInNewBoard" }); break;
+      case "t": postMessage({ action: "openBoardPanel" }); break;
+      case "T": postMessage({ action: "showOverview" }); break;
       case "r": location.reload(); break;
       case "x": postMessage({ action: "removeBoard" }); break;
       case "X": postMessage({ action: "restoreBoard" }); break;

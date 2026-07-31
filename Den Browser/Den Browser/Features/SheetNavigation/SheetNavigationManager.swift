@@ -22,6 +22,8 @@ final class SheetNavigationManager {
         let onEditCurrentSheet: () -> Void
         let onOpenCurrentSheetInNewBoard: (URL) -> Void
         let onPasteURLInNewBoard: (URL) -> Void
+        let onOpenBoardPanel: () -> Void
+        let onShowOverview: () -> Void
         let onRemoveBoard: () -> Void
         let onRestoreBoard: () -> Void
     }
@@ -201,6 +203,18 @@ final class SheetNavigationManager {
                 let action = actionsByWebView[ObjectIdentifier(webView)]?.onOpenCurrentSheetInNewBoard
             else { return false }
             action(url)
+            return true
+        case "openBoardPanel":
+            guard let action = actionsByWebView[ObjectIdentifier(webView)]?.onOpenBoardPanel else {
+                return false
+            }
+            action()
+            return true
+        case "showOverview":
+            guard let action = actionsByWebView[ObjectIdentifier(webView)]?.onShowOverview else {
+                return false
+            }
+            action()
             return true
         case "pasteURL", "pasteURLInNewBoard":
             guard

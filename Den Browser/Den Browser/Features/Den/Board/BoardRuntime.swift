@@ -25,6 +25,8 @@ final class BoardRuntime: NSObject, ObservableObject, WKDownloadDelegate, WKNavi
     private let onEditCurrentSheet: () -> Void
     private let onOpenCurrentSheetInNewBoard: (URL) -> Void
     private let onPasteURLInNewBoard: (URL) -> Void
+    private let onOpenBoardPanel: () -> Void
+    private let onShowOverview: () -> Void
     private let onChange: (UUID, URL?, String?) -> Void
     private let onFullscreenChange: ((UUID, Bool) -> Void)?
     private let onDownloadFinished: (String) -> Void
@@ -50,6 +52,8 @@ final class BoardRuntime: NSObject, ObservableObject, WKDownloadDelegate, WKNavi
         onEditCurrentSheet: @escaping () -> Void = {},
         onOpenCurrentSheetInNewBoard: @escaping (URL) -> Void = { _ in },
         onPasteURLInNewBoard: @escaping (URL) -> Void = { _ in },
+        onOpenBoardPanel: @escaping () -> Void = {},
+        onShowOverview: @escaping () -> Void = {},
         onRemoveBoard: @escaping () -> Void = {},
         onRestoreBoard: @escaping () -> Void = {},
         onDownloadFinished: @escaping (String) -> Void = { _ in },
@@ -63,6 +67,8 @@ final class BoardRuntime: NSObject, ObservableObject, WKDownloadDelegate, WKNavi
         self.onEditCurrentSheet = onEditCurrentSheet
         self.onOpenCurrentSheetInNewBoard = onOpenCurrentSheetInNewBoard
         self.onPasteURLInNewBoard = onPasteURLInNewBoard
+        self.onOpenBoardPanel = onOpenBoardPanel
+        self.onShowOverview = onShowOverview
         self.onChange = onChange
         self.onFullscreenChange = onFullscreenChange
         self.onDownloadFinished = onDownloadFinished
@@ -96,6 +102,8 @@ final class BoardRuntime: NSObject, ObservableObject, WKDownloadDelegate, WKNavi
                 onEditCurrentSheet: onEditCurrentSheet,
                 onOpenCurrentSheetInNewBoard: onOpenCurrentSheetInNewBoard,
                 onPasteURLInNewBoard: onPasteURLInNewBoard,
+                onOpenBoardPanel: onOpenBoardPanel,
+                onShowOverview: onShowOverview,
                 onRemoveBoard: onRemoveBoard,
                 onRestoreBoard: onRestoreBoard
             )

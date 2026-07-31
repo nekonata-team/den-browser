@@ -52,6 +52,14 @@ extension DenStore {
                 preferredWidth: board.width,
                 afterBoardID: board.id
             )
+        } onOpenBoardPanel: {
+            [weak self] in
+            self?.focusBoard(board.id)
+            self?.showOpenBoardPanel()
+        } onShowOverview: {
+            [weak self] in
+            self?.focusBoard(board.id)
+            self?.showOverview()
         } onRemoveBoard: {
             [weak self] in
             self?.removeBoard(board.id)
