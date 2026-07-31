@@ -98,6 +98,13 @@ struct BoardView: View {
             Label("Reload Current Sheet", systemImage: "arrow.clockwise")
         }
 
+        Button {
+            store.focusBoard(board.id)
+            store.captureFocusedSheetScreenshot()
+        } label: {
+            Label("Capture Current Sheet Screenshot...", systemImage: "camera")
+        }
+
         if preferences.nativePictureInPictureEnabled {
             Button {
                 runtime.togglePictureInPicture()

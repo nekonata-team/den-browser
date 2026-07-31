@@ -275,6 +275,10 @@ final class KeyboardController {
         binding("+", modifiers: [.shift]): KeyboardCommand(action: .adjustBoardWidth(80)),
         binding("f"): KeyboardCommand(action: .toggleBoardMaximized, repeatPolicy: .ignore),
         binding("c"): KeyboardCommand(action: .centerBoard, repeatPolicy: .ignore),
+        binding("s"): KeyboardCommand(action: .captureCurrentSheet, repeatPolicy: .ignore),
+        binding("s", modifiers: [.shift]): KeyboardCommand(
+            action: .captureFocusedDesk,
+            repeatPolicy: .ignore),
         binding("z"): KeyboardCommand(action: .toggleZenView, repeatPolicy: .ignore),
         binding("x"): KeyboardCommand(action: .removeBoard, repeatPolicy: .ignore),
         binding("u"): KeyboardCommand(action: .restoreBoard, repeatPolicy: .ignore),
@@ -312,6 +316,8 @@ final class KeyboardController {
         case .adjustBoardWidth(let amount): store.adjustFocusedBoardWidth(by: amount)
         case .toggleBoardMaximized: store.toggleFocusedBoardMaximized()
         case .centerBoard: store.centerFocusedBoard()
+        case .captureCurrentSheet: store.captureFocusedSheetScreenshot()
+        case .captureFocusedDesk: store.captureFocusedDeskScreenshot()
         case .toggleZenView: store.toggleZenView()
         case .removeBoard: store.removeFocusedBoard()
         case .restoreBoard: store.restoreRecentlyRemovedBoard()
@@ -632,6 +638,8 @@ private enum KeyboardAction {
     case adjustBoardWidth(Double)
     case toggleBoardMaximized
     case centerBoard
+    case captureCurrentSheet
+    case captureFocusedDesk
     case toggleZenView
     case removeBoard
     case restoreBoard

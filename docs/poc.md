@@ -88,6 +88,13 @@ Den Browser's first PoC validates whether a macOS WKWebView implementation can s
 6. Press `z` in Den Mode. Confirm the Desk switcher and Profile control hide together, the titlebar stays visible, and pressing `z` again restores both. Confirm the choice is window-local and is not restored after relaunch.
 7. Press `Command` + `W` from Sheet Input and Den Mode and confirm it closes the Focused Board. Press `Shift` + `Command` + `W` and confirm it closes the Profile window. Confirm `Command` + `W` still closes Settings.
 
+## Screenshot validation
+
+1. Press `s` in Den Mode and save the PNG. Confirm it contains the visible web content of the Focused Board's Current Sheet without Board chrome or offscreen scroll content.
+2. Press Shift + `s` and save the PNG. Confirm every Board in the Focused Desk appears once, in Board order, with its label and relative width preserved even when the Desk overflows the window.
+3. Repeat both actions from the Den menu and the relevant Board or Desk context menu. Cancel the save panel and confirm no file is written and Den Mode remains active.
+4. Capture a Desk wider than 16,384 points and confirm the output scales down proportionally without changing Board order.
+
 ## Board movement and restoration validation
 
 1. Drag a Board by its header label or empty area. Confirm it lifts immediately, keeps focus, clears temporary maximization, and reorders only after its center crosses a neighboring Board's center.

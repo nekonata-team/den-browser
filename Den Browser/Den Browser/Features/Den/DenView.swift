@@ -337,6 +337,14 @@ struct DenView: View {
 
                 Button {
                     store.focusDesk(desk.id)
+                    store.captureFocusedDeskScreenshot()
+                } label: {
+                    Label("Capture Desk Screenshot...", systemImage: "camera.on.rectangle")
+                }
+                .disabled(desk.boards.isEmpty)
+
+                Button {
+                    store.focusDesk(desk.id)
                     store.showReplaceDeskPanel()
                 } label: {
                     Label("Replace Desk...", systemImage: "rectangle.stack.badge.minus")

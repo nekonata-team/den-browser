@@ -118,6 +118,14 @@ private struct DenCommands: Commands {
                 .disabled(store?.canCreateDesk != true)
             Button("Save Desk as Preset…") { store?.showSaveDeskPresetPanel() }
                 .disabled(store?.focusedDesk?.boards.isEmpty != false)
+            Button("Capture Current Sheet Screenshot…") {
+                store?.captureFocusedSheetScreenshot()
+            }
+            .disabled(store?.focusedBoard == nil)
+            Button("Capture Focused Desk Screenshot…") {
+                store?.captureFocusedDeskScreenshot()
+            }
+            .disabled(store?.focusedDesk?.boards.isEmpty != false)
             Button("Toggle Overview") { store?.toggleOverview() }
                 .disabled(store == nil)
             Button("Toggle Zen View") { store?.toggleZenView() }

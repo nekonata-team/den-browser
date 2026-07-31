@@ -77,6 +77,8 @@ struct KeyboardShortcutsView: View {
                     item(["w", "then", "- / = / 1–9"], "Resize all Boards"),
                     item(["f"], "Toggle maximized Board"),
                     item(["c"], "Center Focused Board"),
+                    item(["s"], "Capture Current Sheet Screenshot"),
+                    item(["⇧", "S"], "Capture Focused Desk Screenshot"),
                     item(["Return"], "Duplicate Current Sheet"),
                     item(["e"], "Edit Focused Board Link"),
                     item(["r"], "Rename Board"),

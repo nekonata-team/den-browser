@@ -294,6 +294,24 @@ final class Den_BrowserUITests: XCTestCase {
     }
 
     @MainActor
+    func testScreenshotShortcutsOpenSavePanels() throws {
+        let app = launchApp()
+        enterDenMode(in: app)
+
+        app.typeText("s")
+        let currentSheetPanel = app.sheets.firstMatch
+        XCTAssertTrue(currentSheetPanel.waitForExistence(timeout: 10))
+        currentSheetPanel.buttons["Cancel"].click()
+        XCTAssertTrue(currentSheetPanel.waitForNonExistence(timeout: 5))
+
+        app.typeKey("s", modifierFlags: .shift)
+        let deskPanel = app.sheets.firstMatch
+        XCTAssertTrue(deskPanel.waitForExistence(timeout: 15))
+        deskPanel.buttons["Cancel"].click()
+        XCTAssertTrue(deskPanel.waitForNonExistence(timeout: 5))
+    }
+
+    @MainActor
     private func launchApp(
         singleBoard: Bool = false,
         sheetNavigationEnabled: Bool = false,
