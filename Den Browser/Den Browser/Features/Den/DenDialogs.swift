@@ -16,6 +16,7 @@ struct DenDialogs: ViewModifier {
                 Button("Delete Desk", role: .destructive) {
                     store.confirmDeskDeletion()
                 }
+                .keyboardShortcut(.defaultAction)
                 Button("Cancel", role: .cancel) {
                     store.cancelDeskDeletion()
                 }
@@ -71,6 +72,7 @@ struct DenDialogs: ViewModifier {
                 Button("Reset Den", role: .destructive) {
                     store.confirmResetDen()
                 }
+                .keyboardShortcut(.defaultAction)
                 Button("Cancel", role: .cancel) {
                     store.cancelResetDen()
                 }
@@ -86,6 +88,7 @@ struct DenDialogs: ViewModifier {
                 Button("Delete Preset", role: .destructive) {
                     confirmDeskPresetDeletion()
                 }
+                .keyboardShortcut(.defaultAction)
                 Button("Cancel", role: .cancel) { store.cancelDeskPresetDeletion() }
             } message: {
                 Text("Existing Desks will not be affected.")
@@ -99,6 +102,7 @@ struct DenDialogs: ViewModifier {
                 Button("Discard All", role: .destructive) {
                     store.confirmDrawerClear()
                 }
+                .keyboardShortcut(.defaultAction)
                 Button("Cancel", role: .cancel) {
                     store.cancelDrawerClear()
                 }

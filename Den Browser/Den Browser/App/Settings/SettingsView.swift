@@ -228,6 +228,7 @@ private struct ProfilesSettingsView: View {
                     self.profileToDelete = nil
                 }
             }
+            .keyboardShortcut(.defaultAction)
             Button("Cancel", role: .cancel) { profileToDelete = nil }
         } message: {
             Text("Its Den, open window, and website data will be removed.")
