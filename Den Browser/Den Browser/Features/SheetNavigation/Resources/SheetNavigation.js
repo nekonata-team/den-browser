@@ -20,6 +20,30 @@
   const editableSelector =
     'input:not([type="hidden"]):not([type="file"]):not([type="checkbox"]):not([type="radio"]),textarea,[contenteditable="true"]';
 
+  const hintActions = {
+    activate: {
+      selector: actionableSelector,
+      accepts: () => true,
+      activate(target) {
+        target.click();
+      },
+    },
+    openBoard: {
+      selector: "a[href]",
+      accepts: isSupportedHTTPLink,
+      activate(target) {
+        postMessage({ action: "openBoard", url: target.href });
+      },
+    },
+    keepInDrawer: {
+      selector: "a[href]",
+      accepts: isSupportedHTTPLink,
+      activate(target) {
+        postMessage({ action: "keepInDrawer", url: target.href });
+      },
+    },
+  };
+
   function isEditable(element) {
     return element instanceof HTMLInputElement ||
       element instanceof HTMLTextAreaElement ||
@@ -77,6 +101,14 @@
       rect.top < innerHeight && rect.left < innerWidth;
   }
 
+  function isSupportedHTTPLink(target) {
+    try {
+      return ["http:", "https:"].includes(new URL(target.href, location.href).protocol);
+    } catch {
+      return false;
+    }
+  }
+
   function labels(count) {
     let width = 1;
     while (alphabet.length ** width < count) width += 1;
@@ -97,16 +129,20 @@
     prefix = "";
   }
 
+  function closeTransientUI() {
+    closeHints();
+    closeFind();
+    closeHelp();
+  }
+
   function openHints(action) {
     closeHints();
     hintAction = action;
-    const selector = action === "openBoard" || action === "keepInDrawer"
-      ? "a[href]"
-      : actionableSelector;
-    const targets = Array.from(document.querySelectorAll(selector)).filter((target) => {
+    const configuration = hintActions[action];
+    if (!configuration) return;
+    const targets = Array.from(document.querySelectorAll(configuration.selector)).filter((target) => {
       if (!isVisibleAndEnabled(target)) return false;
-      return !["openBoard", "keepInDrawer"].includes(action)
-        || ["http:", "https:"].includes(new URL(target.href, location.href).protocol);
+      return configuration.accepts(target);
     });
     if (targets.length === 0) return;
 
@@ -156,13 +192,7 @@
     if (matching.length === 1 && matching[0].label === prefix) {
       const target = matching[0].target;
       closeHints();
-      if (hintAction === "openBoard") {
-        postMessage({ action: "openBoard", url: target.href });
-      } else if (hintAction === "keepInDrawer") {
-        postMessage({ action: "keepInDrawer", url: target.href });
-      } else {
-        target.click();
-      }
+      hintActions[hintAction].activate(target);
     } else if (matching.length === 0) {
       closeHints();
     }
@@ -244,9 +274,7 @@
   }
 
   function openHelp() {
-    closeHints();
-    closeFind();
-    closeHelp();
+    closeTransientUI();
 
     const container = document.createElement("div");
     container.setAttribute("data-den-sheet-help", "");
@@ -532,9 +560,7 @@
         (host) => hostname === host || hostname.endsWith(`.${host}`),
       );
       if (!enabled || ignored) {
-        closeHints();
-        closeFind();
-        closeHelp();
+        closeTransientUI();
         resetCommand();
       }
     },
