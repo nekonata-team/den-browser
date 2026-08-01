@@ -6,6 +6,8 @@ The Feature is optional and disabled by default. Commands are dormant in editabl
 
 ## Supported commands
 
+Press `?` in Sheet Input to open the in-Sheet command guide. Press `Escape` to close it.
+
 ### Scrolling
 
 | Keys | Action |

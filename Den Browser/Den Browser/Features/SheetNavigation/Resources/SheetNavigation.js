@@ -13,6 +13,7 @@
   let lastFindQuery = "";
   let overlay = null;
   let findBar = null;
+  let helpOverlay = null;
 
   const actionableSelector =
     'a[href],button,input:not([type="hidden"]),select,textarea,[role="button"]';
@@ -237,6 +238,73 @@
     findBar = null;
   }
 
+  function closeHelp() {
+    helpOverlay?.remove();
+    helpOverlay = null;
+  }
+
+  function openHelp() {
+    closeHints();
+    closeFind();
+    closeHelp();
+
+    const container = document.createElement("div");
+    container.setAttribute("data-den-sheet-help", "");
+    Object.assign(container.style, {
+      position: "fixed",
+      inset: "8vh 12vw",
+      zIndex: "2147483647",
+      overflow: "auto",
+      padding: "22px 26px",
+      border: "1px solid #666",
+      borderRadius: "10px",
+      background: "#202124f5",
+      color: "#f1f3f4",
+      font: "13px ui-monospace, monospace",
+      lineHeight: "1.5",
+      boxShadow: "0 8px 32px #000b",
+      pointerEvents: "auto",
+    });
+
+    const title = document.createElement("h2");
+    title.textContent = "Vim-style Sheet Navigation";
+    Object.assign(title.style, { margin: "0 0 4px", font: "bold 18px system-ui" });
+    const subtitle = document.createElement("p");
+    subtitle.textContent = "Current Sheet commands · Escape closes this guide";
+    Object.assign(subtitle.style, { margin: "0 0 18px", color: "#b8bcc2", font: "13px system-ui" });
+    container.append(title, subtitle);
+
+    const sections = [
+      ["Scrolling", [["j / k", "scroll down / up"], ["d / u", "scroll half page down / up"], ["h / l", "scroll left / right"], ["gg / G", "top / bottom"], ["zH / zL", "left / right edge"]]],
+      ["Hints", [["f / Space", "activate a Current Sheet target"], ["F", "open link as a new Board"], ["a", "keep link in Drawer"]]],
+      ["Sheet and URL", [["H / L", "back / forward in Sheet Stack"], ["r", "reload Current Sheet"], ["gu / gU", "URL parent / root"], ["ge / gE", "edit URL / open URL in new Board"], ["t / T", "Open Board / Overview"], ["yy", "copy Current Sheet URL"]]],
+      ["Find", [["/", "find in Current Sheet"], ["n / N", "next / previous match"]]],
+    ];
+
+    for (const [sectionTitle, commands] of sections) {
+      const heading = document.createElement("h3");
+      heading.textContent = sectionTitle;
+      Object.assign(heading.style, { margin: "16px 0 6px", color: "#ffd75a", font: "bold 14px system-ui" });
+      container.append(heading);
+      for (const [keys, description] of commands) {
+        const row = document.createElement("div");
+        row.style.display = "grid";
+        row.style.gridTemplateColumns = "150px 1fr";
+        row.style.gap = "14px";
+        const keyLabel = document.createElement("strong");
+        keyLabel.textContent = keys;
+        const descriptionLabel = document.createElement("span");
+        descriptionLabel.textContent = description;
+        descriptionLabel.style.color = "#d7d9dc";
+        row.append(keyLabel, descriptionLabel);
+        container.append(row);
+      }
+    }
+
+    document.documentElement.append(container);
+    helpOverlay = container;
+  }
+
   function runFind(backward = false) {
     if (!lastFindQuery) return;
     window.find(lastFindQuery, false, backward, true, false, true, false);
@@ -379,6 +447,16 @@
       return;
     }
 
+    if (helpOverlay) {
+      if (event.key === "Escape") {
+        consume(event);
+        closeHelp();
+      } else {
+        consume(event);
+      }
+      return;
+    }
+
     if (overlay) {
       if (event.key === "Escape") {
         consume(event);
@@ -400,6 +478,12 @@
     }
 
     if (isEditable(document.activeElement)) return;
+
+    if (event.key === "?" && bodyHasFocus()) {
+      consume(event);
+      openHelp();
+      return;
+    }
 
     if (event.key === "Escape" && (pendingKey || countPrefix)) {
       consume(event);
@@ -450,6 +534,7 @@
       if (!enabled || ignored) {
         closeHints();
         closeFind();
+        closeHelp();
         resetCommand();
       }
     },
