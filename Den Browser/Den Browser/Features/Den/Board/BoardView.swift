@@ -125,7 +125,7 @@ struct BoardView: View {
             Button {
                 runtime.togglePictureInPicture()
             } label: {
-                Label("Toggle Picture in Picture", systemImage: "pictureinpicture")
+                Label("Toggle Picture in Picture", systemImage: "pip")
             }
         }
 
