@@ -3,6 +3,7 @@
 
   let enabled = false;
   let ignored = false;
+  let paused = false;
   let alphabet = "asdfghjkl";
   let hints = [];
   let hintAction = "activate";
@@ -464,7 +465,7 @@
   }
 
   function onKeyDown(event) {
-    if (!event.isTrusted || !enabled || ignored || hasDisallowedModifier(event)) return;
+    if (!event.isTrusted || !enabled || ignored || paused || hasDisallowedModifier(event)) return;
     if (["Shift", "Control", "Alt", "Meta"].includes(event.key)) return;
 
     if (findBar) {
@@ -559,7 +560,8 @@
       ignored = configuration.ignoredHosts.some(
         (host) => hostname === host || hostname.endsWith(`.${host}`),
       );
-      if (!enabled || ignored) {
+      paused = configuration.paused === true;
+      if (!enabled || ignored || paused) {
         closeTransientUI();
         resetCommand();
       }

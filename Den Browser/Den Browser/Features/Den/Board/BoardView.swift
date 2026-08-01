@@ -98,6 +98,22 @@ struct BoardView: View {
             Label("Reload Current Sheet", systemImage: "arrow.clockwise")
         }
 
+        if store.sheetNavigation.isEnabled {
+            Button {
+                store.sheetNavigation.setBoardPaused(
+                    !store.sheetNavigation.isBoardPaused(board.id),
+                    for: board.id
+                )
+            } label: {
+                Label(
+                    store.sheetNavigation.isBoardPaused(board.id)
+                        ? "Resume Sheet Navigation for this Board"
+                        : "Pause Sheet Navigation for this Board",
+                    systemImage: store.sheetNavigation.isBoardPaused(board.id) ? "play.circle" : "pause.circle"
+                )
+            }
+        }
+
         Button {
             store.focusBoard(board.id)
             store.captureFocusedSheetScreenshot()
@@ -217,6 +233,30 @@ struct BoardView: View {
 
     private var navigationButtons: some View {
         HStack(spacing: 2) {
+            if store.sheetNavigation.isEnabled {
+                Button {
+                    store.sheetNavigation.setBoardPaused(
+                        !store.sheetNavigation.isBoardPaused(board.id),
+                        for: board.id
+                    )
+                } label: {
+                    Image(
+                        systemName: store.sheetNavigation.isBoardPaused(board.id)
+                            ? "pause.circle.fill" : "keyboard"
+                    )
+                    .frame(width: DenLayout.boardControlSize, height: DenLayout.boardControlSize)
+                }
+                .buttonStyle(.borderless)
+                .foregroundStyle(.primary)
+                .help(
+                    store.sheetNavigation.isBoardPaused(board.id)
+                        ? "Resume Sheet Navigation for this Board" : "Pause Sheet Navigation for this Board"
+                )
+                .accessibilityLabel(
+                    store.sheetNavigation.isBoardPaused(board.id)
+                        ? "Resume Sheet Navigation for this Board" : "Pause Sheet Navigation for this Board")
+            }
+
             withBoardContextMenu(
                 Button(action: onGoBack) {
                     Image(systemName: "chevron.left")

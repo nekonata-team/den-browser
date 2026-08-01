@@ -96,6 +96,7 @@ final class BoardRuntime: NSObject, NSWindowDelegate, ObservableObject, WKDownlo
         webView.uiDelegate = self
         sheetNavigation.didOpen(
             webView,
+            boardID: id,
             actions: .init(
                 onOpenBoard: onOpenBoard,
                 onOpenBoardInBackground: onOpenBoardInBackground,
