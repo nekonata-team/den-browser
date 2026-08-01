@@ -375,6 +375,21 @@ struct KeyboardShortcutTests {
         #expect(!KeyboardController.handle(commandW, store: store))
     }
 
+    @Test func denModeACapturesFocusedSheetInDrawer() throws {
+        let focused = board("Focused", url: "https://drawer.example/")
+        let store = makeStore(boards: [focused])
+        store.isDenMode = true
+
+        let capture = try keyEvent(
+            characters: "a",
+            charactersIgnoringModifiers: "a",
+            keyCode: 0)
+
+        #expect(KeyboardController.handle(capture, store: store))
+        #expect(store.state.drawerItems.first?.url == URL(string: "https://drawer.example/"))
+        #expect(!store.isDrawerOpen)
+    }
+
     private func makePreferences() throws -> AppPreferences {
         let defaults = try #require(UserDefaults(suiteName: "KeyboardShortcutTests-\(UUID())"))
         return AppPreferences(defaults: defaults)
@@ -423,7 +438,7 @@ struct KeyboardShortcutTests {
             keyCode: keyCode)
     }
 
-    private func board(_ label: String) -> BoardState {
-        BoardState(label: label, width: 520, currentSheetURL: URL(string: "https://example.com/"))
+    private func board(_ label: String, url: String = "https://example.com/") -> BoardState {
+        BoardState(label: label, width: 520, currentSheetURL: URL(string: url))
     }
 }

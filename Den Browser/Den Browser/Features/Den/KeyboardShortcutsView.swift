@@ -72,6 +72,7 @@ struct KeyboardShortcutsView: View {
                     item(["w", "then", "- / = / 1–9"], "Resize all Boards"),
                     item(["f"], "Toggle maximized Board"),
                     item(["c"], "Center Focused Board"),
+                    item(["a"], "Capture Current Sheet in Drawer"),
                     item(["s"], "Capture Current Sheet Screenshot"),
                     item(["⇧", "S"], "Capture Focused Desk Screenshot"),
                     item(["Return"], "Duplicate Current Sheet"),
@@ -102,6 +103,11 @@ struct KeyboardShortcutsView: View {
                     item(["p"], "Place as Board"),
                     item(["x", "/", "d", "or", "Delete"], "Discard Drawer Item"),
                     item(["Escape"], "Exit Den Mode / close Drawer"),
+                ]),
+            ShortcutGuideSection(
+                title: "Sheet Input",
+                items: [
+                    item(["a", "then", "link hint"], "Capture link in Drawer with Sheet Navigation")
                 ]),
         ]
     }

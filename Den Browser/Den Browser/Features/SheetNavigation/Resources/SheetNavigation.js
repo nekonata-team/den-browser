@@ -99,10 +99,13 @@
   function openHints(action) {
     closeHints();
     hintAction = action;
-    const selector = action === "openBoard" ? "a[href]" : actionableSelector;
+    const selector = action === "openBoard" || action === "captureInDrawer"
+      ? "a[href]"
+      : actionableSelector;
     const targets = Array.from(document.querySelectorAll(selector)).filter((target) => {
       if (!isVisibleAndEnabled(target)) return false;
-      return action !== "openBoard" || ["http:", "https:"].includes(new URL(target.href, location.href).protocol);
+      return !["openBoard", "captureInDrawer"].includes(action)
+        || ["http:", "https:"].includes(new URL(target.href, location.href).protocol);
     });
     if (targets.length === 0) return;
 
@@ -154,6 +157,8 @@
       closeHints();
       if (hintAction === "openBoard") {
         postMessage({ action: "openBoard", url: target.href });
+      } else if (hintAction === "captureInDrawer") {
+        postMessage({ action: "captureInDrawer", url: target.href });
       } else {
         target.click();
       }
@@ -343,6 +348,7 @@
       case "G": scrollToEdge("y", true); break;
       case "f": openHints("activate"); break;
       case "F": openHints("openBoard"); break;
+      case "a": openHints("captureInDrawer"); break;
       case "H": history.back(); break;
       case "L": history.forward(); break;
       case "p": postMessage({ action: "pasteURL" }); break;

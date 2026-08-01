@@ -25,6 +25,7 @@ A numeric prefix repeats relative scrolling commands. For example, `5j`, `3k`, a
 | --- | --- |
 | `f` or `Space` | Show hints and activate a target in the Current Sheet. |
 | `F` | Show link hints and open the selected link as a new Board to the right. |
+| `a` | Show link hints and keep the selected link in the Drawer. |
 | `Escape` | Cancel hints. |
 
 `Space` remains an alias for the existing interaction. `F` only includes links with an `href`; controls that cannot sensibly open as a new Board are excluded.
