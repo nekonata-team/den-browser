@@ -4,8 +4,8 @@ import Foundation
 import WebKit
 
 @MainActor
-final class BoardRuntime: NSObject, ObservableObject, WKDownloadDelegate, WKNavigationDelegate,
-    WKUIDelegate
+final class BoardRuntime: NSObject, NSWindowDelegate, ObservableObject, WKDownloadDelegate,
+    WKNavigationDelegate, WKUIDelegate
 {
     static var defaultUserAgent: String {
         let os = ProcessInfo.processInfo.operatingSystemVersion
@@ -34,6 +34,7 @@ final class BoardRuntime: NSObject, ObservableObject, WKDownloadDelegate, WKNavi
     private unowned let sheetNavigation: SheetNavigationManager
 
     private var downloadFilenames: [ObjectIdentifier: String] = [:]
+    private var auxiliaryWindows: [ObjectIdentifier: NSWindow] = [:]
     private var urlObservation: NSKeyValueObservation?
     private var titleObservation: NSKeyValueObservation?
     private var fullscreenObservation: NSKeyValueObservation?
@@ -161,6 +162,11 @@ final class BoardRuntime: NSObject, ObservableObject, WKDownloadDelegate, WKNavi
     }
 
     func dispose() {
+        for window in auxiliaryWindows.values {
+            window.delegate = nil
+            window.close()
+        }
+        auxiliaryWindows.removeAll()
         sheetNavigation.didClose(webView)
         webView.closeAllMediaPresentations(completionHandler: nil)
         webView.setAllMediaPlaybackSuspended(true, completionHandler: nil)
@@ -248,6 +254,14 @@ final class BoardRuntime: NSObject, ObservableObject, WKDownloadDelegate, WKNavi
         return navigationType == .linkActivated
             && buttonNumber == 0
             && clickModifiers == .option
+            && url.map(SheetURLPolicy.isSupported) == true
+    }
+
+    static func shouldOpenTargetlessNavigationInNewBoard(
+        navigationType: WKNavigationType,
+        url: URL?
+    ) -> Bool {
+        navigationType == .linkActivated
             && url.map(SheetURLPolicy.isSupported) == true
     }
 
@@ -346,13 +360,47 @@ final class BoardRuntime: NSObject, ObservableObject, WKDownloadDelegate, WKNavi
         for navigationAction: WKNavigationAction,
         windowFeatures: WKWindowFeatures
     ) -> WKWebView? {
-        if navigationAction.targetFrame == nil,
-            let url = navigationAction.request.url,
-            SheetURLPolicy.isSupported(url)
-        {
+        guard navigationAction.targetFrame == nil else { return nil }
+
+        if Self.shouldOpenTargetlessNavigationInNewBoard(
+            navigationType: navigationAction.navigationType,
+            url: navigationAction.request.url
+        ), let url = navigationAction.request.url {
             onOpenBoard(url)
+            return nil
         }
-        return nil
+
+        let auxiliaryWebView = WKWebView(frame: .zero, configuration: configuration)
+        auxiliaryWebView.customUserAgent = Self.defaultUserAgent
+        auxiliaryWebView.pageZoom = webView.pageZoom
+        auxiliaryWebView.uiDelegate = self
+
+        let window = NSWindow(
+            contentRect: .init(x: 0, y: 0, width: 720, height: 640),
+            styleMask: [.titled, .closable, .resizable],
+            backing: .buffered,
+            defer: false
+        )
+        window.contentView = auxiliaryWebView
+        window.delegate = self
+        window.isReleasedWhenClosed = false
+        window.center()
+        window.makeKeyAndOrderFront(nil)
+        auxiliaryWindows[ObjectIdentifier(auxiliaryWebView)] = window
+        return auxiliaryWebView
+    }
+
+    func webViewDidClose(_ webView: WKWebView) {
+        guard let window = auxiliaryWindows.removeValue(forKey: ObjectIdentifier(webView)) else {
+            return
+        }
+        window.delegate = nil
+        window.close()
+    }
+
+    func windowWillClose(_ notification: Notification) {
+        guard let window = notification.object as? NSWindow else { return }
+        auxiliaryWindows = auxiliaryWindows.filter { $0.value !== window }
     }
 
     func webView(

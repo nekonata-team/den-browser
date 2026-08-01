@@ -115,4 +115,33 @@ struct BoardRuntimeWebUITests {
             )
         )
     }
+
+    @Test func onlyTargetlessLinkActivationsOpenInNewBoard() {
+        let url = URL(string: "https://example.com/page")
+
+        #expect(
+            BoardRuntime.shouldOpenTargetlessNavigationInNewBoard(
+                navigationType: .linkActivated,
+                url: url
+            )
+        )
+        #expect(
+            !BoardRuntime.shouldOpenTargetlessNavigationInNewBoard(
+                navigationType: .other,
+                url: url
+            )
+        )
+        #expect(
+            !BoardRuntime.shouldOpenTargetlessNavigationInNewBoard(
+                navigationType: .formSubmitted,
+                url: url
+            )
+        )
+        #expect(
+            !BoardRuntime.shouldOpenTargetlessNavigationInNewBoard(
+                navigationType: .linkActivated,
+                url: URL(string: "about:blank")
+            )
+        )
+    }
 }
