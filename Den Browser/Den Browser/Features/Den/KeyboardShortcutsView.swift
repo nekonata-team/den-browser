@@ -72,7 +72,7 @@ struct KeyboardShortcutsView: View {
                     item(["w", "then", "- / = / 1–9"], "Resize all Boards"),
                     item(["f"], "Toggle maximized Board"),
                     item(["c"], "Center Focused Board"),
-                    item(["a"], "Capture Current Sheet in Drawer"),
+                    item(["a"], "Keep Current Sheet in Drawer"),
                     item(["s"], "Capture Current Sheet Screenshot"),
                     item(["⇧", "S"], "Capture Focused Desk Screenshot"),
                     item(["Return"], "Duplicate Current Sheet"),
@@ -107,7 +107,7 @@ struct KeyboardShortcutsView: View {
             ShortcutGuideSection(
                 title: "Sheet Input",
                 items: [
-                    item(["a", "then", "link hint"], "Capture link in Drawer with Sheet Navigation")
+                    item(["a", "then", "link hint"], "Keep link in Drawer with Sheet Navigation")
                 ]),
         ]
     }

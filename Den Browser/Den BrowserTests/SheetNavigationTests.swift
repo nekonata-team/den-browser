@@ -131,7 +131,7 @@ struct SheetNavigationTests {
         #expect(hintCount == 0)
     }
 
-    @Test func modifiedLinkClicksAreCapturedWhenSheetNavigationIsDisabled() async throws {
+    @Test func modifiedLinkClicksAreKeptWhenSheetNavigationIsDisabled() async throws {
         let source = try sheetNavigationScriptSource().replacingOccurrences(
             of: "if (!event.isTrusted || event.button",
             with: "if (event.button"
@@ -353,7 +353,7 @@ struct SheetNavigationTests {
         #expect(store.focusedDesk?.focusedBoardID == store.focusedDesk?.boards[1].id)
     }
 
-    @Test func optionClickCapturesLinkInDrawerWithoutOpeningIt() {
+    @Test func optionClickKeepsLinkInDrawerWithoutOpeningIt() {
         let manager = SheetNavigationManager(scriptSource: "")
         let source = board("Source", url: "https://source.example/")
         let currentDesk = desk("Desk", boards: [source], focusedBoardID: source.id)
@@ -367,7 +367,7 @@ struct SheetNavigationTests {
         #expect(
             manager.handleScriptMessage(
                 [
-                    "action": "captureInDrawer",
+                    "action": "keepInDrawer",
                     "url": destination.absoluteString,
                 ], from: sourceWebView))
         #expect(store.state.drawerItems.map(\.url) == [destination])

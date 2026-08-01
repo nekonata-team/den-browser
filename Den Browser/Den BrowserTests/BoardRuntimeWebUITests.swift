@@ -87,11 +87,11 @@ struct BoardRuntimeWebUITests {
         )
     }
 
-    @Test func optionPrimaryClickCapturesSupportedLinkInDrawer() {
+    @Test func optionPrimaryClickKeepsSupportedLinkInDrawer() {
         let url = URL(string: "https://example.com/page")
 
         #expect(
-            BoardRuntime.shouldCaptureLinkInDrawer(
+            BoardRuntime.shouldKeepLinkInDrawer(
                 navigationType: .linkActivated,
                 modifierFlags: .option,
                 buttonNumber: 0,
@@ -99,7 +99,7 @@ struct BoardRuntimeWebUITests {
             )
         )
         #expect(
-            !BoardRuntime.shouldCaptureLinkInDrawer(
+            !BoardRuntime.shouldKeepLinkInDrawer(
                 navigationType: .linkActivated,
                 modifierFlags: [.option, .shift],
                 buttonNumber: 0,
@@ -107,7 +107,7 @@ struct BoardRuntimeWebUITests {
             )
         )
         #expect(
-            !BoardRuntime.shouldCaptureLinkInDrawer(
+            !BoardRuntime.shouldKeepLinkInDrawer(
                 navigationType: .linkActivated,
                 modifierFlags: .option,
                 buttonNumber: 0,

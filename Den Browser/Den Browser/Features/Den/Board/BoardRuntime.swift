@@ -21,7 +21,7 @@ final class BoardRuntime: NSObject, NSWindowDelegate, ObservableObject, WKDownlo
 
     private let onOpenBoard: (URL) -> Void
     private let onOpenBoardInBackground: (URL) -> Void
-    private let onCaptureInDrawer: (URL) -> Void
+    private let onKeepInDrawer: (URL) -> Void
     private let onEditCurrentSheet: () -> Void
     private let onOpenCurrentSheetInNewBoard: (URL) -> Void
     private let onPasteURLInNewBoard: (URL) -> Void
@@ -47,7 +47,7 @@ final class BoardRuntime: NSObject, NSWindowDelegate, ObservableObject, WKDownlo
         nativePictureInPictureEnabled: Bool = false,
         onOpenBoard: @escaping (URL) -> Void,
         onOpenBoardInBackground: @escaping (URL) -> Void = { _ in },
-        onCaptureInDrawer: @escaping (URL) -> Void = { _ in },
+        onKeepInDrawer: @escaping (URL) -> Void = { _ in },
         onChange: @escaping (UUID, URL?, String?) -> Void,
         onFullscreenChange: ((UUID, Bool) -> Void)? = nil,
         onEditCurrentSheet: @escaping () -> Void = {},
@@ -64,7 +64,7 @@ final class BoardRuntime: NSObject, NSWindowDelegate, ObservableObject, WKDownlo
         self.sheetNavigation = sheetNavigation
         self.onOpenBoard = onOpenBoard
         self.onOpenBoardInBackground = onOpenBoardInBackground
-        self.onCaptureInDrawer = onCaptureInDrawer
+        self.onKeepInDrawer = onKeepInDrawer
         self.onEditCurrentSheet = onEditCurrentSheet
         self.onOpenCurrentSheetInNewBoard = onOpenCurrentSheetInNewBoard
         self.onPasteURLInNewBoard = onPasteURLInNewBoard
@@ -99,7 +99,7 @@ final class BoardRuntime: NSObject, NSWindowDelegate, ObservableObject, WKDownlo
             actions: .init(
                 onOpenBoard: onOpenBoard,
                 onOpenBoardInBackground: onOpenBoardInBackground,
-                onCaptureInDrawer: onCaptureInDrawer,
+                onKeepInDrawer: onKeepInDrawer,
                 onEditCurrentSheet: onEditCurrentSheet,
                 onOpenCurrentSheetInNewBoard: onOpenCurrentSheetInNewBoard,
                 onPasteURLInNewBoard: onPasteURLInNewBoard,
@@ -202,13 +202,13 @@ final class BoardRuntime: NSObject, NSWindowDelegate, ObservableObject, WKDownlo
         decidePolicyFor navigationAction: WKNavigationAction,
         decisionHandler: @escaping @MainActor @Sendable (WKNavigationActionPolicy) -> Void
     ) {
-        if Self.shouldCaptureLinkInDrawer(
+        if Self.shouldKeepLinkInDrawer(
             navigationType: navigationAction.navigationType,
             modifierFlags: navigationAction.modifierFlags,
             buttonNumber: navigationAction.buttonNumber,
             url: navigationAction.request.url
         ), let url = navigationAction.request.url {
-            onCaptureInDrawer(url)
+            onKeepInDrawer(url)
             decisionHandler(.cancel)
             return
         }
@@ -244,7 +244,7 @@ final class BoardRuntime: NSObject, NSWindowDelegate, ObservableObject, WKDownlo
             && url.map(SheetURLPolicy.isSupported) == true
     }
 
-    static func shouldCaptureLinkInDrawer(
+    static func shouldKeepLinkInDrawer(
         navigationType: WKNavigationType,
         modifierFlags: NSEvent.ModifierFlags,
         buttonNumber: Int,

@@ -10,7 +10,7 @@ extension DenStore {
         return state.drawerItems.first { $0.id == selectedDrawerItemID }
     }
 
-    func captureInDrawer(_ url: URL, title: String? = nil, opensDrawer: Bool = true) {
+    func keepInDrawer(_ url: URL, title: String? = nil, opensDrawer: Bool = true) {
         guard SheetURLPolicy.isSupported(url) else {
             showToast("Only HTTP and HTTPS URLs are supported.", style: .warning)
             return
@@ -26,12 +26,12 @@ extension DenStore {
             openDrawer()
         }
         save()
-        showToast("Captured in Drawer.", style: .success)
+        showToast("Kept in Drawer.", style: .success)
     }
 
-    func captureFocusedSheetInDrawer() {
+    func keepFocusedSheetInDrawer() {
         guard let board = focusedBoard, let url = board.currentSheetURL else { return }
-        captureInDrawer(url, title: board.displayName, opensDrawer: false)
+        keepInDrawer(url, title: board.displayName, opensDrawer: false)
     }
 
     func toggleDrawer() {
@@ -193,8 +193,8 @@ extension DenStore {
             websiteDataStore: websiteDataStore,
             sheetNavigation: sheetNavigation,
             sheetScale: preferences.sheetScale,
-            onCaptureInDrawer: { [weak self] url in
-                self?.captureInDrawer(url, opensDrawer: false)
+            onKeepInDrawer: { [weak self] url in
+                self?.keepInDrawer(url, opensDrawer: false)
             },
             onDiscard: { [weak self] in
                 self?.discardDrawerItem(item.id)

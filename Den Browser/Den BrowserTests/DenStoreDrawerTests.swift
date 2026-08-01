@@ -5,7 +5,7 @@ import Testing
 
 @MainActor
 struct DenStoreDrawerTests {
-    @Test func captureKeepsDeskLayoutAndOpensNewestItem() throws {
+    @Test func keepPreservesDeskLayoutAndOpensNewestItem() throws {
         let existingBoard = board("Existing", url: "https://desk.example/")
         let source = desk("Desk", boards: [existingBoard], focusedBoardID: existingBoard.id)
         var savedState: DenState?
@@ -14,7 +14,7 @@ struct DenStoreDrawerTests {
             onSave: { savedState = $0 })
         let url = try #require(URL(string: "https://drawer.example/first"))
 
-        store.captureInDrawer(url)
+        store.keepInDrawer(url)
 
         #expect(store.focusedDesk == source)
         #expect(store.state.drawerItems.map(\.url) == [url])
@@ -29,9 +29,9 @@ struct DenStoreDrawerTests {
         let store = DenStore(state: DenState(desks: [source], focusedDeskID: source.id))
         let url = try #require(URL(string: "https://example.com/"))
 
-        store.captureInDrawer(url)
+        store.keepInDrawer(url)
         let firstID = try #require(store.state.drawerItems.first?.id)
-        store.captureInDrawer(url)
+        store.keepInDrawer(url)
 
         #expect(store.state.drawerItems.count == 2)
         #expect(store.state.drawerItems[0].id != firstID)
@@ -77,12 +77,12 @@ struct DenStoreDrawerTests {
         #expect(store.drawerQuery.isEmpty)
     }
 
-    @Test func captureCurrentSheetCopiesWithoutOpeningDrawerOrChangingBoard() {
+    @Test func keepCurrentSheetCopiesWithoutOpeningDrawerOrChangingBoard() {
         let existingBoard = board("Reference", url: "https://example.com/reference")
         let source = desk("Desk", boards: [existingBoard], focusedBoardID: existingBoard.id)
         let store = DenStore(state: DenState(desks: [source], focusedDeskID: source.id))
 
-        store.captureFocusedSheetInDrawer()
+        store.keepFocusedSheetInDrawer()
 
         #expect(store.focusedBoard == existingBoard)
         #expect(store.state.drawerItems.first?.url == existingBoard.currentSheetURL)
@@ -96,7 +96,7 @@ struct DenStoreDrawerTests {
         let source = desk("Desk", boards: [existingBoard], focusedBoardID: existingBoard.id)
         let store = DenStore(state: DenState(desks: [source], focusedDeskID: source.id))
         let url = try #require(URL(string: "https://placed.example/"))
-        store.captureInDrawer(url)
+        store.keepInDrawer(url)
         let itemID = try #require(store.selectedDrawerItemID)
 
         store.placeDrawerItemAsBoard(itemID)
@@ -111,8 +111,8 @@ struct DenStoreDrawerTests {
     @Test func discardingSelectedItemSelectsItsNeighborAndClosesWhenEmpty() throws {
         let source = desk("Desk")
         let store = DenStore(state: DenState(desks: [source], focusedDeskID: source.id))
-        store.captureInDrawer(try #require(URL(string: "https://first.example/")))
-        store.captureInDrawer(try #require(URL(string: "https://second.example/")))
+        store.keepInDrawer(try #require(URL(string: "https://first.example/")))
+        store.keepInDrawer(try #require(URL(string: "https://second.example/")))
 
         store.discardSelectedDrawerItem()
 
@@ -130,7 +130,7 @@ struct DenStoreDrawerTests {
     @Test func discardingExpandedItemDisposesItsPreviewRuntime() throws {
         let source = desk("Desk")
         let store = DenStore(state: DenState(desks: [source], focusedDeskID: source.id))
-        store.captureInDrawer(try #require(URL(string: "https://preview.example/")))
+        store.keepInDrawer(try #require(URL(string: "https://preview.example/")))
         let item = try #require(store.selectedDrawerItem)
         let runtime = store.drawerRuntime(for: item)
 
@@ -144,8 +144,8 @@ struct DenStoreDrawerTests {
     @Test func clearingDrawerRequiresConfirmationAndDisposesAllItems() throws {
         let source = desk("Desk")
         let store = DenStore(state: DenState(desks: [source], focusedDeskID: source.id))
-        store.captureInDrawer(try #require(URL(string: "https://first.example/")))
-        store.captureInDrawer(try #require(URL(string: "https://second.example/")))
+        store.keepInDrawer(try #require(URL(string: "https://first.example/")))
+        store.keepInDrawer(try #require(URL(string: "https://second.example/")))
         _ = store.drawerRuntime(for: try #require(store.selectedDrawerItem))
 
         store.requestDrawerClearConfirmation()
@@ -224,7 +224,7 @@ struct DenStoreDrawerTests {
         let store = DenStore(
             state: DenState(desks: [source], focusedDeskID: source.id),
             onSave: { savedState = $0 })
-        store.captureInDrawer(try #require(URL(string: "https://preview.example/")))
+        store.keepInDrawer(try #require(URL(string: "https://preview.example/")))
         let itemID = try #require(store.expandedDrawerItemID)
 
         store.toggleDrawerItem(itemID)
@@ -261,8 +261,8 @@ struct DenStoreDrawerTests {
     @Test func denModeKeyboardControlsOpenDrawer() throws {
         let source = desk("Desk")
         let store = DenStore(state: DenState(desks: [source], focusedDeskID: source.id))
-        store.captureInDrawer(try #require(URL(string: "https://first.example/")))
-        store.captureInDrawer(try #require(URL(string: "https://second.example/")))
+        store.keepInDrawer(try #require(URL(string: "https://first.example/")))
+        store.keepInDrawer(try #require(URL(string: "https://second.example/")))
         store.isDenMode = true
 
         #expect(KeyboardController.handle(try keyEvent(.downArrow, keyCode: 125), store: store))
@@ -335,8 +335,8 @@ struct DenStoreDrawerTests {
     @Test func denModeKeyboardControlsDiscardDrawerItemWithXAndD() throws {
         let source = desk("Desk")
         let store = DenStore(state: DenState(desks: [source], focusedDeskID: source.id))
-        store.captureInDrawer(try #require(URL(string: "https://first.example/")))
-        store.captureInDrawer(try #require(URL(string: "https://second.example/")))
+        store.keepInDrawer(try #require(URL(string: "https://first.example/")))
+        store.keepInDrawer(try #require(URL(string: "https://second.example/")))
         store.isDenMode = true
 
         #expect(store.isDrawerOpen)
@@ -351,8 +351,8 @@ struct DenStoreDrawerTests {
     @Test func sheetInputLeavesVimStyleDrawerKeysUnclaimed() throws {
         let source = desk("Desk")
         let store = DenStore(state: DenState(desks: [source], focusedDeskID: source.id))
-        store.captureInDrawer(try #require(URL(string: "https://first.example/")))
-        store.captureInDrawer(try #require(URL(string: "https://second.example/")))
+        store.keepInDrawer(try #require(URL(string: "https://first.example/")))
+        store.keepInDrawer(try #require(URL(string: "https://second.example/")))
 
         #expect(store.state.drawerItems.count == 2)
         #expect(store.isDrawerOpen)

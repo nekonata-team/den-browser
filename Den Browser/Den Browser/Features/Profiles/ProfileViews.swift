@@ -64,7 +64,7 @@ struct ProfileWindowView: View {
             .toolbarBackgroundVisibility(.hidden, for: .windowToolbar)
             .ignoresSafeArea(.container, edges: store.isZenViewPresented ? .top : [])
             .onOpenURL { url in
-                store.captureInDrawer(url)
+                store.keepInDrawer(url)
             }
             .sheet(
                 isPresented: Binding(

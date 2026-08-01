@@ -99,12 +99,12 @@
   function openHints(action) {
     closeHints();
     hintAction = action;
-    const selector = action === "openBoard" || action === "captureInDrawer"
+    const selector = action === "openBoard" || action === "keepInDrawer"
       ? "a[href]"
       : actionableSelector;
     const targets = Array.from(document.querySelectorAll(selector)).filter((target) => {
       if (!isVisibleAndEnabled(target)) return false;
-      return !["openBoard", "captureInDrawer"].includes(action)
+      return !["openBoard", "keepInDrawer"].includes(action)
         || ["http:", "https:"].includes(new URL(target.href, location.href).protocol);
     });
     if (targets.length === 0) return;
@@ -157,8 +157,8 @@
       closeHints();
       if (hintAction === "openBoard") {
         postMessage({ action: "openBoard", url: target.href });
-      } else if (hintAction === "captureInDrawer") {
-        postMessage({ action: "captureInDrawer", url: target.href });
+      } else if (hintAction === "keepInDrawer") {
+        postMessage({ action: "keepInDrawer", url: target.href });
       } else {
         target.click();
       }
@@ -171,8 +171,8 @@
     if (!event.isTrusted || event.button !== 0 || event.ctrlKey) return;
 
     const opensBoard = event.metaKey && !event.altKey;
-    const capturesInDrawer = event.altKey && !event.metaKey && !event.shiftKey;
-    if (!opensBoard && !capturesInDrawer) return;
+    const keepsInDrawer = event.altKey && !event.metaKey && !event.shiftKey;
+    if (!opensBoard && !keepsInDrawer) return;
 
     const link = event.composedPath().find(
       (target) => target instanceof Element && target.matches("a[href]"),
@@ -188,8 +188,8 @@
     if (!["http:", "https:"].includes(url.protocol)) return;
 
     consume(event);
-    if (capturesInDrawer) {
-      postMessage({ action: "captureInDrawer", url: url.href });
+    if (keepsInDrawer) {
+      postMessage({ action: "keepInDrawer", url: url.href });
       return;
     }
     postMessage({
@@ -348,7 +348,7 @@
       case "G": scrollToEdge("y", true); break;
       case "f": openHints("activate"); break;
       case "F": openHints("openBoard"); break;
-      case "a": openHints("captureInDrawer"); break;
+      case "a": openHints("keepInDrawer"); break;
       case "H": history.back(); break;
       case "L": history.forward(); break;
       case "p": postMessage({ action: "pasteURL" }); break;

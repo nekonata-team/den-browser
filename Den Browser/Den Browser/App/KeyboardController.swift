@@ -279,7 +279,7 @@ final class KeyboardController {
         binding("s", modifiers: [.shift]): KeyboardCommand(
             action: .captureFocusedDesk,
             repeatPolicy: .ignore),
-        binding("a"): KeyboardCommand(action: .captureCurrentSheetInDrawer, repeatPolicy: .ignore),
+        binding("a"): KeyboardCommand(action: .keepCurrentSheetInDrawer, repeatPolicy: .ignore),
         binding("z"): KeyboardCommand(action: .toggleZenView, repeatPolicy: .ignore),
         binding("x"): KeyboardCommand(action: .removeBoard, repeatPolicy: .ignore),
         binding("u"): KeyboardCommand(action: .restoreBoard, repeatPolicy: .ignore),
@@ -319,7 +319,7 @@ final class KeyboardController {
         case .centerBoard: store.centerFocusedBoard()
         case .captureCurrentSheet: store.captureFocusedSheetScreenshot()
         case .captureFocusedDesk: store.captureFocusedDeskScreenshot()
-        case .captureCurrentSheetInDrawer: store.captureFocusedSheetInDrawer()
+        case .keepCurrentSheetInDrawer: store.keepFocusedSheetInDrawer()
         case .toggleZenView: store.toggleZenView()
         case .removeBoard: store.removeFocusedBoard()
         case .restoreBoard: store.restoreRecentlyRemovedBoard()
@@ -642,7 +642,7 @@ private enum KeyboardAction {
     case centerBoard
     case captureCurrentSheet
     case captureFocusedDesk
-    case captureCurrentSheetInDrawer
+    case keepCurrentSheetInDrawer
     case toggleZenView
     case removeBoard
     case restoreBoard

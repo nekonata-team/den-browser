@@ -74,6 +74,7 @@ _Avoid_: Inbox, Temporary Desk, scratch workspace, clipboard
 
 **Drawer Item**:
 Web material held in the Drawer before it is placed into an established context or discarded. A Drawer Item is not implicitly unread, actionable, or temporary in storage.
+Web material enters the Drawer when it is kept there. Keeping it does not change the Current Sheet or Desk layout.
 _Avoid_: Inbox item, task, bookmark, history entry
 
 **Drawer Preview**:

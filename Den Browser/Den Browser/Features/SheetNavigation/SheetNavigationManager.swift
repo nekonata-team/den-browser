@@ -18,7 +18,7 @@ final class SheetNavigationManager {
     struct Actions {
         let onOpenBoard: (URL) -> Void
         let onOpenBoardInBackground: (URL) -> Void
-        let onCaptureInDrawer: (URL) -> Void
+        let onKeepInDrawer: (URL) -> Void
         let onEditCurrentSheet: () -> Void
         let onOpenCurrentSheetInNewBoard: (URL) -> Void
         let onPasteURLInNewBoard: (URL) -> Void
@@ -153,7 +153,7 @@ final class SheetNavigationManager {
 
         guard
             action == "commandOpenBoard"
-                || action == "captureInDrawer"
+                || action == "keepInDrawer"
                 || (isEnabled && !isIgnored(webView.url))
         else {
             return false
@@ -179,12 +179,12 @@ final class SheetNavigationManager {
                 actions.onOpenBoard(url)
             }
             return true
-        case "captureInDrawer":
+        case "keepInDrawer":
             guard
                 let urlString = message["url"] as? String,
                 let url = URL(string: urlString),
                 Self.isSupported(url),
-                let action = actionsByWebView[ObjectIdentifier(webView)]?.onCaptureInDrawer
+                let action = actionsByWebView[ObjectIdentifier(webView)]?.onKeepInDrawer
             else { return false }
             action(url)
             return true

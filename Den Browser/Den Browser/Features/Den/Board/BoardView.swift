@@ -87,7 +87,7 @@ struct BoardView: View {
 
         Button {
             store.focusBoard(board.id)
-            store.captureFocusedSheetInDrawer()
+            store.keepFocusedSheetInDrawer()
         } label: {
             Label("Keep Current Sheet in Drawer", systemImage: "tray.and.arrow.down")
         }

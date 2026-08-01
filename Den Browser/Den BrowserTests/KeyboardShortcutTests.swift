@@ -215,7 +215,7 @@ struct KeyboardShortcutTests {
     @Test func denModeToggleRemainsAvailableInDrawer() throws {
         let preferences = try makePreferences()
         let store = makeStore(boards: [board("First")])
-        store.captureInDrawer(try #require(URL(string: "https://example.com/")))
+        store.keepInDrawer(try #require(URL(string: "https://example.com/")))
         let previewID = store.expandedDrawerItemID
         let toggle = try keyEvent(
             characters: ",", charactersIgnoringModifiers: ",", modifiers: [.control], keyCode: 43)
@@ -375,17 +375,17 @@ struct KeyboardShortcutTests {
         #expect(!KeyboardController.handle(commandW, store: store))
     }
 
-    @Test func denModeACapturesFocusedSheetInDrawer() throws {
+    @Test func denModeAKeepsFocusedSheetInDrawer() throws {
         let focused = board("Focused", url: "https://drawer.example/")
         let store = makeStore(boards: [focused])
         store.isDenMode = true
 
-        let capture = try keyEvent(
+        let keep = try keyEvent(
             characters: "a",
             charactersIgnoringModifiers: "a",
             keyCode: 0)
 
-        #expect(KeyboardController.handle(capture, store: store))
+        #expect(KeyboardController.handle(keep, store: store))
         #expect(store.state.drawerItems.first?.url == URL(string: "https://drawer.example/"))
         #expect(!store.isDrawerOpen)
     }
