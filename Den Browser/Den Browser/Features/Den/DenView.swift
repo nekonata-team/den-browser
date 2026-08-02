@@ -22,10 +22,6 @@ struct DenView: View {
     @State private var boardCenteringTask: Task<Void, Never>?
     @State private var boardDrag: BoardDragState?
     @State private var lastBoardAutoScrollTime = 0.0
-    @State private var deskFrames: [UUID: CGRect] = [:]
-    @State private var deskScrollPosition = ScrollPosition(idType: UUID.self)
-    @State private var deskDrag: DeskDragState?
-    @State private var lastDeskAutoScrollTime = 0.0
     @FocusState private var isOpenPanelFocused: Bool
     @FocusState private var isEditBoardLinkPanelFocused: Bool
     @FocusState private var isSaveDeskPresetLabelFocused: Bool
@@ -117,9 +113,6 @@ struct DenView: View {
             .onChange(of: store.boardDragCancellationRequest) { _, _ in
                 cancelBoardDrag()
             }
-            .onChange(of: store.deskDragCancellationRequest) { _, _ in
-                cancelDeskDrag()
-            }
             .onChange(of: store.state.focusedDeskID) { _, deskID in
                 if boardDrag?.deskID != deskID {
                     cancelBoardDrag()
@@ -128,7 +121,6 @@ struct DenView: View {
             .onChange(of: store.temporaryContext) { _, context in
                 if context != nil {
                     cancelBoardDrag()
-                    cancelDeskDrag()
                 }
             }
             .onChange(of: preferences.sheetScale) { _, scale in
@@ -137,7 +129,6 @@ struct DenView: View {
             .onChange(of: appearsActive) { _, isActive in
                 if !isActive {
                     cancelBoardDrag()
-                    cancelDeskDrag()
                 }
             }
             .animation(DenMotion.feedback(reduceMotion: shouldReduceMotion), value: store.temporaryContext)
@@ -161,17 +152,7 @@ struct DenView: View {
     }
 
     private var deskSwitcher: some View {
-        DeskSwitcher(
-            scrollPosition: $deskScrollPosition,
-            shouldReduceMotion: shouldReduceMotion,
-            item: { desk, number, size in
-                AnyView(deskSwitcherItem(desk, number: number, in: size))
-            },
-            onFramesChange: { frames in
-                deskFrames = frames
-                alignDraggedDesk(to: frames)
-            }
-        )
+        DeskSwitcher(profileColor: profileColor)
     }
 
     private var deskFilterOverlay: some View {
@@ -270,112 +251,6 @@ struct DenView: View {
         content
             .padding(.top, shouldShowDeskSwitcher ? DenLayout.panelTopInset : DenLayout.outerInset)
             .transition(DenMotion.transition(reduceMotion: shouldReduceMotion, scale: 0.96))
-    }
-
-    @ViewBuilder
-    private func deskSwitcherButton(_ desk: DeskState, number: Int, in size: CGSize) -> some View {
-        deskButton(desk, number: number, in: size)
-            .id(desk.id)
-    }
-
-    private func deskSwitcherItem(_ desk: DeskState, number: Int, in size: CGSize) -> some View {
-        let isDragged = deskDrag?.deskID == desk.id
-        let offset = isDragged ? deskDrag?.offset ?? 0 : 0
-        return deskSwitcherButton(desk, number: number, in: size)
-            .offset(x: offset)
-            .background(deskFrameBackground(for: desk.id))
-            .zIndex(isDragged ? 2 : 1)
-    }
-
-    private func deskButton(_ desk: DeskState, number: Int, in size: CGSize) -> some View {
-        Text("\(number). \(desk.label)")
-            .lineLimit(1)
-            .frame(maxWidth: DenLayout.deskButtonMaxWidth)
-            .padding(.horizontal, DenLayout.chromeHorizontalPadding)
-            .frame(height: DenLayout.deskButtonHeight)
-            .background {
-                if desk.id == store.state.focusedDeskID {
-                    Capsule().fill(profileColor.opacity(0.35))
-                }
-            }
-            .glassEffect(.regular, in: Capsule())
-            .contentShape(.capsule)
-            .contextMenu {
-                Button {
-                    store.focusDesk(desk.id)
-                    store.showRenameDeskPanel()
-                } label: {
-                    Label("Rename Desk", systemImage: "pencil")
-                }
-
-                Button(role: .destructive) {
-                    store.focusDesk(desk.id)
-                    store.deleteFocusedDesk()
-                } label: {
-                    Label("Delete Desk", systemImage: "trash")
-                }
-                .disabled(!store.canDeleteFocusedDesk)
-
-                Divider()
-
-                Button {
-                    store.focusDesk(desk.id)
-                    store.showSaveDeskPresetPanel()
-                } label: {
-                    Label("Save Desk as Preset...", systemImage: "square.and.arrow.down")
-                }
-                .disabled(desk.boards.isEmpty)
-
-                Button {
-                    store.focusDesk(desk.id)
-                    store.captureFocusedDeskScreenshot()
-                } label: {
-                    Label("Capture Desk Screenshot...", systemImage: "camera.on.rectangle")
-                }
-                .disabled(desk.boards.isEmpty)
-
-                Button {
-                    store.focusDesk(desk.id)
-                    store.showReplaceDeskPanel()
-                } label: {
-                    Label("Replace Desk...", systemImage: "rectangle.stack.badge.minus")
-                }
-
-                Button {
-                    store.showDeskPresetManagement()
-                } label: {
-                    Label("Manage Presets...", systemImage: "slider.horizontal.3")
-                }
-
-                Divider()
-
-                Button {
-                    store.showNewDeskPanel()
-                } label: {
-                    Label("New Desk...", systemImage: "plus")
-                }
-                .disabled(!store.canCreateDesk)
-            }
-            .gesture(
-                DragGesture(minimumDistance: 0, coordinateSpace: .named(DeskSwitcherCoordinateSpace.name))
-                    .onChanged { updateDeskDrag(desk, value: $0, in: size) }
-                    .onEnded { finishDeskGesture(desk, value: $0, in: size) }
-            )
-            .allowsHitTesting(!store.isDeskDragging || deskDrag?.deskID == desk.id)
-            .help("Drag to reorder Desk")
-            .accessibilityHint("Drag to reorder this Desk")
-            .accessibilityAddTraits(.isButton)
-            .accessibilityAction { store.focusDesk(desk.id) }
-            .accessibilityIdentifier("desk-switcher.\(desk.id.uuidString.lowercased())")
-    }
-
-    private func deskFrameBackground(for deskID: UUID) -> some View {
-        GeometryReader { proxy in
-            Color.clear.preference(
-                key: DeskFramePreferenceKey.self,
-                value: [deskID: proxy.frame(in: .named(DeskSwitcherCoordinateSpace.name))]
-            )
-        }
     }
 
     private var newDeskPanel: some View {
@@ -615,126 +490,6 @@ struct DenView: View {
         }
     }
 
-    private func updateDeskDrag(
-        _ desk: DeskState,
-        value: DragGesture.Value,
-        in size: CGSize
-    ) {
-        if deskDrag == nil {
-            guard deskDragDistance(value.translation) >= 4 else { return }
-            guard let frame = deskFrames[desk.id], store.beginDeskDrag(desk.id) else { return }
-            deskDrag = DeskDragState(
-                deskID: desk.id,
-                originalOrder: store.state.desks.map(\.id),
-                startCenterX: frame.midX
-            )
-        }
-
-        guard var drag = deskDrag, drag.deskID == desk.id else { return }
-        drag.translation = value.translation
-        if let frame = deskFrames[desk.id] {
-            drag.offset = drag.desiredCenterX - frame.midX
-        }
-        deskDrag = drag
-        updateDeskInsertion()
-        autoScrollDeskSwitcher(at: value.location, in: size)
-    }
-
-    private func finishDeskGesture(_ desk: DeskState, value: DragGesture.Value, in size: CGSize) {
-        if deskDrag?.deskID == desk.id {
-            finishDeskDrag(value: value, in: size)
-        } else if deskDragDistance(value.translation) < 4 {
-            store.focusDesk(desk.id)
-        }
-    }
-
-    private func deskDragDistance(_ translation: CGSize) -> CGFloat {
-        hypot(translation.width, translation.height)
-    }
-
-    private func updateDeskInsertion() {
-        guard var drag = deskDrag else { return }
-
-        while let index = store.state.desks.firstIndex(where: { $0.id == drag.deskID }),
-            let targetIndex = HorizontalDragInsertion.targetIndex(
-                draggedID: drag.deskID,
-                orderedIDs: store.state.desks.map(\.id),
-                desiredCenterX: drag.desiredCenterX,
-                frames: deskFrames)
-        {
-            let crossedDesk = store.state.desks[targetIndex]
-            store.previewDeskMove(drag.deskID, to: targetIndex)
-            let direction = targetIndex > index ? -1.0 : 1.0
-            drag.offset += direction * (crossedDeskFrameWidth(crossedDesk.id) + 8)
-            deskDrag = drag
-        }
-    }
-
-    private func crossedDeskFrameWidth(_ deskID: UUID) -> CGFloat {
-        deskFrames[deskID]?.width ?? 0
-    }
-
-    private func alignDraggedDesk(to frames: [UUID: CGRect]) {
-        guard var drag = deskDrag, let frame = frames[drag.deskID] else { return }
-        let offset = drag.desiredCenterX - frame.midX
-        guard abs(offset - drag.offset) > 0.5 else { return }
-        drag.offset = offset
-        deskDrag = drag
-    }
-
-    private func autoScrollDeskSwitcher(
-        at location: CGPoint,
-        in size: CGSize
-    ) {
-        guard let drag = deskDrag else { return }
-
-        let desks = store.state.desks
-        guard
-            let decision = HorizontalDragAutoScroll.decision(
-                location: location,
-                size: size,
-                draggedID: drag.deskID,
-                orderedIDs: desks.map(\.id),
-                edge: 40
-            )
-        else { return }
-        let now = Date.timeIntervalSinceReferenceDate
-        guard now - lastDeskAutoScrollTime >= decision.interval else { return }
-        lastDeskAutoScrollTime = now
-        withAnimation(.linear(duration: shouldReduceMotion ? 0 : 0.14)) {
-            deskScrollPosition.scrollTo(id: decision.targetID, anchor: .center)
-        }
-    }
-
-    private func finishDeskDrag(value: DragGesture.Value, in size: CGSize) {
-        guard let drag = deskDrag else { return }
-        let isInside =
-            value.location.x >= 0 && value.location.x <= size.width
-            && value.location.y >= 0 && value.location.y <= size.height
-        if isInside {
-            store.finishDeskDrag()
-            deskDrag = nil
-        } else {
-            cancelDeskDrag(drag)
-        }
-    }
-
-    private func cancelDeskDrag(_ drag: DeskDragState? = nil) {
-        guard let drag = drag ?? deskDrag else { return }
-        let restore = {
-            store.restoreDeskOrder(drag.originalOrder)
-            store.finishDeskDrag()
-            deskDrag = nil
-        }
-        if shouldReduceMotion {
-            restore()
-        } else {
-            withAnimation(DenMotion.spatial(reduceMotion: false)) {
-                restore()
-            }
-        }
-    }
-
     private func updateBoardLayout(for size: CGSize) {
         store.updateBoardLayout(
             availableWidth: size.width - DenLayout.outerInset * 2,
@@ -859,30 +614,6 @@ struct DenView: View {
 private struct PendingBoardCentering {
     let boardID: UUID
     let animated: Bool
-}
-
-private enum DeskSwitcherCoordinateSpace {
-    static let name = "desk-switcher"
-}
-
-private struct DeskDragState {
-    let deskID: UUID
-    let originalOrder: [UUID]
-    let startCenterX: CGFloat
-    var translation: CGSize = .zero
-    var offset: CGFloat = 0
-
-    var desiredCenterX: CGFloat {
-        startCenterX + translation.width
-    }
-}
-
-struct DeskFramePreferenceKey: PreferenceKey {
-    static let defaultValue: [UUID: CGRect] = [:]
-
-    static func reduce(value: inout [UUID: CGRect], nextValue: () -> [UUID: CGRect]) {
-        value.merge(nextValue(), uniquingKeysWith: { _, new in new })
-    }
 }
 
 struct BoardDragState {
