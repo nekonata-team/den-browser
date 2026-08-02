@@ -49,7 +49,7 @@ Den Browserは、[Niri](https://github.com/niri-wm/niri)の空間的なウィン
 - `Command` + `Option` + 左右矢印で隣のBoardへ移動し、Shiftを加えて並べ替え。`Command` + `L`でFocused BoardのCurrent SheetをURLまたは検索語に置き換え、`Command` + `W`でFocused Boardを取り除く。`Shift` + `Command` + `W`でProfileウィンドウを閉じる。Den ModeではBoardの全操作が可能。ポインターでもSheet Stack操作、Board Removal、同じDesk内でのヘッダードラッグ、Boardヘッダーからのアクションメニューに対応。
 - アプリ全体で使うDenとBoardの5つのショートカットを設定で変更し、個別または一括で初期値に戻せる。全ショートカットは設定、Denメニュー、Den Mode中の`?`から確認可能。
 - Appearance設定で、macOSのモーション設定への追従、Standard Motion、Reduced Motionを選択可能。全ProfileのSheetへ適用する50%〜200%のSheet Scaleも設定できる。また、フォーカスされたBoardの配置アライメント（常に中央配置、端に詰める、画面からはみ出た時のみ中央配置）を選択可能。
-- Den Mode中に`z`でZen Viewを切り替え、ネイティブのタイトルバー、Desk Switcher、Profileコントロールを非表示にしてFocused Boardでの作業へ集中。
+- Den Mode中に`z`でZen Viewを切り替え、ネイティブのタイトルバー、Desk Switcher、Profileコントロールを非表示にしてFocused Boardでの作業へ集中。`t`でFocused BoardのSheet NavigationをPause / Resume。
 - Den Mode中に`/`でFocused Desk内のBoardをBoard LabelまたはCurrent Sheet URLから絞り込み、フォーカスを変えずに一致するBoardを選んでから確定。
 - Den Modeで`w`に続けて`-`、`=`、または`1`〜`9`を押すかDenメニューを使い、Focused Desk内の全Boardを80ptずつ、または現在のウィンドウ幅へ指定数が収まるようリサイズ。
 - 現在のアプリ起動中、`u`でRecently Removed Boardを復活。
@@ -68,7 +68,7 @@ Den Browserは、[Niri](https://github.com/niri-wm/niri)の空間的なウィン
 
 ## キーボード操作
 
-`Control` + `,` でDen Modeを切り替えます。`Command` + `L`でFocused BoardのCurrent SheetをURLまたは検索語に置き換え、Den Modeでは`e`でも同じ操作を行えます。Den ModeはCurrent Sheet内のキーボードフォーカスに関係なく、DeskとBoardのコマンドを受け取ります。`/`でFocused Desk内のBoardを絞り込み、`n`または`Space`でBoardを開き、`Tab`でDrawerを開き、`a`でCurrent SheetをDrawerへ保持し、`p`でFocused DeskをDesk Presetとして保存し、Shift + `p`でPresetからFocused Deskを置換します。`s`で表示中のCurrent Sheetを撮影し、Shift + `s`でFocused Deskを撮影します。`w`に続けて`-`または`=`を押すとFocused Desk内の全Boardを80ptずつ調整し、数字を押すと現在のウィンドウ幅に合わせてリサイズします。`x`または`d`でFocused Boardを取り除き、`u`でRecently Removed Boardを復活します。`?`でショートカット一覧を表示し、`z`でZen Viewを切り替えます。`Escape`でSheet Inputへ戻ります。Sheet Navigation有効時は、Sheet Inputで`a`に続けてリンクヒントを入力すると、そのリンクをDrawerへ保持します。
+`Control` + `,` でDen Modeを切り替えます。`Command` + `L`でFocused BoardのCurrent SheetをURLまたは検索語に置き換え、Den Modeでは`e`でも同じ操作を行えます。Den ModeはCurrent Sheet内のキーボードフォーカスに関係なく、DeskとBoardのコマンドを受け取ります。`/`でFocused Desk内のBoardを絞り込み、`n`または`Space`でBoardを開き、`Tab`でDrawerを開き、`a`でCurrent SheetをDrawerへ保持し、`p`でFocused DeskをDesk Presetとして保存し、Shift + `p`でPresetからFocused Deskを置換します。`s`で表示中のCurrent Sheetを撮影し、Shift + `s`でFocused Deskを撮影します。`w`に続けて`-`または`=`を押すとFocused Desk内の全Boardを80ptずつ調整し、数字を押すと現在のウィンドウ幅に合わせてリサイズします。`x`または`d`でFocused Boardを取り除き、`u`でRecently Removed Boardを復活します。`?`でショートカット一覧を表示し、`z`でZen Viewを切り替え、`t`でFocused BoardのSheet NavigationをPause / Resumeします。`Escape`でSheet Inputへ戻ります。Sheet Navigation有効時は、Sheet Inputで`a`に続けてリンクヒントを入力すると、そのリンクをDrawerへ保持します。
 
 全ショートカットは[docs/shortcuts.md](./docs/shortcuts.md)を参照してください。
 

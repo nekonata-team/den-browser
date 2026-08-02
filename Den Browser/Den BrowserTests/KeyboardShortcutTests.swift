@@ -266,6 +266,33 @@ struct KeyboardShortcutTests {
         #expect(store.isEditBoardLinkPanelPresented)
     }
 
+    @Test func denModeTTogglesSheetNavigationPauseForFocusedBoard() throws {
+        let suiteName = "KeyboardSheetNavigationTests-\(UUID())"
+        let defaults = try #require(UserDefaults(suiteName: suiteName))
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let sheetNavigation = SheetNavigationManager(defaults: defaults, scriptSource: "")
+        let desk = DeskState(label: "Desk", boards: [board("First")])
+        let store = DenStore(
+            state: DenState(desks: [desk], focusedDeskID: desk.id),
+            sheetNavigation: sheetNavigation)
+        store.isDenMode = true
+        let toggle = try keyEvent(characters: "t", charactersIgnoringModifiers: "t", keyCode: 17)
+        let repeatedToggle = try keyEvent(
+            characters: "t",
+            charactersIgnoringModifiers: "t",
+            isARepeat: true,
+            keyCode: 17)
+        let boardID = try #require(store.focusedDesk?.focusedBoardID)
+
+        #expect(!sheetNavigation.isBoardPaused(boardID))
+        #expect(KeyboardController.handle(toggle, store: store))
+        #expect(sheetNavigation.isBoardPaused(boardID))
+        #expect(KeyboardController.handle(repeatedToggle, store: store))
+        #expect(sheetNavigation.isBoardPaused(boardID))
+        #expect(KeyboardController.handle(toggle, store: store))
+        #expect(!sheetNavigation.isBoardPaused(boardID))
+    }
+
     @Test func denModeAddsSpaceGuideAndZenViewWithoutPersistedStateChanges() throws {
         let preferences = try makePreferences()
         let store = makeStore(boards: [board("First")])

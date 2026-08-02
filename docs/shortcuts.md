@@ -42,6 +42,7 @@ The complete in-app guide is available from Settings, the Den menu, and `?` in D
 | `w`, then `-` / `=` or `1` through `9` | Resize all Boards | `-` and `=` adjust every Board in the Focused Desk by 80pt and keep the panel open. Digits persistently resize every Board to fit the current window width. Escape or `w` cancels. |
 | `f` | Toggle maximized focused board | Uses the available Den width without changing its persisted Board Width. |
 | `c` | Center focused board | Uses edge space to center the first and last Board too. |
+| `t` | Pause / resume Sheet Navigation for focused Board | Persists independently for each Board. |
 | `s` | Capture Current Sheet screenshot | Captures the visible web content in the Focused Board and opens a macOS save panel for a PNG. |
 | Shift + `s` | Capture Focused Desk screenshot | Captures every Board's visible Current Sheet, preserving Board order and relative widths in one PNG. |
 | `a` | Keep Current Sheet in Drawer | Keeps the Focused Board's Current Sheet in the Drawer without changing the Current Sheet. |

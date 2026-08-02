@@ -275,6 +275,7 @@ final class KeyboardController {
         binding("+", modifiers: [.shift]): KeyboardCommand(action: .adjustBoardWidth(80)),
         binding("f"): KeyboardCommand(action: .toggleBoardMaximized, repeatPolicy: .ignore),
         binding("c"): KeyboardCommand(action: .centerBoard, repeatPolicy: .ignore),
+        binding("t"): KeyboardCommand(action: .toggleFocusedBoardSheetNavigationPause, repeatPolicy: .ignore),
         binding("s"): KeyboardCommand(action: .captureCurrentSheet, repeatPolicy: .ignore),
         binding("s", modifiers: [.shift]): KeyboardCommand(
             action: .captureFocusedDesk,
@@ -317,6 +318,7 @@ final class KeyboardController {
         case .adjustBoardWidth(let amount): store.adjustFocusedBoardWidth(by: amount)
         case .toggleBoardMaximized: store.toggleFocusedBoardMaximized()
         case .centerBoard: store.centerFocusedBoard()
+        case .toggleFocusedBoardSheetNavigationPause: store.toggleFocusedBoardSheetNavigationPause()
         case .captureCurrentSheet: store.captureFocusedSheetScreenshot()
         case .captureFocusedDesk: store.captureFocusedDeskScreenshot()
         case .keepCurrentSheetInDrawer: store.keepFocusedSheetInDrawer()
@@ -640,6 +642,7 @@ private enum KeyboardAction {
     case adjustBoardWidth(Double)
     case toggleBoardMaximized
     case centerBoard
+    case toggleFocusedBoardSheetNavigationPause
     case captureCurrentSheet
     case captureFocusedDesk
     case keepCurrentSheetInDrawer

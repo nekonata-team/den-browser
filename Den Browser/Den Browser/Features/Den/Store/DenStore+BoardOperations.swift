@@ -65,6 +65,13 @@ extension DenStore {
         centerFocusedBoard()
     }
 
+    func toggleFocusedBoardSheetNavigationPause() {
+        guard let focusedBoardID = focusedDesk?.focusedBoardID else { return }
+        sheetNavigation.setBoardPaused(
+            !sheetNavigation.isBoardPaused(focusedBoardID),
+            for: focusedBoardID)
+    }
+
     func centerFocusedBoard() {
         guard focusedDesk?.focusedBoardID != nil else { return }
         centerFocusedBoardRequest &+= 1
