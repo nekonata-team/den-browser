@@ -101,6 +101,66 @@ struct SheetNavigationTests {
         #expect(restored.ignoredHosts == ["example.com", "www.apple.com"])
     }
 
+    @Test func pausedBoardsPersistIndependently() {
+        let suiteName = "SheetNavigationPausedBoardsTests-\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let manager = SheetNavigationManager(defaults: defaults, scriptSource: "")
+        let firstBoardID = UUID()
+        let secondBoardID = UUID()
+
+        manager.setBoardPaused(true, for: firstBoardID)
+        manager.setBoardPaused(true, for: secondBoardID)
+
+        #expect(manager.isBoardPaused(firstBoardID))
+        #expect(manager.isBoardPaused(secondBoardID))
+
+        manager.setBoardPaused(false, for: firstBoardID)
+
+        #expect(!manager.isBoardPaused(firstBoardID))
+        #expect(manager.isBoardPaused(secondBoardID))
+
+        let restored = SheetNavigationManager(defaults: defaults, scriptSource: "")
+        #expect(!restored.isBoardPaused(firstBoardID))
+        #expect(restored.isBoardPaused(secondBoardID))
+    }
+
+    @Test func pauseConfigurationRemainsAfterDocumentReload() async throws {
+        let source = try sheetNavigationScriptSource().replacingOccurrences(
+            of: "if (!event.isTrusted ||",
+            with: "if ("
+        )
+        let suiteName = "SheetNavigationPauseConfigurationTests-\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let manager = SheetNavigationManager(defaults: defaults, scriptSource: source)
+        let boardID = UUID()
+        let webView = makeSheetNavigationWebView(manager: manager)
+        let waiter = WebViewLoadWaiter()
+        let baseURL = URL(string: "https://example.com/")!
+
+        manager.setEnabled(true)
+        manager.didOpen(webView, boardID: boardID, actions: noOpSheetNavigationActions())
+        await waiter.load(sheetNavigationTestHTML, baseURL: baseURL, in: webView)
+
+        manager.setBoardPaused(true, for: boardID)
+
+        await waiter.load(sheetNavigationTestHTML, baseURL: baseURL, in: webView)
+        manager.refreshConfiguration(for: webView)
+        try await dispatchSheetKey("j", in: webView)
+
+        let pausedScrollY = try #require(await webView.evaluateJavaScript("scrollY") as? Int)
+        #expect(pausedScrollY == 0)
+
+        manager.setBoardPaused(false, for: boardID)
+        _ = try await webView.evaluateJavaScript("scrollTo(0, 0)")
+        manager.refreshConfiguration(for: webView)
+        try await dispatchSheetKey("j", in: webView)
+
+        let resumedScrollY = try #require(await webView.evaluateJavaScript("scrollY") as? Int)
+        #expect(resumedScrollY > 0)
+    }
+
     @Test func bundledSheetNavigationScriptIsAvailable() throws {
         let url = try #require(Bundle.main.url(forResource: "SheetNavigation", withExtension: "js"))
         let source = try String(contentsOf: url, encoding: .utf8)
@@ -580,6 +640,21 @@ struct SheetNavigationTests {
         let configuration = WKWebViewConfiguration()
         configuration.userContentController = manager.userContentController
         return WKWebView(frame: NSRect(x: 0, y: 0, width: 800, height: 600), configuration: configuration)
+    }
+
+    private func noOpSheetNavigationActions() -> SheetNavigationManager.Actions {
+        .init(
+            onOpenBoard: { _ in },
+            onOpenBoardInBackground: { _ in },
+            onKeepInDrawer: { _ in },
+            onEditCurrentSheet: {},
+            onOpenCurrentSheetInNewBoard: { _ in },
+            onPasteURLInNewBoard: { _ in },
+            onOpenBoardPanel: {},
+            onShowOverview: {},
+            onRemoveBoard: {},
+            onRestoreBoard: {}
+        )
     }
 
     private func dispatchSheetKey(_ key: String, shift: Bool = false, in webView: WKWebView) async throws {

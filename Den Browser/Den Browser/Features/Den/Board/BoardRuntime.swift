@@ -208,6 +208,7 @@ final class BoardRuntime: NSObject, NSWindowDelegate, ObservableObject, WKDownlo
     }
 
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+        sheetNavigation.refreshConfiguration(for: webView)
         updateFavicon()
     }
 

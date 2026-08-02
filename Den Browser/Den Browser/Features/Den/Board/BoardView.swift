@@ -49,6 +49,9 @@ struct BoardView: View {
         .scaleEffect(isDragging && !shouldReduceMotion ? 1.02 : 1)
         .animation(DenMotion.feedback(reduceMotion: shouldReduceMotion), value: isFocused)
         .animation(DenMotion.feedback(reduceMotion: shouldReduceMotion), value: isDragging)
+        .onAppear {
+            store.sheetNavigation.refreshConfiguration(for: runtime.webView)
+        }
     }
 
     private var loadingIndicator: some View {

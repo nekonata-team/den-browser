@@ -112,6 +112,10 @@ final class SheetNavigationManager {
         boardIDByWebView.removeValue(forKey: ObjectIdentifier(webView))
     }
 
+    func refreshConfiguration(for webView: WKWebView) {
+        applyConfiguration(to: webView)
+    }
+
     func isBoardPaused(_ boardID: UUID) -> Bool { pausedBoardIDs.contains(boardID) }
 
     func setBoardPaused(_ paused: Bool, for boardID: UUID) {
