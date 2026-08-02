@@ -23,12 +23,18 @@ struct BoardView: View {
     var body: some View {
         VStack(spacing: 0) {
             header
-            BoardWebView(
-                webView: runtime.webView,
-                isFocused: isFocused && !store.isDenMode && store.temporaryContext == nil,
-                isPointerFocusEnabled: isPointerFocusEnabled,
-                onFocus: onFocus
-            )
+            ZStack(alignment: .top) {
+                BoardWebView(
+                    webView: runtime.webView,
+                    isFocused: isFocused && !store.isDenMode && store.temporaryContext == nil,
+                    isPointerFocusEnabled: isPointerFocusEnabled,
+                    onFocus: onFocus
+                )
+
+                if runtime.isLoading {
+                    loadingIndicator
+                }
+            }
         }
         .frame(width: width, height: height)
         .clipShape(RoundedRectangle(cornerRadius: DenRadius.large, style: .continuous))
@@ -43,6 +49,22 @@ struct BoardView: View {
         .scaleEffect(isDragging && !shouldReduceMotion ? 1.02 : 1)
         .animation(DenMotion.feedback(reduceMotion: shouldReduceMotion), value: isFocused)
         .animation(DenMotion.feedback(reduceMotion: shouldReduceMotion), value: isDragging)
+    }
+
+    private var loadingIndicator: some View {
+        GeometryReader { geometry in
+            Rectangle()
+                .fill(profileColor)
+                .frame(
+                    width: geometry.size.width * max(0.05, min(runtime.estimatedProgress, 1)),
+                    height: 2
+                )
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .frame(height: 2)
+        .accessibilityElement()
+        .accessibilityLabel("Loading Current Sheet")
+        .accessibilityValue("\(Int(runtime.estimatedProgress * 100)) percent")
     }
 
     private var borderColor: Color {

@@ -17,6 +17,8 @@ struct BoardRuntimeWebUITests {
 
         #expect(runtime.webView.navigationDelegate === runtime)
         #expect(runtime.webView.uiDelegate === runtime)
+        #expect(!runtime.isLoading)
+        #expect(runtime.estimatedProgress == 0)
 
         let selectors = [
             "webView:decidePolicyForNavigationAction:decisionHandler:",

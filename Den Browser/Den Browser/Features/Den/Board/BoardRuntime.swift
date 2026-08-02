@@ -18,6 +18,8 @@ final class BoardRuntime: NSObject, NSWindowDelegate, ObservableObject, WKDownlo
     let id: UUID
     let webView: WKWebView
     @Published private(set) var faviconURL: URL?
+    @Published private(set) var isLoading = false
+    @Published private(set) var estimatedProgress = 0.0
 
     private let onOpenBoard: (URL) -> Void
     private let onOpenBoardInBackground: (URL) -> Void
@@ -35,8 +37,10 @@ final class BoardRuntime: NSObject, NSWindowDelegate, ObservableObject, WKDownlo
 
     private var downloadFilenames: [ObjectIdentifier: String] = [:]
     private var auxiliaryWindows: [ObjectIdentifier: NSWindow] = [:]
+    private var loadingObservation: NSKeyValueObservation?
     private var urlObservation: NSKeyValueObservation?
     private var titleObservation: NSKeyValueObservation?
+    private var progressObservation: NSKeyValueObservation?
     private var fullscreenObservation: NSKeyValueObservation?
 
     init(
@@ -125,6 +129,21 @@ final class BoardRuntime: NSObject, NSWindowDelegate, ObservableObject, WKDownlo
             }
         }
 
+        progressObservation = webView.observe(\.estimatedProgress, options: [.new]) {
+            [weak self] webView, _ in
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+                self.estimatedProgress = webView.estimatedProgress
+            }
+        }
+
+        loadingObservation = webView.observe(\.isLoading, options: [.initial, .new]) {
+            [weak self] webView, _ in
+            Task { @MainActor [weak self] in
+                self?.isLoading = webView.isLoading
+            }
+        }
+
         fullscreenObservation = webView.observe(\.fullscreenState, options: [.new]) { [weak self] _, _ in
             Task { @MainActor [weak self] in
                 guard let self else { return }
@@ -172,13 +191,19 @@ final class BoardRuntime: NSObject, NSWindowDelegate, ObservableObject, WKDownlo
         webView.closeAllMediaPresentations(completionHandler: nil)
         webView.setAllMediaPlaybackSuspended(true, completionHandler: nil)
         webView.stopLoading()
+        isLoading = false
+        estimatedProgress = 0
         webView.navigationDelegate = nil
         webView.uiDelegate = nil
         urlObservation?.invalidate()
         titleObservation?.invalidate()
+        loadingObservation?.invalidate()
+        progressObservation?.invalidate()
         fullscreenObservation?.invalidate()
         urlObservation = nil
         titleObservation = nil
+        loadingObservation = nil
+        progressObservation = nil
         fullscreenObservation = nil
     }
 
@@ -196,6 +221,18 @@ final class BoardRuntime: NSObject, NSWindowDelegate, ObservableObject, WKDownlo
         didStartProvisionalNavigation navigation: WKNavigation!
     ) {
         faviconURL = nil
+    }
+
+    func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
+        onChange(id, webView.url, webView.title)
+    }
+
+    func webView(
+        _ webView: WKWebView,
+        didFailProvisionalNavigation navigation: WKNavigation!,
+        withError error: Error
+    ) {
+        onChange(id, webView.url, webView.title)
     }
 
     func webView(
