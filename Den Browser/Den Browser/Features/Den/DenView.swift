@@ -784,9 +784,9 @@ struct DenView: View {
         guard var drag = deskDrag else { return }
 
         while let index = store.state.desks.firstIndex(where: { $0.id == drag.deskID }),
-            let targetIndex = DeskDragInsertion.targetIndex(
-                draggedDeskID: drag.deskID,
-                orderedDeskIDs: store.state.desks.map(\.id),
+            let targetIndex = HorizontalDragInsertion.targetIndex(
+                draggedID: drag.deskID,
+                orderedIDs: store.state.desks.map(\.id),
                 desiredCenterX: drag.desiredCenterX,
                 frames: deskFrames)
         {
@@ -814,33 +814,23 @@ struct DenView: View {
         at location: CGPoint,
         in size: CGSize
     ) {
-        guard
-            location.y >= 0,
-            location.y <= size.height,
-            let drag = deskDrag,
-            let index = store.state.desks.firstIndex(where: { $0.id == drag.deskID })
-        else { return }
+        guard let drag = deskDrag else { return }
 
         let desks = store.state.desks
-        let edge: CGFloat = 40
-        let targetID: UUID?
-        let distanceToEdge: CGFloat
-        if location.x < edge, index > 0 {
-            targetID = desks[index - 1].id
-            distanceToEdge = max(0, location.x)
-        } else if location.x > size.width - edge, index < desks.count - 1 {
-            targetID = desks[index + 1].id
-            distanceToEdge = max(0, size.width - location.x)
-        } else {
-            return
-        }
-
+        guard
+            let decision = HorizontalDragAutoScroll.decision(
+                location: location,
+                size: size,
+                draggedID: drag.deskID,
+                orderedIDs: desks.map(\.id),
+                edge: 40
+            )
+        else { return }
         let now = Date.timeIntervalSinceReferenceDate
-        let interval = distanceToEdge < 16 ? 0.06 : 0.16
-        guard now - lastDeskAutoScrollTime >= interval, let targetID else { return }
+        guard now - lastDeskAutoScrollTime >= decision.interval else { return }
         lastDeskAutoScrollTime = now
         withAnimation(.linear(duration: shouldReduceMotion ? 0 : 0.14)) {
-            deskScrollPosition.scrollTo(id: targetID, anchor: .center)
+            deskScrollPosition.scrollTo(id: decision.targetID, anchor: .center)
         }
     }
 
@@ -915,9 +905,9 @@ struct DenView: View {
 
         while let boards = store.focusedDesk?.boards,
             let index = deskIndex(of: drag.boardID),
-            let targetIndex = BoardDragInsertion.targetIndex(
-                draggedBoardID: drag.boardID,
-                orderedBoardIDs: boards.map(\.id),
+            let targetIndex = HorizontalDragInsertion.targetIndex(
+                draggedID: drag.boardID,
+                orderedIDs: boards.map(\.id),
                 desiredCenterX: drag.desiredCenterX,
                 frames: boardFrames)
         {
@@ -945,33 +935,22 @@ struct DenView: View {
         at location: CGPoint,
         in size: CGSize
     ) {
+        guard let drag = boardDrag, let boards = store.focusedDesk?.boards else { return }
+
         guard
-            location.y >= 0,
-            location.y <= size.height,
-            let drag = boardDrag,
-            let index = deskIndex(of: drag.boardID),
-            let boards = store.focusedDesk?.boards
+            let decision = HorizontalDragAutoScroll.decision(
+                location: location,
+                size: size,
+                draggedID: drag.boardID,
+                orderedIDs: boards.map(\.id),
+                edge: 48
+            )
         else { return }
-
-        let edge: CGFloat = 48
-        let targetID: UUID?
-        let distanceToEdge: CGFloat
-        if location.x < edge, index > 0 {
-            targetID = boards[index - 1].id
-            distanceToEdge = max(0, location.x)
-        } else if location.x > size.width - edge, index < boards.count - 1 {
-            targetID = boards[index + 1].id
-            distanceToEdge = max(0, size.width - location.x)
-        } else {
-            return
-        }
-
         let now = Date.timeIntervalSinceReferenceDate
-        let interval = distanceToEdge < 16 ? 0.06 : 0.16
-        guard now - lastBoardAutoScrollTime >= interval, let targetID else { return }
+        guard now - lastBoardAutoScrollTime >= decision.interval else { return }
         lastBoardAutoScrollTime = now
         withAnimation(.linear(duration: shouldReduceMotion ? 0 : 0.14)) {
-            boardScrollPosition.scrollTo(id: targetID, anchor: .center)
+            boardScrollPosition.scrollTo(id: decision.targetID, anchor: .center)
         }
     }
 
@@ -1026,61 +1005,11 @@ private struct DeskDragState {
     }
 }
 
-nonisolated enum DeskDragInsertion {
-    static func targetIndex(
-        draggedDeskID: UUID,
-        orderedDeskIDs: [UUID],
-        desiredCenterX: CGFloat,
-        frames: [UUID: CGRect]
-    ) -> Int? {
-        guard let index = orderedDeskIDs.firstIndex(of: draggedDeskID) else { return nil }
-
-        if orderedDeskIDs.indices.contains(index + 1),
-            let nextFrame = frames[orderedDeskIDs[index + 1]],
-            desiredCenterX > nextFrame.midX
-        {
-            return index + 1
-        }
-        if orderedDeskIDs.indices.contains(index - 1),
-            let previousFrame = frames[orderedDeskIDs[index - 1]],
-            desiredCenterX < previousFrame.midX
-        {
-            return index - 1
-        }
-        return nil
-    }
-}
-
 struct DeskFramePreferenceKey: PreferenceKey {
     static let defaultValue: [UUID: CGRect] = [:]
 
     static func reduce(value: inout [UUID: CGRect], nextValue: () -> [UUID: CGRect]) {
         value.merge(nextValue(), uniquingKeysWith: { _, new in new })
-    }
-}
-
-nonisolated enum BoardDragInsertion {
-    static func targetIndex(
-        draggedBoardID: UUID,
-        orderedBoardIDs: [UUID],
-        desiredCenterX: CGFloat,
-        frames: [UUID: CGRect]
-    ) -> Int? {
-        guard let index = orderedBoardIDs.firstIndex(of: draggedBoardID) else { return nil }
-
-        if orderedBoardIDs.indices.contains(index + 1),
-            let nextFrame = frames[orderedBoardIDs[index + 1]],
-            desiredCenterX > nextFrame.midX
-        {
-            return index + 1
-        }
-        if orderedBoardIDs.indices.contains(index - 1),
-            let previousFrame = frames[orderedBoardIDs[index - 1]],
-            desiredCenterX < previousFrame.midX
-        {
-            return index - 1
-        }
-        return nil
     }
 }
 
