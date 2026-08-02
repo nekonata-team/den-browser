@@ -1,8 +1,6 @@
 import SwiftUI
 
 struct DenDialogs: ViewModifier {
-    let confirmDeskPresetDeletion: () -> Void
-
     @Environment(DenStore.self) private var store
 
     func body(content: Content) -> some View {
@@ -86,7 +84,7 @@ struct DenDialogs: ViewModifier {
                     set: { if !$0 { store.cancelDeskPresetDeletion() } })
             ) {
                 Button("Delete Preset", role: .destructive) {
-                    confirmDeskPresetDeletion()
+                    store.confirmDeskPresetDeletion()
                 }
                 .keyboardShortcut(.defaultAction)
                 Button("Cancel", role: .cancel) { store.cancelDeskPresetDeletion() }

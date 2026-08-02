@@ -27,7 +27,7 @@
 ## 実装順
 
 - [x] C1. BoardとDeskの水平ドラッグ計算を共通化する
-- [ ] C2. New Desk系panelの一時状態を`NewDeskPanel`へ移す
+- [x] C2. New Desk系panelの一時状態を`NewDeskPanel`へ移す
 - [ ] C3. Desk切替と並べ替えを`DeskSwitcher`へ集約する
 - [ ] C4. Board表示と並べ替えを`BoardStrip`へ集約する
 - [ ] C5. `BoardRuntime`のaction配線を整理する

@@ -11,14 +11,6 @@ struct DenView: View {
     @State private var urlText = ""
     @State private var openBoardAfterBoardID: UUID?
     @State private var editBoardLinkText = ""
-    @State private var newDeskLabel = ""
-    @State private var newDeskLabelSelection: TextSelection?
-    @State private var selectedDeskPreset: DeskPresetSelection = .builtIn(.empty)
-    @State private var activeDeskPreset: DeskPresetSelection = .builtIn(.empty)
-    @State private var deskPresetQuery = ""
-    @State private var isManagingDeskPresets = false
-    @State private var isChoosingDeskPreset = true
-    @State private var didAttemptDeskAction = false
     @State private var saveDeskPresetLabel = ""
     @State private var saveDeskPresetMessage: String?
 
@@ -36,8 +28,6 @@ struct DenView: View {
     @State private var lastDeskAutoScrollTime = 0.0
     @FocusState private var isOpenPanelFocused: Bool
     @FocusState private var isEditBoardLinkPanelFocused: Bool
-    @FocusState private var isDeskPresetSearchFocused: Bool
-    @FocusState private var isNewDeskLabelFocused: Bool
     @FocusState private var isSaveDeskPresetLabelFocused: Bool
     @State private var renameText = ""
     @FocusState private var isRenamePanelFocused: Bool
@@ -161,7 +151,7 @@ struct DenView: View {
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("den-content")
         .accessibilityValue(store.isDenMode ? "Den Mode" : "Sheet Input")
-        .modifier(DenDialogs(confirmDeskPresetDeletion: confirmDeskPresetDeletion))
+        .modifier(DenDialogs())
     }
 
     private var titlebarTitle: String {
@@ -389,25 +379,7 @@ struct DenView: View {
     }
 
     private var newDeskPanel: some View {
-        NewDeskPanel(
-            selectedDeskPreset: $selectedDeskPreset,
-            activeDeskPreset: $activeDeskPreset,
-            query: $deskPresetQuery,
-            isManaging: $isManagingDeskPresets,
-            isChoosing: $isChoosingDeskPreset,
-            didAttemptAction: $didAttemptDeskAction,
-            newDeskLabel: $newDeskLabel,
-            newDeskLabelSelection: $newDeskLabelSelection,
-            isSearchFocused: $isDeskPresetSearchFocused,
-            isLabelFocused: $isNewDeskLabelFocused,
-            selectedBoards: selectedDeskPresetBoards,
-            presetLabel: deskPresetLabel(for: selectedDeskPreset),
-            boardCountLabel: boardCountLabel(selectedDeskPresetBoards.count),
-            trimmedLabel: trimmedNewDeskLabel,
-            description: newDeskPanelDescription,
-            onConfirmPreset: confirmDeskPreset,
-            onBeginSelection: beginDeskPresetSelection,
-            onSubmit: submitDeskPreset)
+        NewDeskPanel()
     }
 
     private var saveDeskPresetPanel: some View {
@@ -416,91 +388,6 @@ struct DenView: View {
             message: $saveDeskPresetMessage,
             isFocused: $isSaveDeskPresetLabelFocused,
             onSave: saveDeskPreset)
-    }
-
-    private var trimmedNewDeskLabel: String {
-        newDeskLabel.trimmingCharacters(in: .whitespacesAndNewlines)
-    }
-
-    private var newDeskPanelDescription: String {
-        if store.isReplaceDeskPanelPresented {
-            return store.focusedDesk?.boards.isEmpty == false
-                ? "Existing Boards will be removed after confirmation"
-                : "Applies this arrangement to the focused Desk"
-        }
-        return store.canCreateDesk ? "New desk opens after the focused desk" : "A Den can contain up to 10 desks"
-    }
-
-    private func submitDeskPreset() {
-        didAttemptDeskAction = true
-        guard !trimmedNewDeskLabel.isEmpty else { return }
-        if store.isReplaceDeskPanelPresented {
-            let result: DeskReplacementResult?
-            switch selectedDeskPreset {
-            case .builtIn(let preset):
-                result = store.replaceFocusedDesk(label: newDeskLabel, preset: preset)
-            case .personal(let id):
-                result = store.replaceFocusedDesk(label: newDeskLabel, personalPresetID: id)
-            }
-            if result == .applied {
-                resetDeskPresetPanel()
-            }
-            return
-        }
-
-        switch selectedDeskPreset {
-        case .builtIn(let preset):
-            store.createDesk(label: newDeskLabel, preset: preset)
-        case .personal(let id):
-            store.createDesk(label: newDeskLabel, personalPresetID: id)
-        }
-        resetDeskPresetPanel()
-    }
-
-    private func resetDeskPresetPanel() {
-        newDeskLabel = ""
-        selectedDeskPreset = .builtIn(.empty)
-        didAttemptDeskAction = false
-    }
-
-    private func confirmDeskPreset(_ selection: DeskPresetSelection) {
-        let label = deskPresetLabel(for: selection)
-        activeDeskPreset = selection
-        selectedDeskPreset = selection
-        newDeskLabel = label
-        newDeskLabelSelection = TextSelection(range: label.startIndex..<label.endIndex)
-        isChoosingDeskPreset = false
-        didAttemptDeskAction = false
-        DispatchQueue.main.async { isNewDeskLabelFocused = true }
-    }
-
-    private func beginDeskPresetSelection() {
-        activeDeskPreset = selectedDeskPreset
-        isChoosingDeskPreset = true
-        isManagingDeskPresets = false
-        DispatchQueue.main.async { isDeskPresetSearchFocused = true }
-    }
-
-    private func deskPresetLabel(for selection: DeskPresetSelection) -> String {
-        switch selection {
-        case .builtIn(let preset):
-            preset.label
-        case .personal(let id):
-            store.deskPresets.first(where: { $0.id == id })?.label ?? BuiltInDeskPreset.empty.label
-        }
-    }
-
-    private var selectedDeskPresetBoards: [DeskPresetBoard] {
-        switch selectedDeskPreset {
-        case .builtIn(let preset):
-            preset.boards
-        case .personal(let id):
-            store.deskPresets.first(where: { $0.id == id })?.boards ?? []
-        }
-    }
-
-    private func boardCountLabel(_ count: Int) -> String {
-        count == 1 ? "1 Board" : "\(count) Boards"
     }
 
     private func saveDeskPreset() {
@@ -516,21 +403,6 @@ struct DenView: View {
         case .reservedLabel:
             saveDeskPresetMessage = "Built-in Desk Preset labels are reserved"
         }
-    }
-
-    private func confirmDeskPresetDeletion() {
-        if case .personal(let id) = selectedDeskPreset,
-            let pending = store.deskPresetPendingDeletion,
-            pending.id == id
-        {
-            let fallback: DeskPresetSelection =
-                store.isReplaceDeskPanelPresented ? .builtIn(.chatGPT) : .builtIn(.empty)
-            if newDeskLabel == pending.label {
-                newDeskLabel = deskPresetLabel(for: fallback)
-            }
-            selectedDeskPreset = fallback
-        }
-        store.confirmDeskPresetDeletion()
     }
 
     private var shouldShowDeskSwitcher: Bool {
