@@ -4,6 +4,10 @@ Den Browser is organized around product features. The source tree keeps code tha
 
 This document describes the intended architecture. The current source tree is being migrated toward it incrementally, with path-only moves kept separate from behavior changes.
 
+## Platform baseline
+
+The app and test targets support macOS 26.0 and later. Availability checks and fallback paths must reflect versions that can actually run under this baseline. In particular, `if #available(macOS 26.0, *)` is redundant and should not be introduced, nor should code remain solely for versions below macOS 26.0. Checks for runtime presence of private or optional selectors are a separate concern and must be justified by the API's runtime behavior, not by the deployment target.
+
 ## Source organization
 
 ```text
@@ -22,11 +26,15 @@ Den Browser/Den Browser/
       Desk/
       Sheet/
       Overview/
+      Toast/
+      DrawerPreviewRuntime.swift
     Profiles/
     SheetNavigation/
       settings UI, preferences, WebKit controller, and bundled script
   Platform/
-    feature-independent OS integration, when it emerges
+    feature-independent OS integration
+  PrivateWebKit/
+    private WebKit API declarations
   Resources/
 ```
 
@@ -40,6 +48,8 @@ App -------------> Den
 App ---------------------> SheetNavigation
 Profiles ----------------> SheetNavigation
 App ------------------------------> Platform
+Den ------------------------------> Platform
+SheetNavigation ------------------> Platform
 ```
 
 - `App` assembles dependencies and owns application entry points. It does not contain feature behavior.
@@ -62,7 +72,7 @@ Persisted `DenState` remains separate from live `BoardRuntime` and `WKWebView` o
 
 - `DenState` is the source of truth for Desk and Board identity, order, labels, widths, focus, Current Sheet URLs, Drawer Items, and the expanded Drawer Item identity used to restore a Preview.
 - `BoardRuntime` owns live WebKit state, including each Board's in-memory Sheet Stack.
-- Switching Desks detaches and reattaches live web views; it does not reconstruct persisted state or reload the Sheet Stack.
+- `DenView` renders only the Focused Desk. Switching Desks removes and recreates the visible Board views, while `DenStore` caches each Board's `BoardRuntime` and reuses its live `WKWebView`; it does not reconstruct persisted state or reload the Sheet Stack.
 - Persistence never serializes `BoardRuntime`, `DrawerPreviewRuntime`, or `WKWebView`.
 
 This boundary follows [ADR 0008](./adr/0008-codable-den-state-webview-runtime.md).
@@ -71,7 +81,7 @@ This boundary follows [ADR 0008](./adr/0008-codable-den-state-webview-runtime.md
 
 ### Den
 
-Owns Den composition and the workflows connecting Desks, Boards, Sheets, and Overview. It also owns preferences that configure Den, Board, or Sheet behavior, even when those preferences apply across every Profile. `DenStore` remains one Feature store split into focused extensions under `Store`. Board, Desk, Sheet, and Overview remain inside this Feature because their UI and behavior depend on `DenStore`, while `DenView` composes them. Making them top-level Features would create immediate conceptual dependency cycles. Do not introduce repository, coordinator, or service layers solely to mirror folders.
+Owns Den composition and the workflows connecting Desks, Boards, Sheets, and Overview. It also owns preferences for Den, Board, and shared presentation behavior, even when those preferences apply across every Profile. Sheet Navigation preferences remain owned by `SheetNavigation`. `DenStore` remains one Feature store split into focused extensions under `Store`. Board, Desk, Sheet, and Overview remain inside this Feature because their UI and behavior depend on `DenStore`, while `DenView` composes them. Making them top-level Features would create immediate conceptual dependency cycles. Do not introduce repository, coordinator, or service layers solely to mirror folders.
 
 ### Profiles
 
@@ -87,7 +97,7 @@ Settings is not a Feature. `App/Settings` owns the Settings scene and its naviga
 
 ### Platform
 
-Contains reusable operating-system integration rather than product concepts. Do not create a global Platform folder merely because code imports AppKit or WebKit. `BoardRuntime` and `BoardWebView` remain in Den because they own Board lifecycle. `SheetNavigationManager` remains in SheetNavigation because its WebKit integration implements that Feature. `KeyboardController` remains in `App` while it routes app-wide commands into Den behavior. A component moves to `Platform` only when its API is feature-independent and no reverse dependency on a Feature is required.
+Contains reusable operating-system integration rather than product concepts. Do not create a global Platform folder merely because code imports AppKit or WebKit. `TextInputComposition` is a feature-independent IME composition helper shared by Den, Sheet Navigation, and App settings. `BoardRuntime` and `BoardWebView` remain in Den because they own Board lifecycle. `SheetNavigationManager` remains in SheetNavigation because its WebKit integration implements that Feature. `KeyboardController` remains in `App` while it routes app-wide commands into Den behavior. A component moves to `Platform` only when its API is feature-independent and no reverse dependency on a Feature is required.
 
 ## Folder rules
 

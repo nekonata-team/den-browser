@@ -6,6 +6,16 @@ Den Browser is a macOS-first companion browser for long-running web work. It is 
 
 Read [CONTEXT.md](./CONTEXT.md) before changing product behavior or user-visible wording. It defines project terms such as Den, Desk, Board, and Sheet; do not replace them with browser-tab language.
 
+## Platform baseline
+
+The minimum supported platform is macOS 26.0 for the app and its tests.
+
+- Do not add `#available` or `@available` branches for macOS versions below 26.0.
+- Do not add availability checks whose condition is guaranteed by the 26.0 deployment target, such as `if #available(macOS 26.0, *)`.
+- Do not keep fallback code for paths that cannot be reached on the supported platform.
+- Runtime capability checks for private or optional APIs, such as `responds(to:)`, are separate and require a concrete reason.
+- If the minimum macOS version changes, update this rule and the related architecture decision before adding compatibility paths.
+
 ## Implementation flow
 
 1. Read `CONTEXT.md`, `docs/architecture.md`, relevant ADRs in `docs/adr/`, and affected code/tests.
