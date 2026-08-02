@@ -81,10 +81,6 @@ final class DrawerPreviewRuntime: NSObject, WKNavigationDelegate, WKUIDelegate {
         titleObservation = nil
     }
 
-    func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
-        onChange(id, webView.url, webView.title)
-    }
-
     func webView(
         _ webView: WKWebView,
         createWebViewWith configuration: WKWebViewConfiguration,

@@ -207,12 +207,7 @@ final class BoardRuntime: NSObject, NSWindowDelegate, ObservableObject, WKDownlo
         fullscreenObservation = nil
     }
 
-    func webView(_ webView: WKWebView, didCommit navigation: WKNavigation!) {
-        onChange(id, webView.url, webView.title)
-    }
-
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
-        onChange(id, webView.url, webView.title)
         updateFavicon()
     }
 
@@ -221,18 +216,6 @@ final class BoardRuntime: NSObject, NSWindowDelegate, ObservableObject, WKDownlo
         didStartProvisionalNavigation navigation: WKNavigation!
     ) {
         faviconURL = nil
-    }
-
-    func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
-        onChange(id, webView.url, webView.title)
-    }
-
-    func webView(
-        _ webView: WKWebView,
-        didFailProvisionalNavigation navigation: WKNavigation!,
-        withError error: Error
-    ) {
-        onChange(id, webView.url, webView.title)
     }
 
     func webView(
