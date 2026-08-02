@@ -33,7 +33,7 @@ final class BoardRuntime: NSObject, NSWindowDelegate, ObservableObject, WKDownlo
     private let onFullscreenChange: ((UUID, Bool) -> Void)?
     private let onDownloadFinished: (String) -> Void
     private let onDownloadFailed: (String) -> Void
-    private unowned let sheetNavigation: SheetNavigationManager
+    private let sheetNavigation: SheetNavigationManager
 
     private var downloadFilenames: [ObjectIdentifier: String] = [:]
     private var auxiliaryWindows: [ObjectIdentifier: NSWindow] = [:]
