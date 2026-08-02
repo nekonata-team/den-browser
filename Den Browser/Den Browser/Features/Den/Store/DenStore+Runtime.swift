@@ -12,67 +12,71 @@ extension DenStore {
             websiteDataStore: websiteDataStore,
             sheetNavigation: sheetNavigation,
             sheetScale: preferences.sheetScale,
-            nativePictureInPictureEnabled: preferences.nativePictureInPictureEnabled
-        ) {
-            [weak self] url in
-            self?.addBoard(
-                urlString: url.absoluteString,
-                preferredWidth: board.width,
-                afterBoardID: board.id
+            nativePictureInPictureEnabled: preferences.nativePictureInPictureEnabled,
+            sheetNavigationActions: .init(
+                onOpenBoard: { [weak self] url in
+                    self?.addBoard(
+                        urlString: url.absoluteString,
+                        preferredWidth: board.width,
+                        afterBoardID: board.id
+                    )
+                },
+                onOpenBoardInBackground: { [weak self] url in
+                    self?.addBoard(
+                        urlString: url.absoluteString,
+                        preferredWidth: board.width,
+                        afterBoardID: board.id,
+                        focus: false
+                    )
+                },
+                onKeepInDrawer: { [weak self] url in
+                    self?.keepInDrawer(url, opensDrawer: false)
+                },
+                onEditCurrentSheet: { [weak self] in
+                    self?.focusBoard(board.id)
+                    self?.showEditBoardLinkPanel()
+                },
+                onOpenCurrentSheetInNewBoard: { [weak self] url in
+                    self?.focusBoard(board.id)
+                    self?.showOpenBoardPanel(initialURL: url)
+                },
+                onPasteURLInNewBoard: { [weak self] url in
+                    self?.addBoard(
+                        urlString: url.absoluteString,
+                        preferredWidth: board.width,
+                        afterBoardID: board.id
+                    )
+                },
+                onOpenBoardPanel: { [weak self] in
+                    self?.focusBoard(board.id)
+                    self?.showOpenBoardPanel()
+                },
+                onShowOverview: { [weak self] in
+                    self?.focusBoard(board.id)
+                    self?.showOverview()
+                },
+                onRemoveBoard: { [weak self] in
+                    self?.removeBoard(board.id)
+                },
+                onRestoreBoard: { [weak self] in
+                    self?.restoreRecentlyRemovedBoard()
+                }
+            ),
+            events: .init(
+                onChange: { [weak self] boardID, url, title in
+                    self?.updateBoard(boardID: boardID, url: url, title: title)
+                },
+                onFullscreenChange: { [weak self] boardID, isFullscreen in
+                    self?.updateFullscreenStatus(boardID: boardID, isFullscreen: isFullscreen)
+                },
+                onDownloadFinished: { [weak self] filename in
+                    self?.showToast("Downloaded \(filename).", style: .success)
+                },
+                onDownloadFailed: { [weak self] message in
+                    self?.showToast("Download failed: \(message)", style: .error)
+                }
             )
-        } onOpenBoardInBackground: {
-            [weak self] url in
-            self?.addBoard(
-                urlString: url.absoluteString,
-                preferredWidth: board.width,
-                afterBoardID: board.id,
-                focus: false
-            )
-        } onKeepInDrawer: {
-            [weak self] url in
-            self?.keepInDrawer(url, opensDrawer: false)
-        } onChange: {
-            [weak self] boardID, url, title in
-            self?.updateBoard(boardID: boardID, url: url, title: title)
-        } onFullscreenChange: {
-            [weak self] boardID, isFullscreen in
-            self?.updateFullscreenStatus(boardID: boardID, isFullscreen: isFullscreen)
-        } onEditCurrentSheet: {
-            [weak self] in
-            self?.focusBoard(board.id)
-            self?.showEditBoardLinkPanel()
-        } onOpenCurrentSheetInNewBoard: {
-            [weak self] url in
-            self?.focusBoard(board.id)
-            self?.showOpenBoardPanel(initialURL: url)
-        } onPasteURLInNewBoard: {
-            [weak self] url in
-            self?.addBoard(
-                urlString: url.absoluteString,
-                preferredWidth: board.width,
-                afterBoardID: board.id
-            )
-        } onOpenBoardPanel: {
-            [weak self] in
-            self?.focusBoard(board.id)
-            self?.showOpenBoardPanel()
-        } onShowOverview: {
-            [weak self] in
-            self?.focusBoard(board.id)
-            self?.showOverview()
-        } onRemoveBoard: {
-            [weak self] in
-            self?.removeBoard(board.id)
-        } onRestoreBoard: {
-            [weak self] in
-            self?.restoreRecentlyRemovedBoard()
-        } onDownloadFinished: {
-            [weak self] filename in
-            self?.showToast("Downloaded \(filename).", style: .success)
-        } onDownloadFailed: {
-            [weak self] message in
-            self?.showToast("Download failed: \(message)", style: .error)
-        }
+        )
         runtimes[board.id] = runtime
         return runtime
     }

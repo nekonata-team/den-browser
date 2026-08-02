@@ -68,8 +68,8 @@ struct SheetNavigationTests {
             websiteDataStore: .nonPersistent(),
             sheetNavigation: navigation,
             sheetScale: 100,
-            onOpenBoard: { _ in },
-            onChange: { _, _, _ in }
+            sheetNavigationActions: noOpSheetNavigationActions(),
+            events: boardRuntimeEvents()
         )
 
         #expect(runtime.webView.customUserAgent == BoardRuntime.defaultUserAgent)
@@ -340,8 +340,8 @@ struct SheetNavigationTests {
             websiteDataStore: .default(),
             sheetNavigation: manager,
             sheetScale: AppPreferences.defaultSheetScale,
-            onOpenBoard: { _ in },
-            onChange: { _, _, _ in })
+            sheetNavigationActions: noOpSheetNavigationActions(),
+            events: boardRuntimeEvents())
 
         #expect(runtime.webView.configuration.userContentController === manager.userContentController)
         #expect(manager.userContentController.userScripts.count == 1)
@@ -523,8 +523,8 @@ struct SheetNavigationTests {
             websiteDataStore: .default(),
             sheetNavigation: manager,
             sheetScale: AppPreferences.defaultSheetScale,
-            onOpenBoard: { _ in },
-            onChange: { _, url, title in
+            sheetNavigationActions: noOpSheetNavigationActions(),
+            events: boardRuntimeEvents { _, url, title in
                 changeContinuation?.yield((url, title))
             })
 
@@ -568,8 +568,8 @@ struct SheetNavigationTests {
             websiteDataStore: .nonPersistent(),
             sheetNavigation: SheetNavigationManager(scriptSource: ""),
             sheetScale: AppPreferences.defaultSheetScale,
-            onOpenBoard: { _ in },
-            onChange: { _, _, _ in })
+            sheetNavigationActions: noOpSheetNavigationActions(),
+            events: boardRuntimeEvents())
         let expectedURL = URL(string: "https://example.com/assets/favicon.png")!
         var continuation: AsyncStream<URL?>.Continuation?
         let faviconURLs = AsyncStream<URL?> { continuation = $0 }
@@ -654,6 +654,20 @@ struct SheetNavigationTests {
             onShowOverview: {},
             onRemoveBoard: {},
             onRestoreBoard: {}
+        )
+    }
+
+    private func boardRuntimeEvents(
+        onChange: @escaping (UUID, URL?, String?) -> Void = { _, _, _ in },
+        onFullscreenChange: ((UUID, Bool) -> Void)? = nil,
+        onDownloadFinished: @escaping (String) -> Void = { _ in },
+        onDownloadFailed: @escaping (String) -> Void = { _ in }
+    ) -> BoardRuntime.Events {
+        .init(
+            onChange: onChange,
+            onFullscreenChange: onFullscreenChange,
+            onDownloadFinished: onDownloadFinished,
+            onDownloadFailed: onDownloadFailed
         )
     }
 

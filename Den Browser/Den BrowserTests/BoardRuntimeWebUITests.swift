@@ -11,8 +11,13 @@ struct BoardRuntimeWebUITests {
             websiteDataStore: .nonPersistent(),
             sheetNavigation: SheetNavigationManager(scriptSource: ""),
             sheetScale: 100,
-            onOpenBoard: { _ in },
-            onChange: { _, _, _ in }
+            sheetNavigationActions: noOpSheetNavigationActions(),
+            events: .init(
+                onChange: { _, _, _ in },
+                onFullscreenChange: nil,
+                onDownloadFinished: { _ in },
+                onDownloadFailed: { _ in }
+            )
         )
 
         #expect(runtime.webView.navigationDelegate === runtime)
@@ -146,4 +151,20 @@ struct BoardRuntimeWebUITests {
             )
         )
     }
+}
+
+@MainActor
+private func noOpSheetNavigationActions() -> SheetNavigationManager.Actions {
+    .init(
+        onOpenBoard: { _ in },
+        onOpenBoardInBackground: { _ in },
+        onKeepInDrawer: { _ in },
+        onEditCurrentSheet: {},
+        onOpenCurrentSheetInNewBoard: { _ in },
+        onPasteURLInNewBoard: { _ in },
+        onOpenBoardPanel: {},
+        onShowOverview: {},
+        onRemoveBoard: {},
+        onRestoreBoard: {}
+    )
 }

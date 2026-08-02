@@ -7,6 +7,13 @@ import WebKit
 final class BoardRuntime: NSObject, NSWindowDelegate, ObservableObject, WKDownloadDelegate,
     WKNavigationDelegate, WKUIDelegate
 {
+    struct Events {
+        let onChange: (UUID, URL?, String?) -> Void
+        let onFullscreenChange: ((UUID, Bool) -> Void)?
+        let onDownloadFinished: (String) -> Void
+        let onDownloadFailed: (String) -> Void
+    }
+
     static var defaultUserAgent: String {
         let os = ProcessInfo.processInfo.operatingSystemVersion
         let versionString = "\(os.majorVersion).\(os.minorVersion)"
@@ -21,18 +28,8 @@ final class BoardRuntime: NSObject, NSWindowDelegate, ObservableObject, WKDownlo
     @Published private(set) var isLoading = false
     @Published private(set) var estimatedProgress = 0.0
 
-    private let onOpenBoard: (URL) -> Void
-    private let onOpenBoardInBackground: (URL) -> Void
-    private let onKeepInDrawer: (URL) -> Void
-    private let onEditCurrentSheet: () -> Void
-    private let onOpenCurrentSheetInNewBoard: (URL) -> Void
-    private let onPasteURLInNewBoard: (URL) -> Void
-    private let onOpenBoardPanel: () -> Void
-    private let onShowOverview: () -> Void
-    private let onChange: (UUID, URL?, String?) -> Void
-    private let onFullscreenChange: ((UUID, Bool) -> Void)?
-    private let onDownloadFinished: (String) -> Void
-    private let onDownloadFailed: (String) -> Void
+    private let sheetNavigationActions: SheetNavigationManager.Actions
+    private let events: Events
     private let sheetNavigation: SheetNavigationManager
 
     private var downloadFilenames: [ObjectIdentifier: String] = [:]
@@ -49,35 +46,13 @@ final class BoardRuntime: NSObject, NSWindowDelegate, ObservableObject, WKDownlo
         sheetNavigation: SheetNavigationManager,
         sheetScale: Int,
         nativePictureInPictureEnabled: Bool = false,
-        onOpenBoard: @escaping (URL) -> Void,
-        onOpenBoardInBackground: @escaping (URL) -> Void = { _ in },
-        onKeepInDrawer: @escaping (URL) -> Void = { _ in },
-        onChange: @escaping (UUID, URL?, String?) -> Void,
-        onFullscreenChange: ((UUID, Bool) -> Void)? = nil,
-        onEditCurrentSheet: @escaping () -> Void = {},
-        onOpenCurrentSheetInNewBoard: @escaping (URL) -> Void = { _ in },
-        onPasteURLInNewBoard: @escaping (URL) -> Void = { _ in },
-        onOpenBoardPanel: @escaping () -> Void = {},
-        onShowOverview: @escaping () -> Void = {},
-        onRemoveBoard: @escaping () -> Void = {},
-        onRestoreBoard: @escaping () -> Void = {},
-        onDownloadFinished: @escaping (String) -> Void = { _ in },
-        onDownloadFailed: @escaping (String) -> Void = { _ in }
+        sheetNavigationActions: SheetNavigationManager.Actions,
+        events: Events
     ) {
         id = board.id
         self.sheetNavigation = sheetNavigation
-        self.onOpenBoard = onOpenBoard
-        self.onOpenBoardInBackground = onOpenBoardInBackground
-        self.onKeepInDrawer = onKeepInDrawer
-        self.onEditCurrentSheet = onEditCurrentSheet
-        self.onOpenCurrentSheetInNewBoard = onOpenCurrentSheetInNewBoard
-        self.onPasteURLInNewBoard = onPasteURLInNewBoard
-        self.onOpenBoardPanel = onOpenBoardPanel
-        self.onShowOverview = onShowOverview
-        self.onChange = onChange
-        self.onFullscreenChange = onFullscreenChange
-        self.onDownloadFinished = onDownloadFinished
-        self.onDownloadFailed = onDownloadFailed
+        self.sheetNavigationActions = sheetNavigationActions
+        self.events = events
 
         let configuration = WKWebViewConfiguration()
         configuration.websiteDataStore = websiteDataStore
@@ -101,31 +76,20 @@ final class BoardRuntime: NSObject, NSWindowDelegate, ObservableObject, WKDownlo
         sheetNavigation.didOpen(
             webView,
             boardID: id,
-            actions: .init(
-                onOpenBoard: onOpenBoard,
-                onOpenBoardInBackground: onOpenBoardInBackground,
-                onKeepInDrawer: onKeepInDrawer,
-                onEditCurrentSheet: onEditCurrentSheet,
-                onOpenCurrentSheetInNewBoard: onOpenCurrentSheetInNewBoard,
-                onPasteURLInNewBoard: onPasteURLInNewBoard,
-                onOpenBoardPanel: onOpenBoardPanel,
-                onShowOverview: onShowOverview,
-                onRemoveBoard: onRemoveBoard,
-                onRestoreBoard: onRestoreBoard
-            )
+            actions: sheetNavigationActions
         )
 
         urlObservation = webView.observe(\.url, options: [.new]) { [weak self] _, _ in
             Task { @MainActor [weak self] in
                 guard let self else { return }
-                self.onChange(self.id, self.webView.url, self.webView.title)
+                self.events.onChange(self.id, self.webView.url, self.webView.title)
             }
         }
 
         titleObservation = webView.observe(\.title, options: [.new]) { [weak self] _, _ in
             Task { @MainActor [weak self] in
                 guard let self else { return }
-                self.onChange(self.id, self.webView.url, self.webView.title)
+                self.events.onChange(self.id, self.webView.url, self.webView.title)
             }
         }
 
@@ -150,7 +114,7 @@ final class BoardRuntime: NSObject, NSWindowDelegate, ObservableObject, WKDownlo
                 let isFullscreen =
                     self.webView.fullscreenState == .inFullscreen
                     || self.webView.fullscreenState == .enteringFullscreen
-                self.onFullscreenChange?(self.id, isFullscreen)
+                self.events.onFullscreenChange?(self.id, isFullscreen)
             }
         }
 
@@ -230,7 +194,7 @@ final class BoardRuntime: NSObject, NSWindowDelegate, ObservableObject, WKDownlo
             buttonNumber: navigationAction.buttonNumber,
             url: navigationAction.request.url
         ), let url = navigationAction.request.url {
-            onKeepInDrawer(url)
+            sheetNavigationActions.onKeepInDrawer(url)
             decisionHandler(.cancel)
             return
         }
@@ -242,9 +206,9 @@ final class BoardRuntime: NSObject, NSWindowDelegate, ObservableObject, WKDownlo
             url: navigationAction.request.url
         ), let url = navigationAction.request.url {
             if navigationAction.modifierFlags.contains(.shift) {
-                onOpenBoard(url)
+                sheetNavigationActions.onOpenBoard(url)
             } else {
-                onOpenBoardInBackground(url)
+                sheetNavigationActions.onOpenBoardInBackground(url)
             }
             decisionHandler(.cancel)
             return
@@ -335,7 +299,7 @@ final class BoardRuntime: NSObject, NSWindowDelegate, ObservableObject, WKDownlo
                 self?.downloadFilenames[ObjectIdentifier(download)] = destination.lastPathComponent
                 completionHandler(destination)
             } catch {
-                self?.onDownloadFailed(error.localizedDescription)
+                self?.events.onDownloadFailed(error.localizedDescription)
                 completionHandler(nil)
             }
         }
@@ -349,12 +313,12 @@ final class BoardRuntime: NSObject, NSWindowDelegate, ObservableObject, WKDownlo
 
     func downloadDidFinish(_ download: WKDownload) {
         let filename = downloadFilenames.removeValue(forKey: ObjectIdentifier(download)) ?? "File"
-        onDownloadFinished(filename)
+        events.onDownloadFinished(filename)
     }
 
     func download(_ download: WKDownload, didFailWithError error: Error, resumeData: Data?) {
         downloadFilenames.removeValue(forKey: ObjectIdentifier(download))
-        onDownloadFailed(error.localizedDescription)
+        events.onDownloadFailed(error.localizedDescription)
     }
 
     private func updateFavicon() {
@@ -388,7 +352,7 @@ final class BoardRuntime: NSObject, NSWindowDelegate, ObservableObject, WKDownlo
             navigationType: navigationAction.navigationType,
             url: navigationAction.request.url
         ), let url = navigationAction.request.url {
-            onOpenBoard(url)
+            sheetNavigationActions.onOpenBoard(url)
             return nil
         }
 
