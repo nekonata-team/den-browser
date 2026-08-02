@@ -7,21 +7,12 @@ struct DenView: View {
     @Environment(DenStore.self) private var store
     @Environment(AppPreferences.self) private var preferences
     @Environment(\.accessibilityReduceMotion) private var systemReduceMotion
-    @Environment(\.appearsActive) private var appearsActive
     @State private var urlText = ""
     @State private var openBoardAfterBoardID: UUID?
     @State private var editBoardLinkText = ""
     @State private var saveDeskPresetLabel = ""
     @State private var saveDeskPresetMessage: String?
 
-    @State private var didScrollToRestoredFocusedBoard = false
-    @State private var resizingBoardID: UUID?
-    @State private var boardFrames: [UUID: CGRect] = [:]
-    @State private var boardScrollPosition = ScrollPosition(idType: UUID.self)
-    @State private var pendingBoardCentering: PendingBoardCentering?
-    @State private var boardCenteringTask: Task<Void, Never>?
-    @State private var boardDrag: BoardDragState?
-    @State private var lastBoardAutoScrollTime = 0.0
     @FocusState private var isOpenPanelFocused: Bool
     @FocusState private var isEditBoardLinkPanelFocused: Bool
     @FocusState private var isSaveDeskPresetLabelFocused: Bool
@@ -37,7 +28,7 @@ struct DenView: View {
     var body: some View {
         GeometryReader { geometry in
             ZStack(alignment: .top) {
-                boardStrip(in: geometry.size, safeAreaTop: geometry.safeAreaInsets.top)
+                boardStrip(in: geometry.size)
                     .allowsHitTesting(
                         store.temporaryContext == nil && store.focusedDesk?.boards.isEmpty == false
                     )
@@ -104,32 +95,8 @@ struct DenView: View {
                         .zIndex(10)
                 }
             }
-            .onAppear {
-                updateBoardLayout(for: geometry.size)
-            }
-            .onChange(of: geometry.size.width) { _, _ in
-                updateBoardLayout(for: geometry.size)
-            }
-            .onChange(of: store.boardDragCancellationRequest) { _, _ in
-                cancelBoardDrag()
-            }
-            .onChange(of: store.state.focusedDeskID) { _, deskID in
-                if boardDrag?.deskID != deskID {
-                    cancelBoardDrag()
-                }
-            }
-            .onChange(of: store.temporaryContext) { _, context in
-                if context != nil {
-                    cancelBoardDrag()
-                }
-            }
             .onChange(of: preferences.sheetScale) { _, scale in
                 store.applySheetScale(scale)
-            }
-            .onChange(of: appearsActive) { _, isActive in
-                if !isActive {
-                    cancelBoardDrag()
-                }
             }
             .animation(DenMotion.feedback(reduceMotion: shouldReduceMotion), value: store.temporaryContext)
             .animation(DenMotion.feedback(reduceMotion: shouldReduceMotion), value: store.isDeskFilterPresented)
@@ -346,121 +313,17 @@ struct DenView: View {
         BoardWidthPanel()
     }
 
-    private func boardStrip(in size: CGSize, safeAreaTop: CGFloat) -> some View {
+    private func boardStrip(in size: CGSize) -> some View {
         BoardStrip(
-            boardDrag: $boardDrag,
-            resizingBoardID: $resizingBoardID,
-            scrollPosition: $boardScrollPosition,
             size: size,
             shouldShowDeskSwitcher: shouldShowDeskSwitcher,
             profileColor: profileColor,
             boardSpacing: DenLayout.outerInset,
             boardHorizontalPadding: DenLayout.outerInset,
-            isPointerFocusEnabled: isBoardPointerFocusEnabled,
-            onDragChanged: { board, value, size in
-                updateBoardDrag(board, value: value, in: size)
-            },
-            onDragEnded: { value, size in
-                finishBoardDrag(value: value, in: size)
-            },
-            onFramesChanged: { frames in
-                boardFrames = frames
-                alignDraggedBoard(to: frames)
-                if let pendingBoardCentering,
-                    frames[pendingBoardCentering.boardID] != nil
-                {
-                    self.pendingBoardCentering = nil
-                    boardCenteringTask?.cancel()
-                    boardCenteringTask = Task { @MainActor in
-                        await Task.yield()
-                        guard !Task.isCancelled else { return }
-                        performBoardCentering(
-                            pendingBoardCentering.boardID,
-                            animated: pendingBoardCentering.animated)
-                    }
-                }
-            },
             onOpenBoardAtEnd: { boardID in
                 openBoardAfterBoardID = boardID
                 store.showOpenBoardPanel()
-            },
-            onAppear: { shouldCenterFocusedBoard, restingScrollX in
-                guard !didScrollToRestoredFocusedBoard else { return }
-                didScrollToRestoredFocusedBoard = true
-                alignBoardStrip(
-                    centersFocusedBoard: shouldCenterFocusedBoard,
-                    restingScrollX: restingScrollX,
-                    animated: false)
-            },
-            onAlignmentChanged: { previous, current in
-                alignBoardStrip(
-                    centersFocusedBoard: current.centersFocusedBoard,
-                    boardID: current.boardID,
-                    restingScrollX: current.restingScrollX,
-                    animated: previous.deskID == current.deskID)
-            },
-            onCenterRequest: {
-                centerBoard(store.focusedDesk?.focusedBoardID)
             }
-        )
-    }
-
-    private func alignBoardStrip(
-        centersFocusedBoard: Bool,
-        boardID: UUID? = nil,
-        restingScrollX: CGFloat = 0,
-        animated: Bool = true
-    ) {
-        if centersFocusedBoard {
-            centerBoard(boardID ?? store.focusedDesk?.focusedBoardID, animated: animated)
-        } else {
-            resetBoardStripPosition(to: restingScrollX, animated: animated)
-        }
-    }
-
-    private func resetBoardStripPosition(to x: CGFloat = 0, animated: Bool) {
-        pendingBoardCentering = nil
-        boardCenteringTask?.cancel()
-        if animated {
-            withAnimation(DenMotion.spatial(reduceMotion: shouldReduceMotion)) {
-                boardScrollPosition.scrollTo(x: x)
-            }
-        } else {
-            boardScrollPosition.scrollTo(x: x)
-        }
-    }
-
-    private func centerBoard(_ boardID: UUID?, animated: Bool = true) {
-        guard resizingBoardID == nil, !store.isBoardDragging, let boardID else { return }
-        guard boardFrames[boardID] != nil else {
-            pendingBoardCentering = PendingBoardCentering(
-                boardID: boardID,
-                animated: animated)
-            return
-        }
-        pendingBoardCentering = nil
-        boardCenteringTask?.cancel()
-        performBoardCentering(boardID, animated: animated)
-    }
-
-    private func performBoardCentering(_ boardID: UUID, animated: Bool) {
-        if animated {
-            withAnimation(DenMotion.spatial(reduceMotion: shouldReduceMotion)) {
-                boardScrollPosition.scrollTo(id: boardID, anchor: .center)
-            }
-        } else {
-            boardScrollPosition.scrollTo(id: boardID, anchor: .center)
-        }
-    }
-
-    private func isBoardPointerFocusEnabled(for boardID: UUID) -> Bool {
-        (boardDrag == nil || boardDrag?.boardID == boardID) && store.temporaryContext == nil
-    }
-
-    private var shouldReduceMotion: Bool {
-        DenMotion.shouldReduceMotion(
-            preference: preferences.motionPreference,
-            systemReduceMotion: systemReduceMotion
         )
     }
 
@@ -490,151 +353,13 @@ struct DenView: View {
         }
     }
 
-    private func updateBoardLayout(for size: CGSize) {
-        store.updateBoardLayout(
-            availableWidth: size.width - DenLayout.outerInset * 2,
-            spacing: DenLayout.outerInset
+    private var shouldReduceMotion: Bool {
+        DenMotion.shouldReduceMotion(
+            preference: preferences.motionPreference,
+            systemReduceMotion: systemReduceMotion
         )
     }
 
-    private func updateBoardDrag(
-        _ board: BoardState,
-        value: DragGesture.Value,
-        in size: CGSize
-    ) {
-        if boardDrag == nil {
-            guard
-                let desk = store.focusedDesk,
-                let frame = boardFrames[board.id],
-                store.beginBoardDrag(board.id)
-            else { return }
-            boardDrag = BoardDragState(
-                boardID: board.id,
-                deskID: desk.id,
-                originalOrder: desk.boards.map(\.id),
-                startCenterX: frame.midX
-            )
-        }
-
-        guard var drag = boardDrag, drag.boardID == board.id else { return }
-        drag.translation = value.translation
-        drag.offset.height = value.translation.height
-        if let frame = boardFrames[board.id] {
-            drag.offset.width = drag.desiredCenterX - frame.midX
-        }
-        boardDrag = drag
-        updateBoardInsertion()
-        autoScrollBoardStrip(at: value.location, in: size)
-    }
-
-    private func updateBoardInsertion() {
-        guard var drag = boardDrag, store.focusedDesk?.id == drag.deskID else { return }
-
-        while let boards = store.focusedDesk?.boards,
-            let index = deskIndex(of: drag.boardID),
-            let targetIndex = HorizontalDragInsertion.targetIndex(
-                draggedID: drag.boardID,
-                orderedIDs: boards.map(\.id),
-                desiredCenterX: drag.desiredCenterX,
-                frames: boardFrames)
-        {
-            let crossedBoard = boards[targetIndex]
-            store.previewBoardMove(drag.boardID, to: targetIndex)
-            let direction = targetIndex > index ? -1.0 : 1.0
-            drag.offset.width += direction * (crossedBoard.width + DenLayout.outerInset)
-            boardDrag = drag
-        }
-    }
-
-    private func deskIndex(of boardID: UUID) -> Int? {
-        store.focusedDesk?.boards.firstIndex { $0.id == boardID }
-    }
-
-    private func alignDraggedBoard(to frames: [UUID: CGRect]) {
-        guard var drag = boardDrag, let frame = frames[drag.boardID] else { return }
-        let offsetX = drag.desiredCenterX - frame.midX
-        guard abs(offsetX - drag.offset.width) > 0.5 else { return }
-        drag.offset.width = offsetX
-        boardDrag = drag
-    }
-
-    private func autoScrollBoardStrip(
-        at location: CGPoint,
-        in size: CGSize
-    ) {
-        guard let drag = boardDrag, let boards = store.focusedDesk?.boards else { return }
-
-        guard
-            let decision = HorizontalDragAutoScroll.decision(
-                location: location,
-                size: size,
-                draggedID: drag.boardID,
-                orderedIDs: boards.map(\.id),
-                edge: 48
-            )
-        else { return }
-        let now = Date.timeIntervalSinceReferenceDate
-        guard now - lastBoardAutoScrollTime >= decision.interval else { return }
-        lastBoardAutoScrollTime = now
-        withAnimation(.linear(duration: shouldReduceMotion ? 0 : 0.14)) {
-            boardScrollPosition.scrollTo(id: decision.targetID, anchor: .center)
-        }
-    }
-
-    private func finishBoardDrag(value: DragGesture.Value, in size: CGSize) {
-        guard let drag = boardDrag else { return }
-        let isInside =
-            value.location.x >= 0 && value.location.x <= size.width
-            && value.location.y >= 0 && value.location.y <= size.height
-        if isInside {
-            store.finishBoardDrag()
-            boardDrag = nil
-        } else {
-            cancelBoardDrag(drag)
-        }
-    }
-
-    private func cancelBoardDrag(_ drag: BoardDragState? = nil) {
-        guard let drag = drag ?? boardDrag else { return }
-        let restore = {
-            store.restoreBoardOrder(drag.originalOrder, in: drag.deskID)
-            store.finishBoardDrag()
-            boardDrag = nil
-        }
-        if shouldReduceMotion {
-            restore()
-        } else {
-            withAnimation(DenMotion.spatial(reduceMotion: false)) {
-                restore()
-            }
-        }
-    }
-}
-
-private struct PendingBoardCentering {
-    let boardID: UUID
-    let animated: Bool
-}
-
-struct BoardDragState {
-    let boardID: UUID
-    let deskID: UUID
-    let originalOrder: [UUID]
-    let startCenterX: CGFloat
-    var translation: CGSize = .zero
-    var offset: CGSize = .zero
-
-    var desiredCenterX: CGFloat {
-        startCenterX + translation.width
-    }
-}
-
-struct BoardFramePreferenceKey: PreferenceKey {
-    static let defaultValue: [UUID: CGRect] = [:]
-
-    static func reduce(value: inout [UUID: CGRect], nextValue: () -> [UUID: CGRect]) {
-        value.merge(nextValue(), uniquingKeysWith: { _, new in new })
-    }
 }
 
 #Preview {
