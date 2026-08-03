@@ -288,7 +288,11 @@ struct BoardView: View {
                         .frame(width: DenLayout.boardControlSize, height: DenLayout.boardControlSize)
                 }
                 .buttonStyle(.borderless)
-                .foregroundStyle(.primary)
+                .foregroundStyle(
+                    runtime.webView.canGoBack
+                        ? Color.primary
+                        : Color.secondary.opacity(0.35)
+                )
                 .disabled(!runtime.webView.canGoBack)
                 .help("Back in sheet stack")
                 .accessibilityLabel("Back in sheet stack")
@@ -300,7 +304,11 @@ struct BoardView: View {
                         .frame(width: DenLayout.boardControlSize, height: DenLayout.boardControlSize)
                 }
                 .buttonStyle(.borderless)
-                .foregroundStyle(.primary)
+                .foregroundStyle(
+                    runtime.webView.canGoForward
+                        ? Color.primary
+                        : Color.secondary.opacity(0.35)
+                )
                 .disabled(!runtime.webView.canGoForward)
                 .help("Forward in sheet stack")
                 .accessibilityLabel("Forward in sheet stack")
