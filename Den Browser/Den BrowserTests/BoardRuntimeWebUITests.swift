@@ -123,6 +123,33 @@ struct BoardRuntimeWebUITests {
         )
     }
 
+    @Test func customSchemeLinkOpensInExternalApplication() {
+        #expect(
+            BoardRuntime.shouldOpenExternalApplication(
+                navigationType: .linkActivated,
+                url: URL(string: "testapp://open/example")
+            )
+        )
+        #expect(
+            !BoardRuntime.shouldOpenExternalApplication(
+                navigationType: .linkActivated,
+                url: URL(string: "https://example.com/page")
+            )
+        )
+        #expect(
+            !BoardRuntime.shouldOpenExternalApplication(
+                navigationType: .other,
+                url: URL(string: "testapp://open/example")
+            )
+        )
+        #expect(
+            !BoardRuntime.shouldOpenExternalApplication(
+                navigationType: .linkActivated,
+                url: URL(string: "file:///tmp/example")
+            )
+        )
+    }
+
     @Test func onlyTargetlessLinkActivationsOpenInNewBoard() {
         let url = URL(string: "https://example.com/page")
 

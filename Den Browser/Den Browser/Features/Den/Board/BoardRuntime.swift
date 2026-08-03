@@ -188,6 +188,15 @@ final class BoardRuntime: NSObject, NSWindowDelegate, ObservableObject, WKDownlo
         decidePolicyFor navigationAction: WKNavigationAction,
         decisionHandler: @escaping @MainActor @Sendable (WKNavigationActionPolicy) -> Void
     ) {
+        if Self.shouldOpenExternalApplication(
+            navigationType: navigationAction.navigationType,
+            url: navigationAction.request.url
+        ), let url = navigationAction.request.url {
+            NSWorkspace.shared.open(url)
+            decisionHandler(.cancel)
+            return
+        }
+
         if Self.shouldKeepLinkInDrawer(
             navigationType: navigationAction.navigationType,
             modifierFlags: navigationAction.modifierFlags,
@@ -215,6 +224,14 @@ final class BoardRuntime: NSObject, NSWindowDelegate, ObservableObject, WKDownlo
         }
 
         decisionHandler(navigationAction.shouldPerformDownload ? .download : .allow)
+    }
+
+    static func shouldOpenExternalApplication(
+        navigationType: WKNavigationType,
+        url: URL?
+    ) -> Bool {
+        navigationType == .linkActivated
+            && url.map(ExternalURLPolicy.isSupported) == true
     }
 
     static func shouldOpenLinkInNewBoard(
@@ -347,6 +364,14 @@ final class BoardRuntime: NSObject, NSWindowDelegate, ObservableObject, WKDownlo
         windowFeatures: WKWindowFeatures
     ) -> WKWebView? {
         guard navigationAction.targetFrame == nil else { return nil }
+
+        if navigationAction.navigationType == .linkActivated,
+            let url = navigationAction.request.url,
+            ExternalURLPolicy.isSupported(url)
+        {
+            NSWorkspace.shared.open(url)
+            return nil
+        }
 
         if Self.shouldOpenTargetlessNavigationInNewBoard(
             navigationType: navigationAction.navigationType,

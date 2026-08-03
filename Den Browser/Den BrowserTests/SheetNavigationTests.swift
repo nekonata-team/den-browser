@@ -56,6 +56,9 @@ struct SheetNavigationTests {
 
         #expect(supported.allSatisfy(SheetURLPolicy.isSupported))
         #expect(unsupported.allSatisfy { !SheetURLPolicy.isSupported($0) })
+        #expect(ExternalURLPolicy.isSupported(URL(string: "testapp://open/example")!))
+        #expect(!ExternalURLPolicy.isSupported(URL(string: "https://example.com/")!))
+        #expect(!ExternalURLPolicy.isSupported(URL(string: "file:///tmp/example")!))
     }
 
     @Test func boardRuntimeAppliesSafariUserAgent() {

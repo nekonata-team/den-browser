@@ -1,3 +1,4 @@
+import AppKit
 import Foundation
 import WebKit
 
@@ -83,14 +84,36 @@ final class DrawerPreviewRuntime: NSObject, WKNavigationDelegate, WKUIDelegate {
 
     func webView(
         _ webView: WKWebView,
+        decidePolicyFor navigationAction: WKNavigationAction,
+        decisionHandler: @escaping @MainActor @Sendable (WKNavigationActionPolicy) -> Void
+    ) {
+        if navigationAction.navigationType == .linkActivated,
+            let url = navigationAction.request.url,
+            ExternalURLPolicy.isSupported(url)
+        {
+            NSWorkspace.shared.open(url)
+            decisionHandler(.cancel)
+            return
+        }
+
+        decisionHandler(.allow)
+    }
+
+    func webView(
+        _ webView: WKWebView,
         createWebViewWith configuration: WKWebViewConfiguration,
         for navigationAction: WKNavigationAction,
         windowFeatures: WKWindowFeatures
     ) -> WKWebView? {
-        if navigationAction.targetFrame == nil,
-            let url = navigationAction.request.url,
-            SheetURLPolicy.isSupported(url)
+        guard navigationAction.targetFrame == nil, let url = navigationAction.request.url else {
+            return nil
+        }
+
+        if navigationAction.navigationType == .linkActivated,
+            ExternalURLPolicy.isSupported(url)
         {
+            NSWorkspace.shared.open(url)
+        } else if SheetURLPolicy.isSupported(url) {
             webView.load(URLRequest(url: url))
         }
         return nil
