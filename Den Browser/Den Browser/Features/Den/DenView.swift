@@ -70,6 +70,17 @@ struct DenView: View {
 
                 activePanel(defaultBoardWidth: defaultBoardWidth(in: geometry.size))
 
+                if store.isDrawerOpen {
+                    Rectangle()
+                        .fill(.clear)
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            store.closeDrawer()
+                        }
+                        .accessibilityHidden(true)
+                        .zIndex(2)
+                }
+
                 DrawerView(
                     availableHeight: geometry.size.height,
                     profileColor: profileColor
