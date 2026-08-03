@@ -51,7 +51,7 @@ extension DenStore {
         state.desks[deskIndex].boards.insert(board, at: insertIndex)
         if focus {
             state.desks[deskIndex].focusedBoardID = board.id
-            state.focusedDeskID = state.desks[deskIndex].id
+            setFocusedDesk(state.desks[deskIndex].id)
             setTemporaryContext(nil)
             isDenMode = false
         }
@@ -119,7 +119,7 @@ extension DenStore {
 
         state.desks[deskIndex].boards.insert(recentlyRemovedBoard.board, at: insertIndex)
         state.desks[deskIndex].focusedBoardID = recentlyRemovedBoard.board.id
-        state.focusedDeskID = state.desks[deskIndex].id
+        setFocusedDesk(state.desks[deskIndex].id)
         self.recentlyRemovedBoard = nil
         save()
     }

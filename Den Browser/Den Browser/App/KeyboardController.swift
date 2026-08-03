@@ -133,6 +133,12 @@ final class KeyboardController {
         switch action {
         case .toggleDenMode:
             if !event.isARepeat { store.toggleDenMode() }
+        case .focusPreviousDesk:
+            store.focusPreviousDesk()
+        case .focusNextDesk:
+            store.focusNextDesk()
+        case .returnToPreviousDesk:
+            store.returnToPreviousDesk()
         case .focusPreviousBoard:
             store.focusPreviousBoard()
         case .focusNextBoard:

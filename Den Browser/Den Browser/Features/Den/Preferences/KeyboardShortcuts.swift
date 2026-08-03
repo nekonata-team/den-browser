@@ -3,6 +3,9 @@ import Foundation
 
 enum ShortcutAction: String, CaseIterable, Codable, Identifiable {
     case toggleDenMode = "toggle-den-mode"
+    case focusPreviousDesk = "focus-previous-desk"
+    case focusNextDesk = "focus-next-desk"
+    case returnToPreviousDesk = "return-to-previous-desk"
     case focusPreviousBoard = "focus-previous-board"
     case focusNextBoard = "focus-next-board"
     case moveFocusedBoardLeft = "move-focused-board-left"
@@ -13,6 +16,9 @@ enum ShortcutAction: String, CaseIterable, Codable, Identifiable {
     var label: String {
         switch self {
         case .toggleDenMode: "Toggle Den Mode"
+        case .focusPreviousDesk: "Focus Previous Desk"
+        case .focusNextDesk: "Focus Next Desk"
+        case .returnToPreviousDesk: "Return to Previous Desk"
         case .focusPreviousBoard: "Focus Previous Board"
         case .focusNextBoard: "Focus Next Board"
         case .moveFocusedBoardLeft: "Move Focused Board Left"
@@ -24,6 +30,12 @@ enum ShortcutAction: String, CaseIterable, Codable, Identifiable {
         switch self {
         case .toggleDenMode:
             ShortcutBinding(key: .character(","), modifiers: [.control])
+        case .focusPreviousDesk:
+            ShortcutBinding(key: .tab, modifiers: [.control, .shift])
+        case .focusNextDesk:
+            ShortcutBinding(key: .tab, modifiers: [.control])
+        case .returnToPreviousDesk:
+            ShortcutBinding(key: .tab, modifiers: [.command, .option])
         case .focusPreviousBoard:
             ShortcutBinding(key: .leftArrow, modifiers: [.command, .option])
         case .focusNextBoard:

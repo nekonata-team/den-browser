@@ -174,6 +174,45 @@ struct KeyboardShortcutTests {
         #expect(!store.isDenMode)
     }
 
+    @Test func controlTabDeskShortcutsNavigateAndReturn() throws {
+        let firstDesk = DeskState(label: "First", boards: [])
+        let secondDesk = DeskState(label: "Second", boards: [])
+        let thirdDesk = DeskState(label: "Third", boards: [])
+        let store = DenStore(
+            state: DenState(
+                desks: [firstDesk, secondDesk, thirdDesk],
+                focusedDeskID: firstDesk.id))
+        let preferences = try makePreferences()
+
+        let next = try keyEvent(
+            characters: "\t",
+            charactersIgnoringModifiers: "\t",
+            modifiers: [.control],
+            keyCode: 48)
+        #expect(KeyboardController.handle(next, store: store, preferences: preferences))
+        #expect(store.focusedDesk?.id == secondDesk.id)
+
+        let previous = try keyEvent(
+            characters: "\t",
+            charactersIgnoringModifiers: "\t",
+            modifiers: [.control, .shift],
+            keyCode: 48)
+        #expect(KeyboardController.handle(previous, store: store, preferences: preferences))
+        #expect(store.focusedDesk?.id == firstDesk.id)
+
+        let returnToPrevious = try keyEvent(
+            characters: "\t",
+            charactersIgnoringModifiers: "\t",
+            modifiers: [.command, .option],
+            keyCode: 48)
+        #expect(
+            KeyboardController.handle(
+                returnToPrevious,
+                store: store,
+                preferences: preferences))
+        #expect(store.focusedDesk?.id == secondDesk.id)
+    }
+
     @Test func customBindingsApplyImmediatelyAndCanBeUnassigned() throws {
         let preferences = try makePreferences()
         let store = makeStore(boards: [board("First"), board("Second")])

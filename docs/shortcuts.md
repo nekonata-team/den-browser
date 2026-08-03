@@ -4,7 +4,7 @@ Vim-style commands for the Current Sheet are documented in [vim.md](./vim.md).
 
 Den Mode makes Den operations available while a Sheet has keyboard focus. Toggle it with `Control` + `,`. Outside Zen View, the titlebar shows when Den Mode is active; Escape returns to Sheet Input.
 
-The five app-wide shortcuts for toggling Den Mode, focusing the previous or next Board, and moving the Focused Board left or right can be recorded in Settings > Shortcuts. Each action accepts one logical key plus Control, Option, or Command. Board focus and movement shortcuts may be cleared; Toggle Den Mode always retains a binding. Conflicts are rejected, changes apply immediately, and each shortcut or the complete set can be reset. If stored shortcut data cannot be read, Den Browser removes it and uses the default.
+The eight app-wide shortcuts for toggling Den Mode, moving between Desks, returning to the Previous Desk, focusing the previous or next Board, and moving the Focused Board left or right can be recorded in Settings > Shortcuts. Each action accepts one logical key plus Control, Option, or Command. Desk and Board focus and movement shortcuts may be cleared; Toggle Den Mode always retains a binding. Conflicts are rejected, changes apply immediately, and each shortcut or the complete set can be reset. If stored shortcut data cannot be read, Den Browser removes it and uses the default.
 
 The complete in-app guide is available from Settings, the Den menu, and `?` in Den Mode. It uses the current customized bindings.
 
@@ -16,6 +16,9 @@ The complete in-app guide is available from Settings, the Den menu, and `?` in D
 | Command + `W` | Remove focused Board | Available in every keyboard context. |
 | Shift + Command + `W` | Close Profile window | Settings and other non-Den windows retain Command + `W`. |
 | Command + `Q` | Quit Den Browser | |
+| Control + Tab | Next Desk | Available in Sheet Input and Den Mode. |
+| Control + Shift + Tab | Previous Desk | Available in Sheet Input and Den Mode. |
+| Option + Command + Tab | Return to Previous Desk | Toggles between the two most recently focused Desks. Available in Sheet Input and Den Mode. |
 | Command + Option + Left / Right | Previous / next board | Available in Sheet Input and Den Mode. |
 | Shift + Command + Option + Left / Right | Move focused board | Moves left or right without entering Den Mode. |
 | Command + Option + `1` through `9`, `0` | Focus Desk 1 through 10 | Available in Sheet Input. The modifier combination is configurable in Settings > Shortcuts; Shift alone is not allowed. |

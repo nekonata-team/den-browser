@@ -89,7 +89,7 @@ extension DenStore {
             return
         }
 
-        state.focusedDeskID = selection.deskID
+        setFocusedDesk(selection.deskID)
         if let boardID = selection.boardID,
             state.desks[deskIndex].boards.contains(where: { $0.id == boardID })
         {

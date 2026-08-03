@@ -47,7 +47,7 @@ Den Browserは、[Niri](https://github.com/niri-wm/niri)の空間的なウィン
 - 名前と色を持つProfileを作成し、Profileごとに一つのDenウィンドウと分離されたWebサイトデータを保持。
 - タイトルバーで現在のProfileを確認し、右上のアイコン、Profileメニュー、`Control` + `Command` + `P`からProfileを開く・検索。
 - `Command` + `Option` + 左右矢印で隣のBoardへ移動し、Shiftを加えて並べ替え。`Command` + `L`でFocused BoardのCurrent SheetをURLまたは検索語に置き換え、`Command` + `W`でFocused Boardを取り除く。`Shift` + `Command` + `W`でProfileウィンドウを閉じる。Den ModeではBoardの全操作が可能。ポインターでもSheet Stack操作、Board Removal、同じDesk内でのヘッダードラッグ、Boardヘッダーからのアクションメニューに対応。
-- アプリ全体で使うDenとBoardの5つのショートカットを設定で変更し、個別または一括で初期値に戻せる。全ショートカットは設定、Denメニュー、Den Mode中の`?`から確認可能。
+- アプリ全体で使うDenとBoardの8つのショートカットを設定で変更できる。`Control` + `Tab`系でDeskを移動し、`Option` + `Command` + `Tab`で直前のDeskへ戻れる。ショートカットは個別または一括で初期値に戻せ、設定、Denメニュー、Den Mode中の`?`から確認できる。
 - Appearance設定で、macOSのモーション設定への追従、Standard Motion、Reduced Motionを選択可能。全ProfileのSheetへ適用する50%〜200%のSheet Scaleも設定できる。また、フォーカスされたBoardの配置アライメント（常に中央配置、端に詰める、画面からはみ出た時のみ中央配置）を選択可能。
 - Den Mode中に`z`でZen Viewを切り替え、ネイティブのタイトルバー、Desk Switcher、Profileコントロールを非表示にしてFocused Boardでの作業へ集中。`t`でFocused BoardのSheet NavigationをPause / Resume。
 - Den Mode中に`/`でFocused Desk内のBoardをBoard LabelまたはCurrent Sheet URLから絞り込み、フォーカスを変えずに一致するBoardを選んでから確定。

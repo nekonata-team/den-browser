@@ -24,7 +24,7 @@ extension DenStore {
         let focusedBoardID = focusedBoardIndex.flatMap { boards.indices.contains($0) ? boards[$0].id : nil }
         let desk = DeskState(label: trimmedLabel, boards: boards, focusedBoardID: focusedBoardID)
         state.desks.insert(desk, at: focusedDeskIndex + 1)
-        state.focusedDeskID = desk.id
+        setFocusedDesk(desk.id)
         setTemporaryContext(nil)
         isDenMode = false
         save()
@@ -149,7 +149,7 @@ extension DenStore {
 
         state.desks.remove(at: deskIndex)
         if state.focusedDeskID == deskID {
-            state.focusedDeskID = state.desks[min(deskIndex, state.desks.count - 1)].id
+            setFocusedDesk(state.desks[min(deskIndex, state.desks.count - 1)].id)
         }
         if isOverviewPresented {
             overviewSelection = OverviewSelection(

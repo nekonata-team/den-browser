@@ -57,6 +57,7 @@ final class DenStore {
     @ObservationIgnored var runtimes: [UUID: BoardRuntime] = [:]
     @ObservationIgnored var drawerPreviewRuntime: DrawerPreviewRuntime?
     @ObservationIgnored private var toastTask: Task<Void, Never>?
+    @ObservationIgnored private var previousFocusedDeskID: UUID?
     @ObservationIgnored private let onSave: ((DenState) -> Void)?
     @ObservationIgnored private let onDeskPresetsSave: (([PersonalDeskPreset]) -> Void)?
     @ObservationIgnored let onRecentItemsSave: (([RecentItem]) -> Bool)?
@@ -275,6 +276,27 @@ final class DenStore {
             }
         }
         return nil
+    }
+
+    @discardableResult
+    func setFocusedDesk(_ deskID: UUID) -> Bool {
+        guard state.focusedDeskID != deskID else { return false }
+        guard state.desks.contains(where: { $0.id == deskID }) else { return false }
+        previousFocusedDeskID = state.focusedDeskID
+        state.focusedDeskID = deskID
+        return true
+    }
+
+    func returnToPreviousDesk() {
+        guard let previousFocusedDeskID else { return }
+        guard setFocusedDesk(previousFocusedDeskID) else {
+            self.previousFocusedDeskID = nil
+            return
+        }
+        dismissDeskFilter()
+        isDenMode = false
+        ensureFocusedObjects()
+        save()
     }
 
     @discardableResult

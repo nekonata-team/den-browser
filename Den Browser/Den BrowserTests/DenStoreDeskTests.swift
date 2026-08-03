@@ -141,6 +141,22 @@ struct DenStoreDeskTests {
         }
     }
 
+    @Test func returnToPreviousDeskTogglesBetweenMostRecentDesks() {
+        let first = desk("First")
+        let second = desk("Second")
+        let third = desk("Third")
+        let store = DenStore(
+            state: DenState(desks: [first, second, third], focusedDeskID: first.id))
+
+        store.focusDesk(second.id)
+        store.focusDesk(third.id)
+        store.returnToPreviousDesk()
+        #expect(store.focusedDesk?.id == second.id)
+
+        store.returnToPreviousDesk()
+        #expect(store.focusedDesk?.id == third.id)
+    }
+
     @Test func deskDragReordersPersistedDesksWithoutChangingTheirContents() {
         let firstBoard = board("First Board")
         let secondBoard = board("Second Board")
