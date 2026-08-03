@@ -107,13 +107,31 @@ struct DeskSwitcher: View {
                 }
                 .disabled(desk.boards.isEmpty)
 
-                Button {
-                    store.focusDesk(desk.id)
-                    store.captureFocusedDeskScreenshot()
-                } label: {
-                    Label("Capture Desk Screenshot...", systemImage: "camera.on.rectangle")
+                Menu("Export") {
+                    Button {
+                        store.exportDeskLinks(for: desk.id)
+                    } label: {
+                        Label("Save Desk Links as Markdown...", systemImage: "arrow.down.doc")
+                    }
+                    .disabled(!store.canExportDeskLinks(for: desk.id))
+
+                    Button {
+                        store.copyDeskLinks(for: desk.id)
+                    } label: {
+                        Label("Copy Desk Links as Markdown", systemImage: "doc.on.doc")
+                    }
+                    .disabled(!store.canExportDeskLinks(for: desk.id))
+
+                    Divider()
+
+                    Button {
+                        store.focusDesk(desk.id)
+                        store.captureFocusedDeskScreenshot()
+                    } label: {
+                        Label("Capture Desk Screenshot...", systemImage: "camera.on.rectangle")
+                    }
+                    .disabled(desk.boards.isEmpty)
                 }
-                .disabled(desk.boards.isEmpty)
 
                 Button {
                     store.focusDesk(desk.id)

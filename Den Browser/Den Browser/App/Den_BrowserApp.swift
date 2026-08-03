@@ -122,10 +122,25 @@ private struct DenCommands: Commands {
                 store?.captureFocusedSheetScreenshot()
             }
             .disabled(store?.focusedBoard == nil)
-            Button("Capture Focused Desk Screenshot…") {
-                store?.captureFocusedDeskScreenshot()
+            Menu("Export") {
+                Button("Save Desk Links as Markdown…") {
+                    store?.exportFocusedDeskLinks()
+                }
+                .disabled(store?.canExportFocusedDeskLinks != true)
+
+                Button("Copy Desk Links as Markdown") {
+                    store?.copyFocusedDeskLinks()
+                }
+                .disabled(store?.canExportFocusedDeskLinks != true)
+
+                Divider()
+
+                Button("Capture Focused Desk Screenshot…") {
+                    store?.captureFocusedDeskScreenshot()
+                }
+                .disabled(store?.focusedDesk?.boards.isEmpty != false)
             }
-            .disabled(store?.focusedDesk?.boards.isEmpty != false)
+            .disabled(store == nil)
             Button("Toggle Overview") { store?.toggleOverview() }
                 .disabled(store == nil)
             Button("Toggle Zen View") { store?.toggleZenView() }

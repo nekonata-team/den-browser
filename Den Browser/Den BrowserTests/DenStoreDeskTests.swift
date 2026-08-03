@@ -157,6 +157,28 @@ struct DenStoreDeskTests {
         #expect(store.focusedDesk?.id == third.id)
     }
 
+    @Test func deskLinkExportPreservesBoardOrderAndSkipsEmptyBoards() throws {
+        let first = BoardState(
+            label: "First [Reference]",
+            width: 520,
+            currentSheetURL: URL(string: "https://first.example/"))
+        let empty = BoardState(label: "Empty", width: 520, currentSheetURL: nil)
+        let second = BoardState(
+            label: "Second",
+            width: 520,
+            currentSheetURL: URL(string: "https://second.example/path"))
+        let desk = DeskState(label: "Research", boards: [first, empty, second])
+
+        let expected = [
+            "# Research",
+            "",
+            "- [First \\[Reference\\]](<https://first.example/>)",
+            "- [Second](<https://second.example/path>)",
+            "",
+        ].joined(separator: "\n")
+        #expect(DeskLinkExport.markdown(for: desk) == expected)
+    }
+
     @Test func deskDragReordersPersistedDesksWithoutChangingTheirContents() {
         let firstBoard = board("First Board")
         let secondBoard = board("Second Board")
