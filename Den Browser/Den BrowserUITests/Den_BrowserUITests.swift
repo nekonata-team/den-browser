@@ -319,6 +319,7 @@ final class Den_BrowserUITests: XCTestCase {
     ) -> XCUIApplication {
         let app = XCUIApplication()
         var args = [
+            "-ApplePersistenceIgnoreState", "YES",
             "--ui-testing", "--fixture", "interaction-basics",
         ]
         if singleBoard {
@@ -333,6 +334,16 @@ final class Den_BrowserUITests: XCTestCase {
         app.launchArguments = args
         app.launchEnvironment["DEN_UI_TEST_RUN_ID"] = UUID().uuidString
         app.launch()
+
+        if !app.windows.firstMatch.waitForExistence(timeout: 2) {
+            let profileMenu = app.menuBars.menuBarItems["Profile"]
+            XCTAssertTrue(profileMenu.waitForExistence(timeout: 10), "Profile menu bar item should exist")
+            profileMenu.click()
+
+            let uiTestingMenuItem = app.menuItems["UI Testing"]
+            XCTAssertTrue(uiTestingMenuItem.waitForExistence(timeout: 10), "UI Testing menu item should exist")
+            uiTestingMenuItem.click()
+        }
 
         XCTAssertTrue(app.windows.firstMatch.waitForExistence(timeout: 10), "Application window should appear")
         XCTAssertTrue(board(.alpha, in: app).waitForExistence(timeout: 20))
