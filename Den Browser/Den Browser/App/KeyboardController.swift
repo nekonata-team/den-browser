@@ -485,28 +485,27 @@ final class KeyboardController {
                 return true
             }
             return false
-        } else {
-            if isEscape(event), modifiers == [] {
-                if !store.overviewQuery.isEmpty {
-                    store.clearOverviewQuery()
-                } else {
-                    store.hideOverview()
-                }
-                return true
-            }
-            if isReturn(event), modifiers == [] {
-                store.enterOverviewSelection()
-                return true
-            }
-            if character == "/", modifiers == [] {
-                store.enterOverviewFilterMode()
-                return true
-            }
-            if handleMovement(event, modifiers: modifiers, store: store, overview: true) {
-                return true
+        }
+        if isEscape(event), modifiers == [] {
+            if !store.overviewQuery.isEmpty {
+                store.clearOverviewQuery()
+            } else {
+                store.hideOverview()
             }
             return true
         }
+        if isReturn(event), modifiers == [] {
+            store.enterOverviewSelection()
+            return true
+        }
+        if character == "/", modifiers == [] {
+            store.enterOverviewFilterMode()
+            return true
+        }
+        if handleMovement(event, modifiers: modifiers, store: store, overview: true) {
+            return true
+        }
+        return true
     }
 
     private static func hasMarkedText(in event: NSEvent) -> Bool {
