@@ -1,6 +1,7 @@
 import AppKit
 import Foundation
 import Testing
+
 @testable import Den_Browser
 
 @MainActor

@@ -1,5 +1,5 @@
-import Foundation
 import CoreGraphics
+import Foundation
 
 enum FocusedBoardCentering: String, CaseIterable, Identifiable {
     case never
