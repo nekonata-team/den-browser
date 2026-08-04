@@ -185,7 +185,7 @@ final class DenStore {
         onDeskPresetsSave: (([PersonalDeskPreset]) -> Void)? = nil,
         onRecentItemsSave: (([RecentItem]) -> Bool)? = nil
     ) {
-        self.state = state
+        self.state = Self.normalizedPersistedState(state)
         self.deskPresets = deskPresets
         self.recentItems = recentItems
         self.websiteDataStore = websiteDataStore
@@ -205,6 +205,19 @@ final class DenStore {
         if self.state != state {
             onSave?(self.state)
         }
+    }
+
+    private static func normalizedPersistedState(_ state: DenState) -> DenState {
+        var copy = state
+        for deskIndex in copy.desks.indices {
+            for boardIndex in copy.desks[deskIndex].boards.indices {
+                copy.desks[deskIndex].boards[boardIndex].currentSheetURL =
+                    copy.desks[deskIndex].boards[boardIndex].currentSheetURL.map(SheetURLPolicy.canonicalSheetURL)
+                copy.desks[deskIndex].boards[boardIndex].firstSheetURL =
+                    copy.desks[deskIndex].boards[boardIndex].firstSheetURL.map(SheetURLPolicy.canonicalSheetURL)
+            }
+        }
+        return copy
     }
 
     func resetDen() {

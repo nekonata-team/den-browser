@@ -75,6 +75,7 @@ struct ProfileManagerTests {
 
         #expect(persisted.schemaVersion == 1)
         #expect(persisted.den.desks[0].boards[1].currentSheetURL == nil)
+        #expect(persisted.den.desks[0].boards[0].firstSheetURL == nil)
         #expect(persisted.deskPresets[0].boards[1].initialSheetURL == nil)
         #expect(index == ProfileIndex(profileIDs: [persisted.profile.id]))
         #expect(try jsonObject(JSONEncoder().encode(persisted)).isEqual(jsonObject(profileData)))

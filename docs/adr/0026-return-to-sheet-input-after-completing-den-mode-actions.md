@@ -23,7 +23,7 @@ Exploration:
 
 - Relative Board Navigation with Left and Right Arrow or `h` and `l`.
 - Relative Desk Navigation with Up and Down Arrow or `k` and `j`.
-- Movement through the Focused Board's Sheet Stack with `[` and `]`, including Shift plus `[` or `]` to jump to its first or latest Sheet.
+- Movement through the Focused Board's live Sheet Stack with `[` and `]`, including Shift plus `]` to jump to its latest Sheet; Shift plus `[` loads its persisted First Sheet when present.
 
 Organization:
 

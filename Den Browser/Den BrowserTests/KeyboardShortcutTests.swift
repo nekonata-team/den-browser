@@ -363,7 +363,7 @@ struct KeyboardShortcutTests {
         #expect(store.state == state)
     }
 
-    @Test func denModeShiftBracketsJumpToSheetStackEdges() throws {
+    @Test func denModeShiftBracketsHandleFirstAndLatestSheet() throws {
         let store = makeStore(boards: [board("First")])
         store.isDenMode = true
         let first = try keyEvent(

@@ -171,7 +171,12 @@ struct DeskPresetBoard: Codable, Equatable {
     }
 
     func makeBoard() -> BoardState {
-        BoardState(label: label, width: width, currentSheetURL: initialSheetURL, customLabel: customLabel)
+        BoardState(
+            label: label,
+            width: width,
+            currentSheetURL: initialSheetURL,
+            firstSheetURL: initialSheetURL,
+            customLabel: customLabel)
     }
 }
 
@@ -183,6 +188,7 @@ struct BoardState: Codable, Equatable, Identifiable {
     var label: String
     var width: Double
     var currentSheetURL: URL?
+    var firstSheetURL: URL?
     var customLabel: String?
 
     var displayName: String {
@@ -193,11 +199,20 @@ struct BoardState: Codable, Equatable, Identifiable {
         min(max(width, minimumWidth), maximumWidth)
     }
 
-    init(id: UUID = UUID(), label: String, width: Double, currentSheetURL: URL?, customLabel: String? = nil) {
+    init(
+        id: UUID = UUID(),
+        label: String,
+        width: Double,
+        currentSheetURL: URL?,
+        firstSheetURL: URL? = nil,
+        customLabel: String? = nil
+    ) {
+        let canonicalCurrentSheetURL = currentSheetURL.map(SheetURLPolicy.canonicalSheetURL)
         self.id = id
         self.label = label
         self.width = width
-        self.currentSheetURL = currentSheetURL
+        self.currentSheetURL = canonicalCurrentSheetURL
+        self.firstSheetURL = firstSheetURL.map(SheetURLPolicy.canonicalSheetURL) ?? canonicalCurrentSheetURL
         self.customLabel = customLabel
     }
 }

@@ -4,7 +4,7 @@ status: accepted
 
 # Persist Den state separately from WebView runtime
 
-Den Browser should persist desks, boards, labels, widths, current sheet URLs, and focus as Codable Den state, likely in JSON for the MVP. Live WKWebView instances are runtime objects and must not be treated as the source of truth for persisted state. Keeping persisted Den state separate from WebView runtime state makes restoration, testing, and later storage changes simpler.
+Den Browser should persist desks, boards, labels, widths, Current Sheet URLs, First Sheet URLs, and focus as Codable Den state, likely in JSON for the MVP. Live WKWebView instances are runtime objects and must not be treated as the source of truth for persisted state. Keeping persisted Den state separate from WebView runtime state makes restoration, testing, and later storage changes simpler. First Sheet is optional; data written before First Sheet support keeps it absent rather than deriving it from Current Sheet.
 
 ## Desk switching and WebView scheduling
 

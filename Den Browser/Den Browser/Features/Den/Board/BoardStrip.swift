@@ -85,6 +85,7 @@ struct BoardStrip: View {
                                 store.focusBoard(board.id, exitsDenMode: true)
                             }
                         },
+                        onGoToFirst: { store.goToFirstSheetInBoard(board.id) },
                         onGoBack: { store.goBackInBoard(board.id) },
                         onGoForward: { store.goForwardInBoard(board.id) },
                         onRemove: { store.removeBoard(board.id) },

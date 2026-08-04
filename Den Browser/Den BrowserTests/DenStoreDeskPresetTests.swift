@@ -54,6 +54,7 @@ struct DenStoreDeskPresetTests {
         let copy = try #require(store.focusedDesk)
         #expect(copy.boards.map(\.id) != source.boards.map(\.id))
         #expect(copy.boards.map(\.label) == source.boards.map(\.label))
+        #expect(copy.boards.map(\.firstSheetURL) == preset.boards.map(\.initialSheetURL))
         #expect(copy.focusedBoardID == copy.boards[1].id)
     }
 

@@ -10,11 +10,12 @@ Saving the Focused Desk as a Personal Desk Preset captures:
 - Board Labels
 - Board Widths
 - Current Sheet URLs, including path, query, and fragment
+- First Sheet URLs, initialized from each Board's Current Sheet URL at capture time
 - Focused Board
 
 At least one Board is required. A Board without a Current Sheet URL remains valid because its Label, Width, and position can still carry meaning. Sheet Stacks, live `WKWebView` state, scroll positions, input, and sign-in state are not captured.
 
-Creating a Desk from any Desk Preset creates new Desk and Board identities. Replacing a Desk preserves its Desk identity and position while creating new Board identities. Neither operation leaves the Desk linked to the Desk Preset. Profile-owned WebKit data still supplies that Profile's existing site sessions.
+Creating a Desk from any Desk Preset creates new Desk and Board identities. Each created Board receives the Preset's initial Sheet URL as both its Current Sheet URL and First Sheet URL. Replacing a Desk preserves its Desk identity and position while creating new Board identities. Neither operation leaves the Desk linked to the Desk Preset. Profile-owned WebKit data still supplies that Profile's existing site sessions.
 
 ## Saving
 

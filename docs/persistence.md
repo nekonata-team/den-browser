@@ -32,12 +32,12 @@ Nested objects use these keys:
 - `DenState`: `desks`, `focusedDeskID`, optional `drawerItems`, optional `expandedDrawerItemID`
 - `DrawerItem`: `id`, `url`, optional `title`
 - `DeskState`: `id`, `label`, `boards`, optional `focusedBoardID`
-- `BoardState`: `id`, `label`, `width`, optional `customLabel`, optional `currentSheetURL`
+- `BoardState`: `id`, `label`, `width`, optional `customLabel`, optional `currentSheetURL`, optional `firstSheetURL`
 - `PersonalDeskPreset`: `id`, `label`, `boards`, optional `focusedBoardIndex`
 - `DeskPresetBoard`: `label`, `width`, optional `customLabel`, optional `initialSheetURL`
 - `RecentItem`: `kind`, plus `url` for a URL or `query` for a search term used by Open Board
 
-A missing optional Sheet URL means the Board has no Sheet. URLs encode using Foundation `URL`'s `Codable` representation.
+A missing optional Current Sheet URL means the Board has no Current Sheet. A missing First Sheet URL means the Board cannot use the persisted First Sheet return action. Board Sheet URLs normalize HTTP(S) root paths to `/` before persistence. URLs encode using Foundation `URL`'s `Codable` representation.
 
 ## App preference keys
 

@@ -170,10 +170,18 @@ extension DenStore {
 
     func goToFirstSheetInFocusedBoard() {
         guard
-            let webView = focusedRuntime?.webView,
-            let firstSheet = webView.backForwardList.backList.first
+            let firstSheetURL = focusedBoard?.firstSheetURL,
+            let currentSheetURL = focusedBoard?.currentSheetURL,
+            currentSheetURL != firstSheetURL,
+            let webView = focusedRuntime?.webView
         else { return }
-        webView.go(to: firstSheet)
+        webView.load(URLRequest(url: firstSheetURL))
+    }
+
+    func goToFirstSheetInBoard(_ boardID: UUID) {
+        guard boardIndices(for: boardID) != nil else { return }
+        focusBoard(boardID)
+        goToFirstSheetInFocusedBoard()
     }
 
     func goToLatestSheetInFocusedBoard() {
@@ -201,7 +209,7 @@ extension DenStore {
     }
 
     private func normalizedURL(from text: String) -> URL? {
-        resolveOpenBoardInput(text)?.url
+        resolveOpenBoardInput(text).map { SheetURLPolicy.canonicalSheetURL($0.url) }
     }
 
     private func resolveOpenBoardInput(_ text: String) -> (url: URL, item: RecentItem)? {

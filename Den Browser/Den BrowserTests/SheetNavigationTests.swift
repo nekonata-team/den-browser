@@ -62,6 +62,15 @@ struct SheetNavigationTests {
         #expect(!ExternalURLPolicy.isSupported(URL(string: "file:///tmp/example")!))
     }
 
+    @Test func sheetURLPolicyNormalizesRootPathAndHostCase() {
+        #expect(
+            SheetURLPolicy.canonicalSheetURL(URL(string: "HTTP://EXAMPLE.TEST")!)
+                == URL(string: "http://example.test/")!)
+        #expect(
+            SheetURLPolicy.canonicalSheetURL(URL(string: "http://example.test/app")!)
+                == URL(string: "http://example.test/app")!)
+    }
+
     @Test func boardRuntimeAppliesSafariUserAgent() {
         let navigation = SheetNavigationManager(
             defaults: UserDefaults(suiteName: "UserAgentTest-\(UUID().uuidString)") ?? .standard,

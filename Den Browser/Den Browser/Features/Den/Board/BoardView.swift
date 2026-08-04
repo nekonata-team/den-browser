@@ -14,6 +14,7 @@ struct BoardView: View {
     let height: Double
     let isPointerFocusEnabled: Bool
     let onFocus: () -> Void
+    let onGoToFirst: () -> Void
     let onGoBack: () -> Void
     let onGoForward: () -> Void
     let onRemove: () -> Void
@@ -123,6 +124,14 @@ struct BoardView: View {
         } label: {
             Label("Reload Current Sheet", systemImage: "arrow.clockwise")
         }
+
+        Button {
+            store.focusBoard(board.id)
+            store.goToFirstSheetInFocusedBoard()
+        } label: {
+            Label("Return to First Sheet", systemImage: "backward.end")
+        }
+        .disabled(!canReturnToFirstSheet)
 
         if store.sheetNavigation.isEnabled {
             Button {
@@ -284,6 +293,22 @@ struct BoardView: View {
             }
 
             withBoardContextMenu(
+                Button(action: onGoToFirst) {
+                    Image(systemName: "backward.end")
+                        .frame(width: DenLayout.boardControlSize, height: DenLayout.boardControlSize)
+                }
+                .buttonStyle(.borderless)
+                .foregroundStyle(
+                    canReturnToFirstSheet
+                        ? Color.primary
+                        : Color.secondary.opacity(0.35)
+                )
+                .disabled(!canReturnToFirstSheet)
+                .help("Return to First Sheet")
+                .accessibilityLabel("Return to First Sheet")
+            )
+
+            withBoardContextMenu(
                 Button(action: onGoBack) {
                     Image(systemName: "chevron.left")
                         .frame(width: DenLayout.boardControlSize, height: DenLayout.boardControlSize)
@@ -342,6 +367,14 @@ struct BoardView: View {
             return "Focused board"
         }
         return "Board"
+    }
+
+    private var canReturnToFirstSheet: Bool {
+        guard
+            let firstSheetURL = board.firstSheetURL,
+            let currentSheetURL = board.currentSheetURL
+        else { return false }
+        return currentSheetURL != firstSheetURL
     }
 
     private var isContextMenuEnabled: Bool {

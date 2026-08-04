@@ -108,12 +108,12 @@ extension DenStore {
     func updateBoard(boardID: UUID, url: URL?, title: String?) {
         guard let indices = boardIndices(for: boardID) else { return }
         var changed = false
-        if let url,
-            SheetURLPolicy.isSupported(url),
-            state.desks[indices.desk].boards[indices.board].currentSheetURL != url
-        {
-            state.desks[indices.desk].boards[indices.board].currentSheetURL = url
-            changed = true
+        if let url, SheetURLPolicy.isSupported(url) {
+            let canonicalURL = SheetURLPolicy.canonicalSheetURL(url)
+            if state.desks[indices.desk].boards[indices.board].currentSheetURL != canonicalURL {
+                state.desks[indices.desk].boards[indices.board].currentSheetURL = canonicalURL
+                changed = true
+            }
         }
         if let title, !title.isEmpty, state.desks[indices.desk].boards[indices.board].label != title {
             state.desks[indices.desk].boards[indices.board].label = title

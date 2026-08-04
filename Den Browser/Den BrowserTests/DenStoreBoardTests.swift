@@ -40,8 +40,21 @@ struct DenStoreBoardTests {
 
         #expect(store.navigateFocusedBoard(urlString: "after.example/path"))
         #expect(store.focusedBoard?.currentSheetURL == URL(string: "https://after.example/path"))
+        #expect(store.focusedBoard?.firstSheetURL == URL(string: "https://before.example/"))
         #expect(store.temporaryContext == nil)
         #expect(!store.isDenMode)
+    }
+
+    @Test func newBoardKeepsFirstSheetWhenCurrentSheetChanges() throws {
+        let source = desk("Desk")
+        let store = DenStore(state: DenState(desks: [source], focusedDeskID: source.id))
+
+        store.addBoard(urlString: "https://start.example/")
+        let firstSheetURL = try #require(store.focusedBoard?.firstSheetURL)
+
+        #expect(store.navigateFocusedBoard(urlString: "https://later.example/"))
+        #expect(store.focusedBoard?.currentSheetURL == URL(string: "https://later.example/"))
+        #expect(store.focusedBoard?.firstSheetURL == firstSheetURL)
     }
 
     @Test func openBoardCanInsertAfterSpecifiedBoard() {
