@@ -35,6 +35,7 @@ struct DenDialogs: ViewModifier {
                 Button("Replace Desk", role: .destructive) {
                     store.confirmDeskReplacement()
                 }
+                .keyboardShortcut(.defaultAction)
                 Button("Cancel", role: .cancel) {
                     store.cancelDeskReplacement()
                 }
@@ -57,6 +58,7 @@ struct DenDialogs: ViewModifier {
                     store.confirmDeskPresetReplacement()
                     store.hideSaveDeskPresetPanel()
                 }
+                .keyboardShortcut(.defaultAction)
                 Button("Cancel", role: .cancel) { store.cancelDeskPresetReplacement() }
             } message: {
                 Text("Existing Desks will not be affected.")
