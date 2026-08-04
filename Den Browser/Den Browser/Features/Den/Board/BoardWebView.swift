@@ -4,6 +4,7 @@ import WebKit
 struct BoardWebView: NSViewRepresentable {
     let webView: WKWebView
     let isFocused: Bool
+    let isHidden: Bool
     let isPointerFocusEnabled: Bool
     let onFocus: () -> Void
 
@@ -13,6 +14,7 @@ struct BoardWebView: NSViewRepresentable {
 
     func makeNSView(context: Context) -> WKWebView {
         context.coordinator.startRecognizing(webView: webView, onFocus: onFocus)
+        webView.isHidden = isHidden
         context.coordinator.updatePointerFocusEnabled(isPointerFocusEnabled)
         context.coordinator.updateFocus(isFocused, webView: webView)
         return webView
@@ -20,6 +22,7 @@ struct BoardWebView: NSViewRepresentable {
 
     func updateNSView(_ nsView: WKWebView, context: Context) {
         context.coordinator.onFocus = onFocus
+        nsView.isHidden = isHidden
         context.coordinator.updatePointerFocusEnabled(isPointerFocusEnabled)
         context.coordinator.updateFocus(isFocused, webView: nsView)
     }
