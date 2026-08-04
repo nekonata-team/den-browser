@@ -112,6 +112,21 @@ struct DenStoreBoardTests {
         }
     }
 
+    @Test func boardBoundaryFocusStaysWithinSourceDesk() {
+        let boards = [board("A"), board("B"), board("C")]
+        let sourceDesk = desk("Source", boards: boards, focusedBoardID: boards[1].id)
+        let otherDesk = desk("Other", boards: [board("Other Board")])
+        let store = DenStore(
+            state: DenState(desks: [sourceDesk, otherDesk], focusedDeskID: sourceDesk.id))
+
+        store.focusFirstBoardInDesk(containing: boards[1].id)
+        #expect(store.focusedDesk?.id == sourceDesk.id)
+        #expect(store.focusedDesk?.focusedBoardID == boards[0].id)
+
+        store.focusLastBoardInDesk(containing: boards[1].id)
+        #expect(store.focusedDesk?.focusedBoardID == boards[2].id)
+    }
+
     @Test func focusingAlreadyFocusedBoardDoesNotSaveAgain() {
         let board = board("Focused")
         let source = desk("Desk", boards: [board], focusedBoardID: board.id)

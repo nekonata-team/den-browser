@@ -49,7 +49,11 @@ final class DrawerPreviewRuntime: NSObject, WKNavigationDelegate, WKUIDelegate {
                 onOpenBoardPanel: {},
                 onShowOverview: {},
                 onRemoveBoard: onDiscard,
-                onRestoreBoard: {}
+                onRestoreBoard: {},
+                onFocusFirstBoard: {},
+                onFocusLastBoard: {},
+                onGoToFirstSheet: {},
+                onGoToLatestSheet: {}
             )
         )
 

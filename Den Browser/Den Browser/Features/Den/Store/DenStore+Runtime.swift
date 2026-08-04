@@ -60,6 +60,18 @@ extension DenStore {
                 },
                 onRestoreBoard: { [weak self] in
                     self?.restoreRecentlyRemovedBoard()
+                },
+                onFocusFirstBoard: { [weak self] in
+                    self?.focusFirstBoardInDesk(containing: board.id)
+                },
+                onFocusLastBoard: { [weak self] in
+                    self?.focusLastBoardInDesk(containing: board.id)
+                },
+                onGoToFirstSheet: { [weak self] in
+                    self?.goToFirstSheetInBoard(board.id)
+                },
+                onGoToLatestSheet: { [weak self] in
+                    self?.goToLatestSheetInBoard(board.id)
                 }
             ),
             events: .init(

@@ -524,6 +524,36 @@ struct SheetNavigationTests {
         #expect(store.isOverviewPresented)
     }
 
+    @Test func sheetNavigationRoutesBoardBoundaryCommands() async throws {
+        let source = try sheetNavigationScriptSource().replacingOccurrences(
+            of: "if (!event.isTrusted ||",
+            with: "if ("
+        )
+        let manager = SheetNavigationManager(scriptSource: source)
+        let boards = [board("First"), board("Middle"), board("Last")]
+        let currentDesk = desk("Desk", boards: boards, focusedBoardID: boards[1].id)
+        let store = DenStore(
+            state: DenState(desks: [currentDesk], focusedDeskID: currentDesk.id),
+            sheetNavigation: manager
+        )
+        let webView = store.runtime(for: boards[1]).webView
+        let waiter = WebViewLoadWaiter()
+
+        manager.setEnabled(true)
+        await waiter.load("<html>Current Sheet</html>", baseURL: URL(string: "https://example.com/")!, in: webView)
+
+        try await dispatchSheetKey("g", in: webView)
+        try await dispatchSheetKey("0", in: webView)
+        #expect(store.focusedDesk?.focusedBoardID == boards[0].id)
+
+        try await dispatchSheetKey("g", in: webView)
+        try await dispatchSheetKey("$", shift: true, in: webView)
+        #expect(store.focusedDesk?.focusedBoardID == boards[2].id)
+
+        #expect(manager.handleScriptMessage(["action": "goToFirstSheet"], from: webView))
+        #expect(manager.handleScriptMessage(["action": "goToLatestSheet"], from: webView))
+    }
+
     @Test func boardRuntimeObservesUrlAndTitleChanges() async throws {
         let manager = SheetNavigationManager(scriptSource: "")
         var changeContinuation: AsyncStream<(URL?, String?)>.Continuation?
@@ -666,7 +696,11 @@ struct SheetNavigationTests {
             onOpenBoardPanel: {},
             onShowOverview: {},
             onRemoveBoard: {},
-            onRestoreBoard: {}
+            onRestoreBoard: {},
+            onFocusFirstBoard: {},
+            onFocusLastBoard: {},
+            onGoToFirstSheet: {},
+            onGoToLatestSheet: {}
         )
     }
 

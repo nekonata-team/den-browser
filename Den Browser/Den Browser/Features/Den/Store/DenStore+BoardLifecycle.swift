@@ -192,6 +192,12 @@ extension DenStore {
         webView.go(to: latestSheet)
     }
 
+    func goToLatestSheetInBoard(_ boardID: UUID) {
+        guard boardIndices(for: boardID) != nil else { return }
+        focusBoard(boardID)
+        goToLatestSheetInFocusedBoard()
+    }
+
     func goBackInBoard(_ boardID: UUID) {
         guard boardIndices(for: boardID) != nil else { return }
         focusBoard(boardID)

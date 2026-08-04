@@ -26,6 +26,10 @@ final class SheetNavigationManager {
         let onShowOverview: () -> Void
         let onRemoveBoard: () -> Void
         let onRestoreBoard: () -> Void
+        let onFocusFirstBoard: () -> Void
+        let onFocusLastBoard: () -> Void
+        let onGoToFirstSheet: () -> Void
+        let onGoToLatestSheet: () -> Void
     }
 
     static let defaultHintAlphabet = "asdfghjkl"
@@ -258,6 +262,30 @@ final class SheetNavigationManager {
             return true
         case "restoreBoard":
             guard let action = actionsByWebView[ObjectIdentifier(webView)]?.onRestoreBoard else { return false }
+            action()
+            return true
+        case "focusFirstBoard":
+            guard let action = actionsByWebView[ObjectIdentifier(webView)]?.onFocusFirstBoard else {
+                return false
+            }
+            action()
+            return true
+        case "focusLastBoard":
+            guard let action = actionsByWebView[ObjectIdentifier(webView)]?.onFocusLastBoard else {
+                return false
+            }
+            action()
+            return true
+        case "goToFirstSheet":
+            guard let action = actionsByWebView[ObjectIdentifier(webView)]?.onGoToFirstSheet else {
+                return false
+            }
+            action()
+            return true
+        case "goToLatestSheet":
+            guard let action = actionsByWebView[ObjectIdentifier(webView)]?.onGoToLatestSheet else {
+                return false
+            }
             action()
             return true
         default:

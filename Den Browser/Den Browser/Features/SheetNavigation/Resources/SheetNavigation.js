@@ -306,7 +306,7 @@
     const sections = [
       ["Scrolling", [["j / k", "scroll down / up"], ["d / u", "scroll half page down / up"], ["h / l", "scroll left / right"], ["gg / G", "top / bottom"], ["zH / zL", "left / right edge"]]],
       ["Hints", [["f / Space", "activate a Current Sheet target"], ["F", "open link as a new Board"], ["a", "keep link in Drawer"]]],
-      ["Sheet and URL", [["H / L", "back / forward in Sheet Stack"], ["r", "reload Current Sheet"], ["gu / gU", "URL parent / root"], ["ge / gE", "edit URL / open URL in new Board"], ["t / T", "Open Board / Overview"], ["yy", "copy Current Sheet URL"]]],
+      ["Boards and Sheets", [["g0 / g$", "first / last Board in the Desk"], ["g[ / g]", "First / latest Sheet"], ["H / L", "back / forward in Sheet Stack"], ["r", "reload Current Sheet"], ["gu / gU", "URL parent / root"], ["ge / gE", "edit URL / open URL in new Board"], ["t / T", "Open Board / Overview"], ["yy", "copy Current Sheet URL"]]],
       ["Find", [["/", "find in Current Sheet"], ["n / N", "next / previous match"]]],
     ];
 
@@ -407,6 +407,10 @@
       case "gi": focusEditable(count); break;
       case "ge": postMessage({ action: "editCurrentSheet" }); break;
       case "gE": postMessage({ action: "openCurrentSheetInNewBoard" }); break;
+      case "g0": postMessage({ action: "focusFirstBoard" }); break;
+      case "g$": postMessage({ action: "focusLastBoard" }); break;
+      case "g[": postMessage({ action: "goToFirstSheet" }); break;
+      case "g]": postMessage({ action: "goToLatestSheet" }); break;
       case "zH": scrollToEdge("x", false); break;
       case "zL": scrollToEdge("x", true); break;
       case "yy":

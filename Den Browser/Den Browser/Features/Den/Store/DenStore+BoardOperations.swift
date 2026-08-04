@@ -42,6 +42,22 @@ extension DenStore {
         moveBoardFocus(by: 1)
     }
 
+    func focusFirstBoardInDesk(containing boardID: UUID) {
+        guard
+            let deskIndex = boardIndices(for: boardID)?.desk,
+            let firstBoardID = state.desks[deskIndex].boards.first?.id
+        else { return }
+        focusBoard(firstBoardID)
+    }
+
+    func focusLastBoardInDesk(containing boardID: UUID) {
+        guard
+            let deskIndex = boardIndices(for: boardID)?.desk,
+            let lastBoardID = state.desks[deskIndex].boards.last?.id
+        else { return }
+        focusBoard(lastBoardID)
+    }
+
     func moveFocusedBoardLeft() {
         moveFocusedBoard(by: -1)
     }

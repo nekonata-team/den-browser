@@ -32,10 +32,12 @@ A numeric prefix repeats relative scrolling commands. For example, `5j`, `3k`, a
 
 `Space` remains an alias for the existing interaction. `F` only includes links with an `href`; controls that cannot sensibly open as a new Board are excluded.
 
-### Sheet and URL navigation
+### Board, Sheet, and URL navigation
 
 | Keys | Action |
 | --- | --- |
+| `g0` / `g$` | Focus the first / last Board in the current Desk. |
+| `g[` / `g]` | Return to the First / latest Sheet in the focused Board. |
 | `H` / `L` | Move backward / forward in the Sheet Stack. |
 | `r` | Reload the Current Sheet. |
 | `gu` | Move one level up the Current Sheet URL. |
