@@ -14,6 +14,12 @@ mod release
 format:
     {{swift_format}} format --in-place --recursive --parallel --configuration .swift-format "{{swift_sources}}"
 
+# Format staged Swift sources in place.
+[group("quality")]
+[positional-arguments]
+format-staged +files:
+    {{swift_format}} format --in-place --parallel --configuration .swift-format "$@"
+
 # Fail on Swift style and safety findings.
 [group("quality")]
 lint:
