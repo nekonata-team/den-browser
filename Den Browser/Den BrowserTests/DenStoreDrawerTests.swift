@@ -142,6 +142,65 @@ struct DenStoreDrawerTests {
         #expect(runtime.webView.uiDelegate == nil)
     }
 
+    @Test func discardingExpandedItemOpensFollowingPreview() throws {
+        let source = desk("Desk")
+        let first = DrawerItem(url: try #require(URL(string: "https://first.example/")))
+        let second = DrawerItem(url: try #require(URL(string: "https://second.example/")))
+        let third = DrawerItem(url: try #require(URL(string: "https://third.example/")))
+        let store = DenStore(
+            state: DenState(
+                desks: [source],
+                focusedDeskID: source.id,
+                drawerItems: [first, second, third]))
+
+        store.toggleDrawer()
+        store.toggleDrawerItem(second.id)
+        store.discardDrawerItem(second.id)
+
+        #expect(store.state.drawerItems.map(\.id) == [first.id, third.id])
+        #expect(store.selectedDrawerItemID == third.id)
+        #expect(store.expandedDrawerItemID == third.id)
+        #expect(store.isDrawerOpen)
+    }
+
+    @Test func discardingLastExpandedItemOpensPreviousPreview() throws {
+        let source = desk("Desk")
+        let first = DrawerItem(url: try #require(URL(string: "https://first.example/")))
+        let second = DrawerItem(url: try #require(URL(string: "https://second.example/")))
+        let store = DenStore(
+            state: DenState(
+                desks: [source],
+                focusedDeskID: source.id,
+                drawerItems: [first, second]))
+
+        store.toggleDrawer()
+        store.toggleDrawerItem(second.id)
+        store.discardDrawerItem(second.id)
+
+        #expect(store.state.drawerItems.map(\.id) == [first.id])
+        #expect(store.selectedDrawerItemID == first.id)
+        #expect(store.expandedDrawerItemID == first.id)
+    }
+
+    @Test func placementDoesNotAdvanceToAnotherDrawerPreview() throws {
+        let source = desk("Desk")
+        let first = DrawerItem(url: try #require(URL(string: "https://first.example/")))
+        let second = DrawerItem(url: try #require(URL(string: "https://second.example/")))
+        let store = DenStore(
+            state: DenState(
+                desks: [source],
+                focusedDeskID: source.id,
+                drawerItems: [first, second]))
+
+        store.toggleDrawer()
+        store.toggleDrawerItem(second.id)
+        store.placeDrawerItemAsBoard(second.id)
+
+        #expect(store.state.drawerItems.map(\.id) == [first.id])
+        #expect(store.expandedDrawerItemID == nil)
+        #expect(!store.isDrawerOpen)
+    }
+
     @Test func clearingDrawerRequiresConfirmationAndDisposesAllItems() throws {
         let source = desk("Desk")
         let store = DenStore(state: DenState(desks: [source], focusedDeskID: source.id))

@@ -44,7 +44,8 @@ struct AppConfiguration {
             profileDirectoryURL: directoryURL,
             defaults: defaults,
             initialProfile: interactionBasicsProfile(
-                singleBoard: processInfo.arguments.contains("--single-board")),
+                singleBoard: processInfo.arguments.contains("--single-board"),
+                multipleDrawerItems: processInfo.arguments.contains("--multiple-drawer-items")),
             websiteDataStore: { _ in .nonPersistent() })
     }
 
@@ -55,7 +56,10 @@ struct AppConfiguration {
         return arguments[index + 1]
     }
 
-    private static func interactionBasicsProfile(singleBoard: Bool) -> PersistedProfile {
+    private static func interactionBasicsProfile(
+        singleBoard: Bool,
+        multipleDrawerItems: Bool = false
+    ) -> PersistedProfile {
         let alpha = BoardState(
             id: fixtureID("00000000-0000-0000-0000-000000000301"),
             label: "Alpha",
@@ -88,6 +92,11 @@ struct AppConfiguration {
             id: fixtureID("00000000-0000-0000-0000-000000000401"),
             url: fixtureSheetURLValue(),
             title: "Drawer Fixture")
+        let secondDrawerItem = DrawerItem(
+            id: fixtureID("00000000-0000-0000-0000-000000000402"),
+            url: fixtureSheetURLValue(),
+            title: "Next Drawer Fixture")
+        let drawerItems = multipleDrawerItems ? [secondDrawerItem, drawerItem] : [drawerItem]
         return PersistedProfile(
             profile: ProfileState(
                 id: fixtureID("00000000-0000-0000-0000-000000000100"),
@@ -97,8 +106,8 @@ struct AppConfiguration {
             den: DenState(
                 desks: [desk, secondDesk, thirdDesk],
                 focusedDeskID: desk.id,
-                drawerItems: [drawerItem],
-                expandedDrawerItemID: drawerItem.id))
+                drawerItems: drawerItems,
+                expandedDrawerItemID: multipleDrawerItems ? secondDrawerItem.id : drawerItem.id))
     }
 
     private static let fixtureSheetURL: String = {

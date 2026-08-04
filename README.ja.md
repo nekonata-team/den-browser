@@ -55,7 +55,7 @@ Den Browserは、[Niri](https://github.com/niri-wm/niri)の空間的なウィン
 - Den Modeで`w`に続けて`-`、`=`、または`1`〜`9`を押すかDenメニューを使い、Focused Desk内の全Boardを80ptずつ、または現在のウィンドウ幅へ指定数が収まるようリサイズ。
 - 現在のアプリ起動中、`u`でRecently Removed Boardを復活。
 - Open BoardパネルのRecentから、以前のURLまたは検索語を再利用。
-- Profile所有のDen-level DrawerへWeb materialを保持し、Item数を確認しながらDen Modeの`/`でtitleまたはURLから絞り込み、一度に一つのライブPreviewを展開。後からBoardとして配置、または破棄。Den Modeで`a`を押すとFocused BoardのCurrent SheetをDrawerへ保持し、Sheet Navigation有効時にSheet Inputで`a`に続けてリンクヒントを入力すると、そのリンクを保持。Drawer内でもDen Modeを切り替え、Previewのライブ状態を終わらせずにDrawer Itemと展開中のPreviewの間でキーボード操作を移せる。ほかのアプリから開いたリンクは現在のDesk配置を変えずにDrawerへ入る。展開中のPreviewは現在のアプリ起動中、Drawerを閉じてもライブ状態を保ち、再起動後は最初にDrawerを開いたとき新しいライブruntimeで再表示。
+- Profile所有のDen-level DrawerへWeb materialを保持し、Item数を確認しながらDen Modeの`/`でtitleまたはURLから絞り込み、一度に一つのライブPreviewを展開。展開中のPreviewを破棄すると、表示順で次のItemがあればそのPreviewを開き、末尾なら一つ前のItemを開く。後からBoardとして配置、または破棄。Den Modeで`a`を押すとFocused BoardのCurrent SheetをDrawerへ保持し、Sheet Navigation有効時にSheet Inputで`a`に続けてリンクヒントを入力すると、そのリンクを保持。Drawer内でもDen Modeを切り替え、Previewのライブ状態を終わらせずにDrawer Itemと展開中のPreviewの間でキーボード操作を移せる。ほかのアプリから開いたリンクは現在のDesk配置を変えずにDrawerへ入る。展開中のPreviewは現在のアプリ起動中、Drawerを閉じてもライブ状態を保ち、再起動後は最初にDrawerを開いたとき新しいライブruntimeで再表示。
 - OverviewでDeskを跨いだBoardの確認と再配置。
 - 空のDeskは即座に削除し、Boardを含むDeskは完全削除の確認後に削除。
 - Focused DeskをProfile所有のPersonal Desk Presetとして保存し、キーボード中心のファジー検索でPresetを選択、プレビューしてから、新しいDeskを作成、またはコンテキストメニューやDen ModeのShift + `p`から現在のDeskの内容を置換。Deskの置換ではDeskの同一性と位置を維持し、Boardを作り直す。Preset自体の置換、削除はPicker内で操作。組み込みのEmpty、ChatGPT、Geminiをすぐ使える初期配置として提供。

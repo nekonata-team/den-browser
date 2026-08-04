@@ -126,16 +126,31 @@ extension DenStore {
     }
 
     func discardDrawerItem(_ itemID: UUID) {
+        discardDrawerItem(itemID, advancesPreview: true)
+    }
+
+    private func discardDrawerItem(_ itemID: UUID, advancesPreview: Bool) {
         guard let index = state.drawerItems.firstIndex(where: { $0.id == itemID }) else { return }
         let wasSelected = selectedDrawerItemID == itemID
-        if expandedDrawerItemID == itemID {
+        let wasExpanded = expandedDrawerItemID == itemID
+        let nextPreviewID =
+            advancesPreview && wasExpanded
+            ? nextDrawerItemID(after: itemID)
+            : nil
+
+        if wasExpanded {
             state.expandedDrawerItemID = nil
             releaseDrawerPreview()
         }
         state.drawerItems.remove(at: index)
-        if wasSelected {
+
+        if wasExpanded {
+            state.expandedDrawerItemID = nextPreviewID
+            selectedDrawerItemID = nextPreviewID ?? filteredDrawerItems.first?.id
+        } else if wasSelected {
             selectedDrawerItemID = filteredDrawerItems.first?.id
         }
+
         if state.drawerItems.isEmpty {
             closeDrawer()
         }
@@ -174,7 +189,7 @@ extension DenStore {
     func placeDrawerItemAsBoard(_ itemID: UUID) {
         guard let item = state.drawerItems.first(where: { $0.id == itemID }) else { return }
         addBoard(urlString: item.url.absoluteString, preferredWidth: focusedBoard?.width)
-        discardDrawerItem(itemID)
+        discardDrawerItem(itemID, advancesPreview: false)
         closeDrawer()
     }
 
@@ -234,5 +249,15 @@ extension DenStore {
             return
         }
         selectedDrawerItemID = items.first?.id
+    }
+
+    private func nextDrawerItemID(after itemID: UUID) -> UUID? {
+        let items = filteredDrawerItems
+        guard let index = items.firstIndex(where: { $0.id == itemID }) else { return nil }
+        if items.indices.contains(index + 1) {
+            return items[index + 1].id
+        }
+        guard index > items.startIndex else { return nil }
+        return items[index - 1].id
     }
 }

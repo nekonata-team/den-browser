@@ -85,6 +85,35 @@ final class Den_BrowserUITests: XCTestCase {
     }
 
     @MainActor
+    func testDrawerPreviewRetainsSheetNavigationAfterDiscardingIntoNextPreview() throws {
+        let app = launchApp(sheetNavigationEnabled: true, multipleDrawerItems: true)
+        enterDenMode(in: app)
+        app.typeKey(.tab, modifierFlags: [])
+
+        let drawer = app.descendants(matching: .any).matching(identifier: "drawer").firstMatch
+        XCTAssertTrue(drawer.waitForExistence(timeout: 5))
+        let nextDrawerItem = app.buttons
+            .matching(NSPredicate(format: "label BEGINSWITH %@", "Next Drawer Fixture"))
+            .firstMatch
+        let drawerItem = app.buttons
+            .matching(NSPredicate(format: "label BEGINSWITH %@", "Drawer Fixture"))
+            .firstMatch
+        XCTAssertTrue(nextDrawerItem.waitForExistence(timeout: 10))
+        XCTAssertTrue(drawerItem.exists)
+
+        app.typeText("x")
+
+        XCTAssertTrue(nextDrawerItem.waitForNonExistence(timeout: 5))
+        XCTAssertTrue(drawerItem.exists)
+
+        app.typeText("gi")
+        let sheetInput = app.textFields["Sheet input"].firstMatch
+        XCTAssertTrue(sheetInput.waitForExistence(timeout: 5))
+        app.typeText("next preview input")
+        XCTAssertEqual(sheetInput.value as? String, "next preview input")
+    }
+
+    @MainActor
     func testDrawerSearchAppearsOnDemand() throws {
         let app = launchApp()
         enterDenMode(in: app)
@@ -315,6 +344,7 @@ final class Den_BrowserUITests: XCTestCase {
     private func launchApp(
         singleBoard: Bool = false,
         sheetNavigationEnabled: Bool = false,
+        multipleDrawerItems: Bool = false,
         centerBoardsOnOverflow: Bool = false
     ) -> XCUIApplication {
         let app = XCUIApplication()
@@ -327,6 +357,9 @@ final class Den_BrowserUITests: XCTestCase {
         }
         if sheetNavigationEnabled {
             args.append("--enable-sheet-navigation")
+        }
+        if multipleDrawerItems {
+            args.append("--multiple-drawer-items")
         }
         if centerBoardsOnOverflow {
             args.append("--center-boards-on-overflow")

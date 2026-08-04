@@ -261,6 +261,7 @@ struct DrawerView: View {
                     webView: runtime.webView,
                     isFocused: !store.isDenMode
                 )
+                .id(item.id)
                 .frame(height: previewHeight)
                 .clipShape(RoundedRectangle(cornerRadius: DenRadius.small, style: .continuous))
                 .padding([.horizontal, .bottom], DenLayout.outerInset)
@@ -352,10 +353,13 @@ private struct DrawerWebView: NSViewRepresentable {
 
     final class Coordinator {
         private var isFocused = false
+        private weak var focusedWebView: WKWebView?
 
         func updateFocus(_ newValue: Bool, webView: WKWebView) {
-            guard newValue != isFocused else { return }
+            let webViewChanged = focusedWebView !== webView
+            guard newValue != isFocused || (newValue && webViewChanged) else { return }
             isFocused = newValue
+            focusedWebView = newValue ? webView : nil
             if newValue {
                 DispatchQueue.main.async { [weak webView] in
                     guard let webView else { return }
