@@ -47,7 +47,8 @@ struct DeskSwitcher: View {
                 }
             }
             .onPreferenceChange(DeskFramePreferenceKey.self) {
-                frames = $0; alignDraggedDesk()
+                frames = $0
+                alignDraggedDesk()
             }
         }
         .frame(height: DenLayout.deskSwitcherHeight)
