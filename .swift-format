@@ -5,6 +5,7 @@
   "lineLength" : 120,
   "rules" : {
     "NeverForceUnwrap" : true,
+    "NeverUseForceTry" : true,
     "NeverUseImplicitlyUnwrappedOptionals" : false
   },
   "version" : 1

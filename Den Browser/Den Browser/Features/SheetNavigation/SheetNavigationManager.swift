@@ -319,7 +319,9 @@ final class SheetNavigationManager {
             "ignoredHosts": ignoredHosts,
             "paused": webView.flatMap { boardIDByWebView[ObjectIdentifier($0)] }.map(isBoardPaused) ?? false,
         ]
-        let data = try! JSONSerialization.data(withJSONObject: configuration)
+        guard let data = try? JSONSerialization.data(withJSONObject: configuration) else {
+            return ""
+        }
         return "window.__denSheetNavigation?.configure(\(String(decoding: data, as: UTF8.self)));"
     }
 
