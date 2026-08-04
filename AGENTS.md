@@ -34,12 +34,29 @@ manual candidate verification, `just release publish X.Y.Z`.
 
 ## Docs
 
-- `README.md`: English product and PoC overview
-- `README.ja.md`: Japanese product and PoC overview
+- `README.md`: English public product entry point
+- `README.ja.md`: Japanese public product entry point
 - `CONTEXT.md`: required domain language
 - `DESIGN.md`: UI design rules
+- `docs/shortcuts.md`: complete keyboard and pointer controls
+- `docs/poc.md`: current acceptance criteria and exploratory checks
+- `docs/architecture.md` and `docs/adr/`: architecture and product decisions
 - `docs/testing.md`: automated and exploratory validation
+- `docs/releasing.md`: signed release and publishing workflow
 
-Keep `README.md` and `README.ja.md` aligned in structure and product facts. Update both when user-visible features, status, requirements, or documentation links change. Write natural copy in each language rather than translating literally.
+## Documentation operation
+
+- Keep README focused on product positioning, target work, status, requirements,
+  installation, core concepts, a short feature summary, and entry-point links.
+- Do not add exhaustive feature lists, shortcut maps, implementation details, or
+  PoC test cases to README. Put them in their owning document above.
+- When behavior changes, update the owning source-of-truth document and affected
+  tests. Update README only when public positioning, status, requirements,
+  installation, core concepts, or documentation entry points change.
+- Keep `README.md` and `README.ja.md` aligned in structure and product facts.
+  Write natural copy in each language; do not translate feature inventories
+  mechanically.
+- Before handoff, check changed documentation links and inspect the final diff
+  for duplicated or stale product claims.
 
 @RTK.md

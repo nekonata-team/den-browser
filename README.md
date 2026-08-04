@@ -4,13 +4,16 @@
 
 **Web work, the Niri way.**
 
-A keyboard-first spatial browser for people working across multiple web tasks.
+Den Browser is a keyboard-first spatial browser for long-running web work. It
+keeps parallel tasks as persistent work surfaces instead of a growing tab list,
+so research, AI chats, development, writing, and documentation stay easy to
+revisit.
 
 > **Status:** Functional macOS proof of concept under active development.
 
-Den Browser is built for web work that stays open for a long time: AI chats, research, development, writing, documentation, and other workflows with several ongoing contexts. Instead of collecting those contexts in a tab list, Den Browser arranges them as persistent work surfaces that you can navigate and organize from the keyboard.
-
-Den Browser complements Safari, Chrome, or another general-purpose browser rather than replacing one. Use your usual browser for everyday browsing and Den Browser for work that benefits from spatial memory and long-lived context.
+Den Browser complements Safari, Chrome, or another general-purpose browser. It
+is for work that benefits from spatial memory and long-lived context, not for
+replacing everyday browsing.
 
 ## Installation
 
@@ -23,66 +26,35 @@ brew install --cask den-browser
 
 Upgrade with `brew upgrade --cask den-browser`.
 
-## Inspired by Niri
+## Core model
 
-Den Browser applies ideas from [Niri](https://github.com/niri-wm/niri)'s spatial window management to web work. Niri workspaces map loosely to Desks, and Niri windows map loosely to Boards. The mapping is intentionally not exact: Den Browser uses a paper-workspace model designed around web tasks, navigation history, and restoration.
-
-## Work model
-
-- **Profile**: An isolated web identity with its own Den, sign-ins, and site data.
-- **Den**: The full work environment for one Profile.
+- **Profile**: An isolated web identity with its own sign-ins, site data, and
+  Den.
+- **Den**: The complete work environment for one Profile.
 - **Desk**: A broad work context containing Boards in a horizontal work area.
-- **Desk Preset**: A reusable starting arrangement for creating a Desk or replacing its contents.
-- **Board**: An intentional work surface for one focused task context.
+- **Board**: A persistent work surface for one focused task.
 - **Sheet**: A web screen held within a Board.
-- **Sheet Stack**: The back-forward sequence of Sheets within a Board.
 
-See [CONTEXT.md](./CONTEXT.md) for the complete product language.
+Den Browser draws loosely on [Niri](https://github.com/niri-wm/niri)'s spatial
+window management. Its paper-workspace model is designed around web tasks,
+navigation history, and restoration. See [CONTEXT.md](./CONTEXT.md) for the
+complete product language.
 
-## Current features
+## What Den Browser provides
 
-- Arrange Boards spatially across multiple Desks.
-- Command-click an HTTP or HTTPS link to open it in a new adjacent Board while keeping the current Focus; add Shift to focus the new Board. Option-click holds the link in the Drawer without opening it or changing the Current Sheet.
-- Drag Desk buttons in the Desk switcher to reorder Desks.
-- Save or copy a Desk's Current Sheet links as a readable Markdown list from its Export menu.
-- Create named, color-coded Profiles, each with one Den window and isolated website data.
-- See the current Profile in the titlebar, and open or find Profiles from the top-right icon, Profile menu, or `Control` + `Command` + `P`.
-- Navigate between neighboring Boards with `Command` + `Option` + Left / Right, add Shift to reorder them, replace the Focused Board's Current Sheet with `Command` + `L`, remove the Focused Board with `Command` + `W`, and use Den Mode for the full set of Board operations. `Shift` + `Command` + `W` closes the Profile window. Pointer controls support Sheet Stack navigation, Board Removal, same-Desk header dragging, and a Board action menu from any Board header.
-- Customize the eight app-wide Den and Board shortcuts in Settings, including Control + Tab Desk navigation and Option + Command + Tab to return to the Previous Desk; reset them individually or together, and open the complete shortcut guide from Settings, the Den menu, or `?` in Den Mode.
-- Choose whether Den follows the macOS motion setting, uses Standard Motion, or uses Reduced Motion in Appearance settings; set Sheet Scale from 50% to 200% for every Profile; and configure the board centering layout (Always, Never, or When Overflowing).
-- Toggle Zen View with `z` in Den Mode to hide the native titlebar, Desk switcher, and Profile control for focused Board work, or press `t` to pause and resume Sheet Navigation for the Focused Board.
-- Filter the Focused Desk's Boards by Board Label or Current Sheet URL with `/` in Den Mode, navigate matching Boards without changing focus, then enter the selected Board.
-- Resize every Board in the Focused Desk by 80pt or to fit a chosen count across the current window, using `w` then `-`, `=`, or `1` through `9` in Den Mode or the Den menu.
-- Restore the most Recently Removed Board with `u` during the current app run.
-- Reopen a URL or search from Recent in the Open Board panel.
-- Hold web material in a Profile-owned Den-level Drawer, see its item count, filter Items by title or URL with `/` in Den Mode, expand one live preview at a time, and later place it as a Board or discard it. Discarding the expanded Preview advances to the next visible Item's Preview, or the previous visible Item when the discarded Item was last. Press `a` in Den Mode to keep the Focused Board's Current Sheet in the Drawer; when Sheet Navigation is enabled, press `a` then a link hint in Sheet Input to keep that link instead. Den Mode remains toggleable inside the Drawer: it moves keyboard ownership between Drawer Items and the expanded Preview without ending the Preview's live state. Links opened from other apps enter the Drawer without changing the current Desk layout. An expanded preview stays live when the Drawer closes during the current app run, and returns with a new live runtime when first opened after relaunch.
-- See and reorganize Boards across Desks in Overview.
-- Delete empty Desks immediately, or delete a Desk containing Boards after confirming the permanent removal.
-- Save the Focused Desk as a Profile-owned Personal Desk Preset, then use keyboard-first fuzzy search to choose and preview a preset before creating another Desk or replacing the contents of the current Desk from its context menu or Shift + `p` in Den Mode. Desk replacement preserves the Desk identity and position while recreating its Boards. Presets can also be replaced or deleted from the picker. Built-in Empty, ChatGPT, and Gemini presets provide ready-made starting points.
-- Keep browser-like back-forward navigation inside each Board as a Sheet Stack.
-- Download files from a Current Sheet through the macOS save panel, with the site-provided filename and completion feedback.
-- Capture the Focused Board's visible Current Sheet with `s`, or combine every Board in the Focused Desk into one labeled, width-preserving PNG with Shift + `s`.
-- Restore Desk and Board labels, order, widths, focus, and current Sheet URLs after relaunching the app, showing the Focused Board immediately without a scroll animation.
-- Register as an `http` / `https` browser handler; URLs opened from other apps become previewable Drawer Items in the active Profile. macOS controls the user's default-browser choice.
-- Keep sign-ins across app launches while isolating them between Profiles.
-- Optionally enable first-party Vim-style Sheet Navigation for scrolling, link hints, find, Sheet Stack navigation, and URL actions.
+- Persistent spatial organization across multiple Desks.
+- Keyboard-first navigation and Board management, with pointer controls where
+  useful.
+- Profile-isolated sign-ins and website data, with Den state restored after
+  relaunch.
+- A Drawer shared across the Den for material whose Desk or Board context is not
+  settled.
+- Optional first-party Vim-style Sheet Navigation for content inside the
+  Current Sheet.
 
-## Keyboard operation
-
-Press `Control` + `,` to toggle Den Mode. `Command` + `L` replaces the Focused Board's Current Sheet with a URL or search; `e` does the same in Den Mode. Den Mode receives Desk and Board commands independently of keyboard focus inside the Current Sheet. `/` filters Boards in the Focused Desk, `n` or `Space` opens a Board, Tab opens the Drawer, `a` keeps the Current Sheet in the Drawer, `p` saves the Focused Desk as a Desk Preset, Shift + `p` replaces the Focused Desk from a Preset, `s` captures the visible Current Sheet, Shift + `s` captures the Focused Desk, and `w` then `-` or `=` adjusts all Boards in the Focused Desk by 80pt; a digit instead resizes them to fit the current window. `x` or `d` removes the Focused Board, `u` restores the Recently Removed Board, `?` opens the shortcut guide, `z` toggles Zen View, and `t` pauses or resumes Sheet Navigation for the Focused Board. Escape returns to Sheet Input. When Sheet Navigation is enabled, `a` followed by a link hint keeps that link in the Drawer.
-
-See [docs/shortcuts.md](./docs/shortcuts.md) for the complete shortcut map.
-
-Vim-style Sheet Navigation is a separate optional Feature. It controls content inside the Current Sheet and is disabled by default. See [docs/vim.md](./docs/vim.md) for supported commands.
-
-## Current scope
-
-- Requires macOS 26 or later.
-- Stores Profile and Den state locally under Application Support; app preferences remain shared across Profiles.
-- Focuses on long-running parallel web work, not the full feature set of a general-purpose browser.
-- Remains a proof of concept while WebKit compatibility, performance, accessibility, and visual behavior receive further validation.
-
-The current acceptance criteria and exploratory checks live in [docs/poc.md](./docs/poc.md).
+See [docs/shortcuts.md](./docs/shortcuts.md) for complete keyboard controls and
+[docs/poc.md](./docs/poc.md) for current acceptance criteria and exploratory
+checks.
 
 ## Development
 
@@ -95,27 +67,16 @@ just test
 just check
 ```
 
-These commands disable code signing. Lefthook runs `just format` and `just lint` before commits, automatically stages formatting changes, and runs `just check` before pushes.
+These commands disable code signing. Run `just --list` for the available tasks.
 
-For optional Neovim SourceKit-LSP support:
-
-```sh
-brew install xcode-build-server
-just lsp-config
-```
-
-Build the project in Xcode first so SourceKit-LSP can use its build log and index.
-
-## Project documentation
+## Documentation
 
 - [CONTEXT.md](./CONTEXT.md): product language and domain model
-- [docs/architecture.md](./docs/architecture.md): source organization and dependency boundaries
 - [DESIGN.md](./DESIGN.md): visual and interaction rules
 - [docs/shortcuts.md](./docs/shortcuts.md): Den Mode keyboard commands
-- [docs/desk-presets.md](./docs/desk-presets.md): Desk Preset behavior and scope
-- [docs/screenshots.md](./docs/screenshots.md): Current Sheet and Desk screenshot behavior
+- [docs/desk-presets.md](./docs/desk-presets.md): Desk Preset behavior
 - [docs/vim.md](./docs/vim.md): Vim-style Sheet Navigation
-- [docs/poc.md](./docs/poc.md): proof-of-concept criteria
+- [docs/architecture.md](./docs/architecture.md): source organization and boundaries
 - [docs/testing.md](./docs/testing.md): automated and exploratory validation
-- [docs/releasing.md](./docs/releasing.md): signed release and Homebrew Tap workflow
+- [docs/releasing.md](./docs/releasing.md): signed release workflow
 - [docs/adr](./docs/adr): product and architecture decisions
