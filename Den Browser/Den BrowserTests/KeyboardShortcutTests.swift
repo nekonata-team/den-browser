@@ -297,6 +297,21 @@ struct KeyboardShortcutTests {
         #expect(store.temporaryContext == nil)
     }
 
+    @Test func hardReloadCurrentSheetShortcutReloadsOnlyFocusedBoard() throws {
+        let first = board("First")
+        let second = board("Second")
+        let store = makeStore(boards: [first, second])
+        let reload = try keyEvent(
+            characters: "R",
+            charactersIgnoringModifiers: "r",
+            modifiers: [.command, .shift],
+            keyCode: 15)
+
+        #expect(KeyboardController.handle(reload, store: store))
+        #expect(Set(store.runtimes.keys) == Set([first.id]))
+        #expect(store.focusedDesk?.focusedBoardID == first.id)
+    }
+
     @Test func reloadFocusedDeskSheetsShortcutReloadsOnlyFocusedDesk() throws {
         let first = board("First")
         let second = board("Second")

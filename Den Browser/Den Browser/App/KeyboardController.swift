@@ -100,6 +100,13 @@ final class KeyboardController {
             return false
         }
 
+        if character == "r", modifiers == [.command, .shift] {
+            if !event.isARepeat {
+                store.reloadFocusedBoardFromOrigin()
+            }
+            return true
+        }
+
         if character == "r", modifiers == [.command, .option, .shift] {
             if !event.isARepeat {
                 store.reloadFocusedDeskSheets()

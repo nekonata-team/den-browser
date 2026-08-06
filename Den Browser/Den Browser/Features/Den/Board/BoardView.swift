@@ -128,6 +128,12 @@ struct BoardView: View {
         }
 
         Button {
+            runtime.webView.reloadFromOrigin()
+        } label: {
+            Label("Hard Reload Current Sheet", systemImage: "arrow.clockwise.circle")
+        }
+
+        Button {
             store.focusBoard(board.id)
             store.goToFirstSheetInFocusedBoard()
         } label: {

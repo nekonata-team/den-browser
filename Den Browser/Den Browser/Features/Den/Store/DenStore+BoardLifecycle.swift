@@ -214,6 +214,10 @@ extension DenStore {
         focusedRuntime?.webView.reload()
     }
 
+    func reloadFocusedBoardFromOrigin() {
+        focusedRuntime?.webView.reloadFromOrigin()
+    }
+
     func reloadFocusedDeskSheets() {
         guard let desk = focusedDesk else { return }
         for board in desk.boards {

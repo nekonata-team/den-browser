@@ -57,6 +57,7 @@ The complete in-app guide is available from Settings, the Den menu, and `?` in D
 | Shift + `d` | Delete focused desk | Deletes an empty desk immediately. A desk with Boards requires confirmation. Unavailable for the last desk. |
 | Shift + `r` | Rename focused Desk | Opens the Rename Desk panel; Return confirms, Escape returns to Den Mode. |
 | Command + `R` | Reload current sheet | Available outside Den Mode. |
+| Shift + Command + `R` | Hard reload current sheet | Reloads the Current Sheet with end-to-end cache revalidation. Available in Sheet Input and Den Mode. |
 | Shift + Option + Command + `R` | Reload Focused Desk sheets | Reloads every Board's Current Sheet in the Focused Desk. Available in Sheet Input and Den Mode. |
 
 ## Overview

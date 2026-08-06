@@ -176,6 +176,9 @@ private struct DenCommands: Commands {
             Button("Reload Current Sheet") { store?.reloadFocusedBoard() }
                 .keyboardShortcut("r", modifiers: [.command])
                 .disabled(store == nil)
+            Button("Hard Reload Current Sheet") { store?.reloadFocusedBoardFromOrigin() }
+                .keyboardShortcut("r", modifiers: [.command, .shift])
+                .disabled(store == nil)
             Button("Reload Focused Desk Sheets") { store?.reloadFocusedDeskSheets() }
                 .keyboardShortcut("r", modifiers: [.command, .option, .shift])
                 .disabled(store?.focusedDesk?.boards.isEmpty != false)
