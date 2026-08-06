@@ -118,6 +118,14 @@ final class KeyboardController {
             return handleDenMode(event, store: store)
         }
 
+        if store.isDenMode,
+            store.temporaryContext == nil,
+            character == ",",
+            modifiers == []
+        {
+            return false
+        }
+
         if handleCustomShortcut(event, store: store, preferences: preferences) {
             return true
         }

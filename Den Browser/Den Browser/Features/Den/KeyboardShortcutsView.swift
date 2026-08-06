@@ -62,6 +62,7 @@ struct KeyboardShortcutsView: View {
                     item(["⇧", "P"], "Replace Desk from Preset"),
                     item(["o"], "Overview"),
                     item(["Tab"], "Toggle Drawer"),
+                    item([","], "Open Settings"),
                     item(["?"], "Keyboard Shortcuts"),
                     item(["z"], "Toggle Zen View"),
                 ]),

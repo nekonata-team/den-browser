@@ -147,6 +147,9 @@ private struct DenCommands: Commands {
                 .disabled(store == nil)
             Button("Keyboard Shortcuts…") { store?.showKeyboardShortcuts() }
                 .disabled(store == nil)
+            SettingsLink()
+                .keyboardShortcut(",", modifiers: [])
+                .disabled(store?.isDenMode != true || store?.temporaryContext != nil)
             Button("Toggle Drawer") { store?.toggleDrawer() }
                 .disabled(store == nil)
 

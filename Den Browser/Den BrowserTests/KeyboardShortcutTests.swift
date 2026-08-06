@@ -297,6 +297,20 @@ struct KeyboardShortcutTests {
         #expect(store.temporaryContext == nil)
     }
 
+    @Test func commaPassesThroughForSettingsOnlyInDenMode() throws {
+        let store = makeStore(boards: [board("First")])
+        let comma = try keyEvent(
+            characters: ",", charactersIgnoringModifiers: ",", modifiers: [], keyCode: 43)
+
+        #expect(!KeyboardController.handle(comma, store: store))
+
+        store.isDenMode = true
+        #expect(!KeyboardController.handle(comma, store: store))
+
+        store.showOverview()
+        #expect(KeyboardController.handle(comma, store: store))
+    }
+
     @Test func hardReloadCurrentSheetShortcutReloadsOnlyFocusedBoard() throws {
         let first = board("First")
         let second = board("Second")
