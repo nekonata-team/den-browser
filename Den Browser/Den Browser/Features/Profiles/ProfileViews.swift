@@ -25,29 +25,13 @@ struct ProfileWindowView: View {
         if let profile = profileManager.profile(id: activeProfileID),
             let store = profileManager.store(for: activeProfileID)
         {
-            ZStack(alignment: .topTrailing) {
-                DenView(profileName: profile.name, profileColor: profile.color.color)
-
-                if !store.isZenViewPresented && !store.isOverviewPresented {
-                    HStack(spacing: 8) {
-                        if store.focusedDesk?.boards.isEmpty == false {
-                            Button {
-                                store.showSaveDeskPresetPanel()
-                            } label: {
-                                Image(systemName: "bookmark")
-                                    .font(.system(size: 13, weight: .semibold))
-                                    .frame(width: 30, height: 30)
-                            }
-                            .buttonStyle(.borderless)
-                            .tint(.secondary)
-                            .fixedSize()
-                            .accessibilityLabel("Save Desk as Preset")
-                            .help("Save Desk as Preset")
-                        }
-
-                        ProfileChip(profile: profile)
-                    }
-                    .padding(12)
+            ZStack(alignment: .top) {
+                DenView(
+                    profileName: profile.name,
+                    profileColor: profile.color.color,
+                    shouldShowHeader: !store.isZenViewPresented
+                ) {
+                    DenHeader(profile: profile)
                 }
 
                 if profileManager.openProfilePanelProfileID == activeProfileID {
@@ -82,52 +66,6 @@ struct ProfileWindowView: View {
             ContentUnavailableView("Profile unavailable", systemImage: "person.crop.circle.badge.exclamationmark")
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-    }
-}
-
-private struct ProfileChip: View {
-    let profile: ProfileState
-
-    @Environment(ProfileManager.self) private var profileManager
-    @Environment(\.openWindow) private var openWindow
-
-    var body: some View {
-        Menu {
-            ForEach(profileManager.profiles) { item in
-                Button {
-                    openWindow(value: item.id)
-                } label: {
-                    Label(item.name, systemImage: item.id == profile.id ? "checkmark" : "person.crop.circle")
-                }
-            }
-
-            Divider()
-
-            Button("Open Profile…") {
-                profileManager.openProfilePanelProfileID = profile.id
-            }
-            .keyboardShortcut("p", modifiers: [.control, .command])
-
-            Button("Clear Browsing Data…") {
-                profileManager.clearBrowsingDataProfileID = profile.id
-            }
-
-            SettingsLink {
-                Text("New Profile…")
-            }
-            SettingsLink {
-                Text("Manage Profiles…")
-            }
-        } label: {
-            Image(systemName: "person.fill")
-                .font(.system(size: 13, weight: .semibold))
-                .frame(width: 30, height: 30)
-        }
-        .menuStyle(.borderlessButton)
-        .tint(.secondary)
-        .fixedSize()
-        .accessibilityLabel("Profile: \(profile.name)")
-        .help("Profile: \(profile.name)")
     }
 }
 

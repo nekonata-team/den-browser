@@ -1,8 +1,10 @@
 import SwiftUI
 
-struct DenView: View {
+struct DenView<Header: View>: View {
     private let profileName: String?
     private let profileColor: Color
+    private let shouldShowHeader: Bool
+    private let header: Header
 
     @Environment(DenStore.self) private var store
     @Environment(AppPreferences.self) private var preferences
@@ -20,9 +22,16 @@ struct DenView: View {
     @FocusState private var isRenamePanelFocused: Bool
     @FocusState private var isDeskFilterFocused: Bool
 
-    init(profileName: String? = nil, profileColor: Color = .blue) {
+    init(
+        profileName: String? = nil,
+        profileColor: Color = .blue,
+        shouldShowHeader: Bool,
+        @ViewBuilder header: () -> Header
+    ) {
         self.profileName = profileName
         self.profileColor = profileColor
+        self.shouldShowHeader = shouldShowHeader
+        self.header = header()
     }
 
     var body: some View {
@@ -43,11 +52,8 @@ struct DenView: View {
                     .accessibilityHidden(store.temporaryContext != nil)
                 }
 
-                if shouldShowDeskSwitcher {
-                    deskSwitcher
-                        .padding(.top, DenLayout.outerInset)
-                        .allowsHitTesting(store.temporaryContext == nil)
-                        .accessibilityHidden(store.temporaryContext != nil)
+                if shouldShowHeader {
+                    header
                 }
 
                 if store.isDeskFilterPresented && store.filteredDeskBoards.isEmpty {
@@ -60,8 +66,8 @@ struct DenView: View {
                     deskFilterOverlay
                         .padding(
                             .top,
-                            shouldShowDeskSwitcher
-                                ? DenLayout.boardTopInsetWithDeskSwitcher + DenLayout.outerInset
+                            shouldShowHeader
+                                ? DenLayout.denHeaderHeight + DenLayout.outerInset
                                 : DenLayout.outerInset
                         )
                         .transition(DenMotion.transition(reduceMotion: shouldReduceMotion, scale: 0.96))
@@ -127,10 +133,6 @@ struct DenView: View {
         let profilePrefix = profileName.map { "\($0) · " } ?? ""
         guard store.isDenMode else { return profileName.map { "\($0) — Den Browser" } ?? "Den Browser" }
         return profilePrefix + "DEN MODE"
-    }
-
-    private var deskSwitcher: some View {
-        DeskSwitcher(profileColor: profileColor)
     }
 
     private var deskFilterOverlay: some View {
@@ -227,7 +229,12 @@ struct DenView: View {
 
     private func panelOverlay<Content: View>(_ content: Content) -> some View {
         content
-            .padding(.top, shouldShowDeskSwitcher ? DenLayout.panelTopInset : DenLayout.outerInset)
+            .padding(
+                .top,
+                shouldShowHeader
+                    ? DenLayout.denHeaderHeight + DenLayout.panelGap
+                    : DenLayout.outerInset
+            )
             .transition(DenMotion.transition(reduceMotion: shouldReduceMotion, scale: 0.96))
     }
 
@@ -256,10 +263,6 @@ struct DenView: View {
         case .reservedLabel:
             saveDeskPresetMessage = "Built-in Desk Preset labels are reserved"
         }
-    }
-
-    private var shouldShowDeskSwitcher: Bool {
-        !store.isZenViewPresented
     }
 
     private func defaultBoardWidth(in size: CGSize) -> Double {
@@ -327,7 +330,7 @@ struct DenView: View {
     private func boardStrip(in size: CGSize) -> some View {
         BoardStrip(
             size: size,
-            shouldShowDeskSwitcher: shouldShowDeskSwitcher,
+            shouldShowHeader: shouldShowHeader,
             profileColor: profileColor,
             boardSpacing: DenLayout.outerInset,
             boardHorizontalPadding: DenLayout.outerInset,
@@ -371,6 +374,14 @@ struct DenView: View {
         )
     }
 
+}
+
+extension DenView where Header == EmptyView {
+    init(profileName: String? = nil, profileColor: Color = .blue) {
+        self.init(profileName: profileName, profileColor: profileColor, shouldShowHeader: false) {
+            EmptyView()
+        }
+    }
 }
 
 #Preview {

@@ -13,8 +13,7 @@ enum DenLayout {
     static let overlayInset: CGFloat = 18
     static let deskFilterWidth: CGFloat = 320
 
-    static let boardTopInsetWithDeskSwitcher = outerInset + deskSwitcherHeight
-    static let panelTopInset = boardTopInsetWithDeskSwitcher + panelGap
+    static let denHeaderHeight = deskSwitcherHeight
 }
 
 enum DenPanelLayout {

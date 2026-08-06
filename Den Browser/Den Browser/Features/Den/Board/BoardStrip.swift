@@ -7,7 +7,7 @@ struct BoardStrip: View {
     @Environment(\.appearsActive) private var appearsActive
 
     let size: CGSize
-    let shouldShowDeskSwitcher: Bool
+    let shouldShowHeader: Bool
     let profileColor: Color
     let boardSpacing: CGFloat
     let boardHorizontalPadding: CGFloat
@@ -38,7 +38,7 @@ struct BoardStrip: View {
             store.isDeskFilterPresented
             ? store.filteredDeskBoards
             : store.focusedDesk?.boards ?? []
-        let topInset = shouldShowDeskSwitcher ? DenLayout.boardTopInsetWithDeskSwitcher : DenLayout.outerInset
+        let topInset = shouldShowHeader ? DenLayout.denHeaderHeight : DenLayout.outerInset
         let bottomInset = DenLayout.outerInset
         let boardHeight = max(DenLayout.minimumBoardHeight, size.height - topInset - bottomInset)
         let maximizedBoardWidth = max(

@@ -29,6 +29,7 @@ struct DeskSwitcher: View {
                             deskSwitcherItem(desk, number: index + 1, in: geometry.size)
                         }
                     }
+                    .frame(height: DenLayout.deskSwitcherHeight)
                     .scrollTargetLayout()
                 }
                 .padding(.horizontal, DenLayout.chromeHorizontalPadding)
