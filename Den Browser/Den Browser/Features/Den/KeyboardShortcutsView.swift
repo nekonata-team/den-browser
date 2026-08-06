@@ -39,6 +39,7 @@ struct KeyboardShortcutsView: View {
                     item(["⌘", "T"], "Open Board"),
                     item(["⌘", "L"], "Edit Focused Board Link"),
                     item(["⌘", "R"], "Reload Current Sheet"),
+                    item(["⌘", "⌥", "⇧", "R"], "Reload Focused Desk Sheets"),
                     item(["⌘", "W"], "Remove Focused Board"),
                     item(["⇧", "⌘", "W"], "Close Profile Window"),
                     item(["⌘", "Q"], "Quit Den Browser"),

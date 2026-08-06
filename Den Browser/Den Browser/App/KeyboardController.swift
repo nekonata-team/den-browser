@@ -100,6 +100,13 @@ final class KeyboardController {
             return false
         }
 
+        if character == "r", modifiers == [.command, .option, .shift] {
+            if !event.isARepeat {
+                store.reloadFocusedDeskSheets()
+            }
+            return true
+        }
+
         if store.isDenMode, store.isDeskFilterPresented {
             return handleDenMode(event, store: store)
         }

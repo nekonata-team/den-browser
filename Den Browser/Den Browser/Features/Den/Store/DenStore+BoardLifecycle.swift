@@ -214,6 +214,13 @@ extension DenStore {
         focusedRuntime?.webView.reload()
     }
 
+    func reloadFocusedDeskSheets() {
+        guard let desk = focusedDesk else { return }
+        for board in desk.boards {
+            runtime(for: board).webView.reload()
+        }
+    }
+
     private func normalizedURL(from text: String) -> URL? {
         resolveOpenBoardInput(text).map { SheetURLPolicy.canonicalSheetURL($0.url) }
     }

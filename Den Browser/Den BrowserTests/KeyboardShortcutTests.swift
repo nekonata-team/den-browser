@@ -297,6 +297,34 @@ struct KeyboardShortcutTests {
         #expect(store.temporaryContext == nil)
     }
 
+    @Test func reloadFocusedDeskSheetsShortcutReloadsOnlyFocusedDesk() throws {
+        let first = board("First")
+        let second = board("Second")
+        let other = board("Other")
+        let firstDesk = DeskState(
+            label: "First Desk",
+            boards: [first, second],
+            focusedBoardID: first.id)
+        let secondDesk = DeskState(
+            label: "Second Desk",
+            boards: [other],
+            focusedBoardID: other.id)
+        let store = DenStore(
+            state: DenState(
+                desks: [firstDesk, secondDesk],
+                focusedDeskID: firstDesk.id))
+        let reload = try keyEvent(
+            characters: "R",
+            charactersIgnoringModifiers: "r",
+            modifiers: [.command, .option, .shift],
+            keyCode: 15)
+
+        #expect(KeyboardController.handle(reload, store: store))
+        #expect(Set(store.runtimes.keys) == Set([first.id, second.id]))
+        #expect(store.focusedDesk?.id == firstDesk.id)
+        #expect(store.state.desks.map(\.id) == [firstDesk.id, secondDesk.id])
+    }
+
     @Test func denModeEOpensFocusedBoardLinkEditor() throws {
         let store = makeStore(boards: [board("First")])
         store.isDenMode = true
