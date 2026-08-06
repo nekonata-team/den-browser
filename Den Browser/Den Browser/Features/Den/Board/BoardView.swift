@@ -39,6 +39,8 @@ struct BoardView: View {
             }
         }
         .frame(width: width, height: height)
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("board-surface.\(board.id.uuidString.lowercased())")
         .clipShape(RoundedRectangle(cornerRadius: DenRadius.large, style: .continuous))
         .overlay {
             RoundedRectangle(cornerRadius: DenRadius.large, style: .continuous)

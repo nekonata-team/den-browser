@@ -183,7 +183,7 @@ final class Den_BrowserUITests: XCTestCase {
         let boardStrip = app.scrollViews["board-strip"].firstMatch
         XCTAssertTrue(boardStrip.waitForExistence(timeout: 5))
         assertEventually("The initial Board should fill most of the Board Strip") {
-            self.board(.alpha, in: app).frame.width > boardStrip.frame.width * 0.85
+            self.boardSurface(.alpha, in: app).frame.width > boardStrip.frame.width * 0.85
         }
 
         // Duplicate Alpha. The new Board must become visible and finish centered.
@@ -192,27 +192,31 @@ final class Den_BrowserUITests: XCTestCase {
         }
         app.typeKey("\r", modifierFlags: [])
 
-        let headerPredicate = NSPredicate(format: "identifier BEGINSWITH 'board-header.'")
-        let headersQuery = boardStrip.descendants(matching: .any).matching(headerPredicate)
+        let surfacePredicate = NSPredicate(format: "identifier BEGINSWITH 'board-surface.'")
+        let surfacesQuery = boardStrip.descendants(matching: .any).matching(surfacePredicate)
 
-        assertEventually("New board header should appear") {
-            headersQuery.allElementsBoundByIndex.count == 2
+        assertEventually("New board surface should appear") {
+            surfacesQuery.allElementsBoundByIndex.count == 2
         }
 
-        let allHeaders = headersQuery.allElementsBoundByIndex
+        let allSurfaces = surfacesQuery.allElementsBoundByIndex
 
         guard
-            let newBoardHeader = allHeaders.first(where: {
-                !FixtureBoard.allHeaderIdentifiers.contains($0.identifier)
+            let newBoardSurface = allSurfaces.first(where: {
+                !FixtureBoard.allSurfaceIdentifiers.contains($0.identifier)
             })
         else {
-            XCTFail("Failed to find the newly created board header")
+            XCTFail("Failed to find the newly created board surface")
             return
         }
+        let newBoardID = String(newBoardSurface.identifier.dropFirst("board-surface.".count))
+        let newBoardHeader = app.descendants(matching: .any)
+            .matching(identifier: "board-header.\(newBoardID)")
+            .firstMatch
         XCTAssertTrue(newBoardHeader.wait(for: \.isSelected, toEqual: true, timeout: 5))
 
         assertEventuallyEqual(
-            actual: { newBoardHeader.frame.midX },
+            actual: { newBoardSurface.frame.midX },
             expected: boardStrip.frame.midX,
             tolerance: 50,
             message: "New Board should finish centered after its insertion animation"
@@ -223,17 +227,19 @@ final class Den_BrowserUITests: XCTestCase {
     func testRemovingFocusedBoardSettlesAtLeadingEdge() throws {
         let app = launchApp()
         let boardStrip = app.scrollViews["board-strip"].firstMatch
-        let alpha = board(.alpha, in: app)
-        let bravo = board(.bravo, in: app)
+        let alpha = boardSurface(.alpha, in: app)
+        let bravo = boardSurface(.bravo, in: app)
+        let alphaHeader = boardHeader(.alpha, in: app)
+        let bravoHeader = boardHeader(.bravo, in: app)
 
-        boardHeader(.bravo, in: app).click()
-        XCTAssertTrue(bravo.wait(for: \.isSelected, toEqual: true, timeout: 5))
+        bravoHeader.click()
+        XCTAssertTrue(bravoHeader.wait(for: \.isSelected, toEqual: true, timeout: 5))
 
         enterDenMode(in: app)
         app.typeText("x")
 
         XCTAssertTrue(bravo.waitForNonExistence(timeout: 5))
-        XCTAssertTrue(alpha.wait(for: \.isSelected, toEqual: true, timeout: 5))
+        XCTAssertTrue(alphaHeader.wait(for: \.isSelected, toEqual: true, timeout: 5))
         assertEventually("Remaining Boards should settle at the leading edge") {
             abs(alpha.frame.minX - boardStrip.frame.minX) < 30
         }
@@ -243,8 +249,8 @@ final class Den_BrowserUITests: XCTestCase {
     func testOnOverflowKeepsBoardCoordinatesStableAcrossBoundary() throws {
         let app = launchApp(centerBoardsOnOverflow: true)
         let boardStrip = app.scrollViews["board-strip"].firstMatch
-        let alpha = board(.alpha, in: app)
-        let charlie = board(.charlie, in: app)
+        let alpha = boardSurface(.alpha, in: app)
+        let charlie = boardSurface(.charlie, in: app)
 
         enterDenMode(in: app)
         app.typeText("w3")
@@ -264,22 +270,22 @@ final class Den_BrowserUITests: XCTestCase {
         }
         app.typeKey(.return, modifierFlags: [])
 
-        let headerPredicate = NSPredicate(format: "identifier BEGINSWITH 'board-header.'")
-        let headersQuery = boardStrip.descendants(matching: .any).matching(headerPredicate)
-        assertEventually("New board header should appear") {
-            headersQuery.allElementsBoundByIndex.count == 4
+        let surfacePredicate = NSPredicate(format: "identifier BEGINSWITH 'board-surface.'")
+        let surfacesQuery = boardStrip.descendants(matching: .any).matching(surfacePredicate)
+        assertEventually("New board surface should appear") {
+            surfacesQuery.allElementsBoundByIndex.count == 4
         }
 
-        let newBoard = headersQuery.allElementsBoundByIndex.first {
-            !FixtureBoard.allHeaderIdentifiers.contains($0.identifier)
+        let newBoardSurfaceElement = surfacesQuery.allElementsBoundByIndex.first {
+            !FixtureBoard.allSurfaceIdentifiers.contains($0.identifier)
         }
-        let newBoardIdentifier = try XCTUnwrap(newBoard?.identifier)
-        let newBoardHeader =
+        let newBoardIdentifier = try XCTUnwrap(newBoardSurfaceElement?.identifier)
+        let newBoardSurface =
             app.descendants(matching: .any)
             .matching(identifier: newBoardIdentifier)
             .firstMatch
         assertEventuallyEqual(
-            actual: { newBoardHeader.frame.midX },
+            actual: { newBoardSurface.frame.midX },
             expected: boardStrip.frame.midX,
             tolerance: 50,
             message: "New Board should center after crossing the overflow boundary"
@@ -288,7 +294,7 @@ final class Den_BrowserUITests: XCTestCase {
         enterDenMode(in: app)
         app.typeText("x")
 
-        XCTAssertTrue(newBoardHeader.waitForNonExistence(timeout: 5))
+        XCTAssertTrue(newBoardSurface.waitForNonExistence(timeout: 5))
         assertEventuallyEqual(
             actual: { alpha.frame.minX },
             expected: initialAlphaX,
@@ -406,6 +412,13 @@ final class Den_BrowserUITests: XCTestCase {
     }
 
     @MainActor
+    private func boardSurface(_ board: FixtureBoard, in app: XCUIApplication) -> XCUIElement {
+        app.descendants(matching: .any)
+            .matching(identifier: "board-surface.\(board.rawValue)")
+            .firstMatch
+    }
+
+    @MainActor
     private func boardHeader(_ board: FixtureBoard, in app: XCUIApplication) -> XCUIElement {
         app.descendants(matching: .any).matching(identifier: "board-header.\(board.rawValue)").firstMatch
     }
@@ -454,8 +467,8 @@ private enum FixtureBoard: String, CaseIterable {
     case bravo = "00000000-0000-0000-0000-000000000302"
     case charlie = "00000000-0000-0000-0000-000000000303"
 
-    static var allHeaderIdentifiers: Set<String> {
-        Set(allCases.map { "board-header.\($0.rawValue)" })
+    static var allSurfaceIdentifiers: Set<String> {
+        Set(allCases.map { "board-surface.\($0.rawValue)" })
     }
 }
 

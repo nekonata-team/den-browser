@@ -3,6 +3,17 @@ import Foundation
 import WebKit
 
 @MainActor
+final class DrawerPreviewWebView: WKWebView {
+    var onMoveToWindow: (() -> Void)?
+
+    override func viewDidMoveToWindow() {
+        super.viewDidMoveToWindow()
+        guard window != nil else { return }
+        onMoveToWindow?()
+    }
+}
+
+@MainActor
 final class DrawerPreviewRuntime: NSObject, WKNavigationDelegate, WKUIDelegate {
     let id: UUID
     let webView: WKWebView
@@ -28,7 +39,7 @@ final class DrawerPreviewRuntime: NSObject, WKNavigationDelegate, WKUIDelegate {
         let configuration = WKWebViewConfiguration()
         configuration.websiteDataStore = websiteDataStore
         configuration.userContentController = sheetNavigation.userContentController
-        webView = WKWebView(frame: .zero, configuration: configuration)
+        webView = DrawerPreviewWebView(frame: .zero, configuration: configuration)
         webView.customUserAgent = BoardRuntime.defaultUserAgent
         webView.pageZoom = CGFloat(sheetScale) / 100
         webView.allowsBackForwardNavigationGestures = true
