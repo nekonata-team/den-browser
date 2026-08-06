@@ -196,13 +196,16 @@ private struct ProfilesSettingsView: View {
             }
 
             Section("New Profile") {
-                TextField("Name", text: $newName)
-                Picker("Color", selection: $newColor) {
-                    ForEach(ProfileColor.allCases) { color in
-                        Label(color.label, systemImage: "circle.fill")
-                            .foregroundStyle(color.color)
-                            .tag(color)
+                HStack {
+                    ProfileColorDot(color: newColor)
+                    TextField("Name", text: $newName)
+                    Picker("Color", selection: $newColor) {
+                        ForEach(ProfileColor.allCases) { color in
+                            Text(color.label).tag(color)
+                        }
                     }
+                    .labelsHidden()
+                    .frame(width: 100)
                 }
                 Button("Create Profile") {
                     guard profileManager.createProfile(name: newName, color: newColor) != nil else { return }
@@ -258,6 +261,16 @@ private struct ProfilesSettingsView: View {
     }
 }
 
+private struct ProfileColorDot: View {
+    let color: ProfileColor
+
+    var body: some View {
+        Circle()
+            .fill(color.color)
+            .frame(width: 10, height: 10)
+    }
+}
+
 private struct ProfileSettingsRow: View {
     let profile: ProfileState
     let canDelete: Bool
@@ -275,7 +288,7 @@ private struct ProfileSettingsRow: View {
 
     var body: some View {
         HStack {
-            Circle().fill(profile.color.color).frame(width: 11, height: 11)
+            ProfileColorDot(color: profile.color)
             TextField("Profile name", text: $name)
                 .onSubmit { TextInputComposition.performUnlessActive(saveName) }
             Picker("Color", selection: colorBinding) {
