@@ -28,7 +28,7 @@ struct BoardView: View {
                 BoardWebView(
                     webView: runtime.webView,
                     isFocused: isFocused && !store.isDenMode && store.temporaryContext == nil,
-                    isHidden: store.isDrawerOpen,
+                    isHidden: store.isDrawerOpen || store.isOverviewPresented,
                     isPointerFocusEnabled: isPointerFocusEnabled,
                     onFocus: onFocus
                 )
