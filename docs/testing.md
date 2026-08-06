@@ -19,6 +19,20 @@ Stable product behavior should be covered by unit, integration, or end-to-end te
 
 Per [ADR-0020](./adr/0020-test-critical-ui-workflows.md), each UI test is an independent user-visible workflow, not an exhaustive input permutation. Exhaustive shortcut mappings, state mutations (adding/removing boards), branches, and edge cases remain focused unit tests to prevent test suite hangs and maintain fast test execution.
 
+### UI test readability
+
+UI tests use a lightweight BDD-style structure. This is a readability convention, not a second test framework:
+
+- `Given` describes the user-visible starting context.
+- `When` describes a user action or meaningful transition.
+- `Then` checks the observable result.
+
+The `given`, `when`, and `then` helpers in `BDD.swift` record these sections with XCTest's `XCTContext` activities. They are available only to UI tests through a small marker protocol and must stay thin. Do not build a general-purpose fluent DSL or hide the scenario's important assertions behind helpers.
+
+Keep scenario text in Den's domain language (`Desk`, `Board`, `Sheet`, `Drawer`, and `Drawer Preview`). Hide only mechanical details that obscure the behavior, such as repeated keyboard sequences, accessibility queries, fixture setup, or polling. The test body should still make the causal sequence and final assertions obvious.
+
+Keep `Then` blocks assertion-only. Put input, navigation, dismissal, and other state-changing operations in `When` blocks. Use `assertEventually` for UI settling and animation boundaries; do not add sleeps or arbitrary delays.
+
 UI tests launch with a fixed three-Board fixture, except focused workflows that request its one-Board variant.
 Profile documents use a fresh temporary directory, preferences use a dedicated defaults suite, and Sheets use a
 non-persistent WebKit store with local data URLs. UI tests must not read or write the user's Profiles, preferences,
