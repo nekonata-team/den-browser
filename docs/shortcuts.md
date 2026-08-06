@@ -63,6 +63,7 @@ The complete in-app guide is available from Settings, the Den menu, and `?` in D
 ## Overview
 
 Overview accepts movement, Shift plus movement, `/` (search/filter), Return, and Escape. Movement changes the Overview Selection; Shift moves its board. Pressing `/` enters Search Mode to dynamically filter desks and boards (Return confirms the query to allow navigation, Escape cancels and clears the query). Return in Normal Mode makes the selection the Focused Board. Escape in Normal Mode clears the query if active, or closes overview back to Den Mode.
+When no Desk or Board matches the query, Overview shows a no-results state.
 
 ## Focused Desk filter
 

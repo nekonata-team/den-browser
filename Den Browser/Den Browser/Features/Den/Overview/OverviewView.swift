@@ -73,6 +73,11 @@ struct OverviewView: View {
                     value: store.state.desks.map { $0.boards.map(\.id) })
             }
             .scrollPosition($scrollPosition, anchor: .center)
+            .overlay {
+                if !hasOverviewMatches {
+                    ContentUnavailableView.search(text: store.overviewQuery)
+                }
+            }
         }
         .padding(DenOverviewLayout.contentPadding)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
@@ -102,6 +107,13 @@ struct OverviewView: View {
         withAnimation(DenMotion.spatial(reduceMotion: shouldReduceMotion)) {
             scrollPosition.scrollTo(id: boardID, anchor: .center)
         }
+    }
+
+    private var hasOverviewMatches: Bool {
+        store.overviewQuery.isEmpty
+            || store.state.desks.contains { desk in
+                desk.boards.contains { store.matchesOverviewFilter($0, in: desk) }
+            }
     }
 
     private func deskRow(_ desk: DeskState, filteredBoards: [BoardState]) -> some View {
