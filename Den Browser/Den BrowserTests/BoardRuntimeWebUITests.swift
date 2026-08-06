@@ -124,7 +124,7 @@ struct BoardRuntimeWebUITests {
         )
     }
 
-    @Test func customSchemeLinkOpensInExternalApplication() {
+    @Test func customSchemeNavigationOpensInExternalApplication() {
         #expect(
             BoardRuntime.shouldOpenExternalApplication(
                 navigationType: .linkActivated,
@@ -138,7 +138,7 @@ struct BoardRuntimeWebUITests {
             )
         )
         #expect(
-            !BoardRuntime.shouldOpenExternalApplication(
+            BoardRuntime.shouldOpenExternalApplication(
                 navigationType: .other,
                 url: URL(string: "testapp://open/example")
             )

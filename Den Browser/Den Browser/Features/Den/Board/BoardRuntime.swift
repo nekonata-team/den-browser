@@ -230,7 +230,7 @@ final class BoardRuntime: NSObject, NSWindowDelegate, ObservableObject, WKDownlo
         navigationType: WKNavigationType,
         url: URL?
     ) -> Bool {
-        navigationType == .linkActivated
+        (navigationType == .linkActivated || navigationType == .other)
             && url.map(ExternalURLPolicy.isSupported) == true
     }
 
@@ -365,10 +365,10 @@ final class BoardRuntime: NSObject, NSWindowDelegate, ObservableObject, WKDownlo
     ) -> WKWebView? {
         guard navigationAction.targetFrame == nil else { return nil }
 
-        if navigationAction.navigationType == .linkActivated,
-            let url = navigationAction.request.url,
-            ExternalURLPolicy.isSupported(url)
-        {
+        if Self.shouldOpenExternalApplication(
+            navigationType: navigationAction.navigationType,
+            url: navigationAction.request.url
+        ), let url = navigationAction.request.url {
             NSWorkspace.shared.open(url)
             return nil
         }
