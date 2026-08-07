@@ -22,11 +22,19 @@ final class BoardRuntime: NSObject, NSWindowDelegate, ObservableObject, WKDownlo
             + "Version/\(versionString) Safari/605.1.15"
     }
 
+    static let webViewFallbackBackgroundColor = NSColor(
+        calibratedRed: 0.08,
+        green: 0.10,
+        blue: 0.12,
+        alpha: 1
+    )
+
     let id: UUID
     let webView: WKWebView
     @Published private(set) var faviconURL: URL?
     @Published private(set) var isLoading = false
     @Published private(set) var estimatedProgress = 0.0
+    @Published private(set) var isShowingInitialLoadFallback = false
 
     private let sheetNavigationActions: SheetNavigationManager.Actions
     private let events: Events
@@ -119,6 +127,7 @@ final class BoardRuntime: NSObject, NSWindowDelegate, ObservableObject, WKDownlo
         }
 
         if let url = board.currentSheetURL {
+            isShowingInitialLoadFallback = true
             webView.load(URLRequest(url: url))
         }
     }
@@ -157,6 +166,7 @@ final class BoardRuntime: NSObject, NSWindowDelegate, ObservableObject, WKDownlo
         webView.stopLoading()
         isLoading = false
         estimatedProgress = 0
+        isShowingInitialLoadFallback = false
         webView.navigationDelegate = nil
         webView.uiDelegate = nil
         urlObservation?.invalidate()
@@ -176,11 +186,32 @@ final class BoardRuntime: NSObject, NSWindowDelegate, ObservableObject, WKDownlo
         updateFavicon()
     }
 
+    func webView(_ webView: WKWebView, didCommit navigation: WKNavigation!) {
+        guard isShowingInitialLoadFallback else { return }
+        DispatchQueue.main.async { [weak self] in
+            self?.isShowingInitialLoadFallback = false
+        }
+    }
+
     func webView(
         _ webView: WKWebView,
         didStartProvisionalNavigation navigation: WKNavigation!
     ) {
         faviconURL = nil
+    }
+
+    func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
+        isShowingInitialLoadFallback = false
+        events.onChange(id, webView.url, webView.title)
+    }
+
+    func webView(
+        _ webView: WKWebView,
+        didFailProvisionalNavigation navigation: WKNavigation!,
+        withError error: Error
+    ) {
+        isShowingInitialLoadFallback = false
+        events.onChange(id, webView.url, webView.title)
     }
 
     func webView(
@@ -281,6 +312,7 @@ final class BoardRuntime: NSObject, NSWindowDelegate, ObservableObject, WKDownlo
         navigationAction: WKNavigationAction,
         didBecome download: WKDownload
     ) {
+        isShowingInitialLoadFallback = false
         download.delegate = self
     }
 
@@ -289,6 +321,7 @@ final class BoardRuntime: NSObject, NSWindowDelegate, ObservableObject, WKDownlo
         navigationResponse: WKNavigationResponse,
         didBecome download: WKDownload
     ) {
+        isShowingInitialLoadFallback = false
         download.delegate = self
     }
 

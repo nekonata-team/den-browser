@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 import WebKit
 
@@ -33,6 +34,10 @@ struct BoardView: View {
                     onFocus: onFocus
                 )
 
+                if runtime.isShowingInitialLoadFallback {
+                    initialLoadFallback
+                }
+
                 if runtime.isLoading {
                     loadingIndicator
                 }
@@ -56,6 +61,12 @@ struct BoardView: View {
         .onAppear {
             store.sheetNavigation.refreshConfiguration(for: runtime.webView)
         }
+    }
+
+    private var initialLoadFallback: some View {
+        Color(nsColor: BoardRuntime.webViewFallbackBackgroundColor)
+            .accessibilityHidden(true)
+            .allowsHitTesting(false)
     }
 
     private var loadingIndicator: some View {
