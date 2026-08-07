@@ -269,6 +269,48 @@ struct KeyboardShortcutTests {
         #expect(store.expandedDrawerItemID == previewID)
     }
 
+    @Test func denModeShiftDRequestsDrawerClearConfirmation() throws {
+        let store = makeStore(boards: [board("First")])
+        store.keepInDrawer(try #require(URL(string: "https://first.example/")))
+        store.keepInDrawer(try #require(URL(string: "https://second.example/")))
+        store.isDenMode = true
+
+        let clear = try keyEvent(
+            characters: "D",
+            charactersIgnoringModifiers: "d",
+            modifiers: [.shift],
+            keyCode: 2)
+
+        #expect(KeyboardController.handle(clear, store: store))
+        #expect(store.drawerPendingDeletionCount == 2)
+        #expect(store.state.drawerItems.count == 2)
+    }
+
+    @Test func denModeShiftDDoesNothingInDrawerFilterModeOrOnRepeat() throws {
+        let store = makeStore(boards: [board("First")])
+        store.keepInDrawer(try #require(URL(string: "https://example.com/")))
+        store.isDenMode = true
+
+        let clear = try keyEvent(
+            characters: "D",
+            charactersIgnoringModifiers: "d",
+            modifiers: [.shift],
+            keyCode: 2)
+        store.enterDrawerFilterMode()
+        #expect(KeyboardController.handle(clear, store: store))
+        #expect(!store.hasPendingConfirmation)
+
+        store.exitDrawerFilterMode()
+        let repeatClear = try keyEvent(
+            characters: "D",
+            charactersIgnoringModifiers: "d",
+            modifiers: [.shift],
+            isARepeat: true,
+            keyCode: 2)
+        #expect(KeyboardController.handle(repeatClear, store: store))
+        #expect(!store.hasPendingConfirmation)
+    }
+
     @Test func nativeCommandShortcutsPassThroughWithoutExecuting() throws {
         let first = board("First")
         let second = board("Second")

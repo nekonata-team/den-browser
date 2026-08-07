@@ -366,10 +366,9 @@ final class KeyboardController {
             return false
         }
 
-        let modifiers = normalizedModifiers(for: event)
-        guard modifiers == [] else { return true }
-
         if store.isDrawerFilterMode {
+            let modifiers = normalizedModifiers(for: event)
+            guard modifiers == [] else { return true }
             if hasMarkedText(in: event) {
                 return false
             }
@@ -385,6 +384,15 @@ final class KeyboardController {
         }
 
         if store.isDenMode {
+            let modifiers = normalizedModifiers(for: event)
+            if modifiers == [.shift], characterIgnoringModifiers(for: event) == "d" {
+                if !event.isARepeat {
+                    store.requestDrawerClearConfirmation()
+                }
+                return true
+            }
+            guard modifiers == [] else { return true }
+
             if isTab(event) {
                 store.closeDrawer()
                 return true
@@ -431,6 +439,9 @@ final class KeyboardController {
             }
             return true
         }
+
+        let modifiers = normalizedModifiers(for: event)
+        guard modifiers == [] else { return true }
 
         if isEscape(event) {
             store.closeDrawer()

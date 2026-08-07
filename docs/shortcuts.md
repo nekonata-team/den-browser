@@ -55,7 +55,7 @@ The complete in-app guide is available from Settings, the Den menu, and `?` in D
 | `r` | Rename focused Board | Opens the Rename Board panel; Return confirms, Escape returns to Den Mode. |
 | `x` / `d` | Remove focused Board | Releases its live Sheet runtime. Key repeat is ignored. |
 | `u` | Restore Recently Removed Board | Available for the current app run. Key repeat is ignored. |
-| Shift + `d` | Delete focused desk | Deletes an empty desk immediately. A desk with Boards requires confirmation. Unavailable for the last desk. |
+| Shift + `d` | Discard all Drawer items / Delete focused desk | In Drawer Den Mode, opens confirmation to discard every Drawer Item. In other Den Mode contexts, deletes an empty desk immediately; a desk with Boards requires confirmation. Unavailable for the last desk. Key repeat is ignored. |
 | Shift + `r` | Rename focused Desk | Opens the Rename Desk panel; Return confirms, Escape returns to Den Mode. |
 | Command + `R` | Reload current sheet | Available outside Den Mode. |
 | Shift + Command + `R` | Hard reload current sheet | Reloads the Current Sheet with end-to-end cache revalidation. Available in Sheet Input and Den Mode. |
