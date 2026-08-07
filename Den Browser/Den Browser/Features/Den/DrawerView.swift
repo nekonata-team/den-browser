@@ -47,7 +47,7 @@ struct DrawerView: View {
             restoreKeyboardFocus()
         }
         .onChange(of: store.selectedDrawerItemID) { _, itemID in
-            if store.isDenMode, !store.isDrawerFilterMode {
+            if store.isDenMode, !store.isDrawerFilterInputActive {
                 focusedDrawerItemID = itemID
             }
         }
@@ -100,7 +100,7 @@ struct DrawerView: View {
 
             HStack(spacing: 8) {
                 Image(systemName: "magnifyingglass")
-                    .foregroundStyle(store.isDrawerFilterMode ? .primary : .secondary)
+                    .foregroundStyle(store.isDrawerFilterInputActive ? .primary : .secondary)
                 TextField(
                     "Search Drawer Items (/)",
                     text: Binding(
@@ -110,23 +110,23 @@ struct DrawerView: View {
                 )
                 .textFieldStyle(.plain)
                 .focused($isSearchFocused)
-                .disabled(!store.isDrawerFilterMode)
+                .disabled(!store.isDrawerFilterInputActive)
                 .accessibilityIdentifier("drawer-search")
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 8)
             .frame(width: DenDrawerLayout.searchFieldWidth)
             .background(
-                Color.primary.opacity(store.isDrawerFilterMode ? 0.08 : 0.04),
+                Color.primary.opacity(store.isDrawerFilterInputActive ? 0.08 : 0.04),
                 in: RoundedRectangle(cornerRadius: DenRadius.medium, style: .continuous)
             )
             .overlay {
                 RoundedRectangle(cornerRadius: DenRadius.medium, style: .continuous)
                     .stroke(
-                        store.isDrawerFilterMode
+                        store.isDrawerFilterInputActive
                             ? profileColor.opacity(0.86)
                             : Color.primary.opacity(0.10),
-                        lineWidth: store.isDrawerFilterMode ? 1.5 : 1
+                        lineWidth: store.isDrawerFilterInputActive ? 1.5 : 1
                     )
             }
             .opacity(isSearchPresented ? 1 : 0)
@@ -135,14 +135,14 @@ struct DrawerView: View {
             .allowsHitTesting(isSearchPresented)
             .accessibilityHidden(!isSearchPresented)
             .onTapGesture {
-                if !store.isDrawerFilterMode {
+                if !store.isDrawerFilterInputActive {
                     store.enterDrawerFilterMode()
                 }
             }
         }
         .padding(.horizontal, DenDrawerLayout.headerHorizontalPadding)
         .padding(.vertical, 12)
-        .onChange(of: store.isDrawerFilterMode) { _, newValue in
+        .onChange(of: store.isDrawerFilterInputActive) { _, newValue in
             if newValue {
                 isSearchFocused = true
             } else {
@@ -301,7 +301,7 @@ struct DrawerView: View {
     }
 
     private var isSearchPresented: Bool {
-        store.isDrawerFilterMode || !store.drawerQuery.isEmpty
+        store.isDrawerFilterPresented || !store.drawerQuery.isEmpty
     }
 
     private var itemCountLabel: String {
@@ -311,7 +311,7 @@ struct DrawerView: View {
     }
 
     private func restoreKeyboardFocus() {
-        guard !store.isDrawerFilterMode else { return }
+        guard !store.isDrawerFilterInputActive else { return }
         if !store.isDenMode, store.expandedDrawerItemID != nil {
             return
         }

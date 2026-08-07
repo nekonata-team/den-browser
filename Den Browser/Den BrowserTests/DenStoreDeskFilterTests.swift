@@ -77,6 +77,29 @@ struct DenStoreDeskFilterTests {
         #expect(store.isDeskFilterInputActive)
     }
 
+    @Test func deskFilterPassesModifiedReturnAndEscapeToTextInput() throws {
+        let alpha = board("Alpha")
+        let source = desk("Desk", boards: [alpha], focusedBoardID: alpha.id)
+        let store = DenStore(state: DenState(desks: [source], focusedDeskID: source.id))
+        store.isDenMode = true
+        store.enterDeskFilter()
+
+        let modifiedReturn = try keyEvent(
+            "\r",
+            keyCode: 36,
+            modifiers: [.shift],
+            charactersIgnoringModifiers: "\r")
+        let modifiedEscape = try keyEvent(
+            "\u{1B}",
+            keyCode: 53,
+            modifiers: [.command],
+            charactersIgnoringModifiers: "\u{1B}")
+
+        #expect(!KeyboardController.handle(modifiedReturn, store: store))
+        #expect(!KeyboardController.handle(modifiedEscape, store: store))
+        #expect(store.isDeskFilterInputActive)
+    }
+
     @Test func escapeCancelsFilterAndDeskCommandsStaySuspended() throws {
         let alpha = board("Alpha")
         let bravo = board("Bravo")

@@ -246,11 +246,11 @@ final class KeyboardController {
             if hasMarkedText(in: event) {
                 return false
             }
-            if isEscape(event) {
+            if isEscape(event), modifiers == [] {
                 store.dismissDeskFilter()
                 return true
             }
-            if isReturn(event) {
+            if isReturn(event), modifiers == [] {
                 store.confirmDeskFilterQuery()
                 return true
             }
@@ -367,19 +367,46 @@ final class KeyboardController {
             return false
         }
 
-        if store.isDrawerFilterMode {
+        if store.isDrawerFilterInputActive {
+            let modifiers = normalizedModifiers(for: event)
             if hasMarkedText(in: event) {
                 return false
             }
+            if isEscape(event), modifiers == [] {
+                store.exitDrawerFilterMode()
+                return true
+            }
+            if isReturn(event), modifiers == [] {
+                store.confirmDrawerFilterQuery()
+                return true
+            }
+            return false
+        }
+
+        if store.isDrawerFilterSelecting {
+            let modifiers = normalizedModifiers(for: event)
+            guard modifiers == [] else { return true }
+
             if isEscape(event) {
                 store.exitDrawerFilterMode()
                 return true
             }
             if isReturn(event) {
-                store.confirmDrawerFilterAndToggleSelection()
+                store.confirmDrawerFilterSelection()
                 return true
             }
-            return false
+
+            switch characterIgnoringModifiers(for: event) {
+            case "j": store.selectDrawerItem(by: 1)
+            case "k": store.selectDrawerItem(by: -1)
+            default:
+                switch event.specialKey {
+                case .downArrow: store.selectDrawerItem(by: 1)
+                case .upArrow: store.selectDrawerItem(by: -1)
+                default: break
+                }
+            }
+            return true
         }
 
         if store.isDenMode {
@@ -504,7 +531,7 @@ final class KeyboardController {
         let modifiers = normalizedModifiers(for: event)
         let character = event.charactersIgnoringModifiers?.first
 
-        if store.isOverviewFilterMode {
+        if store.isOverviewFilterInputActive {
             if hasMarkedText(in: event) {
                 return false
             }

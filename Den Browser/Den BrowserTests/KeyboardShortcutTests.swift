@@ -324,7 +324,59 @@ struct KeyboardShortcutTests {
             keyCode: 0)
 
         #expect(!KeyboardController.handle(uppercase, store: store))
-        #expect(store.isDrawerFilterMode)
+        #expect(store.isDrawerFilterInputActive)
+    }
+
+    @Test func drawerFilterPassesModifiedReturnAndEscapeToTextInput() throws {
+        let store = makeStore(boards: [board("First")])
+        store.keepInDrawer(try #require(URL(string: "https://example.com/")))
+        store.isDenMode = true
+        store.enterDrawerFilterMode()
+
+        let modifiedReturn = try keyEvent(
+            characters: "\r",
+            charactersIgnoringModifiers: "\r",
+            modifiers: [.shift],
+            keyCode: 36)
+        let modifiedEscape = try keyEvent(
+            characters: "\u{1B}",
+            charactersIgnoringModifiers: "\u{1B}",
+            modifiers: [.command],
+            keyCode: 53)
+
+        #expect(!KeyboardController.handle(modifiedReturn, store: store))
+        #expect(!KeyboardController.handle(modifiedEscape, store: store))
+        #expect(store.isDrawerFilterInputActive)
+    }
+
+    @Test func overviewFilterUsesTwoPhaseSelection() throws {
+        let first = board("First")
+        let second = board("Second")
+        let store = makeStore(boards: [first, second])
+        store.showOverview()
+
+        let slash = try keyEvent(
+            characters: "/",
+            charactersIgnoringModifiers: "/",
+            keyCode: 44)
+        let returnKey = try keyEvent(
+            characters: "\r",
+            charactersIgnoringModifiers: "\r",
+            keyCode: 36)
+
+        #expect(KeyboardController.handle(slash, store: store))
+        #expect(store.overviewFilterPhase == .filtering)
+        store.setOverviewQuery("Second")
+        #expect(store.overviewSelectionBoardID == second.id)
+
+        #expect(KeyboardController.handle(returnKey, store: store))
+        #expect(store.overviewFilterPhase == .selecting)
+        #expect(store.isOverviewPresented)
+
+        #expect(KeyboardController.handle(returnKey, store: store))
+        #expect(store.overviewFilterPhase == .inactive)
+        #expect(!store.isOverviewPresented)
+        #expect(store.focusedBoard?.id == second.id)
     }
 
     @Test func nativeCommandShortcutsPassThroughWithoutExecuting() throws {

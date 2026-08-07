@@ -17,7 +17,7 @@ extension DenStore {
         }
         releaseDrawerPreview()
         drawerQuery = ""
-        isDrawerFilterMode = false
+        drawerFilterPhase = .inactive
         let item = DrawerItem(url: url, title: title)
         state.drawerItems.insert(item, at: 0)
         selectedDrawerItemID = item.id
@@ -63,19 +63,30 @@ extension DenStore {
     }
 
     func enterDrawerFilterMode() {
-        isDrawerFilterMode = true
+        drawerFilterPhase = .filtering
         updateDrawerSelectionForFilter()
     }
 
     func exitDrawerFilterMode() {
-        isDrawerFilterMode = false
+        drawerFilterPhase = .inactive
         drawerQuery = ""
         updateDrawerSelectionForFilter()
     }
 
-    func confirmDrawerFilterAndToggleSelection() {
-        isDrawerFilterMode = false
-        toggleSelectedDrawerItem()
+    func confirmDrawerFilterQuery() {
+        guard drawerFilterPhase == .filtering else { return }
+        drawerFilterPhase = .selecting
+    }
+
+    func confirmDrawerFilterSelection() {
+        guard
+            drawerFilterPhase == .selecting,
+            let selectedDrawerItemID,
+            filteredDrawerItems.contains(where: { $0.id == selectedDrawerItemID })
+        else { return }
+        drawerFilterPhase = .inactive
+        drawerQuery = ""
+        toggleDrawerItem(selectedDrawerItemID)
     }
 
     func clearDrawerQuery() {
@@ -174,7 +185,7 @@ extension DenStore {
         state.expandedDrawerItemID = nil
         selectedDrawerItemID = nil
         drawerQuery = ""
-        isDrawerFilterMode = false
+        drawerFilterPhase = .inactive
         closeDrawer()
         pendingConfirmation = nil
         save()

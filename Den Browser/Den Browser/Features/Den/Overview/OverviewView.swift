@@ -18,7 +18,7 @@ struct OverviewView: View {
 
                 HStack(spacing: 8) {
                     Image(systemName: "magnifyingglass")
-                        .foregroundStyle(store.isOverviewFilterMode ? .primary : .secondary)
+                        .foregroundStyle(store.isOverviewFilterInputActive ? .primary : .secondary)
 
                     TextField(
                         "Search desks and boards (/)",
@@ -29,24 +29,26 @@ struct OverviewView: View {
                     )
                     .textFieldStyle(.plain)
                     .focused($isSearchFocused)
-                    .disabled(!store.isOverviewFilterMode)
+                    .disabled(!store.isOverviewFilterInputActive)
                 }
                 .padding(.horizontal, 12)
                 .padding(.vertical, 8)
                 .frame(width: DenOverviewLayout.searchFieldWidth)
                 .background(
-                    Color.primary.opacity(store.isOverviewFilterMode ? 0.08 : 0.04),
+                    Color.primary.opacity(store.isOverviewFilterInputActive ? 0.08 : 0.04),
                     in: RoundedRectangle(cornerRadius: DenRadius.medium, style: .continuous)
                 )
                 .overlay {
                     RoundedRectangle(cornerRadius: DenRadius.medium, style: .continuous)
                         .stroke(
-                            store.isOverviewFilterMode ? profileColor.opacity(0.86) : Color.primary.opacity(0.10),
-                            lineWidth: store.isOverviewFilterMode ? 1.5 : 1
+                            store.isOverviewFilterInputActive
+                                ? profileColor.opacity(0.86)
+                                : Color.primary.opacity(0.10),
+                            lineWidth: store.isOverviewFilterInputActive ? 1.5 : 1
                         )
                 }
                 .onTapGesture {
-                    if !store.isOverviewFilterMode {
+                    if !store.isOverviewFilterInputActive {
                         store.enterOverviewFilterMode()
                     }
                 }
@@ -91,7 +93,7 @@ struct OverviewView: View {
         .onExitCommand {
             store.hideOverview()
         }
-        .onChange(of: store.isOverviewFilterMode) { _, newValue in
+        .onChange(of: store.isOverviewFilterInputActive) { _, newValue in
             isSearchFocused = newValue
         }
         .onChange(of: store.overviewSelectionBoardID) { _, boardID in

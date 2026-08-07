@@ -17,11 +17,11 @@ final class DenStore {
     var isZenViewPresented = false
     var isDenMode = false
     var isFullscreenActive = false
-    var deskFilterPhase: DeskFilterPhase = .inactive
+    var deskFilterPhase: DenFilterPhase = .inactive
     var deskFilterQuery = ""
     var deskFilterSelectionBoardID: UUID?
     var overviewQuery = ""
-    var isOverviewFilterMode = false
+    var overviewFilterPhase: DenFilterPhase = .inactive
     var boardWidthPanelMessage: String?
     var openBoardPanelInitialURL: URL?
     var pendingConfirmation: PendingConfirmation?
@@ -35,6 +35,13 @@ final class DenStore {
     var isDrawerOpen: Bool { temporaryContext == .drawer }
     var isDeskFilterPresented: Bool { deskFilterPhase != .inactive }
     var isDeskFilterInputActive: Bool { deskFilterPhase == .filtering }
+    var isDeskFilterSelecting: Bool { deskFilterPhase == .selecting }
+    var isOverviewFilterPresented: Bool { overviewFilterPhase != .inactive }
+    var isOverviewFilterInputActive: Bool { overviewFilterPhase == .filtering }
+    var isOverviewFilterSelecting: Bool { overviewFilterPhase == .selecting }
+    var isDrawerFilterPresented: Bool { drawerFilterPhase != .inactive }
+    var isDrawerFilterInputActive: Bool { drawerFilterPhase == .filtering }
+    var isDrawerFilterSelecting: Bool { drawerFilterPhase == .selecting }
     var isBoardDragging: Bool {
         guard case .board? = activeDrag else { return false }
         return true
@@ -46,7 +53,7 @@ final class DenStore {
     var overviewSelectionDeskID: UUID? { overviewSelection?.deskID }
     var overviewSelectionBoardID: UUID? { overviewSelection?.boardID }
     var drawerQuery = ""
-    var isDrawerFilterMode = false
+    var drawerFilterPhase: DenFilterPhase = .inactive
     var selectedDrawerItemID: UUID?
     var expandedDrawerItemID: UUID? { state.expandedDrawerItemID }
     private(set) var toastMessage: ToastMessage?
@@ -238,9 +245,11 @@ final class DenStore {
         maximizedBoardID = nil
         dismissDeskFilter()
         overviewSelection = nil
+        overviewQuery = ""
+        overviewFilterPhase = .inactive
         recentlyRemovedBoard = nil
         drawerQuery = ""
-        isDrawerFilterMode = false
+        drawerFilterPhase = .inactive
         selectedDrawerItemID = nil
         toastTask?.cancel()
         toastMessage = nil
@@ -379,13 +388,15 @@ final class DenStore {
         }
         if temporaryContext == .overview, context != .overview {
             overviewSelection = nil
+            overviewQuery = ""
+            overviewFilterPhase = .inactive
         }
         if temporaryContext == .boardWidth, context != .boardWidth {
             boardWidthPanelMessage = nil
         }
         if temporaryContext == .drawer, context != .drawer {
             drawerQuery = ""
-            isDrawerFilterMode = false
+            drawerFilterPhase = .inactive
         }
         temporaryContext = context
     }
@@ -406,7 +417,7 @@ enum TemporaryContext: Equatable {
     case drawer
 }
 
-enum DeskFilterPhase: Equatable {
+enum DenFilterPhase: Equatable {
     case inactive
     case filtering
     case selecting

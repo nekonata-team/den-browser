@@ -74,7 +74,7 @@ struct DenStoreDrawerTests {
         store.closeDrawer()
 
         #expect(!store.isDrawerOpen)
-        #expect(!store.isDrawerFilterMode)
+        #expect(store.drawerFilterPhase == .inactive)
         #expect(store.drawerQuery.isEmpty)
     }
 
@@ -377,19 +377,48 @@ struct DenStoreDrawerTests {
         store.toggleDrawer()
 
         #expect(KeyboardController.handle(try keyEvent("/", keyCode: 44), store: store))
-        #expect(store.isDrawerFilterMode)
+        #expect(store.drawerFilterPhase == .filtering)
 
         store.setDrawerQuery("second")
         #expect(store.selectedDrawerItemID == second.id)
         #expect(KeyboardController.handle(try keyEvent(.carriageReturn, keyCode: 36), store: store))
-        #expect(!store.isDrawerFilterMode)
+        #expect(store.drawerFilterPhase == .selecting)
+        #expect(store.expandedDrawerItemID == nil)
+
+        #expect(KeyboardController.handle(try keyEvent(.carriageReturn, keyCode: 36), store: store))
+        #expect(store.drawerFilterPhase == .inactive)
         #expect(store.expandedDrawerItemID == second.id)
-        #expect(store.drawerQuery == "second")
+        #expect(store.drawerQuery.isEmpty)
         #expect(!store.isDenMode)
 
         #expect(KeyboardController.handle(try keyEvent("\u{1B}", keyCode: 53), store: store))
         #expect(!store.isDrawerOpen)
         #expect(store.expandedDrawerItemID == second.id)
+    }
+
+    @Test func drawerFilterKeepsSelectingPhaseWhenThereAreNoMatches() throws {
+        let source = desk("Desk")
+        let item = DrawerItem(url: try #require(URL(string: "https://example.com/")))
+        let store = DenStore(
+            state: DenState(
+                desks: [source],
+                focusedDeskID: source.id,
+                drawerItems: [item]))
+        store.isDenMode = true
+        store.toggleDrawer()
+        store.enterDrawerFilterMode()
+        store.setDrawerQuery("missing")
+        store.confirmDrawerFilterQuery()
+
+        #expect(store.drawerFilterPhase == .selecting)
+        #expect(store.selectedDrawerItemID == nil)
+        store.confirmDrawerFilterSelection()
+        #expect(store.drawerFilterPhase == .selecting)
+        #expect(store.drawerQuery == "missing")
+
+        store.exitDrawerFilterMode()
+        #expect(store.drawerFilterPhase == .inactive)
+        #expect(store.drawerQuery.isEmpty)
     }
 
     @Test func denModeKeyboardControlsDiscardDrawerItemWithXAndD() throws {

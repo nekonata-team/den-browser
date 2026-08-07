@@ -12,7 +12,7 @@ extension DenStore {
     func showOverview() {
         setTemporaryContext(.overview)
         overviewQuery = ""
-        isOverviewFilterMode = false
+        overviewFilterPhase = .inactive
         overviewSelection = OverviewSelection(
             deskID: state.focusedDeskID,
             boardID: focusedDesk?.focusedBoardID)
@@ -22,7 +22,7 @@ extension DenStore {
         if temporaryContext == .overview {
             setTemporaryContext(nil)
             overviewQuery = ""
-            isOverviewFilterMode = false
+            overviewFilterPhase = .inactive
         }
     }
 
@@ -32,20 +32,22 @@ extension DenStore {
     }
 
     func enterOverviewFilterMode() {
-        isOverviewFilterMode = true
+        overviewFilterPhase = .filtering
         updateOverviewSelectionForFilter()
     }
 
     func exitOverviewFilterMode() {
-        isOverviewFilterMode = false
+        overviewFilterPhase = .inactive
         overviewQuery = ""
     }
 
     func confirmOverviewFilterQuery() {
-        isOverviewFilterMode = false
+        guard overviewFilterPhase == .filtering else { return }
+        overviewFilterPhase = .selecting
     }
 
     func clearOverviewQuery() {
+        overviewFilterPhase = .inactive
         overviewQuery = ""
         updateOverviewSelectionForFilter()
     }

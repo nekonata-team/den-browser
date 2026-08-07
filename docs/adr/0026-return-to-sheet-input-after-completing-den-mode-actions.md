@@ -31,6 +31,7 @@ Organization:
 - Moving the Focused Board to the previous or next Desk.
 - Board Removal, Board Restoration, and deletion of an eligible empty Desk.
 - Overview Selection movement, Overview filtering, and moving the selected Board while Overview remains open.
+- Drawer filtering and candidate selection while the Drawer remains open.
 
 Adjustment:
 
@@ -56,6 +57,7 @@ Work-content confirmation:
 
 - Confirming an edited Current Sheet URL.
 - Confirming a Board Label or Desk Label.
+- Opening a Drawer Item's Preview by confirming the selected Item.
 
 Completion of an independent task:
 

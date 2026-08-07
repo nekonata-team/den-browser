@@ -68,14 +68,14 @@ Den Browser's first PoC validates whether a macOS WKWebView implementation can s
 1. Open two links from another application. Confirm both enter the active Profile's Drawer newest-first, the latest item expands into a live Preview, and the Focused Desk layout does not change.
 2. In Den Mode, use Tab to open and close the bottom Drawer. Confirm a closed Drawer does not cover or intercept a Board, then expand each accordion item and confirm only one live Preview remains at a time.
 3. Switch Desks while a Preview is expanded. Confirm the same Drawer Item remains visible and no Board moves between Desks.
-4. In Den Mode, use Tab, Up / Down or `k` / `j`, Return, `p`, `x` / `d` / Delete, and Escape to open the Drawer, select items, expand a Preview, place an item as a Board, discard an item, and close the Drawer.
+4. In Den Mode, use Tab to open the Drawer, press `/` to filter by title or URL, type a query including uppercase characters, and press Return to confirm it. Use Up / Down or `k` / `j` to select a visible Item, press Return again to expand or collapse its Preview, and press Escape to clear the filter. Also use `p`, `x` / `d` / Delete, and Tab to place an Item as a Board, discard an Item, and close the Drawer.
 5. Keep a Current Sheet in the Drawer from its Board header menu. Confirm the source Board and input context remain unchanged, and the Drawer stays closed.
 6. Enter transient state in a Preview, then close and reopen the Drawer; confirm the same live Preview and its state continue. Quit, relaunch, and open that Profile's Drawer; confirm a new live Preview runtime is created from the persisted URL. Repeat after collapsing the Preview and confirm it stays collapsed.
 
 ## Focused Desk filter validation
 
 1. In Den Mode, press `/` and confirm a floating filter appears without moving or resizing the Boards. Search by Board Label and Current Sheet URL; confirm only matching Boards remain visible while the original Focused Board is unchanged.
-2. Press Return to finish typing, use Left / Right or `h` / `l` to select a matching Board, then press Return. Confirm all Boards return, the selected Board becomes the Focused Board, and Den returns to Sheet Input.
+2. Press Return to finish typing, use Left / Right or `h` / `l` to select a matching Board, then press Return. Confirm all Boards return, the selected Board becomes the Focused Board, and Den returns to Sheet Input. Uppercase characters must reach the filter field while typing.
 3. Repeat the filter and press Escape. Confirm all Boards return, the original Focused Board remains focused, and Den Mode stays active.
 
 ## Shortcut and Zen View validation

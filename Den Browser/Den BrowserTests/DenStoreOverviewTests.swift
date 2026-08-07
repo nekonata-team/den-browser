@@ -52,7 +52,7 @@ struct DenStoreOverviewTests {
             // 1. Show overview
             store.showOverview()
             #expect(store.overviewQuery == "")
-            #expect(!store.isOverviewFilterMode)
+            #expect(store.overviewFilterPhase == .inactive)
             #expect(store.overviewSelectionDeskID == desk1.id)
             #expect(store.overviewSelectionBoardID == b1.id)
 
@@ -79,22 +79,23 @@ struct DenStoreOverviewTests {
 
             // 6. Enter filter mode, type query, and confirm it
             store.enterOverviewFilterMode()
-            #expect(store.isOverviewFilterMode)
+            #expect(store.overviewFilterPhase == .filtering)
             store.setOverviewQuery("git")
             store.confirmOverviewFilterQuery()
-            #expect(!store.isOverviewFilterMode)
+            #expect(store.overviewFilterPhase == .selecting)
             #expect(store.overviewQuery == "git")
 
             // 7. Clear query in normal mode
             store.clearOverviewQuery()
             #expect(store.overviewQuery == "")
+            #expect(store.overviewFilterPhase == .inactive)
             #expect(store.overviewSelectionDeskID == desk2.id)
             #expect(store.overviewSelectionBoardID == b2.id)
 
             // 8. Escape clears filter mode and query
             store.enterOverviewFilterMode()
             store.exitOverviewFilterMode()
-            #expect(!store.isOverviewFilterMode)
+            #expect(store.overviewFilterPhase == .inactive)
             #expect(store.overviewQuery == "")
         }
     }
