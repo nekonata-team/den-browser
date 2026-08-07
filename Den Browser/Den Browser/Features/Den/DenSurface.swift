@@ -6,15 +6,9 @@ struct DenBackground: View {
 
     var body: some View {
         LinearGradient(
-            colors: isDenMode
-                ? [
-                    Color(red: 0.03, green: 0.18, blue: 0.23),
-                    Color(red: 0.06, green: 0.10, blue: 0.18),
-                ]
-                : [
-                    Color(red: 0.08, green: 0.10, blue: 0.12),
-                    Color(red: 0.15, green: 0.16, blue: 0.19),
-                ],
+            colors: (isDenMode
+                ? DenSurfaceColors.denModeBackground
+                : DenSurfaceColors.standardBackground).map(\.color),
             startPoint: .topLeading,
             endPoint: .bottomTrailing
         )

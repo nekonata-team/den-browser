@@ -22,13 +22,6 @@ final class BoardRuntime: NSObject, NSWindowDelegate, ObservableObject, WKDownlo
             + "Version/\(versionString) Safari/605.1.15"
     }
 
-    static let webViewFallbackBackgroundColor = NSColor(
-        calibratedRed: 0.08,
-        green: 0.10,
-        blue: 0.12,
-        alpha: 1
-    )
-
     let id: UUID
     let webView: WKWebView
     @Published private(set) var faviconURL: URL?
@@ -73,6 +66,13 @@ final class BoardRuntime: NSObject, NSWindowDelegate, ObservableObject, WKDownlo
         )
 
         webView = WKWebView(frame: .zero, configuration: configuration)
+        let fallbackColor = DenSurfaceColors.webViewFallbackBackground
+        webView.underPageBackgroundColor = NSColor(
+            calibratedRed: fallbackColor.red,
+            green: fallbackColor.green,
+            blue: fallbackColor.blue,
+            alpha: 1
+        )
         webView.customUserAgent = Self.defaultUserAgent
         webView.pageZoom = CGFloat(sheetScale) / 100
         webView.allowsBackForwardNavigationGestures = true

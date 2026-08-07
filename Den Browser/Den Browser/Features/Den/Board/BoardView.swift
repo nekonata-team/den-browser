@@ -1,4 +1,3 @@
-import AppKit
 import SwiftUI
 import WebKit
 
@@ -64,7 +63,7 @@ struct BoardView: View {
     }
 
     private var initialLoadFallback: some View {
-        Color(nsColor: BoardRuntime.webViewFallbackBackgroundColor)
+        DenSurfaceColors.webViewFallbackBackground.color
             .accessibilityHidden(true)
             .allowsHitTesting(false)
     }

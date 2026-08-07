@@ -40,7 +40,13 @@ final class DrawerPreviewRuntime: NSObject, WKNavigationDelegate, WKUIDelegate {
         configuration.websiteDataStore = websiteDataStore
         configuration.userContentController = sheetNavigation.userContentController
         webView = DrawerPreviewWebView(frame: .zero, configuration: configuration)
-        webView.underPageBackgroundColor = BoardRuntime.webViewFallbackBackgroundColor
+        let fallbackColor = DenSurfaceColors.webViewFallbackBackground
+        webView.underPageBackgroundColor = NSColor(
+            calibratedRed: fallbackColor.red,
+            green: fallbackColor.green,
+            blue: fallbackColor.blue,
+            alpha: 1
+        )
         webView.customUserAgent = BoardRuntime.defaultUserAgent
         webView.pageZoom = CGFloat(sheetScale) / 100
         webView.allowsBackForwardNavigationGestures = true
