@@ -297,7 +297,7 @@ struct KeyboardShortcutTests {
             modifiers: [.shift],
             keyCode: 2)
         store.enterDrawerFilterMode()
-        #expect(KeyboardController.handle(clear, store: store))
+        #expect(!KeyboardController.handle(clear, store: store))
         #expect(!store.hasPendingConfirmation)
 
         store.exitDrawerFilterMode()
@@ -309,6 +309,22 @@ struct KeyboardShortcutTests {
             keyCode: 2)
         #expect(KeyboardController.handle(repeatClear, store: store))
         #expect(!store.hasPendingConfirmation)
+    }
+
+    @Test func drawerFilterPassesShiftedCharactersToTextInput() throws {
+        let store = makeStore(boards: [board("First")])
+        store.keepInDrawer(try #require(URL(string: "https://example.com/")))
+        store.isDenMode = true
+        store.enterDrawerFilterMode()
+
+        let uppercase = try keyEvent(
+            characters: "A",
+            charactersIgnoringModifiers: "a",
+            modifiers: [.shift],
+            keyCode: 0)
+
+        #expect(!KeyboardController.handle(uppercase, store: store))
+        #expect(store.isDrawerFilterMode)
     }
 
     @Test func nativeCommandShortcutsPassThroughWithoutExecuting() throws {

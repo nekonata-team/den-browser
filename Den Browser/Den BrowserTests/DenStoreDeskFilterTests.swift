@@ -60,6 +60,23 @@ struct DenStoreDeskFilterTests {
         #expect(!store.isDenMode)
     }
 
+    @Test func deskFilterPassesShiftedCharactersToTextInput() throws {
+        let alpha = board("Alpha")
+        let source = desk("Desk", boards: [alpha], focusedBoardID: alpha.id)
+        let store = DenStore(state: DenState(desks: [source], focusedDeskID: source.id))
+        store.isDenMode = true
+        store.enterDeskFilter()
+
+        let uppercase = try keyEvent(
+            "A",
+            keyCode: 0,
+            modifiers: [.shift],
+            charactersIgnoringModifiers: "a")
+
+        #expect(!KeyboardController.handle(uppercase, store: store))
+        #expect(store.isDeskFilterInputActive)
+    }
+
     @Test func escapeCancelsFilterAndDeskCommandsStaySuspended() throws {
         let alpha = board("Alpha")
         let bravo = board("Bravo")
@@ -135,18 +152,20 @@ struct DenStoreDeskFilterTests {
     private func keyEvent(
         _ character: String,
         keyCode: UInt16,
+        modifiers: NSEvent.ModifierFlags = [],
+        charactersIgnoringModifiers: String? = nil,
         windowNumber: Int = 0
     ) throws -> NSEvent {
         try #require(
             NSEvent.keyEvent(
                 with: .keyDown,
                 location: .zero,
-                modifierFlags: [],
+                modifierFlags: modifiers,
                 timestamp: 0,
                 windowNumber: windowNumber,
                 context: nil,
                 characters: character,
-                charactersIgnoringModifiers: character,
+                charactersIgnoringModifiers: charactersIgnoringModifiers ?? character,
                 isARepeat: false,
                 keyCode: keyCode
             ))

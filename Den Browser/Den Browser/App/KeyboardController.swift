@@ -241,7 +241,6 @@ final class KeyboardController {
 
     private static func handleDeskFilter(_ event: NSEvent, store: DenStore) -> Bool {
         let modifiers = normalizedModifiers(for: event)
-        guard modifiers == [] else { return true }
 
         if store.isDeskFilterInputActive {
             if hasMarkedText(in: event) {
@@ -257,6 +256,8 @@ final class KeyboardController {
             }
             return false
         }
+
+        guard modifiers == [] else { return true }
 
         if isEscape(event) {
             store.dismissDeskFilter()
@@ -367,8 +368,6 @@ final class KeyboardController {
         }
 
         if store.isDrawerFilterMode {
-            let modifiers = normalizedModifiers(for: event)
-            guard modifiers == [] else { return true }
             if hasMarkedText(in: event) {
                 return false
             }
