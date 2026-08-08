@@ -43,7 +43,6 @@ extension DenStore {
     }
 
     func openDrawer() {
-        guard !state.drawerItems.isEmpty else { return }
         setTemporaryContext(.drawer)
         selectedDrawerItemID = selectedDrawerItemID ?? state.drawerItems.first?.id
         if expandedDrawerItemID != nil {
