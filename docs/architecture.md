@@ -27,7 +27,8 @@ Den Browser/Den Browser/
       Sheet/
       Overview/
       Toast/
-      DrawerPreviewRuntime.swift
+      Drawer/
+      Design/
     Profiles/
     SheetNavigation/
       settings UI, preferences, WebKit controller, and bundled script
