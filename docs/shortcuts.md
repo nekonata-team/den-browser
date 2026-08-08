@@ -51,6 +51,7 @@ The complete in-app guide is available from Settings, the Den menu, and `?` in D
 | Shift + `s` | Capture Focused Desk screenshot | Captures every Board's visible Current Sheet, preserving Board order and relative widths in one PNG. |
 | `a` | Keep Current Sheet in Drawer | Keeps the Focused Board's Current Sheet in the Drawer without changing the Current Sheet. |
 | Return | Duplicate current sheet | Creates board to right, focuses it, then enters sheet input. |
+| Shift + Return | New Board from First Sheet | Creates a Board to the right from the Focused Board's persisted First Sheet URL, focuses it, then enters Sheet Input. A Board without a First Sheet does nothing. |
 | `e` | Edit Focused Board Link panel | Replaces the Current Sheet with a URL or search on Return. Escape returns to Den Mode. |
 | `r` | Rename focused Board | Opens the Rename Board panel; Return confirms, Escape returns to Den Mode. |
 | `x` / `d` | Remove focused Board | Releases its live Sheet runtime. Key repeat is ignored. |

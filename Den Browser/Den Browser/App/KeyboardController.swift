@@ -320,6 +320,9 @@ final class KeyboardController {
         binding("d"): KeyboardCommand(action: .removeBoard, repeatPolicy: .ignore),
         binding("d", modifiers: [.shift]): KeyboardCommand(action: .deleteDesk),
         binding("e"): KeyboardCommand(action: .showEditBoardLinkPanel, repeatPolicy: .ignore),
+        ShortcutBinding(key: .returnKey, modifiers: [.shift]): KeyboardCommand(
+            action: .duplicateFirstSheet,
+            repeatPolicy: .ignore),
         ShortcutBinding(key: .returnKey, modifiers: []): KeyboardCommand(
             action: .duplicateBoard,
             repeatPolicy: .ignore),
@@ -359,6 +362,7 @@ final class KeyboardController {
         case .deleteDesk: store.deleteFocusedDesk()
         case .showEditBoardLinkPanel: store.showEditBoardLinkPanel()
         case .duplicateBoard: store.duplicateFocusedBoard()
+        case .duplicateFirstSheet: store.duplicateFocusedBoardFromFirstSheet()
         }
     }
 
@@ -718,4 +722,5 @@ private enum KeyboardAction {
     case deleteDesk
     case showEditBoardLinkPanel
     case duplicateBoard
+    case duplicateFirstSheet
 }

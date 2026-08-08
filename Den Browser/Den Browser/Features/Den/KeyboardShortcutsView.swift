@@ -80,6 +80,7 @@ struct KeyboardShortcutsView: View {
                     item(["s"], "Capture Current Sheet Screenshot"),
                     item(["⇧", "S"], "Capture Focused Desk Screenshot"),
                     item(["Return"], "Duplicate Current Sheet"),
+                    item(["Shift", "+", "Return"], "New Board from First Sheet"),
                     item(["e"], "Edit Focused Board Link"),
                     item(["r"], "Rename Board"),
                     item(["x", "/", "d"], "Remove Focused Board"),

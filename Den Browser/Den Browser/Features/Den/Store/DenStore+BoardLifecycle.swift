@@ -131,10 +131,43 @@ extension DenStore {
         else { return }
 
         let source = state.desks[deskIndex].boards[boardIndex]
+        duplicateBoard(
+            source,
+            deskIndex: deskIndex,
+            boardIndex: boardIndex,
+            currentSheetURL: source.currentSheetURL
+        )
+    }
+
+    func duplicateFocusedBoardFromFirstSheet() {
+        guard
+            let deskIndex = focusedDeskIndex,
+            let boardIndex = focusedBoardIndex(in: deskIndex)
+        else { return }
+
+        let source = state.desks[deskIndex].boards[boardIndex]
+        guard let firstSheetURL = source.firstSheetURL else { return }
+        duplicateBoard(
+            source,
+            deskIndex: deskIndex,
+            boardIndex: boardIndex,
+            currentSheetURL: firstSheetURL,
+            firstSheetURL: firstSheetURL
+        )
+    }
+
+    private func duplicateBoard(
+        _ source: BoardState,
+        deskIndex: Int,
+        boardIndex: Int,
+        currentSheetURL: URL?,
+        firstSheetURL: URL? = nil
+    ) {
         let board = BoardState(
             label: source.label,
             width: source.width,
-            currentSheetURL: source.currentSheetURL,
+            currentSheetURL: currentSheetURL,
+            firstSheetURL: firstSheetURL,
             customLabel: source.customLabel
         )
         state.desks[deskIndex].boards.insert(board, at: boardIndex + 1)

@@ -473,6 +473,51 @@ struct KeyboardShortcutTests {
         #expect(store.isEditBoardLinkPanelPresented)
     }
 
+    @Test func denModeShiftReturnCreatesBoardFromFirstSheet() throws {
+        let firstSheetURL = try #require(URL(string: "https://example.com/origin"))
+        let currentSheetURL = try #require(URL(string: "https://example.com/current"))
+        let source = BoardState(
+            label: "First",
+            width: 520,
+            currentSheetURL: currentSheetURL,
+            firstSheetURL: firstSheetURL,
+            customLabel: "Pinned")
+        let store = makeStore(boards: [source])
+        store.isDenMode = true
+        let shiftReturn = try keyEvent(
+            characters: "\r",
+            charactersIgnoringModifiers: "\r",
+            modifiers: [.shift],
+            keyCode: 36)
+
+        #expect(KeyboardController.handle(shiftReturn, store: store))
+        #expect(store.focusedDesk?.boards.count == 2)
+        #expect(store.focusedBoard?.currentSheetURL == firstSheetURL)
+        #expect(store.focusedBoard?.firstSheetURL == firstSheetURL)
+        #expect(store.focusedBoard?.customLabel == "Pinned")
+        #expect(!store.isDenMode)
+    }
+
+    @Test func denModeShiftReturnDoesNothingWithoutFirstSheet() throws {
+        var source = BoardState(
+            label: "Legacy",
+            width: 520,
+            currentSheetURL: URL(string: "https://example.com/current"),
+            firstSheetURL: nil)
+        source.firstSheetURL = nil
+        let store = makeStore(boards: [source])
+        store.isDenMode = true
+        let shiftReturn = try keyEvent(
+            characters: "\r",
+            charactersIgnoringModifiers: "\r",
+            modifiers: [.shift],
+            keyCode: 36)
+
+        #expect(KeyboardController.handle(shiftReturn, store: store))
+        #expect(store.focusedDesk?.boards.count == 1)
+        #expect(store.isDenMode)
+    }
+
     @Test func denModeTTogglesSheetNavigationPauseForFocusedBoard() throws {
         let suiteName = "KeyboardSheetNavigationTests-\(UUID())"
         let defaults = try #require(UserDefaults(suiteName: suiteName))
