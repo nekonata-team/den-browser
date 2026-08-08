@@ -278,7 +278,7 @@ struct DeskSwitcher: View {
         if shouldReduceMotion {
             restore()
         } else {
-            withAnimation(DenMotion.spatial(reduceMotion: false)) {
+            withAnimation(DenMotion.spatial(reduceMotion: shouldReduceMotion)) {
                 restore()
             }
         }

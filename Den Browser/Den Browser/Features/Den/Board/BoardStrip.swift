@@ -1,5 +1,17 @@
 import SwiftUI
 
+private struct BoardStripLayoutKey: Equatable {
+    let ids: [UUID]
+    let widths: [Double]
+    let maximizedBoardID: UUID?
+
+    init(ids: [UUID], widths: [Double], maximizedBoardID: UUID?) {
+        self.ids = ids
+        self.widths = widths
+        self.maximizedBoardID = maximizedBoardID
+    }
+}
+
 struct BoardStrip: View {
     @Environment(DenStore.self) private var store
     @Environment(AppPreferences.self) private var preferences
@@ -27,6 +39,15 @@ struct BoardStrip: View {
         DenMotion.shouldReduceMotion(
             preference: preferences.motionPreference,
             systemReduceMotion: systemReduceMotion
+        )
+    }
+
+    private var layoutKey: BoardStripLayoutKey {
+        let boards = store.isDeskFilterPresented ? store.filteredDeskBoards : store.focusedDesk?.boards ?? []
+        return BoardStripLayoutKey(
+            ids: boards.map(\.id),
+            widths: boards.map(\.width),
+            maximizedBoardID: store.maximizedBoardID
         )
     }
 
@@ -167,9 +188,7 @@ struct BoardStrip: View {
             .padding(.trailing, paddings.trailing)
             .padding(.top, topInset)
             .padding(.bottom, bottomInset)
-            .animation(DenMotion.spatial(reduceMotion: shouldReduceMotion), value: boards.map(\.id))
-            .animation(DenMotion.spatial(reduceMotion: shouldReduceMotion), value: boards.map(\.width))
-            .animation(DenMotion.spatial(reduceMotion: shouldReduceMotion), value: store.maximizedBoardID)
+            .animation(DenMotion.spatial(reduceMotion: shouldReduceMotion), value: layoutKey)
         }
         .scrollPosition($scrollPosition)
         .onScrollGeometryChange(for: BoardStripScrollGeometry.self) { geometry in
@@ -347,7 +366,7 @@ struct BoardStrip: View {
         if shouldReduceMotion {
             restore()
         } else {
-            withAnimation(DenMotion.spatial(reduceMotion: false)) { restore() }
+            withAnimation(DenMotion.spatial(reduceMotion: shouldReduceMotion)) { restore() }
         }
     }
 
