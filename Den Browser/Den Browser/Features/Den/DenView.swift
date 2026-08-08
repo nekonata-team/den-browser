@@ -314,7 +314,10 @@ struct DenView<Header: View>: View {
     private func restoreFocusedSheetFirstResponder() {
         DispatchQueue.main.async {
             guard let webView = store.focusedRuntime?.webView else { return }
-            webView.window?.makeFirstResponder(webView)
+            guard let window = webView.window,
+                needsFirstResponderActivation(window.firstResponder, target: webView)
+            else { return }
+            _ = window.makeFirstResponder(webView)
         }
     }
 

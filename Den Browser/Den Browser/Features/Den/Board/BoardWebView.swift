@@ -83,10 +83,18 @@ struct BoardWebView: NSViewRepresentable {
             activationTask = Task { @MainActor [weak webView] in
                 await Task.yield()
                 guard !Task.isCancelled, let webView else { return }
-                webView.window?.makeFirstResponder(webView)
+                guard let window = webView.window,
+                    needsFirstResponderActivation(window.firstResponder, target: webView)
+                else { return }
+                _ = window.makeFirstResponder(webView)
             }
         }
     }
+}
+
+func needsFirstResponderActivation(_ firstResponder: NSResponder?, target: NSView) -> Bool {
+    guard let firstResponderView = firstResponder as? NSView else { return true }
+    return firstResponderView !== target && !firstResponderView.isDescendant(of: target)
 }
 
 struct PointerFocusState {

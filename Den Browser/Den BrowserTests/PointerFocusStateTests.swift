@@ -1,9 +1,27 @@
+import AppKit
 import Testing
 
 @testable import Den_Browser
 
 @MainActor
 struct PointerFocusStateTests {
+    @Test func firstResponderInsideTargetDoesNotNeedActivation() {
+        let target = NSView()
+        let child = NSView()
+        target.addSubview(child)
+
+        #expect(!needsFirstResponderActivation(target, target: target))
+        #expect(!needsFirstResponderActivation(child, target: target))
+    }
+
+    @Test func firstResponderOutsideTargetNeedsActivation() {
+        let target = NSView()
+        let other = NSView()
+
+        #expect(needsFirstResponderActivation(other, target: target))
+        #expect(needsFirstResponderActivation(nil, target: target))
+    }
+
     @Test func webPointerFocusSuppressesExplicitActivation() {
         var state = PointerFocusState()
 
