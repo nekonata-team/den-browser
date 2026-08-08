@@ -22,7 +22,7 @@ enum MotionPreference: String, CaseIterable, Identifiable {
 final class AppPreferences {
     static let schemaVersion = 1
     static let defaultDeskNumberBinding = ShortcutBinding(
-        key: .character("1"), modifiers: [.command, .option])
+        key: .character("1"), modifiers: [.command])
     static let defaultSheetScale = 100
     static let sheetScaleRange = 50...200
 

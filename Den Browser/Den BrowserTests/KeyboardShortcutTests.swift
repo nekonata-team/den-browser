@@ -50,7 +50,7 @@ struct KeyboardShortcutTests {
                 for: .focusNextBoard) == .conflict(.focusPreviousBoard))
         #expect(
             preferences.setShortcut(
-                ShortcutBinding(key: .character("1"), modifiers: [.command, .option]),
+                ShortcutBinding(key: .character("1"), modifiers: [.command]),
                 for: .focusNextBoard) == .conflictWithDeskNumber)
         #expect(
             preferences.setDeskNumberBinding(
@@ -152,7 +152,7 @@ struct KeyboardShortcutTests {
         }
     }
 
-    @Test func sheetInputCommandOptionDigitFocusesDesk() throws {
+    @Test func sheetInputCommandDigitFocusesDesk() throws {
         let movedBoard = board("Moved")
         let firstDesk = DeskState(label: "First", boards: [], focusedBoardID: nil)
         let secondDesk = DeskState(
@@ -164,13 +164,13 @@ struct KeyboardShortcutTests {
                 desks: [firstDesk, secondDesk],
                 focusedDeskID: secondDesk.id))
         let preferences = try makePreferences()
-        let commandOptionOne = try keyEvent(
+        let commandOne = try keyEvent(
             characters: "1",
             charactersIgnoringModifiers: "1",
-            modifiers: [.command, .option],
+            modifiers: [.command],
             keyCode: 18)
 
-        #expect(KeyboardController.handle(commandOptionOne, store: store, preferences: preferences))
+        #expect(KeyboardController.handle(commandOne, store: store, preferences: preferences))
         #expect(store.state.focusedDeskID == firstDesk.id)
         #expect(!store.isDenMode)
     }
