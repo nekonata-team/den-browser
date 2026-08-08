@@ -720,7 +720,7 @@ struct SheetNavigationTests {
 
     private func dispatchSheetKey(_ key: String, shift: Bool = false, in webView: WKWebView) async throws {
         let keyData = try JSONEncoder().encode(key)
-        let keyLiteral = String(decoding: keyData, as: UTF8.self)
+        guard let keyLiteral = String(data: keyData, encoding: .utf8) else { return }
         _ = try await webView.evaluateJavaScript(
             "document.dispatchEvent(new KeyboardEvent('keydown', "
                 + "{key: \(keyLiteral), shiftKey: \(shift), bubbles: true, cancelable: true}))")

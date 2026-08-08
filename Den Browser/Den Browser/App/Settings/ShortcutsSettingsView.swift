@@ -200,7 +200,7 @@ struct ShortcutsSettingsView: View {
 
     private func capture(_ event: NSEvent, for action: ShortcutAction) {
         if event.keyCode == 53,
-            event.modifierFlags.intersection([.command, .control, .option, .shift]).isEmpty
+            event.modifierFlags.isDisjoint(with: [.command, .control, .option, .shift])
         {
             stopRecording()
             return
@@ -233,7 +233,7 @@ struct ShortcutsSettingsView: View {
 
     private func captureDeskNumberShortcut(_ event: NSEvent) {
         if event.keyCode == 53,
-            event.modifierFlags.intersection([.command, .control, .option, .shift]).isEmpty
+            event.modifierFlags.isDisjoint(with: [.command, .control, .option, .shift])
         {
             stopRecording()
             return

@@ -4,12 +4,6 @@ private struct BoardStripLayoutKey: Equatable {
     let ids: [UUID]
     let widths: [Double]
     let maximizedBoardID: UUID?
-
-    init(ids: [UUID], widths: [Double], maximizedBoardID: UUID?) {
-        self.ids = ids
-        self.widths = widths
-        self.maximizedBoardID = maximizedBoardID
-    }
 }
 
 struct BoardStrip: View {
@@ -383,15 +377,15 @@ struct BoardStrip: View {
         }
     }
 
-    private func resetBoardStripPosition(to x: CGFloat = 0, animated: Bool) {
+    private func resetBoardStripPosition(to horizontalOffset: CGFloat = 0, animated: Bool) {
         pendingBoardCentering = nil
         boardCenteringTask?.cancel()
         if animated {
             withAnimation(DenMotion.spatial(reduceMotion: shouldReduceMotion)) {
-                scrollPosition.scrollTo(x: x)
+                scrollPosition.scrollTo(x: horizontalOffset)
             }
         } else {
-            scrollPosition.scrollTo(x: x)
+            scrollPosition.scrollTo(x: horizontalOffset)
         }
     }
 

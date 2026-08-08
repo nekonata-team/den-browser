@@ -350,7 +350,10 @@ final class SheetNavigationManager {
         guard let data = try? JSONSerialization.data(withJSONObject: configuration) else {
             return ""
         }
-        return "window.__denSheetNavigation?.configure(\(String(decoding: data, as: UTF8.self)));"
+        guard let configurationScript = String(data: data, encoding: .utf8) else {
+            return ""
+        }
+        return "window.__denSheetNavigation?.configure(\(configurationScript));"
     }
 
     private static let bundledScript: String = {

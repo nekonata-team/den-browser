@@ -588,19 +588,19 @@ final class KeyboardController {
         switch (overview, modifiers == [.shift], direction) {
         case (false, false, .left): store.focusPreviousBoard()
         case (false, false, .right): store.focusNextBoard()
-        case (false, false, .up): store.focusPreviousDesk()
+        case (false, false, .upward): store.focusPreviousDesk()
         case (false, false, .down): store.focusNextDesk()
         case (false, true, .left): store.moveFocusedBoardLeft()
         case (false, true, .right): store.moveFocusedBoardRight()
-        case (false, true, .up): store.moveFocusedBoardToPreviousDesk()
+        case (false, true, .upward): store.moveFocusedBoardToPreviousDesk()
         case (false, true, .down): store.moveFocusedBoardToNextDesk()
         case (true, false, .left): store.selectPreviousBoardInOverview()
         case (true, false, .right): store.selectNextBoardInOverview()
-        case (true, false, .up): store.selectPreviousDeskInOverview()
+        case (true, false, .upward): store.selectPreviousDeskInOverview()
         case (true, false, .down): store.selectNextDeskInOverview()
         case (true, true, .left): store.moveOverviewSelectionBoardLeft()
         case (true, true, .right): store.moveOverviewSelectionBoardRight()
-        case (true, true, .up): store.moveOverviewSelectionBoardToPreviousDesk()
+        case (true, true, .upward): store.moveOverviewSelectionBoardToPreviousDesk()
         case (true, true, .down): store.moveOverviewSelectionBoardToNextDesk()
         }
         return true
@@ -610,13 +610,13 @@ final class KeyboardController {
         switch event.specialKey {
         case .leftArrow: return .left
         case .rightArrow: return .right
-        case .upArrow: return .up
+        case .upArrow: return .upward
         case .downArrow: return .down
         default:
             switch characterIgnoringModifiers(for: event) {
             case "h": return .left
             case "l": return .right
-            case "k": return .up
+            case "k": return .upward
             case "j": return .down
             default: return nil
             }
@@ -656,7 +656,7 @@ final class KeyboardController {
 private enum MovementDirection {
     case left
     case right
-    case up
+    case upward
     case down
 }
 

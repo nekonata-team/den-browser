@@ -24,6 +24,7 @@ format-staged +files:
 [group("quality")]
 lint:
     {{swift_format}} lint --strict --recursive --parallel --configuration .swift-format "{{swift_sources}}"
+    swiftlint lint --strict
 
 # Build macOS app without code signing.
 [group("build")]

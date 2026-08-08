@@ -1,0 +1,18 @@
+excluded:
+  - .derived-data
+
+disabled_rules:
+  # swift-format is the source of truth for these style rules.
+  - opening_brace
+  - trailing_comma
+  - closure_parameter_position
+  - large_tuple
+  - todo
+
+  # Existing UI and test boundaries are intentionally larger than these limits.
+  - cyclomatic_complexity
+  - file_length
+  - function_body_length
+  - line_length
+  - type_body_length
+  - type_name

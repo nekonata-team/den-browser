@@ -215,10 +215,10 @@ struct DenStorePresentationTests {
     }
 
     @Test func boardRenamingAndCustomLabelStickiness() {
-        let b1 = board("Google", url: "https://google.com")
-        withStore(desks: [desk("Main", boards: [b1])]) { store in
+        let googleBoard = board("Google", url: "https://google.com")
+        withStore(desks: [desk("Main", boards: [googleBoard])]) { store in
             // 1. Initially, customLabel is nil, displayName returns page title
-            let boardID = b1.id
+            let boardID = googleBoard.id
             guard
                 let deskIndex = store.focusedDeskIndex,
                 let boardIndex = store.focusedBoardIndex(in: deskIndex)

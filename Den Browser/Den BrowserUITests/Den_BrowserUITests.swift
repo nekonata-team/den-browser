@@ -26,6 +26,8 @@ final class Den_BrowserUITests: XCTestCase, BDD {
                 [kTISPropertyInputSourceID: id] as CFDictionary,
                 false
             ).takeRetainedValue() as Array
+        // Carbon exposes input sources through an untyped CFArray.
+        // swiftlint:disable:next force_cast
         let source = try XCTUnwrap(sources.first as! TISInputSource?)
         XCTAssertEqual(TISSelectInputSource(source), noErr)
     }

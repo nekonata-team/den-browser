@@ -51,9 +51,7 @@ struct DefaultBrowserSettingsSection: View {
         Task { @MainActor in
             var failed = false
             for scheme in DefaultBrowserStatus.urlSchemes {
-                if await Self.setDefaultApplication(applicationURL, for: scheme) != nil {
-                    failed = true
-                }
+                failed = await Self.setDefaultApplication(applicationURL, for: scheme) != nil || failed
             }
 
             isSettingDefault = false

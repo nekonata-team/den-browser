@@ -62,20 +62,20 @@ enum ScreenshotCapture {
         NSColor.windowBackgroundColor.setFill()
         NSBezierPath(rect: NSRect(origin: .zero, size: canvasSize)).fill()
 
-        var x: CGFloat = 0
+        var horizontalOffset: CGFloat = 0
         for item in items {
             let sheetSize = CGSize(
                 width: item.image.size.width * scale,
                 height: item.image.size.height * scale)
             let sheetRect = NSRect(
-                x: x,
+                x: horizontalOffset,
                 y: canvasSize.height - deskHeaderHeight - sheetSize.height,
                 width: sheetSize.width,
                 height: sheetSize.height)
             item.image.draw(in: sheetRect)
 
             let headerRect = NSRect(
-                x: x,
+                x: horizontalOffset,
                 y: canvasSize.height - deskHeaderHeight,
                 width: sheetSize.width,
                 height: deskHeaderHeight)
@@ -88,7 +88,7 @@ enum ScreenshotCapture {
                     .foregroundColor: NSColor.labelColor,
                 ])
 
-            x += sheetSize.width + scaledSpacing
+            horizontalOffset += sheetSize.width + scaledSpacing
         }
 
         return result

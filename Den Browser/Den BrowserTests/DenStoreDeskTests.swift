@@ -315,8 +315,8 @@ struct DenStoreDeskTests {
     }
 
     @Test func deskRenaming() {
-        let b1 = board("Google")
-        let desk1 = desk("Main", boards: [b1], focusedBoardID: b1.id)
+        let firstBoard = board("Google")
+        let desk1 = desk("Main", boards: [firstBoard], focusedBoardID: firstBoard.id)
 
         withStore(desks: [desk1]) { store in
             // 1. Enter Den Mode, show rename panel

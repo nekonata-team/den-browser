@@ -5,8 +5,8 @@ import WebKit
 @MainActor
 class BaseWebRuntime: NSObject, WKDownloadDelegate, WKNavigationDelegate, WKUIDelegate {
     static var defaultUserAgent: String {
-        let os = ProcessInfo.processInfo.operatingSystemVersion
-        let versionString = "\(os.majorVersion).\(os.minorVersion)"
+        let operatingSystemVersion = ProcessInfo.processInfo.operatingSystemVersion
+        let versionString = "\(operatingSystemVersion.majorVersion).\(operatingSystemVersion.minorVersion)"
         return "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
             + "AppleWebKit/605.1.15 (KHTML, like Gecko) "
             + "Version/\(versionString) Safari/605.1.15"
@@ -118,7 +118,7 @@ class BaseWebRuntime: NSObject, WKDownloadDelegate, WKNavigationDelegate, WKUIDe
         decidePolicyFor navigationAction: WKNavigationAction,
         decisionHandler: @escaping @MainActor @Sendable (WKNavigationActionPolicy) -> Void
     ) {
-        if (navigationAction.navigationType == .linkActivated || navigationAction.navigationType == .other),
+        if navigationAction.navigationType == .linkActivated || navigationAction.navigationType == .other,
             let url = navigationAction.request.url,
             ExternalURLPolicy.isSupported(url)
         {

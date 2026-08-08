@@ -7,7 +7,7 @@ import WebKit
 final class BoardRuntime: BaseWebRuntime, NSWindowDelegate, ObservableObject {
     struct Events {
         var onChange: (UUID, URL?, String?) -> Void
-        var onFullscreenChange: ((UUID, Bool) -> Void)? = nil
+        var onFullscreenChange: ((UUID, Bool) -> Void)?
         var onDownloadFinished: (String) -> Void = { _ in }
         var onDownloadFailed: (String) -> Void = { _ in }
     }
@@ -358,10 +358,10 @@ final class BoardRuntime: BaseWebRuntime, NSWindowDelegate, ObservableObject {
     }
 
     func togglePictureInPicture() {
-        let js = Self.pictureInPictureJavaScript
-        guard !js.isEmpty else { return }
+        let pictureInPictureScript = Self.pictureInPictureJavaScript
+        guard !pictureInPictureScript.isEmpty else { return }
 
-        webView.evaluateJavaScript(js) { result, error in
+        webView.evaluateJavaScript(pictureInPictureScript) { result, error in
             #if DEBUG
                 if let error {
                     print("[DenBrowser] PiP script error: \(error.localizedDescription)")

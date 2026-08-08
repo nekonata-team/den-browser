@@ -43,10 +43,10 @@ struct DenStoreOverviewTests {
     }
 
     @Test func overviewFilteringAndNavigation() {
-        let b1 = board("Google", url: "https://google.com")
-        let b2 = board("GitHub", url: "https://github.com")
-        let desk1 = desk("Main", boards: [b1], focusedBoardID: b1.id)
-        let desk2 = desk("Dev", boards: [b2], focusedBoardID: b2.id)
+        let googleBoard = board("Google", url: "https://google.com")
+        let githubBoard = board("GitHub", url: "https://github.com")
+        let desk1 = desk("Main", boards: [googleBoard], focusedBoardID: googleBoard.id)
+        let desk2 = desk("Dev", boards: [githubBoard], focusedBoardID: githubBoard.id)
 
         withStore(desks: [desk1, desk2]) { store in
             // 1. Show overview
@@ -54,23 +54,23 @@ struct DenStoreOverviewTests {
             #expect(store.overviewQuery == "")
             #expect(store.overviewFilterPhase == .inactive)
             #expect(store.overviewSelectionDeskID == desk1.id)
-            #expect(store.overviewSelectionBoardID == b1.id)
+            #expect(store.overviewSelectionBoardID == googleBoard.id)
 
-            // 2. Set query matching b2
+            // 2. Set query matching githubBoard
             store.setOverviewQuery("git")
             #expect(store.overviewQuery == "git")
-            // Selection should jump to first matching board (b2 in desk2)
+            // Selection should jump to first matching board (githubBoard in desk2)
             #expect(store.overviewSelectionDeskID == desk2.id)
-            #expect(store.overviewSelectionBoardID == b2.id)
+            #expect(store.overviewSelectionBoardID == githubBoard.id)
 
-            // 3. Re-set query matching b1
+            // 3. Re-set query matching googleBoard
             store.setOverviewQuery("oog")
             #expect(store.overviewSelectionDeskID == desk1.id)
-            #expect(store.overviewSelectionBoardID == b1.id)
+            #expect(store.overviewSelectionBoardID == googleBoard.id)
 
             // 4. Test matchesOverviewFilter
-            #expect(store.matchesOverviewFilter(b1, in: desk1))
-            #expect(!store.matchesOverviewFilter(b2, in: desk2))
+            #expect(store.matchesOverviewFilter(googleBoard, in: desk1))
+            #expect(!store.matchesOverviewFilter(githubBoard, in: desk2))
 
             // 5. Non-matching query clears selection
             store.setOverviewQuery("nonexistent")
@@ -90,7 +90,7 @@ struct DenStoreOverviewTests {
             #expect(store.overviewQuery == "")
             #expect(store.overviewFilterPhase == .inactive)
             #expect(store.overviewSelectionDeskID == desk2.id)
-            #expect(store.overviewSelectionBoardID == b2.id)
+            #expect(store.overviewSelectionBoardID == githubBoard.id)
 
             // 8. Escape clears filter mode and query
             store.enterOverviewFilterMode()
