@@ -14,6 +14,18 @@ _require-main:
 _require-clean:
     @[[ -z "$(git status --porcelain)" ]] || { printf '%s\n' 'working tree has uncommitted changes' >&2; exit 1; }
 
+[script]
+_commit-version-if-needed:
+    set -euo pipefail
+
+    git add "Den Browser/Den Browser.xcodeproj/project.pbxproj"
+
+    if git diff --cached --quiet -- "Den Browser/Den Browser.xcodeproj/project.pbxproj"; then
+        printf '%s\n' 'version unchanged; skipping commit'
+    else
+        git commit -m "bump: バージョンを更新" -- "Den Browser/Den Browser.xcodeproj/project.pbxproj"
+    fi
+
 # Set version and auto-increment build number.
 set-version version: (_validate-version version)
     {{fastlane}} bump_version version:{{version}}
@@ -79,8 +91,7 @@ prepare $version: (_validate-version version) _require-clean
 # Commit and publish a verified candidate to GitHub and Homebrew.
 [confirm("Publish verified release candidate?")]
 publish $version: (_validate-version version) _require-main
-    git add "Den Browser/Den Browser.xcodeproj/project.pbxproj"
-    git commit -m "bump: バージョンを更新" -- "Den Browser/Den Browser.xcodeproj/project.pbxproj"
+    just release _commit-version-if-needed
     [[ -z "$(git status --porcelain)" ]]
     git push origin main
     just --yes release github "v${version}"
