@@ -7,6 +7,7 @@ struct DrawerView: View {
 
     let availableHeight: CGFloat
     let profileColor: Color
+    var shouldShowHeader: Bool = true
 
     @FocusState private var isSearchFocused: Bool
     @FocusState private var focusedDrawerItemID: UUID?
@@ -286,7 +287,10 @@ struct DrawerView: View {
     }
 
     private var drawerHeight: CGFloat {
-        max(DenDrawerLayout.minimumHeight, availableHeight - DenDrawerLayout.windowClearance)
+        max(
+            DenDrawerLayout.minimumHeight,
+            availableHeight - DenDrawerLayout.windowClearance(shouldShowHeader: shouldShowHeader)
+        )
     }
 
     private var previewHeight: CGFloat {
@@ -325,8 +329,12 @@ private enum DenDrawerLayout {
     static let itemHeight: CGFloat = 46
     static let itemButtonWidth: CGFloat = 28
     static let minimumHeight: CGFloat = 360
-    static let windowClearance: CGFloat = 52
     static let previewReservedHeight: CGFloat = 160
+
+    static func windowClearance(shouldShowHeader: Bool) -> CGFloat {
+        let topInset = shouldShowHeader ? DenLayout.denHeaderHeight : DenLayout.outerInset
+        return topInset + DenLayout.boardHeaderHeight
+    }
 }
 
 private struct DrawerWebView: NSViewRepresentable {

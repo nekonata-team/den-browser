@@ -89,7 +89,8 @@ struct DenView<Header: View>: View {
 
                 DrawerView(
                     availableHeight: geometry.size.height,
-                    profileColor: profileColor
+                    profileColor: profileColor,
+                    shouldShowHeader: shouldShowHeader
                 )
                 .padding(.horizontal, DenLayout.outerInset)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
