@@ -17,3 +17,5 @@ xcuserdata/
 *.p12
 *.provisionprofile
 fastlane/report.xml
+
+.code-review-graph/

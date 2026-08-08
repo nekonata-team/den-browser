@@ -1,0 +1,7 @@
+# BEGIN my-codex: add-code-review-graph
+[mcp_servers.code-review-graph]
+command = "uvx"
+args = ["code-review-graph", "serve", "--auto-watch"]
+default_tools_approval_mode = "approve"
+startup_timeout_sec = 60
+# END my-codex: add-code-review-graph
