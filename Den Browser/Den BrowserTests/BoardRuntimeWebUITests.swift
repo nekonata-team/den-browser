@@ -46,7 +46,7 @@ struct BoardRuntimeWebUITests {
         let url = URL(string: "https://example.com/page")
 
         #expect(
-            BoardRuntime.shouldOpenLinkInNewBoard(
+            SheetNavigationPolicy.shouldOpenLinkInNewBoard(
                 navigationType: .linkActivated,
                 modifierFlags: .command,
                 buttonNumber: 0,
@@ -54,7 +54,7 @@ struct BoardRuntimeWebUITests {
             )
         )
         #expect(
-            !BoardRuntime.shouldOpenLinkInNewBoard(
+            !SheetNavigationPolicy.shouldOpenLinkInNewBoard(
                 navigationType: .linkActivated,
                 modifierFlags: [.option, .command],
                 buttonNumber: 0,
@@ -62,7 +62,7 @@ struct BoardRuntimeWebUITests {
             )
         )
         #expect(
-            !BoardRuntime.shouldOpenLinkInNewBoard(
+            !SheetNavigationPolicy.shouldOpenLinkInNewBoard(
                 navigationType: .linkActivated,
                 modifierFlags: .command,
                 buttonNumber: 1,
@@ -70,7 +70,7 @@ struct BoardRuntimeWebUITests {
             )
         )
         #expect(
-            !BoardRuntime.shouldOpenLinkInNewBoard(
+            !SheetNavigationPolicy.shouldOpenLinkInNewBoard(
                 navigationType: .other,
                 modifierFlags: .command,
                 buttonNumber: 0,
@@ -78,7 +78,7 @@ struct BoardRuntimeWebUITests {
             )
         )
         #expect(
-            !BoardRuntime.shouldOpenLinkInNewBoard(
+            !SheetNavigationPolicy.shouldOpenLinkInNewBoard(
                 navigationType: .linkActivated,
                 modifierFlags: .command,
                 buttonNumber: 0,
@@ -86,7 +86,7 @@ struct BoardRuntimeWebUITests {
             )
         )
         #expect(
-            BoardRuntime.shouldOpenLinkInNewBoard(
+            SheetNavigationPolicy.shouldOpenLinkInNewBoard(
                 navigationType: .linkActivated,
                 modifierFlags: [.command, .shift],
                 buttonNumber: 0,
@@ -99,7 +99,7 @@ struct BoardRuntimeWebUITests {
         let url = URL(string: "https://example.com/page")
 
         #expect(
-            BoardRuntime.shouldKeepLinkInDrawer(
+            SheetNavigationPolicy.shouldKeepLinkInDrawer(
                 navigationType: .linkActivated,
                 modifierFlags: .option,
                 buttonNumber: 0,
@@ -107,7 +107,7 @@ struct BoardRuntimeWebUITests {
             )
         )
         #expect(
-            !BoardRuntime.shouldKeepLinkInDrawer(
+            !SheetNavigationPolicy.shouldKeepLinkInDrawer(
                 navigationType: .linkActivated,
                 modifierFlags: [.option, .shift],
                 buttonNumber: 0,
@@ -115,7 +115,7 @@ struct BoardRuntimeWebUITests {
             )
         )
         #expect(
-            !BoardRuntime.shouldKeepLinkInDrawer(
+            !SheetNavigationPolicy.shouldKeepLinkInDrawer(
                 navigationType: .linkActivated,
                 modifierFlags: .option,
                 buttonNumber: 0,
@@ -126,25 +126,25 @@ struct BoardRuntimeWebUITests {
 
     @Test func customSchemeNavigationOpensInExternalApplication() {
         #expect(
-            BoardRuntime.shouldOpenExternalApplication(
+            SheetNavigationPolicy.shouldOpenExternalApplication(
                 navigationType: .linkActivated,
                 url: URL(string: "testapp://open/example")
             )
         )
         #expect(
-            !BoardRuntime.shouldOpenExternalApplication(
+            !SheetNavigationPolicy.shouldOpenExternalApplication(
                 navigationType: .linkActivated,
                 url: URL(string: "https://example.com/page")
             )
         )
         #expect(
-            BoardRuntime.shouldOpenExternalApplication(
+            SheetNavigationPolicy.shouldOpenExternalApplication(
                 navigationType: .other,
                 url: URL(string: "testapp://open/example")
             )
         )
         #expect(
-            !BoardRuntime.shouldOpenExternalApplication(
+            !SheetNavigationPolicy.shouldOpenExternalApplication(
                 navigationType: .linkActivated,
                 url: URL(string: "file:///tmp/example")
             )
@@ -155,25 +155,25 @@ struct BoardRuntimeWebUITests {
         let url = URL(string: "https://example.com/page")
 
         #expect(
-            BoardRuntime.shouldOpenTargetlessNavigationInNewBoard(
+            SheetNavigationPolicy.shouldOpenTargetlessNavigationInNewBoard(
                 navigationType: .linkActivated,
                 url: url
             )
         )
         #expect(
-            !BoardRuntime.shouldOpenTargetlessNavigationInNewBoard(
+            !SheetNavigationPolicy.shouldOpenTargetlessNavigationInNewBoard(
                 navigationType: .other,
                 url: url
             )
         )
         #expect(
-            !BoardRuntime.shouldOpenTargetlessNavigationInNewBoard(
+            !SheetNavigationPolicy.shouldOpenTargetlessNavigationInNewBoard(
                 navigationType: .formSubmitted,
                 url: url
             )
         )
         #expect(
-            !BoardRuntime.shouldOpenTargetlessNavigationInNewBoard(
+            !SheetNavigationPolicy.shouldOpenTargetlessNavigationInNewBoard(
                 navigationType: .linkActivated,
                 url: URL(string: "about:blank")
             )

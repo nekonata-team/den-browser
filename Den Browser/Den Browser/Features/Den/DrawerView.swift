@@ -346,35 +346,21 @@ private struct DrawerWebView: NSViewRepresentable {
     }
 
     func makeNSView(context: Context) -> WKWebView {
-        context.coordinator.attach(webView: webView)
         context.coordinator.updateFocus(isFocused, webView: webView)
         return webView
     }
 
     func updateNSView(_ nsView: WKWebView, context: Context) {
-        context.coordinator.attach(webView: nsView)
         context.coordinator.updateFocus(isFocused, webView: nsView)
-    }
-
-    static func dismantleNSView(_ nsView: WKWebView, coordinator: Coordinator) {
-        coordinator.detach(webView: nsView)
     }
 
     final class Coordinator {
         private var isFocused = false
         private weak var focusedWebView: WKWebView?
+        private var focusTask: Task<Void, Never>?
 
-        func attach(webView: WKWebView) {
-            guard let webView = webView as? DrawerPreviewWebView else { return }
-            webView.onMoveToWindow = { [weak self, weak webView] in
-                guard let self, let webView else { return }
-                self.focusIfNeeded(webView)
-            }
-            focusIfNeeded(webView)
-        }
-
-        func detach(webView: WKWebView) {
-            (webView as? DrawerPreviewWebView)?.onMoveToWindow = nil
+        deinit {
+            focusTask?.cancel()
         }
 
         func updateFocus(_ newValue: Bool, webView: WKWebView) {
@@ -382,15 +368,15 @@ private struct DrawerWebView: NSViewRepresentable {
             guard newValue != isFocused || (newValue && webViewChanged) else { return }
             isFocused = newValue
             focusedWebView = newValue ? webView : nil
-            if newValue {
-                focusIfNeeded(webView)
-            }
-        }
 
-        private func focusIfNeeded(_ webView: WKWebView) {
-            guard isFocused, focusedWebView === webView else { return }
-            guard let window = webView.window else { return }
-            window.makeFirstResponder(webView)
+            focusTask?.cancel()
+            guard newValue else { return }
+
+            focusTask = Task { @MainActor [weak webView] in
+                await Task.yield()
+                guard !Task.isCancelled, let webView else { return }
+                webView.window?.makeFirstResponder(webView)
+            }
         }
     }
 }

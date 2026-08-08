@@ -226,7 +226,14 @@ extension DenStore {
             },
             onChange: { [weak self] itemID, url, title in
                 self?.updateDrawerItem(itemID: itemID, url: url, title: title)
-            })
+            },
+            onDownloadFinished: { [weak self] filename in
+                self?.showToast("Downloaded '\(filename)'", style: .success)
+            },
+            onDownloadFailed: { [weak self] filename in
+                self?.showToast("Failed to download '\(filename)'", style: .warning)
+            }
+        )
         drawerPreviewRuntime = runtime
         return runtime
     }

@@ -4,26 +4,14 @@ import Foundation
 import WebKit
 
 @MainActor
-final class BoardRuntime: NSObject, NSWindowDelegate, ObservableObject, WKDownloadDelegate,
-    WKNavigationDelegate, WKUIDelegate
-{
+final class BoardRuntime: BaseWebRuntime, NSWindowDelegate, ObservableObject {
     struct Events {
-        let onChange: (UUID, URL?, String?) -> Void
-        let onFullscreenChange: ((UUID, Bool) -> Void)?
-        let onDownloadFinished: (String) -> Void
-        let onDownloadFailed: (String) -> Void
+        var onChange: (UUID, URL?, String?) -> Void
+        var onFullscreenChange: ((UUID, Bool) -> Void)? = nil
+        var onDownloadFinished: (String) -> Void = { _ in }
+        var onDownloadFailed: (String) -> Void = { _ in }
     }
 
-    static var defaultUserAgent: String {
-        let os = ProcessInfo.processInfo.operatingSystemVersion
-        let versionString = "\(os.majorVersion).\(os.minorVersion)"
-        return "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
-            + "AppleWebKit/605.1.15 (KHTML, like Gecko) "
-            + "Version/\(versionString) Safari/605.1.15"
-    }
-
-    let id: UUID
-    let webView: WKWebView
     @Published private(set) var faviconURL: URL?
     @Published private(set) var isLoading = false
     @Published private(set) var estimatedProgress = 0.0
@@ -33,11 +21,8 @@ final class BoardRuntime: NSObject, NSWindowDelegate, ObservableObject, WKDownlo
     private let events: Events
     private let sheetNavigation: SheetNavigationManager
 
-    private var downloadFilenames: [ObjectIdentifier: String] = [:]
     private var auxiliaryWindows: [ObjectIdentifier: NSWindow] = [:]
     private var loadingObservation: NSKeyValueObservation?
-    private var urlObservation: NSKeyValueObservation?
-    private var titleObservation: NSKeyValueObservation?
     private var progressObservation: NSKeyValueObservation?
     private var fullscreenObservation: NSKeyValueObservation?
 
@@ -50,56 +35,29 @@ final class BoardRuntime: NSObject, NSWindowDelegate, ObservableObject, WKDownlo
         sheetNavigationActions: SheetNavigationManager.Actions,
         events: Events
     ) {
-        id = board.id
         self.sheetNavigation = sheetNavigation
         self.sheetNavigationActions = sheetNavigationActions
         self.events = events
 
-        let configuration = WKWebViewConfiguration()
-        configuration.websiteDataStore = websiteDataStore
-        configuration.userContentController = sheetNavigation.userContentController
-        configuration.preferences.isElementFullscreenEnabled = true
+        super.init(
+            id: board.id,
+            initialURL: board.currentSheetURL,
+            websiteDataStore: websiteDataStore,
+            userContentController: sheetNavigation.userContentController,
+            sheetScale: sheetScale,
+            enableElementFullscreen: true
+        )
 
         Self.configureNativePictureInPicture(
-            preferences: configuration.preferences,
+            preferences: webView.configuration.preferences,
             enabled: nativePictureInPictureEnabled
         )
 
-        webView = WKWebView(frame: .zero, configuration: configuration)
-        let fallbackColor = DenSurfaceColors.webViewFallbackBackground
-        webView.underPageBackgroundColor = NSColor(
-            calibratedRed: fallbackColor.red,
-            green: fallbackColor.green,
-            blue: fallbackColor.blue,
-            alpha: 1
-        )
-        webView.customUserAgent = Self.defaultUserAgent
-        webView.pageZoom = CGFloat(sheetScale) / 100
-        webView.allowsBackForwardNavigationGestures = true
-
-        super.init()
-
-        webView.navigationDelegate = self
-        webView.uiDelegate = self
         sheetNavigation.didOpen(
             webView,
             boardID: id,
             actions: sheetNavigationActions
         )
-
-        urlObservation = webView.observe(\.url, options: [.new]) { [weak self] _, _ in
-            Task { @MainActor [weak self] in
-                guard let self else { return }
-                self.events.onChange(self.id, self.webView.url, self.webView.title)
-            }
-        }
-
-        titleObservation = webView.observe(\.title, options: [.new]) { [weak self] _, _ in
-            Task { @MainActor [weak self] in
-                guard let self else { return }
-                self.events.onChange(self.id, self.webView.url, self.webView.title)
-            }
-        }
 
         progressObservation = webView.observe(\.estimatedProgress, options: [.new]) {
             [weak self] webView, _ in
@@ -126,9 +84,8 @@ final class BoardRuntime: NSObject, NSWindowDelegate, ObservableObject, WKDownlo
             }
         }
 
-        if let url = board.currentSheetURL {
+        if board.currentSheetURL != nil {
             isShowingInitialLoadFallback = true
-            webView.load(URLRequest(url: url))
         }
     }
 
@@ -154,221 +111,102 @@ final class BoardRuntime: NSObject, NSWindowDelegate, ObservableObject, WKDownlo
         preferences._allowsPictureInPictureMediaPlayback = true
     }
 
-    func dispose() {
+    override func dispose() {
         for window in auxiliaryWindows.values {
             window.delegate = nil
             window.close()
         }
         auxiliaryWindows.removeAll()
         sheetNavigation.didClose(webView)
-        webView.closeAllMediaPresentations(completionHandler: nil)
-        webView.setAllMediaPlaybackSuspended(true, completionHandler: nil)
-        webView.stopLoading()
         isLoading = false
         estimatedProgress = 0
         isShowingInitialLoadFallback = false
-        webView.navigationDelegate = nil
-        webView.uiDelegate = nil
-        urlObservation?.invalidate()
-        titleObservation?.invalidate()
         loadingObservation?.invalidate()
         progressObservation?.invalidate()
         fullscreenObservation?.invalidate()
-        urlObservation = nil
-        titleObservation = nil
         loadingObservation = nil
         progressObservation = nil
         fullscreenObservation = nil
+
+        super.dispose()
     }
 
-    func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+    override func handleURLOrTitleChange(url: URL?, title: String?) {
+        events.onChange(id, url, title)
+    }
+
+    override func handleSpecialLink(
+        _ url: URL,
+        navigationType: WKNavigationType,
+        modifierFlags: NSEvent.ModifierFlags,
+        buttonNumber: Int
+    ) -> Bool {
+        if SheetNavigationPolicy.shouldKeepLinkInDrawer(
+            navigationType: navigationType,
+            modifierFlags: modifierFlags,
+            buttonNumber: buttonNumber,
+            url: url
+        ) {
+            sheetNavigationActions.onKeepInDrawer(url)
+            return true
+        }
+
+        if SheetNavigationPolicy.shouldOpenLinkInNewBoard(
+            navigationType: navigationType,
+            modifierFlags: modifierFlags,
+            buttonNumber: buttonNumber,
+            url: url
+        ) {
+            if modifierFlags.contains(.shift) {
+                sheetNavigationActions.onOpenBoard(url)
+            } else {
+                sheetNavigationActions.onOpenBoardInBackground(url)
+            }
+            return true
+        }
+
+        return false
+    }
+
+    override func notifyDownloadFinished(filename: String) {
+        events.onDownloadFinished(filename)
+    }
+
+    override func notifyDownloadFailed(filename: String) {
+        events.onDownloadFailed(filename)
+    }
+
+    override func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
         sheetNavigation.refreshConfiguration(for: webView)
         updateFavicon()
     }
 
-    func webView(_ webView: WKWebView, didCommit navigation: WKNavigation!) {
+    override func webView(_ webView: WKWebView, didCommit navigation: WKNavigation!) {
         guard isShowingInitialLoadFallback else { return }
         DispatchQueue.main.async { [weak self] in
             self?.isShowingInitialLoadFallback = false
         }
     }
 
-    func webView(
+    override func webView(
         _ webView: WKWebView,
         didStartProvisionalNavigation navigation: WKNavigation!
     ) {
         faviconURL = nil
     }
 
-    func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
+    override func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
         isShowingInitialLoadFallback = false
         events.onChange(id, webView.url, webView.title)
     }
 
-    func webView(
+    override func webView(
         _ webView: WKWebView,
         didFailProvisionalNavigation navigation: WKNavigation!,
         withError error: Error
     ) {
         isShowingInitialLoadFallback = false
         events.onChange(id, webView.url, webView.title)
-    }
-
-    func webView(
-        _ webView: WKWebView,
-        decidePolicyFor navigationAction: WKNavigationAction,
-        decisionHandler: @escaping @MainActor @Sendable (WKNavigationActionPolicy) -> Void
-    ) {
-        if Self.shouldOpenExternalApplication(
-            navigationType: navigationAction.navigationType,
-            url: navigationAction.request.url
-        ), let url = navigationAction.request.url {
-            NSWorkspace.shared.open(url)
-            decisionHandler(.cancel)
-            return
-        }
-
-        if Self.shouldKeepLinkInDrawer(
-            navigationType: navigationAction.navigationType,
-            modifierFlags: navigationAction.modifierFlags,
-            buttonNumber: navigationAction.buttonNumber,
-            url: navigationAction.request.url
-        ), let url = navigationAction.request.url {
-            sheetNavigationActions.onKeepInDrawer(url)
-            decisionHandler(.cancel)
-            return
-        }
-
-        if Self.shouldOpenLinkInNewBoard(
-            navigationType: navigationAction.navigationType,
-            modifierFlags: navigationAction.modifierFlags,
-            buttonNumber: navigationAction.buttonNumber,
-            url: navigationAction.request.url
-        ), let url = navigationAction.request.url {
-            if navigationAction.modifierFlags.contains(.shift) {
-                sheetNavigationActions.onOpenBoard(url)
-            } else {
-                sheetNavigationActions.onOpenBoardInBackground(url)
-            }
-            decisionHandler(.cancel)
-            return
-        }
-
-        decisionHandler(navigationAction.shouldPerformDownload ? .download : .allow)
-    }
-
-    static func shouldOpenExternalApplication(
-        navigationType: WKNavigationType,
-        url: URL?
-    ) -> Bool {
-        (navigationType == .linkActivated || navigationType == .other)
-            && url.map(ExternalURLPolicy.isSupported) == true
-    }
-
-    static func shouldOpenLinkInNewBoard(
-        navigationType: WKNavigationType,
-        modifierFlags: NSEvent.ModifierFlags,
-        buttonNumber: Int,
-        url: URL?
-    ) -> Bool {
-        let clickModifiers = modifierFlags.intersection([.command, .control, .option, .shift])
-        return navigationType == .linkActivated
-            && buttonNumber == 0
-            && (clickModifiers == .command || clickModifiers == [.command, .shift])
-            && url.map(SheetURLPolicy.isSupported) == true
-    }
-
-    static func shouldKeepLinkInDrawer(
-        navigationType: WKNavigationType,
-        modifierFlags: NSEvent.ModifierFlags,
-        buttonNumber: Int,
-        url: URL?
-    ) -> Bool {
-        let clickModifiers = modifierFlags.intersection([.command, .control, .option, .shift])
-        return navigationType == .linkActivated
-            && buttonNumber == 0
-            && clickModifiers == .option
-            && url.map(SheetURLPolicy.isSupported) == true
-    }
-
-    static func shouldOpenTargetlessNavigationInNewBoard(
-        navigationType: WKNavigationType,
-        url: URL?
-    ) -> Bool {
-        navigationType == .linkActivated
-            && url.map(SheetURLPolicy.isSupported) == true
-    }
-
-    func webView(
-        _ webView: WKWebView,
-        decidePolicyFor navigationResponse: WKNavigationResponse,
-        decisionHandler: @escaping @MainActor @Sendable (WKNavigationResponsePolicy) -> Void
-    ) {
-        decisionHandler(navigationResponse.canShowMIMEType ? .allow : .download)
-    }
-
-    func webView(
-        _ webView: WKWebView,
-        navigationAction: WKNavigationAction,
-        didBecome download: WKDownload
-    ) {
-        isShowingInitialLoadFallback = false
-        download.delegate = self
-    }
-
-    func webView(
-        _ webView: WKWebView,
-        navigationResponse: WKNavigationResponse,
-        didBecome download: WKDownload
-    ) {
-        isShowingInitialLoadFallback = false
-        download.delegate = self
-    }
-
-    func download(
-        _ download: WKDownload,
-        decideDestinationUsing response: URLResponse,
-        suggestedFilename: String,
-        completionHandler: @escaping @MainActor @Sendable (URL?) -> Void
-    ) {
-        let panel = NSSavePanel()
-        panel.canCreateDirectories = true
-        panel.nameFieldStringValue = suggestedFilename
-
-        let complete: @MainActor @Sendable (NSApplication.ModalResponse) -> Void = {
-            [weak self] response in
-            guard response == .OK, let destination = panel.url else {
-                completionHandler(nil)
-                return
-            }
-
-            do {
-                if FileManager.default.fileExists(atPath: destination.path) {
-                    try FileManager.default.removeItem(at: destination)
-                }
-                self?.downloadFilenames[ObjectIdentifier(download)] = destination.lastPathComponent
-                completionHandler(destination)
-            } catch {
-                self?.events.onDownloadFailed(error.localizedDescription)
-                completionHandler(nil)
-            }
-        }
-
-        if let window = webView.window {
-            panel.beginSheetModal(for: window, completionHandler: complete)
-        } else {
-            panel.begin(completionHandler: complete)
-        }
-    }
-
-    func downloadDidFinish(_ download: WKDownload) {
-        let filename = downloadFilenames.removeValue(forKey: ObjectIdentifier(download)) ?? "File"
-        events.onDownloadFinished(filename)
-    }
-
-    func download(_ download: WKDownload, didFailWithError error: Error, resumeData: Data?) {
-        downloadFilenames.removeValue(forKey: ObjectIdentifier(download))
-        events.onDownloadFailed(error.localizedDescription)
     }
 
     private func updateFavicon() {
@@ -390,7 +228,7 @@ final class BoardRuntime: NSObject, NSWindowDelegate, ObservableObject, WKDownlo
         }
     }
 
-    func webView(
+    override func webView(
         _ webView: WKWebView,
         createWebViewWith configuration: WKWebViewConfiguration,
         for navigationAction: WKNavigationAction,
@@ -398,7 +236,7 @@ final class BoardRuntime: NSObject, NSWindowDelegate, ObservableObject, WKDownlo
     ) -> WKWebView? {
         guard navigationAction.targetFrame == nil else { return nil }
 
-        if Self.shouldOpenExternalApplication(
+        if SheetNavigationPolicy.shouldOpenExternalApplication(
             navigationType: navigationAction.navigationType,
             url: navigationAction.request.url
         ), let url = navigationAction.request.url {
@@ -406,7 +244,7 @@ final class BoardRuntime: NSObject, NSWindowDelegate, ObservableObject, WKDownlo
             return nil
         }
 
-        if Self.shouldOpenTargetlessNavigationInNewBoard(
+        if SheetNavigationPolicy.shouldOpenTargetlessNavigationInNewBoard(
             navigationType: navigationAction.navigationType,
             url: navigationAction.request.url
         ), let url = navigationAction.request.url {

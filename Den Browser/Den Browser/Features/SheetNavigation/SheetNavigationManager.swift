@@ -16,20 +16,20 @@ private final class SheetNavigationMessageHandler: NSObject, WKScriptMessageHand
 @Observable
 final class SheetNavigationManager {
     struct Actions {
-        let onOpenBoard: (URL) -> Void
-        let onOpenBoardInBackground: (URL) -> Void
-        let onKeepInDrawer: (URL) -> Void
-        let onEditCurrentSheet: () -> Void
-        let onOpenCurrentSheetInNewBoard: (URL) -> Void
-        let onPasteURLInNewBoard: (URL) -> Void
-        let onOpenBoardPanel: () -> Void
-        let onShowOverview: () -> Void
-        let onRemoveBoard: () -> Void
-        let onRestoreBoard: () -> Void
-        let onFocusFirstBoard: () -> Void
-        let onFocusLastBoard: () -> Void
-        let onGoToFirstSheet: () -> Void
-        let onGoToLatestSheet: () -> Void
+        var onOpenBoard: (URL) -> Void = { _ in }
+        var onOpenBoardInBackground: (URL) -> Void = { _ in }
+        var onKeepInDrawer: (URL) -> Void = { _ in }
+        var onEditCurrentSheet: () -> Void = {}
+        var onOpenCurrentSheetInNewBoard: (URL) -> Void = { _ in }
+        var onPasteURLInNewBoard: (URL) -> Void = { _ in }
+        var onOpenBoardPanel: () -> Void = {}
+        var onShowOverview: () -> Void = {}
+        var onRemoveBoard: () -> Void = {}
+        var onRestoreBoard: () -> Void = {}
+        var onFocusFirstBoard: () -> Void = {}
+        var onFocusLastBoard: () -> Void = {}
+        var onGoToFirstSheet: () -> Void = {}
+        var onGoToLatestSheet: () -> Void = {}
     }
 
     static let defaultHintAlphabet = "asdfghjkl"

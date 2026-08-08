@@ -3,25 +3,13 @@ import Foundation
 import WebKit
 
 @MainActor
-final class DrawerPreviewWebView: WKWebView {
-    var onMoveToWindow: (() -> Void)?
-
-    override func viewDidMoveToWindow() {
-        super.viewDidMoveToWindow()
-        guard window != nil else { return }
-        onMoveToWindow?()
-    }
-}
-
-@MainActor
-final class DrawerPreviewRuntime: NSObject, WKNavigationDelegate, WKUIDelegate {
-    let id: UUID
-    let webView: WKWebView
-
+final class DrawerPreviewRuntime: BaseWebRuntime {
     private let onChange: (UUID, URL?, String?) -> Void
+    private let onKeepInDrawer: (URL) -> Void
+    private let onDiscard: () -> Void
+    private let onDownloadFinished: (String) -> Void
+    private let onDownloadFailed: (String) -> Void
     private unowned let sheetNavigation: SheetNavigationManager
-    private var urlObservation: NSKeyValueObservation?
-    private var titleObservation: NSKeyValueObservation?
 
     init(
         item: DrawerItem,
@@ -30,114 +18,76 @@ final class DrawerPreviewRuntime: NSObject, WKNavigationDelegate, WKUIDelegate {
         sheetScale: Int,
         onKeepInDrawer: @escaping (URL) -> Void,
         onDiscard: @escaping () -> Void,
-        onChange: @escaping (UUID, URL?, String?) -> Void
+        onChange: @escaping (UUID, URL?, String?) -> Void,
+        onDownloadFinished: @escaping (String) -> Void,
+        onDownloadFailed: @escaping (String) -> Void
     ) {
-        id = item.id
         self.onChange = onChange
+        self.onKeepInDrawer = onKeepInDrawer
+        self.onDiscard = onDiscard
+        self.onDownloadFinished = onDownloadFinished
+        self.onDownloadFailed = onDownloadFailed
         self.sheetNavigation = sheetNavigation
 
-        let configuration = WKWebViewConfiguration()
-        configuration.websiteDataStore = websiteDataStore
-        configuration.userContentController = sheetNavigation.userContentController
-        webView = DrawerPreviewWebView(frame: .zero, configuration: configuration)
-        let fallbackColor = DenSurfaceColors.webViewFallbackBackground
-        webView.underPageBackgroundColor = NSColor(
-            calibratedRed: fallbackColor.red,
-            green: fallbackColor.green,
-            blue: fallbackColor.blue,
-            alpha: 1
+        super.init(
+            id: item.id,
+            initialURL: item.url,
+            websiteDataStore: websiteDataStore,
+            userContentController: sheetNavigation.userContentController,
+            sheetScale: sheetScale,
+            enableElementFullscreen: false
         )
-        webView.customUserAgent = BoardRuntime.defaultUserAgent
-        webView.pageZoom = CGFloat(sheetScale) / 100
-        webView.allowsBackForwardNavigationGestures = true
 
-        super.init()
-
-        webView.navigationDelegate = self
-        webView.uiDelegate = self
         sheetNavigation.didOpen(
             webView,
             actions: .init(
-                onOpenBoard: { [weak webView] url in webView?.load(URLRequest(url: url)) },
-                onOpenBoardInBackground: { [weak webView] url in webView?.load(URLRequest(url: url)) },
-                onKeepInDrawer: onKeepInDrawer,
-                onEditCurrentSheet: {},
-                onOpenCurrentSheetInNewBoard: { [weak webView] url in webView?.load(URLRequest(url: url)) },
-                onPasteURLInNewBoard: { [weak webView] url in webView?.load(URLRequest(url: url)) },
-                onOpenBoardPanel: {},
-                onShowOverview: {},
-                onRemoveBoard: onDiscard,
-                onRestoreBoard: {},
-                onFocusFirstBoard: {},
-                onFocusLastBoard: {},
-                onGoToFirstSheet: {},
-                onGoToLatestSheet: {}
+                onOpenBoard: { [weak self] url in self?.onKeepInDrawer(url) },
+                onOpenBoardInBackground: { [weak self] url in self?.onKeepInDrawer(url) },
+                onKeepInDrawer: { [weak self] url in self?.onKeepInDrawer(url) },
+                onRemoveBoard: { [weak self] in self?.onDiscard() }
             )
         )
-
-        urlObservation = webView.observe(\.url, options: [.new]) { [weak self] _, _ in
-            Task { @MainActor [weak self] in
-                guard let self else { return }
-                self.onChange(self.id, self.webView.url, self.webView.title)
-            }
-        }
-        titleObservation = webView.observe(\.title, options: [.new]) { [weak self] _, _ in
-            Task { @MainActor [weak self] in
-                guard let self else { return }
-                self.onChange(self.id, self.webView.url, self.webView.title)
-            }
-        }
-
-        webView.load(URLRequest(url: item.url))
     }
 
-    func dispose() {
+    override func dispose() {
         sheetNavigation.didClose(webView)
-        webView.closeAllMediaPresentations(completionHandler: nil)
-        webView.setAllMediaPlaybackSuspended(true, completionHandler: nil)
-        webView.stopLoading()
-        webView.navigationDelegate = nil
-        webView.uiDelegate = nil
-        urlObservation?.invalidate()
-        titleObservation?.invalidate()
-        urlObservation = nil
-        titleObservation = nil
+        super.dispose()
     }
 
-    func webView(
-        _ webView: WKWebView,
-        decidePolicyFor navigationAction: WKNavigationAction,
-        decisionHandler: @escaping @MainActor @Sendable (WKNavigationActionPolicy) -> Void
-    ) {
-        if navigationAction.navigationType == .linkActivated,
-            let url = navigationAction.request.url,
-            ExternalURLPolicy.isSupported(url)
-        {
-            NSWorkspace.shared.open(url)
-            decisionHandler(.cancel)
-            return
-        }
-
-        decisionHandler(.allow)
+    override func handleURLOrTitleChange(url: URL?, title: String?) {
+        onChange(id, url, title)
     }
 
-    func webView(
-        _ webView: WKWebView,
-        createWebViewWith configuration: WKWebViewConfiguration,
-        for navigationAction: WKNavigationAction,
-        windowFeatures: WKWindowFeatures
-    ) -> WKWebView? {
-        guard navigationAction.targetFrame == nil, let url = navigationAction.request.url else {
-            return nil
-        }
-
-        if navigationAction.navigationType == .linkActivated,
-            ExternalURLPolicy.isSupported(url)
+    override func handleSpecialLink(
+        _ url: URL,
+        navigationType: WKNavigationType,
+        modifierFlags: NSEvent.ModifierFlags,
+        buttonNumber: Int
+    ) -> Bool {
+        if SheetNavigationPolicy.shouldKeepLinkInDrawer(
+            navigationType: navigationType,
+            modifierFlags: modifierFlags,
+            buttonNumber: buttonNumber,
+            url: url
+        )
+            || SheetNavigationPolicy.shouldOpenLinkInNewBoard(
+                navigationType: navigationType,
+                modifierFlags: modifierFlags,
+                buttonNumber: buttonNumber,
+                url: url
+            )
         {
-            NSWorkspace.shared.open(url)
-        } else if SheetURLPolicy.isSupported(url) {
-            webView.load(URLRequest(url: url))
+            onKeepInDrawer(url)
+            return true
         }
-        return nil
+        return false
+    }
+
+    override func notifyDownloadFinished(filename: String) {
+        onDownloadFinished(filename)
+    }
+
+    override func notifyDownloadFailed(filename: String) {
+        onDownloadFailed(filename)
     }
 }
