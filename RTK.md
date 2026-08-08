@@ -15,6 +15,15 @@ rtk npm run build
 rtk pytest -q
 ```
 
+For Xcode tests, use `rtk test` to show failures compactly while retaining the
+full output in the RTK tee log:
+
+```bash
+rtk test "xcodebuild test ..."
+```
+
+Pass the complete command as one quoted argument when paths contain spaces.
+
 ## Meta Commands
 
 ```bash
