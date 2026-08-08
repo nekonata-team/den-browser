@@ -44,6 +44,16 @@ extension DenStore {
         else { return }
         dismissDeskFilter()
         focusBoard(boardID, exitsDenMode: true)
+        deskFilterCenteringTask?.cancel()
+        deskFilterCenteringTask = Task { @MainActor [weak self] in
+            try? await Task.sleep(for: .milliseconds(50))
+            guard !Task.isCancelled,
+                let self,
+                self.deskFilterPhase == .inactive,
+                self.focusedDesk?.focusedBoardID == boardID
+            else { return }
+            self.centerFocusedBoardRequest += 1
+        }
     }
 
     func matchesDeskFilter(_ board: BoardState) -> Bool {

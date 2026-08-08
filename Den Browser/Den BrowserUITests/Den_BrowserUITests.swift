@@ -373,8 +373,10 @@ final class Den_BrowserUITests: XCTestCase, BDD {
 
     @MainActor
     func testFiltersBoardsInFocusedDeskAndEntersSelection() throws {
-        let app = launchApp()
+        let app = launchApp(centerBoardsAlways: true)
         let filter = app.descendants(matching: .any).matching(identifier: "desk-filter").firstMatch
+        let boardStrip = app.scrollViews["board-strip"].firstMatch
+        let charlieSurface = boardSurface(.charlie, in: app)
 
         given("the focused Desk contains Alpha, Bravo, and Charlie") {
             enterDenMode(in: app)
@@ -382,15 +384,15 @@ final class Den_BrowserUITests: XCTestCase, BDD {
             XCTAssertTrue(filter.waitForExistence(timeout: 5))
         }
 
-        when("filtering for Bravo") {
-            app.typeText("Bravo")
+        when("filtering for Charlie") {
+            app.typeText("Charlie")
         }
 
-        then("only Bravo remains visible") {
+        then("only Charlie remains visible") {
             assertEventually("Only the matching Board should remain visible") {
-                self.board(.bravo, in: app).exists
+                self.board(.charlie, in: app).exists
                     && !self.board(.alpha, in: app).exists
-                    && !self.board(.charlie, in: app).exists
+                    && !self.board(.bravo, in: app).exists
             }
         }
 
@@ -399,11 +401,17 @@ final class Den_BrowserUITests: XCTestCase, BDD {
             app.typeKey("\r", modifierFlags: [])
         }
 
-        then("Bravo is focused and all Boards are visible again") {
-            XCTAssertTrue(board(.bravo, in: app).wait(for: \.isSelected, toEqual: true, timeout: 5))
+        then("Charlie is focused and all Boards are visible again") {
+            XCTAssertTrue(board(.charlie, in: app).wait(for: \.isSelected, toEqual: true, timeout: 5))
             XCTAssertTrue(app.windows["UI Testing — Den Browser"].waitForExistence(timeout: 5))
             XCTAssertTrue(board(.alpha, in: app).waitForExistence(timeout: 5))
             XCTAssertTrue(board(.charlie, in: app).waitForExistence(timeout: 5))
+            assertEventuallyEqual(
+                actual: { charlieSurface.frame.midX },
+                expected: boardStrip.frame.midX,
+                tolerance: 30,
+                message: "Filtered Board should center after all Boards return"
+            )
         }
     }
 
@@ -412,7 +420,8 @@ final class Den_BrowserUITests: XCTestCase, BDD {
         singleBoard: Bool = false,
         sheetNavigationEnabled: Bool = false,
         multipleDrawerItems: Bool = false,
-        centerBoardsOnOverflow: Bool = false
+        centerBoardsOnOverflow: Bool = false,
+        centerBoardsAlways: Bool = false
     ) -> XCUIApplication {
         let app = XCUIApplication()
         var args = [
@@ -430,6 +439,9 @@ final class Den_BrowserUITests: XCTestCase, BDD {
         }
         if centerBoardsOnOverflow {
             args.append("--center-boards-on-overflow")
+        }
+        if centerBoardsAlways {
+            args.append("--center-boards-always")
         }
         app.launchArguments = args
         app.launchEnvironment["DEN_UI_TEST_RUN_ID"] = UUID().uuidString

@@ -27,6 +27,7 @@ final class DenStore {
     var pendingConfirmation: PendingConfirmation?
     var maximizedBoardID: UUID?
     var centerFocusedBoardRequest = 0
+    var deskFilterCenteringTask: Task<Void, Never>?
     var activeDrag: ActiveDrag?
     var boardDragCancellationRequest = 0
     var deskDragCancellationRequest = 0

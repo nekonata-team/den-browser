@@ -27,7 +27,7 @@ struct DenStoreDeskFilterTests {
         #expect(store.focusedBoard?.id == bravo.id)
     }
 
-    @Test func keyboardFilteringConfirmsQueryThenEntersSelection() throws {
+    @Test func keyboardFilteringConfirmsQueryThenEntersSelection() async throws {
         let alpha = board("Alpha")
         let bravo = board("Bravo")
         let charlie = board("Charlie")
@@ -54,6 +54,8 @@ struct DenStoreDeskFilterTests {
 
         #expect(KeyboardController.handle(try keyEvent(.carriageReturn, keyCode: 36), store: store))
         #expect(store.focusedBoard?.id == bravo.id)
+        await store.deskFilterCenteringTask?.value
+        #expect(store.centerFocusedBoardRequest == 1)
         #expect(!store.isDeskFilterPresented)
         #expect(store.deskFilterPhase == .inactive)
         #expect(store.deskFilterQuery.isEmpty)

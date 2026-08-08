@@ -17,6 +17,7 @@ struct BoardStrip: View {
     @State private var resizingBoardID: UUID?
     @State private var boardFrames: [UUID: CGRect] = [:]
     @State private var scrollPosition = ScrollPosition(idType: UUID.self)
+    @State private var scrollGeometry = BoardStripScrollGeometry.zero
     @State private var didScrollToRestoredFocusedBoard = false
     @State private var pendingBoardCentering: PendingBoardCentering?
     @State private var boardCenteringTask: Task<Void, Never>?
@@ -59,7 +60,8 @@ struct BoardStrip: View {
             deskID: store.state.focusedDeskID,
             boardID: store.focusedDesk?.focusedBoardID,
             centersFocusedBoard: shouldCenterFocusedBoard,
-            restingScrollX: restingScrollX
+            restingScrollX: restingScrollX,
+            isDeskFilterPresented: store.isDeskFilterPresented
         )
 
         return ScrollView(.horizontal) {
@@ -166,10 +168,26 @@ struct BoardStrip: View {
             .padding(.top, topInset)
             .padding(.bottom, bottomInset)
             .animation(DenMotion.spatial(reduceMotion: shouldReduceMotion), value: boards.map(\.id))
+            .transaction(value: store.isDeskFilterPresented) { transaction in
+                if !store.isDeskFilterPresented {
+                    transaction.animation = nil
+                    transaction.disablesAnimations = true
+                }
+            }
             .animation(DenMotion.spatial(reduceMotion: shouldReduceMotion), value: boards.map(\.width))
             .animation(DenMotion.spatial(reduceMotion: shouldReduceMotion), value: store.maximizedBoardID)
         }
-        .scrollPosition($scrollPosition, anchor: .center)
+        .scrollPosition($scrollPosition)
+        .onScrollGeometryChange(for: BoardStripScrollGeometry.self) { geometry in
+            BoardStripScrollGeometry(
+                offsetX: geometry.contentOffset.x,
+                contentWidth: geometry.contentSize.width,
+                containerWidth: geometry.containerSize.width
+            )
+        } action: { _, geometry in
+            scrollGeometry = geometry
+            settlePendingBoardCentering(in: boardFrames)
+        }
         .coordinateSpace(name: BoardStripCoordinateSpace.name)
         .scrollIndicators(.never)
         .accessibilityIdentifier("board-strip")
@@ -189,6 +207,15 @@ struct BoardStrip: View {
             )
         }
         .onChange(of: alignmentTarget) { previous, current in
+            guard !current.isDeskFilterPresented else { return }
+            guard !previous.isDeskFilterPresented else {
+                var transaction = Transaction(animation: nil)
+                transaction.disablesAnimations = true
+                withTransaction(transaction) {
+                    scrollPosition.scrollTo(x: scrollGeometry.offsetX)
+                }
+                return
+            }
             alignBoardStrip(
                 centersFocusedBoard: current.centersFocusedBoard,
                 boardID: current.boardID,
@@ -197,7 +224,8 @@ struct BoardStrip: View {
             )
         }
         .onChange(of: store.centerFocusedBoardRequest) { _, _ in
-            centerBoard(store.focusedDesk?.focusedBoardID)
+            guard let boardID = store.focusedDesk?.focusedBoardID else { return }
+            centerBoard(boardID, animated: true)
         }
         .onChange(of: store.deskFilterSelectionBoardID) { _, boardID in
             guard store.isDeskFilterPresented, let boardID else { return }
@@ -356,7 +384,12 @@ struct BoardStrip: View {
 
     private func centerBoard(_ boardID: UUID?, animated: Bool = true) {
         guard resizingBoardID == nil, !store.isBoardDragging, let boardID else { return }
-        guard boardFrames[boardID] != nil else {
+        let boardIDs = Set(store.focusedDesk?.boards.map(\.id) ?? [])
+        guard
+            let frame = boardFrames[boardID],
+            boardIDs.isSubset(of: boardFrames.keys),
+            canScrollToCenter(frame)
+        else {
             pendingBoardCentering = PendingBoardCentering(boardID: boardID, animated: animated)
             return
         }
@@ -366,17 +399,45 @@ struct BoardStrip: View {
     }
 
     private func performBoardCentering(_ boardID: UUID, animated: Bool) {
+        guard let frame = boardFrames[boardID] else { return }
+        let targetOffsetX = scrollGeometry.offsetX + frame.midX - size.width / 2
         if animated {
-            withAnimation(DenMotion.spatial(reduceMotion: shouldReduceMotion)) {
-                scrollPosition.scrollTo(id: boardID, anchor: .center)
+            withAnimation(
+                DenMotion.spatial(reduceMotion: shouldReduceMotion),
+                completionCriteria: .logicallyComplete
+            ) {
+                scrollPosition.scrollTo(x: targetOffsetX)
+            } completion: {
+                correctBoardCentering(boardID)
             }
         } else {
-            scrollPosition.scrollTo(id: boardID, anchor: .center)
+            scrollPosition.scrollTo(x: targetOffsetX)
+        }
+    }
+
+    private func correctBoardCentering(_ boardID: UUID) {
+        guard
+            !store.isDeskFilterPresented,
+            store.focusedDesk?.focusedBoardID == boardID,
+            let frame = boardFrames[boardID]
+        else { return }
+        let correction = frame.midX - size.width / 2
+        guard abs(correction) > 1 else { return }
+        var transaction = Transaction(animation: nil)
+        transaction.disablesAnimations = true
+        withTransaction(transaction) {
+            scrollPosition.scrollTo(x: scrollGeometry.offsetX + correction)
         }
     }
 
     private func settlePendingBoardCentering(in frames: [UUID: CGRect]) {
-        guard let pendingBoardCentering, frames[pendingBoardCentering.boardID] != nil else { return }
+        let boardIDs = Set(store.focusedDesk?.boards.map(\.id) ?? [])
+        guard
+            let pendingBoardCentering,
+            let frame = frames[pendingBoardCentering.boardID],
+            boardIDs.isSubset(of: frames.keys)
+                && canScrollToCenter(frame)
+        else { return }
         self.pendingBoardCentering = nil
         boardCenteringTask?.cancel()
         boardCenteringTask = Task { @MainActor in
@@ -388,6 +449,12 @@ struct BoardStrip: View {
             )
         }
     }
+
+    private func canScrollToCenter(_ frame: CGRect) -> Bool {
+        let targetOffsetX = scrollGeometry.offsetX + frame.midX - size.width / 2
+        let maximumOffsetX = max(0, scrollGeometry.contentWidth - scrollGeometry.containerWidth)
+        return targetOffsetX <= maximumOffsetX + 1
+    }
 }
 
 struct BoardStripAlignmentTarget: Equatable {
@@ -395,11 +462,20 @@ struct BoardStripAlignmentTarget: Equatable {
     let boardID: UUID?
     let centersFocusedBoard: Bool
     let restingScrollX: CGFloat
+    let isDeskFilterPresented: Bool
 }
 
 private struct PendingBoardCentering {
     let boardID: UUID
     let animated: Bool
+}
+
+private struct BoardStripScrollGeometry: Equatable {
+    static let zero = BoardStripScrollGeometry(offsetX: 0, contentWidth: 0, containerWidth: 0)
+
+    let offsetX: CGFloat
+    let contentWidth: CGFloat
+    let containerWidth: CGFloat
 }
 
 struct BoardDragState {

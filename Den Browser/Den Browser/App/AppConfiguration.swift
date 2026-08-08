@@ -39,6 +39,9 @@ struct AppConfiguration {
         if processInfo.arguments.contains("--center-boards-on-overflow") {
             AppPreferences(defaults: defaults).setBoardCentering(.onOverflow)
         }
+        if processInfo.arguments.contains("--center-boards-always") {
+            AppPreferences(defaults: defaults).setBoardCentering(.always)
+        }
 
         return AppConfiguration(
             profileDirectoryURL: directoryURL,

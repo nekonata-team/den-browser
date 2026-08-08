@@ -75,7 +75,7 @@ Den Browser's first PoC validates whether a macOS WKWebView implementation can s
 ## Focused Desk filter validation
 
 1. In Den Mode, press `/` and confirm a floating filter appears without moving or resizing the Boards. Search by Board Label and Current Sheet URL; confirm only matching Boards remain visible while the original Focused Board is unchanged.
-2. Press Return to finish typing, use Left / Right or `h` / `l` to select a matching Board, then press Return. Confirm all Boards return, the selected Board becomes the Focused Board, and Den returns to Sheet Input. Uppercase characters must reach the filter field while typing.
+2. Press Return to finish typing, use Left / Right or `h` / `l` to select a matching Board, then press Return. Confirm all Boards return without restoration animation, the selected Board becomes the Focused Board using the configured centering animation, then Den returns to Sheet Input. Uppercase characters must reach the filter field while typing.
 3. Repeat the filter and press Escape. Confirm all Boards return, the original Focused Board remains focused, and Den Mode stays active.
 
 ## Shortcut and Zen View validation
