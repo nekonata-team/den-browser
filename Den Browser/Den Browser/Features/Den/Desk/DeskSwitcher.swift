@@ -40,7 +40,7 @@ struct DeskSwitcher: View {
             }
             .scrollPosition($scrollPosition, anchor: .center)
             .coordinateSpace(name: DeskSwitcherCoordinateSpace.name)
-            .scrollIndicators(.hidden)
+            .scrollIndicators(.never)
             .onChange(of: store.state.focusedDeskID) { _, deskID in
                 cancelDeskDrag()
                 withAnimation(DenMotion.spatial(reduceMotion: shouldReduceMotion)) {
