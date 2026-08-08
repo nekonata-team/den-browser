@@ -1,0 +1,2 @@
+# Release archives are generated artifacts, not source.
+.release/**
