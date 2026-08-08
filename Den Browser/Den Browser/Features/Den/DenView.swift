@@ -131,9 +131,11 @@ struct DenView<Header: View>: View {
     }
 
     private var titlebarTitle: String {
-        let profilePrefix = profileName.map { "\($0) · " } ?? ""
-        guard store.isDenMode else { return profileName.map { "\($0) — Den Browser" } ?? "Den Browser" }
-        return profilePrefix + "DEN MODE"
+        let profileTitle = profileName ?? "Den"
+        guard store.temporaryContext == nil, store.focusedBoard != nil else {
+            return profileTitle
+        }
+        return "\(profileTitle) · \(store.isDenMode ? "DEN MODE" : "SHEET INPUT")"
     }
 
     private var deskFilterOverlay: some View {

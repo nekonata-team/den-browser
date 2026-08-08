@@ -2,7 +2,7 @@
 
 Vim-style commands for the Current Sheet are documented in [vim.md](./vim.md).
 
-Den Mode makes Den operations available while a Sheet has keyboard focus. Toggle it with `Control` + `,`. Outside Zen View, the titlebar shows when Den Mode is active; Escape returns to Sheet Input.
+Den Mode makes Den operations available while a Sheet has keyboard focus. Toggle it with `Control` + `,`. The titlebar identifies the current keyboard context as `DEN MODE` or `SHEET INPUT` during ordinary Board work; it shows only the Profile name while a temporary context is open or no Board is focused. Escape returns to Sheet Input.
 
 The eight app-wide shortcuts for toggling Den Mode, moving between Desks, returning to the Previous Desk, focusing the previous or next Board, and moving the Focused Board left or right can be recorded in Settings > Shortcuts. Each action accepts one logical key plus Control, Option, or Command. Desk and Board focus and movement shortcuts may be cleared; Toggle Den Mode always retains a binding. Conflicts are rejected, changes apply immediately, and each shortcut or the complete set can be reset. If stored shortcut data cannot be read, Den Browser removes it and uses the default.
 

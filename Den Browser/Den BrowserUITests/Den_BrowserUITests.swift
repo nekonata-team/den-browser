@@ -37,6 +37,7 @@ final class Den_BrowserUITests: XCTestCase, BDD {
 
         given("the initial Sheet input is visible") {
             XCTAssertTrue(sheetInput.waitForExistence(timeout: 10))
+            XCTAssertTrue(app.windows["UI Testing · SHEET INPUT"].waitForExistence(timeout: 5))
         }
 
         when("entering Den Mode after typing into the Sheet input") {
@@ -48,6 +49,7 @@ final class Den_BrowserUITests: XCTestCase, BDD {
 
         when("returning to Sheet mode") {
             app.typeKey(",", modifierFlags: .control)
+            XCTAssertTrue(app.windows["UI Testing · SHEET INPUT"].waitForExistence(timeout: 5))
         }
 
         when("typing more input") {
@@ -403,7 +405,7 @@ final class Den_BrowserUITests: XCTestCase, BDD {
 
         then("Charlie is focused and all Boards are visible again") {
             XCTAssertTrue(board(.charlie, in: app).wait(for: \.isSelected, toEqual: true, timeout: 5))
-            XCTAssertTrue(app.windows["UI Testing — Den Browser"].waitForExistence(timeout: 5))
+            XCTAssertTrue(app.windows["UI Testing · SHEET INPUT"].waitForExistence(timeout: 5))
             XCTAssertTrue(board(.alpha, in: app).waitForExistence(timeout: 5))
             XCTAssertTrue(board(.charlie, in: app).waitForExistence(timeout: 5))
             assertEventuallyEqual(
