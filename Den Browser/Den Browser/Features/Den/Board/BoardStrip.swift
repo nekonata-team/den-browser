@@ -168,12 +168,6 @@ struct BoardStrip: View {
             .padding(.top, topInset)
             .padding(.bottom, bottomInset)
             .animation(DenMotion.spatial(reduceMotion: shouldReduceMotion), value: boards.map(\.id))
-            .transaction(value: store.isDeskFilterPresented) { transaction in
-                if !store.isDeskFilterPresented {
-                    transaction.animation = nil
-                    transaction.disablesAnimations = true
-                }
-            }
             .animation(DenMotion.spatial(reduceMotion: shouldReduceMotion), value: boards.map(\.width))
             .animation(DenMotion.spatial(reduceMotion: shouldReduceMotion), value: store.maximizedBoardID)
         }
@@ -423,9 +417,7 @@ struct BoardStrip: View {
         else { return }
         let correction = frame.midX - size.width / 2
         guard abs(correction) > 1 else { return }
-        var transaction = Transaction(animation: nil)
-        transaction.disablesAnimations = true
-        withTransaction(transaction) {
+        withAnimation(DenMotion.feedback(reduceMotion: shouldReduceMotion)) {
             scrollPosition.scrollTo(x: scrollGeometry.offsetX + correction)
         }
     }
@@ -433,19 +425,17 @@ struct BoardStrip: View {
     private func settlePendingBoardCentering(in frames: [UUID: CGRect]) {
         let boardIDs = Set(store.focusedDesk?.boards.map(\.id) ?? [])
         guard
-            let pendingBoardCentering,
-            let frame = frames[pendingBoardCentering.boardID],
+            let pending = pendingBoardCentering,
+            let frame = frames[pending.boardID],
             boardIDs.isSubset(of: frames.keys)
                 && canScrollToCenter(frame)
         else { return }
         self.pendingBoardCentering = nil
         boardCenteringTask?.cancel()
         boardCenteringTask = Task { @MainActor in
-            await Task.yield()
-            guard !Task.isCancelled else { return }
             performBoardCentering(
-                pendingBoardCentering.boardID,
-                animated: pendingBoardCentering.animated
+                pending.boardID,
+                animated: pending.animated
             )
         }
     }
