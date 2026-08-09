@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 struct ProfileWindowView: View {
@@ -8,12 +9,6 @@ struct ProfileWindowView: View {
 
     var body: some View {
         content
-            .onChange(of: appearsActive, initial: true) { _, isActive in
-                profileManager.setProfileActive(profileID, isActive: isActive)
-            }
-            .onDisappear {
-                profileManager.profileWindowDisappeared(profileID)
-            }
             .handlesExternalEvents(
                 preferring: appearsActive ? ["*"] : [],
                 allowing: appearsActive ? [] : ["*"])
@@ -44,6 +39,7 @@ struct ProfileWindowView: View {
             .environment(store)
             .focusedSceneValue(\.denStore, store)
             .focusedSceneValue(\.profileID, activeProfileID)
+            .background(WindowRegistration(profileID: activeProfileID))
             .toolbarVisibility(store.isZenViewPresented ? .hidden : .visible, for: .windowToolbar)
             .toolbarBackgroundVisibility(.hidden, for: .windowToolbar)
             .ignoresSafeArea(.container, edges: store.isZenViewPresented ? .top : [])
@@ -65,6 +61,57 @@ struct ProfileWindowView: View {
         } else {
             ContentUnavailableView("Profile unavailable", systemImage: "person.crop.circle.badge.exclamationmark")
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+    }
+}
+
+private struct WindowRegistration: NSViewRepresentable {
+    let profileID: UUID
+
+    @Environment(ProfileManager.self) private var profileManager
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(profileID: profileID, profileManager: profileManager)
+    }
+
+    func makeNSView(context: Context) -> NSView {
+        let view = NSView()
+        DispatchQueue.main.async { context.coordinator.register(view.window) }
+        return view
+    }
+
+    func updateNSView(_ view: NSView, context: Context) {
+        DispatchQueue.main.async { context.coordinator.register(view.window) }
+    }
+
+    static func dismantleNSView(_ view: NSView, coordinator: Coordinator) {
+        coordinator.unregister()
+    }
+
+    @MainActor
+    final class Coordinator: NSObject {
+        private let profileID: UUID
+        private weak var profileManager: ProfileManager?
+        private weak var window: NSWindow?
+
+        init(profileID: UUID, profileManager: ProfileManager) {
+            self.profileID = profileID
+            self.profileManager = profileManager
+            super.init()
+        }
+
+        func register(_ window: NSWindow?) {
+            guard let window, self.window !== window else { return }
+            self.window = window
+            if profileManager?.register(window: window, for: profileID) != true {
+                self.window = nil
+            }
+        }
+
+        func unregister() {
+            guard let window else { return }
+            profileManager?.unregister(window: window, for: profileID)
+            self.window = nil
         }
     }
 }

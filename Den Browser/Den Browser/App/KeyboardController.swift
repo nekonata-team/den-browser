@@ -10,7 +10,7 @@ final class KeyboardController {
 
         monitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) {
             [weak profileManager, weak preferences] event in
-            guard let store = profileManager?.activeStore(), let preferences else { return event }
+            guard let store = profileManager?.store(for: event.window), let preferences else { return event }
             return Self.handle(event, store: store, preferences: preferences) ? nil : event
         }
     }

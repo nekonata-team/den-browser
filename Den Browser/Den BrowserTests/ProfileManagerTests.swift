@@ -234,26 +234,6 @@ struct ProfileManagerTests {
         #expect(manager.resolvedProfileID(missingID) == personalID)
     }
 
-    @Test func activeProfileTracksSwiftUIWindowActivity() throws {
-        let directory = temporaryProfileDirectory()
-        defer { try? FileManager.default.removeItem(at: directory) }
-        let manager = makeProfileManager(directory: directory)
-        let personalID = manager.personalProfileID
-        let personalStore = try #require(manager.store(for: personalID))
-        let work = try #require(manager.createProfile(name: "Work", color: .green))
-        let workStore = try #require(manager.store(for: work.id))
-
-        manager.setProfileActive(personalID, isActive: true)
-        #expect(manager.activeStore() === personalStore)
-
-        manager.setProfileActive(work.id, isActive: true)
-        manager.setProfileActive(personalID, isActive: false)
-        #expect(manager.activeStore() === workStore)
-
-        manager.setProfileActive(work.id, isActive: false)
-        #expect(manager.activeStore() == nil)
-    }
-
     @Test func profileManagerPersistsDeskPresetsPerProfile() throws {
         let directory = temporaryProfileDirectory()
         defer { try? FileManager.default.removeItem(at: directory) }
@@ -354,22 +334,6 @@ struct ProfileManagerTests {
         #expect(store.recentlyRemovedBoard?.board.id == boardID)
         #expect(restored.store(for: personalID)?.focusedDesk?.boards.contains { $0.id == boardID } == false)
         #expect(restored.store(for: personalID)?.recentlyRemovedBoard == nil)
-    }
-
-    @Test func closingProfileWindowKeepsCurrentRunRestorationCandidate() throws {
-        let directory = temporaryProfileDirectory()
-        defer { try? FileManager.default.removeItem(at: directory) }
-        let manager = makeProfileManager(directory: directory)
-        let profileID = manager.personalProfileID
-        let store = try #require(manager.store(for: profileID))
-        store.addBoard(urlString: "https://example.com")
-        let boardID = try #require(store.focusedDesk?.focusedBoardID)
-        store.removeFocusedBoard()
-
-        manager.profileWindowDisappeared(profileID)
-
-        #expect(manager.store(for: profileID) === store)
-        #expect(store.recentlyRemovedBoard?.board.id == boardID)
     }
 
     @Test func profileStoresUseSeparateWebKitStoresAndCallbacks() throws {
@@ -504,6 +468,7 @@ struct ProfileManagerTests {
     private func board(_ label: String, width: Double = 520, url: String = "https://example.com/") -> BoardState {
         BoardState(label: label, width: width, currentSheetURL: URL(string: url))
     }
+
 }
 
 private final class PersistenceFixtureBundleToken {}
