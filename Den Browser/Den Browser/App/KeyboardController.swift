@@ -1,6 +1,73 @@
 import AppKit
 import Foundation
 
+private struct KeyboardInput {
+    let character: String?
+    let baseCharacter: String?
+    let characters: String?
+    let key: ShortcutKey?
+    let modifiers: ShortcutModifiers
+    let isRepeat: Bool
+    let hasMarkedText: Bool
+    let isDrawerPreviewFirstResponder: Bool
+    let isEscape: Bool
+
+    var binding: ShortcutBinding? {
+        guard let key else { return nil }
+        return ShortcutBinding(key: key, modifiers: modifiers)
+    }
+
+    init(
+        character: String?,
+        baseCharacter: String?,
+        characters: String? = nil,
+        key: ShortcutKey?,
+        modifiers: ShortcutModifiers,
+        isRepeat: Bool,
+        hasMarkedText: Bool = false,
+        isDrawerPreviewFirstResponder: Bool = false,
+        isEscape: Bool = false
+    ) {
+        self.character = character
+        self.baseCharacter = baseCharacter
+        self.characters = characters ?? character
+        self.key = key
+        self.modifiers = modifiers
+        self.isRepeat = isRepeat
+        self.hasMarkedText = hasMarkedText
+        self.isDrawerPreviewFirstResponder = isDrawerPreviewFirstResponder
+        self.isEscape = isEscape
+    }
+
+    init(_ event: NSEvent, store: DenStore? = nil) {
+        self.init(
+            character: event.charactersIgnoringModifiers,
+            baseCharacter: event.characters(byApplyingModifiers: []),
+            characters: event.characters,
+            key: ShortcutKey(event: event),
+            modifiers: ShortcutModifiers(event.modifierFlags),
+            isRepeat: event.isARepeat,
+            hasMarkedText: TextInputComposition.isActive(in: event.window),
+            isDrawerPreviewFirstResponder: store.map {
+                Self.isDrawerPreviewFirstResponder(event, store: $0)
+            } ?? false,
+            isEscape: event.keyCode == 53)
+    }
+
+    private static func isDrawerPreviewFirstResponder(_ event: NSEvent, store: DenStore) -> Bool {
+        guard
+            let webView = store.drawerPreviewRuntime?.webView,
+            var view = event.window?.firstResponder as? NSView
+        else { return false }
+
+        while view !== webView {
+            guard let superview = view.superview else { return false }
+            view = superview
+        }
+        return true
+    }
+}
+
 @MainActor
 final class KeyboardController {
     private var monitor: Any?
@@ -22,6 +89,14 @@ final class KeyboardController {
     }
 
     static func handle(_ event: NSEvent, store: DenStore, preferences: AppPreferences? = nil) -> Bool {
+        handle(KeyboardInput(event, store: store), store: store, preferences: preferences)
+    }
+
+    private static func handle(
+        _ event: KeyboardInput,
+        store: DenStore,
+        preferences: AppPreferences? = nil
+    ) -> Bool {
         if store.isFullscreenActive {
             return false
         }
@@ -88,7 +163,7 @@ final class KeyboardController {
 
         if !store.isDenMode,
             let deskNumberBinding = preferences?.deskNumberBinding,
-            modifiers == deskNumberBinding.modifiers.eventFlags,
+            modifiers == deskNumberBinding.modifiers,
             let digit = baseCharacter(for: event).flatMap(Int.init),
             (0...9).contains(digit)
         {
@@ -101,14 +176,14 @@ final class KeyboardController {
         }
 
         if character == "r", modifiers == [.command, .shift] {
-            if !event.isARepeat {
+            if !event.isRepeat {
                 store.reloadFocusedBoardFromOrigin()
             }
             return true
         }
 
         if character == "r", modifiers == [.command, .option, .shift] {
-            if !event.isARepeat {
+            if !event.isRepeat {
                 store.reloadFocusedDeskSheets()
             }
             return true
@@ -138,11 +213,11 @@ final class KeyboardController {
     }
 
     private static func handleCustomShortcut(
-        _ event: NSEvent,
+        _ event: KeyboardInput,
         store: DenStore,
         preferences: AppPreferences?
     ) -> Bool {
-        guard let binding = ShortcutBinding(event: event) else { return false }
+        guard let binding = event.binding else { return false }
         guard
             let action = ShortcutAction.allCases.first(where: {
                 if let preferences { return preferences.shortcut(for: $0) == binding }
@@ -154,7 +229,7 @@ final class KeyboardController {
 
         switch action {
         case .toggleDenMode:
-            if !event.isARepeat { store.toggleDenMode() }
+            if !event.isRepeat { store.toggleDenMode() }
         case .focusPreviousDesk:
             store.focusPreviousDesk()
         case .focusNextDesk:
@@ -174,28 +249,28 @@ final class KeyboardController {
     }
 
     private static func handleDrawerDenModeToggle(
-        _ event: NSEvent,
+        _ event: KeyboardInput,
         store: DenStore,
         preferences: AppPreferences?
     ) -> Bool {
-        guard let binding = ShortcutBinding(event: event) else { return false }
+        guard let binding = event.binding else { return false }
         let toggleBinding =
             preferences?.shortcut(for: .toggleDenMode)
             ?? ShortcutAction.toggleDenMode.defaultBinding
         guard binding == toggleBinding else { return false }
-        if !event.isARepeat {
+        if !event.isRepeat {
             store.toggleDenMode()
         }
         return true
     }
 
-    private static func handleDenMode(_ event: NSEvent, store: DenStore) -> Bool {
+    private static func handleDenMode(_ event: KeyboardInput, store: DenStore) -> Bool {
         let modifiers = normalizedModifiers(for: event)
         if store.isDeskFilterPresented {
             return handleDeskFilter(event, store: store)
         }
 
-        if isTab(event), modifiers == [], !event.isARepeat {
+        if isTab(event), modifiers == [], !event.isRepeat {
             store.toggleDrawer()
             return true
         }
@@ -239,7 +314,7 @@ final class KeyboardController {
         return true
     }
 
-    private static func handleDeskFilter(_ event: NSEvent, store: DenStore) -> Bool {
+    private static func handleDeskFilter(_ event: KeyboardInput, store: DenStore) -> Bool {
         let modifiers = normalizedModifiers(for: event)
 
         if store.isDeskFilterInputActive {
@@ -266,7 +341,7 @@ final class KeyboardController {
         } else if characterIgnoringModifiers(for: event) == "/" {
             store.enterDeskFilter()
         } else {
-            switch event.specialKey {
+            switch event.key {
             case .leftArrow:
                 store.selectDeskFilterBoard(by: -1)
             case .rightArrow:
@@ -366,8 +441,8 @@ final class KeyboardController {
         }
     }
 
-    private static func handleDrawer(_ event: NSEvent, store: DenStore) -> Bool {
-        if !store.isDenMode, isDrawerPreviewFirstResponder(event, store: store) {
+    private static func handleDrawer(_ event: KeyboardInput, store: DenStore) -> Bool {
+        if !store.isDenMode, event.isDrawerPreviewFirstResponder {
             return false
         }
 
@@ -404,7 +479,7 @@ final class KeyboardController {
             case "j": store.selectDrawerItem(by: 1)
             case "k": store.selectDrawerItem(by: -1)
             default:
-                switch event.specialKey {
+                switch event.key {
                 case .downArrow: store.selectDrawerItem(by: 1)
                 case .upArrow: store.selectDrawerItem(by: -1)
                 default: break
@@ -416,7 +491,7 @@ final class KeyboardController {
         if store.isDenMode {
             let modifiers = normalizedModifiers(for: event)
             if modifiers == [.shift], characterIgnoringModifiers(for: event) == "d" {
-                if !event.isARepeat {
+                if !event.isRepeat {
                     store.requestDrawerClearConfirmation()
                 }
                 return true
@@ -433,13 +508,13 @@ final class KeyboardController {
                 return true
             }
 
-            if isReturn(event), !event.isARepeat {
+            if isReturn(event), !event.isRepeat {
                 store.toggleSelectedDrawerItem()
                 return true
             }
 
-            if event.specialKey == .backspace || event.specialKey == .deleteForward {
-                if !event.isARepeat {
+            if event.key == .backspace || event.key == .deleteForward {
+                if !event.isRepeat {
                     store.discardSelectedDrawerItem()
                 }
                 return true
@@ -453,15 +528,15 @@ final class KeyboardController {
             case "k":
                 store.selectDrawerItem(by: -1)
             case "p":
-                if !event.isARepeat {
+                if !event.isRepeat {
                     store.placeSelectedDrawerItemAsBoard()
                 }
             case "x", "d":
-                if !event.isARepeat {
+                if !event.isRepeat {
                     store.discardSelectedDrawerItem()
                 }
             default:
-                switch event.specialKey {
+                switch event.key {
                 case .downArrow: store.selectDrawerItem(by: 1)
                 case .upArrow: store.selectDrawerItem(by: -1)
                 default: break
@@ -478,19 +553,19 @@ final class KeyboardController {
             return true
         }
 
-        if isReturn(event), !event.isARepeat {
+        if isReturn(event), !event.isRepeat {
             store.toggleSelectedDrawerItem()
             return true
         }
 
-        if event.specialKey == .backspace || event.specialKey == .deleteForward {
-            if !event.isARepeat {
+        if event.key == .backspace || event.key == .deleteForward {
+            if !event.isRepeat {
                 store.discardSelectedDrawerItem()
             }
             return true
         }
 
-        switch event.specialKey {
+        switch event.key {
         case .downArrow: store.selectDrawerItem(by: 1)
         case .upArrow: store.selectDrawerItem(by: -1)
         default: return false
@@ -498,20 +573,7 @@ final class KeyboardController {
         return true
     }
 
-    private static func isDrawerPreviewFirstResponder(_ event: NSEvent, store: DenStore) -> Bool {
-        guard
-            let webView = store.drawerPreviewRuntime?.webView,
-            var view = event.window?.firstResponder as? NSView
-        else { return false }
-
-        while view !== webView {
-            guard let superview = view.superview else { return false }
-            view = superview
-        }
-        return true
-    }
-
-    private static func handleBoardWidthPanel(_ event: NSEvent, store: DenStore) -> Bool {
+    private static func handleBoardWidthPanel(_ event: KeyboardInput, store: DenStore) -> Bool {
         let modifiers = normalizedModifiers(for: event)
         if isEscape(event), modifiers == [] {
             store.hideBoardWidthPanel()
@@ -519,7 +581,7 @@ final class KeyboardController {
         }
 
         let character = characterIgnoringModifiers(for: event)
-        if character == "w", modifiers == [], !event.isARepeat {
+        if character == "w", modifiers == [], !event.isRepeat {
             store.hideBoardWidthPanel()
         } else if character == "-", modifiers == [] {
             store.adjustFocusedDeskBoardWidths(by: -80)
@@ -531,9 +593,9 @@ final class KeyboardController {
         return true
     }
 
-    private static func handleOverview(_ event: NSEvent, store: DenStore) -> Bool {
+    private static func handleOverview(_ event: KeyboardInput, store: DenStore) -> Bool {
         let modifiers = normalizedModifiers(for: event)
-        let character = event.charactersIgnoringModifiers?.first
+        let character = characterIgnoringModifiers(for: event)?.first
 
         if store.isOverviewFilterInputActive {
             if hasMarkedText(in: event) {
@@ -571,13 +633,13 @@ final class KeyboardController {
         return true
     }
 
-    private static func hasMarkedText(in event: NSEvent) -> Bool {
-        TextInputComposition.isActive(in: event.window)
+    private static func hasMarkedText(in event: KeyboardInput) -> Bool {
+        event.hasMarkedText
     }
 
     private static func handleMovement(
-        _ event: NSEvent,
-        modifiers: NSEvent.ModifierFlags,
+        _ event: KeyboardInput,
+        modifiers: ShortcutModifiers,
         store: DenStore,
         overview: Bool
     ) -> Bool {
@@ -606,8 +668,8 @@ final class KeyboardController {
         return true
     }
 
-    private static func movementDirection(for event: NSEvent) -> MovementDirection? {
-        switch event.specialKey {
+    private static func movementDirection(for event: KeyboardInput) -> MovementDirection? {
+        switch event.key {
         case .leftArrow: return .left
         case .rightArrow: return .right
         case .upArrow: return .upward
@@ -623,33 +685,33 @@ final class KeyboardController {
         }
     }
 
-    private static func normalizedModifiers(for event: NSEvent) -> NSEvent.ModifierFlags {
-        event.modifierFlags.intersection([.command, .control, .option, .shift])
+    private static func normalizedModifiers(for event: KeyboardInput) -> ShortcutModifiers {
+        event.modifiers
     }
 
-    private static func characterIgnoringModifiers(for event: NSEvent) -> String? {
-        event.charactersIgnoringModifiers?.lowercased()
+    private static func characterIgnoringModifiers(for event: KeyboardInput) -> String? {
+        event.character?.lowercased()
     }
 
-    private static func baseCharacter(for event: NSEvent) -> String? {
-        event.characters(byApplyingModifiers: [])?.lowercased()
+    private static func baseCharacter(for event: KeyboardInput) -> String? {
+        event.baseCharacter?.lowercased()
     }
 
-    private static func isEscape(_ event: NSEvent) -> Bool {
-        event.keyCode == 53
+    private static func isEscape(_ event: KeyboardInput) -> Bool {
+        event.isEscape
     }
 
-    private static func isQuestionMark(_ event: NSEvent, modifiers: NSEvent.ModifierFlags) -> Bool {
+    private static func isQuestionMark(_ event: KeyboardInput, modifiers: ShortcutModifiers) -> Bool {
         modifiers == [.shift]
-            && (event.characters == "?" || event.charactersIgnoringModifiers == "/")
+            && (event.characters == "?" || event.baseCharacter == "/")
     }
 
-    private static func isReturn(_ event: NSEvent) -> Bool {
-        event.specialKey == .carriageReturn
+    private static func isReturn(_ event: KeyboardInput) -> Bool {
+        event.key == .returnKey
     }
 
-    private static func isTab(_ event: NSEvent) -> Bool {
-        event.specialKey == .tab
+    private static func isTab(_ event: KeyboardInput) -> Bool {
+        event.key == .tab
     }
 }
 
@@ -664,9 +726,9 @@ private struct KeyStroke {
     let binding: ShortcutBinding
     let isRepeat: Bool
 
-    init?(event: NSEvent) {
-        let modifiers = ShortcutModifiers(event.modifierFlags)
-        if let character = event.charactersIgnoringModifiers?.lowercased(),
+    init?(event: KeyboardInput) {
+        let modifiers = event.modifiers
+        if let character = event.character?.lowercased(),
             character.count == 1,
             character.unicodeScalars.allSatisfy({
                 !CharacterSet.controlCharacters.contains($0)
@@ -674,10 +736,10 @@ private struct KeyStroke {
         {
             binding = ShortcutBinding(key: .character(character), modifiers: modifiers)
         } else {
-            guard let binding = ShortcutBinding(event: event) else { return nil }
+            guard let binding = event.binding else { return nil }
             self.binding = binding
         }
-        isRepeat = event.isARepeat
+        isRepeat = event.isRepeat
     }
 }
 

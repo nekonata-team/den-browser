@@ -201,13 +201,10 @@ final class ProfileManager {
         stores[profileID]?.releaseRuntimes()
     }
 
-    func profileID(for window: NSWindow?) -> UUID? {
-        guard let window else { return nil }
-        return windows.first(where: { $0.value.window === window })?.key
-    }
-
     func store(for window: NSWindow?) -> DenStore? {
-        profileID(for: window).flatMap(store(for:))
+        guard let window else { return nil }
+        let profileID = windows.first(where: { $0.value.window === window })?.key
+        return profileID.flatMap(store(for:))
     }
 
     private func closeWindow(for profileID: UUID) {
