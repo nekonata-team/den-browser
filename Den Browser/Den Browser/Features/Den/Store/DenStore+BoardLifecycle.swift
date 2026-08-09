@@ -170,6 +170,10 @@ extension DenStore {
             firstSheetURL: firstSheetURL,
             customLabel: source.customLabel
         )
+        sheetNavigation.setBoardPaused(
+            sheetNavigation.isBoardPaused(source.id),
+            for: board.id
+        )
         state.desks[deskIndex].boards.insert(board, at: boardIndex + 1)
         state.desks[deskIndex].focusedBoardID = board.id
         isDenMode = false
