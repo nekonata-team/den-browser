@@ -1,5 +1,5 @@
 ---
-status: superseded
+status: superseded by ADR-0033
 ---
 
 # Restrict sheet URLs to HTTP and HTTPS protocols

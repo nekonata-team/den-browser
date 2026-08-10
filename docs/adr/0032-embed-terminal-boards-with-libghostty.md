@@ -1,10 +1,8 @@
-# ADR 0032: Embed Terminal Boards with libghostty
+---
+status: accepted
+---
 
-## Status
-
-Accepted
-
-## Decision
+# Embed Terminal Boards with libghostty
 
 Den Browser supports Terminal Boards beside Web Boards in the same Desk. The app embeds `GhosttyTerminal` from the exact `libghostty-spm` 1.3.2 package and gives each Terminal Board its own controller and surface. Terminal processes live until their Board, Profile Window, or app closes. Ordinary Terminal Boards persist only the latest reported Working Directory; Zellij Boards persist an optional session name.
 

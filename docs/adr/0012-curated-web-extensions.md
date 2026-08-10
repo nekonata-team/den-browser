@@ -1,5 +1,5 @@
 ---
-status: superseded
+status: superseded by ADR-0013
 ---
 
 # Offer curated web extensions as Features
