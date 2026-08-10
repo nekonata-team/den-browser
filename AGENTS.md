@@ -46,6 +46,7 @@ manual candidate verification, `just release publish X.Y.Z`.
 
 ## Documentation operation
 
+- Use the `domain-modeling` skill when creating or updating `CONTEXT.md` or ADRs.
 - Keep README focused on product positioning, target work, status, requirements,
   installation, core concepts, a short feature summary, and entry-point links.
 - Do not add exhaustive feature lists, shortcut maps, implementation details, or
