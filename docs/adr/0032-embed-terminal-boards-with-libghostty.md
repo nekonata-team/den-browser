@@ -10,7 +10,7 @@ Den Browser supports Terminal Boards beside Web Boards in the same Desk. The app
 
 The app disables App Sandbox because a normal developer Shell must access the user's files and launch ordinary child processes. Hardened Runtime, Developer ID signing, and notarization remain required. Existing Sandbox-container data is not migrated before 1.0.
 
-Ghostty configuration is loaded from its standard XDG and macOS paths. Den owns app shortcuts and denies OSC 52 clipboard reads and writes. Ghostty window, tab, and split concepts are not exposed.
+Ghostty configuration is loaded from its standard XDG and macOS paths. Named bundled themes resolve through the pinned `GhosttyTheme` catalog. Den owns app shortcuts and denies OSC 52 clipboard reads and writes. Ghostty window, tab, and split concepts are not exposed.
 
 ## Consequences
 

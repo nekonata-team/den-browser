@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		53A10001301A000000000001 /* GhosttyTerminal in Frameworks */ = {isa = PBXBuildFile; productRef = 53A10003301A000000000001 /* GhosttyTerminal */; };
+		53A10004301A000000000001 /* GhosttyTheme in Frameworks */ = {isa = PBXBuildFile; productRef = 53A10005301A000000000001 /* GhosttyTheme */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -70,6 +71,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				53A10001301A000000000001 /* GhosttyTerminal in Frameworks */,
+				53A10004301A000000000001 /* GhosttyTheme in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -131,6 +133,7 @@
 			name = "Den Browser";
 			packageProductDependencies = (
 				53A10003301A000000000001 /* GhosttyTerminal */,
+				53A10005301A000000000001 /* GhosttyTheme */,
 			);
 			productName = "Den Browser";
 			productReference = 530E9DDB2FFFFED90033427C /* Den Browser.app */;
@@ -625,6 +628,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 53A10002301A000000000001 /* XCRemoteSwiftPackageReference "libghostty-spm" */;
 			productName = GhosttyTerminal;
+		};
+		53A10005301A000000000001 /* GhosttyTheme */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 53A10002301A000000000001 /* XCRemoteSwiftPackageReference "libghostty-spm" */;
+			productName = GhosttyTheme;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

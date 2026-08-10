@@ -8,7 +8,7 @@ Automated unit tests own:
 
 - `DenStore` and other pure state transitions, including board focus, ordering, moving, holding, placing, canceling, and closing.
 - State persistence and restoration.
-- Terminal command parsing and Web/Terminal Board lifecycle transitions.
+- Terminal command parsing, named theme resolution, and Web/Terminal Board lifecycle transitions.
 - Profile model coding, ordering, CRUD, corruption recovery, per-Profile Den restoration, and app-wide preference persistence.
 - Routing Sheet Navigation callbacks and WebKit stores to their owning Profile.
 - The pointer-focus state machine used to coordinate board selection and WebKit focus.

@@ -122,6 +122,7 @@ Den Browser's first PoC validates whether a macOS WKWebView implementation can s
 5. Duplicate a Terminal Board and apply a Desk Preset containing one. Confirm each starts an independent Shell. Relaunch and confirm only layout, label, width, and Working Directory restore.
 6. Cmd-click an HTTP(S) link and confirm a background Web Board appears immediately to the right.
 7. Place eight Terminal Boards across three Desks, keep two producing output for ten minutes, and confirm Den actions stay responsive with no state loss or crash.
+8. Set a bundled Ghostty theme by name and confirm its colors apply. Repeat with separate light/dark names.
 
 ## Board context menu validation
 
