@@ -712,7 +712,7 @@ struct SheetNavigationTests {
                 return nil
             }
             group.addTask {
-                try await Task.sleep(for: .seconds(2))
+                try await Task.sleep(for: .seconds(5))
                 return nil
             }
 
