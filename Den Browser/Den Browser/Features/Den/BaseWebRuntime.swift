@@ -94,8 +94,12 @@ class BaseWebRuntime: NSObject, WKDownloadDelegate, WKNavigationDelegate, WKUIDe
         // Overridden by subclasses
     }
 
-    func handleSpecialLink(
-        _ url: URL, navigationType: WKNavigationType, modifierFlags: NSEvent.ModifierFlags, buttonNumber: Int
+    func handleLinkNavigation(
+        _ url: URL,
+        navigationType: WKNavigationType,
+        modifierFlags: NSEvent.ModifierFlags,
+        buttonNumber: Int,
+        opensNewContext: Bool
     ) -> Bool {
         // Overridden by subclasses if needed. Return true if handled.
         return false
@@ -123,8 +127,17 @@ class BaseWebRuntime: NSObject, WKDownloadDelegate, WKNavigationDelegate, WKUIDe
         decidePolicyFor navigationAction: WKNavigationAction,
         decisionHandler: @escaping @MainActor @Sendable (WKNavigationActionPolicy) -> Void
     ) {
+        guard let url = navigationAction.request.url else {
+            decisionHandler(.allow)
+            return
+        }
+
+        if navigationAction.shouldPerformDownload {
+            decisionHandler(.download)
+            return
+        }
+
         if navigationAction.navigationType == .linkActivated || navigationAction.navigationType == .other,
-            let url = navigationAction.request.url,
             ExternalURLPolicy.isSupported(url)
         {
             NSWorkspace.shared.open(url)
@@ -132,17 +145,18 @@ class BaseWebRuntime: NSObject, WKDownloadDelegate, WKNavigationDelegate, WKUIDe
             return
         }
 
-        if handleSpecialLink(
-            navigationAction.request.url ?? URL(fileURLWithPath: ""),
+        if handleLinkNavigation(
+            url,
             navigationType: navigationAction.navigationType,
             modifierFlags: navigationAction.modifierFlags,
-            buttonNumber: navigationAction.buttonNumber
+            buttonNumber: navigationAction.buttonNumber,
+            opensNewContext: navigationAction.targetFrame == nil
         ) {
             decisionHandler(.cancel)
             return
         }
 
-        decisionHandler(navigationAction.shouldPerformDownload ? .download : .allow)
+        decisionHandler(.allow)
     }
 
     func webView(
@@ -181,17 +195,22 @@ class BaseWebRuntime: NSObject, WKDownloadDelegate, WKNavigationDelegate, WKUIDe
             return nil
         }
 
-        if navigationAction.navigationType == .linkActivated,
+        if navigationAction.shouldPerformDownload {
+            load(url)
+        } else if navigationAction.navigationType == .linkActivated,
             ExternalURLPolicy.isSupported(url)
         {
             NSWorkspace.shared.open(url)
         } else if SheetURLPolicy.isSupported(url) {
-            _ = handleSpecialLink(
+            if !handleLinkNavigation(
                 url,
                 navigationType: navigationAction.navigationType,
                 modifierFlags: navigationAction.modifierFlags,
-                buttonNumber: navigationAction.buttonNumber
-            )
+                buttonNumber: navigationAction.buttonNumber,
+                opensNewContext: true
+            ) {
+                load(url)
+            }
         }
         return nil
     }

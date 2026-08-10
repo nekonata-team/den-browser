@@ -135,11 +135,12 @@ final class BoardRuntime: BaseWebRuntime, NSWindowDelegate, ObservableObject {
         events.onChange(id, url, title)
     }
 
-    override func handleSpecialLink(
+    override func handleLinkNavigation(
         _ url: URL,
         navigationType: WKNavigationType,
         modifierFlags: NSEvent.ModifierFlags,
-        buttonNumber: Int
+        buttonNumber: Int,
+        opensNewContext: Bool
     ) -> Bool {
         if SheetNavigationPolicy.shouldKeepLinkInDrawer(
             navigationType: navigationType,

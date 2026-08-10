@@ -44,6 +44,8 @@ final class DrawerPreviewRuntime: BaseWebRuntime {
                 onOpenBoard: { [weak self] url in self?.onKeepInDrawer(url) },
                 onOpenBoardInBackground: { [weak self] url in self?.onKeepInDrawer(url) },
                 onKeepInDrawer: { [weak self] url in self?.onKeepInDrawer(url) },
+                onOpenCurrentSheetInNewBoard: { [weak self] url in self?.onKeepInDrawer(url) },
+                onPasteURLInNewBoard: { [weak self] url in self?.onKeepInDrawer(url) },
                 onRemoveBoard: { [weak self] in self?.onDiscard() },
                 isSupportedSheetURL: SheetURLPolicy.isSupported,
                 onNavigateCurrentSheet: { [weak self] url in self?.load(url) }
@@ -60,18 +62,20 @@ final class DrawerPreviewRuntime: BaseWebRuntime {
         onChange(id, url, title)
     }
 
-    override func handleSpecialLink(
+    override func handleLinkNavigation(
         _ url: URL,
         navigationType: WKNavigationType,
         modifierFlags: NSEvent.ModifierFlags,
-        buttonNumber: Int
+        buttonNumber: Int,
+        opensNewContext: Bool
     ) -> Bool {
-        if SheetNavigationPolicy.shouldKeepLinkInDrawer(
-            navigationType: navigationType,
-            modifierFlags: modifierFlags,
-            buttonNumber: buttonNumber,
-            url: url
-        )
+        if opensNewContext
+            || SheetNavigationPolicy.shouldKeepLinkInDrawer(
+                navigationType: navigationType,
+                modifierFlags: modifierFlags,
+                buttonNumber: buttonNumber,
+                url: url
+            )
             || SheetNavigationPolicy.shouldOpenLinkInNewBoard(
                 navigationType: navigationType,
                 modifierFlags: modifierFlags,

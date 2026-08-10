@@ -124,6 +124,72 @@ struct BoardRuntimeWebUITests {
         )
     }
 
+    @Test func drawerPreviewDistinguishesNewContextLinks() throws {
+        let manager = SheetNavigationManager(scriptSource: "")
+        let item = DrawerItem(url: try #require(URL(string: "file:///tmp/drawer-preview.html")))
+        var keptURL: URL?
+        let runtime = DrawerPreviewRuntime(
+            item: item,
+            websiteDataStore: .nonPersistent(),
+            sheetNavigation: manager,
+            sheetScale: 100,
+            onKeepInDrawer: { keptURL = $0 },
+            onDiscard: {},
+            onChange: { _, _, _ in },
+            onDownloadFinished: { _ in },
+            onDownloadFailed: { _ in }
+        )
+        defer { runtime.dispose() }
+
+        let normalURL = try #require(URL(string: "https://example.com/normal"))
+        #expect(
+            !runtime.handleLinkNavigation(
+                normalURL,
+                navigationType: .linkActivated,
+                modifierFlags: [],
+                buttonNumber: 0,
+                opensNewContext: false
+            )
+        )
+        #expect(keptURL == nil)
+
+        let targetlessURL = try #require(URL(string: "https://example.com/targetless"))
+        #expect(
+            runtime.handleLinkNavigation(
+                targetlessURL,
+                navigationType: .linkActivated,
+                modifierFlags: [],
+                buttonNumber: 0,
+                opensNewContext: true
+            )
+        )
+        #expect(keptURL == targetlessURL)
+
+        let commandURL = try #require(URL(string: "https://example.com/command"))
+        #expect(
+            runtime.handleLinkNavigation(
+                commandURL,
+                navigationType: .linkActivated,
+                modifierFlags: .command,
+                buttonNumber: 0,
+                opensNewContext: false
+            )
+        )
+        #expect(keptURL == commandURL)
+
+        let optionURL = try #require(URL(string: "https://example.com/option"))
+        #expect(
+            runtime.handleLinkNavigation(
+                optionURL,
+                navigationType: .linkActivated,
+                modifierFlags: .option,
+                buttonNumber: 0,
+                opensNewContext: false
+            )
+        )
+        #expect(keptURL == optionURL)
+    }
+
     @Test func customSchemeNavigationOpensInExternalApplication() {
         #expect(
             SheetNavigationPolicy.shouldOpenExternalApplication(
