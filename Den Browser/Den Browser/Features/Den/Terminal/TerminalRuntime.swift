@@ -21,9 +21,10 @@ final class TerminalRuntime: NSObject, ObservableObject {
     init(workingDirectory: String, events: Events) {
         self.events = events
         super.init()
+        let resolution = TerminalConfigurationSource.current
         let controller = TerminalController(
-            configFilePath: TerminalConfigurationSource.current.filePath,
-            theme: TerminalConfigurationSource.current.theme)
+            configSource: resolution.configSource,
+            theme: resolution.theme)
         self.controller = controller
         terminalView.delegate = self
         terminalView.configuration = TerminalSurfaceOptions(

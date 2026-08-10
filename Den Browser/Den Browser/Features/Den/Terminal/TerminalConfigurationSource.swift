@@ -4,7 +4,7 @@ import GhosttyTheme
 
 enum TerminalConfigurationSource {
     struct Resolution {
-        let filePath: String?
+        let configSource: TerminalController.ConfigSource
         let theme: TerminalTheme
     }
 
@@ -31,28 +31,34 @@ enum TerminalConfigurationSource {
         ]
         let loadedCandidates = (arguments.contains("--ui-testing") ? [] : candidates)
             .filter { fileManager.fileExists(atPath: $0.path) }
-        var lines = loadedCandidates.map { "config-file = \(quoted($0.path))" }
-
-        let token = UUID().uuidString
-        let directory = fileManager.temporaryDirectory
-        let overrideURL = directory.appending(path: "den-browser-ghostty-\(token)-override.conf")
-        let url = directory.appending(path: "den-browser-ghostty-\(token).conf")
-        do {
-            var overrides = ["clipboard-read = deny", "clipboard-write = deny"]
-            if arguments.contains("--ui-testing") {
-                overrides.append("command = /bin/zsh -f")
-            }
-            try overrides.joined(separator: "\n")
-                .write(to: overrideURL, atomically: true, encoding: .utf8)
-            lines.append("config-file = \(quoted(overrideURL.path))")
-            try lines.joined(separator: "\n").write(to: url, atomically: true, encoding: .utf8)
-            return Resolution(
-                filePath: url.path,
-                theme: resolveTheme(from: loadedCandidates))
-        } catch {
-            NSLog("Could not create Den Browser Ghostty config: %@", error.localizedDescription)
-            return Resolution(filePath: nil, theme: TerminalTheme())
+        var contents = loadedCandidates.compactMap {
+            try? String(contentsOf: $0, encoding: .utf8)
         }
+        .map { removingThemeSetting(from: $0) }
+        .joined(separator: "\n")
+
+        if arguments.contains("--ui-testing") {
+            if !contents.isEmpty { contents.append("\n") }
+            contents.append("command = /bin/zsh -f")
+        }
+
+        return Resolution(
+            configSource: .generated(contents),
+            theme: resolveTheme(from: loadedCandidates))
+    }
+
+    private static func removingThemeSetting(from contents: String) -> String {
+        contents
+            .split(omittingEmptySubsequences: false, whereSeparator: \.isNewline)
+            .filter { rawLine in
+                let line = rawLine.trimmingCharacters(in: .whitespaces)
+                guard !line.isEmpty, !line.hasPrefix("#"),
+                    let separator = line.firstIndex(of: "=")
+                else { return true }
+                let key = line[..<separator].trimmingCharacters(in: .whitespaces)
+                return key != "theme"
+            }
+            .joined(separator: "\n")
     }
 
     private static func resolveTheme(from candidates: [URL]) -> TerminalTheme {
@@ -96,9 +102,5 @@ enum TerminalConfigurationSource {
     private static func unquoted(_ value: String) -> String {
         guard value.count >= 2, value.first == "\"", value.last == "\"" else { return value }
         return String(value.dropFirst().dropLast())
-    }
-
-    private static func quoted(_ value: String) -> String {
-        "\"\(value.replacingOccurrences(of: "\\", with: "\\\\").replacingOccurrences(of: "\"", with: "\\\""))\""
     }
 }
