@@ -49,14 +49,20 @@ struct ProfileManagerTests {
     @Test func profileDocumentWithoutRecentItemsLoadsEmptyList() throws {
         let profile = ProfileState(
             id: UUID(), name: "Work", color: .purple, webProfileStore: .identified(UUID()))
+        let recentItems: [RecentItem] = [
+            .url(URL(string: "https://example.com")!),
+            .search("Swift"),
+            .terminal(workingDirectory: "/tmp"),
+            .zellij(sessionName: nil),
+            .zellij(sessionName: "project-a"),
+        ]
         let encoded = try JSONEncoder().encode(
             PersistedProfile(
                 profile: profile,
                 den: .sample,
-                recentItems: [.url(URL(string: "https://example.com")!), .search("Swift")]))
+                recentItems: recentItems))
         #expect(
-            try JSONDecoder().decode(PersistedProfile.self, from: encoded).recentItems
-                == [.url(URL(string: "https://example.com")!), .search("Swift")])
+            try JSONDecoder().decode(PersistedProfile.self, from: encoded).recentItems == recentItems)
         var object = try #require(JSONSerialization.jsonObject(with: encoded) as? [String: Any])
         object.removeValue(forKey: "recentItems")
 

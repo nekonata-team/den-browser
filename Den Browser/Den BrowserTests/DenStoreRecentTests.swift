@@ -93,6 +93,119 @@ struct DenStoreRecentTests {
         #expect(store.focusedDesk?.boards.count == 1)
     }
 
+    @Test func terminalAndZellijInputsBecomeRecentItems() throws {
+        let source = desk("Desk")
+        let suiteName = "DenStoreRecentTerminalTests-\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let preferences = AppPreferences(defaults: defaults)
+        preferences.setZellijPath("/opt/homebrew/bin/zellij")
+        let store = DenStore(
+            state: DenState(desks: [source], focusedDeskID: source.id),
+            sheetNavigation: SheetNavigationManager(),
+            preferences: preferences)
+        let home = FileManager.default.homeDirectoryForCurrentUser.standardizedFileURL.path
+        let directory = FileManager.default.temporaryDirectory.standardizedFileURL.path
+
+        store.openBoard(input: ":terminal")
+        store.openBoard(input: ":terminal ~")
+        store.openBoard(input: ":terminal \(directory)")
+        store.openBoard(input: ":zellij")
+        store.openBoard(input: ":zellij project-a")
+
+        #expect(
+            store.recentItems == [
+                .zellij(sessionName: "project-a"),
+                .zellij(sessionName: nil),
+                .terminal(workingDirectory: directory),
+                .terminal(workingDirectory: home),
+            ])
+    }
+
+    @Test func openingTerminalRecentRevalidatesDirectoryAndMovesItToTheFront() throws {
+        let source = desk("Desk")
+        let directory = FileManager.default.temporaryDirectory.standardizedFileURL.path
+        let item = RecentItem.terminal(workingDirectory: directory)
+        let store = DenStore(
+            state: DenState(desks: [source], focusedDeskID: source.id),
+            websiteDataStore: .default(),
+            sheetNavigation: SheetNavigationManager(),
+            recentItems: [.search("existing"), item],
+            onSave: nil,
+            onRecentItemsSave: { _ in true })
+
+        store.openBoard(recentItem: item)
+
+        #expect(store.focusedBoard?.terminalWorkingDirectory == directory)
+        #expect(store.recentItems.first == item)
+    }
+
+    @Test func missingTerminalRecentShowsErrorWithoutCreatingBoard() {
+        let source = desk("Desk")
+        let item = RecentItem.terminal(
+            workingDirectory: "/missing/den-browser-\(UUID().uuidString)")
+        let store = DenStore(
+            state: DenState(desks: [source], focusedDeskID: source.id),
+            websiteDataStore: .default(),
+            sheetNavigation: SheetNavigationManager(),
+            recentItems: [item],
+            onSave: nil,
+            onRecentItemsSave: { _ in true })
+
+        store.openBoard(recentItem: item)
+
+        #expect(store.focusedDesk?.boards.isEmpty == true)
+        #expect(store.openBoardPanelMessage?.contains("does not exist") == true)
+        #expect(store.recentItems == [item])
+    }
+
+    @Test func openingZellijRecentCreatesBoardAndMovesItToTheFront() {
+        let source = desk("Desk")
+        let suiteName = "DenStoreRecentZellijTests-\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let preferences = AppPreferences(defaults: defaults)
+        preferences.setZellijPath("/opt/homebrew/bin/zellij")
+        let item = RecentItem.zellij(sessionName: "project-a")
+        let store = DenStore(
+            state: DenState(desks: [source], focusedDeskID: source.id),
+            websiteDataStore: .default(),
+            sheetNavigation: SheetNavigationManager(),
+            preferences: preferences,
+            recentItems: [.search("existing"), item],
+            onSave: nil,
+            onRecentItemsSave: { _ in true })
+
+        store.openBoard(recentItem: item)
+
+        #expect(store.focusedBoard?.isZellij == true)
+        #expect(store.focusedBoard?.zellijSessionName == "project-a")
+        #expect(store.recentItems.first == item)
+    }
+
+    @Test func openingZellijRecentWithoutConfigurationShowsError() {
+        let source = desk("Desk")
+        let suiteName = "DenStoreRecentMissingZellijTests-\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let preferences = AppPreferences(defaults: defaults)
+        let item = RecentItem.zellij(sessionName: nil)
+        let store = DenStore(
+            state: DenState(desks: [source], focusedDeskID: source.id),
+            websiteDataStore: .default(),
+            sheetNavigation: SheetNavigationManager(),
+            preferences: preferences,
+            recentItems: [item],
+            onSave: nil,
+            onRecentItemsSave: { _ in true })
+
+        store.openBoard(recentItem: item)
+
+        #expect(store.focusedDesk?.boards.isEmpty == true)
+        #expect(store.openBoardPanelMessage?.contains("absolute Zellij executable path") == true)
+        #expect(store.recentItems == [item])
+    }
+
     private func desk(_ label: String) -> DeskState {
         DeskState(label: label, boards: [])
     }

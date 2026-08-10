@@ -28,7 +28,7 @@ struct OpenBoardPanel: View {
     var body: some View {
         VStack(alignment: .leading, spacing: DenPanelLayout.contentSpacing) {
             DenPanelHeader(systemImage: "plus.rectangle.on.rectangle") {
-                TextField("Open URL or search", text: $urlText)
+                TextField("Open URL, search, or command", text: $urlText)
                     .textFieldStyle(.plain)
                     .font(.title3.weight(.medium))
                     .focused($isFocused)

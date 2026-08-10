@@ -73,11 +73,11 @@ The Sheet URL held when a Board was created. It remains the Board's fixed return
 _Avoid_: Home page, bookmark, browser history
 
 **Recent**:
-A Profile-owned list of URLs and search terms recently used to open new boards. It is ordered by most recent use and lets the Profile open another board from the same input.
+A Profile-owned list of inputs recently used to open new Boards. It is ordered by most recent use and lets the Profile open another Board from the same web, Terminal, or Zellij input.
 _Avoid_: History, Used Board, Recent Board, Starting Point, Board Start
 
 **Recent Item**:
-A URL or search term retained in Recent.
+An input retained in Recent for opening another Board, including a URL, search term, Terminal location, or Zellij session intent.
 _Avoid_: Recent Entry
 
 **Drawer**:

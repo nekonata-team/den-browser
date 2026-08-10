@@ -93,9 +93,20 @@ struct DenStoreBoardTests {
 
         #expect(store.focusedBoard?.isZellij != true)
         #expect(store.openBoardPanelMessage?.contains("absolute Zellij executable path") == true)
+        #expect(store.recentItems.isEmpty)
     }
 
-    @Test func terminalBoardsCreateDuplicateRemoveAndRestoreWithoutRecentItems() throws {
+    @Test func invalidTerminalInputDoesNotCreateRecentItem() {
+        let source = desk("Desk")
+        let store = DenStore(state: DenState(desks: [source], focusedDeskID: source.id))
+
+        store.openBoard(input: ":terminal /missing/den-browser-\(UUID().uuidString)")
+
+        #expect(store.focusedDesk?.boards.isEmpty == true)
+        #expect(store.recentItems.isEmpty)
+    }
+
+    @Test func terminalBoardsCreateDuplicateRemoveAndRestoreWithRecentItems() throws {
         let source = desk("Desk")
         let store = DenStore(state: DenState(desks: [source], focusedDeskID: source.id))
         let directory = FileManager.default.temporaryDirectory.standardizedFileURL.path
@@ -106,7 +117,7 @@ struct DenStoreBoardTests {
         #expect(original.isTerminal)
         #expect(original.terminalWorkingDirectory == directory)
         #expect(original.width == 640)
-        #expect(store.recentItems.isEmpty)
+        #expect(store.recentItems == [.terminal(workingDirectory: directory)])
 
         store.duplicateFocusedBoard()
         let duplicate = try #require(store.focusedBoard)

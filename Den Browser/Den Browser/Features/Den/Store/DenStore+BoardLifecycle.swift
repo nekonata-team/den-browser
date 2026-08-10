@@ -35,6 +35,9 @@ extension DenStore {
                 preferredWidth: preferredWidth,
                 afterBoardID: afterBoardID)
             openBoardPanelMessage = nil
+            if input.count <= Self.maximumPersistedRecentInputLength {
+                saveRecentItem(.zellij(sessionName: sessionName))
+            }
             return
         }
 
@@ -46,6 +49,9 @@ extension DenStore {
                     preferredWidth: preferredWidth,
                     afterBoardID: afterBoardID)
                 openBoardPanelMessage = nil
+                if input.count <= Self.maximumPersistedRecentInputLength {
+                    saveRecentItem(.terminal(workingDirectory: workingDirectory))
+                }
             case .failure(let error):
                 openBoardPanelMessage = error.message
             }
@@ -90,16 +96,50 @@ extension DenStore {
         } else {
             url = homeDirectory.appending(path: rawPath, directoryHint: .isDirectory)
         }
-        let standardized = url.standardizedFileURL
+        return validateTerminalWorkingDirectory(url.standardizedFileURL.path, fileManager: fileManager)
+    }
+
+    func openBoard(recentItem: RecentItem, preferredWidth: Double? = nil, afterBoardID: UUID? = nil) {
+        switch recentItem {
+        case .url, .search:
+            openBoard(input: recentItem.displayText, preferredWidth: preferredWidth, afterBoardID: afterBoardID)
+        case .terminal(let workingDirectory):
+            switch Self.validateTerminalWorkingDirectory(workingDirectory) {
+            case .success(let resolvedWorkingDirectory):
+                addTerminalBoard(
+                    workingDirectory: resolvedWorkingDirectory,
+                    preferredWidth: preferredWidth,
+                    afterBoardID: afterBoardID)
+                openBoardPanelMessage = nil
+                saveRecentItem(.terminal(workingDirectory: resolvedWorkingDirectory))
+            case .failure(let error):
+                openBoardPanelMessage = error.message
+            }
+        case .zellij(let sessionName):
+            guard ZellijLaunchCommand.isValidExecutablePath(preferences.zellijPath) else {
+                openBoardPanelMessage =
+                    "Set an absolute Zellij executable path in Settings > Features > Terminal."
+                return
+            }
+            addZellijBoard(
+                sessionName: sessionName,
+                preferredWidth: preferredWidth,
+                afterBoardID: afterBoardID)
+            openBoardPanelMessage = nil
+            saveRecentItem(.zellij(sessionName: sessionName))
+        }
+    }
+
+    static func validateTerminalWorkingDirectory(
+        _ workingDirectory: String,
+        fileManager: FileManager = .default
+    ) -> Result<String, TerminalInputError> {
+        let standardized = URL(fileURLWithPath: workingDirectory, isDirectory: true).standardizedFileURL
         var isDirectory: ObjCBool = false
         guard fileManager.fileExists(atPath: standardized.path, isDirectory: &isDirectory), isDirectory.boolValue else {
             return .failure(.missingDirectory(standardized.path))
         }
         return .success(standardized.path)
-    }
-
-    func openBoard(recentItem: RecentItem, preferredWidth: Double? = nil, afterBoardID: UUID? = nil) {
-        openBoard(input: recentItem.displayText, preferredWidth: preferredWidth, afterBoardID: afterBoardID)
     }
 
     func clearRecent() {
