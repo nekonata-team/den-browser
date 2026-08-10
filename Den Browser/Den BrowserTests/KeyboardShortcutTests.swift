@@ -16,7 +16,9 @@ struct KeyboardShortcutTests {
             key: .character("1"), modifiers: [.control, .option])
 
         #expect(preferences.shortcut(for: .toggleDenMode) == ShortcutAction.toggleDenMode.defaultBinding)
-        #expect(preferences.deskNumberBinding == AppPreferences.defaultDeskNumberBinding)
+        #expect(
+            preferences.deskNumberBinding
+                == ShortcutBinding(key: .character("1"), modifiers: [.command, .option]))
         #expect(preferences.setShortcut(customToggle, for: .toggleDenMode) == nil)
         #expect(preferences.setDeskNumberBinding(customDeskNumber) == nil)
         preferences.clearShortcut(for: .focusPreviousBoard)
@@ -50,7 +52,7 @@ struct KeyboardShortcutTests {
                 for: .focusNextBoard) == .conflict(.focusPreviousBoard))
         #expect(
             preferences.setShortcut(
-                ShortcutBinding(key: .character("1"), modifiers: [.command]),
+                ShortcutBinding(key: .character("1"), modifiers: [.command, .option]),
                 for: .focusNextBoard) == .conflictWithDeskNumber)
         #expect(
             preferences.setDeskNumberBinding(
@@ -152,7 +154,7 @@ struct KeyboardShortcutTests {
         }
     }
 
-    @Test func sheetInputCommandDigitFocusesDesk() throws {
+    @Test func sheetInputCommandOptionDigitFocusesDeskAndLeavesCommandZeroAvailable() throws {
         let movedBoard = board("Moved")
         let firstDesk = DeskState(label: "First", boards: [], focusedBoardID: nil)
         let secondDesk = DeskState(
@@ -164,15 +166,22 @@ struct KeyboardShortcutTests {
                 desks: [firstDesk, secondDesk],
                 focusedDeskID: secondDesk.id))
         let preferences = try makePreferences()
-        let commandOne = try keyEvent(
+        let commandOptionOne = try keyEvent(
             characters: "1",
             charactersIgnoringModifiers: "1",
-            modifiers: [.command],
+            modifiers: [.command, .option],
             keyCode: 18)
+        let commandZero = try keyEvent(
+            characters: "0",
+            charactersIgnoringModifiers: "0",
+            modifiers: [.command],
+            keyCode: 29)
 
-        #expect(KeyboardController.handle(commandOne, store: store, preferences: preferences))
+        #expect(KeyboardController.handle(commandOptionOne, store: store, preferences: preferences))
         #expect(store.state.focusedDeskID == firstDesk.id)
         #expect(!store.isDenMode)
+        #expect(!KeyboardController.handle(commandZero, store: store, preferences: preferences))
+        #expect(store.state.focusedDeskID == firstDesk.id)
     }
 
     @Test func controlTabDeskShortcutsNavigateAndReturn() throws {
