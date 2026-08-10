@@ -50,7 +50,7 @@ Version 1 documents decode as Web Boards and are written back as version 2. An o
 - `features.vim-style-sheet-navigation.enabled`
 - `features.vim-style-sheet-navigation.hint-alphabet`
 - `features.vim-style-sheet-navigation.ignored-hosts`
-- `shortcuts.<ShortcutAction raw value>`
+- `shortcuts.<ConfigurableShortcut raw value>`
 - `shortcuts.desk-number`, optional `shortcuts.desk-number.disabled`
 - `appearance.motion`
 - `appearance.board-centering`

@@ -15,7 +15,7 @@ struct KeyboardShortcutTests {
         let customDeskNumber = ShortcutBinding(
             key: .character("1"), modifiers: [.control, .option])
 
-        #expect(preferences.shortcut(for: .toggleDenMode) == ShortcutAction.toggleDenMode.defaultBinding)
+        #expect(preferences.shortcut(for: .toggleDenMode) == ConfigurableShortcut.toggleDenMode.defaultBinding)
         #expect(
             preferences.deskNumberBinding
                 == ShortcutBinding(key: .character("1"), modifiers: [.command, .option]))
@@ -30,14 +30,14 @@ struct KeyboardShortcutTests {
         #expect(restored.deskNumberBinding == customDeskNumber)
 
         restored.resetShortcut(for: .toggleDenMode)
-        #expect(restored.shortcut(for: .toggleDenMode) == ShortcutAction.toggleDenMode.defaultBinding)
+        #expect(restored.shortcut(for: .toggleDenMode) == ConfigurableShortcut.toggleDenMode.defaultBinding)
         restored.clearDeskNumberBinding()
         #expect(restored.deskNumberBinding == nil)
         #expect(AppPreferences(defaults: defaults).deskNumberBinding == nil)
         restored.resetDeskNumberBinding()
         restored.resetAllShortcuts()
         #expect(restored.shortcutOverrides.isEmpty)
-        #expect(restored.shortcut(for: .focusPreviousBoard) == ShortcutAction.focusPreviousBoard.defaultBinding)
+        #expect(restored.shortcut(for: .focusPreviousBoard) == ConfigurableShortcut.focusPreviousBoard.defaultBinding)
         #expect(restored.deskNumberBinding == AppPreferences.defaultDeskNumberBinding)
     }
 
@@ -48,7 +48,7 @@ struct KeyboardShortcutTests {
         #expect(preferences.setShortcut(unmodified, for: .toggleDenMode) == .invalid)
         #expect(
             preferences.setShortcut(
-                ShortcutAction.focusPreviousBoard.defaultBinding,
+                ConfigurableShortcut.focusPreviousBoard.defaultBinding,
                 for: .focusNextBoard) == .conflict(.focusPreviousBoard))
         #expect(
             preferences.setShortcut(
@@ -61,7 +61,7 @@ struct KeyboardShortcutTests {
             preferences.setDeskNumberBinding(
                 ShortcutBinding(key: .character("1"), modifiers: [.shift])) == .invalid)
         preferences.clearShortcut(for: .toggleDenMode)
-        #expect(preferences.shortcut(for: .toggleDenMode) == ShortcutAction.toggleDenMode.defaultBinding)
+        #expect(preferences.shortcut(for: .toggleDenMode) == ConfigurableShortcut.toggleDenMode.defaultBinding)
     }
 
     @Test func unreadableAndDuplicateOverridesFallBackSafely() throws {
@@ -77,8 +77,8 @@ struct KeyboardShortcutTests {
         defaults.set(data, forKey: "shortcuts.focus-next-board")
 
         let preferences = AppPreferences(defaults: defaults)
-        let effective = ShortcutAction.allCases.compactMap(preferences.shortcut)
-        #expect(preferences.shortcut(for: .toggleDenMode) == ShortcutAction.toggleDenMode.defaultBinding)
+        let effective = ConfigurableShortcut.allCases.compactMap(preferences.shortcut)
+        #expect(preferences.shortcut(for: .toggleDenMode) == ConfigurableShortcut.toggleDenMode.defaultBinding)
         #expect(Set(effective).count == effective.count)
     }
 
@@ -110,7 +110,7 @@ struct KeyboardShortcutTests {
         #expect(
             ShortcutBinding(event: function)
                 == ShortcutBinding(key: .function(12), modifiers: [.control]))
-        #expect(ShortcutAction.moveFocusedBoardLeft.defaultBinding.displayTokens == ["⌥", "⇧", "⌘", "←"])
+        #expect(ConfigurableShortcut.moveFocusedBoardLeft.defaultBinding.displayTokens == ["⌥", "⇧", "⌘", "←"])
     }
 
     @Test func denModeShiftDigitMovesFocusedBoardToDesk() throws {
@@ -416,7 +416,7 @@ struct KeyboardShortcutTests {
         #expect(store.temporaryContext == nil)
     }
 
-    @Test func commaPassesThroughForSettingsOnlyInDenMode() throws {
+    @Test func denModeCommaPerformsSettingsWithoutForwarding() throws {
         let store = makeStore(boards: [board("First")])
         let comma = try keyEvent(
             characters: ",", charactersIgnoringModifiers: ",", modifiers: [], keyCode: 43)
@@ -424,10 +424,29 @@ struct KeyboardShortcutTests {
         #expect(!KeyboardController.handle(comma, store: store))
 
         store.isDenMode = true
-        #expect(!KeyboardController.handle(comma, store: store))
+        #expect(KeyboardController.decision(for: comma, store: store) == .perform(.openSettings))
+        var didOpenSettings = false
+        let handled = KeyboardController.handle(
+            comma,
+            store: store,
+            openSettings: { didOpenSettings = true })
+        #expect(handled)
+        #expect(didOpenSettings)
 
         store.showOverview()
         #expect(KeyboardController.handle(comma, store: store))
+        #expect(KeyboardController.decision(for: comma, store: store) == .consume(.exclusiveContext))
+    }
+
+    @Test func denModeUnmappedKeyIsConsumedByRouter() throws {
+        let store = makeStore(boards: [board("First")])
+        store.isDenMode = true
+        let unmapped = try keyEvent(
+            characters: "v", charactersIgnoringModifiers: "v", modifiers: [], keyCode: 9)
+
+        #expect(
+            KeyboardController.decision(for: unmapped, store: store)
+                == .consume(.denModeUnmapped))
     }
 
     @Test func hardReloadCurrentSheetShortcutReloadsOnlyFocusedBoard() throws {

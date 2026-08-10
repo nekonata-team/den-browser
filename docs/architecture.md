@@ -63,6 +63,7 @@ SheetNavigation ------------------> Platform
 - `App` coordinates scenes, windows, commands, navigation, and workflows that combine otherwise independent Features. Code is not promoted to `App` merely because two Features use it.
 - Feature-specific AppKit, WebKit, persistence, or keyboard integration stays with its owning Feature or in `App`. Code moves to `Platform` only after a concrete feature-independent boundary emerges.
 - `Platform` must not acquire feature policy. Temporary reverse dependencies are not hidden behind speculative protocols.
+- Profile-window keyboard ownership follows the typed routing boundary in [keyboard-input.md](./keyboard-input.md). SwiftUI Commands and routed keys share application actions where they represent the same behavior.
 
 Folders communicate intent but do not enforce access control inside the shared Swift target. Dependency direction is maintained through review, focused tests, and keeping platform APIs narrow.
 

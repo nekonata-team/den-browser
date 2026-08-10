@@ -18,7 +18,7 @@ The minimum supported platform is macOS 26.0 for the app and its tests.
 
 ## Implementation flow
 
-1. Read `CONTEXT.md`, `docs/architecture.md`, relevant ADRs in `docs/adr/`, and affected code/tests.
+1. Read `CONTEXT.md`, `docs/architecture.md`, relevant ADRs in `docs/adr/`, and affected code/tests. Read `docs/keyboard-input.md` before changing keyboard routing, Commands, shortcut recording, or local key handling.
 2. Keep persisted `DenState` separate from live `BoardRuntime`/`WKWebView` objects.
 3. Add or update focused unit tests for stable `DenStore` behavior.
 4. Choose validation in proportion to the change. Run `just check` before handoff for Swift source, Xcode settings, or test and validation configuration changes. Otherwise, run focused validation that exercises the changed behavior.
@@ -39,6 +39,7 @@ manual candidate verification, `just release publish X.Y.Z`.
 - `CONTEXT.md`: required domain language
 - `DESIGN.md`: UI design rules
 - `docs/shortcuts.md`: complete keyboard and pointer controls
+- `docs/keyboard-input.md`: keyboard implementation contract and diagnostic path
 - `docs/poc.md`: current acceptance criteria and exploratory checks
 - `docs/architecture.md` and `docs/adr/`: architecture and product decisions
 - `docs/testing.md`: automated and exploratory validation

@@ -48,6 +48,7 @@ struct AppConfiguration {
             defaults: defaults,
             initialProfile: interactionBasicsProfile(
                 singleBoard: processInfo.arguments.contains("--single-board"),
+                terminalBoard: processInfo.arguments.contains("--terminal-board"),
                 multipleDrawerItems: processInfo.arguments.contains("--multiple-drawer-items")),
             websiteDataStore: { _ in .nonPersistent() })
     }
@@ -61,13 +62,23 @@ struct AppConfiguration {
 
     private static func interactionBasicsProfile(
         singleBoard: Bool,
+        terminalBoard: Bool,
         multipleDrawerItems: Bool = false
     ) -> PersistedProfile {
-        let alpha = BoardState(
-            id: fixtureID("00000000-0000-0000-0000-000000000301"),
-            label: "Alpha",
-            width: 320,
-            currentSheetURL: URL(string: fixtureSheetURL))
+        let alpha =
+            if terminalBoard {
+                BoardState(
+                    id: fixtureID("00000000-0000-0000-0000-000000000301"),
+                    label: "Terminal",
+                    width: 320,
+                    workingDirectory: "/tmp")
+            } else {
+                BoardState(
+                    id: fixtureID("00000000-0000-0000-0000-000000000301"),
+                    label: "Alpha",
+                    width: 320,
+                    currentSheetURL: URL(string: fixtureSheetURL))
+            }
         let bravo = BoardState(
             id: fixtureID("00000000-0000-0000-0000-000000000302"),
             label: "Bravo",

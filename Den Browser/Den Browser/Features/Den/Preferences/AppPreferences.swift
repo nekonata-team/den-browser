@@ -26,7 +26,7 @@ final class AppPreferences {
     static let defaultSheetScale = 100
     static let sheetScaleRange = 50...200
 
-    private(set) var shortcutOverrides: [ShortcutAction: ShortcutOverride]
+    private(set) var shortcutOverrides: [ConfigurableShortcut: ShortcutOverride]
     private(set) var deskNumberBinding: ShortcutBinding?
     private(set) var motionPreference: MotionPreference
     private(set) var nativePictureInPictureEnabled: Bool
@@ -111,7 +111,7 @@ final class AppPreferences {
         defaults.set(normalized, forKey: Self.zellijPathKey)
     }
 
-    func shortcut(for action: ShortcutAction) -> ShortcutBinding? {
+    func shortcut(for action: ConfigurableShortcut) -> ShortcutBinding? {
         guard let override = shortcutOverrides[action] else { return action.defaultBinding }
         return override.binding
     }
@@ -121,7 +121,7 @@ final class AppPreferences {
             binding.modifiers.hasPrimaryModifier
         else { return .invalid }
 
-        if let conflict = ShortcutAction.allCases.first(where: {
+        if let conflict = ConfigurableShortcut.allCases.first(where: {
             guard let actionBinding = shortcut(for: $0) else { return false }
             return actionBinding.key.deskNumber != nil
                 && actionBinding.modifiers == binding.modifiers
@@ -156,11 +156,11 @@ final class AppPreferences {
         defaults.set(true, forKey: Self.deskNumberShortcutDisabledKey)
     }
 
-    func hasShortcutOverride(for action: ShortcutAction) -> Bool {
+    func hasShortcutOverride(for action: ConfigurableShortcut) -> Bool {
         shortcutOverrides[action] != nil
     }
 
-    func setShortcut(_ binding: ShortcutBinding, for action: ShortcutAction) -> ShortcutValidationError? {
+    func setShortcut(_ binding: ShortcutBinding, for action: ConfigurableShortcut) -> ShortcutValidationError? {
         guard binding.isRecordable else { return .invalid }
         if let deskNumberBinding,
             binding.key.deskNumber != nil,
@@ -181,33 +181,36 @@ final class AppPreferences {
         return nil
     }
 
-    func clearShortcut(for action: ShortcutAction) {
+    func clearShortcut(for action: ConfigurableShortcut) {
         guard action.canBeUnassigned else { return }
         shortcutOverrides[action] = .unassigned
         persistShortcutOverride(for: action)
     }
 
-    func resetShortcut(for action: ShortcutAction) {
+    func resetShortcut(for action: ConfigurableShortcut) {
         shortcutOverrides.removeValue(forKey: action)
         defaults.removeObject(forKey: shortcutDefaultsKey(for: action))
     }
 
     func resetAllShortcuts() {
-        for action in ShortcutAction.allCases {
+        for action in ConfigurableShortcut.allCases {
             defaults.removeObject(forKey: shortcutDefaultsKey(for: action))
         }
         shortcutOverrides.removeAll()
         resetDeskNumberBinding()
     }
 
-    func conflictingAction(for binding: ShortcutBinding, excluding action: ShortcutAction) -> ShortcutAction? {
-        ShortcutAction.allCases.first { candidate in
+    func conflictingAction(
+        for binding: ShortcutBinding,
+        excluding action: ConfigurableShortcut
+    ) -> ConfigurableShortcut? {
+        ConfigurableShortcut.allCases.first { candidate in
             candidate != action && shortcut(for: candidate) == binding
         }
     }
 
     private func loadShortcutOverrides() {
-        for action in ShortcutAction.allCases {
+        for action in ConfigurableShortcut.allCases {
             let key = shortcutDefaultsKey(for: action)
             guard let data = defaults.data(forKey: key) else { continue }
             guard
@@ -220,7 +223,7 @@ final class AppPreferences {
             shortcutOverrides[action] = override
         }
 
-        for action in ShortcutAction.allCases {
+        for action in ConfigurableShortcut.allCases {
             guard let binding = shortcutOverrides[action]?.binding else { continue }
             if conflictingAction(for: binding, excluding: action) != nil {
                 resetShortcut(for: action)
@@ -228,14 +231,14 @@ final class AppPreferences {
         }
     }
 
-    private func isValid(_ override: ShortcutOverride, for action: ShortcutAction) -> Bool {
+    private func isValid(_ override: ShortcutOverride, for action: ConfigurableShortcut) -> Bool {
         switch override {
         case .assigned(let binding): binding.isRecordable
         case .unassigned: action.canBeUnassigned
         }
     }
 
-    private func persistShortcutOverride(for action: ShortcutAction) {
+    private func persistShortcutOverride(for action: ConfigurableShortcut) {
         guard
             let override = shortcutOverrides[action],
             let data = try? PropertyListEncoder().encode(override)
@@ -268,7 +271,7 @@ final class AppPreferences {
         return binding
     }
 
-    private func shortcutDefaultsKey(for action: ShortcutAction) -> String {
+    private func shortcutDefaultsKey(for action: ConfigurableShortcut) -> String {
         Self.shortcutKeyPrefix + action.rawValue
     }
 

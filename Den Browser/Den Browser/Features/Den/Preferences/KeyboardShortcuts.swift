@@ -1,7 +1,7 @@
 import AppKit
 import Foundation
 
-enum ShortcutAction: String, CaseIterable, Codable, Identifiable {
+enum ConfigurableShortcut: String, CaseIterable, Codable, Identifiable {
     case toggleDenMode = "toggle-den-mode"
     case focusPreviousDesk = "focus-previous-desk"
     case focusNextDesk = "focus-next-desk"
@@ -244,6 +244,6 @@ enum ShortcutOverride: Codable, Equatable {
 
 enum ShortcutValidationError: Equatable {
     case invalid
-    case conflict(ShortcutAction)
+    case conflict(ConfigurableShortcut)
     case conflictWithDeskNumber
 }

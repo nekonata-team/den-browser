@@ -3,7 +3,7 @@ import SwiftUI
 
 struct ShortcutsSettingsView: View {
     @Environment(AppPreferences.self) private var preferences
-    @State private var recordingAction: ShortcutAction?
+    @State private var recordingAction: ConfigurableShortcut?
     @State private var recordingDeskNumberShortcut = false
     @State private var recordingMonitor: Any?
     @State private var errorMessage: String?
@@ -12,7 +12,7 @@ struct ShortcutsSettingsView: View {
     var body: some View {
         Form {
             Section("Shortcuts") {
-                ForEach(ShortcutAction.allCases) { action in
+                ForEach(ConfigurableShortcut.allCases) { action in
                     shortcutRow(action)
                 }
                 deskNumberShortcutRow
@@ -116,7 +116,7 @@ struct ShortcutsSettingsView: View {
         }
     }
 
-    private func shortcutRow(_ action: ShortcutAction) -> some View {
+    private func shortcutRow(_ action: ConfigurableShortcut) -> some View {
         VStack(alignment: .leading, spacing: 5) {
             HStack(spacing: 8) {
                 Text(action.label)
@@ -178,7 +178,7 @@ struct ShortcutsSettingsView: View {
         }
     }
 
-    private func startRecording(_ action: ShortcutAction) {
+    private func startRecording(_ action: ConfigurableShortcut) {
         stopRecording()
         recordingAction = action
         errorMessage = nil
@@ -198,7 +198,7 @@ struct ShortcutsSettingsView: View {
         }
     }
 
-    private func capture(_ event: NSEvent, for action: ShortcutAction) {
+    private func capture(_ event: NSEvent, for action: ConfigurableShortcut) {
         if event.keyCode == 53,
             event.modifierFlags.isDisjoint(with: [.command, .control, .option, .shift])
         {
@@ -294,12 +294,12 @@ struct ShortcutsSettingsView: View {
         }
     }
 
-    private func bindingTokens(for action: ShortcutAction) -> [String] {
+    private func bindingTokens(for action: ConfigurableShortcut) -> [String] {
         if recordingAction == action { return ["Type shortcut…"] }
         return preferences.shortcut(for: action)?.displayTokens ?? ["Record shortcut"]
     }
 
-    private func bindingAccessibilityLabel(for action: ShortcutAction) -> String {
+    private func bindingAccessibilityLabel(for action: ConfigurableShortcut) -> String {
         if recordingAction == action { return "Cancel recording for \(action.label)" }
         if let binding = preferences.shortcut(for: action) {
             return "Record shortcut for \(action.label), current shortcut \(binding.accessibilityLabel)"
@@ -307,7 +307,7 @@ struct ShortcutsSettingsView: View {
         return "Record shortcut for \(action.label), unassigned"
     }
 
-    private func optionCharacterWarning(for action: ShortcutAction) -> Bool {
+    private func optionCharacterWarning(for action: ConfigurableShortcut) -> Bool {
         guard let binding = preferences.shortcut(for: action), binding.modifiers.contains(.option) else {
             return false
         }

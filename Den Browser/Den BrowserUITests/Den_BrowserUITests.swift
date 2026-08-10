@@ -309,6 +309,19 @@ final class Den_BrowserUITests: XCTestCase, BDD {
     }
 
     @MainActor
+    func testDenModeCommaOpensSettingsAboveTerminalBoard() throws {
+        let app = launchApp(singleBoard: true, terminalBoard: true)
+
+        let profileWindowCount = app.windows.count
+        enterDenMode(in: app)
+        app.typeKey(",", modifierFlags: [])
+
+        assertEventually("Den Mode comma should open Settings", timeout: 5) {
+            app.windows.count > profileWindowCount
+        }
+    }
+
+    @MainActor
     func testRemovingFocusedBoardSettlesAtLeadingEdge() throws {
         let app = launchApp()
         let boardStrip = app.scrollViews["board-strip"].firstMatch
@@ -455,6 +468,7 @@ final class Den_BrowserUITests: XCTestCase, BDD {
     @MainActor
     private func launchApp(
         singleBoard: Bool = false,
+        terminalBoard: Bool = false,
         sheetNavigationEnabled: Bool = false,
         multipleDrawerItems: Bool = false,
         centerBoardsOnOverflow: Bool = false,
@@ -467,6 +481,9 @@ final class Den_BrowserUITests: XCTestCase, BDD {
         ]
         if singleBoard {
             args.append("--single-board")
+        }
+        if terminalBoard {
+            args.append("--terminal-board")
         }
         if sheetNavigationEnabled {
             args.append("--enable-sheet-navigation")

@@ -45,7 +45,7 @@ struct KeyboardShortcutsView: View {
                     item(["⇧", "⌘", "W"], "Close Profile Window"),
                     item(["⌘", "Q"], "Quit Den Browser"),
                     item(deskNumberShortcutTokens, "Focus Desk 1–10"),
-                ] + ShortcutAction.allCases.map(customItem)),
+                ] + ConfigurableShortcut.allCases.map(customItem)),
             ShortcutGuideSection(
                 title: "Den Mode",
                 items: [
@@ -117,7 +117,7 @@ struct KeyboardShortcutsView: View {
         ]
     }
 
-    private func customItem(_ action: ShortcutAction) -> ShortcutGuideItem {
+    private func customItem(_ action: ConfigurableShortcut) -> ShortcutGuideItem {
         guard let binding = preferences.shortcut(for: action) else {
             return item(["Unassigned"], action.label)
         }
