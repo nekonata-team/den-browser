@@ -1,6 +1,6 @@
 # Local persistence
 
-Den Browser persists only state needed to restore user-owned work. Version 1 is the first public local format. Prerelease formats are not supported.
+Den Browser persists only state needed to restore user-owned work. Version 2 adds explicit Web and Terminal Board content.
 
 ## Ownership
 
@@ -8,9 +8,9 @@ Den Browser persists only state needed to restore user-owned work. Version 1 is 
 - A versioned JSON `ProfileIndex` stores Profile order.
 - App-wide preferences use typed, independent `UserDefaults` keys.
 - WebKit owns website data in each Profile's `WKWebsiteDataStore`.
-- Live `BoardRuntime`, `DrawerPreviewRuntime`, `WKWebView`, transient presentation state, and the Recently Removed Board are not persisted. The expanded Drawer Item identity is persisted only to recreate its Preview runtime when the Drawer first opens after relaunch.
+- Live Web and Terminal runtimes, `WKWebView`, Shell processes, terminal screens, scrollback, transient presentation state, and the Recently Removed Board are not persisted.
 
-## Version 1 JSON keys
+## Version 2 JSON keys
 
 `ProfileIndex`:
 
@@ -32,12 +32,16 @@ Nested objects use these keys:
 - `DenState`: `desks`, `focusedDeskID`, optional `drawerItems`, optional `expandedDrawerItemID`
 - `DrawerItem`: `id`, `url`, optional `title`
 - `DeskState`: `id`, `label`, `boards`, optional `focusedBoardID`
-- `BoardState`: `id`, `label`, `width`, optional `customLabel`, optional `currentSheetURL`, optional `firstSheetURL`
+- `BoardState`: `id`, `label`, `width`, optional `customLabel`, `content`
+- Web Board `content`: `kind: web`, optional `currentSheetURL`, optional `firstSheetURL`
+- Terminal Board `content`: `kind: terminal`, `workingDirectory`
 - `PersonalDeskPreset`: `id`, `label`, `boards`, optional `focusedBoardIndex`
-- `DeskPresetBoard`: `label`, `width`, optional `customLabel`, optional `initialSheetURL`
+- `DeskPresetBoard`: `label`, `width`, optional `customLabel`, and equivalent Web or Terminal `content`
 - `RecentItem`: `kind`, plus `url` for a URL or `query` for a search term used by Open Board
 
 A missing optional Current Sheet URL means the Board has no Current Sheet. A missing First Sheet URL means the Board cannot use the persisted First Sheet return action. Board Sheet URLs normalize HTTP(S) root paths to `/` before persistence. URLs encode using Foundation `URL`'s `Codable` representation.
+
+Version 1 documents decode as Web Boards and are written back as version 2. Terminal restoration starts a new Shell in the saved Working Directory.
 
 ## App preference keys
 

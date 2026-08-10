@@ -41,7 +41,10 @@ Extract the application from the ZIP and complete the applicable checks in
 [poc.md](./poc.md).
 
 Confirm that Gatekeeper accepts the app, it launches on Apple Silicon, and its
-Profiles and Den state survive an upgrade. Remove the test application before publishing.
+Profiles and Den state survive an upgrade. Confirm `codesign` reports Hardened
+Runtime without the App Sandbox entitlement, the app contains arm64 and x86_64
+Ghostty slices, and a Terminal Board can run the user's Shell. Remove the test
+application before publishing.
 
 ## Publish
 

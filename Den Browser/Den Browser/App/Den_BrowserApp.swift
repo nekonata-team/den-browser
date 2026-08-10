@@ -113,7 +113,7 @@ private struct DenCommands: Commands {
                 .disabled(store == nil)
             Button("Edit Focused Board Link") { store?.showEditBoardLinkPanel() }
                 .keyboardShortcut("l", modifiers: [.command])
-                .disabled(store?.focusedBoard == nil)
+                .disabled(store?.focusedBoard?.isTerminal != false)
             Button("New Desk") { store?.showNewDeskPanel() }
                 .disabled(store?.canCreateDesk != true)
             Button("Save Desk as Preset…") { store?.showSaveDeskPresetPanel() }
@@ -121,7 +121,7 @@ private struct DenCommands: Commands {
             Button("Capture Current Sheet Screenshot…") {
                 store?.captureFocusedSheetScreenshot()
             }
-            .disabled(store?.focusedBoard == nil)
+            .disabled(store?.focusedBoard?.isTerminal != false)
             Menu("Export") {
                 Button("Save Desk Links as Markdown…") {
                     store?.exportFocusedDeskLinks()
@@ -138,7 +138,9 @@ private struct DenCommands: Commands {
                 Button("Capture Focused Desk Screenshot…") {
                     store?.captureFocusedDeskScreenshot()
                 }
-                .disabled(store?.focusedDesk?.boards.isEmpty != false)
+                .disabled(
+                    store?.focusedDesk?.boards.isEmpty != false
+                        || store?.focusedDesk?.boards.contains(where: \.isTerminal) == true)
             }
             .disabled(store == nil)
             Button("Toggle Overview") { store?.toggleOverview() }
@@ -178,13 +180,13 @@ private struct DenCommands: Commands {
 
             Button("Reload Current Sheet") { store?.reloadFocusedBoard() }
                 .keyboardShortcut("r", modifiers: [.command])
-                .disabled(store == nil)
+                .disabled(store?.focusedBoard?.isTerminal != false)
             Button("Hard Reload Current Sheet") { store?.reloadFocusedBoardFromOrigin() }
                 .keyboardShortcut("r", modifiers: [.command, .shift])
-                .disabled(store == nil)
+                .disabled(store?.focusedBoard?.isTerminal != false)
             Button("Reload Focused Desk Sheets") { store?.reloadFocusedDeskSheets() }
                 .keyboardShortcut("r", modifiers: [.command, .option, .shift])
-                .disabled(store?.focusedDesk?.boards.isEmpty != false)
+                .disabled(store?.focusedDesk?.boards.allSatisfy(\.isTerminal) != false)
 
             Divider()
 

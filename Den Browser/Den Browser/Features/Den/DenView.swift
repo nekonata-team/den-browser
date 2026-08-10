@@ -126,7 +126,7 @@ struct DenView<Header: View>: View {
         .navigationTitle(titlebarTitle)
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("den-content")
-        .accessibilityValue(store.isDenMode ? "Den Mode" : "Sheet Input")
+        .accessibilityValue(store.isDenMode ? "Den Mode" : store.contentInputLabel)
         .modifier(DenDialogs())
     }
 
@@ -135,7 +135,7 @@ struct DenView<Header: View>: View {
         guard store.temporaryContext == nil, store.focusedBoard != nil else {
             return profileTitle
         }
-        return "\(profileTitle) · \(store.isDenMode ? "DEN MODE" : "SHEET INPUT")"
+        return "\(profileTitle) · \(store.isDenMode ? "DEN MODE" : store.contentInputLabel.uppercased())"
     }
 
     private var deskFilterOverlay: some View {
@@ -282,12 +282,14 @@ struct DenView<Header: View>: View {
             defaultBoardWidth: defaultBoardWidth,
             initialURL: store.openBoardPanelInitialURL,
             recentItems: store.recentItems,
+            message: store.openBoardPanelMessage,
             onSubmit: { openBoard(defaultBoardWidth: $0) },
             onOpenRecent: { item, width in
                 openBoard(item, defaultBoardWidth: width)
             },
             onClearRecent: store.clearRecent,
-            onDismiss: dismissOpenBoardPanel
+            onDismiss: dismissOpenBoardPanel,
+            onInputChange: { store.openBoardPanelMessage = nil }
         )
     }
 
@@ -313,11 +315,16 @@ struct DenView<Header: View>: View {
 
     private func restoreFocusedSheetFirstResponder() {
         DispatchQueue.main.async {
-            guard let webView = store.focusedRuntime?.webView else { return }
-            guard let window = webView.window,
-                needsFirstResponderActivation(window.firstResponder, target: webView)
+            let target: NSView?
+            if let webView = store.focusedRuntime?.webView {
+                target = webView
+            } else {
+                target = store.focusedTerminalRuntime?.terminalView
+            }
+            guard let target, let window = target.window,
+                needsFirstResponderActivation(window.firstResponder, target: target)
             else { return }
-            _ = window.makeFirstResponder(webView)
+            _ = window.makeFirstResponder(target)
         }
     }
 

@@ -177,7 +177,7 @@ struct ProfileIndex: Codable, Equatable {
 }
 
 struct PersistedProfile: Codable, Equatable {
-    static let currentSchemaVersion = 1
+    static let currentSchemaVersion = 2
     private enum CodingKeys: String, CodingKey {
         case schemaVersion, profile, den, deskPresets, recentItems
     }
@@ -202,11 +202,12 @@ struct PersistedProfile: Codable, Equatable {
 
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
-        schemaVersion = try container.decode(Int.self, forKey: .schemaVersion)
-        guard schemaVersion == Self.currentSchemaVersion else {
+        let decodedSchemaVersion = try container.decode(Int.self, forKey: .schemaVersion)
+        guard (1...Self.currentSchemaVersion).contains(decodedSchemaVersion) else {
             throw DecodingError.dataCorruptedError(
                 forKey: .schemaVersion, in: container, debugDescription: "Unsupported PersistedProfile schema")
         }
+        schemaVersion = Self.currentSchemaVersion
         profile = try container.decode(ProfileState.self, forKey: .profile)
         den = try container.decode(DenState.self, forKey: .den)
         deskPresets = try container.decodeIfPresent([PersonalDeskPreset].self, forKey: .deskPresets) ?? []

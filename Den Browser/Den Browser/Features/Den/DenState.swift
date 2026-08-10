@@ -148,35 +148,170 @@ struct PersonalDeskPreset: Codable, Equatable, Identifiable {
     }
 }
 
+enum DeskPresetBoardContent: Codable, Equatable {
+    case web(URL?)
+    case terminal(String)
+
+    private enum CodingKeys: String, CodingKey { case kind, initialSheetURL, workingDirectory }
+    private enum Kind: String, Codable { case web, terminal }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        switch try container.decode(Kind.self, forKey: .kind) {
+        case .web:
+            self = .web(try container.decodeIfPresent(URL.self, forKey: .initialSheetURL))
+        case .terminal:
+            self = .terminal(try container.decode(String.self, forKey: .workingDirectory))
+        }
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        switch self {
+        case .web(let url):
+            try container.encode(Kind.web, forKey: .kind)
+            try container.encodeIfPresent(url, forKey: .initialSheetURL)
+        case .terminal(let workingDirectory):
+            try container.encode(Kind.terminal, forKey: .kind)
+            try container.encode(workingDirectory, forKey: .workingDirectory)
+        }
+    }
+}
+
 struct DeskPresetBoard: Codable, Equatable {
     var label: String
     var width: Double
-    var initialSheetURL: URL?
+    var content: DeskPresetBoardContent
     var customLabel: String?
+
+    var initialSheetURL: URL? {
+        guard case .web(let url) = content else { return nil }
+        return url
+    }
+
+    var terminalWorkingDirectory: String? {
+        guard case .terminal(let path) = content else { return nil }
+        return path
+    }
 
     nonisolated init(label: String, width: Double, initialSheetURL: URL?, customLabel: String? = nil) {
         self.label = label
         self.width = width
-        self.initialSheetURL = initialSheetURL
+        content = .web(initialSheetURL)
+        self.customLabel = customLabel
+    }
+
+    nonisolated init(label: String, width: Double, workingDirectory: String, customLabel: String? = nil) {
+        self.label = label
+        self.width = width
+        content = .terminal(workingDirectory)
         self.customLabel = customLabel
     }
 
     nonisolated init(board: BoardState) {
-        self.init(
-            label: board.label,
-            width: board.width,
-            initialSheetURL: board.currentSheetURL,
-            customLabel: board.customLabel
-        )
+        switch board.content {
+        case .web(let web):
+            self.init(
+                label: board.label,
+                width: board.width,
+                initialSheetURL: web.currentSheetURL,
+                customLabel: board.customLabel)
+        case .terminal(let terminal):
+            self.init(
+                label: board.label,
+                width: board.width,
+                workingDirectory: terminal.workingDirectory,
+                customLabel: board.customLabel)
+        }
     }
 
     func makeBoard() -> BoardState {
-        BoardState(
-            label: label,
-            width: width,
-            currentSheetURL: initialSheetURL,
-            firstSheetURL: initialSheetURL,
-            customLabel: customLabel)
+        switch content {
+        case .web(let initialSheetURL):
+            BoardState(
+                label: label,
+                width: width,
+                currentSheetURL: initialSheetURL,
+                firstSheetURL: initialSheetURL,
+                customLabel: customLabel)
+        case .terminal(let workingDirectory):
+            BoardState(
+                label: label,
+                width: width,
+                workingDirectory: workingDirectory,
+                customLabel: customLabel)
+        }
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case label, width, content, customLabel, initialSheetURL
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        label = try container.decode(String.self, forKey: .label)
+        width = try container.decode(Double.self, forKey: .width)
+        customLabel = try container.decodeIfPresent(String.self, forKey: .customLabel)
+        if let content = try container.decodeIfPresent(DeskPresetBoardContent.self, forKey: .content) {
+            self.content = content
+        } else {
+            content = .web(try container.decodeIfPresent(URL.self, forKey: .initialSheetURL))
+        }
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(label, forKey: .label)
+        try container.encode(width, forKey: .width)
+        try container.encode(content, forKey: .content)
+        try container.encodeIfPresent(customLabel, forKey: .customLabel)
+    }
+}
+
+struct WebBoardState: Codable, Equatable {
+    var currentSheetURL: URL?
+    var firstSheetURL: URL?
+}
+
+struct TerminalBoardState: Codable, Equatable {
+    var workingDirectory: String
+}
+
+enum BoardContentState: Codable, Equatable {
+    case web(WebBoardState)
+    case terminal(TerminalBoardState)
+
+    private enum CodingKeys: String, CodingKey {
+        case kind, currentSheetURL, firstSheetURL, workingDirectory
+    }
+    private enum Kind: String, Codable { case web, terminal }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        switch try container.decode(Kind.self, forKey: .kind) {
+        case .web:
+            self = .web(
+                WebBoardState(
+                    currentSheetURL: try container.decodeIfPresent(URL.self, forKey: .currentSheetURL),
+                    firstSheetURL: try container.decodeIfPresent(URL.self, forKey: .firstSheetURL)))
+        case .terminal:
+            self = .terminal(
+                TerminalBoardState(
+                    workingDirectory: try container.decode(String.self, forKey: .workingDirectory)))
+        }
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        switch self {
+        case .web(let web):
+            try container.encode(Kind.web, forKey: .kind)
+            try container.encodeIfPresent(web.currentSheetURL, forKey: .currentSheetURL)
+            try container.encodeIfPresent(web.firstSheetURL, forKey: .firstSheetURL)
+        case .terminal(let terminal):
+            try container.encode(Kind.terminal, forKey: .kind)
+            try container.encode(terminal.workingDirectory, forKey: .workingDirectory)
+        }
     }
 }
 
@@ -187,9 +322,48 @@ struct BoardState: Codable, Equatable, Identifiable {
     var id: UUID
     var label: String
     var width: Double
-    var currentSheetURL: URL?
-    var firstSheetURL: URL?
+    var content: BoardContentState
     var customLabel: String?
+
+    var currentSheetURL: URL? {
+        get {
+            guard case .web(let web) = content else { return nil }
+            return web.currentSheetURL
+        }
+        set {
+            guard case .web(var web) = content else { return }
+            web.currentSheetURL = newValue.map(SheetURLPolicy.canonicalSheetURL)
+            content = .web(web)
+        }
+    }
+
+    var firstSheetURL: URL? {
+        get {
+            guard case .web(let web) = content else { return nil }
+            return web.firstSheetURL
+        }
+        set {
+            guard case .web(var web) = content else { return }
+            web.firstSheetURL = newValue.map(SheetURLPolicy.canonicalSheetURL)
+            content = .web(web)
+        }
+    }
+
+    var terminalWorkingDirectory: String? {
+        get {
+            guard case .terminal(let terminal) = content else { return nil }
+            return terminal.workingDirectory
+        }
+        set {
+            guard let newValue, case .terminal = content else { return }
+            content = .terminal(TerminalBoardState(workingDirectory: newValue))
+        }
+    }
+
+    var isTerminal: Bool {
+        guard case .terminal = content else { return false }
+        return true
+    }
 
     var displayName: String {
         customLabel ?? label
@@ -211,8 +385,54 @@ struct BoardState: Codable, Equatable, Identifiable {
         self.id = id
         self.label = label
         self.width = width
-        self.currentSheetURL = canonicalCurrentSheetURL
-        self.firstSheetURL = firstSheetURL.map(SheetURLPolicy.canonicalSheetURL) ?? canonicalCurrentSheetURL
+        content = .web(
+            WebBoardState(
+                currentSheetURL: canonicalCurrentSheetURL,
+                firstSheetURL: firstSheetURL.map(SheetURLPolicy.canonicalSheetURL) ?? canonicalCurrentSheetURL))
         self.customLabel = customLabel
+    }
+
+    init(
+        id: UUID = UUID(),
+        label: String = "Terminal",
+        width: Double,
+        workingDirectory: String,
+        customLabel: String? = nil
+    ) {
+        self.id = id
+        self.label = label
+        self.width = width
+        content = .terminal(TerminalBoardState(workingDirectory: workingDirectory))
+        self.customLabel = customLabel
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case id, label, width, content, customLabel, currentSheetURL, firstSheetURL
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(UUID.self, forKey: .id)
+        label = try container.decode(String.self, forKey: .label)
+        width = try container.decode(Double.self, forKey: .width)
+        customLabel = try container.decodeIfPresent(String.self, forKey: .customLabel)
+        if let content = try container.decodeIfPresent(BoardContentState.self, forKey: .content) {
+            self.content = content
+        } else {
+            let current = try container.decodeIfPresent(URL.self, forKey: .currentSheetURL)
+                .map(SheetURLPolicy.canonicalSheetURL)
+            let first = try container.decodeIfPresent(URL.self, forKey: .firstSheetURL)
+                .map(SheetURLPolicy.canonicalSheetURL)
+            content = .web(WebBoardState(currentSheetURL: current, firstSheetURL: first))
+        }
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(id, forKey: .id)
+        try container.encode(label, forKey: .label)
+        try container.encode(width, forKey: .width)
+        try container.encode(content, forKey: .content)
+        try container.encodeIfPresent(customLabel, forKey: .customLabel)
     }
 }

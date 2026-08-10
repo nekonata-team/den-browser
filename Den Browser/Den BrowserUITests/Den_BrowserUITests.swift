@@ -276,6 +276,39 @@ final class Den_BrowserUITests: XCTestCase, BDD {
     }
 
     @MainActor
+    func testTerminalBoardStartsAndExitRemovesIt() throws {
+        let app = launchApp(singleBoard: true)
+        let boardStrip = app.scrollViews["board-strip"].firstMatch
+        let surfacePredicate = NSPredicate(format: "identifier BEGINSWITH 'board-surface.'")
+        let surfaces = boardStrip.descendants(matching: .any).matching(surfacePredicate)
+
+        when("creating a Terminal Board from the Open Board panel") {
+            app.typeKey("t", modifierFlags: .command)
+            let input = app.textFields["Open URL or search"].firstMatch
+            XCTAssertTrue(input.waitForExistence(timeout: 5))
+            input.typeText(":terminal /tmp")
+            input.typeKey(.return, modifierFlags: [])
+        }
+
+        then("a second Board appears") {
+            assertEventually("Terminal Board should appear", timeout: 10) {
+                surfaces.allElementsBoundByIndex.count == 2
+            }
+        }
+
+        when("the Shell exits") {
+            app.typeText("exit")
+            app.typeKey(.return, modifierFlags: [])
+        }
+
+        then("the Terminal Board is removed") {
+            assertEventually("Terminal Board should be removed", timeout: 10) {
+                surfaces.allElementsBoundByIndex.count == 1
+            }
+        }
+    }
+
+    @MainActor
     func testRemovingFocusedBoardSettlesAtLeadingEdge() throws {
         let app = launchApp()
         let boardStrip = app.scrollViews["board-strip"].firstMatch

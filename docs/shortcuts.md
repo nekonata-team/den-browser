@@ -11,7 +11,7 @@ The complete in-app guide is available from Settings, the Den menu, and `?` in D
 | Shortcut | Action | Notes |
 | --- | --- | --- |
 | Control + Command + `P` | Open Profile panel | Searches Profiles and opens their existing Den window or creates it if closed. |
-| Command + `T` | New Board panel | Available in every keyboard context. |
+| Command + `T` | New Board panel | Enter a URL/search for a Web Board or `:terminal [path]` for a Terminal Board. Available in every keyboard context. |
 | Command + `L` | Edit Focused Board Link panel | Replaces the Current Sheet with a URL or search on Return. Available in every keyboard context. |
 | Command + `W` | Remove focused Board | Available in every keyboard context. |
 | Shift + Command + `W` | Close Profile window | Settings and other non-Den windows retain Command + `W`. |
@@ -50,7 +50,7 @@ The complete in-app guide is available from Settings, the Den menu, and `?` in D
 | `s` | Capture Current Sheet screenshot | Captures the visible web content in the Focused Board and opens a macOS save panel for a PNG. |
 | Shift + `s` | Capture Focused Desk screenshot | Captures every Board's visible Current Sheet, preserving Board order and relative widths in one PNG. |
 | `a` | Keep Current Sheet in Drawer | Keeps the Focused Board's Current Sheet in the Drawer without changing the Current Sheet. |
-| Return | Duplicate current sheet | Creates board to right, focuses it, then enters sheet input. |
+| Return | Duplicate focused Board content | Web Boards duplicate the Current Sheet. Terminal Boards start a new Shell from the saved Working Directory. |
 | Shift + Return | New Board from First Sheet | Creates a Board to the right from the Focused Board's persisted First Sheet URL, focuses it, then enters Sheet Input. A Board without a First Sheet does nothing. |
 | `e` | Edit Focused Board Link panel | Replaces the Current Sheet with a URL or search on Return. Escape returns to Den Mode. |
 | `r` | Rename focused Board | Opens the Rename Board panel; Return confirms, Escape returns to Den Mode. |
@@ -61,6 +61,8 @@ The complete in-app guide is available from Settings, the Den menu, and `?` in D
 | Command + `R` | Reload current sheet | Available outside Den Mode. |
 | Shift + Command + `R` | Hard reload current sheet | Reloads the Current Sheet with end-to-end cache revalidation. Available in Sheet Input and Den Mode. |
 | Shift + Option + Command + `R` | Reload Focused Desk sheets | Reloads every Board's Current Sheet in the Focused Desk. Available in Sheet Input and Den Mode. |
+
+Sheet navigation, Drawer placement, reload, PiP, and screenshot commands do nothing when the Focused Board is a Terminal Board. Removing a Terminal Board or running `exit` ends its process. Restoring it starts a new Shell.
 
 ## Overview
 

@@ -105,6 +105,16 @@ Den Browser's first PoC validates whether a macOS WKWebView implementation can s
 6. Press `u`; confirm the same Board identity, label, width, Current Sheet URL, former Desk, and former position return with a new `WKWebView`. Confirm the Sheet Stack, page state, and temporary maximization do not return.
 7. Delete the source Desk before restoration and confirm `u` restores the Board to the right of the Focused Board in the Focused Desk. Quit and relaunch and confirm the restoration candidate does not persist.
 
+## Terminal Board validation
+
+1. Open the Command-T panel, enter `:terminal`, and confirm a Terminal Board opens to the right using the home directory. Repeat with `:terminal /tmp` and an invalid path; the invalid input must remain in the panel with an error.
+2. Run an interactive Shell command, switch Desks, and return. Confirm the process and scrollback remain while the hidden surface does not keep rendering.
+3. Confirm Japanese IME, selection, Command-C, Command-V, resizing, pointer focus, Den Mode, Board movement, and Overview work without visible input lag.
+4. Run `exit` and confirm the Board disappears. Remove another active Terminal Board and confirm its process ends without confirmation; restore it and confirm a new Shell starts from the saved Working Directory.
+5. Duplicate a Terminal Board and apply a Desk Preset containing one. Confirm each starts an independent Shell. Relaunch and confirm only layout, label, width, and Working Directory restore.
+6. Cmd-click an HTTP(S) link and confirm a background Web Board appears immediately to the right.
+7. Place eight Terminal Boards across three Desks, keep two producing output for ten minutes, and confirm Den actions stay responsive with no state loss or crash.
+
 ## Board context menu validation
 
 1. Right-click and Control-click the label, empty area, and each button in an unfocused Board header. Confirm the Board becomes focused before the native context menu appears, remains focused after dismissal, and ordinary left-click and drag behavior stays unchanged.

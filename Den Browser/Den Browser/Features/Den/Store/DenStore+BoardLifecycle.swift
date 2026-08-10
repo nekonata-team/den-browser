@@ -1,11 +1,65 @@
 import Foundation
 
+enum TerminalInputError: Error, Equatable {
+    case missingDirectory(String)
+
+    var message: String {
+        switch self {
+        case .missingDirectory(let path): "Terminal directory does not exist: \(path)"
+        }
+    }
+}
+
 extension DenStore {
     func openBoard(input: String, preferredWidth: Double? = nil, afterBoardID: UUID? = nil) {
+        if let terminal = Self.resolveTerminalInput(input) {
+            switch terminal {
+            case .success(let workingDirectory):
+                addTerminalBoard(
+                    workingDirectory: workingDirectory,
+                    preferredWidth: preferredWidth,
+                    afterBoardID: afterBoardID)
+                openBoardPanelMessage = nil
+            case .failure(let error):
+                openBoardPanelMessage = error.message
+            }
+            return
+        }
         guard let resolution = resolveOpenBoardInput(input) else { return }
         addBoard(urlString: input, preferredWidth: preferredWidth, afterBoardID: afterBoardID)
         guard input.count <= Self.maximumPersistedRecentInputLength else { return }
         saveRecentItem(resolution.item)
+    }
+
+    static func resolveTerminalInput(
+        _ input: String,
+        homeDirectory: URL = FileManager.default.homeDirectoryForCurrentUser,
+        fileManager: FileManager = .default
+    ) -> Result<String, TerminalInputError>? {
+        let trimmed = input.trimmingCharacters(in: .whitespacesAndNewlines)
+        let parts = trimmed.split(maxSplits: 1, whereSeparator: \.isWhitespace)
+        guard parts.first == ":terminal" else { return nil }
+
+        let rawPath =
+            parts.count == 1
+            ? ""
+            : String(parts[1]).trimmingCharacters(in: .whitespacesAndNewlines)
+        let url: URL
+        if rawPath.isEmpty || rawPath == "~" {
+            url = homeDirectory
+        } else if rawPath.hasPrefix("~/") {
+            url = homeDirectory.appending(path: String(rawPath.dropFirst(2)), directoryHint: .isDirectory)
+        } else if rawPath.hasPrefix("/") {
+            url = URL(fileURLWithPath: rawPath, isDirectory: true)
+        } else {
+            url = homeDirectory.appending(path: rawPath, directoryHint: .isDirectory)
+        }
+        let standardized = url.standardizedFileURL
+        var isDirectory: ObjCBool = false
+        guard fileManager.fileExists(atPath: standardized.path, isDirectory: &isDirectory), isDirectory.boolValue else {
+            return .failure(.missingDirectory(standardized.path))
+        }
+        return .success(standardized.path)
     }
 
     func openBoard(recentItem: RecentItem, preferredWidth: Double? = nil, afterBoardID: UUID? = nil) {
@@ -31,7 +85,22 @@ extension DenStore {
         let label = url.host(percentEncoded: false) ?? url.absoluteString
         let width = preferredWidth ?? 520
         let board = BoardState(label: label, width: width, currentSheetURL: url)
+        insertBoard(board, afterBoardID: afterBoardID, focus: focus)
+    }
 
+    func addTerminalBoard(
+        workingDirectory: String,
+        preferredWidth: Double? = nil,
+        afterBoardID: UUID? = nil,
+        focus: Bool = true
+    ) {
+        let board = BoardState(
+            width: preferredWidth ?? 520,
+            workingDirectory: workingDirectory)
+        insertBoard(board, afterBoardID: afterBoardID, focus: focus)
+    }
+
+    private func insertBoard(_ board: BoardState, afterBoardID: UUID?, focus: Bool) {
         let deskIndex: Int
         let insertIndex: Int
         if let afterBoardID {
@@ -91,7 +160,7 @@ extension DenStore {
         if maximizedBoardID == board.id {
             maximizedBoardID = nil
         }
-        runtimes.removeValue(forKey: board.id)?.dispose()
+        disposeRuntime(for: board.id)
 
         save()
     }
@@ -131,6 +200,18 @@ extension DenStore {
         else { return }
 
         let source = state.desks[deskIndex].boards[boardIndex]
+        if let workingDirectory = source.terminalWorkingDirectory {
+            let board = BoardState(
+                label: source.label,
+                width: source.width,
+                workingDirectory: workingDirectory,
+                customLabel: source.customLabel)
+            state.desks[deskIndex].boards.insert(board, at: boardIndex + 1)
+            state.desks[deskIndex].focusedBoardID = board.id
+            isDenMode = false
+            save()
+            return
+        }
         duplicateBoard(
             source,
             deskIndex: deskIndex,
@@ -257,7 +338,7 @@ extension DenStore {
 
     func reloadFocusedDeskSheets() {
         guard let desk = focusedDesk else { return }
-        for board in desk.boards {
+        for board in desk.boards where !board.isTerminal {
             runtime(for: board).webView.reload()
         }
     }

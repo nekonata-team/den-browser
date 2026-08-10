@@ -58,6 +58,21 @@ struct DenStoreDeskPresetTests {
         #expect(copy.focusedBoardID == copy.boards[1].id)
     }
 
+    @Test func personalPresetRestoresTerminalAsANewBoard() throws {
+        let terminal = BoardState(width: 700, workingDirectory: "/tmp", customLabel: "Build")
+        let source = desk("Development", boards: [terminal], focusedBoardID: terminal.id)
+        let store = DenStore(state: DenState(desks: [source], focusedDeskID: source.id))
+
+        #expect(store.saveFocusedDeskAsPreset(label: "Terminal") == .created)
+        let preset = try #require(store.deskPresets.first)
+        #expect(preset.boards.first?.content == .terminal("/tmp"))
+
+        store.createDesk(label: "Copy", personalPresetID: preset.id)
+        #expect(store.focusedBoard?.id != terminal.id)
+        #expect(store.focusedBoard?.terminalWorkingDirectory == "/tmp")
+        #expect(store.focusedBoard?.customLabel == "Build")
+    }
+
     @Test func personalPresetValidationReplacementAndDeletion() throws {
         let source = desk("Desk", boards: [board("First")])
         var saves: [[PersonalDeskPreset]] = []

@@ -24,6 +24,7 @@ final class DenStore {
     var overviewFilterPhase: DenFilterPhase = .inactive
     var boardWidthPanelMessage: String?
     var openBoardPanelInitialURL: URL?
+    var openBoardPanelMessage: String?
     var pendingConfirmation: PendingConfirmation?
     var maximizedBoardID: UUID?
     var centerFocusedBoardRequest = 0
@@ -63,6 +64,7 @@ final class DenStore {
     let websiteDataStore: WKWebsiteDataStore
 
     @ObservationIgnored var runtimes: [UUID: BoardRuntime] = [:]
+    @ObservationIgnored var terminalRuntimes: [UUID: TerminalRuntime] = [:]
     @ObservationIgnored var drawerPreviewRuntime: DrawerPreviewRuntime?
     @ObservationIgnored private var toastTask: Task<Void, Never>?
     @ObservationIgnored private var previousFocusedDeskID: UUID?
@@ -81,6 +83,10 @@ final class DenStore {
             let boardIndex = focusedBoardIndex(in: deskIndex)
         else { return nil }
         return state.desks[deskIndex].boards[boardIndex]
+    }
+
+    var contentInputLabel: String {
+        focusedBoard?.isTerminal == true ? "Terminal Input" : "Sheet Input"
     }
 
     var canCreateDesk: Bool {
@@ -238,6 +244,7 @@ final class DenStore {
         }
         state = .sample
         openBoardPanelInitialURL = nil
+        openBoardPanelMessage = nil
         setTemporaryContext(nil)
         isZenViewPresented = false
         activeDrag = nil

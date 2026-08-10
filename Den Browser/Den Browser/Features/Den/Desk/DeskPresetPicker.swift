@@ -305,6 +305,9 @@ enum DeskPresetSearch {
             + boards.compactMap { board in
                 board.initialSheetURL?.host(percentEncoded: false).map { ($0, 2_000) }
             }
+            + boards.compactMap { board in
+                board.terminalWorkingDirectory.map { ($0, 2_000) }
+            }
 
         var total = 0
         for token in tokens {

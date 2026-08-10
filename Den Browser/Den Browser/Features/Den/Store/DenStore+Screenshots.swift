@@ -2,7 +2,7 @@ import AppKit
 
 extension DenStore {
     func captureFocusedSheetScreenshot() {
-        guard let board = focusedBoard else {
+        guard let board = focusedBoard, !board.isTerminal else {
             showToast("No focused Board.", style: .warning)
             return
         }
@@ -29,6 +29,11 @@ extension DenStore {
     func captureFocusedDeskScreenshot() {
         guard let desk = focusedDesk, !desk.boards.isEmpty else {
             showToast("Focused Desk has no Boards.", style: .warning)
+            return
+        }
+
+        guard !desk.boards.contains(where: \.isTerminal) else {
+            showToast("Desk screenshots do not support Terminal Boards.", style: .warning)
             return
         }
 

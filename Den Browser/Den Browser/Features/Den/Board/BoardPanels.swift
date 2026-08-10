@@ -10,10 +10,12 @@ struct OpenBoardPanel: View {
     let defaultBoardWidth: Double
     let initialURL: URL?
     let recentItems: [RecentItem]
+    let message: String?
     let onSubmit: (Double) -> Void
     let onOpenRecent: (RecentItem, Double) -> Void
     let onClearRecent: () -> Void
     let onDismiss: () -> Void
+    let onInputChange: () -> Void
 
     private var filteredRecentItems: [RecentItem] {
         let query = urlText.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -49,6 +51,12 @@ struct OpenBoardPanel: View {
                             }
                         }
                     }
+            }
+
+            if let message {
+                Text(message)
+                    .font(.caption)
+                    .foregroundStyle(.red)
             }
 
             if !filteredRecentItems.isEmpty {
@@ -89,7 +97,7 @@ struct OpenBoardPanel: View {
             }
 
             HStack(spacing: DenPanelLayout.contentSpacing) {
-                Text("New board opens to the right of the focused board")
+                Text("Use :terminal [path] for a Terminal Board")
                     .foregroundStyle(.secondary)
                 Spacer()
                 Text("n in Den Mode")
@@ -104,7 +112,10 @@ struct OpenBoardPanel: View {
             }
             DispatchQueue.main.async { isFocused = true }
         }
-        .onChange(of: urlText) { _, _ in selectedRecentItemID = nil }
+        .onChange(of: urlText) { _, _ in
+            selectedRecentItemID = nil
+            onInputChange()
+        }
         .onExitCommand(perform: onDismiss)
     }
 

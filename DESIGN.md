@@ -9,6 +9,7 @@ Den controls feel like a calm desk laid over live web sheets. Web content remain
 - Use dark, low-contrast Den background with restrained Profile-colored ambient light.
 - Use Liquid Glass for Den controls, panels, and desk switcher. Do not apply glass treatment to sheet content.
 - Boards stay white with rounded continuous corners. Focus uses the active Profile color.
+- Terminal Boards keep the same Board chrome and focus treatment while their Ghostty-rendered surface owns terminal colors, text, cursor, selection, and IME presentation.
 - Use only continuous 8pt, 12pt, and 18pt corner radii: small controls use 8pt, inner cards and inputs use 12pt, and Boards, panels, and Overview use 18pt.
 - Keep hierarchy visible: Desk switcher above board strip, board header above sheet, sheet stack indicator secondary.
 - Show the current Profile name in the titlebar and a simple Profile icon at the top right. Place the Desk Preset bookmark action immediately to its left when the Focused Desk has Boards. Present both as compact borderless controls with matching secondary tint. Give both icons accessibility labels and help text; Profile identity must not depend on color.
@@ -35,6 +36,7 @@ Den controls feel like a calm desk laid over live web sheets. Web content remain
 
 - Keyboard operation leads. Pointer actions support it and must keep focused-board state consistent.
 - Use the native context menu on Board headers for concise, Board-specific actions. Keep Sheet context menus owned by web content, and focus the targeted Board when its header menu opens.
+- Hide Sheet-only controls on Terminal Boards. Keep only shared Board actions such as move, resize, duplicate, rename, maximize, and remove.
 - Keep context-menu ordering stable by disabling unavailable left/right movement instead of hiding it. Do not show Den Mode-only or configurable key equivalents there.
 - Do not make color the only state signal. Focus and direct manipulation need borders, elevation, motion, and accessible labels.
 - Keep New Desk and Replace Desk keyboard-first: choose an active Desk Preset through fuzzy search and arrow keys, confirm it, then edit the initialized Desk Label before applying it. Do not treat search-driven active results as confirmed selections.

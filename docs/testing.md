@@ -8,6 +8,7 @@ Automated unit tests own:
 
 - `DenStore` and other pure state transitions, including board focus, ordering, moving, holding, placing, canceling, and closing.
 - State persistence and restoration.
+- Terminal command parsing and Web/Terminal Board lifecycle transitions.
 - Profile model coding, ordering, CRUD, corruption recovery, per-Profile Den restoration, and app-wide preference persistence.
 - Routing Sheet Navigation callbacks and WebKit stores to their owning Profile.
 - The pointer-focus state machine used to coordinate board selection and WebKit focus.
@@ -16,6 +17,7 @@ Stable product behavior should be covered by unit, integration, or end-to-end te
 
 - SwiftUI-specific gesture identity (e.g. pointer drag-and-drop between Boards), which cannot be simulated in unit tests.
 - Core mode transitions and state-transition cycles (e.g. Sheet input -> Den Mode -> returning to Sheet input and confirming re-focus/input capability).
+- Creating a Terminal Board, entering Terminal Input, and removing it when the Shell exits.
 
 Per [ADR-0020](./adr/0020-test-critical-ui-workflows.md), each UI test is an independent user-visible workflow, not an exhaustive input permutation. Exhaustive shortcut mappings, state mutations (adding/removing boards), branches, and edge cases remain focused unit tests to prevent test suite hangs and maintain fast test execution.
 
@@ -36,7 +38,7 @@ Keep `Then` blocks assertion-only. Put input, navigation, dismissal, and other s
 UI tests launch with a fixed three-Board fixture, except focused workflows that request its one-Board variant.
 Profile documents use a fresh temporary directory, preferences use a dedicated defaults suite, and Sheets use a
 non-persistent WebKit store with local data URLs. UI tests must not read or write the user's Profiles, preferences,
-website data, window restoration, or external services.
+website data, window restoration, or external services. Terminal UI tests use an isolated `/bin/zsh -f` command and do not load the user's Ghostty configuration.
 
 Exploratory human validation is reserved for milestone checks that depend on macOS, WebKit, remote services, or visual judgment:
 
@@ -45,6 +47,7 @@ Exploratory human validation is reserved for milestone checks that depend on mac
 - First-responder handoff between Den controls and web content.
 - External web compatibility and authentication persistence.
 - Performance and resource use.
+- Ghostty rendering, IME, Shell environment, detach/reattach behavior, and process cleanup.
 - Liquid Glass, visual quality, and accessibility.
 
 Human validation is exploratory, not a correctness guarantee. When it finds a reproducible regression, add an automated test where practical.

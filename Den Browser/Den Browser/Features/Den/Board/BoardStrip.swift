@@ -82,32 +82,11 @@ struct BoardStrip: View {
         return ScrollView(.horizontal) {
             HStack(alignment: .top, spacing: boardSpacing) {
                 ForEach(boards) { board in
-                    BoardView(
-                        board: board,
-                        isFocused:
-                            store.isDeskFilterPresented
-                            ? board.id == store.deskFilterSelectionBoardID
-                            : board.id == store.focusedDesk?.focusedBoardID,
-                        isDragging: boardDrag?.boardID == board.id,
-                        runtime: store.runtime(for: board),
-                        profileColor: profileColor,
+                    boardView(
+                        board,
                         width: store.maximizedBoardID == board.id ? maximizedBoardWidth : board.width,
                         height: boardHeight,
-                        isPointerFocusEnabled:
-                            !store.isDeskFilterPresented && isPointerFocusEnabled(for: board.id),
-                        onFocus: {
-                            if store.isDeskFilterPresented {
-                                store.confirmDeskFilterSelection(board.id)
-                            } else {
-                                store.focusBoard(board.id, exitsDenMode: true)
-                            }
-                        },
-                        onGoToFirst: { store.goToFirstSheetInBoard(board.id) },
-                        onGoBack: { store.goBackInBoard(board.id) },
-                        onGoForward: { store.goForwardInBoard(board.id) },
-                        onRemove: { store.removeBoard(board.id) },
-                        onDragChanged: { updateBoardDrag(board, value: $0, in: size) },
-                        onDragEnded: { finishBoardDrag(value: $0, in: size) }
+                        containerSize: size
                     )
                     .disabled(store.isDeskFilterPresented)
                     .overlay {
@@ -250,6 +229,60 @@ struct BoardStrip: View {
         }
         .onChange(of: appearsActive) { _, isActive in
             if !isActive { cancelBoardDrag() }
+        }
+    }
+
+    @ViewBuilder
+    private func boardView(
+        _ board: BoardState,
+        width: CGFloat,
+        height: CGFloat,
+        containerSize: CGSize
+    ) -> some View {
+        let focused =
+            store.isDeskFilterPresented
+            ? board.id == store.deskFilterSelectionBoardID
+            : board.id == store.focusedDesk?.focusedBoardID
+        let pointerFocusEnabled = !store.isDeskFilterPresented && isPointerFocusEnabled(for: board.id)
+        let focus = {
+            if store.isDeskFilterPresented {
+                store.confirmDeskFilterSelection(board.id)
+            } else {
+                store.focusBoard(board.id, exitsDenMode: true)
+            }
+        }
+
+        if board.isTerminal {
+            TerminalBoardView(
+                board: board,
+                isFocused: focused,
+                isDragging: boardDrag?.boardID == board.id,
+                runtime: store.terminalRuntime(for: board),
+                profileColor: profileColor,
+                width: width,
+                height: height,
+                isPointerFocusEnabled: pointerFocusEnabled,
+                onFocus: focus,
+                onRemove: { store.removeBoard(board.id) },
+                onDragChanged: { updateBoardDrag(board, value: $0, in: containerSize) },
+                onDragEnded: { finishBoardDrag(value: $0, in: containerSize) })
+        } else {
+            BoardView(
+                board: board,
+                isFocused: focused,
+                isDragging: boardDrag?.boardID == board.id,
+                runtime: store.runtime(for: board),
+                profileColor: profileColor,
+                width: width,
+                height: height,
+                isPointerFocusEnabled: pointerFocusEnabled,
+                onFocus: focus,
+                onGoToFirst: { store.goToFirstSheetInBoard(board.id) },
+                onGoBack: { store.goBackInBoard(board.id) },
+                onGoForward: { store.goForwardInBoard(board.id) },
+                onRemove: { store.removeBoard(board.id) },
+                onDragChanged: { updateBoardDrag(board, value: $0, in: containerSize) },
+                onDragEnded: { finishBoardDrag(value: $0, in: containerSize) })
         }
     }
 

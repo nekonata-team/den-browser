@@ -3,6 +3,7 @@ import WebKit
 
 extension DenStore {
     func runtime(for board: BoardState) -> BoardRuntime {
+        precondition(!board.isTerminal, "Terminal Board cannot create a web runtime")
         if let runtime = runtimes[board.id] {
             return runtime
         }
@@ -93,6 +94,39 @@ extension DenStore {
         return runtime
     }
 
+    func terminalRuntime(for board: BoardState) -> TerminalRuntime {
+        precondition(board.isTerminal, "Web Board cannot create a terminal runtime")
+        if let runtime = terminalRuntimes[board.id] {
+            return runtime
+        }
+
+        let runtime = TerminalRuntime(
+            workingDirectory: board.terminalWorkingDirectory ?? FileManager.default.homeDirectoryForCurrentUser.path,
+            events: .init(
+                onClose: { [weak self] in self?.removeBoard(board.id) },
+                onFocus: { [weak self] in self?.focusBoard(board.id, exitsDenMode: true) },
+                onWorkingDirectoryChange: { [weak self] path in
+                    self?.updateTerminalBoard(boardID: board.id, workingDirectory: path)
+                },
+                onTitleChange: { [weak self] title in
+                    self?.updateTerminalBoard(boardID: board.id, title: title)
+                },
+                onOpenURL: { [weak self] url in
+                    guard let self, let resolvedURL = URL(string: url), SheetURLPolicy.isSupported(resolvedURL)
+                    else { return }
+                    addBoard(
+                        urlString: resolvedURL.absoluteString,
+                        preferredWidth: board.width,
+                        afterBoardID: board.id,
+                        focus: false)
+                },
+                onNotification: { [weak self] message in
+                    if !message.isEmpty { self?.showToast(message) }
+                }))
+        terminalRuntimes[board.id] = runtime
+        return runtime
+    }
+
     func applySheetScale(_ scale: Int) {
         for runtime in runtimes.values {
             runtime.webView.pageZoom = CGFloat(scale) / 100
@@ -105,7 +139,16 @@ extension DenStore {
             runtime.dispose()
         }
         runtimes.removeAll()
+        for runtime in terminalRuntimes.values {
+            runtime.dispose()
+        }
+        terminalRuntimes.removeAll()
         releaseDrawerPreview()
+    }
+
+    func disposeRuntime(for boardID: UUID) {
+        runtimes.removeValue(forKey: boardID)?.dispose()
+        terminalRuntimes.removeValue(forKey: boardID)?.dispose()
     }
 
     var focusedRuntime: BoardRuntime? {
@@ -114,7 +157,13 @@ extension DenStore {
             let focusedBoardID = desk.focusedBoardID,
             let board = desk.boards.first(where: { $0.id == focusedBoardID })
         else { return nil }
+        guard !board.isTerminal else { return nil }
         return runtime(for: board)
+    }
+
+    var focusedTerminalRuntime: TerminalRuntime? {
+        guard let board = focusedBoard, board.isTerminal else { return nil }
+        return terminalRuntime(for: board)
     }
 
     func updateBoard(boardID: UUID, url: URL?, title: String?) {
@@ -134,5 +183,29 @@ extension DenStore {
         if changed {
             save()
         }
+    }
+
+    private func updateTerminalBoard(
+        boardID: UUID,
+        workingDirectory: String? = nil,
+        title: String? = nil
+    ) {
+        guard let indices = boardIndices(for: boardID),
+            state.desks[indices.desk].boards[indices.board].isTerminal
+        else { return }
+        var changed = false
+        if let workingDirectory, !workingDirectory.isEmpty,
+            state.desks[indices.desk].boards[indices.board].terminalWorkingDirectory != workingDirectory
+        {
+            state.desks[indices.desk].boards[indices.board].terminalWorkingDirectory = workingDirectory
+            changed = true
+        }
+        if let title, !title.isEmpty,
+            state.desks[indices.desk].boards[indices.board].label != title
+        {
+            state.desks[indices.desk].boards[indices.board].label = title
+            changed = true
+        }
+        if changed { save() }
     }
 }

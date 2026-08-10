@@ -166,7 +166,8 @@ struct OverviewView: View {
                     .lineLimit(2)
 
                 Text(
-                    board.currentSheetURL?.host(percentEncoded: false)
+                    board.terminalWorkingDirectory
+                        ?? board.currentSheetURL?.host(percentEncoded: false)
                         ?? board.currentSheetURL?.absoluteString ?? ""
                 )
                 .font(.caption2)

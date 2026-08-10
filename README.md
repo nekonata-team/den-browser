@@ -2,10 +2,10 @@
 
 # Den Browser
 
-**Web work, the Niri way.**
+**Web and terminal work, the Niri way.**
 
-Den Browser is a keyboard-first spatial browser for long-running web work. It
-keeps parallel tasks as persistent work surfaces instead of a growing tab list,
+Den Browser is a keyboard-first spatial browser for long-running web and terminal work. It
+keeps parallel tasks as persistent work surfaces instead of growing tab and terminal-window lists,
 so research, AI chats, development, writing, and documentation stay easy to
 revisit.
 
@@ -32,7 +32,7 @@ Upgrade with `brew upgrade --cask den-browser`.
   Den.
 - **Den**: The complete work environment for one Profile.
 - **Desk**: A broad work context containing Boards in a horizontal work area.
-- **Board**: A persistent work surface for one focused task.
+- **Board**: A persistent work surface containing Web Sheets or a Terminal Session.
 - **Sheet**: A web screen held within a Board.
 
 Den Browser draws loosely on [Niri](https://github.com/niri-wm/niri)'s spatial
@@ -43,6 +43,7 @@ complete product language.
 ## What Den Browser provides
 
 - Persistent spatial organization across multiple Desks.
+- Web and Terminal Boards side by side in one Desk.
 - Keyboard-first navigation and Board management, with pointer controls where
   useful.
 - Profile-isolated sign-ins and website data, with Den state restored after
@@ -58,7 +59,9 @@ checks.
 
 ## Development
 
-Den Browser is a macOS app built with SwiftUI, AppKit bridges, and `WKWebView`.
+Den Browser is a macOS app built with SwiftUI, AppKit bridges, `WKWebView`, and
+libghostty. Terminal Boards run with the user's normal macOS permissions; the
+app is not App Sandboxed.
 
 ```sh
 mise install
@@ -80,3 +83,4 @@ These commands disable code signing. Run `just --list` for the available tasks.
 - [docs/testing.md](./docs/testing.md): automated and exploratory validation
 - [docs/releasing.md](./docs/releasing.md): signed release workflow
 - [docs/adr](./docs/adr): product and architecture decisions
+- [THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md): bundled software licenses

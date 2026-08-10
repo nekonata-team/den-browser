@@ -25,6 +25,7 @@ Den Browser/Den Browser/
       Board/
       Desk/
       Sheet/
+      Terminal/
       Overview/
       Toast/
       Drawer/
@@ -67,16 +68,19 @@ Folders communicate intent but do not enforce access control inside the shared S
 
 When a dependency would create a cycle, do not hide it behind an App coordinator or a generic shared type. Reconsider ownership, move orchestration to `App`, or narrow the exchanged data until the graph is acyclic.
 
-## Den state and WebKit runtime
+## Den state and live runtimes
 
-Persisted `DenState` remains separate from live `BoardRuntime` and `WKWebView` objects.
+Persisted `DenState` remains separate from live Web and Terminal runtime objects.
 
-- `DenState` is the source of truth for Desk and Board identity, order, labels, widths, focus, Current Sheet URLs, First Sheet URLs, Drawer Items, and the expanded Drawer Item identity used to restore a Preview.
+- `DenState` is the source of truth for Desk and Board identity, order, labels, widths, focus, Board content, Drawer Items, and the expanded Drawer Item identity used to restore a Preview.
 - `BoardRuntime` owns live WebKit state, including each Board's in-memory Sheet Stack.
-- `DenView` renders only the Focused Desk. Switching Desks removes and recreates the visible Board views, while `DenStore` caches each Board's `BoardRuntime` and reuses its live `WKWebView`; it does not reconstruct persisted state or reload the Sheet Stack.
-- Persistence never serializes `BoardRuntime`, `DrawerPreviewRuntime`, or `WKWebView`.
+- `TerminalRuntime` owns one libghostty surface and Shell process. One controller is used per Terminal Board.
+- `DenView` renders only the Focused Desk. `DenStore` retains both runtime types across Desk changes; detached Terminal views stop rendering without ending their process.
+- Persistence never serializes WebKit objects, terminal processes, terminal screens, or scrollback.
 
 This boundary follows [ADR 0008](./adr/0008-codable-den-state-webview-runtime.md).
+
+Terminal embedding and its security boundary follow [ADR 0032](./adr/0032-embed-terminal-boards-with-libghostty.md).
 
 ## Feature boundaries
 

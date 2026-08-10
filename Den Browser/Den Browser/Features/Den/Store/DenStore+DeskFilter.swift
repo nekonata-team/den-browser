@@ -60,6 +60,7 @@ extension DenStore {
         guard !deskFilterQuery.isEmpty else { return true }
         return board.displayName.localizedCaseInsensitiveContains(deskFilterQuery)
             || (board.currentSheetURL?.absoluteString.localizedCaseInsensitiveContains(deskFilterQuery) ?? false)
+            || (board.terminalWorkingDirectory?.localizedCaseInsensitiveContains(deskFilterQuery) ?? false)
     }
 
     private func updateDeskFilterSelection() {

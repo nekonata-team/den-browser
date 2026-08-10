@@ -2,7 +2,7 @@
 
 ## Language
 
-Den Browser is a browser that manages web work as personal work areas instead of tab-list entries.
+Den Browser manages long-running web and terminal work as personal work areas instead of tab-list entries or separate terminal windows.
 
 **Profile**:
 An isolated web identity that has one Den and keeps its sign-ins and site data separate from other profiles.
@@ -37,8 +37,16 @@ A user-visible label for a desk preset. It becomes the initial Desk Label when t
 _Avoid_: Desk Label, preset name
 
 **Board**:
-A user-created work surface that holds one focused task context and its sheet stack within a desk.
+A user-created work surface that holds one focused task context within a desk. A Board contains either a Sheet Stack or one live Terminal Session.
 _Avoid_: Tab, card, pane, slot
+
+**Terminal Board**:
+A Board whose content is a live terminal session instead of a Sheet Stack. Its process remains live across Desk changes while the Profile Window remains open.
+_Avoid_: Terminal window, terminal tab, pane
+
+**Terminal Session**:
+The live shell, terminal screen, and scrollback owned by a Terminal Board. Only its latest reported Working Directory is persisted; restoring the Board starts a new Terminal Session.
+_Avoid_: Terminal window, shell tab
 
 **Board Label**:
 A user-visible label for a board's task context. A board label may be inferred from a sheet or set by the user.
@@ -109,6 +117,10 @@ _Avoid_: Desk scrolling, tab switching
 The keyboard context in which the Current Sheet receives input instead of Den. Sheet Input may provide ordinary web input or Vim-style Sheet Navigation.
 _Avoid_: Normal mode, browser mode
 
+**Terminal Input**:
+The keyboard context in which a Terminal Board receives input instead of Den.
+_Avoid_: Shell mode, terminal tab input
+
 **Vim-style Sheet Navigation**:
 An optional keyboard interaction style for navigating within the current sheet. It is distinct from Den Mode and board navigation.
 _Avoid_: Vimium C mode, extension mode, Den Mode
@@ -130,7 +142,7 @@ The action that switches keyboard ownership between Sheet Input and Den Mode.
 _Avoid_: Leader, prefix, mode key
 
 **Board Removal**:
-Taking a board off its desk and ending its live sheet runtime.
+Taking a Board off its Desk and ending its live Sheet or Terminal runtime. Removing a Terminal Board terminates its process without confirmation.
 _Avoid_: Close tab, delete page, trash
 
 **Recently Removed Board**:
@@ -138,5 +150,5 @@ The most recent board removed from one Profile's Den during the current app run 
 _Avoid_: Closed tab, trash, Held Board, undo history
 
 **Board Restoration**:
-Returning the Recently Removed Board to a desk with its saved board identity, label, width, and Current Sheet URL.
+Returning the Recently Removed Board to a Desk with its saved identity, label, width, and persisted content. A restored Terminal Board starts a new Terminal Session from its saved Working Directory.
 _Avoid_: Undo, reopen tab, restore Sheet Stack

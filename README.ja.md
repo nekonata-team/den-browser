@@ -2,10 +2,10 @@
 
 # Den Browser
 
-**Web作業を、Niriのように。**
+**Webとターミナル作業を、Niriのように。**
 
-Den Browserは、長時間続くWeb作業のためのキーボードファーストな空間
-ブラウザです。増え続けるタブ一覧の代わりに、並行する作業を永続する
+Den Browserは、長時間続くWeb・ターミナル作業のためのキーボードファーストな空間
+ブラウザです。増え続けるタブやターミナルウィンドウの代わりに、並行する作業を永続する
 作業面として保持し、調査、AIチャット、開発、執筆、ドキュメント作業を
 後からすぐ再開できます。
 
@@ -32,7 +32,7 @@ brew install --cask den-browser
   Web上の識別単位。
 - **Den**: 一つのProfileに属する作業環境全体。
 - **Desk**: Boardを水平に並べる、大きな作業文脈。
-- **Board**: 一つの作業に集中するための、永続する作業面。
+- **Board**: Web SheetまたはTerminal Sessionを保持する、永続する作業面。
 - **Sheet**: Board内に保持されるWeb画面。
 
 Den Browserは、[Niri](https://github.com/niri-wm/niri)の空間的なウィンドウ
@@ -43,6 +43,7 @@ Den Browserは、[Niri](https://github.com/niri-wm/niri)の空間的なウィン
 ## Den Browserの特徴
 
 - 複数のDeskにまたがる、永続的な空間配置。
+- 一つのDeskに並べられるWeb BoardとTerminal Board。
 - キーボード中心の移動とBoard操作。必要な操作はポインターにも対応。
 - Profileごとに分離されたログイン状態とサイトデータ。再起動後のDen状態復元。
 - DeskやBoardの文脈がまだ決まっていないWeb上の素材を置く、Den全体のDrawer。
@@ -54,7 +55,8 @@ Den Browserは、[Niri](https://github.com/niri-wm/niri)の空間的なウィン
 
 ## 開発
 
-Den BrowserはSwiftUI、AppKitブリッジ、`WKWebView`で構成されたmacOSアプリです。
+Den BrowserはSwiftUI、AppKitブリッジ、`WKWebView`、libghosttyで構成されたmacOSアプリです。
+Terminal Boardは通常のmacOSユーザー権限で動作し、アプリはApp Sandboxを使用しません。
 
 ```sh
 mise install
@@ -77,3 +79,4 @@ just check
 - [docs/testing.md](./docs/testing.md): 自動テストと手動検証
 - [docs/releasing.md](./docs/releasing.md): 署名付きリリース手順
 - [docs/adr](./docs/adr): プロダクトとアーキテクチャの意思決定
+- [THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md): 同梱ソフトウェアのライセンス

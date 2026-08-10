@@ -7,6 +7,50 @@ import Testing
 @MainActor
 struct DenStoreBoardTests {
 
+    @Test func terminalInputResolvesHomeRelativeAndAbsoluteDirectories() throws {
+        let home = FileManager.default.temporaryDirectory
+
+        #expect(
+            try DenStore.resolveTerminalInput(":terminal", homeDirectory: home)?.get()
+                == home.standardizedFileURL.path)
+        #expect(
+            try DenStore.resolveTerminalInput(":terminal .", homeDirectory: home)?.get()
+                == home.standardizedFileURL.path)
+        #expect(
+            try DenStore.resolveTerminalInput(
+                ":terminal \(home.path)", homeDirectory: URL(fileURLWithPath: "/"))?.get()
+                == home.standardizedFileURL.path)
+        #expect(DenStore.resolveTerminalInput(":terminally", homeDirectory: home) == nil)
+
+        let missing = DenStore.resolveTerminalInput(
+            ":terminal missing-\(UUID().uuidString)", homeDirectory: home)
+        #expect(throws: TerminalInputError.self) { try missing?.get() }
+    }
+
+    @Test func terminalBoardsCreateDuplicateRemoveAndRestoreWithoutRecentItems() throws {
+        let source = desk("Desk")
+        let store = DenStore(state: DenState(desks: [source], focusedDeskID: source.id))
+        let directory = FileManager.default.temporaryDirectory.standardizedFileURL.path
+
+        store.openBoard(input: ":terminal \(directory)", preferredWidth: 640)
+
+        let original = try #require(store.focusedBoard)
+        #expect(original.isTerminal)
+        #expect(original.terminalWorkingDirectory == directory)
+        #expect(original.width == 640)
+        #expect(store.recentItems.isEmpty)
+
+        store.duplicateFocusedBoard()
+        let duplicate = try #require(store.focusedBoard)
+        #expect(duplicate.id != original.id)
+        #expect(duplicate.terminalWorkingDirectory == directory)
+
+        store.removeFocusedBoard()
+        store.restoreRecentlyRemovedBoard()
+        #expect(store.focusedBoard?.id == duplicate.id)
+        #expect(store.focusedBoard?.terminalWorkingDirectory == directory)
+    }
+
     @Test func openBoardAcceptsWebHostsAndSearchesInvalidURLs() throws {
         let source = desk("Desk")
         let store = DenStore(state: DenState(desks: [source], focusedDeskID: source.id))

@@ -19,7 +19,7 @@ struct ProfileManagerTests {
             performing: {
                 try JSONDecoder().decode(
                     PersistedProfile.self,
-                    from: Data("{\"schemaVersion\":2,\"profile\":{},\"den\":{}}".utf8))
+                    from: Data("{\"schemaVersion\":3,\"profile\":{},\"den\":{}}".utf8))
             })
         #expect(
             throws: DecodingError.self,
@@ -42,7 +42,7 @@ struct ProfileManagerTests {
             PersistedProfile.self,
             from: JSONSerialization.data(withJSONObject: object))
 
-        #expect(decoded.schemaVersion == 1)
+        #expect(decoded.schemaVersion == 2)
         #expect(decoded.deskPresets.isEmpty)
     }
 
@@ -67,18 +67,20 @@ struct ProfileManagerTests {
         #expect(decoded.recentItems.isEmpty)
     }
 
-    @Test func versionOneFixturesRemainReadableAndStable() throws {
+    @Test func versionOneFixturesMigrateToVersionTwo() throws {
         let profileData = try fixtureData("persisted-profile-v1")
         let persisted = try JSONDecoder().decode(PersistedProfile.self, from: profileData)
         let indexData = try fixtureData("profile-index-v1")
         let index = try JSONDecoder().decode(ProfileIndex.self, from: indexData)
 
-        #expect(persisted.schemaVersion == 1)
+        #expect(persisted.schemaVersion == 2)
         #expect(persisted.den.desks[0].boards[1].currentSheetURL == nil)
         #expect(persisted.den.desks[0].boards[0].firstSheetURL == nil)
         #expect(persisted.deskPresets[0].boards[1].initialSheetURL == nil)
         #expect(index == ProfileIndex(profileIDs: [persisted.profile.id]))
-        #expect(try jsonObject(JSONEncoder().encode(persisted)).isEqual(jsonObject(profileData)))
+        let migrated = try #require(
+            JSONSerialization.jsonObject(with: JSONEncoder().encode(persisted)) as? [String: Any])
+        #expect(migrated["schemaVersion"] as? Int == 2)
         #expect(try jsonObject(JSONEncoder().encode(index)).isEqual(jsonObject(indexData)))
 
         var futureObject = try #require(JSONSerialization.jsonObject(with: profileData) as? [String: Any])

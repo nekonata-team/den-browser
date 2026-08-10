@@ -56,6 +56,7 @@ extension DenStore {
         guard !overviewQuery.isEmpty else { return true }
         return board.displayName.localizedCaseInsensitiveContains(overviewQuery)
             || (board.currentSheetURL?.absoluteString.localizedCaseInsensitiveContains(overviewQuery) ?? false)
+            || (board.terminalWorkingDirectory?.localizedCaseInsensitiveContains(overviewQuery) ?? false)
             || desk.label.localizedCaseInsensitiveContains(overviewQuery)
     }
 

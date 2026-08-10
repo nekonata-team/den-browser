@@ -92,7 +92,7 @@ extension DenStore {
         guard let deskIndex = state.desks.firstIndex(where: { $0.id == replacement.deskID }) else { return }
 
         for board in state.desks[deskIndex].boards {
-            runtimes.removeValue(forKey: board.id)?.dispose()
+            disposeRuntime(for: board.id)
         }
         let boards = replacement.boards.map { $0.makeBoard() }
         state.desks[deskIndex].label = replacement.label
@@ -144,7 +144,7 @@ extension DenStore {
             if maximizedBoardID == board.id {
                 maximizedBoardID = nil
             }
-            runtimes.removeValue(forKey: board.id)?.dispose()
+            disposeRuntime(for: board.id)
         }
 
         state.desks.remove(at: deskIndex)

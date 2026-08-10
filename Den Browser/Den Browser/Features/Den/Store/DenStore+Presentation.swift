@@ -31,12 +31,14 @@ extension DenStore {
 
     func showOpenBoardPanel(initialURL: URL? = nil) {
         openBoardPanelInitialURL = initialURL
+        openBoardPanelMessage = nil
         setTemporaryContext(.openBoard)
     }
 
     func hideOpenBoardPanel() {
         if temporaryContext == .openBoard {
             openBoardPanelInitialURL = nil
+            openBoardPanelMessage = nil
             setTemporaryContext(nil)
         }
     }
@@ -46,7 +48,7 @@ extension DenStore {
     }
 
     func showEditBoardLinkPanel() {
-        guard focusedBoard != nil else {
+        guard focusedBoard?.isTerminal == false else {
             showToast("No focused board.", style: .warning)
             return
         }
