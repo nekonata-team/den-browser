@@ -1,6 +1,6 @@
 # Local persistence
 
-Den Browser persists only state needed to restore user-owned work. Version 2 adds explicit Web and Terminal Board content.
+Den Browser persists only state needed to restore user-owned work. Version 2 adds explicit Web, Terminal, and Zellij Board content.
 
 ## Ownership
 
@@ -8,7 +8,7 @@ Den Browser persists only state needed to restore user-owned work. Version 2 add
 - A versioned JSON `ProfileIndex` stores Profile order.
 - App-wide preferences use typed, independent `UserDefaults` keys.
 - WebKit owns website data in each Profile's `WKWebsiteDataStore`.
-- Live Web and Terminal runtimes, `WKWebView`, Shell processes, terminal screens, scrollback, transient presentation state, and the Recently Removed Board are not persisted.
+- Live Web and Terminal runtimes, `WKWebView`, Shell and Zellij processes, terminal screens, scrollback, transient presentation state, and the Recently Removed Board are not persisted.
 
 ## Version 2 JSON keys
 
@@ -35,13 +35,14 @@ Nested objects use these keys:
 - `BoardState`: `id`, `label`, `width`, optional `customLabel`, `content`
 - Web Board `content`: `kind: web`, optional `currentSheetURL`, optional `firstSheetURL`
 - Terminal Board `content`: `kind: terminal`, `workingDirectory`
+- Zellij Board `content`: `kind: zellij`, optional `sessionName`
 - `PersonalDeskPreset`: `id`, `label`, `boards`, optional `focusedBoardIndex`
-- `DeskPresetBoard`: `label`, `width`, optional `customLabel`, and equivalent Web or Terminal `content`
+- `DeskPresetBoard`: `label`, `width`, optional `customLabel`, and equivalent Web, Terminal, or Zellij `content`
 - `RecentItem`: `kind`, plus `url` for a URL or `query` for a search term used by Open Board
 
 A missing optional Current Sheet URL means the Board has no Current Sheet. A missing First Sheet URL means the Board cannot use the persisted First Sheet return action. Board Sheet URLs normalize HTTP(S) root paths to `/` before persistence. Absolute local file URLs are stored with the same Foundation `URL` `Codable` representation; no file contents, access bookmarks, or existence state are persisted. A moved, deleted, or machine-specific local file may therefore fail to load after restoration without invalidating the saved Board, Drawer Item, Recent Item, or Desk Preset.
 
-Version 1 documents decode as Web Boards and are written back as version 2. Terminal restoration starts a new Shell in the saved Working Directory.
+Version 1 documents decode as Web Boards and are written back as version 2. An ordinary Terminal Board restores a new Shell in the saved Working Directory. Named Zellij restoration runs `zellij attach --create <sessionName>`; an unnamed Zellij Board runs `zellij -l welcome`.
 
 ## App preference keys
 

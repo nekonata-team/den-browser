@@ -115,14 +115,16 @@ Den Browser's first PoC validates whether a macOS WKWebView implementation can s
 
 ## Terminal Board validation
 
-1. Open the Command-T panel, enter `:terminal`, and confirm a Terminal Board opens to the right using the home directory. Repeat with `:terminal /tmp` and an invalid path; the invalid input must remain in the panel with an error.
-2. Run an interactive Shell command, switch Desks, and return. Confirm the process and scrollback remain while the hidden surface does not keep rendering.
-3. Confirm Japanese IME, selection, Command-C, Command-V, resizing, pointer focus, Den Mode, Board movement, and Overview work without visible input lag.
-4. Run `exit` and confirm the Board disappears. Remove another active Terminal Board and confirm its process ends without confirmation; restore it and confirm a new Shell starts from the saved Working Directory.
-5. Duplicate a Terminal Board and apply a Desk Preset containing one. Confirm each starts an independent Shell. Relaunch and confirm only layout, label, width, and Working Directory restore.
-6. Cmd-click an HTTP(S) link and confirm a background Web Board appears immediately to the right.
-7. Place eight Terminal Boards across three Desks, keep two producing output for ten minutes, and confirm Den actions stay responsive with no state loss or crash.
-8. Set a bundled Ghostty theme by name and confirm its colors apply. Repeat with separate light/dark names.
+1. In Settings > Features > Terminal, enter the absolute path to the Zellij executable. Open the Command-T panel, enter `:terminal`, and confirm a Terminal Board opens to the right using the home directory. Repeat with `:terminal /tmp` and an invalid path; the invalid input must remain in the panel with an error.
+2. Enter `:zellij` and confirm the configured Zellij executable starts directly and shows the Welcome screen without an initial shell command appearing first. Choose a session or create one, restart Den, and confirm the same Zellij Board shows Welcome again because Welcome selection is owned by Zellij and is not inferred by Den.
+3. Enter `:zellij project-a` and confirm the configured executable attaches to the named session, creating it when absent. Restart Den and confirm the Board reconnects to `project-a`.
+4. Run an interactive Shell command, switch Desks, and return. Confirm the process and scrollback remain while the hidden surface does not keep rendering.
+5. Confirm Japanese IME, selection, Command-C, Command-V, resizing, pointer focus, Den Mode, Board movement, and Overview work without visible input lag.
+6. Run `exit` and confirm the Board disappears. Remove an active Terminal Board and confirm its process ends without confirmation; restore it and confirm a new Shell starts from the saved Working Directory.
+7. Duplicate an ordinary Terminal Board and apply a Desk Preset containing a Terminal or Zellij Board. Confirm the restored content follows its kind: an independent Shell for a Terminal Board, and the persisted Zellij session behavior for a Zellij Board.
+8. Cmd-click an HTTP(S) link and confirm a background Web Board appears immediately to the right.
+9. Place eight Terminal Boards across three Desks, keep two producing output for ten minutes, and confirm Den actions stay responsive with no state loss or crash.
+10. Set a bundled Ghostty theme by name and confirm its colors apply. Repeat with separate light/dark names.
 
 ## Board context menu validation
 

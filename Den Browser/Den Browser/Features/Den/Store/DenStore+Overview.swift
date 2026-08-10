@@ -57,6 +57,7 @@ extension DenStore {
         return board.displayName.localizedCaseInsensitiveContains(overviewQuery)
             || (board.currentSheetURL?.absoluteString.localizedCaseInsensitiveContains(overviewQuery) ?? false)
             || (board.terminalWorkingDirectory?.localizedCaseInsensitiveContains(overviewQuery) ?? false)
+            || (board.zellijSessionName?.localizedCaseInsensitiveContains(overviewQuery) ?? false)
             || desk.label.localizedCaseInsensitiveContains(overviewQuery)
     }
 

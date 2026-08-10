@@ -6,7 +6,7 @@ Accepted
 
 ## Decision
 
-Den Browser supports Terminal Boards beside Web Boards in the same Desk. The app embeds `GhosttyTerminal` from the exact `libghostty-spm` 1.3.2 package and gives each Terminal Board its own controller and surface. Terminal processes live until their Board, Profile Window, or app closes. Persisted state contains only the latest reported Working Directory.
+Den Browser supports Terminal Boards beside Web Boards in the same Desk. The app embeds `GhosttyTerminal` from the exact `libghostty-spm` 1.3.2 package and gives each Terminal Board its own controller and surface. Terminal processes live until their Board, Profile Window, or app closes. Ordinary Terminal Boards persist only the latest reported Working Directory; Zellij Boards persist an optional session name.
 
 The app disables App Sandbox because a normal developer Shell must access the user's files and launch ordinary child processes. Hardened Runtime, Developer ID signing, and notarization remain required. Existing Sandbox-container data is not migrated before 1.0.
 

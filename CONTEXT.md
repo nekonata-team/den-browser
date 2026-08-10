@@ -41,11 +41,11 @@ A user-created work surface that holds one focused task context within a desk. A
 _Avoid_: Tab, card, pane, slot
 
 **Terminal Board**:
-A Board whose content is a live terminal session instead of a Sheet Stack. Its process remains live across Desk changes while the Profile Window remains open.
+A Board whose content is a live shell or terminal multiplexer session instead of a Sheet Stack. Its process remains live across Desk changes while the Profile Window remains open.
 _Avoid_: Terminal window, terminal tab, pane
 
 **Terminal Session**:
-The live shell, terminal screen, and scrollback owned by a Terminal Board. Only its latest reported Working Directory is persisted; restoring the Board starts a new Terminal Session.
+The live shell or Zellij session, terminal screen, and scrollback owned by a Terminal Board. An ordinary Terminal Board persists only its latest reported Working Directory. Named Zellij Boards persist their session name; a Zellij Board without a name opens Zellij's Welcome screen again when restored.
 _Avoid_: Terminal window, shell tab
 
 **Board Label**:
@@ -150,5 +150,5 @@ The most recent board removed from one Profile's Den during the current app run 
 _Avoid_: Closed tab, trash, Held Board, undo history
 
 **Board Restoration**:
-Returning the Recently Removed Board to a Desk with its saved identity, label, width, and persisted content. A restored Terminal Board starts a new Terminal Session from its saved Working Directory.
+Returning the Recently Removed Board to a Desk with its saved identity, label, width, and persisted content. A restored ordinary Terminal Board starts a new Terminal Session from its saved Working Directory; a restored Zellij Board starts Zellij from its persisted session name or Welcome screen.
 _Avoid_: Undo, reopen tab, restore Sheet Stack

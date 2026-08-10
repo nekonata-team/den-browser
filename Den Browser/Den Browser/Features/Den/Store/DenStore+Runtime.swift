@@ -107,6 +107,11 @@ extension DenStore {
 
         let runtime = TerminalRuntime(
             workingDirectory: board.terminalWorkingDirectory ?? FileManager.default.homeDirectoryForCurrentUser.path,
+            command: board.isZellij
+                ? ZellijLaunchCommand.command(
+                    sessionName: board.zellijSessionName,
+                    executablePath: preferences.zellijPath)
+                : nil,
             events: .init(
                 onClose: { [weak self] in self?.removeBoard(board.id) },
                 onFocus: { [weak self] in self?.focusBoard(board.id, exitsDenMode: true) },

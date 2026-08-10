@@ -20,6 +20,11 @@ struct SettingsView: View {
                     Label("Shortcuts", systemImage: "keyboard")
                 }
 
+            TerminalSettingsView()
+                .tabItem {
+                    Label("Terminal", systemImage: "terminal")
+                }
+
             Form {
                 DefaultBrowserSettingsSection()
 
@@ -61,6 +66,32 @@ struct SettingsView: View {
         }
     }
 
+}
+
+private struct TerminalSettingsView: View {
+    @Environment(AppPreferences.self) private var preferences
+
+    var body: some View {
+        Form {
+            Section("Zellij") {
+                TextField("Executable", text: zellijPathBinding)
+
+                Text("Use the absolute path to the Zellij executable.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .formStyle(.grouped)
+        .padding()
+    }
+
+    private var zellijPathBinding: Binding<String> {
+        Binding {
+            preferences.zellijPath
+        } set: { path in
+            preferences.setZellijPath(path)
+        }
+    }
 }
 
 private struct AppearanceSettingsView: View {

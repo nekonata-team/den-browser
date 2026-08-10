@@ -32,6 +32,7 @@ final class AppPreferences {
     private(set) var nativePictureInPictureEnabled: Bool
     private(set) var boardCentering: FocusedBoardCentering
     private(set) var sheetScale: Int
+    private(set) var zellijPath: String
 
     @ObservationIgnored private let defaults: UserDefaults
 
@@ -44,6 +45,7 @@ final class AppPreferences {
         "features.native-picture-in-picture.enabled"
     private static let boardCenteringKey = "appearance.board-centering"
     private static let sheetScaleKey = "appearance.sheet-scale"
+    private static let zellijPathKey = "terminal.zellij-path"
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
@@ -61,6 +63,7 @@ final class AppPreferences {
         sheetScale =
             Self.normalizedSheetScale(defaults.object(forKey: Self.sheetScaleKey) as? Int)
             ?? Self.defaultSheetScale
+        zellijPath = defaults.string(forKey: Self.zellijPathKey) ?? ""
         loadShortcutOverrides()
     }
 
@@ -100,6 +103,12 @@ final class AppPreferences {
         guard Self.sheetScaleRange.contains(scale) else { return }
         sheetScale = scale
         defaults.set(scale, forKey: Self.sheetScaleKey)
+    }
+
+    func setZellijPath(_ path: String) {
+        let normalized = path.trimmingCharacters(in: .whitespacesAndNewlines)
+        zellijPath = normalized
+        defaults.set(normalized, forKey: Self.zellijPathKey)
     }
 
     func shortcut(for action: ShortcutAction) -> ShortcutBinding? {

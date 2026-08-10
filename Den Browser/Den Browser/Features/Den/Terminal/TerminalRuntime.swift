@@ -13,15 +13,16 @@ final class TerminalRuntime: NSObject, ObservableObject {
         var onNotification: (String) -> Void
     }
 
-    let terminalView = AppTerminalView(frame: .zero)
+    let terminalView: AppTerminalView
     private var controller: TerminalController?
     private let events: Events
     private var isDisposed = false
 
-    init(workingDirectory: String, events: Events) {
+    init(workingDirectory: String, command: String? = nil, events: Events) {
         self.events = events
+        terminalView = AppTerminalView(frame: .zero)
         super.init()
-        let resolution = TerminalConfigurationSource.current
+        let resolution = TerminalConfigurationSource.make(commandOverride: command)
         let controller = TerminalController(
             configSource: resolution.configSource,
             theme: resolution.theme)

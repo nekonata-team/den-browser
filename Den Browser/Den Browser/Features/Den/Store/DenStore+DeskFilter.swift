@@ -61,6 +61,7 @@ extension DenStore {
         return board.displayName.localizedCaseInsensitiveContains(deskFilterQuery)
             || (board.currentSheetURL?.absoluteString.localizedCaseInsensitiveContains(deskFilterQuery) ?? false)
             || (board.terminalWorkingDirectory?.localizedCaseInsensitiveContains(deskFilterQuery) ?? false)
+            || (board.zellijSessionName?.localizedCaseInsensitiveContains(deskFilterQuery) ?? false)
     }
 
     private func updateDeskFilterSelection() {

@@ -68,7 +68,7 @@ struct TerminalBoardView: View {
 
     private var dragHandle: some View {
         HStack(spacing: 8) {
-            Image(systemName: "terminal")
+            Image(systemName: board.isZellij ? "rectangle.3.group" : "terminal")
                 .foregroundStyle(.secondary)
                 .frame(width: 16, height: 16)
                 .accessibilityHidden(true)
@@ -98,7 +98,9 @@ struct TerminalBoardView: View {
             store.focusBoard(board.id)
             store.duplicateFocusedBoard()
         } label: {
-            Label("Duplicate Terminal", systemImage: "plus.square.on.square")
+            Label(
+                board.isZellij ? "Duplicate Zellij Board" : "Duplicate Terminal",
+                systemImage: "plus.square.on.square")
         }
         Button {
             store.focusBoard(board.id)

@@ -2,18 +2,37 @@ import Foundation
 import GhosttyTerminal
 import GhosttyTheme
 
+enum ZellijLaunchCommand {
+    static func isValidExecutablePath(_ path: String) -> Bool {
+        path.trimmingCharacters(in: .whitespacesAndNewlines).hasPrefix("/")
+    }
+
+    static func command(sessionName: String?, executablePath: String) -> String? {
+        let executablePath = executablePath.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard isValidExecutablePath(executablePath) else { return nil }
+
+        if let sessionName, !sessionName.isEmpty {
+            return "\(shellQuote(executablePath)) attach --create \(shellQuote(sessionName))"
+        }
+        return "\(shellQuote(executablePath)) -l welcome"
+    }
+
+    private static func shellQuote(_ value: String) -> String {
+        "'" + value.replacingOccurrences(of: "'", with: "'\\''") + "'"
+    }
+}
+
 enum TerminalConfigurationSource {
     struct Resolution {
         let configSource: TerminalController.ConfigSource
         let theme: TerminalTheme
     }
 
-    static let current = make()
-
     static func make(
         fileManager: FileManager = .default,
         environment: [String: String] = ProcessInfo.processInfo.environment,
-        arguments: [String] = ProcessInfo.processInfo.arguments
+        arguments: [String] = ProcessInfo.processInfo.arguments,
+        commandOverride: String? = nil
     ) -> Resolution {
         let home = fileManager.homeDirectoryForCurrentUser
         let xdgRoot: URL
@@ -34,10 +53,14 @@ enum TerminalConfigurationSource {
         var contents = loadedCandidates.compactMap {
             try? String(contentsOf: $0, encoding: .utf8)
         }
-        .map { removingThemeSetting(from: $0) }
+        .map { removingSetting("theme", from: $0) }
+        .map { commandOverride == nil ? $0 : removingSetting("command", from: $0) }
         .joined(separator: "\n")
 
-        if arguments.contains("--ui-testing") {
+        if let commandOverride {
+            if !contents.isEmpty { contents.append("\n") }
+            contents.append("command = \(commandOverride)")
+        } else if arguments.contains("--ui-testing") {
             if !contents.isEmpty { contents.append("\n") }
             contents.append("command = /bin/zsh -f")
         }
@@ -47,7 +70,7 @@ enum TerminalConfigurationSource {
             theme: resolveTheme(from: loadedCandidates))
     }
 
-    private static func removingThemeSetting(from contents: String) -> String {
+    private static func removingSetting(_ keyToRemove: String, from contents: String) -> String {
         contents
             .split(omittingEmptySubsequences: false, whereSeparator: \.isNewline)
             .filter { rawLine in
@@ -56,7 +79,7 @@ enum TerminalConfigurationSource {
                     let separator = line.firstIndex(of: "=")
                 else { return true }
                 let key = line[..<separator].trimmingCharacters(in: .whitespaces)
-                return key != "theme"
+                return key != keyToRemove
             }
             .joined(separator: "\n")
     }

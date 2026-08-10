@@ -27,6 +27,74 @@ struct DenStoreBoardTests {
         #expect(throws: TerminalInputError.self) { try missing?.get() }
     }
 
+    @Test func zellijInputResolvesWelcomeAndNamedSessions() {
+        #expect(DenStore.resolveZellijInput(":zellij") == .welcome)
+        #expect(DenStore.resolveZellijInput(":zellij   ") == .welcome)
+        #expect(DenStore.resolveZellijInput(":zellij project-a") == .session("project-a"))
+        #expect(DenStore.resolveZellijInput(":zellijly") == nil)
+    }
+
+    @Test func zellijBoardsPersistOptionalSessionNames() throws {
+        let source = desk("Desk")
+        let suiteName = "DenStoreZellijTests-\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let preferences = AppPreferences(defaults: defaults)
+        preferences.setZellijPath("/opt/homebrew/bin/zellij")
+        let store = DenStore(
+            state: DenState(desks: [source], focusedDeskID: source.id),
+            sheetNavigation: SheetNavigationManager(),
+            preferences: preferences)
+
+        store.openBoard(input: ":zellij project-a")
+        let named = try #require(store.focusedBoard)
+        #expect(named.isTerminal)
+        #expect(named.isZellij)
+        #expect(named.zellijSessionName == "project-a")
+        #expect(
+            ZellijLaunchCommand.command(
+                sessionName: named.zellijSessionName,
+                executablePath: "/opt/homebrew/bin/zellij")
+                == "'/opt/homebrew/bin/zellij' attach --create 'project-a'"
+        )
+        let restoredNamed = try JSONDecoder().decode(
+            BoardState.self,
+            from: JSONEncoder().encode(named))
+        #expect(restoredNamed.content == .zellij(ZellijBoardState(sessionName: "project-a")))
+
+        store.openBoard(input: ":zellij")
+        let welcome = try #require(store.focusedBoard)
+        #expect(welcome.isZellij)
+        #expect(welcome.zellijSessionName == nil)
+        #expect(
+            ZellijLaunchCommand.command(
+                sessionName: welcome.zellijSessionName,
+                executablePath: "/opt/homebrew/bin/zellij")
+                == "'/opt/homebrew/bin/zellij' -l welcome"
+        )
+        let restoredWelcome = try JSONDecoder().decode(
+            BoardState.self,
+            from: JSONEncoder().encode(welcome))
+        #expect(restoredWelcome.content == .zellij(ZellijBoardState(sessionName: nil)))
+    }
+
+    @Test func zellijBoardRequiresConfiguredAbsoluteExecutablePath() {
+        let source = desk("Desk")
+        let suiteName = "DenStoreZellijMissingPathTests-\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let preferences = AppPreferences(defaults: defaults)
+        let store = DenStore(
+            state: DenState(desks: [source], focusedDeskID: source.id),
+            sheetNavigation: SheetNavigationManager(),
+            preferences: preferences)
+
+        store.openBoard(input: ":zellij")
+
+        #expect(store.focusedBoard?.isZellij != true)
+        #expect(store.openBoardPanelMessage?.contains("absolute Zellij executable path") == true)
+    }
+
     @Test func terminalBoardsCreateDuplicateRemoveAndRestoreWithoutRecentItems() throws {
         let source = desk("Desk")
         let store = DenStore(state: DenState(desks: [source], focusedDeskID: source.id))

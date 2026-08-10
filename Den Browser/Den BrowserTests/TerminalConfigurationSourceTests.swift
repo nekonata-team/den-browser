@@ -7,6 +7,48 @@ import Testing
 
 @MainActor
 struct TerminalConfigurationSourceTests {
+    @Test func zellijLaunchCommandsUseWelcomeOrNamedSession() {
+        #expect(
+            ZellijLaunchCommand.command(
+                sessionName: nil,
+                executablePath: "/opt/homebrew/bin/zellij")
+                == "'/opt/homebrew/bin/zellij' -l welcome"
+        )
+        #expect(
+            ZellijLaunchCommand.command(
+                sessionName: "project's shell",
+                executablePath: "/opt/homebrew/bin/zellij")
+                == "'/opt/homebrew/bin/zellij' attach --create 'project'\\''s shell'"
+        )
+        #expect(ZellijLaunchCommand.command(sessionName: nil, executablePath: "zellij") == nil)
+    }
+
+    @Test func zellijCommandOverridesUserCommandWithoutShellInput() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appending(path: "den-browser-terminal-command-\(UUID())", directoryHint: .isDirectory)
+        let configDirectory = root.appending(path: "ghostty", directoryHint: .isDirectory)
+        try FileManager.default.createDirectory(at: configDirectory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        try "command = /bin/zsh -f\nfont-size = 14".write(
+            to: configDirectory.appending(path: "config.ghostty"),
+            atomically: true,
+            encoding: .utf8)
+
+        let resolution = TerminalConfigurationSource.make(
+            environment: ["XDG_CONFIG_HOME": root.path],
+            arguments: [],
+            commandOverride: "'/opt/homebrew/bin/zellij' -l welcome")
+
+        guard case let .generated(contents) = resolution.configSource else {
+            Issue.record("Expected a generated Ghostty config")
+            return
+        }
+        #expect(!contents.contains("command = /bin/zsh -f"))
+        #expect(contents.contains("command = '/opt/homebrew/bin/zellij' -l welcome"))
+        #expect(contents.contains("font-size = 14"))
+    }
+
     @Test func bundledThemeResolvesFromStandardConfig() throws {
         let root = FileManager.default.temporaryDirectory
             .appending(path: "den-browser-terminal-config-\(UUID())", directoryHint: .isDirectory)

@@ -131,6 +131,7 @@ struct ProfileManagerTests {
         preferences.setMotionPreference(.standard)
         preferences.setNativePictureInPictureEnabled(true)
         preferences.setSheetScale(80)
+        preferences.setZellijPath(" /opt/homebrew/bin/zellij ")
 
         let restored = AppPreferences(defaults: defaults)
         let storedKeys = Set((defaults.persistentDomain(forName: suiteName) ?? [:]).keys)
@@ -140,11 +141,13 @@ struct ProfileManagerTests {
                 "appearance.motion",
                 "features.native-picture-in-picture.enabled",
                 "appearance.sheet-scale",
+                "terminal.zellij-path",
             ])
         #expect(defaults.integer(forKey: "preferences.schemaVersion") == 1)
         #expect(restored.motionPreference == .standard)
         #expect(restored.nativePictureInPictureEnabled)
         #expect(restored.sheetScale == 80)
+        #expect(restored.zellijPath == "/opt/homebrew/bin/zellij")
     }
 
     @Test func appPreferencesMigrateLegacyValuesAndDoNotDowngradeFutureSchema() {

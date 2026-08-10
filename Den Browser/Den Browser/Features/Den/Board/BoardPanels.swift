@@ -97,7 +97,7 @@ struct OpenBoardPanel: View {
             }
 
             HStack(spacing: DenPanelLayout.contentSpacing) {
-                Text("Use :terminal [path] for a Terminal Board")
+                Text("Use :terminal [path] for a Terminal Board or :zellij [session] for a Zellij Board")
                     .foregroundStyle(.secondary)
                 Spacer()
                 Text("n in Den Mode")

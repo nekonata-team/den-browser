@@ -151,9 +151,10 @@ struct PersonalDeskPreset: Codable, Equatable, Identifiable {
 enum DeskPresetBoardContent: Codable, Equatable {
     case web(URL?)
     case terminal(String)
+    case zellij(String?)
 
-    private enum CodingKeys: String, CodingKey { case kind, initialSheetURL, workingDirectory }
-    private enum Kind: String, Codable { case web, terminal }
+    private enum CodingKeys: String, CodingKey { case kind, initialSheetURL, workingDirectory, sessionName }
+    private enum Kind: String, Codable { case web, terminal, zellij }
 
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
@@ -162,6 +163,8 @@ enum DeskPresetBoardContent: Codable, Equatable {
             self = .web(try container.decodeIfPresent(URL.self, forKey: .initialSheetURL))
         case .terminal:
             self = .terminal(try container.decode(String.self, forKey: .workingDirectory))
+        case .zellij:
+            self = .zellij(try container.decodeIfPresent(String.self, forKey: .sessionName))
         }
     }
 
@@ -174,6 +177,9 @@ enum DeskPresetBoardContent: Codable, Equatable {
         case .terminal(let workingDirectory):
             try container.encode(Kind.terminal, forKey: .kind)
             try container.encode(workingDirectory, forKey: .workingDirectory)
+        case .zellij(let sessionName):
+            try container.encode(Kind.zellij, forKey: .kind)
+            try container.encodeIfPresent(sessionName, forKey: .sessionName)
         }
     }
 }
@@ -194,6 +200,11 @@ struct DeskPresetBoard: Codable, Equatable {
         return path
     }
 
+    var zellijSessionName: String? {
+        guard case .zellij(let sessionName) = content else { return nil }
+        return sessionName
+    }
+
     nonisolated init(label: String, width: Double, initialSheetURL: URL?, customLabel: String? = nil) {
         self.label = label
         self.width = width
@@ -205,6 +216,13 @@ struct DeskPresetBoard: Codable, Equatable {
         self.label = label
         self.width = width
         content = .terminal(workingDirectory)
+        self.customLabel = customLabel
+    }
+
+    nonisolated init(label: String, width: Double, zellijSessionName: String?, customLabel: String? = nil) {
+        self.label = label
+        self.width = width
+        content = .zellij(zellijSessionName)
         self.customLabel = customLabel
     }
 
@@ -221,6 +239,12 @@ struct DeskPresetBoard: Codable, Equatable {
                 label: board.label,
                 width: board.width,
                 workingDirectory: terminal.workingDirectory,
+                customLabel: board.customLabel)
+        case .zellij(let zellij):
+            self.init(
+                label: board.label,
+                width: board.width,
+                zellijSessionName: zellij.sessionName,
                 customLabel: board.customLabel)
         }
     }
@@ -239,6 +263,12 @@ struct DeskPresetBoard: Codable, Equatable {
                 label: label,
                 width: width,
                 workingDirectory: workingDirectory,
+                customLabel: customLabel)
+        case .zellij(let sessionName):
+            BoardState(
+                label: label,
+                width: width,
+                zellijSessionName: sessionName,
                 customLabel: customLabel)
         }
     }
@@ -277,14 +307,19 @@ struct TerminalBoardState: Codable, Equatable {
     var workingDirectory: String
 }
 
+struct ZellijBoardState: Codable, Equatable {
+    var sessionName: String?
+}
+
 enum BoardContentState: Codable, Equatable {
     case web(WebBoardState)
     case terminal(TerminalBoardState)
+    case zellij(ZellijBoardState)
 
     private enum CodingKeys: String, CodingKey {
-        case kind, currentSheetURL, firstSheetURL, workingDirectory
+        case kind, currentSheetURL, firstSheetURL, workingDirectory, sessionName
     }
-    private enum Kind: String, Codable { case web, terminal }
+    private enum Kind: String, Codable { case web, terminal, zellij }
 
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
@@ -298,6 +333,10 @@ enum BoardContentState: Codable, Equatable {
             self = .terminal(
                 TerminalBoardState(
                     workingDirectory: try container.decode(String.self, forKey: .workingDirectory)))
+        case .zellij:
+            self = .zellij(
+                ZellijBoardState(
+                    sessionName: try container.decodeIfPresent(String.self, forKey: .sessionName)))
         }
     }
 
@@ -311,6 +350,9 @@ enum BoardContentState: Codable, Equatable {
         case .terminal(let terminal):
             try container.encode(Kind.terminal, forKey: .kind)
             try container.encode(terminal.workingDirectory, forKey: .workingDirectory)
+        case .zellij(let zellij):
+            try container.encode(Kind.zellij, forKey: .kind)
+            try container.encodeIfPresent(zellij.sessionName, forKey: .sessionName)
         }
     }
 }
@@ -360,8 +402,20 @@ struct BoardState: Codable, Equatable, Identifiable {
         }
     }
 
+    var zellijSessionName: String? {
+        guard case .zellij(let zellij) = content else { return nil }
+        return zellij.sessionName
+    }
+
     var isTerminal: Bool {
-        guard case .terminal = content else { return false }
+        switch content {
+        case .terminal, .zellij: true
+        case .web: false
+        }
+    }
+
+    var isZellij: Bool {
+        guard case .zellij = content else { return false }
         return true
     }
 
@@ -403,6 +457,20 @@ struct BoardState: Codable, Equatable, Identifiable {
         self.label = label
         self.width = width
         content = .terminal(TerminalBoardState(workingDirectory: workingDirectory))
+        self.customLabel = customLabel
+    }
+
+    init(
+        id: UUID = UUID(),
+        label: String = "Zellij",
+        width: Double,
+        zellijSessionName: String?,
+        customLabel: String? = nil
+    ) {
+        self.id = id
+        self.label = label
+        self.width = width
+        content = .zellij(ZellijBoardState(sessionName: zellijSessionName))
         self.customLabel = customLabel
     }
 

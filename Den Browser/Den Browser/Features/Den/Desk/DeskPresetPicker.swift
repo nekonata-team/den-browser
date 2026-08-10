@@ -308,6 +308,9 @@ enum DeskPresetSearch {
             + boards.compactMap { board in
                 board.terminalWorkingDirectory.map { ($0, 2_000) }
             }
+            + boards.compactMap { board in
+                board.zellijSessionName.map { ($0, 2_000) }
+            }
 
         var total = 0
         for token in tokens {

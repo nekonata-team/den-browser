@@ -11,11 +11,12 @@ Saving the Focused Desk as a Personal Desk Preset captures:
 - Board Widths
 - Current Sheet URLs, including path, query, and fragment
 - First Sheet URLs, initialized from each Board's Current Sheet URL at capture time
+- Terminal Working Directories and optional Zellij session names
 - Focused Board
 
-At least one Board is required. A Board without a Current Sheet URL remains valid because its Label, Width, and position can still carry meaning. Sheet Stacks, live `WKWebView` state, scroll positions, input, and sign-in state are not captured.
+At least one Board is required. A Board without a Current Sheet URL remains valid because its Label, Width, position, or terminal content can still carry meaning. Sheet Stacks, live `WKWebView` state, scroll positions, input, and sign-in state are not captured.
 
-Creating a Desk from any Desk Preset creates new Desk and Board identities. Each created Board receives the Preset's initial Sheet URL as both its Current Sheet URL and First Sheet URL. Replacing a Desk preserves its Desk identity and position while creating new Board identities. Neither operation leaves the Desk linked to the Desk Preset. Profile-owned WebKit data still supplies that Profile's existing site sessions.
+Creating a Desk from any Desk Preset creates new Desk and Board identities. Web Boards receive the Preset's initial Sheet URL as both their Current Sheet URL and First Sheet URL; Terminal and Zellij Boards receive their persisted terminal content. Replacing a Desk preserves its Desk identity and position while creating new Board identities. Neither operation leaves the Desk linked to the Desk Preset. Profile-owned WebKit data still supplies that Profile's existing site sessions.
 
 ## Saving
 
@@ -29,7 +30,7 @@ Labels are trimmed, cannot be empty, and compare case-insensitively. A Desk with
 
 The New Desk panel starts with keyboard focus in Desk Preset search and treats Empty as the initial active candidate. Up and Down move the active candidate. Return or Tab confirms it, initializes the Desk Label from its Desk Preset Label, selects that label for editing, and advances focus to the Desk Label. Return from the label creates the Desk. Escape from the label returns to Preset selection; Escape there closes the panel. While IME conversion is active, Return, Tab, Shift-Tab, Up, and Down remain available to the input method instead of triggering these panel actions. Changing the Desk Label does not change the confirmed Desk Preset.
 
-Empty search keeps Built-in Presets and My Presets grouped. Typed search ranks fuzzy subsequence matches across both groups, prioritizing Desk Preset Labels, then Board Labels, then Current Sheet URL hosts. A single result becomes active but still requires Return or Tab for confirmation. The active candidate drives the preview without becoming the confirmed Desk Preset. The preview shows Board Labels, URL hosts, and relative Board Widths without capturing Sheet images. The built-in order is:
+Empty search keeps Built-in Presets and My Presets grouped. Typed search ranks fuzzy subsequence matches across both groups, prioritizing Desk Preset Labels, then Board Labels, then Current Sheet URL hosts or terminal session names. A single result becomes active but still requires Return or Tab for confirmation. The active candidate drives the preview without becoming the confirmed Desk Preset. The preview shows Board Labels, URL hosts, terminal session names, and relative Board Widths without capturing Sheet images. The built-in order is:
 
 1. Empty
 2. ChatGPT

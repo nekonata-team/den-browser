@@ -10,8 +10,34 @@ enum TerminalInputError: Error, Equatable {
     }
 }
 
+enum ZellijInput: Equatable {
+    case welcome
+    case session(String)
+}
+
 extension DenStore {
     func openBoard(input: String, preferredWidth: Double? = nil, afterBoardID: UUID? = nil) {
+        if let zellij = Self.resolveZellijInput(input) {
+            guard ZellijLaunchCommand.isValidExecutablePath(preferences.zellijPath) else {
+                openBoardPanelMessage =
+                    "Set an absolute Zellij executable path in Settings > Features > Terminal."
+                return
+            }
+            let sessionName: String?
+            switch zellij {
+            case .welcome:
+                sessionName = nil
+            case .session(let name):
+                sessionName = name
+            }
+            addZellijBoard(
+                sessionName: sessionName,
+                preferredWidth: preferredWidth,
+                afterBoardID: afterBoardID)
+            openBoardPanelMessage = nil
+            return
+        }
+
         if let terminal = Self.resolveTerminalInput(input) {
             switch terminal {
             case .success(let workingDirectory):
@@ -29,6 +55,16 @@ extension DenStore {
         addBoard(urlString: input, preferredWidth: preferredWidth, afterBoardID: afterBoardID)
         guard input.count <= Self.maximumPersistedRecentInputLength else { return }
         saveRecentItem(resolution.item)
+    }
+
+    static func resolveZellijInput(_ input: String) -> ZellijInput? {
+        let trimmed = input.trimmingCharacters(in: .whitespacesAndNewlines)
+        let parts = trimmed.split(maxSplits: 1, whereSeparator: \.isWhitespace)
+        guard parts.first == ":zellij" else { return nil }
+        guard parts.count == 2 else { return .welcome }
+
+        let sessionName = String(parts[1]).trimmingCharacters(in: .whitespacesAndNewlines)
+        return sessionName.isEmpty ? .welcome : .session(sessionName)
     }
 
     static func resolveTerminalInput(
@@ -97,6 +133,18 @@ extension DenStore {
         let board = BoardState(
             width: preferredWidth ?? 520,
             workingDirectory: workingDirectory)
+        insertBoard(board, afterBoardID: afterBoardID, focus: focus)
+    }
+
+    func addZellijBoard(
+        sessionName: String?,
+        preferredWidth: Double? = nil,
+        afterBoardID: UUID? = nil,
+        focus: Bool = true
+    ) {
+        let board = BoardState(
+            width: preferredWidth ?? 520,
+            zellijSessionName: sessionName)
         insertBoard(board, afterBoardID: afterBoardID, focus: focus)
     }
 
@@ -205,6 +253,18 @@ extension DenStore {
                 label: source.label,
                 width: source.width,
                 workingDirectory: workingDirectory,
+                customLabel: source.customLabel)
+            state.desks[deskIndex].boards.insert(board, at: boardIndex + 1)
+            state.desks[deskIndex].focusedBoardID = board.id
+            isDenMode = false
+            save()
+            return
+        }
+        if source.isZellij {
+            let board = BoardState(
+                label: source.label,
+                width: source.width,
+                zellijSessionName: source.zellijSessionName,
                 customLabel: source.customLabel)
             state.desks[deskIndex].boards.insert(board, at: boardIndex + 1)
             state.desks[deskIndex].focusedBoardID = board.id
