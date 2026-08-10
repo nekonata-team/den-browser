@@ -73,6 +73,11 @@ extension DenStore {
                 },
                 onGoToLatestSheet: { [weak self] in
                     self?.goToLatestSheetInBoard(board.id)
+                },
+                isSupportedSheetURL: SheetURLPolicy.isSupported,
+                onNavigateCurrentSheet: { [weak self] url in
+                    self?.focusBoard(board.id)
+                    self?.navigateFocusedBoard(urlString: url.absoluteString)
                 }
             ),
             events: .init(

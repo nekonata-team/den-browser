@@ -140,7 +140,7 @@ extension DenStore {
         setTemporaryContext(nil)
         isDenMode = false
         save()
-        runtimes[boardID]?.webView.load(URLRequest(url: url))
+        runtimes[boardID]?.load(url)
         return true
     }
 
@@ -291,9 +291,9 @@ extension DenStore {
             let firstSheetURL = focusedBoard?.firstSheetURL,
             let currentSheetURL = focusedBoard?.currentSheetURL,
             currentSheetURL != firstSheetURL,
-            let webView = focusedRuntime?.webView
+            let runtime = focusedRuntime
         else { return }
-        webView.load(URLRequest(url: firstSheetURL))
+        runtime.load(firstSheetURL)
     }
 
     func goToFirstSheetInBoard(_ boardID: UUID) {

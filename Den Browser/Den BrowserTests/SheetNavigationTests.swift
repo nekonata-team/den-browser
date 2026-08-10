@@ -42,14 +42,17 @@ private final class WebViewLoadWaiter: NSObject, WKNavigationDelegate {
 
 @MainActor
 struct SheetNavigationTests {
-    @Test func sheetURLPolicyAcceptsOnlyHTTPWithHost() {
+    @Test func sheetURLPolicyAcceptsWebAndAbsoluteLocalFileURLs() {
         let supported = [
             URL(string: "http://example.com/")!,
             URL(string: "HTTPS://EXAMPLE.COM/path")!,
+            URL(string: "file:///tmp/example.html")!,
+            URL(string: "file://localhost/tmp/example.html")!,
         ]
         let unsupported = [
             URL(string: "https://")!,
-            URL(string: "file:///tmp/example")!,
+            URL(string: "file:relative.html")!,
+            URL(string: "file://server/share/example.html")!,
             URL(string: "data:text/plain,example")!,
             URL(string: "about:blank")!,
             URL(string: "mailto:user@example.com")!,
@@ -69,6 +72,59 @@ struct SheetNavigationTests {
         #expect(
             SheetURLPolicy.canonicalSheetURL(URL(string: "http://example.test/app")!)
                 == URL(string: "http://example.test/app")!)
+        #expect(
+            SheetURLPolicy.canonicalSheetURL(
+                URL(string: "file://localhost/tmp/a%20b.html?mode=test#section")!)
+                == URL(string: "file:///tmp/a%20b.html?mode=test#section")!)
+    }
+
+    @Test func boardRuntimeLoadsLocalHTMLAndSiblingScript() async throws {
+        let directory = FileManager.default.temporaryDirectory.appending(
+            path: "DenBrowserFileURLTests-(UUID().uuidString)",
+            directoryHint: .isDirectory)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+
+        let htmlURL = directory.appending(path: "index.html")
+        let scriptURL = directory.appending(path: "title.js")
+        try "<html><head><script src=\"title.js\"></script></head></html>".write(
+            to: htmlURL, atomically: true, encoding: .utf8)
+        try "document.title = 'Sibling script loaded';".write(
+            to: scriptURL, atomically: true, encoding: .utf8)
+
+        var continuation: AsyncStream<(URL?, String?)>.Continuation?
+        let changes = AsyncStream<(URL?, String?)> { continuation = $0 }
+        let runtime = BoardRuntime(
+            board: BoardState(label: "Local", width: 520, currentSheetURL: htmlURL),
+            websiteDataStore: .nonPersistent(),
+            sheetNavigation: SheetNavigationManager(scriptSource: ""),
+            sheetScale: AppPreferences.defaultSheetScale,
+            sheetNavigationActions: noOpSheetNavigationActions(),
+            events: boardRuntimeEvents { _, url, title in
+                continuation?.yield((url, title))
+            })
+        defer {
+            continuation?.finish()
+            runtime.dispose()
+        }
+
+        let observed = try await withThrowingTaskGroup(of: Bool.self) { group in
+            group.addTask {
+                for await change in changes where change.1 == "Sibling script loaded" {
+                    return true
+                }
+                return false
+            }
+            group.addTask {
+                try await Task.sleep(for: .seconds(5))
+                return false
+            }
+            let result = try await group.next()!
+            group.cancelAll()
+            return result
+        }
+
+        #expect(observed)
     }
 
     @Test func boardRuntimeAppliesSafariUserAgent() {
@@ -387,6 +443,30 @@ struct SheetNavigationTests {
         #expect(store.focusedDesk?.focusedBoardID == store.focusedDesk?.boards[1].id)
     }
 
+    @Test func sheetNavigationCanOpenAndKeepLocalFileLinks() throws {
+        let manager = SheetNavigationManager(scriptSource: "")
+        let source = board("Source", url: "https://source.example/")
+        let currentDesk = desk("Desk", boards: [source], focusedBoardID: source.id)
+        let store = DenStore(
+            state: DenState(desks: [currentDesk], focusedDeskID: currentDesk.id),
+            sheetNavigation: manager)
+        let sourceWebView = store.runtime(for: source).webView
+        let fileURL = try #require(URL(string: "file:///tmp/Den%20Browser/reference.html"))
+        manager.setEnabled(true)
+
+        #expect(
+            manager.handleScriptMessage(
+                ["action": "openBoard", "url": fileURL.absoluteString],
+                from: sourceWebView))
+        #expect(store.focusedBoard?.currentSheetURL == fileURL)
+
+        #expect(
+            manager.handleScriptMessage(
+                ["action": "keepInDrawer", "url": fileURL.absoluteString],
+                from: sourceWebView))
+        #expect(store.state.drawerItems.first?.url == fileURL)
+    }
+
     @Test func commandClickCanOpenLinkWhenSheetNavigationIsDisabled() {
         let manager = SheetNavigationManager(scriptSource: "")
         let source = board("Source", url: "https://source.example/")
@@ -700,7 +780,9 @@ struct SheetNavigationTests {
             onFocusFirstBoard: {},
             onFocusLastBoard: {},
             onGoToFirstSheet: {},
-            onGoToLatestSheet: {}
+            onGoToLatestSheet: {},
+            isSupportedSheetURL: SheetURLPolicy.isSupported,
+            onNavigateCurrentSheet: { _ in }
         )
     }
 

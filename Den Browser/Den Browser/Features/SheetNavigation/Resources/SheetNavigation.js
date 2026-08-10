@@ -15,6 +15,7 @@
   let overlay = null;
   let findBar = null;
   let helpOverlay = null;
+  const supportedSheetProtocols = new Set(["http:", "https:", "file:"]);
 
   const actionableSelector =
     'a[href],button,input:not([type="hidden"]),select,textarea,[role="button"]';
@@ -31,14 +32,14 @@
     },
     openBoard: {
       selector: "a[href]",
-      accepts: isSupportedHTTPLink,
+      accepts: isSupportedSheetLink,
       activate(target) {
         postMessage({ action: "openBoard", url: target.href });
       },
     },
     keepInDrawer: {
       selector: "a[href]",
-      accepts: isSupportedHTTPLink,
+      accepts: isSupportedSheetLink,
       activate(target) {
         postMessage({ action: "keepInDrawer", url: target.href });
       },
@@ -102,9 +103,9 @@
       rect.top < innerHeight && rect.left < innerWidth;
   }
 
-  function isSupportedHTTPLink(target) {
+  function isSupportedSheetLink(target) {
     try {
-      return ["http:", "https:"].includes(new URL(target.href, location.href).protocol);
+      return supportedSheetProtocols.has(new URL(target.href, location.href).protocol);
     } catch {
       return false;
     }
@@ -217,7 +218,7 @@
     } catch {
       return;
     }
-    if (!["http:", "https:"].includes(url.protocol)) return;
+    if (!supportedSheetProtocols.has(url.protocol)) return;
 
     consume(event);
     if (keepsInDrawer) {

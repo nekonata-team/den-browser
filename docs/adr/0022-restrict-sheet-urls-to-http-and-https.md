@@ -1,8 +1,10 @@
 ---
-status: accepted
+status: superseded
 ---
 
 # Restrict sheet URLs to HTTP and HTTPS protocols
+
+Superseded by [ADR 0033](./0033-support-local-file-sheet-urls.md) after the App Sandbox was disabled for Terminal Boards.
 
 Den Browser restricts Sheet URLs to `http` and `https` schemes, explicitly declining to support the local file scheme (`file://`). This decision aligns with the product's positioning as a companion browser for long-running web work rather than a general-purpose browser or document viewer (see [ADR-0001](./0001-companion-browser.md)).
 

@@ -30,6 +30,8 @@ final class SheetNavigationManager {
         var onFocusLastBoard: () -> Void = {}
         var onGoToFirstSheet: () -> Void = {}
         var onGoToLatestSheet: () -> Void = {}
+        var isSupportedSheetURL: (URL) -> Bool = { _ in false }
+        var onNavigateCurrentSheet: (URL) -> Void = { _ in }
     }
 
     static let defaultHintAlphabet = "asdfghjkl"
@@ -194,8 +196,8 @@ final class SheetNavigationManager {
             guard
                 let urlString = message["url"] as? String,
                 let url = URL(string: urlString),
-                Self.isSupported(url),
-                let actions = actionsByWebView[ObjectIdentifier(webView)]
+                let actions = actionsByWebView[ObjectIdentifier(webView)],
+                actions.isSupportedSheetURL(url)
             else { return false }
             if action == "commandOpenBoard",
                 message["focused"] as? Bool != true
@@ -209,26 +211,26 @@ final class SheetNavigationManager {
             guard
                 let urlString = message["url"] as? String,
                 let url = URL(string: urlString),
-                Self.isSupported(url),
-                let action = actionsByWebView[ObjectIdentifier(webView)]?.onKeepInDrawer
+                let actions = actionsByWebView[ObjectIdentifier(webView)],
+                actions.isSupportedSheetURL(url)
             else { return false }
-            action(url)
+            actions.onKeepInDrawer(url)
             return true
         case "editCurrentSheet":
             guard
                 let url = webView.url,
-                Self.isSupported(url),
-                let action = actionsByWebView[ObjectIdentifier(webView)]?.onEditCurrentSheet
+                let actions = actionsByWebView[ObjectIdentifier(webView)],
+                actions.isSupportedSheetURL(url)
             else { return false }
-            action()
+            actions.onEditCurrentSheet()
             return true
         case "openCurrentSheetInNewBoard":
             guard
                 let url = webView.url,
-                Self.isSupported(url),
-                let action = actionsByWebView[ObjectIdentifier(webView)]?.onOpenCurrentSheetInNewBoard
+                let actions = actionsByWebView[ObjectIdentifier(webView)],
+                actions.isSupportedSheetURL(url)
             else { return false }
-            action(url)
+            actions.onOpenCurrentSheetInNewBoard(url)
             return true
         case "openBoardPanel":
             guard let action = actionsByWebView[ObjectIdentifier(webView)]?.onOpenBoardPanel else {
@@ -246,14 +248,13 @@ final class SheetNavigationManager {
             guard
                 let value = NSPasteboard.general.string(forType: .string),
                 let url = URL(string: value.trimmingCharacters(in: .whitespacesAndNewlines)),
-                Self.isSupported(url)
+                let actions = actionsByWebView[ObjectIdentifier(webView)],
+                actions.isSupportedSheetURL(url)
             else { return false }
             if action == "pasteURL" {
-                webView.load(URLRequest(url: url))
-            } else if let action = actionsByWebView[ObjectIdentifier(webView)]?.onPasteURLInNewBoard {
-                action(url)
+                actions.onNavigateCurrentSheet(url)
             } else {
-                return false
+                actions.onPasteURLInNewBoard(url)
             }
             return true
         case "removeBoard":
@@ -305,16 +306,6 @@ final class SheetNavigationManager {
     private func isIgnored(_ url: URL?) -> Bool {
         guard let hostname = url?.host(percentEncoded: false)?.lowercased() else { return false }
         return ignoredHosts.contains { hostname == $0 || hostname.hasSuffix(".\($0)") }
-    }
-
-    private static func isSupported(_ url: URL) -> Bool {
-        guard
-            let scheme = url.scheme?.lowercased(),
-            scheme == "http" || scheme == "https",
-            let host = url.host,
-            !host.isEmpty
-        else { return false }
-        return true
     }
 
     private func applyConfiguration() {

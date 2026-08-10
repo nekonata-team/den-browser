@@ -44,7 +44,9 @@ final class DrawerPreviewRuntime: BaseWebRuntime {
                 onOpenBoard: { [weak self] url in self?.onKeepInDrawer(url) },
                 onOpenBoardInBackground: { [weak self] url in self?.onKeepInDrawer(url) },
                 onKeepInDrawer: { [weak self] url in self?.onKeepInDrawer(url) },
-                onRemoveBoard: { [weak self] in self?.onDiscard() }
+                onRemoveBoard: { [weak self] in self?.onDiscard() },
+                isSupportedSheetURL: SheetURLPolicy.isSupported,
+                onNavigateCurrentSheet: { [weak self] url in self?.load(url) }
             )
         )
     }

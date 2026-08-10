@@ -67,8 +67,13 @@ class BaseWebRuntime: NSObject, WKDownloadDelegate, WKNavigationDelegate, WKUIDe
         }
 
         if let initialURL {
-            webView.load(URLRequest(url: initialURL))
+            load(initialURL)
         }
+    }
+
+    @discardableResult
+    func load(_ url: URL) -> WKNavigation? {
+        webView.loadSheetURL(url)
     }
 
     func dispose() {

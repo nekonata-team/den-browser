@@ -63,6 +63,14 @@ Den Browser's first PoC validates whether a macOS WKWebView implementation can s
 5. Trigger a failed download and confirm Den reports the failure without changing the Current Sheet or persisted `DenState`.
 6. Download from an authenticated site and confirm the Current Sheet's Profile session is used.
 
+## Local file Sheet validation
+
+1. Enter an absolute `file:///` URL for a local HTML file in Open Board. Confirm its HTML and sibling CSS, JavaScript, images, and nested resources within the same directory render without a file picker.
+2. Confirm a normal local link navigates in the Sheet, Command-click opens a background Board, Shift-Command-click focuses the new Board, and Option-click keeps the link in the Drawer. Repeat the new-Board and Drawer operations with Vim-style Sheet Navigation.
+3. Confirm the local file URL appears in Recent, survives Board removal and restoration, can be saved in a Personal Desk Preset, and restores after relaunch without persisting file contents or access bookmarks.
+4. Move or delete the file, relaunch, and confirm Den preserves the saved URL while WebKit reports the ordinary load failure. Restore the file and reload the Sheet.
+5. Confirm relative `file:` URLs and remote `file://host/` URLs are rejected. Confirm a local HTML file cannot read a resource outside the directory granted for that load.
+
 ## Drawer validation
 
 1. Open two links from another application. Confirm both enter the active Profile's Drawer newest-first, the latest item expands into a live Preview, and the Focused Desk layout does not change.

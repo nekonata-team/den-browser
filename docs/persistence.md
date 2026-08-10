@@ -39,7 +39,7 @@ Nested objects use these keys:
 - `DeskPresetBoard`: `label`, `width`, optional `customLabel`, and equivalent Web or Terminal `content`
 - `RecentItem`: `kind`, plus `url` for a URL or `query` for a search term used by Open Board
 
-A missing optional Current Sheet URL means the Board has no Current Sheet. A missing First Sheet URL means the Board cannot use the persisted First Sheet return action. Board Sheet URLs normalize HTTP(S) root paths to `/` before persistence. URLs encode using Foundation `URL`'s `Codable` representation.
+A missing optional Current Sheet URL means the Board has no Current Sheet. A missing First Sheet URL means the Board cannot use the persisted First Sheet return action. Board Sheet URLs normalize HTTP(S) root paths to `/` before persistence. Absolute local file URLs are stored with the same Foundation `URL` `Codable` representation; no file contents, access bookmarks, or existence state are persisted. A moved, deleted, or machine-specific local file may therefore fail to load after restoration without invalidating the saved Board, Drawer Item, Recent Item, or Desk Preset.
 
 Version 1 documents decode as Web Boards and are written back as version 2. Terminal restoration starts a new Shell in the saved Working Directory.
 

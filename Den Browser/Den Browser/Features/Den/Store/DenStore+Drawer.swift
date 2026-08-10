@@ -12,7 +12,7 @@ extension DenStore {
 
     func keepInDrawer(_ url: URL, title: String? = nil, opensDrawer: Bool = true) {
         guard SheetURLPolicy.isSupported(url) else {
-            showToast("Only HTTP and HTTPS URLs are supported.", style: .warning)
+            showToast("Only HTTP, HTTPS, and local file URLs are supported.", style: .warning)
             return
         }
         releaseDrawerPreview()

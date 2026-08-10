@@ -75,6 +75,24 @@ struct DenStoreBoardTests {
         #expect(invalidURLSearch.queryItems == [URLQueryItem(name: "q", value: "https://")])
     }
 
+    @Test func localFileURLParticipatesInBoardRecentDrawerAndPresetWorkflows() throws {
+        let source = desk("Desk")
+        let store = DenStore(state: DenState(desks: [source], focusedDeskID: source.id))
+        let fileURL = try #require(URL(string: "file:///tmp/Den%20Browser/index.html#notes"))
+
+        store.openBoard(input: fileURL.absoluteString)
+
+        #expect(store.focusedBoard?.currentSheetURL == fileURL)
+        #expect(store.focusedBoard?.firstSheetURL == fileURL)
+        #expect(store.recentItems.first == .url(fileURL))
+
+        store.keepFocusedSheetInDrawer()
+        #expect(store.state.drawerItems.first?.url == fileURL)
+
+        #expect(store.saveFocusedDeskAsPreset(label: "Local Files") == .created)
+        #expect(store.deskPresets.first?.boards.first?.initialSheetURL == fileURL)
+    }
+
     @Test func editingFocusedBoardLinkReplacesCurrentSheet() throws {
         let board = board("Board", url: "https://before.example/")
         let source = desk("Desk", boards: [board], focusedBoardID: board.id)

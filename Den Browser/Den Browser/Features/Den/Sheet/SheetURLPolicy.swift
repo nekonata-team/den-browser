@@ -1,19 +1,31 @@
 import Foundation
+import WebKit
 
 enum SheetURLPolicy {
     static func isSupported(_ url: URL) -> Bool {
-        guard
-            let scheme = url.scheme?.lowercased(),
-            scheme == "http" || scheme == "https",
-            let host = url.host,
-            !host.isEmpty
-        else { return false }
-        return true
+        guard let scheme = url.scheme?.lowercased() else { return false }
+        if scheme == "http" || scheme == "https" {
+            return url.host?.isEmpty == false
+        }
+        if scheme == "file" {
+            let host = url.host?.lowercased()
+            return (host == nil || host == "" || host == "localhost")
+                && url.path.hasPrefix("/")
+                && !url.path.isEmpty
+        }
+        return false
     }
 
     static func canonicalSheetURL(_ url: URL) -> URL {
         guard var components = URLComponents(url: url, resolvingAgainstBaseURL: false) else {
             return url
+        }
+        if components.scheme?.lowercased() == "file" {
+            components.scheme = "file"
+            if components.host?.lowercased() == "localhost" {
+                components.host = ""
+            }
+            return components.url ?? url
         }
         normalize(&components)
         return components.url ?? url
@@ -25,5 +37,22 @@ enum SheetURLPolicy {
         if components.path.isEmpty {
             components.path = "/"
         }
+    }
+}
+
+extension WKWebView {
+    @discardableResult
+    func loadSheetURL(_ url: URL) -> WKNavigation? {
+        guard url.isFileURL else { return load(URLRequest(url: url)) }
+
+        var components = URLComponents(url: url, resolvingAgainstBaseURL: false)
+        components?.query = nil
+        components?.fragment = nil
+        let resourceURL = components?.url ?? url
+        let readAccessURL =
+            resourceURL.hasDirectoryPath
+            ? resourceURL
+            : resourceURL.deletingLastPathComponent()
+        return loadFileURL(url, allowingReadAccessTo: readAccessURL)
     }
 }

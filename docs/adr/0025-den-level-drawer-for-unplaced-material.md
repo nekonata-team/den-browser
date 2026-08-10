@@ -54,7 +54,7 @@ Future media support must not turn the initial design into a speculative generic
 - Discarding an expanded Preview advances to the next visible Drawer Item's Preview, or the previous visible Item when the discarded Item was last; discarding a non-expanded Item does not change the current Preview.
 - Placement creates a Board to the right of the Focused Board, focuses it, removes the Drawer Item, and closes the Drawer.
 - Keeping a Current Sheet in the Drawer copies its URL and label with independent identity without opening the Drawer. The source Board remains unchanged.
-- Option-clicking an HTTP or HTTPS link in a Current Sheet captures it as a new Drawer Item without opening the Drawer or changing the Current Sheet, Focused Board, or Desk layout.
+- Option-clicking a supported HTTP, HTTPS, or local file link in a Current Sheet captures it as a new Drawer Item without opening the Drawer or changing the Current Sheet, Focused Board, or Desk layout. Local file URL support follows [ADR 0033](./0033-support-local-file-sheet-urls.md).
 - URL, title, and the expanded Drawer Item identity persist. Live WebKit state does not; opening a Drawer after relaunch creates a new runtime from the persisted URL.
 - New items appear first. Duplicate URLs remain separate items.
 - The expanded Preview remains selected across Desk changes.

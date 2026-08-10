@@ -197,6 +197,8 @@ private func noOpSheetNavigationActions() -> SheetNavigationManager.Actions {
         onFocusFirstBoard: {},
         onFocusLastBoard: {},
         onGoToFirstSheet: {},
-        onGoToLatestSheet: {}
+        onGoToLatestSheet: {},
+        isSupportedSheetURL: SheetURLPolicy.isSupported,
+        onNavigateCurrentSheet: { _ in }
     )
 }
