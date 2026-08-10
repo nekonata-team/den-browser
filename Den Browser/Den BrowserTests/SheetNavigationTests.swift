@@ -623,6 +623,14 @@ struct SheetNavigationTests {
         await waiter.load("<html>Current Sheet</html>", baseURL: URL(string: "https://example.com/")!, in: webView)
 
         try await dispatchSheetKey("g", in: webView)
+        try await dispatchSheetKey("T", shift: true, in: webView)
+        #expect(store.focusedDesk?.focusedBoardID == boards[0].id)
+
+        try await dispatchSheetKey("g", in: webView)
+        try await dispatchSheetKey("t", in: webView)
+        #expect(store.focusedDesk?.focusedBoardID == boards[2].id)
+
+        try await dispatchSheetKey("g", in: webView)
         try await dispatchSheetKey("0", in: webView)
         #expect(store.focusedDesk?.focusedBoardID == boards[0].id)
 
@@ -779,6 +787,8 @@ struct SheetNavigationTests {
             onRestoreBoard: {},
             onFocusFirstBoard: {},
             onFocusLastBoard: {},
+            onFocusPreviousBoard: {},
+            onFocusNextBoard: {},
             onGoToFirstSheet: {},
             onGoToLatestSheet: {},
             isSupportedSheetURL: SheetURLPolicy.isSupported,

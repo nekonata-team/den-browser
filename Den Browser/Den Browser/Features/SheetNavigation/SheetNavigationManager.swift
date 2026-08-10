@@ -28,6 +28,8 @@ final class SheetNavigationManager {
         var onRestoreBoard: () -> Void = {}
         var onFocusFirstBoard: () -> Void = {}
         var onFocusLastBoard: () -> Void = {}
+        var onFocusPreviousBoard: () -> Void = {}
+        var onFocusNextBoard: () -> Void = {}
         var onGoToFirstSheet: () -> Void = {}
         var onGoToLatestSheet: () -> Void = {}
         var isSupportedSheetURL: (URL) -> Bool = { _ in false }
@@ -273,6 +275,18 @@ final class SheetNavigationManager {
             return true
         case "focusLastBoard":
             guard let action = actionsByWebView[ObjectIdentifier(webView)]?.onFocusLastBoard else {
+                return false
+            }
+            action()
+            return true
+        case "focusPreviousBoard":
+            guard let action = actionsByWebView[ObjectIdentifier(webView)]?.onFocusPreviousBoard else {
+                return false
+            }
+            action()
+            return true
+        case "focusNextBoard":
+            guard let action = actionsByWebView[ObjectIdentifier(webView)]?.onFocusNextBoard else {
                 return false
             }
             action()

@@ -36,6 +36,7 @@ A numeric prefix repeats relative scrolling commands. For example, `5j`, `3k`, a
 
 | Keys | Action |
 | --- | --- |
+| `gt` / `gT` | Focus the next / previous Board in the current Desk. |
 | `g0` / `g$` | Focus the first / last Board in the current Desk. |
 | `g[` / `g]` | Return to the First / latest Sheet in the focused Board. |
 | `H` / `L` | Move backward / forward in the Sheet Stack. |

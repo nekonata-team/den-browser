@@ -68,6 +68,14 @@ extension DenStore {
                 onFocusLastBoard: { [weak self] in
                     self?.focusLastBoardInDesk(containing: board.id)
                 },
+                onFocusPreviousBoard: { [weak self] in
+                    self?.focusBoard(board.id)
+                    self?.focusPreviousBoard()
+                },
+                onFocusNextBoard: { [weak self] in
+                    self?.focusBoard(board.id)
+                    self?.focusNextBoard()
+                },
                 onGoToFirstSheet: { [weak self] in
                     self?.goToFirstSheetInBoard(board.id)
                 },
