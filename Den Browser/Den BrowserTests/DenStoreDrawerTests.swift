@@ -421,7 +421,7 @@ struct DenStoreDrawerTests {
         #expect(store.drawerQuery.isEmpty)
     }
 
-    @Test func denModeKeyboardControlsDiscardDrawerItemWithXAndD() throws {
+    @Test func denModeKeyboardControlsDiscardDrawerItemWithD() throws {
         let source = desk("Desk")
         let store = DenStore(state: DenState(desks: [source], focusedDeskID: source.id))
         store.keepInDrawer(try #require(URL(string: "https://first.example/")))
@@ -431,6 +431,8 @@ struct DenStoreDrawerTests {
         #expect(store.isDrawerOpen)
         #expect(store.state.drawerItems.count == 2)
         #expect(KeyboardController.handle(try keyEvent("x", keyCode: 7), store: store))
+        #expect(store.state.drawerItems.count == 2)
+        #expect(KeyboardController.handle(try keyEvent("d", keyCode: 2), store: store))
         #expect(store.state.drawerItems.count == 1)
         #expect(KeyboardController.handle(try keyEvent("d", keyCode: 2), store: store))
         #expect(store.state.drawerItems.isEmpty)

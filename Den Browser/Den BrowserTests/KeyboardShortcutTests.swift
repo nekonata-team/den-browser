@@ -441,12 +441,14 @@ struct KeyboardShortcutTests {
     @Test func denModeUnmappedKeyIsConsumedByRouter() throws {
         let store = makeStore(boards: [board("First")])
         store.isDenMode = true
-        let unmapped = try keyEvent(
-            characters: "v", charactersIgnoringModifiers: "v", modifiers: [], keyCode: 9)
+        for character in ["v", "x"] {
+            let unmapped = try keyEvent(
+                characters: character, charactersIgnoringModifiers: character, modifiers: [], keyCode: 9)
 
-        #expect(
-            KeyboardController.decision(for: unmapped, store: store)
-                == .consume(.denModeUnmapped))
+            #expect(
+                KeyboardController.decision(for: unmapped, store: store)
+                    == .consume(.denModeUnmapped))
+        }
     }
 
     @Test func hardReloadCurrentSheetShortcutReloadsOnlyFocusedBoard() throws {

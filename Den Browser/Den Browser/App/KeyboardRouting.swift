@@ -393,7 +393,7 @@ enum KeyboardRouter {
                 case "j": .selectDrawerItem(1)
                 case "k": .selectDrawerItem(-1)
                 case "p": .placeSelectedDrawerItemAsBoard
-                case "x", "d": .discardSelectedDrawerItem
+                case "d": .discardSelectedDrawerItem
                 default:
                     switch event.key {
                     case .downArrow: .selectDrawerItem(1)
@@ -527,7 +527,6 @@ enum KeyboardRouter {
         binding("s", modifiers: [.shift]): KeyboardCommand(action: .captureFocusedDesk, repeatPolicy: .ignore),
         binding("a"): KeyboardCommand(action: .keepCurrentSheetInDrawer, repeatPolicy: .ignore),
         binding("z"): KeyboardCommand(action: .toggleZenView, repeatPolicy: .ignore),
-        binding("x"): KeyboardCommand(action: .removeBoard, repeatPolicy: .ignore),
         binding("u"): KeyboardCommand(action: .restoreBoard, repeatPolicy: .ignore),
         binding("r"): KeyboardCommand(action: .showRenameBoardPanel, repeatPolicy: .ignore),
         binding("r", modifiers: [.shift]): KeyboardCommand(action: .showRenameDeskPanel, repeatPolicy: .ignore),
