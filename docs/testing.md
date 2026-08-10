@@ -1,6 +1,6 @@
 # Testing
 
-Den Browser uses automated tests for stable product behavior and exploratory human validation for areas where automation is not reliable. The concrete PoC acceptance criteria live in [poc.md](./poc.md).
+Den Browser uses automated tests for stable product behavior and exploratory human validation for areas where automation is not reliable. The outcome-level PoC criteria live in [poc.md](./poc.md); this document defines the validation boundary rather than providing an exhaustive operation checklist.
 
 ## Responsibilities
 
@@ -71,4 +71,5 @@ just check
 
 Before merge, use this standard order: build and unit tests, applicable UI tests, code review, then merge. Add
 exploratory validation when warranted, such as for UI behavior changes or milestone acceptance; use
-[poc.md](./poc.md) as the source of truth for concrete criteria.
+[poc.md](./poc.md) as the source of truth for outcome-level PoC criteria. Do not add step-by-step procedures to
+that document; turn reproducible findings into automated tests or tracked issues.

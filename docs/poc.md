@@ -1,199 +1,47 @@
-# PoC Criteria
+# PoC Decision
 
-Den Browser's first PoC validates whether a macOS WKWebView implementation can support the Den interaction model.
+## Question
 
-## Must pass
+Can a macOS `WKWebView` implementation support Den's interaction model for long-running web work?
+
+This document defines outcome-level PoC criteria. Validation procedures belong in tests or exploratory sessions.
+
+## Success criteria
 
 - ChatGPT, Gemini, and Claude logins remain available after app restart.
 - Two Profiles can stay signed into different identities on the same site, and both identities survive restart.
-- Each Profile restores its own Den, and selecting an already-open Profile does not duplicate its window.
-- Six boards can be open at the same time.
-- Board navigation works from the keyboard without noticeable delay.
-- In-progress text inside each board remains available after moving between boards.
-- Back and forward navigation can be treated as a sheet stack.
-- App restart restores desks, board order, board labels, board widths, current sheet URLs, and the focused board, then shows that board without a scroll animation.
+- Each Profile restores its own Den without duplicating windows or mixing state.
+- Multiple Boards can remain open while keyboard input, focus changes, and Board navigation stay usable.
+- Moving between Boards or Desks preserves each Board's live Sheet state, including in-progress text.
+- The core Den workflow—opening a Board, selecting and moving between Boards and Desks, focusing its Sheet, and removing a Board—can be completed with pointer-only input and keyboard-only input.
+- App restart restores Desks, Board order, Board labels, Board widths, Current Sheet URLs, and focused Board.
+- Back and forward navigation can be treated as a Sheet stack.
+- Web, Terminal, and Zellij Boards can coexist with the same Den lifecycle and persistence model.
+- The Drawer, Desk, and Profile boundaries remain reliable during ordinary long-running work.
 
-## Performance targets
+## Constraints
 
-- Text input stays responsive with six boards open.
-- Board navigation feels immediate, targeting roughly 100 ms or less.
-- CPU does not stay high after 30 minutes idle with six boards open.
-- Memory usage stays within a practical range for daily use. The acceptable range should be set after the first measurement pass.
+- Den controls must remain usable while a Sheet has WebKit focus.
+- Persisted `DenState` must remain separate from live `BoardRuntime` and `WKWebView` objects.
+- WebKit-specific behavior, authentication, IME, rendering, and resource use require exploratory validation in addition to automated tests.
 
-## Design checks
+## Evidence
 
-- Liquid Glass controls remain legible over live WKWebView content.
-- Den controls use Liquid Glass as a floating navigation/control layer, not as decoration over sheet content.
-- Reduced transparency, increased contrast, and reduced motion settings keep the interface usable.
-- Focused board and keyboard focus indicators are clear without relying only on color.
-- The titlebar exposes the Profile name, and the top-right Profile icon exposes it through an accessibility label and help text; Profile identity does not depend on color.
-
-## Motion validation
-
-1. Select Follow System and confirm Den motion follows the current macOS Reduce Motion setting.
-2. Select Standard Motion and confirm Board movement remains smooth even when macOS Reduce Motion is enabled.
-3. Select Reduced Motion and confirm spatial motion stops while brief opacity feedback remains.
-4. Relaunch the app and switch Profiles; confirm the selected Motion preference persists and remains shared.
-5. Move focus across two or more Boards in quick succession; confirm scrolling retargets smoothly without snapping.
-
-## Board Width validation
-
-1. Open at least four Boards with different widths. In Den Mode, press `w`, then `3`; confirm every Board in the Focused Desk receives the same persistent width, three Boards and their gaps fit the current window, the Focused Board stays focused and centers, and other Desks remain unchanged.
-2. Move the window to a differently sized display and confirm Board Widths do not automatically change. Run `w`, then `3` again and confirm widths recalculate from the new window.
-3. Temporarily maximize the Focused Board with `f`, run the bulk resize, and confirm maximization clears.
-4. Resize the window while the Board Width panel is open and confirm available counts and displayed widths update. Confirm unsupported counts do not alter any Board.
-5. Repeat with Standard Motion and Reduced Motion. Confirm simultaneous `WKWebView` resizing stays responsive and Reduced Motion removes spatial animation.
-6. On a window wider than 1420 points, choose `1 Board` and confirm it remains available and uses the full width even though individual Board resizing retains its separate 1400-point safety limit.
-
-## Profile validation
-
-1. Create a second Profile, open the same site in both Profiles, and sign in as different identities.
-2. Quit and relaunch; confirm both sign-ins and each Profile's Desks, Boards, URLs, widths, and focus restore independently.
-3. Select the same Profile repeatedly from the chip, Profile menu, and `Control` + `Command` + `P`; confirm only one Den window exists.
-4. Change Vim-style Sheet Navigation settings and confirm open Sheets in both Profiles update without reloading.
-5. Delete the second Profile; confirm its window closes and its Den and website data disappear while Personal remains.
-6. With VoiceOver, confirm the Profile icon announces its name and does not rely on color alone.
-
-## Download validation
-
-1. Download an ordinary linked file from a Current Sheet. Confirm the macOS save panel uses the suggested filename, the file is written to the chosen location, and Den reports completion.
-2. Repeat with an HTML `download` attribute, a Blob URL, a `Content-Disposition: attachment` response, and a MIME type WebKit cannot display.
-3. Cancel the save panel and confirm no file or error notification appears.
-4. Choose an existing filename, confirm replacement, and verify the new file replaces it.
-5. Trigger a failed download and confirm Den reports the failure without changing the Current Sheet or persisted `DenState`.
-6. Download from an authenticated site and confirm the Current Sheet's Profile session is used.
-
-## Local file Sheet validation
-
-1. Enter an absolute `file:///` URL for a local HTML file in Open Board. Confirm its HTML and sibling CSS, JavaScript, images, and nested resources within the same directory render without a file picker.
-2. Confirm a normal local link navigates in the Sheet, Command-click opens a background Board, Shift-Command-click focuses the new Board, and Option-click keeps the link in the Drawer. Repeat the new-Board and Drawer operations with Vim-style Sheet Navigation.
-3. Confirm the local file URL appears in Recent, survives Board removal and restoration, can be saved in a Personal Desk Preset, and restores after relaunch without persisting file contents or access bookmarks.
-4. Move or delete the file, relaunch, and confirm Den preserves the saved URL while WebKit reports the ordinary load failure. Restore the file and reload the Sheet.
-5. Confirm relative `file:` URLs and remote `file://host/` URLs are rejected. Confirm a local HTML file cannot read a resource outside the directory granted for that load.
-
-## Drawer validation
-
-1. Open two links from another application. Confirm both enter the active Profile's Drawer newest-first, the latest item expands into a live Preview, and the Focused Desk layout does not change.
-2. In Den Mode, use Tab to open and close the bottom Drawer. Confirm a closed Drawer does not cover or intercept a Board, then expand each accordion item and confirm only one live Preview remains at a time.
-3. Switch Desks while a Preview is expanded. Confirm the same Drawer Item remains visible and no Board moves between Desks.
-4. In Den Mode, use Tab to open the Drawer, press `/` to filter by title or URL, type a query including uppercase characters, and press Return to confirm it. Use Up / Down or `k` / `j` to select a visible Item, press Return again to expand or collapse its Preview, and press Escape to clear the filter. Also use `p`, `x` / `d` / Delete, and Tab to place an Item as a Board, discard an Item, and close the Drawer.
-5. Keep a Current Sheet in the Drawer from its Board header menu. Confirm the source Board and input context remain unchanged, and the Drawer stays closed.
-6. Enter transient state in a Preview, then close and reopen the Drawer; confirm the same live Preview and its state continue. Quit, relaunch, and open that Profile's Drawer; confirm a new live Preview runtime is created from the persisted URL. Repeat after collapsing the Preview and confirm it stays collapsed.
-
-## Focused Desk filter validation
-
-1. In Den Mode, press `/` and confirm a floating filter appears without moving or resizing the Boards. Search by Board Label and Current Sheet URL; confirm only matching Boards remain visible while the original Focused Board is unchanged.
-2. Press Return to finish typing, use Left / Right or `h` / `l` to select a matching Board, then press Return. Confirm all Boards return without restoration animation, the selected Board becomes the Focused Board using the configured centering animation, then Den returns to Sheet Input. Uppercase characters must reach the filter field while typing.
-3. Repeat the filter and press Escape. Confirm all Boards return, the original Focused Board remains focused, and Den Mode stays active.
-
-## Shortcut and Zen View validation
-
-1. In Settings > Shortcuts, record a new binding for each app-wide action and confirm it applies immediately while the Den window is active.
-2. Confirm an unmodified key, an existing menu shortcut, and a binding already assigned to another action are rejected. Confirm Escape cancels recording.
-3. Clear each optional Board focus and movement shortcut. Confirm Toggle Den Mode cannot be cleared. Reset one shortcut, then Reset All, and confirm the defaults return.
-4. Open the complete shortcut guide from Settings, the Den menu, and `?` in Den Mode. Confirm it shows current custom bindings and that `?` or Escape closes the Den Mode guide.
-5. In Den Mode, confirm both `n` and Space open the Board panel.
-6. Press `z` in Den Mode. Confirm the Desk switcher and Profile control hide together, the titlebar stays visible, and pressing `z` again restores both. Confirm the choice is window-local and is not restored after relaunch.
-7. Press `Command` + `W` from Sheet Input and Den Mode and confirm it closes the Focused Board. Press `Shift` + `Command` + `W` and confirm it closes the Profile window. Confirm `Command` + `W` still closes Settings.
-
-## Screenshot validation
-
-1. Press `s` in Den Mode and save the PNG. Confirm it contains the visible web content of the Focused Board's Current Sheet without Board chrome or offscreen scroll content.
-2. Press Shift + `s` and save the PNG. Confirm every Board in the Focused Desk appears once, in Board order, with its label and relative width preserved even when the Desk overflows the window.
-3. Repeat both actions from the Den menu and the relevant Board or Desk context menu. Cancel the save panel and confirm no file is written and Den Mode remains active.
-4. Capture a Desk wider than 16,384 points and confirm the output scales down proportionally without changing Board order.
-
-## Board movement and restoration validation
-
-1. Drag a Board by its header label or empty area. Confirm it lifts immediately, keeps focus, clears temporary maximization, and reorders only after its center crosses a neighboring Board's center.
-2. Confirm header navigation and remove buttons do not begin a drag. Confirm the cursor changes over draggable header space.
-3. Drag near both horizontal edges and confirm the Board strip auto-scrolls. Drop outside the strip, press Escape, switch Desk, and deactivate the window in separate attempts; confirm each cancels without saving an intermediate order.
-4. Repeat with Reduced Motion. Confirm the Board follows the pointer while neighboring Boards and cancellation do not use spatial animation.
-5. Remove Boards with `x`, `d`, `Command` + `W`, and the header button. Confirm each releases its `WKWebView`, replaces the Profile's single Recently Removed Board, and ignores key repeat.
-6. Press `u`; confirm the same Board identity, label, width, Current Sheet URL, former Desk, and former position return with a new `WKWebView`. Confirm the Sheet Stack, page state, and temporary maximization do not return.
-7. Delete the source Desk before restoration and confirm `u` restores the Board to the right of the Focused Board in the Focused Desk. Quit and relaunch and confirm the restoration candidate does not persist.
-
-## Terminal Board validation
-
-1. In Settings > Features > Terminal, enter the absolute path to the Zellij executable. Open the Command-T panel, enter `:terminal`, and confirm a Terminal Board opens to the right using the home directory. Repeat with `:terminal /tmp` and an invalid path; the invalid input must remain in the panel with an error.
-2. Enter `:zellij` and confirm the configured Zellij executable starts directly and shows the Welcome screen without an initial shell command appearing first. Choose a session or create one, restart Den, and confirm the same Zellij Board shows Welcome again because Welcome selection is owned by Zellij and is not inferred by Den.
-3. Enter `:zellij project-a` and confirm the configured executable attaches to the named session, creating it when absent. Restart Den and confirm the Board reconnects to `project-a`.
-4. Confirm successful `:terminal`, `:terminal ~`, `:zellij`, and `:zellij project-a` inputs appear in Recent. Confirm `:terminal` and `:terminal ~` share one Recent Item, Recent opens a new Board, invalid input stays in the panel without entering Recent, and a previously saved directory that is later removed remains in Recent while showing an error.
-5. Run an interactive Shell command, switch Desks, and return. Confirm the process and scrollback remain while the hidden surface does not keep rendering.
-6. Confirm Japanese IME, selection, Command-C, Command-V, resizing, pointer focus, Den Mode, Board movement, and Overview work without visible input lag.
-7. Run `exit` and confirm the Board disappears. Remove an active Terminal Board and confirm its process ends without confirmation; restore it and confirm a new Shell starts from the saved Working Directory.
-8. Duplicate an ordinary Terminal Board and apply a Desk Preset containing a Terminal or Zellij Board. Confirm the restored content follows its kind: an independent Shell for a Terminal Board, and the persisted Zellij session behavior for a Zellij Board.
-9. Cmd-click an HTTP(S) link and confirm a background Web Board appears immediately to the right.
-10. Place eight Terminal Boards across three Desks, keep two producing output for ten minutes, and confirm Den actions stay responsive with no state loss or crash.
-11. Set a bundled Ghostty theme by name and confirm its colors apply. Repeat with separate light/dark names.
-
-## Board context menu validation
-
-1. Right-click and Control-click the label, empty area, and each button in an unfocused Board header. Confirm the Board becomes focused before the native context menu appears, remains focused after dismissal, and ordinary left-click and drag behavior stays unchanged.
-2. Confirm the menu is available in Sheet Input, Den Mode, Zen View, and while the Board is maximized. Confirm it is unavailable during Board dragging, Overview, and temporary panels.
-3. Exercise Duplicate Current Sheet, Reload Current Sheet, Maximize Board / Restore Board Size, and Center Board. Confirm every action targets the right-clicked Board even when it was previously unfocused.
-4. Confirm Move Board Left and Move Board Right remain visible but disable at their respective Desk edges and both disable for a one-Board Desk.
-5. With multiple Desks, confirm Move to Desk excludes the current Desk, labels destinations with their one-based number and label, inserts after the destination's Focused Board, then focuses the moved Board in that Desk.
-6. Confirm Remove Board is destructive-styled, does not ask for confirmation, and creates the normal Recently Removed Board candidate. Confirm the menu shows icons but no key equivalents.
-7. Right-click inside a Sheet and confirm the website's context menu remains unchanged.
-
-## Desk deletion validation
-
-1. Delete an empty Desk and confirm it disappears immediately.
-2. Delete a Desk containing Boards, cancel the confirmation, and confirm the Desk and its Boards remain.
-3. Delete it again, confirm the warning, and verify the Desk and its Boards disappear. Confirm the last Desk cannot be deleted.
-
-## Desk Preset validation
-
-1. Save a Desk containing Boards with different Labels, Widths, Current Sheet URLs, and a non-first Focused Board. Confirm the bookmark button, Den menu, and `p` in Den Mode open the same panel. Confirm an empty Desk exposes no save action and `b` has no Preset action.
-2. Relaunch and confirm the Personal Desk Preset remains only in its owning Profile. Create a Desk from it and confirm Board order, Labels, Widths, exact URLs, and initial focus match while Desk and Board identities are new.
-3. Confirm New Desk focuses Preset search with Empty active. Type fuzzy queries against Preset Labels, Board Labels, and URL hosts; use Up and Down to change the active result. Confirm one remaining result becomes active without auto-confirming. Press Return or Tab to confirm it and focus its fully selected initial Desk Label, edit the label, then press Return to create. Confirm Escape from the label returns to Preset selection and a second Escape closes the panel.
-4. Save another Desk under the same Personal Desk Preset Label. Cancel replacement once, then confirm it. Verify the preset keeps its list position while its captured Boards change and existing Desks remain unchanged.
-5. In Manage Presets, search for and delete a preset after confirmation. Verify existing Desks remain unchanged and deleting the selected preset returns selection to Empty.
-6. Create ChatGPT and Gemini Desks. Confirm each creates three 520-point Boards, uses the expected site URL, and focuses the first Board.
-7. Open `Replace Desk…` from a populated Desk's context menu. Confirm Empty is absent, choose a Preset, edit the Desk Label, cancel the destructive confirmation once, then confirm it. Verify the Desk identity and position remain, old Board runtimes and live Sheet state end, new Board identities and Preset layout appear, and Drawer plus Recently Removed Board remain unchanged.
-8. Replace an empty Desk and confirm the Preset applies without a destructive confirmation.
-
-## Vim-style Sheet navigation experiment
-
-The Vimium C 2.12.2 experiment using `WKWebExtension` did not produce usable keyboard navigation in sheets. Loading the extension context succeeded, but its Chrome-oriented background runtime did not provide working Vimium behavior in Den Browser.
-
-The PoC will instead validate a small first-party implementation of Vim-style Sheet Navigation. It is an optional Feature, disabled by default, and is limited to interaction within the current sheet; Den Mode remains responsible for desks and boards.
-
-In Normal mode, `f` opens hints and `Space` is its body-focus-only alias. Editable controls retain ordinary Space input, and a focused link or button retains ordinary Space activation. `F` opens a hinted link as a new Board. `Escape` cancels active hints. The PoC does not preserve Space-to-scroll while Normal mode is active.
-
-Hints cover visible standard actionable elements: links, buttons, form controls, and elements with `role="button"`. The PoC uses standard selectors and does not infer clickability from arbitrary page script or styling.
-
-Focusing an editable control enters Insert state. Outside IME composition, `Escape` blurs that control and returns to Normal state. During IME composition, `Escape` remains available to the IME; a later `Escape` exits the editable control. When hints are visible, `Escape` only cancels the hints.
-
-Hint labels use the configurable hint alphabet, defaulting to the home-row keys `asdfghjkl`. Labels grow to multiple characters as needed. Completing a unique label performs the element's ordinary activation in the Current Sheet, or opens a link as a new Board after `F`.
-
-Settings exposes the hint alphabet as a string. It defaults to `asdfghjkl`, accepts ASCII letters and digits, lowercases letters, removes duplicates, and requires at least two distinct characters. Invalid input is shown as an error and is not persisted. Settings also accepts Ignored Sites, one hostname or URL per line. URLs are reduced to hostnames, duplicates are removed, and each hostname covers its subdomains.
-
-Each `Space` invocation discovers eligible elements from the current viewport, so dynamic pages are supported without a mutation observer. Hidden and disabled elements are excluded. iframe contents and Shadow DOM are outside this PoC.
-
-Feature enablement and hint-alphabet changes apply immediately to open sheets without reloading them. Disabling the Feature removes active hints and makes its key handling dormant. The same settings apply to future sheets and navigations.
-
-In Normal state, `j` / `k` and `h` / `l` scroll by about 60 points, `d` / `u` scroll by half a viewport, `gg` / `G` move to vertical edges, and `0` / `$` and `zH` / `zL` move to horizontal edges. Numeric prefixes multiply relative movement. `H` / `L`, `r`, `gu` / `gU`, `yy`, and `/` with `n` / `N` provide Sheet Stack, URL, clipboard, and find operations. The target is the scrollable area beneath the viewport center, falling back to the Sheet's main scrolling element. Insert state and key presses with Command, Option, or Control remain available to the Sheet.
-
-The implementation is one small first-party JavaScript resource. The Vimium C archive, third-party source, and `WKWebExtension` integration are removed. Swift is responsible only for persisted settings and applying configuration to live sheets.
-
-Validate the Feature on a general page and in ChatGPT:
-
-1. Enable it in Settings and confirm relative, half-viewport, edge, and counted scrolling commands affect the Sheet or its central scrollable area.
-2. Press `f` or `Space`, type a displayed label, and confirm the target receives its ordinary activation. Press `F` and confirm a hinted link opens as a new Board.
-3. Focus a text field and confirm Space remains text input; press `Escape` and confirm focus leaves the field and hints can then start.
-4. During Japanese IME composition, confirm `Escape` remains available to the IME and a later `Escape` leaves the field.
-5. Change the hint alphabet and confirm the next invocation uses it without reloading the Sheet.
-6. Disable the Feature and confirm active hints disappear and the page receives its keys again.
-7. Add the current hostname to Ignored Sites and confirm the page receives its keys without reloading; remove it and confirm navigation resumes.
-8. Confirm `H` / `L`, `r`, `gu` / `gU`, `yy`, `/`, and `n` / `N` perform their documented actions.
+- Stable state transitions, persistence, parsing, and lifecycle behavior are covered by unit tests.
+- Native SwiftUI workflows are covered by focused UI tests.
+- WebKit integration, external authentication, visual behavior, IME, and long-running resource use are checked exploratorily.
+- The test responsibilities and validation boundaries are defined in [testing.md](./testing.md).
 
 ## Fail conditions
 
-- AI chat logins do not persist across app restarts.
-- ChatGPT, Gemini, or Claude is not usable in WKWebView.
-- Three to six boards make input or board navigation clearly sluggish.
+- AI chat logins cannot be kept across app restarts.
 - Den shortcuts cannot work reliably while web content has focus.
-- WKWebView constraints create a major hole in the core desk, board, or sheet experience.
-- Liquid Glass overlays cannot remain legible or accessible over embedded WKWebView content.
+- WebKit constraints create a major hole in the core Desk, Board, or Sheet experience.
+- Multiple Boards make ordinary interaction clearly unusable.
+- Liquid Glass overlays cannot remain legible or accessible over embedded WebKit content.
+
+## Decision
+
+Status: In progress.
+
+Continue the PoC while the success criteria hold. Revisit the interaction model when a fail condition affects the core Den experience.
