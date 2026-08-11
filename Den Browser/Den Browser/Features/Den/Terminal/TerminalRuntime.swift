@@ -37,6 +37,7 @@ final class TerminalRuntime: NSObject, ObservableObject {
     func dispose() {
         guard !isDisposed else { return }
         isDisposed = true
+        terminalView.setSurfaceVisible(false)
         terminalView.delegate = nil
         terminalView.controller = nil
         controller = nil
