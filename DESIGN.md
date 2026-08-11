@@ -47,6 +47,14 @@ Den controls feel like a calm desk laid over live web sheets. Web content remain
 - Motion defaults to following the macOS Reduce Motion setting. Preferences can explicitly select Standard Motion or Reduced Motion for Den.
 - Reduced Motion removes spatial animation while preserving brief opacity feedback.
 
+## Transient feedback
+
+Use a Toast when an app-owned operation has no otherwise visible result, or when its failure or blocked state needs explanation.
+
+Do not use a Toast when the result is already communicated by visible UI state, such as changed content, focus, navigation, selection, or layout.
+
+Keep Toasts concise and non-blocking. Prefer direct UI state for persistent or actionable feedback.
+
 ## Zen View
 
 - Zen View hides the native titlebar, Desk switcher, Desk Preset bookmark action, and Profile control together, without hiding controls inside Boards.
