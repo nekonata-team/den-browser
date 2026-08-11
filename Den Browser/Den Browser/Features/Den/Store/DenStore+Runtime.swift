@@ -59,6 +59,9 @@ extension DenStore {
                 onRemoveBoard: { [weak self] in
                     self?.removeBoard(board.id)
                 },
+                onRemoveBoardAndFocusNext: { [weak self] in
+                    self?.removeBoard(board.id, focusNext: true)
+                },
                 onRestoreBoard: { [weak self] in
                     self?.restoreRecentlyRemovedBoard()
                 },

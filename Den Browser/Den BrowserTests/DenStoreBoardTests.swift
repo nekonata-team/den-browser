@@ -409,6 +409,23 @@ struct DenStoreBoardTests {
         }
     }
 
+    @Test func removingBoardCanPreferNextBoard() {
+        let boards = [board("A"), board("B"), board("C")]
+        withStore(desks: [desk("Desk", boards: boards, focusedBoardID: boards[1].id)]) { store in
+            store.removeBoard(boards[1].id, focusNext: true)
+
+            #expect(store.focusedDesk?.boards.map(\.id) == [boards[0].id, boards[2].id])
+            #expect(store.focusedDesk?.focusedBoardID == boards[2].id)
+        }
+
+        let lastBoards = [board("A"), board("B")]
+        withStore(desks: [desk("Desk", boards: lastBoards, focusedBoardID: lastBoards[1].id)]) { store in
+            store.removeBoard(lastBoards[1].id, focusNext: true)
+
+            #expect(store.focusedDesk?.focusedBoardID == lastBoards[0].id)
+        }
+    }
+
     @Test func removingUnfocusedBoardKeepsFocus() {
         let boards = [board("A"), board("B"), board("C")]
         withStore(desks: [desk("Desk", boards: boards, focusedBoardID: boards[1].id)]) { store in

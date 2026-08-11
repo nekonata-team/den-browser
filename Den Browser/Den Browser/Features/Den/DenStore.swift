@@ -330,15 +330,20 @@ final class DenStore {
     }
 
     @discardableResult
-    func removeBoard(at indices: (desk: Int, board: Int)) -> BoardState {
+    func removeBoard(at indices: (desk: Int, board: Int), focusNext: Bool = false) -> BoardState {
         let board = state.desks[indices.desk].boards.remove(at: indices.board)
         let boards = state.desks[indices.desk].boards
         guard state.desks[indices.desk].focusedBoardID == board.id else { return board }
 
-        state.desks[indices.desk].focusedBoardID =
-            indices.board > 0
-            ? boards[indices.board - 1].id
-            : boards.first?.id
+        let focusedBoardID: UUID?
+        if focusNext && indices.board < boards.count {
+            focusedBoardID = boards[indices.board].id
+        } else if indices.board > 0 {
+            focusedBoardID = boards[indices.board - 1].id
+        } else {
+            focusedBoardID = boards.first?.id
+        }
+        state.desks[indices.desk].focusedBoardID = focusedBoardID
         return board
     }
 

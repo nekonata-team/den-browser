@@ -25,6 +25,7 @@ final class SheetNavigationManager {
         var onOpenBoardPanel: () -> Void = {}
         var onShowOverview: () -> Void = {}
         var onRemoveBoard: () -> Void = {}
+        var onRemoveBoardAndFocusNext: () -> Void = {}
         var onRestoreBoard: () -> Void = {}
         var onFocusFirstBoard: () -> Void = {}
         var onFocusLastBoard: () -> Void = {}
@@ -261,6 +262,12 @@ final class SheetNavigationManager {
             return true
         case "removeBoard":
             guard let action = actionsByWebView[ObjectIdentifier(webView)]?.onRemoveBoard else { return false }
+            action()
+            return true
+        case "removeBoardAndFocusNext":
+            guard let action = actionsByWebView[ObjectIdentifier(webView)]?.onRemoveBoardAndFocusNext else {
+                return false
+            }
             action()
             return true
         case "restoreBoard":

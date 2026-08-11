@@ -259,6 +259,7 @@ private func noOpSheetNavigationActions() -> SheetNavigationManager.Actions {
         onOpenBoardPanel: {},
         onShowOverview: {},
         onRemoveBoard: {},
+        onRemoveBoardAndFocusNext: {},
         onRestoreBoard: {},
         onFocusFirstBoard: {},
         onFocusLastBoard: {},

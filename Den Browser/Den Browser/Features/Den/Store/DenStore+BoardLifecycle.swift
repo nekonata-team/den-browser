@@ -237,9 +237,9 @@ extension DenStore {
         removeBoard(boardID)
     }
 
-    func removeBoard(_ boardID: UUID) {
+    func removeBoard(_ boardID: UUID, focusNext: Bool = false) {
         guard let indices = boardIndices(for: boardID) else { return }
-        let board = removeBoard(at: indices)
+        let board = removeBoard(at: indices, focusNext: focusNext)
         recentlyRemovedBoard = RecentlyRemovedBoard(
             board: board,
             sourceDeskID: state.desks[indices.desk].id,

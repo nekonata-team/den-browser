@@ -76,7 +76,8 @@ struct BoardStrip: View {
             boardID: store.focusedDesk?.focusedBoardID,
             centersFocusedBoard: shouldCenterFocusedBoard,
             restingScrollX: restingScrollX,
-            isDeskFilterPresented: store.isDeskFilterPresented
+            isDeskFilterPresented: store.isDeskFilterPresented,
+            layoutKey: layoutKey
         )
 
         return ScrollView(.horizontal) {
@@ -202,12 +203,17 @@ struct BoardStrip: View {
                 }
                 return
             }
-            alignBoardStrip(
-                centersFocusedBoard: current.centersFocusedBoard,
-                boardID: current.boardID,
-                restingScrollX: current.restingScrollX,
-                animated: previous.deskID == current.deskID
-            )
+            let animated = previous.deskID == current.deskID
+            if current.centersFocusedBoard, previous.layoutKey != current.layoutKey {
+                deferBoardCentering(current.boardID, animated: animated)
+            } else {
+                alignBoardStrip(
+                    centersFocusedBoard: current.centersFocusedBoard,
+                    boardID: current.boardID,
+                    restingScrollX: current.restingScrollX,
+                    animated: animated
+                )
+            }
         }
         .onChange(of: store.centerFocusedBoardRequest) { _, _ in
             guard let boardID = store.focusedDesk?.focusedBoardID else { return }
@@ -438,6 +444,17 @@ struct BoardStrip: View {
         performBoardCentering(boardID, animated: animated)
     }
 
+    private func deferBoardCentering(_ boardID: UUID?, animated: Bool) {
+        guard let boardID else { return }
+        pendingBoardCentering = PendingBoardCentering(boardID: boardID, animated: animated)
+        boardCenteringTask?.cancel()
+        boardCenteringTask = Task { @MainActor in
+            await Task.yield()
+            guard !Task.isCancelled else { return }
+            settlePendingBoardCentering(in: boardFrames)
+        }
+    }
+
     private func performBoardCentering(_ boardID: UUID, animated: Bool) {
         guard let frame = boardFrames[boardID] else { return }
         let targetOffsetX = scrollGeometry.offsetX + frame.midX - size.width / 2
@@ -493,12 +510,13 @@ struct BoardStrip: View {
     }
 }
 
-struct BoardStripAlignmentTarget: Equatable {
+private struct BoardStripAlignmentTarget: Equatable {
     let deskID: UUID?
     let boardID: UUID?
     let centersFocusedBoard: Bool
     let restingScrollX: CGFloat
     let isDeskFilterPresented: Bool
+    let layoutKey: BoardStripLayoutKey
 }
 
 private struct PendingBoardCentering {
