@@ -55,9 +55,9 @@ just release publish X.Y.Z
 ```
 
 This commits and pushes the version change, creates and pushes the annotated
-tag, creates a GitHub Release with the notarized ZIP artifact, opens the
-Homebrew Cask pull request, and enables rebase auto-merge. Release notes are
-intentionally left empty.
+tag, creates a GitHub Release with the notarized ZIP artifact and links to the
+tagged source, MPL 2.0 license, and third-party notices in its release notes,
+opens the Homebrew Cask pull request, and enables rebase auto-merge.
 
 Both orchestration commands stop at the first failure. The component commands
 remain available:

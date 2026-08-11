@@ -1,5 +1,8 @@
 # Third-party notices
 
+Den Browser's original source code is licensed under the [Mozilla Public License, version 2.0](./LICENSE).
+This file covers the bundled third-party software listed below.
+
 Den Browser includes the following MIT-licensed software:
 
 - [Ghostty](https://github.com/ghostty-org/ghostty), copyright © 2024 Mitchell Hashimoto and Ghostty contributors.

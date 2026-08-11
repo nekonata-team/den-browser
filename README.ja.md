@@ -80,3 +80,8 @@ just check
 - [docs/releasing.md](./docs/releasing.md): 署名付きリリース手順
 - [docs/adr](./docs/adr): プロダクトとアーキテクチャの意思決定
 - [THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md): 同梱ソフトウェアのライセンス
+
+## ライセンス
+
+Den Browserの自作コードは、[Mozilla Public License, version 2.0](./LICENSE)で提供します。
+Copyright (c) 2026 nekonata.

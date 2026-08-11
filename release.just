@@ -54,6 +54,15 @@ github $tag: (_validate-tag tag)
         exit 1
     }
 
+    source_url="https://github.com/nekonata-team/den-browser/tree/${tag}"
+    notes="Source code and licensing:"
+    notes+=$'\n\n'
+    notes+="- [Source code](${source_url})"
+    notes+=$'\n'
+    notes+="- [MPL 2.0 license](${source_url}/LICENSE)"
+    notes+=$'\n'
+    notes+="- [Third-party notices](${source_url}/THIRD_PARTY_NOTICES.md)"
+
     git tag -a "$tag" -m "Den Browser $version"
     git push origin "$tag"
 
@@ -61,7 +70,7 @@ github $tag: (_validate-tag tag)
         --repo nekonata-team/den-browser \
         --verify-tag \
         --title "$tag" \
-        --notes ""
+        --notes "$notes"
 
 # Update the Homebrew Cask and enable auto-merge.
 [confirm("Update Homebrew Cask?")]

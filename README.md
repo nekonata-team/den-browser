@@ -84,3 +84,8 @@ These commands disable code signing. Run `just --list` for the available tasks.
 - [docs/releasing.md](./docs/releasing.md): signed release workflow
 - [docs/adr](./docs/adr): product and architecture decisions
 - [THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md): bundled software licenses
+
+## License
+
+Den Browser's original source code is licensed under the [Mozilla Public License, version 2.0](./LICENSE).
+Copyright (c) 2026 nekonata.
