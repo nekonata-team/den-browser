@@ -40,6 +40,7 @@ The complete in-app guide is available from Settings, the Den menu, and `?` in D
 | `?` | Keyboard Shortcuts | Opens the complete guide; `?` or Escape closes it. |
 | `,` | Open Settings | Available in Den Mode. |
 | `z` | Toggle Zen View | Hides the native titlebar, Desk switcher, and Profile control for this window. Press `z` again to restore them. |
+| Shift + `f` | Toggle Focus Mode | Keeps the Focused Board's Sheet or Terminal surface clear and softly blurs other Board content. Remains active until toggled off. |
 | `[` / `]` | Back / forward in sheet stack | Uses focused board. |
 | Shift + `[` / Shift + `]` | First / latest Sheet | Shift + `[` loads the Focused Board's persisted First Sheet URL when present; Shift + `]` jumps to the latest Sheet retained in the live Sheet Stack. A Board without a First Sheet does nothing. |
 | `-` / `=` | Narrow / widen focused board | |

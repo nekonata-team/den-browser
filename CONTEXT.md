@@ -137,6 +137,10 @@ _Avoid_: Command mode, navigation mode
 A temporary Den presentation that hides Desk and Profile controls so Boards receive more display area. It does not change keyboard ownership or Sheet behavior.
 _Avoid_: Zen Mode, Compact Mode
 
+**Focus Mode**:
+A temporary Den presentation that keeps the Focused Board clear while visually de-emphasizing other Boards' Sheets and Terminal surfaces. It does not change Desk layout, Board focus, or keyboard ownership.
+_Avoid_: distraction-free mode
+
 **Den Mode Toggle**:
 The action that switches keyboard ownership between Sheet Input and Den Mode.
 _Avoid_: Leader, prefix, mode key

@@ -126,8 +126,13 @@ struct DenView<Header: View>: View {
         .navigationTitle(titlebarTitle)
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("den-content")
-        .accessibilityValue(store.isDenMode ? "Den Mode" : store.contentInputLabel)
+        .accessibilityValue(contentAccessibilityValue)
         .modifier(DenDialogs())
+    }
+
+    private var contentAccessibilityValue: String {
+        let inputContext = store.isDenMode ? "Den Mode" : store.contentInputLabel
+        return store.isFocusModePresented ? "\(inputContext), Focus Mode" : inputContext
     }
 
     private var titlebarTitle: String {

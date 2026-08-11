@@ -18,12 +18,14 @@ This document defines outcome-level PoC criteria. Validation procedures belong i
 - Back and forward navigation can be treated as a Sheet stack.
 - Web, Terminal, and Zellij Boards can coexist with the same Den lifecycle and persistence model.
 - The Drawer, Desk, and Profile boundaries remain reliable during ordinary long-running work.
+- Focus Mode keeps the Focused Board readable while visually de-emphasizing other Board content without breaking Board focus or input.
 
 ## Constraints
 
 - Den controls must remain usable while a Sheet has WebKit focus.
 - Persisted `DenState` must remain separate from live `BoardRuntime` and `WKWebView` objects.
 - WebKit-specific behavior, authentication, IME, rendering, and resource use require exploratory validation in addition to automated tests.
+- Focus Mode rendering across Web and Terminal Boards, accessibility, and resource use require exploratory validation.
 
 ## Evidence
 
@@ -39,6 +41,7 @@ This document defines outcome-level PoC criteria. Validation procedures belong i
 - WebKit constraints create a major hole in the core Desk, Board, or Sheet experience.
 - Multiple Boards make ordinary interaction clearly unusable.
 - Liquid Glass overlays cannot remain legible or accessible over embedded WebKit content.
+- Focus Mode makes non-focused Board content unreadable, breaks direct manipulation, or causes unacceptable rendering or resource regressions.
 
 ## Decision
 

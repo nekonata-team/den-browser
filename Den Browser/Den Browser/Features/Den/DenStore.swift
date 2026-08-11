@@ -15,6 +15,7 @@ final class DenStore {
     var recentItems: [RecentItem]
     private(set) var temporaryContext: TemporaryContext?
     var isZenViewPresented = false
+    var isFocusModePresented = false
     var isDenMode = false
     var isFullscreenActive = false
     var deskFilterPhase: DenFilterPhase = .inactive
@@ -247,6 +248,7 @@ final class DenStore {
         openBoardPanelMessage = nil
         setTemporaryContext(nil)
         isZenViewPresented = false
+        isFocusModePresented = false
         activeDrag = nil
         boardWidthPanelMessage = nil
         pendingConfirmation = nil

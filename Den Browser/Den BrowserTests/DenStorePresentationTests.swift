@@ -25,6 +25,7 @@ struct DenStorePresentationTests {
         #expect(store.state.desks.count == 1)
         #expect(store.deskPendingDeletion == nil)
         #expect(store.maximizedBoardID == nil)
+        #expect(!store.isFocusModePresented)
         #expect(!store.isBoardDragging)
         #expect(savedState == store.state)
         #expect(store.toastMessage?.message == "Reset Den completed.")
@@ -408,6 +409,56 @@ struct DenStorePresentationTests {
             #expect(store.maximizedBoardID == nil)
             #expect(store.state == stateBeforeCommands)
         }
+    }
+
+    @Test func focusModeIsRuntimeOnlyAndIgnoresKeyRepeat() throws {
+        let first = board("First")
+        let second = board("Second")
+        let deskState = desk("Desk", boards: [first, second], focusedBoardID: first.id)
+        var savedState: DenState?
+        let store = DenStore(
+            state: DenState(desks: [deskState], focusedDeskID: deskState.id),
+            onSave: { savedState = $0 })
+        let stateBeforeToggle = store.state
+        store.isDenMode = true
+
+        let toggle = try #require(
+            NSEvent.keyEvent(
+                with: .keyDown,
+                location: .zero,
+                modifierFlags: [.shift],
+                timestamp: 0,
+                windowNumber: 0,
+                context: nil,
+                characters: "F",
+                charactersIgnoringModifiers: "f",
+                isARepeat: false,
+                keyCode: 3))
+        let repeatedToggle = try #require(
+            NSEvent.keyEvent(
+                with: .keyDown,
+                location: .zero,
+                modifierFlags: [.shift],
+                timestamp: 0,
+                windowNumber: 0,
+                context: nil,
+                characters: "F",
+                charactersIgnoringModifiers: "f",
+                isARepeat: true,
+                keyCode: 3))
+
+        #expect(KeyboardController.handle(toggle, store: store))
+        #expect(store.isFocusModePresented)
+        #expect(store.state == stateBeforeToggle)
+        #expect(savedState == nil)
+        #expect(KeyboardController.handle(repeatedToggle, store: store))
+        #expect(store.isFocusModePresented)
+
+        store.exitDenMode()
+
+        #expect(store.isFocusModePresented)
+        #expect(store.state == stateBeforeToggle)
+        #expect(savedState == nil)
     }
 
     @Test func denModeBoardWidthPanelAdjustsAllBoardsAndAcceptsFitSelectionKeys() throws {

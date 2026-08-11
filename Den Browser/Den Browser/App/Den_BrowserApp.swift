@@ -185,6 +185,16 @@ private struct DenCommands: Commands {
                 .disabled(store == nil)
             Button("Toggle Zen View") { store?.performAppAction(.toggleZenView) }
                 .disabled(store == nil)
+            Toggle(
+                "Focus Mode",
+                isOn: Binding(
+                    get: { store?.isFocusModePresented == true },
+                    set: { isPresented in
+                        guard isPresented != (store?.isFocusModePresented ?? false) else { return }
+                        store?.performAppAction(.toggleFocusMode)
+                    })
+            )
+            .disabled(store?.isDenMode != true || store?.temporaryContext != nil)
             Button("Keyboard Shortcuts…") { store?.performAppAction(.showKeyboardShortcuts) }
                 .disabled(store == nil)
             Button("Settings…") {

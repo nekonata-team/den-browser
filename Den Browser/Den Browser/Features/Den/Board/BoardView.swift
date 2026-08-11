@@ -41,6 +41,7 @@ struct BoardView: View {
                     loadingIndicator
                 }
             }
+            .blur(radius: isFocusModeDeemphasized ? DenLayout.focusModeBlurRadius : 0)
         }
         .frame(width: width, height: height)
         .accessibilityElement(children: .contain)
@@ -54,9 +55,23 @@ struct BoardView: View {
             color: .black.opacity(isDragging ? 0.55 : (isFocused ? 0.42 : 0.30)),
             radius: isDragging ? 42 : (isFocused ? 34 : 24), x: 0, y: isDragging ? 28 : 22
         )
+        .shadow(
+            color: focusModeHaloColor,
+            radius: isFocusModeFocused ? DenLayout.focusModeHaloRadius : 0,
+            x: 0,
+            y: 0
+        )
         .scaleEffect(isDragging && !shouldReduceMotion ? 1.02 : 1)
         .animation(DenMotion.feedback(reduceMotion: shouldReduceMotion), value: isFocused)
         .animation(DenMotion.feedback(reduceMotion: shouldReduceMotion), value: isDragging)
+        .animation(
+            DenMotion.feedback(reduceMotion: shouldReduceMotion),
+            value: isFocusModeDeemphasized
+        )
+        .animation(
+            DenMotion.feedback(reduceMotion: shouldReduceMotion),
+            value: isFocusModeFocused
+        )
         .onAppear {
             store.sheetNavigation.refreshConfiguration(for: runtime.webView)
         }
@@ -82,6 +97,18 @@ struct BoardView: View {
         .accessibilityElement()
         .accessibilityLabel("Loading Current Sheet")
         .accessibilityValue("\(Int(runtime.estimatedProgress * 100)) percent")
+    }
+
+    private var isFocusModeDeemphasized: Bool {
+        store.isFocusModePresented && !isFocused && !store.isDeskFilterPresented
+    }
+
+    private var isFocusModeFocused: Bool {
+        store.isFocusModePresented && isFocused
+    }
+
+    private var focusModeHaloColor: Color {
+        isFocusModeFocused ? profileColor.opacity(0.16) : .clear
     }
 
     private var borderColor: Color {

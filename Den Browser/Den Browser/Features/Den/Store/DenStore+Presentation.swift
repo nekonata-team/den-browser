@@ -19,6 +19,10 @@ extension DenStore {
         isZenViewPresented.toggle()
     }
 
+    func toggleFocusMode() {
+        isFocusModePresented.toggle()
+    }
+
     func showKeyboardShortcuts() {
         setTemporaryContext(.keyboardShortcuts)
     }

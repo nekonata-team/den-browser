@@ -66,6 +66,49 @@ final class Den_BrowserUITests: XCTestCase, BDD {
     }
 
     @MainActor
+    func testFocusModePreservesBoardFocusAcrossDenMode() throws {
+        let app = launchApp()
+        let denContent = app.descendants(matching: .any)
+            .matching(identifier: "den-content")
+            .firstMatch
+        let bravo = board(.bravo, in: app)
+
+        given("the Focused Desk contains multiple Boards") {
+            enterDenMode(in: app)
+        }
+
+        when("enabling Focus Mode") {
+            app.typeKey("f", modifierFlags: .shift)
+        }
+
+        then("Focus Mode is exposed without changing keyboard ownership") {
+            XCTAssertTrue(
+                (denContent.value as? String)?.contains("Focus Mode") == true,
+                "Den content should expose Focus Mode")
+            assertDenMode(in: app)
+        }
+
+        when("moving focus to the next Board") {
+            app.typeKey("l", modifierFlags: [])
+        }
+
+        then("the next Board becomes the Focused Board") {
+            XCTAssertTrue(bravo.wait(for: \.isSelected, toEqual: true, timeout: 5))
+        }
+
+        when("returning to Sheet Input") {
+            app.typeKey(",", modifierFlags: .control)
+        }
+
+        then("Focus Mode remains active in Sheet Input") {
+            XCTAssertTrue(app.windows["UI Testing · SHEET INPUT"].waitForExistence(timeout: 5))
+            XCTAssertTrue(
+                (denContent.value as? String)?.contains("Focus Mode") == true,
+                "Focus Mode should remain active after leaving Den Mode")
+        }
+    }
+
+    @MainActor
     func testDrawerPreviewReceivesVimAndFormInput() throws {
         let app = launchApp(sheetNavigationEnabled: true)
 

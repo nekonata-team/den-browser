@@ -65,6 +65,7 @@ struct KeyboardShortcutsView: View {
                     item([","], "Open Settings"),
                     item(["?"], "Keyboard Shortcuts"),
                     item(["z"], "Toggle Zen View"),
+                    item(["⇧", "F"], "Toggle Focus Mode"),
                 ]),
             ShortcutGuideSection(
                 title: "Board Actions",

@@ -27,7 +27,9 @@ struct TerminalBoardView: View {
                 isFocused: isFocused && !store.isDenMode && store.temporaryContext == nil,
                 isHidden: store.isDrawerOpen || store.isOverviewPresented,
                 isPointerFocusEnabled: isPointerFocusEnabled,
-                onFocus: onFocus)
+                onFocus: onFocus
+            )
+            .blur(radius: isFocusModeDeemphasized ? DenLayout.focusModeBlurRadius : 0)
         }
         .frame(width: width, height: height)
         .accessibilityElement(children: .contain)
@@ -41,9 +43,34 @@ struct TerminalBoardView: View {
             color: .black.opacity(isDragging ? 0.55 : (isFocused ? 0.42 : 0.30)),
             radius: isDragging ? 42 : (isFocused ? 34 : 24), x: 0, y: isDragging ? 28 : 22
         )
+        .shadow(
+            color: focusModeHaloColor,
+            radius: isFocusModeFocused ? DenLayout.focusModeHaloRadius : 0,
+            x: 0,
+            y: 0
+        )
         .scaleEffect(isDragging && !shouldReduceMotion ? 1.02 : 1)
         .animation(DenMotion.feedback(reduceMotion: shouldReduceMotion), value: isFocused)
         .animation(DenMotion.feedback(reduceMotion: shouldReduceMotion), value: isDragging)
+        .animation(
+            DenMotion.feedback(reduceMotion: shouldReduceMotion),
+            value: isFocusModeDeemphasized
+        )
+        .animation(
+            DenMotion.feedback(reduceMotion: shouldReduceMotion),
+            value: isFocusModeFocused)
+    }
+
+    private var isFocusModeDeemphasized: Bool {
+        store.isFocusModePresented && !isFocused && !store.isDeskFilterPresented
+    }
+
+    private var isFocusModeFocused: Bool {
+        store.isFocusModePresented && isFocused
+    }
+
+    private var focusModeHaloColor: Color {
+        isFocusModeFocused ? profileColor.opacity(0.16) : .clear
     }
 
     private var header: some View {

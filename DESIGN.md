@@ -64,6 +64,15 @@ Keep Toasts concise and non-blocking. Prefer direct UI state for persistent or a
 - Treat Zen View as window-local runtime presentation. A recreated Den window starts with Zen View off.
 - Keep temporary panels, Overview, Empty Den guidance, and the Keyboard Shortcuts guide available while Zen View is active.
 
+## Focus Mode
+
+- Focus Mode keeps the Focused Board's Current Sheet or Terminal surface clear and softly de-emphasizes other Board content.
+- Keep non-focused Board Headers, labels, order, widths, and direct manipulation visible so the Desk's spatial map remains usable.
+- Keep the existing Focused Board ring as the boundary cue; in Focus Mode, add only a subtle Profile-colored halo to give it quiet foreground presence. Reserve Header tint for Den Mode.
+- Treat Focus Mode as window-local runtime presentation. A recreated Den window starts with Focus Mode off, while Den Mode, Sheet Input, and Desk changes do not turn it off.
+- Do not pause, mute, or alter web content as part of Focus Mode. The effect is visual only.
+- Keep Focus Mode optional and user-controlled; describe it as a visual presentation aid.
+
 ## Review checklist
 
 - Is `WKWebView` content readable beneath Den controls?
@@ -71,3 +80,4 @@ Keep Toasts concise and non-blocking. Prefer direct UI state for persistent or a
 - Does keyboard focus still make sense after pointer interaction?
 - Does UI use Den, Desk, Board, and Sheet terminology correctly?
 - Does Zen View remove native window and Den chrome while preserving Board controls and Den Mode feedback?
+- Does Focus Mode preserve Board spatial orientation, keyboard focus, and Web/Terminal input?

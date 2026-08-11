@@ -192,6 +192,7 @@ enum AppAction: Equatable {
     case captureFocusedDesk
     case keepCurrentSheetInDrawer
     case toggleZenView
+    case toggleFocusMode
     case removeBoard
     case restoreBoard
     case showRenameBoardPanel
@@ -521,6 +522,7 @@ enum KeyboardRouter {
         binding("=", modifiers: [.shift]): KeyboardCommand(action: .adjustBoardWidth(80)),
         binding("+", modifiers: [.shift]): KeyboardCommand(action: .adjustBoardWidth(80)),
         binding("f"): KeyboardCommand(action: .toggleBoardMaximized, repeatPolicy: .ignore),
+        binding("f", modifiers: [.shift]): KeyboardCommand(action: .toggleFocusMode, repeatPolicy: .ignore),
         binding("c"): KeyboardCommand(action: .centerBoard, repeatPolicy: .ignore),
         binding("t"): KeyboardCommand(action: .toggleFocusedBoardSheetNavigationPause, repeatPolicy: .ignore),
         binding("s"): KeyboardCommand(action: .captureCurrentSheet, repeatPolicy: .ignore),
@@ -633,6 +635,7 @@ enum AppActionHandler {
         case .captureFocusedDesk: store.captureFocusedDeskScreenshot()
         case .keepCurrentSheetInDrawer: store.keepFocusedSheetInDrawer()
         case .toggleZenView: store.toggleZenView()
+        case .toggleFocusMode: store.toggleFocusMode()
         case .removeBoard: store.removeFocusedBoard()
         case .restoreBoard: store.restoreRecentlyRemovedBoard()
         case .showRenameBoardPanel: store.showRenameBoardPanel()
