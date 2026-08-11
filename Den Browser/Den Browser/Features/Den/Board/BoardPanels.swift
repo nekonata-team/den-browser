@@ -38,6 +38,7 @@ struct OpenBoardPanel: View {
                 .textFieldStyle(.plain)
                 .font(.title3.weight(.medium))
                 .focused($isFocused)
+                .accessibilityIdentifier("open-board-input")
                 .onKeyPress(.downArrow) {
                     guard !TextInputComposition.isActive else { return .ignored }
                     moveRecentSelection(by: 1)

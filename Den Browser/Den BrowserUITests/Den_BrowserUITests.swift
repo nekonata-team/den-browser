@@ -82,9 +82,9 @@ final class Den_BrowserUITests: XCTestCase, BDD {
         }
 
         then("Focus Mode is exposed without changing keyboard ownership") {
-            XCTAssertTrue(
-                (denContent.value as? String)?.contains("Focus Mode") == true,
-                "Den content should expose Focus Mode")
+            assertEventually("Den content should expose Focus Mode") {
+                denContent.label.contains("Focus Mode")
+            }
             assertDenMode(in: app)
         }
 
@@ -102,9 +102,9 @@ final class Den_BrowserUITests: XCTestCase, BDD {
 
         then("Focus Mode remains active in Sheet Input") {
             XCTAssertTrue(app.windows["UI Testing · SHEET INPUT"].waitForExistence(timeout: 5))
-            XCTAssertTrue(
-                (denContent.value as? String)?.contains("Focus Mode") == true,
-                "Focus Mode should remain active after leaving Den Mode")
+            assertEventually("Focus Mode should remain active after leaving Den Mode") {
+                denContent.label.contains("Focus Mode")
+            }
         }
     }
 
@@ -327,7 +327,7 @@ final class Den_BrowserUITests: XCTestCase, BDD {
 
         when("creating a Terminal Board from the Open Board panel") {
             app.typeKey("t", modifierFlags: .command)
-            let input = app.textFields["Open URL or search"].firstMatch
+            let input = app.textFields["open-board-input"].firstMatch
             XCTAssertTrue(input.waitForExistence(timeout: 5))
             input.typeText(":terminal /tmp")
             input.typeKey(.return, modifierFlags: [])

@@ -126,6 +126,7 @@ struct DenView<Header: View>: View {
         .navigationTitle(titlebarTitle)
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("den-content")
+        .accessibilityLabel(contentAccessibilityValue)
         .accessibilityValue(contentAccessibilityValue)
         .modifier(DenDialogs())
     }
