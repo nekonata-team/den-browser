@@ -65,8 +65,7 @@ struct DenStoreDeskTests {
         let restorationCandidate = RecentlyRemovedBoard(
             board: board("Removed"),
             sourceDeskID: other.id,
-            sourceBoardIndex: 0,
-            wasSheetNavigationPaused: false)
+            sourceBoardIndex: 0)
         store.recentlyRemovedBoard = restorationCandidate
         store.toggleFocusedBoardMaximized()
         store.showReplaceDeskPanel()
@@ -99,25 +98,21 @@ struct DenStoreDeskTests {
         #expect(savedState == store.state)
     }
 
-    @Test func replacingDeskRemovesPausedStateForDiscardedBoards() {
-        let suiteName = "DenStoreDeskReplacementPauseTests-\(UUID().uuidString)"
-        let defaults = UserDefaults(suiteName: suiteName)!
-        defer { defaults.removePersistentDomain(forName: suiteName) }
-        let navigation = SheetNavigationManager(defaults: defaults, scriptSource: "")
-        let preferences = AppPreferences(defaults: defaults)
-        let oldBoard = board("Old")
+    @Test func replacingDeskDiscardsPausedStateWithItsBoards() {
+        let oldBoard = BoardState(
+            label: "Old",
+            width: 520,
+            currentSheetURL: URL(string: "https://example.com/"),
+            sheetNavigationPaused: true)
         let replacing = desk("Research", boards: [oldBoard], focusedBoardID: oldBoard.id)
         let other = desk("Other")
         let store = DenStore(
-            state: DenState(desks: [replacing, other], focusedDeskID: replacing.id),
-            sheetNavigation: navigation,
-            preferences: preferences)
+            state: DenState(desks: [replacing, other], focusedDeskID: replacing.id))
 
-        navigation.setBoardPaused(true, for: oldBoard.id)
         _ = store.replaceFocusedDesk(label: "Morning", preset: .chatGPT)
         store.confirmDeskReplacement()
 
-        #expect(!navigation.isBoardPaused(oldBoard.id))
+        #expect(!store.state.desks.flatMap(\.boards).contains { $0.id == oldBoard.id })
     }
 
     @Test func cancellingDeskReplacementKeepsDeskAndPanel() {
@@ -310,25 +305,21 @@ struct DenStoreDeskTests {
         }
     }
 
-    @Test func deletingDeskRemovesPausedStateForItsBoards() {
-        let suiteName = "DenStoreDeskDeletionPauseTests-\(UUID().uuidString)"
-        let defaults = UserDefaults(suiteName: suiteName)!
-        defer { defaults.removePersistentDomain(forName: suiteName) }
-        let navigation = SheetNavigationManager(defaults: defaults, scriptSource: "")
-        let preferences = AppPreferences(defaults: defaults)
-        let removedBoard = board("Removed")
+    @Test func deletingDeskDiscardsItsPausedBoardState() {
+        let removedBoard = BoardState(
+            label: "Removed",
+            width: 520,
+            currentSheetURL: URL(string: "https://example.com/"),
+            sheetNavigationPaused: true)
         let populated = desk("Populated", boards: [removedBoard], focusedBoardID: removedBoard.id)
         let empty = desk("Empty")
         let store = DenStore(
-            state: DenState(desks: [populated, empty], focusedDeskID: populated.id),
-            sheetNavigation: navigation,
-            preferences: preferences)
+            state: DenState(desks: [populated, empty], focusedDeskID: populated.id))
 
-        navigation.setBoardPaused(true, for: removedBoard.id)
         store.deleteFocusedDesk()
         store.confirmDeskDeletion()
 
-        #expect(!navigation.isBoardPaused(removedBoard.id))
+        #expect(!store.state.desks.flatMap(\.boards).contains { $0.id == removedBoard.id })
     }
 
     @Test func lastDeskCannotBeDeleted() {

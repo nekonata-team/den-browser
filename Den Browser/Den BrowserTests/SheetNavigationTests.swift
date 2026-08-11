@@ -175,53 +175,6 @@ struct SheetNavigationTests {
         #expect(restored.ignoredHosts == ["example.com", "www.apple.com"])
     }
 
-    @Test func pausedBoardsPersistIndependently() {
-        let suiteName = "SheetNavigationPausedBoardsTests-\(UUID().uuidString)"
-        let defaults = UserDefaults(suiteName: suiteName)!
-        defer { defaults.removePersistentDomain(forName: suiteName) }
-        let manager = SheetNavigationManager(defaults: defaults, scriptSource: "")
-        let firstBoardID = UUID()
-        let secondBoardID = UUID()
-
-        manager.setBoardPaused(true, for: firstBoardID)
-        manager.setBoardPaused(true, for: secondBoardID)
-
-        #expect(
-            Set((defaults.persistentDomain(forName: suiteName) ?? [:]).keys) == [
-                "preferences.sheet-navigation.paused-board-ids"
-            ])
-
-        #expect(manager.isBoardPaused(firstBoardID))
-        #expect(manager.isBoardPaused(secondBoardID))
-
-        manager.setBoardPaused(false, for: firstBoardID)
-
-        #expect(!manager.isBoardPaused(firstBoardID))
-        #expect(manager.isBoardPaused(secondBoardID))
-
-        let restored = SheetNavigationManager(defaults: defaults, scriptSource: "")
-        #expect(!restored.isBoardPaused(firstBoardID))
-        #expect(restored.isBoardPaused(secondBoardID))
-    }
-
-    @Test func pausedBoardsCanBePrunedToExistingBoards() {
-        let suiteName = "SheetNavigationPausedBoardPruningTests-\(UUID().uuidString)"
-        let defaults = UserDefaults(suiteName: suiteName)!
-        defer { defaults.removePersistentDomain(forName: suiteName) }
-        let manager = SheetNavigationManager(defaults: defaults, scriptSource: "")
-        let activeBoardID = UUID()
-        let removedBoardID = UUID()
-
-        manager.setBoardPaused(true, for: activeBoardID)
-        manager.setBoardPaused(true, for: removedBoardID)
-        manager.removePausedBoards(notIn: [activeBoardID])
-
-        #expect(manager.pausedBoardIDs == [activeBoardID])
-        #expect(
-            defaults.stringArray(forKey: "preferences.sheet-navigation.paused-board-ids")
-                == [activeBoardID.uuidString])
-    }
-
     @Test func pauseConfigurationRemainsAfterDocumentReload() async throws {
         let source = try sheetNavigationScriptSource().replacingOccurrences(
             of: "if (!event.isTrusted ||",

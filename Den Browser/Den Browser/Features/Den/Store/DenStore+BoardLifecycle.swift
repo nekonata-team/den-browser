@@ -240,14 +240,11 @@ extension DenStore {
     func removeBoard(_ boardID: UUID, focusNext: Bool = false) {
         guard let indices = boardIndices(for: boardID) else { return }
         let board = removeBoard(at: indices, focusNext: focusNext)
-        let wasSheetNavigationPaused = sheetNavigation.isBoardPaused(board.id)
         recentlyRemovedBoard = RecentlyRemovedBoard(
             board: board,
             sourceDeskID: state.desks[indices.desk].id,
-            sourceBoardIndex: indices.board,
-            wasSheetNavigationPaused: wasSheetNavigationPaused
+            sourceBoardIndex: indices.board
         )
-        sheetNavigation.removeBoardPausedState(for: board.id)
         if maximizedBoardID == board.id {
             maximizedBoardID = nil
         }
@@ -280,7 +277,6 @@ extension DenStore {
         let board = recentlyRemovedBoard.board
         state.desks[deskIndex].boards.insert(board, at: insertIndex)
         state.desks[deskIndex].focusedBoardID = board.id
-        sheetNavigation.setBoardPaused(recentlyRemovedBoard.wasSheetNavigationPaused, for: board.id)
         setFocusedDesk(state.desks[deskIndex].id)
         self.recentlyRemovedBoard = nil
         save()
@@ -354,11 +350,8 @@ extension DenStore {
             width: source.width,
             currentSheetURL: currentSheetURL,
             firstSheetURL: firstSheetURL,
-            customLabel: source.customLabel
-        )
-        sheetNavigation.setBoardPaused(
-            sheetNavigation.isBoardPaused(source.id),
-            for: board.id
+            customLabel: source.customLabel,
+            sheetNavigationPaused: source.sheetNavigationPaused
         )
         state.desks[deskIndex].boards.insert(board, at: boardIndex + 1)
         state.desks[deskIndex].focusedBoardID = board.id

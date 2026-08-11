@@ -82,9 +82,19 @@ extension DenStore {
 
     func toggleFocusedBoardSheetNavigationPause() {
         guard let focusedBoardID = focusedDesk?.focusedBoardID else { return }
-        sheetNavigation.setBoardPaused(
-            !sheetNavigation.isBoardPaused(focusedBoardID),
-            for: focusedBoardID)
+        toggleBoardSheetNavigationPause(focusedBoardID)
+    }
+
+    func toggleBoardSheetNavigationPause(_ boardID: UUID) {
+        guard
+            let indices = boardIndices(for: boardID),
+            !state.desks[indices.desk].boards[indices.board].isTerminal
+        else { return }
+
+        state.desks[indices.desk].boards[indices.board].sheetNavigationPaused.toggle()
+        let paused = state.desks[indices.desk].boards[indices.board].sheetNavigationPaused
+        sheetNavigation.setBoardPaused(paused, for: boardID)
+        save()
     }
 
     func centerFocusedBoard() {

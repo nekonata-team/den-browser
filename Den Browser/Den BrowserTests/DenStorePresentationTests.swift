@@ -249,21 +249,23 @@ struct DenStorePresentationTests {
             #expect(store.state.desks[deskIndex].boards[boardIndex].displayName == "Search Tasks")
 
             // 4. Duplicate the board (duplicate should copy customLabel)
-            store.sheetNavigation.setBoardPaused(true, for: boardID)
+            store.toggleBoardSheetNavigationPause(boardID)
             store.isDenMode = true
             store.duplicateFocusedBoard()
             let boards = store.focusedDesk?.boards ?? []
             #expect(boards.count == 2)
             #expect(boards[1].customLabel == "Search Tasks")
             #expect(boards[1].displayName == "Search Tasks")
-            #expect(store.sheetNavigation.isBoardPaused(boards[1].id))
+            #expect(boards[0].sheetNavigationPaused)
+            #expect(boards[1].sheetNavigationPaused)
 
             // 5. Focus original board and clear the label
             store.focusBoard(boardID)
             store.renameFocusedBoard(to: "")
-            store.sheetNavigation.setBoardPaused(false, for: boardID)
+            store.toggleBoardSheetNavigationPause(boardID)
             #expect(store.state.desks[deskIndex].boards[boardIndex].customLabel == nil)
             #expect(store.state.desks[deskIndex].boards[boardIndex].displayName == "Google Search Result")
+            #expect(!store.state.desks[deskIndex].boards[boardIndex].sheetNavigationPaused)
         }
     }
 

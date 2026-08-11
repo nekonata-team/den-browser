@@ -32,7 +32,7 @@ Nested objects use these keys:
 - `DenState`: `desks`, `focusedDeskID`, optional `drawerItems`, optional `expandedDrawerItemID`
 - `DrawerItem`: `id`, `url`, optional `title`
 - `DeskState`: `id`, `label`, `boards`, optional `focusedBoardID`
-- `BoardState`: `id`, `label`, `width`, optional `customLabel`, `content`
+- `BoardState`: `id`, `label`, `width`, optional `customLabel`, optional `sheetNavigationPaused`, `content`
 - Web Board `content`: `kind: web`, optional `currentSheetURL`, optional `firstSheetURL`
 - Terminal Board `content`: `kind: terminal`, `workingDirectory`
 - Zellij Board `content`: `kind: zellij`, optional `sessionName`
@@ -56,7 +56,6 @@ Version 1 documents decode as Web Boards and are written back as version 2. An o
 | `sheet-navigation` | Enabled | `preferences.sheet-navigation.enabled` | `Bool` | `false` | Features > Vim-style Sheet Navigation |
 | `sheet-navigation` | Hint alphabet | `preferences.sheet-navigation.hint-alphabet` | `String` | `asdfghjkl` | Features > Vim-style Sheet Navigation |
 | `sheet-navigation` | Ignored hosts | `preferences.sheet-navigation.ignored-hosts` | `[String]` | `[]` | Features > Vim-style Sheet Navigation |
-| `sheet-navigation` | Paused Boards | `preferences.sheet-navigation.paused-board-ids` | `[String]` of UUIDs | `[]` | Board state; no direct setting |
 | `shortcuts` | Action override | `preferences.shortcuts.actions.<action-id>` | Property-list encoded `ShortcutOverride` | Absent; uses the action default | Shortcuts > Shortcuts |
 | `shortcuts` | Desk number binding | `preferences.shortcuts.desk-number.binding` | Property-list encoded `ShortcutBinding` | `Command` + `Option` + digit | Shortcuts > Focus Desk 1–10 |
 | `shortcuts` | Desk number disabled | `preferences.shortcuts.desk-number.disabled` | `Bool` | Absent / `false` | Shortcuts > Focus Desk 1–10 |
@@ -66,10 +65,9 @@ Version 1 documents decode as Web Boards and are written back as version 2. An o
 | `picture-in-picture` | Enabled | `preferences.picture-in-picture.enabled` | `Bool` | `false` | Features > Experimental Picture in Picture |
 | `terminal` | Zellij executable path | `preferences.terminal.zellij.executable-path` | `String` | Empty | Terminal > Zellij |
 
-Paused Board IDs are removed when their Board, Desk, or Profile is permanently
-removed. They are also pruned against the loaded Profile documents at startup.
-Removing a Board for the current-run restore action temporarily removes the ID
-and restores its paused state if the Board is restored.
+`BoardState.sheetNavigationPaused` stores whether Vim-style Sheet Navigation is
+paused for that Board. It defaults to `false` when absent, follows the Board
+through Desk moves and restoration, and is copied when a Web Board is duplicated.
 
 The absence of `preferences.schema.version` means version 0. Preferences migrate one
 version at a time and update the version key only after each migration step

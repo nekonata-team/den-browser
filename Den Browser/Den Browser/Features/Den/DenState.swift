@@ -366,6 +366,7 @@ struct BoardState: Codable, Equatable, Identifiable {
     var width: Double
     var content: BoardContentState
     var customLabel: String?
+    var sheetNavigationPaused: Bool
 
     var currentSheetURL: URL? {
         get {
@@ -433,7 +434,8 @@ struct BoardState: Codable, Equatable, Identifiable {
         width: Double,
         currentSheetURL: URL?,
         firstSheetURL: URL? = nil,
-        customLabel: String? = nil
+        customLabel: String? = nil,
+        sheetNavigationPaused: Bool = false
     ) {
         let canonicalCurrentSheetURL = currentSheetURL.map(SheetURLPolicy.canonicalSheetURL)
         self.id = id
@@ -444,6 +446,7 @@ struct BoardState: Codable, Equatable, Identifiable {
                 currentSheetURL: canonicalCurrentSheetURL,
                 firstSheetURL: firstSheetURL.map(SheetURLPolicy.canonicalSheetURL) ?? canonicalCurrentSheetURL))
         self.customLabel = customLabel
+        self.sheetNavigationPaused = sheetNavigationPaused
     }
 
     init(
@@ -458,6 +461,7 @@ struct BoardState: Codable, Equatable, Identifiable {
         self.width = width
         content = .terminal(TerminalBoardState(workingDirectory: workingDirectory))
         self.customLabel = customLabel
+        sheetNavigationPaused = false
     }
 
     init(
@@ -472,10 +476,11 @@ struct BoardState: Codable, Equatable, Identifiable {
         self.width = width
         content = .zellij(ZellijBoardState(sessionName: zellijSessionName))
         self.customLabel = customLabel
+        sheetNavigationPaused = false
     }
 
     private enum CodingKeys: String, CodingKey {
-        case id, label, width, content, customLabel, currentSheetURL, firstSheetURL
+        case id, label, width, content, customLabel, sheetNavigationPaused, currentSheetURL, firstSheetURL
     }
 
     init(from decoder: Decoder) throws {
@@ -484,6 +489,7 @@ struct BoardState: Codable, Equatable, Identifiable {
         label = try container.decode(String.self, forKey: .label)
         width = try container.decode(Double.self, forKey: .width)
         customLabel = try container.decodeIfPresent(String.self, forKey: .customLabel)
+        sheetNavigationPaused = try container.decodeIfPresent(Bool.self, forKey: .sheetNavigationPaused) ?? false
         if let content = try container.decodeIfPresent(BoardContentState.self, forKey: .content) {
             self.content = content
         } else {
@@ -502,5 +508,8 @@ struct BoardState: Codable, Equatable, Identifiable {
         try container.encode(width, forKey: .width)
         try container.encode(content, forKey: .content)
         try container.encodeIfPresent(customLabel, forKey: .customLabel)
+        if sheetNavigationPaused {
+            try container.encode(true, forKey: .sheetNavigationPaused)
+        }
     }
 }

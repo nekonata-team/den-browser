@@ -573,15 +573,13 @@ struct KeyboardShortcutTests {
             charactersIgnoringModifiers: "t",
             isARepeat: true,
             keyCode: 17)
-        let boardID = try #require(store.focusedDesk?.focusedBoardID)
-
-        #expect(!sheetNavigation.isBoardPaused(boardID))
+        #expect(store.focusedBoard?.sheetNavigationPaused == false)
         #expect(KeyboardController.handle(toggle, store: store))
-        #expect(sheetNavigation.isBoardPaused(boardID))
+        #expect(store.focusedBoard?.sheetNavigationPaused == true)
         #expect(KeyboardController.handle(repeatedToggle, store: store))
-        #expect(sheetNavigation.isBoardPaused(boardID))
+        #expect(store.focusedBoard?.sheetNavigationPaused == true)
         #expect(KeyboardController.handle(toggle, store: store))
-        #expect(!sheetNavigation.isBoardPaused(boardID))
+        #expect(store.focusedBoard?.sheetNavigationPaused == false)
     }
 
     @Test func denModeAddsSpaceGuideAndZenViewWithoutPersistedStateChanges() throws {

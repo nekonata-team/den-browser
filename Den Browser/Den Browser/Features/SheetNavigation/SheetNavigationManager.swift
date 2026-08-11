@@ -47,7 +47,6 @@ final class SheetNavigationManager {
     private(set) var isEnabled: Bool
     private(set) var hintAlphabet: String
     private(set) var ignoredHosts: [String]
-    private(set) var pausedBoardIDs: Set<UUID>
 
     @ObservationIgnored private let defaults: UserDefaults
     @ObservationIgnored private let scriptSource: String
@@ -55,6 +54,7 @@ final class SheetNavigationManager {
     @ObservationIgnored private let messageHandler = SheetNavigationMessageHandler()
     @ObservationIgnored private var actionsByWebView: [ObjectIdentifier: Actions] = [:]
     @ObservationIgnored private var boardIDByWebView: [ObjectIdentifier: UUID] = [:]
+    @ObservationIgnored private var pausedByWebView: [ObjectIdentifier: Bool] = [:]
 
     init(
         defaults: UserDefaults = .standard,
@@ -67,8 +67,6 @@ final class SheetNavigationManager {
             Self.normalizeHintAlphabet(defaults.string(forKey: Self.hintAlphabetKey) ?? "")
             ?? Self.defaultHintAlphabet
         ignoredHosts = defaults.stringArray(forKey: Self.ignoredHostsKey) ?? []
-        pausedBoardIDs = Set(
-            (defaults.stringArray(forKey: Self.pausedBoardIDsKey) ?? []).compactMap(UUID.init(uuidString:)))
         configureMessageHandler()
     }
 
@@ -111,44 +109,39 @@ final class SheetNavigationManager {
         return true
     }
 
-    func didOpen(_ webView: WKWebView, boardID: UUID? = nil, actions: Actions) {
+    func didOpen(
+        _ webView: WKWebView,
+        boardID: UUID? = nil,
+        paused: Bool = false,
+        actions: Actions
+    ) {
+        let webViewID = ObjectIdentifier(webView)
         webViews.add(webView)
-        actionsByWebView[ObjectIdentifier(webView)] = actions
-        if let boardID { boardIDByWebView[ObjectIdentifier(webView)] = boardID }
+        actionsByWebView[webViewID] = actions
+        if let boardID { boardIDByWebView[webViewID] = boardID }
+        pausedByWebView[webViewID] = paused
         applyConfiguration(to: webView)
     }
 
     func didClose(_ webView: WKWebView) {
+        let webViewID = ObjectIdentifier(webView)
         webViews.remove(webView)
-        actionsByWebView.removeValue(forKey: ObjectIdentifier(webView))
-        boardIDByWebView.removeValue(forKey: ObjectIdentifier(webView))
+        actionsByWebView.removeValue(forKey: webViewID)
+        boardIDByWebView.removeValue(forKey: webViewID)
+        pausedByWebView.removeValue(forKey: webViewID)
     }
 
     func refreshConfiguration(for webView: WKWebView) {
         applyConfiguration(to: webView)
     }
 
-    func isBoardPaused(_ boardID: UUID) -> Bool { pausedBoardIDs.contains(boardID) }
-
     func setBoardPaused(_ paused: Bool, for boardID: UUID) {
-        guard pausedBoardIDs.contains(boardID) != paused else { return }
-        if paused { pausedBoardIDs.insert(boardID) } else { pausedBoardIDs.remove(boardID) }
-        persistPausedBoardIDs()
         for webView in webViews.allObjects where boardIDByWebView[ObjectIdentifier(webView)] == boardID {
+            let webViewID = ObjectIdentifier(webView)
+            guard pausedByWebView[webViewID] != paused else { continue }
+            pausedByWebView[webViewID] = paused
             applyConfiguration(to: webView)
         }
-    }
-
-    func removeBoardPausedState(for boardID: UUID) {
-        guard pausedBoardIDs.remove(boardID) != nil else { return }
-        persistPausedBoardIDs()
-    }
-
-    func removePausedBoards(notIn validBoardIDs: Set<UUID>) {
-        let retainedBoardIDs = pausedBoardIDs.intersection(validBoardIDs)
-        guard retainedBoardIDs != pausedBoardIDs else { return }
-        pausedBoardIDs = retainedBoardIDs
-        persistPausedBoardIDs()
     }
 
     static func normalizeHintAlphabet(_ alphabet: String) -> String? {
@@ -385,7 +378,7 @@ final class SheetNavigationManager {
             "enabled": isEnabled,
             "alphabet": hintAlphabet,
             "ignoredHosts": ignoredHosts,
-            "paused": webView.flatMap { boardIDByWebView[ObjectIdentifier($0)] }.map(isBoardPaused) ?? false,
+            "paused": webView.map { pausedByWebView[ObjectIdentifier($0)] ?? false } ?? false,
         ]
         guard let data = try? JSONSerialization.data(withJSONObject: configuration) else {
             return ""
@@ -404,12 +397,7 @@ final class SheetNavigationManager {
         return source
     }()
 
-    private func persistPausedBoardIDs() {
-        defaults.set(pausedBoardIDs.map(\.uuidString).sorted(), forKey: Self.pausedBoardIDsKey)
-    }
-
     static let enabledKey = "preferences.sheet-navigation.enabled"
     private static let hintAlphabetKey = "preferences.sheet-navigation.hint-alphabet"
     private static let ignoredHostsKey = "preferences.sheet-navigation.ignored-hosts"
-    private static let pausedBoardIDsKey = "preferences.sheet-navigation.paused-board-ids"
 }

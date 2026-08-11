@@ -30,6 +30,25 @@ struct ProfileManagerTests {
             })
     }
 
+    @Test func profilePersistsBoardSheetNavigationPause() throws {
+        let board = BoardState(
+            label: "Paused",
+            width: 520,
+            currentSheetURL: URL(string: "https://example.com/"),
+            sheetNavigationPaused: true)
+        let desk = DeskState(label: "Desk", boards: [board], focusedBoardID: board.id)
+        let profile = ProfileState(
+            id: UUID(), name: "Work", color: .purple, webProfileStore: .identified(UUID()))
+        let persisted = PersistedProfile(
+            profile: profile,
+            den: DenState(desks: [desk], focusedDeskID: desk.id))
+
+        let encoded = try JSONEncoder().encode(persisted)
+        let decoded = try JSONDecoder().decode(PersistedProfile.self, from: encoded)
+
+        #expect(decoded.den.desks[0].boards[0].sheetNavigationPaused)
+    }
+
     @Test func profileDocumentWithoutDeskPresetsLoadsEmptyList() throws {
         let profile = ProfileState(
             id: UUID(), name: "Work", color: .purple, webProfileStore: .identified(UUID()))
@@ -82,6 +101,7 @@ struct ProfileManagerTests {
         #expect(persisted.schemaVersion == 2)
         #expect(persisted.den.desks[0].boards[1].currentSheetURL == nil)
         #expect(persisted.den.desks[0].boards[0].firstSheetURL == nil)
+        #expect(persisted.den.desks[0].boards.allSatisfy { !$0.sheetNavigationPaused })
         #expect(persisted.deskPresets[0].boards[1].initialSheetURL == nil)
         #expect(index == ProfileIndex(profileIDs: [persisted.profile.id]))
         let migrated = try #require(
@@ -176,28 +196,6 @@ struct ProfileManagerTests {
         _ = AppPreferences(defaults: defaults)
 
         #expect(defaults.integer(forKey: "preferences.schema.version") == 2)
-    }
-
-    @Test func profileLoadPrunesPausedBoardsThatAreNotPersisted() {
-        let directory = temporaryProfileDirectory()
-        defer { try? FileManager.default.removeItem(at: directory) }
-        let suiteName = "ProfilePausedBoardPruningTests-\(UUID().uuidString)"
-        let defaults = UserDefaults(suiteName: suiteName)!
-        defer { defaults.removePersistentDomain(forName: suiteName) }
-        let removedBoardID = UUID()
-        defaults.set(
-            [removedBoardID.uuidString],
-            forKey: "preferences.sheet-navigation.paused-board-ids")
-        let navigation = SheetNavigationManager(defaults: defaults, scriptSource: "")
-
-        _ = ProfileManager(
-            directoryURL: directory,
-            sheetNavigation: navigation,
-            preferences: AppPreferences(defaults: defaults),
-            removeDataStore: { _ in })
-
-        #expect(navigation.pausedBoardIDs.isEmpty)
-        #expect(defaults.stringArray(forKey: "preferences.sheet-navigation.paused-board-ids") == [])
     }
 
     @Test func motionPreferenceFollowsOrOverridesSystemSetting() {
@@ -299,28 +297,6 @@ struct ProfileManagerTests {
         #expect(!(await manager.deleteProfile(personalID)))
         #expect(await manager.deleteProfile(work.id))
         #expect(manager.profiles.map(\.id) == [personalID])
-    }
-
-    @Test func deletingProfileRemovesPausedStateForItsBoards() async throws {
-        let directory = temporaryProfileDirectory()
-        defer { try? FileManager.default.removeItem(at: directory) }
-        let suiteName = "ProfilePausedBoardDeletionTests-\(UUID().uuidString)"
-        let defaults = UserDefaults(suiteName: suiteName)!
-        defer { defaults.removePersistentDomain(forName: suiteName) }
-        let navigation = SheetNavigationManager(defaults: defaults, scriptSource: "")
-        let manager = ProfileManager(
-            directoryURL: directory,
-            sheetNavigation: navigation,
-            preferences: AppPreferences(defaults: defaults),
-            removeDataStore: { _ in })
-        let work = try #require(manager.createProfile(name: "Work", color: .gray))
-        let store = try #require(manager.store(for: work.id))
-        store.addBoard(urlString: "https://example.com")
-        let boardID = try #require(store.focusedDesk?.focusedBoardID)
-        navigation.setBoardPaused(true, for: boardID)
-
-        #expect(await manager.deleteProfile(work.id))
-        #expect(!navigation.isBoardPaused(boardID))
     }
 
     @Test func failedWebsiteDataDeletionRestoresProfileDocument() async throws {

@@ -153,16 +153,13 @@ struct BoardView: View {
 
         if store.sheetNavigation.isEnabled {
             Button {
-                store.sheetNavigation.setBoardPaused(
-                    !store.sheetNavigation.isBoardPaused(board.id),
-                    for: board.id
-                )
+                store.toggleBoardSheetNavigationPause(board.id)
             } label: {
                 Label(
-                    store.sheetNavigation.isBoardPaused(board.id)
+                    board.sheetNavigationPaused
                         ? "Resume Sheet Navigation for this Board"
                         : "Pause Sheet Navigation for this Board",
-                    systemImage: store.sheetNavigation.isBoardPaused(board.id) ? "play.circle" : "pause.circle"
+                    systemImage: board.sheetNavigationPaused ? "play.circle" : "pause.circle"
                 )
             }
         }
@@ -288,13 +285,10 @@ struct BoardView: View {
         HStack(spacing: 2) {
             if store.sheetNavigation.isEnabled {
                 Button {
-                    store.sheetNavigation.setBoardPaused(
-                        !store.sheetNavigation.isBoardPaused(board.id),
-                        for: board.id
-                    )
+                    store.toggleBoardSheetNavigationPause(board.id)
                 } label: {
                     Image(
-                        systemName: store.sheetNavigation.isBoardPaused(board.id)
+                        systemName: board.sheetNavigationPaused
                             ? "pause.circle.fill" : "keyboard"
                     )
                     .frame(width: DenLayout.boardControlSize, height: DenLayout.boardControlSize)
@@ -302,11 +296,11 @@ struct BoardView: View {
                 .buttonStyle(.borderless)
                 .foregroundStyle(.primary)
                 .help(
-                    store.sheetNavigation.isBoardPaused(board.id)
+                    board.sheetNavigationPaused
                         ? "Resume Sheet Navigation for this Board" : "Pause Sheet Navigation for this Board"
                 )
                 .accessibilityLabel(
-                    store.sheetNavigation.isBoardPaused(board.id)
+                    board.sheetNavigationPaused
                         ? "Resume Sheet Navigation for this Board" : "Pause Sheet Navigation for this Board")
             }
 

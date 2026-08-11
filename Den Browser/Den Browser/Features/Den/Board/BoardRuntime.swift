@@ -56,6 +56,7 @@ final class BoardRuntime: BaseWebRuntime, NSWindowDelegate, ObservableObject {
         sheetNavigation.didOpen(
             webView,
             boardID: id,
+            paused: board.sheetNavigationPaused,
             actions: sheetNavigationActions
         )
 
