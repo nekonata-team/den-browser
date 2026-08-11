@@ -22,7 +22,7 @@ struct PointerFocusStateTests {
         #expect(needsFirstResponderActivation(nil, target: target))
     }
 
-    @Test func webPointerFocusSuppressesExplicitActivation() {
+    @Test func pointerFocusSuppressesExplicitActivation() {
         var state = PointerFocusState()
 
         let handledPointer = state.handlePointerDown()
@@ -34,7 +34,7 @@ struct PointerFocusStateTests {
         #expect(activatedAfterKeyboardFocus)
     }
 
-    @Test func disabledWebPointerFocusHasNoCallbackOrSuppression() {
+    @Test func disabledPointerFocusHasNoCallbackOrSuppression() {
         var state = PointerFocusState()
         _ = state.handlePointerDown()
         state.updateEnabled(false)

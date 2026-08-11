@@ -197,22 +197,41 @@ private struct TerminalBoardSurface: NSViewRepresentable {
     private func update(_ view: AppTerminalView, coordinator: Coordinator) {
         view.isHidden = isHidden
         view.setSurfaceVisible(!isHidden)
-        coordinator.isEnabled = isPointerFocusEnabled
-        guard isFocused else { return }
-        Task { @MainActor [weak view] in
-            await Task.yield()
-            guard let view, let window = view.window,
-                needsFirstResponderActivation(window.firstResponder, target: view)
-            else { return }
-            _ = window.makeFirstResponder(view)
-        }
+        coordinator.updatePointerFocusEnabled(isPointerFocusEnabled)
+        coordinator.updateFocus(isFocused, view: view)
     }
 
     final class Coordinator: NSGestureRecognizer {
+        private var pointerFocusState = PointerFocusState()
+        private var activationTask: Task<Void, Never>?
         fileprivate var onFocus: (() -> Void)?
 
         init() { super.init(target: nil, action: nil) }
         required init?(coder: NSCoder) { super.init(coder: coder) }
+
+        deinit {
+            activationTask?.cancel()
+        }
+
+        func updatePointerFocusEnabled(_ isEnabled: Bool) {
+            self.isEnabled = isEnabled
+            pointerFocusState.updateEnabled(isEnabled)
+        }
+
+        func updateFocus(_ newValue: Bool, view: AppTerminalView) {
+            guard newValue != pointerFocusState.isFocused else { return }
+            activationTask?.cancel()
+            activationTask = nil
+            guard pointerFocusState.updateFocus(newValue) else { return }
+
+            activationTask = Task { @MainActor [weak view] in
+                await Task.yield()
+                guard !Task.isCancelled, let view, let window = view.window,
+                    needsFirstResponderActivation(window.firstResponder, target: view)
+                else { return }
+                _ = window.makeFirstResponder(view)
+            }
+        }
 
         func startRecognizing(view: AppTerminalView, onFocus: @escaping () -> Void) {
             self.onFocus = onFocus
@@ -221,13 +240,15 @@ private struct TerminalBoardSurface: NSViewRepresentable {
         }
 
         override func mouseDown(with event: NSEvent) {
-            if isEnabled { onFocus?() }
+            if pointerFocusState.handlePointerDown() { onFocus?() }
             state = .failed
         }
 
         func stopRecognizing() {
             view?.removeGestureRecognizer(self)
             onFocus = nil
+            activationTask?.cancel()
+            activationTask = nil
         }
     }
 }

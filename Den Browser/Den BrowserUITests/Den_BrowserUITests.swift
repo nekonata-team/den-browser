@@ -322,6 +322,35 @@ final class Den_BrowserUITests: XCTestCase, BDD {
     }
 
     @MainActor
+    func testTerminalBoardDenModeToggleDoesNotExitImmediately() throws {
+        let app = launchApp(terminalBoard: true)
+        let alpha = board(.alpha, in: app)
+        let bravo = board(.bravo, in: app)
+        let sheetInputWindow = app.windows["UI Testing · SHEET INPUT"]
+        let terminalInputWindow = app.windows["UI Testing · TERMINAL INPUT"]
+
+        for _ in 0..<4 {
+            enterDenMode(in: app)
+            app.typeKey("l", modifierFlags: [])
+            XCTAssertTrue(bravo.wait(for: \.isSelected, toEqual: true, timeout: 5))
+            app.typeKey(",", modifierFlags: [.control])
+            XCTAssertTrue(
+                sheetInputWindow.waitForExistence(timeout: 5),
+                "Den Mode should return to Sheet Input after focusing Bravo")
+            XCTAssertTrue(bravo.isSelected)
+
+            enterDenMode(in: app)
+            app.typeKey("h", modifierFlags: [])
+            XCTAssertTrue(alpha.wait(for: \.isSelected, toEqual: true, timeout: 5))
+            app.typeKey(",", modifierFlags: [.control])
+            XCTAssertTrue(
+                terminalInputWindow.waitForExistence(timeout: 5),
+                "Den Mode should return to Terminal Input after focusing Alpha")
+            XCTAssertTrue(alpha.isSelected)
+        }
+    }
+
+    @MainActor
     func testRemovingFocusedBoardSettlesAtLeadingEdge() throws {
         let app = launchApp()
         let boardStrip = app.scrollViews["board-strip"].firstMatch

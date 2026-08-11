@@ -130,6 +130,18 @@ struct DenStoreBoardTests {
         #expect(store.focusedBoard?.terminalWorkingDirectory == directory)
     }
 
+    @Test func terminalFocusNotificationDoesNotExitDenMode() {
+        let terminal = BoardState(width: 520, workingDirectory: "/tmp")
+        let source = desk("Desk", boards: [terminal], focusedBoardID: terminal.id)
+        let store = DenStore(state: DenState(desks: [source], focusedDeskID: source.id))
+        store.isDenMode = true
+
+        store.terminalRuntime(for: terminal).terminalDidChangeFocus(true)
+
+        #expect(store.isDenMode)
+        #expect(store.focusedBoard?.id == terminal.id)
+    }
+
     @Test func openBoardAcceptsWebHostsAndSearchesInvalidURLs() throws {
         let source = desk("Desk")
         let store = DenStore(state: DenState(desks: [source], focusedDeskID: source.id))
