@@ -158,15 +158,19 @@ final class BoardRuntime: BaseWebRuntime, NSWindowDelegate, ObservableObject {
             buttonNumber: buttonNumber,
             url: url
         ) {
-            if modifierFlags.contains(.shift) {
-                sheetNavigationActions.onOpenBoard(url)
-            } else {
-                sheetNavigationActions.onOpenBoardInBackground(url)
-            }
+            openBoardFromModifierClick(url, modifierFlags: modifierFlags)
             return true
         }
 
         return false
+    }
+
+    private func openBoardFromModifierClick(_ url: URL, modifierFlags: NSEvent.ModifierFlags) {
+        if modifierFlags.contains(.shift) {
+            sheetNavigationActions.onOpenBoard(url)
+        } else {
+            sheetNavigationActions.onOpenBoardInBackground(url)
+        }
     }
 
     override func notifyDownloadFinished(filename: String) {
@@ -245,11 +249,22 @@ final class BoardRuntime: BaseWebRuntime, NSWindowDelegate, ObservableObject {
             return nil
         }
 
-        if SheetNavigationPolicy.shouldOpenTargetlessNavigationInNewBoard(
-            navigationType: navigationAction.navigationType,
-            url: navigationAction.request.url
-        ), let url = navigationAction.request.url {
-            sheetNavigationActions.onOpenBoard(url)
+        if let url = navigationAction.request.url,
+            SheetNavigationPolicy.shouldOpenTargetlessNavigationInNewBoard(
+                navigationType: navigationAction.navigationType,
+                url: url
+            )
+        {
+            if SheetNavigationPolicy.shouldOpenLinkInNewBoard(
+                navigationType: navigationAction.navigationType,
+                modifierFlags: navigationAction.modifierFlags,
+                buttonNumber: navigationAction.buttonNumber,
+                url: url
+            ) {
+                openBoardFromModifierClick(url, modifierFlags: navigationAction.modifierFlags)
+            } else {
+                sheetNavigationActions.onOpenBoard(url)
+            }
             return nil
         }
 

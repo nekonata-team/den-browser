@@ -19,8 +19,8 @@ enum SheetNavigationPolicy {
     ) -> Bool {
         let clickModifiers = modifierFlags.intersection([.command, .control, .option, .shift])
         return navigationType == .linkActivated
-            && buttonNumber == 0
-            && (clickModifiers == .command || clickModifiers == [.command, .shift])
+            && ((buttonNumber == 0 && (clickModifiers == .command || clickModifiers == [.command, .shift]))
+                || (buttonNumber == 4 && (clickModifiers == [] || clickModifiers == [.shift])))
             && url.map(SheetURLPolicy.isSupported) == true
     }
 

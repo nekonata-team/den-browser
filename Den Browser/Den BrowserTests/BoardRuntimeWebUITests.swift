@@ -42,7 +42,7 @@ struct BoardRuntimeWebUITests {
         #expect(selectors.allSatisfy { runtime.responds(to: NSSelectorFromString($0)) })
     }
 
-    @Test func commandPrimaryClickOpensSupportedLinkInNewBoard() {
+    @Test func modifierClicksOpenSupportedLinkInNewBoard() {
         let url = URL(string: "https://example.com/page")
 
         #expect(
@@ -65,7 +65,31 @@ struct BoardRuntimeWebUITests {
             !SheetNavigationPolicy.shouldOpenLinkInNewBoard(
                 navigationType: .linkActivated,
                 modifierFlags: .command,
-                buttonNumber: 1,
+                buttonNumber: 4,
+                url: url
+            )
+        )
+        #expect(
+            SheetNavigationPolicy.shouldOpenLinkInNewBoard(
+                navigationType: .linkActivated,
+                modifierFlags: [],
+                buttonNumber: 4,
+                url: url
+            )
+        )
+        #expect(
+            SheetNavigationPolicy.shouldOpenLinkInNewBoard(
+                navigationType: .linkActivated,
+                modifierFlags: [.shift],
+                buttonNumber: 4,
+                url: url
+            )
+        )
+        #expect(
+            !SheetNavigationPolicy.shouldOpenLinkInNewBoard(
+                navigationType: .linkActivated,
+                modifierFlags: [.option],
+                buttonNumber: 4,
                 url: url
             )
         )
@@ -93,6 +117,57 @@ struct BoardRuntimeWebUITests {
                 url: url
             )
         )
+    }
+
+    @Test func middleClicksChooseBackgroundOrFocusedBoard() throws {
+        let url = try #require(URL(string: "https://example.com/page"))
+        var openedURL: URL?
+        var backgroundURL: URL?
+        var actions = noOpSheetNavigationActions()
+        actions.onOpenBoard = { openedURL = $0 }
+        actions.onOpenBoardInBackground = { backgroundURL = $0 }
+
+        let runtime = BoardRuntime(
+            board: BoardState(label: "Board", width: 320, currentSheetURL: nil),
+            websiteDataStore: .nonPersistent(),
+            sheetNavigation: SheetNavigationManager(scriptSource: ""),
+            sheetScale: 100,
+            sheetNavigationActions: actions,
+            events: .init(
+                onChange: { _, _, _ in },
+                onFullscreenChange: nil,
+                onDownloadFinished: { _ in },
+                onDownloadFailed: { _ in }
+            )
+        )
+        defer { runtime.dispose() }
+
+        #expect(
+            runtime.handleLinkNavigation(
+                url,
+                navigationType: .linkActivated,
+                modifierFlags: [],
+                buttonNumber: 4,
+                opensNewContext: false
+            )
+        )
+        #expect(backgroundURL == url)
+        #expect(openedURL == nil)
+
+        openedURL = nil
+        backgroundURL = nil
+
+        #expect(
+            runtime.handleLinkNavigation(
+                url,
+                navigationType: .linkActivated,
+                modifierFlags: [.shift],
+                buttonNumber: 4,
+                opensNewContext: false
+            )
+        )
+        #expect(openedURL == url)
+        #expect(backgroundURL == nil)
     }
 
     @Test func optionPrimaryClickKeepsSupportedLinkInDrawer() {
@@ -128,12 +203,14 @@ struct BoardRuntimeWebUITests {
         let manager = SheetNavigationManager(scriptSource: "")
         let item = DrawerItem(url: try #require(URL(string: "file:///tmp/drawer-preview.html")))
         var keptURL: URL?
+        var backgroundURL: URL?
         let runtime = DrawerPreviewRuntime(
             item: item,
             websiteDataStore: .nonPersistent(),
             sheetNavigation: manager,
             sheetScale: 100,
             onKeepInDrawer: { keptURL = $0 },
+            onKeepInDrawerInBackground: { backgroundURL = $0 },
             onDiscard: {},
             onChange: { _, _, _ in },
             onDownloadFinished: { _ in },
@@ -172,10 +249,22 @@ struct BoardRuntimeWebUITests {
                 navigationType: .linkActivated,
                 modifierFlags: .command,
                 buttonNumber: 0,
-                opensNewContext: false
+                opensNewContext: true
             )
         )
-        #expect(keptURL == commandURL)
+        #expect(backgroundURL == commandURL)
+
+        let commandShiftURL = try #require(URL(string: "https://example.com/command-shift"))
+        #expect(
+            runtime.handleLinkNavigation(
+                commandShiftURL,
+                navigationType: .linkActivated,
+                modifierFlags: [.command, .shift],
+                buttonNumber: 0,
+                opensNewContext: true
+            )
+        )
+        #expect(keptURL == commandShiftURL)
 
         let optionURL = try #require(URL(string: "https://example.com/option"))
         #expect(
@@ -188,6 +277,30 @@ struct BoardRuntimeWebUITests {
             )
         )
         #expect(keptURL == optionURL)
+
+        let middleURL = try #require(URL(string: "https://example.com/middle"))
+        #expect(
+            runtime.handleLinkNavigation(
+                middleURL,
+                navigationType: .linkActivated,
+                modifierFlags: [],
+                buttonNumber: 4,
+                opensNewContext: false
+            )
+        )
+        #expect(backgroundURL == middleURL)
+
+        let shiftMiddleURL = try #require(URL(string: "https://example.com/shift-middle"))
+        #expect(
+            runtime.handleLinkNavigation(
+                shiftMiddleURL,
+                navigationType: .linkActivated,
+                modifierFlags: [.shift],
+                buttonNumber: 4,
+                opensNewContext: false
+            )
+        )
+        #expect(keptURL == shiftMiddleURL)
     }
 
     @Test func customSchemeNavigationOpensInExternalApplication() {

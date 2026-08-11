@@ -6,6 +6,7 @@ import WebKit
 final class DrawerPreviewRuntime: BaseWebRuntime {
     private let onChange: (UUID, URL?, String?) -> Void
     private let onKeepInDrawer: (URL) -> Void
+    private let onKeepInDrawerInBackground: (URL) -> Void
     private let onDiscard: () -> Void
     private let onDownloadFinished: (String) -> Void
     private let onDownloadFailed: (String) -> Void
@@ -17,6 +18,7 @@ final class DrawerPreviewRuntime: BaseWebRuntime {
         sheetNavigation: SheetNavigationManager,
         sheetScale: Int,
         onKeepInDrawer: @escaping (URL) -> Void,
+        onKeepInDrawerInBackground: @escaping (URL) -> Void,
         onDiscard: @escaping () -> Void,
         onChange: @escaping (UUID, URL?, String?) -> Void,
         onDownloadFinished: @escaping (String) -> Void,
@@ -24,6 +26,7 @@ final class DrawerPreviewRuntime: BaseWebRuntime {
     ) {
         self.onChange = onChange
         self.onKeepInDrawer = onKeepInDrawer
+        self.onKeepInDrawerInBackground = onKeepInDrawerInBackground
         self.onDiscard = onDiscard
         self.onDownloadFinished = onDownloadFinished
         self.onDownloadFailed = onDownloadFailed
@@ -42,7 +45,7 @@ final class DrawerPreviewRuntime: BaseWebRuntime {
             webView,
             actions: .init(
                 onOpenBoard: { [weak self] url in self?.onKeepInDrawer(url) },
-                onOpenBoardInBackground: { [weak self] url in self?.onKeepInDrawer(url) },
+                onOpenBoardInBackground: { [weak self] url in self?.onKeepInDrawerInBackground(url) },
                 onKeepInDrawer: { [weak self] url in self?.onKeepInDrawer(url) },
                 onOpenCurrentSheetInNewBoard: { [weak self] url in self?.onKeepInDrawer(url) },
                 onPasteURLInNewBoard: { [weak self] url in self?.onKeepInDrawer(url) },
@@ -69,14 +72,22 @@ final class DrawerPreviewRuntime: BaseWebRuntime {
         buttonNumber: Int,
         opensNewContext: Bool
     ) -> Bool {
+        if SheetNavigationPolicy.shouldOpenLinkInNewBoard(
+            navigationType: navigationType,
+            modifierFlags: modifierFlags,
+            buttonNumber: buttonNumber,
+            url: url
+        ) {
+            if modifierFlags.contains(.shift) {
+                onKeepInDrawer(url)
+            } else {
+                onKeepInDrawerInBackground(url)
+            }
+            return true
+        }
+
         if opensNewContext
             || SheetNavigationPolicy.shouldKeepLinkInDrawer(
-                navigationType: navigationType,
-                modifierFlags: modifierFlags,
-                buttonNumber: buttonNumber,
-                url: url
-            )
-            || SheetNavigationPolicy.shouldOpenLinkInNewBoard(
                 navigationType: navigationType,
                 modifierFlags: modifierFlags,
                 buttonNumber: buttonNumber,

@@ -39,6 +39,27 @@ struct DenStoreDrawerTests {
         #expect(store.state.drawerItems[1].id == firstID)
     }
 
+    @Test func backgroundKeepPreservesCurrentPreviewSelection() throws {
+        let source = desk("Desk")
+        let currentItem = DrawerItem(url: try #require(URL(string: "https://current.example/")))
+        let store = DenStore(
+            state: DenState(
+                desks: [source],
+                focusedDeskID: source.id,
+                drawerItems: [currentItem]))
+        store.selectedDrawerItemID = currentItem.id
+        store.state.expandedDrawerItemID = currentItem.id
+        let runtime = store.drawerRuntime(for: currentItem)
+
+        let backgroundURL = try #require(URL(string: "https://background.example/"))
+        store.keepInDrawerInBackground(backgroundURL)
+
+        #expect(store.state.drawerItems.map(\.url) == [backgroundURL, currentItem.url])
+        #expect(store.selectedDrawerItemID == currentItem.id)
+        #expect(store.expandedDrawerItemID == currentItem.id)
+        #expect(store.drawerPreviewRuntime === runtime)
+    }
+
     @Test func filteringMatchesTitleHostAndURLAndKeepsSelectionInResults() throws {
         let source = desk("Desk")
         let items = [

@@ -10,23 +10,36 @@ extension DenStore {
         return state.drawerItems.first { $0.id == selectedDrawerItemID }
     }
 
-    func keepInDrawer(_ url: URL, title: String? = nil, opensDrawer: Bool = true) {
+    func keepInDrawer(
+        _ url: URL,
+        title: String? = nil,
+        opensDrawer: Bool = true,
+        selectsItem: Bool = true
+    ) {
         guard SheetURLPolicy.isSupported(url) else {
             showToast("Only HTTP, HTTPS, and local file URLs are supported.", style: .warning)
             return
         }
-        releaseDrawerPreview()
-        drawerQuery = ""
-        drawerFilterPhase = .inactive
+        if selectsItem {
+            releaseDrawerPreview()
+            drawerQuery = ""
+            drawerFilterPhase = .inactive
+        }
         let item = DrawerItem(url: url, title: title)
         state.drawerItems.insert(item, at: 0)
-        selectedDrawerItemID = item.id
-        state.expandedDrawerItemID = item.id
+        if selectsItem {
+            selectedDrawerItemID = item.id
+            state.expandedDrawerItemID = item.id
+        }
         if opensDrawer {
             openDrawer()
         }
         save()
         showToast("Kept in Drawer.", style: .success)
+    }
+
+    func keepInDrawerInBackground(_ url: URL, title: String? = nil) {
+        keepInDrawer(url, title: title, opensDrawer: false, selectsItem: false)
     }
 
     func keepFocusedSheetInDrawer() {
@@ -220,6 +233,9 @@ extension DenStore {
             sheetScale: preferences.sheetScale,
             onKeepInDrawer: { [weak self] url in
                 self?.keepInDrawer(url, opensDrawer: false)
+            },
+            onKeepInDrawerInBackground: { [weak self] url in
+                self?.keepInDrawerInBackground(url)
             },
             onDiscard: { [weak self] in
                 self?.discardDrawerItem(item.id)
