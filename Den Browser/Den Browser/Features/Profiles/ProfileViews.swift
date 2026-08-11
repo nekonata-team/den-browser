@@ -124,10 +124,16 @@ private struct OpenProfilePanel: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            TextField("Open Profile", text: $query)
-                .textFieldStyle(.plain)
-                .font(.title3)
-                .focused($isFocused)
+            TextField(
+                text: $query,
+                prompt: Text("Search profiles")
+            ) {
+                Text("Open Profile")
+            }
+            .labelsHidden()
+            .textFieldStyle(.plain)
+            .font(.title3)
+            .focused($isFocused)
 
             ForEach(filteredProfiles) { profile in
                 Button {

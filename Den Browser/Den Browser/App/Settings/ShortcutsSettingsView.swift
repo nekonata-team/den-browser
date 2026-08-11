@@ -10,7 +10,7 @@ struct ShortcutsSettingsView: View {
     @State private var isGuidePresented = false
 
     var body: some View {
-        Form {
+        SettingsForm {
             Section("Shortcuts") {
                 ForEach(ConfigurableShortcut.allCases) { action in
                     shortcutRow(action)
@@ -18,29 +18,28 @@ struct ShortcutsSettingsView: View {
                 deskNumberShortcutRow
             }
 
-            Section {
-                HStack {
-                    Button("View All Shortcuts…") {
-                        stopRecording()
-                        isGuidePresented = true
-                    }
-                    Spacer()
-                    Button("Reset All") {
-                        stopRecording()
-                        preferences.resetAllShortcuts()
-                    }
-                    .disabled(
-                        preferences.shortcutOverrides.isEmpty
-                            && !preferences.hasDeskNumberBindingOverride())
-                }
+            SettingsHelpText {
+                Text("Custom shortcuts take priority over Sheet input while their Den window is active.")
             }
 
-            Text("Custom shortcuts take priority over Sheet input while their Den window is active.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
+            Section {
+                SettingsActionRow {
+                    HStack(spacing: 12) {
+                        Button("View All Shortcuts…") {
+                            stopRecording()
+                            isGuidePresented = true
+                        }
+                        Button("Reset All") {
+                            stopRecording()
+                            preferences.resetAllShortcuts()
+                        }
+                        .disabled(
+                            preferences.shortcutOverrides.isEmpty
+                                && !preferences.hasDeskNumberBindingOverride())
+                    }
+                }
+            }
         }
-        .formStyle(.grouped)
-        .padding()
         .onDisappear(perform: stopRecording)
         .onReceive(NotificationCenter.default.publisher(for: NSWindow.didResignKeyNotification)) { _ in
             stopRecording()
@@ -109,9 +108,7 @@ struct ShortcutsSettingsView: View {
             }
 
             if recordingDeskNumberShortcut, let errorMessage {
-                Text(errorMessage)
-                    .font(.caption)
-                    .foregroundStyle(.red)
+                SettingsValidationMessage(errorMessage)
             }
         }
     }
@@ -167,13 +164,11 @@ struct ShortcutsSettingsView: View {
             }
 
             if recordingAction == action, let errorMessage {
-                Text(errorMessage)
-                    .font(.caption)
-                    .foregroundStyle(.red)
+                SettingsValidationMessage(errorMessage)
             } else if optionCharacterWarning(for: action) {
-                Text("This shortcut may replace text input in Sheets.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                SettingsHelpText {
+                    Text("This shortcut may replace text input in Sheets.")
+                }
             }
         }
     }

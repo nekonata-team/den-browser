@@ -149,12 +149,15 @@ struct DenView<Header: View>: View {
                 .foregroundStyle(store.isDeskFilterInputActive ? .primary : .secondary)
 
             TextField(
-                "Filter Boards (/)",
                 text: Binding(
                     get: { store.deskFilterQuery },
                     set: { store.setDeskFilterQuery($0) }
-                )
-            )
+                ),
+                prompt: Text("Filter boards")
+            ) {
+                Text("Filter Boards")
+            }
+            .labelsHidden()
             .textFieldStyle(.plain)
             .focused($isDeskFilterFocused)
             .disabled(!store.isDeskFilterInputActive)

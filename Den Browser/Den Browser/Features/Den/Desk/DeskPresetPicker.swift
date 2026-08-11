@@ -31,32 +31,38 @@ struct DeskPresetPicker: View {
                     Text("Manage Presets")
                         .font(.headline)
                 }
-                TextField("Search Desk Presets", text: $query)
-                    .textFieldStyle(.roundedBorder)
-                    .focused(isSearchFocused)
-                    .onSubmit { TextInputComposition.performUnlessActive(confirmSelection) }
-                    .onKeyPress(.upArrow) {
-                        guard !isManaging, !TextInputComposition.isActive else { return .ignored }
-                        moveSelection(by: -1)
-                        return .handled
+                TextField(
+                    text: $query,
+                    prompt: Text("Filter presets")
+                ) {
+                    Text("Search Desk Presets")
+                }
+                .labelsHidden()
+                .textFieldStyle(.roundedBorder)
+                .focused(isSearchFocused)
+                .onSubmit { TextInputComposition.performUnlessActive(confirmSelection) }
+                .onKeyPress(.upArrow) {
+                    guard !isManaging, !TextInputComposition.isActive else { return .ignored }
+                    moveSelection(by: -1)
+                    return .handled
+                }
+                .onKeyPress(.downArrow) {
+                    guard !isManaging, !TextInputComposition.isActive else { return .ignored }
+                    moveSelection(by: 1)
+                    return .handled
+                }
+                .onKeyPress(phases: .down) { keyPress in
+                    guard
+                        !isManaging,
+                        keyPress.key == .tab,
+                        !keyPress.modifiers.contains(.shift),
+                        !TextInputComposition.isActive
+                    else {
+                        return .ignored
                     }
-                    .onKeyPress(.downArrow) {
-                        guard !isManaging, !TextInputComposition.isActive else { return .ignored }
-                        moveSelection(by: 1)
-                        return .handled
-                    }
-                    .onKeyPress(phases: .down) { keyPress in
-                        guard
-                            !isManaging,
-                            keyPress.key == .tab,
-                            !keyPress.modifiers.contains(.shift),
-                            !TextInputComposition.isActive
-                        else {
-                            return .ignored
-                        }
-                        confirmSelection()
-                        return .handled
-                    }
+                    confirmSelection()
+                    return .handled
+                }
             }
 
             ScrollView {

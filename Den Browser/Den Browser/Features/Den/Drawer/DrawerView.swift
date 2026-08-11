@@ -103,12 +103,15 @@ struct DrawerView: View {
                 Image(systemName: "magnifyingglass")
                     .foregroundStyle(store.isDrawerFilterInputActive ? .primary : .secondary)
                 TextField(
-                    "Search Drawer Items (/)",
                     text: Binding(
                         get: { store.drawerQuery },
                         set: { store.setDrawerQuery($0) }
-                    )
-                )
+                    ),
+                    prompt: Text("Search drawer items")
+                ) {
+                    Text("Search Drawer Items")
+                }
+                .labelsHidden()
                 .textFieldStyle(.plain)
                 .focused($isSearchFocused)
                 .disabled(!store.isDrawerFilterInputActive)

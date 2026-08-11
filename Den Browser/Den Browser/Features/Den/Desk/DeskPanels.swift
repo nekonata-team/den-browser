@@ -55,21 +55,28 @@ struct NewDeskPanel: View {
 
                 DeskPresetPreview(boards: selectedDeskPresetBoards)
 
-                TextField("Desk label", text: $newDeskLabel, selection: $newDeskLabelSelection)
-                    .textFieldStyle(.roundedBorder)
-                    .font(.body.weight(.medium))
-                    .focused($isLabelFocused)
-                    .onSubmit { TextInputComposition.performUnlessActive(submitDeskPreset) }
-                    .onKeyPress(phases: .down) { keyPress in
-                        let isBackTab = keyPress.key == .tab || keyPress.characters == "\u{19}"
-                        guard
-                            isBackTab,
-                            keyPress.modifiers.contains(.shift),
-                            !TextInputComposition.isActive
-                        else { return .ignored }
-                        beginDeskPresetSelection()
-                        return .handled
-                    }
+                TextField(
+                    text: $newDeskLabel,
+                    selection: $newDeskLabelSelection,
+                    prompt: Text("e.g. Research")
+                ) {
+                    Text("Desk label")
+                }
+                .labelsHidden()
+                .textFieldStyle(.roundedBorder)
+                .font(.body.weight(.medium))
+                .focused($isLabelFocused)
+                .onSubmit { TextInputComposition.performUnlessActive(submitDeskPreset) }
+                .onKeyPress(phases: .down) { keyPress in
+                    let isBackTab = keyPress.key == .tab || keyPress.characters == "\u{19}"
+                    guard
+                        isBackTab,
+                        keyPress.modifiers.contains(.shift),
+                        !TextInputComposition.isActive
+                    else { return .ignored }
+                    beginDeskPresetSelection()
+                    return .handled
+                }
 
                 HStack(spacing: DenPanelLayout.contentSpacing) {
                     if didAttemptAction && trimmedNewDeskLabel.isEmpty {
@@ -233,10 +240,16 @@ struct SaveDeskPresetPanel: View {
                 Image(systemName: "bookmark").foregroundStyle(.secondary)
                 Text("Save Desk as Preset").font(.headline)
             }
-            TextField("Preset label", text: $label)
-                .textFieldStyle(.roundedBorder)
-                .focused($isFocused)
-                .onSubmit { TextInputComposition.performUnlessActive(onSave) }
+            TextField(
+                text: $label,
+                prompt: Text("e.g. Daily research")
+            ) {
+                Text("Preset label")
+            }
+            .labelsHidden()
+            .textFieldStyle(.roundedBorder)
+            .focused($isFocused)
+            .onSubmit { TextInputComposition.performUnlessActive(onSave) }
             DeskPresetPreview(boards: store.focusedDesk?.boards.map(DeskPresetBoard.init) ?? [])
             HStack {
                 Text(message ?? "Captures the current Board arrangement")
@@ -266,15 +279,21 @@ struct RenameDeskPanel: View {
     var body: some View {
         VStack(alignment: .leading, spacing: DenPanelLayout.contentSpacing) {
             DenPanelHeader(systemImage: "pencil") {
-                TextField("Rename desk", text: $text)
-                    .textFieldStyle(.plain)
-                    .font(.title3.weight(.medium))
-                    .focused($isFocused)
-                    .onSubmit {
-                        TextInputComposition.performUnlessActive {
-                            store.renameFocusedDesk(to: text)
-                        }
+                TextField(
+                    text: $text,
+                    prompt: Text("Desk label")
+                ) {
+                    Text("Rename desk")
+                }
+                .labelsHidden()
+                .textFieldStyle(.plain)
+                .font(.title3.weight(.medium))
+                .focused($isFocused)
+                .onSubmit {
+                    TextInputComposition.performUnlessActive {
+                        store.renameFocusedDesk(to: text)
                     }
+                }
             }
             HStack(spacing: DenPanelLayout.contentSpacing) {
                 Text("Press Return to confirm, Escape to cancel").foregroundStyle(.secondary)

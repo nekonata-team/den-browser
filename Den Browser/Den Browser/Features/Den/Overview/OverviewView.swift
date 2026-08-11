@@ -21,12 +21,15 @@ struct OverviewView: View {
                         .foregroundStyle(store.isOverviewFilterInputActive ? .primary : .secondary)
 
                     TextField(
-                        "Search desks and boards (/)",
                         text: Binding(
                             get: { store.overviewQuery },
                             set: { store.setOverviewQuery($0) }
-                        )
-                    )
+                        ),
+                        prompt: Text("Search desks and boards")
+                    ) {
+                        Text("Search desks and boards")
+                    }
+                    .labelsHidden()
                     .textFieldStyle(.plain)
                     .focused($isSearchFocused)
                     .disabled(!store.isOverviewFilterInputActive)

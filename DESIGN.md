@@ -47,6 +47,18 @@ Den controls feel like a calm desk laid over live web sheets. Web content remain
 - Motion defaults to following the macOS Reduce Motion setting. Preferences can explicitly select Standard Motion or Reduced Motion for Den.
 - Reduced Motion removes spatial animation while preserving brief opacity feedback.
 
+## Input and settings
+
+- Every app-owned SwiftUI `TextField` provides an explicit `prompt:`. The prompt describes an example or expected input format; the label describes the field's meaning and remains the accessibility label.
+- `TextEditor` has no `prompt:` API. Use an explicit label and short helper text that communicates the same input guidance.
+- Toggles, pickers, and sliders commit changes immediately.
+- Text settings use a draft and an explicit Save action. Return may submit the same Save action, but leaving the screen does not silently persist an unfinished draft.
+- Place explicit setting actions after their helper text and validation message in a trailing action row. Keep navigation and reset actions visually grouped without treating them as the same semantic action.
+- Use the shared settings help and validation treatments for repeated explanatory and error text; keep their content and semantics feature-owned.
+- Inline Profile names commit on Return; leaving the screen does not commit an unfinished edit.
+- Shortcut recording commits a valid binding immediately and reports invalid or conflicting input inline.
+- Search and filter fields are transient and never use the persisted-settings contract.
+
 ## Transient feedback
 
 Use a Toast when an app-owned operation has no otherwise visible result, or when its failure or blocked state needs explanation.

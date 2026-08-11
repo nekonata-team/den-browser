@@ -25,7 +25,7 @@ struct SettingsView: View {
                     Label("Terminal", systemImage: "terminal")
                 }
 
-            Form {
+            SettingsForm {
                 DefaultBrowserSettingsSection()
 
                 SheetNavigationSettingsSection()
@@ -36,9 +36,9 @@ struct SettingsView: View {
                             .labelsHidden()
                     } label: {
                         VStack(alignment: .leading, spacing: 3) {
-                            Text("Allows playing video in a Picture-in-Picture window.")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
+                            SettingsHelpText {
+                                Text("Allows playing video in a Picture-in-Picture window.")
+                            }
                             Text(
                                 "Note: Uses private APIs. Future macOS updates may break it. Changes apply to new sheets or after restart."
                             )
@@ -49,8 +49,6 @@ struct SettingsView: View {
                 }
 
             }
-            .formStyle(.grouped)
-            .padding()
             .tabItem {
                 Label("Features", systemImage: "puzzlepiece.extension")
             }
@@ -70,27 +68,48 @@ struct SettingsView: View {
 
 private struct TerminalSettingsView: View {
     @Environment(AppPreferences.self) private var preferences
+    @State private var zellijPathDraft = ""
+    @State private var hasLoadedDraft = false
 
     var body: some View {
-        Form {
+        SettingsForm {
             Section("Zellij") {
-                TextField("Executable", text: zellijPathBinding)
+                TextField(
+                    text: $zellijPathDraft,
+                    prompt: Text("/usr/local/bin/zellij")
+                ) {
+                    Text("Executable")
+                }
+                .onSubmit {
+                    TextInputComposition.performUnlessActive(saveZellijPath)
+                }
 
-                Text("Use the absolute path to the Zellij executable.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                SettingsHelpText {
+                    Text("Use the absolute path to the Zellij executable.")
+                }
+
+                SettingsActionRow {
+                    Button("Save Executable Path") {
+                        saveZellijPath()
+                    }
+                    .disabled(!hasZellijPathChanges)
+                }
             }
         }
-        .formStyle(.grouped)
-        .padding()
+        .onAppear {
+            guard !hasLoadedDraft else { return }
+            zellijPathDraft = preferences.zellijPath
+            hasLoadedDraft = true
+        }
     }
 
-    private var zellijPathBinding: Binding<String> {
-        Binding {
-            preferences.zellijPath
-        } set: { path in
-            preferences.setZellijPath(path)
-        }
+    private var hasZellijPathChanges: Bool {
+        zellijPathDraft.trimmingCharacters(in: .whitespacesAndNewlines) != preferences.zellijPath
+    }
+
+    private func saveZellijPath() {
+        preferences.setZellijPath(zellijPathDraft)
+        zellijPathDraft = preferences.zellijPath
     }
 }
 
@@ -99,7 +118,7 @@ private struct AppearanceSettingsView: View {
     @Environment(\.accessibilityReduceMotion) private var systemReduceMotion
 
     var body: some View {
-        Form {
+        SettingsForm {
             Section("Board Centering") {
                 Picker("Centering", selection: boardCenteringBinding) {
                     ForEach(FocusedBoardCentering.allCases) { mode in
@@ -108,9 +127,9 @@ private struct AppearanceSettingsView: View {
                 }
                 .pickerStyle(.radioGroup)
 
-                Text(boardCenteringDescription)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                SettingsHelpText {
+                    Text(boardCenteringDescription)
+                }
             }
 
             Section("Sheet Scale") {
@@ -134,14 +153,16 @@ private struct AppearanceSettingsView: View {
                         .monospacedDigit()
                 }
 
-                Text("Applies to every Sheet across Profiles immediately.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-
-                Button("Reset Sheet Scale") {
-                    preferences.setSheetScale(AppPreferences.defaultSheetScale)
+                SettingsHelpText {
+                    Text("Applies to every Sheet across Profiles immediately.")
                 }
-                .disabled(preferences.sheetScale == AppPreferences.defaultSheetScale)
+
+                SettingsActionRow {
+                    Button("Reset Sheet Scale") {
+                        preferences.setSheetScale(AppPreferences.defaultSheetScale)
+                    }
+                    .disabled(preferences.sheetScale == AppPreferences.defaultSheetScale)
+                }
             }
 
             Section("Motion") {
@@ -152,13 +173,11 @@ private struct AppearanceSettingsView: View {
                 }
                 .pickerStyle(.radioGroup)
 
-                Text(motionDescription)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                SettingsHelpText {
+                    Text(motionDescription)
+                }
             }
         }
-        .formStyle(.grouped)
-        .padding()
     }
 
     private var boardCenteringBinding: Binding<FocusedBoardCentering> {
@@ -216,7 +235,7 @@ private struct ProfilesSettingsView: View {
     @State private var profileToDelete: ProfileState?
 
     var body: some View {
-        Form {
+        SettingsForm {
             Section("Profiles") {
                 ForEach(profileManager.profiles) { profile in
                     ProfileSettingsRow(
@@ -229,7 +248,16 @@ private struct ProfilesSettingsView: View {
             Section("New Profile") {
                 HStack {
                     ProfileColorDot(color: newColor)
-                    TextField("Name", text: $newName)
+                    TextField(
+                        text: $newName,
+                        prompt: Text("e.g. Work")
+                    ) {
+                        Text("Profile name")
+                    }
+                    .labelsHidden()
+                    .onSubmit {
+                        TextInputComposition.performUnlessActive(createProfile)
+                    }
                     Picker("Color", selection: $newColor) {
                         ForEach(ProfileColor.allCases) { color in
                             Text(color.label).tag(color)
@@ -238,15 +266,14 @@ private struct ProfilesSettingsView: View {
                     .labelsHidden()
                     .frame(width: 100)
                 }
-                Button("Create Profile") {
-                    guard profileManager.createProfile(name: newName, color: newColor) != nil else { return }
-                    newName = ""
+                SettingsActionRow {
+                    Button("Create Profile") {
+                        createProfile()
+                    }
+                    .disabled(newName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                 }
-                .disabled(newName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
             }
         }
-        .formStyle(.grouped)
-        .padding()
         .confirmationDialog(
             "Delete \(profileToDelete?.name ?? "Profile")?",
             isPresented: Binding(
@@ -290,6 +317,11 @@ private struct ProfilesSettingsView: View {
             }
         }
     }
+
+    private func createProfile() {
+        guard profileManager.createProfile(name: newName, color: newColor) != nil else { return }
+        newName = ""
+    }
 }
 
 private struct ProfileColorDot: View {
@@ -320,8 +352,14 @@ private struct ProfileSettingsRow: View {
     var body: some View {
         HStack {
             ProfileColorDot(color: profile.color)
-            TextField("Profile name", text: $name)
-                .onSubmit { TextInputComposition.performUnlessActive(saveName) }
+            TextField(
+                text: $name,
+                prompt: Text("e.g. Work")
+            ) {
+                Text("Profile name")
+            }
+            .labelsHidden()
+            .onSubmit { TextInputComposition.performUnlessActive(saveName) }
             Picker("Color", selection: colorBinding) {
                 ForEach(ProfileColor.allCases) { color in
                     Text(color.label).tag(color)
@@ -356,7 +394,6 @@ private struct ProfileSettingsRow: View {
                 .accessibilityLabel("Default Profile (Personal) cannot be deleted")
             }
         }
-        .onDisappear(perform: saveName)
     }
 
     private var colorBinding: Binding<ProfileColor> {
@@ -374,4 +411,5 @@ private struct ProfileSettingsRow: View {
         }
         name = profileManager.profile(id: profile.id)?.name ?? name
     }
+
 }

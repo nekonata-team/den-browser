@@ -13,16 +13,18 @@ struct DefaultBrowserSettingsSection: View {
                     .foregroundStyle(.secondary)
             }
 
-            Button(status.isDenBrowser ? "Den Browser Is Default" : "Make Den Browser Default") {
-                makeDefaultBrowser()
-            }
-            .disabled(status.isDenBrowser || isSettingDefault)
-
             // TODO: Update copy when external links enter the Drawer instead of the Focused Desk.
             // See ADR 0025: docs/adr/0025-den-level-drawer-for-unplaced-material.md
-            Text("Links opened from other apps will open as a new Board in the Focused Desk.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
+            SettingsHelpText {
+                Text("Links opened from other apps will open as a new Board in the Focused Desk.")
+            }
+
+            SettingsActionRow {
+                Button(status.isDenBrowser ? "Den Browser Is Default" : "Make Den Browser Default") {
+                    makeDefaultBrowser()
+                }
+                .disabled(status.isDenBrowser || isSettingDefault)
+            }
         }
         .onAppear(perform: refreshStatus)
         .alert("Could Not Set Default Browser", isPresented: errorAlertBinding) {

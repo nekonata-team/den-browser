@@ -11,29 +11,35 @@ struct SheetNavigationSettingsSection: View {
                 Toggle("", isOn: enabledBinding)
                     .labelsHidden()
             } label: {
-                Text("Use j / k and Space hints within Sheets")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                SettingsHelpText {
+                    Text("Use j / k and Space hints within Sheets")
+                }
             }
 
             if sheetNavigation.isEnabled {
                 LabeledContent("Hint alphabet") {
-                    TextField("asdfghjkl", text: $hintAlphabetDraft)
-                        .labelsHidden()
-                        .frame(width: 180)
-                        .onSubmit {
-                            TextInputComposition.performUnlessActive(saveHintAlphabet)
-                        }
+                    TextField(
+                        text: $hintAlphabetDraft,
+                        prompt: Text("e.g. asdfghjkl")
+                    ) {
+                        Text("Hint alphabet")
+                    }
+                    .labelsHidden()
+                    .frame(width: 180)
+                    .onSubmit {
+                        TextInputComposition.performUnlessActive(saveHintAlphabet)
+                    }
                 }
 
                 if hintAlphabetIsInvalid {
-                    Text("Use at least two distinct ASCII letters or digits.")
-                        .font(.caption)
-                        .foregroundStyle(.red)
+                    SettingsValidationMessage("Use at least two distinct ASCII letters or digits.")
                 }
 
-                Button("Save Hint Alphabet", action: saveHintAlphabet)
-                    .disabled(hintAlphabetIsInvalid || normalizedHintAlphabet == sheetNavigation.hintAlphabet)
+                SettingsActionRow {
+                    Button("Save Hint Alphabet", action: saveHintAlphabet)
+                        .disabled(
+                            hintAlphabetIsInvalid || normalizedHintAlphabet == sheetNavigation.hintAlphabet)
+                }
 
                 VStack(alignment: .leading, spacing: 6) {
                     Text("Ignored sites")
@@ -41,20 +47,20 @@ struct SheetNavigationSettingsSection: View {
                         .font(.body.monospaced())
                         .frame(height: 80)
                         .accessibilityLabel("Ignored sites")
-                    Text("One host per line. A host also ignores its subdomains.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                    SettingsHelpText {
+                        Text("One host per line. A host also ignores its subdomains.")
+                    }
                 }
 
                 if ignoredSitesAreInvalid {
-                    Text("Enter hostnames or URLs, one per line.")
-                        .font(.caption)
-                        .foregroundStyle(.red)
+                    SettingsValidationMessage("Enter hostnames or URLs, one per line.")
                 }
 
-                Button("Save Ignored Sites", action: saveIgnoredSites)
-                    .disabled(
-                        ignoredSitesAreInvalid || normalizedIgnoredSites == sheetNavigation.ignoredHosts)
+                SettingsActionRow {
+                    Button("Save Ignored Sites", action: saveIgnoredSites)
+                        .disabled(
+                            ignoredSitesAreInvalid || normalizedIgnoredSites == sheetNavigation.ignoredHosts)
+                }
             }
         }
         .onAppear {

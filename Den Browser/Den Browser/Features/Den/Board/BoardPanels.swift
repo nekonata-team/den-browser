@@ -28,29 +28,35 @@ struct OpenBoardPanel: View {
     var body: some View {
         VStack(alignment: .leading, spacing: DenPanelLayout.contentSpacing) {
             DenPanelHeader(systemImage: "plus.rectangle.on.rectangle") {
-                TextField("Open URL, search, or command", text: $urlText)
-                    .textFieldStyle(.plain)
-                    .font(.title3.weight(.medium))
-                    .focused($isFocused)
-                    .onKeyPress(.downArrow) {
-                        guard !TextInputComposition.isActive else { return .ignored }
-                        moveRecentSelection(by: 1)
-                        return filteredRecentItems.isEmpty ? .ignored : .handled
-                    }
-                    .onKeyPress(.upArrow) {
-                        guard !TextInputComposition.isActive else { return .ignored }
-                        moveRecentSelection(by: -1)
-                        return filteredRecentItems.isEmpty ? .ignored : .handled
-                    }
-                    .onSubmit {
-                        TextInputComposition.performUnlessActive {
-                            if let selected = filteredRecentItems.first(where: { $0.id == selectedRecentItemID }) {
-                                onOpenRecent(selected, defaultBoardWidth)
-                            } else {
-                                onSubmit(defaultBoardWidth)
-                            }
+                TextField(
+                    text: $urlText,
+                    prompt: Text("https://example.com, search, or :terminal")
+                ) {
+                    Text("Open URL, search, or command")
+                }
+                .labelsHidden()
+                .textFieldStyle(.plain)
+                .font(.title3.weight(.medium))
+                .focused($isFocused)
+                .onKeyPress(.downArrow) {
+                    guard !TextInputComposition.isActive else { return .ignored }
+                    moveRecentSelection(by: 1)
+                    return filteredRecentItems.isEmpty ? .ignored : .handled
+                }
+                .onKeyPress(.upArrow) {
+                    guard !TextInputComposition.isActive else { return .ignored }
+                    moveRecentSelection(by: -1)
+                    return filteredRecentItems.isEmpty ? .ignored : .handled
+                }
+                .onSubmit {
+                    TextInputComposition.performUnlessActive {
+                        if let selected = filteredRecentItems.first(where: { $0.id == selectedRecentItemID }) {
+                            onOpenRecent(selected, defaultBoardWidth)
+                        } else {
+                            onSubmit(defaultBoardWidth)
                         }
                     }
+                }
             }
 
             if let message {
@@ -141,11 +147,17 @@ struct EditBoardLinkPanel: View {
     var body: some View {
         VStack(alignment: .leading, spacing: DenPanelLayout.contentSpacing) {
             DenPanelHeader(systemImage: "link") {
-                TextField("Open URL or search", text: $text)
-                    .textFieldStyle(.plain)
-                    .font(.title3.weight(.medium))
-                    .focused($isFocused)
-                    .onSubmit { TextInputComposition.performUnlessActive(onSubmit) }
+                TextField(
+                    text: $text,
+                    prompt: Text("https://example.com or search")
+                ) {
+                    Text("Open URL or search")
+                }
+                .labelsHidden()
+                .textFieldStyle(.plain)
+                .font(.title3.weight(.medium))
+                .focused($isFocused)
+                .onSubmit { TextInputComposition.performUnlessActive(onSubmit) }
             }
 
             HStack(spacing: DenPanelLayout.contentSpacing) {
@@ -174,15 +186,21 @@ struct RenameBoardPanel: View {
     var body: some View {
         VStack(alignment: .leading, spacing: DenPanelLayout.contentSpacing) {
             DenPanelHeader(systemImage: "pencil") {
-                TextField("Rename board", text: $text)
-                    .textFieldStyle(.plain)
-                    .font(.title3.weight(.medium))
-                    .focused($isFocused)
-                    .onSubmit {
-                        TextInputComposition.performUnlessActive {
-                            store.renameFocusedBoard(to: text)
-                        }
+                TextField(
+                    text: $text,
+                    prompt: Text("Board label, or leave empty")
+                ) {
+                    Text("Rename board")
+                }
+                .labelsHidden()
+                .textFieldStyle(.plain)
+                .font(.title3.weight(.medium))
+                .focused($isFocused)
+                .onSubmit {
+                    TextInputComposition.performUnlessActive {
+                        store.renameFocusedBoard(to: text)
                     }
+                }
             }
             HStack(spacing: DenPanelLayout.contentSpacing) {
                 Text("Leave empty to restore page-provided title").foregroundStyle(.secondary)
