@@ -36,16 +36,17 @@ final class AppPreferences {
 
     @ObservationIgnored private let defaults: UserDefaults
 
-    private static let schemaVersionKey = "preferences.schemaVersion"
-    private static let shortcutKeyPrefix = "shortcuts."
-    private static let deskNumberShortcutKey = "shortcuts.desk-number"
-    private static let deskNumberShortcutDisabledKey = "shortcuts.desk-number.disabled"
-    private static let motionKey = "appearance.motion"
+    private static let schemaVersionKey = "preferences.schema.version"
+    private static let shortcutKeyPrefix = "preferences.shortcuts.actions."
+    private static let deskNumberShortcutKey = "preferences.shortcuts.desk-number.binding"
+    private static let deskNumberShortcutDisabledKey =
+        "preferences.shortcuts.desk-number.disabled"
+    private static let motionKey = "preferences.appearance.motion.mode"
     private static let nativePictureInPictureEnabledKey =
-        "features.native-picture-in-picture.enabled"
-    private static let boardCenteringKey = "appearance.board-centering"
-    private static let sheetScaleKey = "appearance.sheet-scale"
-    private static let zellijPathKey = "terminal.zellij-path"
+        "preferences.picture-in-picture.enabled"
+    private static let boardCenteringKey = "preferences.appearance.board-centering.mode"
+    private static let sheetScaleKey = "preferences.appearance.sheet-scale.percent"
+    private static let zellijPathKey = "preferences.terminal.zellij.executable-path"
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
@@ -74,7 +75,7 @@ final class AppPreferences {
         while version < schemaVersion {
             switch version {
             case 0:
-                // Version 1 adopts existing per-key preferences without changing them.
+                // Version 1 records the current preference schema; missing values use defaults.
                 break
             default:
                 return

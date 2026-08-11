@@ -392,8 +392,8 @@ final class SheetNavigationManager {
         return source
     }()
 
-    static let enabledKey = "features.vim-style-sheet-navigation.enabled"
-    private static let hintAlphabetKey = "features.vim-style-sheet-navigation.hint-alphabet"
-    private static let ignoredHostsKey = "features.vim-style-sheet-navigation.ignored-hosts"
-    private static let pausedBoardIDsKey = "features.vim-style-sheet-navigation.paused-board-ids"
+    static let enabledKey = "preferences.sheet-navigation.enabled"
+    private static let hintAlphabetKey = "preferences.sheet-navigation.hint-alphabet"
+    private static let ignoredHostsKey = "preferences.sheet-navigation.ignored-hosts"
+    private static let pausedBoardIDsKey = "preferences.sheet-navigation.paused-board-ids"
 }

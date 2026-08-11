@@ -143,34 +143,39 @@ struct ProfileManagerTests {
         let storedKeys = Set((defaults.persistentDomain(forName: suiteName) ?? [:]).keys)
         #expect(
             storedKeys == [
-                "preferences.schemaVersion",
-                "appearance.motion",
-                "features.native-picture-in-picture.enabled",
-                "appearance.sheet-scale",
-                "terminal.zellij-path",
+                "preferences.schema.version",
+                "preferences.appearance.motion.mode",
+                "preferences.picture-in-picture.enabled",
+                "preferences.appearance.sheet-scale.percent",
+                "preferences.terminal.zellij.executable-path",
             ])
-        #expect(defaults.integer(forKey: "preferences.schemaVersion") == 1)
+        #expect(defaults.integer(forKey: "preferences.schema.version") == 1)
         #expect(restored.motionPreference == .standard)
         #expect(restored.nativePictureInPictureEnabled)
         #expect(restored.sheetScale == 80)
         #expect(restored.zellijPath == "/opt/homebrew/bin/zellij")
     }
 
-    @Test func appPreferencesMigrateLegacyValuesAndDoNotDowngradeFutureSchema() {
-        let legacySuiteName = "AppPreferencesLegacyTests-\(UUID().uuidString)"
-        let legacyDefaults = UserDefaults(suiteName: legacySuiteName)!
-        defer { legacyDefaults.removePersistentDomain(forName: legacySuiteName) }
-        _ = AppPreferences(defaults: legacyDefaults)
-        #expect(legacyDefaults.integer(forKey: "preferences.schemaVersion") == 1)
+    @Test func appPreferencesInitializeMissingSchema() {
+        let suiteName = "AppPreferencesMissingSchemaTests-\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        defer { defaults.removePersistentDomain(forName: suiteName) }
 
-        let futureSuiteName = "AppPreferencesFutureTests-\(UUID().uuidString)"
-        let futureDefaults = UserDefaults(suiteName: futureSuiteName)!
-        defer { futureDefaults.removePersistentDomain(forName: futureSuiteName) }
-        futureDefaults.set(2, forKey: "preferences.schemaVersion")
+        let preferences = AppPreferences(defaults: defaults)
 
-        _ = AppPreferences(defaults: futureDefaults)
+        #expect(defaults.integer(forKey: "preferences.schema.version") == 1)
+        #expect(preferences.sheetScale == AppPreferences.defaultSheetScale)
+    }
 
-        #expect(futureDefaults.integer(forKey: "preferences.schemaVersion") == 2)
+    @Test func appPreferencesDoNotDowngradeFutureSchema() {
+        let suiteName = "AppPreferencesFutureSchemaTests-\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        defaults.set(2, forKey: "preferences.schema.version")
+
+        _ = AppPreferences(defaults: defaults)
+
+        #expect(defaults.integer(forKey: "preferences.schema.version") == 2)
     }
 
     @Test func motionPreferenceFollowsOrOverridesSystemSetting() {

@@ -150,7 +150,6 @@ struct SheetNavigationTests {
         let suiteName = "SheetNavigationManagerTests-\(UUID().uuidString)"
         let defaults = UserDefaults(suiteName: suiteName)!
         defer { defaults.removePersistentDomain(forName: suiteName) }
-        defaults.set(true, forKey: "features.vimium-c.enabled")
 
         let manager = SheetNavigationManager(defaults: defaults, scriptSource: "")
         #expect(!manager.isEnabled)
@@ -163,6 +162,12 @@ struct SheetNavigationTests {
         #expect(manager.userContentController.userScripts[0].source.contains("\"enabled\":true"))
         #expect(manager.userContentController.userScripts[0].source.contains("\"alphabet\":\"a1\""))
         #expect(manager.ignoredHosts == ["example.com", "www.apple.com"])
+        #expect(
+            Set((defaults.persistentDomain(forName: suiteName) ?? [:]).keys) == [
+                "preferences.sheet-navigation.enabled",
+                "preferences.sheet-navigation.hint-alphabet",
+                "preferences.sheet-navigation.ignored-hosts",
+            ])
 
         let restored = SheetNavigationManager(defaults: defaults, scriptSource: "")
         #expect(restored.isEnabled)
@@ -180,6 +185,11 @@ struct SheetNavigationTests {
 
         manager.setBoardPaused(true, for: firstBoardID)
         manager.setBoardPaused(true, for: secondBoardID)
+
+        #expect(
+            Set((defaults.persistentDomain(forName: suiteName) ?? [:]).keys) == [
+                "preferences.sheet-navigation.paused-board-ids"
+            ])
 
         #expect(manager.isBoardPaused(firstBoardID))
         #expect(manager.isBoardPaused(secondBoardID))

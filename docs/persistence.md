@@ -46,23 +46,37 @@ Version 1 documents decode as Web Boards and are written back as version 2. An o
 
 ## App preference keys
 
-- `preferences.schemaVersion`
-- `features.vim-style-sheet-navigation.enabled`
-- `features.vim-style-sheet-navigation.hint-alphabet`
-- `features.vim-style-sheet-navigation.ignored-hosts`
-- `shortcuts.<ConfigurableShortcut raw value>`
-- `shortcuts.desk-number`, optional `shortcuts.desk-number.disabled`
-- `appearance.motion`
-- `appearance.board-centering`
-- `appearance.sheet-scale`
-- `features.native-picture-in-picture.enabled`
+- App-wide `UserDefaults` keys use `preferences.<domain>.<setting>` or
+  `preferences.<domain>.<setting>.<property>`. Domains describe stable preference
+  ownership rather than Settings tab placement. Key components use kebab-case.
 
-The absence of `preferences.schemaVersion` means version 0. Preferences migrate one version at a time, preserve existing per-key values when adopting version 1, and update the version key only after each migration step completes. A schema version newer than the app supports is not overwritten or downgraded.
+| Domain | Setting | Key | Stored value | Default | Settings location |
+| --- | --- | --- | --- | --- | --- |
+| `schema` | Version | `preferences.schema.version` | `Int` | `1` | Internal |
+| `sheet-navigation` | Enabled | `preferences.sheet-navigation.enabled` | `Bool` | `false` | Features > Vim-style Sheet Navigation |
+| `sheet-navigation` | Hint alphabet | `preferences.sheet-navigation.hint-alphabet` | `String` | `asdfghjkl` | Features > Vim-style Sheet Navigation |
+| `sheet-navigation` | Ignored hosts | `preferences.sheet-navigation.ignored-hosts` | `[String]` | `[]` | Features > Vim-style Sheet Navigation |
+| `sheet-navigation` | Paused Boards | `preferences.sheet-navigation.paused-board-ids` | `[String]` of UUIDs | `[]` | Board state; no direct setting |
+| `shortcuts` | Action override | `preferences.shortcuts.actions.<action-id>` | Property-list encoded `ShortcutOverride` | Absent; uses the action default | Shortcuts > Shortcuts |
+| `shortcuts` | Desk number binding | `preferences.shortcuts.desk-number.binding` | Property-list encoded `ShortcutBinding` | `Command` + `Option` + digit | Shortcuts > Focus Desk 1–10 |
+| `shortcuts` | Desk number disabled | `preferences.shortcuts.desk-number.disabled` | `Bool` | Absent / `false` | Shortcuts > Focus Desk 1–10 |
+| `appearance` | Motion mode | `preferences.appearance.motion.mode` | `MotionPreference.rawValue` | `follow-system` | Appearance > Motion |
+| `appearance` | Board centering mode | `preferences.appearance.board-centering.mode` | `FocusedBoardCentering.rawValue` | `never` | Appearance > Board Centering |
+| `appearance` | Sheet scale | `preferences.appearance.sheet-scale.percent` | `Int` (`50...200`) | `100` | Appearance > Sheet Scale |
+| `picture-in-picture` | Enabled | `preferences.picture-in-picture.enabled` | `Bool` | `false` | Features > Experimental Picture in Picture |
+| `terminal` | Zellij executable path | `preferences.terminal.zellij.executable-path` | `String` | Empty | Terminal > Zellij |
+
+The absence of `preferences.schema.version` means version 0. Preferences migrate one
+version at a time and update the version key only after each migration step
+completes. Missing values use their defaults. A schema version newer than the app
+supports is not overwritten or downgraded.
 
 ## Compatibility rules
 
-- Existing keys and enum raw values are never renamed or removed within version 1.
-- Existing keys do not change meaning or encoded type within version 1.
+- Existing preference keys and enum raw values are not renamed or removed within a
+  released schema version.
+- Existing preference keys do not change meaning or encoded type within a released
+  schema version.
 - New fields must be optional or decode with a default when absent.
 - Decoders ignore unknown keys so newer additive documents remain readable.
 - Breaking changes require a new schema version and an explicit migration before writing the new format.

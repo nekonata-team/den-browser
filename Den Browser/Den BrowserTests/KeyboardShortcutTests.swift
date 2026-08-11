@@ -24,7 +24,14 @@ struct KeyboardShortcutTests {
         preferences.clearShortcut(for: .focusPreviousBoard)
 
         let restored = AppPreferences(defaults: defaults)
-        #expect(defaults.integer(forKey: "preferences.schemaVersion") == 1)
+        #expect(
+            Set((defaults.persistentDomain(forName: suiteName) ?? [:]).keys) == [
+                "preferences.schema.version",
+                "preferences.shortcuts.actions.toggle-den-mode",
+                "preferences.shortcuts.actions.focus-previous-board",
+                "preferences.shortcuts.desk-number.binding",
+            ])
+        #expect(defaults.integer(forKey: "preferences.schema.version") == 1)
         #expect(restored.shortcut(for: .toggleDenMode) == customToggle)
         #expect(restored.shortcut(for: .focusPreviousBoard) == nil)
         #expect(restored.deskNumberBinding == customDeskNumber)
@@ -68,13 +75,15 @@ struct KeyboardShortcutTests {
         let suiteName = "KeyboardShortcutCorruptionTests-\(UUID())"
         let defaults = try #require(UserDefaults(suiteName: suiteName))
         defer { defaults.removePersistentDomain(forName: suiteName) }
-        defaults.set(Data("not a property list".utf8), forKey: "shortcuts.toggle-den-mode")
+        defaults.set(
+            Data("not a property list".utf8),
+            forKey: "preferences.shortcuts.actions.toggle-den-mode")
 
         let duplicate = ShortcutOverride.assigned(
             ShortcutBinding(key: .character("b"), modifiers: [.control]))
         let data = try PropertyListEncoder().encode(duplicate)
-        defaults.set(data, forKey: "shortcuts.focus-previous-board")
-        defaults.set(data, forKey: "shortcuts.focus-next-board")
+        defaults.set(data, forKey: "preferences.shortcuts.actions.focus-previous-board")
+        defaults.set(data, forKey: "preferences.shortcuts.actions.focus-next-board")
 
         let preferences = AppPreferences(defaults: defaults)
         let effective = ConfigurableShortcut.allCases.compactMap(preferences.shortcut)
