@@ -61,9 +61,8 @@ test:
 
 # Run deterministic macOS UI interaction tests. Pass a target to run a specific class or case (e.g. just ui-test Den_BrowserUITests/testNewBoardIsCenteredAfterCreation).
 [group("test")]
-[script]
-ui-test target="":
-    bash scripts/ui-test.sh "{{target}}"
+ui-test target="Den_BrowserUITests":
+    rtk test "xcodebuild test -project '{{project}}' -scheme '{{scheme}}' -destination 'platform=macOS' -derivedDataPath '{{derived_data}}' -only-testing:'Den BrowserUITests/{{target}}' CODE_SIGNING_ALLOWED=NO"
 
 # Build then run unit tests.
 [group("test")]
