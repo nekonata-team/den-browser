@@ -178,6 +178,28 @@ struct ProfileManagerTests {
         #expect(defaults.integer(forKey: "preferences.schema.version") == 2)
     }
 
+    @Test func profileLoadPrunesPausedBoardsThatAreNotPersisted() {
+        let directory = temporaryProfileDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let suiteName = "ProfilePausedBoardPruningTests-\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let removedBoardID = UUID()
+        defaults.set(
+            [removedBoardID.uuidString],
+            forKey: "preferences.sheet-navigation.paused-board-ids")
+        let navigation = SheetNavigationManager(defaults: defaults, scriptSource: "")
+
+        _ = ProfileManager(
+            directoryURL: directory,
+            sheetNavigation: navigation,
+            preferences: AppPreferences(defaults: defaults),
+            removeDataStore: { _ in })
+
+        #expect(navigation.pausedBoardIDs.isEmpty)
+        #expect(defaults.stringArray(forKey: "preferences.sheet-navigation.paused-board-ids") == [])
+    }
+
     @Test func motionPreferenceFollowsOrOverridesSystemSetting() {
         #expect(
             DenMotion.shouldReduceMotion(
@@ -277,6 +299,28 @@ struct ProfileManagerTests {
         #expect(!(await manager.deleteProfile(personalID)))
         #expect(await manager.deleteProfile(work.id))
         #expect(manager.profiles.map(\.id) == [personalID])
+    }
+
+    @Test func deletingProfileRemovesPausedStateForItsBoards() async throws {
+        let directory = temporaryProfileDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let suiteName = "ProfilePausedBoardDeletionTests-\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let navigation = SheetNavigationManager(defaults: defaults, scriptSource: "")
+        let manager = ProfileManager(
+            directoryURL: directory,
+            sheetNavigation: navigation,
+            preferences: AppPreferences(defaults: defaults),
+            removeDataStore: { _ in })
+        let work = try #require(manager.createProfile(name: "Work", color: .gray))
+        let store = try #require(manager.store(for: work.id))
+        store.addBoard(urlString: "https://example.com")
+        let boardID = try #require(store.focusedDesk?.focusedBoardID)
+        navigation.setBoardPaused(true, for: boardID)
+
+        #expect(await manager.deleteProfile(work.id))
+        #expect(!navigation.isBoardPaused(boardID))
     }
 
     @Test func failedWebsiteDataDeletionRestoresProfileDocument() async throws {

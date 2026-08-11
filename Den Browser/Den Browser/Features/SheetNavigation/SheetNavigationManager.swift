@@ -133,10 +133,22 @@ final class SheetNavigationManager {
     func setBoardPaused(_ paused: Bool, for boardID: UUID) {
         guard pausedBoardIDs.contains(boardID) != paused else { return }
         if paused { pausedBoardIDs.insert(boardID) } else { pausedBoardIDs.remove(boardID) }
-        defaults.set(pausedBoardIDs.map(\.uuidString).sorted(), forKey: Self.pausedBoardIDsKey)
+        persistPausedBoardIDs()
         for webView in webViews.allObjects where boardIDByWebView[ObjectIdentifier(webView)] == boardID {
             applyConfiguration(to: webView)
         }
+    }
+
+    func removeBoardPausedState(for boardID: UUID) {
+        guard pausedBoardIDs.remove(boardID) != nil else { return }
+        persistPausedBoardIDs()
+    }
+
+    func removePausedBoards(notIn validBoardIDs: Set<UUID>) {
+        let retainedBoardIDs = pausedBoardIDs.intersection(validBoardIDs)
+        guard retainedBoardIDs != pausedBoardIDs else { return }
+        pausedBoardIDs = retainedBoardIDs
+        persistPausedBoardIDs()
     }
 
     static func normalizeHintAlphabet(_ alphabet: String) -> String? {
@@ -391,6 +403,10 @@ final class SheetNavigationManager {
         else { return "" }
         return source
     }()
+
+    private func persistPausedBoardIDs() {
+        defaults.set(pausedBoardIDs.map(\.uuidString).sorted(), forKey: Self.pausedBoardIDsKey)
+    }
 
     static let enabledKey = "preferences.sheet-navigation.enabled"
     private static let hintAlphabetKey = "preferences.sheet-navigation.hint-alphabet"

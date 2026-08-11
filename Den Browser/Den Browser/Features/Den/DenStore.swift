@@ -464,6 +464,7 @@ struct RecentlyRemovedBoard {
     let board: BoardState
     let sourceDeskID: UUID
     let sourceBoardIndex: Int
+    let wasSheetNavigationPaused: Bool
 }
 
 struct PendingDeskReplacement {

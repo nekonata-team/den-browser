@@ -65,7 +65,8 @@ struct DenStoreDeskTests {
         let restorationCandidate = RecentlyRemovedBoard(
             board: board("Removed"),
             sourceDeskID: other.id,
-            sourceBoardIndex: 0)
+            sourceBoardIndex: 0,
+            wasSheetNavigationPaused: false)
         store.recentlyRemovedBoard = restorationCandidate
         store.toggleFocusedBoardMaximized()
         store.showReplaceDeskPanel()
@@ -96,6 +97,27 @@ struct DenStoreDeskTests {
         #expect(!store.isReplaceDeskPanelPresented)
         #expect(!store.isDenMode)
         #expect(savedState == store.state)
+    }
+
+    @Test func replacingDeskRemovesPausedStateForDiscardedBoards() {
+        let suiteName = "DenStoreDeskReplacementPauseTests-\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let navigation = SheetNavigationManager(defaults: defaults, scriptSource: "")
+        let preferences = AppPreferences(defaults: defaults)
+        let oldBoard = board("Old")
+        let replacing = desk("Research", boards: [oldBoard], focusedBoardID: oldBoard.id)
+        let other = desk("Other")
+        let store = DenStore(
+            state: DenState(desks: [replacing, other], focusedDeskID: replacing.id),
+            sheetNavigation: navigation,
+            preferences: preferences)
+
+        navigation.setBoardPaused(true, for: oldBoard.id)
+        _ = store.replaceFocusedDesk(label: "Morning", preset: .chatGPT)
+        store.confirmDeskReplacement()
+
+        #expect(!navigation.isBoardPaused(oldBoard.id))
     }
 
     @Test func cancellingDeskReplacementKeepsDeskAndPanel() {
@@ -286,6 +308,27 @@ struct DenStoreDeskTests {
             #expect(runtime.webView.navigationDelegate == nil)
             #expect(runtime.webView.uiDelegate == nil)
         }
+    }
+
+    @Test func deletingDeskRemovesPausedStateForItsBoards() {
+        let suiteName = "DenStoreDeskDeletionPauseTests-\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let navigation = SheetNavigationManager(defaults: defaults, scriptSource: "")
+        let preferences = AppPreferences(defaults: defaults)
+        let removedBoard = board("Removed")
+        let populated = desk("Populated", boards: [removedBoard], focusedBoardID: removedBoard.id)
+        let empty = desk("Empty")
+        let store = DenStore(
+            state: DenState(desks: [populated, empty], focusedDeskID: populated.id),
+            sheetNavigation: navigation,
+            preferences: preferences)
+
+        navigation.setBoardPaused(true, for: removedBoard.id)
+        store.deleteFocusedDesk()
+        store.confirmDeskDeletion()
+
+        #expect(!navigation.isBoardPaused(removedBoard.id))
     }
 
     @Test func lastDeskCannotBeDeleted() {

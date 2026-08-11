@@ -402,6 +402,29 @@ struct DenStoreBoardTests {
         }
     }
 
+    @Test func removingAndRestoringBoardRestoresSheetNavigationPause() {
+        let suiteName = "DenStorePausedBoardRestorationTests-\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let navigation = SheetNavigationManager(defaults: defaults, scriptSource: "")
+        let board = board("Paused")
+        let store = DenStore(
+            state: DenState(
+                desks: [desk("Desk", boards: [board], focusedBoardID: board.id)],
+                focusedDeskID: UUID()),
+            sheetNavigation: navigation,
+            preferences: AppPreferences(defaults: defaults))
+
+        navigation.setBoardPaused(true, for: board.id)
+        store.removeFocusedBoard()
+
+        #expect(!navigation.isBoardPaused(board.id))
+
+        store.restoreRecentlyRemovedBoard()
+
+        #expect(navigation.isBoardPaused(board.id))
+    }
+
     @Test func removingFirstBoardFocusesNextBoard() {
         let boards = [board("A"), board("B"), board("C")]
         withStore(desks: [desk("Desk", boards: boards, focusedBoardID: boards[0].id)]) { store in

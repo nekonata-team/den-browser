@@ -66,6 +66,11 @@ Version 1 documents decode as Web Boards and are written back as version 2. An o
 | `picture-in-picture` | Enabled | `preferences.picture-in-picture.enabled` | `Bool` | `false` | Features > Experimental Picture in Picture |
 | `terminal` | Zellij executable path | `preferences.terminal.zellij.executable-path` | `String` | Empty | Terminal > Zellij |
 
+Paused Board IDs are removed when their Board, Desk, or Profile is permanently
+removed. They are also pruned against the loaded Profile documents at startup.
+Removing a Board for the current-run restore action temporarily removes the ID
+and restores its paused state if the Board is restored.
+
 The absence of `preferences.schema.version` means version 0. Preferences migrate one
 version at a time and update the version key only after each migration step
 completes. Missing values use their defaults. A schema version newer than the app

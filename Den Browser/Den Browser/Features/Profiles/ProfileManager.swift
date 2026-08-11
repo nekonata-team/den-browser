@@ -140,6 +140,7 @@ final class ProfileManager {
             try await removeDataStore(dataStoreID)
             profiles.removeAll { $0.id == profileID }
             persistedProfiles.removeValue(forKey: profileID)
+            prunePausedBoardIDs()
             do {
                 try saveIndex()
             } catch {
@@ -235,6 +236,7 @@ final class ProfileManager {
         loaded = deduplicated(loaded)
         persistedProfiles = Dictionary(uniqueKeysWithValues: loaded.map { ($0.profile.id, $0) })
         profiles = loaded.map(\.profile)
+        prunePausedBoardIDs()
         if let newPersonalProfile {
             do {
                 try save(newPersonalProfile)
@@ -341,6 +343,14 @@ final class ProfileManager {
 
     private func reportSaveError(_ error: Error) {
         errorMessage = "Could not save Profiles: \(error.localizedDescription)"
+    }
+
+    private func prunePausedBoardIDs() {
+        let boardIDs = Set(
+            persistedProfiles.values.flatMap { persisted in
+                persisted.den.desks.flatMap(\.boards).map(\.id)
+            })
+        sheetNavigation.removePausedBoards(notIn: boardIDs)
     }
 
     private func decode<T: Decodable>(_ type: T.Type, from url: URL) -> T? {
