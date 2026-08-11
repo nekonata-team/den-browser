@@ -48,6 +48,15 @@ extension DenStore {
                         afterBoardID: board.id
                     )
                 },
+                onCopyURLSucceeded: { [weak self] in
+                    self?.showToast("Copied Current Sheet URL.", style: .success)
+                },
+                onCopyURLFailed: { [weak self] in
+                    self?.showToast("Could not copy Current Sheet URL.", style: .error)
+                },
+                onPasteURLFailed: { [weak self] in
+                    self?.showToast("Clipboard does not contain a supported URL.", style: .warning)
+                },
                 onOpenBoardPanel: { [weak self] in
                     self?.focusBoard(board.id)
                     self?.showOpenBoardPanel()

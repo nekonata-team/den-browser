@@ -22,6 +22,9 @@ final class SheetNavigationManager {
         var onEditCurrentSheet: () -> Void = {}
         var onOpenCurrentSheetInNewBoard: (URL) -> Void = { _ in }
         var onPasteURLInNewBoard: (URL) -> Void = { _ in }
+        var onCopyURLSucceeded: () -> Void = {}
+        var onCopyURLFailed: () -> Void = {}
+        var onPasteURLFailed: () -> Void = {}
         var onOpenBoardPanel: () -> Void = {}
         var onShowOverview: () -> Void = {}
         var onRemoveBoard: () -> Void = {}
@@ -192,9 +195,19 @@ final class SheetNavigationManager {
 
         switch action {
         case "copyURL":
-            guard let url = webView.url else { return false }
+            guard let actions = actionsByWebView[ObjectIdentifier(webView)] else { return false }
+            guard let url = webView.url else {
+                actions.onCopyURLFailed()
+                return false
+            }
             NSPasteboard.general.clearContents()
-            return NSPasteboard.general.setString(url.absoluteString, forType: .string)
+            let copied = NSPasteboard.general.setString(url.absoluteString, forType: .string)
+            if copied {
+                actions.onCopyURLSucceeded()
+            } else {
+                actions.onCopyURLFailed()
+            }
+            return copied
         case "openBoard", "commandOpenBoard":
             guard
                 let urlString = message["url"] as? String,
@@ -248,12 +261,15 @@ final class SheetNavigationManager {
             action()
             return true
         case "pasteURL", "pasteURLInNewBoard":
+            guard let actions = actionsByWebView[ObjectIdentifier(webView)] else { return false }
             guard
                 let value = NSPasteboard.general.string(forType: .string),
                 let url = URL(string: value.trimmingCharacters(in: .whitespacesAndNewlines)),
-                let actions = actionsByWebView[ObjectIdentifier(webView)],
                 actions.isSupportedSheetURL(url)
-            else { return false }
+            else {
+                actions.onPasteURLFailed()
+                return false
+            }
             if action == "pasteURL" {
                 actions.onNavigateCurrentSheet(url)
             } else {

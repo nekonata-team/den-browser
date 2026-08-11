@@ -467,6 +467,45 @@ struct SheetNavigationTests {
         #expect(store.state.drawerItems.first?.url == fileURL)
     }
 
+    @Test func sheetNavigationShowsToastForCopyAndInvalidPaste() async throws {
+        let manager = SheetNavigationManager(scriptSource: "")
+        let source = board("Source", url: "https://source.example/")
+        let currentDesk = desk("Desk", boards: [source], focusedBoardID: source.id)
+        let store = DenStore(
+            state: DenState(desks: [currentDesk], focusedDeskID: currentDesk.id),
+            sheetNavigation: manager
+        )
+        let webView = store.runtime(for: source).webView
+        let waiter = WebViewLoadWaiter()
+
+        manager.setEnabled(true)
+        await waiter.load("<html>Current Sheet</html>", baseURL: URL(string: "https://source.example/")!, in: webView)
+        defer { NSPasteboard.general.clearContents() }
+
+        #expect(manager.handleScriptMessage(["action": "copyURL"], from: webView))
+        #expect(store.toastMessage?.message == "Copied Current Sheet URL.")
+
+        NSPasteboard.general.clearContents()
+        for action in ["pasteURL", "pasteURLInNewBoard"] {
+            #expect(!manager.handleScriptMessage(["action": action], from: webView))
+            #expect(store.toastMessage?.message == "Clipboard does not contain a supported URL.")
+        }
+    }
+
+    @Test func sheetNavigationReportsCopyFailureWithoutCurrentURL() {
+        let manager = SheetNavigationManager(scriptSource: "")
+        let webView = WKWebView()
+        var didReportFailure = false
+        manager.didOpen(
+            webView,
+            actions: .init(onCopyURLFailed: { didReportFailure = true })
+        )
+        manager.setEnabled(true)
+
+        #expect(!manager.handleScriptMessage(["action": "copyURL"], from: webView))
+        #expect(didReportFailure)
+    }
+
     @Test func commandClickCanOpenLinkWhenSheetNavigationIsDisabled() {
         let manager = SheetNavigationManager(scriptSource: "")
         let source = board("Source", url: "https://source.example/")
@@ -806,6 +845,9 @@ struct SheetNavigationTests {
             onEditCurrentSheet: {},
             onOpenCurrentSheetInNewBoard: { _ in },
             onPasteURLInNewBoard: { _ in },
+            onCopyURLSucceeded: {},
+            onCopyURLFailed: {},
+            onPasteURLFailed: {},
             onOpenBoardPanel: {},
             onShowOverview: {},
             onRemoveBoard: {},
