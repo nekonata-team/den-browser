@@ -49,7 +49,7 @@ struct BoardRuntimeWebUITests {
             SheetNavigationPolicy.shouldOpenLinkInNewBoard(
                 navigationType: .linkActivated,
                 modifierFlags: .command,
-                buttonNumber: 0,
+                button: .primary,
                 url: url
             )
         )
@@ -57,7 +57,7 @@ struct BoardRuntimeWebUITests {
             !SheetNavigationPolicy.shouldOpenLinkInNewBoard(
                 navigationType: .linkActivated,
                 modifierFlags: [.option, .command],
-                buttonNumber: 0,
+                button: .primary,
                 url: url
             )
         )
@@ -65,7 +65,7 @@ struct BoardRuntimeWebUITests {
             !SheetNavigationPolicy.shouldOpenLinkInNewBoard(
                 navigationType: .linkActivated,
                 modifierFlags: .command,
-                buttonNumber: 4,
+                button: .middle,
                 url: url
             )
         )
@@ -73,7 +73,7 @@ struct BoardRuntimeWebUITests {
             SheetNavigationPolicy.shouldOpenLinkInNewBoard(
                 navigationType: .linkActivated,
                 modifierFlags: [],
-                buttonNumber: 4,
+                button: .middle,
                 url: url
             )
         )
@@ -81,7 +81,7 @@ struct BoardRuntimeWebUITests {
             SheetNavigationPolicy.shouldOpenLinkInNewBoard(
                 navigationType: .linkActivated,
                 modifierFlags: [.shift],
-                buttonNumber: 4,
+                button: .middle,
                 url: url
             )
         )
@@ -89,7 +89,7 @@ struct BoardRuntimeWebUITests {
             !SheetNavigationPolicy.shouldOpenLinkInNewBoard(
                 navigationType: .linkActivated,
                 modifierFlags: [.option],
-                buttonNumber: 4,
+                button: .middle,
                 url: url
             )
         )
@@ -97,7 +97,7 @@ struct BoardRuntimeWebUITests {
             !SheetNavigationPolicy.shouldOpenLinkInNewBoard(
                 navigationType: .other,
                 modifierFlags: .command,
-                buttonNumber: 0,
+                button: .primary,
                 url: url
             )
         )
@@ -105,7 +105,7 @@ struct BoardRuntimeWebUITests {
             !SheetNavigationPolicy.shouldOpenLinkInNewBoard(
                 navigationType: .linkActivated,
                 modifierFlags: .command,
-                buttonNumber: 0,
+                button: .primary,
                 url: URL(string: "mailto:test@example.com")
             )
         )
@@ -113,7 +113,7 @@ struct BoardRuntimeWebUITests {
             SheetNavigationPolicy.shouldOpenLinkInNewBoard(
                 navigationType: .linkActivated,
                 modifierFlags: [.command, .shift],
-                buttonNumber: 0,
+                button: .primary,
                 url: url
             )
         )
@@ -147,7 +147,7 @@ struct BoardRuntimeWebUITests {
                 url,
                 navigationType: .linkActivated,
                 modifierFlags: [],
-                buttonNumber: 4,
+                button: .middle,
                 opensNewContext: false
             )
         )
@@ -162,7 +162,7 @@ struct BoardRuntimeWebUITests {
                 url,
                 navigationType: .linkActivated,
                 modifierFlags: [.shift],
-                buttonNumber: 4,
+                button: .middle,
                 opensNewContext: false
             )
         )
@@ -177,7 +177,7 @@ struct BoardRuntimeWebUITests {
             SheetNavigationPolicy.shouldKeepLinkInDrawer(
                 navigationType: .linkActivated,
                 modifierFlags: .option,
-                buttonNumber: 0,
+                button: .primary,
                 url: url
             )
         )
@@ -185,7 +185,7 @@ struct BoardRuntimeWebUITests {
             !SheetNavigationPolicy.shouldKeepLinkInDrawer(
                 navigationType: .linkActivated,
                 modifierFlags: [.option, .shift],
-                buttonNumber: 0,
+                button: .primary,
                 url: url
             )
         )
@@ -193,7 +193,7 @@ struct BoardRuntimeWebUITests {
             !SheetNavigationPolicy.shouldKeepLinkInDrawer(
                 navigationType: .linkActivated,
                 modifierFlags: .option,
-                buttonNumber: 0,
+                button: .primary,
                 url: URL(string: "mailto:test@example.com")
             )
         )
@@ -224,7 +224,7 @@ struct BoardRuntimeWebUITests {
                 normalURL,
                 navigationType: .linkActivated,
                 modifierFlags: [],
-                buttonNumber: 0,
+                button: .primary,
                 opensNewContext: false
             )
         )
@@ -236,7 +236,7 @@ struct BoardRuntimeWebUITests {
                 targetlessURL,
                 navigationType: .linkActivated,
                 modifierFlags: [],
-                buttonNumber: 0,
+                button: .primary,
                 opensNewContext: true
             )
         )
@@ -248,7 +248,7 @@ struct BoardRuntimeWebUITests {
                 commandURL,
                 navigationType: .linkActivated,
                 modifierFlags: .command,
-                buttonNumber: 0,
+                button: .primary,
                 opensNewContext: true
             )
         )
@@ -260,7 +260,7 @@ struct BoardRuntimeWebUITests {
                 commandShiftURL,
                 navigationType: .linkActivated,
                 modifierFlags: [.command, .shift],
-                buttonNumber: 0,
+                button: .primary,
                 opensNewContext: true
             )
         )
@@ -272,7 +272,7 @@ struct BoardRuntimeWebUITests {
                 optionURL,
                 navigationType: .linkActivated,
                 modifierFlags: .option,
-                buttonNumber: 0,
+                button: .primary,
                 opensNewContext: false
             )
         )
@@ -284,7 +284,7 @@ struct BoardRuntimeWebUITests {
                 middleURL,
                 navigationType: .linkActivated,
                 modifierFlags: [],
-                buttonNumber: 4,
+                button: .middle,
                 opensNewContext: false
             )
         )
@@ -296,7 +296,7 @@ struct BoardRuntimeWebUITests {
                 shiftMiddleURL,
                 navigationType: .linkActivated,
                 modifierFlags: [.shift],
-                buttonNumber: 4,
+                button: .middle,
                 opensNewContext: false
             )
         )

@@ -14,25 +14,25 @@ enum SheetNavigationPolicy {
     static func shouldOpenLinkInNewBoard(
         navigationType: WKNavigationType,
         modifierFlags: NSEvent.ModifierFlags,
-        buttonNumber: Int,
+        button: MouseButton?,
         url: URL?
     ) -> Bool {
         let clickModifiers = modifierFlags.intersection([.command, .control, .option, .shift])
         return navigationType == .linkActivated
-            && ((buttonNumber == 0 && (clickModifiers == .command || clickModifiers == [.command, .shift]))
-                || (buttonNumber == 4 && (clickModifiers == [] || clickModifiers == [.shift])))
+            && ((button == .primary && (clickModifiers == .command || clickModifiers == [.command, .shift]))
+                || (button == .middle && (clickModifiers == [] || clickModifiers == [.shift])))
             && url.map(SheetURLPolicy.isSupported) == true
     }
 
     static func shouldKeepLinkInDrawer(
         navigationType: WKNavigationType,
         modifierFlags: NSEvent.ModifierFlags,
-        buttonNumber: Int,
+        button: MouseButton?,
         url: URL?
     ) -> Bool {
         let clickModifiers = modifierFlags.intersection([.command, .control, .option, .shift])
         return navigationType == .linkActivated
-            && buttonNumber == 0
+            && button == .primary
             && clickModifiers == .option
             && url.map(SheetURLPolicy.isSupported) == true
     }

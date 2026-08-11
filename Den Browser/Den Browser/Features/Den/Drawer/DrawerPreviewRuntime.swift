@@ -69,13 +69,13 @@ final class DrawerPreviewRuntime: BaseWebRuntime {
         _ url: URL,
         navigationType: WKNavigationType,
         modifierFlags: NSEvent.ModifierFlags,
-        buttonNumber: Int,
+        button: MouseButton?,
         opensNewContext: Bool
     ) -> Bool {
         if SheetNavigationPolicy.shouldOpenLinkInNewBoard(
             navigationType: navigationType,
             modifierFlags: modifierFlags,
-            buttonNumber: buttonNumber,
+            button: button,
             url: url
         ) {
             if modifierFlags.contains(.shift) {
@@ -90,7 +90,7 @@ final class DrawerPreviewRuntime: BaseWebRuntime {
             || SheetNavigationPolicy.shouldKeepLinkInDrawer(
                 navigationType: navigationType,
                 modifierFlags: modifierFlags,
-                buttonNumber: buttonNumber,
+                button: button,
                 url: url
             )
         {

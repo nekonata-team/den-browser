@@ -139,13 +139,13 @@ final class BoardRuntime: BaseWebRuntime, NSWindowDelegate, ObservableObject {
         _ url: URL,
         navigationType: WKNavigationType,
         modifierFlags: NSEvent.ModifierFlags,
-        buttonNumber: Int,
+        button: MouseButton?,
         opensNewContext: Bool
     ) -> Bool {
         if SheetNavigationPolicy.shouldKeepLinkInDrawer(
             navigationType: navigationType,
             modifierFlags: modifierFlags,
-            buttonNumber: buttonNumber,
+            button: button,
             url: url
         ) {
             sheetNavigationActions.onKeepInDrawer(url)
@@ -155,7 +155,7 @@ final class BoardRuntime: BaseWebRuntime, NSWindowDelegate, ObservableObject {
         if SheetNavigationPolicy.shouldOpenLinkInNewBoard(
             navigationType: navigationType,
             modifierFlags: modifierFlags,
-            buttonNumber: buttonNumber,
+            button: button,
             url: url
         ) {
             openBoardFromModifierClick(url, modifierFlags: modifierFlags)
@@ -258,7 +258,7 @@ final class BoardRuntime: BaseWebRuntime, NSWindowDelegate, ObservableObject {
             if SheetNavigationPolicy.shouldOpenLinkInNewBoard(
                 navigationType: navigationAction.navigationType,
                 modifierFlags: navigationAction.modifierFlags,
-                buttonNumber: navigationAction.buttonNumber,
+                button: MouseButton(rawValue: navigationAction.buttonNumber),
                 url: url
             ) {
                 openBoardFromModifierClick(url, modifierFlags: navigationAction.modifierFlags)

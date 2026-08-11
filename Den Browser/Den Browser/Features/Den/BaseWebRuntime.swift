@@ -2,6 +2,11 @@ import AppKit
 import Foundation
 import WebKit
 
+enum MouseButton: Int {
+    case primary = 0
+    case middle = 4
+}
+
 @MainActor
 class BaseWebRuntime: NSObject, WKDownloadDelegate, WKNavigationDelegate, WKUIDelegate {
     static var defaultUserAgent: String {
@@ -98,7 +103,7 @@ class BaseWebRuntime: NSObject, WKDownloadDelegate, WKNavigationDelegate, WKUIDe
         _ url: URL,
         navigationType: WKNavigationType,
         modifierFlags: NSEvent.ModifierFlags,
-        buttonNumber: Int,
+        button: MouseButton?,
         opensNewContext: Bool
     ) -> Bool {
         // Overridden by subclasses if needed. Return true if handled.
@@ -149,7 +154,7 @@ class BaseWebRuntime: NSObject, WKDownloadDelegate, WKNavigationDelegate, WKUIDe
             url,
             navigationType: navigationAction.navigationType,
             modifierFlags: navigationAction.modifierFlags,
-            buttonNumber: navigationAction.buttonNumber,
+            button: MouseButton(rawValue: navigationAction.buttonNumber),
             opensNewContext: navigationAction.targetFrame == nil
         ) {
             decisionHandler(.cancel)
@@ -206,7 +211,7 @@ class BaseWebRuntime: NSObject, WKDownloadDelegate, WKNavigationDelegate, WKUIDe
                 url,
                 navigationType: navigationAction.navigationType,
                 modifierFlags: navigationAction.modifierFlags,
-                buttonNumber: navigationAction.buttonNumber,
+                button: MouseButton(rawValue: navigationAction.buttonNumber),
                 opensNewContext: true
             ) {
                 load(url)
