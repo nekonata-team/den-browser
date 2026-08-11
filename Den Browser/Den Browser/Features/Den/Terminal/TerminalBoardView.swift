@@ -70,7 +70,7 @@ struct TerminalBoardView: View {
     }
 
     private var focusModeHaloColor: Color {
-        isFocusModeFocused ? profileColor.opacity(0.16) : .clear
+        isFocusModeFocused ? profileColor.opacity(0.24) : .clear
     }
 
     private var header: some View {

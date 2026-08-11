@@ -13,7 +13,7 @@ enum DenLayout {
     static let overlayInset: CGFloat = 18
     static let deskFilterWidth: CGFloat = 320
     static let focusModeBlurRadius: CGFloat = 8
-    static let focusModeHaloRadius: CGFloat = 18
+    static let focusModeHaloRadius: CGFloat = 24
 
     static let denHeaderHeight = deskSwitcherHeight
 }
