@@ -156,6 +156,7 @@ struct BoardStrip: View {
                     .help("Open Board at End of Desk")
                     .accessibilityLabel("Open Board at End of Desk")
                 }
+
             }
             .scrollTargetLayout()
             .padding(.leading, paddings.leading)
@@ -163,6 +164,10 @@ struct BoardStrip: View {
             .padding(.top, topInset)
             .padding(.bottom, bottomInset)
             .animation(DenMotion.spatial(reduceMotion: shouldReduceMotion), value: layoutKey)
+            .transaction(value: store.state.focusedDeskID) { transaction in
+                transaction.animation = nil
+                transaction.disablesAnimations = true
+            }
         }
         .scrollPosition($scrollPosition)
         .onScrollGeometryChange(for: BoardStripScrollGeometry.self) { geometry in

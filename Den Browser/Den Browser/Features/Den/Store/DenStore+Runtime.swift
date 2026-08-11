@@ -135,7 +135,12 @@ extension DenStore {
             events: .init(
                 onClose: { [weak self] in self?.removeBoard(board.id) },
                 onFocus: { [weak self] in
-                    guard let self, !self.isDenMode else { return }
+                    guard
+                        let self,
+                        !self.isDenMode,
+                        self.temporaryContext == nil,
+                        self.focusedBoard?.id == board.id
+                    else { return }
                     self.focusBoard(board.id, exitsDenMode: true)
                 },
                 onWorkingDirectoryChange: { [weak self] path in

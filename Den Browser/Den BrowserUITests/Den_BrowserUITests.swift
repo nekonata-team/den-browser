@@ -351,6 +351,92 @@ final class Den_BrowserUITests: XCTestCase, BDD {
     }
 
     @MainActor
+    func testOverviewEnterFromTerminalInputFocusesAnotherDesk() throws {
+        let app = launchApp(terminalBoard: true)
+        let alpha = board(.alpha, in: app)
+        let bravo = board(.bravo, in: app)
+        let sheetInputWindow = app.windows["UI Testing · SHEET INPUT"]
+        let terminalInputWindow = app.windows["UI Testing · TERMINAL INPUT"]
+
+        given("a Web Board is on the next Desk and Terminal Input is focused") {
+            enterDenMode(in: app)
+            app.typeKey("l", modifierFlags: [])
+            XCTAssertTrue(bravo.wait(for: \.isSelected, toEqual: true, timeout: 5))
+            app.typeKey("2", modifierFlags: [.shift])
+            app.typeKey(.tab, modifierFlags: [.control, .shift])
+            XCTAssertTrue(alpha.wait(for: \.isSelected, toEqual: true, timeout: 5))
+            XCTAssertTrue(terminalInputWindow.waitForExistence(timeout: 5))
+        }
+
+        when("selecting that Desk in Overview and pressing Enter") {
+            enterDenMode(in: app)
+            app.typeKey("o", modifierFlags: [])
+            app.typeKey("j", modifierFlags: [])
+            app.typeKey(.return, modifierFlags: [])
+        }
+
+        then("the selected Board on the other Desk receives focus") {
+            XCTAssertTrue(bravo.wait(for: \.isSelected, toEqual: true, timeout: 5))
+            XCTAssertTrue(sheetInputWindow.waitForExistence(timeout: 5))
+
+            let stableUntil = Date(timeIntervalSinceNow: 1)
+            while Date() < stableUntil {
+                if !bravo.isSelected || terminalInputWindow.exists || !sheetInputWindow.exists {
+                    XCTFail("Overview Enter should keep the target Desk focused")
+                    break
+                }
+                RunLoop.current.run(mode: .default, before: Date(timeIntervalSinceNow: 0.05))
+            }
+        }
+    }
+
+    @MainActor
+    func testOverviewEnterCentersBoardOnAnotherDesk() throws {
+        let app = launchApp(centerBoardsAlways: true)
+        let boardStrip = app.scrollViews["board-strip"].firstMatch
+        let bravo = board(.bravo, in: app)
+        let charlie = board(.charlie, in: app)
+        let charlieSurface = boardSurface(.charlie, in: app)
+
+        given("the next Desk has enough Boards to require scrolling") {
+            enterDenMode(in: app)
+            app.typeKey("l", modifierFlags: [])
+            XCTAssertTrue(bravo.wait(for: \.isSelected, toEqual: true, timeout: 5))
+            app.typeKey("2", modifierFlags: [.shift])
+            app.typeKey(.tab, modifierFlags: [.control, .shift])
+
+            enterDenMode(in: app)
+            app.typeKey("l", modifierFlags: [])
+            XCTAssertTrue(charlie.wait(for: \.isSelected, toEqual: true, timeout: 5))
+            app.typeKey("2", modifierFlags: [.shift])
+
+            for _ in 0..<4 {
+                enterDenMode(in: app)
+                app.typeKey(.return, modifierFlags: [])
+            }
+            app.typeKey(.tab, modifierFlags: [.control, .shift])
+        }
+
+        when("selecting a middle Board in Overview and pressing Enter") {
+            enterDenMode(in: app)
+            app.typeKey("o", modifierFlags: [])
+            app.typeKey("j", modifierFlags: [])
+            app.typeKey("l", modifierFlags: [])
+            app.typeKey(.return, modifierFlags: [])
+        }
+
+        then("the selected Board is centered in the Board Strip") {
+            XCTAssertTrue(charlie.wait(for: \.isSelected, toEqual: true, timeout: 5))
+            assertEventuallyEqual(
+                actual: { charlieSurface.frame.midX },
+                expected: boardStrip.frame.midX,
+                tolerance: 15,
+                message: "Overview selection should center the Board on the target Desk"
+            )
+        }
+    }
+
+    @MainActor
     func testRemovingFocusedBoardSettlesAtLeadingEdge() throws {
         let app = launchApp()
         let boardStrip = app.scrollViews["board-strip"].firstMatch
@@ -366,7 +452,7 @@ final class Den_BrowserUITests: XCTestCase, BDD {
 
         when("removing the focused Board") {
             enterDenMode(in: app)
-            app.typeText("x")
+            app.typeText("d")
         }
 
         then("Alpha remains focused and settles at the leading edge") {
@@ -436,7 +522,7 @@ final class Den_BrowserUITests: XCTestCase, BDD {
 
         when("removing the newly created Board") {
             enterDenMode(in: app)
-            app.typeText("x")
+            app.typeText("d")
         }
 
         then("the original Boards return to their centered coordinates") {
