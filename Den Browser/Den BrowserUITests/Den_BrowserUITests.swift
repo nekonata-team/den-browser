@@ -418,19 +418,12 @@ final class Den_BrowserUITests: XCTestCase, BDD {
 
     @MainActor
     func testOverviewEnterFromTerminalInputFocusesAnotherDesk() throws {
-        let app = launchApp(terminalBoard: true)
-        let alpha = board(.alpha, in: app)
+        let app = launchApp(fixture: .terminalOverview)
         let bravo = board(.bravo, in: app)
         let sheetInputWindow = app.windows["UI Testing · SHEET INPUT"]
         let terminalInputWindow = app.windows["UI Testing · TERMINAL INPUT"]
 
         given("a Web Board is on the next Desk and Terminal Input is focused") {
-            enterDenMode(in: app)
-            app.typeKey("l", modifierFlags: [])
-            XCTAssertTrue(bravo.wait(for: \.isSelected, toEqual: true, timeout: 5))
-            app.typeKey("2", modifierFlags: [.shift])
-            app.typeKey(.tab, modifierFlags: [.control, .shift])
-            XCTAssertTrue(alpha.wait(for: \.isSelected, toEqual: true, timeout: 5))
             XCTAssertTrue(terminalInputWindow.waitForExistence(timeout: 5))
         }
 
@@ -458,26 +451,13 @@ final class Den_BrowserUITests: XCTestCase, BDD {
 
     @MainActor
     func testDirectDeskSwitchActivatesFocusedNonLeadingBoard() throws {
-        let app = launchApp()
+        let app = launchApp(fixture: .focusedNonLeadingBoard)
         let alpha = board(.alpha, in: app)
-        let bravo = board(.bravo, in: app)
         let charlie = board(.charlie, in: app)
         let charlieInput = boardSurface(.charlie, in: app).textFields["Sheet input"].firstMatch
 
         given("the second Desk has a non-leading Focused Board") {
-            enterDenMode(in: app)
-            app.typeKey("l", modifierFlags: [])
-            XCTAssertTrue(bravo.wait(for: \.isSelected, toEqual: true, timeout: 5))
-            app.typeKey("2", modifierFlags: [.shift])
-
-            enterDenMode(in: app)
-            app.typeKey("1", modifierFlags: [])
-            enterDenMode(in: app)
-            app.typeKey("l", modifierFlags: [])
             XCTAssertTrue(charlie.wait(for: \.isSelected, toEqual: true, timeout: 5))
-            app.typeKey("2", modifierFlags: [.shift])
-            XCTAssertTrue(charlie.wait(for: \.isSelected, toEqual: true, timeout: 5))
-
             XCTAssertTrue(charlieInput.waitForExistence(timeout: 5))
             charlieInput.click()
             app.typeText("before switch")
@@ -501,29 +481,14 @@ final class Den_BrowserUITests: XCTestCase, BDD {
 
     @MainActor
     func testOverviewEnterCentersBoardOnAnotherDesk() throws {
-        let app = launchApp(centerBoardsAlways: true)
+        let app = launchApp(fixture: .overflowingSecondDesk, centerBoardsAlways: true)
         let boardStrip = app.scrollViews["board-strip"].firstMatch
-        let bravo = board(.bravo, in: app)
+        let alpha = board(.alpha, in: app)
         let charlie = board(.charlie, in: app)
         let charlieSurface = boardSurface(.charlie, in: app)
 
         given("the next Desk has enough Boards to require scrolling") {
-            enterDenMode(in: app)
-            app.typeKey("l", modifierFlags: [])
-            XCTAssertTrue(bravo.wait(for: \.isSelected, toEqual: true, timeout: 5))
-            app.typeKey("2", modifierFlags: [.shift])
-            app.typeKey(.tab, modifierFlags: [.control, .shift])
-
-            enterDenMode(in: app)
-            app.typeKey("l", modifierFlags: [])
-            XCTAssertTrue(charlie.wait(for: \.isSelected, toEqual: true, timeout: 5))
-            app.typeKey("2", modifierFlags: [.shift])
-
-            for _ in 0..<4 {
-                enterDenMode(in: app)
-                app.typeKey(.return, modifierFlags: [])
-            }
-            app.typeKey(.tab, modifierFlags: [.control, .shift])
+            XCTAssertTrue(alpha.wait(for: \.isSelected, toEqual: true, timeout: 5))
         }
 
         when("selecting a middle Board in Overview and pressing Enter") {
@@ -691,6 +656,7 @@ final class Den_BrowserUITests: XCTestCase, BDD {
 
     @MainActor
     private func launchApp(
+        fixture: UITestFixture = .interactionBasics,
         singleBoard: Bool = false,
         terminalBoard: Bool = false,
         sheetNavigationEnabled: Bool = false,
@@ -701,7 +667,7 @@ final class Den_BrowserUITests: XCTestCase, BDD {
         let app = XCUIApplication()
         var args = [
             "-ApplePersistenceIgnoreState", "YES",
-            "--ui-testing", "--fixture", "interaction-basics",
+            "--ui-testing", "--fixture", fixture.rawValue,
         ]
         if singleBoard {
             args.append("--single-board")
@@ -736,8 +702,8 @@ final class Den_BrowserUITests: XCTestCase, BDD {
         }
 
         XCTAssertTrue(app.windows.firstMatch.waitForExistence(timeout: 10), "Application window should appear")
-        XCTAssertTrue(board(.alpha, in: app).waitForExistence(timeout: 20))
-        if !singleBoard {
+        XCTAssertTrue(board(fixture.initialBoard, in: app).waitForExistence(timeout: 20))
+        if fixture == .interactionBasics && !singleBoard {
             XCTAssertTrue(board(.bravo, in: app).exists)
             XCTAssertTrue(board(.charlie, in: app).exists)
         }
@@ -810,6 +776,17 @@ final class Den_BrowserUITests: XCTestCase, BDD {
         }
         let actVal = actual()
         XCTAssertEqual(actVal, expected, accuracy: tolerance, message)
+    }
+}
+
+private enum UITestFixture: String {
+    case interactionBasics = "interaction-basics"
+    case focusedNonLeadingBoard = "focused-non-leading-board"
+    case terminalOverview = "terminal-overview"
+    case overflowingSecondDesk = "overflowing-second-desk"
+
+    var initialBoard: FixtureBoard {
+        self == .focusedNonLeadingBoard ? .charlie : .alpha
     }
 }
 

@@ -16,8 +16,11 @@ struct AppConfiguration {
                 websiteDataStore: { $0.websiteDataStore })
         }
 
-        guard argumentValue(after: "--fixture", in: processInfo.arguments) == "interaction-basics" else {
-            preconditionFailure("UI tests require the interaction-basics fixture")
+        guard
+            let fixtureName = argumentValue(after: "--fixture", in: processInfo.arguments),
+            let fixture = UITestFixture(rawValue: fixtureName)
+        else {
+            preconditionFailure("UI tests require a supported fixture")
         }
 
         let runID = processInfo.environment["DEN_UI_TEST_RUN_ID"] ?? UUID().uuidString
@@ -46,7 +49,8 @@ struct AppConfiguration {
         return AppConfiguration(
             profileDirectoryURL: directoryURL,
             defaults: defaults,
-            initialProfile: interactionBasicsProfile(
+            initialProfile: uiTestProfile(
+                fixture: fixture,
                 singleBoard: processInfo.arguments.contains("--single-board"),
                 terminalBoard: processInfo.arguments.contains("--terminal-board"),
                 multipleDrawerItems: processInfo.arguments.contains("--multiple-drawer-items")),
@@ -60,13 +64,14 @@ struct AppConfiguration {
         return arguments[index + 1]
     }
 
-    private static func interactionBasicsProfile(
+    private static func uiTestProfile(
+        fixture: UITestFixture,
         singleBoard: Bool,
         terminalBoard: Bool,
         multipleDrawerItems: Bool = false
     ) -> PersistedProfile {
         let alpha =
-            if terminalBoard {
+            if terminalBoard || fixture == .terminalOverview {
                 BoardState(
                     id: fixtureID("00000000-0000-0000-0000-000000000301"),
                     label: "Terminal",
@@ -89,17 +94,59 @@ struct AppConfiguration {
             label: "Charlie",
             width: 320,
             currentSheetURL: URL(string: fixtureSheetURL))
+        let mainDeskID = fixtureID("00000000-0000-0000-0000-000000000200")
+        let secondDeskID = fixtureID("00000000-0000-0000-0000-000000000201")
+        let thirdDeskID = fixtureID("00000000-0000-0000-0000-000000000202")
+        let mainBoards: [BoardState]
+        let secondBoards: [BoardState]
+        let secondFocusedBoardID: UUID?
+        let focusedDeskID: UUID
+        switch fixture {
+        case .interactionBasics:
+            mainBoards = singleBoard ? [alpha] : [alpha, bravo, charlie]
+            secondBoards = []
+            secondFocusedBoardID = nil
+            focusedDeskID = mainDeskID
+        case .focusedNonLeadingBoard:
+            mainBoards = [alpha]
+            secondBoards = [bravo, charlie]
+            secondFocusedBoardID = charlie.id
+            focusedDeskID = secondDeskID
+        case .terminalOverview:
+            mainBoards = [alpha]
+            secondBoards = [bravo]
+            secondFocusedBoardID = bravo.id
+            focusedDeskID = mainDeskID
+        case .overflowingSecondDesk:
+            let overflowBoards = [
+                (id: "00000000-0000-0000-0000-000000000304", label: "Delta"),
+                (id: "00000000-0000-0000-0000-000000000305", label: "Echo"),
+                (id: "00000000-0000-0000-0000-000000000306", label: "Foxtrot"),
+                (id: "00000000-0000-0000-0000-000000000307", label: "Golf"),
+            ].map { board in
+                BoardState(
+                    id: fixtureID(board.id),
+                    label: board.label,
+                    width: 320,
+                    currentSheetURL: URL(string: fixtureSheetURL))
+            }
+            mainBoards = [alpha]
+            secondBoards = [bravo, charlie] + overflowBoards
+            secondFocusedBoardID = overflowBoards.last?.id
+            focusedDeskID = mainDeskID
+        }
         let desk = DeskState(
-            id: fixtureID("00000000-0000-0000-0000-000000000200"),
+            id: mainDeskID,
             label: "Main",
-            boards: singleBoard ? [alpha] : [alpha, bravo, charlie],
+            boards: mainBoards,
             focusedBoardID: alpha.id)
         let secondDesk = DeskState(
-            id: fixtureID("00000000-0000-0000-0000-000000000201"),
+            id: secondDeskID,
             label: "Second",
-            boards: [])
+            boards: secondBoards,
+            focusedBoardID: secondFocusedBoardID)
         let thirdDesk = DeskState(
-            id: fixtureID("00000000-0000-0000-0000-000000000202"),
+            id: thirdDeskID,
             label: "Third",
             boards: [])
         let drawerItem = DrawerItem(
@@ -119,7 +166,7 @@ struct AppConfiguration {
                 webProfileStore: .default),
             den: DenState(
                 desks: [desk, secondDesk, thirdDesk],
-                focusedDeskID: desk.id,
+                focusedDeskID: focusedDeskID,
                 drawerItems: drawerItems,
                 expandedDrawerItemID: multipleDrawerItems ? secondDrawerItem.id : drawerItem.id))
     }
@@ -151,4 +198,11 @@ struct AppConfiguration {
         }
         return url
     }
+}
+
+private enum UITestFixture: String {
+    case interactionBasics = "interaction-basics"
+    case focusedNonLeadingBoard = "focused-non-leading-board"
+    case terminalOverview = "terminal-overview"
+    case overflowingSecondDesk = "overflowing-second-desk"
 }

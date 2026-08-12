@@ -35,7 +35,9 @@ Keep scenario text in Den's domain language (`Desk`, `Board`, `Sheet`, `Drawer`,
 
 Keep `Then` blocks assertion-only. Put input, navigation, dismissal, and other state-changing operations in `When` blocks. Use `assertEventually` for UI settling and animation boundaries; do not add sleeps or arbitrary delays.
 
-UI tests launch with a fixed three-Board fixture, except focused workflows that request its one-Board variant.
+UI tests launch with deterministic fixture state. The default fixture contains three Boards; focused workflows
+may request a one-Board variant or seed the required Desk and Board arrangement directly instead of constructing
+an unrelated Given through UI operations. The transition under test must still be performed through the UI.
 Profile documents use a fresh temporary directory, preferences use a dedicated defaults suite, and Sheets use a
 non-persistent WebKit store with local data URLs. UI tests must not read or write the user's Profiles, preferences,
 website data, window restoration, or external services. Terminal UI tests use an isolated `/bin/zsh -f` command and do not load the user's Ghostty configuration.
