@@ -7,6 +7,7 @@ struct BoardView: View {
     @Environment(\.accessibilityReduceMotion) private var systemReduceMotion
     let board: BoardState
     let isFocused: Bool
+    let focusRequest: BoardFocusRequest?
     let isDragging: Bool
     @ObservedObject var runtime: BoardRuntime
     let profileColor: Color
@@ -30,6 +31,19 @@ struct BoardView: View {
                     isFocused: isFocused && !store.isDenMode && store.temporaryContext == nil,
                     isHidden: store.isDrawerOpen || store.isOverviewPresented,
                     isPointerFocusEnabled: isPointerFocusEnabled,
+                    focusRequest: focusRequest,
+                    onSurfaceReady: { window in
+                        guard runtime.webView.fullscreenState == .notInFullscreen else {
+                            return true
+                        }
+                        guard
+                            needsFirstResponderActivation(
+                                window.firstResponder,
+                                target: runtime.webView
+                            )
+                        else { return true }
+                        return window.makeFirstResponder(runtime.webView)
+                    },
                     onFocus: onFocus
                 )
 

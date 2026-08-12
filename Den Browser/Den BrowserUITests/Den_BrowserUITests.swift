@@ -66,6 +66,29 @@ final class Den_BrowserUITests: XCTestCase, BDD {
     }
 
     @MainActor
+    func testClickingInputOnUnfocusedBoardPreservesClickedResponder() throws {
+        let app = launchApp()
+        let alpha = board(.alpha, in: app)
+        let bravo = board(.bravo, in: app)
+        let bravoInput = boardSurface(.bravo, in: app).textFields["Sheet input"].firstMatch
+
+        given("another Board is focused") {
+            XCTAssertTrue(alpha.wait(for: \.isSelected, toEqual: true, timeout: 5))
+            XCTAssertTrue(bravoInput.waitForExistence(timeout: 5))
+        }
+
+        when("clicking the Sheet input in an unfocused Board") {
+            bravoInput.click()
+            app.typeText("first input")
+        }
+
+        then("the clicked input receives the first keystroke") {
+            XCTAssertTrue(bravo.wait(for: \.isSelected, toEqual: true, timeout: 5))
+            XCTAssertEqual(bravoInput.value as? String, "first input")
+        }
+    }
+
+    @MainActor
     func testFocusModePreservesBoardFocusAcrossDenMode() throws {
         let app = launchApp()
         let denContent = app.descendants(matching: .any)
@@ -430,6 +453,49 @@ final class Den_BrowserUITests: XCTestCase, BDD {
                 }
                 RunLoop.current.run(mode: .default, before: Date(timeIntervalSinceNow: 0.05))
             }
+        }
+    }
+
+    @MainActor
+    func testDirectDeskSwitchActivatesFocusedNonLeadingBoard() throws {
+        let app = launchApp()
+        let alpha = board(.alpha, in: app)
+        let bravo = board(.bravo, in: app)
+        let charlie = board(.charlie, in: app)
+        let charlieInput = boardSurface(.charlie, in: app).textFields["Sheet input"].firstMatch
+
+        given("the second Desk has a non-leading Focused Board") {
+            enterDenMode(in: app)
+            app.typeKey("l", modifierFlags: [])
+            XCTAssertTrue(bravo.wait(for: \.isSelected, toEqual: true, timeout: 5))
+            app.typeKey("2", modifierFlags: [.shift])
+
+            enterDenMode(in: app)
+            app.typeKey("1", modifierFlags: [])
+            enterDenMode(in: app)
+            app.typeKey("l", modifierFlags: [])
+            XCTAssertTrue(charlie.wait(for: \.isSelected, toEqual: true, timeout: 5))
+            app.typeKey("2", modifierFlags: [.shift])
+            XCTAssertTrue(charlie.wait(for: \.isSelected, toEqual: true, timeout: 5))
+
+            XCTAssertTrue(charlieInput.waitForExistence(timeout: 5))
+            charlieInput.click()
+            app.typeText("before switch")
+        }
+
+        when("switching away and returning by Desk number") {
+            enterDenMode(in: app)
+            app.typeKey("1", modifierFlags: [])
+            XCTAssertTrue(alpha.wait(for: \.isSelected, toEqual: true, timeout: 5))
+            enterDenMode(in: app)
+            app.typeKey("2", modifierFlags: [])
+            XCTAssertTrue(charlie.wait(for: \.isSelected, toEqual: true, timeout: 5))
+        }
+
+        then("the Focused Board receives Sheet Input") {
+            XCTAssertTrue(charlieInput.waitForExistence(timeout: 5))
+            app.typeText(" after switch")
+            XCTAssertEqual(charlieInput.value as? String, "before switch after switch")
         }
     }
 

@@ -49,6 +49,17 @@ struct BoardStrip: View {
         (boardDrag == nil || boardDrag?.boardID == boardID) && store.temporaryContext == nil
     }
 
+    private var focusedBoardFocusRequest: BoardFocusRequest? {
+        guard
+            !store.isDenMode,
+            !store.isDeskFilterPresented,
+            store.temporaryContext == nil,
+            let desk = store.focusedDesk,
+            let boardID = desk.focusedBoardID
+        else { return nil }
+        return BoardFocusRequest(deskID: desk.id, boardID: boardID)
+    }
+
     var body: some View {
         let boards =
             store.isDeskFilterPresented
@@ -71,6 +82,7 @@ struct BoardStrip: View {
         let paddings = BoardLayout.calculatePaddings(for: layoutParams)
         let shouldCenterFocusedBoard = BoardLayout.shouldCenterFocusedBoard(for: layoutParams)
         let restingScrollX = BoardLayout.restingScrollX(for: layoutParams)
+        let focusRequest = focusedBoardFocusRequest
         let alignmentTarget = BoardStripAlignmentTarget(
             deskID: store.state.focusedDeskID,
             boardID: store.focusedDesk?.focusedBoardID,
@@ -87,7 +99,8 @@ struct BoardStrip: View {
                         board,
                         width: store.maximizedBoardID == board.id ? maximizedBoardWidth : board.width,
                         height: boardHeight,
-                        containerSize: size
+                        containerSize: size,
+                        focusRequest: focusRequest
                     )
                     .disabled(store.isDeskFilterPresented)
                     .overlay {
@@ -248,13 +261,15 @@ struct BoardStrip: View {
         _ board: BoardState,
         width: CGFloat,
         height: CGFloat,
-        containerSize: CGSize
+        containerSize: CGSize,
+        focusRequest: BoardFocusRequest?
     ) -> some View {
         let focused =
             store.isDeskFilterPresented
             ? board.id == store.deskFilterSelectionBoardID
             : board.id == store.focusedDesk?.focusedBoardID
         let pointerFocusEnabled = !store.isDeskFilterPresented && isPointerFocusEnabled(for: board.id)
+        let boardFocusRequest = focusRequest?.boardID == board.id ? focusRequest : nil
         let focus = {
             if store.isDeskFilterPresented {
                 store.confirmDeskFilterSelection(board.id)
@@ -267,6 +282,7 @@ struct BoardStrip: View {
             TerminalBoardView(
                 board: board,
                 isFocused: focused,
+                focusRequest: boardFocusRequest,
                 isDragging: boardDrag?.boardID == board.id,
                 runtime: store.terminalRuntime(for: board),
                 profileColor: profileColor,
@@ -281,6 +297,7 @@ struct BoardStrip: View {
             BoardView(
                 board: board,
                 isFocused: focused,
+                focusRequest: boardFocusRequest,
                 isDragging: boardDrag?.boardID == board.id,
                 runtime: store.runtime(for: board),
                 profileColor: profileColor,

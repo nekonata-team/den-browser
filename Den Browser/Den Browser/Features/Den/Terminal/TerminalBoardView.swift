@@ -8,6 +8,7 @@ struct TerminalBoardView: View {
 
     let board: BoardState
     let isFocused: Bool
+    let focusRequest: BoardFocusRequest?
     let isDragging: Bool
     @ObservedObject var runtime: TerminalRuntime
     let profileColor: Color
@@ -27,6 +28,16 @@ struct TerminalBoardView: View {
                 isFocused: isFocused && !store.isDenMode && store.temporaryContext == nil,
                 isHidden: store.isDrawerOpen || store.isOverviewPresented,
                 isPointerFocusEnabled: isPointerFocusEnabled,
+                focusRequest: focusRequest,
+                onSurfaceReady: { window in
+                    guard
+                        needsFirstResponderActivation(
+                            window.firstResponder,
+                            target: runtime.terminalView
+                        )
+                    else { return true }
+                    return window.makeFirstResponder(runtime.terminalView)
+                },
                 onFocus: onFocus
             )
             .blur(radius: isFocusModeDeemphasized ? DenLayout.focusModeBlurRadius : 0)
@@ -201,23 +212,32 @@ private struct TerminalBoardSurface: NSViewRepresentable {
     let isFocused: Bool
     let isHidden: Bool
     let isPointerFocusEnabled: Bool
+    let focusRequest: BoardFocusRequest?
+    let onSurfaceReady: (NSWindow) -> Bool
     let onFocus: () -> Void
 
     func makeCoordinator() -> Coordinator { Coordinator() }
 
-    func makeNSView(context: Context) -> AppTerminalView {
+    func makeNSView(context: Context) -> SurfaceHost<AppTerminalView> {
+        let host = SurfaceHost(content: terminalView)
         context.coordinator.startRecognizing(view: terminalView, onFocus: onFocus)
         update(terminalView, coordinator: context.coordinator)
-        return terminalView
+        host.update(request: focusRequest) { window in
+            context.coordinator.handleFocusRequest(in: window, onSurfaceReady: onSurfaceReady)
+        }
+        return host
     }
 
-    func updateNSView(_ nsView: AppTerminalView, context: Context) {
+    func updateNSView(_ nsView: SurfaceHost<AppTerminalView>, context: Context) {
         context.coordinator.onFocus = onFocus
-        update(nsView, coordinator: context.coordinator)
+        update(terminalView, coordinator: context.coordinator)
+        nsView.update(request: focusRequest) { window in
+            context.coordinator.handleFocusRequest(in: window, onSurfaceReady: onSurfaceReady)
+        }
     }
 
-    static func dismantleNSView(_ nsView: AppTerminalView, coordinator: Coordinator) {
-        nsView.setSurfaceVisible(false)
+    static func dismantleNSView(_ nsView: SurfaceHost<AppTerminalView>, coordinator: Coordinator) {
+        nsView.content.setSurfaceVisible(false)
         coordinator.stopRecognizing()
     }
 
@@ -225,39 +245,31 @@ private struct TerminalBoardSurface: NSViewRepresentable {
         view.isHidden = isHidden
         view.setSurfaceVisible(!isHidden)
         coordinator.updatePointerFocusEnabled(isPointerFocusEnabled)
-        coordinator.updateFocus(isFocused, view: view)
+        coordinator.updateFocus(isFocused)
     }
 
     final class Coordinator: NSGestureRecognizer {
         private var pointerFocusState = PointerFocusState()
-        private var activationTask: Task<Void, Never>?
         fileprivate var onFocus: (() -> Void)?
 
         init() { super.init(target: nil, action: nil) }
         required init?(coder: NSCoder) { super.init(coder: coder) }
-
-        deinit {
-            activationTask?.cancel()
-        }
 
         func updatePointerFocusEnabled(_ isEnabled: Bool) {
             self.isEnabled = isEnabled
             pointerFocusState.updateEnabled(isEnabled)
         }
 
-        func updateFocus(_ newValue: Bool, view: AppTerminalView) {
-            guard newValue != pointerFocusState.isFocused else { return }
-            activationTask?.cancel()
-            activationTask = nil
-            guard pointerFocusState.updateFocus(newValue) else { return }
+        func updateFocus(_ newValue: Bool) {
+            pointerFocusState.updateFocus(newValue)
+        }
 
-            activationTask = Task { @MainActor [weak view] in
-                await Task.yield()
-                guard !Task.isCancelled, let view, let window = view.window,
-                    needsFirstResponderActivation(window.firstResponder, target: view)
-                else { return }
-                _ = window.makeFirstResponder(view)
-            }
+        func handleFocusRequest(
+            in window: NSWindow,
+            onSurfaceReady: (NSWindow) -> Bool
+        ) -> Bool {
+            guard pointerFocusState.shouldActivateFocusRequest() else { return true }
+            return onSurfaceReady(window)
         }
 
         func startRecognizing(view: AppTerminalView, onFocus: @escaping () -> Void) {
@@ -274,8 +286,7 @@ private struct TerminalBoardSurface: NSViewRepresentable {
         func stopRecognizing() {
             view?.removeGestureRecognizer(self)
             onFocus = nil
-            activationTask?.cancel()
-            activationTask = nil
+            pointerFocusState.reset()
         }
     }
 }

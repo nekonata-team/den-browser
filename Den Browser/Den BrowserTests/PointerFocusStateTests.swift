@@ -22,15 +22,39 @@ struct PointerFocusStateTests {
         #expect(needsFirstResponderActivation(nil, target: target))
     }
 
+    @Test func reattachingSurfaceHandlesSameRequestAgain() {
+        let window = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 100, height: 100),
+            styleMask: [],
+            backing: .buffered,
+            defer: false
+        )
+        let host = SurfaceHost(content: NSView())
+        let request = BoardFocusRequest(deskID: UUID(), boardID: UUID())
+        var handlingCount = 0
+        host.update(request: request) { _ in
+            handlingCount += 1
+            return true
+        }
+
+        window.contentView?.addSubview(host)
+        #expect(handlingCount == 1)
+        host.removeFromSuperview()
+        window.contentView?.addSubview(host)
+        #expect(handlingCount == 2)
+    }
+
     @Test func pointerFocusSuppressesExplicitActivation() {
         var state = PointerFocusState()
 
         let handledPointer = state.handlePointerDown()
-        let activatedAfterPointer = state.updateFocus(true)
+        state.updateFocus(true)
+        let activatedAfterPointer = state.shouldActivateFocusRequest()
         #expect(handledPointer)
         #expect(!activatedAfterPointer)
-        _ = state.updateFocus(false)
-        let activatedAfterKeyboardFocus = state.updateFocus(true)
+        state.updateFocus(false)
+        state.updateFocus(true)
+        let activatedAfterKeyboardFocus = state.shouldActivateFocusRequest()
         #expect(activatedAfterKeyboardFocus)
     }
 
@@ -42,7 +66,18 @@ struct PointerFocusStateTests {
         let handledPointer = state.handlePointerDown()
         #expect(!handledPointer)
         state.updateEnabled(true)
-        let activated = state.updateFocus(true)
+        state.updateFocus(true)
+        let activated = state.shouldActivateFocusRequest()
+        #expect(activated)
+    }
+
+    @Test func resetClearsPendingPointerFocus() {
+        var state = PointerFocusState()
+        _ = state.handlePointerDown()
+        state.reset()
+
+        state.updateFocus(true)
+        let activated = state.shouldActivateFocusRequest()
         #expect(activated)
     }
 }
