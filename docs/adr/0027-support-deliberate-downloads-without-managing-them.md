@@ -10,6 +10,8 @@ Supporting downloads does not make Download management part of the Den work mode
 
 The app is unsandboxed per [ADR 0032](./0032-embed-terminal-boards-with-libghostty.md). Downloads still use a destination the user explicitly selects through the save panel, and replacing an existing file requires the panel's normal confirmation.
 
-`BoardRuntime` owns the live `WKDownload` integration because the download inherits the Current Sheet's WebKit session and ends with that runtime interaction. The download destination and lifecycle do not enter persisted Profile or Den state.
+`BaseWebRuntime` owns the live `WKDownload` integration shared by Boards and the Drawer Preview because each download inherits its Current Sheet's WebKit session and ends with that runtime interaction. The download destination and lifecycle do not enter persisted Profile or Den state.
+
+On macOS, WebKit creates downloads from its built-in context menu outside the public navigation callbacks. Den Browser implements WebKit's private `_webView:contextMenuDidCreateDownload:` navigation-delegate selector only to attach the same `WKDownloadDelegate` used by public download paths. Replacing the built-in menu would require duplicating WebKit hit testing and download initiation, while leaving the selector unhandled silently cancels the download. If WebKit removes the selector, context-menu downloads may stop working without affecting public navigation-initiated downloads.
 
 This decision narrows the download exclusion in [ADR 0001](./0001-companion-browser.md). [ADR 0033](./0033-support-local-file-sheet-urls.md) later permits local `file://` Sheets, but downloads remain distinct: their destinations and lifecycle do not enter persisted Den state.

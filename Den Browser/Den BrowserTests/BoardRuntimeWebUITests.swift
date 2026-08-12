@@ -31,6 +31,7 @@ struct BoardRuntimeWebUITests {
             "webView:decidePolicyForNavigationResponse:decisionHandler:",
             "webView:navigationAction:didBecomeDownload:",
             "webView:navigationResponse:didBecomeDownload:",
+            "_webView:contextMenuDidCreateDownload:",
             "download:decideDestinationUsingResponse:suggestedFilename:completionHandler:",
             "downloadDidFinish:",
             "download:didFailWithError:resumeData:",

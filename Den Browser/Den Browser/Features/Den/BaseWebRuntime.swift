@@ -188,6 +188,12 @@ class BaseWebRuntime: NSObject, WKDownloadDelegate, WKNavigationDelegate, WKUIDe
         download.delegate = self
     }
 
+    // WebKit creates downloads from its macOS context menu outside the public navigation callbacks.
+    @objc(_webView:contextMenuDidCreateDownload:)
+    func webView(_ webView: WKWebView, contextMenuDidCreate download: WKDownload) {
+        download.delegate = self
+    }
+
     // MARK: - WKUIDelegate
 
     func webView(
