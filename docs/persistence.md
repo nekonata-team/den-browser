@@ -64,6 +64,7 @@ Version 1 documents decode as Web Boards and are written back as version 2. An o
 | `appearance` | Sheet scale | `preferences.appearance.sheet-scale.percent` | `Int` (`50...200`) | `100` | Appearance > Sheet Scale |
 | `picture-in-picture` | Enabled | `preferences.picture-in-picture.enabled` | `Bool` | `false` | Features > Experimental Picture in Picture |
 | `terminal` | Zellij executable path | `preferences.terminal.zellij.executable-path` | `String` | Empty | Terminal > Zellij |
+| `essentials` | Items | `preferences.essentials.items` | Property-list encoded `[Essential]` | Absent | Essentials |
 
 `BoardState.sheetNavigationPaused` stores whether Vim-style Sheet Navigation is
 paused for that Board. It defaults to `false` when absent, follows the Board

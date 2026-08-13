@@ -80,6 +80,14 @@ _Avoid_: History, Used Board, Recent Board, Starting Point, Board Start
 An input retained in Recent for opening another Board, including a URL, search term, Terminal location, or Zellij session intent.
 _Avoid_: Recent Entry
 
+**Essential**:
+A user-named input kept for repeatedly starting a Board from Den Mode. An Essential may be a URL, search term, Terminal location, or Zellij session intent; unlike a Recent Item, it is intentional and named rather than automatically retained.
+_Avoid_: Quick Launch, Board Starter, bookmark, site shortcut
+
+**Essentials**:
+The app-wide collection of Essentials available from Den Mode through the reserved Essentials Prefix.
+_Avoid_: launcher, favorites, saved tabs
+
 **Drawer**:
 A Den-wide place for material whose Desk or Board context is not yet settled. It remains available across Desk changes without becoming part of a Desk layout.
 _Avoid_: Inbox, Temporary Desk, scratch workspace, clipboard

@@ -56,6 +56,7 @@ final class DenStore {
         get { storage.recentItems }
         set { storage.recentItems = newValue }
     }
+    var essentials: [Essential] { preferences.essentials }
     private(set) var presentedDeskID: UUID
     private(set) var temporaryContext: TemporaryContext?
     var isZenViewPresented = false
@@ -530,6 +531,7 @@ final class DenStore {
 }
 
 enum TemporaryContext: Equatable {
+    case essentialsPrefix
     case openBoard
     case editBoardLink
     case newDesk

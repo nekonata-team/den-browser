@@ -202,6 +202,8 @@ struct DenView<Header: View>: View {
     @ViewBuilder
     private func activePanel(defaultBoardWidth: CGFloat) -> some View {
         switch store.temporaryContext {
+        case .essentialsPrefix:
+            panelOverlay(essentialsPrefixPanel)
         case .openBoard:
             panelOverlay(openBoardPanel(defaultBoardWidth: defaultBoardWidth))
         case .editBoardLink:
@@ -252,6 +254,41 @@ struct DenView<Header: View>: View {
 
     private var newDeskPanel: some View {
         NewDeskPanel()
+    }
+
+    private var essentialsPrefixPanel: some View {
+        VStack(alignment: .leading, spacing: DenPanelLayout.contentSpacing) {
+            DenPanelHeader(systemImage: "sparkles") {
+                Text("Essentials")
+                    .font(.headline)
+            }
+
+            if store.essentials.isEmpty {
+                Text("No Essentials configured.")
+                    .foregroundStyle(.secondary)
+            } else {
+                ScrollView {
+                    LazyVStack(alignment: .leading, spacing: DenPanelLayout.controlSpacing) {
+                        ForEach(store.essentials) { essential in
+                            HStack(spacing: DenPanelLayout.controlSpacing) {
+                                Text("g \(essential.displayKey)")
+                                    .font(.caption.monospaced().weight(.semibold))
+                                    .frame(width: 42, alignment: .leading)
+                                Text(essential.name)
+                                    .lineLimit(1)
+                                Spacer(minLength: 0)
+                            }
+                        }
+                    }
+                }
+                .frame(maxHeight: 320)
+            }
+
+            Text("Press Escape to cancel")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+        .denPanel(width: 300)
     }
 
     private var saveDeskPresetPanel: some View {

@@ -46,7 +46,8 @@ final class KeyboardController {
         store: DenStore,
         preferences: AppPreferences? = nil
     ) -> InputDecision {
-        KeyboardRouter.route(
+        let preferences = preferences ?? store.preferences
+        return KeyboardRouter.route(
             event: KeyEvent(event),
             context: InputContext(store: store, event: event),
             shortcuts: ShortcutConfiguration(preferences: preferences))

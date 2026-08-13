@@ -78,8 +78,10 @@ struct InputContext {
 struct ShortcutConfiguration {
     let bindings: [ConfigurableShortcut: ShortcutBinding]
     let deskNumberBinding: ShortcutBinding?
+    let essentials: [Essential]
 
     init(preferences: AppPreferences?) {
+        essentials = preferences?.essentials ?? []
         if let preferences {
             bindings = Dictionary(
                 uniqueKeysWithValues: ConfigurableShortcut.allCases.compactMap { shortcut in
@@ -95,6 +97,10 @@ struct ShortcutConfiguration {
 
     func shortcut(matching binding: ShortcutBinding) -> ConfigurableShortcut? {
         bindings.first(where: { $0.value == binding })?.key
+    }
+
+    func essential(matching key: String) -> Essential? {
+        essentials.first { $0.key == key }
     }
 }
 
@@ -123,6 +129,10 @@ enum AppAction: Equatable {
     case openSettings
     case toggleDenMode
     case exitDenMode
+    case enterEssentialsPrefix
+    case exitEssentialsPrefix
+    case showEssentialNotFound(String)
+    case launchEssential(UUID)
     case focusPreviousDesk
     case focusNextDesk
     case returnToPreviousDesk
@@ -241,6 +251,8 @@ enum KeyboardRouter {
                 return .perform(.hideKeyboardShortcuts)
             }
             return .consume(.exclusiveContext)
+        case .essentialsPrefix:
+            return routeEssentialsPrefix(event, shortcuts: shortcuts)
         case .boardWidth:
             return routeBoardWidth(event)
         case .overview:
@@ -285,6 +297,10 @@ enum KeyboardRouter {
             return .perform(.openSettings)
         }
 
+        if context.isDenMode, character == "g", modifiers == [] {
+            return event.isRepeat ? .consume(.ignoredRepeat) : .perform(.enterEssentialsPrefix)
+        }
+
         if let binding = event.binding, let shortcut = shortcuts.shortcut(matching: binding) {
             return route(shortcut: shortcut, isRepeat: event.isRepeat)
         }
@@ -307,6 +323,27 @@ enum KeyboardRouter {
             case .moveFocusedBoardRight: .moveFocusedBoardRight
             }
         return .perform(action)
+    }
+
+    private static func routeEssentialsPrefix(
+        _ event: KeyEvent,
+        shortcuts: ShortcutConfiguration
+    ) -> InputDecision {
+        if event.isRepeat { return .consume(.ignoredRepeat) }
+        if event.isEscape, event.modifiers == [] {
+            return .perform(.exitEssentialsPrefix)
+        }
+        guard
+            event.modifiers == [] || event.modifiers == [.shift],
+            let character = event.characters,
+            !character.isEmpty
+        else {
+            return .perform(.exitEssentialsPrefix)
+        }
+        guard let essential = shortcuts.essential(matching: character) else {
+            return .perform(.showEssentialNotFound(character))
+        }
+        return .perform(.launchEssential(essential.id))
     }
 
     private static func routeDenMode(_ event: KeyEvent) -> InputDecision {
@@ -569,6 +606,20 @@ enum AppActionHandler {
         case .openSettings: break
         case .toggleDenMode: store.toggleDenMode()
         case .exitDenMode: store.exitDenMode()
+        case .enterEssentialsPrefix: store.enterEssentialsPrefix()
+        case .exitEssentialsPrefix: store.exitEssentialsPrefix()
+        case .showEssentialNotFound(let key):
+            store.exitEssentialsPrefix()
+            let label: String
+            switch key {
+            case " ": label = "Space"
+            case "\r", "\n": label = "Return"
+            case "\t": label = "Tab"
+            case "\u{8}", "\u{7F}": label = "Delete"
+            default: label = key
+            }
+            store.showToast("No Essential assigned to '\(label)'.", style: .warning)
+        case .launchEssential(let id): store.launchEssential(id: id)
         case .focusPreviousDesk: store.focusPreviousDesk()
         case .focusNextDesk: store.focusNextDesk()
         case .returnToPreviousDesk: store.returnToPreviousDesk()

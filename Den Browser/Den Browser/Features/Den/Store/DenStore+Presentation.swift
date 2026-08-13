@@ -1,6 +1,17 @@
 import Foundation
 
 extension DenStore {
+    func enterEssentialsPrefix() {
+        guard isDenMode else { return }
+        setTemporaryContext(.essentialsPrefix)
+    }
+
+    func exitEssentialsPrefix() {
+        if temporaryContext == .essentialsPrefix {
+            setTemporaryContext(nil)
+        }
+    }
+
     func toggleDenMode() {
         guard temporaryContext == nil || temporaryContext == .drawer else { return }
         isDenMode.toggle()

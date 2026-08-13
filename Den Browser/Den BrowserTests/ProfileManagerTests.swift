@@ -176,6 +176,28 @@ struct ProfileManagerTests {
         #expect(restored.zellijPath == "/opt/homebrew/bin/zellij")
     }
 
+    @Test func appPreferencesPersistEssentialsWithoutProfileOwnership() throws {
+        let suiteName = "AppPreferencesEssentialsTests-\(UUID().uuidString)"
+        let defaults = try #require(UserDefaults(suiteName: suiteName))
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let preferences = AppPreferences(defaults: defaults)
+        let essentials = [
+            Essential(name: "ChatGPT", key: "C", input: "https://chatgpt.com"),
+            Essential(name: "Terminal", key: "T", input: ":terminal ~/Projects"),
+        ]
+
+        #expect(preferences.setEssentials(essentials))
+        #expect(AppPreferences(defaults: defaults).essentials == essentials)
+        #expect(
+            !preferences.setEssentials(
+                [essentials[0], Essential(name: "Duplicate", key: "C", input: "other")]))
+        let lowercase = Essential(name: "Lowercase", key: "c", input: "other")
+        #expect(preferences.setEssentials([essentials[0], lowercase]))
+        #expect(AppPreferences(defaults: defaults).essentials == [essentials[0], lowercase])
+        preferences.setEssentials([])
+        #expect(AppPreferences(defaults: defaults).essentials.isEmpty)
+    }
+
     @Test func appPreferencesInitializeMissingSchema() {
         let suiteName = "AppPreferencesMissingSchemaTests-\(UUID().uuidString)"
         let defaults = UserDefaults(suiteName: suiteName)!

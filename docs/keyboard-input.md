@@ -1,6 +1,6 @@
 # Keyboard Input
 
-This document is the implementation contract for keyboard input. User-visible bindings belong in [shortcuts.md](./shortcuts.md); the reasons for architectural choices belong in [ADR 0036](./adr/0036-centralize-profile-keyboard-routing.md).
+This document is the implementation contract for keyboard input. User-visible bindings belong in [shortcuts.md](./shortcuts.md); the reasons for architectural choices belong in [ADR 0036](./adr/0036-centralize-profile-keyboard-routing.md) and [ADR 0038](./adr/0038-use-one-g-prefix-for-essentials.md).
 
 ## Canonical flow
 
@@ -19,7 +19,7 @@ NSEvent
 
 `KeyboardController` is the AppKit adapter. It normalizes the event, snapshots the current input context, calls `KeyboardRouter`, and applies the decision. It must not contain key policy or mutate `DenStore` directly.
 
-`KeyboardRouter` owns Profile-window key precedence. It is side-effect free: it receives values and returns exactly one `InputDecision`. It must not reference UI objects, call `DenStore`, or open windows.
+`KeyboardRouter` owns Profile-window key precedence. It is side-effect free: it receives values and returns exactly one `InputDecision`. It must not reference UI objects, call `DenStore`, or open windows. The Essentials Prefix is a typed temporary context: Den Mode's `g` enters it, then one logical key, optionally with Shift for uppercase, either launches the matching Essential or shows a warning Toast before returning to Den Mode.
 
 `AppAction` names input-reachable application behavior. `AppActionHandler` is the only keyboard path that performs these actions. SwiftUI `Commands` must use the same action when a menu item and a key event represent the same behavior. Menu-only operations do not need an `AppAction`.
 
@@ -32,7 +32,7 @@ Routing must preserve this order:
 1. Fullscreen, pending confirmations, native application commands, and text-entry panels receive their explicitly forwarded keys.
 2. Dragging and exclusive temporary contexts consume keys they own. Their allowed cancellation and movement keys become `AppAction` values.
 3. Configurable app-wide shortcuts take priority over Sheet Input and Terminal Input while a Profile window is active.
-4. Den Mode owns every remaining key. A mapped key performs an action; an unmapped key is consumed.
+4. Den Mode owns every remaining key. The reserved `g` enters the Essentials Prefix; its next key, including its case, is handled by that temporary context. Other mapped keys perform an action; an unmapped key is consumed with a warning Toast.
 5. Sheet Input, Terminal Input, Drawer Preview input, and filter text fields receive only events explicitly forwarded to them.
 
 Den Mode actions must never be implemented by forwarding an event and relying on a SwiftUI menu item to catch it. In particular, unmodified comma performs `openSettings` and is consumed before a Sheet or Terminal can receive it.

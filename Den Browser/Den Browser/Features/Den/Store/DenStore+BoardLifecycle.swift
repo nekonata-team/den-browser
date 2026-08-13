@@ -16,12 +16,13 @@ enum ZellijInput: Equatable {
 }
 
 extension DenStore {
-    func openBoard(input: String, preferredWidth: Double? = nil, afterBoardID: UUID? = nil) {
+    @discardableResult
+    func openBoard(input: String, preferredWidth: Double? = nil, afterBoardID: UUID? = nil) -> Bool {
         if let zellij = Self.resolveZellijInput(input) {
             guard ZellijLaunchCommand.isValidExecutablePath(preferences.zellijPath) else {
                 openBoardPanelMessage =
                     "Set an absolute Zellij executable path in Settings > Features > Terminal."
-                return
+                return false
             }
             let sessionName: String?
             switch zellij {
@@ -30,37 +31,45 @@ extension DenStore {
             case .session(let name):
                 sessionName = name
             }
-            addZellijBoard(
-                sessionName: sessionName,
-                preferredWidth: preferredWidth,
-                afterBoardID: afterBoardID)
+            guard
+                addZellijBoard(
+                    sessionName: sessionName,
+                    preferredWidth: preferredWidth,
+                    afterBoardID: afterBoardID)
+            else { return false }
             openBoardPanelMessage = nil
             if input.count <= Self.maximumPersistedRecentInputLength {
                 saveRecentItem(.zellij(sessionName: sessionName))
             }
-            return
+            return true
         }
 
         if let terminal = Self.resolveTerminalInput(input) {
             switch terminal {
             case .success(let workingDirectory):
-                addTerminalBoard(
-                    workingDirectory: workingDirectory,
-                    preferredWidth: preferredWidth,
-                    afterBoardID: afterBoardID)
+                guard
+                    addTerminalBoard(
+                        workingDirectory: workingDirectory,
+                        preferredWidth: preferredWidth,
+                        afterBoardID: afterBoardID)
+                else { return false }
                 openBoardPanelMessage = nil
                 if input.count <= Self.maximumPersistedRecentInputLength {
                     saveRecentItem(.terminal(workingDirectory: workingDirectory))
                 }
+                return true
             case .failure(let error):
                 openBoardPanelMessage = error.message
+                return false
             }
-            return
         }
-        guard let resolution = resolveOpenBoardInput(input) else { return }
-        addBoard(urlString: input, preferredWidth: preferredWidth, afterBoardID: afterBoardID)
-        guard input.count <= Self.maximumPersistedRecentInputLength else { return }
+        guard let resolution = resolveOpenBoardInput(input) else { return false }
+        guard addBoard(urlString: input, preferredWidth: preferredWidth, afterBoardID: afterBoardID) else {
+            return false
+        }
+        guard input.count <= Self.maximumPersistedRecentInputLength else { return true }
         saveRecentItem(resolution.item)
+        return true
     }
 
     static func resolveZellijInput(_ input: String) -> ZellijInput? {
@@ -106,10 +115,12 @@ extension DenStore {
         case .terminal(let workingDirectory):
             switch Self.validateTerminalWorkingDirectory(workingDirectory) {
             case .success(let resolvedWorkingDirectory):
-                addTerminalBoard(
-                    workingDirectory: resolvedWorkingDirectory,
-                    preferredWidth: preferredWidth,
-                    afterBoardID: afterBoardID)
+                guard
+                    addTerminalBoard(
+                        workingDirectory: resolvedWorkingDirectory,
+                        preferredWidth: preferredWidth,
+                        afterBoardID: afterBoardID)
+                else { return }
                 openBoardPanelMessage = nil
                 saveRecentItem(.terminal(workingDirectory: resolvedWorkingDirectory))
             case .failure(let error):
@@ -121,10 +132,12 @@ extension DenStore {
                     "Set an absolute Zellij executable path in Settings > Features > Terminal."
                 return
             }
-            addZellijBoard(
-                sessionName: sessionName,
-                preferredWidth: preferredWidth,
-                afterBoardID: afterBoardID)
+            guard
+                addZellijBoard(
+                    sessionName: sessionName,
+                    preferredWidth: preferredWidth,
+                    afterBoardID: afterBoardID)
+            else { return }
             openBoardPanelMessage = nil
             saveRecentItem(.zellij(sessionName: sessionName))
         }
@@ -151,52 +164,56 @@ extension DenStore {
         }
     }
 
+    @discardableResult
     func addBoard(
         urlString: String,
         preferredWidth: Double? = nil,
         afterBoardID: UUID? = nil,
         focus: Bool = true
-    ) {
-        guard let url = normalizedURL(from: urlString) else { return }
+    ) -> Bool {
+        guard let url = normalizedURL(from: urlString) else { return false }
         let label = url.host(percentEncoded: false) ?? url.absoluteString
         let width = preferredWidth ?? 520
         let board = BoardState(label: label, width: width, currentSheetURL: url)
-        insertBoard(board, afterBoardID: afterBoardID, focus: focus)
+        return insertBoard(board, afterBoardID: afterBoardID, focus: focus)
     }
 
+    @discardableResult
     func addTerminalBoard(
         workingDirectory: String,
         preferredWidth: Double? = nil,
         afterBoardID: UUID? = nil,
         focus: Bool = true
-    ) {
+    ) -> Bool {
         let board = BoardState(
             width: preferredWidth ?? 520,
             workingDirectory: workingDirectory)
-        insertBoard(board, afterBoardID: afterBoardID, focus: focus)
+        return insertBoard(board, afterBoardID: afterBoardID, focus: focus)
     }
 
+    @discardableResult
     func addZellijBoard(
         sessionName: String?,
         preferredWidth: Double? = nil,
         afterBoardID: UUID? = nil,
         focus: Bool = true
-    ) {
+    ) -> Bool {
         let board = BoardState(
             width: preferredWidth ?? 520,
             zellijSessionName: sessionName)
-        insertBoard(board, afterBoardID: afterBoardID, focus: focus)
+        return insertBoard(board, afterBoardID: afterBoardID, focus: focus)
     }
 
-    private func insertBoard(_ board: BoardState, afterBoardID: UUID?, focus: Bool) {
+    @discardableResult
+    private func insertBoard(_ board: BoardState, afterBoardID: UUID?, focus: Bool) -> Bool {
         let deskIndex: Int
         let insertIndex: Int
         if let afterBoardID {
-            guard let indices = boardIndices(for: afterBoardID) else { return }
+            guard let indices = boardIndices(for: afterBoardID) else { return false }
             deskIndex = indices.desk
             insertIndex = indices.board + 1
         } else {
-            guard let focusedDeskIndex else { return }
+            guard let focusedDeskIndex else { return false }
             deskIndex = focusedDeskIndex
             if let focusedBoardIndex = focusedBoardIndex(in: deskIndex) {
                 insertIndex = focusedBoardIndex + 1
@@ -213,6 +230,23 @@ extension DenStore {
             isDenMode = false
         }
         save()
+        return true
+    }
+
+    func launchEssential(id: UUID) {
+        guard let essential = essentials.first(where: { $0.id == id }) else {
+            exitEssentialsPrefix()
+            return
+        }
+
+        exitEssentialsPrefix()
+        openBoardPanelMessage = nil
+        guard openBoard(input: essential.input) else {
+            let message = openBoardPanelMessage ?? "Could not open Essential '\(essential.name)'."
+            openBoardPanelMessage = nil
+            showToast(message, style: .warning)
+            return
+        }
     }
 
     @discardableResult

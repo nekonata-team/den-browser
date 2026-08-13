@@ -20,6 +20,11 @@ struct SettingsView: View {
                     Label("Shortcuts", systemImage: "keyboard")
                 }
 
+            EssentialsSettingsView()
+                .tabItem {
+                    Label("Essentials", systemImage: "sparkles")
+                }
+
             TerminalSettingsView()
                 .tabItem {
                     Label("Terminal", systemImage: "terminal")

@@ -4,6 +4,38 @@ import Testing
 
 @testable import Den_Browser
 
+private final class TestUserDefaults: UserDefaults {
+    private var values: [String: Any] = [:]
+
+    init?(suiteName: String) {
+        super.init(suiteName: suiteName)
+    }
+
+    override func set(_ value: Any?, forKey defaultName: String) {
+        values[defaultName] = value
+    }
+
+    override func object(forKey defaultName: String) -> Any? {
+        values[defaultName]
+    }
+
+    override func string(forKey defaultName: String) -> String? {
+        values[defaultName] as? String
+    }
+
+    override func data(forKey defaultName: String) -> Data? {
+        values[defaultName] as? Data
+    }
+
+    override func bool(forKey defaultName: String) -> Bool {
+        values[defaultName] as? Bool ?? false
+    }
+
+    override func removeObject(forKey defaultName: String) {
+        values.removeValue(forKey: defaultName)
+    }
+}
+
 @MainActor
 struct KeyboardShortcutTests {
     @Test func shortcutOverridesPersistClearAndReset() throws {
@@ -150,7 +182,7 @@ struct KeyboardShortcutTests {
 
     @Test func denModeEqualsWidensFocusedBoardWithOrWithoutShift() throws {
         for (characters, modifiers) in [("=", NSEvent.ModifierFlags()), ("+", NSEvent.ModifierFlags.shift)] {
-            let store = makeStore(boards: [board("Focused")])
+            let store = try makeStore(boards: [board("Focused")])
             store.isDenMode = true
             let event = try keyEvent(
                 characters: characters,
@@ -234,7 +266,7 @@ struct KeyboardShortcutTests {
 
     @Test func customBindingsApplyImmediatelyAndCanBeUnassigned() throws {
         let preferences = try makePreferences()
-        let store = makeStore(boards: [board("First"), board("Second")])
+        let store = try makeStore(boards: [board("First"), board("Second")])
         let toggle = try keyEvent(
             characters: ".", charactersIgnoringModifiers: ".", modifiers: [.control], keyCode: 47)
         let defaultToggle = try keyEvent(
@@ -257,7 +289,7 @@ struct KeyboardShortcutTests {
 
     @Test func customBindingsAreSuspendedByTemporaryContexts() throws {
         let preferences = try makePreferences()
-        let store = makeStore(boards: [board("First"), board("Second")])
+        let store = try makeStore(boards: [board("First"), board("Second")])
         let next = try arrowEvent(.rightArrow, modifiers: [.command, .option])
 
         store.showNewDeskPanel()
@@ -272,7 +304,7 @@ struct KeyboardShortcutTests {
 
     @Test func denModeToggleRemainsAvailableInDrawer() throws {
         let preferences = try makePreferences()
-        let store = makeStore(boards: [board("First")])
+        let store = try makeStore(boards: [board("First")])
         store.keepInDrawer(try #require(URL(string: "https://example.com/")))
         let previewID = store.expandedDrawerItemID
         let toggle = try keyEvent(
@@ -288,7 +320,7 @@ struct KeyboardShortcutTests {
     }
 
     @Test func denModeShiftDRequestsDrawerClearConfirmation() throws {
-        let store = makeStore(boards: [board("First")])
+        let store = try makeStore(boards: [board("First")])
         store.keepInDrawer(try #require(URL(string: "https://first.example/")))
         store.keepInDrawer(try #require(URL(string: "https://second.example/")))
         store.isDenMode = true
@@ -305,7 +337,7 @@ struct KeyboardShortcutTests {
     }
 
     @Test func denModeShiftDDoesNothingInDrawerFilterModeOrOnRepeat() throws {
-        let store = makeStore(boards: [board("First")])
+        let store = try makeStore(boards: [board("First")])
         store.keepInDrawer(try #require(URL(string: "https://example.com/")))
         store.isDenMode = true
 
@@ -330,7 +362,7 @@ struct KeyboardShortcutTests {
     }
 
     @Test func drawerFilterPassesShiftedCharactersToTextInput() throws {
-        let store = makeStore(boards: [board("First")])
+        let store = try makeStore(boards: [board("First")])
         store.keepInDrawer(try #require(URL(string: "https://example.com/")))
         store.isDenMode = true
         store.enterDrawerFilterMode()
@@ -346,7 +378,7 @@ struct KeyboardShortcutTests {
     }
 
     @Test func drawerFilterPassesModifiedReturnAndEscapeToTextInput() throws {
-        let store = makeStore(boards: [board("First")])
+        let store = try makeStore(boards: [board("First")])
         store.keepInDrawer(try #require(URL(string: "https://example.com/")))
         store.isDenMode = true
         store.enterDrawerFilterMode()
@@ -370,7 +402,7 @@ struct KeyboardShortcutTests {
     @Test func overviewFilterUsesTwoPhaseSelection() throws {
         let first = board("First")
         let second = board("Second")
-        let store = makeStore(boards: [first, second])
+        let store = try makeStore(boards: [first, second])
         store.showOverview()
 
         let slash = try keyEvent(
@@ -399,7 +431,7 @@ struct KeyboardShortcutTests {
 
     @Test func overviewEscapeRequestsBoardDragCancellation() throws {
         let first = board("First")
-        let store = makeStore(boards: [first])
+        let store = try makeStore(boards: [first])
         store.showOverview()
         #expect(store.beginOverviewBoardDrag(first.id))
 
@@ -419,7 +451,7 @@ struct KeyboardShortcutTests {
     @Test func nativeCommandShortcutsPassThroughWithoutExecuting() throws {
         let first = board("First")
         let second = board("Second")
-        let store = makeStore(boards: [first, second])
+        let store = try makeStore(boards: [first, second])
         let commands = [
             try keyEvent(
                 characters: "w", charactersIgnoringModifiers: "w", modifiers: [.command], keyCode: 13),
@@ -445,7 +477,7 @@ struct KeyboardShortcutTests {
     }
 
     @Test func denModeCommaPerformsSettingsWithoutForwarding() throws {
-        let store = makeStore(boards: [board("First")])
+        let store = try makeStore(boards: [board("First")])
         let comma = try keyEvent(
             characters: ",", charactersIgnoringModifiers: ",", modifiers: [], keyCode: 43)
 
@@ -466,8 +498,150 @@ struct KeyboardShortcutTests {
         #expect(KeyboardController.decision(for: comma, store: store) == .consume(.exclusiveContext))
     }
 
+    @Test func denModeGPrefixLaunchesMatchingEssential() throws {
+        let store = try makeStore(boards: [board("First")])
+        let essential = Essential(name: "ChatGPT", key: "c", input: "https://chatgpt.com")
+        #expect(store.preferences.setEssentials([essential]))
+        store.isDenMode = true
+
+        let prefix = try keyEvent(
+            characters: "g", charactersIgnoringModifiers: "g", keyCode: 5)
+        let key = try keyEvent(
+            characters: "c", charactersIgnoringModifiers: "c", keyCode: 8)
+
+        #expect(
+            KeyboardController.decision(for: prefix, store: store)
+                == .perform(.enterEssentialsPrefix))
+        #expect(KeyboardController.handle(prefix, store: store))
+        #expect(store.temporaryContext == .essentialsPrefix)
+        #expect(
+            KeyboardController.decision(for: key, store: store)
+                == .perform(.launchEssential(essential.id)))
+        #expect(KeyboardController.handle(key, store: store))
+        #expect(store.temporaryContext == nil)
+        #expect(!store.isDenMode)
+        #expect(store.focusedBoard?.currentSheetURL == URL(string: "https://chatgpt.com/"))
+    }
+
+    @Test func denModeGPrefixShowsToastForUnregisteredKeys() throws {
+        let store = try makeStore(boards: [board("First")])
+        #expect(
+            store.preferences.setEssentials([
+                Essential(name: "ChatGPT", key: "c", input: "https://chatgpt.com")
+            ]))
+        store.isDenMode = true
+        let prefix = try keyEvent(
+            characters: "g", charactersIgnoringModifiers: "g", keyCode: 5)
+        let unknown = try keyEvent(
+            characters: "x", charactersIgnoringModifiers: "x", keyCode: 7)
+
+        #expect(KeyboardController.handle(prefix, store: store))
+        #expect(
+            KeyboardController.decision(for: unknown, store: store)
+                == .perform(.showEssentialNotFound("x")))
+        #expect(KeyboardController.handle(unknown, store: store))
+        #expect(store.temporaryContext == nil)
+        #expect(store.isDenMode)
+        #expect(store.focusedDesk?.boards.count == 1)
+        #expect(store.toastMessage?.message == "No Essential assigned to 'x'.")
+        #expect(store.toastMessage?.style == .warning)
+
+        let returnKey = try keyEvent(
+            characters: "\r", charactersIgnoringModifiers: "\r", keyCode: 36)
+        #expect(KeyboardController.handle(prefix, store: store))
+        #expect(KeyboardController.handle(returnKey, store: store))
+        #expect(store.toastMessage?.message == "No Essential assigned to 'Return'.")
+    }
+
+    @Test func denModeGPrefixCancelsQuietlyForEscapeAndModifiedKeys() throws {
+        let store = try makeStore(boards: [board("First")])
+        #expect(
+            store.preferences.setEssentials([
+                Essential(name: "ChatGPT", key: "c", input: "https://chatgpt.com")
+            ]))
+        store.isDenMode = true
+        let prefix = try keyEvent(
+            characters: "g", charactersIgnoringModifiers: "g", keyCode: 5)
+        let escape = try keyEvent(
+            characters: "\u{1B}", charactersIgnoringModifiers: "\u{1B}", keyCode: 53)
+        let modified = try keyEvent(
+            characters: "x", charactersIgnoringModifiers: "x", modifiers: [.command], keyCode: 7)
+
+        #expect(KeyboardController.handle(prefix, store: store))
+        #expect(KeyboardController.handle(escape, store: store))
+        #expect(store.temporaryContext == nil)
+        #expect(store.isDenMode)
+
+        #expect(KeyboardController.handle(prefix, store: store))
+        #expect(KeyboardController.handle(modified, store: store))
+        #expect(store.temporaryContext == nil)
+        #expect(store.isDenMode)
+        #expect(store.toastMessage == nil)
+    }
+
+    @Test func denModeGPrefixPreservesEssentialKeyCase() throws {
+        let store = try makeStore(boards: [board("First")])
+        let lowercase = Essential(name: "Lowercase", key: "c", input: "https://example.com/lower")
+        let uppercase = Essential(name: "Uppercase", key: "C", input: "https://example.com/upper")
+        #expect(store.preferences.setEssentials([lowercase, uppercase]))
+        store.isDenMode = true
+
+        let prefix = try keyEvent(
+            characters: "g", charactersIgnoringModifiers: "g", keyCode: 5)
+        let lowercaseKey = try keyEvent(
+            characters: "c", charactersIgnoringModifiers: "c", keyCode: 8)
+        let uppercaseKey = try keyEvent(
+            characters: "C", charactersIgnoringModifiers: "c", modifiers: [.shift], keyCode: 8)
+
+        #expect(KeyboardController.handle(prefix, store: store))
+        #expect(
+            KeyboardController.decision(for: lowercaseKey, store: store)
+                == .perform(.launchEssential(lowercase.id)))
+        #expect(
+            KeyboardController.decision(for: uppercaseKey, store: store)
+                == .perform(.launchEssential(uppercase.id)))
+        #expect(KeyboardController.handle(uppercaseKey, store: store))
+        #expect(store.focusedBoard?.currentSheetURL == URL(string: "https://example.com/upper"))
+    }
+
+    @Test func denModeGPrefixCanLaunchTerminalEssential() throws {
+        let store = try makeStore(boards: [board("First")])
+        let directory = FileManager.default.temporaryDirectory.standardizedFileURL.path
+        #expect(
+            store.preferences.setEssentials([
+                Essential(name: "Terminal", key: "t", input: ":terminal \(directory)")
+            ]))
+        store.isDenMode = true
+
+        let prefix = try keyEvent(
+            characters: "g", charactersIgnoringModifiers: "g", keyCode: 5)
+        let key = try keyEvent(
+            characters: "t", charactersIgnoringModifiers: "t", keyCode: 17)
+
+        #expect(KeyboardController.handle(prefix, store: store))
+        #expect(KeyboardController.handle(key, store: store))
+        #expect(store.focusedBoard?.terminalWorkingDirectory == directory)
+        #expect(!store.isDenMode)
+    }
+
+    @Test func commandShortcutRemainsOutsideEssentialsPrefix() throws {
+        let preferences = try makePreferences()
+        let store = try makeStore(boards: [board("First")])
+        #expect(
+            store.preferences.setEssentials([
+                Essential(name: "Terminal", key: "t", input: ":terminal")
+            ]))
+        store.isDenMode = true
+        let commandT = try keyEvent(
+            characters: "t", charactersIgnoringModifiers: "t", modifiers: [.command], keyCode: 17)
+
+        #expect(!KeyboardController.handle(commandT, store: store, preferences: preferences))
+        #expect(store.temporaryContext == nil)
+        #expect(store.isDenMode)
+    }
+
     @Test func denModeUnmappedKeyIsConsumedByRouter() throws {
-        let store = makeStore(boards: [board("First")])
+        let store = try makeStore(boards: [board("First")])
         store.isDenMode = true
         for character in ["v", "x"] {
             let unmapped = try keyEvent(
@@ -482,7 +656,7 @@ struct KeyboardShortcutTests {
     @Test func hardReloadCurrentSheetShortcutReloadsOnlyFocusedBoard() throws {
         let first = board("First")
         let second = board("Second")
-        let store = makeStore(boards: [first, second])
+        let store = try makeStore(boards: [first, second])
         let reload = try keyEvent(
             characters: "R",
             charactersIgnoringModifiers: "r",
@@ -523,7 +697,7 @@ struct KeyboardShortcutTests {
     }
 
     @Test func denModeEOpensFocusedBoardLinkEditor() throws {
-        let store = makeStore(boards: [board("First")])
+        let store = try makeStore(boards: [board("First")])
         store.isDenMode = true
         let editLink = try keyEvent(characters: "e", charactersIgnoringModifiers: "e", keyCode: 14)
 
@@ -540,7 +714,7 @@ struct KeyboardShortcutTests {
             currentSheetURL: currentSheetURL,
             firstSheetURL: firstSheetURL,
             customLabel: "Pinned")
-        let store = makeStore(boards: [source])
+        let store = try makeStore(boards: [source])
         store.isDenMode = true
         let shiftReturn = try keyEvent(
             characters: "\r",
@@ -563,7 +737,7 @@ struct KeyboardShortcutTests {
             currentSheetURL: URL(string: "https://example.com/current"),
             firstSheetURL: nil)
         source.firstSheetURL = nil
-        let store = makeStore(boards: [source])
+        let store = try makeStore(boards: [source])
         store.isDenMode = true
         let shiftReturn = try keyEvent(
             characters: "\r",
@@ -603,7 +777,7 @@ struct KeyboardShortcutTests {
 
     @Test func denModeAddsSpaceGuideAndZenViewWithoutPersistedStateChanges() throws {
         let preferences = try makePreferences()
-        let store = makeStore(boards: [board("First")])
+        let store = try makeStore(boards: [board("First")])
         store.isDenMode = true
         let state = store.state
 
@@ -632,7 +806,7 @@ struct KeyboardShortcutTests {
     }
 
     @Test func denModeShiftBracketsHandleFirstAndLatestSheet() throws {
-        let store = makeStore(boards: [board("First")])
+        let store = try makeStore(boards: [board("First")])
         store.isDenMode = true
         let first = try keyEvent(
             characters: "{", charactersIgnoringModifiers: "{", modifiers: [.shift], keyCode: 33)
@@ -646,13 +820,13 @@ struct KeyboardShortcutTests {
 
     @Test func denModePOpensDeskPresetPanelOnlyForDeskWithBoards() throws {
         let save = try keyEvent(characters: "p", charactersIgnoringModifiers: "p", keyCode: 35)
-        let store = makeStore(boards: [board("First")])
+        let store = try makeStore(boards: [board("First")])
         store.isDenMode = true
 
         #expect(KeyboardController.handle(save, store: store))
         #expect(store.isSaveDeskPresetPanelPresented)
 
-        let empty = makeStore(boards: [])
+        let empty = try makeStore(boards: [])
         empty.isDenMode = true
         #expect(KeyboardController.handle(save, store: empty))
         #expect(!empty.isSaveDeskPresetPanelPresented)
@@ -661,7 +835,7 @@ struct KeyboardShortcutTests {
     @Test func denModeShiftPOpensDeskReplacement() throws {
         let replace = try keyEvent(
             characters: "P", charactersIgnoringModifiers: "p", modifiers: [.shift], keyCode: 35)
-        let store = makeStore(boards: [])
+        let store = try makeStore(boards: [])
         store.isDenMode = true
 
         #expect(KeyboardController.handle(replace, store: store))
@@ -672,7 +846,7 @@ struct KeyboardShortcutTests {
 
     @Test func denModeBHasNoPresetAction() throws {
         let legacy = try keyEvent(characters: "b", charactersIgnoringModifiers: "b", keyCode: 11)
-        let store = makeStore(boards: [board("First")])
+        let store = try makeStore(boards: [board("First")])
         store.isDenMode = true
 
         #expect(KeyboardController.handle(legacy, store: store))
@@ -683,7 +857,7 @@ struct KeyboardShortcutTests {
     @Test func presetConfirmationsSuspendBoardRemovalShortcuts() throws {
         let commandW = try keyEvent(
             characters: "w", charactersIgnoringModifiers: "w", modifiers: [.command], keyCode: 13)
-        let store = makeStore(boards: [board("First")])
+        let store = try makeStore(boards: [board("First")])
 
         #expect(store.saveFocusedDeskAsPreset(label: "Routine") == .created)
         #expect(store.saveFocusedDeskAsPreset(label: "Routine") == .replacementPending)
@@ -698,7 +872,7 @@ struct KeyboardShortcutTests {
     }
 
     @Test func fullscreenBypassesAllShortcutsAndClearsDenMode() throws {
-        let store = makeStore(boards: [board("First")])
+        let store = try makeStore(boards: [board("First")])
         store.isDenMode = true
 
         store.updateFullscreenStatus(boardID: UUID(), isFullscreen: true)
@@ -712,7 +886,7 @@ struct KeyboardShortcutTests {
 
     @Test func denModeAKeepsFocusedSheetInDrawer() throws {
         let focused = board("Focused", url: "https://drawer.example/")
-        let store = makeStore(boards: [focused])
+        let store = try makeStore(boards: [focused])
         store.isDenMode = true
 
         let keep = try keyEvent(
@@ -726,13 +900,17 @@ struct KeyboardShortcutTests {
     }
 
     private func makePreferences() throws -> AppPreferences {
-        let defaults = try #require(UserDefaults(suiteName: "KeyboardShortcutTests-\(UUID())"))
+        let defaults = try #require(TestUserDefaults(suiteName: "KeyboardShortcutTests-\(UUID())"))
         return AppPreferences(defaults: defaults)
     }
 
-    private func makeStore(boards: [BoardState]) -> DenStore {
+    private func makeStore(boards: [BoardState]) throws -> DenStore {
         let desk = DeskState(label: "Desk", boards: boards, focusedBoardID: boards.first?.id)
-        return DenStore(state: DenState(desks: [desk], focusedDeskID: desk.id))
+        let defaults = try #require(TestUserDefaults(suiteName: "KeyboardShortcutStore-\(UUID())"))
+        return DenStore(
+            state: DenState(desks: [desk], focusedDeskID: desk.id),
+            sheetNavigation: SheetNavigationManager(),
+            preferences: AppPreferences(defaults: defaults))
     }
 
     private func keyEvent(

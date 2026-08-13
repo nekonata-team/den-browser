@@ -63,6 +63,7 @@ struct KeyboardShortcutsView: View {
                     item(["o"], "Overview"),
                     item(["Tab"], "Toggle Drawer"),
                     item([","], "Open Settings"),
+                    item(["g", "then", "key"], "Start Essential"),
                     item(["?"], "Keyboard Shortcuts"),
                     item(["z"], "Toggle Zen View"),
                     item(["⇧", "F"], "Toggle Focus Mode"),

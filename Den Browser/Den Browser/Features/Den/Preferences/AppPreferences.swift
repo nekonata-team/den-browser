@@ -1,6 +1,44 @@
 import Foundation
 import Observation
 
+struct Essential: Codable, Equatable, Hashable, Identifiable {
+    private enum CodingKeys: String, CodingKey {
+        case id, name, key, input
+    }
+
+    let id: UUID
+    var name: String
+    var key: String
+    var input: String
+
+    init(id: UUID = UUID(), name: String, key: String, input: String) {
+        self.id = id
+        self.name = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        self.key = key == " " ? key : key.trimmingCharacters(in: .whitespacesAndNewlines)
+        self.input = input.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.init(
+            id: try container.decode(UUID.self, forKey: .id),
+            name: try container.decode(String.self, forKey: .name),
+            key: try container.decode(String.self, forKey: .key),
+            input: try container.decode(String.self, forKey: .input))
+    }
+
+    var displayKey: String {
+        key == " " ? "Space" : key
+    }
+
+    var isValid: Bool {
+        !name.isEmpty
+            && key.count == 1
+            && key.unicodeScalars.allSatisfy { !CharacterSet.controlCharacters.contains($0) }
+            && !input.isEmpty
+    }
+}
+
 enum MotionPreference: String, CaseIterable, Identifiable {
     case followSystem = "follow-system"
     case standard
@@ -33,6 +71,7 @@ final class AppPreferences {
     private(set) var boardCentering: FocusedBoardCentering
     private(set) var sheetScale: Int
     private(set) var zellijPath: String
+    private(set) var essentials: [Essential]
 
     @ObservationIgnored private let defaults: UserDefaults
 
@@ -47,6 +86,7 @@ final class AppPreferences {
     private static let boardCenteringKey = "preferences.appearance.board-centering.mode"
     private static let sheetScaleKey = "preferences.appearance.sheet-scale.percent"
     private static let zellijPathKey = "preferences.terminal.zellij.executable-path"
+    private static let essentialsKey = "preferences.essentials.items"
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
@@ -65,6 +105,7 @@ final class AppPreferences {
             Self.normalizedSheetScale(defaults.object(forKey: Self.sheetScaleKey) as? Int)
             ?? Self.defaultSheetScale
         zellijPath = defaults.string(forKey: Self.zellijPathKey) ?? ""
+        essentials = Self.loadEssentials(defaults)
         loadShortcutOverrides()
     }
 
@@ -110,6 +151,20 @@ final class AppPreferences {
         let normalized = path.trimmingCharacters(in: .whitespacesAndNewlines)
         zellijPath = normalized
         defaults.set(normalized, forKey: Self.zellijPathKey)
+    }
+
+    @discardableResult
+    func setEssentials(_ essentials: [Essential]) -> Bool {
+        guard Self.areValidEssentials(essentials), let data = try? PropertyListEncoder().encode(essentials) else {
+            return false
+        }
+        self.essentials = essentials
+        if essentials.isEmpty {
+            defaults.removeObject(forKey: Self.essentialsKey)
+        } else {
+            defaults.set(data, forKey: Self.essentialsKey)
+        }
+        return true
     }
 
     func shortcut(for action: ConfigurableShortcut) -> ShortcutBinding? {
@@ -270,6 +325,27 @@ final class AppPreferences {
             return defaultDeskNumberBinding
         }
         return binding
+    }
+
+    private static func loadEssentials(_ defaults: UserDefaults) -> [Essential] {
+        guard let data = defaults.data(forKey: essentialsKey),
+            let essentials = try? PropertyListDecoder().decode([Essential].self, from: data),
+            areValidEssentials(essentials)
+        else {
+            defaults.removeObject(forKey: essentialsKey)
+            return []
+        }
+        return essentials
+    }
+
+    private static func areValidEssentials(_ essentials: [Essential]) -> Bool {
+        var ids: Set<UUID> = []
+        var keys: Set<String> = []
+        return essentials.allSatisfy { essential in
+            essential.isValid
+                && ids.insert(essential.id).inserted
+                && keys.insert(essential.key).inserted
+        }
     }
 
     private func shortcutDefaultsKey(for action: ConfigurableShortcut) -> String {

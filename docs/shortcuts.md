@@ -8,6 +8,8 @@ The eight app-wide shortcuts for toggling Den Mode, moving between Desks, return
 
 The complete in-app guide is available from Settings, the Den menu, and `?` in Den Mode. It uses the current customized bindings.
 
+Essentials are app-wide named Board inputs configured in Settings > Essentials. In Den Mode, `g` opens the Essentials Prefix; press `g` followed by an Essential's case-sensitive key to start its Web, Terminal, or Zellij Board input in the active Profile window. Hold Shift for an uppercase key. Escape cancels the prefix, and an unregistered second key shows a warning Toast before returning to Den Mode.
+
 | Shortcut | Action | Notes |
 | --- | --- | --- |
 | Control + Command + `P` | Open Profile panel | Searches Profiles and opens their existing Den window or creates it if closed. |
@@ -39,6 +41,7 @@ The complete in-app guide is available from Settings, the Den menu, and `?` in D
 | `o` | Toggle overview | Overview is temporary within Den Mode. |
 | `?` | Keyboard Shortcuts | Opens the complete guide; `?` or Escape closes it. |
 | `,` | Open Settings | Available in Den Mode. |
+| `g`, then Essential key | Start an Essential | Opens the configured Board input. Available in Den Mode. |
 | `z` | Toggle Zen View | Hides the native titlebar, Desk switcher, and Profile control for this window. Press `z` again to restore them. |
 | Shift + `f` | Toggle Focus Mode | Keeps the Focused Board's Sheet or Terminal surface clear and softly blurs other Board content. Remains active until toggled off. |
 | `[` / `]` | Back / forward in sheet stack | Uses focused board. |
