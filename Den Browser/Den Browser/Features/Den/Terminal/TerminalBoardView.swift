@@ -137,7 +137,7 @@ struct TerminalBoardView: View {
             store.duplicateFocusedBoard()
         } label: {
             Label(
-                board.isZellij ? "Duplicate Zellij Board" : "Duplicate Terminal",
+                board.isZellij ? "Duplicate Zellij Board" : "Duplicate Terminal Board",
                 systemImage: "plus.square.on.square")
         }
         Button {
