@@ -15,7 +15,7 @@ final class TerminalRuntime: NSObject, ObservableObject {
 
     let terminalView: AppTerminalView
     private var controller: TerminalController?
-    private let events: Events
+    private var events: Events
     private var isDisposed = false
 
     init(workingDirectory: String, command: String? = nil, events: Events) {
@@ -32,6 +32,10 @@ final class TerminalRuntime: NSObject, ObservableObject {
             workingDirectory: workingDirectory,
             context: .window)
         terminalView.controller = controller
+    }
+
+    func updateOwner(events: Events) {
+        self.events = events
     }
 
     func dispose() {

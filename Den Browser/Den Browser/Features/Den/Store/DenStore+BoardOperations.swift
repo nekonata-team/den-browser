@@ -2,7 +2,7 @@ import Foundation
 
 extension DenStore {
     func focusDesk(_ deskID: UUID) {
-        guard setFocusedDesk(deskID) || state.focusedDeskID == deskID else { return }
+        guard setFocusedDesk(deskID) || presentedDeskID == deskID else { return }
         dismissDeskFilter()
         isDenMode = false
         save()
@@ -11,7 +11,7 @@ extension DenStore {
     func focusBoard(_ boardID: UUID, exitsDenMode: Bool = false) {
         guard let indices = boardIndices(for: boardID) else { return }
         let deskID = state.desks[indices.desk].id
-        let changed = state.focusedDeskID != deskID || state.desks[indices.desk].focusedBoardID != boardID
+        let changed = presentedDeskID != deskID || state.desks[indices.desk].focusedBoardID != boardID
         if !changed {
             if exitsDenMode {
                 isDenMode = false

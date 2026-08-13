@@ -72,6 +72,18 @@ struct ProfileState: Codable, Equatable, Identifiable {
     var webProfileStore: WebProfileStore
 }
 
+struct ProfileWindowRoute: Codable, Hashable {
+    let windowID: UUID
+    let profileID: UUID
+    let deskID: UUID?
+
+    init(windowID: UUID = UUID(), profileID: UUID, deskID: UUID? = nil) {
+        self.windowID = windowID
+        self.profileID = profileID
+        self.deskID = deskID
+    }
+}
+
 enum RecentItem: Codable, Equatable, Hashable, Identifiable {
     case url(URL)
     case search(String)

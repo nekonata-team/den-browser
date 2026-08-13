@@ -5,14 +5,58 @@ import WebKit
 
 @MainActor
 @Observable
+final class DenStorage {
+    var state: DenState
+    var deskPresets: [PersonalDeskPreset]
+    var recentItems: [RecentItem]
+    var activeDrag: ActiveDrag?
+    var recentlyRemovedBoard: RecentlyRemovedBoard?
+
+    @ObservationIgnored var runtimes: [UUID: BoardRuntime] = [:]
+    @ObservationIgnored var terminalRuntimes: [UUID: TerminalRuntime] = [:]
+    @ObservationIgnored var runtimeOwners: [UUID: DenStore] = [:]
+    @ObservationIgnored let onSave: ((DenState) -> Void)?
+    @ObservationIgnored let onDeskPresetsSave: (([PersonalDeskPreset]) -> Void)?
+    @ObservationIgnored let onRecentItemsSave: (([RecentItem]) -> Bool)?
+
+    init(
+        state: DenState,
+        deskPresets: [PersonalDeskPreset] = [],
+        recentItems: [RecentItem] = [],
+        onSave: ((DenState) -> Void)? = nil,
+        onDeskPresetsSave: (([PersonalDeskPreset]) -> Void)? = nil,
+        onRecentItemsSave: (([RecentItem]) -> Bool)? = nil
+    ) {
+        self.state = state
+        self.deskPresets = deskPresets
+        self.recentItems = recentItems
+        self.onSave = onSave
+        self.onDeskPresetsSave = onDeskPresetsSave
+        self.onRecentItemsSave = onRecentItemsSave
+    }
+}
+
+@MainActor
+@Observable
 final class DenStore {
     static let maximumDeskCount = 10
     static let maximumRecentItemCount = 100
     static let maximumPersistedRecentInputLength = 2_048
 
-    var state: DenState
-    var deskPresets: [PersonalDeskPreset]
-    var recentItems: [RecentItem]
+    let storage: DenStorage
+    var state: DenState {
+        get { storage.state }
+        set { storage.state = newValue }
+    }
+    var deskPresets: [PersonalDeskPreset] {
+        get { storage.deskPresets }
+        set { storage.deskPresets = newValue }
+    }
+    var recentItems: [RecentItem] {
+        get { storage.recentItems }
+        set { storage.recentItems = newValue }
+    }
+    private(set) var presentedDeskID: UUID
     private(set) var temporaryContext: TemporaryContext?
     var isZenViewPresented = false
     var isFocusModePresented = false
@@ -30,11 +74,17 @@ final class DenStore {
     var maximizedBoardID: UUID?
     var centerFocusedBoardRequest = 0
     var deskFilterCenteringTask: Task<Void, Never>?
-    var activeDrag: ActiveDrag?
+    var activeDrag: ActiveDrag? {
+        get { storage.activeDrag }
+        set { storage.activeDrag = newValue }
+    }
     var boardDragCancellationRequest = 0
     var deskDragCancellationRequest = 0
     var overviewSelection: OverviewSelection?
-    var recentlyRemovedBoard: RecentlyRemovedBoard?
+    var recentlyRemovedBoard: RecentlyRemovedBoard? {
+        get { storage.recentlyRemovedBoard }
+        set { storage.recentlyRemovedBoard = newValue }
+    }
     var isDrawerOpen: Bool { temporaryContext == .drawer }
     var isDeskFilterPresented: Bool { deskFilterPhase != .inactive }
     var isDeskFilterInputActive: Bool { deskFilterPhase == .filtering }
@@ -64,18 +114,25 @@ final class DenStore {
     let preferences: AppPreferences
     let websiteDataStore: WKWebsiteDataStore
 
-    @ObservationIgnored var runtimes: [UUID: BoardRuntime] = [:]
-    @ObservationIgnored var terminalRuntimes: [UUID: TerminalRuntime] = [:]
+    var runtimes: [UUID: BoardRuntime] {
+        get { storage.runtimes }
+        set { storage.runtimes = newValue }
+    }
+    var terminalRuntimes: [UUID: TerminalRuntime] {
+        get { storage.terminalRuntimes }
+        set { storage.terminalRuntimes = newValue }
+    }
     @ObservationIgnored var drawerPreviewRuntime: DrawerPreviewRuntime?
-    @ObservationIgnored private var toastTask: Task<Void, Never>?
+    @ObservationIgnored var toastTask: Task<Void, Never>?
     @ObservationIgnored private var previousFocusedDeskID: UUID?
-    @ObservationIgnored private let onSave: ((DenState) -> Void)?
-    @ObservationIgnored private let onDeskPresetsSave: (([PersonalDeskPreset]) -> Void)?
-    @ObservationIgnored let onRecentItemsSave: (([RecentItem]) -> Bool)?
+    @ObservationIgnored let canPresentDesk: ((UUID) -> Bool)?
+    @ObservationIgnored private let onDeskPresentationRequest: ((UUID) -> Bool)?
+    @ObservationIgnored private let onWillResetDen: (() -> Void)?
+    var onRecentItemsSave: (([RecentItem]) -> Bool)? { storage.onRecentItemsSave }
     var boardLayoutMetrics: BoardLayoutMetrics?
 
     var focusedDesk: DeskState? {
-        state.desks.first { $0.id == state.focusedDeskID }
+        state.desks.first { $0.id == presentedDeskID }
     }
 
     var focusedBoard: BoardState? {
@@ -96,6 +153,7 @@ final class DenStore {
 
     var canDeleteFocusedDesk: Bool {
         state.desks.count > 1
+            && state.desks.contains { $0.id != presentedDeskID && (canPresentDesk?($0.id) ?? true) }
     }
 
     var isOpenBoardPanelPresented: Bool { temporaryContext == .openBoard }
@@ -200,15 +258,22 @@ final class DenStore {
         onDeskPresetsSave: (([PersonalDeskPreset]) -> Void)? = nil,
         onRecentItemsSave: (([RecentItem]) -> Bool)? = nil
     ) {
-        self.state = Self.normalizedPersistedState(state)
-        self.deskPresets = deskPresets
-        self.recentItems = recentItems
+        let normalizedState = Self.normalizedPersistedState(state)
+        let storage = DenStorage(
+            state: normalizedState,
+            deskPresets: deskPresets,
+            recentItems: recentItems,
+            onSave: onSave,
+            onDeskPresetsSave: onDeskPresetsSave,
+            onRecentItemsSave: onRecentItemsSave)
+        self.storage = storage
+        presentedDeskID = normalizedState.focusedDeskID
         self.websiteDataStore = websiteDataStore
         self.sheetNavigation = sheetNavigation
         self.preferences = preferences
-        self.onSave = onSave
-        self.onDeskPresetsSave = onDeskPresetsSave
-        self.onRecentItemsSave = onRecentItemsSave
+        canPresentDesk = nil
+        onDeskPresentationRequest = nil
+        onWillResetDen = nil
         ensureFocusedObjects()
         if let restoredDrawerItemID = self.state.expandedDrawerItemID,
             self.state.drawerItems.contains(where: { $0.id == restoredDrawerItemID })
@@ -222,7 +287,36 @@ final class DenStore {
         }
     }
 
-    private static func normalizedPersistedState(_ state: DenState) -> DenState {
+    init(
+        storage: DenStorage,
+        presentedDeskID: UUID?,
+        websiteDataStore: WKWebsiteDataStore,
+        sheetNavigation: SheetNavigationManager,
+        preferences: AppPreferences,
+        canPresentDesk: @escaping (UUID) -> Bool,
+        onDeskPresentationRequest: @escaping (UUID) -> Bool,
+        onWillResetDen: @escaping () -> Void
+    ) {
+        self.storage = storage
+        self.presentedDeskID =
+            presentedDeskID
+            .flatMap { requested in storage.state.desks.contains { $0.id == requested } ? requested : nil }
+            ?? storage.state.focusedDeskID
+        self.websiteDataStore = websiteDataStore
+        self.sheetNavigation = sheetNavigation
+        self.preferences = preferences
+        self.canPresentDesk = canPresentDesk
+        self.onDeskPresentationRequest = onDeskPresentationRequest
+        self.onWillResetDen = onWillResetDen
+        ensureFocusedObjects()
+        if let restoredDrawerItemID = state.expandedDrawerItemID,
+            state.drawerItems.contains(where: { $0.id == restoredDrawerItemID })
+        {
+            selectedDrawerItemID = restoredDrawerItemID
+        }
+    }
+
+    static func normalizedPersistedState(_ state: DenState) -> DenState {
         var copy = state
         for deskIndex in copy.desks.indices {
             for boardIndex in copy.desks[deskIndex].boards.indices {
@@ -236,6 +330,7 @@ final class DenStore {
     }
 
     func resetDen() {
+        onWillResetDen?()
         releaseRuntimes()
         if isBoardDragging {
             boardDragCancellationRequest &+= 1
@@ -244,6 +339,7 @@ final class DenStore {
             deskDragCancellationRequest &+= 1
         }
         state = .sample
+        presentedDeskID = state.focusedDeskID
         openBoardPanelInitialURL = nil
         openBoardPanelMessage = nil
         setTemporaryContext(nil)
@@ -298,7 +394,7 @@ final class DenStore {
     }
 
     var focusedDeskIndex: Int? {
-        state.desks.firstIndex { $0.id == state.focusedDeskID }
+        state.desks.firstIndex { $0.id == presentedDeskID }
     }
 
     func boardIndices(for boardID: UUID) -> (desk: Int, board: Int)? {
@@ -312,11 +408,17 @@ final class DenStore {
 
     @discardableResult
     func setFocusedDesk(_ deskID: UUID) -> Bool {
-        guard state.focusedDeskID != deskID else { return false }
+        guard presentedDeskID != deskID else { return false }
         guard state.desks.contains(where: { $0.id == deskID }) else { return false }
-        previousFocusedDeskID = state.focusedDeskID
+        guard onDeskPresentationRequest?(deskID) ?? true else { return false }
+        previousFocusedDeskID = presentedDeskID
+        presentedDeskID = deskID
         state.focusedDeskID = deskID
         return true
+    }
+
+    func canSelectDesk(_ deskID: UUID) -> Bool {
+        deskID == presentedDeskID || (canPresentDesk?(deskID) ?? true)
     }
 
     func returnToPreviousDesk() {
@@ -352,6 +454,7 @@ final class DenStore {
     func ensureFocusedObjects() {
         if state.desks.isEmpty {
             state = .sample
+            presentedDeskID = state.focusedDeskID
             return
         }
 
@@ -359,6 +462,12 @@ final class DenStore {
             let firstDeskID = state.desks.first?.id
         {
             state.focusedDeskID = firstDeskID
+        }
+        if !state.desks.contains(where: { $0.id == presentedDeskID }),
+            let firstDeskID = state.desks.first(where: { canPresentDesk?($0.id) ?? true })?.id
+                ?? state.desks.first?.id
+        {
+            presentedDeskID = firstDeskID
         }
 
         for deskIndex in state.desks.indices {
@@ -371,11 +480,11 @@ final class DenStore {
 
     func save() {
         guard activeDrag == nil else { return }
-        onSave?(state)
+        storage.onSave?(state)
     }
 
     func saveDeskPresets() {
-        onDeskPresetsSave?(deskPresets)
+        storage.onDeskPresetsSave?(deskPresets)
     }
 
     func wrappedIndex(_ index: Int, count: Int) -> Int {
@@ -387,9 +496,11 @@ final class DenStore {
             isDenMode = false
             isFullscreenActive = true
         } else {
-            isFullscreenActive = runtimes.values.contains {
-                $0.webView.fullscreenState == .inFullscreen
-                    || $0.webView.fullscreenState == .enteringFullscreen
+            let focusedBoardIDs = Set(focusedDesk?.boards.map(\.id) ?? [])
+            isFullscreenActive = runtimes.contains { boardID, runtime in
+                focusedBoardIDs.contains(boardID)
+                    && (runtime.webView.fullscreenState == .inFullscreen
+                        || runtime.webView.fullscreenState == .enteringFullscreen)
             }
         }
     }

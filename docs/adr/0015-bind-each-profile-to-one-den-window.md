@@ -1,8 +1,10 @@
 ---
-status: accepted
+status: superseded by ADR-0037
 ---
 
 # Bind each Profile to one Den window
+
+Superseded by [ADR 0037](./0037-present-distinct-desks-in-profile-windows.md), which allows one Profile to present distinct Desks in multiple windows while retaining one Den and one website-data identity.
 
 Each Profile owns exactly one Den presented in its own window, and every Board in that Den shares the Profile's persistent `WKWebsiteDataStore`. Profile and Den share one lifecycle: deleting a Profile also deletes its Den and website data. App preferences remain shared across profiles. Selecting a Profile with an open window brings that window forward; otherwise, it opens the Profile's Den window.
 

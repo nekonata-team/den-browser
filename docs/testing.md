@@ -9,7 +9,7 @@ Automated unit tests own:
 - `DenStore` and other pure state transitions, including board focus, ordering, moving, holding, placing, canceling, and closing.
 - State persistence and restoration.
 - Terminal command parsing, Zellij command resolution, named theme resolution, and Web/Terminal/Zellij Board lifecycle transitions.
-- Profile model coding, ordering, CRUD, corruption recovery, per-Profile Den restoration, and app-wide preference persistence.
+- Profile model coding, ordering, CRUD, corruption recovery, per-Profile Den restoration, Profile-window Desk assignment, and app-wide preference persistence.
 - Routing Sheet Navigation callbacks and WebKit stores to their owning Profile.
 - The pointer-focus state machine used to coordinate board selection and WebKit focus.
 
@@ -48,6 +48,7 @@ Exploratory human validation is reserved for milestone checks that depend on mac
 - WebKit downloads, native save-panel access, Blob responses, and authenticated responses.
 - First-responder handoff between Den controls and web content.
 - External web compatibility and authentication persistence.
+- Multiple-window placement and focus behavior across physical displays.
 - Performance and resource use.
 - Ghostty rendering, IME, Shell environment, detach/reattach behavior, and process cleanup.
 - Liquid Glass, visual quality, and accessibility.

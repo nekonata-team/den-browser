@@ -17,8 +17,8 @@ final class BoardRuntime: BaseWebRuntime, NSWindowDelegate, ObservableObject {
     @Published private(set) var estimatedProgress = 0.0
     @Published private(set) var isShowingInitialLoadFallback = false
 
-    private let sheetNavigationActions: SheetNavigationManager.Actions
-    private let events: Events
+    private var sheetNavigationActions: SheetNavigationManager.Actions
+    private var events: Events
     private let sheetNavigation: SheetNavigationManager
 
     private var auxiliaryWindows: [ObjectIdentifier: NSWindow] = [:]
@@ -88,6 +88,15 @@ final class BoardRuntime: BaseWebRuntime, NSWindowDelegate, ObservableObject {
         if board.currentSheetURL != nil {
             isShowingInitialLoadFallback = true
         }
+    }
+
+    func updateOwner(
+        sheetNavigationActions: SheetNavigationManager.Actions,
+        events: Events
+    ) {
+        self.sheetNavigationActions = sheetNavigationActions
+        self.events = events
+        sheetNavigation.updateActions(sheetNavigationActions, for: webView)
     }
 
     private static func configureNativePictureInPicture(

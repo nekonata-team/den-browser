@@ -2,7 +2,7 @@ import AppKit
 import SwiftUI
 
 struct ProfileWindowView: View {
-    let profileID: UUID
+    let route: ProfileWindowRoute
 
     @Environment(ProfileManager.self) private var profileManager
     @Environment(\.appearsActive) private var appearsActive
@@ -16,9 +16,9 @@ struct ProfileWindowView: View {
 
     @ViewBuilder
     private var content: some View {
-        let activeProfileID = profileManager.resolvedProfileID(profileID)
+        let activeProfileID = profileManager.resolvedProfileID(route.profileID)
         if let profile = profileManager.profile(id: activeProfileID),
-            let store = profileManager.store(for: activeProfileID)
+            let store = profileManager.store(for: route)
         {
             ZStack(alignment: .top) {
                 DenView(
@@ -26,10 +26,12 @@ struct ProfileWindowView: View {
                     profileColor: profile.color.color,
                     shouldShowHeader: !store.isZenViewPresented
                 ) {
-                    DenHeader(profile: profile)
+                    DenHeader(profile: profile, windowID: route.windowID)
                 }
 
-                if profileManager.openProfilePanelProfileID == activeProfileID {
+                if profileManager.openProfilePanelProfileID == activeProfileID,
+                    profileManager.openProfilePanelWindowID == route.windowID
+                {
                     OpenProfilePanel()
                         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
                         .padding(.top, 64)
@@ -39,7 +41,8 @@ struct ProfileWindowView: View {
             .environment(store)
             .focusedSceneValue(\.denStore, store)
             .focusedSceneValue(\.profileID, activeProfileID)
-            .background(WindowRegistration(profileID: activeProfileID))
+            .focusedSceneValue(\.profileWindowID, route.windowID)
+            .background(WindowRegistration(route: route))
             .toolbarVisibility(store.isZenViewPresented ? .hidden : .visible, for: .windowToolbar)
             .toolbarBackgroundVisibility(.hidden, for: .windowToolbar)
             .ignoresSafeArea(.container, edges: store.isZenViewPresented ? .top : [])
@@ -48,13 +51,22 @@ struct ProfileWindowView: View {
             }
             .sheet(
                 isPresented: Binding(
-                    get: { profileManager.clearBrowsingDataProfileID != nil },
-                    set: { if !$0 { profileManager.clearBrowsingDataProfileID = nil } }
+                    get: {
+                        profileManager.clearBrowsingDataProfileID != nil
+                            && profileManager.clearBrowsingDataWindowID == route.windowID
+                    },
+                    set: {
+                        if !$0 {
+                            profileManager.clearBrowsingDataProfileID = nil
+                            profileManager.clearBrowsingDataWindowID = nil
+                        }
+                    }
                 )
             ) {
                 if let id = profileManager.clearBrowsingDataProfileID {
                     ClearBrowsingDataView(profileID: id) {
                         profileManager.clearBrowsingDataProfileID = nil
+                        profileManager.clearBrowsingDataWindowID = nil
                     }
                 }
             }
@@ -66,12 +78,12 @@ struct ProfileWindowView: View {
 }
 
 private struct WindowRegistration: NSViewRepresentable {
-    let profileID: UUID
+    let route: ProfileWindowRoute
 
     @Environment(ProfileManager.self) private var profileManager
 
     func makeCoordinator() -> Coordinator {
-        Coordinator(profileID: profileID, profileManager: profileManager)
+        Coordinator(route: route, profileManager: profileManager)
     }
 
     func makeNSView(context: Context) -> NSView {
@@ -90,12 +102,13 @@ private struct WindowRegistration: NSViewRepresentable {
 
     @MainActor
     final class Coordinator: NSObject {
-        private let profileID: UUID
+        private let route: ProfileWindowRoute
         private weak var profileManager: ProfileManager?
         private weak var window: NSWindow?
+        private var closeObserver: NSObjectProtocol?
 
-        init(profileID: UUID, profileManager: ProfileManager) {
-            self.profileID = profileID
+        init(route: ProfileWindowRoute, profileManager: ProfileManager) {
+            self.route = route
             self.profileManager = profileManager
             super.init()
         }
@@ -103,15 +116,38 @@ private struct WindowRegistration: NSViewRepresentable {
         func register(_ window: NSWindow?) {
             guard let window, self.window !== window else { return }
             self.window = window
-            if profileManager?.register(window: window, for: profileID) != true {
-                self.window = nil
+            profileManager?.register(window: window, for: route)
+            closeObserver = NotificationCenter.default.addObserver(
+                forName: NSWindow.willCloseNotification,
+                object: window,
+                queue: .main
+            ) { [weak self] _ in
+                Task { @MainActor [weak self] in
+                    self?.unregister(window: window)
+                }
             }
         }
 
         func unregister() {
-            guard let window else { return }
-            profileManager?.unregister(window: window, for: profileID)
+            guard let window else {
+                removeCloseObserver()
+                return
+            }
+            unregister(window: window)
+        }
+
+        private func unregister(window: NSWindow) {
+            guard self.window === window else { return }
+            profileManager?.unregister(window: window, for: route)
             self.window = nil
+            removeCloseObserver()
+        }
+
+        private func removeCloseObserver() {
+            if let closeObserver {
+                NotificationCenter.default.removeObserver(closeObserver)
+                self.closeObserver = nil
+            }
         }
     }
 }
@@ -138,7 +174,10 @@ private struct OpenProfilePanel: View {
             ForEach(filteredProfiles) { profile in
                 Button {
                     profileManager.openProfilePanelProfileID = nil
-                    openWindow(value: profile.id)
+                    profileManager.openProfilePanelWindowID = nil
+                    if !profileManager.activateWindow(for: profile.id) {
+                        openWindow(value: ProfileWindowRoute(profileID: profile.id))
+                    }
                 } label: {
                     HStack {
                         Circle().fill(profile.color.color).frame(width: 10, height: 10)
@@ -155,7 +194,10 @@ private struct OpenProfilePanel: View {
         .frame(width: 380)
         .glassEffect(.regular, in: RoundedRectangle(cornerRadius: DenRadius.large, style: .continuous))
         .onAppear { isFocused = true }
-        .onExitCommand { profileManager.openProfilePanelProfileID = nil }
+        .onExitCommand {
+            profileManager.openProfilePanelProfileID = nil
+            profileManager.openProfilePanelWindowID = nil
+        }
     }
 
     private var filteredProfiles: [ProfileState] {
@@ -172,6 +214,10 @@ struct ProfileIDFocusedValueKey: FocusedValueKey {
     typealias Value = UUID
 }
 
+struct ProfileWindowIDFocusedValueKey: FocusedValueKey {
+    typealias Value = UUID
+}
+
 extension FocusedValues {
     var denStore: DenStore? {
         get { self[DenStoreFocusedValueKey.self] }
@@ -181,5 +227,10 @@ extension FocusedValues {
     var profileID: UUID? {
         get { self[ProfileIDFocusedValueKey.self] }
         set { self[ProfileIDFocusedValueKey.self] = newValue }
+    }
+
+    var profileWindowID: UUID? {
+        get { self[ProfileWindowIDFocusedValueKey.self] }
+        set { self[ProfileWindowIDFocusedValueKey.self] = newValue }
     }
 }

@@ -131,6 +131,12 @@ final class SheetNavigationManager {
         pausedByWebView.removeValue(forKey: webViewID)
     }
 
+    func updateActions(_ actions: Actions, for webView: WKWebView) {
+        let webViewID = ObjectIdentifier(webView)
+        guard actionsByWebView[webViewID] != nil else { return }
+        actionsByWebView[webViewID] = actions
+    }
+
     func refreshConfiguration(for webView: WKWebView) {
         applyConfiguration(to: webView)
     }

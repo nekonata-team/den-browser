@@ -306,13 +306,22 @@ private struct ProfilesSettingsView: View {
         }
         .sheet(
             isPresented: Binding(
-                get: { profileManager.clearBrowsingDataProfileID != nil },
-                set: { if !$0 { profileManager.clearBrowsingDataProfileID = nil } }
+                get: {
+                    profileManager.clearBrowsingDataProfileID != nil
+                        && profileManager.clearBrowsingDataWindowID == nil
+                },
+                set: {
+                    if !$0 {
+                        profileManager.clearBrowsingDataProfileID = nil
+                        profileManager.clearBrowsingDataWindowID = nil
+                    }
+                }
             )
         ) {
             if let id = profileManager.clearBrowsingDataProfileID {
                 ClearBrowsingDataView(profileID: id) {
                     profileManager.clearBrowsingDataProfileID = nil
+                    profileManager.clearBrowsingDataWindowID = nil
                 }
             }
         }
@@ -369,6 +378,7 @@ private struct ProfileSettingsRow: View {
             .frame(width: 100)
             Button {
                 profileManager.clearBrowsingDataProfileID = profile.id
+                profileManager.clearBrowsingDataWindowID = nil
             } label: {
                 Image(systemName: "eraser")
             }

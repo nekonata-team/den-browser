@@ -84,7 +84,7 @@ struct BoardStrip: View {
         let restingScrollX = BoardLayout.restingScrollX(for: layoutParams)
         let focusRequest = focusedBoardFocusRequest
         let alignmentTarget = BoardStripAlignmentTarget(
-            deskID: store.state.focusedDeskID,
+            deskID: store.presentedDeskID,
             boardID: store.focusedDesk?.focusedBoardID,
             centersFocusedBoard: shouldCenterFocusedBoard,
             restingScrollX: restingScrollX,
@@ -177,7 +177,7 @@ struct BoardStrip: View {
             .padding(.top, topInset)
             .padding(.bottom, bottomInset)
             .animation(DenMotion.spatial(reduceMotion: shouldReduceMotion), value: layoutKey)
-            .transaction(value: store.state.focusedDeskID) { transaction in
+            .transaction(value: store.presentedDeskID) { transaction in
                 transaction.animation = nil
                 transaction.disablesAnimations = true
             }
@@ -245,7 +245,7 @@ struct BoardStrip: View {
         }
         .onChange(of: size.width) { _, _ in updateBoardLayout(for: size) }
         .onChange(of: store.boardDragCancellationRequest) { _, _ in cancelBoardDrag() }
-        .onChange(of: store.state.focusedDeskID) { _, deskID in
+        .onChange(of: store.presentedDeskID) { _, deskID in
             if boardDrag?.deskID != deskID { cancelBoardDrag() }
         }
         .onChange(of: store.temporaryContext) { _, context in

@@ -9,12 +9,18 @@ final class ProfileManager {
     private(set) var profiles: [ProfileState] = []
     private(set) var errorMessage: String?
     var openProfilePanelProfileID: UUID?
+    var openProfilePanelWindowID: UUID?
     var clearBrowsingDataProfileID: UUID?
+    var clearBrowsingDataWindowID: UUID?
+    private(set) var windowAssignmentRevision = 0
 
     @ObservationIgnored private let directoryURL: URL
     @ObservationIgnored private var persistedProfiles: [UUID: PersistedProfile] = [:]
+    @ObservationIgnored private var storages: [UUID: DenStorage] = [:]
     @ObservationIgnored private var stores: [UUID: DenStore] = [:]
-    @ObservationIgnored private var windows: [UUID: WeakWindow] = [:]
+    @ObservationIgnored private var storeProfileIDs: [UUID: UUID] = [:]
+    @ObservationIgnored private var windows: [UUID: RegisteredWindow] = [:]
+    @ObservationIgnored private var websiteDataStores: [UUID: WKWebsiteDataStore] = [:]
     @ObservationIgnored private let sheetNavigation: SheetNavigationManager
     @ObservationIgnored private let preferences: AppPreferences
     @ObservationIgnored private let removeDataStore: (UUID) async throws -> Void
@@ -57,26 +63,42 @@ final class ProfileManager {
     }
 
     func store(for profileID: UUID) -> DenStore? {
-        guard let persisted = persistedProfiles[profileID] else { return nil }
-        if let store = stores[profileID] { return store }
+        store(for: ProfileWindowRoute(windowID: profileID, profileID: profileID))
+    }
+
+    func store(for route: ProfileWindowRoute) -> DenStore? {
+        let profileID = resolvedProfileID(route.profileID)
+        if let store = stores[route.windowID], storeProfileIDs[route.windowID] == profileID {
+            return store
+        }
+        guard let storage = storage(for: profileID) else { return nil }
+        let requestedDeskID = route.deskID ?? storage.state.focusedDeskID
+        let presentedDeskID = availableDeskID(
+            preferred: requestedDeskID,
+            profileID: profileID,
+            excludingWindowID: route.windowID)
+        guard let presentedDeskID else { return nil }
 
         let store = DenStore(
-            state: persisted.den,
-            websiteDataStore: websiteDataStore(persisted.profile.webProfileStore),
+            storage: storage,
+            presentedDeskID: presentedDeskID,
+            websiteDataStore: profileWebsiteDataStore(for: profileID),
             sheetNavigation: sheetNavigation,
             preferences: preferences,
-            deskPresets: persisted.deskPresets,
-            recentItems: persisted.recentItems,
-            onSave: { [weak self] den in
-                self?.saveDen(den, for: profileID)
+            canPresentDesk: { [weak self] deskID in
+                self?.canPresent(deskID, profileID: profileID, excludingWindowID: route.windowID) ?? true
             },
-            onDeskPresetsSave: { [weak self] presets in
-                self?.saveDeskPresets(presets, for: profileID)
+            onDeskPresentationRequest: { [weak self] deskID in
+                self?.requestDeskPresentation(
+                    deskID,
+                    profileID: profileID,
+                    windowID: route.windowID) ?? true
             },
-            onRecentItemsSave: { [weak self] items in
-                self?.saveRecentItems(items, for: profileID) ?? false
+            onWillResetDen: { [weak self] in
+                self?.closeOtherWindows(profileID: profileID, excludingWindowID: route.windowID)
             })
-        stores[profileID] = store
+        stores[route.windowID] = store
+        storeProfileIDs[route.windowID] = profileID
         return store
     }
 
@@ -131,8 +153,12 @@ final class ProfileManager {
             case .identified(let dataStoreID) = profile.webProfileStore
         else { return false }
 
-        closeWindow(for: profileID)
-        stores.removeValue(forKey: profileID)?.releaseRuntimes()
+        closeWindows(for: profileID)
+        removeStores(for: profileID)
+        if let storage = storages.removeValue(forKey: profileID) {
+            releaseRuntimes(storage)
+        }
+        websiteDataStores.removeValue(forKey: profileID)
         let profileURL = profileURL(for: profileID)
         let hadDocument = FileManager.default.fileExists(atPath: profileURL.path)
         do {
@@ -178,39 +204,208 @@ final class ProfileManager {
 
     func clearError() { errorMessage = nil }
 
-    @discardableResult
-    func register(window: NSWindow, for profileID: UUID) -> Bool {
-        let profileID = resolvedProfileID(profileID)
-        if let existingWindow = windows[profileID]?.window, existingWindow !== window {
-            if existingWindow.isVisible {
-                existingWindow.makeKeyAndOrderFront(nil)
-            }
-            DispatchQueue.main.async { [weak window] in
-                window?.close()
-            }
-            return false
-        }
-        windows[profileID] = WeakWindow(window)
-        return true
+    func register(window: NSWindow, for route: ProfileWindowRoute) {
+        let profileID = resolvedProfileID(route.profileID)
+        windows[route.windowID] = RegisteredWindow(profileID: profileID, window: window)
+        windowAssignmentRevision &+= 1
     }
 
-    func unregister(window: NSWindow, for profileID: UUID) {
-        let profileID = resolvedProfileID(profileID)
-        guard windows[profileID]?.window === window else { return }
-        windows.removeValue(forKey: profileID)
-        stores[profileID]?.releaseRuntimes()
+    func unregister(window: NSWindow, for route: ProfileWindowRoute) {
+        guard windows[route.windowID]?.window === window else { return }
+        windows.removeValue(forKey: route.windowID)
+        stores.removeValue(forKey: route.windowID)?.releaseWindowResources()
+        windowAssignmentRevision &+= 1
+        let profileID = storeProfileIDs.removeValue(forKey: route.windowID) ?? resolvedProfileID(route.profileID)
+        guard !storeProfileIDs.values.contains(profileID), let storage = storages.removeValue(forKey: profileID) else {
+            return
+        }
+        releaseRuntimes(storage)
+        websiteDataStores.removeValue(forKey: profileID)
     }
 
     func store(for window: NSWindow?) -> DenStore? {
         guard let window else { return nil }
-        let profileID = windows.first(where: { $0.value.window === window })?.key
-        return profileID.flatMap(store(for:))
+        let windowID = windows.first(where: { $0.value.window === window })?.key
+        return windowID.flatMap { stores[$0] }
     }
 
-    private func closeWindow(for profileID: UUID) {
+    func activateWindow(for profileID: UUID) -> Bool {
         let profileID = resolvedProfileID(profileID)
-        guard let window = windows.removeValue(forKey: profileID)?.window else { return }
-        window.close()
+        let window =
+            NSApp.orderedWindows.first { candidate in
+                windows.values.contains { $0.profileID == profileID && $0.window === candidate }
+            } ?? windows.values.first { $0.profileID == profileID }?.window
+        guard let window else { return false }
+        window.makeKeyAndOrderFront(nil)
+        return true
+    }
+
+    func canOpenDeskInNewWindow(
+        _ deskID: UUID,
+        profileID: UUID,
+        sourceWindowID: UUID
+    ) -> Bool {
+        _ = windowAssignmentRevision
+        guard canPresent(deskID, profileID: profileID, excludingWindowID: sourceWindowID),
+            let source = stores[sourceWindowID]
+        else { return false }
+        return source.presentedDeskID != deskID
+            || availableReplacementDeskID(
+                for: deskID,
+                profileID: profileID,
+                excludingWindowID: sourceWindowID) != nil
+    }
+
+    func isDeskPresentedInAnotherWindow(
+        _ deskID: UUID,
+        profileID: UUID,
+        excludingWindowID: UUID
+    ) -> Bool {
+        _ = windowAssignmentRevision
+        return !canPresent(deskID, profileID: profileID, excludingWindowID: excludingWindowID)
+    }
+
+    func routeForOpeningDesk(
+        _ deskID: UUID,
+        profileID: UUID,
+        sourceWindowID: UUID
+    ) -> ProfileWindowRoute? {
+        guard canOpenDeskInNewWindow(deskID, profileID: profileID, sourceWindowID: sourceWindowID),
+            let source = stores[sourceWindowID]
+        else { return nil }
+        if source.presentedDeskID == deskID {
+            guard
+                let replacementDeskID = availableReplacementDeskID(
+                    for: deskID,
+                    profileID: profileID,
+                    excludingWindowID: sourceWindowID)
+            else { return nil }
+            source.focusDesk(replacementDeskID)
+        }
+        let route = ProfileWindowRoute(profileID: profileID, deskID: deskID)
+        guard store(for: route)?.presentedDeskID == deskID else { return nil }
+        return route
+    }
+
+    private func storage(for profileID: UUID) -> DenStorage? {
+        if let storage = storages[profileID] { return storage }
+        guard let persisted = persistedProfiles[profileID] else { return nil }
+        let normalizedState = DenStore.normalizedPersistedState(persisted.den)
+        let storage = DenStorage(
+            state: normalizedState,
+            deskPresets: persisted.deskPresets,
+            recentItems: persisted.recentItems,
+            onSave: { [weak self] den in self?.saveDen(den, for: profileID) },
+            onDeskPresetsSave: { [weak self] presets in self?.saveDeskPresets(presets, for: profileID) },
+            onRecentItemsSave: { [weak self] items in self?.saveRecentItems(items, for: profileID) ?? false })
+        storages[profileID] = storage
+        if normalizedState != persisted.den {
+            saveDen(normalizedState, for: profileID)
+        }
+        return storage
+    }
+
+    private func profileWebsiteDataStore(for profileID: UUID) -> WKWebsiteDataStore {
+        if let store = websiteDataStores[profileID] { return store }
+        let store = persistedProfiles[profileID].map { websiteDataStore($0.profile.webProfileStore) } ?? .default()
+        websiteDataStores[profileID] = store
+        return store
+    }
+
+    private func canPresent(_ deskID: UUID, profileID: UUID, excludingWindowID: UUID) -> Bool {
+        !stores.contains { windowID, store in
+            windowID != excludingWindowID
+                && storeProfileIDs[windowID] == profileID
+                && store.presentedDeskID == deskID
+        }
+    }
+
+    private func requestDeskPresentation(_ deskID: UUID, profileID: UUID, windowID: UUID) -> Bool {
+        guard
+            let ownerWindowID = stores.first(where: { candidateWindowID, store in
+                candidateWindowID != windowID
+                    && storeProfileIDs[candidateWindowID] == profileID
+                    && store.presentedDeskID == deskID
+            })?.key
+        else { return true }
+        windows[ownerWindowID]?.window?.makeKeyAndOrderFront(nil)
+        return false
+    }
+
+    private func availableDeskID(
+        preferred: UUID,
+        profileID: UUID,
+        excludingWindowID: UUID
+    ) -> UUID? {
+        guard let storage = storages[profileID] else { return nil }
+        if storage.state.desks.contains(where: { $0.id == preferred }),
+            canPresent(preferred, profileID: profileID, excludingWindowID: excludingWindowID)
+        {
+            return preferred
+        }
+        return storage.state.desks.first {
+            canPresent($0.id, profileID: profileID, excludingWindowID: excludingWindowID)
+        }?.id
+    }
+
+    private func availableReplacementDeskID(
+        for deskID: UUID,
+        profileID: UUID,
+        excludingWindowID: UUID
+    ) -> UUID? {
+        guard let desks = storages[profileID]?.state.desks,
+            let currentIndex = desks.firstIndex(where: { $0.id == deskID })
+        else { return nil }
+        let orderedCandidates = desks[(currentIndex + 1)...] + desks[..<currentIndex]
+        return orderedCandidates.first {
+            $0.id != deskID
+                && canPresent($0.id, profileID: profileID, excludingWindowID: excludingWindowID)
+        }?.id
+    }
+
+    private func closeWindows(for profileID: UUID) {
+        let matchingWindows = windows.filter { $0.value.profileID == profileID }
+        for (windowID, registration) in matchingWindows {
+            windows.removeValue(forKey: windowID)
+            stores.removeValue(forKey: windowID)?.releaseWindowResources()
+            storeProfileIDs.removeValue(forKey: windowID)
+            registration.window?.close()
+        }
+    }
+
+    private func closeOtherWindows(profileID: UUID, excludingWindowID: UUID) {
+        let matchingWindows = windows.filter {
+            $0.key != excludingWindowID && $0.value.profileID == profileID
+        }
+        for (windowID, registration) in matchingWindows {
+            windows.removeValue(forKey: windowID)
+            stores.removeValue(forKey: windowID)?.releaseWindowResources()
+            storeProfileIDs.removeValue(forKey: windowID)
+            registration.window?.close()
+        }
+        let remainingWindowIDs = storeProfileIDs.compactMap {
+            $0.key != excludingWindowID && $0.value == profileID ? $0.key : nil
+        }
+        for windowID in remainingWindowIDs {
+            stores.removeValue(forKey: windowID)?.releaseWindowResources()
+            storeProfileIDs.removeValue(forKey: windowID)
+        }
+    }
+
+    private func removeStores(for profileID: UUID) {
+        let windowIDs = storeProfileIDs.compactMap { $0.value == profileID ? $0.key : nil }
+        for windowID in windowIDs {
+            stores.removeValue(forKey: windowID)?.releaseWindowResources()
+            storeProfileIDs.removeValue(forKey: windowID)
+        }
+    }
+
+    private func releaseRuntimes(_ storage: DenStorage) {
+        for runtime in storage.runtimes.values { runtime.dispose() }
+        storage.runtimes.removeAll()
+        for runtime in storage.terminalRuntimes.values { runtime.dispose() }
+        storage.terminalRuntimes.removeAll()
+        storage.runtimeOwners.removeAll()
     }
 
     private func load() {
@@ -390,10 +585,12 @@ final class ProfileManager {
     }
 }
 
-private final class WeakWindow {
+private final class RegisteredWindow {
+    let profileID: UUID
     weak var window: NSWindow?
 
-    init(_ window: NSWindow) {
+    init(profileID: UUID, window: NSWindow) {
+        self.profileID = profileID
         self.window = window
     }
 }

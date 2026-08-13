@@ -138,6 +138,12 @@ extension DenStore {
             state.desks.count > 1,
             let deskIndex = state.desks.firstIndex(where: { $0.id == deskID })
         else { return }
+        let replacementCandidates = state.desks.dropFirst(deskIndex + 1) + state.desks.prefix(deskIndex).reversed()
+        guard
+            let replacementDeskID = replacementCandidates.first(where: {
+                $0.id != deskID && (canPresentDesk?($0.id) ?? true)
+            })?.id
+        else { return }
 
         let desk = state.desks[deskIndex]
         for board in desk.boards {
@@ -148,12 +154,12 @@ extension DenStore {
         }
 
         state.desks.remove(at: deskIndex)
-        if state.focusedDeskID == deskID {
-            setFocusedDesk(state.desks[min(deskIndex, state.desks.count - 1)].id)
+        if presentedDeskID == deskID {
+            setFocusedDesk(replacementDeskID)
         }
         if isOverviewPresented {
             overviewSelection = OverviewSelection(
-                deskID: state.focusedDeskID,
+                deskID: presentedDeskID,
                 boardID: focusedDesk?.focusedBoardID)
         }
         save()

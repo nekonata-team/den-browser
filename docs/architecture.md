@@ -76,7 +76,8 @@ Persisted `DenState` remains separate from live Web and Terminal runtime objects
 - `DenState` is the source of truth for Desk and Board identity, order, labels, widths, focus, Board content, Drawer Items, and the expanded Drawer Item identity used to restore a Preview.
 - `BoardRuntime` owns live WebKit state, including each Board's in-memory Sheet Stack.
 - `TerminalRuntime` owns one libghostty surface and Shell or Zellij process. One controller is used per Terminal Board.
-- `DenView` renders only the Focused Desk. `DenStore` retains both runtime types across Desk changes; detached Terminal views stop rendering without ending their process.
+- Each Profile has one shared `DenStorage` for persisted state and live runtimes. Each Profile window has a `DenStore` for its own presented Desk and transient presentation state.
+- `DenView` renders only the Desk assigned to its window. Shared runtime storage retains both runtime types across Desk and window changes; detached Terminal views stop rendering without ending their process.
 - Persistence never serializes WebKit objects, terminal processes, terminal screens, or scrollback.
 
 This boundary follows [ADR 0008](./adr/0008-codable-den-state-webview-runtime.md).
@@ -91,7 +92,7 @@ Owns Den composition and the workflows connecting Desks, Boards, Sheets, and Ove
 
 ### Profiles
 
-Owns Profile identity, Profile-scoped persistence, website-data isolation, and Profile window lifecycle. A Profile owns one Den, so this Feature may depend on the Den Feature to create, restore, and present that Den. WebKit storage mechanics may live in `Platform`, while Profile policy remains in the feature.
+Owns Profile identity, Profile-scoped persistence, website-data isolation, and Profile window lifecycle. A Profile owns one Den and may present distinct Desks from it in multiple windows, so this Feature may depend on the Den Feature to create, restore, and present that Den. WebKit storage mechanics may live in `Platform`, while Profile policy remains in the feature.
 
 ### SheetNavigation
 

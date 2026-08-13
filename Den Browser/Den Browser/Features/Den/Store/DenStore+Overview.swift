@@ -14,7 +14,7 @@ extension DenStore {
         overviewQuery = ""
         overviewFilterPhase = .inactive
         overviewSelection = OverviewSelection(
-            deskID: state.focusedDeskID,
+            deskID: presentedDeskID,
             boardID: focusedDesk?.focusedBoardID)
     }
 

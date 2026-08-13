@@ -25,8 +25,8 @@ struct Den_BrowserApp: App {
     }
 
     var body: some Scene {
-        WindowGroup("Den Browser", for: UUID.self) { $profileID in
-            ProfileWindowView(profileID: profileID)
+        WindowGroup("Den Browser", for: ProfileWindowRoute.self) { $route in
+            ProfileWindowView(route: route)
                 .environment(profileManager)
                 .environment(preferences)
                 .environment(\.colorScheme, .dark)
@@ -39,7 +39,9 @@ struct Den_BrowserApp: App {
                         openSettingsCoordinator: openSettingsCoordinator)
                 }
         } defaultValue: {
-            profileManager.personalProfileID
+            ProfileWindowRoute(
+                windowID: profileManager.personalProfileID,
+                profileID: profileManager.personalProfileID)
         }
         .handlesExternalEvents(matching: ["*"])
         .commands {
@@ -93,7 +95,7 @@ private struct DenCommands: Commands {
 
     @FocusedValue(\.denStore) private var store
     @FocusedValue(\.profileID) private var profileID
-    @Environment(\.dismissWindow) private var dismissWindow
+    @FocusedValue(\.profileWindowID) private var profileWindowID
     @Environment(\.openWindow) private var openWindow
 
     var body: some Commands {
@@ -110,9 +112,7 @@ private struct DenCommands: Commands {
                         store?.focusedDesk?.focusedBoardID == nil
                             || store?.hasPendingConfirmation == true)
                 Button("Close Profile Window") {
-                    if let profileID {
-                        dismissWindow(value: profileID)
-                    }
+                    NSApp.keyWindow?.performClose(nil)
                 }
                 .keyboardShortcut("w", modifiers: [.command, .shift])
                 .disabled(store?.hasPendingConfirmation == true)
@@ -122,7 +122,9 @@ private struct DenCommands: Commands {
         CommandMenu("Profile") {
             ForEach(profileManager.profiles) { profile in
                 Button(profile.name) {
-                    openWindow(value: profile.id)
+                    if !profileManager.activateWindow(for: profile.id) {
+                        openWindow(value: ProfileWindowRoute(profileID: profile.id))
+                    }
                 }
             }
 
@@ -130,12 +132,14 @@ private struct DenCommands: Commands {
 
             Button("Open Profile…") {
                 profileManager.openProfilePanelProfileID = profileID
+                profileManager.openProfilePanelWindowID = profileWindowID
             }
             .keyboardShortcut("p", modifiers: [.control, .command])
 
             Button("Clear Browsing Data…") {
                 let targetID = profileID ?? profileManager.personalProfileID
                 profileManager.clearBrowsingDataProfileID = targetID
+                profileManager.clearBrowsingDataWindowID = profileWindowID
             }
             .keyboardShortcut(.delete, modifiers: [.command, .shift])
 

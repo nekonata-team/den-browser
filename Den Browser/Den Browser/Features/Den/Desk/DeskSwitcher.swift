@@ -8,6 +8,9 @@ struct DeskSwitcher: View {
     @Environment(\.appearsActive) private var appearsActive
 
     let profileColor: Color
+    let canOpenInNewWindow: (UUID) -> Bool
+    let isPresentedInAnotherWindow: (UUID) -> Bool
+    let onOpenInNewWindow: (UUID) -> Void
     @State private var scrollPosition = ScrollPosition(idType: UUID.self)
     @State private var frames: [UUID: CGRect] = [:]
     @State private var drag: DeskDragState?
@@ -41,7 +44,7 @@ struct DeskSwitcher: View {
             .scrollPosition($scrollPosition, anchor: .center)
             .coordinateSpace(name: DeskSwitcherCoordinateSpace.name)
             .scrollIndicators(.never)
-            .onChange(of: store.state.focusedDeskID) { _, deskID in
+            .onChange(of: store.presentedDeskID) { _, deskID in
                 cancelDeskDrag()
                 withAnimation(DenMotion.spatial(reduceMotion: shouldReduceMotion)) {
                     scrollPosition.scrollTo(id: deskID, anchor: .center)
@@ -71,104 +74,130 @@ struct DeskSwitcher: View {
     }
 
     private func deskButton(_ desk: DeskState, number: Int, in size: CGSize) -> some View {
-        Text("\(number). \(desk.label)")
-            .lineLimit(1)
-            .frame(maxWidth: DenLayout.deskButtonMaxWidth)
-            .padding(.horizontal, DenLayout.chromeHorizontalPadding)
-            .frame(height: DenLayout.deskButtonHeight)
-            .background {
-                if desk.id == store.state.focusedDeskID {
-                    Capsule().fill(profileColor.opacity(0.35))
-                }
-            }
-            .glassEffect(.regular, in: Capsule())
-            .contentShape(.capsule)
-            .contextMenu {
-                Button {
-                    store.focusDesk(desk.id)
-                    store.showRenameDeskPanel()
-                } label: {
-                    Label("Rename Desk", systemImage: "pencil")
-                }
+        let isPresentedElsewhere = isPresentedInAnotherWindow(desk.id)
+        return HStack(spacing: 6) {
+            Text("\(number). \(desk.label)")
+                .lineLimit(1)
 
-                Button(role: .destructive) {
-                    store.focusDesk(desk.id)
-                    store.deleteFocusedDesk()
+            if isPresentedElsewhere {
+                Image(systemName: "macwindow")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .help("Open in another window")
+                    .accessibilityLabel("Open in another window")
+            }
+        }
+        .frame(maxWidth: DenLayout.deskButtonMaxWidth)
+        .padding(.horizontal, DenLayout.chromeHorizontalPadding)
+        .frame(height: DenLayout.deskButtonHeight)
+        .background {
+            if desk.id == store.presentedDeskID {
+                Capsule().fill(profileColor.opacity(0.35))
+            }
+        }
+        .glassEffect(.regular, in: Capsule())
+        .contentShape(.capsule)
+        .contextMenu {
+            Button {
+                onOpenInNewWindow(desk.id)
+            } label: {
+                Label("Open Desk in New Window", systemImage: "macwindow.badge.plus")
+            }
+            .disabled(!canOpenInNewWindow(desk.id))
+
+            Divider()
+
+            Button {
+                store.focusDesk(desk.id)
+                store.showRenameDeskPanel()
+            } label: {
+                Label("Rename Desk", systemImage: "pencil")
+            }
+            .disabled(!store.canSelectDesk(desk.id))
+
+            Button(role: .destructive) {
+                store.focusDesk(desk.id)
+                store.deleteFocusedDesk()
+            } label: {
+                Label("Delete Desk", systemImage: "trash")
+            }
+            .disabled(!store.canSelectDesk(desk.id) || !store.canDeleteFocusedDesk)
+
+            Divider()
+
+            Button {
+                store.focusDesk(desk.id)
+                store.showSaveDeskPresetPanel()
+            } label: {
+                Label("Save Desk as Preset...", systemImage: "square.and.arrow.down")
+            }
+            .disabled(!store.canSelectDesk(desk.id) || desk.boards.isEmpty)
+
+            Menu("Export") {
+                Button {
+                    store.exportDeskLinks(for: desk.id)
                 } label: {
-                    Label("Delete Desk", systemImage: "trash")
+                    Label("Save Desk Links as Markdown...", systemImage: "arrow.down.doc")
                 }
-                .disabled(!store.canDeleteFocusedDesk)
+                .disabled(!store.canExportDeskLinks(for: desk.id))
+
+                Button {
+                    store.copyDeskLinks(for: desk.id)
+                } label: {
+                    Label("Copy Desk Links as Markdown", systemImage: "doc.on.doc")
+                }
+                .disabled(!store.canExportDeskLinks(for: desk.id))
 
                 Divider()
 
                 Button {
                     store.focusDesk(desk.id)
-                    store.showSaveDeskPresetPanel()
+                    store.captureFocusedDeskScreenshot()
                 } label: {
-                    Label("Save Desk as Preset...", systemImage: "square.and.arrow.down")
+                    Label("Capture Desk Screenshot...", systemImage: "camera.on.rectangle")
                 }
-                .disabled(desk.boards.isEmpty)
-
-                Menu("Export") {
-                    Button {
-                        store.exportDeskLinks(for: desk.id)
-                    } label: {
-                        Label("Save Desk Links as Markdown...", systemImage: "arrow.down.doc")
-                    }
-                    .disabled(!store.canExportDeskLinks(for: desk.id))
-
-                    Button {
-                        store.copyDeskLinks(for: desk.id)
-                    } label: {
-                        Label("Copy Desk Links as Markdown", systemImage: "doc.on.doc")
-                    }
-                    .disabled(!store.canExportDeskLinks(for: desk.id))
-
-                    Divider()
-
-                    Button {
-                        store.focusDesk(desk.id)
-                        store.captureFocusedDeskScreenshot()
-                    } label: {
-                        Label("Capture Desk Screenshot...", systemImage: "camera.on.rectangle")
-                    }
-                    .disabled(desk.boards.isEmpty)
-                }
-
-                Button {
-                    store.focusDesk(desk.id)
-                    store.showReplaceDeskPanel()
-                } label: {
-                    Label("Replace Desk...", systemImage: "rectangle.stack.badge.minus")
-                }
-
-                Button {
-                    store.showDeskPresetManagement()
-                } label: {
-                    Label("Manage Presets...", systemImage: "slider.horizontal.3")
-                }
-
-                Divider()
-
-                Button {
-                    store.showNewDeskPanel()
-                } label: {
-                    Label("New Desk...", systemImage: "plus")
-                }
-                .disabled(!store.canCreateDesk)
+                .disabled(!store.canSelectDesk(desk.id) || desk.boards.isEmpty)
             }
-            .gesture(
-                DragGesture(minimumDistance: 0, coordinateSpace: .named(DeskSwitcherCoordinateSpace.name))
-                    .onChanged { updateDeskDrag(desk, value: $0, in: size) }
-                    .onEnded { finishDeskGesture(desk, value: $0, in: size) }
-            )
-            .allowsHitTesting(!store.isDeskDragging || drag?.deskID == desk.id)
-            .help("Drag to reorder Desk")
-            .accessibilityHint("Drag to reorder this Desk")
-            .accessibilityAddTraits(.isButton)
-            .accessibilityAction { store.focusDesk(desk.id) }
-            .accessibilityIdentifier("desk-switcher.\(desk.id.uuidString.lowercased())")
-            .id(desk.id)
+
+            Button {
+                store.focusDesk(desk.id)
+                store.showReplaceDeskPanel()
+            } label: {
+                Label("Replace Desk...", systemImage: "rectangle.stack.badge.minus")
+            }
+            .disabled(!store.canSelectDesk(desk.id))
+
+            Button {
+                store.showDeskPresetManagement()
+            } label: {
+                Label("Manage Presets...", systemImage: "slider.horizontal.3")
+            }
+
+            Divider()
+
+            Button {
+                store.showNewDeskPanel()
+            } label: {
+                Label("New Desk...", systemImage: "plus")
+            }
+            .disabled(!store.canCreateDesk)
+        }
+        .gesture(
+            DragGesture(minimumDistance: 0, coordinateSpace: .named(DeskSwitcherCoordinateSpace.name))
+                .onChanged { updateDeskDrag(desk, value: $0, in: size) }
+                .onEnded { finishDeskGesture(desk, value: $0, in: size) }
+        )
+        .allowsHitTesting(!store.isDeskDragging || drag?.deskID == desk.id)
+        .help("Drag to reorder Desk")
+        .accessibilityHint("Drag to reorder this Desk")
+        .accessibilityLabel(
+            "\(number). \(desk.label)"
+                + (isPresentedElsewhere ? ", open in another window" : "")
+        )
+        .accessibilityAddTraits(.isButton)
+        .accessibilityAction { store.focusDesk(desk.id) }
+        .accessibilityIdentifier("desk-switcher.\(desk.id.uuidString.lowercased())")
+        .id(desk.id)
     }
 
     private func deskFrameBackground(for deskID: UUID) -> some View {

@@ -243,6 +243,55 @@ struct ProfileManagerTests {
         #expect(restored.store(for: work.id)?.focusedDesk?.label == "Restored")
     }
 
+    @Test func profileWindowsShareDenAndPresentDistinctDesks() throws {
+        let directory = temporaryProfileDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let manager = makeProfileManager(directory: directory)
+        let profileID = manager.personalProfileID
+        let sourceRoute = ProfileWindowRoute(windowID: profileID, profileID: profileID)
+        let source = try #require(manager.store(for: sourceRoute))
+        source.createDesk(label: "Second", preset: .empty)
+        let detachedDeskID = source.presentedDeskID
+
+        let detachedRoute = try #require(
+            manager.routeForOpeningDesk(
+                detachedDeskID,
+                profileID: profileID,
+                sourceWindowID: sourceRoute.windowID))
+        let detached = try #require(manager.store(for: detachedRoute))
+
+        #expect(source.storage === detached.storage)
+        #expect(source.presentedDeskID != detachedDeskID)
+        #expect(detached.presentedDeskID == detachedDeskID)
+        #expect(
+            manager.isDeskPresentedInAnotherWindow(
+                detachedDeskID,
+                profileID: profileID,
+                excludingWindowID: sourceRoute.windowID))
+        detached.renameFocusedDesk(to: "Detached")
+        #expect(source.state.desks.first { $0.id == detachedDeskID }?.label == "Detached")
+
+        let sourceDeskID = source.presentedDeskID
+        source.focusDesk(detachedDeskID)
+        #expect(source.presentedDeskID == sourceDeskID)
+        #expect(
+            !manager.canOpenDeskInNewWindow(
+                sourceDeskID,
+                profileID: profileID,
+                sourceWindowID: sourceRoute.windowID))
+
+        let detachedWindow = NSWindow()
+        manager.register(window: detachedWindow, for: detachedRoute)
+        manager.unregister(window: detachedWindow, for: detachedRoute)
+        #expect(
+            !manager.isDeskPresentedInAnotherWindow(
+                detachedDeskID,
+                profileID: profileID,
+                excludingWindowID: sourceRoute.windowID))
+        source.focusDesk(detachedDeskID)
+        #expect(source.presentedDeskID == detachedDeskID)
+    }
+
     @Test func loadingDoesNotRewriteExistingProfileDocuments() throws {
         let directory = temporaryProfileDirectory()
         defer { try? FileManager.default.removeItem(at: directory) }
