@@ -8,6 +8,9 @@ final class DrawerPreviewRuntime: BaseWebRuntime {
     private let onKeepInDrawer: (URL) -> Void
     private let onKeepInDrawerInBackground: (URL) -> Void
     private let onDiscard: () -> Void
+    private let onCopyURLSucceeded: () -> Void
+    private let onCopyURLFailed: () -> Void
+    private let onPasteURLFailed: () -> Void
     private let onDownloadFinished: (String) -> Void
     private let onDownloadFailed: (String) -> Void
     private unowned let sheetNavigation: SheetNavigationManager
@@ -21,6 +24,9 @@ final class DrawerPreviewRuntime: BaseWebRuntime {
         onKeepInDrawerInBackground: @escaping (URL) -> Void,
         onDiscard: @escaping () -> Void,
         onChange: @escaping (UUID, URL?, String?) -> Void,
+        onCopyURLSucceeded: @escaping () -> Void = {},
+        onCopyURLFailed: @escaping () -> Void = {},
+        onPasteURLFailed: @escaping () -> Void = {},
         onDownloadFinished: @escaping (String) -> Void,
         onDownloadFailed: @escaping (String) -> Void
     ) {
@@ -28,6 +34,9 @@ final class DrawerPreviewRuntime: BaseWebRuntime {
         self.onKeepInDrawer = onKeepInDrawer
         self.onKeepInDrawerInBackground = onKeepInDrawerInBackground
         self.onDiscard = onDiscard
+        self.onCopyURLSucceeded = onCopyURLSucceeded
+        self.onCopyURLFailed = onCopyURLFailed
+        self.onPasteURLFailed = onPasteURLFailed
         self.onDownloadFinished = onDownloadFinished
         self.onDownloadFailed = onDownloadFailed
         self.sheetNavigation = sheetNavigation
@@ -49,6 +58,9 @@ final class DrawerPreviewRuntime: BaseWebRuntime {
                 onKeepInDrawer: { [weak self] url in self?.onKeepInDrawer(url) },
                 onOpenCurrentSheetInNewBoard: { [weak self] url in self?.onKeepInDrawer(url) },
                 onPasteURLInNewBoard: { [weak self] url in self?.onKeepInDrawer(url) },
+                onCopyURLSucceeded: { [weak self] in self?.onCopyURLSucceeded() },
+                onCopyURLFailed: { [weak self] in self?.onCopyURLFailed() },
+                onPasteURLFailed: { [weak self] in self?.onPasteURLFailed() },
                 onRemoveBoard: { [weak self] in self?.onDiscard() },
                 isSupportedSheetURL: SheetURLPolicy.isSupported,
                 onNavigateCurrentSheet: { [weak self] url in self?.load(url) }

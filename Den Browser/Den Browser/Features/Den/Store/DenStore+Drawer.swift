@@ -243,6 +243,15 @@ extension DenStore {
             onChange: { [weak self] itemID, url, title in
                 self?.updateDrawerItem(itemID: itemID, url: url, title: title)
             },
+            onCopyURLSucceeded: { [weak self] in
+                self?.showToast("Copied Current Sheet URL.", style: .success)
+            },
+            onCopyURLFailed: { [weak self] in
+                self?.showToast("Could not copy Current Sheet URL.", style: .error)
+            },
+            onPasteURLFailed: { [weak self] in
+                self?.showToast("Clipboard does not contain a supported URL.", style: .warning)
+            },
             onDownloadFinished: { [weak self] filename in
                 self?.showToast("Downloaded '\(filename)'", style: .success)
             },

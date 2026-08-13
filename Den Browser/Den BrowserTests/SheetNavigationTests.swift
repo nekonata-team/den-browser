@@ -473,6 +473,36 @@ struct SheetNavigationTests {
         }
     }
 
+    @Test func drawerPreviewShowsToastForCopyAndInvalidPaste() async throws {
+        let manager = SheetNavigationManager(scriptSource: "")
+        let item = DrawerItem(url: try #require(URL(string: "https://drawer.example/")))
+        let desk = DeskState(label: "Desk", boards: [])
+        let store = DenStore(
+            state: DenState(
+                desks: [desk],
+                focusedDeskID: desk.id,
+                drawerItems: [item]),
+            sheetNavigation: manager)
+        let runtime = store.drawerRuntime(for: item)
+        let waiter = WebViewLoadWaiter()
+
+        manager.setEnabled(true)
+        await waiter.load("<html>Drawer Preview</html>", baseURL: item.url, in: runtime.webView)
+        defer {
+            store.releaseDrawerPreview()
+            NSPasteboard.general.clearContents()
+        }
+
+        #expect(manager.handleScriptMessage(["action": "copyURL"], from: runtime.webView))
+        #expect(store.toastMessage?.message == "Copied Current Sheet URL.")
+
+        NSPasteboard.general.clearContents()
+        for action in ["pasteURL", "pasteURLInNewBoard"] {
+            #expect(!manager.handleScriptMessage(["action": action], from: runtime.webView))
+            #expect(store.toastMessage?.message == "Clipboard does not contain a supported URL.")
+        }
+    }
+
     @Test func sheetNavigationReportsCopyFailureWithoutCurrentURL() {
         let manager = SheetNavigationManager(scriptSource: "")
         let webView = WKWebView()
