@@ -513,6 +513,7 @@ final class DenStore {
             openBoardPanelInitialURL = nil
         }
         if temporaryContext == .overview, context != .overview {
+            cancelOverviewBoardDrag()
             overviewSelection = nil
             overviewQuery = ""
             overviewFilterPhase = .inactive

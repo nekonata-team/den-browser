@@ -100,6 +100,59 @@ struct DenStoreOverviewTests {
         }
     }
 
+    @Test func overviewBoardDragMovesAcrossDesksOnlyOnCommit() {
+        let first = board("First")
+        let second = board("Second")
+        let third = board("Third")
+        let main = desk("Main", boards: [first, second], focusedBoardID: first.id)
+        let other = desk("Other", boards: [third], focusedBoardID: third.id)
+        var saveCount = 0
+        let store = DenStore(
+            state: DenState(desks: [main, other], focusedDeskID: main.id),
+            onSave: { _ in saveCount += 1 })
+        store.showOverview()
+
+        #expect(store.beginOverviewBoardDrag(second.id))
+        #expect(store.state.desks[0].boards.map(\.id) == [first.id, second.id])
+        store.finishOverviewBoardDrag(second.id, toDeskID: other.id, at: 0)
+        #expect(store.state.desks[0].boards.map(\.id) == [first.id])
+        #expect(store.state.desks[1].boards.map(\.id) == [second.id, third.id])
+        #expect(store.overviewSelectionBoardID == second.id)
+        #expect(saveCount == 1)
+    }
+
+    @Test func overviewBoardDragCancellationLeavesEveryDeskUnchanged() {
+        let first = board("First")
+        let second = board("Second")
+        let third = board("Third")
+        let main = desk("Main", boards: [first, second], focusedBoardID: first.id)
+        let other = desk("Other", boards: [third], focusedBoardID: third.id)
+        var saveCount = 0
+        let store = DenStore(
+            state: DenState(desks: [main, other], focusedDeskID: main.id),
+            onSave: { _ in saveCount += 1 })
+        store.showOverview()
+
+        #expect(store.beginOverviewBoardDrag(first.id))
+        store.cancelOverviewBoardDrag()
+
+        #expect(store.state.desks[0].boards.map(\.id) == [first.id, second.id])
+        #expect(store.state.desks[1].boards.map(\.id) == [third.id])
+        #expect(store.activeDrag == nil)
+        #expect(saveCount == 0)
+    }
+
+    @Test func overviewBoardDragIsUnavailableWhileFiltering() {
+        let first = board("First")
+        let desk = desk("Desk", boards: [first], focusedBoardID: first.id)
+        let store = DenStore(state: DenState(desks: [desk], focusedDeskID: desk.id))
+        store.showOverview()
+        store.setOverviewQuery("First")
+
+        #expect(!store.beginOverviewBoardDrag(first.id))
+        #expect(store.activeDrag == nil)
+    }
+
     private func withStore(desks: [DeskState], body: (DenStore) throws -> Void) rethrows {
         let store = DenStore(state: DenState(desks: desks, focusedDeskID: desks[0].id))
         try body(store)

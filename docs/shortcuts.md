@@ -80,6 +80,8 @@ Drag a Board header's label or empty area to reorder it within the Focused Desk.
 
 Right-click or Control-click anywhere in a Board header to focus that Board and open its native context menu. The menu can keep a copy of the Current Sheet in the Drawer, duplicate or reload it, maximize or center the Board, move it left, right, or to another numbered Desk, and remove it. Movement at a Desk edge remains visible but disabled. Right-clicking inside a Sheet continues to use the web content's own context menu.
 
+While Overview is open without a search query, drag a Board card to another position or Desk. Dropping on the left or right half of a Board inserts before or after it; dropping in a Desk row's empty area appends it. Overview remains open with the moved Board selected. Board dragging is disabled while filtering.
+
 ## Pointer Desk actions
 
 Drag a Desk button in the Desk switcher to reorder Desks. Clicking still focuses that Desk, and its context menu remains available. Dropping outside the switcher cancels the move; moving near its horizontal edges scrolls it. Desk reordering has no keyboard shortcut.

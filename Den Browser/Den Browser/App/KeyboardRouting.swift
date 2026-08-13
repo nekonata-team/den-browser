@@ -449,6 +449,9 @@ enum KeyboardRouter {
             if event.key == .returnKey, modifiers == [] { return .perform(.confirmOverviewFilterQuery) }
             return .forward(.filterTextInput)
         }
+        if context.isBoardDragging, event.isEscape, modifiers == [] {
+            return .perform(.requestBoardDragCancellation)
+        }
         if event.isEscape, modifiers == [] {
             return .perform(context.hasOverviewQuery ? .clearOverviewQuery : .hideOverview)
         }

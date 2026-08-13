@@ -98,6 +98,42 @@ struct HorizontalDragGeometryTests {
         #expect(missingID == nil)
     }
 
+    @Test func overviewInsertionUsesBoardHalvesAndSupportsEmptyDesk() {
+        let desk = UUID.fixture(10)
+        let emptyDesk = UUID.fixture(11)
+        let frames = [
+            first: CGRect(x: 0, y: 0, width: 100, height: 100),
+            second: CGRect(x: 110, y: 0, width: 100, height: 100),
+        ]
+
+        #expect(
+            OverviewDragGeometry.targetDeskID(
+                at: CGPoint(x: 20, y: 40),
+                frames: [desk: CGRect(x: 0, y: 0, width: 240, height: 120)]) == desk)
+        #expect(
+            OverviewDragGeometry.targetIndex(
+                draggedID: first,
+                orderedIDs: [first, second],
+                locationX: 120,
+                frames: frames) == 0)
+        #expect(
+            OverviewDragGeometry.targetIndex(
+                draggedID: first,
+                orderedIDs: [first, second],
+                locationX: 220,
+                frames: frames) == 1)
+        #expect(
+            OverviewDragGeometry.targetIndex(
+                draggedID: first,
+                orderedIDs: [],
+                locationX: 0,
+                frames: [:]) == 0)
+        #expect(
+            OverviewDragGeometry.targetDeskID(
+                at: CGPoint(x: 20, y: 200),
+                frames: [emptyDesk: CGRect(x: 0, y: 300, width: 240, height: 120)]) == nil)
+    }
+
     private var horizontalFrames: [UUID: CGRect] {
         [
             first: CGRect(x: 0, y: 0, width: 100, height: 100),

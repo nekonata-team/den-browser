@@ -397,6 +397,25 @@ struct KeyboardShortcutTests {
         #expect(store.focusedBoard?.id == second.id)
     }
 
+    @Test func overviewEscapeRequestsBoardDragCancellation() throws {
+        let first = board("First")
+        let store = makeStore(boards: [first])
+        store.showOverview()
+        #expect(store.beginOverviewBoardDrag(first.id))
+
+        let escape = try keyEvent(
+            characters: "\u{1B}",
+            charactersIgnoringModifiers: "\u{1B}",
+            keyCode: 53)
+
+        #expect(
+            KeyboardController.decision(for: escape, store: store)
+                == .perform(.requestBoardDragCancellation))
+        #expect(KeyboardController.handle(escape, store: store))
+        #expect(store.boardDragCancellationRequest == 1)
+        #expect(store.isOverviewPresented)
+    }
+
     @Test func nativeCommandShortcutsPassThroughWithoutExecuting() throws {
         let first = board("First")
         let second = board("Second")

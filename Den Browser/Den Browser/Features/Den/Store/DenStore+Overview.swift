@@ -20,6 +20,7 @@ extension DenStore {
 
     func hideOverview() {
         if temporaryContext == .overview {
+            cancelOverviewBoardDrag()
             setTemporaryContext(nil)
             overviewQuery = ""
             overviewFilterPhase = .inactive
@@ -109,6 +110,49 @@ extension DenStore {
         overviewSelection = OverviewSelection(
             deskID: state.desks[indices.desk].id,
             boardID: boardID)
+    }
+
+    func beginOverviewBoardDrag(_ boardID: UUID) -> Bool {
+        guard
+            activeDrag == nil,
+            temporaryContext == .overview,
+            overviewQuery.isEmpty,
+            overviewFilterPhase == .inactive,
+            let indices = boardIndices(for: boardID)
+        else { return false }
+
+        overviewSelection = OverviewSelection(
+            deskID: state.desks[indices.desk].id,
+            boardID: boardID)
+        activeDrag = .board(boardID)
+        return true
+    }
+
+    func finishOverviewBoardDrag(_ boardID: UUID, toDeskID deskID: UUID, at targetIndex: Int) {
+        guard
+            case .board(let activeBoardID)? = activeDrag,
+            activeBoardID == boardID,
+            let source = boardIndices(for: boardID),
+            let targetDeskIndex = state.desks.firstIndex(where: { $0.id == deskID })
+        else { return }
+
+        let keepsDeskFocus =
+            source.desk == targetDeskIndex
+            && state.desks[source.desk].focusedBoardID == boardID
+        let board = removeBoard(at: source)
+        let insertionIndex = min(max(targetIndex, 0), state.desks[targetDeskIndex].boards.count)
+        state.desks[targetDeskIndex].boards.insert(board, at: insertionIndex)
+        if keepsDeskFocus {
+            state.desks[targetDeskIndex].focusedBoardID = boardID
+        }
+        overviewSelection = OverviewSelection(deskID: deskID, boardID: boardID)
+        activeDrag = nil
+        save()
+    }
+
+    func cancelOverviewBoardDrag() {
+        guard case .board? = activeDrag else { return }
+        activeDrag = nil
     }
 
     func selectPreviousBoardInOverview() {

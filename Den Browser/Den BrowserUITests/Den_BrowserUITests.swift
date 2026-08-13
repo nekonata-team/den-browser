@@ -264,6 +264,36 @@ final class Den_BrowserUITests: XCTestCase, BDD {
     }
 
     @MainActor
+    func testOrganizesOverviewBoardsUsingPointer() throws {
+        let app = launchApp()
+
+        given("Overview shows the fixture Boards") {
+            enterDenMode(in: app)
+            app.typeKey("o", modifierFlags: [])
+        }
+
+        let bravo = overviewBoard(.bravo, in: app)
+        let charlie = overviewBoard(.charlie, in: app)
+
+        given("Bravo and Charlie are exposed as draggable Overview Boards") {
+            XCTAssertTrue(bravo.waitForExistence(timeout: 5))
+            XCTAssertTrue(charlie.waitForExistence(timeout: 5))
+        }
+
+        when("dragging Bravo to the right of Charlie") {
+            let start = bravo.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+            let end = charlie.coordinate(withNormalizedOffset: CGVector(dx: 0.75, dy: 0.5))
+            start.press(forDuration: 0.5, thenDragTo: end)
+        }
+
+        then("Bravo is positioned to the right of Charlie in Overview") {
+            assertEventually("Overview should reorder Bravo after Charlie") {
+                bravo.frame.minX > charlie.frame.minX
+            }
+        }
+    }
+
+    @MainActor
     func testReordersDesksUsingPointer() throws {
         let app = launchApp()
         let second = desk(.second, in: app)
@@ -738,6 +768,13 @@ final class Den_BrowserUITests: XCTestCase, BDD {
     @MainActor
     private func boardHeader(_ board: FixtureBoard, in app: XCUIApplication) -> XCUIElement {
         app.descendants(matching: .any).matching(identifier: "board-header.\(board.rawValue)").firstMatch
+    }
+
+    @MainActor
+    private func overviewBoard(_ board: FixtureBoard, in app: XCUIApplication) -> XCUIElement {
+        app.descendants(matching: .any)
+            .matching(identifier: "overview-board.\(board.rawValue)")
+            .firstMatch
     }
 
     @MainActor

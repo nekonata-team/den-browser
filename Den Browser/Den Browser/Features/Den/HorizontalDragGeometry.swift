@@ -73,3 +73,27 @@ nonisolated enum HorizontalDragAutoScroll {
         )
     }
 }
+
+nonisolated enum OverviewDragGeometry {
+    static func targetDeskID<ID: Hashable>(at location: CGPoint, frames: [ID: CGRect]) -> ID? {
+        frames
+            .filter { $0.value.minY <= location.y && location.y <= $0.value.maxY }
+            .min { abs($0.value.midY - location.y) < abs($1.value.midY - location.y) }?
+            .key
+    }
+
+    static func targetIndex<ID: Equatable>(
+        draggedID: ID,
+        orderedIDs: [ID],
+        locationX: CGFloat,
+        frames: [ID: CGRect]
+    ) -> Int? {
+        var targetIndex = 0
+        for id in orderedIDs where id != draggedID {
+            guard let frame = frames[id] else { return nil }
+            if locationX < frame.midX { return targetIndex }
+            targetIndex += 1
+        }
+        return targetIndex
+    }
+}
