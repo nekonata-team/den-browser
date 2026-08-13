@@ -22,7 +22,13 @@ struct PointerFocusStateTests {
         #expect(needsFirstResponderActivation(nil, target: target))
     }
 
-    @Test func reattachingSurfaceHandlesSameRequestAgain() {
+    @Test func reattachingSurfaceHandlesSameRequestAgain() async {
+        func waitForMainQueue() async {
+            await withCheckedContinuation { continuation in
+                DispatchQueue.main.async { continuation.resume() }
+            }
+        }
+
         let window = NSWindow(
             contentRect: NSRect(x: 0, y: 0, width: 100, height: 100),
             styleMask: [],
@@ -38,9 +44,12 @@ struct PointerFocusStateTests {
         }
 
         window.contentView?.addSubview(host)
+        #expect(handlingCount == 0)
+        await waitForMainQueue()
         #expect(handlingCount == 1)
         host.removeFromSuperview()
         window.contentView?.addSubview(host)
+        await waitForMainQueue()
         #expect(handlingCount == 2)
     }
 

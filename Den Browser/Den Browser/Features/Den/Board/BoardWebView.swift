@@ -105,6 +105,7 @@ final class SurfaceHost<Content: NSView>: NSView {
     private var onReady: ((NSWindow) -> Bool)?
     private var handledRequest: BoardFocusRequest?
     private weak var handledWindow: NSWindow?
+    private var isNotificationScheduled = false
 
     init(content: Content) {
         self.content = content
@@ -141,6 +142,16 @@ final class SurfaceHost<Content: NSView>: NSView {
     }
 
     private func notifyIfReady() {
+        guard request != nil, window != nil, !isNotificationScheduled else { return }
+        isNotificationScheduled = true
+        DispatchQueue.main.async { [weak self] in
+            guard let self else { return }
+            self.isNotificationScheduled = false
+            self.notifyIfReadyNow()
+        }
+    }
+
+    private func notifyIfReadyNow() {
         guard let request, let window, let onReady else {
             return
         }
