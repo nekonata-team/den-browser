@@ -34,13 +34,24 @@ extension DenStore {
             return runtime
         }
 
+        let command: String?
+        if board.isZellij {
+            command = ZellijLaunchCommand.command(
+                sessionName: board.zellijSessionName,
+                executablePath: preferences.zellijPath)
+        } else if board.isZmx {
+            command = board.zmxSessionName.flatMap {
+                ZmxLaunchCommand.command(
+                    sessionName: $0,
+                    executablePath: preferences.zmxPath)
+            }
+        } else {
+            command = nil
+        }
+
         let runtime = TerminalRuntime(
             workingDirectory: board.terminalWorkingDirectory ?? FileManager.default.homeDirectoryForCurrentUser.path,
-            command: board.isZellij
-                ? ZellijLaunchCommand.command(
-                    sessionName: board.zellijSessionName,
-                    executablePath: preferences.zellijPath)
-                : nil,
+            command: command,
             events: events)
         terminalRuntimes[board.id] = runtime
         return runtime

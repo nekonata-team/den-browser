@@ -32,7 +32,7 @@ Upgrade with `brew upgrade --cask den-browser`.
   Den.
 - **Den**: The complete work environment for one Profile.
 - **Desk**: A broad work context containing Boards in a horizontal work area.
-- **Board**: A persistent work surface containing Web Sheets, a Terminal Session, or a Zellij Session.
+- **Board**: A persistent work surface containing Web Sheets, a Terminal Session, a Zellij Session, or a zmx Session.
 - **Sheet**: A web screen held within a Board.
 
 Den Browser draws loosely on [Niri](https://github.com/niri-wm/niri)'s spatial
@@ -43,7 +43,7 @@ complete product language.
 ## What Den Browser provides
 
 - Persistent spatial organization across multiple Desks.
-- Web, Terminal, and Zellij Boards side by side in one Desk.
+- Web, Terminal, Zellij, and zmx Boards side by side in one Desk.
 - Keyboard-first navigation and Board management, with pointer controls where
   useful.
 - Profile-isolated sign-ins and website data, with Den state restored after

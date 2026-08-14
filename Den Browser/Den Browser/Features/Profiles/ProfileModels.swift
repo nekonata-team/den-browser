@@ -89,11 +89,12 @@ enum RecentItem: Codable, Equatable, Hashable, Identifiable {
     case search(String)
     case terminal(workingDirectory: String)
     case zellij(sessionName: String?)
+    case zmx(sessionName: String)
 
     private enum CodingKeys: String, CodingKey {
         case kind, url, query, workingDirectory, sessionName
     }
-    private enum Kind: String, Codable { case url, search, terminal, zellij }
+    private enum Kind: String, Codable { case url, search, terminal, zellij, zmx }
 
     var id: Self { self }
 
@@ -106,6 +107,8 @@ enum RecentItem: Codable, Equatable, Hashable, Identifiable {
             return workingDirectory == homeDirectory ? ":terminal" : ":terminal \(workingDirectory)"
         case .zellij(let sessionName):
             return sessionName.map { ":zellij \($0)" } ?? ":zellij"
+        case .zmx(let sessionName):
+            return ":zmx \(sessionName)"
         }
     }
 
@@ -115,6 +118,7 @@ enum RecentItem: Codable, Equatable, Hashable, Identifiable {
         case .search: "magnifyingglass"
         case .terminal: "terminal"
         case .zellij: "rectangle.split.3x1"
+        case .zmx: "arrow.triangle.2.circlepath"
         }
     }
 
@@ -139,12 +143,14 @@ enum RecentItem: Codable, Equatable, Hashable, Identifiable {
             return URL(fileURLWithPath: workingDirectory, isDirectory: true).standardizedFileURL.path
         case .zellij(let sessionName):
             return sessionName ?? ""
+        case .zmx(let sessionName):
+            return sessionName
         }
     }
 
     static func == (lhs: Self, rhs: Self) -> Bool {
         switch (lhs, rhs) {
-        case (.url, .url), (.search, .search), (.terminal, .terminal), (.zellij, .zellij):
+        case (.url, .url), (.search, .search), (.terminal, .terminal), (.zellij, .zellij), (.zmx, .zmx):
             lhs.normalizedValue == rhs.normalizedValue
         default:
             false
@@ -157,6 +163,7 @@ enum RecentItem: Codable, Equatable, Hashable, Identifiable {
         case .search: hasher.combine(1)
         case .terminal: hasher.combine(2)
         case .zellij: hasher.combine(3)
+        case .zmx: hasher.combine(4)
         }
         hasher.combine(normalizedValue)
     }
@@ -173,6 +180,8 @@ enum RecentItem: Codable, Equatable, Hashable, Identifiable {
                 workingDirectory: try container.decode(String.self, forKey: .workingDirectory))
         case .zellij:
             self = .zellij(sessionName: try container.decodeIfPresent(String.self, forKey: .sessionName))
+        case .zmx:
+            self = .zmx(sessionName: try container.decode(String.self, forKey: .sessionName))
         }
     }
 
@@ -191,6 +200,9 @@ enum RecentItem: Codable, Equatable, Hashable, Identifiable {
         case .zellij(let sessionName):
             try container.encode(Kind.zellij, forKey: .kind)
             try container.encodeIfPresent(sessionName, forKey: .sessionName)
+        case .zmx(let sessionName):
+            try container.encode(Kind.zmx, forKey: .kind)
+            try container.encode(sessionName, forKey: .sessionName)
         }
     }
 }

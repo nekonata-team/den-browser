@@ -59,6 +59,7 @@ extension DenStore {
             || (board.currentSheetURL?.absoluteString.localizedCaseInsensitiveContains(overviewQuery) ?? false)
             || (board.terminalWorkingDirectory?.localizedCaseInsensitiveContains(overviewQuery) ?? false)
             || (board.zellijSessionName?.localizedCaseInsensitiveContains(overviewQuery) ?? false)
+            || (board.zmxSessionName?.localizedCaseInsensitiveContains(overviewQuery) ?? false)
             || desk.label.localizedCaseInsensitiveContains(overviewQuery)
     }
 

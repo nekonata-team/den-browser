@@ -15,9 +15,37 @@ enum ZellijInput: Equatable {
     case session(String)
 }
 
+enum ZmxInput: Equatable {
+    case missingSessionName
+    case session(String)
+}
+
 extension DenStore {
     @discardableResult
     func openBoard(input: String, preferredWidth: Double? = nil, afterBoardID: UUID? = nil) -> Bool {
+        if let zmx = Self.resolveZmxInput(input) {
+            guard case .session(let sessionName) = zmx else {
+                openBoardPanelMessage = "Enter a zmx session name."
+                return false
+            }
+            guard ZmxLaunchCommand.isValidExecutablePath(preferences.zmxPath) else {
+                openBoardPanelMessage =
+                    "Set an absolute zmx executable path in Settings > Features > Terminal."
+                return false
+            }
+            guard
+                addZmxBoard(
+                    sessionName: sessionName,
+                    preferredWidth: preferredWidth,
+                    afterBoardID: afterBoardID)
+            else { return false }
+            openBoardPanelMessage = nil
+            if input.count <= Self.maximumPersistedRecentInputLength {
+                saveRecentItem(.zmx(sessionName: sessionName))
+            }
+            return true
+        }
+
         if let zellij = Self.resolveZellijInput(input) {
             guard ZellijLaunchCommand.isValidExecutablePath(preferences.zellijPath) else {
                 openBoardPanelMessage =
@@ -82,6 +110,16 @@ extension DenStore {
         return sessionName.isEmpty ? .welcome : .session(sessionName)
     }
 
+    static func resolveZmxInput(_ input: String) -> ZmxInput? {
+        let trimmed = input.trimmingCharacters(in: .whitespacesAndNewlines)
+        let parts = trimmed.split(maxSplits: 1, whereSeparator: \.isWhitespace)
+        guard parts.first == ":zmx" else { return nil }
+        guard parts.count == 2 else { return .missingSessionName }
+
+        let sessionName = String(parts[1]).trimmingCharacters(in: .whitespacesAndNewlines)
+        return sessionName.isEmpty ? .missingSessionName : .session(sessionName)
+    }
+
     static func resolveTerminalInput(
         _ input: String,
         homeDirectory: URL = FileManager.default.homeDirectoryForCurrentUser,
@@ -140,6 +178,25 @@ extension DenStore {
             else { return }
             openBoardPanelMessage = nil
             saveRecentItem(.zellij(sessionName: sessionName))
+        case .zmx(let sessionName):
+            let sessionName = sessionName.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !sessionName.isEmpty else {
+                openBoardPanelMessage = "Enter a zmx session name."
+                return
+            }
+            guard ZmxLaunchCommand.isValidExecutablePath(preferences.zmxPath) else {
+                openBoardPanelMessage =
+                    "Set an absolute zmx executable path in Settings > Features > Terminal."
+                return
+            }
+            guard
+                addZmxBoard(
+                    sessionName: sessionName,
+                    preferredWidth: preferredWidth,
+                    afterBoardID: afterBoardID)
+            else { return }
+            openBoardPanelMessage = nil
+            saveRecentItem(.zmx(sessionName: sessionName))
         }
     }
 
@@ -201,6 +258,21 @@ extension DenStore {
         let board = BoardState(
             width: preferredWidth ?? 520,
             zellijSessionName: sessionName)
+        return insertBoard(board, afterBoardID: afterBoardID, focus: focus)
+    }
+
+    @discardableResult
+    func addZmxBoard(
+        sessionName: String,
+        preferredWidth: Double? = nil,
+        afterBoardID: UUID? = nil,
+        focus: Bool = true
+    ) -> Bool {
+        let normalizedSessionName = sessionName.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !normalizedSessionName.isEmpty else { return false }
+        let board = BoardState(
+            width: preferredWidth ?? 520,
+            zmxSessionName: normalizedSessionName)
         return insertBoard(board, afterBoardID: afterBoardID, focus: focus)
     }
 
@@ -340,6 +412,18 @@ extension DenStore {
                 label: source.label,
                 width: source.width,
                 zellijSessionName: source.zellijSessionName,
+                customLabel: source.customLabel)
+            state.desks[deskIndex].boards.insert(board, at: boardIndex + 1)
+            state.desks[deskIndex].focusedBoardID = board.id
+            isDenMode = false
+            save()
+            return
+        }
+        if let sessionName = source.zmxSessionName {
+            let board = BoardState(
+                label: source.label,
+                width: source.width,
+                zmxSessionName: sessionName,
                 customLabel: source.customLabel)
             state.desks[deskIndex].boards.insert(board, at: boardIndex + 1)
             state.desks[deskIndex].focusedBoardID = board.id

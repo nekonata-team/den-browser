@@ -100,6 +100,7 @@ struct DenStoreRecentTests {
         defer { defaults.removePersistentDomain(forName: suiteName) }
         let preferences = AppPreferences(defaults: defaults)
         preferences.setZellijPath("/opt/homebrew/bin/zellij")
+        preferences.setZmxPath("/opt/homebrew/bin/zmx")
         let store = DenStore(
             state: DenState(desks: [source], focusedDeskID: source.id),
             sheetNavigation: SheetNavigationManager(),
@@ -112,9 +113,11 @@ struct DenStoreRecentTests {
         store.openBoard(input: ":terminal \(directory)")
         store.openBoard(input: ":zellij")
         store.openBoard(input: ":zellij project-a")
+        store.openBoard(input: ":zmx project-a")
 
         #expect(
             store.recentItems == [
+                .zmx(sessionName: "project-a"),
                 .zellij(sessionName: "project-a"),
                 .zellij(sessionName: nil),
                 .terminal(workingDirectory: directory),
@@ -183,6 +186,30 @@ struct DenStoreRecentTests {
         #expect(store.recentItems.first == item)
     }
 
+    @Test func openingZmxRecentCreatesBoardAndMovesItToTheFront() {
+        let source = desk("Desk")
+        let suiteName = "DenStoreRecentZmxTests-\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let preferences = AppPreferences(defaults: defaults)
+        preferences.setZmxPath("/opt/homebrew/bin/zmx")
+        let item = RecentItem.zmx(sessionName: "project-a")
+        let store = DenStore(
+            state: DenState(desks: [source], focusedDeskID: source.id),
+            websiteDataStore: .default(),
+            sheetNavigation: SheetNavigationManager(),
+            preferences: preferences,
+            recentItems: [.search("existing"), item],
+            onSave: nil,
+            onRecentItemsSave: { _ in true })
+
+        store.openBoard(recentItem: item)
+
+        #expect(store.focusedBoard?.isZmx == true)
+        #expect(store.focusedBoard?.zmxSessionName == "project-a")
+        #expect(store.recentItems.first == item)
+    }
+
     @Test func openingZellijRecentWithoutConfigurationShowsError() {
         let source = desk("Desk")
         let suiteName = "DenStoreRecentMissingZellijTests-\(UUID().uuidString)"
@@ -203,6 +230,29 @@ struct DenStoreRecentTests {
 
         #expect(store.focusedDesk?.boards.isEmpty == true)
         #expect(store.openBoardPanelMessage?.contains("absolute Zellij executable path") == true)
+        #expect(store.recentItems == [item])
+    }
+
+    @Test func openingZmxRecentWithoutConfigurationShowsError() {
+        let source = desk("Desk")
+        let suiteName = "DenStoreRecentMissingZmxTests-\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let preferences = AppPreferences(defaults: defaults)
+        let item = RecentItem.zmx(sessionName: "project-a")
+        let store = DenStore(
+            state: DenState(desks: [source], focusedDeskID: source.id),
+            websiteDataStore: .default(),
+            sheetNavigation: SheetNavigationManager(),
+            preferences: preferences,
+            recentItems: [item],
+            onSave: nil,
+            onRecentItemsSave: { _ in true })
+
+        store.openBoard(recentItem: item)
+
+        #expect(store.focusedDesk?.boards.isEmpty == true)
+        #expect(store.openBoardPanelMessage?.contains("absolute zmx executable path") == true)
         #expect(store.recentItems == [item])
     }
 

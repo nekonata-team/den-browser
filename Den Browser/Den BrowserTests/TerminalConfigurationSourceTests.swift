@@ -23,6 +23,18 @@ struct TerminalConfigurationSourceTests {
         #expect(ZellijLaunchCommand.command(sessionName: nil, executablePath: "zellij") == nil)
     }
 
+    @Test func zmxLaunchCommandsUseNamedSession() {
+        #expect(
+            ZmxLaunchCommand.command(
+                sessionName: "project's shell",
+                executablePath: "/opt/homebrew/bin/zmx")
+                == "'/opt/homebrew/bin/zmx' attach 'project'\\''s shell'"
+        )
+        #expect(ZmxLaunchCommand.command(sessionName: "", executablePath: "/opt/homebrew/bin/zmx") == nil)
+        #expect(ZmxLaunchCommand.command(sessionName: " ", executablePath: "/opt/homebrew/bin/zmx") == nil)
+        #expect(ZmxLaunchCommand.command(sessionName: "project", executablePath: "zmx") == nil)
+    }
+
     @Test func zellijCommandOverridesUserCommandWithoutShellInput() throws {
         let root = FileManager.default.temporaryDirectory
             .appending(path: "den-browser-terminal-command-\(UUID())", directoryHint: .isDirectory)

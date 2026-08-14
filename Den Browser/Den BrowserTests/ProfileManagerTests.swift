@@ -74,6 +74,7 @@ struct ProfileManagerTests {
             .terminal(workingDirectory: "/tmp"),
             .zellij(sessionName: nil),
             .zellij(sessionName: "project-a"),
+            .zmx(sessionName: "project-a"),
         ]
         let encoded = try JSONEncoder().encode(
             PersistedProfile(
@@ -158,6 +159,7 @@ struct ProfileManagerTests {
         preferences.setNativePictureInPictureEnabled(true)
         preferences.setSheetScale(80)
         preferences.setZellijPath(" /opt/homebrew/bin/zellij ")
+        preferences.setZmxPath(" /opt/homebrew/bin/zmx ")
 
         let restored = AppPreferences(defaults: defaults)
         let storedKeys = Set((defaults.persistentDomain(forName: suiteName) ?? [:]).keys)
@@ -168,12 +170,14 @@ struct ProfileManagerTests {
                 "preferences.picture-in-picture.enabled",
                 "preferences.appearance.sheet-scale.percent",
                 "preferences.terminal.zellij.executable-path",
+                "preferences.terminal.zmx.executable-path",
             ])
         #expect(defaults.integer(forKey: "preferences.schema.version") == 1)
         #expect(restored.motionPreference == .standard)
         #expect(restored.nativePictureInPictureEnabled)
         #expect(restored.sheetScale == 80)
         #expect(restored.zellijPath == "/opt/homebrew/bin/zellij")
+        #expect(restored.zmxPath == "/opt/homebrew/bin/zmx")
     }
 
     @Test func appPreferencesPersistEssentialsWithoutProfileOwnership() throws {

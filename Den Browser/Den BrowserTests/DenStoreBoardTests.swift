@@ -34,6 +34,13 @@ struct DenStoreBoardTests {
         #expect(DenStore.resolveZellijInput(":zellijly") == nil)
     }
 
+    @Test func zmxInputRequiresAndResolvesNamedSessions() {
+        #expect(DenStore.resolveZmxInput(":zmx") == .missingSessionName)
+        #expect(DenStore.resolveZmxInput(":zmx   ") == .missingSessionName)
+        #expect(DenStore.resolveZmxInput(":zmx project-a") == .session("project-a"))
+        #expect(DenStore.resolveZmxInput(":zmxly") == nil)
+    }
+
     @Test func zellijBoardsPersistOptionalSessionNames() throws {
         let source = desk("Desk")
         let suiteName = "DenStoreZellijTests-\(UUID().uuidString)"
@@ -94,6 +101,39 @@ struct DenStoreBoardTests {
         #expect(store.focusedBoard?.isZellij != true)
         #expect(store.openBoardPanelMessage?.contains("absolute Zellij executable path") == true)
         #expect(store.recentItems.isEmpty)
+    }
+
+    @Test func zmxBoardsPersistNamedSession() throws {
+        let source = desk("Desk")
+        let suiteName = "DenStoreZmxTests-\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let preferences = AppPreferences(defaults: defaults)
+        preferences.setZmxPath("/opt/homebrew/bin/zmx")
+        let store = DenStore(
+            state: DenState(desks: [source], focusedDeskID: source.id),
+            sheetNavigation: SheetNavigationManager(),
+            preferences: preferences)
+
+        store.openBoard(input: ":zmx project-a")
+        let board = try #require(store.focusedBoard)
+        #expect(board.isTerminal)
+        #expect(board.isZmx)
+        #expect(board.zmxSessionName == "project-a")
+        #expect(
+            ZmxLaunchCommand.command(
+                sessionName: board.zmxSessionName ?? "",
+                executablePath: "/opt/homebrew/bin/zmx")
+                == "'/opt/homebrew/bin/zmx' attach 'project-a'"
+        )
+        let restored = try JSONDecoder().decode(
+            BoardState.self,
+            from: JSONEncoder().encode(board))
+        #expect(restored.content == .zmx(ZmxBoardState(sessionName: "project-a")))
+
+        store.openBoard(input: ":zmx")
+        #expect(store.focusedDesk?.boards.count == 1)
+        #expect(store.openBoardPanelMessage == "Enter a zmx session name.")
     }
 
     @Test func invalidTerminalInputDoesNotCreateRecentItem() {

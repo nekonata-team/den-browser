@@ -41,11 +41,11 @@ A user-created work surface that holds one focused task context within a desk. A
 _Avoid_: Tab, card, pane, slot
 
 **Terminal Board**:
-A Board whose content is a live shell or terminal multiplexer session instead of a Sheet Stack. Its process remains live across Desk changes while the Profile Window remains open.
+A Board whose content is a live shell or terminal session instead of a Sheet Stack. Its process remains live across Desk changes while the Profile Window remains open.
 _Avoid_: Terminal window, terminal tab, pane
 
 **Terminal Session**:
-The live shell or Zellij session, terminal screen, and scrollback owned by a Terminal Board. An ordinary Terminal Board persists only its latest reported Working Directory. Named Zellij Boards persist their session name; a Zellij Board without a name opens Zellij's Welcome screen again when restored.
+The live shell, Zellij session, or zmx session, terminal screen, and scrollback owned by a Terminal Board. An ordinary Terminal Board persists only its latest reported Working Directory. Named Zellij and zmx Boards persist their session name; a Zellij Board without a name opens Zellij's Welcome screen again when restored.
 _Avoid_: Terminal window, shell tab
 
 **Board Label**:
@@ -73,15 +73,15 @@ The Sheet URL held when a Board was created. It remains the Board's fixed return
 _Avoid_: Home page, bookmark, browser history
 
 **Recent**:
-A Profile-owned list of inputs recently used to open new Boards. It is ordered by most recent use and lets the Profile open another Board from the same web, Terminal, or Zellij input.
+A Profile-owned list of inputs recently used to open new Boards. It is ordered by most recent use and lets the Profile open another Board from the same web, Terminal, Zellij, or zmx input.
 _Avoid_: History, Used Board, Recent Board, Starting Point, Board Start
 
 **Recent Item**:
-An input retained in Recent for opening another Board, including a URL, search term, Terminal location, or Zellij session intent.
+An input retained in Recent for opening another Board, including a URL, search term, Terminal location, Zellij session intent, or zmx session intent.
 _Avoid_: Recent Entry
 
 **Essential**:
-A user-named input kept for repeatedly starting a Board from Den Mode. An Essential may be a URL, search term, Terminal location, or Zellij session intent; unlike a Recent Item, it is intentional and named rather than automatically retained.
+A user-named input kept for repeatedly starting a Board from Den Mode. An Essential may be a URL, search term, Terminal location, Zellij session intent, or zmx session intent; unlike a Recent Item, it is intentional and named rather than automatically retained.
 _Avoid_: Quick Launch, Board Starter, bookmark, site shortcut
 
 **Essentials**:
@@ -162,5 +162,5 @@ The most recent board removed from one Profile's Den during the current app run 
 _Avoid_: Closed tab, trash, Held Board, undo history
 
 **Board Restoration**:
-Returning the Recently Removed Board to a Desk with its saved identity, label, width, and persisted content. A restored ordinary Terminal Board starts a new Terminal Session from its saved Working Directory; a restored Zellij Board starts Zellij from its persisted session name or Welcome screen.
+Returning the Recently Removed Board to a Desk with its saved identity, label, width, and persisted content. A restored ordinary Terminal Board starts a new Terminal Session from its saved Working Directory; a restored Zellij Board starts Zellij from its persisted session name or Welcome screen, and a restored zmx Board reconnects to its persisted session name.
 _Avoid_: Undo, reopen tab, restore Sheet Stack

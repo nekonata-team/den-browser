@@ -32,7 +32,7 @@ brew install --cask den-browser
   Web上の識別単位。
 - **Den**: 一つのProfileに属する作業環境全体。
 - **Desk**: Boardを水平に並べる、大きな作業文脈。
-- **Board**: Web Sheet、Terminal Session、またはZellij Sessionを保持する、永続する作業面。
+- **Board**: Web Sheet、Terminal Session、Zellij Session、またはzmx Sessionを保持する、永続する作業面。
 - **Sheet**: Board内に保持されるWeb画面。
 
 Den Browserは、[Niri](https://github.com/niri-wm/niri)の空間的なウィンドウ
@@ -43,7 +43,7 @@ Den Browserは、[Niri](https://github.com/niri-wm/niri)の空間的なウィン
 ## Den Browserの特徴
 
 - 複数のDeskにまたがる、永続的な空間配置。
-- 一つのDeskに並べられるWeb Board、Terminal Board、Zellij Board。
+- 一つのDeskに並べられるWeb Board、Terminal Board、Zellij Board、zmx Board。
 - キーボード中心の移動とBoard操作。必要な操作はポインターにも対応。
 - Profileごとに分離されたログイン状態とサイトデータ。再起動後のDen状態復元。
 - DeskやBoardの文脈がまだ決まっていないWeb上の素材を置く、Den全体のDrawer。

@@ -152,9 +152,10 @@ enum DeskPresetBoardContent: Codable, Equatable {
     case web(URL?)
     case terminal(String)
     case zellij(String?)
+    case zmx(String)
 
     private enum CodingKeys: String, CodingKey { case kind, initialSheetURL, workingDirectory, sessionName }
-    private enum Kind: String, Codable { case web, terminal, zellij }
+    private enum Kind: String, Codable { case web, terminal, zellij, zmx }
 
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
@@ -165,6 +166,8 @@ enum DeskPresetBoardContent: Codable, Equatable {
             self = .terminal(try container.decode(String.self, forKey: .workingDirectory))
         case .zellij:
             self = .zellij(try container.decodeIfPresent(String.self, forKey: .sessionName))
+        case .zmx:
+            self = .zmx(try container.decode(String.self, forKey: .sessionName))
         }
     }
 
@@ -180,6 +183,9 @@ enum DeskPresetBoardContent: Codable, Equatable {
         case .zellij(let sessionName):
             try container.encode(Kind.zellij, forKey: .kind)
             try container.encodeIfPresent(sessionName, forKey: .sessionName)
+        case .zmx(let sessionName):
+            try container.encode(Kind.zmx, forKey: .kind)
+            try container.encode(sessionName, forKey: .sessionName)
         }
     }
 }
@@ -205,6 +211,11 @@ struct DeskPresetBoard: Codable, Equatable {
         return sessionName
     }
 
+    var zmxSessionName: String? {
+        guard case .zmx(let sessionName) = content else { return nil }
+        return sessionName
+    }
+
     nonisolated init(label: String, width: Double, initialSheetURL: URL?, customLabel: String? = nil) {
         self.label = label
         self.width = width
@@ -223,6 +234,13 @@ struct DeskPresetBoard: Codable, Equatable {
         self.label = label
         self.width = width
         content = .zellij(zellijSessionName)
+        self.customLabel = customLabel
+    }
+
+    nonisolated init(label: String, width: Double, zmxSessionName: String, customLabel: String? = nil) {
+        self.label = label
+        self.width = width
+        content = .zmx(zmxSessionName)
         self.customLabel = customLabel
     }
 
@@ -245,6 +263,12 @@ struct DeskPresetBoard: Codable, Equatable {
                 label: board.label,
                 width: board.width,
                 zellijSessionName: zellij.sessionName,
+                customLabel: board.customLabel)
+        case .zmx(let zmx):
+            self.init(
+                label: board.label,
+                width: board.width,
+                zmxSessionName: zmx.sessionName,
                 customLabel: board.customLabel)
         }
     }
@@ -269,6 +293,12 @@ struct DeskPresetBoard: Codable, Equatable {
                 label: label,
                 width: width,
                 zellijSessionName: sessionName,
+                customLabel: customLabel)
+        case .zmx(let sessionName):
+            BoardState(
+                label: label,
+                width: width,
+                zmxSessionName: sessionName,
                 customLabel: customLabel)
         }
     }
@@ -311,15 +341,20 @@ struct ZellijBoardState: Codable, Equatable {
     var sessionName: String?
 }
 
+struct ZmxBoardState: Codable, Equatable {
+    var sessionName: String
+}
+
 enum BoardContentState: Codable, Equatable {
     case web(WebBoardState)
     case terminal(TerminalBoardState)
     case zellij(ZellijBoardState)
+    case zmx(ZmxBoardState)
 
     private enum CodingKeys: String, CodingKey {
         case kind, currentSheetURL, firstSheetURL, workingDirectory, sessionName
     }
-    private enum Kind: String, Codable { case web, terminal, zellij }
+    private enum Kind: String, Codable { case web, terminal, zellij, zmx }
 
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
@@ -337,6 +372,10 @@ enum BoardContentState: Codable, Equatable {
             self = .zellij(
                 ZellijBoardState(
                     sessionName: try container.decodeIfPresent(String.self, forKey: .sessionName)))
+        case .zmx:
+            self = .zmx(
+                ZmxBoardState(
+                    sessionName: try container.decode(String.self, forKey: .sessionName)))
         }
     }
 
@@ -353,6 +392,9 @@ enum BoardContentState: Codable, Equatable {
         case .zellij(let zellij):
             try container.encode(Kind.zellij, forKey: .kind)
             try container.encodeIfPresent(zellij.sessionName, forKey: .sessionName)
+        case .zmx(let zmx):
+            try container.encode(Kind.zmx, forKey: .kind)
+            try container.encode(zmx.sessionName, forKey: .sessionName)
         }
     }
 }
@@ -408,15 +450,25 @@ struct BoardState: Codable, Equatable, Identifiable {
         return zellij.sessionName
     }
 
+    var zmxSessionName: String? {
+        guard case .zmx(let zmx) = content else { return nil }
+        return zmx.sessionName
+    }
+
     var isTerminal: Bool {
         switch content {
-        case .terminal, .zellij: true
+        case .terminal, .zellij, .zmx: true
         case .web: false
         }
     }
 
     var isZellij: Bool {
         guard case .zellij = content else { return false }
+        return true
+    }
+
+    var isZmx: Bool {
+        guard case .zmx = content else { return false }
         return true
     }
 
@@ -475,6 +527,21 @@ struct BoardState: Codable, Equatable, Identifiable {
         self.label = label
         self.width = width
         content = .zellij(ZellijBoardState(sessionName: zellijSessionName))
+        self.customLabel = customLabel
+        sheetNavigationPaused = false
+    }
+
+    init(
+        id: UUID = UUID(),
+        label: String = "zmx",
+        width: Double,
+        zmxSessionName: String,
+        customLabel: String? = nil
+    ) {
+        self.id = id
+        self.label = label
+        self.width = width
+        content = .zmx(ZmxBoardState(sessionName: zmxSessionName))
         self.customLabel = customLabel
         sheetNavigationPaused = false
     }

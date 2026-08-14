@@ -71,6 +71,7 @@ final class AppPreferences {
     private(set) var boardCentering: FocusedBoardCentering
     private(set) var sheetScale: Int
     private(set) var zellijPath: String
+    private(set) var zmxPath: String
     private(set) var essentials: [Essential]
 
     @ObservationIgnored private let defaults: UserDefaults
@@ -86,6 +87,7 @@ final class AppPreferences {
     private static let boardCenteringKey = "preferences.appearance.board-centering.mode"
     private static let sheetScaleKey = "preferences.appearance.sheet-scale.percent"
     private static let zellijPathKey = "preferences.terminal.zellij.executable-path"
+    private static let zmxPathKey = "preferences.terminal.zmx.executable-path"
     private static let essentialsKey = "preferences.essentials.items"
 
     init(defaults: UserDefaults = .standard) {
@@ -105,6 +107,7 @@ final class AppPreferences {
             Self.normalizedSheetScale(defaults.object(forKey: Self.sheetScaleKey) as? Int)
             ?? Self.defaultSheetScale
         zellijPath = defaults.string(forKey: Self.zellijPathKey) ?? ""
+        zmxPath = defaults.string(forKey: Self.zmxPathKey) ?? ""
         essentials = Self.loadEssentials(defaults)
         loadShortcutOverrides()
     }
@@ -151,6 +154,12 @@ final class AppPreferences {
         let normalized = path.trimmingCharacters(in: .whitespacesAndNewlines)
         zellijPath = normalized
         defaults.set(normalized, forKey: Self.zellijPathKey)
+    }
+
+    func setZmxPath(_ path: String) {
+        let normalized = path.trimmingCharacters(in: .whitespacesAndNewlines)
+        zmxPath = normalized
+        defaults.set(normalized, forKey: Self.zmxPathKey)
     }
 
     @discardableResult

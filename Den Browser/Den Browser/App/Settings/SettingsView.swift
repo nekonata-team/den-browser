@@ -74,6 +74,7 @@ struct SettingsView: View {
 private struct TerminalSettingsView: View {
     @Environment(AppPreferences.self) private var preferences
     @State private var zellijPathDraft = ""
+    @State private var zmxPathDraft = ""
     @State private var hasLoadedDraft = false
 
     var body: some View {
@@ -100,10 +101,34 @@ private struct TerminalSettingsView: View {
                     .disabled(!hasZellijPathChanges)
                 }
             }
+
+            Section("zmx") {
+                TextField(
+                    text: $zmxPathDraft,
+                    prompt: Text("/usr/local/bin/zmx")
+                ) {
+                    Text("Executable")
+                }
+                .onSubmit {
+                    TextInputComposition.performUnlessActive(saveZmxPath)
+                }
+
+                SettingsHelpText {
+                    Text("Use the absolute path to the zmx executable.")
+                }
+
+                SettingsActionRow {
+                    Button("Save Executable Path") {
+                        saveZmxPath()
+                    }
+                    .disabled(!hasZmxPathChanges)
+                }
+            }
         }
         .onAppear {
             guard !hasLoadedDraft else { return }
             zellijPathDraft = preferences.zellijPath
+            zmxPathDraft = preferences.zmxPath
             hasLoadedDraft = true
         }
     }
@@ -115,6 +140,15 @@ private struct TerminalSettingsView: View {
     private func saveZellijPath() {
         preferences.setZellijPath(zellijPathDraft)
         zellijPathDraft = preferences.zellijPath
+    }
+
+    private var hasZmxPathChanges: Bool {
+        zmxPathDraft.trimmingCharacters(in: .whitespacesAndNewlines) != preferences.zmxPath
+    }
+
+    private func saveZmxPath() {
+        preferences.setZmxPath(zmxPathDraft)
+        zmxPathDraft = preferences.zmxPath
     }
 }
 

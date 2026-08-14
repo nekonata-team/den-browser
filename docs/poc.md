@@ -16,7 +16,7 @@ This document defines outcome-level PoC criteria. Validation procedures belong i
 - The core Den workflow—opening a Board, selecting and moving between Boards and Desks, focusing its Sheet, and removing a Board—can be completed with pointer-only input and keyboard-only input.
 - App restart restores Desks, Board order, Board labels, Board widths, Current Sheet URLs, and focused Board.
 - Back and forward navigation can be treated as a Sheet stack.
-- Web, Terminal, and Zellij Boards can coexist with the same Den lifecycle and persistence model.
+- Web, Terminal, Zellij, and zmx Boards can coexist with the same Den lifecycle and persistence model.
 - The Drawer, Desk, and Profile boundaries remain reliable during ordinary long-running work.
 - Focus Mode keeps the Focused Board readable while visually de-emphasizing other Board content without breaking Board focus or input.
 

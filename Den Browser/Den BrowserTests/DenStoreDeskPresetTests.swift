@@ -89,6 +89,22 @@ struct DenStoreDeskPresetTests {
         #expect(store.focusedBoard?.customLabel == "Project")
     }
 
+    @Test func personalPresetRestoresZmxBoardSession() throws {
+        let zmx = BoardState(width: 700, zmxSessionName: "project-a", customLabel: "Project")
+        let source = desk("Development", boards: [zmx], focusedBoardID: zmx.id)
+        let store = DenStore(state: DenState(desks: [source], focusedDeskID: source.id))
+
+        #expect(store.saveFocusedDeskAsPreset(label: "zmx") == .created)
+        let preset = try #require(store.deskPresets.first)
+        #expect(preset.boards.first?.content == .zmx("project-a"))
+
+        store.createDesk(label: "Copy", personalPresetID: preset.id)
+        #expect(store.focusedBoard?.id != zmx.id)
+        #expect(store.focusedBoard?.isZmx == true)
+        #expect(store.focusedBoard?.zmxSessionName == "project-a")
+        #expect(store.focusedBoard?.customLabel == "Project")
+    }
+
     @Test func personalPresetValidationReplacementAndDeletion() throws {
         let source = desk("Desk", boards: [board("First")])
         var saves: [[PersonalDeskPreset]] = []

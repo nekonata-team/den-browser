@@ -22,6 +22,23 @@ enum ZellijLaunchCommand {
     }
 }
 
+enum ZmxLaunchCommand {
+    static func isValidExecutablePath(_ path: String) -> Bool {
+        path.trimmingCharacters(in: .whitespacesAndNewlines).hasPrefix("/")
+    }
+
+    static func command(sessionName: String, executablePath: String) -> String? {
+        let executablePath = executablePath.trimmingCharacters(in: .whitespacesAndNewlines)
+        let sessionName = sessionName.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard isValidExecutablePath(executablePath), !sessionName.isEmpty else { return nil }
+        return "\(shellQuote(executablePath)) attach \(shellQuote(sessionName))"
+    }
+
+    private static func shellQuote(_ value: String) -> String {
+        "'" + value.replacingOccurrences(of: "'", with: "'\\''") + "'"
+    }
+}
+
 enum TerminalConfigurationSource {
     struct Resolution {
         let configSource: TerminalController.ConfigSource
