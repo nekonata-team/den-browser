@@ -14,10 +14,12 @@ struct DenView<Header: View>: View {
     @State private var editBoardLinkText = ""
     @State private var saveDeskPresetLabel = ""
     @State private var saveDeskPresetMessage: String?
+    @State private var zmxDuplicationText = ""
 
     @FocusState private var isOpenPanelFocused: Bool
     @FocusState private var isEditBoardLinkPanelFocused: Bool
     @FocusState private var isSaveDeskPresetLabelFocused: Bool
+    @FocusState private var isZmxDuplicationPanelFocused: Bool
     @State private var renameText = ""
     @FocusState private var isRenamePanelFocused: Bool
     @FocusState private var isDeskFilterFocused: Bool
@@ -206,6 +208,8 @@ struct DenView<Header: View>: View {
             panelOverlay(essentialsPrefixPanel)
         case .openBoard:
             panelOverlay(openBoardPanel(defaultBoardWidth: defaultBoardWidth))
+        case .zmxDuplication:
+            panelOverlay(zmxDuplicationPanel)
         case .editBoardLink:
             panelOverlay(editBoardLinkPanel)
         case .newDesk, .replaceDesk, .deskPresetManagement:
@@ -348,6 +352,21 @@ struct DenView<Header: View>: View {
         )
     }
 
+    private var zmxDuplicationPanel: some View {
+        ZmxDuplicationPanel(
+            text: zmxDuplicationTextBinding,
+            isFocused: $isZmxDuplicationPanelFocused,
+            sourceSessionName: store.focusedBoard?.zmxSessionName ?? "zmx",
+            onSubmit: duplicateFocusedZmxBoard,
+            onDismiss: dismissZmxDuplicationPanel)
+    }
+
+    private var zmxDuplicationTextBinding: Binding<String> {
+        Binding(
+            get: { zmxDuplicationText },
+            set: { zmxDuplicationText = ZmxSessionNameGenerator.normalizedSuffix($0) })
+    }
+
     private func dismissOpenBoardPanel() {
         store.hideOpenBoardPanel()
         openBoardAfterBoardID = nil
@@ -356,6 +375,18 @@ struct DenView<Header: View>: View {
 
     private func dismissEditBoardLinkPanel() {
         store.hideEditBoardLinkPanel()
+        restoreFocusedSheetFirstResponder()
+    }
+
+    private func duplicateFocusedZmxBoard() {
+        guard store.duplicateFocusedZmxBoard(suffix: zmxDuplicationText) else { return }
+        zmxDuplicationText = ""
+        restoreFocusedSheetFirstResponder()
+    }
+
+    private func dismissZmxDuplicationPanel() {
+        store.hideZmxDuplicationPanel()
+        zmxDuplicationText = ""
         restoreFocusedSheetFirstResponder()
     }
 

@@ -343,6 +343,14 @@ struct ZellijBoardState: Codable, Equatable {
 
 struct ZmxBoardState: Codable, Equatable {
     var sessionName: String
+    var workingDirectory: String
+    var rootSessionName: String?
+
+    init(sessionName: String, workingDirectory: String, rootSessionName: String? = nil) {
+        self.sessionName = sessionName
+        self.workingDirectory = workingDirectory
+        self.rootSessionName = rootSessionName
+    }
 }
 
 enum BoardContentState: Codable, Equatable {
@@ -352,7 +360,7 @@ enum BoardContentState: Codable, Equatable {
     case zmx(ZmxBoardState)
 
     private enum CodingKeys: String, CodingKey {
-        case kind, currentSheetURL, firstSheetURL, workingDirectory, sessionName
+        case kind, currentSheetURL, firstSheetURL, workingDirectory, sessionName, rootSessionName
     }
     private enum Kind: String, Codable { case web, terminal, zellij, zmx }
 
@@ -375,7 +383,11 @@ enum BoardContentState: Codable, Equatable {
         case .zmx:
             self = .zmx(
                 ZmxBoardState(
-                    sessionName: try container.decode(String.self, forKey: .sessionName)))
+                    sessionName: try container.decode(String.self, forKey: .sessionName),
+                    workingDirectory: try container.decode(String.self, forKey: .workingDirectory),
+                    rootSessionName: try container.decodeIfPresent(
+                        String.self,
+                        forKey: .rootSessionName)))
         }
     }
 
@@ -395,6 +407,8 @@ enum BoardContentState: Codable, Equatable {
         case .zmx(let zmx):
             try container.encode(Kind.zmx, forKey: .kind)
             try container.encode(zmx.sessionName, forKey: .sessionName)
+            try container.encode(zmx.workingDirectory, forKey: .workingDirectory)
+            try container.encodeIfPresent(zmx.rootSessionName, forKey: .rootSessionName)
         }
     }
 }
@@ -436,12 +450,23 @@ struct BoardState: Codable, Equatable, Identifiable {
 
     var terminalWorkingDirectory: String? {
         get {
-            guard case .terminal(let terminal) = content else { return nil }
-            return terminal.workingDirectory
+            switch content {
+            case .terminal(let terminal): terminal.workingDirectory
+            case .zmx(let zmx): zmx.workingDirectory
+            case .web, .zellij: nil
+            }
         }
         set {
-            guard let newValue, case .terminal = content else { return }
-            content = .terminal(TerminalBoardState(workingDirectory: newValue))
+            guard let newValue else { return }
+            switch content {
+            case .terminal:
+                content = .terminal(TerminalBoardState(workingDirectory: newValue))
+            case .zmx(var zmx):
+                zmx.workingDirectory = newValue
+                content = .zmx(zmx)
+            case .web, .zellij:
+                return
+            }
         }
     }
 
@@ -453,6 +478,11 @@ struct BoardState: Codable, Equatable, Identifiable {
     var zmxSessionName: String? {
         guard case .zmx(let zmx) = content else { return nil }
         return zmx.sessionName
+    }
+
+    var zmxRootSessionName: String? {
+        guard case .zmx(let zmx) = content else { return nil }
+        return zmx.rootSessionName
     }
 
     var isTerminal: Bool {
@@ -536,12 +566,18 @@ struct BoardState: Codable, Equatable, Identifiable {
         label: String = "zmx",
         width: Double,
         zmxSessionName: String,
+        workingDirectory: String = FileManager.default.homeDirectoryForCurrentUser.path,
+        rootSessionName: String? = nil,
         customLabel: String? = nil
     ) {
         self.id = id
         self.label = label
         self.width = width
-        content = .zmx(ZmxBoardState(sessionName: zmxSessionName))
+        content = .zmx(
+            ZmxBoardState(
+                sessionName: zmxSessionName,
+                workingDirectory: workingDirectory,
+                rootSessionName: rootSessionName))
         self.customLabel = customLabel
         sheetNavigationPaused = false
     }

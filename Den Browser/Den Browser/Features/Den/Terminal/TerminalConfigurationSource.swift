@@ -27,15 +27,96 @@ enum ZmxLaunchCommand {
         path.trimmingCharacters(in: .whitespacesAndNewlines).hasPrefix("/")
     }
 
-    static func command(sessionName: String, executablePath: String) -> String? {
+    static func command(
+        sessionName: String,
+        executablePath: String,
+        rootSessionName: String? = nil
+    ) -> String? {
         let executablePath = executablePath.trimmingCharacters(in: .whitespacesAndNewlines)
         let sessionName = sessionName.trimmingCharacters(in: .whitespacesAndNewlines)
         guard isValidExecutablePath(executablePath), !sessionName.isEmpty else { return nil }
-        return "\(shellQuote(executablePath)) attach \(shellQuote(sessionName))"
+        guard let rootSessionName = rootSessionName?.trimmingCharacters(in: .whitespacesAndNewlines),
+            !rootSessionName.isEmpty
+        else {
+            return "\(shellQuote(executablePath)) attach \(shellQuote(sessionName))"
+        }
+
+        let rootLabel = shellQuote("den.root=\(rootSessionName)")
+        let initializeRootLabel =
+            "\(shellQuote(executablePath)) set . \(rootLabel) >/dev/null 2>&1 || true; "
+            + "exec \"${SHELL:-/bin/zsh}\" -l"
+        return "\(shellQuote(executablePath)) attach \(shellQuote(sessionName)) /bin/sh -lc "
+            + shellQuote(initializeRootLabel)
     }
 
     private static func shellQuote(_ value: String) -> String {
         "'" + value.replacingOccurrences(of: "'", with: "'\\''") + "'"
+    }
+}
+
+enum ZmxSessionNameGenerator {
+    static func normalizedSuffix(_ suffix: String) -> String {
+        suffix.filter { character in
+            character.isASCII
+                && (character.isLetter || character.isNumber || "-_".contains(character) || character == ".")
+        }
+    }
+
+    static func nextName(rootSessionName: String, suffix: String, occupiedNames: Set<String>) -> String {
+        let cleanSuffix = normalizedSuffix(suffix)
+        if cleanSuffix.isEmpty {
+            var number = 2
+            var candidate = "\(rootSessionName)-\(number)"
+            while occupiedNames.contains(candidate) {
+                number += 1
+                candidate = "\(rootSessionName)-\(number)"
+            }
+            return candidate
+        }
+
+        let baseName = "\(rootSessionName)-\(cleanSuffix)"
+        var candidate = baseName
+        var number = 2
+        while occupiedNames.contains(candidate) {
+            candidate = "\(baseName)-\(number)"
+            number += 1
+        }
+        return candidate
+    }
+}
+
+enum ZmxSessionNames {
+    static func active(executablePath: String) -> Set<String>? {
+        let executablePath = executablePath.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard ZmxLaunchCommand.isValidExecutablePath(executablePath) else { return nil }
+
+        let process = Process()
+        let output = Pipe()
+        process.executableURL = URL(fileURLWithPath: executablePath)
+        process.arguments = ["list", "--short"]
+        process.standardOutput = output
+        process.standardError = FileHandle.nullDevice
+
+        do {
+            try process.run()
+            process.waitUntilExit()
+        } catch {
+            return nil
+        }
+        guard process.terminationStatus == 0 else { return nil }
+
+        let data = output.fileHandleForReading.readDataToEndOfFile()
+        guard let text = String(data: data, encoding: .utf8) else { return [] }
+        return Set(
+            text.split(whereSeparator: \.isNewline).compactMap { rawLine in
+                let line = rawLine.trimmingCharacters(in: .whitespacesAndNewlines)
+                guard !line.isEmpty else { return nil }
+                if let nameField = line.split(separator: "\t").first(where: { $0.hasPrefix("name=") }) {
+                    return String(nameField.dropFirst("name=".count))
+                }
+                return String(line.split(separator: "\t").first ?? "")
+            }
+        )
     }
 }
 

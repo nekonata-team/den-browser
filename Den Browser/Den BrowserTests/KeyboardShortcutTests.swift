@@ -361,6 +361,25 @@ struct KeyboardShortcutTests {
         #expect(!store.hasPendingConfirmation)
     }
 
+    @Test func denModeEnterAndShiftEnterUseDistinctDuplicateActions() throws {
+        let store = try makeStore(boards: [board("First")])
+        store.isDenMode = true
+        let returnKey = try keyEvent(
+            characters: "\r", charactersIgnoringModifiers: "\r", keyCode: 36)
+        let shiftReturn = try keyEvent(
+            characters: "\r",
+            charactersIgnoringModifiers: "\r",
+            modifiers: [.shift],
+            keyCode: 36)
+
+        #expect(
+            KeyboardController.decision(for: returnKey, store: store)
+                == .perform(.duplicateBoard))
+        #expect(
+            KeyboardController.decision(for: shiftReturn, store: store)
+                == .perform(.duplicateFirstSheet))
+    }
+
     @Test func drawerFilterPassesShiftedCharactersToTextInput() throws {
         let store = try makeStore(boards: [board("First")])
         store.keepInDrawer(try #require(URL(string: "https://example.com/")))

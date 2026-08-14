@@ -533,6 +533,7 @@ final class DenStore {
 enum TemporaryContext: Equatable {
     case essentialsPrefix
     case openBoard
+    case zmxDuplication
     case editBoardLink
     case newDesk
     case replaceDesk

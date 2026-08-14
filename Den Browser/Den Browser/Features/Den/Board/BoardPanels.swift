@@ -179,6 +179,52 @@ struct EditBoardLinkPanel: View {
     }
 }
 
+struct ZmxDuplicationPanel: View {
+    @Binding var text: String
+    @FocusState.Binding var isFocused: Bool
+
+    let sourceSessionName: String
+    let onSubmit: () -> Void
+    let onDismiss: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: DenPanelLayout.contentSpacing) {
+            DenPanelHeader(systemImage: "plus.square.on.square") {
+                TextField(
+                    text: $text,
+                    prompt: Text("Optional suffix, e.g. vi")
+                ) {
+                    Text("Duplicate zmx Board")
+                }
+                .labelsHidden()
+                .textFieldStyle(.plain)
+                .font(.title3.weight(.medium))
+                .focused($isFocused)
+                .accessibilityIdentifier("zmx-duplication-input")
+                .onSubmit { TextInputComposition.performUnlessActive(onSubmit) }
+            }
+
+            Text("Creates \(sourceSessionName)-… in the same Working Directory")
+                .foregroundStyle(.secondary)
+
+            HStack(spacing: DenPanelLayout.contentSpacing) {
+                Text("Letters, numbers, -, _, . only")
+                    .foregroundStyle(.secondary)
+                Spacer()
+                Text("Enter to duplicate · Escape to cancel")
+                    .foregroundStyle(.secondary)
+            }
+            .font(.caption)
+        }
+        .denPanel()
+        .onAppear {
+            text = ""
+            DispatchQueue.main.async { isFocused = true }
+        }
+        .onExitCommand(perform: onDismiss)
+    }
+}
+
 struct RenameBoardPanel: View {
     @Environment(DenStore.self) private var store
     @Binding var text: String

@@ -54,7 +54,7 @@ Essentials are app-wide named Board inputs configured in Settings > Essentials. 
 | `s` | Capture Current Sheet screenshot | Captures the visible web content in the Focused Board and opens a macOS save panel for a PNG. |
 | Shift + `s` | Capture Focused Desk screenshot | Captures every Board's visible Current Sheet, preserving Board order and relative widths in one PNG. |
 | `a` | Keep Current Sheet in Drawer | Keeps the Focused Board's Current Sheet in the Drawer without changing the Current Sheet. |
-| Return | Duplicate focused Board content | Web Boards duplicate the Current Sheet. Ordinary Terminal Boards start a new Shell from the saved Working Directory. Zellij Boards reconnect to the same session or show Welcome; zmx Boards reconnect to the same session. |
+| Return | Duplicate focused Board | Web Boards duplicate the Current Sheet. Ordinary Terminal Boards start a new Shell from the saved Working Directory. Zellij Boards reconnect to the same session or show Welcome. zmx Boards open a suffix panel and create an independent session in the same Working Directory; the root session name is used for the new name (`den` + `vi` → `den-vi`). Suffixes accept letters, numbers, `-`, `_`, and `.`; leaving the suffix empty uses an automatic number. |
 | Shift + Return | New Board from First Sheet | Creates a Board to the right from the Focused Board's persisted First Sheet URL, focuses it, then enters Sheet Input. A Board without a First Sheet does nothing. |
 | `e` | Edit Focused Board Link panel | Replaces the Current Sheet with a URL or search on Return. Escape returns to Den Mode. |
 | `r` | Rename focused Board | Opens the Rename Board panel; Return confirms, Escape returns to Den Mode. |
@@ -81,7 +81,7 @@ In Den Mode, `/` opens a floating filter over the current Board strip. It dynami
 
 Drag a Board header's label or empty area to reorder it within the Focused Desk. Header buttons remain ordinary controls. Dropping outside the Board strip cancels the move; moving near the strip's horizontal edges scrolls it. Keyboard Board movement and Overview remain available without pointer input.
 
-Right-click or Control-click anywhere in a Board header to focus that Board and open its native context menu. The menu can keep a copy of the Current Sheet in the Drawer, duplicate or reload it, maximize or center the Board, move it left, right, or to another numbered Desk, and remove it. Movement at a Desk edge remains visible but disabled. Right-clicking inside a Sheet continues to use the web content's own context menu.
+Right-click or Control-click anywhere in a Board header to focus that Board and open its native context menu. The menu can keep a copy of the Current Sheet in the Drawer, duplicate or reload it, maximize or center the Board, move it left, right, or to another numbered Desk, and remove it. Duplicating a zmx Board opens the same suffix panel as Return. Movement at a Desk edge remains visible but disabled. Right-clicking inside a Sheet continues to use the web content's own context menu.
 
 While Overview is open without a search query, drag a Board card to another position or Desk. Dropping on the left or right half of a Board inserts before or after it; dropping in a Desk row's empty area appends it. Overview remains open with the moved Board selected. Board dragging is disabled while filtering.
 

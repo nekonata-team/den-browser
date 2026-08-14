@@ -129,11 +129,66 @@ struct DenStoreBoardTests {
         let restored = try JSONDecoder().decode(
             BoardState.self,
             from: JSONEncoder().encode(board))
-        #expect(restored.content == .zmx(ZmxBoardState(sessionName: "project-a")))
+        #expect(
+            restored.content
+                == .zmx(
+                    ZmxBoardState(
+                        sessionName: "project-a",
+                        workingDirectory: FileManager.default.homeDirectoryForCurrentUser.path)))
 
         store.openBoard(input: ":zmx")
         #expect(store.focusedDesk?.boards.count == 1)
         #expect(store.openBoardPanelMessage == "Enter a zmx session name.")
+    }
+
+    @Test func zmxBoardDuplicationCreatesRootedIndependentSessions() throws {
+        let sourceBoard = BoardState(
+            width: 640,
+            zmxSessionName: "den",
+            workingDirectory: "/tmp/project")
+        let source = desk("Desk", boards: [sourceBoard], focusedBoardID: sourceBoard.id)
+        let suiteName = "DenStoreZmxDuplicationTests-\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let preferences = AppPreferences(defaults: defaults)
+        preferences.setZmxPath("/usr/bin/true")
+        let store = DenStore(
+            state: DenState(desks: [source], focusedDeskID: source.id),
+            sheetNavigation: SheetNavigationManager(),
+            preferences: preferences)
+
+        store.duplicateFocusedBoard()
+        #expect(store.temporaryContext == .zmxDuplication)
+        #expect(store.focusedDesk?.boards.count == 1)
+
+        #expect(store.duplicateFocusedZmxBoard(suffix: "vi"))
+        let firstChild = try #require(store.focusedBoard)
+        #expect(firstChild.zmxSessionName == "den-vi")
+        #expect(firstChild.zmxRootSessionName == "den")
+        #expect(firstChild.terminalWorkingDirectory == "/tmp/project")
+        #expect(store.recentItems.first == .zmx(sessionName: "den-vi"))
+        let restoredChild = try JSONDecoder().decode(
+            BoardState.self,
+            from: JSONEncoder().encode(firstChild))
+        #expect(
+            restoredChild.content
+                == .zmx(
+                    ZmxBoardState(
+                        sessionName: "den-vi",
+                        workingDirectory: "/tmp/project",
+                        rootSessionName: "den")))
+
+        store.duplicateFocusedBoard()
+        #expect(store.duplicateFocusedZmxBoard(suffix: "nvim"))
+        #expect(store.focusedBoard?.zmxSessionName == "den-nvim")
+        #expect(store.focusedBoard?.zmxRootSessionName == "den")
+        #expect(store.recentItems.first == .zmx(sessionName: "den-nvim"))
+
+        store.focusBoard(firstChild.id)
+        store.duplicateFocusedBoard()
+        #expect(store.duplicateFocusedZmxBoard(suffix: "vi"))
+        #expect(store.focusedBoard?.zmxSessionName == "den-vi-2")
+        #expect(store.recentItems.first == .zmx(sessionName: "den-vi-2"))
     }
 
     @Test func invalidTerminalInputDoesNotCreateRecentItem() {

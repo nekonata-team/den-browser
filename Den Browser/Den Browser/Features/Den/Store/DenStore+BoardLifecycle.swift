@@ -395,6 +395,10 @@ extension DenStore {
         else { return }
 
         let source = state.desks[deskIndex].boards[boardIndex]
+        if source.isZmx {
+            showZmxDuplicationPanel()
+            return
+        }
         if let workingDirectory = source.terminalWorkingDirectory {
             let board = BoardState(
                 label: source.label,
@@ -419,24 +423,53 @@ extension DenStore {
             save()
             return
         }
-        if let sessionName = source.zmxSessionName {
-            let board = BoardState(
-                label: source.label,
-                width: source.width,
-                zmxSessionName: sessionName,
-                customLabel: source.customLabel)
-            state.desks[deskIndex].boards.insert(board, at: boardIndex + 1)
-            state.desks[deskIndex].focusedBoardID = board.id
-            isDenMode = false
-            save()
-            return
-        }
         duplicateBoard(
             source,
             deskIndex: deskIndex,
             boardIndex: boardIndex,
             currentSheetURL: source.currentSheetURL
         )
+    }
+
+    @discardableResult
+    func duplicateFocusedZmxBoard(suffix: String) -> Bool {
+        guard
+            let deskIndex = focusedDeskIndex,
+            let boardIndex = focusedBoardIndex(in: deskIndex),
+            let sessionName = state.desks[deskIndex].boards[boardIndex].zmxSessionName
+        else { return false }
+        let source = state.desks[deskIndex].boards[boardIndex]
+
+        guard let activeSessionNames = ZmxSessionNames.active(executablePath: preferences.zmxPath) else {
+            showToast("Could not inspect active zmx sessions.", style: .warning)
+            return false
+        }
+
+        let denSessionNames = state.desks.flatMap { desk in
+            desk.boards.compactMap(\.zmxSessionName)
+        }
+        let rootSessionName = source.zmxRootSessionName ?? sessionName
+        let newSessionName = ZmxSessionNameGenerator.nextName(
+            rootSessionName: rootSessionName,
+            suffix: suffix,
+            occupiedNames: activeSessionNames.union(denSessionNames))
+        let workingDirectory =
+            source.terminalWorkingDirectory
+            ?? FileManager.default.homeDirectoryForCurrentUser.path
+        let board = BoardState(
+            label: source.label,
+            width: source.width,
+            zmxSessionName: newSessionName,
+            workingDirectory: workingDirectory,
+            rootSessionName: rootSessionName,
+            customLabel: source.customLabel)
+        state.desks[deskIndex].boards.insert(board, at: boardIndex + 1)
+        state.desks[deskIndex].focusedBoardID = board.id
+        setTemporaryContext(nil)
+        isDenMode = false
+        save()
+        saveRecentItem(.zmx(sessionName: newSessionName))
+        return true
     }
 
     func duplicateFocusedBoardFromFirstSheet() {

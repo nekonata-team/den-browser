@@ -63,6 +63,21 @@ extension DenStore {
         }
     }
 
+    var isZmxDuplicationPanelPresented: Bool {
+        temporaryContext == .zmxDuplication
+    }
+
+    func showZmxDuplicationPanel() {
+        guard focusedBoard?.isZmx == true else { return }
+        setTemporaryContext(.zmxDuplication)
+    }
+
+    func hideZmxDuplicationPanel() {
+        if temporaryContext == .zmxDuplication {
+            setTemporaryContext(nil)
+        }
+    }
+
     var isEditBoardLinkPanelPresented: Bool {
         temporaryContext == .editBoardLink
     }

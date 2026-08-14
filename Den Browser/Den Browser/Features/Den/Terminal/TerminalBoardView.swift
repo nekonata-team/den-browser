@@ -143,7 +143,7 @@ struct TerminalBoardView: View {
             Label(
                 board.isZellij
                     ? "Duplicate Zellij Board"
-                    : (board.isZmx ? "Duplicate zmx Board" : "Duplicate Terminal Board"),
+                    : (board.isZmx ? "Duplicate zmx Board…" : "Duplicate Terminal Board"),
                 systemImage: "plus.square.on.square")
         }
         Button {

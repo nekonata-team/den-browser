@@ -259,7 +259,7 @@ enum KeyboardRouter {
             return routeOverview(event, context: context)
         case .drawer:
             return routeDrawer(event, context: context)
-        case .openBoard, .editBoardLink, .newDesk, .replaceDesk, .deskPresetManagement,
+        case .openBoard, .zmxDuplication, .editBoardLink, .newDesk, .replaceDesk, .deskPresetManagement,
             .saveDeskPreset, .renameBoard, .renameDesk:
             return .forward(.temporaryTextInput)
         case nil:

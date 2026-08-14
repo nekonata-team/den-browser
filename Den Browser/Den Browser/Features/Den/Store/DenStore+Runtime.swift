@@ -43,7 +43,8 @@ extension DenStore {
             command = board.zmxSessionName.flatMap {
                 ZmxLaunchCommand.command(
                     sessionName: $0,
-                    executablePath: preferences.zmxPath)
+                    executablePath: preferences.zmxPath,
+                    rootSessionName: board.zmxRootSessionName)
             }
         } else {
             command = nil
