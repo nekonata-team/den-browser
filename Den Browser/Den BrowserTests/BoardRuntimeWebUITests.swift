@@ -375,6 +375,7 @@ private func noOpSheetNavigationActions() -> SheetNavigationManager.Actions {
         onPasteURLFailed: {},
         onOpenBoardPanel: {},
         onShowOverview: {},
+        onShowEssentials: {},
         onRemoveBoard: {},
         onRemoveBoardAndFocusNext: {},
         onRestoreBoard: {},

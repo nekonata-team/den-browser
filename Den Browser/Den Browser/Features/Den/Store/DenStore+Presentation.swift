@@ -3,6 +3,11 @@ import Foundation
 extension DenStore {
     func enterEssentialsPrefix() {
         guard isDenMode else { return }
+        showEssentialsPrefix()
+    }
+
+    func showEssentialsPrefix() {
+        guard temporaryContext == nil else { return }
         setTemporaryContext(.essentialsPrefix)
     }
 

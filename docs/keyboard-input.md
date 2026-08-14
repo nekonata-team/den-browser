@@ -19,7 +19,7 @@ NSEvent
 
 `KeyboardController` is the AppKit adapter. It normalizes the event, snapshots the current input context, calls `KeyboardRouter`, and applies the decision. It must not contain key policy or mutate `DenStore` directly.
 
-`KeyboardRouter` owns Profile-window key precedence. It is side-effect free: it receives values and returns exactly one `InputDecision`. It must not reference UI objects, call `DenStore`, or open windows. The Essentials Prefix is a typed temporary context: Den Mode's `g` enters it, then one logical key, optionally with Shift for uppercase, either launches the matching Essential or shows a warning Toast before returning to Den Mode.
+`KeyboardRouter` owns Profile-window key precedence. It is side-effect free: it receives values and returns exactly one `InputDecision`. It must not reference UI objects, call `DenStore`, or open windows. The Essentials Prefix is a typed temporary context: Den Mode's `g` or Vim-style Sheet Navigation's `o` enters it, then one logical key, optionally with Shift for uppercase, either launches the matching Essential or shows a warning Toast before returning to the prior input context.
 
 `AppAction` names input-reachable application behavior. `AppActionHandler` is the only keyboard path that performs these actions. SwiftUI `Commands` must use the same action when a menu item and a key event represent the same behavior. Menu-only operations do not need an `AppAction`.
 

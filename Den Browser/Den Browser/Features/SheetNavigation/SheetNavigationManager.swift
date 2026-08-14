@@ -27,6 +27,7 @@ final class SheetNavigationManager {
         var onPasteURLFailed: () -> Void = {}
         var onOpenBoardPanel: () -> Void = {}
         var onShowOverview: () -> Void = {}
+        var onShowEssentials: () -> Void = {}
         var onRemoveBoard: () -> Void = {}
         var onRemoveBoardAndFocusNext: () -> Void = {}
         var onRestoreBoard: () -> Void = {}
@@ -267,6 +268,12 @@ final class SheetNavigationManager {
             return true
         case "showOverview":
             guard let action = actionsByWebView[ObjectIdentifier(webView)]?.onShowOverview else {
+                return false
+            }
+            action()
+            return true
+        case "showEssentials":
+            guard let action = actionsByWebView[ObjectIdentifier(webView)]?.onShowEssentials else {
                 return false
             }
             action()

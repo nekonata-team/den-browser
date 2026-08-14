@@ -652,6 +652,10 @@ struct SheetNavigationTests {
         store.hideOpenBoardPanel()
         try await dispatchSheetKey("T", shift: true, in: webView)
         #expect(store.isOverviewPresented)
+
+        store.hideOverview()
+        try await dispatchSheetKey("o", in: webView)
+        #expect(store.temporaryContext == .essentialsPrefix)
     }
 
     @Test func sheetNavigationRoutesBoardBoundaryCommands() async throws {
@@ -861,6 +865,7 @@ struct SheetNavigationTests {
             onPasteURLFailed: {},
             onOpenBoardPanel: {},
             onShowOverview: {},
+            onShowEssentials: {},
             onRemoveBoard: {},
             onRemoveBoardAndFocusNext: {},
             onRestoreBoard: {},

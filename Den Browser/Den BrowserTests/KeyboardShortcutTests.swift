@@ -523,6 +523,24 @@ struct KeyboardShortcutTests {
         #expect(store.focusedBoard?.currentSheetURL == URL(string: "https://chatgpt.com/"))
     }
 
+    @Test func sheetInputEssentialsPrefixLaunchesWithoutEnteringDenMode() throws {
+        let store = try makeStore(boards: [board("First")])
+        let essential = Essential(name: "ChatGPT", key: "c", input: "https://chatgpt.com")
+        #expect(store.preferences.setEssentials([essential]))
+        store.showEssentialsPrefix()
+
+        let key = try keyEvent(
+            characters: "c", charactersIgnoringModifiers: "c", keyCode: 8)
+
+        #expect(
+            KeyboardController.decision(for: key, store: store)
+                == .perform(.launchEssential(essential.id)))
+        #expect(KeyboardController.handle(key, store: store))
+        #expect(store.temporaryContext == nil)
+        #expect(!store.isDenMode)
+        #expect(store.focusedBoard?.currentSheetURL == URL(string: "https://chatgpt.com/"))
+    }
+
     @Test func denModeGPrefixShowsToastForUnregisteredKeys() throws {
         let store = try makeStore(boards: [board("First")])
         #expect(

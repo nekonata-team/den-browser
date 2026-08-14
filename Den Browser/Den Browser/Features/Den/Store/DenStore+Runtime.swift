@@ -87,6 +87,10 @@ extension DenStore {
                 self?.focusBoard(board.id)
                 self?.showOverview()
             },
+            onShowEssentials: { [weak self] in
+                self?.focusBoard(board.id)
+                self?.showEssentialsPrefix()
+            },
             onRemoveBoard: { [weak self] in self?.removeBoard(board.id) },
             onRemoveBoardAndFocusNext: { [weak self] in self?.removeBoard(board.id, focusNext: true) },
             onRestoreBoard: { [weak self] in self?.restoreRecentlyRemovedBoard() },

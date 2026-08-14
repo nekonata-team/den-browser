@@ -47,6 +47,7 @@ A numeric prefix repeats relative scrolling commands. For example, `5j`, `3k`, a
 | `ge` | Open the Current Sheet URL editor for the focused Board. |
 | `gE` | Open the Open Board panel with the Current Sheet URL prefilled. |
 | `p` / `P` | Open the clipboard URL in the Current Sheet / a new Board. |
+| `o`, then Essential key | Open the Essentials Prefix and start the matching Essential. |
 | `t` | Open the Open Board panel. |
 | `T` | Open Overview to browse Boards and Desks. |
 | `yy` | Copy the Current Sheet URL. |
@@ -65,7 +66,6 @@ A numeric prefix repeats relative scrolling commands. For example, `5j`, `3k`, a
 
 ## Deliberately deferred
 
-- `o` / `O`: an Omnibox needs a Den-native URL and search surface.
 - `i`: editable focus already enters Insert state automatically; `gi` provides explicit focus traversal.
 - `v`: Visual mode needs a separate text-selection design.
 - `J` and `K`: Vimium tab movement operations do not map cleanly to Den's Board and Desk spatial operations.
