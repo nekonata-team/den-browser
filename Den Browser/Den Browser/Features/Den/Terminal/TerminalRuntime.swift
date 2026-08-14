@@ -17,6 +17,7 @@ final class TerminalRuntime: NSObject, ObservableObject {
     private var controller: TerminalController?
     private var events: Events
     private var isDisposed = false
+    private var isCloseNotificationScheduled = false
 
     init(workingDirectory: String, command: String? = nil, events: Events) {
         self.events = events
@@ -50,8 +51,13 @@ final class TerminalRuntime: NSObject, ObservableObject {
 
 extension TerminalRuntime: TerminalSurfaceCloseDelegate {
     func terminalDidClose(processAlive _: Bool) {
-        guard !isDisposed else { return }
-        events.onClose()
+        guard !isDisposed, !isCloseNotificationScheduled else { return }
+        isCloseNotificationScheduled = true
+        // Ghostty invokes close callbacks from app_tick; let it unwind before teardown.
+        DispatchQueue.main.async { [weak self] in
+            guard let self, !self.isDisposed else { return }
+            self.events.onClose()
+        }
     }
 }
 
