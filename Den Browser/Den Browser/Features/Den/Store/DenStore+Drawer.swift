@@ -63,6 +63,18 @@ extension DenStore {
         }
     }
 
+    func focusDrawerItem(_ itemID: UUID) {
+        guard state.drawerItems.contains(where: { $0.id == itemID }) else { return }
+        drawerQuery = ""
+        drawerFilterPhase = .inactive
+        releaseDrawerPreview()
+        selectedDrawerItemID = itemID
+        state.expandedDrawerItemID = itemID
+        setTemporaryContext(.drawer)
+        isDenMode = false
+        save()
+    }
+
     func closeDrawer() {
         if temporaryContext == .drawer {
             setTemporaryContext(nil)

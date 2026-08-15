@@ -1,10 +1,16 @@
 import SwiftUI
 
+enum ToastTarget: Equatable {
+    case board(UUID)
+    case drawerItem(UUID)
+}
+
 struct ToastMessage: Equatable, Identifiable {
     let id = UUID()
     let title: String?
     let body: String
     let style: ToastStyle
+    let target: ToastTarget?
 
     var message: String {
         [title, body.isEmpty ? nil : body]
@@ -12,10 +18,16 @@ struct ToastMessage: Equatable, Identifiable {
             .joined(separator: ": ")
     }
 
-    init(title: String? = nil, body: String, style: ToastStyle) {
+    init(
+        title: String? = nil,
+        body: String,
+        style: ToastStyle,
+        target: ToastTarget? = nil
+    ) {
         self.title = title?.isEmpty == false ? title : nil
         self.body = body
         self.style = style
+        self.target = target
     }
 
     init(message: String, style: ToastStyle) {

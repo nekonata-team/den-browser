@@ -69,6 +69,55 @@ struct DenStorePresentationTests {
         #expect(store.toastMessage?.message == "Build: Finished")
     }
 
+    @Test func tappingBoardToastFocusesTargetBoardAndDismissesToast() {
+        let target = board("Target")
+        let first = desk("First")
+        let second = desk("Second", boards: [target])
+        let store = DenStore(
+            state: DenState(desks: [first, second], focusedDeskID: first.id)
+        )
+
+        store.setTemporaryContext(.drawer)
+        store.showToast(title: "Build", body: "Finished", target: .board(target.id))
+        store.handleToastTap()
+
+        #expect(store.presentedDeskID == second.id)
+        #expect(store.focusedBoard?.id == target.id)
+        #expect(store.temporaryContext == nil)
+        #expect(store.toastMessage == nil)
+    }
+
+    @Test func tappingUntargetedToastDismissesToast() {
+        let store = DenStore(state: .sample)
+
+        store.showToast("Saved")
+        store.handleToastTap()
+
+        #expect(store.toastMessage == nil)
+    }
+
+    @Test func tappingDrawerToastOpensAndExpandsTargetItem() throws {
+        let item = DrawerItem(url: try #require(URL(string: "https://example.com/")))
+        let drawerDesk = desk("Desk")
+        let store = DenStore(
+            state: DenState(
+                desks: [drawerDesk],
+                focusedDeskID: drawerDesk.id,
+                drawerItems: [item])
+        )
+
+        store.showToast(
+            title: nil,
+            body: "Open item",
+            target: ToastTarget.drawerItem(item.id))
+        store.handleToastTap()
+
+        #expect(store.isDrawerOpen)
+        #expect(store.selectedDrawerItemID == item.id)
+        #expect(store.expandedDrawerItemID == item.id)
+        #expect(store.toastMessage == nil)
+    }
+
     @Test func resetDenRequiresConfirmationBeforeChangingState() {
         let board = board("Board")
         let populated = desk("Populated", boards: [board])

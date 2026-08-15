@@ -102,7 +102,7 @@ struct DenView<Header: View>: View {
                 .zIndex(3)
 
                 if let toast = store.toastMessage {
-                    ToastView(toast: toast)
+                    ToastView(toast: toast, onTap: store.handleToastTap)
                         .padding(.trailing, 20)
                         .padding(.bottom, 20)
                         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
@@ -111,7 +111,6 @@ struct DenView<Header: View>: View {
                                 ? .opacity
                                 : .move(edge: .bottom).combined(with: .opacity)
                         )
-                        .allowsHitTesting(false)
                         .zIndex(10)
                 }
             }

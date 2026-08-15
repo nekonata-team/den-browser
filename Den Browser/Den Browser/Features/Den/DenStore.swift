@@ -373,12 +373,13 @@ final class DenStore {
     func showToast(
         title: String?,
         body: String,
-        style: ToastMessage.ToastStyle = .info
+        style: ToastMessage.ToastStyle = .info,
+        target: ToastTarget? = nil
     ) {
         guard title?.isEmpty == false || !body.isEmpty else { return }
         toastTask?.cancel()
         withAnimation(.easeOut(duration: 0.15)) {
-            toastMessage = ToastMessage(title: title, body: body, style: style)
+            toastMessage = ToastMessage(title: title, body: body, style: style, target: target)
         }
         toastTask = Task { @MainActor [weak self] in
             try? await Task.sleep(for: Self.toastDuration)
@@ -386,6 +387,34 @@ final class DenStore {
             withAnimation(.easeIn(duration: 0.15)) {
                 self?.toastMessage = nil
             }
+        }
+    }
+
+    func handleToastTap() {
+        guard let target = toastMessage?.target else {
+            dismissToast()
+            return
+        }
+
+        switch target {
+        case .board(let boardID):
+            guard boardIndices(for: boardID) != nil else {
+                dismissToast()
+                return
+            }
+            setTemporaryContext(nil)
+            focusBoard(boardID, exitsDenMode: true)
+        case .drawerItem(let itemID):
+            focusDrawerItem(itemID)
+        }
+        dismissToast()
+    }
+
+    func dismissToast() {
+        toastTask?.cancel()
+        toastTask = nil
+        withAnimation(.easeIn(duration: 0.15)) {
+            toastMessage = nil
         }
     }
 
