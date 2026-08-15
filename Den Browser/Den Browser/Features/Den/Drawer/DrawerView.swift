@@ -156,28 +156,38 @@ struct DrawerView: View {
     }
 
     private var drawerContents: some View {
-        Group {
-            if store.state.drawerItems.isEmpty {
-                ContentUnavailableView(
-                    "Drawer is empty",
-                    systemImage: "tray",
-                    description: Text("Keep a Current Sheet here before its work context is settled.")
-                )
-            } else if store.filteredDrawerItems.isEmpty {
-                ContentUnavailableView.search(text: store.drawerQuery)
-            } else {
-                ScrollView {
-                    LazyVStack(spacing: 6) {
-                        ForEach(store.filteredDrawerItems) { item in
-                            drawerSection(item)
+        ScrollViewReader { proxy in
+            Group {
+                if store.state.drawerItems.isEmpty {
+                    ContentUnavailableView(
+                        "Drawer is empty",
+                        systemImage: "tray",
+                        description: Text("Keep a Current Sheet here before its work context is settled.")
+                    )
+                } else if store.filteredDrawerItems.isEmpty {
+                    ContentUnavailableView.search(text: store.drawerQuery)
+                } else {
+                    ScrollView {
+                        LazyVStack(spacing: 6) {
+                            ForEach(store.filteredDrawerItems) { item in
+                                drawerSection(item)
+                            }
                         }
+                        .padding(.horizontal, DenLayout.outerInset)
+                        .padding(.bottom, DenLayout.outerInset)
                     }
-                    .padding(.horizontal, DenLayout.outerInset)
-                    .padding(.bottom, DenLayout.outerInset)
                 }
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .onChange(of: store.expandedDrawerItemID) { _, itemID in
+                guard store.isDrawerOpen, let itemID else { return }
+                schedulePreviewScroll(to: itemID, using: proxy)
+            }
+            .onChange(of: store.isDrawerOpen) { _, isOpen in
+                guard isOpen, let itemID = store.expandedDrawerItemID else { return }
+                schedulePreviewScroll(to: itemID, using: proxy)
+            }
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     private func drawerSection(_ item: DrawerItem) -> some View {
@@ -271,6 +281,7 @@ struct DrawerView: View {
                 .padding([.horizontal, .bottom], DenLayout.outerInset)
             }
         }
+        .id(drawerItemScrollID(for: item.id))
         .background(
             RoundedRectangle(cornerRadius: DenRadius.medium, style: .continuous)
                 .fill(
@@ -287,6 +298,21 @@ struct DrawerView: View {
                         : Color.primary.opacity(0.08)
                 )
         }
+    }
+
+    private func schedulePreviewScroll(to itemID: UUID, using proxy: ScrollViewProxy) {
+        let animation = DenMotion.spatial(reduceMotion: shouldReduceMotion)
+        Task { @MainActor in
+            await Task.yield()
+            guard store.isDrawerOpen, store.expandedDrawerItemID == itemID else { return }
+            withAnimation(animation) {
+                proxy.scrollTo(drawerItemScrollID(for: itemID), anchor: .top)
+            }
+        }
+    }
+
+    private func drawerItemScrollID(for itemID: UUID) -> String {
+        "drawer-item-\(itemID.uuidString)"
     }
 
     private var drawerHeight: CGFloat {
