@@ -58,7 +58,8 @@ Essentials are app-wide named Board inputs configured in Settings > Essentials. 
 | Shift + Return | New Board from First Sheet | Creates a Board to the right from the Focused Board's persisted First Sheet URL, focuses it, then enters Sheet Input. A Board without a First Sheet does nothing. |
 | `e` | Edit Focused Board Link panel | Replaces the Current Sheet with a URL or search on Return. Escape returns to Den Mode. |
 | `r` | Rename focused Board | Opens the Rename Board panel; Return confirms, Escape returns to Den Mode. |
-| `d` | Remove focused Board | Releases its live Sheet runtime. Key repeat is ignored. |
+| `d` | Remove focused Board and focus the next Board | If no next Board exists, focuses the previous Board. Releases its live Sheet runtime. Key repeat is ignored. |
+| `x` | Remove focused Board and focus the previous Board | If no previous Board exists, focuses the next Board. Releases its live Sheet runtime. Key repeat is ignored. |
 | `u` | Restore Recently Removed Board | Available for the current app run. Key repeat is ignored. |
 | Shift + `d` | Discard all Drawer items / Delete focused desk | In Drawer Den Mode, opens confirmation to discard every Drawer Item. In other Den Mode contexts, deletes an empty desk immediately; a desk with Boards requires confirmation. Unavailable for the last desk. Key repeat is ignored. |
 | Shift + `r` | Rename focused Desk | Opens the Rename Desk panel; Return confirms, Escape returns to Den Mode. |

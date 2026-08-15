@@ -204,6 +204,7 @@ enum AppAction: Equatable {
     case toggleZenView
     case toggleFocusMode
     case removeBoard
+    case removeBoardAndFocusNext
     case restoreBoard
     case showRenameBoardPanel
     case showRenameDeskPanel
@@ -569,10 +570,11 @@ enum KeyboardRouter {
         binding("s", modifiers: [.shift]): KeyboardCommand(action: .captureFocusedDesk, repeatPolicy: .ignore),
         binding("a"): KeyboardCommand(action: .keepCurrentSheetInDrawer, repeatPolicy: .ignore),
         binding("z"): KeyboardCommand(action: .toggleZenView, repeatPolicy: .ignore),
+        binding("x"): KeyboardCommand(action: .removeBoard, repeatPolicy: .ignore),
         binding("u"): KeyboardCommand(action: .restoreBoard, repeatPolicy: .ignore),
         binding("r"): KeyboardCommand(action: .showRenameBoardPanel, repeatPolicy: .ignore),
         binding("r", modifiers: [.shift]): KeyboardCommand(action: .showRenameDeskPanel, repeatPolicy: .ignore),
-        binding("d"): KeyboardCommand(action: .removeBoard, repeatPolicy: .ignore),
+        binding("d"): KeyboardCommand(action: .removeBoardAndFocusNext, repeatPolicy: .ignore),
         binding("d", modifiers: [.shift]): KeyboardCommand(action: .deleteDesk),
         binding("e"): KeyboardCommand(action: .showEditBoardLinkPanel, repeatPolicy: .ignore),
         ShortcutBinding(key: .returnKey, modifiers: [.shift]): KeyboardCommand(
@@ -691,6 +693,7 @@ enum AppActionHandler {
         case .toggleZenView: store.toggleZenView()
         case .toggleFocusMode: store.toggleFocusMode()
         case .removeBoard: store.removeFocusedBoard()
+        case .removeBoardAndFocusNext: store.removeFocusedBoard(focusNext: true)
         case .restoreBoard: store.restoreRecentlyRemovedBoard()
         case .showRenameBoardPanel: store.showRenameBoardPanel()
         case .showRenameDeskPanel: store.showRenameDeskPanel()

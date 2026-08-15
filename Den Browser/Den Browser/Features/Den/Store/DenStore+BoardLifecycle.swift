@@ -338,9 +338,9 @@ extension DenStore {
         return true
     }
 
-    func removeFocusedBoard() {
+    func removeFocusedBoard(focusNext: Bool = false) {
         guard let boardID = focusedDesk?.focusedBoardID else { return }
-        removeBoard(boardID)
+        removeBoard(boardID, focusNext: focusNext)
     }
 
     func removeBoard(_ boardID: UUID, focusNext: Bool = false) {

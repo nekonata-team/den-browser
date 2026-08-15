@@ -467,6 +467,34 @@ struct KeyboardShortcutTests {
         #expect(store.isOverviewPresented)
     }
 
+    @Test func denModeRemoveShortcutsChooseTheirFocusDirection() throws {
+        let dBoards = [board("First"), board("Focused"), board("Last")]
+        let dStore = try makeStore(boards: dBoards)
+        dStore.focusBoard(dBoards[1].id)
+        dStore.isDenMode = true
+        let dEvent = try keyEvent(characters: "d", charactersIgnoringModifiers: "d", keyCode: 2)
+
+        #expect(
+            KeyboardController.decision(for: dEvent, store: dStore)
+                == .perform(.removeBoardAndFocusNext))
+        #expect(KeyboardController.handle(dEvent, store: dStore))
+        #expect(dStore.focusedDesk?.boards.map(\.id) == [dBoards[0].id, dBoards[2].id])
+        #expect(dStore.focusedDesk?.focusedBoardID == dBoards[2].id)
+
+        let xBoards = [board("First"), board("Focused"), board("Last")]
+        let xStore = try makeStore(boards: xBoards)
+        xStore.focusBoard(xBoards[1].id)
+        xStore.isDenMode = true
+        let xEvent = try keyEvent(characters: "x", charactersIgnoringModifiers: "x", keyCode: 7)
+
+        #expect(
+            KeyboardController.decision(for: xEvent, store: xStore)
+                == .perform(.removeBoard))
+        #expect(KeyboardController.handle(xEvent, store: xStore))
+        #expect(xStore.focusedDesk?.boards.map(\.id) == [xBoards[0].id, xBoards[2].id])
+        #expect(xStore.focusedDesk?.focusedBoardID == xBoards[0].id)
+    }
+
     @Test func nativeCommandShortcutsPassThroughWithoutExecuting() throws {
         let first = board("First")
         let second = board("Second")
@@ -680,14 +708,12 @@ struct KeyboardShortcutTests {
     @Test func denModeUnmappedKeyIsConsumedByRouter() throws {
         let store = try makeStore(boards: [board("First")])
         store.isDenMode = true
-        for character in ["v", "x"] {
-            let unmapped = try keyEvent(
-                characters: character, charactersIgnoringModifiers: character, modifiers: [], keyCode: 9)
+        let unmapped = try keyEvent(
+            characters: "v", charactersIgnoringModifiers: "v", modifiers: [], keyCode: 9)
 
-            #expect(
-                KeyboardController.decision(for: unmapped, store: store)
-                    == .consume(.denModeUnmapped))
-        }
+        #expect(
+            KeyboardController.decision(for: unmapped, store: store)
+                == .consume(.denModeUnmapped))
     }
 
     @Test func hardReloadCurrentSheetShortcutReloadsOnlyFocusedBoard() throws {

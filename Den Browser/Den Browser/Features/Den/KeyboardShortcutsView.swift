@@ -85,7 +85,8 @@ struct KeyboardShortcutsView: View {
                     item(["Shift", "+", "Return"], "New Board from First Sheet"),
                     item(["e"], "Edit Focused Board Link"),
                     item(["r"], "Rename Board"),
-                    item(["x", "/", "d"], "Remove Focused Board"),
+                    item(["d"], "Remove Focused Board and focus next Board"),
+                    item(["x"], "Remove Focused Board and focus previous Board"),
                     item(["u"], "Restore Removed Board"),
                     item(["⇧", "D"], "Delete Focused Desk"),
                     item(["⇧", "R"], "Rename Desk"),
@@ -108,7 +109,7 @@ struct KeyboardShortcutsView: View {
                     item(["↑", "/", "↓", "or", "k", "/", "j"], "Select Drawer Item"),
                     item(["Return"], "Toggle Drawer Preview"),
                     item(["p"], "Place as Board"),
-                    item(["x", "/", "d", "or", "Delete"], "Discard Drawer Item"),
+                    item(["d", "or", "Delete"], "Discard Drawer Item"),
                     item(["Escape"], "Exit Den Mode / close Drawer"),
                 ]),
             ShortcutGuideSection(
