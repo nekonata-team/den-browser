@@ -267,16 +267,18 @@ struct DenView<Header: View>: View {
             }
 
             if store.essentials.isEmpty {
-                Text("No Essentials configured.")
-                    .foregroundStyle(.secondary)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("No Essentials configured.")
+                    Text("Configure Essentials in Settings.")
+                        .font(.caption)
+                }
+                .foregroundStyle(.secondary)
             } else {
                 ScrollView {
                     LazyVStack(alignment: .leading, spacing: DenPanelLayout.controlSpacing) {
                         ForEach(store.essentials) { essential in
                             HStack(spacing: DenPanelLayout.controlSpacing) {
-                                Text("g \(essential.displayKey)")
-                                    .font(.caption.monospaced().weight(.semibold))
-                                    .frame(width: 42, alignment: .leading)
+                                ShortcutChip(tokens: [essential.displayKey], width: 42)
                                 Text(essential.name)
                                     .lineLimit(1)
                                 Spacer(minLength: 0)
@@ -287,9 +289,13 @@ struct DenView<Header: View>: View {
                 .frame(maxHeight: 320)
             }
 
-            Text("Press Escape to cancel")
-                .font(.caption)
-                .foregroundStyle(.secondary)
+            Text(
+                store.essentials.isEmpty
+                    ? "Press Escape to cancel"
+                    : "Press an Essential key · Escape to cancel"
+            )
+            .font(.caption)
+            .foregroundStyle(.secondary)
         }
         .denPanel(width: 300)
     }

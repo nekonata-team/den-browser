@@ -57,9 +57,7 @@ struct EssentialsSettingsView: View {
 
             Spacer(minLength: 0)
 
-            Text("g \(essential.displayKey)")
-                .font(.caption.monospaced())
-                .foregroundStyle(.secondary)
+            ShortcutChip(tokens: [essential.displayKey], width: 42)
 
             Button {
                 errorMessage = nil
