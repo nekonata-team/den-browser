@@ -13,7 +13,7 @@ Essentials are app-wide named Board inputs configured in Settings > Essentials. 
 | Shortcut | Action | Notes |
 | --- | --- | --- |
 | Control + Command + `P` | Open Profile panel | Searches Profiles and opens their existing Den window or creates it if closed. |
-| Command + `T` | New Board panel | Enter a URL/search for a Web Board, `:terminal [path]` for an ordinary Terminal Board, `:zellij [session]` for a Zellij Board, or `:zmx [session]` for a zmx Board. Without a session, Zellij's Welcome screen is shown; zmx requires a session name. Available in every keyboard context. |
+| Command + `T` | New Board panel | Enter a URL/search for a Web Board, `:terminal [path]` for an ordinary Terminal Board, `:zellij [session]` for a Zellij Board, or `:zmx [session]` for a zmx Board. Without a session, Zellij's Welcome screen is shown; zmx requires a session name. Up / Down selects a visible Recent Item; Right copies it into the input. Available in every keyboard context. |
 | Command + `L` | Edit Focused Board Link panel | Replaces the Current Sheet with a URL or search on Return. Available in every keyboard context. |
 | Command + `W` | Remove focused Board | Available in every keyboard context. |
 | Shift + Command + `W` | Close Profile window | Settings and other non-Den windows retain Command + `W`. |

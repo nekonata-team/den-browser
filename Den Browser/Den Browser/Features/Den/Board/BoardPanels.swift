@@ -49,6 +49,16 @@ struct OpenBoardPanel: View {
                     moveRecentSelection(by: -1)
                     return filteredRecentItems.isEmpty ? .ignored : .handled
                 }
+                .onKeyPress(.rightArrow) {
+                    guard !TextInputComposition.isActive,
+                        let selectedRecentItemID,
+                        let selected = filteredRecentItems.first(where: {
+                            $0.id == selectedRecentItemID
+                        })
+                    else { return .ignored }
+                    urlText = selected.displayText
+                    return .handled
+                }
                 .onSubmit {
                     TextInputComposition.performUnlessActive {
                         if let selected = filteredRecentItems.first(where: { $0.id == selectedRecentItemID }) {

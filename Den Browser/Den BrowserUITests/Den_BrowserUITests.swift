@@ -405,6 +405,32 @@ final class Den_BrowserUITests: XCTestCase, BDD {
     }
 
     @MainActor
+    func testRecentSelectionCanBeAcceptedIntoOpenBoardInput() throws {
+        let app = launchApp(singleBoard: true)
+        let recentInput = "https://recent.example/"
+
+        when("creating a Board that becomes a Recent Item") {
+            app.typeKey("t", modifierFlags: .command)
+            let input = app.textFields["open-board-input"].firstMatch
+            XCTAssertTrue(input.waitForExistence(timeout: 5))
+            input.typeText(recentInput)
+            input.typeKey(.return, modifierFlags: [])
+        }
+
+        when("selecting the Recent Item and pressing Right") {
+            app.typeKey("t", modifierFlags: .command)
+            let input = app.textFields["open-board-input"].firstMatch
+            XCTAssertTrue(input.waitForExistence(timeout: 5))
+            input.typeKey(.downArrow, modifierFlags: [])
+            input.typeKey(.rightArrow, modifierFlags: [])
+
+            then("the Recent Item is copied into the input") {
+                XCTAssertEqual(input.value as? String, recentInput)
+            }
+        }
+    }
+
+    @MainActor
     func testDenModeCommaOpensSettingsAboveTerminalBoard() throws {
         let app = launchApp(singleBoard: true, terminalBoard: true)
 
