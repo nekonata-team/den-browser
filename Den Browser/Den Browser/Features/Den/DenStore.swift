@@ -42,6 +42,7 @@ final class DenStore {
     static let maximumDeskCount = 10
     static let maximumRecentItemCount = 100
     static let maximumPersistedRecentInputLength = 2_048
+    private static let toastDuration: Duration = .seconds(5)
 
     let storage: DenStorage
     var state: DenState {
@@ -366,12 +367,21 @@ final class DenStore {
     }
 
     func showToast(_ message: String, style: ToastMessage.ToastStyle = .info) {
+        showToast(title: nil, body: message, style: style)
+    }
+
+    func showToast(
+        title: String?,
+        body: String,
+        style: ToastMessage.ToastStyle = .info
+    ) {
+        guard title?.isEmpty == false || !body.isEmpty else { return }
         toastTask?.cancel()
         withAnimation(.easeOut(duration: 0.15)) {
-            toastMessage = ToastMessage(message: message, style: style)
+            toastMessage = ToastMessage(title: title, body: body, style: style)
         }
         toastTask = Task { @MainActor [weak self] in
-            try? await Task.sleep(for: .milliseconds(2500))
+            try? await Task.sleep(for: Self.toastDuration)
             guard !Task.isCancelled else { return }
             withAnimation(.easeIn(duration: 0.15)) {
                 self?.toastMessage = nil

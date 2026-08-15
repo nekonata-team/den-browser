@@ -168,8 +168,8 @@ extension DenStore {
                     afterBoardID: board.id,
                     focus: false)
             },
-            onNotification: { [weak self] message in
-                if !message.isEmpty { self?.showToast(message) }
+            onNotification: { [weak self] title, body in
+                self?.showToast(title: title, body: body)
             })
     }
 

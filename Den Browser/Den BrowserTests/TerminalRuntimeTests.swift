@@ -21,7 +21,7 @@ struct TerminalRuntimeTests {
                 onWorkingDirectoryChange: { _ in },
                 onTitleChange: { _ in },
                 onOpenURL: { _ in },
-                onNotification: { _ in }
+                onNotification: { _, _ in }
             )
         )
 
@@ -32,6 +32,31 @@ struct TerminalRuntimeTests {
         await waitForMainQueue()
 
         #expect(closeCount == 1)
+        runtime.dispose()
+    }
+
+    @Test func terminalDesktopNotificationForwardsTitleAndBody() {
+        var receivedTitle: String?
+        var receivedBody: String?
+        let runtime = TerminalRuntime(
+            workingDirectory: FileManager.default.homeDirectoryForCurrentUser.path,
+            events: .init(
+                onClose: {},
+                onFocus: {},
+                onWorkingDirectoryChange: { _ in },
+                onTitleChange: { _ in },
+                onOpenURL: { _ in },
+                onNotification: { title, body in
+                    receivedTitle = title
+                    receivedBody = body
+                }
+            )
+        )
+
+        runtime.terminalDidRequestDesktopNotification(title: "Build", body: "Finished")
+
+        #expect(receivedTitle == "Build")
+        #expect(receivedBody == "Finished")
         runtime.dispose()
     }
 }

@@ -59,6 +59,16 @@ struct DenStorePresentationTests {
         #expect(store.toastMessage?.style == .warning)
     }
 
+    @Test func showToastPreservesTitleAndBody() {
+        let store = DenStore(state: .sample)
+
+        store.showToast(title: "Build", body: "Finished")
+
+        #expect(store.toastMessage?.title == "Build")
+        #expect(store.toastMessage?.body == "Finished")
+        #expect(store.toastMessage?.message == "Build: Finished")
+    }
+
     @Test func resetDenRequiresConfirmationBeforeChangingState() {
         let board = board("Board")
         let populated = desk("Populated", boards: [board])

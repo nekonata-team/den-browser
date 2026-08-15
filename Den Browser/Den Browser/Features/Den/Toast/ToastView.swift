@@ -4,17 +4,31 @@ struct ToastView: View {
     let toast: ToastMessage
 
     var body: some View {
-        HStack(spacing: 8) {
+        HStack(alignment: .top, spacing: 8) {
             Image(systemName: toast.style.systemImage)
                 .font(.system(size: 13, weight: .semibold))
                 .foregroundStyle(toast.style.iconColor)
 
-            Text(toast.message)
-                .font(.caption.weight(.medium))
-                .foregroundStyle(.primary)
+            VStack(alignment: .leading, spacing: 3) {
+                if let title = toast.title {
+                    Text(title)
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.primary)
+                        .lineLimit(2)
+                }
+
+                if !toast.body.isEmpty {
+                    Text(toast.body)
+                        .font(.caption.weight(.medium))
+                        .foregroundStyle(.primary)
+                        .lineLimit(4)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 10)
+        .frame(maxWidth: 320, alignment: .leading)
         .background(
             .ultraThinMaterial,
             in: RoundedRectangle(

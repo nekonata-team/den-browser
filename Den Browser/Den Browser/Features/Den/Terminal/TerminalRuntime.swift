@@ -10,7 +10,7 @@ final class TerminalRuntime: NSObject, ObservableObject {
         var onWorkingDirectoryChange: (String) -> Void
         var onTitleChange: (String) -> Void
         var onOpenURL: (String) -> Void
-        var onNotification: (String) -> Void
+        var onNotification: (String, String) -> Void
     }
 
     let terminalView: AppTerminalView
@@ -91,6 +91,6 @@ extension TerminalRuntime: TerminalSurfaceOpenURLDelegate {
 extension TerminalRuntime: TerminalSurfaceDesktopNotificationDelegate {
     func terminalDidRequestDesktopNotification(title: String, body: String) {
         guard !isDisposed else { return }
-        events.onNotification([title, body].filter { !$0.isEmpty }.joined(separator: ": "))
+        events.onNotification(title, body)
     }
 }
