@@ -289,11 +289,7 @@ struct BoardView: View {
             .frame(width: 16, height: 16)
             .accessibilityHidden(true)
 
-            Text(board.displayName)
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(.primary)
-                .lineLimit(1)
-                .accessibilityLabel("Board: \(board.displayName), \(accessibilityState)")
+            BoardHeaderTitle(board: board, isFocused: isFocused)
 
             Spacer(minLength: 8)
         }
@@ -415,13 +411,6 @@ struct BoardView: View {
         }
     }
 
-    private var accessibilityState: String {
-        if isFocused {
-            return "Focused board"
-        }
-        return "Board"
-    }
-
     private var canReturnToFirstSheet: Bool {
         guard
             let firstSheetURL = board.firstSheetURL,
@@ -453,6 +442,49 @@ struct BoardView: View {
             preference: preferences.motionPreference,
             systemReduceMotion: systemReduceMotion
         )
+    }
+}
+
+struct BoardHeaderTitle: View {
+    let board: BoardState
+    let isFocused: Bool
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text(board.displayName)
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.primary)
+                .lineLimit(1)
+
+            if let supplementaryText {
+                Text(supplementaryText)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+                    .help(supplementaryText)
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(accessibilityLabel)
+    }
+
+    private var supplementaryText: String? {
+        if let currentSheetURL = board.currentSheetURL {
+            return currentSheetURL.absoluteString
+        }
+        return board.zellijSessionName ?? board.zmxSessionName
+    }
+
+    private var accessibilityLabel: String {
+        [
+            "Board: \(board.displayName)",
+            supplementaryText,
+            isFocused ? "Focused board" : "Board",
+        ]
+        .compactMap { $0 }
+        .joined(separator: ", ")
     }
 }
 

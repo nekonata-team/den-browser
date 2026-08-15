@@ -114,9 +114,7 @@ struct TerminalBoardView: View {
             .foregroundStyle(.secondary)
             .frame(width: 16, height: 16)
             .accessibilityHidden(true)
-            Text(board.displayName)
-                .font(.caption.weight(.semibold))
-                .lineLimit(1)
+            BoardHeaderTitle(board: board, isFocused: isFocused)
             Spacer(minLength: 8)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -129,7 +127,7 @@ struct TerminalBoardView: View {
         )
         .pointerStyle(isDragging ? .grabActive : .grabIdle)
         .help("Drag to move Board")
-        .accessibilityLabel("Board: \(board.displayName)")
+        .accessibilityElement(children: .combine)
         .accessibilityIdentifier("board-header.\(board.id.uuidString.lowercased())")
         .accessibilityAddTraits(isFocused ? .isSelected : [])
     }
