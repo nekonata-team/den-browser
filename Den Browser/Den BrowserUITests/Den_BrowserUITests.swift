@@ -343,7 +343,7 @@ final class Den_BrowserUITests: XCTestCase, BDD {
         let surfacePredicate = NSPredicate(format: "identifier BEGINSWITH 'board-surface.'")
         let surfacesQuery = boardStrip.descendants(matching: .any).matching(surfacePredicate)
 
-        then("the new Board is selected and settles at the center") {
+        then("the new Board is selected and settles at the trailing edge") {
             assertEventually("New board surface should appear") {
                 surfacesQuery.allElementsBoundByIndex.count == 2
             }
@@ -363,10 +363,10 @@ final class Den_BrowserUITests: XCTestCase, BDD {
             XCTAssertTrue(newBoardHeader.wait(for: \.isSelected, toEqual: true, timeout: 5))
 
             assertEventuallyEqual(
-                actual: { newBoardSurface.frame.midX },
-                expected: boardStrip.frame.midX,
+                actual: { newBoardSurface.frame.maxX },
+                expected: boardStrip.frame.maxX,
                 tolerance: 50,
-                message: "New Board should finish centered after its insertion animation"
+                message: "New Board should finish at the trailing edge after its insertion animation"
             )
         }
     }

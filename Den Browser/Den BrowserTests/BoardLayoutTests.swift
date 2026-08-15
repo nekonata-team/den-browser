@@ -16,12 +16,51 @@ struct BoardLayoutTests {
         #expect(restingScrollX(for: .onOverflow, boardCount: 4) == 0)
     }
 
-    @Test func centersFocusedBoardOnlyWhenRequestedOrBoardsOverflow() {
+    @Test func centersFocusedBoardOnlyForAlwaysOrOverflowLayout() {
         #expect(shouldCenterFocusedBoard(for: .always, boardCount: 3))
         #expect(!shouldCenterFocusedBoard(for: .never, boardCount: 3))
         #expect(!shouldCenterFocusedBoard(for: .onOverflow, boardCount: 3))
-        #expect(shouldCenterFocusedBoard(for: .never, boardCount: 4))
+        #expect(!shouldCenterFocusedBoard(for: .never, boardCount: 4))
         #expect(shouldCenterFocusedBoard(for: .onOverflow, boardCount: 4))
+    }
+
+    @Test func revealsAnOffscreenBoardAtTheNearestEdge() {
+        #expect(
+            BoardLayout.scrollTargetToRevealBoard(
+                frame: CGRect(x: -80, y: 0, width: 320, height: 400),
+                currentScrollX: 100,
+                contentWidth: 1_500,
+                containerWidth: 1_000,
+                horizontalPadding: 10
+            ) == 10
+        )
+        #expect(
+            BoardLayout.scrollTargetToRevealBoard(
+                frame: CGRect(x: 900, y: 0, width: 320, height: 400),
+                currentScrollX: 200,
+                contentWidth: 1_500,
+                containerWidth: 1_000,
+                horizontalPadding: 10
+            ) == 430
+        )
+        #expect(
+            BoardLayout.scrollTargetToRevealBoard(
+                frame: CGRect(x: 100, y: 0, width: 320, height: 400),
+                currentScrollX: 200,
+                contentWidth: 1_500,
+                containerWidth: 1_000,
+                horizontalPadding: 10
+            ) == nil
+        )
+        #expect(
+            BoardLayout.scrollTargetToRevealBoard(
+                frame: CGRect(x: 1_200, y: 0, width: 320, height: 400),
+                currentScrollX: 300,
+                contentWidth: 1_500,
+                containerWidth: 1_000,
+                horizontalPadding: 10
+            ) == 500
+        )
     }
 
     private func paddings(

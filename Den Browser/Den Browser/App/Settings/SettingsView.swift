@@ -232,9 +232,9 @@ private struct AppearanceSettingsView: View {
         case .always:
             "Keep the focused board centered in the window, even at the ends."
         case .never:
-            "Align boards to the left and right edges. No extra scroll space is added."
+            "Do not center focused Boards. Off-screen Boards scroll only to the nearest edge."
         case .onOverflow:
-            "Center boards when they exceed the window width. Otherwise, display them in the center without scrolling."
+            "Center a focused Board when it does not fit beside the previously focused Board."
         }
     }
 

@@ -44,7 +44,31 @@ struct BoardLayout {
     }
 
     static func shouldCenterFocusedBoard(for params: Parameters) -> Bool {
-        params.centering == .always || params.boardsOverflow
+        params.centering == .always
+            || (params.centering == .onOverflow && params.boardsOverflow)
+    }
+
+    static func scrollTargetToRevealBoard(
+        frame: CGRect,
+        currentScrollX: CGFloat,
+        contentWidth: CGFloat,
+        containerWidth: CGFloat,
+        horizontalPadding: CGFloat
+    ) -> CGFloat? {
+        let leadingEdge = horizontalPadding
+        let trailingEdge = containerWidth - horizontalPadding
+        let adjustment: CGFloat
+
+        if frame.minX < leadingEdge {
+            adjustment = frame.minX - leadingEdge
+        } else if frame.maxX > trailingEdge {
+            adjustment = frame.maxX - trailingEdge
+        } else {
+            return nil
+        }
+
+        let maximumOffset = max(0, contentWidth - containerWidth)
+        return min(max(0, currentScrollX + adjustment), maximumOffset)
     }
 
     static func restingScrollX(for params: Parameters) -> CGFloat {
