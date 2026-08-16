@@ -22,6 +22,12 @@ struct AppConfiguration {
         else {
             preconditionFailure("UI tests require a supported fixture")
         }
+        let boardCountArgument =
+            argumentValue(after: "--board-count", in: processInfo.arguments)
+            ?? UITestBoardCount.three.rawValue
+        guard let boardCount = UITestBoardCount(rawValue: boardCountArgument) else {
+            preconditionFailure("UI tests require a supported Board count")
+        }
 
         let runID = processInfo.environment["DEN_UI_TEST_RUN_ID"] ?? UUID().uuidString
         let directoryURL = FileManager.default.temporaryDirectory
@@ -51,7 +57,7 @@ struct AppConfiguration {
             defaults: defaults,
             initialProfile: uiTestProfile(
                 fixture: fixture,
-                singleBoard: processInfo.arguments.contains("--single-board"),
+                boardCount: boardCount,
                 terminalBoard: processInfo.arguments.contains("--terminal-board"),
                 multipleDrawerItems: processInfo.arguments.contains("--multiple-drawer-items")),
             websiteDataStore: { _ in .nonPersistent() })
@@ -66,7 +72,7 @@ struct AppConfiguration {
 
     private static func uiTestProfile(
         fixture: UITestFixture,
-        singleBoard: Bool,
+        boardCount: UITestBoardCount,
         terminalBoard: Bool,
         multipleDrawerItems: Bool = false
     ) -> PersistedProfile {
@@ -100,22 +106,37 @@ struct AppConfiguration {
         let mainBoards: [BoardState]
         let secondBoards: [BoardState]
         let secondFocusedBoardID: UUID?
+        let mainFocusedBoardID: UUID
         let focusedDeskID: UUID
         switch fixture {
         case .interactionBasics:
-            mainBoards = singleBoard ? [alpha] : [alpha, bravo, charlie]
+            mainBoards =
+                switch boardCount {
+                case .one: [alpha]
+                case .two: [alpha, bravo]
+                case .three: [alpha, bravo, charlie]
+                }
             secondBoards = []
             secondFocusedBoardID = nil
+            mainFocusedBoardID = alpha.id
+            focusedDeskID = mainDeskID
+        case .overviewBoardPair:
+            mainBoards = [bravo, charlie]
+            secondBoards = []
+            secondFocusedBoardID = nil
+            mainFocusedBoardID = bravo.id
             focusedDeskID = mainDeskID
         case .focusedNonLeadingBoard:
             mainBoards = [alpha]
             secondBoards = [bravo, charlie]
             secondFocusedBoardID = charlie.id
+            mainFocusedBoardID = alpha.id
             focusedDeskID = secondDeskID
         case .terminalOverview:
             mainBoards = [alpha]
             secondBoards = [bravo]
             secondFocusedBoardID = bravo.id
+            mainFocusedBoardID = alpha.id
             focusedDeskID = mainDeskID
         case .overflowingSecondDesk:
             let overflowBoards = [
@@ -133,13 +154,14 @@ struct AppConfiguration {
             mainBoards = [alpha]
             secondBoards = [bravo, charlie] + overflowBoards
             secondFocusedBoardID = overflowBoards.last?.id
+            mainFocusedBoardID = alpha.id
             focusedDeskID = mainDeskID
         }
         let desk = DeskState(
             id: mainDeskID,
             label: "Main",
             boards: mainBoards,
-            focusedBoardID: alpha.id)
+            focusedBoardID: mainFocusedBoardID)
         let secondDesk = DeskState(
             id: secondDeskID,
             label: "Second",
@@ -202,7 +224,14 @@ struct AppConfiguration {
 
 private enum UITestFixture: String {
     case interactionBasics = "interaction-basics"
+    case overviewBoardPair = "overview-board-pair"
     case focusedNonLeadingBoard = "focused-non-leading-board"
     case terminalOverview = "terminal-overview"
     case overflowingSecondDesk = "overflowing-second-desk"
+}
+
+private enum UITestBoardCount: String {
+    case one
+    case two
+    case three
 }

@@ -34,7 +34,7 @@ final class Den_BrowserUITests: XCTestCase, BDD {
 
     @MainActor
     func testSheetInputAndDenModeFocusCycle() throws {
-        let app = launchApp()
+        let app = launchApp(boardCount: .one)
         let sheetInput = app.textFields["Sheet input"].firstMatch
 
         given("the initial Sheet input is visible") {
@@ -67,7 +67,7 @@ final class Den_BrowserUITests: XCTestCase, BDD {
 
     @MainActor
     func testClickingInputOnUnfocusedBoardPreservesClickedResponder() throws {
-        let app = launchApp()
+        let app = launchApp(boardCount: .two)
         let alpha = board(.alpha, in: app)
         let bravo = board(.bravo, in: app)
         let bravoInput = boardSurface(.bravo, in: app).textFields["Sheet input"].firstMatch
@@ -90,7 +90,7 @@ final class Den_BrowserUITests: XCTestCase, BDD {
 
     @MainActor
     func testFocusModePreservesBoardFocusAcrossDenMode() throws {
-        let app = launchApp()
+        let app = launchApp(boardCount: .two)
         let denContent = app.descendants(matching: .any)
             .matching(identifier: "den-content")
             .firstMatch
@@ -133,7 +133,7 @@ final class Den_BrowserUITests: XCTestCase, BDD {
 
     @MainActor
     func testDrawerPreviewReceivesVimAndFormInput() throws {
-        let app = launchApp(sheetNavigationEnabled: true)
+        let app = launchApp(boardCount: .one, sheetNavigationEnabled: true)
 
         let drawer = app.descendants(matching: .any).matching(identifier: "drawer").firstMatch
         let previewContent = app.staticTexts["result:pending"].firstMatch
@@ -159,7 +159,10 @@ final class Den_BrowserUITests: XCTestCase, BDD {
 
     @MainActor
     func testDrawerPreviewRetainsSheetNavigationAfterDiscardingIntoNextPreview() throws {
-        let app = launchApp(sheetNavigationEnabled: true, multipleDrawerItems: true)
+        let app = launchApp(
+            boardCount: .one,
+            sheetNavigationEnabled: true,
+            multipleDrawerItems: true)
 
         let drawer = app.descendants(matching: .any).matching(identifier: "drawer").firstMatch
         let nextDrawerItem = app.buttons
@@ -203,7 +206,7 @@ final class Den_BrowserUITests: XCTestCase, BDD {
 
     @MainActor
     func testDrawerSearchAppearsOnDemand() throws {
-        let app = launchApp()
+        let app = launchApp(boardCount: .one)
 
         let drawer = app.descendants(matching: .any).matching(identifier: "drawer").firstMatch
         let search = app.textFields["drawer-search"].firstMatch
@@ -238,7 +241,7 @@ final class Den_BrowserUITests: XCTestCase, BDD {
 
     @MainActor
     func testOrganizesBoardsUsingPointer() throws {
-        let app = launchApp()
+        let app = launchApp(boardCount: .three)
         let bravo = board(.bravo, in: app)
         let charlie = board(.charlie, in: app)
 
@@ -265,7 +268,7 @@ final class Den_BrowserUITests: XCTestCase, BDD {
 
     @MainActor
     func testOrganizesOverviewBoardsUsingPointer() throws {
-        let app = launchApp()
+        let app = launchApp(fixture: .overviewBoardPair)
 
         given("Overview shows the fixture Boards") {
             enterDenMode(in: app)
@@ -295,7 +298,7 @@ final class Den_BrowserUITests: XCTestCase, BDD {
 
     @MainActor
     func testReordersDesksUsingPointer() throws {
-        let app = launchApp()
+        let app = launchApp(boardCount: .one)
         let second = desk(.second, in: app)
         let third = desk(.third, in: app)
 
@@ -319,7 +322,7 @@ final class Den_BrowserUITests: XCTestCase, BDD {
 
     @MainActor
     func testNewBoardAnimatesIntoBoardStrip() throws {
-        let app = launchApp(singleBoard: true)
+        let app = launchApp(boardCount: .one)
         let boardStrip = app.scrollViews["board-strip"].firstMatch
 
         given("one Board fills the Board Strip") {
@@ -373,7 +376,7 @@ final class Den_BrowserUITests: XCTestCase, BDD {
 
     @MainActor
     func testTerminalBoardStartsAndExitRemovesIt() throws {
-        let app = launchApp(singleBoard: true)
+        let app = launchApp(boardCount: .one)
         let boardStrip = app.scrollViews["board-strip"].firstMatch
         let surfacePredicate = NSPredicate(format: "identifier BEGINSWITH 'board-surface.'")
         let surfaces = boardStrip.descendants(matching: .any).matching(surfacePredicate)
@@ -406,7 +409,7 @@ final class Den_BrowserUITests: XCTestCase, BDD {
 
     @MainActor
     func testRecentSelectionCanBeAcceptedIntoOpenBoardInput() throws {
-        let app = launchApp(singleBoard: true)
+        let app = launchApp(boardCount: .one)
         let recentInput = "https://recent.example/"
 
         when("creating a Board that becomes a Recent Item") {
@@ -432,7 +435,7 @@ final class Den_BrowserUITests: XCTestCase, BDD {
 
     @MainActor
     func testDenModeCommaOpensSettingsAboveTerminalBoard() throws {
-        let app = launchApp(singleBoard: true, terminalBoard: true)
+        let app = launchApp(boardCount: .one, terminalBoard: true)
 
         let profileWindowCount = app.windows.count
         enterDenMode(in: app)
@@ -445,7 +448,7 @@ final class Den_BrowserUITests: XCTestCase, BDD {
 
     @MainActor
     func testTerminalBoardDenModeToggleDoesNotExitImmediately() throws {
-        let app = launchApp(terminalBoard: true)
+        let app = launchApp(boardCount: .two, terminalBoard: true)
         let alpha = board(.alpha, in: app)
         let bravo = board(.bravo, in: app)
         let sheetInputWindow = app.windows["UI Testing · SHEET INPUT"]
@@ -568,7 +571,7 @@ final class Den_BrowserUITests: XCTestCase, BDD {
 
     @MainActor
     func testRemovingFocusedBoardSettlesAtLeadingEdge() throws {
-        let app = launchApp()
+        let app = launchApp(boardCount: .two)
         let boardStrip = app.scrollViews["board-strip"].firstMatch
         let alpha = boardSurface(.alpha, in: app)
         let bravo = boardSurface(.bravo, in: app)
@@ -713,7 +716,7 @@ final class Den_BrowserUITests: XCTestCase, BDD {
     @MainActor
     private func launchApp(
         fixture: UITestFixture = .interactionBasics,
-        singleBoard: Bool = false,
+        boardCount: UITestBoardCount = .three,
         terminalBoard: Bool = false,
         sheetNavigationEnabled: Bool = false,
         multipleDrawerItems: Bool = false,
@@ -724,10 +727,8 @@ final class Den_BrowserUITests: XCTestCase, BDD {
         var args = [
             "-ApplePersistenceIgnoreState", "YES",
             "--ui-testing", "--fixture", fixture.rawValue,
+            "--board-count", boardCount.rawValue,
         ]
-        if singleBoard {
-            args.append("--single-board")
-        }
         if terminalBoard {
             args.append("--terminal-board")
         }
@@ -759,9 +760,13 @@ final class Den_BrowserUITests: XCTestCase, BDD {
 
         XCTAssertTrue(app.windows.firstMatch.waitForExistence(timeout: 10), "Application window should appear")
         XCTAssertTrue(board(fixture.initialBoard, in: app).waitForExistence(timeout: 20))
-        if fixture == .interactionBasics && !singleBoard {
-            XCTAssertTrue(board(.bravo, in: app).exists)
-            XCTAssertTrue(board(.charlie, in: app).exists)
+        if fixture == .interactionBasics {
+            if boardCount != .one {
+                XCTAssertTrue(board(.bravo, in: app).exists)
+            }
+            if boardCount == .three {
+                XCTAssertTrue(board(.charlie, in: app).exists)
+            }
         }
         return app
     }
@@ -842,14 +847,48 @@ final class Den_BrowserUITests: XCTestCase, BDD {
     }
 }
 
+@MainActor
+final class Den_BrowserUIPerformanceTests: XCTestCase {
+    override func tearDownWithError() throws {
+        MainActor.assumeIsolated {
+            XCUIApplication().terminate()
+        }
+        try super.tearDownWithError()
+    }
+
+    func testApplicationLaunchPerformance() {
+        let app = XCUIApplication()
+        app.launchArguments = [
+            "-ApplePersistenceIgnoreState", "YES",
+            "--ui-testing", "--fixture", UITestFixture.interactionBasics.rawValue,
+            "--board-count", UITestBoardCount.one.rawValue,
+        ]
+        app.launchEnvironment["DEN_UI_TEST_RUN_ID"] = UUID().uuidString
+
+        let options = XCTMeasureOptions()
+        options.iterationCount = 1
+        measure(
+            metrics: [XCTApplicationLaunchMetric(waitUntilResponsive: true)],
+            options: options
+        ) {
+            app.launch()
+        }
+    }
+}
+
 private enum UITestFixture: String {
     case interactionBasics = "interaction-basics"
+    case overviewBoardPair = "overview-board-pair"
     case focusedNonLeadingBoard = "focused-non-leading-board"
     case terminalOverview = "terminal-overview"
     case overflowingSecondDesk = "overflowing-second-desk"
 
     var initialBoard: FixtureBoard {
-        self == .focusedNonLeadingBoard ? .charlie : .alpha
+        switch self {
+        case .focusedNonLeadingBoard: .charlie
+        case .overviewBoardPair: .bravo
+        default: .alpha
+        }
     }
 }
 
@@ -866,4 +905,10 @@ private enum FixtureBoard: String, CaseIterable {
 private enum FixtureDesk: String {
     case second = "00000000-0000-0000-0000-000000000201"
     case third = "00000000-0000-0000-0000-000000000202"
+}
+
+private enum UITestBoardCount: String {
+    case one
+    case two
+    case three
 }

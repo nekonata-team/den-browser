@@ -35,12 +35,25 @@ Keep scenario text in Den's domain language (`Desk`, `Board`, `Sheet`, `Drawer`,
 
 Keep `Then` blocks assertion-only. Put input, navigation, dismissal, and other state-changing operations in `When` blocks. Use `assertEventually` for UI settling and animation boundaries; do not add sleeps or arbitrary delays.
 
-UI tests launch with deterministic fixture state. The default fixture contains three Boards; focused workflows
-may request a one-Board variant or seed the required Desk and Board arrangement directly instead of constructing
-an unrelated Given through UI operations. The transition under test must still be performed through the UI.
+UI tests launch with deterministic fixture state. Each test should request the smallest fixture that covers its
+Given: one Board for single-Board workflows, two Boards when focus or ordering compares a pair, and three or more
+only when the scenario needs them. The dedicated Desk fixtures should be used when a workflow needs a particular
+Desk arrangement instead of constructing an unrelated Given through UI operations. The transition under test must
+still be performed through the UI.
 Profile documents use a fresh temporary directory, preferences use a dedicated defaults suite, and Sheets use a
 non-persistent WebKit store with local data URLs. UI tests must not read or write the user's Profiles, preferences,
 website data, window restoration, or external services. Terminal UI tests use an isolated `/bin/zsh -f` command and do not load the user's Ghostty configuration.
+
+The separate `Den_BrowserUIPerformanceTests` class measures application launch with XCTest's
+`XCTApplicationLaunchMetric`; it is not part of the default interaction test class. Run it explicitly when
+checking launch performance:
+
+```sh
+just ui-test Den_BrowserUIPerformanceTests/testApplicationLaunchPerformance
+xcrun xcresulttool get test-results metrics --path <path-to-xcresult>
+```
+
+Use the XCTest result bundle for per-test durations. Do not add ad hoc timers or sleeps to interaction tests.
 
 Exploratory human validation is reserved for milestone checks that depend on macOS, WebKit, remote services, or visual judgment:
 
