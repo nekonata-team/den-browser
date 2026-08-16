@@ -582,7 +582,7 @@ final class Den_BrowserUITests: XCTestCase, BDD {
 
         when("removing the focused Board") {
             enterDenMode(in: app)
-            app.typeText("d")
+            app.typeText("x")
         }
 
         then("Alpha remains focused and settles at the leading edge") {

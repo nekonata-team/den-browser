@@ -231,7 +231,27 @@ struct BoardStrip: View {
             let layoutChanged = previous.layoutKey != current.layoutKey
             let centeringChanged = previous.centering != current.centering
 
-            if focusChanged {
+            if layoutChanged {
+                if current.centering == .never {
+                    deferBoardAlignment(
+                        .visible,
+                        current.boardID,
+                        animated: animated,
+                        layoutKey: current.layoutKey)
+                } else if current.centersFocusedBoard {
+                    deferBoardAlignment(
+                        .center,
+                        current.boardID,
+                        animated: animated,
+                        layoutKey: current.layoutKey)
+                } else {
+                    deferBoardAlignment(
+                        .resting(current.restingScrollX),
+                        current.boardID,
+                        animated: animated,
+                        layoutKey: current.layoutKey)
+                }
+            } else if focusChanged {
                 let shouldCenter =
                     switch current.centering {
                     case .always: true
@@ -239,38 +259,23 @@ struct BoardStrip: View {
                     case .never: false
                     }
                 if shouldCenter {
-                    if layoutChanged {
-                        deferBoardAlignment(.center, current.boardID, animated: animated)
-                    } else {
-                        centerBoard(current.boardID, animated: animated)
-                    }
-                } else if layoutChanged {
-                    deferBoardAlignment(.visible, current.boardID, animated: animated)
+                    centerBoard(current.boardID, animated: animated)
                 } else {
                     revealBoard(current.boardID, animated: animated)
                 }
-            } else if layoutChanged || centeringChanged {
-                if current.centering == .never {
-                    if layoutChanged {
-                        deferBoardAlignment(.visible, current.boardID, animated: animated)
-                    } else {
-                        revealBoard(current.boardID, animated: animated)
-                    }
-                } else if current.centersFocusedBoard, layoutChanged {
-                    deferBoardAlignment(.center, current.boardID, animated: animated)
-                } else {
-                    alignBoardStrip(
-                        centersFocusedBoard: current.centersFocusedBoard,
-                        boardID: current.boardID,
-                        restingScrollX: current.restingScrollX,
-                        animated: animated
-                    )
-                }
+            } else if centeringChanged {
+                alignBoardStrip(
+                    centersFocusedBoard: current.centersFocusedBoard,
+                    boardID: current.boardID,
+                    restingScrollX: current.restingScrollX,
+                    animated: animated
+                )
             } else {
                 return
             }
         }
         .onChange(of: store.centerFocusedBoardRequest) { _, _ in
+            if let pendingBoardAlignment, case .resting = pendingBoardAlignment.kind { return }
             guard let boardID = store.focusedDesk?.focusedBoardID else { return }
             centerBoard(boardID, animated: true)
         }
@@ -499,7 +504,8 @@ struct BoardStrip: View {
             pendingBoardAlignment = PendingBoardAlignment(
                 boardID: boardID,
                 kind: .center,
-                animated: animated
+                animated: animated,
+                layoutKey: nil
             )
             return
         }
@@ -520,7 +526,8 @@ struct BoardStrip: View {
             pendingBoardAlignment = PendingBoardAlignment(
                 boardID: boardID,
                 kind: .visible,
-                animated: animated
+                animated: animated,
+                layoutKey: nil
             )
             return
         }
@@ -539,13 +546,15 @@ struct BoardStrip: View {
     private func deferBoardAlignment(
         _ kind: BoardAlignmentKind,
         _ boardID: UUID?,
-        animated: Bool
+        animated: Bool,
+        layoutKey: BoardStripLayoutKey? = nil
     ) {
         guard let boardID else { return }
         pendingBoardAlignment = PendingBoardAlignment(
             boardID: boardID,
             kind: kind,
-            animated: animated
+            animated: animated,
+            layoutKey: layoutKey
         )
         boardCenteringTask?.cancel()
         boardCenteringTask = Task { @MainActor in
@@ -601,9 +610,11 @@ struct BoardStrip: View {
         guard
             let pending = pendingBoardAlignment,
             let frame = frames[pending.boardID],
+            pending.layoutKey == nil || pending.layoutKey == layoutKey,
             boardIDs.isSubset(of: frames.keys)
                 && scrollGeometry.containerWidth > 0
                 && scrollGeometry.contentWidth > 0
+                && (pending.layoutKey == nil || boardFramesMatchLayout(frames))
         else { return }
         self.pendingBoardAlignment = nil
         boardCenteringTask?.cancel()
@@ -615,7 +626,21 @@ struct BoardStrip: View {
             case .visible:
                 guard let targetOffsetX = scrollTargetToRevealBoard(for: frame) else { return }
                 performBoardVisibility(targetOffsetX, animated: pending.animated)
+            case .resting(let targetOffsetX):
+                resetBoardStripPosition(to: targetOffsetX, animated: pending.animated)
             }
+        }
+    }
+
+    private func boardFramesMatchLayout(_ frames: [UUID: CGRect]) -> Bool {
+        let boards = store.focusedDesk?.boards ?? []
+        return boards.allSatisfy { board in
+            guard let frame = frames[board.id] else { return false }
+            let expectedWidth =
+                store.maximizedBoardID == board.id
+                ? max(CGFloat(BoardState.minimumWidth), size.width - boardHorizontalPadding * 2)
+                : CGFloat(board.width)
+            return abs(frame.width - expectedWidth) <= 1
         }
     }
 
@@ -655,6 +680,7 @@ private struct BoardStripAlignmentTarget: Equatable {
 
 private enum BoardAlignmentKind {
     case center
+    case resting(CGFloat)
     case visible
 }
 
@@ -662,6 +688,7 @@ private struct PendingBoardAlignment {
     let boardID: UUID
     let kind: BoardAlignmentKind
     let animated: Bool
+    let layoutKey: BoardStripLayoutKey?
 }
 
 private struct BoardStripScrollGeometry: Equatable {
