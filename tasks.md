@@ -1,216 +1,153 @@
-# Code smell 改善タスク
+# Project Tasks
 
-## 目的
+<!-- Status: [ ] open / [/] in progress / [x] complete / [-] cancelled. -->
 
-挙動を変えず、次の具体的な smell を減らす。
+## Contents
 
-- `DenView` が子Viewの一時状態と操作詳細まで所有している。
-- BoardとDeskの水平ドラッグ計算が重複している。
-- `NewDeskPanel` と `BoardRuntime` の引数が多く、責務境界が読み取りにくい。
+- [/] [TASK-001：アクセシブルな名前と状態を整える](#task-001アクセシブルな名前と状態を整える)
+- [TASK-002：ポインター専用操作に代替手段を追加する](#task-002ポインター専用操作に代替手段を追加する)
+- [TASK-003：大きい文字とコントラストに耐える](#task-003大きい文字とコントラストに耐える)
+- [TASK-004：macOS実機と回帰検証を行う](#task-004macos実機と回帰検証を行う)
 
-ファイル行数だけを理由に分割しない。
-単一実装のprotocol、Repository、Coordinator、Service、基底runtimeは追加しない。
-抽出後のproduction codeが増えるだけなら、その抽出は行わない。
+## Current Status
 
-各タスクは別commitにする。
-機能変更を混ぜない。
+TASK-001を実装中。アクセシビリティ監査で見つかった意味・状態の不足から対応している。
+監査で見つかった不足を、意味・操作・表示・検証の4 taskに分けて追跡する。
 
-## 必読
+## Tasks
 
-- `CONTEXT.md`
-- `docs/architecture.md`
-- `docs/testing.md`
-- ADR 0007: Use SwiftUI first with AppKit bridges
-- ADR 0020: Test critical UI workflows
-- ADR 0028: Defer WebKit for SwiftUI migration
+### [/] TASK-001：アクセシブルな名前と状態を整える
 
-## 実装順
+#### Purpose
 
-- [x] C1. BoardとDeskの水平ドラッグ計算を共通化する
-- [x] C2. New Desk系panelの一時状態を`NewDeskPanel`へ移す
-- [x] C3. Desk切替と並べ替えを`DeskSwitcher`へ集約する
-- [x] C4. Board表示と並べ替えを`BoardStrip`へ集約する
-- [x] C5. `BoardRuntime`のaction配線を整理する
+VoiceOverが操作対象の意味、現在の選択状態、Boardの補足情報を読み上げられるようにする。
 
-### C1. BoardとDeskの水平ドラッグ計算を共通化する
+#### Prerequisites
 
-根拠:
+- なし
 
-- `BoardDragInsertion.targetIndex`と`DeskDragInsertion.targetIndex`は名前以外が同じ。
-- BoardとDeskのedge auto-scrollも、対象配列とedge幅以外は同じ。
-- lifecycleまで共通化すると、store操作と復元条件の違いが隠れる。
+#### Work
 
-実装:
+- [x] Picture in PictureとVim-style Sheet NavigationのToggleに明示的なアクセシブルな名前を付ける。
+- [x] Desk switcherのPresented Deskを選択状態として公開する。
+- [x] Overviewの選択中DeskとBoardを選択状態として公開する。
+- [x] Overview Boardのラベルに、必要なURL・Terminal・Zellij・zmxの補足情報を含める。
+- [ ] パネル表示時のアクセシビリティフォーカスと、装飾用アイコンの読み上げを確認する。
 
-- 2つのinsertion型を、IDに依存しないfeature-localな純粋関数へ統合する。
-- edge auto-scrollは、方向、隣接ID、実行間隔を決める純粋計算だけを共有する。
-- drag state、開始、終了、cancel、store更新はBoardとDeskに残す。
-- 汎用drag frameworkやprotocolは追加しない。
+#### Acceptance Criteria
 
-テスト:
+- [/] VoiceOverが各Toggleを用途付きで識別できる。
+- [/] Desk switcherとOverviewで、現在選択中の項目が状態として読み上げられる。
+- [/] 同名のBoardをOverviewで補足情報により区別できる。
+- [ ] Den、Desk、Board、Sheet、Drawerの用語を維持する。
 
-- 重複しているinsertion testを1組へ統合する。
-- 左右の境界、隣接要素の中心を越える条件、geometry不足を検証する。
-- edge内外、先頭と末尾、速い再実行と遅い再実行を検証する。
+#### Verification
 
-受け入れ条件:
+コード対応済み。`just check`、Overview/Deskの既存ポインターUIテストは成功。
+macOS 26のVoiceOver確認と必要なUIクエリの追加は未実施。
 
-- BoardとDeskが同じ水平判定を使う。
-- 並べ替え開始、preview、範囲外drop時の復元は変わらない。
-- production codeの行数が減る。
+### TASK-002：ポインター専用操作に代替手段を追加する
 
-検証:
+#### Purpose
 
-- `just check`
-- `just ui-test Den_BrowserUITests/testOrganizesBoardsUsingPointer`
-- `just ui-test Den_BrowserUITests/testReordersDesksUsingPointer`
+ドラッグできない利用者もDesk・Boardの整理とBoard幅変更を完了できるようにする。
 
-### C2. New Desk系panelの一時状態を`NewDeskPanel`へ移す
+#### Prerequisites
 
-根拠:
+- なし
 
-- `NewDeskPanel`は19個のbinding、値、callbackを受け取る。
-- preset選択、検索、label、validation、focusの状態はpanel内だけで使う。
-- 現在はその状態と操作が`DenView`へ逆流し、親Viewの変更理由を増やしている。
+#### Work
 
-実装:
+- [ ] Desk reorderにキーボードまたはVoiceOverの左右移動アクションを追加する。
+- [ ] BoardResizeHandleを調整可能なアクセシビリティ要素として公開する。
+- [ ] Overview Boardの移動をVoiceOverアクションまたは同等の操作として公開する。
+- [ ] 既存のポインター操作、Den ModeのBoard移動、Overviewのキーボード操作を維持する。
 
-- preset選択、検索、管理表示、label、selection、validation、focusを`NewDeskPanel`が所有する。
-- preset確定、Desk作成・置換、削除後のfallbackもpanel側へ移す。
-- `DenView`はpanelの表示位置と`temporaryContext`による選択だけを担当する。
-- 状態をまとめるだけの参照型やViewModelは作らない。SwiftUIのlocal stateで足りる限り使う。
-- `.newDesk`、`.replaceDesk`、`.deskPresetManagement`の切替時に初期状態を明示する。
+#### Acceptance Criteria
 
-テスト:
+- [ ] ポインターなしでDeskの並べ替えを完了できる。
+- [ ] ポインターなしでFocused Desk内のBoard移動とBoard幅変更を完了できる。
+- [ ] ポインターなしでOverviewのBoard移動を完了できる。
+- [ ] 範囲外キャンセル、Desk切替、Focus状態、既存のドラッグ挙動が変わらない。
 
-- `DenStoreDeskPresetTests`で作成、置換、削除のdomain挙動を維持する。
-- 純粋なfallback判定を抽出した場合だけfocused unit testを追加する。
+#### Verification
 
-受け入れ条件:
+未実施。キーボードのみ、VoiceOverの操作、既存のポインターUIテストで確認する。
 
-- `DenView`からNew Desk系panel専用の`@State`と`@FocusState`がなくなる。
-- `NewDeskPanel`のinitializerが、内部状態をbindingで受け取らない。
-- preset削除、Replace Desk、IME確定、Escape/Shift-Tabの挙動が変わらない。
+### TASK-003：大きい文字とコントラストに耐える
 
-検証:
+#### Purpose
 
-- `just check`
-- New Desk、Replace Desk、Manage Presetsを探索確認する。
-- Personal Desk Preset削除時、選択とlabelが有効なfallbackへ戻ることを確認する。
+固定レイアウトと低コントラストの視覚設計が、文字拡大やコントラスト強調時の情報欠落を起こさないようにする。
 
-### C3. Desk切替と並べ替えを`DeskSwitcher`へ集約する
+#### Prerequisites
 
-根拠:
+- TASK-001：状態表示の意味を確定する
 
-- `DeskSwitcher`は37行の汎用shellだが、呼び出し元は1つだけ。
-- `AnyView`化したitem closureとframe callbackを通し、実処理は`DenView`にある。
-- Desk button、context menu、frame、scroll、dragは1つのUI責務である。
+#### Work
 
-実装:
+- [ ] Settings、Denパネル、Keyboard Shortcuts、Overviewの固定幅・固定高を大きい文字で確認する。
+- [ ] Desk名、Drawer項目、Boardヘッダー、Overviewカードの切れ・重なり・過度な省略を解消する。
+- [ ] Desk・Board・Overviewの選択表示、無効状態、検索欄の境界線をコントラスト強調設定で確認・調整する。
+- [ ] 色以外の状態表現と既存のReduce Motion対応を維持する。
 
-- Desk item、context menu、frame収集、scroll position、drag stateを`DeskSwitcher`へ移す。
-- `item: (...) -> AnyView`と`onFramesChange`を削除し、concreteなfeature Viewにする。
-- drag cancellation request、`temporaryContext`、focused Desk変更、Window非アクティブを`DeskSwitcher`内で処理する。
-- `DenView`には表示条件、配置、Profile色だけを残す。
-- Desk専用controllerやreorder serviceは追加しない。
+#### Acceptance Criteria
 
-テスト:
+- [ ] macOSの大きい文字設定で、主要な操作名・状態・入力内容が欠落しない。
+- [ ] コントラスト強調設定で、主要なテキスト、操作境界、選択状態を識別できる。
+- [ ] 選択状態が色だけに依存しない。
+- [ ] 通常表示のレイアウトとSheetの表示領域を不必要に壊さない。
 
-- C1の純粋関数testを維持する。
-- 必要ならcancel条件だけを純粋関数として追加検証する。
+#### Verification
 
-受け入れ条件:
+未実施。大きい文字、コントラスト強調、通常表示、Reduce Motionの組み合わせを実機で確認する。
 
-- `DenView`からDesk drag、frame、scroll、auto-scroll stateと関連methodがなくなる。
-- `DeskSwitcher`に`AnyView`とitem builderがない。
-- click、context menu、並べ替え、範囲外drop、非アクティブ時cancelが変わらない。
+### TASK-004：macOS実機と回帰検証を行う
 
-検証:
+#### Purpose
 
-- `just check`
-- `just ui-test Den_BrowserUITests/testReordersDesksUsingPointer`
-- Window外drop、別アプリ切替、panel表示中のcancelを探索確認する。
+SwiftUI、WKWebView、Ghosttyの境界を含むアクセシビリティ対応を実際のmacOS環境で確認し、再発を防ぐ。
 
-### C4. Board表示と並べ替えを`BoardStrip`へ集約する
+#### Prerequisites
 
-根拠:
+- TASK-001：アクセシブルな名前と状態を整える
+- TASK-002：ポインター専用操作に代替手段を追加する
+- TASK-003：大きい文字とコントラストに耐える
 
-- `BoardStrip`自身がScrollViewとBoard群を描画する一方、scroll、frame、drag、resize、centering stateは`DenView`が持つ。
-- その分割により、`BoardStrip`は多数のbindingとcallbackを必要としている。
-- Board Strip内だけで完結する表示操作を親へ戻す理由がない。
+#### Work
 
-実装:
+- [ ] VoiceOverでDen、Desk、Board、Overview、Drawer、Settingsを通しで操作する。
+- [ ] Terminal BoardのGhostty側アクセシビリティ公開範囲を確認する。
+- [ ] WKWebViewのSheet入力、Drawer Preview入力、ネイティブダイアログのフォーカス移動を確認する。
+- [ ] 安定した状態・ラベル・操作をXCUITestまたはfocused unit testでカバーする。
+- [ ] `docs/testing.md`のアクセシビリティ検証方針を必要に応じて更新する。
 
-- Board frame、scroll position、drag、resize、centering待機を`BoardStrip`へ移す。
-- alignment変更、focused Board center request、Desk filter選択scrollを`BoardStrip`内で処理する。
-- drag cancellation request、focused Desk変更、`temporaryContext`、Window非アクティブを`BoardStrip`内で処理する。
-- Open Board panelを開くactionなど、親との境界を越えるcallbackだけ残す。
-- layout計算の純粋関数は`BoardLayout`に維持する。
-- Board専用controllerやscroll serviceは追加しない。
+#### Acceptance Criteria
 
-テスト:
+- [ ] VoiceOverで主要なDen操作を完了できる。
+- [ ] Terminal Board、Sheet、Drawer Previewからの入力フォーカスが破綻しない。
+- [ ] `just check`と関連UIテストが成功する。
+- [ ] 実機確認結果と未対応の外部依存が記録されている。
 
-- `BoardLayoutTests`とC1の純粋関数testを維持する。
-- centering条件を新たに純粋化した場合だけfocused unit testを追加する。
+#### Verification
 
-受け入れ条件:
+未実施。`just check`、関連UIテスト、macOS 26実機でのVoiceOver確認を記録する。
 
-- `DenView`からBoard drag、frame、scroll、resize、centering stateと関連methodがなくなる。
-- `BoardStrip`のinitializerには、内部イベントを親へ中継するcallbackが残らない。
-- pointer focus、resize、並べ替え、filter、Desk切替後の位置、Board追加animationが変わらない。
+## Common Acceptance Criteria
 
-検証:
+- [ ] macOS 26.0を最低対応バージョンとし、不要な古いOS向け分岐を追加しない。
+- [ ] DenStateとBoardRuntime・WKWebView・Terminalの責務境界を維持する。
+- [ ] アクセシビリティ対応のためだけに新しい依存関係、Coordinator、Service、抽象protocolを追加しない。
+- [ ] 既存のキーボード優先設計とポインター操作を維持する。
+- [ ] 変更したSwift sourceには`just check`を実行する。
 
-- `just check`
-- `just ui-test Den_BrowserUITests/testOrganizesBoardsUsingPointer`
-- `just ui-test Den_BrowserUITests/testNewBoardAnimatesIntoBoardStrip`
-- `just ui-test Den_BrowserUITests/testRemovingFocusedBoardSettlesAtLeadingEdge`
-- centering設定の各値、Zen View、Desk filterを探索確認する。
+## Deferred Items
 
-### C5. `BoardRuntime`のaction配線を整理する
+- [ ] Ghostty外部パッケージ自体の変更は、TASK-004で不足が確認された場合だけ判断する。
+- [ ] WKWebViewが表示する第三者Sheetのアクセシビリティ品質は、Den Browser側の対応範囲と分けて記録する。
 
-根拠:
+## Out of Scope
 
-- initializerが多数のclosureを受け、12個をpropertyへ保持する。
-- Sheet Navigation用actionを個別に受けた直後、`SheetNavigationManager.Actions`へ詰め直している。
-- default no-op closureにより、productionの必須配線漏れを見落としやすい。
-
-実装:
-
-- Sheet Navigation command群を1つの明示的なaction valueとして渡す。
-- navigation policy、状態変更、fullscreen、downloadなどruntime自身が使うeventも用途別にまとめる。
-- production call siteでは必要なactionを明示する。
-- test専用のno-op fixtureは許容するが、production initializerのdefault no-opはなくす。
-- actionを実行する新しいCoordinator、delegate wrapper、protocolは追加しない。
-
-テスト:
-
-- `SheetNavigationTests`と`BoardRuntimeWebUITests`を新しいaction valueへ更新する。
-- Command-click、targetなしpopup、download完了・失敗、remove/restore commandの既存検証を維持する。
-
-受け入れ条件:
-
-- `BoardRuntime` initializerに長いclosure列がない。
-- Sheet Navigation actionの詰め替えが1か所だけになる。
-- action配線漏れをdefault no-opが隠さない。
-- production codeが増えない。
-
-検証:
-
-- `just check`
-
-## 現時点で追跡しない項目
-
-- `DenStore`の分割: persisted stateとlive runtimeの境界は明確。安定した独立state machineが現れるまで分割しない。
-- `SheetNavigationManager`の分割: settings、WebView登録、JS message routingは現在1つのWebKit境界としてまとまっている。Profile別設定や別consumerが必要になった時に再検討する。
-- `BoardRuntime`と`DrawerPreviewRuntime`の基底class/factory化: runtimeは2種類だけで、delegate責務も異なる。3つ目の同種runtimeか共通不具合が出るまで共有しない。
-- `KeyboardController`と`ProfileManager`の行数分割: 大きいが責務は凝集している。具体的な変更衝突が出るまで分割しない。
-- WebKit for SwiftUI移行: ADR 0028の再評価条件が満たされるまで追跡しない。
-
-## 完了の定義
-
-- 各タスクの受け入れ条件を満たす。
-- Swift source変更ごとに`just check`が成功する。
-- UI test失敗時は変更前でも再現するか確認し、既知失敗として曖昧に処理しない。
-- `docs/architecture.md`と責務境界が変わる場合、同じcommitで更新する。
-- 終了したタスクはcommit履歴で追えるため、`tasks.md`へ完了詳細を残し続けない。
+- 今回のtask登録だけで実装・テスト・commitは行わない。
+- Den Browser全体のビジュアルデザイン刷新は行わない。
+- 第三者WebサイトのHTMLやアクセシビリティは変更しない。

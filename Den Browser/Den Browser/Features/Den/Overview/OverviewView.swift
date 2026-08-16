@@ -24,6 +24,7 @@ struct OverviewView: View {
                 HStack(spacing: 8) {
                     Image(systemName: "magnifyingglass")
                         .foregroundStyle(store.isOverviewFilterInputActive ? .primary : .secondary)
+                        .accessibilityHidden(true)
 
                     TextField(
                         text: Binding(
@@ -183,6 +184,10 @@ struct OverviewView: View {
                 }
             }
             .foregroundStyle(Color.primary.opacity(desk.id == store.overviewSelectionDeskID ? 0.96 : 0.58))
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel("Desk \(desk.label)")
+            .accessibilityValue(desk.id == store.overviewSelectionDeskID ? "Selected Desk" : "")
+            .accessibilityAddTraits(desk.id == store.overviewSelectionDeskID ? .isSelected : [])
 
             HStack(alignment: .top, spacing: DenOverviewLayout.boardSpacing) {
                 if filteredBoards.isEmpty {
@@ -253,10 +258,31 @@ struct OverviewView: View {
         .allowsHitTesting(overviewDrag == nil || overviewDrag?.boardID == board.id)
         .zIndex(overviewDrag?.boardID == board.id ? 2 : 1)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("Board \(board.displayName)")
+        .accessibilityLabel(overviewBoardAccessibilityLabel(for: board))
+        .accessibilityValue(isSelected ? "Selected Board" : "")
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
         .accessibilityIdentifier("overview-board.\(board.id.uuidString.lowercased())")
         .accessibilityHint("Drag to move this Board")
         .id(board.id)
+    }
+
+    private func overviewBoardAccessibilityLabel(for board: BoardState) -> String {
+        let detail: String?
+        if let zmxSessionName = board.zmxSessionName {
+            detail = "zmx session \(zmxSessionName)"
+        } else if let zellijSessionName = board.zellijSessionName {
+            detail = "Zellij session \(zellijSessionName)"
+        } else if let terminalWorkingDirectory = board.terminalWorkingDirectory {
+            detail = "Terminal working directory \(terminalWorkingDirectory)"
+        } else if let currentSheetURL = board.currentSheetURL {
+            detail = "Sheet URL \(currentSheetURL.absoluteString)"
+        } else {
+            detail = nil
+        }
+
+        return ["Board \(board.displayName)", detail]
+            .compactMap { $0 }
+            .joined(separator: ", ")
     }
 
     private func overviewBoardCard(_ board: BoardState, isSelected: Bool) -> some View {

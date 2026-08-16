@@ -102,6 +102,7 @@ struct DrawerView: View {
             HStack(spacing: 8) {
                 Image(systemName: "magnifyingglass")
                     .foregroundStyle(store.isDrawerFilterInputActive ? .primary : .secondary)
+                    .accessibilityHidden(true)
                 TextField(
                     text: Binding(
                         get: { store.drawerQuery },

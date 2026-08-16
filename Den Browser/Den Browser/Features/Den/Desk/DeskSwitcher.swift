@@ -84,7 +84,7 @@ struct DeskSwitcher: View {
                     .font(.caption2)
                     .foregroundStyle(.secondary)
                     .help("Open in another window")
-                    .accessibilityLabel("Open in another window")
+                    .accessibilityHidden(true)
             }
         }
         .frame(maxWidth: DenLayout.deskButtonMaxWidth)
@@ -195,6 +195,8 @@ struct DeskSwitcher: View {
                 + (isPresentedElsewhere ? ", open in another window" : "")
         )
         .accessibilityAddTraits(.isButton)
+        .accessibilityAddTraits(desk.id == store.presentedDeskID ? .isSelected : [])
+        .accessibilityValue(desk.id == store.presentedDeskID ? "Presented Desk" : "")
         .accessibilityAction { store.focusDesk(desk.id) }
         .accessibilityIdentifier("desk-switcher.\(desk.id.uuidString.lowercased())")
         .id(desk.id)

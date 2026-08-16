@@ -37,7 +37,7 @@ struct SettingsView: View {
 
                 Section("Experimental Picture in Picture") {
                     LabeledContent {
-                        Toggle("", isOn: pipBinding)
+                        Toggle("Picture in Picture", isOn: pipBinding)
                             .labelsHidden()
                     } label: {
                         VStack(alignment: .leading, spacing: 3) {

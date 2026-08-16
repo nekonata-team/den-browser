@@ -8,7 +8,7 @@ struct SheetNavigationSettingsSection: View {
     var body: some View {
         Section("Vim-style Sheet Navigation") {
             LabeledContent {
-                Toggle("", isOn: enabledBinding)
+                Toggle("Vim-style Sheet Navigation", isOn: enabledBinding)
                     .labelsHidden()
             } label: {
                 SettingsHelpText {

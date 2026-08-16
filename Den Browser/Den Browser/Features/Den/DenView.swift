@@ -149,6 +149,7 @@ struct DenView<Header: View>: View {
         HStack(spacing: 8) {
             Image(systemName: "magnifyingglass")
                 .foregroundStyle(store.isDeskFilterInputActive ? .primary : .secondary)
+                .accessibilityHidden(true)
 
             TextField(
                 text: Binding(
