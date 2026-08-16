@@ -28,7 +28,7 @@ extension DenStore {
                 openBoardPanelMessage = "Enter a zmx session name."
                 return false
             }
-            guard ZmxLaunchCommand.isValidExecutablePath(preferences.zmxPath) else {
+            guard zmxClient.isConfigured else {
                 openBoardPanelMessage =
                     "Set an absolute zmx executable path in Settings > Features > Terminal."
                 return false
@@ -47,7 +47,7 @@ extension DenStore {
         }
 
         if let zellij = Self.resolveZellijInput(input) {
-            guard ZellijLaunchCommand.isValidExecutablePath(preferences.zellijPath) else {
+            guard zellijClient.isConfigured else {
                 openBoardPanelMessage =
                     "Set an absolute Zellij executable path in Settings > Features > Terminal."
                 return false
@@ -165,7 +165,7 @@ extension DenStore {
                 openBoardPanelMessage = error.message
             }
         case .zellij(let sessionName):
-            guard ZellijLaunchCommand.isValidExecutablePath(preferences.zellijPath) else {
+            guard zellijClient.isConfigured else {
                 openBoardPanelMessage =
                     "Set an absolute Zellij executable path in Settings > Features > Terminal."
                 return
@@ -184,7 +184,7 @@ extension DenStore {
                 openBoardPanelMessage = "Enter a zmx session name."
                 return
             }
-            guard ZmxLaunchCommand.isValidExecutablePath(preferences.zmxPath) else {
+            guard zmxClient.isConfigured else {
                 openBoardPanelMessage =
                     "Set an absolute zmx executable path in Settings > Features > Terminal."
                 return
@@ -434,9 +434,7 @@ extension DenStore {
     func zmxRootSessionName(for board: BoardState) -> String? {
         guard let sessionName = board.zmxSessionName else { return nil }
         return
-            ZmxSessionNames.rootSessionName(
-                sessionName: sessionName,
-                executablePath: preferences.zmxPath)
+            zmxClient.rootSessionName(for: sessionName)
             ?? board.zmxRootSessionName
             ?? sessionName
     }
@@ -450,7 +448,7 @@ extension DenStore {
         else { return false }
         let source = state.desks[deskIndex].boards[boardIndex]
 
-        guard let activeSessionNames = ZmxSessionNames.active(executablePath: preferences.zmxPath) else {
+        guard let activeSessionNames = zmxClient.activeSessionNames() else {
             showToast("Could not inspect active zmx sessions.", style: .warning)
             return false
         }

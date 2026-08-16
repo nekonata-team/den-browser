@@ -59,9 +59,8 @@ struct DenStoreBoardTests {
         #expect(named.isZellij)
         #expect(named.zellijSessionName == "project-a")
         #expect(
-            ZellijLaunchCommand.command(
-                sessionName: named.zellijSessionName,
-                executablePath: "/opt/homebrew/bin/zellij")
+            ZellijClient(executablePath: "/opt/homebrew/bin/zellij")
+                .launchCommand(sessionName: named.zellijSessionName)
                 == "'/opt/homebrew/bin/zellij' attach --create 'project-a'"
         )
         let restoredNamed = try JSONDecoder().decode(
@@ -74,9 +73,8 @@ struct DenStoreBoardTests {
         #expect(welcome.isZellij)
         #expect(welcome.zellijSessionName == nil)
         #expect(
-            ZellijLaunchCommand.command(
-                sessionName: welcome.zellijSessionName,
-                executablePath: "/opt/homebrew/bin/zellij")
+            ZellijClient(executablePath: "/opt/homebrew/bin/zellij")
+                .launchCommand(sessionName: welcome.zellijSessionName)
                 == "'/opt/homebrew/bin/zellij' -l welcome"
         )
         let restoredWelcome = try JSONDecoder().decode(
@@ -121,9 +119,8 @@ struct DenStoreBoardTests {
         #expect(board.isZmx)
         #expect(board.zmxSessionName == "project-a")
         #expect(
-            ZmxLaunchCommand.command(
-                sessionName: board.zmxSessionName ?? "",
-                executablePath: "/opt/homebrew/bin/zmx")
+            ZmxClient(executablePath: "/opt/homebrew/bin/zmx")
+                .launchCommand(sessionName: board.zmxSessionName ?? "")
                 == "'/opt/homebrew/bin/zmx' attach 'project-a'"
         )
         let restored = try JSONDecoder().decode(
@@ -151,11 +148,17 @@ struct DenStoreBoardTests {
         let defaults = UserDefaults(suiteName: suiteName)!
         defer { defaults.removePersistentDomain(forName: suiteName) }
         let preferences = AppPreferences(defaults: defaults)
-        preferences.setZmxPath("/usr/bin/true")
+        preferences.setZmxPath("/usr/bin/zmx")
         let store = DenStore(
             state: DenState(desks: [source], focusedDeskID: source.id),
             sheetNavigation: SheetNavigationManager(),
-            preferences: preferences)
+            preferences: preferences,
+            terminalCommandRunner: StubTerminalCommandRunner(
+                responses: [
+                    ["list", "--short"]: TerminalCommandResult(
+                        terminationStatus: 0,
+                        standardOutput: "")
+                ]))
 
         store.duplicateFocusedBoard()
         #expect(store.temporaryContext == .zmxDuplication)
@@ -192,22 +195,6 @@ struct DenStoreBoardTests {
     }
 
     @Test func zmxBoardDuplicationUsesTheSourceRootLabel() throws {
-        let directory = FileManager.default.temporaryDirectory
-            .appending(path: "den-browser-zmx-\(UUID())", directoryHint: .isDirectory)
-        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
-        defer { try? FileManager.default.removeItem(at: directory) }
-
-        let executable = directory.appending(path: "zmx")
-        try """
-        #!/bin/sh
-        if [ "$1" = "list" ]; then
-          printf 'den-vi\\n'
-        elif [ "$1" = "get" ] && [ "$2" = "den-vi" ] && [ "$3" = "den.root" ]; then
-          printf 'den\\n'
-        fi
-        """.write(to: executable, atomically: true, encoding: .utf8)
-        try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: executable.path)
-
         let sourceBoard = BoardState(
             width: 640,
             zmxSessionName: "den-vi",
@@ -217,11 +204,21 @@ struct DenStoreBoardTests {
         let defaults = UserDefaults(suiteName: suiteName)!
         defer { defaults.removePersistentDomain(forName: suiteName) }
         let preferences = AppPreferences(defaults: defaults)
-        preferences.setZmxPath(executable.path)
+        preferences.setZmxPath("/usr/bin/zmx")
+        let commandRunner = StubTerminalCommandRunner(
+            responses: [
+                ["list", "--short"]: TerminalCommandResult(
+                    terminationStatus: 0,
+                    standardOutput: "den-vi\n"),
+                ["get", "den-vi", "den.root"]: TerminalCommandResult(
+                    terminationStatus: 0,
+                    standardOutput: "den\n"),
+            ])
         let store = DenStore(
             state: DenState(desks: [source], focusedDeskID: source.id),
             sheetNavigation: SheetNavigationManager(),
-            preferences: preferences)
+            preferences: preferences,
+            terminalCommandRunner: commandRunner)
 
         store.duplicateFocusedBoard()
         #expect(store.zmxDuplicationRootSessionName == "den")
@@ -805,5 +802,13 @@ struct DenStoreBoardTests {
 
     private func board(_ label: String, width: Double = 520, url: String = "https://example.com/") -> BoardState {
         BoardState(label: label, width: width, currentSheetURL: url.isEmpty ? nil : URL(string: url))
+    }
+}
+
+private struct StubTerminalCommandRunner: TerminalCommandRunning {
+    let responses: [[String]: TerminalCommandResult]
+
+    func run(executablePath: String, arguments: [String]) -> TerminalCommandResult? {
+        responses[arguments]
     }
 }

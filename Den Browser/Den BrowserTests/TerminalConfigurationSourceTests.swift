@@ -9,41 +9,53 @@ import Testing
 struct TerminalConfigurationSourceTests {
     @Test func zellijLaunchCommandsUseWelcomeOrNamedSession() {
         #expect(
-            ZellijLaunchCommand.command(
-                sessionName: nil,
-                executablePath: "/opt/homebrew/bin/zellij")
+            ZellijClient(executablePath: "/opt/homebrew/bin/zellij")
+                .launchCommand(sessionName: nil)
                 == "'/opt/homebrew/bin/zellij' -l welcome"
         )
         #expect(
-            ZellijLaunchCommand.command(
-                sessionName: "project's shell",
-                executablePath: "/opt/homebrew/bin/zellij")
+            ZellijClient(executablePath: "/opt/homebrew/bin/zellij")
+                .launchCommand(sessionName: "project's shell")
                 == "'/opt/homebrew/bin/zellij' attach --create 'project'\\''s shell'"
         )
-        #expect(ZellijLaunchCommand.command(sessionName: nil, executablePath: "zellij") == nil)
+        #expect(ZellijClient(executablePath: "zellij").launchCommand(sessionName: nil) == nil)
     }
 
     @Test func zmxLaunchCommandsUseNamedSession() {
         #expect(
-            ZmxLaunchCommand.command(
-                sessionName: "project's shell",
-                executablePath: "/opt/homebrew/bin/zmx")
+            ZmxClient(executablePath: "/opt/homebrew/bin/zmx")
+                .launchCommand(sessionName: "project's shell")
                 == "'/opt/homebrew/bin/zmx' attach 'project'\\''s shell'"
         )
-        #expect(ZmxLaunchCommand.command(sessionName: "", executablePath: "/opt/homebrew/bin/zmx") == nil)
-        #expect(ZmxLaunchCommand.command(sessionName: " ", executablePath: "/opt/homebrew/bin/zmx") == nil)
-        #expect(ZmxLaunchCommand.command(sessionName: "project", executablePath: "zmx") == nil)
+        #expect(ZmxClient(executablePath: "/opt/homebrew/bin/zmx").launchCommand(sessionName: "") == nil)
+        #expect(ZmxClient(executablePath: "/opt/homebrew/bin/zmx").launchCommand(sessionName: " ") == nil)
+        #expect(ZmxClient(executablePath: "zmx").launchCommand(sessionName: "project") == nil)
     }
 
     @Test func zmxChildLaunchCommandInitializesRootLabel() throws {
         let command = try #require(
-            ZmxLaunchCommand.command(
-                sessionName: "den-vi",
-                executablePath: "/opt/homebrew/bin/zmx",
-                rootSessionName: "den"))
+            ZmxClient(executablePath: "/opt/homebrew/bin/zmx")
+                .launchCommand(sessionName: "den-vi", rootSessionName: "den"))
 
         #expect(command.contains("attach 'den-vi' /bin/sh -lc"))
         #expect(command.contains("den.root=den"))
+    }
+
+    @Test func zmxClientReadsActiveSessionsAndRootLabel() throws {
+        let client = ZmxClient(
+            executablePath: "/opt/homebrew/bin/zmx",
+            commandRunner: StubTerminalCommandRunner(
+                responses: [
+                    ["list", "--short"]: TerminalCommandResult(
+                        terminationStatus: 0,
+                        standardOutput: "name=den-vi\tstatus=running\nplain-session\n"),
+                    ["get", "den-vi", "den.root"]: TerminalCommandResult(
+                        terminationStatus: 0,
+                        standardOutput: " den \n"),
+                ]))
+
+        #expect(client.activeSessionNames() == ["den-vi", "plain-session"])
+        #expect(client.rootSessionName(for: "den-vi") == "den")
     }
 
     @Test func zmxSessionNameGeneratorUsesRootAndSkipsCollisions() {
@@ -189,5 +201,13 @@ struct TerminalConfigurationSourceTests {
         var right = left
         right.keycode = 124
         #expect(ghostty_config_key_is_binding(config, right))
+    }
+}
+
+private struct StubTerminalCommandRunner: TerminalCommandRunning {
+    let responses: [[String]: TerminalCommandResult]
+
+    func run(executablePath: String, arguments: [String]) -> TerminalCommandResult? {
+        responses[arguments]
     }
 }

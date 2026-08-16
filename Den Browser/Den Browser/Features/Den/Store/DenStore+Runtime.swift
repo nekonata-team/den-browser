@@ -36,14 +36,11 @@ extension DenStore {
 
         let command: String?
         if board.isZellij {
-            command = ZellijLaunchCommand.command(
-                sessionName: board.zellijSessionName,
-                executablePath: preferences.zellijPath)
+            command = zellijClient.launchCommand(sessionName: board.zellijSessionName)
         } else if board.isZmx {
             command = board.zmxSessionName.flatMap {
-                ZmxLaunchCommand.command(
+                zmxClient.launchCommand(
                     sessionName: $0,
-                    executablePath: preferences.zmxPath,
                     rootSessionName: board.zmxRootSessionName)
             }
         } else {

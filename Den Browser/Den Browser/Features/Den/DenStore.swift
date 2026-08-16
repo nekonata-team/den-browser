@@ -121,6 +121,14 @@ final class DenStore {
     let sheetNavigation: SheetNavigationManager
     let preferences: AppPreferences
     let websiteDataStore: WKWebsiteDataStore
+    var zellijClient: ZellijClient {
+        ZellijClient(executablePath: preferences.zellijPath)
+    }
+    var zmxClient: ZmxClient {
+        ZmxClient(
+            executablePath: preferences.zmxPath,
+            commandRunner: terminalCommandRunner)
+    }
 
     var runtimes: [UUID: BoardRuntime] {
         get { storage.runtimes }
@@ -133,6 +141,7 @@ final class DenStore {
     @ObservationIgnored var drawerPreviewRuntime: DrawerPreviewRuntime?
     @ObservationIgnored var toastTask: Task<Void, Never>?
     @ObservationIgnored private var previousFocusedDeskID: UUID?
+    @ObservationIgnored private let terminalCommandRunner: any TerminalCommandRunning
     @ObservationIgnored let canPresentDesk: ((UUID) -> Bool)?
     @ObservationIgnored private let onDeskPresentationRequest: ((UUID) -> Bool)?
     @ObservationIgnored private let onWillResetDen: (() -> Void)?
@@ -213,13 +222,15 @@ final class DenStore {
     convenience init(
         state: DenState,
         sheetNavigation: SheetNavigationManager,
-        preferences: AppPreferences = AppPreferences()
+        preferences: AppPreferences = AppPreferences(),
+        terminalCommandRunner: any TerminalCommandRunning = ProcessTerminalCommandRunner()
     ) {
         self.init(
             state: state,
             websiteDataStore: .default(),
             sheetNavigation: sheetNavigation,
             preferences: preferences,
+            terminalCommandRunner: terminalCommandRunner,
             deskPresets: [],
             onSave: nil,
             onRecentItemsSave: nil
@@ -260,6 +271,7 @@ final class DenStore {
         websiteDataStore: WKWebsiteDataStore,
         sheetNavigation: SheetNavigationManager,
         preferences: AppPreferences = AppPreferences(),
+        terminalCommandRunner: any TerminalCommandRunning = ProcessTerminalCommandRunner(),
         deskPresets: [PersonalDeskPreset] = [],
         recentItems: [RecentItem] = [],
         onSave: ((DenState) -> Void)?,
@@ -279,6 +291,7 @@ final class DenStore {
         self.websiteDataStore = websiteDataStore
         self.sheetNavigation = sheetNavigation
         self.preferences = preferences
+        self.terminalCommandRunner = terminalCommandRunner
         canPresentDesk = nil
         onDeskPresentationRequest = nil
         onWillResetDen = nil
@@ -303,7 +316,8 @@ final class DenStore {
         preferences: AppPreferences,
         canPresentDesk: @escaping (UUID) -> Bool,
         onDeskPresentationRequest: @escaping (UUID) -> Bool,
-        onWillResetDen: @escaping () -> Void
+        onWillResetDen: @escaping () -> Void,
+        terminalCommandRunner: any TerminalCommandRunning = ProcessTerminalCommandRunner()
     ) {
         self.storage = storage
         self.presentedDeskID =
@@ -313,6 +327,7 @@ final class DenStore {
         self.websiteDataStore = websiteDataStore
         self.sheetNavigation = sheetNavigation
         self.preferences = preferences
+        self.terminalCommandRunner = terminalCommandRunner
         self.canPresentDesk = canPresentDesk
         self.onDeskPresentationRequest = onDeskPresentationRequest
         self.onWillResetDen = onWillResetDen

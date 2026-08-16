@@ -2,58 +2,6 @@ import Foundation
 import GhosttyTerminal
 import GhosttyTheme
 
-enum ZellijLaunchCommand {
-    static func isValidExecutablePath(_ path: String) -> Bool {
-        path.trimmingCharacters(in: .whitespacesAndNewlines).hasPrefix("/")
-    }
-
-    static func command(sessionName: String?, executablePath: String) -> String? {
-        let executablePath = executablePath.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard isValidExecutablePath(executablePath) else { return nil }
-
-        if let sessionName, !sessionName.isEmpty {
-            return "\(shellQuote(executablePath)) attach --create \(shellQuote(sessionName))"
-        }
-        return "\(shellQuote(executablePath)) -l welcome"
-    }
-
-    private static func shellQuote(_ value: String) -> String {
-        "'" + value.replacingOccurrences(of: "'", with: "'\\''") + "'"
-    }
-}
-
-enum ZmxLaunchCommand {
-    static func isValidExecutablePath(_ path: String) -> Bool {
-        path.trimmingCharacters(in: .whitespacesAndNewlines).hasPrefix("/")
-    }
-
-    static func command(
-        sessionName: String,
-        executablePath: String,
-        rootSessionName: String? = nil
-    ) -> String? {
-        let executablePath = executablePath.trimmingCharacters(in: .whitespacesAndNewlines)
-        let sessionName = sessionName.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard isValidExecutablePath(executablePath), !sessionName.isEmpty else { return nil }
-        guard let rootSessionName = rootSessionName?.trimmingCharacters(in: .whitespacesAndNewlines),
-            !rootSessionName.isEmpty
-        else {
-            return "\(shellQuote(executablePath)) attach \(shellQuote(sessionName))"
-        }
-
-        let rootLabel = shellQuote("den.root=\(rootSessionName)")
-        let initializeRootLabel =
-            "\(shellQuote(executablePath)) set . \(rootLabel) >/dev/null 2>&1 || true; "
-            + "exec \"${SHELL:-/bin/zsh}\" -l"
-        return "\(shellQuote(executablePath)) attach \(shellQuote(sessionName)) /bin/sh -lc "
-            + shellQuote(initializeRootLabel)
-    }
-
-    private static func shellQuote(_ value: String) -> String {
-        "'" + value.replacingOccurrences(of: "'", with: "'\\''") + "'"
-    }
-}
-
 enum ZmxSessionNameGenerator {
     static func normalizedSuffix(_ suffix: String) -> String {
         suffix.filter { character in
@@ -82,74 +30,6 @@ enum ZmxSessionNameGenerator {
             number += 1
         }
         return candidate
-    }
-}
-
-enum ZmxSessionNames {
-    static func active(executablePath: String) -> Set<String>? {
-        let executablePath = executablePath.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard ZmxLaunchCommand.isValidExecutablePath(executablePath) else { return nil }
-
-        let process = Process()
-        let output = Pipe()
-        process.executableURL = URL(fileURLWithPath: executablePath)
-        process.arguments = ["list", "--short"]
-        process.standardOutput = output
-        process.standardError = FileHandle.nullDevice
-
-        do {
-            try process.run()
-            process.waitUntilExit()
-        } catch {
-            return nil
-        }
-        guard process.terminationStatus == 0 else { return nil }
-
-        let data = output.fileHandleForReading.readDataToEndOfFile()
-        guard let text = String(data: data, encoding: .utf8) else { return [] }
-        return Set(
-            text.split(whereSeparator: \.isNewline).compactMap { rawLine in
-                let line = rawLine.trimmingCharacters(in: .whitespacesAndNewlines)
-                guard !line.isEmpty else { return nil }
-                if let nameField = line.split(separator: "\t").first(where: { $0.hasPrefix("name=") }) {
-                    return String(nameField.dropFirst("name=".count))
-                }
-                return String(line.split(separator: "\t").first ?? "")
-            }
-        )
-    }
-
-    static func rootSessionName(sessionName: String, executablePath: String) -> String? {
-        let executablePath = executablePath.trimmingCharacters(in: .whitespacesAndNewlines)
-        let sessionName = sessionName.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard ZmxLaunchCommand.isValidExecutablePath(executablePath), !sessionName.isEmpty else {
-            return nil
-        }
-
-        let process = Process()
-        let output = Pipe()
-        process.executableURL = URL(fileURLWithPath: executablePath)
-        process.arguments = ["get", sessionName, "den.root"]
-        process.standardOutput = output
-        process.standardError = FileHandle.nullDevice
-
-        do {
-            try process.run()
-            process.waitUntilExit()
-        } catch {
-            return nil
-        }
-        guard process.terminationStatus == 0 else { return nil }
-
-        let data = output.fileHandleForReading.readDataToEndOfFile()
-        guard
-            let rootSessionName = String(data: data, encoding: .utf8)?
-                .trimmingCharacters(in: .whitespacesAndNewlines),
-            !rootSessionName.isEmpty
-        else {
-            return nil
-        }
-        return rootSessionName
     }
 }
 
