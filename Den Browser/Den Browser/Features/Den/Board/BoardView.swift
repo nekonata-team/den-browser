@@ -5,6 +5,7 @@ struct BoardView: View {
     @Environment(DenStore.self) private var store
     @Environment(AppPreferences.self) private var preferences
     @Environment(\.accessibilityReduceMotion) private var systemReduceMotion
+    @Environment(\.accessibilityDifferentiateWithoutColor) private var differentiateWithoutColor
     let board: BoardState
     let isFocused: Bool
     let focusRequest: BoardFocusRequest?
@@ -127,7 +128,7 @@ struct BoardView: View {
 
     private var borderColor: Color {
         if isFocused {
-            return profileColor.opacity(0.75)
+            return differentiateWithoutColor ? .primary : profileColor.opacity(0.75)
         }
         return Color.primary.opacity(0.16)
     }

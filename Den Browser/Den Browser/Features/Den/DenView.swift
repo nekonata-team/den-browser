@@ -9,6 +9,7 @@ struct DenView<Header: View>: View {
     @Environment(DenStore.self) private var store
     @Environment(AppPreferences.self) private var preferences
     @Environment(\.accessibilityReduceMotion) private var systemReduceMotion
+    @Environment(\.accessibilityDifferentiateWithoutColor) private var differentiateWithoutColor
     @State private var urlText = ""
     @State private var openBoardAfterBoardID: UUID?
     @State private var editBoardLinkText = ""
@@ -181,7 +182,7 @@ struct DenView<Header: View>: View {
             RoundedRectangle(cornerRadius: DenRadius.medium, style: .continuous)
                 .stroke(
                     store.isDeskFilterInputActive
-                        ? profileColor.opacity(0.86)
+                        ? (differentiateWithoutColor ? Color.primary : profileColor.opacity(0.86))
                         : Color.primary.opacity(0.16),
                     lineWidth: store.isDeskFilterInputActive ? 1.5 : 1
                 )

@@ -4,6 +4,7 @@ import WebKit
 struct DrawerView: View {
     @Environment(DenStore.self) private var store
     @Environment(\.accessibilityReduceMotion) private var systemReduceMotion
+    @Environment(\.accessibilityDifferentiateWithoutColor) private var differentiateWithoutColor
 
     let availableHeight: CGFloat
     let profileColor: Color
@@ -129,7 +130,7 @@ struct DrawerView: View {
                 RoundedRectangle(cornerRadius: DenRadius.medium, style: .continuous)
                     .stroke(
                         store.isDrawerFilterInputActive
-                            ? profileColor.opacity(0.86)
+                            ? (differentiateWithoutColor ? Color.primary : profileColor.opacity(0.86))
                             : Color.primary.opacity(0.10),
                         lineWidth: store.isDrawerFilterInputActive ? 1.5 : 1
                     )
@@ -295,7 +296,7 @@ struct DrawerView: View {
             RoundedRectangle(cornerRadius: DenRadius.medium, style: .continuous)
                 .stroke(
                     store.selectedDrawerItemID == item.id
-                        ? profileColor.opacity(0.38)
+                        ? (differentiateWithoutColor ? Color.primary : profileColor.opacity(0.38))
                         : Color.primary.opacity(0.08)
                 )
         }

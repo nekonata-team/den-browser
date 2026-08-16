@@ -6,6 +6,7 @@ struct OverviewView: View {
     @Environment(DenStore.self) private var store
     @Environment(AppPreferences.self) private var preferences
     @Environment(\.accessibilityReduceMotion) private var systemReduceMotion
+    @Environment(\.accessibilityDifferentiateWithoutColor) private var differentiateWithoutColor
     @Environment(\.appearsActive) private var appearsActive
 
     @FocusState private var isSearchFocused: Bool
@@ -51,7 +52,7 @@ struct OverviewView: View {
                     RoundedRectangle(cornerRadius: DenRadius.medium, style: .continuous)
                         .stroke(
                             store.isOverviewFilterInputActive
-                                ? profileColor.opacity(0.86)
+                                ? (differentiateWithoutColor ? Color.primary : profileColor.opacity(0.86))
                                 : Color.primary.opacity(0.10),
                             lineWidth: store.isOverviewFilterInputActive ? 1.5 : 1
                         )
@@ -180,7 +181,14 @@ struct OverviewView: View {
                         .fill(profileColor)
                         .frame(
                             width: DenOverviewLayout.selectionIndicatorSize,
-                            height: DenOverviewLayout.selectionIndicatorSize)
+                            height: DenOverviewLayout.selectionIndicatorSize
+                        )
+                        .overlay {
+                            if differentiateWithoutColor {
+                                Circle()
+                                    .stroke(Color.primary, lineWidth: 1)
+                            }
+                        }
                 }
             }
             .foregroundStyle(Color.primary.opacity(desk.id == store.overviewSelectionDeskID ? 0.96 : 0.58))
@@ -344,7 +352,9 @@ struct OverviewView: View {
         .overlay {
             RoundedRectangle(cornerRadius: DenRadius.medium, style: .continuous)
                 .stroke(
-                    isSelected ? profileColor.opacity(0.86) : Color.primary.opacity(0.12),
+                    isSelected
+                        ? (differentiateWithoutColor ? Color.primary : profileColor.opacity(0.86))
+                        : Color.primary.opacity(0.12),
                     lineWidth: isSelected ? 2 : 1)
         }
     }

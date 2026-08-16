@@ -5,6 +5,7 @@ struct DeskSwitcher: View {
     @Environment(DenStore.self) private var store
     @Environment(AppPreferences.self) private var preferences
     @Environment(\.accessibilityReduceMotion) private var systemReduceMotion
+    @Environment(\.accessibilityDifferentiateWithoutColor) private var differentiateWithoutColor
     @Environment(\.appearsActive) private var appearsActive
 
     let profileColor: Color
@@ -93,6 +94,11 @@ struct DeskSwitcher: View {
         .background {
             if desk.id == store.presentedDeskID {
                 Capsule().fill(profileColor.opacity(0.35))
+            }
+        }
+        .overlay {
+            if desk.id == store.presentedDeskID, differentiateWithoutColor {
+                Capsule().stroke(Color.primary, lineWidth: 1)
             }
         }
         .glassEffect(.regular, in: Capsule())

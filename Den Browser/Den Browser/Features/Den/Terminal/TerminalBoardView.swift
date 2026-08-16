@@ -5,6 +5,7 @@ struct TerminalBoardView: View {
     @Environment(DenStore.self) private var store
     @Environment(AppPreferences.self) private var preferences
     @Environment(\.accessibilityReduceMotion) private var systemReduceMotion
+    @Environment(\.accessibilityDifferentiateWithoutColor) private var differentiateWithoutColor
 
     let board: BoardState
     let isFocused: Bool
@@ -208,7 +209,9 @@ struct TerminalBoardView: View {
     }
 
     private var borderColor: Color {
-        isFocused ? profileColor.opacity(0.75) : Color.primary.opacity(0.16)
+        isFocused
+            ? (differentiateWithoutColor ? .primary : profileColor.opacity(0.75))
+            : Color.primary.opacity(0.16)
     }
 
     private var boardDeskID: UUID? {

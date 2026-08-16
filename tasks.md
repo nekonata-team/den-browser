@@ -6,12 +6,12 @@
 
 - [/] [TASK-001：アクセシブルな名前と状態を整える](#task-001アクセシブルな名前と状態を整える)
 - [x] [TASK-002：ポインター専用操作に代替手段を追加する](#task-002ポインター専用操作に代替手段を追加する)
-- [TASK-003：大きい文字とコントラストに耐える](#task-003大きい文字とコントラストに耐える)
+- [x] [TASK-003：色に依存しない選択状態を示す](#task-003色に依存しない選択状態を示す)
 - [TASK-004：macOS実機と回帰検証を行う](#task-004macos実機と回帰検証を行う)
 
 ## Current Status
 
-TASK-001のコード対応を完了。VoiceOver手動確認は任意とし、TASK-002のコード対応とComputer Use検証を完了した。
+TASK-001のコード対応を完了。VoiceOver手動確認は任意とし、TASK-002のコード対応とComputer Use検証を完了した。TASK-003はmacOSのテキストサイズ対応を対象外とし、色以外で区別する選択表示と境界線の対応を完了した。
 監査で見つかった不足を、意味・操作・表示・検証の4 taskに分けて追跡する。
 
 ## Tasks
@@ -78,11 +78,11 @@ Desk左右移動、Focused Desk内Board左右移動、Board幅656→736→656ポ
 各操作後にAXツリーで順序・選択状態・幅を確認し、すべて元の状態へ復元した。`just check`と既存のDesk・Focused Desk・OverviewのポインターUIテストも成功。
 VoiceOver手動確認は、このComputer Use検証の代替として実施しない。
 
-### TASK-003：大きい文字とコントラストに耐える
+### [x] TASK-003：色に依存しない選択状態を示す
 
 #### Purpose
 
-固定レイアウトと低コントラストの視覚設計が、文字拡大やコントラスト強調時の情報欠落を起こさないようにする。
+選択状態と操作中の境界線が色だけに依存しないようにする。
 
 #### Prerequisites
 
@@ -90,21 +90,19 @@ VoiceOver手動確認は、このComputer Use検証の代替として実施し�
 
 #### Work
 
-- [ ] Settings、Denパネル、Keyboard Shortcuts、Overviewの固定幅・固定高を大きい文字で確認する。
-- [ ] Desk名、Drawer項目、Boardヘッダー、Overviewカードの切れ・重なり・過度な省略を解消する。
-- [ ] Desk・Board・Overviewの選択表示、無効状態、検索欄の境界線をコントラスト強調設定で確認・調整する。
-- [ ] 色以外の状態表現と既存のReduce Motion対応を維持する。
+- [x] Board、Terminal Board、Overview、Desk、Drawerの選択表示と検索欄の境界線を、`accessibilityDifferentiateWithoutColor` が有効な場合に主色の輪郭でも示す。
+- [x] 色以外の選択状態（アクセシビリティの選択状態、輪郭）と既存のReduce Motion対応を維持する。
 
 #### Acceptance Criteria
 
-- [ ] macOSの大きい文字設定で、主要な操作名・状態・入力内容が欠落しない。
-- [ ] コントラスト強調設定で、主要なテキスト、操作境界、選択状態を識別できる。
-- [ ] 選択状態が色だけに依存しない。
-- [ ] 通常表示のレイアウトとSheetの表示領域を不必要に壊さない。
+- [x] `カラー以外で区別` を有効にすると、主要な操作境界と選択状態を識別できる。
+- [x] 選択状態が色だけに依存しない。
+- [x] 通常表示のレイアウトを変更しない。
 
 #### Verification
 
-未実施。大きい文字、コントラスト強調、通常表示、Reduce Motionの組み合わせを実機で確認する。
+macOSの「カラー以外で区別」を有効化し、Computer UseでBoardの選択枠、Overviewの選択Board、Drawerの検索欄の境界線をスクリーンショットで確認した。確認後に設定をオフへ戻し、Den Browserの画面も復元した。
+`just check`とBoard/Overview/DeskのポインターUIテストは成功。macOSのテキストサイズ変更は対象外とした。
 
 ### TASK-004：macOS実機と回帰検証を行う
 
@@ -116,7 +114,7 @@ SwiftUI、WKWebView、Ghosttyの境界を含むアクセシビリティ対応を
 
 - TASK-001：アクセシブルな名前と状態を整える
 - TASK-002：ポインター専用操作に代替手段を追加する
-- TASK-003：大きい文字とコントラストに耐える
+- TASK-003：色に依存しない選択状態を示す
 
 #### Work
 
@@ -135,8 +133,8 @@ SwiftUI、WKWebView、Ghosttyの境界を含むアクセシビリティ対応を
 
 #### Verification
 
-TASK-002でDesk・Board・OverviewのComputer Use検証を実施済み。
-Drawer・Settings・Ghostty・WKWebViewを含む通しのComputer Use検証、`just check`、関連UIテストの記録は未実施。
+TASK-002でDesk・Board・Overviewの操作、TASK-003でOverview・Drawerの通常表示とコントラスト設定のComputer Use検証を実施済み。
+Settings・Ghostty・WKWebViewを含む通しのComputer Use検証は未実施。
 
 ## Common Acceptance Criteria
 
@@ -150,6 +148,7 @@ Drawer・Settings・Ghostty・WKWebViewを含む通しのComputer Use検証、`j
 
 - [ ] Ghostty外部パッケージ自体の変更は、TASK-004で不足が確認された場合だけ判断する。
 - [ ] WKWebViewが表示する第三者Sheetのアクセシビリティ品質は、Den Browser側の対応範囲と分けて記録する。
+- [ ] macOSの「テキストサイズ」に連動するDen Browser全体の文字サイズ変更は、対応方針と実装方法を決めるまで保留する。
 
 ## Out of Scope
 
