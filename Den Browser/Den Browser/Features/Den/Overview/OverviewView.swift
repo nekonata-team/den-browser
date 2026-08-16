@@ -262,7 +262,23 @@ struct OverviewView: View {
         .accessibilityValue(isSelected ? "Selected Board" : "")
         .accessibilityAddTraits(isSelected ? .isSelected : [])
         .accessibilityIdentifier("overview-board.\(board.id.uuidString.lowercased())")
-        .accessibilityHint("Drag to move this Board")
+        .accessibilityHint("Drag to move this Board, or use Board movement actions")
+        .accessibilityAction(named: "Move Board Left") {
+            store.selectBoardInOverview(board.id)
+            store.moveOverviewSelectionBoardLeft()
+        }
+        .accessibilityAction(named: "Move Board Right") {
+            store.selectBoardInOverview(board.id)
+            store.moveOverviewSelectionBoardRight()
+        }
+        .accessibilityAction(named: "Move Board to Previous Desk") {
+            store.selectBoardInOverview(board.id)
+            store.moveOverviewSelectionBoardToPreviousDesk()
+        }
+        .accessibilityAction(named: "Move Board to Next Desk") {
+            store.selectBoardInOverview(board.id)
+            store.moveOverviewSelectionBoardToNextDesk()
+        }
         .id(board.id)
     }
 

@@ -312,10 +312,20 @@ struct BoardView: View {
         )
         .pointerStyle(isDragging ? .grabActive : .grabIdle)
         .help("Drag to move Board")
-        .accessibilityHint("Drag to reorder this Board within the Focused Desk")
+        .accessibilityHint(
+            "Drag to reorder this Board within the Focused Desk, or use Board movement actions"
+        )
         .accessibilityElement(children: .combine)
         .accessibilityIdentifier("board-header.\(board.id.uuidString.lowercased())")
         .accessibilityAddTraits(isFocused ? .isSelected : [])
+        .accessibilityAction(named: "Move Board Left") {
+            store.focusBoard(board.id)
+            store.moveFocusedBoardLeft()
+        }
+        .accessibilityAction(named: "Move Board Right") {
+            store.focusBoard(board.id)
+            store.moveFocusedBoardRight()
+        }
     }
 
     private var navigationButtons: some View {

@@ -198,6 +198,12 @@ struct DeskSwitcher: View {
         .accessibilityAddTraits(desk.id == store.presentedDeskID ? .isSelected : [])
         .accessibilityValue(desk.id == store.presentedDeskID ? "Presented Desk" : "")
         .accessibilityAction { store.focusDesk(desk.id) }
+        .accessibilityAction(named: "Move Desk Left") {
+            store.moveDesk(desk.id, by: -1)
+        }
+        .accessibilityAction(named: "Move Desk Right") {
+            store.moveDesk(desk.id, by: 1)
+        }
         .accessibilityIdentifier("desk-switcher.\(desk.id.uuidString.lowercased())")
         .id(desk.id)
     }

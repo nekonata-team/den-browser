@@ -223,6 +223,7 @@ extension DenStore {
 
     private func moveOverviewSelectionBoard(by delta: Int) {
         guard
+            activeDrag == nil,
             let boardID = overviewSelectionBoardID,
             let indices = boardIndices(for: boardID)
         else { return }
@@ -242,6 +243,7 @@ extension DenStore {
 
     private func moveOverviewSelectionBoardToDesk(by delta: Int) {
         guard
+            activeDrag == nil,
             let boardID = overviewSelectionBoardID,
             state.desks.count > 1,
             let source = boardIndices(for: boardID)

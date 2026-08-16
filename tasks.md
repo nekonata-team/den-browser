@@ -5,13 +5,13 @@
 ## Contents
 
 - [/] [TASK-001：アクセシブルな名前と状態を整える](#task-001アクセシブルな名前と状態を整える)
-- [TASK-002：ポインター専用操作に代替手段を追加する](#task-002ポインター専用操作に代替手段を追加する)
+- [x] [TASK-002：ポインター専用操作に代替手段を追加する](#task-002ポインター専用操作に代替手段を追加する)
 - [TASK-003：大きい文字とコントラストに耐える](#task-003大きい文字とコントラストに耐える)
 - [TASK-004：macOS実機と回帰検証を行う](#task-004macos実機と回帰検証を行う)
 
 ## Current Status
 
-TASK-001を実装中。アクセシビリティ監査で見つかった意味・状態の不足から対応している。
+TASK-001のコード対応を完了。VoiceOver手動確認は任意とし、TASK-002のコード対応とComputer Use検証を完了した。
 監査で見つかった不足を、意味・操作・表示・検証の4 taskに分けて追跡する。
 
 ## Tasks
@@ -44,9 +44,9 @@ VoiceOverが操作対象の意味、現在の選択状態、Boardの補足情報
 #### Verification
 
 コード対応済み。`just check`、Overview/Deskの既存ポインターUIテストは成功。
-macOS 26のVoiceOver確認と必要なUIクエリの追加は未実施。
+VoiceOver手動確認は実施せず、Den全体のComputer Use検証はTASK-004で扱う。
 
-### TASK-002：ポインター専用操作に代替手段を追加する
+### [x] TASK-002：ポインター専用操作に代替手段を追加する
 
 #### Purpose
 
@@ -58,21 +58,25 @@ macOS 26のVoiceOver確認と必要なUIクエリの追加は未実施。
 
 #### Work
 
-- [ ] Desk reorderにキーボードまたはVoiceOverの左右移動アクションを追加する。
-- [ ] BoardResizeHandleを調整可能なアクセシビリティ要素として公開する。
-- [ ] Overview Boardの移動をVoiceOverアクションまたは同等の操作として公開する。
-- [ ] 既存のポインター操作、Den ModeのBoard移動、Overviewのキーボード操作を維持する。
+- [x] Desk reorderにキーボードまたはVoiceOverの左右移動アクションを追加する。
+- [x] BoardResizeHandleを調整可能なアクセシビリティ要素として公開する。
+- [x] Overview Boardの移動をVoiceOverアクションまたは同等の操作として公開する。
+- [x] 既存のポインター操作、Den ModeのBoard移動、Overviewのキーボード操作を維持する。
 
 #### Acceptance Criteria
 
-- [ ] ポインターなしでDeskの並べ替えを完了できる。
-- [ ] ポインターなしでFocused Desk内のBoard移動とBoard幅変更を完了できる。
-- [ ] ポインターなしでOverviewのBoard移動を完了できる。
-- [ ] 範囲外キャンセル、Desk切替、Focus状態、既存のドラッグ挙動が変わらない。
+- [x] ポインターなしでDeskの並べ替えを完了できる。
+- [x] ポインターなしでFocused Desk内のBoard移動とBoard幅変更を完了できる。
+- [x] ポインターなしでOverviewのBoard移動を完了できる。
+- [x] 範囲外キャンセル、Desk切替、Focus状態、既存のドラッグ挙動が変わらない。
 
 #### Verification
 
-未実施。キーボードのみ、VoiceOverの操作、既存のポインターUIテストで確認する。
+2026-08-16、`/Users/hiroaki/projects/niri-browser/.derived-data/Build/Products/Debug/Den Browser.app`をComputer Useで操作した。
+アクセシビリティツリーからDesk・Board・Overview Boardの移動アクションとBoard幅のIncrement/Decrementを取得し、以下を実行した。
+Desk左右移動、Focused Desk内Board左右移動、Board幅656→736→656ポイント、Overview内Board左右移動、OverviewのDesk間移動を確認した。
+各操作後にAXツリーで順序・選択状態・幅を確認し、すべて元の状態へ復元した。`just check`と既存のDesk・Focused Desk・OverviewのポインターUIテストも成功。
+VoiceOver手動確認は、このComputer Use検証の代替として実施しない。
 
 ### TASK-003：大きい文字とコントラストに耐える
 
@@ -116,7 +120,7 @@ SwiftUI、WKWebView、Ghosttyの境界を含むアクセシビリティ対応を
 
 #### Work
 
-- [ ] VoiceOverでDen、Desk、Board、Overview、Drawer、Settingsを通しで操作する。
+- [ ] Computer UseでDen、Desk、Board、Overview、Drawer、Settingsを通しで操作する。
 - [ ] Terminal BoardのGhostty側アクセシビリティ公開範囲を確認する。
 - [ ] WKWebViewのSheet入力、Drawer Preview入力、ネイティブダイアログのフォーカス移動を確認する。
 - [ ] 安定した状態・ラベル・操作をXCUITestまたはfocused unit testでカバーする。
@@ -124,14 +128,15 @@ SwiftUI、WKWebView、Ghosttyの境界を含むアクセシビリティ対応を
 
 #### Acceptance Criteria
 
-- [ ] VoiceOverで主要なDen操作を完了できる。
+- [ ] Computer Useで主要なDen操作を完了できる。
 - [ ] Terminal Board、Sheet、Drawer Previewからの入力フォーカスが破綻しない。
 - [ ] `just check`と関連UIテストが成功する。
 - [ ] 実機確認結果と未対応の外部依存が記録されている。
 
 #### Verification
 
-未実施。`just check`、関連UIテスト、macOS 26実機でのVoiceOver確認を記録する。
+TASK-002でDesk・Board・OverviewのComputer Use検証を実施済み。
+Drawer・Settings・Ghostty・WKWebViewを含む通しのComputer Use検証、`just check`、関連UIテストの記録は未実施。
 
 ## Common Acceptance Criteria
 

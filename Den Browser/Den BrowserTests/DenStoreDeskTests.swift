@@ -231,6 +231,27 @@ struct DenStoreDeskTests {
         #expect(store.state.desks.map(\.id) == [first.id, third.id, second.id])
     }
 
+    @Test func movingDeskByAccessibilityActionReordersOneStepAndPreservesFocus() {
+        let first = desk("First")
+        let second = desk("Second")
+        let third = desk("Third")
+        let store = DenStore(
+            state: DenState(desks: [first, second, third], focusedDeskID: second.id))
+
+        store.moveDesk(first.id, by: 1)
+
+        #expect(store.state.desks.map(\.id) == [second.id, first.id, third.id])
+        #expect(store.focusedDesk?.id == second.id)
+
+        store.moveDesk(third.id, by: 1)
+        #expect(store.state.desks.map(\.id) == [second.id, first.id, third.id])
+
+        #expect(store.beginDeskDrag(first.id))
+        store.moveDesk(third.id, by: -1)
+        #expect(store.state.desks.map(\.id) == [second.id, first.id, third.id])
+        store.finishDeskDrag()
+    }
+
     @Test func cancellingDeskDragPersistsRestoredOrderAfterBoardUpdate() {
         let firstBoard = board("First Board")
         let secondBoard = board("Second Board")

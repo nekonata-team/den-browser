@@ -732,6 +732,17 @@ struct BoardResizeHandle: View {
                     }
             )
             .help("Drag to resize board")
-            .accessibilityLabel("Resize \(board.displayName) board")
+            .accessibilityLabel("Resize \(board.displayName) Board")
+            .accessibilityValue("\(Int(board.width.rounded())) points")
+            .accessibilityAdjustableAction { direction in
+                guard (BoardState.minimumWidth...BoardState.maximumWidth).contains(board.width)
+                else { return }
+                let delta = direction == .increment ? 80.0 : -80.0
+                let adjustedWidth = BoardState.constrainedWidth(board.width + delta)
+                guard adjustedWidth != board.width else { return }
+                onResizeStart()
+                onResize(adjustedWidth)
+                onResizeEnd()
+            }
     }
 }

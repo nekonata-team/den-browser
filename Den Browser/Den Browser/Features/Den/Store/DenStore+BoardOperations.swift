@@ -225,6 +225,18 @@ extension DenStore {
         deskDragCancellationRequest &+= 1
     }
 
+    func moveDesk(_ deskID: UUID, by delta: Int) {
+        guard
+            temporaryContext == nil,
+            activeDrag == nil,
+            let deskIndex = state.desks.firstIndex(where: { $0.id == deskID }),
+            state.desks.indices.contains(deskIndex + delta)
+        else { return }
+
+        state.desks.swapAt(deskIndex, deskIndex + delta)
+        save()
+    }
+
     private func moveDeskFocus(by delta: Int) {
         guard let currentIndex = focusedDeskIndex, !state.desks.isEmpty else { return }
         dismissDeskFilter()
