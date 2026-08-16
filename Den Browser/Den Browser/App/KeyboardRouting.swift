@@ -177,7 +177,7 @@ enum AppAction: Equatable {
     case confirmDrawerFilterSelection
     case selectDrawerItem(Int)
     case toggleSelectedDrawerItem
-    case discardSelectedDrawerItem
+    case discardSelectedDrawerItem(focusNext: Bool)
     case placeSelectedDrawerItemAsBoard
     case requestDrawerClearConfirmation
     case enterDeskFilter
@@ -424,7 +424,9 @@ enum KeyboardRouter {
                 return event.isRepeat ? .consume(.ignoredRepeat) : .perform(.toggleSelectedDrawerItem)
             }
             if event.key == .backspace || event.key == .deleteForward {
-                return event.isRepeat ? .consume(.ignoredRepeat) : .perform(.discardSelectedDrawerItem)
+                return event.isRepeat
+                    ? .consume(.ignoredRepeat)
+                    : .perform(.discardSelectedDrawerItem(focusNext: true))
             }
             let action: AppAction? =
                 switch event.character?.lowercased() {
@@ -432,7 +434,8 @@ enum KeyboardRouter {
                 case "j": .selectDrawerItem(1)
                 case "k": .selectDrawerItem(-1)
                 case "p": .placeSelectedDrawerItemAsBoard
-                case "d": .discardSelectedDrawerItem
+                case "x": .discardSelectedDrawerItem(focusNext: false)
+                case "d": .discardSelectedDrawerItem(focusNext: true)
                 default:
                     switch event.key {
                     case .downArrow: .selectDrawerItem(1)
@@ -441,8 +444,13 @@ enum KeyboardRouter {
                     }
                 }
             guard let action else { return .consume(.exclusiveContext) }
-            if event.isRepeat, [.placeSelectedDrawerItemAsBoard, .discardSelectedDrawerItem].contains(action) {
-                return .consume(.ignoredRepeat)
+            if event.isRepeat {
+                switch action {
+                case .placeSelectedDrawerItemAsBoard, .discardSelectedDrawerItem:
+                    return .consume(.ignoredRepeat)
+                default:
+                    break
+                }
             }
             return .perform(action)
         }
@@ -453,7 +461,9 @@ enum KeyboardRouter {
             return event.isRepeat ? .consume(.ignoredRepeat) : .perform(.toggleSelectedDrawerItem)
         }
         if event.key == .backspace || event.key == .deleteForward {
-            return event.isRepeat ? .consume(.ignoredRepeat) : .perform(.discardSelectedDrawerItem)
+            return event.isRepeat
+                ? .consume(.ignoredRepeat)
+                : .perform(.discardSelectedDrawerItem(focusNext: true))
         }
         return switch event.key {
         case .downArrow: .perform(.selectDrawerItem(1))
@@ -666,7 +676,8 @@ enum AppActionHandler {
         case .confirmDrawerFilterSelection: store.confirmDrawerFilterSelection()
         case .selectDrawerItem(let offset): store.selectDrawerItem(by: offset)
         case .toggleSelectedDrawerItem: store.toggleSelectedDrawerItem()
-        case .discardSelectedDrawerItem: store.discardSelectedDrawerItem()
+        case .discardSelectedDrawerItem(let focusNext):
+            store.discardSelectedDrawerItem(focusNext: focusNext)
         case .placeSelectedDrawerItemAsBoard: store.placeSelectedDrawerItemAsBoard()
         case .requestDrawerClearConfirmation: store.requestDrawerClearConfirmation()
         case .enterDeskFilter: store.enterDeskFilter()

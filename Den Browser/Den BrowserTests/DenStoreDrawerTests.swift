@@ -442,22 +442,26 @@ struct DenStoreDrawerTests {
         #expect(store.drawerQuery.isEmpty)
     }
 
-    @Test func denModeKeyboardControlsDiscardDrawerItemWithD() throws {
+    @Test func denModeKeyboardControlsDiscardDrawerItemWithXAndD() throws {
         let source = desk("Desk")
         let store = DenStore(state: DenState(desks: [source], focusedDeskID: source.id))
         store.keepInDrawer(try #require(URL(string: "https://first.example/")))
         store.keepInDrawer(try #require(URL(string: "https://second.example/")))
+        store.keepInDrawer(try #require(URL(string: "https://third.example/")))
+        store.keepInDrawer(try #require(URL(string: "https://fourth.example/")))
         store.isDenMode = true
+        let itemIDs = store.state.drawerItems.map(\.id)
+        store.selectDrawerItem(by: 2)
 
         #expect(store.isDrawerOpen)
-        #expect(store.state.drawerItems.count == 2)
+        #expect(store.selectedDrawerItemID == itemIDs[2])
         #expect(KeyboardController.handle(try keyEvent("x", keyCode: 7), store: store))
-        #expect(store.state.drawerItems.count == 2)
+        #expect(store.state.drawerItems.map(\.id) == [itemIDs[0], itemIDs[1], itemIDs[3]])
+        #expect(store.selectedDrawerItemID == itemIDs[1])
         #expect(KeyboardController.handle(try keyEvent("d", keyCode: 2), store: store))
-        #expect(store.state.drawerItems.count == 1)
-        #expect(KeyboardController.handle(try keyEvent("d", keyCode: 2), store: store))
-        #expect(store.state.drawerItems.isEmpty)
-        #expect(!store.isDrawerOpen)
+        #expect(store.state.drawerItems.map(\.id) == [itemIDs[0], itemIDs[3]])
+        #expect(store.selectedDrawerItemID == itemIDs[3])
+        #expect(store.isDrawerOpen)
     }
 
     @Test func sheetInputLeavesVimStyleDrawerKeysUnclaimed() throws {

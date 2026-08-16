@@ -109,7 +109,8 @@ struct KeyboardShortcutsView: View {
                     item(["↑", "/", "↓", "or", "k", "/", "j"], "Select Drawer Item"),
                     item(["Return"], "Toggle Drawer Preview"),
                     item(["p"], "Place as Board"),
-                    item(["d", "or", "Delete"], "Discard Drawer Item"),
+                    item(["x"], "Discard Drawer Item and focus previous"),
+                    item(["d", "or", "Delete"], "Discard Drawer Item and focus next"),
                     item(["Escape"], "Exit Den Mode / close Drawer"),
                 ]),
             ShortcutGuideSection(

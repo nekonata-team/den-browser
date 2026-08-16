@@ -164,13 +164,13 @@ extension DenStore {
         discardDrawerItem(itemID, advancesPreview: true)
     }
 
-    private func discardDrawerItem(_ itemID: UUID, advancesPreview: Bool) {
+    private func discardDrawerItem(_ itemID: UUID, advancesPreview: Bool, focusNext: Bool = true) {
         guard let index = state.drawerItems.firstIndex(where: { $0.id == itemID }) else { return }
         let wasSelected = selectedDrawerItemID == itemID
         let wasExpanded = expandedDrawerItemID == itemID
-        let nextPreviewID =
-            advancesPreview && wasExpanded
-            ? nextDrawerItemID(after: itemID)
+        let adjacentItemID =
+            advancesPreview && wasSelected
+            ? adjacentDrawerItemID(after: itemID, focusNext: focusNext)
             : nil
 
         if wasExpanded {
@@ -180,10 +180,10 @@ extension DenStore {
         state.drawerItems.remove(at: index)
 
         if wasExpanded {
-            state.expandedDrawerItemID = nextPreviewID
-            selectedDrawerItemID = nextPreviewID ?? filteredDrawerItems.first?.id
+            state.expandedDrawerItemID = adjacentItemID
+            selectedDrawerItemID = adjacentItemID ?? filteredDrawerItems.first?.id
         } else if wasSelected {
-            selectedDrawerItemID = filteredDrawerItems.first?.id
+            selectedDrawerItemID = adjacentItemID ?? filteredDrawerItems.first?.id
         }
 
         if state.drawerItems.isEmpty {
@@ -192,9 +192,9 @@ extension DenStore {
         save()
     }
 
-    func discardSelectedDrawerItem() {
+    func discardSelectedDrawerItem(focusNext: Bool = true) {
         guard let selectedDrawerItemID else { return }
-        discardDrawerItem(selectedDrawerItemID)
+        discardDrawerItem(selectedDrawerItemID, advancesPreview: true, focusNext: focusNext)
     }
 
     func requestDrawerClearConfirmation() {
@@ -305,13 +305,15 @@ extension DenStore {
         selectedDrawerItemID = items.first?.id
     }
 
-    private func nextDrawerItemID(after itemID: UUID) -> UUID? {
+    private func adjacentDrawerItemID(after itemID: UUID, focusNext: Bool) -> UUID? {
         let items = filteredDrawerItems
         guard let index = items.firstIndex(where: { $0.id == itemID }) else { return nil }
-        if items.indices.contains(index + 1) {
-            return items[index + 1].id
+        let preferredIndex = index + (focusNext ? 1 : -1)
+        if items.indices.contains(preferredIndex) {
+            return items[preferredIndex].id
         }
-        guard index > items.startIndex else { return nil }
-        return items[index - 1].id
+        let fallbackIndex = index + (focusNext ? -1 : 1)
+        guard items.indices.contains(fallbackIndex) else { return nil }
+        return items[fallbackIndex].id
     }
 }
