@@ -35,7 +35,7 @@ struct PointerFocusStateTests {
             backing: .buffered,
             defer: false
         )
-        let host = SurfaceHost(content: NSView())
+        let host = SurfaceHost<BoardFocusRequest, NSView>(content: NSView())
         let request = BoardFocusRequest(deskID: UUID(), boardID: UUID())
         var handlingCount = 0
         host.update(request: request) { _ in

@@ -236,8 +236,8 @@ private struct TerminalBoardSurface: NSViewRepresentable {
 
     func makeCoordinator() -> Coordinator { Coordinator() }
 
-    func makeNSView(context: Context) -> SurfaceHost<AppTerminalView> {
-        let host = SurfaceHost(content: terminalView)
+    func makeNSView(context: Context) -> SurfaceHost<BoardFocusRequest, AppTerminalView> {
+        let host = SurfaceHost<BoardFocusRequest, AppTerminalView>(content: terminalView)
         context.coordinator.startRecognizing(view: terminalView, onFocus: onFocus)
         update(terminalView, coordinator: context.coordinator)
         host.update(request: focusRequest) { window in
@@ -246,7 +246,10 @@ private struct TerminalBoardSurface: NSViewRepresentable {
         return host
     }
 
-    func updateNSView(_ nsView: SurfaceHost<AppTerminalView>, context: Context) {
+    func updateNSView(
+        _ nsView: SurfaceHost<BoardFocusRequest, AppTerminalView>,
+        context: Context
+    ) {
         context.coordinator.onFocus = onFocus
         update(terminalView, coordinator: context.coordinator)
         nsView.update(request: focusRequest) { window in
@@ -254,7 +257,10 @@ private struct TerminalBoardSurface: NSViewRepresentable {
         }
     }
 
-    static func dismantleNSView(_ nsView: SurfaceHost<AppTerminalView>, coordinator: Coordinator) {
+    static func dismantleNSView(
+        _ nsView: SurfaceHost<BoardFocusRequest, AppTerminalView>,
+        coordinator: Coordinator
+    ) {
         nsView.content.setSurfaceVisible(false)
         coordinator.stopRecognizing()
     }

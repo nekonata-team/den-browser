@@ -19,8 +19,8 @@ struct BoardWebView: NSViewRepresentable {
         Coordinator()
     }
 
-    func makeNSView(context: Context) -> SurfaceHost<WKWebView> {
-        let host = SurfaceHost(content: webView)
+    func makeNSView(context: Context) -> SurfaceHost<BoardFocusRequest, WKWebView> {
+        let host = SurfaceHost<BoardFocusRequest, WKWebView>(content: webView)
         context.coordinator.startRecognizing(webView: webView, onFocus: onFocus)
         webView.isHidden = isHidden
         context.coordinator.updatePointerFocusEnabled(isPointerFocusEnabled)
@@ -31,7 +31,10 @@ struct BoardWebView: NSViewRepresentable {
         return host
     }
 
-    func updateNSView(_ nsView: SurfaceHost<WKWebView>, context: Context) {
+    func updateNSView(
+        _ nsView: SurfaceHost<BoardFocusRequest, WKWebView>,
+        context: Context
+    ) {
         context.coordinator.onFocus = onFocus
         webView.isHidden = isHidden
         context.coordinator.updatePointerFocusEnabled(isPointerFocusEnabled)
@@ -41,7 +44,10 @@ struct BoardWebView: NSViewRepresentable {
         }
     }
 
-    static func dismantleNSView(_ nsView: SurfaceHost<WKWebView>, coordinator: Coordinator) {
+    static func dismantleNSView(
+        _ nsView: SurfaceHost<BoardFocusRequest, WKWebView>,
+        coordinator: Coordinator
+    ) {
         coordinator.stopRecognizing()
     }
 
@@ -99,11 +105,11 @@ func needsFirstResponderActivation(_ firstResponder: NSResponder?, target: NSVie
     return firstResponderView !== target && !firstResponderView.isDescendant(of: target)
 }
 
-final class SurfaceHost<Content: NSView>: NSView {
+final class SurfaceHost<Request: Equatable, Content: NSView>: NSView {
     let content: Content
-    private var request: BoardFocusRequest?
+    private var request: Request?
     private var onReady: ((NSWindow) -> Bool)?
-    private var handledRequest: BoardFocusRequest?
+    private var handledRequest: Request?
     private weak var handledWindow: NSWindow?
     private var isNotificationScheduled = false
 
@@ -122,7 +128,7 @@ final class SurfaceHost<Content: NSView>: NSView {
 
     required init?(coder: NSCoder) { return nil }
 
-    func update(request: BoardFocusRequest?, onReady: @escaping (NSWindow) -> Bool) {
+    func update(request: Request?, onReady: @escaping (NSWindow) -> Bool) {
         if request == nil {
             handledRequest = nil
             handledWindow = nil

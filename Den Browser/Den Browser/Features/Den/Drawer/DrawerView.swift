@@ -372,42 +372,22 @@ private struct DrawerWebView: NSViewRepresentable {
     let webView: WKWebView
     let isFocused: Bool
 
-    func makeCoordinator() -> Coordinator {
-        Coordinator()
+    func makeNSView(context: Context) -> SurfaceHost<Bool, WKWebView> {
+        let host = SurfaceHost<Bool, WKWebView>(content: webView)
+        update(host)
+        return host
     }
 
-    func makeNSView(context: Context) -> WKWebView {
-        context.coordinator.updateFocus(isFocused, webView: webView)
-        return webView
+    func updateNSView(_ nsView: SurfaceHost<Bool, WKWebView>, context: Context) {
+        update(nsView)
     }
 
-    func updateNSView(_ nsView: WKWebView, context: Context) {
-        context.coordinator.updateFocus(isFocused, webView: nsView)
-    }
-
-    final class Coordinator {
-        private var isFocused = false
-        private weak var focusedWebView: WKWebView?
-        private var focusTask: Task<Void, Never>?
-
-        deinit {
-            focusTask?.cancel()
-        }
-
-        func updateFocus(_ newValue: Bool, webView: WKWebView) {
-            let webViewChanged = focusedWebView !== webView
-            guard newValue != isFocused || (newValue && webViewChanged) else { return }
-            isFocused = newValue
-            focusedWebView = newValue ? webView : nil
-
-            focusTask?.cancel()
-            guard newValue else { return }
-
-            focusTask = Task { @MainActor [weak webView] in
-                await Task.yield()
-                guard !Task.isCancelled, let webView else { return }
-                webView.window?.makeFirstResponder(webView)
+    private func update(_ host: SurfaceHost<Bool, WKWebView>) {
+        host.update(request: isFocused ? true : nil) { window in
+            guard needsFirstResponderActivation(window.firstResponder, target: webView) else {
+                return true
             }
+            return window.makeFirstResponder(webView)
         }
     }
 }
