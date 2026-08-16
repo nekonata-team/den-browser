@@ -120,6 +120,12 @@ struct AppConfiguration {
             secondFocusedBoardID = nil
             mainFocusedBoardID = alpha.id
             focusedDeskID = mainDeskID
+        case .focusedSecondBoard:
+            mainBoards = [alpha, bravo]
+            secondBoards = []
+            secondFocusedBoardID = nil
+            mainFocusedBoardID = bravo.id
+            focusedDeskID = mainDeskID
         case .overviewBoardPair:
             mainBoards = [bravo, charlie]
             secondBoards = []
@@ -224,6 +230,7 @@ struct AppConfiguration {
 
 private enum UITestFixture: String {
     case interactionBasics = "interaction-basics"
+    case focusedSecondBoard = "focused-second-board"
     case overviewBoardPair = "overview-board-pair"
     case focusedNonLeadingBoard = "focused-non-leading-board"
     case terminalOverview = "terminal-overview"

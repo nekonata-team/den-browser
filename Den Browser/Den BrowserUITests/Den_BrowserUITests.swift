@@ -571,15 +571,14 @@ final class Den_BrowserUITests: XCTestCase, BDD {
 
     @MainActor
     func testRemovingFocusedBoardSettlesAtLeadingEdge() throws {
-        let app = launchApp(boardCount: .two)
+        let app = launchApp(fixture: .focusedSecondBoard)
         let boardStrip = app.scrollViews["board-strip"].firstMatch
         let alpha = boardSurface(.alpha, in: app)
         let bravo = boardSurface(.bravo, in: app)
         let alphaHeader = boardHeader(.alpha, in: app)
         let bravoHeader = boardHeader(.bravo, in: app)
 
-        given("Bravo is the focused Board") {
-            bravoHeader.click()
+        given("Bravo starts as the focused Board") {
             XCTAssertTrue(bravoHeader.wait(for: \.isSelected, toEqual: true, timeout: 5))
         }
 
@@ -878,6 +877,7 @@ final class Den_BrowserUIPerformanceTests: XCTestCase {
 
 private enum UITestFixture: String {
     case interactionBasics = "interaction-basics"
+    case focusedSecondBoard = "focused-second-board"
     case overviewBoardPair = "overview-board-pair"
     case focusedNonLeadingBoard = "focused-non-leading-board"
     case terminalOverview = "terminal-overview"
@@ -885,6 +885,7 @@ private enum UITestFixture: String {
 
     var initialBoard: FixtureBoard {
         switch self {
+        case .focusedSecondBoard: .bravo
         case .focusedNonLeadingBoard: .charlie
         case .overviewBoardPair: .bravo
         default: .alpha
