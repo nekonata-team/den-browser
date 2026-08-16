@@ -105,3 +105,9 @@ publish $version: (_validate-version version) _require-main
     git push origin main
     just --yes release github "v${version}"
     just --yes release homebrew "$version"
+
+# Prepare and publish without manual candidate verification.
+[confirm("Prepare and publish release without manual verification?")]
+ship $version: (_validate-version version) _require-main _require-clean
+    just --yes release prepare "$version"
+    just --yes release publish "$version"

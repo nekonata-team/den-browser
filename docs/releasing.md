@@ -46,6 +46,26 @@ Runtime without the App Sandbox entitlement, the app contains arm64 and x86_64
 Ghostty slices, and a Terminal Board can run the user's Shell. Remove the test
 application before publishing.
 
+## Prepare and publish without candidate verification
+
+When manual candidate verification is not required, run the complete release:
+
+```sh
+just release ship X.Y.Z
+```
+
+This requires a clean `main` worktree, runs `prepare`, and then runs `publish`
+without stopping for candidate verification. The command asks for one
+confirmation before starting; pass `--yes` only when the whole release is
+intentionally non-interactive:
+
+```sh
+just --yes release ship X.Y.Z
+```
+
+If either phase fails, the command stops immediately. Use the component
+commands below to inspect and continue a partial release.
+
 ## Publish
 
 After verifying the candidate, publish it:
@@ -59,7 +79,7 @@ tag, creates a GitHub Release with the notarized ZIP artifact and links to the
 tagged source, MPL 2.0 license, and third-party notices in its release notes,
 opens the Homebrew Cask pull request, and enables rebase auto-merge.
 
-Both orchestration commands stop at the first failure. The component commands
+All orchestration commands stop at the first failure. The component commands
 remain available:
 
 ```sh
