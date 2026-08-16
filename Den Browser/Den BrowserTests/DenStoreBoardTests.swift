@@ -191,6 +191,45 @@ struct DenStoreBoardTests {
         #expect(store.recentItems.first == .zmx(sessionName: "den-vi-2"))
     }
 
+    @Test func zmxBoardDuplicationUsesTheSourceRootLabel() throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appending(path: "den-browser-zmx-\(UUID())", directoryHint: .isDirectory)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+
+        let executable = directory.appending(path: "zmx")
+        try """
+        #!/bin/sh
+        if [ "$1" = "list" ]; then
+          printf 'den-vi\\n'
+        elif [ "$1" = "get" ] && [ "$2" = "den-vi" ] && [ "$3" = "den.root" ]; then
+          printf 'den\\n'
+        fi
+        """.write(to: executable, atomically: true, encoding: .utf8)
+        try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: executable.path)
+
+        let sourceBoard = BoardState(
+            width: 640,
+            zmxSessionName: "den-vi",
+            workingDirectory: "/tmp/project")
+        let source = desk("Desk", boards: [sourceBoard], focusedBoardID: sourceBoard.id)
+        let suiteName = "DenStoreZmxRootLabelTests-\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let preferences = AppPreferences(defaults: defaults)
+        preferences.setZmxPath(executable.path)
+        let store = DenStore(
+            state: DenState(desks: [source], focusedDeskID: source.id),
+            sheetNavigation: SheetNavigationManager(),
+            preferences: preferences)
+
+        store.duplicateFocusedBoard()
+        #expect(store.zmxDuplicationRootSessionName == "den")
+        #expect(store.duplicateFocusedZmxBoard(suffix: "nvim"))
+        #expect(store.focusedBoard?.zmxSessionName == "den-nvim")
+        #expect(store.focusedBoard?.zmxRootSessionName == "den")
+    }
+
     @Test func invalidTerminalInputDoesNotCreateRecentItem() {
         let source = desk("Desk")
         let store = DenStore(state: DenState(desks: [source], focusedDeskID: source.id))

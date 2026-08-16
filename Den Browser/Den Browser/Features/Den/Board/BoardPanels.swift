@@ -193,7 +193,7 @@ struct ZmxDuplicationPanel: View {
     @Binding var text: String
     @FocusState.Binding var isFocused: Bool
 
-    let sourceSessionName: String
+    let rootSessionName: String
     let onSubmit: () -> Void
     let onDismiss: () -> Void
 
@@ -214,7 +214,7 @@ struct ZmxDuplicationPanel: View {
                 .onSubmit { TextInputComposition.performUnlessActive(onSubmit) }
             }
 
-            Text("Creates \(sourceSessionName)-… in the same Working Directory")
+            Text("Creates \(rootSessionName)-… in the same Working Directory")
                 .foregroundStyle(.secondary)
 
             HStack(spacing: DenPanelLayout.contentSpacing) {

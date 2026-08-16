@@ -68,7 +68,12 @@ extension DenStore {
     }
 
     func showZmxDuplicationPanel() {
-        guard focusedBoard?.isZmx == true else { return }
+        guard
+            let board = focusedBoard,
+            board.isZmx,
+            let rootSessionName = zmxRootSessionName(for: board)
+        else { return }
+        updateZmxDuplicationRootSessionName(rootSessionName)
         setTemporaryContext(.zmxDuplication)
     }
 

@@ -363,7 +363,9 @@ struct DenView<Header: View>: View {
         ZmxDuplicationPanel(
             text: zmxDuplicationTextBinding,
             isFocused: $isZmxDuplicationPanelFocused,
-            sourceSessionName: store.focusedBoard?.zmxSessionName ?? "zmx",
+            rootSessionName: store.zmxDuplicationRootSessionName
+                ?? store.focusedBoard?.zmxSessionName
+                ?? "zmx",
             onSubmit: duplicateFocusedZmxBoard,
             onDismiss: dismissZmxDuplicationPanel)
     }

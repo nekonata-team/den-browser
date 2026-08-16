@@ -118,6 +118,39 @@ enum ZmxSessionNames {
             }
         )
     }
+
+    static func rootSessionName(sessionName: String, executablePath: String) -> String? {
+        let executablePath = executablePath.trimmingCharacters(in: .whitespacesAndNewlines)
+        let sessionName = sessionName.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard ZmxLaunchCommand.isValidExecutablePath(executablePath), !sessionName.isEmpty else {
+            return nil
+        }
+
+        let process = Process()
+        let output = Pipe()
+        process.executableURL = URL(fileURLWithPath: executablePath)
+        process.arguments = ["get", sessionName, "den.root"]
+        process.standardOutput = output
+        process.standardError = FileHandle.nullDevice
+
+        do {
+            try process.run()
+            process.waitUntilExit()
+        } catch {
+            return nil
+        }
+        guard process.terminationStatus == 0 else { return nil }
+
+        let data = output.fileHandleForReading.readDataToEndOfFile()
+        guard
+            let rootSessionName = String(data: data, encoding: .utf8)?
+                .trimmingCharacters(in: .whitespacesAndNewlines),
+            !rootSessionName.isEmpty
+        else {
+            return nil
+        }
+        return rootSessionName
+    }
 }
 
 enum TerminalConfigurationSource {

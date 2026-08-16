@@ -60,6 +60,7 @@ final class DenStore {
     var essentials: [Essential] { preferences.essentials }
     private(set) var presentedDeskID: UUID
     private(set) var temporaryContext: TemporaryContext?
+    private(set) var zmxDuplicationRootSessionName: String?
     var isZenViewPresented = false
     var isFocusModePresented = false
     var isDenMode = false
@@ -88,6 +89,11 @@ final class DenStore {
         set { storage.recentlyRemovedBoard = newValue }
     }
     var isDrawerOpen: Bool { temporaryContext == .drawer }
+
+    func updateZmxDuplicationRootSessionName(_ rootSessionName: String?) {
+        zmxDuplicationRootSessionName = rootSessionName
+    }
+
     var isDeskFilterPresented: Bool { deskFilterPhase != .inactive }
     var isDeskFilterInputActive: Bool { deskFilterPhase == .filtering }
     var isDeskFilterSelecting: Bool { deskFilterPhase == .selecting }
@@ -564,6 +570,9 @@ final class DenStore {
         if temporaryContext == .drawer, context != .drawer {
             drawerQuery = ""
             drawerFilterPhase = .inactive
+        }
+        if temporaryContext == .zmxDuplication, context != .zmxDuplication {
+            zmxDuplicationRootSessionName = nil
         }
         temporaryContext = context
     }

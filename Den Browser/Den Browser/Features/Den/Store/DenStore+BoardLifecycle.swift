@@ -431,6 +431,16 @@ extension DenStore {
         )
     }
 
+    func zmxRootSessionName(for board: BoardState) -> String? {
+        guard let sessionName = board.zmxSessionName else { return nil }
+        return
+            ZmxSessionNames.rootSessionName(
+                sessionName: sessionName,
+                executablePath: preferences.zmxPath)
+            ?? board.zmxRootSessionName
+            ?? sessionName
+    }
+
     @discardableResult
     func duplicateFocusedZmxBoard(suffix: String) -> Bool {
         guard
@@ -448,7 +458,7 @@ extension DenStore {
         let denSessionNames = state.desks.flatMap { desk in
             desk.boards.compactMap(\.zmxSessionName)
         }
-        let rootSessionName = source.zmxRootSessionName ?? sessionName
+        let rootSessionName = zmxRootSessionName(for: source) ?? sessionName
         let newSessionName = ZmxSessionNameGenerator.nextName(
             rootSessionName: rootSessionName,
             suffix: suffix,
