@@ -279,8 +279,12 @@ final class Den_BrowserUITests: XCTestCase, BDD {
         let charlie = overviewBoard(.charlie, in: app)
 
         given("Bravo and Charlie are exposed as draggable Overview Boards") {
-            XCTAssertTrue(bravo.waitForExistence(timeout: 5))
-            XCTAssertTrue(charlie.waitForExistence(timeout: 5))
+            XCTAssertTrue(
+                bravo.wait(for: \.isHittable, toEqual: true, timeout: 5),
+                "Bravo should be ready for pointer interaction")
+            XCTAssertTrue(
+                charlie.wait(for: \.isHittable, toEqual: true, timeout: 5),
+                "Charlie should be ready for pointer interaction")
         }
 
         when("dragging Bravo to the right of Charlie") {
