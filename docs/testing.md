@@ -51,7 +51,7 @@ Exploratory human validation is reserved for milestone checks that depend on mac
 - Multiple-window placement and focus behavior across physical displays.
 - Performance and resource use.
 - Ghostty rendering, IME, Shell environment, Zellij/zmx detach and reattach behavior, and process cleanup.
-- Liquid Glass, visual quality, and accessibility.
+- Liquid Glass, visual quality, and accessibility. On macOS, use Computer Use as an AX-based exploratory check for Den, Desk, Board, Overview, Drawer, Settings, app dialogs, and first-responder handoff. Record the accessibility boundary of external surfaces separately: WKWebView content belongs to the loaded site, and Ghostty's internal terminal content may not be exposed through the app AX tree.
 
 Human validation is exploratory, not a correctness guarantee. When it finds a reproducible regression, add an automated test where practical.
 

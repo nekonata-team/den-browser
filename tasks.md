@@ -7,11 +7,11 @@
 - [/] [TASK-001：アクセシブルな名前と状態を整える](#task-001アクセシブルな名前と状態を整える)
 - [x] [TASK-002：ポインター専用操作に代替手段を追加する](#task-002ポインター専用操作に代替手段を追加する)
 - [x] [TASK-003：色に依存しない選択状態を示す](#task-003色に依存しない選択状態を示す)
-- [TASK-004：macOS実機と回帰検証を行う](#task-004macos実機と回帰検証を行う)
+- [/] [TASK-004：macOS実機と回帰検証を行う](#task-004macos実機と回帰検証を行う)
 
 ## Current Status
 
-TASK-001のコード対応を完了。VoiceOver手動確認は任意とし、TASK-002のコード対応とComputer Use検証を完了した。TASK-003はmacOSのテキストサイズ対応を対象外とし、色以外で区別する選択表示と境界線の対応を完了した。
+TASK-001のコード対応を完了。VoiceOver手動確認は任意とし、TASK-002のコード対応とComputer Use検証を完了した。TASK-003はmacOSのテキストサイズ対応を対象外とし、色以外で区別する選択表示と境界線の対応を完了した。TASK-004はmacOS実機のComputer Use検証を進め、Ghostty内部のAX公開と第三者Webサイトの品質を外部依存として切り分けた。
 監査で見つかった不足を、意味・操作・表示・検証の4 taskに分けて追跡する。
 
 ## Tasks
@@ -104,7 +104,7 @@ VoiceOver手動確認は、このComputer Use検証の代替として実施し�
 macOSの「カラー以外で区別」を有効化し、Computer UseでBoardの選択枠、Overviewの選択Board、Drawerの検索欄の境界線をスクリーンショットで確認した。確認後に設定をオフへ戻し、Den Browserの画面も復元した。
 `just check`とBoard/Overview/DeskのポインターUIテストは成功。macOSのテキストサイズ変更は対象外とした。
 
-### TASK-004：macOS実機と回帰検証を行う
+### [/] TASK-004：macOS実機と回帰検証を行う
 
 #### Purpose
 
@@ -118,23 +118,24 @@ SwiftUI、WKWebView、Ghosttyの境界を含むアクセシビリティ対応を
 
 #### Work
 
-- [ ] Computer UseでDen、Desk、Board、Overview、Drawer、Settingsを通しで操作する。
-- [ ] Terminal BoardのGhostty側アクセシビリティ公開範囲を確認する。
-- [ ] WKWebViewのSheet入力、Drawer Preview入力、ネイティブダイアログのフォーカス移動を確認する。
+- [x] Computer UseでDen、Desk、Board、Overview、Drawer、Settingsを通しで操作する。
+- [x] Terminal BoardのGhostty側アクセシビリティ公開範囲を確認する。
+- [x] WKWebViewのSheet入力、Drawer Preview入力、アプリ内ダイアログのフォーカス移動を確認する。
 - [ ] 安定した状態・ラベル・操作をXCUITestまたはfocused unit testでカバーする。
-- [ ] `docs/testing.md`のアクセシビリティ検証方針を必要に応じて更新する。
+- [x] `docs/testing.md`のアクセシビリティ検証方針を更新する。
 
 #### Acceptance Criteria
 
-- [ ] Computer Useで主要なDen操作を完了できる。
-- [ ] Terminal Board、Sheet、Drawer Previewからの入力フォーカスが破綻しない。
-- [ ] `just check`と関連UIテストが成功する。
-- [ ] 実機確認結果と未対応の外部依存が記録されている。
+- [x] Computer Useで主要なDen操作を完了できる。
+- [/] Terminal Board、Sheet、Drawer Previewからの入力フォーカスが破綻しない。アプリ境界の切替とSheet／PreviewのAXフォーカスは確認できたが、Ghostty内部の端末文字列・コントロールはAXツリーに公開されない。
+- [x] `just check`と関連UIテストが成功する。
+- [x] 実機確認結果と未対応の外部依存が記録されている。
 
 #### Verification
 
 TASK-002でDesk・Board・Overviewの操作、TASK-003でOverview・Drawerの通常表示とコントラスト設定のComputer Use検証を実施済み。
-Settings・Ghostty・WKWebViewを含む通しのComputer Use検証は未実施。
+2026-08-16、`/Users/hiroaki/projects/niri-browser/.derived-data/Build/Products/Debug/Den Browser.app`をComputer Useで再確認した。Settingsの全タブで見出し・入力・Toggle・Slider・Buttonの名前、役割、値を確認した。GhosttyはTerminal Boardの表示、Den Mode／Terminal Inputの切替を確認できたが、端末内部の文字列・操作部品はAXツリーに公開されなかった。WKWebViewのSheetとDrawer PreviewはHTML content、リンク、Button、Text Entry Areaまで公開され、Tab操作後にWeb内容へフォーカスできた。Keyboard Shortcutsアプリ内ダイアログは閉じるButtonと全ショートカット項目を確認できた。確認用に作成したDrawer Itemとフォーカスは元へ戻した。
+今回の`just check`とTASK-002・TASK-003で実施した関連UIテストは成功した。Ghostty内部のAX公開は外部パッケージの対応範囲、第三者Webサイトのアクセシビリティ品質はDen Browserの対応範囲外として残す。AXラベル・状態の専用XCUITest追加は未実施。
 
 ## Common Acceptance Criteria
 
