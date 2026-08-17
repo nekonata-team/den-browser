@@ -2,6 +2,7 @@
 ruby = "4.0.6"
 lefthook = "2.1.10"
 rtk = "0.44.1"
+"asdf:jq" = "1.8.2"
 swiftlint = "0.65.0"
 
 [hooks]
