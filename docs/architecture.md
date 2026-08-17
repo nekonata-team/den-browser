@@ -77,7 +77,7 @@ Persisted `DenState` remains separate from live Web and Terminal runtime objects
 - `BoardRuntime` owns live WebKit state, including each Board's in-memory Sheet Stack.
 - `TerminalRuntime` owns one libghostty surface and Shell, Zellij, or zmx process. One controller is used per Terminal Board.
 - Each Profile has one shared `DenStorage` for persisted state and live runtimes. Each Profile window has a `DenStore` for its own presented Desk and transient presentation state.
-- `DenView` renders only the Desk assigned to its window. Shared runtime storage retains both runtime types across Desk and window changes; detached Terminal views stop rendering without ending their process.
+- `DenView` renders only the Desk assigned to its window. Shared runtime storage retains both runtime types across Desk and window changes; detached Terminal views stop rendering without ending their process. A detached TerminalRuntime also runs low-frequency app ticks until its surface is visible again or the runtime is disposed; this follows [ADR 0040](./adr/0040-tick-detached-terminal-runtimes.md).
 - Persistence never serializes WebKit objects, terminal processes, terminal screens, or scrollback.
 
 This boundary follows [ADR 0008](./adr/0008-codable-den-state-webview-runtime.md).

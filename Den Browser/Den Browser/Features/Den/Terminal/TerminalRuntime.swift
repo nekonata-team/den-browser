@@ -16,8 +16,13 @@ final class TerminalRuntime: NSObject, ObservableObject {
     let terminalView: AppTerminalView
     private var controller: TerminalController?
     private var events: Events
+    private var hiddenTickTask: Task<Void, Never>?
     private var isDisposed = false
     private var isCloseNotificationScheduled = false
+    private var isSurfaceVisible = true
+
+    // Keep libghostty app_tick processing while the surface's display link is paused.
+    private static let hiddenTickInterval = Duration.seconds(1)
 
     init(workingDirectory: String, command: String? = nil, events: Events) {
         self.events = events
@@ -39,13 +44,41 @@ final class TerminalRuntime: NSObject, ObservableObject {
         self.events = events
     }
 
+    func setSurfaceVisible(_ visible: Bool) {
+        guard !isDisposed, isSurfaceVisible != visible else { return }
+        isSurfaceVisible = visible
+        if visible {
+            stopHiddenTicking()
+        } else {
+            startHiddenTicking()
+        }
+        terminalView.setSurfaceVisible(visible)
+    }
+
     func dispose() {
         guard !isDisposed else { return }
         isDisposed = true
+        stopHiddenTicking()
         terminalView.setSurfaceVisible(false)
         terminalView.delegate = nil
         terminalView.controller = nil
         controller = nil
+    }
+
+    private func startHiddenTicking() {
+        guard hiddenTickTask == nil else { return }
+        hiddenTickTask = Task { [weak self] in
+            while !Task.isCancelled {
+                guard let self, !self.isDisposed else { return }
+                self.controller?.tick()
+                try? await Task.sleep(for: Self.hiddenTickInterval)
+            }
+        }
+    }
+
+    private func stopHiddenTicking() {
+        hiddenTickTask?.cancel()
+        hiddenTickTask = nil
     }
 }
 

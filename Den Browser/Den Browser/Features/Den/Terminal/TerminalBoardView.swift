@@ -26,6 +26,7 @@ struct TerminalBoardView: View {
             header
             TerminalBoardSurface(
                 terminalView: runtime.terminalView,
+                onSurfaceVisibilityChange: { runtime.setSurfaceVisible($0) },
                 isFocused: isFocused && !store.isDenMode && store.temporaryContext == nil,
                 isHidden: store.isDrawerOpen || store.isOverviewPresented,
                 isPointerFocusEnabled: isPointerFocusEnabled,
@@ -227,6 +228,7 @@ struct TerminalBoardView: View {
 
 private struct TerminalBoardSurface: NSViewRepresentable {
     let terminalView: AppTerminalView
+    let onSurfaceVisibilityChange: (Bool) -> Void
     let isFocused: Bool
     let isHidden: Bool
     let isPointerFocusEnabled: Bool
@@ -261,13 +263,15 @@ private struct TerminalBoardSurface: NSViewRepresentable {
         _ nsView: SurfaceHost<BoardFocusRequest, AppTerminalView>,
         coordinator: Coordinator
     ) {
-        nsView.content.setSurfaceVisible(false)
+        coordinator.onSurfaceVisibilityChange?(false)
+        coordinator.onSurfaceVisibilityChange = nil
         coordinator.stopRecognizing()
     }
 
     private func update(_ view: AppTerminalView, coordinator: Coordinator) {
+        coordinator.onSurfaceVisibilityChange = onSurfaceVisibilityChange
         view.isHidden = isHidden
-        view.setSurfaceVisible(!isHidden)
+        onSurfaceVisibilityChange(!isHidden)
         coordinator.updatePointerFocusEnabled(isPointerFocusEnabled)
         coordinator.updateFocus(isFocused)
     }
@@ -275,6 +279,7 @@ private struct TerminalBoardSurface: NSViewRepresentable {
     final class Coordinator: NSGestureRecognizer {
         private var pointerFocusState = PointerFocusState()
         fileprivate var onFocus: (() -> Void)?
+        fileprivate var onSurfaceVisibilityChange: ((Bool) -> Void)?
 
         init() { super.init(target: nil, action: nil) }
         required init?(coder: NSCoder) { super.init(coder: coder) }
