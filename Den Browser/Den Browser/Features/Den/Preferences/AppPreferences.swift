@@ -68,6 +68,7 @@ final class AppPreferences {
     private(set) var deskNumberBinding: ShortcutBinding?
     private(set) var motionPreference: MotionPreference
     private(set) var nativePictureInPictureEnabled: Bool
+    private(set) var uBOLiteEnabled: Bool
     private(set) var boardCentering: FocusedBoardCentering
     private(set) var sheetScale: Int
     private(set) var zellijPath: String
@@ -84,6 +85,7 @@ final class AppPreferences {
     private static let motionKey = "preferences.appearance.motion.mode"
     private static let nativePictureInPictureEnabledKey =
         "preferences.picture-in-picture.enabled"
+    private static let uBOLiteEnabledKey = "preferences.content-blocking.ubolite.enabled"
     private static let boardCenteringKey = "preferences.appearance.board-centering.mode"
     private static let sheetScaleKey = "preferences.appearance.sheet-scale.percent"
     private static let zellijPathKey = "preferences.terminal.zellij.executable-path"
@@ -100,6 +102,7 @@ final class AppPreferences {
             ?? .followSystem
         nativePictureInPictureEnabled = defaults.bool(
             forKey: Self.nativePictureInPictureEnabledKey)
+        uBOLiteEnabled = defaults.bool(forKey: Self.uBOLiteEnabledKey)
         boardCentering =
             defaults.string(forKey: Self.boardCenteringKey).flatMap(FocusedBoardCentering.init(rawValue:))
             ?? .never
@@ -132,6 +135,11 @@ final class AppPreferences {
     func setNativePictureInPictureEnabled(_ enabled: Bool) {
         nativePictureInPictureEnabled = enabled
         defaults.set(enabled, forKey: Self.nativePictureInPictureEnabledKey)
+    }
+
+    func setUBOLiteEnabled(_ enabled: Bool) {
+        uBOLiteEnabled = enabled
+        defaults.set(enabled, forKey: Self.uBOLiteEnabledKey)
     }
 
     func setMotionPreference(_ preference: MotionPreference) {

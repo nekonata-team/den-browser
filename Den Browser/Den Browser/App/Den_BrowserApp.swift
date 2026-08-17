@@ -20,7 +20,13 @@ struct Den_BrowserApp: App {
             sheetNavigation: sheetNavigation,
             preferences: preferences,
             initialProfile: configuration.initialProfile,
-            websiteDataStore: configuration.websiteDataStore)
+            websiteDataStore: configuration.websiteDataStore,
+            webExtensionDescriptors: [
+                BundledWebExtensionDescriptor(
+                    identifier: "com.denbrowser.ubolite",
+                    resourceName: "uBOLite.safari.zip",
+                    preapproveRequestedAccess: true)
+            ])
         _profileManager = State(initialValue: manager)
     }
 

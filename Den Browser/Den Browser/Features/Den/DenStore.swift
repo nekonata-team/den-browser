@@ -129,6 +129,8 @@ final class DenStore {
             executablePath: preferences.zmxPath,
             commandRunner: terminalCommandRunner)
     }
+    private(set) var webExtensionHost: MV3WebExtensionHost?
+    private(set) var webExtensionWindow: MV3WebExtensionWindow?
 
     var runtimes: [UUID: BoardRuntime] {
         get { storage.runtimes }
@@ -158,6 +160,16 @@ final class DenStore {
             let boardIndex = focusedBoardIndex(in: deskIndex)
         else { return nil }
         return state.desks[deskIndex].boards[boardIndex]
+    }
+
+    func updateWebExtensionHost(
+        _ host: MV3WebExtensionHost?,
+        window: MV3WebExtensionWindow?
+    ) {
+        guard webExtensionHost !== host || webExtensionWindow !== window else { return }
+        releaseWebRuntimes()
+        webExtensionHost = host
+        webExtensionWindow = window
     }
 
     var contentInputLabel: String {
@@ -272,6 +284,8 @@ final class DenStore {
         sheetNavigation: SheetNavigationManager,
         preferences: AppPreferences = AppPreferences(),
         terminalCommandRunner: any TerminalCommandRunning = ProcessTerminalCommandRunner(),
+        webExtensionHost: MV3WebExtensionHost? = nil,
+        webExtensionWindow: MV3WebExtensionWindow? = nil,
         deskPresets: [PersonalDeskPreset] = [],
         recentItems: [RecentItem] = [],
         onSave: ((DenState) -> Void)?,
@@ -292,6 +306,8 @@ final class DenStore {
         self.sheetNavigation = sheetNavigation
         self.preferences = preferences
         self.terminalCommandRunner = terminalCommandRunner
+        self.webExtensionHost = webExtensionHost
+        self.webExtensionWindow = webExtensionWindow
         canPresentDesk = nil
         onDeskPresentationRequest = nil
         onWillResetDen = nil
@@ -314,6 +330,8 @@ final class DenStore {
         websiteDataStore: WKWebsiteDataStore,
         sheetNavigation: SheetNavigationManager,
         preferences: AppPreferences,
+        webExtensionHost: MV3WebExtensionHost? = nil,
+        webExtensionWindow: MV3WebExtensionWindow? = nil,
         canPresentDesk: @escaping (UUID) -> Bool,
         onDeskPresentationRequest: @escaping (UUID) -> Bool,
         onWillResetDen: @escaping () -> Void,
@@ -328,6 +346,8 @@ final class DenStore {
         self.sheetNavigation = sheetNavigation
         self.preferences = preferences
         self.terminalCommandRunner = terminalCommandRunner
+        self.webExtensionHost = webExtensionHost
+        self.webExtensionWindow = webExtensionWindow
         self.canPresentDesk = canPresentDesk
         self.onDeskPresentationRequest = onDeskPresentationRequest
         self.onWillResetDen = onWillResetDen

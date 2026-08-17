@@ -55,15 +55,11 @@
 		};
 		530E9DEB2FFFFEDB0033427C /* Den BrowserTests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-			);
 			path = "Den BrowserTests";
 			sourceTree = "<group>";
 		};
 		530E9DF52FFFFEDB0033427C /* Den BrowserUITests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-			);
 			path = "Den BrowserUITests";
 			sourceTree = "<group>";
 		};

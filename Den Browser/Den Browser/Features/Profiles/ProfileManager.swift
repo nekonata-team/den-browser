@@ -21,8 +21,10 @@ final class ProfileManager {
     @ObservationIgnored private var storeProfileIDs: [UUID: UUID] = [:]
     @ObservationIgnored private var windows: [UUID: RegisteredWindow] = [:]
     @ObservationIgnored private var websiteDataStores: [UUID: WKWebsiteDataStore] = [:]
+    @ObservationIgnored private var webExtensionHosts: [UUID: MV3WebExtensionHost] = [:]
     @ObservationIgnored private let sheetNavigation: SheetNavigationManager
     @ObservationIgnored private let preferences: AppPreferences
+    @ObservationIgnored private let webExtensionDescriptors: [BundledWebExtensionDescriptor]
     @ObservationIgnored private let removeDataStore: (UUID) async throws -> Void
     @ObservationIgnored private let removeWebsiteDataTypes: (WKWebsiteDataStore, Set<String>) async throws -> Void
     @ObservationIgnored private let initialProfile: PersistedProfile?
@@ -42,7 +44,8 @@ final class ProfileManager {
         removeWebsiteDataTypes: @escaping (WKWebsiteDataStore, Set<String>) async throws -> Void = ProfileManager
             .removeWebsiteDataTypes,
         initialProfile: PersistedProfile? = nil,
-        websiteDataStore: ((WebProfileStore) -> WKWebsiteDataStore)? = nil
+        websiteDataStore: ((WebProfileStore) -> WKWebsiteDataStore)? = nil,
+        webExtensionDescriptors: [BundledWebExtensionDescriptor] = []
     ) {
         self.directoryURL = directoryURL
         self.sheetNavigation = sheetNavigation
@@ -51,6 +54,7 @@ final class ProfileManager {
         self.removeWebsiteDataTypes = removeWebsiteDataTypes
         self.initialProfile = initialProfile
         self.websiteDataStore = websiteDataStore ?? { $0.websiteDataStore }
+        self.webExtensionDescriptors = webExtensionDescriptors
         load()
     }
 
@@ -78,6 +82,8 @@ final class ProfileManager {
             profileID: profileID,
             excludingWindowID: route.windowID)
         guard let presentedDeskID else { return nil }
+        let webExtensionHost = webExtensionHost(for: profileID)
+        let webExtensionWindow = webExtensionHost?.window(for: route.windowID)
 
         let store = DenStore(
             storage: storage,
@@ -85,6 +91,8 @@ final class ProfileManager {
             websiteDataStore: profileWebsiteDataStore(for: profileID),
             sheetNavigation: sheetNavigation,
             preferences: preferences,
+            webExtensionHost: webExtensionHost,
+            webExtensionWindow: webExtensionWindow,
             canPresentDesk: { [weak self] deskID in
                 self?.canPresent(deskID, profileID: profileID, excludingWindowID: route.windowID) ?? true
             },
@@ -159,6 +167,7 @@ final class ProfileManager {
             releaseRuntimes(storage)
         }
         websiteDataStores.removeValue(forKey: profileID)
+        webExtensionHosts.removeValue(forKey: profileID)?.dispose()
         let profileURL = profileURL(for: profileID)
         let hadDocument = FileManager.default.fileExists(atPath: profileURL.path)
         do {
@@ -204,9 +213,47 @@ final class ProfileManager {
 
     func clearError() { errorMessage = nil }
 
+    func setUBOLiteEnabled(_ enabled: Bool) {
+        preferences.setUBOLiteEnabled(enabled)
+
+        for (windowID, store) in stores {
+            let profileID = storeProfileIDs[windowID]
+            let host = enabled ? profileID.flatMap(webExtensionHost(for:)) : nil
+            let extensionWindow = host?.window(for: windowID)
+            store.updateWebExtensionHost(host, window: extensionWindow)
+        }
+
+        if !enabled {
+            let hosts = Array(webExtensionHosts.values)
+            webExtensionHosts.removeAll()
+            hosts.forEach { $0.dispose() }
+        }
+    }
+
+    func focusWebExtensionWindow(for route: ProfileWindowRoute) {
+        guard let profileID = storeProfileIDs[route.windowID],
+            let host = webExtensionHosts[profileID]
+        else { return }
+        host.focusWindow(host.window(for: route.windowID))
+    }
+
+    func presentUBOLitePopup(anchorView: NSView? = nil) {
+        guard preferences.uBOLiteEnabled else { return }
+        let target = extensionPresentationTarget()
+        let profileID = target?.registration.profileID ?? personalProfileID
+        guard let host = webExtensionHost(for: profileID) else { return }
+        if let target {
+            host.focusWindow(host.window(for: target.windowID))
+        }
+        host.presentActionPopup(
+            from: anchorView?.window ?? NSApp.keyWindow,
+            anchorView: anchorView)
+    }
+
     func register(window: NSWindow, for route: ProfileWindowRoute) {
         let profileID = resolvedProfileID(route.profileID)
         windows[route.windowID] = RegisteredWindow(profileID: profileID, window: window)
+        focusWebExtensionWindow(for: route)
         windowAssignmentRevision &+= 1
     }
 
@@ -214,6 +261,9 @@ final class ProfileManager {
         guard windows[route.windowID]?.window === window else { return }
         windows.removeValue(forKey: route.windowID)
         stores.removeValue(forKey: route.windowID)?.releaseWindowResources()
+        if let profileID = storeProfileIDs[route.windowID] {
+            webExtensionHosts[profileID]?.closeWindow(id: route.windowID)
+        }
         windowAssignmentRevision &+= 1
         let profileID = storeProfileIDs.removeValue(forKey: route.windowID) ?? resolvedProfileID(route.profileID)
         guard !storeProfileIDs.values.contains(profileID), let storage = storages.removeValue(forKey: profileID) else {
@@ -221,6 +271,7 @@ final class ProfileManager {
         }
         releaseRuntimes(storage)
         websiteDataStores.removeValue(forKey: profileID)
+        webExtensionHosts.removeValue(forKey: profileID)?.dispose()
     }
 
     func store(for window: NSWindow?) -> DenStore? {
@@ -312,6 +363,34 @@ final class ProfileManager {
         return store
     }
 
+    private func extensionPresentationTarget() -> (windowID: UUID, registration: RegisteredWindow)? {
+        if let keyWindow = NSApp.keyWindow,
+            let target = windows.first(where: { $0.value.window === keyWindow })
+        {
+            return (target.key, target.value)
+        }
+        for window in NSApp.orderedWindows {
+            if let target = windows.first(where: { $0.value.window === window }) {
+                return (target.key, target.value)
+            }
+        }
+        return nil
+    }
+
+    private func webExtensionHost(for profileID: UUID) -> MV3WebExtensionHost? {
+        guard preferences.uBOLiteEnabled, !webExtensionDescriptors.isEmpty else { return nil }
+        if let host = webExtensionHosts[profileID] {
+            return host
+        }
+        let host = MV3WebExtensionHost(
+            profileID: profileID,
+            websiteDataStore: profileWebsiteDataStore(for: profileID),
+            userContentController: sheetNavigation.userContentController,
+            descriptors: webExtensionDescriptors)
+        webExtensionHosts[profileID] = host
+        return host
+    }
+
     private func canPresent(_ deskID: UUID, profileID: UUID, excludingWindowID: UUID) -> Bool {
         !stores.contains { windowID, store in
             windowID != excludingWindowID
@@ -368,6 +447,7 @@ final class ProfileManager {
         for (windowID, registration) in matchingWindows {
             windows.removeValue(forKey: windowID)
             stores.removeValue(forKey: windowID)?.releaseWindowResources()
+            webExtensionHosts[profileID]?.closeWindow(id: windowID)
             storeProfileIDs.removeValue(forKey: windowID)
             registration.window?.close()
         }
@@ -380,6 +460,7 @@ final class ProfileManager {
         for (windowID, registration) in matchingWindows {
             windows.removeValue(forKey: windowID)
             stores.removeValue(forKey: windowID)?.releaseWindowResources()
+            webExtensionHosts[profileID]?.closeWindow(id: windowID)
             storeProfileIDs.removeValue(forKey: windowID)
             registration.window?.close()
         }
@@ -388,6 +469,7 @@ final class ProfileManager {
         }
         for windowID in remainingWindowIDs {
             stores.removeValue(forKey: windowID)?.releaseWindowResources()
+            webExtensionHosts[profileID]?.closeWindow(id: windowID)
             storeProfileIDs.removeValue(forKey: windowID)
         }
     }
@@ -395,7 +477,11 @@ final class ProfileManager {
     private func removeStores(for profileID: UUID) {
         let windowIDs = storeProfileIDs.compactMap { $0.value == profileID ? $0.key : nil }
         for windowID in windowIDs {
+            let profileID = storeProfileIDs[windowID]
             stores.removeValue(forKey: windowID)?.releaseWindowResources()
+            if let profileID {
+                webExtensionHosts[profileID]?.closeWindow(id: windowID)
+            }
             storeProfileIDs.removeValue(forKey: windowID)
         }
     }

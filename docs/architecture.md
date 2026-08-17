@@ -94,6 +94,8 @@ Owns Den composition and the workflows connecting Desks, Boards, Sheets, and Ove
 
 Owns Profile identity, Profile-scoped persistence, website-data isolation, and Profile window lifecycle. A Profile owns one Den and may present distinct Desks from it in multiple windows, so this Feature may depend on the Den Feature to create, restore, and present that Den. WebKit storage mechanics may live in `Platform`, while Profile policy remains in the feature.
 
+Optional bundled WebExtensions are also Profile-scoped. `ProfileManager` owns one `MV3WebExtensionHost` per Profile and one extension window per Profile Window. The host is created only when the corresponding Feature is enabled, and each Sheet runtime registers with that host's controller. Bundled extension resources and permissions remain app-defined; arbitrary extension installation is outside this boundary.
+
 ### SheetNavigation
 
 Owns optional Vim-style interaction within the Current Sheet: preferences, validation, settings UI, WebKit content-controller integration, and the bundled script. It does not own Board lifecycle or persisted Sheet state. Den injects the shared controller into each Board runtime and handles requests to open a link as another Board.

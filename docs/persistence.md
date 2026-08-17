@@ -64,6 +64,7 @@ Version 1 documents decode as Web Boards and are written back as version 2. An o
 | `appearance` | Board centering mode | `preferences.appearance.board-centering.mode` | `FocusedBoardCentering.rawValue` | `never` | Appearance > Board Centering |
 | `appearance` | Sheet scale | `preferences.appearance.sheet-scale.percent` | `Int` (`50...200`) | `100` | Appearance > Sheet Scale |
 | `picture-in-picture` | Enabled | `preferences.picture-in-picture.enabled` | `Bool` | `false` | Features > Experimental Picture in Picture |
+| `content-blocking` | uBlock Origin Lite enabled | `preferences.content-blocking.ubolite.enabled` | `Bool` | `false` | Features > Content Blocking |
 | `terminal` | Zellij executable path | `preferences.terminal.zellij.executable-path` | `String` | Empty | Terminal > Zellij |
 | `terminal` | zmx executable path | `preferences.terminal.zmx.executable-path` | `String` | Empty | Terminal > zmx |
 | `essentials` | Items | `preferences.essentials.items` | Property-list encoded `[Essential]` | Absent | Essentials |

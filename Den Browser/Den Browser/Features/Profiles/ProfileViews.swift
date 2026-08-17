@@ -11,7 +11,12 @@ struct ProfileWindowView: View {
         content
             .handlesExternalEvents(
                 preferring: appearsActive ? ["*"] : [],
-                allowing: appearsActive ? [] : ["*"])
+                allowing: appearsActive ? [] : ["*"]
+            )
+            .onChange(of: appearsActive, initial: true) { _, isActive in
+                guard isActive else { return }
+                profileManager.focusWebExtensionWindow(for: route)
+            }
     }
 
     @ViewBuilder

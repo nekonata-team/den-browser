@@ -9,6 +9,9 @@ extension DenStore {
         storage.runtimeOwners[board.id] = self
         if let runtime = runtimes[board.id] {
             runtime.updateOwner(sheetNavigationActions: actions, events: events)
+            if let webExtensionHost, let webExtensionWindow {
+                webExtensionHost.register(runtime: runtime, in: webExtensionWindow)
+            }
             return runtime
         }
 
@@ -16,6 +19,8 @@ extension DenStore {
             board: board,
             websiteDataStore: websiteDataStore,
             sheetNavigation: sheetNavigation,
+            webExtensionHost: webExtensionHost,
+            webExtensionWindow: webExtensionWindow,
             sheetScale: preferences.sheetScale,
             nativePictureInPictureEnabled: preferences.nativePictureInPictureEnabled,
             sheetNavigationActions: actions,
@@ -178,15 +183,22 @@ extension DenStore {
     }
 
     func releaseRuntimes() {
-        for runtime in runtimes.values {
-            runtime.dispose()
-        }
-        runtimes.removeAll()
+        releaseWebRuntimes()
         for runtime in terminalRuntimes.values {
             runtime.dispose()
         }
         terminalRuntimes.removeAll()
         storage.runtimeOwners.removeAll()
+    }
+
+    func releaseWebRuntimes() {
+        for boardID in runtimes.keys {
+            storage.runtimeOwners.removeValue(forKey: boardID)
+        }
+        for runtime in runtimes.values {
+            runtime.dispose()
+        }
+        runtimes.removeAll()
         releaseDrawerPreview()
     }
 

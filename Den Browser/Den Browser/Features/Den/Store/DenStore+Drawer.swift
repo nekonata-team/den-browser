@@ -242,6 +242,8 @@ extension DenStore {
             item: item,
             websiteDataStore: websiteDataStore,
             sheetNavigation: sheetNavigation,
+            webExtensionHost: webExtensionHost,
+            webExtensionWindow: webExtensionWindow,
             sheetScale: preferences.sheetScale,
             onKeepInDrawer: { [weak self] url in
                 self?.keepInDrawer(url, opensDrawer: false)
@@ -271,6 +273,7 @@ extension DenStore {
                 self?.showToast("Failed to download '\(filename)'", style: .warning)
             }
         )
+        webExtensionHost?.activate(runtime: runtime)
         drawerPreviewRuntime = runtime
         return runtime
     }
@@ -279,6 +282,9 @@ extension DenStore {
         guard let runtime = drawerPreviewRuntime else { return }
         runtime.dispose()
         drawerPreviewRuntime = nil
+        if let focusedBoardID = focusedBoard?.id, let focusedRuntime = runtimes[focusedBoardID] {
+            webExtensionHost?.activate(runtime: focusedRuntime)
+        }
     }
 
     private func updateDrawerItem(itemID: UUID, url: URL?, title: String?) {

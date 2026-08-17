@@ -90,6 +90,10 @@ struct BoardView: View {
         .onAppear {
             store.sheetNavigation.refreshConfiguration(for: runtime.webView)
         }
+        .onChange(of: isFocused, initial: true) { _, isFocused in
+            guard isFocused else { return }
+            runtime.activateWebExtensionTab()
+        }
     }
 
     private var initialLoadFallback: some View {

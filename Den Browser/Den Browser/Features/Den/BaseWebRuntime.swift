@@ -29,6 +29,7 @@ class BaseWebRuntime: NSObject, WKDownloadDelegate, WKNavigationDelegate, WKUIDe
         initialURL: URL?,
         websiteDataStore: WKWebsiteDataStore,
         userContentController: WKUserContentController?,
+        webExtensionController: WKWebExtensionController? = nil,
         sheetScale: Int,
         enableElementFullscreen: Bool = true
     ) {
@@ -39,6 +40,7 @@ class BaseWebRuntime: NSObject, WKDownloadDelegate, WKNavigationDelegate, WKUIDe
         if let userContentController {
             configuration.userContentController = userContentController
         }
+        configuration.webExtensionController = webExtensionController
         configuration.preferences.isElementFullscreenEnabled = enableElementFullscreen
 
         webView = WKWebView(frame: .zero, configuration: configuration)

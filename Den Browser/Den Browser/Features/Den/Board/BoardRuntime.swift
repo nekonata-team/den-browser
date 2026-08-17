@@ -20,6 +20,8 @@ final class BoardRuntime: BaseWebRuntime, NSWindowDelegate, ObservableObject {
     private var sheetNavigationActions: SheetNavigationManager.Actions
     private var events: Events
     private let sheetNavigation: SheetNavigationManager
+    private let webExtensionHost: MV3WebExtensionHost?
+    private let webExtensionWindow: MV3WebExtensionWindow?
 
     private var auxiliaryWindows: [ObjectIdentifier: NSWindow] = [:]
     private var loadingObservation: NSKeyValueObservation?
@@ -30,20 +32,27 @@ final class BoardRuntime: BaseWebRuntime, NSWindowDelegate, ObservableObject {
         board: BoardState,
         websiteDataStore: WKWebsiteDataStore,
         sheetNavigation: SheetNavigationManager,
+        webExtensionHost: MV3WebExtensionHost? = nil,
+        webExtensionWindow: MV3WebExtensionWindow? = nil,
         sheetScale: Int,
         nativePictureInPictureEnabled: Bool = false,
         sheetNavigationActions: SheetNavigationManager.Actions,
         events: Events
     ) {
         self.sheetNavigation = sheetNavigation
+        self.webExtensionHost = webExtensionHost
+        self.webExtensionWindow = webExtensionWindow
         self.sheetNavigationActions = sheetNavigationActions
         self.events = events
 
         super.init(
             id: board.id,
-            initialURL: board.currentSheetURL,
+            initialURL: webExtensionHost != nil && webExtensionWindow != nil
+                ? nil
+                : board.currentSheetURL,
             websiteDataStore: websiteDataStore,
             userContentController: sheetNavigation.userContentController,
+            webExtensionController: webExtensionHost?.controller,
             sheetScale: sheetScale,
             enableElementFullscreen: true
         )
@@ -59,6 +68,10 @@ final class BoardRuntime: BaseWebRuntime, NSWindowDelegate, ObservableObject {
             paused: board.sheetNavigationPaused,
             actions: sheetNavigationActions
         )
+        if let webExtensionHost, let webExtensionWindow {
+            webExtensionHost.register(runtime: self, in: webExtensionWindow)
+            webExtensionHost.loadInitialURL(board.currentSheetURL, for: self)
+        }
 
         progressObservation = webView.observe(\.estimatedProgress, options: [.new]) {
             [weak self] webView, _ in
@@ -99,6 +112,10 @@ final class BoardRuntime: BaseWebRuntime, NSWindowDelegate, ObservableObject {
         sheetNavigation.updateActions(sheetNavigationActions, for: webView)
     }
 
+    func activateWebExtensionTab() {
+        webExtensionHost?.activate(runtime: self)
+    }
+
     private static func configureNativePictureInPicture(
         preferences: WKPreferences,
         enabled: Bool
@@ -127,6 +144,7 @@ final class BoardRuntime: BaseWebRuntime, NSWindowDelegate, ObservableObject {
             window.close()
         }
         auxiliaryWindows.removeAll()
+        webExtensionHost?.unregister(runtime: self)
         sheetNavigation.didClose(webView)
         isLoading = false
         estimatedProgress = 0

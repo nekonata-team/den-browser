@@ -1,7 +1,10 @@
+import AppKit
 import SwiftUI
 
 struct SettingsView: View {
     @Environment(AppPreferences.self) private var preferences
+    @Environment(ProfileManager.self) private var profileManager
+    @State private var uBOLitePopupAnchorView: NSView?
 
     var body: some View {
         TabView {
@@ -53,6 +56,40 @@ struct SettingsView: View {
                     }
                 }
 
+                Section("Content Blocking") {
+                    LabeledContent {
+                        Toggle("", isOn: uBOLiteBinding)
+                            .labelsHidden()
+                    } label: {
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text("uBlock Origin Lite")
+                            SettingsHelpText {
+                                Text("Use the bundled MV3 content blocker on every Sheet.")
+                            }
+                            Text("Changing this setting reloads open Sheets.")
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+
+                    if preferences.uBOLiteEnabled {
+                        SettingsActionRow {
+                            Button {
+                                profileManager.presentUBOLitePopup(anchorView: uBOLitePopupAnchorView)
+                            } label: {
+                                Label("Open uBlock Origin Lite", systemImage: "shield.lefthalf.filled")
+                            }
+                            .background(
+                                PopupAnchorView { view in
+                                    guard uBOLitePopupAnchorView !== view else { return }
+                                    uBOLitePopupAnchorView = view
+                                }
+                                .allowsHitTesting(false)
+                            )
+                        }
+                    }
+                }
+
             }
             .tabItem {
                 Label("Features", systemImage: "puzzlepiece.extension")
@@ -69,6 +106,28 @@ struct SettingsView: View {
         }
     }
 
+    private var uBOLiteBinding: Binding<Bool> {
+        Binding {
+            preferences.uBOLiteEnabled
+        } set: { enabled in
+            profileManager.setUBOLiteEnabled(enabled)
+        }
+    }
+
+}
+
+private struct PopupAnchorView: NSViewRepresentable {
+    let onResolve: (NSView) -> Void
+
+    func makeNSView(context: Context) -> NSView {
+        let view = NSView()
+        DispatchQueue.main.async { onResolve(view) }
+        return view
+    }
+
+    func updateNSView(_ view: NSView, context: Context) {
+        DispatchQueue.main.async { onResolve(view) }
+    }
 }
 
 private struct TerminalSettingsView: View {

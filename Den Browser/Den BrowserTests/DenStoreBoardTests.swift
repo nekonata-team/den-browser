@@ -1,6 +1,7 @@
 import AppKit
 import Foundation
 import Testing
+import WebKit
 
 @testable import Den_Browser
 
@@ -136,6 +137,30 @@ struct DenStoreBoardTests {
         store.openBoard(input: ":zmx")
         #expect(store.focusedDesk?.boards.count == 1)
         #expect(store.openBoardPanelMessage == "Enter a zmx session name.")
+    }
+
+    @Test func changingWebExtensionHostKeepsTerminalRuntimeAlive() {
+        let terminal = BoardState(width: 520, zmxSessionName: "project-a", workingDirectory: "/tmp")
+        let source = desk("Desk", boards: [terminal], focusedBoardID: terminal.id)
+        let store = DenStore(
+            state: DenState(desks: [source], focusedDeskID: source.id),
+            websiteDataStore: .nonPersistent(),
+            sheetNavigation: SheetNavigationManager(),
+            onSave: nil)
+        let runtime = store.terminalRuntime(for: terminal)
+        let host = MV3WebExtensionHost(
+            profileID: UUID(),
+            websiteDataStore: .nonPersistent(),
+            userContentController: WKUserContentController())
+        let window = host.window(for: UUID())
+        defer {
+            store.releaseRuntimes()
+            host.dispose()
+        }
+
+        store.updateWebExtensionHost(host, window: window)
+
+        #expect(store.terminalRuntimes[terminal.id] === runtime)
     }
 
     @Test func zmxBoardDuplicationCreatesRootedIndependentSessions() throws {
