@@ -1,0 +1,4 @@
+interface:
+  display_name: "Worktree Finish"
+  short_description: "mainへrebase・FF merge・worktree削除を安全に実行"
+  default_prompt: "Use $worktree-finish to rebase this feature worktree onto main, fast-forward merge it, and remove the worktree."
