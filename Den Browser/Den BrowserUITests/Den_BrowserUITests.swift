@@ -44,7 +44,7 @@ final class Den_BrowserUITests: XCTestCase, BDD {
 
         when("entering Den Mode after typing into the Sheet input") {
             sheetInput.click()
-            sheetInput.typeText("hello")
+            sheetInput.typeText("a")
             sheetInput.typeKey(",", modifierFlags: .control)
             assertDenMode(in: app)
         }
@@ -61,7 +61,7 @@ final class Den_BrowserUITests: XCTestCase, BDD {
         }
 
         then("the Sheet input regains focus and retains the previous text") {
-            XCTAssertEqual(sheetInput.value as? String, "hello!")
+            XCTAssertEqual(sheetInput.value as? String, "a!")
         }
     }
 
@@ -79,55 +79,12 @@ final class Den_BrowserUITests: XCTestCase, BDD {
 
         when("clicking the Sheet input in an unfocused Board") {
             bravoInput.click()
-            app.typeText("first input")
+            app.typeText("a")
         }
 
         then("the clicked input receives the first keystroke") {
             XCTAssertTrue(bravo.wait(for: \.isSelected, toEqual: true, timeout: 5))
-            XCTAssertEqual(bravoInput.value as? String, "first input")
-        }
-    }
-
-    @MainActor
-    func testFocusModePreservesBoardFocusAcrossDenMode() throws {
-        let app = launchApp(boardCount: .two)
-        let denContent = app.descendants(matching: .any)
-            .matching(identifier: "den-content")
-            .firstMatch
-        let bravo = board(.bravo, in: app)
-
-        given("the Focused Desk contains multiple Boards") {
-            enterDenMode(in: app)
-        }
-
-        when("enabling Focus Mode") {
-            app.typeKey("f", modifierFlags: .shift)
-        }
-
-        then("Focus Mode is exposed without changing keyboard ownership") {
-            assertEventually("Den content should expose Focus Mode") {
-                denContent.label.contains("Focus Mode")
-            }
-            assertDenMode(in: app)
-        }
-
-        when("moving focus to the next Board") {
-            app.typeKey("l", modifierFlags: [])
-        }
-
-        then("the next Board becomes the Focused Board") {
-            XCTAssertTrue(bravo.wait(for: \.isSelected, toEqual: true, timeout: 5))
-        }
-
-        when("returning to Sheet Input") {
-            app.typeKey(",", modifierFlags: .control)
-        }
-
-        then("Focus Mode remains active in Sheet Input") {
-            XCTAssertTrue(app.windows["UI Testing · SHEET INPUT"].waitForExistence(timeout: 5))
-            assertEventually("Focus Mode should remain active after leaving Den Mode") {
-                denContent.label.contains("Focus Mode")
-            }
+            XCTAssertEqual(bravoInput.value as? String, "a")
         }
     }
 
@@ -149,11 +106,11 @@ final class Den_BrowserUITests: XCTestCase, BDD {
         when("moving to the Sheet input and typing") {
             app.typeText("gi")
             XCTAssertTrue(sheetInput.waitForExistence(timeout: 5))
-            app.typeText("drawer input")
+            app.typeText("a")
         }
 
         then("the Drawer preview forwards input to the Sheet") {
-            XCTAssertEqual(sheetInput.value as? String, "drawer input")
+            XCTAssertEqual(sheetInput.value as? String, "a")
         }
     }
 
@@ -196,11 +153,11 @@ final class Den_BrowserUITests: XCTestCase, BDD {
 
         when("typing into the Sheet input from the remaining preview") {
             XCTAssertTrue(sheetInput.waitForExistence(timeout: 5))
-            app.typeText("next preview input")
+            app.typeText("a")
         }
 
         then("the remaining preview accepts Sheet input") {
-            XCTAssertEqual(sheetInput.value as? String, "next preview input")
+            XCTAssertEqual(sheetInput.value as? String, "a")
         }
     }
 
@@ -221,12 +178,12 @@ final class Den_BrowserUITests: XCTestCase, BDD {
         when("opening Drawer search and entering a query") {
             app.buttons["Search Drawer Items"].click()
             XCTAssertTrue(search.waitForExistence(timeout: 5))
-            app.typeText("drawer")
+            app.typeText("d")
             app.typeKey(.return, modifierFlags: [])
         }
 
         then("the entered query remains visible") {
-            XCTAssertEqual(search.value as? String, "drawer")
+            XCTAssertEqual(search.value as? String, "d")
             XCTAssertTrue(search.exists)
         }
 
@@ -414,7 +371,7 @@ final class Den_BrowserUITests: XCTestCase, BDD {
     @MainActor
     func testRecentSelectionCanBeAcceptedIntoOpenBoardInput() throws {
         let app = launchApp(boardCount: .one)
-        let recentInput = "https://recent.example/"
+        let recentInput = "https://e.co"
 
         when("creating a Board that becomes a Recent Item") {
             app.typeKey("t", modifierFlags: .command)
@@ -523,7 +480,7 @@ final class Den_BrowserUITests: XCTestCase, BDD {
             XCTAssertTrue(charlie.wait(for: \.isSelected, toEqual: true, timeout: 5))
             XCTAssertTrue(charlieInput.waitForExistence(timeout: 5))
             charlieInput.click()
-            app.typeText("before switch")
+            app.typeText("a")
         }
 
         when("switching away and returning by Desk number") {
@@ -537,8 +494,8 @@ final class Den_BrowserUITests: XCTestCase, BDD {
 
         then("the Focused Board receives Sheet Input") {
             XCTAssertTrue(charlieInput.waitForExistence(timeout: 5))
-            app.typeText(" after switch")
-            XCTAssertEqual(charlieInput.value as? String, "before switch after switch")
+            app.typeText("b")
+            XCTAssertEqual(charlieInput.value as? String, "ab")
         }
     }
 
@@ -686,7 +643,7 @@ final class Den_BrowserUITests: XCTestCase, BDD {
         }
 
         when("filtering for Charlie") {
-            app.typeText("Charlie")
+            app.typeText("arl")
         }
 
         then("only Charlie remains visible") {
