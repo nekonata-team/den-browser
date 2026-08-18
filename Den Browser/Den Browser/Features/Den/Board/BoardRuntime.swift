@@ -4,7 +4,7 @@ import Foundation
 import WebKit
 
 @MainActor
-final class BoardRuntime: BaseWebRuntime, NSWindowDelegate, ObservableObject {
+final class BoardRuntime: BaseWebRuntime, ObservableObject {
     struct Events {
         var onChange: (UUID, URL?, String?) -> Void
         var onFullscreenChange: ((UUID, Bool) -> Void)?
@@ -23,7 +23,6 @@ final class BoardRuntime: BaseWebRuntime, NSWindowDelegate, ObservableObject {
     private let webExtensionHost: MV3WebExtensionHost?
     private let webExtensionWindow: MV3WebExtensionWindow?
 
-    private var auxiliaryWindows: [ObjectIdentifier: NSWindow] = [:]
     private var loadingObservation: NSKeyValueObservation?
     private var progressObservation: NSKeyValueObservation?
     private var fullscreenObservation: NSKeyValueObservation?
@@ -139,11 +138,6 @@ final class BoardRuntime: BaseWebRuntime, NSWindowDelegate, ObservableObject {
     }
 
     override func dispose() {
-        for window in auxiliaryWindows.values {
-            window.delegate = nil
-            window.close()
-        }
-        auxiliaryWindows.removeAll()
         webExtensionHost?.unregister(runtime: self)
         sheetNavigation.didClose(webView)
         isLoading = false
@@ -296,37 +290,7 @@ final class BoardRuntime: BaseWebRuntime, NSWindowDelegate, ObservableObject {
             return nil
         }
 
-        let auxiliaryWebView = WKWebView(frame: .zero, configuration: configuration)
-        auxiliaryWebView.customUserAgent = Self.defaultUserAgent
-        auxiliaryWebView.pageZoom = webView.pageZoom
-        auxiliaryWebView.uiDelegate = self
-
-        let window = NSWindow(
-            contentRect: .init(x: 0, y: 0, width: 720, height: 640),
-            styleMask: [.titled, .closable, .resizable],
-            backing: .buffered,
-            defer: false
-        )
-        window.contentView = auxiliaryWebView
-        window.delegate = self
-        window.isReleasedWhenClosed = false
-        window.center()
-        window.makeKeyAndOrderFront(nil)
-        auxiliaryWindows[ObjectIdentifier(auxiliaryWebView)] = window
-        return auxiliaryWebView
-    }
-
-    func webViewDidClose(_ webView: WKWebView) {
-        guard let window = auxiliaryWindows.removeValue(forKey: ObjectIdentifier(webView)) else {
-            return
-        }
-        window.delegate = nil
-        window.close()
-    }
-
-    func windowWillClose(_ notification: Notification) {
-        guard let window = notification.object as? NSWindow else { return }
-        auxiliaryWindows = auxiliaryWindows.filter { $0.value !== window }
+        return makeAuxiliaryWebView(configuration: configuration, sourceWebView: webView)
     }
 
     func webView(

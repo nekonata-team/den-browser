@@ -8,7 +8,7 @@ enum MouseButton: Int {
 }
 
 @MainActor
-class BaseWebRuntime: NSObject, WKDownloadDelegate, WKNavigationDelegate, WKUIDelegate {
+class BaseWebRuntime: NSObject, NSWindowDelegate, WKDownloadDelegate, WKNavigationDelegate, WKUIDelegate {
     static var defaultUserAgent: String {
         let operatingSystemVersion = ProcessInfo.processInfo.operatingSystemVersion
         let versionString = "\(operatingSystemVersion.majorVersion).\(operatingSystemVersion.minorVersion)"
@@ -20,6 +20,7 @@ class BaseWebRuntime: NSObject, WKDownloadDelegate, WKNavigationDelegate, WKUIDe
     let id: UUID
     let webView: WKWebView
 
+    private var auxiliaryWindows: [ObjectIdentifier: NSWindow] = [:]
     private var downloadFilenames: [ObjectIdentifier: String] = [:]
     private var urlObservation: NSKeyValueObservation?
     private var titleObservation: NSKeyValueObservation?
@@ -84,6 +85,11 @@ class BaseWebRuntime: NSObject, WKDownloadDelegate, WKNavigationDelegate, WKUIDe
     }
 
     func dispose() {
+        for window in Array(auxiliaryWindows.values) {
+            window.delegate = nil
+            window.close()
+        }
+        auxiliaryWindows.removeAll()
         webView.closeAllMediaPresentations(completionHandler: nil)
         webView.setAllMediaPlaybackSuspended(true, completionHandler: nil)
         webView.stopLoading()
@@ -222,10 +228,49 @@ class BaseWebRuntime: NSObject, WKDownloadDelegate, WKNavigationDelegate, WKUIDe
                 button: MouseButton(rawValue: navigationAction.buttonNumber),
                 opensNewContext: true
             ) {
-                load(url)
+                return makeAuxiliaryWebView(configuration: configuration, sourceWebView: webView)
             }
+        } else {
+            return makeAuxiliaryWebView(configuration: configuration, sourceWebView: webView)
         }
         return nil
+    }
+
+    func makeAuxiliaryWebView(
+        configuration: WKWebViewConfiguration,
+        sourceWebView: WKWebView
+    ) -> WKWebView {
+        let auxiliaryWebView = WKWebView(frame: .zero, configuration: configuration)
+        auxiliaryWebView.customUserAgent = Self.defaultUserAgent
+        auxiliaryWebView.pageZoom = sourceWebView.pageZoom
+        auxiliaryWebView.uiDelegate = self
+
+        let window = NSWindow(
+            contentRect: .init(x: 0, y: 0, width: 720, height: 640),
+            styleMask: [.titled, .closable, .resizable],
+            backing: .buffered,
+            defer: false
+        )
+        window.contentView = auxiliaryWebView
+        window.delegate = self
+        window.isReleasedWhenClosed = false
+        window.center()
+        window.makeKeyAndOrderFront(nil)
+        auxiliaryWindows[ObjectIdentifier(auxiliaryWebView)] = window
+        return auxiliaryWebView
+    }
+
+    func webViewDidClose(_ webView: WKWebView) {
+        guard let window = auxiliaryWindows.removeValue(forKey: ObjectIdentifier(webView)) else {
+            return
+        }
+        window.delegate = nil
+        window.close()
+    }
+
+    func windowWillClose(_ notification: Notification) {
+        guard let window = notification.object as? NSWindow else { return }
+        auxiliaryWindows = auxiliaryWindows.filter { $0.value !== window }
     }
 
     // MARK: - WKDownloadDelegate

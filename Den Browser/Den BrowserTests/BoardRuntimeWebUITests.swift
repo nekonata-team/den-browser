@@ -243,6 +243,18 @@ struct BoardRuntimeWebUITests {
         )
         #expect(keptURL == targetlessURL)
 
+        let popupURL = try #require(URL(string: "https://example.com/popup"))
+        #expect(
+            !runtime.handleLinkNavigation(
+                popupURL,
+                navigationType: .other,
+                modifierFlags: [],
+                button: nil,
+                opensNewContext: true
+            )
+        )
+        #expect(keptURL == targetlessURL)
+
         let commandURL = try #require(URL(string: "https://example.com/command"))
         #expect(
             runtime.handleLinkNavigation(
@@ -302,6 +314,32 @@ struct BoardRuntimeWebUITests {
             )
         )
         #expect(keptURL == shiftMiddleURL)
+    }
+
+    @Test func drawerPreviewDisposesAuxiliaryPopupWindow() throws {
+        let manager = SheetNavigationManager(scriptSource: "")
+        let runtime = DrawerPreviewRuntime(
+            item: DrawerItem(url: try #require(URL(string: "file:///tmp/drawer-preview.html"))),
+            websiteDataStore: .nonPersistent(),
+            sheetNavigation: manager,
+            sheetScale: 100,
+            onKeepInDrawer: { _ in },
+            onKeepInDrawerInBackground: { _ in },
+            onDiscard: {},
+            onChange: { _, _, _ in },
+            onDownloadFinished: { _ in },
+            onDownloadFailed: { _ in }
+        )
+        let popup = runtime.makeAuxiliaryWebView(
+            configuration: WKWebViewConfiguration(),
+            sourceWebView: runtime.webView
+        )
+        let popupWindow = try #require(popup.window)
+        #expect(popupWindow.contentView === popup)
+
+        runtime.dispose()
+
+        #expect(!popupWindow.isVisible)
     }
 
     @Test func customSchemeNavigationOpensInExternalApplication() {

@@ -110,7 +110,7 @@ final class DrawerPreviewRuntime: BaseWebRuntime {
             return true
         }
 
-        if opensNewContext
+        if (opensNewContext && navigationType == .linkActivated)
             || SheetNavigationPolicy.shouldKeepLinkInDrawer(
                 navigationType: navigationType,
                 modifierFlags: modifierFlags,
