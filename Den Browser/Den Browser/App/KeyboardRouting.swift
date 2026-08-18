@@ -43,6 +43,7 @@ struct InputContext {
     let isDrawerFilterSelecting: Bool
     let isOverviewFilterInputActive: Bool
     let hasOverviewQuery: Bool
+    let isNotificationListPresented: Bool
 
     init(store: DenStore, event: NSEvent) {
         isFullscreenActive = store.isFullscreenActive
@@ -59,6 +60,7 @@ struct InputContext {
         isDrawerFilterSelecting = store.isDrawerFilterSelecting
         isOverviewFilterInputActive = store.isOverviewFilterInputActive
         hasOverviewQuery = !store.overviewQuery.isEmpty
+        isNotificationListPresented = store.isNotificationListPresented
     }
 
     private static func isDrawerPreviewFirstResponder(_ event: NSEvent, store: DenStore) -> Bool {
@@ -127,6 +129,10 @@ enum InputDestination: Equatable {
 
 enum AppAction: Equatable {
     case openSettings
+    case toggleNotifications
+    case closeNotifications
+    case moveNotificationSelection(Int)
+    case openSelectedNotification
     case toggleDenMode
     case exitDenMode
     case enterEssentialsPrefix
@@ -233,6 +239,16 @@ enum KeyboardRouter {
             binding == shortcuts.bindings[.toggleDenMode]
         {
             return event.isRepeat ? .consume(.ignoredRepeat) : .perform(.toggleDenMode)
+        }
+
+        if context.isNotificationListPresented {
+            if event.isEscape, modifiers == [] { return .perform(.closeNotifications) }
+            if modifiers == [] {
+                if event.key == .upArrow { return .perform(.moveNotificationSelection(-1)) }
+                if event.key == .downArrow { return .perform(.moveNotificationSelection(1)) }
+                if event.key == .returnKey { return .perform(.openSelectedNotification) }
+            }
+            return .consume(.exclusiveContext)
         }
 
         if context.isBoardDragging {
@@ -555,6 +571,7 @@ enum KeyboardRouter {
     }
 
     private static let denModeCommands: [ShortcutBinding: KeyboardCommand] = [
+        binding("i"): KeyboardCommand(action: .toggleNotifications),
         binding("n"): KeyboardCommand(action: .showOpenBoardPanel),
         binding(" "): KeyboardCommand(action: .showOpenBoardPanel),
         binding("n", modifiers: [.shift]): KeyboardCommand(action: .showNewDeskPanel),
@@ -616,6 +633,10 @@ enum AppActionHandler {
 
         switch action {
         case .openSettings: break
+        case .toggleNotifications: store.toggleNotificationList()
+        case .closeNotifications: store.closeNotificationList()
+        case .moveNotificationSelection(let offset): store.moveNotificationSelection(by: offset)
+        case .openSelectedNotification: store.openSelectedNotification()
         case .toggleDenMode: store.toggleDenMode()
         case .exitDenMode: store.exitDenMode()
         case .enterEssentialsPrefix: store.enterEssentialsPrefix()

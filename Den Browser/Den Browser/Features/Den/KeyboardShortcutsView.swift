@@ -56,6 +56,8 @@ struct KeyboardShortcutsView: View {
                     item(["/"], "Filter Boards in Focused Desk"),
                     item(["1–9", "/", "0"], "Focus Desk 1–10"),
                     item(["Shift", "+", "digit"], "Move Focused Board to Desk"),
+                    item(["i"], "Show Notifications"),
+                    item(["↑", "/", "↓"], "Select notification; Return opens it"),
                     item(["n", "/", "Space"], "Open Board"),
                     item(["⇧", "N"], "New Desk"),
                     item(["p"], "Save Desk as Preset"),

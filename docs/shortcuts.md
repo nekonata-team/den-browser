@@ -33,6 +33,8 @@ Essentials are app-wide named Board inputs configured in Settings > Essentials. 
 | `1` through `9` | Focus desk 1 through 9 | Missing desks are a no-op. |
 | `0` | Focus desk 10 | Missing desk is a no-op. |
 | Shift + digit | Move focused board to desk | Places it after that desk's focused board, then focuses it. |
+| `i` | Show Notifications | Opens the session's notification list. Its trash button clears all Notifications after confirmation. |
+| Up / Down | Select notification | When the notification list is open; Return opens the selected notification and Escape closes the list. |
 | `n` / Space | New Board panel | Creating enters Sheet Input; Escape returns to Den Mode. |
 | Shift + `n` | New Desk panel | Creating enters Sheet Input; Escape returns to Den Mode. |
 | `p` | Save Desk as Preset panel | Available when the Focused Desk contains a Board. |

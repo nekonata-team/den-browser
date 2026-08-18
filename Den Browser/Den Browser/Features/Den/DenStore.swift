@@ -9,6 +9,7 @@ final class DenStorage {
     var state: DenState
     var deskPresets: [PersonalDeskPreset]
     var recentItems: [RecentItem]
+    var notifications: [DenNotification] = []
     var activeDrag: ActiveDrag?
     var recentlyRemovedBoard: RecentlyRemovedBoard?
 
@@ -41,6 +42,7 @@ final class DenStorage {
 final class DenStore {
     static let maximumDeskCount = 10
     static let maximumRecentItemCount = 100
+    static let maximumNotificationCount = 200
     static let maximumPersistedRecentInputLength = 2_048
     private static let toastDuration: Duration = .seconds(5)
 
@@ -57,12 +59,21 @@ final class DenStore {
         get { storage.recentItems }
         set { storage.recentItems = newValue }
     }
+    var notifications: [DenNotification] {
+        get { storage.notifications }
+        set { storage.notifications = newValue }
+    }
+    var unreadNotificationCount: Int {
+        notifications.lazy.filter { !$0.isRead }.count
+    }
     var essentials: [Essential] { preferences.essentials }
     private(set) var presentedDeskID: UUID
     private(set) var temporaryContext: TemporaryContext?
     private(set) var zmxDuplicationRootSessionName: String?
     var isZenViewPresented = false
     var isFocusModePresented = false
+    var isNotificationListPresented = false
+    var selectedNotificationID: UUID?
     var isDenMode = false
     var isFullscreenActive = false
     var deskFilterPhase: DenFilterPhase = .inactive
@@ -215,6 +226,10 @@ final class DenStore {
     }
     var drawerPendingDeletionCount: Int? {
         guard case .clearDrawer(let count)? = pendingConfirmation else { return nil }
+        return count
+    }
+    var notificationPendingDeletionCount: Int? {
+        guard case .clearNotifications(let count)? = pendingConfirmation else { return nil }
         return count
     }
     var isResetDenPending: Bool {
@@ -397,6 +412,9 @@ final class DenStore {
         overviewQuery = ""
         overviewFilterPhase = .inactive
         recentlyRemovedBoard = nil
+        notifications.removeAll()
+        isNotificationListPresented = false
+        selectedNotificationID = nil
         drawerQuery = ""
         drawerFilterPhase = .inactive
         selectedDrawerItemID = nil
@@ -447,6 +465,19 @@ final class DenStore {
             focusBoard(boardID, exitsDenMode: true)
         case .drawerItem(let itemID):
             focusDrawerItem(itemID)
+        case .notification(let notificationID):
+            guard let notification = notifications.first(where: { $0.id == notificationID }) else {
+                dismissToast()
+                return
+            }
+            markNotificationRead(notificationID)
+            guard boardIndices(for: notification.boardID) != nil else {
+                dismissToast()
+                return
+            }
+            closeNotificationList()
+            setTemporaryContext(nil)
+            focusBoard(notification.boardID, exitsDenMode: true)
         }
         dismissToast()
     }
@@ -589,6 +620,8 @@ final class DenStore {
     func setTemporaryContext(_ context: TemporaryContext?) {
         if context != nil {
             dismissDeskFilter()
+            isNotificationListPresented = false
+            selectedNotificationID = nil
         }
         if temporaryContext == .openBoard, context != .openBoard {
             openBoardPanelInitialURL = nil
@@ -642,6 +675,7 @@ enum PendingConfirmation {
     case deleteDeskPreset(PersonalDeskPreset)
     case replaceDeskPreset(PersonalDeskPreset)
     case clearDrawer(Int)
+    case clearNotifications(Int)
     case resetDen
 }
 

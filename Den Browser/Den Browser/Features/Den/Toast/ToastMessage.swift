@@ -3,6 +3,7 @@ import SwiftUI
 enum ToastTarget: Equatable {
     case board(UUID)
     case drawerItem(UUID)
+    case notification(UUID)
 }
 
 struct ToastMessage: Equatable, Identifiable {

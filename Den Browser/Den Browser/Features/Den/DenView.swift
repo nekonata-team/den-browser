@@ -79,6 +79,27 @@ struct DenView<Header: View>: View {
 
                 activePanel(defaultBoardWidth: defaultBoardWidth(in: geometry.size))
 
+                if store.isNotificationListPresented {
+                    Rectangle()
+                        .fill(.clear)
+                        .contentShape(Rectangle())
+                        .onTapGesture { store.closeNotificationList() }
+                        .accessibilityHidden(true)
+                        .zIndex(4)
+
+                    NotificationListView(profileColor: profileColor)
+                        .padding(
+                            .top,
+                            shouldShowHeader
+                                ? DenLayout.denHeaderHeight + DenLayout.panelGap
+                                : DenLayout.outerInset
+                        )
+                        .padding(.trailing, DenLayout.outerInset)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
+                        .transition(DenMotion.transition(reduceMotion: shouldReduceMotion, scale: 0.96))
+                        .zIndex(5)
+                }
+
                 if store.isDrawerOpen {
                     Rectangle()
                         .fill(.clear)

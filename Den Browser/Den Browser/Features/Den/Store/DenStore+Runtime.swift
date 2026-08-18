@@ -171,7 +171,7 @@ extension DenStore {
                     focus: false)
             },
             onNotification: { [weak self] title, body in
-                self?.showToast(title: title, body: body, target: .board(board.id))
+                self?.recordNotification(title: title, body: body, boardID: board.id)
             })
     }
 

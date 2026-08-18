@@ -31,6 +31,7 @@ struct DenStorePresentationTests {
         #expect(store.toastMessage?.message == "Reset Den completed.")
         #expect(store.toastMessage?.style == .success)
         #expect(store.runtimes.isEmpty)
+        #expect(store.notifications.isEmpty)
         #expect(runtime.webView.navigationDelegate == nil)
         #expect(runtime.webView.uiDelegate == nil)
     }
@@ -67,6 +68,75 @@ struct DenStorePresentationTests {
         #expect(store.toastMessage?.title == "Build")
         #expect(store.toastMessage?.body == "Finished")
         #expect(store.toastMessage?.message == "Build: Finished")
+    }
+
+    @Test func recordingNotificationAddsUnreadHistoryAndTargetedToast() {
+        let target = board("Terminal")
+        let desk = desk("Desk", boards: [target], focusedBoardID: target.id)
+        let store = DenStore(state: DenState(desks: [desk], focusedDeskID: desk.id))
+
+        store.recordNotification(title: "Build", body: "Finished", boardID: target.id)
+
+        #expect(store.notifications.count == 1)
+        #expect(store.notifications[0].title == "Build")
+        #expect(store.notifications[0].body == "Finished")
+        #expect(store.notifications[0].boardID == target.id)
+        #expect(store.unreadNotificationCount == 1)
+        #expect(store.toastMessage?.target == .notification(store.notifications[0].id))
+    }
+
+    @Test func clearingNotificationsRemovesSessionHistoryAfterConfirmation() {
+        let target = board("Terminal")
+        let desk = desk("Desk", boards: [target], focusedBoardID: target.id)
+        let store = DenStore(state: DenState(desks: [desk], focusedDeskID: desk.id))
+
+        store.recordNotification(title: "Build", body: "Finished", boardID: target.id)
+        store.toggleNotificationList()
+        store.requestNotificationClearConfirmation()
+
+        #expect(store.notificationPendingDeletionCount == 1)
+        store.confirmNotificationClear()
+
+        #expect(store.notifications.isEmpty)
+        #expect(store.unreadNotificationCount == 0)
+        #expect(!store.isNotificationListPresented)
+        #expect(store.notificationPendingDeletionCount == nil)
+        #expect(store.toastMessage == nil)
+    }
+
+    @Test func openingNotificationFocusesItsBoardAcrossDesksAndMarksItRead() {
+        let target = board("Terminal")
+        let first = desk("First")
+        let second = desk("Second", boards: [target], focusedBoardID: target.id)
+        let store = DenStore(state: DenState(desks: [first, second], focusedDeskID: first.id))
+
+        store.recordNotification(title: "Build", body: "Finished", boardID: target.id)
+        let notification = store.notifications[0]
+        store.toggleNotificationList()
+        store.openNotification(notification)
+
+        #expect(store.presentedDeskID == second.id)
+        #expect(store.focusedBoard?.id == target.id)
+        #expect(store.notifications[0].isRead)
+        #expect(store.unreadNotificationCount == 0)
+        #expect(!store.isNotificationListPresented)
+    }
+
+    @Test func tappingNotificationToastFocusesItsBoardAndMarksItRead() {
+        let target = board("Terminal")
+        let first = desk("First")
+        let second = desk("Second", boards: [target], focusedBoardID: target.id)
+        let store = DenStore(state: DenState(desks: [first, second], focusedDeskID: first.id))
+
+        store.recordNotification(title: "Build", body: "Finished", boardID: target.id)
+        store.toggleNotificationList()
+        store.handleToastTap()
+
+        #expect(store.presentedDeskID == second.id)
+        #expect(store.focusedBoard?.id == target.id)
+        #expect(store.notifications[0].isRead)
+        #expect(!store.isNotificationListPresented)
+        #expect(store.toastMessage == nil)
     }
 
     @Test func tappingBoardToastFocusesTargetBoardAndDismissesToast() {
@@ -600,7 +670,13 @@ struct DenStorePresentationTests {
     }
 
     private func withStore(desks: [DeskState], body: (DenStore) throws -> Void) rethrows {
-        let store = DenStore(state: DenState(desks: desks, focusedDeskID: desks[0].id))
+        let suiteName = "DenStorePresentationTests-\(UUID())"
+        let defaults = UserDefaults(suiteName: suiteName) ?? UserDefaults()
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let store = DenStore(
+            state: DenState(desks: desks, focusedDeskID: desks[0].id),
+            sheetNavigation: SheetNavigationManager(),
+            preferences: AppPreferences(defaults: defaults))
         try body(store)
     }
 

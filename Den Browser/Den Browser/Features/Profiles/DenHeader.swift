@@ -54,6 +54,8 @@ struct DenHeaderControls: View {
 
     var body: some View {
         HStack(spacing: 8) {
+            NotificationButton()
+
             if store.focusedDesk?.boards.isEmpty == false {
                 SaveDeskPresetButton()
             }
@@ -61,6 +63,31 @@ struct DenHeaderControls: View {
             ProfileChip(profile: profile, windowID: windowID)
         }
         .padding(.trailing, DenLayout.chromeHorizontalPadding)
+    }
+}
+
+private struct NotificationButton: View {
+    @Environment(DenStore.self) private var store
+
+    var body: some View {
+        Button {
+            store.toggleNotificationList()
+        } label: {
+            Image(systemName: store.unreadNotificationCount > 0 ? "bell.badge" : "bell")
+                .font(.system(size: 13, weight: .semibold))
+                .frame(width: 30, height: 30)
+        }
+        .buttonStyle(.borderless)
+        .tint(.secondary)
+        .fixedSize()
+        .disabled(store.temporaryContext != nil)
+        .accessibilityLabel("Notifications")
+        .accessibilityValue(
+            store.unreadNotificationCount > 0
+                ? "\(store.unreadNotificationCount) unread"
+                : "No unread notifications"
+        )
+        .help("Notifications")
     }
 }
 

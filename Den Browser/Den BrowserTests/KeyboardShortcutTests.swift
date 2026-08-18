@@ -264,6 +264,50 @@ struct KeyboardShortcutTests {
         #expect(store.focusedDesk?.id == secondDesk.id)
     }
 
+    @Test func denModeIOpensNotifications() throws {
+        let store = try makeStore(boards: [board("Terminal")])
+        store.isDenMode = true
+        let open = try keyEvent(
+            characters: "i",
+            charactersIgnoringModifiers: "i",
+            keyCode: 34)
+
+        #expect(KeyboardController.handle(open, store: store))
+        #expect(store.isNotificationListPresented)
+        #expect(store.isDenMode)
+    }
+
+    @Test func notificationArrowsMoveSelectionAndReturnOpensIt() throws {
+        let first = board("First")
+        let second = board("Second")
+        let store = try makeStore(boards: [first, second])
+        store.recordNotification(title: "First", body: "Done", boardID: first.id)
+        store.recordNotification(title: "Second", body: "Done", boardID: second.id)
+        store.isDenMode = true
+        let preferences = try makePreferences()
+
+        let open = try keyEvent(
+            characters: "i",
+            charactersIgnoringModifiers: "i",
+            keyCode: 34)
+        let down = try keyEvent(
+            characters: "\u{F701}",
+            charactersIgnoringModifiers: "\u{F701}",
+            keyCode: 125)
+        let enter = try keyEvent(
+            characters: "\r",
+            charactersIgnoringModifiers: "\r",
+            keyCode: 36)
+
+        #expect(KeyboardController.handle(open, store: store, preferences: preferences))
+        #expect(store.selectedNotificationID == store.notifications[0].id)
+        #expect(KeyboardController.handle(down, store: store, preferences: preferences))
+        #expect(store.selectedNotificationID == store.notifications[1].id)
+        #expect(KeyboardController.handle(enter, store: store, preferences: preferences))
+        #expect(store.focusedBoard?.id == first.id)
+        #expect(!store.isNotificationListPresented)
+    }
+
     @Test func customBindingsApplyImmediatelyAndCanBeUnassigned() throws {
         let preferences = try makePreferences()
         let store = try makeStore(boards: [board("First"), board("Second")])

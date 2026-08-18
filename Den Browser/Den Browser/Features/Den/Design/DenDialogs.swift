@@ -110,5 +110,22 @@ struct DenDialogs: ViewModifier {
                 let count = store.drawerPendingDeletionCount ?? 0
                 Text("All \(count) Drawer items will be discarded.")
             }
+            .confirmationDialog(
+                "Clear all Notifications?",
+                isPresented: Binding(
+                    get: { store.notificationPendingDeletionCount != nil },
+                    set: { if !$0 { store.cancelNotificationClear() } })
+            ) {
+                Button("Clear All", role: .destructive) {
+                    store.confirmNotificationClear()
+                }
+                .keyboardShortcut(.defaultAction)
+                Button("Cancel", role: .cancel) {
+                    store.cancelNotificationClear()
+                }
+            } message: {
+                let count = store.notificationPendingDeletionCount ?? 0
+                Text("All \(count) Notifications will be removed from this app run.")
+            }
     }
 }
