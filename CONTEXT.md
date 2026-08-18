@@ -110,8 +110,12 @@ Creating a Board from a Drawer Item in the Focused Desk. The placed item leaves 
 _Avoid_: Restore, open tab, move to workspace
 
 **Drawer Discard**:
-Releasing a Drawer Item without placing it into a Desk or Board context.
+Releasing a Drawer Item without placing it into a Desk or Board context. A discarded Drawer Item remains available in the current app run's transient restoration history, which retains up to ten items.
 _Avoid_: Complete, archive, close tab
+
+**Drawer Restoration**:
+Returning the newest discarded Drawer Item to the Drawer. Repeated restoration returns older discarded items from the current app run; the history is not persisted across relaunches. Restoration preserves Den Mode when invoked there.
+_Avoid_: Undo, reopen tab, restore Board
 
 **Focused Board**:
 The board currently selected for work within a desk.

@@ -154,6 +154,7 @@ struct DenStoreDrawerTests {
         #expect(store.focusedDesk?.boards.map(\.currentSheetURL) == [existingBoard.currentSheetURL, url])
         #expect(store.focusedBoard?.currentSheetURL == url)
         #expect(store.focusedBoard?.width == existingBoard.width)
+        #expect(store.recentlyDiscardedDrawerItems.isEmpty)
         #expect(!store.isDrawerOpen)
     }
 
@@ -172,8 +173,54 @@ struct DenStoreDrawerTests {
         store.discardSelectedDrawerItem()
 
         #expect(store.state.drawerItems.isEmpty)
+        #expect(store.recentlyDiscardedDrawerItems.count == 2)
         #expect(!store.isDrawerOpen)
         #expect(store.selectedDrawerItemID == nil)
+    }
+
+    @Test func discardHistoryIsTransientAndResetClearsIt() throws {
+        let source = desk("Desk")
+        let item = DrawerItem(url: try #require(URL(string: "https://discarded.example/")))
+        var savedState: DenState?
+        let store = DenStore(
+            state: DenState(desks: [source], focusedDeskID: source.id, drawerItems: [item]),
+            onSave: { savedState = $0 })
+
+        store.discardDrawerItem(item.id)
+
+        #expect(store.recentlyDiscardedDrawerItems.map(\.id) == [item.id])
+        let restoredStore = DenStore(state: try #require(savedState))
+        #expect(restoredStore.recentlyDiscardedDrawerItems.isEmpty)
+
+        store.restoreRecentlyDiscardedDrawerItem()
+        store.resetDen()
+        #expect(store.recentlyDiscardedDrawerItems.isEmpty)
+    }
+
+    @Test func discardHistoryKeepsAtMostTenItemsAndRestoresNewestFirst() throws {
+        let source = desk("Desk")
+        let items = try (0..<12).map { index in
+            DrawerItem(url: try #require(URL(string: "https://drawer-\(index).example/")))
+        }
+        let store = DenStore(
+            state: DenState(desks: [source], focusedDeskID: source.id, drawerItems: items))
+
+        for item in items.prefix(11) {
+            store.discardDrawerItem(item.id)
+        }
+
+        #expect(store.state.drawerItems.map(\.id) == [items[11].id])
+        #expect(store.recentlyDiscardedDrawerItems.count == DenStore.maximumRecentlyDiscardedDrawerItemCount)
+        #expect(
+            store.recentlyDiscardedDrawerItems.map(\.id)
+                == Array(items[1...10].reversed()).map(\.id))
+
+        for _ in 0..<DenStore.maximumRecentlyDiscardedDrawerItemCount {
+            store.restoreRecentlyDiscardedDrawerItem()
+        }
+
+        #expect(store.recentlyDiscardedDrawerItems.isEmpty)
+        #expect(store.state.drawerItems.map(\.id) == Array(items[1...11]).map(\.id))
     }
 
     @Test func discardingExpandedItemDisposesItsPreviewRuntime() throws {
@@ -268,6 +315,7 @@ struct DenStoreDrawerTests {
         #expect(store.selectedDrawerItemID == nil)
         #expect(store.expandedDrawerItemID == nil)
         #expect(store.drawerPreviewRuntime == nil)
+        #expect(store.recentlyDiscardedDrawerItems.count == 2)
         #expect(!store.isDrawerOpen)
     }
 
@@ -489,6 +537,26 @@ struct DenStoreDrawerTests {
         #expect(store.state.drawerItems.map(\.id) == [itemIDs[0], itemIDs[3]])
         #expect(store.selectedDrawerItemID == itemIDs[3])
         #expect(store.isDrawerOpen)
+    }
+
+    @Test func denModeKeyboardRestoresNewestDiscardedDrawerItemWithU() throws {
+        let source = desk("Desk")
+        let item = DrawerItem(url: try #require(URL(string: "https://restore.example/")))
+        let store = DenStore(
+            state: DenState(desks: [source], focusedDeskID: source.id, drawerItems: [item]))
+
+        store.openDrawer()
+        store.isDenMode = true
+        store.discardDrawerItem(item.id)
+        store.openDrawer()
+        store.isDenMode = true
+
+        #expect(KeyboardController.handle(try keyEvent("u", keyCode: 32), store: store))
+        #expect(store.state.drawerItems.map(\.id) == [item.id])
+        #expect(store.recentlyDiscardedDrawerItems.isEmpty)
+        #expect(store.selectedDrawerItemID == item.id)
+        #expect(store.expandedDrawerItemID == item.id)
+        #expect(store.isDenMode)
     }
 
     @Test func sheetInputLeavesVimStyleDrawerKeysUnclaimed() throws {

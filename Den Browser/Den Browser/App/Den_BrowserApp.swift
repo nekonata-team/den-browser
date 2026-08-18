@@ -190,6 +190,13 @@ private struct DenCommands: Commands {
                     .disabled(store?.recentlyRemovedBoards.isEmpty ?? true)
             }
 
+            Menu("Drawer") {
+                Button("Restore Discarded Drawer Item") {
+                    store?.performAppAction(.restoreDiscardedDrawerItem)
+                }
+                .disabled(store?.recentlyDiscardedDrawerItems.isEmpty ?? true)
+            }
+
             Menu("Desk") {
                 Button("New Desk") { store?.performAppAction(.showNewDeskPanel) }
                     .disabled(store?.canCreateDesk != true)

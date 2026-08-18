@@ -184,6 +184,7 @@ enum AppAction: Equatable {
     case selectDrawerItem(Int)
     case toggleSelectedDrawerItem
     case discardSelectedDrawerItem(focusNext: Bool)
+    case restoreDiscardedDrawerItem
     case placeSelectedDrawerItemAsBoard
     case requestDrawerClearConfirmation
     case enterDeskFilter
@@ -430,6 +431,11 @@ enum KeyboardRouter {
         }
 
         if context.isDenMode {
+            if modifiers == [], event.character?.lowercased() == "u" {
+                return event.isRepeat
+                    ? .consume(.ignoredRepeat)
+                    : .perform(.restoreDiscardedDrawerItem)
+            }
             if modifiers == [.shift], event.character?.lowercased() == "d" {
                 return event.isRepeat ? .consume(.ignoredRepeat) : .perform(.requestDrawerClearConfirmation)
             }
@@ -699,6 +705,7 @@ enum AppActionHandler {
         case .toggleSelectedDrawerItem: store.toggleSelectedDrawerItem()
         case .discardSelectedDrawerItem(let focusNext):
             store.discardSelectedDrawerItem(focusNext: focusNext)
+        case .restoreDiscardedDrawerItem: store.restoreRecentlyDiscardedDrawerItem()
         case .placeSelectedDrawerItemAsBoard: store.placeSelectedDrawerItemAsBoard()
         case .requestDrawerClearConfirmation: store.requestDrawerClearConfirmation()
         case .enterDeskFilter: store.enterDeskFilter()

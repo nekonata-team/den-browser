@@ -26,7 +26,7 @@ This routing avoids guessing which Desk owns an externally received link and pre
 
 A user can also keep a Board's Current Sheet in the Drawer for later recall or temporary comparison with work in another Desk.
 
-Opening Drawer material may create a temporary live preview, but the Drawer should persist only enough state to recall the material; it must not persist `WKWebView` or other live runtime objects. Placing web material into an established context creates a Board or adds a Sheet to a Board, depending on the chosen destination. Discarding removes it from the Drawer.
+Opening Drawer material may create a temporary live preview, but the Drawer should persist only enough state to recall the material; it must not persist `WKWebView` or other live runtime objects. Placing web material into an established context creates a Board or adds a Sheet to a Board, depending on the chosen destination. Discarding removes it from the Drawer and retains the item in a transient, current-run restoration history of up to ten items; this history is not persisted. Placement does not create a discard-history entry.
 
 The first Current Sheet operation should preserve the source Board rather than silently remove a Sheet from its Sheet Stack. A later explicit “stow” operation may move a Sheet if a clear lifecycle and recovery model emerges.
 
@@ -52,6 +52,7 @@ Future media support must not turn the initial design into a speculative generic
 - Opening an external URL captures, selects, and expands a new Drawer Item.
 - Closing the Drawer keeps its expanded Preview identity and live runtime for the next open during the current app run. Collapsing a Preview clears that identity and releases the runtime. Both operations keep the Drawer Item.
 - Discarding an expanded Preview advances to the next visible Drawer Item's Preview, or the previous visible Item when the discarded Item was last; discarding a non-expanded Item does not change the current Preview.
+- `u` restores the newest discarded Drawer Item, and repeated use restores older retained items. Restoration returns to the Drawer with the item selected and expanded; when invoked in Den Mode, it keeps Den Mode active. The history is limited to ten items and lasts only for the current app run.
 - Placement creates a Board to the right of the Focused Board, focuses it, removes the Drawer Item, and closes the Drawer.
 - Keeping a Current Sheet in the Drawer copies its URL and label with independent identity without opening the Drawer. The source Board remains unchanged.
 - Option-clicking a supported HTTP, HTTPS, or local file link in a Current Sheet captures it as a new Drawer Item without opening the Drawer or changing the Current Sheet, Focused Board, or Desk layout. Local file URL support follows [ADR 0033](./0033-support-local-file-sheet-urls.md).

@@ -164,8 +164,14 @@ extension DenStore {
         discardDrawerItem(itemID, advancesPreview: true)
     }
 
-    private func discardDrawerItem(_ itemID: UUID, advancesPreview: Bool, focusNext: Bool = true) {
+    private func discardDrawerItem(
+        _ itemID: UUID,
+        advancesPreview: Bool,
+        focusNext: Bool = true,
+        recordsDiscardHistory: Bool = true
+    ) {
         guard let index = state.drawerItems.firstIndex(where: { $0.id == itemID }) else { return }
+        let item = state.drawerItems[index]
         let wasSelected = selectedDrawerItemID == itemID
         let wasExpanded = expandedDrawerItemID == itemID
         let adjacentItemID =
@@ -173,6 +179,9 @@ extension DenStore {
             ? adjacentDrawerItemID(after: itemID, focusNext: focusNext)
             : nil
 
+        if recordsDiscardHistory {
+            rememberDiscardedDrawerItems([item])
+        }
         if wasExpanded {
             state.expandedDrawerItemID = nil
             releaseDrawerPreview()
@@ -192,6 +201,31 @@ extension DenStore {
         save()
     }
 
+    func restoreRecentlyDiscardedDrawerItem() {
+        guard let item = recentlyDiscardedDrawerItems.first else {
+            showToast("No discarded Drawer Item to restore.", style: .warning)
+            return
+        }
+
+        let wasDenMode = isDenMode
+        releaseDrawerPreview()
+        state.drawerItems.insert(item, at: 0)
+        selectedDrawerItemID = item.id
+        state.expandedDrawerItemID = item.id
+        recentlyDiscardedDrawerItems.removeFirst()
+        openDrawer()
+        isDenMode = wasDenMode
+        save()
+    }
+
+    private func rememberDiscardedDrawerItems(_ items: [DrawerItem]) {
+        recentlyDiscardedDrawerItems.insert(contentsOf: items, at: 0)
+        let overflow = recentlyDiscardedDrawerItems.count - Self.maximumRecentlyDiscardedDrawerItemCount
+        if overflow > 0 {
+            recentlyDiscardedDrawerItems.removeLast(overflow)
+        }
+    }
+
     func discardSelectedDrawerItem(focusNext: Bool = true) {
         guard let selectedDrawerItemID else { return }
         discardDrawerItem(selectedDrawerItemID, advancesPreview: true, focusNext: focusNext)
@@ -204,6 +238,7 @@ extension DenStore {
 
     func confirmDrawerClear() {
         guard drawerPendingDeletionCount != nil else { return }
+        rememberDiscardedDrawerItems(state.drawerItems)
         releaseDrawerPreview()
         state.drawerItems = []
         state.expandedDrawerItemID = nil
@@ -224,7 +259,7 @@ extension DenStore {
     func placeDrawerItemAsBoard(_ itemID: UUID) {
         guard let item = state.drawerItems.first(where: { $0.id == itemID }) else { return }
         addBoard(urlString: item.url.absoluteString, preferredWidth: focusedBoard?.width)
-        discardDrawerItem(itemID, advancesPreview: false)
+        discardDrawerItem(itemID, advancesPreview: false, recordsDiscardHistory: false)
         closeDrawer()
     }
 

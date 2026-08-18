@@ -22,6 +22,9 @@ struct DenStorePresentationTests {
         store.recentlyRemovedBoards = [
             RecentlyRemovedBoard(board: board, sourceDeskID: populated.id, sourceBoardIndex: 0)
         ]
+        store.recentlyDiscardedDrawerItems = [
+            DrawerItem(url: URL(string: "https://discarded.example/")!)
+        ]
 
         store.resetDen()
 
@@ -35,6 +38,7 @@ struct DenStorePresentationTests {
         #expect(store.toastMessage?.style == .success)
         #expect(store.runtimes.isEmpty)
         #expect(store.recentlyRemovedBoards.isEmpty)
+        #expect(store.recentlyDiscardedDrawerItems.isEmpty)
         #expect(store.notifications.isEmpty)
         #expect(runtime.webView.navigationDelegate == nil)
         #expect(runtime.webView.uiDelegate == nil)
