@@ -164,11 +164,18 @@ extension DenStore {
             onOpenURL: { [weak self] url in
                 guard let self, let resolvedURL = URL(string: url), SheetURLPolicy.isSupported(resolvedURL)
                 else { return }
-                addBoard(
-                    urlString: resolvedURL.absoluteString,
-                    preferredWidth: board.width,
-                    afterBoardID: board.id,
-                    focus: false)
+                let canonicalURL = SheetURLPolicy.canonicalSheetURL(resolvedURL)
+                registerTerminalURL(canonicalURL)
+                guard
+                    addBoard(
+                        urlString: canonicalURL.absoluteString,
+                        preferredWidth: board.width,
+                        afterBoardID: board.id,
+                        focus: false)
+                else {
+                    cancelTerminalURLRegistration(canonicalURL)
+                    return
+                }
             },
             onNotification: { [weak self] title, body in
                 self?.recordNotification(title: title, body: body, boardID: board.id)

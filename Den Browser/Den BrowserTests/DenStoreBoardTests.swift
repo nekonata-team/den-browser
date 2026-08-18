@@ -1,5 +1,6 @@
 import AppKit
 import Foundation
+import GhosttyTerminal
 import Testing
 import WebKit
 
@@ -296,6 +297,24 @@ struct DenStoreBoardTests {
 
         #expect(store.isDenMode)
         #expect(store.focusedBoard?.id == terminal.id)
+    }
+
+    @Test func terminalLinkCreatesBackgroundBoardWithoutDrawer() throws {
+        let terminal = BoardState(width: 520, workingDirectory: "/tmp")
+        let source = desk("Desk", boards: [terminal], focusedBoardID: terminal.id)
+        let store = DenStore(state: DenState(desks: [source], focusedDeskID: source.id))
+        let url = try #require(URL(string: "https://terminal-link.example/path"))
+        defer { store.releaseRuntimes() }
+
+        store.terminalRuntime(for: terminal).terminalDidRequestOpenURL(url.absoluteString, kind: .text)
+
+        #expect(store.focusedDesk?.boards.map(\.currentSheetURL) == [nil, url])
+        #expect(store.focusedDesk?.focusedBoardID == terminal.id)
+        #expect(store.state.drawerItems.isEmpty)
+
+        store.handleExternalURL(url)
+
+        #expect(store.state.drawerItems.isEmpty)
     }
 
     @Test func openBoardAcceptsWebHostsAndSearchesInvalidURLs() throws {

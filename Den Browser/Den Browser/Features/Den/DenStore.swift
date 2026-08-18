@@ -153,6 +153,7 @@ final class DenStore {
     }
     @ObservationIgnored var drawerPreviewRuntime: DrawerPreviewRuntime?
     @ObservationIgnored var toastTask: Task<Void, Never>?
+    @ObservationIgnored private var pendingTerminalURLSuppressions: [URL: (count: Int, expiresAt: Date)] = [:]
     @ObservationIgnored private var previousFocusedDeskID: UUID?
     @ObservationIgnored private let terminalCommandRunner: any TerminalCommandRunning
     @ObservationIgnored let canPresentDesk: ((UUID) -> Bool)?
@@ -160,6 +161,42 @@ final class DenStore {
     @ObservationIgnored private let onWillResetDen: (() -> Void)?
     var onRecentItemsSave: (([RecentItem]) -> Bool)? { storage.onRecentItemsSave }
     var boardLayoutMetrics: BoardLayoutMetrics?
+
+    // ponytail: one-second handoff window; replace with source-aware URL routing if available.
+    private static let terminalURLSuppressionDuration: TimeInterval = 1
+
+    func registerTerminalURL(_ url: URL) {
+        let canonicalURL = SheetURLPolicy.canonicalSheetURL(url)
+        let expiration = Date().addingTimeInterval(Self.terminalURLSuppressionDuration)
+        if let pending = pendingTerminalURLSuppressions[canonicalURL], pending.expiresAt > Date() {
+            pendingTerminalURLSuppressions[canonicalURL] = (pending.count + 1, expiration)
+        } else {
+            pendingTerminalURLSuppressions[canonicalURL] = (1, expiration)
+        }
+    }
+
+    func handleExternalURL(_ url: URL) {
+        let canonicalURL = SheetURLPolicy.canonicalSheetURL(url)
+        if !consumeTerminalURLSuppression(canonicalURL) { keepInDrawer(url) }
+    }
+
+    func cancelTerminalURLRegistration(_ url: URL) {
+        _ = consumeTerminalURLSuppression(SheetURLPolicy.canonicalSheetURL(url))
+    }
+
+    private func consumeTerminalURLSuppression(_ url: URL) -> Bool {
+        guard let pending = pendingTerminalURLSuppressions[url] else { return false }
+        guard pending.expiresAt > Date() else {
+            pendingTerminalURLSuppressions.removeValue(forKey: url)
+            return false
+        }
+        if pending.count == 1 {
+            pendingTerminalURLSuppressions.removeValue(forKey: url)
+        } else {
+            pendingTerminalURLSuppressions[url] = (pending.count - 1, pending.expiresAt)
+        }
+        return true
+    }
 
     var focusedDesk: DeskState? {
         state.desks.first { $0.id == presentedDeskID }

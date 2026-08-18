@@ -1,4 +1,5 @@
 import Foundation
+import GhosttyTerminal
 import Testing
 
 @testable import Den_Browser
@@ -57,6 +58,26 @@ struct TerminalRuntimeTests {
 
         #expect(receivedTitle == "Build")
         #expect(receivedBody == "Finished")
+        runtime.dispose()
+    }
+
+    @Test func terminalOpenURLForwardsURL() {
+        var receivedURL: String?
+        let runtime = TerminalRuntime(
+            workingDirectory: FileManager.default.homeDirectoryForCurrentUser.path,
+            events: .init(
+                onClose: {},
+                onFocus: {},
+                onWorkingDirectoryChange: { _ in },
+                onTitleChange: { _ in },
+                onOpenURL: { receivedURL = $0 },
+                onNotification: { _, _ in }
+            )
+        )
+
+        runtime.terminalDidRequestOpenURL("https://example.com/path", kind: .text)
+
+        #expect(receivedURL == "https://example.com/path")
         runtime.dispose()
     }
 }

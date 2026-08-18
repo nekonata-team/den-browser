@@ -52,7 +52,7 @@ struct ProfileWindowView: View {
             .toolbarBackgroundVisibility(.hidden, for: .windowToolbar)
             .ignoresSafeArea(.container, edges: store.isZenViewPresented ? .top : [])
             .onOpenURL { url in
-                store.keepInDrawer(url)
+                store.handleExternalURL(url)
             }
             .sheet(
                 isPresented: Binding(

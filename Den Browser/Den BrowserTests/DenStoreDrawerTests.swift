@@ -25,6 +25,33 @@ struct DenStoreDrawerTests {
         #expect(savedState == store.state)
     }
 
+    @Test func terminalURLSuppressesMatchingExternalURLOnce() throws {
+        let source = desk("Desk")
+        let store = DenStore(state: DenState(desks: [source], focusedDeskID: source.id))
+        let url = try #require(URL(string: "https://terminal.example/path"))
+
+        store.registerTerminalURL(url)
+        store.handleExternalURL(url)
+
+        #expect(store.state.drawerItems.isEmpty)
+
+        store.handleExternalURL(url)
+
+        #expect(store.state.drawerItems.map(\.url) == [url])
+    }
+
+    @Test func terminalURLSuppressionMatchesCanonicalURL() throws {
+        let source = desk("Desk")
+        let store = DenStore(state: DenState(desks: [source], focusedDeskID: source.id))
+        let terminalURL = try #require(URL(string: "HTTPS://terminal.example"))
+        let externalURL = try #require(URL(string: "https://terminal.example/"))
+
+        store.registerTerminalURL(terminalURL)
+        store.handleExternalURL(externalURL)
+
+        #expect(store.state.drawerItems.isEmpty)
+    }
+
     @Test func duplicateURLsRemainDistinctAndNewestComesFirst() throws {
         let source = desk("Desk")
         let store = DenStore(state: DenState(desks: [source], focusedDeskID: source.id))
