@@ -187,7 +187,7 @@ private struct DenCommands: Commands {
                         store?.focusedDesk?.focusedBoardID == nil
                             || store?.hasPendingConfirmation == true)
                 Button("Restore Removed Board") { store?.performAppAction(.restoreBoard) }
-                    .disabled(store?.recentlyRemovedBoard == nil)
+                    .disabled(store?.recentlyRemovedBoards.isEmpty ?? true)
             }
 
             Menu("Desk") {

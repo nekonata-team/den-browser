@@ -573,7 +573,7 @@ struct DenStoreBoardTests {
 
             #expect(store.focusedDesk?.boards.map(\.id) == [boards[0].id, boards[2].id])
             #expect(store.focusedDesk?.focusedBoardID == boards[0].id)
-            #expect(store.recentlyRemovedBoard?.board.id == boards[1].id)
+            #expect(store.recentlyRemovedBoards.first?.board.id == boards[1].id)
         }
     }
 
@@ -589,7 +589,7 @@ struct DenStoreBoardTests {
                 focusedDeskID: UUID()))
         store.removeFocusedBoard()
 
-        #expect(store.recentlyRemovedBoard?.board.sheetNavigationPaused == true)
+        #expect(store.recentlyRemovedBoards.first?.board.sheetNavigationPaused == true)
 
         store.restoreRecentlyRemovedBoard()
 
@@ -642,7 +642,7 @@ struct DenStoreBoardTests {
         }
     }
 
-    @Test func removalReplacesRestoreCandidateAndDoesNotPersistIt() throws {
+    @Test func removalHistoryKeepsNewestBoardsAndDoesNotPersistThem() throws {
         let boards = [board("First"), board("Second")]
         let source = desk("Source", boards: boards, focusedBoardID: boards[0].id)
         var persistedState: DenState?
@@ -654,9 +654,30 @@ struct DenStoreBoardTests {
         store.removeFocusedBoard()
         let persisted = try #require(persistedState)
 
-        #expect(store.recentlyRemovedBoard?.board.id == boards[1].id)
+        #expect(store.recentlyRemovedBoards.map { $0.board.id } == [boards[1].id, boards[0].id])
         #expect(persisted.desks[0].boards.isEmpty)
-        #expect(DenStore(state: persisted).recentlyRemovedBoard == nil)
+        #expect(DenStore(state: persisted).recentlyRemovedBoards.isEmpty)
+    }
+
+    @Test func removalHistoryKeepsAtMostTenBoardsAndRestoresNewestFirst() {
+        let boards = (0..<12).map { board("Board \($0)") }
+        withStore(desks: [desk("Desk", boards: boards, focusedBoardID: boards[0].id)]) { store in
+            for _ in 0..<11 {
+                store.removeFocusedBoard()
+            }
+
+            #expect(store.recentlyRemovedBoards.count == DenStore.maximumRecentlyRemovedBoardCount)
+            #expect(
+                store.recentlyRemovedBoards.map { $0.board.id }
+                    == Array((1...10).reversed()).map { boards[$0].id })
+
+            for _ in 0..<DenStore.maximumRecentlyRemovedBoardCount {
+                store.restoreRecentlyRemovedBoard()
+            }
+
+            #expect(store.recentlyRemovedBoards.isEmpty)
+            #expect(store.focusedDesk?.boards.map(\.id) == Array(1...11).map { boards[$0].id })
+        }
     }
 
     @Test func restorationUsesOriginalDeskIndexAndBoardIdentity() {
@@ -668,7 +689,7 @@ struct DenStoreBoardTests {
 
             #expect(store.focusedDesk?.boards == boards)
             #expect(store.focusedDesk?.focusedBoardID == boards[1].id)
-            #expect(store.recentlyRemovedBoard == nil)
+            #expect(store.recentlyRemovedBoards.isEmpty)
         }
     }
 

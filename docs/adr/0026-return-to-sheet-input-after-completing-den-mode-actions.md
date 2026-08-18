@@ -40,7 +40,7 @@ Adjustment:
 - Maximizing or centering the Focused Board.
 - Toggling Zen View.
 
-Board Removal and Board Restoration remain repeatable, but their key bindings do not repeat while held. Restoration remains limited to the Recently Removed Board, and Desk deletion remains limited to an eligible empty Desk.
+Board Removal and Board Restoration remain repeatable, but their key bindings do not repeat while held. Restoration remains limited to the retained Recently Removed Boards, newest first, and Desk deletion remains limited to an eligible empty Desk.
 
 ## Return to Sheet Input
 

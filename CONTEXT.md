@@ -162,9 +162,9 @@ Taking a Board off its Desk and ending its live Sheet or Terminal runtime. Remov
 _Avoid_: Close tab, delete page, trash
 
 **Recently Removed Board**:
-The most recent board removed from one Profile's Den during the current app run and still available for restoration.
+A Board removed from a Profile's Den during the current app run and still available for restoration. A Profile can retain up to ten Recently Removed Boards.
 _Avoid_: Closed tab, trash, Held Board, undo history
 
 **Board Restoration**:
-Returning the Recently Removed Board to a Desk with its saved identity, label, width, and persisted content. A restored ordinary Terminal Board starts a new Terminal Session from its saved Working Directory; a restored Zellij Board starts Zellij from its persisted session name or Welcome screen, and a restored zmx Board reconnects to its persisted session name.
+Returning a Recently Removed Board to a Desk with its saved identity, label, width, and persisted content; restoration starts with the newest available Board, and repeated restoration can return older Recently Removed Boards. A restored ordinary Terminal Board starts a new Terminal Session from its saved Working Directory; a restored Zellij Board starts Zellij from its persisted session name or Welcome screen, and a restored zmx Board reconnects to its persisted session name.
 _Avoid_: Undo, reopen tab, restore Sheet Stack

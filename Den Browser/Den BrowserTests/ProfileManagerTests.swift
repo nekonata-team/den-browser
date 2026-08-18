@@ -445,9 +445,9 @@ struct ProfileManagerTests {
         store.removeFocusedBoard()
         let restored = makeProfileManager(directory: directory)
 
-        #expect(store.recentlyRemovedBoard?.board.id == boardID)
+        #expect(store.recentlyRemovedBoards.first?.board.id == boardID)
         #expect(restored.store(for: personalID)?.focusedDesk?.boards.contains { $0.id == boardID } == false)
-        #expect(restored.store(for: personalID)?.recentlyRemovedBoard == nil)
+        #expect(restored.store(for: personalID)?.recentlyRemovedBoards.isEmpty == true)
     }
 
     @Test func profileStoresUseSeparateWebKitStoresAndCallbacks() throws {

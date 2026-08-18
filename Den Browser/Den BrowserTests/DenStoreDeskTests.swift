@@ -66,7 +66,7 @@ struct DenStoreDeskTests {
             board: board("Removed"),
             sourceDeskID: other.id,
             sourceBoardIndex: 0)
-        store.recentlyRemovedBoard = restorationCandidate
+        store.recentlyRemovedBoards = [restorationCandidate]
         store.toggleFocusedBoardMaximized()
         store.showReplaceDeskPanel()
 
@@ -92,7 +92,7 @@ struct DenStoreDeskTests {
         #expect(runtime.webView.navigationDelegate == nil)
         #expect(runtime.webView.uiDelegate == nil)
         #expect(store.maximizedBoardID == nil)
-        #expect(store.recentlyRemovedBoard?.board.id == restorationCandidate.board.id)
+        #expect(store.recentlyRemovedBoards.first?.board.id == restorationCandidate.board.id)
         #expect(!store.isReplaceDeskPanelPresented)
         #expect(!store.isDenMode)
         #expect(savedState == store.state)

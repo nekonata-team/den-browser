@@ -346,11 +346,17 @@ extension DenStore {
     func removeBoard(_ boardID: UUID, focusNext: Bool = false) {
         guard let indices = boardIndices(for: boardID) else { return }
         let board = removeBoard(at: indices, focusNext: focusNext)
-        recentlyRemovedBoard = RecentlyRemovedBoard(
-            board: board,
-            sourceDeskID: state.desks[indices.desk].id,
-            sourceBoardIndex: indices.board
+        recentlyRemovedBoards.insert(
+            RecentlyRemovedBoard(
+                board: board,
+                sourceDeskID: state.desks[indices.desk].id,
+                sourceBoardIndex: indices.board
+            ),
+            at: 0
         )
+        if recentlyRemovedBoards.count > Self.maximumRecentlyRemovedBoardCount {
+            recentlyRemovedBoards.removeLast()
+        }
         if maximizedBoardID == board.id {
             maximizedBoardID = nil
         }
@@ -360,7 +366,7 @@ extension DenStore {
     }
 
     func restoreRecentlyRemovedBoard() {
-        guard let recentlyRemovedBoard else {
+        guard let recentlyRemovedBoard = recentlyRemovedBoards.first else {
             showToast("No removed board to restore.", style: .warning)
             return
         }
@@ -384,7 +390,7 @@ extension DenStore {
         state.desks[deskIndex].boards.insert(board, at: insertIndex)
         state.desks[deskIndex].focusedBoardID = board.id
         setFocusedDesk(state.desks[deskIndex].id)
-        self.recentlyRemovedBoard = nil
+        recentlyRemovedBoards.removeFirst()
         save()
     }
 

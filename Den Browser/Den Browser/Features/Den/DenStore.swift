@@ -11,7 +11,7 @@ final class DenStorage {
     var recentItems: [RecentItem]
     var notifications: [DenNotification] = []
     var activeDrag: ActiveDrag?
-    var recentlyRemovedBoard: RecentlyRemovedBoard?
+    var recentlyRemovedBoards: [RecentlyRemovedBoard] = []
 
     @ObservationIgnored var runtimes: [UUID: BoardRuntime] = [:]
     @ObservationIgnored var terminalRuntimes: [UUID: TerminalRuntime] = [:]
@@ -43,6 +43,7 @@ final class DenStore {
     static let maximumDeskCount = 10
     static let maximumRecentItemCount = 100
     static let maximumNotificationCount = 200
+    static let maximumRecentlyRemovedBoardCount = 10
     static let maximumPersistedRecentInputLength = 2_048
     private static let toastDuration: Duration = .seconds(5)
 
@@ -95,9 +96,9 @@ final class DenStore {
     var boardDragCancellationRequest = 0
     var deskDragCancellationRequest = 0
     var overviewSelection: OverviewSelection?
-    var recentlyRemovedBoard: RecentlyRemovedBoard? {
-        get { storage.recentlyRemovedBoard }
-        set { storage.recentlyRemovedBoard = newValue }
+    var recentlyRemovedBoards: [RecentlyRemovedBoard] {
+        get { storage.recentlyRemovedBoards }
+        set { storage.recentlyRemovedBoards = newValue }
     }
     var isDrawerOpen: Bool { temporaryContext == .drawer }
 
@@ -448,7 +449,7 @@ final class DenStore {
         overviewSelection = nil
         overviewQuery = ""
         overviewFilterPhase = .inactive
-        recentlyRemovedBoard = nil
+        recentlyRemovedBoards.removeAll()
         notifications.removeAll()
         isNotificationListPresented = false
         selectedNotificationID = nil
