@@ -1,5 +1,6 @@
 excluded:
   - .derived-data
+  - .derived-data-ui
 
 disabled_rules:
   # swift-format is the source of truth for these style rules.

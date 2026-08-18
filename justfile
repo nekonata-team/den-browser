@@ -3,6 +3,7 @@ set shell := ["zsh", "-cu"]
 project := "Den Browser/Den Browser.xcodeproj"
 scheme := "Den Browser"
 derived_data := ".derived-data"
+ui_test_derived_data := ".derived-data-ui"
 swift_format := "xcrun swift-format"
 swift_sources := "Den Browser"
 
@@ -47,7 +48,7 @@ run: build
 # Remove all derived data build directories.
 [group("development")]
 clean:
-    rm -rf "{{derived_data}}"
+    rm -rf "{{derived_data}}" "{{ui_test_derived_data}}"
 
 [group("development")]
 precommit:
@@ -65,7 +66,7 @@ test:
 # Run deterministic macOS UI interaction tests. Pass a target to run a specific class or case (e.g. just ui-test Den_BrowserUITests/testNewBoardIsCenteredAfterCreation).
 [group("test")]
 ui-test target="Den_BrowserUITests":
-    rtk test "xcodebuild test -project '{{project}}' -scheme '{{scheme}}' -destination 'platform=macOS' -derivedDataPath '{{derived_data}}' -only-testing:'Den BrowserUITests/{{target}}' CODE_SIGNING_ALLOWED=NO"
+    rtk test "xcodebuild test -project '{{project}}' -scheme '{{scheme}}' -destination 'platform=macOS' -derivedDataPath '{{ui_test_derived_data}}' -only-testing:'Den BrowserUITests/{{target}}'"
 
 # Build then run unit tests.
 [group("test")]
