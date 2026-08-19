@@ -90,4 +90,4 @@ While Overview is open without a search query, drag a Board card to another posi
 
 ## Pointer Desk actions
 
-Drag a Desk button in the Desk switcher to reorder Desks. Clicking still focuses that Desk, and its context menu remains available. Dropping outside the switcher cancels the move; moving near its horizontal edges scrolls it. Desk reordering has no keyboard shortcut.
+Click the plus button after the last Desk button in the Desk switcher to open the New Desk panel. Drag a Desk button in the Desk switcher to reorder Desks. Clicking still focuses that Desk, and its context menu remains available. Dropping outside the switcher cancels the move; moving near its horizontal edges scrolls it. Desk reordering has no keyboard shortcut.

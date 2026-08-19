@@ -8,11 +8,11 @@ XCUITest is an expensive exception, not the default for UI code. Adding a View, 
 
 Add a UI test only when all of the following are true:
 
-- The behavior crosses a native UI boundary, such as SwiftUI gesture recognition or hit testing, accessibility routing, or AppKit, WebKit, or Terminal responder boundaries.
+- The behavior crosses a native UI boundary, such as SwiftUI-specific gesture identity (for example, pointer drag-and-drop), accessibility routing that is itself under test, or AppKit, WebKit, or Terminal responder boundaries. Ordinary Button clicks do not qualify.
 - A unit test cannot observe the failure at that boundary.
 - The test proves one independent user-visible workflow and its final outcome.
 
-Before adding one, state which boundary it protects and why a unit test cannot protect it. Do not add UI tests merely to reconfirm a `DenStore` transition, a simple View-to-Store delegation, a visual/style choice, or every input variant of the same wiring. A different fixture or state outcome is not enough reason for another UI test when the native boundary is unchanged.
+Before adding one, state which boundary it protects and why a unit test cannot protect it. Do not add UI tests merely to reconfirm a `DenStore` transition, a simple View-to-Store delegation, an ordinary Button click, a visual/style choice, or every input variant of the same wiring. A different fixture or state outcome is not enough reason for another UI test when the native boundary is unchanged.
 
 A concrete native boundary is Board input activation: the handoff from Board state and SwiftUI
 updates to the Board's native input surface (`WKWebView` for a Web Board or the Ghostty view

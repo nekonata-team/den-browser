@@ -32,6 +32,20 @@ struct DeskSwitcher: View {
                         ForEach(Array(store.state.desks.enumerated()), id: \.element.id) { index, desk in
                             deskSwitcherItem(desk, number: index + 1, in: geometry.size)
                         }
+
+                        Button {
+                            store.showNewDeskPanel()
+                        } label: {
+                            Image(systemName: "plus")
+                                .font(.system(size: 13, weight: .semibold))
+                                .frame(width: 30, height: 30)
+                        }
+                        .buttonStyle(.borderless)
+                        .tint(.secondary)
+                        .fixedSize()
+                        .disabled(!store.canCreateDesk)
+                        .accessibilityLabel("New Desk")
+                        .help("New Desk")
                     }
                     .frame(height: DenLayout.deskSwitcherHeight)
                     .scrollTargetLayout()
