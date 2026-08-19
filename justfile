@@ -61,12 +61,14 @@ prepush:
 # Run unit tests without code signing.
 [group("test")]
 test:
-    rtk test "xcodebuild test -project '{{project}}' -scheme '{{scheme}}' -destination 'platform=macOS' -derivedDataPath '{{derived_data}}' -only-testing:'Den BrowserTests' CODE_SIGNING_ALLOWED=NO"
+    rtk test "xcodebuild test -project '{{project}}' -scheme '{{scheme}}' -destination 'platform=macOS' -derivedDataPath '{{derived_data}}' -only-testing:'Den BrowserTests' CODE_SIGNING_ALLOWED=NO" || { echo "✗ Unit tests failed."; echo '  Inspect: xcrun xcresulttool get test-results summary --path "$(ls -td .derived-data/Logs/Test/*.xcresult | head -n 1)"'; exit 1; }
+    echo "✓ Unit tests passed"
 
 # Run deterministic macOS UI interaction tests. Pass a target to run a specific class or case (e.g. just ui-test Den_BrowserUITests/testNewBoardIsCenteredAfterCreation).
 [group("test")]
 ui-test target="Den_BrowserUITests":
-    rtk test "xcodebuild test -project '{{project}}' -scheme '{{scheme}}' -destination 'platform=macOS' -derivedDataPath '{{ui_test_derived_data}}' -only-testing:'Den BrowserUITests/{{target}}'"
+    rtk test "xcodebuild test -project '{{project}}' -scheme '{{scheme}}' -destination 'platform=macOS' -derivedDataPath '{{ui_test_derived_data}}' -only-testing:'Den BrowserUITests/{{target}}'" || { echo "✗ UI tests failed."; echo '  Inspect: xcrun xcresulttool get test-results summary --path "$(ls -td .derived-data-ui/Logs/Test/*.xcresult | head -n 1)"'; exit 1; }
+    echo "✓ UI tests passed"
 
 # Build then run unit tests.
 [group("test")]
