@@ -119,6 +119,6 @@ Contains reusable operating-system integration rather than product concepts. Do 
 
 ## Validation
 
-Swift source moves require `just check`. Changes affecting Board or Desk interaction run focused UI tests only when they cross a native UI boundary that lower-level tests cannot observe; otherwise, focused unit tests are sufficient. Resource moves must additionally verify that the bundled Sheet Navigation script loads at runtime.
+Validation boundaries follow [testing.md](./testing.md). Swift source moves require `just check`; resource moves must additionally verify that the bundled Sheet Navigation script loads at runtime.
 
 Architecture decisions live in [docs/adr](./adr). Product terminology remains defined only in [CONTEXT.md](../CONTEXT.md).

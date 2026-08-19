@@ -24,14 +24,14 @@ This document defines outcome-level PoC criteria. Validation procedures belong i
 
 - Den controls must remain usable while a Sheet has WebKit focus.
 - Persisted `DenState` must remain separate from live `BoardRuntime` and `WKWebView` objects.
-- WebKit-specific behavior, authentication, IME, rendering, and resource use require exploratory validation in addition to automated tests.
+- WebKit-specific behavior, authentication, IME, rendering, and resource use require exploratory validation; automate stable, reproducible behavior where practical.
 - Focus Mode rendering across Web and Terminal Boards, accessibility, and resource use require exploratory validation.
 
 ## Evidence
 
-- Stable state transitions, persistence, parsing, and lifecycle behavior are covered by unit tests.
-- Native SwiftUI workflows are covered by focused UI tests.
-- WebKit integration, external authentication, visual behavior, IME, and long-running resource use are checked exploratorily.
+- Stable state transitions, persistence, parsing, and lifecycle behavior are covered by focused automated tests.
+- Native UI integration that crosses a boundary a unit test cannot observe is covered by focused UI tests.
+- PoC sessions record results for WebKit integration, external authentication, visual behavior, IME, and long-running resource use.
 - The test responsibilities and validation boundaries are defined in [testing.md](./testing.md).
 
 ## Fail conditions

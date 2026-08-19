@@ -12,7 +12,7 @@ Add a UI test only when all of the following are true:
 - A unit test cannot observe the failure at that boundary.
 - The test proves one independent user-visible workflow and its final outcome.
 
-Before adding one, state which boundary it protects and why a unit test cannot protect it. Do not add UI tests merely to reconfirm a `DenStore` transition, a simple View-to-Store delegation, an ordinary Button click, a visual/style choice, or every input variant of the same wiring. A different fixture or state outcome is not enough reason for another UI test when the native boundary is unchanged.
+Before adding one, state which boundary it protects and why a unit test cannot observe it. Do not add UI tests for unit-observable behavior, ordinary Button clicks, visual/style choices, or every input variant of the same wiring. Exhaustive shortcut mappings, state transitions, branches, and edge cases belong in focused unit tests.
 
 A concrete native boundary is Board input activation: the handoff from Board state and SwiftUI
 updates to the Board's native input surface (`WKWebView` for a Web Board or the Ghostty view
@@ -24,7 +24,7 @@ toggle, Desk switch, or Overview confirmation and observes a target-specific res
 Unit tests cover the focus state machine; UI tests cover actual input delivery through the mounted
 native surface.
 
-If no such boundary exists, add or update the focused unit test instead. Use exploratory validation for visual behavior, operating-system behavior, external services, and other boundaries that are not reliable to automate.
+If no such boundary exists, add or update the focused unit test instead. Use exploratory validation where automation is not reliable.
 
 ## Responsibilities
 
@@ -37,13 +37,11 @@ Automated unit tests own:
 - Routing Sheet Navigation callbacks and WebKit stores to their owning Profile.
 - The pointer-focus state machine used to coordinate board selection and WebKit focus.
 
-Stable product behavior should be covered by unit, integration, or end-to-end tests. XCUITests own native UI integration, including:
+XCUITests own native UI integration, including:
 
 - SwiftUI-specific gesture identity (e.g. pointer drag-and-drop between Boards), which cannot be simulated in unit tests.
 - Board input activation across the native responder boundary, such as clicking an unfocused Board and sending input, or switching Desks and sending input without another click.
 - Creating a Terminal, Zellij, or zmx Board, entering Terminal Input, and removing it when the Shell, Zellij, or zmx process exits.
-
-Per [ADR-0020](./adr/0020-test-critical-ui-workflows.md), each UI test is an independent user-visible workflow, not an exhaustive input permutation. Exhaustive shortcut mappings, state mutations (adding/removing boards), branches, and edge cases remain focused unit tests to prevent test suite hangs and maintain fast test execution.
 
 ### UI test readability
 
