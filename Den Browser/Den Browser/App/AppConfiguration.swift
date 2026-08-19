@@ -77,7 +77,7 @@ struct AppConfiguration {
         multipleDrawerItems: Bool = false
     ) -> PersistedProfile {
         let alpha =
-            if terminalBoard || fixture == .terminalOverview {
+            if terminalBoard {
                 BoardState(
                     id: fixtureID("00000000-0000-0000-0000-000000000301"),
                     label: "Terminal",
@@ -138,12 +138,6 @@ struct AppConfiguration {
             secondFocusedBoardID = charlie.id
             mainFocusedBoardID = alpha.id
             focusedDeskID = secondDeskID
-        case .terminalOverview:
-            mainBoards = [alpha]
-            secondBoards = [bravo]
-            secondFocusedBoardID = bravo.id
-            mainFocusedBoardID = alpha.id
-            focusedDeskID = mainDeskID
         case .overflowingSecondDesk:
             let overflowBoards = [
                 (id: "00000000-0000-0000-0000-000000000304", label: "Delta"),
@@ -233,7 +227,6 @@ private enum UITestFixture: String {
     case focusedSecondBoard = "focused-second-board"
     case overviewBoardPair = "overview-board-pair"
     case focusedNonLeadingBoard = "focused-non-leading-board"
-    case terminalOverview = "terminal-overview"
     case overflowingSecondDesk = "overflowing-second-desk"
 }
 

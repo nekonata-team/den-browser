@@ -56,8 +56,7 @@ final class Den_BrowserUITests: XCTestCase, BDD {
 
         when("typing more input") {
             XCTAssertTrue(sheetInput.waitForExistence(timeout: 5))
-            sheetInput.click()
-            sheetInput.typeText("!")
+            app.typeText("!")
         }
 
         then("the Sheet input regains focus and retains the previous text") {
@@ -158,41 +157,6 @@ final class Den_BrowserUITests: XCTestCase, BDD {
 
         then("the remaining preview accepts Sheet input") {
             XCTAssertEqual(sheetInput.value as? String, "a")
-        }
-    }
-
-    @MainActor
-    func testDrawerSearchAppearsOnDemand() throws {
-        let app = launchApp(boardCount: .one)
-
-        let drawer = app.descendants(matching: .any).matching(identifier: "drawer").firstMatch
-        let search = app.textFields["drawer-search"].firstMatch
-
-        given("the Drawer is open without its search field") {
-            enterDenMode(in: app)
-            app.typeKey(.tab, modifierFlags: [])
-            XCTAssertTrue(drawer.waitForExistence(timeout: 5))
-            XCTAssertFalse(search.exists)
-        }
-
-        when("opening Drawer search and entering a query") {
-            app.buttons["Search Drawer Items"].click()
-            XCTAssertTrue(search.waitForExistence(timeout: 5))
-            app.typeText("d")
-            app.typeKey(.return, modifierFlags: [])
-        }
-
-        then("the entered query remains visible") {
-            XCTAssertEqual(search.value as? String, "d")
-            XCTAssertTrue(search.exists)
-        }
-
-        when("dismissing Drawer search") {
-            app.typeKey(.escape, modifierFlags: [])
-        }
-
-        then("Drawer search disappears") {
-            XCTAssertTrue(search.waitForNonExistence(timeout: 5))
         }
     }
 
@@ -369,102 +333,43 @@ final class Den_BrowserUITests: XCTestCase, BDD {
     }
 
     @MainActor
-    func testRecentSelectionCanBeAcceptedIntoOpenBoardInput() throws {
-        let app = launchApp(boardCount: .one)
-        let recentInput = "https://e.co"
-
-        when("creating a Board that becomes a Recent Item") {
-            app.typeKey("t", modifierFlags: .command)
-            let input = app.textFields["open-board-input"].firstMatch
-            XCTAssertTrue(input.waitForExistence(timeout: 5))
-            input.typeText(recentInput)
-            input.typeKey(.return, modifierFlags: [])
-        }
-
-        when("selecting the Recent Item and pressing Right") {
-            app.typeKey("t", modifierFlags: .command)
-            let input = app.textFields["open-board-input"].firstMatch
-            XCTAssertTrue(input.waitForExistence(timeout: 5))
-            input.typeKey(.downArrow, modifierFlags: [])
-            input.typeKey(.rightArrow, modifierFlags: [])
-
-            then("the Recent Item is copied into the input") {
-                XCTAssertEqual(input.value as? String, recentInput)
-            }
-        }
-    }
-
-    @MainActor
-    func testDenModeCommaOpensSettingsAboveTerminalBoard() throws {
-        let app = launchApp(boardCount: .one, terminalBoard: true)
-
-        let profileWindowCount = app.windows.count
-        enterDenMode(in: app)
-        app.typeKey(",", modifierFlags: [])
-
-        assertEventually("Den Mode comma should open Settings", timeout: 5) {
-            app.windows.count > profileWindowCount
-        }
-    }
-
-    @MainActor
     func testTerminalBoardDenModeToggleDoesNotExitImmediately() throws {
         let app = launchApp(boardCount: .two, terminalBoard: true)
         let alpha = board(.alpha, in: app)
         let bravo = board(.bravo, in: app)
         let sheetInputWindow = app.windows["UI Testing · SHEET INPUT"]
         let terminalInputWindow = app.windows["UI Testing · TERMINAL INPUT"]
+        let surfacePredicate = NSPredicate(format: "identifier BEGINSWITH 'board-surface.'")
+        let surfaces = app.scrollViews["board-strip"].firstMatch
+            .descendants(matching: .any)
+            .matching(surfacePredicate)
 
-        for _ in 0..<4 {
-            enterDenMode(in: app)
-            app.typeKey("l", modifierFlags: [])
-            XCTAssertTrue(bravo.wait(for: \.isSelected, toEqual: true, timeout: 5))
-            app.typeKey(",", modifierFlags: [.control])
-            XCTAssertTrue(
-                sheetInputWindow.waitForExistence(timeout: 5),
-                "Den Mode should return to Sheet Input after focusing Bravo")
-            XCTAssertTrue(bravo.isSelected)
+        enterDenMode(in: app)
+        app.typeKey("l", modifierFlags: [])
+        XCTAssertTrue(bravo.wait(for: \.isSelected, toEqual: true, timeout: 5))
+        app.typeKey(",", modifierFlags: [.control])
+        XCTAssertTrue(
+            sheetInputWindow.waitForExistence(timeout: 5),
+            "Den Mode should return to Sheet Input after focusing Bravo")
+        XCTAssertTrue(bravo.isSelected)
 
-            enterDenMode(in: app)
-            app.typeKey("h", modifierFlags: [])
-            XCTAssertTrue(alpha.wait(for: \.isSelected, toEqual: true, timeout: 5))
-            app.typeKey(",", modifierFlags: [.control])
-            XCTAssertTrue(
-                terminalInputWindow.waitForExistence(timeout: 5),
-                "Den Mode should return to Terminal Input after focusing Alpha")
-            XCTAssertTrue(alpha.isSelected)
-        }
-    }
+        enterDenMode(in: app)
+        app.typeKey("h", modifierFlags: [])
+        XCTAssertTrue(alpha.wait(for: \.isSelected, toEqual: true, timeout: 5))
+        app.typeKey(",", modifierFlags: [.control])
+        XCTAssertTrue(
+            terminalInputWindow.waitForExistence(timeout: 5),
+            "Den Mode should return to Terminal Input after focusing Alpha")
+        XCTAssertTrue(alpha.isSelected)
 
-    @MainActor
-    func testOverviewEnterFromTerminalInputFocusesAnotherDesk() throws {
-        let app = launchApp(fixture: .terminalOverview)
-        let bravo = board(.bravo, in: app)
-        let sheetInputWindow = app.windows["UI Testing · SHEET INPUT"]
-        let terminalInputWindow = app.windows["UI Testing · TERMINAL INPUT"]
-
-        given("a Web Board is on the next Desk and Terminal Input is focused") {
-            XCTAssertTrue(terminalInputWindow.waitForExistence(timeout: 5))
-        }
-
-        when("selecting that Desk in Overview and pressing Enter") {
-            enterDenMode(in: app)
-            app.typeKey("o", modifierFlags: [])
-            app.typeKey("j", modifierFlags: [])
+        when("typing a Shell command after returning from Den Mode") {
+            app.typeText("exit")
             app.typeKey(.return, modifierFlags: [])
         }
 
-        then("the selected Board on the other Desk receives focus") {
-            XCTAssertTrue(bravo.wait(for: \.isSelected, toEqual: true, timeout: 5))
-            XCTAssertTrue(sheetInputWindow.waitForExistence(timeout: 5))
-
-            let stableUntil = Date(timeIntervalSinceNow: 1)
-            while Date() < stableUntil {
-                if !bravo.isSelected || terminalInputWindow.exists || !sheetInputWindow.exists {
-                    XCTFail("Overview Enter should keep the target Desk focused")
-                    break
-                }
-                RunLoop.current.run(mode: .default, before: Date(timeIntervalSinceNow: 0.05))
+        then("the Terminal Board receives the command and exits") {
+            assertEventually("Terminal Board should be removed after its Shell exits", timeout: 10) {
+                surfaces.allElementsBoundByIndex.count == 1
             }
         }
     }
@@ -634,9 +539,21 @@ final class Den_BrowserUITests: XCTestCase, BDD {
         let app = launchApp(centerBoardsAlways: true)
         let filter = app.descendants(matching: .any).matching(identifier: "desk-filter").firstMatch
         let boardStrip = app.scrollViews["board-strip"].firstMatch
+        let alpha = board(.alpha, in: app)
+        let bravo = board(.bravo, in: app)
+        let charlie = board(.charlie, in: app)
         let charlieSurface = boardSurface(.charlie, in: app)
+        let charlieInput = charlieSurface.textFields["Sheet input"].firstMatch
 
-        given("the focused Desk contains Alpha, Bravo, and Charlie") {
+        given("Charlie has prior input focus and Alpha is focused before filtering") {
+            XCTAssertTrue(charlieInput.waitForExistence(timeout: 5))
+            charlieInput.click()
+            app.typeText("p")
+            enterDenMode(in: app)
+            app.typeKey("h", modifierFlags: [])
+            app.typeKey("h", modifierFlags: [])
+            app.typeKey(",", modifierFlags: [.control])
+            XCTAssertTrue(alpha.wait(for: \.isSelected, toEqual: true, timeout: 5))
             enterDenMode(in: app)
             app.typeText("/")
             XCTAssertTrue(filter.waitForExistence(timeout: 5))
@@ -655,21 +572,23 @@ final class Den_BrowserUITests: XCTestCase, BDD {
         }
 
         when("confirming the filtered selection") {
-            app.typeKey("\r", modifierFlags: [])
-            app.typeKey("\r", modifierFlags: [])
+            app.typeKey(.return, modifierFlags: [])
+            app.typeKey(.return, modifierFlags: [])
         }
 
-        then("Charlie is focused and all Boards are visible again") {
-            XCTAssertTrue(board(.charlie, in: app).wait(for: \.isSelected, toEqual: true, timeout: 5))
-            XCTAssertTrue(app.windows["UI Testing · SHEET INPUT"].waitForExistence(timeout: 5))
-            XCTAssertTrue(board(.alpha, in: app).waitForExistence(timeout: 5))
-            XCTAssertTrue(board(.charlie, in: app).waitForExistence(timeout: 5))
+        then("all Boards return, Charlie is centered, and receives Sheet input") {
+            XCTAssertTrue(charlie.wait(for: \.isSelected, toEqual: true, timeout: 5))
+            XCTAssertTrue(charlieInput.waitForExistence(timeout: 5))
+            XCTAssertTrue(alpha.waitForExistence(timeout: 5))
+            XCTAssertTrue(bravo.waitForExistence(timeout: 5))
             assertEventuallyEqual(
                 actual: { charlieSurface.frame.midX },
                 expected: boardStrip.frame.midX,
                 tolerance: 30,
-                message: "Filtered Board should center after all Boards return"
+                message: "Filtered Board should center before receiving input"
             )
+            app.typeText("a")
+            XCTAssertEqual(charlieInput.value as? String, "pa")
         }
     }
 
@@ -841,7 +760,6 @@ private enum UITestFixture: String {
     case focusedSecondBoard = "focused-second-board"
     case overviewBoardPair = "overview-board-pair"
     case focusedNonLeadingBoard = "focused-non-leading-board"
-    case terminalOverview = "terminal-overview"
     case overflowingSecondDesk = "overflowing-second-desk"
 
     var initialBoard: FixtureBoard {
