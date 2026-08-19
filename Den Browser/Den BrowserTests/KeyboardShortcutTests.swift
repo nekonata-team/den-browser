@@ -590,7 +590,7 @@ struct KeyboardShortcutTests {
     }
 
     @Test func denModeGPrefixLaunchesMatchingEssential() throws {
-        let store = try makeStore(boards: [board("First")])
+        let store = try makeStore(boards: [BoardState(label: "First", width: 720, currentSheetURL: nil)])
         let essential = Essential(name: "ChatGPT", key: "c", input: "https://chatgpt.com")
         #expect(store.preferences.setEssentials([essential]))
         store.isDenMode = true
@@ -612,6 +612,7 @@ struct KeyboardShortcutTests {
         #expect(store.temporaryContext == nil)
         #expect(!store.isDenMode)
         #expect(store.focusedBoard?.currentSheetURL == URL(string: "https://chatgpt.com/"))
+        #expect(store.focusedBoard?.width == 720)
     }
 
     @Test func sheetInputEssentialsPrefixLaunchesWithoutEnteringDenMode() throws {

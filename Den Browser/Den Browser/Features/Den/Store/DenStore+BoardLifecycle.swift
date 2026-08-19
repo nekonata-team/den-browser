@@ -230,7 +230,7 @@ extension DenStore {
     ) -> Bool {
         guard let url = normalizedURL(from: urlString) else { return false }
         let label = url.host(percentEncoded: false) ?? url.absoluteString
-        let width = preferredWidth ?? 520
+        let width = preferredWidth ?? inheritedBoardWidth
         let board = BoardState(label: label, width: width, currentSheetURL: url)
         return insertBoard(board, afterBoardID: afterBoardID, focus: focus)
     }
@@ -243,7 +243,7 @@ extension DenStore {
         focus: Bool = true
     ) -> Bool {
         let board = BoardState(
-            width: preferredWidth ?? 520,
+            width: preferredWidth ?? inheritedBoardWidth,
             workingDirectory: workingDirectory)
         return insertBoard(board, afterBoardID: afterBoardID, focus: focus)
     }
@@ -256,7 +256,7 @@ extension DenStore {
         focus: Bool = true
     ) -> Bool {
         let board = BoardState(
-            width: preferredWidth ?? 520,
+            width: preferredWidth ?? inheritedBoardWidth,
             zellijSessionName: sessionName)
         return insertBoard(board, afterBoardID: afterBoardID, focus: focus)
     }
@@ -271,7 +271,7 @@ extension DenStore {
         let normalizedSessionName = sessionName.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !normalizedSessionName.isEmpty else { return false }
         let board = BoardState(
-            width: preferredWidth ?? 520,
+            width: preferredWidth ?? inheritedBoardWidth,
             zmxSessionName: normalizedSessionName)
         return insertBoard(board, afterBoardID: afterBoardID, focus: focus)
     }
@@ -303,6 +303,10 @@ extension DenStore {
         }
         save()
         return true
+    }
+
+    private var inheritedBoardWidth: Double {
+        focusedBoard?.width ?? 520
     }
 
     func launchEssential(id: UUID) {
