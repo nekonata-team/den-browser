@@ -2,6 +2,30 @@
 
 Den Browser uses automated tests for stable product behavior and exploratory human validation for areas where automation is not reliable. The outcome-level PoC criteria live in [poc.md](./poc.md); this document defines the validation boundary rather than providing an exhaustive operation checklist.
 
+## XCUITest admission rule
+
+XCUITest is an expensive exception, not the default for UI code. Adding a View, gesture, or user-visible behavior does not by itself justify a UI test.
+
+Add a UI test only when all of the following are true:
+
+- The behavior crosses a native UI boundary, such as SwiftUI gesture recognition or hit testing, accessibility routing, or AppKit, WebKit, or Terminal responder boundaries.
+- A unit test cannot observe the failure at that boundary.
+- The test proves one independent user-visible workflow and its final outcome.
+
+Before adding one, state which boundary it protects and why a unit test cannot protect it. Do not add UI tests merely to reconfirm a `DenStore` transition, a simple View-to-Store delegation, a visual/style choice, or every input variant of the same wiring. A different fixture or state outcome is not enough reason for another UI test when the native boundary is unchanged.
+
+A concrete native boundary is Board input activation: the handoff from Board state and SwiftUI
+updates to the Board's native input surface (`WKWebView` for a Web Board or the Ghostty view
+for a Terminal Board).
+
+For this boundary, a UI test qualifies only when it sends input after a pointer click, Den Mode
+toggle, Desk switch, or Overview confirmation and observes a target-specific result. Board selection,
+`DenStore` focus state, window titles, and routing decisions do not by themselves justify a UI test.
+Unit tests cover the focus state machine; UI tests cover actual input delivery through the mounted
+native surface.
+
+If no such boundary exists, add or update the focused unit test instead. Use exploratory validation for visual behavior, operating-system behavior, external services, and other boundaries that are not reliable to automate.
+
 ## Responsibilities
 
 Automated unit tests own:
@@ -16,7 +40,7 @@ Automated unit tests own:
 Stable product behavior should be covered by unit, integration, or end-to-end tests. XCUITests own native UI integration, including:
 
 - SwiftUI-specific gesture identity (e.g. pointer drag-and-drop between Boards), which cannot be simulated in unit tests.
-- Core mode transitions and state-transition cycles (e.g. Sheet input -> Den Mode -> returning to Sheet input and confirming re-focus/input capability).
+- Board input activation across the native responder boundary, such as clicking an unfocused Board and sending input, or switching Desks and sending input without another click.
 - Creating a Terminal, Zellij, or zmx Board, entering Terminal Input, and removing it when the Shell, Zellij, or zmx process exits.
 
 Per [ADR-0020](./adr/0020-test-critical-ui-workflows.md), each UI test is an independent user-visible workflow, not an exhaustive input permutation. Exhaustive shortcut mappings, state mutations (adding/removing boards), branches, and edge cases remain focused unit tests to prevent test suite hangs and maintain fast test execution.
@@ -59,7 +83,7 @@ Exploratory human validation is reserved for milestone checks that depend on mac
 
 - Real interaction with `WKWebView`, including navigation and text entry.
 - WebKit downloads, native save-panel access, Blob responses, and authenticated responses.
-- First-responder handoff between Den controls and web content.
+- First-responder handoff involving IME, external sites, multiple windows, or other nondeterministic surfaces.
 - External web compatibility and authentication persistence.
 - Multiple-window placement and focus behavior across physical displays.
 - Performance and resource use.
@@ -85,7 +109,7 @@ just check
 
 `just lint` runs Xcode-bundled `swift-format` in strict mode, including style and enabled safety rules. `just format` applies same configuration. Builds treat compiler warnings as errors.
 
-Before merge, use this standard order: build and unit tests, applicable UI tests, code review, then merge. Add
+Before merge, run `just check`, then only the focused UI tests admitted by the rule above, then code review. Add
 exploratory validation when warranted, such as for UI behavior changes or milestone acceptance; use
 [poc.md](./poc.md) as the source of truth for outcome-level PoC criteria. Do not add step-by-step procedures to
 that document; turn reproducible findings into automated tests or tracked issues.
