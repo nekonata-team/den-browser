@@ -176,6 +176,23 @@ struct DenStoreOverviewTests {
         #expect(store.overviewSelectionBoardID == second.id)
     }
 
+    @Test func enteringAnEmptyDeskFromOverviewLeavesOverview() {
+        let board = board("Board")
+        let main = desk("Main", boards: [board], focusedBoardID: board.id)
+        let empty = desk("Empty")
+        let store = DenStore(
+            state: DenState(desks: [main, empty], focusedDeskID: main.id))
+        store.showOverview()
+
+        store.enterOverviewDesk(empty.id)
+
+        #expect(store.presentedDeskID == empty.id)
+        #expect(store.focusedDesk?.id == empty.id)
+        #expect(store.focusedBoard == nil)
+        #expect(!store.isOverviewPresented)
+        #expect(!store.isDenMode)
+    }
+
     private func withStore(desks: [DeskState], body: (DenStore) throws -> Void) rethrows {
         let store = DenStore(state: DenState(desks: desks, focusedDeskID: desks[0].id))
         try body(store)

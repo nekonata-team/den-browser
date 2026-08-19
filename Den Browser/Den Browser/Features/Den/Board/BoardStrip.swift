@@ -67,7 +67,7 @@ struct BoardStrip: View {
             : store.focusedDesk?.boards ?? []
         let topInset = shouldShowHeader ? DenLayout.denHeaderHeight : DenLayout.outerInset
         let bottomInset = DenLayout.outerInset
-        let boardHeight = max(DenLayout.minimumBoardHeight, size.height - topInset - bottomInset)
+        let boardHeight = DenLayout.boardHeight(for: size, shouldShowHeader: shouldShowHeader)
         let maximizedBoardWidth = max(
             CGFloat(BoardState.minimumWidth),
             size.width - boardHorizontalPadding * 2)

@@ -113,6 +113,21 @@ extension DenStore {
             boardID: boardID)
     }
 
+    func enterOverviewBoard(_ boardID: UUID) {
+        selectBoardInOverview(boardID)
+        enterOverviewSelection()
+    }
+
+    func selectDeskInOverview(_ deskID: UUID) {
+        guard state.desks.contains(where: { $0.id == deskID }) else { return }
+        overviewSelection = OverviewSelection(deskID: deskID, boardID: nil)
+    }
+
+    func enterOverviewDesk(_ deskID: UUID) {
+        selectDeskInOverview(deskID)
+        enterOverviewSelection()
+    }
+
     func beginOverviewBoardDrag(_ boardID: UUID) -> Bool {
         guard
             activeDrag == nil,

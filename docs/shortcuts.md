@@ -73,7 +73,7 @@ Sheet navigation, Drawer placement, reload, PiP, and screenshot commands do noth
 
 ## Overview
 
-Overview accepts movement, Shift plus movement, `/` (search/filter), Return, and Escape. Movement changes the Overview Selection; Shift moves its board. Pressing `/` enters Search Mode to dynamically filter desks and boards (Return confirms the query to allow navigation, Escape cancels and clears the query). Return in Normal Mode makes the selection the Focused Board. Escape in Normal Mode clears the query if active, or closes overview back to Den Mode.
+Overview accepts movement, Shift plus movement, `/` (search/filter), Return, and Escape. Movement changes the Overview Selection; Shift moves its board. Pressing `/` enters Search Mode to dynamically filter desks and boards (Return confirms the query to allow navigation, Escape cancels and clears the query). Return in Normal Mode makes the selection the Focused Board. Clicking selects a Board; double-clicking enters its Desk and Board. Double-clicking an empty Desk enters that Desk. Escape in Normal Mode clears the query if active, or closes overview back to Den Mode.
 When no Desk or Board matches the query, Overview shows a no-results state.
 
 ## Focused Desk filter
@@ -86,7 +86,7 @@ Drag a Board header's label or empty area to reorder it within the Focused Desk.
 
 Right-click or Control-click anywhere in a Board header to focus that Board and open its native context menu. The menu can keep a copy of the Current Sheet in the Drawer, duplicate or reload it, maximize or center the Board, move it left, right, or to another numbered Desk, and remove it. Duplicating a zmx Board opens the same suffix panel as Return. Movement at a Desk edge remains visible but disabled. Right-clicking inside a Sheet continues to use the web content's own context menu.
 
-While Overview is open without a search query, drag a Board card to another position or Desk. Dropping on the left or right half of a Board inserts before or after it; dropping in a Desk row's empty area appends it. Overview remains open with the moved Board selected. Board dragging is disabled while filtering.
+While Overview is open without a search query, drag a Board card to another position or Desk. Dropping on the left or right half of a Board inserts before or after it; dropping in a Desk row's empty area appends it. Overview remains open with the moved Board selected. Board dragging is disabled while filtering. Board cards use proportional widths and show Web or Terminal identity with an icon, label, and semantic type tint.
 
 ## Pointer Desk actions
 

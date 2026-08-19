@@ -16,6 +16,11 @@ enum DenLayout {
     static let focusModeHaloRadius: CGFloat = 24
 
     static let denHeaderHeight = deskSwitcherHeight
+
+    static func boardHeight(for size: CGSize, shouldShowHeader: Bool) -> CGFloat {
+        let topInset = shouldShowHeader ? denHeaderHeight : outerInset
+        return max(minimumBoardHeight, size.height - topInset - outerInset)
+    }
 }
 
 enum DenPanelLayout {

@@ -77,7 +77,11 @@ struct DenView<Header: View>: View {
                         .zIndex(2)
                 }
 
-                activePanel(defaultBoardWidth: defaultBoardWidth(in: geometry.size))
+                activePanel(
+                    defaultBoardWidth: defaultBoardWidth(in: geometry.size),
+                    boardHeight: DenLayout.boardHeight(
+                        for: geometry.size,
+                        shouldShowHeader: shouldShowHeader))
 
                 if store.isNotificationListPresented {
                     Rectangle()
@@ -224,7 +228,7 @@ struct DenView<Header: View>: View {
     }
 
     @ViewBuilder
-    private func activePanel(defaultBoardWidth: CGFloat) -> some View {
+    private func activePanel(defaultBoardWidth: CGFloat, boardHeight: CGFloat) -> some View {
         switch store.temporaryContext {
         case .essentialsPrefix:
             panelOverlay(essentialsPrefixPanel)
@@ -245,7 +249,7 @@ struct DenView<Header: View>: View {
         case .renameDesk:
             panelOverlay(renameDeskPanel)
         case .overview:
-            OverviewView(profileColor: profileColor)
+            OverviewView(profileColor: profileColor, boardHeight: boardHeight)
                 .padding(DenLayout.overlayInset)
                 .transition(DenMotion.transition(reduceMotion: shouldReduceMotion, scale: 0.98))
         case .keyboardShortcuts:
