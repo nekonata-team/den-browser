@@ -178,6 +178,12 @@ struct BoardStrip: View {
             .padding(.top, topInset)
             .padding(.bottom, bottomInset)
             .animation(DenMotion.spatial(reduceMotion: shouldReduceMotion), value: layoutKey)
+            .transaction(value: store.isDeskFilterPresented) { transaction in
+                if !store.isDeskFilterPresented {
+                    transaction.animation = nil
+                    transaction.disablesAnimations = true
+                }
+            }
             .transaction(value: store.presentedDeskID) { transaction in
                 transaction.animation = nil
                 transaction.disablesAnimations = true
@@ -277,7 +283,7 @@ struct BoardStrip: View {
         .onChange(of: store.centerFocusedBoardRequest) { _, _ in
             if let pendingBoardAlignment, case .resting = pendingBoardAlignment.kind { return }
             guard let boardID = store.focusedDesk?.focusedBoardID else { return }
-            centerBoard(boardID, animated: true)
+            deferBoardAlignment(.center, boardID, animated: true, layoutKey: layoutKey)
         }
         .onChange(of: store.deskFilterSelectionBoardID) { _, boardID in
             guard store.isDeskFilterPresented, let boardID else { return }
