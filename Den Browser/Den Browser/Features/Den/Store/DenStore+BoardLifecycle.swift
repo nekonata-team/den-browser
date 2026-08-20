@@ -616,16 +616,17 @@ extension DenStore {
     }
 
     private func resolveOpenBoardInput(_ text: String) -> (url: URL, item: RecentItem)? {
-        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmed = SheetURLPolicy.normalizePastedText(text, joiningLineBreaksWith: " ")
         guard !trimmed.isEmpty else { return nil }
 
-        if let url = URL(string: trimmed), SheetURLPolicy.isSupported(url) {
+        let urlText = SheetURLPolicy.normalizePastedText(text, joiningLineBreaksWith: "")
+        if let url = URL(string: urlText), SheetURLPolicy.isSupported(url) {
             return (url, .url(url))
         }
 
-        if !trimmed.contains("://"),
-            !trimmed.contains(where: \.isWhitespace),
-            let url = URL(string: "https://\(trimmed)"),
+        if !urlText.contains("://"),
+            !urlText.contains(where: \.isWhitespace),
+            let url = URL(string: "https://\(urlText)"),
             let host = url.host,
             host == "localhost" || host.contains(".")
         {

@@ -467,6 +467,23 @@ struct SheetNavigationTests {
         #expect(store.toastMessage?.message == "Copied Current Sheet URL.")
 
         NSPasteboard.general.clearContents()
+        #expect(
+            NSPasteboard.general.setString(
+                "https://pasted.example/long-\npath",
+                forType: .string))
+        #expect(manager.handleScriptMessage(["action": "pasteURL"], from: webView))
+        #expect(store.focusedBoard?.currentSheetURL == URL(string: "https://pasted.example/long-path"))
+
+        NSPasteboard.general.clearContents()
+        #expect(
+            NSPasteboard.general.setString(
+                "https://pasted.example/new-\nboard",
+                forType: .string))
+        #expect(manager.handleScriptMessage(["action": "pasteURLInNewBoard"], from: webView))
+        #expect(store.focusedDesk?.boards.count == 2)
+        #expect(store.focusedBoard?.currentSheetURL == URL(string: "https://pasted.example/new-board"))
+
+        NSPasteboard.general.clearContents()
         for action in ["pasteURL", "pasteURLInNewBoard"] {
             #expect(!manager.handleScriptMessage(["action": action], from: webView))
             #expect(store.toastMessage?.message == "Clipboard does not contain a supported URL.")

@@ -2,6 +2,12 @@ import Foundation
 import WebKit
 
 enum SheetURLPolicy {
+    static func normalizePastedText(_ text: String, joiningLineBreaksWith separator: String) -> String {
+        text.trimmingCharacters(in: .whitespacesAndNewlines)
+            .split(whereSeparator: \Character.isNewline)
+            .joined(separator: separator)
+    }
+
     static func isSupported(_ url: URL) -> Bool {
         guard let scheme = url.scheme?.lowercased() else { return false }
         if scheme == "http" || scheme == "https" {

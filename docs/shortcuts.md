@@ -70,6 +70,8 @@ Essentials are app-wide named Board inputs configured in Settings > Essentials. 
 | Shift + Command + `R` | Hard reload current sheet | Reloads the Current Sheet with end-to-end cache revalidation. Available in Sheet Input and Den Mode. |
 | Shift + Option + Command + `R` | Reload Focused Desk sheets | Reloads every Board's Current Sheet in the Focused Desk. Available in Sheet Input and Den Mode. |
 
+Open Board and Current Sheet URL input removes line breaks from pasted URLs. Line breaks in pasted search input become spaces.
+
 Sheet navigation, Drawer placement, reload, PiP, and screenshot commands do nothing when the Focused Board is a Terminal Board. Cmd-clicking a supported link in a Terminal Board creates a background Web Board without adding a Drawer Item. Removing a Terminal Board or running `exit` ends its process. Restoring an ordinary Terminal Board starts a new Shell; restoring a Zellij Board reconnects to its named session or shows Welcome; restoring a zmx Board reconnects to its named session.
 
 ## Overview

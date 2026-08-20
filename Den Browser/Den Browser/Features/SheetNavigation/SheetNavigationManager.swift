@@ -280,9 +280,11 @@ final class SheetNavigationManager {
             return true
         case "pasteURL", "pasteURLInNewBoard":
             guard let actions = actionsByWebView[ObjectIdentifier(webView)] else { return false }
+            let value = NSPasteboard.general.string(forType: .string)
+                .map { SheetURLPolicy.normalizePastedText($0, joiningLineBreaksWith: "") }
             guard
-                let value = NSPasteboard.general.string(forType: .string),
-                let url = URL(string: value.trimmingCharacters(in: .whitespacesAndNewlines)),
+                let value,
+                let url = URL(string: value),
                 actions.isSupportedSheetURL(url)
             else {
                 actions.onPasteURLFailed()

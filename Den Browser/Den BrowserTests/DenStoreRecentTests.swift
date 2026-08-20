@@ -48,6 +48,31 @@ struct DenStoreRecentTests {
         #expect(store.recentItems == [.search("swift observation")])
     }
 
+    @Test func pastedLineBreaksDoNotBreakURLOrSearchInput() throws {
+        let source = desk("Desk")
+        let store = DenStore(
+            state: DenState(desks: [source], focusedDeskID: source.id),
+            websiteDataStore: .default(),
+            sheetNavigation: SheetNavigationManager(),
+            recentItems: [],
+            onSave: nil,
+            onRecentItemsSave: { _ in true })
+
+        store.openBoard(input: "https://example.com/long-\npath")
+        store.openBoard(input: "Swift\nObservation")
+
+        #expect(store.focusedDesk?.boards.first?.currentSheetURL == URL(string: "https://example.com/long-path"))
+        let searchURL = try #require(
+            store.focusedDesk?.boards.last?.currentSheetURL
+                .flatMap { URLComponents(url: $0, resolvingAgainstBaseURL: false) })
+        #expect(searchURL.queryItems == [URLQueryItem(name: "q", value: "Swift Observation")])
+        #expect(
+            store.recentItems == [
+                .search("Swift Observation"),
+                .url(URL(string: "https://example.com/long-path")!),
+            ])
+    }
+
     @Test func recentKeepsOneHundredItemsAndClearPersists() {
         let source = desk("Desk")
         var savedItems: [RecentItem] = []
