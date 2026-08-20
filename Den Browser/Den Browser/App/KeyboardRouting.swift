@@ -43,6 +43,8 @@ struct InputContext {
     let isDrawerFilterSelecting: Bool
     let isOverviewFilterInputActive: Bool
     let hasOverviewQuery: Bool
+    let isZmxSessionFilterInputActive: Bool
+    let hasZmxSessionQuery: Bool
     let isNotificationListPresented: Bool
 
     init(store: DenStore, event: NSEvent) {
@@ -60,6 +62,8 @@ struct InputContext {
         isDrawerFilterSelecting = store.isDrawerFilterSelecting
         isOverviewFilterInputActive = store.isOverviewFilterInputActive
         hasOverviewQuery = !store.overviewQuery.isEmpty
+        isZmxSessionFilterInputActive = store.isZmxSessionFilterInputActive
+        hasZmxSessionQuery = !store.zmxSessionQuery.isEmpty
         isNotificationListPresented = store.isNotificationListPresented
     }
 
@@ -151,6 +155,15 @@ enum AppAction: Equatable {
     case focusDesk(Int)
     case moveFocusedBoardToDesk(Int)
     case showOpenBoardPanel
+    case hideZmxSessions
+    case enterZmxSessionFilter
+    case exitZmxSessionFilter
+    case confirmZmxSessionFilterQuery
+    case clearZmxSessionFilter
+    case moveZmxSessionSelection(Int)
+    case openSelectedZmxSession
+    case deleteSelectedZmxSession
+    case refreshZmxSessions
     case showNewDeskPanel
     case showSaveDeskPresetPanel
     case showReplaceDeskPanel
@@ -277,6 +290,8 @@ enum KeyboardRouter {
             return routeOverview(event, context: context)
         case .drawer:
             return routeDrawer(event, context: context)
+        case .zmxSessions:
+            return routeZmxSessions(event, context: context)
         case .openBoard, .zmxDuplication, .editBoardLink, .newDesk, .replaceDesk, .deskPresetManagement,
             .saveDeskPreset, .renameBoard, .renameDesk:
             return .forward(.temporaryTextInput)
@@ -531,6 +546,30 @@ enum KeyboardRouter {
         return .consume(.exclusiveContext)
     }
 
+    private static func routeZmxSessions(_ event: KeyEvent, context: InputContext) -> InputDecision {
+        let modifiers = event.modifiers
+        if context.isZmxSessionFilterInputActive {
+            if event.hasMarkedText { return .forward(.filterTextInput) }
+            if event.isEscape, modifiers == [] { return .perform(.exitZmxSessionFilter) }
+            if event.key == .returnKey, modifiers == [] { return .perform(.confirmZmxSessionFilterQuery) }
+            return .forward(.filterTextInput)
+        }
+        guard modifiers == [] else { return .consume(.exclusiveContext) }
+        if event.isEscape {
+            return .perform(context.hasZmxSessionQuery ? .clearZmxSessionFilter : .hideZmxSessions)
+        }
+        if event.character?.lowercased() == "/" { return .perform(.enterZmxSessionFilter) }
+        if event.key == .upArrow { return .perform(.moveZmxSessionSelection(-1)) }
+        if event.key == .downArrow { return .perform(.moveZmxSessionSelection(1)) }
+        if event.key == .returnKey { return .perform(.openSelectedZmxSession) }
+        if event.key == .backspace || event.key == .deleteForward {
+            return .perform(.deleteSelectedZmxSession)
+        }
+        if event.character?.lowercased() == "x" { return .perform(.deleteSelectedZmxSession) }
+        if event.character?.lowercased() == "r" { return .perform(.refreshZmxSessions) }
+        return .consume(.exclusiveContext)
+    }
+
     private static func movementAction(_ event: KeyEvent, overview: Bool) -> AppAction? {
         guard event.modifiers == [] || event.modifiers == [.shift], let direction = direction(for: event) else {
             return nil
@@ -671,6 +710,15 @@ enum AppActionHandler {
         case .focusDesk(let number): store.focusDesk(number: number)
         case .moveFocusedBoardToDesk(let number): store.moveFocusedBoard(toDeskNumber: number)
         case .showOpenBoardPanel: store.showOpenBoardPanel()
+        case .hideZmxSessions: store.hideZmxSessions()
+        case .enterZmxSessionFilter: store.enterZmxSessionFilter()
+        case .exitZmxSessionFilter: store.exitZmxSessionFilter()
+        case .confirmZmxSessionFilterQuery: store.confirmZmxSessionFilterQuery()
+        case .clearZmxSessionFilter: store.clearZmxSessionFilter()
+        case .moveZmxSessionSelection(let offset): store.selectZmxSession(by: offset)
+        case .openSelectedZmxSession: store.openSelectedZmxSession()
+        case .deleteSelectedZmxSession: store.requestZmxSessionDeletion()
+        case .refreshZmxSessions: store.refreshZmxSessions()
         case .showNewDeskPanel: store.showNewDeskPanel()
         case .showSaveDeskPresetPanel: store.showSaveDeskPresetPanel()
         case .showReplaceDeskPanel: store.showReplaceDeskPanel()

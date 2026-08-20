@@ -87,6 +87,15 @@ final class DenStore {
     var boardWidthPanelMessage: String?
     var openBoardPanelInitialURL: URL?
     var openBoardPanelMessage: String?
+    var zmxSessionGroups: [ZmxSessionGroup] = []
+    var zmxSessionsMessage: String?
+    var zmxSessionsIsLoading = false
+    var zmxSessionSelectedName: String?
+    var zmxSessionQuery = ""
+    var zmxSessionFilterPhase: DenFilterPhase = .inactive
+    var zmxSessionPendingDeletion: String?
+    var zmxSessionsReturnToOpenBoard = false
+    var zmxSessionRefreshTask: Task<Void, Never>?
     var pendingConfirmation: PendingConfirmation?
     var maximizedBoardID: UUID?
     var centerFocusedBoardRequest = 0
@@ -241,6 +250,8 @@ final class DenStore {
     }
 
     var isOpenBoardPanelPresented: Bool { temporaryContext == .openBoard }
+    var isZmxSessionsPresented: Bool { temporaryContext == .zmxSessions }
+    var isZmxSessionFilterInputActive: Bool { zmxSessionFilterPhase == .filtering }
     var isNewDeskPanelPresented: Bool {
         temporaryContext == .newDesk
             || temporaryContext == .replaceDesk
@@ -280,7 +291,9 @@ final class DenStore {
         guard case .resetDen? = pendingConfirmation else { return false }
         return true
     }
-    var hasPendingConfirmation: Bool { pendingConfirmation != nil }
+    var hasPendingConfirmation: Bool {
+        pendingConfirmation != nil || zmxSessionPendingDeletion != nil
+    }
 
     convenience init() {
         self.init(state: .sample)
@@ -694,6 +707,7 @@ final class DenStore {
 enum TemporaryContext: Equatable {
     case essentialsPrefix
     case openBoard
+    case zmxSessions
     case zmxDuplication
     case editBoardLink
     case newDesk

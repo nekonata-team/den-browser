@@ -172,6 +172,14 @@ struct TerminalBoardView: View {
         } label: {
             Label("Center Board", systemImage: "scope")
         }
+        if board.isZmx {
+            Button {
+                store.focusBoard(board.id)
+                store.showZmxSessions(selectedSessionName: board.zmxSessionName)
+            } label: {
+                Label("zmx Sessions…", systemImage: "arrow.triangle.2.circlepath")
+            }
+        }
         Divider()
         Button {
             store.focusBoard(board.id)

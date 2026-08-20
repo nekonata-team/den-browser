@@ -24,14 +24,15 @@ extension DenStore {
     @discardableResult
     func openBoard(input: String, preferredWidth: Double? = nil, afterBoardID: UUID? = nil) -> Bool {
         if let zmx = Self.resolveZmxInput(input) {
-            guard case .session(let sessionName) = zmx else {
-                openBoardPanelMessage = "Enter a zmx session name."
-                return false
-            }
             guard zmxClient.isConfigured else {
                 openBoardPanelMessage =
                     "Set an absolute zmx executable path in Settings > Features > Terminal."
                 return false
+            }
+            guard case .session(let sessionName) = zmx else {
+                showZmxSessions(returnsToOpenBoard: temporaryContext == .openBoard)
+                saveRecentItem(.zmx(sessionName: ""))
+                return true
             }
             guard
                 addZmxBoard(
@@ -180,8 +181,8 @@ extension DenStore {
             saveRecentItem(.zellij(sessionName: sessionName))
         case .zmx(let sessionName):
             let sessionName = sessionName.trimmingCharacters(in: .whitespacesAndNewlines)
-            guard !sessionName.isEmpty else {
-                openBoardPanelMessage = "Enter a zmx session name."
+            if sessionName.isEmpty {
+                openBoard(input: ":zmx", preferredWidth: preferredWidth, afterBoardID: afterBoardID)
                 return
             }
             guard zmxClient.isConfigured else {

@@ -13,7 +13,8 @@ Essentials are app-wide named Board inputs configured in Settings > Essentials. 
 | Shortcut | Action | Notes |
 | --- | --- | --- |
 | Control + Command + `P` | Open Profile panel | Searches Profiles and opens their existing Den window or creates it if closed. |
-| Command + `T` | New Board panel | Enter a URL/search for a Web Board, `:terminal [path]` for an ordinary Terminal Board, `:zellij [session]` for a Zellij Board, or `:zmx [session]` for a zmx Board. Without a session, Zellij's Welcome screen is shown; zmx requires a session name. Up / Down selects a visible Recent Item; Right copies it into the input. Available in every keyboard context. |
+| Command + `T` | New Board panel | Enter a URL/search for a Web Board, `:terminal [path]` for an ordinary Terminal Board, `:zellij [session]` for a Zellij Board, or `:zmx [session]` for a zmx Board. Without a session, Zellij's Welcome screen is shown; `:zmx` opens zmx Sessions, and Escape returns here. Up / Down selects a visible Recent Item; Right copies it into the input. Available in every keyboard context. |
+| `/`, Up / Down, Return, `x`, Delete / Backspace, `r` | zmx Sessions | `/` focuses filtering. Outside filtering, selects a Session, opens it, requests deletion, or reloads the list. Escape clears filtering, then closes the list. |
 | Command + `L` | Edit Focused Board Link panel | Replaces the Current Sheet with a URL or search on Return. Available in every keyboard context. |
 | Command + `W` | Remove focused Board | Available in every keyboard context. |
 | Shift + Command + `W` | Close Profile window | Settings and other non-Den windows retain Command + `W`. |
@@ -84,7 +85,7 @@ In Den Mode, `/` opens a floating filter over the current Board strip. It dynami
 
 Drag a Board header's label or empty area to reorder it within the Focused Desk. Header buttons remain ordinary controls. Dropping outside the Board strip cancels the move; moving near the strip's horizontal edges scrolls it. Keyboard Board movement and Overview remain available without pointer input.
 
-Right-click or Control-click anywhere in a Board header to focus that Board and open its native context menu. The menu can keep a copy of the Current Sheet in the Drawer, duplicate or reload it, maximize or center the Board, move it left, right, or to another numbered Desk, and remove it. Duplicating a zmx Board opens the same suffix panel as Return. Movement at a Desk edge remains visible but disabled. Right-clicking inside a Sheet continues to use the web content's own context menu.
+Right-click or Control-click anywhere in a Board header to focus that Board and open its native context menu. The menu can keep a copy of the Current Sheet in the Drawer, duplicate or reload it, maximize or center the Board, move it left, right, or to another numbered Desk, and remove it. zmx Board menus also open zmx Sessions with their Session highlighted. Duplicating a zmx Board opens the same suffix panel as Return. Movement at a Desk edge remains visible but disabled. Right-clicking inside a Sheet continues to use the web content's own context menu.
 
 While Overview is open without a search query, drag a Board card to another position or Desk. Dropping on the left or right half of a Board inserts before or after it; dropping in a Desk row's empty area appends it. Overview remains open with the moved Board selected. Board dragging is disabled while filtering. Board cards use proportional widths and show Web or Terminal identity with an icon, label, and semantic type tint.
 

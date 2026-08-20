@@ -108,7 +108,7 @@ enum RecentItem: Codable, Equatable, Hashable, Identifiable {
         case .zellij(let sessionName):
             return sessionName.map { ":zellij \($0)" } ?? ":zellij"
         case .zmx(let sessionName):
-            return ":zmx \(sessionName)"
+            return sessionName.isEmpty ? ":zmx" : ":zmx \(sessionName)"
         }
     }
 

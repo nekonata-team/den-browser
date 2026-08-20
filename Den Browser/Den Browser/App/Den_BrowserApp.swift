@@ -190,6 +190,9 @@ private struct DenCommands: Commands {
                     .disabled(store?.recentlyRemovedBoards.isEmpty ?? true)
             }
 
+            Button("zmx Sessions…") { store?.showZmxSessions() }
+                .disabled(store?.zmxClient.isConfigured != true)
+
             Menu("Drawer") {
                 Button("Restore Discarded Drawer Item") {
                     store?.performAppAction(.restoreDiscardedDrawerItem)

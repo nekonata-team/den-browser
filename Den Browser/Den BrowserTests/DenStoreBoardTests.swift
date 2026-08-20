@@ -103,7 +103,7 @@ struct DenStoreBoardTests {
         #expect(store.recentItems.isEmpty)
     }
 
-    @Test func zmxBoardsPersistNamedSession() throws {
+    @Test func zmxBoardsPersistNamedSessionAndOpenSessionsList() async throws {
         let source = desk("Desk")
         let suiteName = "DenStoreZmxTests-\(UUID().uuidString)"
         let defaults = UserDefaults(suiteName: suiteName)!
@@ -113,7 +113,10 @@ struct DenStoreBoardTests {
         let store = DenStore(
             state: DenState(desks: [source], focusedDeskID: source.id),
             sheetNavigation: SheetNavigationManager(),
-            preferences: preferences)
+            preferences: preferences,
+            terminalCommandRunner: StubTerminalCommandRunner(responses: [
+                ["list"]: TerminalCommandResult(terminationStatus: 0, standardOutput: "")
+            ]))
 
         store.openBoard(input: ":zmx project-a")
         let board = try #require(store.focusedBoard)
@@ -136,8 +139,80 @@ struct DenStoreBoardTests {
                         workingDirectory: FileManager.default.homeDirectoryForCurrentUser.path)))
 
         store.openBoard(input: ":zmx")
+        await waitForZmxSessionLoad(store)
         #expect(store.focusedDesk?.boards.count == 1)
-        #expect(store.openBoardPanelMessage == "Enter a zmx session name.")
+        #expect(store.isZmxSessionsPresented)
+        #expect(store.recentItems.first == .zmx(sessionName: ""))
+        #expect(RecentItem.zmx(sessionName: "").displayText == ":zmx")
+
+        store.hideZmxSessions()
+        store.openBoard(recentItem: .zmx(sessionName: ""))
+        await waitForZmxSessionLoad(store)
+        #expect(store.isZmxSessionsPresented)
+
+        store.hideZmxSessions()
+        store.showOpenBoardPanel()
+        store.openBoard(input: ":zmx")
+        await waitForZmxSessionLoad(store)
+        store.hideZmxSessions()
+        #expect(store.isOpenBoardPanelPresented)
+    }
+
+    @Test func zmxSessionsGroupChildrenOpenBoardsAndKillOneSession() async {
+        let source = desk("Desk")
+        let suiteName = "DenStoreZmxSessionsTests-\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let preferences = AppPreferences(defaults: defaults)
+        preferences.setZmxPath("/opt/homebrew/bin/zmx")
+        let commandRunner = StubTerminalCommandRunner(
+            responses: [
+                ["list"]: TerminalCommandResult(
+                    terminationStatus: 0,
+                    standardOutput: "name=den\nname=den-vi\tden.root=den\nname=old-root-debug\tden.root=old-root\n"),
+                ["kill", "den-vi", "--force"]: TerminalCommandResult(
+                    terminationStatus: 0,
+                    standardOutput: ""),
+            ])
+        let store = DenStore(
+            state: DenState(desks: [source], focusedDeskID: source.id),
+            sheetNavigation: SheetNavigationManager(),
+            preferences: preferences,
+            terminalCommandRunner: commandRunner)
+
+        store.showZmxSessions(selectedSessionName: "den-vi")
+        await waitForZmxSessionLoad(store)
+
+        #expect(
+            store.zmxSessionGroups == [
+                ZmxSessionGroup(rootSessionName: "den", isRootActive: true, childSessionNames: ["den-vi"]),
+                ZmxSessionGroup(
+                    rootSessionName: "old-root",
+                    isRootActive: false,
+                    childSessionNames: ["old-root-debug"]),
+            ])
+        #expect(store.zmxSessionSelectedName == "den-vi")
+        store.setZmxSessionQuery("vi")
+        #expect(
+            store.filteredZmxSessionGroups
+                == [ZmxSessionGroup(rootSessionName: "den", isRootActive: true, childSessionNames: ["den-vi"])]
+        )
+        store.clearZmxSessionFilter()
+
+        store.openZmxSession("den-vi")
+        #expect(store.focusedBoard?.zmxSessionName == "den-vi")
+        #expect(!store.isZmxSessionsPresented)
+
+        store.showZmxSessions()
+        await waitForZmxSessionLoad(store)
+        store.openZmxSession("den-vi")
+        #expect(store.focusedDesk?.boards.count == 1)
+
+        store.showZmxSessions()
+        await waitForZmxSessionLoad(store)
+        store.killZmxSession("den-vi")
+        await waitForZmxSessionLoad(store)
+        #expect(store.zmxSessionsMessage == nil)
     }
 
     @Test func changingWebExtensionHostKeepsTerminalRuntimeAlive() {
@@ -868,9 +943,13 @@ struct DenStoreBoardTests {
     private func board(_ label: String, width: Double = 520, url: String = "https://example.com/") -> BoardState {
         BoardState(label: label, width: width, currentSheetURL: url.isEmpty ? nil : URL(string: url))
     }
+
+    private func waitForZmxSessionLoad(_ store: DenStore) async {
+        await store.zmxSessionRefreshTask?.value
+    }
 }
 
-private struct StubTerminalCommandRunner: TerminalCommandRunning {
+private struct StubTerminalCommandRunner: TerminalCommandRunning, Sendable {
     let responses: [[String]: TerminalCommandResult]
 
     func run(executablePath: String, arguments: [String]) -> TerminalCommandResult? {

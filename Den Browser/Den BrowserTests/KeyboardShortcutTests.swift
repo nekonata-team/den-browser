@@ -689,6 +689,97 @@ struct KeyboardShortcutTests {
         #expect(store.toastMessage == nil)
     }
 
+    @Test func zmxSessionsEscapeClosesPanel() throws {
+        let initialBoard = board("First")
+        let desk = DeskState(label: "Desk", boards: [initialBoard], focusedBoardID: initialBoard.id)
+        let preferences = try makePreferences()
+        preferences.setZmxPath("/missing/zmx")
+        let store = DenStore(
+            state: DenState(desks: [desk], focusedDeskID: desk.id),
+            sheetNavigation: SheetNavigationManager(),
+            preferences: preferences)
+        let escape = try keyEvent(
+            characters: "\u{1B}", charactersIgnoringModifiers: "\u{1B}", keyCode: 53)
+
+        store.showZmxSessions()
+
+        #expect(store.isZmxSessionsPresented)
+        #expect(KeyboardController.decision(for: escape, store: store) == .perform(.hideZmxSessions))
+        #expect(KeyboardController.handle(escape, store: store))
+        #expect(!store.isZmxSessionsPresented)
+    }
+
+    @Test func zmxSessionsArrowSelectionAndActionsUseTheFocusedSession() async throws {
+        let desk = DeskState(label: "Desk", boards: [], focusedBoardID: nil)
+        let preferences = try makePreferences()
+        preferences.setZmxPath("/opt/homebrew/bin/zmx")
+        let store = DenStore(
+            state: DenState(desks: [desk], focusedDeskID: desk.id),
+            sheetNavigation: SheetNavigationManager(),
+            preferences: preferences,
+            terminalCommandRunner: ZmxKeyboardCommandRunner(
+                responses: [
+                    ["list"]: TerminalCommandResult(
+                        terminationStatus: 0,
+                        standardOutput: "name=den\nname=den-vi\tden.root=den\n")
+                ]))
+        store.showZmxSessions()
+        await waitForZmxSessionLoad(store)
+
+        let down = try arrowEvent(.downArrow, modifiers: [])
+        let upArrow = try arrowEvent(.upArrow, modifiers: [])
+        let returnKey = try keyEvent(
+            characters: "\r", charactersIgnoringModifiers: "\r", keyCode: 36)
+        let delete = try keyEvent(
+            characters: "\u{8}", charactersIgnoringModifiers: "\u{8}", keyCode: 51)
+        let deleteKey = try keyEvent(
+            characters: "x", charactersIgnoringModifiers: "x", keyCode: 7)
+        let reload = try keyEvent(characters: "r", charactersIgnoringModifiers: "r", keyCode: 15)
+        let filter = try keyEvent(characters: "/", charactersIgnoringModifiers: "/", keyCode: 44)
+        let escape = try keyEvent(
+            characters: "\u{1B}", charactersIgnoringModifiers: "\u{1B}", keyCode: 53)
+
+        #expect(store.zmxSessionSelectedName == "den")
+        #expect(
+            KeyboardController.decision(for: down, store: store)
+                == .perform(.moveZmxSessionSelection(1)))
+        #expect(KeyboardController.handle(down, store: store))
+        #expect(store.zmxSessionSelectedName == "den-vi")
+        #expect(KeyboardController.handle(upArrow, store: store))
+        #expect(store.zmxSessionSelectedName == "den")
+        #expect(
+            KeyboardController.decision(for: returnKey, store: store)
+                == .perform(.openSelectedZmxSession))
+        #expect(
+            KeyboardController.decision(for: filter, store: store)
+                == .perform(.enterZmxSessionFilter))
+        #expect(KeyboardController.handle(filter, store: store))
+        #expect(store.isZmxSessionFilterInputActive)
+        #expect(
+            KeyboardController.decision(for: deleteKey, store: store)
+                == .forward(.filterTextInput))
+        #expect(KeyboardController.handle(escape, store: store))
+        #expect(!store.isZmxSessionFilterInputActive)
+        #expect(store.zmxSessionQuery.isEmpty)
+        #expect(
+            KeyboardController.decision(for: escape, store: store)
+                == .perform(.hideZmxSessions))
+        #expect(
+            KeyboardController.decision(for: delete, store: store)
+                == .perform(.deleteSelectedZmxSession))
+        #expect(
+            KeyboardController.decision(for: deleteKey, store: store)
+                == .perform(.deleteSelectedZmxSession))
+        #expect(
+            KeyboardController.decision(for: reload, store: store)
+                == .perform(.refreshZmxSessions))
+        #expect(KeyboardController.handle(delete, store: store))
+        #expect(store.zmxSessionPendingDeletion == "den")
+        #expect(
+            KeyboardController.decision(for: returnKey, store: store)
+                == .forward(.temporaryTextInput))
+    }
+
     @Test func denModeGPrefixPreservesEssentialKeyCase() throws {
         let store = try makeStore(boards: [board("First")])
         let lowercase = Essential(name: "Lowercase", key: "c", input: "https://example.com/lower")
@@ -1048,6 +1139,8 @@ struct KeyboardShortcutTests {
     ) throws -> NSEvent {
         let (characters, keyCode): (String, UInt16) =
             switch specialKey {
+            case .upArrow: ("\u{F700}", 126)
+            case .downArrow: ("\u{F701}", 125)
             case .leftArrow: ("\u{F702}", 123)
             case .rightArrow: ("\u{F703}", 124)
             default: ("", 0)
@@ -1061,5 +1154,17 @@ struct KeyboardShortcutTests {
 
     private func board(_ label: String, url: String = "https://example.com/") -> BoardState {
         BoardState(label: label, width: 520, currentSheetURL: URL(string: url))
+    }
+
+    private func waitForZmxSessionLoad(_ store: DenStore) async {
+        await store.zmxSessionRefreshTask?.value
+    }
+}
+
+private struct ZmxKeyboardCommandRunner: TerminalCommandRunning, Sendable {
+    let responses: [[String]: TerminalCommandResult]
+
+    func run(executablePath: String, arguments: [String]) -> TerminalCommandResult? {
+        responses[arguments]
     }
 }

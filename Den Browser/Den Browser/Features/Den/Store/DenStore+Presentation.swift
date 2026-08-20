@@ -63,6 +63,36 @@ extension DenStore {
         }
     }
 
+    func showZmxSessions(selectedSessionName: String? = nil, returnsToOpenBoard: Bool = false) {
+        guard zmxClient.isConfigured else {
+            showToast("Set an absolute zmx executable path in Settings > Features > Terminal.", style: .warning)
+            return
+        }
+        zmxSessionSelectedName = selectedSessionName
+        zmxSessionQuery = ""
+        zmxSessionFilterPhase = .inactive
+        zmxSessionsReturnToOpenBoard = returnsToOpenBoard
+        refreshZmxSessions()
+        setTemporaryContext(.zmxSessions)
+    }
+
+    func hideZmxSessions(returnToSource: Bool = true) {
+        if temporaryContext == .zmxSessions {
+            let returnsToOpenBoard = returnToSource && zmxSessionsReturnToOpenBoard
+            zmxSessionRefreshTask?.cancel()
+            zmxSessionRefreshTask = nil
+            zmxSessionsIsLoading = false
+            zmxSessionGroups = []
+            zmxSessionsMessage = nil
+            zmxSessionSelectedName = nil
+            zmxSessionQuery = ""
+            zmxSessionFilterPhase = .inactive
+            zmxSessionPendingDeletion = nil
+            zmxSessionsReturnToOpenBoard = false
+            setTemporaryContext(returnsToOpenBoard ? .openBoard : nil)
+        }
+    }
+
     var isZmxDuplicationPanelPresented: Bool {
         temporaryContext == .zmxDuplication
     }

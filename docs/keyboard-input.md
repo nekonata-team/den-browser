@@ -42,6 +42,7 @@ Den Mode actions must never be implemented by forwarding an event and relying on
 - `KeyboardController` owns the only runtime `keyDown` local monitor for Profile windows.
 - The shortcut recorder may install a second local monitor only while recording inside Settings and must remove it when recording ends or the window resigns key status.
 - New routing exceptions must be represented by a typed `InputDestination` or `InputReason`; ad hoc early returns are not allowed.
+- Confirmation dialogs must provide a default action for Return and a cancel action for Escape. While a confirmation is presented, the Router forwards both keys to the native dialog.
 - Shortcut persistence uses logical characters or named special keys plus modifiers. Do not persist physical key codes.
 - Do not add global hotkeys without a new architectural decision.
 - Do not log raw keys, composed text, or forwarded terminal and Sheet input.

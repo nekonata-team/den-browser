@@ -48,6 +48,10 @@ _Avoid_: Terminal window, terminal tab, pane
 The live shell, Zellij session, or zmx session, terminal screen, and scrollback owned by a Terminal Board. An ordinary Terminal Board persists only its latest reported Working Directory. Named Zellij and zmx Boards persist their session name; a Zellij Board without a name opens Zellij's Welcome screen again when restored.
 _Avoid_: Terminal window, shell tab
 
+**zmx Sessions**:
+A temporary live list of named zmx sessions that can attach a session to a Terminal Board or end one session. It groups child sessions under their root session; a missing root remains visible as a group.
+_Avoid_: Session manager, terminal tab list
+
 **Notification**:
 A temporary message from a Terminal Board that calls attention to an event while Den Browser is running. It appears in the Den's notification list and can return focus to its originating Board, including when that Board is on another Desk; Notifications are not retained after Den Browser exits.
 _Avoid_: Toast, terminal output, log, history entry

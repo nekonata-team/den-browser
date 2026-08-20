@@ -234,6 +234,8 @@ struct DenView<Header: View>: View {
             panelOverlay(essentialsPrefixPanel)
         case .openBoard:
             panelOverlay(openBoardPanel(defaultBoardWidth: defaultBoardWidth))
+        case .zmxSessions:
+            panelOverlay(ZmxSessionsPanel(profileColor: profileColor))
         case .zmxDuplication:
             panelOverlay(zmxDuplicationPanel)
         case .editBoardLink:

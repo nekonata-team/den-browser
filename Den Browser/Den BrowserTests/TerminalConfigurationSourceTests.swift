@@ -58,6 +58,20 @@ struct TerminalConfigurationSourceTests {
         #expect(client.rootSessionName(for: "den-vi") == "den")
     }
 
+    @Test func zmxClientKillsSessionsWithForce() {
+        let client = ZmxClient(
+            executablePath: "/opt/homebrew/bin/zmx",
+            commandRunner: StubTerminalCommandRunner(
+                responses: [
+                    ["kill", "den-vi", "--force"]: TerminalCommandResult(
+                        terminationStatus: 0,
+                        standardOutput: "")
+                ]))
+
+        #expect(client.killSession(" den-vi "))
+        #expect(!client.killSession(""))
+    }
+
     @Test func zmxSessionNameGeneratorUsesRootAndSkipsCollisions() {
         let occupied: Set<String> = ["den", "den-vi", "den-vi-2", "den-2"]
 
@@ -204,7 +218,7 @@ struct TerminalConfigurationSourceTests {
     }
 }
 
-private struct StubTerminalCommandRunner: TerminalCommandRunning {
+private struct StubTerminalCommandRunner: TerminalCommandRunning, Sendable {
     let responses: [[String]: TerminalCommandResult]
 
     func run(executablePath: String, arguments: [String]) -> TerminalCommandResult? {
