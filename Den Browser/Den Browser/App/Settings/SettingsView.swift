@@ -138,6 +138,18 @@ private struct TerminalSettingsView: View {
 
     var body: some View {
         SettingsForm {
+            Section("Permissions") {
+                SettingsHelpText {
+                    Text("Terminal Boards may need Full Disk Access to access protected files.")
+                }
+
+                SettingsActionRow {
+                    Button("Open Full Disk Access Settings") {
+                        openFullDiskAccessSettings()
+                    }
+                }
+            }
+
             Section("Zellij") {
                 TextField(
                     text: $zellijPathDraft,
@@ -208,6 +220,14 @@ private struct TerminalSettingsView: View {
     private func saveZmxPath() {
         preferences.setZmxPath(zmxPathDraft)
         zmxPathDraft = preferences.zmxPath
+    }
+
+    private func openFullDiskAccessSettings() {
+        guard
+            let url = URL(
+                string: "x-apple.systempreferences:com.apple.settings.PrivacySecurity.extension?Privacy_AllFiles")
+        else { return }
+        NSWorkspace.shared.open(url)
     }
 }
 
