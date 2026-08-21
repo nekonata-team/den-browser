@@ -20,8 +20,7 @@ SafariやChromeなどの汎用ブラウザを置き換えるものではあり�
 Den BrowserにはmacOS 26以降が必要です。
 
 ```sh
-brew tap nekonata-team/tap
-brew install --cask den-browser
+brew install --cask nekonata-team/tap/den-browser
 ```
 
 更新には `brew upgrade --cask den-browser` を使用します。

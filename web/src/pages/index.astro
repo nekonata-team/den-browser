@@ -1,0 +1,328 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout title="Web and terminal work, the Niri way">
+	<!-- Hero Section -->
+	<section class="relative pt-20 pb-16 md:pt-32 md:pb-20 px-6 overflow-hidden">
+		<div class="mx-auto max-w-4xl text-center flex flex-col items-center mb-12 md:mb-16">
+			<!-- Main Title -->
+			<h1 class="font-extrabold text-4xl sm:text-5xl md:text-6xl tracking-tight leading-none mb-8 max-w-3xl">
+				Web and terminal work, <br class="sm:hidden" />
+				<span class="metallic-text">the Niri way.</span>
+			</h1>
+
+			<!-- Subtitle -->
+			<p class="text-zinc-400 text-lg md:text-xl max-w-2xl leading-relaxed mb-8">
+				A keyboard-first spatial companion browser for macOS. Built for parallel web tasks, AI chats, research, development, and terminal workflows.
+			</p>
+
+			<!-- Quick CTA -->
+			<a href="#install" class="glass-button text-xs sm:text-sm py-2.5 px-6 flex items-center gap-2">
+				<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4 text-cyan-400">
+					<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+					<polyline points="7 10 12 15 17 10"></polyline>
+					<line x1="12" y1="15" x2="12" y2="3"></line>
+				</svg>
+				Install Den Browser
+			</a>
+		</div>
+
+		<!-- App Video Preview Showcase (Click-to-Play) -->
+		<div class="mx-auto max-w-5xl px-6 mb-16 md:mb-20">
+			<div id="video-wrapper" class="glass-panel rounded-2xl overflow-hidden shadow-2xl border border-white/10 aspect-video relative group cursor-pointer">
+				<!-- Window Header Overlay -->
+				<div class="absolute top-0 left-0 right-0 z-10 bg-black/40 border-b border-white/5 px-4 py-2.5 flex items-center justify-between backdrop-blur-sm pointer-events-none">
+					<div class="flex items-center gap-2">
+						<span class="w-2.5 h-2.5 rounded-full bg-red-500/40"></span>
+						<span class="w-2.5 h-2.5 rounded-full bg-yellow-500/40"></span>
+						<span class="w-2.5 h-2.5 rounded-full bg-green-500/40"></span>
+					</div>
+					<div class="text-[10px] font-medium text-zinc-400 bg-white/5 px-2.5 py-0.5 rounded border border-white/5">
+						Den Browser Showcase
+					</div>
+					<div class="w-10"></div>
+				</div>
+
+				<!-- HTML5 Video element with explicit poster (zero preload) -->
+				<video
+					id="demo-video"
+					class="w-full h-full object-cover pt-9"
+					poster="/videos/poster.png"
+					preload="none"
+					playsinline
+					data-src="/videos/preview.mp4"
+				>
+					Your browser does not support the video tag.
+				</video>
+
+				<!-- Play Button Overlay -->
+				<div id="play-overlay" class="absolute inset-0 pt-9 flex items-center justify-center bg-black/20 hover:bg-black/10 transition-colors pointer-events-auto">
+					<button id="play-trigger" class="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-cyan-500/20 border border-cyan-400/40 flex items-center justify-center text-cyan-300 shadow-2xl group-hover:scale-110 group-hover:bg-cyan-500/30 group-hover:border-cyan-400/70 transition-all duration-300" aria-label="Play video">
+						<svg class="w-7 h-7 sm:w-8 sm:h-8 translate-x-0.5 text-cyan-300 drop-shadow" fill="currentColor" viewBox="0 0 24 24">
+							<path d="M8 5v14l11-7z"/>
+						</svg>
+					</button>
+				</div>
+			</div>
+		</div>
+
+		<!-- Install Section -->
+		<div id="install" class="mx-auto w-full max-w-lg glass-panel rounded-2xl p-5 flex flex-col gap-3 scroll-mt-24">
+			<div class="flex items-center justify-between text-xs text-zinc-500 px-1">
+				<span class="font-semibold uppercase tracking-wider">Install via Homebrew Cask</span>
+				<span>macOS 26+</span>
+			</div>
+			<div class="flex items-center justify-between bg-black/40 rounded-xl border border-white/5 p-3 group hover:border-white/10 transition-colors gap-3">
+				<div class="overflow-x-auto min-w-0 flex-1">
+					<code class="font-mono text-xs sm:text-[13px] text-cyan-300 select-all whitespace-nowrap block">brew install --cask nekonata-team/tap/den-browser</code>
+				</div>
+				<button class="copy-btn glass-button p-2.5 shrink-0 active:scale-95 transition-transform" aria-label="Copy install command">
+					<svg class="copy-icon h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+						<rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+						<path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+					</svg>
+					<svg class="success-icon h-4 w-4 text-cyan-400 hidden" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+						<polyline points="20 6 9 17 4 12"></polyline>
+					</svg>
+				</button>
+			</div>
+			<p class="text-xs text-zinc-500 text-center px-2">
+				Auto-updates with <code>brew upgrade --cask den-browser</code>.
+			</p>
+		</div>
+	</section>
+
+	<!-- Conceptual Model (No Tabs) -->
+	<section class="py-20 border-t border-b border-white/5 bg-black/10 px-6">
+		<div class="mx-auto max-w-4xl">
+			<div class="text-center mb-16">
+				<span class="text-xs font-bold uppercase tracking-wider text-purple-400">Concept</span>
+				<h2 class="text-3xl font-extrabold text-white mt-2 mb-4">No Tabs. Just persistent physical space.</h2>
+				<p class="text-zinc-400 max-w-xl mx-auto">
+					Den Browser replaces ephemeral browser tabs with structured, persistent surfaces designed for long-running work.
+				</p>
+			</div>
+
+			<!-- Workspace Concept Grid -->
+			<div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+				<!-- Concept: Desk -->
+				<div class="glass-card rounded-2xl p-6 border border-white/10 flex flex-col gap-3">
+					<div class="text-[10px] font-bold text-cyan-400 uppercase tracking-widest">Broad Context</div>
+					<h3 class="text-xl font-bold text-white">Desk</h3>
+					<p class="text-zinc-400 text-sm leading-relaxed">
+						A horizontal work area representing a broad task context. Switch between multiple desks instantly from the keyboard without losing your place.
+					</p>
+				</div>
+
+				<!-- Concept: Board -->
+				<div class="glass-card rounded-2xl p-6 border border-white/10 flex flex-col gap-3">
+					<div class="text-[10px] font-bold text-purple-400 uppercase tracking-widest">Surface</div>
+					<h3 class="text-xl font-bold text-white">Board</h3>
+					<p class="text-zinc-400 text-sm leading-relaxed">
+						A focused column representing a single task. Holds either a Web Sheet stack or a live native Terminal session side-by-side.
+					</p>
+				</div>
+
+				<!-- Concept: Sheet & Terminal -->
+				<div class="glass-card rounded-2xl p-6 border border-white/10 flex flex-col gap-3">
+					<div class="text-[10px] font-bold text-pink-400 uppercase tracking-widest">Content</div>
+					<h3 class="text-xl font-bold text-white">Sheet & Terminal</h3>
+					<p class="text-zinc-400 text-sm leading-relaxed">
+						Web screens held within a board with persistent navigation history, or interactive Terminal, Zellij, and zmx sessions.
+					</p>
+				</div>
+			</div>
+		</div>
+	</section>
+
+	<!-- Features Grid Section (Balanced 3x2 Grid) -->
+	<section id="features" class="py-20 bg-black/20 px-6">
+		<div class="mx-auto max-w-7xl">
+			<div class="text-center mb-16">
+				<h2 class="text-3xl font-extrabold text-white mb-4">Orchestrate your web workflow</h2>
+				<p class="text-zinc-400 max-w-xl mx-auto">
+					No more tab list clutter. Den Browser maps spatial window management directly to Desks, Boards, and Drawers.
+				</p>
+			</div>
+
+			<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+				<!-- Feature 1: Niri Canvas -->
+				<div class="glass-card rounded-2xl p-8 border border-white/10 flex flex-col gap-4">
+					<div class="w-10 h-10 rounded-xl bg-cyan-500/10 flex items-center justify-center border border-cyan-500/30">
+						<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 text-cyan-400">
+							<rect x="3" y="3" width="18" height="18" rx="2"></rect>
+							<path d="M9 3v18"></path>
+						</svg>
+					</div>
+					<h3 class="text-xl font-semibold text-white">Niri-Inspired Spatial Canvas</h3>
+					<p class="text-zinc-400 leading-relaxed">
+						Inspired by the Niri scrollable tiling window manager, web tasks sit side-by-side on an infinite horizontal strip. Boards never overlap or hide behind tabs—glide smoothly across your workspace.
+					</p>
+				</div>
+
+				<!-- Feature 2: Integrated Terminal & Zellij -->
+				<div class="glass-card rounded-2xl p-8 border border-white/10 flex flex-col gap-4">
+					<div class="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center border border-emerald-500/30">
+						<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 text-emerald-400">
+							<polyline points="4 17 10 11 4 5"></polyline>
+							<line x1="12" y1="19" x2="20" y2="19"></line>
+						</svg>
+					</div>
+					<h3 class="text-xl font-semibold text-white">Integrated Terminal & Zellij</h3>
+					<p class="text-zinc-400 leading-relaxed">
+						Place native shell, Zellij, or zmx terminal sessions side-by-side with your Web Boards on the same Desk. Seamlessly bridge web research and CLI tasks from your keyboard.
+					</p>
+				</div>
+
+				<!-- Feature 3: Built-in Content Blocking -->
+				<div class="glass-card rounded-2xl p-8 border border-white/10 flex flex-col gap-4">
+					<div class="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center border border-purple-500/30">
+						<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 text-purple-400">
+							<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+							<path d="m9 12 2 2 4-4"></path>
+						</svg>
+					</div>
+					<h3 class="text-xl font-semibold text-white">Built-in Content Blocking (uBOL)</h3>
+					<p class="text-zinc-400 leading-relaxed">
+						Bundled with uBlock Origin Lite out of the box. Blocks intrusive ads, popups, and trackers for a lightweight, distraction-free web experience.
+					</p>
+				</div>
+
+				<!-- Feature 4: Keyboard Control -->
+				<div class="glass-card rounded-2xl p-8 border border-white/10 flex flex-col gap-4">
+					<div class="w-10 h-10 rounded-xl bg-pink-500/10 flex items-center justify-center border border-pink-500/30">
+						<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 text-pink-400">
+							<rect x="2" y="4" width="20" height="16" rx="2"></rect>
+							<path d="M6 8h.01"></path>
+							<path d="M10 8h.01"></path>
+							<path d="M14 8h.01"></path>
+							<path d="M18 8h.01"></path>
+							<path d="M8 12h8"></path>
+							<path d="M7 16h10"></path>
+						</svg>
+					</div>
+					<h3 class="text-xl font-semibold text-white">Keyboard-First Control</h3>
+					<p class="text-zinc-400 leading-relaxed">
+						Toggle Den Mode (<code class="bg-white/5 px-1 rounded border border-white/10 text-zinc-300">Ctrl + ,</code>) or use Vim-style commands to navigate and resize boards (<code class="bg-white/5 px-1 rounded border border-white/10 text-zinc-300">-</code>/<code class="bg-white/5 px-1 rounded border border-white/10 text-zinc-300">=</code>), switch desks, and launch saved Essentials (<code class="bg-white/5 px-1 rounded border border-white/10 text-zinc-300">g</code>) purely from the keyboard.
+					</p>
+				</div>
+
+				<!-- Feature 5: Shared Drawer -->
+				<div class="glass-card rounded-2xl p-8 border border-white/10 flex flex-col gap-4">
+					<div class="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center border border-amber-500/30">
+						<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 text-amber-400">
+							<rect x="3" y="3" width="18" height="18" rx="2"></rect>
+							<path d="M3 9h18"></path>
+							<path d="M3 15h18"></path>
+							<path d="M12 12h.01"></path>
+						</svg>
+					</div>
+					<h3 class="text-xl font-semibold text-white">Shared Drawer & History</h3>
+					<p class="text-zinc-400 leading-relaxed">
+						Capture links opened from external apps into a Den-wide Drawer (<code class="bg-white/5 px-1 rounded border border-white/10 text-zinc-300">a</code>) without disrupting your active Desk. Preview, filter, place (<code class="bg-white/5 px-1 rounded border border-white/10 text-zinc-300">p</code>), discard (<code class="bg-white/5 px-1 rounded border border-white/10 text-zinc-300">x</code>), or restore (<code class="bg-white/5 px-1 rounded border border-white/10 text-zinc-300">u</code>) anytime.
+					</p>
+				</div>
+
+				<!-- Feature 6: Zen View & Focus Mode -->
+				<div class="glass-card rounded-2xl p-8 border border-white/10 flex flex-col gap-4">
+					<div class="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center border border-blue-500/30">
+						<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 text-blue-400">
+							<circle cx="12" cy="12" r="10"></circle>
+							<circle cx="12" cy="12" r="3"></circle>
+						</svg>
+					</div>
+					<h3 class="text-xl font-semibold text-white">Zen View & Focus Mode</h3>
+					<p class="text-zinc-400 leading-relaxed">
+						Press <code class="bg-white/5 px-1 rounded border border-white/10 text-zinc-300">z</code> for Zen View to strip away all UI chrome, or <code class="bg-white/5 px-1 rounded border border-white/10 text-zinc-300">Shift + F</code> for Focus Mode to softly dim background boards and zero in on your active task.
+					</p>
+				</div>
+			</div>
+		</div>
+	</section>
+
+	<!-- Bottom CTA / Install Section -->
+	<section class="py-24 border-t border-white/5 bg-gradient-to-b from-transparent to-cyan-950/10 px-6">
+		<div class="mx-auto max-w-4xl text-center flex flex-col items-center">
+			<h2 class="text-3xl sm:text-4xl font-extrabold text-white mb-4">
+				Ready to transform your web workflow?
+			</h2>
+			<p class="text-zinc-400 text-base sm:text-lg max-w-xl mb-10 leading-relaxed">
+				Experience persistent spatial browsing, integrated terminals, and keyboard-first orchestration on macOS.
+			</p>
+
+			<!-- Install Box (Bottom) -->
+			<div class="w-full max-w-lg glass-panel rounded-2xl p-5 flex flex-col gap-3">
+				<div class="flex items-center justify-between text-xs text-zinc-500 px-1">
+					<span class="font-semibold uppercase tracking-wider">Install via Homebrew Cask</span>
+					<span>macOS 26+</span>
+				</div>
+				<div class="flex items-center justify-between bg-black/40 rounded-xl border border-white/5 p-3 group hover:border-white/10 transition-colors gap-3">
+					<div class="overflow-x-auto min-w-0 flex-1">
+						<code class="font-mono text-xs sm:text-[13px] text-cyan-300 select-all whitespace-nowrap block">brew install --cask nekonata-team/tap/den-browser</code>
+					</div>
+					<button class="copy-btn glass-button p-2.5 shrink-0 active:scale-95 transition-transform" aria-label="Copy install command">
+						<svg class="copy-icon h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+							<rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+							<path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+						</svg>
+						<svg class="success-icon h-4 w-4 text-cyan-400 hidden" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+							<polyline points="20 6 9 17 4 12"></polyline>
+						</svg>
+					</button>
+				</div>
+				<p class="text-xs text-zinc-500 text-center px-2">
+					Auto-updates with <code>brew upgrade --cask den-browser</code>.
+				</p>
+			</div>
+		</div>
+	</section>
+
+	<!-- Script for copy & video feature -->
+	<script is:inline>
+		// Copy command feature
+		document.querySelectorAll('.copy-btn').forEach((btn) => {
+			const codeEl = btn.parentElement.querySelector('code');
+			const copyIcon = btn.querySelector('.copy-icon');
+			const successIcon = btn.querySelector('.success-icon');
+
+			btn.addEventListener('click', async (e) => {
+				e.stopPropagation();
+				try {
+					await navigator.clipboard.writeText(codeEl.textContent.trim());
+
+					copyIcon.classList.add('hidden');
+					successIcon.classList.remove('hidden');
+					btn.classList.add('bg-cyan-500/20', 'border-cyan-500/40');
+
+					setTimeout(() => {
+						copyIcon.classList.remove('hidden');
+						successIcon.classList.add('hidden');
+						btn.classList.remove('bg-cyan-500/20', 'border-cyan-500/40');
+					}, 2000);
+				} catch (err) {
+					console.error('Failed to copy text: ', err);
+				}
+			});
+		});
+
+		// Click-to-play video showcase
+		const playOverlay = document.getElementById('play-overlay');
+		const demoVideo = document.getElementById('demo-video');
+		const videoWrapper = document.getElementById('video-wrapper');
+
+		if (playOverlay && demoVideo && videoWrapper) {
+			playOverlay.addEventListener('click', () => {
+				if (!demoVideo.src && demoVideo.dataset.src) {
+					demoVideo.src = demoVideo.dataset.src;
+				}
+				playOverlay.classList.add('hidden');
+				demoVideo.controls = true;
+				videoWrapper.classList.remove('cursor-pointer');
+				demoVideo.play().catch((err) => {
+					console.log('Playback error/prevented: ', err);
+				});
+			});
+		}
+	</script>
+</Layout>

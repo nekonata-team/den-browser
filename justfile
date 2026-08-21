@@ -7,6 +7,9 @@ ui_test_derived_data := ".derived-data-ui"
 swift_format := "xcrun swift-format"
 swift_sources := "Den Browser"
 
+# Web works.
+mod web
+
 # Prepare and publish signed releases.
 mod release
 

@@ -1,0 +1,63 @@
+---
+import Layout from './Layout.astro';
+import { getLangFromUrl } from '../i18n/ui';
+
+const { frontmatter } = Astro.props;
+const lang = getLangFromUrl(Astro.url);
+const lastUpdatedLabel = lang === 'ja' ? '最終更新日' : 'Last Updated';
+---
+
+<Layout title={frontmatter.title}>
+	<section class="py-20 px-6 max-w-4xl mx-auto flex-grow flex flex-col justify-center">
+		<div class="glass-panel rounded-2xl p-8 md:p-12 border border-white/10 shadow-2xl">
+			<h1 class="text-3xl md:text-4xl font-extrabold text-white mb-2 tracking-tight leading-none metallic-text">
+				{frontmatter.title}
+			</h1>
+			<p class="text-xs text-zinc-500 mb-8 font-medium">
+				{lastUpdatedLabel}: {frontmatter.date || new Date().toLocaleDateString(lang === 'ja' ? 'ja-JP' : 'en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+			</p>
+
+			<div class="legal-content text-sm md:text-base leading-relaxed">
+				<slot />
+			</div>
+		</div>
+	</section>
+</Layout>
+
+<style is:global>
+	.legal-content h2 {
+		font-size: 1.4rem;
+		font-weight: 700;
+		color: #ffffff;
+		margin-top: 2.5rem;
+		margin-bottom: 1rem;
+		border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+		padding-bottom: 0.5rem;
+		letter-spacing: -0.025em;
+	}
+	.legal-content p {
+		color: #a1a1aa; /* zinc 400 */
+		margin-bottom: 1.25rem;
+	}
+	.legal-content ul {
+		list-style-type: disc;
+		padding-left: 1.5rem;
+		margin-bottom: 1.25rem;
+		color: #a1a1aa;
+	}
+	.legal-content li {
+		margin-bottom: 0.5rem;
+	}
+	.legal-content strong {
+		color: #ffffff;
+		font-weight: 600;
+	}
+	.legal-content a {
+		color: #22d3ee; /* cyan 400 */
+		text-decoration: underline;
+		transition: color 200ms;
+	}
+	.legal-content a:hover {
+		color: #a855f7; /* purple 500 transition */
+	}
+</style>

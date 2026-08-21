@@ -20,8 +20,7 @@ replacing everyday browsing.
 Den Browser requires macOS 26 or later.
 
 ```sh
-brew tap nekonata-team/tap
-brew install --cask den-browser
+brew install --cask nekonata-team/tap/den-browser
 ```
 
 Upgrade with `brew upgrade --cask den-browser`.
