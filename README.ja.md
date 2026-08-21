@@ -1,8 +1,8 @@
-[English](./README.md) | [日本語](./README.ja.md)
+[English](./README.md) | [日本語](./README.ja.md) | [Webサイト](https://den.nekonata.dev/)
 
 # Den Browser
 
-**Webとターミナル作業を、Niriのように。**
+**Webとターミナル作業を、Niriのように。** — [den.nekonata.dev](https://den.nekonata.dev/)
 
 Den Browserは、長時間続くWeb・ターミナル作業のためのキーボードファーストな空間
 ブラウザです。増え続けるタブやターミナルウィンドウの代わりに、並行する作業を永続する
@@ -78,6 +78,7 @@ just check
 - [docs/testing.md](./docs/testing.md): 自動テストと手動検証
 - [docs/releasing.md](./docs/releasing.md): 署名付きリリース手順
 - [docs/adr](./docs/adr): プロダクトとアーキテクチャの意思決定
+- [web/README.md](./web/README.md): 公開サイトとデプロイ
 - [THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md): 同梱ソフトウェアのライセンス
 
 ## ライセンス

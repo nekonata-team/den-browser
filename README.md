@@ -1,8 +1,8 @@
-[English](./README.md) | [日本語](./README.ja.md)
+[English](./README.md) | [日本語](./README.ja.md) | [Website](https://den.nekonata.dev/)
 
 # Den Browser
 
-**Web and terminal work, the Niri way.**
+**Web and terminal work, the Niri way.** — [den.nekonata.dev](https://den.nekonata.dev/)
 
 Den Browser is a keyboard-first spatial browser for long-running web and terminal work. It
 keeps parallel tasks as persistent work surfaces instead of growing tab and terminal-window lists,
@@ -82,6 +82,7 @@ These commands disable code signing. Run `just --list` for the available tasks.
 - [docs/testing.md](./docs/testing.md): automated and exploratory validation
 - [docs/releasing.md](./docs/releasing.md): signed release workflow
 - [docs/adr](./docs/adr): product and architecture decisions
+- [web/README.md](./web/README.md): public website and deployment
 - [THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md): bundled software licenses
 
 ## License
