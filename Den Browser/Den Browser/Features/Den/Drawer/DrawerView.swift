@@ -71,18 +71,6 @@ struct DrawerView: View {
 
                 HStack(spacing: 8) {
                     Spacer()
-                    Button {
-                        store.restoreRecentlyDiscardedDrawerItem()
-                    } label: {
-                        Image(systemName: "arrow.uturn.backward")
-                            .font(.system(size: 12, weight: .semibold))
-                            .frame(width: 30, height: 30)
-                    }
-                    .buttonStyle(.plain)
-                    .disabled(store.recentlyDiscardedDrawerItems.isEmpty)
-                    .accessibilityLabel("Restore Discarded Drawer Item")
-                    .help("Restore Discarded Drawer Item")
-
                     Button(role: .destructive) {
                         store.requestDrawerClearConfirmation()
                     } label: {
