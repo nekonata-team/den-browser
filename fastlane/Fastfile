@@ -62,6 +62,24 @@ platform :mac do
     ).strip
     UI.user_error!("Built app version is #{built_version}, expected #{version}") unless built_version == version
 
+    signing_identity = sh("security", "find-identity", "-v", "-p", "codesigning", log: false)
+      .lines
+      .filter_map { |line| line[/\"(Developer ID Application:[^\"]+)\"/, 1] }
+      .first
+    UI.user_error!("Developer ID Application certificate not found") unless signing_identity
+
+    sparkle = File.join(app, "Contents", "Frameworks", "Sparkle.framework", "Versions", "B")
+    sign_options = ["--force", "--sign", signing_identity, "--options", "runtime", "--timestamp"]
+    sh("codesign", *sign_options, File.join(sparkle, "XPCServices", "Installer.xpc"))
+    sh(
+      "codesign", *sign_options, "--preserve-metadata=entitlements",
+      File.join(sparkle, "XPCServices", "Downloader.xpc")
+    )
+    sh("codesign", *sign_options, File.join(sparkle, "Autoupdate"))
+    sh("codesign", *sign_options, File.join(sparkle, "Updater.app"))
+    sh("codesign", *sign_options, File.join(app, "Contents", "Frameworks", "Sparkle.framework"))
+    sh("codesign", *sign_options, "--preserve-metadata=entitlements", app)
+
     sh("codesign", "--verify", "--deep", "--strict", "--verbose=2", app)
 
     sh("ditto", "-c", "-k", "--sequesterRsrc", "--keepParent", app, zip)

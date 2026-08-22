@@ -61,6 +61,7 @@ generate-key:
 appcast tag: (_validate-tag tag)
     set -euo pipefail
 
+    tag="{{tag}}"
     version="${tag#v}"
     zip=".release/${tag}/Den-Browser-${version}-macOS.zip"
     input=".release/${tag}/appcast-input"
@@ -78,6 +79,7 @@ appcast tag: (_validate-tag tag)
 github $tag: (_validate-tag tag)
     set -euo pipefail
 
+    tag="{{tag}}"
     [[ -z "$(git status --porcelain)" ]] || {
         printf '%s\n' "working tree has uncommitted changes" >&2
         exit 1
@@ -115,6 +117,7 @@ github $tag: (_validate-tag tag)
 homebrew $version: (_validate-version version)
     set -euo pipefail
 
+    version="{{version}}"
     brew tap nekonata-team/tap
 
     brew bump-cask-pr \
