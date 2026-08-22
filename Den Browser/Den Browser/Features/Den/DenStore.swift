@@ -88,6 +88,7 @@ final class DenStore {
     var openBoardPanelInitialURL: URL?
     var openBoardPanelMessage: String?
     var zmxSessionGroups: [ZmxSessionGroup] = []
+    var zmxSessionProcessNames: [String: String] = [:]
     var zmxSessionsMessage: String?
     var zmxSessionsIsLoading = false
     var zmxSessionSelectedName: String?

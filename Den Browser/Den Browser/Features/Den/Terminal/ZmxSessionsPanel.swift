@@ -50,7 +50,9 @@ struct ZmxSessionsPanel: View {
                             ForEach(store.filteredZmxSessionGroups) { group in
                                 sessionRow(
                                     group.rootSessionName,
-                                    detail: group.isRootActive ? nil : "Missing root",
+                                    detail: group.isRootActive
+                                        ? store.zmxSessionProcessName(for: group.rootSessionName)
+                                        : "Missing root",
                                     isChild: false,
                                     isActionable: group.isRootActive
                                 )
@@ -58,7 +60,7 @@ struct ZmxSessionsPanel: View {
                                 ForEach(group.childSessionNames, id: \.self) { sessionName in
                                     sessionRow(
                                         sessionName,
-                                        detail: nil,
+                                        detail: store.zmxSessionProcessName(for: sessionName),
                                         isChild: true,
                                         isActionable: true
                                     )
@@ -145,10 +147,15 @@ struct ZmxSessionsPanel: View {
                 Image(systemName: "arrow.turn.down.right")
                     .foregroundStyle(.secondary)
             }
-            VStack(alignment: .leading, spacing: 2) {
+            HStack(spacing: 5) {
                 Text(sessionName).lineLimit(1).truncationMode(.middle)
                 if let detail {
-                    Text(detail).font(.caption).foregroundStyle(.secondary)
+                    Text("—").foregroundStyle(.secondary)
+                    Text(detail)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                        .truncationMode(.middle)
                 }
             }
             if isActionable {

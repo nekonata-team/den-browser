@@ -36,25 +36,31 @@ extension DenStore {
         }
     }
 
+    func zmxSessionProcessName(for sessionName: String) -> String? {
+        zmxSessionProcessNames[sessionName]
+    }
+
     func refreshZmxSessions() {
         zmxSessionRefreshTask?.cancel()
         zmxSessionsIsLoading = true
         zmxSessionsMessage = nil
         let client = zmxClient
         zmxSessionRefreshTask = Task { [weak self] in
-            let groups = await Task.detached(priority: .userInitiated) {
-                client.sessionGroups()
+            let snapshot = await Task.detached(priority: .userInitiated) {
+                client.sessionSnapshot()
             }.value
             guard !Task.isCancelled else { return }
             guard let self else { return }
             zmxSessionsIsLoading = false
-            guard let groups else {
+            guard let snapshot else {
                 zmxSessionGroups = []
+                zmxSessionProcessNames = [:]
                 zmxSessionsMessage = "Could not list zmx Sessions."
                 zmxSessionSelectedName = nil
                 return
             }
-            zmxSessionGroups = groups
+            zmxSessionGroups = snapshot.groups
+            zmxSessionProcessNames = snapshot.processNames
             if let selectedName = zmxSessionSelectedName, zmxSessionNames.contains(selectedName) {
                 return
             }

@@ -5,6 +5,11 @@ nonisolated struct TerminalCommandResult: Sendable {
     let standardOutput: String
 }
 
+nonisolated struct ZmxSessionSnapshot: Sendable {
+    let groups: [ZmxSessionGroup]
+    let processNames: [String: String]
+}
+
 nonisolated protocol TerminalCommandRunning: Sendable {
     func run(executablePath: String, arguments: [String]) -> TerminalCommandResult?
 }
@@ -23,12 +28,12 @@ nonisolated struct ProcessTerminalCommandRunner: TerminalCommandRunning {
 
         do {
             try process.run()
-            process.waitUntilExit()
         } catch {
             return nil
         }
 
         let data = output.fileHandleForReading.readDataToEndOfFile()
+        process.waitUntilExit()
         guard let standardOutput = String(data: data, encoding: .utf8) else { return nil }
         return TerminalCommandResult(
             terminationStatus: process.terminationStatus,
@@ -125,9 +130,18 @@ nonisolated struct ZmxClient: Sendable {
         return rootSessionName.isEmpty ? nil : rootSessionName
     }
 
-    func sessionGroups() -> [ZmxSessionGroup]? {
+    func sessionSnapshot() -> ZmxSessionSnapshot? {
         guard let sessions = sessionsWithRootLabels() else { return nil }
+        return ZmxSessionSnapshot(
+            groups: makeSessionGroups(from: sessions),
+            processNames: processNames(for: sessions))
+    }
 
+    func sessionGroups() -> [ZmxSessionGroup]? {
+        sessionSnapshot()?.groups
+    }
+
+    private func makeSessionGroups(from sessions: [ZmxSessionInfo]) -> [ZmxSessionGroup] {
         var childrenByRoot: [String: [String]] = [:]
         var rootSessionNames = Set(sessions.map(\.name))
         for session in sessions {
@@ -148,7 +162,92 @@ nonisolated struct ZmxClient: Sendable {
         }
     }
 
-    private func sessionsWithRootLabels() -> [(name: String, rootSessionName: String?)]? {
+    private func processNames(for sessions: [ZmxSessionInfo]) -> [String: String] {
+        var processNames = Dictionary(
+            uniqueKeysWithValues: sessions.map { ($0.name, "Unknown") })
+        guard let processes = processSnapshot() else { return processNames }
+
+        for session in sessions {
+            guard let pid = session.pid, let sessionProcess = processes[pid] else { continue }
+            if let processName = foregroundProcessName(
+                for: session,
+                sessionProcess: sessionProcess,
+                processes: processes)
+            {
+                processNames[session.name] = processName
+            }
+        }
+        return processNames
+    }
+
+    private func processSnapshot() -> [Int32: ProcessInfo]? {
+        guard
+            let result = commandRunner.run(
+                executablePath: "/bin/ps",
+                arguments: ["-axo", "pid=,ppid=,pgid=,tpgid=,command="]),
+            result.terminationStatus == 0
+        else { return nil }
+
+        var processes: [Int32: ProcessInfo] = [:]
+        for rawLine in result.standardOutput.split(whereSeparator: \.isNewline) {
+            let fields = rawLine.split(
+                maxSplits: 4,
+                omittingEmptySubsequences: true,
+                whereSeparator: \.isWhitespace)
+            guard fields.count == 5,
+                let pid = Int32(fields[0]),
+                let parentPID = Int32(fields[1]),
+                let processGroupID = Int32(fields[2]),
+                let terminalProcessGroupID = Int32(fields[3]),
+                let executableName = executableName(from: String(fields[4]))
+            else { continue }
+            processes[pid] = ProcessInfo(
+                pid: pid,
+                parentPID: parentPID,
+                processGroupID: processGroupID,
+                terminalProcessGroupID: terminalProcessGroupID,
+                executableName: executableName)
+        }
+        return processes
+    }
+
+    private func foregroundProcessName(
+        for session: ZmxSessionInfo,
+        sessionProcess: ProcessInfo,
+        processes: [Int32: ProcessInfo]
+    ) -> String? {
+        let shellName = sessionProcess.executableName
+        let foregroundProcessGroupID = sessionProcess.terminalProcessGroupID
+        guard foregroundProcessGroupID > 0 else { return "Idle · \(shellName)" }
+
+        let foregroundProcesses = processes.values.filter {
+            $0.processGroupID == foregroundProcessGroupID
+        }
+        guard !foregroundProcesses.isEmpty else { return "Idle · \(shellName)" }
+
+        let foregroundPIDs = Set(foregroundProcesses.map(\.pid))
+        let firstProcess =
+            foregroundProcesses
+            .sorted { $0.pid < $1.pid }
+            .first { !foregroundPIDs.contains($0.parentPID) }
+            ?? foregroundProcesses.min { $0.pid < $1.pid }
+        guard let firstProcess else { return "Idle · \(shellName)" }
+        if firstProcess.pid == session.pid {
+            return "Idle · \(firstProcess.executableName)"
+        }
+        return firstProcess.executableName
+    }
+
+    private func executableName(from command: String) -> String? {
+        guard let firstArgument = command.split(whereSeparator: \.isWhitespace).first else {
+            return nil
+        }
+        let name = URL(fileURLWithPath: String(firstArgument)).lastPathComponent
+        let normalizedName = name.trimmingCharacters(in: CharacterSet(charactersIn: "-"))
+        return normalizedName.isEmpty ? nil : normalizedName
+    }
+
+    private func sessionsWithRootLabels() -> [ZmxSessionInfo]? {
         guard isConfigured,
             let result = commandRunner.run(executablePath: executablePath, arguments: ["list"]),
             result.terminationStatus == 0
@@ -162,10 +261,16 @@ nonisolated struct ZmxClient: Sendable {
             else { return nil }
             let name = nameField[nameStart.upperBound...].trimmingCharacters(in: .whitespacesAndNewlines)
             guard !name.isEmpty else { return nil }
+            let pid = fields.first { $0.hasPrefix("pid=") }.flatMap {
+                Int32($0.dropFirst("pid=".count).trimmingCharacters(in: .whitespacesAndNewlines))
+            }
             let rootSessionName = fields.first { $0.hasPrefix("den.root=") }.map {
                 String($0.dropFirst("den.root=".count)).trimmingCharacters(in: .whitespacesAndNewlines)
             }
-            return (name, rootSessionName: rootSessionName?.isEmpty == false ? rootSessionName : nil)
+            return ZmxSessionInfo(
+                name: String(name),
+                pid: pid,
+                rootSessionName: rootSessionName?.isEmpty == false ? rootSessionName : nil)
         }
     }
 
@@ -178,6 +283,20 @@ nonisolated struct ZmxClient: Sendable {
         else { return false }
         return result.terminationStatus == 0
     }
+}
+
+private struct ZmxSessionInfo: Sendable {
+    let name: String
+    let pid: Int32?
+    let rootSessionName: String?
+}
+
+private struct ProcessInfo: Sendable {
+    let pid: Int32
+    let parentPID: Int32
+    let processGroupID: Int32
+    let terminalProcessGroupID: Int32
+    let executableName: String
 }
 
 private nonisolated enum TerminalExecutablePath {

@@ -7,6 +7,17 @@ import Testing
 
 @MainActor
 struct TerminalConfigurationSourceTests {
+    @Test func terminalCommandRunnerDrainsLargeOutputBeforeWaiting() throws {
+        let output = String(repeating: "x", count: 100_000)
+        let result = try #require(
+            ProcessTerminalCommandRunner().run(
+                executablePath: "/usr/bin/printf",
+                arguments: [output]))
+
+        #expect(result.terminationStatus == 0)
+        #expect(result.standardOutput == output)
+    }
+
     @Test func zellijLaunchCommandsUseWelcomeOrNamedSession() {
         #expect(
             ZellijClient(executablePath: "/opt/homebrew/bin/zellij")
@@ -56,6 +67,56 @@ struct TerminalConfigurationSourceTests {
 
         #expect(client.activeSessionNames() == ["den-vi", "plain-session"])
         #expect(client.rootSessionName(for: "den-vi") == "den")
+    }
+
+    @Test func zmxClientReportsForegroundAndIdleProcesses() throws {
+        let client = ZmxClient(
+            executablePath: "/opt/homebrew/bin/zmx",
+            commandRunner: StubTerminalCommandRunner(
+                responses: [
+                    ["list"]: TerminalCommandResult(
+                        terminationStatus: 0,
+                        standardOutput: "name=den\tpid=100\n"
+                            + "name=den-idle\tpid=300\n"
+                            + "name=den-web\tpid=500\n"
+                            + "name=den-unknown\tpid=999\n"),
+                    ["-axo", "pid=,ppid=,pgid=,tpgid=,command="]: TerminalCommandResult(
+                        terminationStatus: 0,
+                        standardOutput: "100 1 100 200 /bin/zsh\n"
+                            + "200 100 200 200 /opt/codex\n"
+                            + "201 200 200 200 /opt/node\n"
+                            + "300 1 300 300 /bin/zsh\n"
+                            + "500 1 500 600 /bin/zsh\n"
+                            + "600 1 600 600 /opt/just web dev\n"
+                            + "601 600 600 600 pnpm dev\n"
+                            + "602 601 600 600 node astro dev\n"),
+                ]))
+
+        let snapshot = try #require(client.sessionSnapshot())
+        #expect(
+            snapshot.processNames == [
+                "den": "codex",
+                "den-idle": "Idle · zsh",
+                "den-web": "just",
+                "den-unknown": "Unknown",
+            ])
+    }
+
+    @Test func zmxClientUsesUnknownWhenProcessSnapshotFails() throws {
+        let client = ZmxClient(
+            executablePath: "/opt/homebrew/bin/zmx",
+            commandRunner: StubTerminalCommandRunner(
+                responses: [
+                    ["list"]: TerminalCommandResult(
+                        terminationStatus: 0,
+                        standardOutput: "name=den\tpid=100\n"),
+                    ["-axo", "pid=,ppid=,pgid=,tpgid=,command="]: TerminalCommandResult(
+                        terminationStatus: 1,
+                        standardOutput: ""),
+                ]))
+
+        let snapshot = try #require(client.sessionSnapshot())
+        #expect(snapshot.processNames == ["den": "Unknown"])
     }
 
     @Test func zmxClientKillsSessionsWithForce() {
