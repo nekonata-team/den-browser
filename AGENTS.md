@@ -18,7 +18,7 @@ The minimum supported platform is macOS 26.0 for the app and its tests.
 
 ## Implementation flow
 
-1. Read `CONTEXT.md`, `docs/architecture.md`, relevant ADRs in `docs/adr/`, and affected code/tests. Read `docs/keyboard-input.md` before changing keyboard routing, Commands, shortcut recording, or local key handling.
+1. Read `CONTEXT.md`, `docs/architecture.md`, relevant ADRs in `docs/adr/`, and affected code/tests. Read `docs/testing.md` before choosing a test strategy or adding/updating UI tests. For every XCUITest, record the native UI boundary it protects and why a unit test cannot observe the failure; ordinary Button clicks do not qualify. Read `docs/keyboard-input.md` before changing keyboard routing, Commands, shortcut recording, or local key handling.
 2. Keep persisted `DenState` separate from live `BoardRuntime`/`WKWebView` objects.
 3. Add or update focused unit tests for stable `DenStore` behavior.
 4. Choose validation in proportion to the change. Run `just check` before handoff for Swift source, Xcode settings, or test and validation configuration changes. Otherwise, run focused validation that exercises the changed behavior.

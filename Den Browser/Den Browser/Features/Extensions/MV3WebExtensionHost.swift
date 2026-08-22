@@ -33,6 +33,20 @@ struct BundledWebExtensionDescriptor: Equatable {
     }
 }
 
+@MainActor
+protocol WebExtensionHost: AnyObject {
+    var controller: WKWebExtensionController { get }
+
+    func register(
+        webView: WKWebView,
+        in window: MV3WebExtensionWindow,
+        initialURL: URL?,
+        loadURL: @escaping (URL) -> Void
+    )
+    func activate(webView: WKWebView)
+    func unregister(webView: WKWebView)
+}
+
 /// Owns WebKit's MV3 runtime for one Profile.
 ///
 /// A controller is intentionally not shared between Profiles. WebKit stores
@@ -41,7 +55,7 @@ struct BundledWebExtensionDescriptor: Equatable {
 /// Profile's cookie boundary. `storage.sync` remains outside the host's initial
 /// compatibility surface and is exposed as unavailable to extensions.
 @MainActor
-final class MV3WebExtensionHost: NSObject, WKWebExtensionControllerDelegate {
+final class MV3WebExtensionHost: NSObject, WKWebExtensionControllerDelegate, WebExtensionHost {
     let controller: WKWebExtensionController
 
     private let bundle: Bundle
@@ -111,19 +125,28 @@ final class MV3WebExtensionHost: NSObject, WKWebExtensionControllerDelegate {
         closeWindow(window)
     }
 
-    func register(runtime: BaseWebRuntime, in window: MV3WebExtensionWindow) {
-        let key = ObjectIdentifier(runtime.webView)
+    func register(
+        webView: WKWebView,
+        in window: MV3WebExtensionWindow,
+        initialURL: URL?,
+        loadURL: @escaping (URL) -> Void
+    ) {
+        let key = ObjectIdentifier(webView)
         if let existingTab = tabs[key] {
             guard existingTab.window !== window else { return }
             unregister(tab: existingTab)
         }
-        let tab = MV3WebExtensionTab(webView: runtime.webView, window: window)
+        let tab = MV3WebExtensionTab(
+            webView: webView,
+            window: window,
+            loadInitialURL: loadURL)
         tabs[key] = tab
         window.add(tab)
         controller.didOpenTab(tab)
         if window.activeTab === tab {
             activate(tab)
         }
+        loadInitialURL(initialURL, for: webView)
         presentPendingActionPopupIfPossible()
     }
 
@@ -139,22 +162,22 @@ final class MV3WebExtensionHost: NSObject, WKWebExtensionControllerDelegate {
         presentPendingActionPopupIfPossible()
     }
 
-    func activate(runtime: BaseWebRuntime) {
-        guard let tab = tabs[ObjectIdentifier(runtime.webView)] else { return }
+    func activate(webView: WKWebView) {
+        guard let tab = tabs[ObjectIdentifier(webView)] else { return }
         activate(tab)
     }
 
-    func unregister(runtime: BaseWebRuntime) {
-        guard let tab = tabs[ObjectIdentifier(runtime.webView)] else { return }
+    func unregister(webView: WKWebView) {
+        guard let tab = tabs[ObjectIdentifier(webView)] else { return }
         unregister(tab: tab)
     }
 
-    func loadInitialURL(_ url: URL?, for runtime: BaseWebRuntime) {
+    private func loadInitialURL(_ url: URL?, for webView: WKWebView) {
         guard let url else { return }
-        let key = ObjectIdentifier(runtime.webView)
+        let key = ObjectIdentifier(webView)
         guard !isDisposed else { return }
         if isReady {
-            runtime.load(url)
+            tabs[key]?.loadInitialURL(url)
         } else {
             pendingInitialLoads[key] = url
         }
@@ -253,7 +276,7 @@ final class MV3WebExtensionHost: NSObject, WKWebExtensionControllerDelegate {
         let pendingLoads = pendingInitialLoads
         pendingInitialLoads.removeAll()
         for (key, url) in pendingLoads {
-            tabs[key]?.webView?.loadSheetURL(url)
+            tabs[key]?.loadInitialURL(url)
         }
         presentPendingActionPopupIfPossible()
     }
@@ -481,11 +504,21 @@ final class MV3WebExtensionWindow: NSObject, WKWebExtensionWindow {
 final class MV3WebExtensionTab: NSObject, WKWebExtensionTab {
     weak var webView: WKWebView?
     weak var window: MV3WebExtensionWindow?
+    private let loadInitialURLHandler: (URL) -> Void
 
-    init(webView: WKWebView, window: MV3WebExtensionWindow) {
+    init(
+        webView: WKWebView,
+        window: MV3WebExtensionWindow,
+        loadInitialURL: @escaping (URL) -> Void
+    ) {
         self.webView = webView
         self.window = window
+        self.loadInitialURLHandler = loadInitialURL
         super.init()
+    }
+
+    func loadInitialURL(_ url: URL) {
+        loadInitialURLHandler(url)
     }
 
     func window(for context: WKWebExtensionContext) -> (any WKWebExtensionWindow)? {

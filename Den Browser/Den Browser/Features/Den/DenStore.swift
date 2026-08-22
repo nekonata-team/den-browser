@@ -156,7 +156,7 @@ final class DenStore {
             executablePath: preferences.zmxPath,
             commandRunner: terminalCommandRunner)
     }
-    private(set) var webExtensionHost: MV3WebExtensionHost?
+    private(set) var webExtensionHost: WebExtensionHost?
     private(set) var webExtensionWindow: MV3WebExtensionWindow?
 
     var runtimes: [UUID: BoardRuntime] {
@@ -227,7 +227,7 @@ final class DenStore {
     }
 
     func updateWebExtensionHost(
-        _ host: MV3WebExtensionHost?,
+        _ host: WebExtensionHost?,
         window: MV3WebExtensionWindow?
     ) {
         guard webExtensionHost !== host || webExtensionWindow !== window else { return }
@@ -356,7 +356,7 @@ final class DenStore {
         sheetNavigation: SheetNavigationManager,
         preferences: AppPreferences = AppPreferences(),
         terminalCommandRunner: any TerminalCommandRunning = ProcessTerminalCommandRunner(),
-        webExtensionHost: MV3WebExtensionHost? = nil,
+        webExtensionHost: WebExtensionHost? = nil,
         webExtensionWindow: MV3WebExtensionWindow? = nil,
         deskPresets: [PersonalDeskPreset] = [],
         recentItems: [RecentItem] = [],
@@ -402,7 +402,7 @@ final class DenStore {
         websiteDataStore: WKWebsiteDataStore,
         sheetNavigation: SheetNavigationManager,
         preferences: AppPreferences,
-        webExtensionHost: MV3WebExtensionHost? = nil,
+        webExtensionHost: WebExtensionHost? = nil,
         webExtensionWindow: MV3WebExtensionWindow? = nil,
         canPresentDesk: @escaping (UUID) -> Bool,
         onDeskPresentationRequest: @escaping (UUID) -> Bool,

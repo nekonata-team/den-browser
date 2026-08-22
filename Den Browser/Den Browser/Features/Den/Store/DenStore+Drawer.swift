@@ -308,7 +308,7 @@ extension DenStore {
                 self?.showToast("Failed to download '\(filename)'", style: .warning)
             }
         )
-        webExtensionHost?.activate(runtime: runtime)
+        webExtensionHost?.activate(webView: runtime.webView)
         drawerPreviewRuntime = runtime
         return runtime
     }
@@ -318,7 +318,7 @@ extension DenStore {
         runtime.dispose()
         drawerPreviewRuntime = nil
         if let focusedBoardID = focusedBoard?.id, let focusedRuntime = runtimes[focusedBoardID] {
-            webExtensionHost?.activate(runtime: focusedRuntime)
+            webExtensionHost?.activate(webView: focusedRuntime.webView)
         }
     }
 

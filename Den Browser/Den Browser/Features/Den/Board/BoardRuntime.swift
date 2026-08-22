@@ -20,7 +20,7 @@ final class BoardRuntime: BaseWebRuntime, ObservableObject {
     private var sheetNavigationActions: SheetNavigationManager.Actions
     private var events: Events
     private let sheetNavigation: SheetNavigationManager
-    private let webExtensionHost: MV3WebExtensionHost?
+    private let webExtensionHost: WebExtensionHost?
     private let webExtensionWindow: MV3WebExtensionWindow?
 
     private var loadingObservation: NSKeyValueObservation?
@@ -31,7 +31,7 @@ final class BoardRuntime: BaseWebRuntime, ObservableObject {
         board: BoardState,
         websiteDataStore: WKWebsiteDataStore,
         sheetNavigation: SheetNavigationManager,
-        webExtensionHost: MV3WebExtensionHost? = nil,
+        webExtensionHost: WebExtensionHost? = nil,
         webExtensionWindow: MV3WebExtensionWindow? = nil,
         sheetScale: Int,
         nativePictureInPictureEnabled: Bool = false,
@@ -68,8 +68,13 @@ final class BoardRuntime: BaseWebRuntime, ObservableObject {
             actions: sheetNavigationActions
         )
         if let webExtensionHost, let webExtensionWindow {
-            webExtensionHost.register(runtime: self, in: webExtensionWindow)
-            webExtensionHost.loadInitialURL(board.currentSheetURL, for: self)
+            webExtensionHost.register(
+                webView: webView,
+                in: webExtensionWindow,
+                initialURL: board.currentSheetURL
+            ) { [weak self] url in
+                self?.load(url)
+            }
         }
 
         progressObservation = webView.observe(\.estimatedProgress, options: [.new]) {
@@ -112,7 +117,7 @@ final class BoardRuntime: BaseWebRuntime, ObservableObject {
     }
 
     func activateWebExtensionTab() {
-        webExtensionHost?.activate(runtime: self)
+        webExtensionHost?.activate(webView: webView)
     }
 
     private static func configureNativePictureInPicture(
@@ -138,7 +143,7 @@ final class BoardRuntime: BaseWebRuntime, ObservableObject {
     }
 
     override func dispose() {
-        webExtensionHost?.unregister(runtime: self)
+        webExtensionHost?.unregister(webView: webView)
         sheetNavigation.didClose(webView)
         isLoading = false
         estimatedProgress = 0

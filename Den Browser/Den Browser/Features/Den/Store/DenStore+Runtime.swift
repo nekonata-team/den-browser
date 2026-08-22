@@ -10,7 +10,13 @@ extension DenStore {
         if let runtime = runtimes[board.id] {
             runtime.updateOwner(sheetNavigationActions: actions, events: events)
             if let webExtensionHost, let webExtensionWindow {
-                webExtensionHost.register(runtime: runtime, in: webExtensionWindow)
+                webExtensionHost.register(
+                    webView: runtime.webView,
+                    in: webExtensionWindow,
+                    initialURL: nil
+                ) { [weak runtime] url in
+                    runtime?.load(url)
+                }
             }
             return runtime
         }

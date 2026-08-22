@@ -2,7 +2,7 @@
 
 Den Browser is organized around product features. The source tree keeps code that changes together close together, while platform-specific integration stays behind explicit boundaries.
 
-This document describes the intended architecture. The current source tree is being migrated toward it incrementally, with path-only moves kept separate from behavior changes.
+This document describes current and intended boundaries; path-only moves remain separate from behavior changes.
 
 ## Platform baseline
 
@@ -31,6 +31,8 @@ Den Browser/Den Browser/
       Drawer/
       Design/
     Profiles/
+    Extensions/
+      bundled WebExtension descriptors and per-Profile WebKit host
     SheetNavigation/
       settings UI, preferences, WebKit controller, and bundled script
   Platform/
@@ -40,7 +42,7 @@ Den Browser/Den Browser/
   Resources/
 ```
 
-`Den`, `Profiles`, and `SheetNavigation` are the top-level Features. `Features/Den` is intentionally the largest Feature because a Den owns the workflows and invariants connecting Desks, Boards, Sheets, and Overview. Those folders are subfeatures or components, not independent top-level Features. A large cohesive Feature is preferable to false boundaries that make `DenStore` dependencies cyclic or scatter one workflow across the source tree.
+`Den`, `Profiles`, `Extensions`, and `SheetNavigation` are the top-level Features. `Features/Den` is intentionally the largest Feature because a Den owns the workflows and invariants connecting Desks, Boards, Sheets, and Overview. Those folders are subfeatures or components, not independent top-level Features. A large cohesive Feature is preferable to false boundaries that make `DenStore` dependencies cyclic or scatter one workflow across the source tree.
 
 ## Dependency direction
 
@@ -49,6 +51,8 @@ App -> Profiles -> Den -> SheetNavigation
 App -------------> Den
 App ---------------------> SheetNavigation
 Profiles ----------------> SheetNavigation
+Profiles ----------------> Extensions
+Den ---------------------> Extensions
 App ------------------------------> Platform
 Den ------------------------------> Platform
 SheetNavigation ------------------> Platform
@@ -63,6 +67,7 @@ SheetNavigation ------------------> Platform
 - `App` coordinates scenes, windows, commands, navigation, and workflows that combine otherwise independent Features. Code is not promoted to `App` merely because two Features use it.
 - Feature-specific AppKit, WebKit, persistence, or keyboard integration stays with its owning Feature or in `App`. Code moves to `Platform` only after a concrete feature-independent boundary emerges.
 - `Platform` must not acquire feature policy. Temporary reverse dependencies are not hidden behind speculative protocols.
+- WebExtension integration uses a narrow `WebExtensionHost` boundary. `Den` supplies Web and Drawer `WKWebView` instances plus the URL-loading callback; `Extensions` owns WebKit tab registration and never imports Den runtime types.
 - Profile-window keyboard ownership follows the typed routing boundary in [keyboard-input.md](./keyboard-input.md). SwiftUI Commands and routed keys share application actions where they represent the same behavior.
 
 Folders communicate intent but do not enforce access control inside the shared Swift target. Dependency direction is maintained through review, focused tests, and keeping platform APIs narrow.
@@ -71,13 +76,15 @@ When a dependency would create a cycle, do not hide it behind an App coordinator
 
 ## Den state and live runtimes
 
-Persisted `DenState` remains separate from live Web and Terminal runtime objects.
+Persisted Profile data remains separate from live Web and Terminal runtime objects.
 
 - `DenState` is the source of truth for Desk and Board identity, order, labels, widths, focus, Board content, Drawer Items, and the expanded Drawer Item identity used to restore a Preview.
+- `DenStorage` also holds Profile-owned persisted Desk Presets and Recent Items. These are persisted alongside `DenState` but remain separate data collections.
 - `BoardRuntime` owns live WebKit state, including each Board's in-memory Sheet Stack.
 - `TerminalRuntime` owns one libghostty surface and Shell, Zellij, or zmx process. One controller is used per Terminal Board.
-- Each Profile has one shared `DenStorage` for persisted state and live runtimes. Each Profile window has a `DenStore` for its own presented Desk and transient presentation state.
+- Each Profile has one shared `DenStorage` for persisted data, Profile-shared transient state, and live runtime registries. Profile-shared transient state includes Notifications, active drag state, Recently Removed Boards, and discarded Drawer Item restoration history. Each Profile window has a `DenStore` for its presented Desk and window-local presentation state.
 - `DenView` renders only the Desk assigned to its window. Shared runtime storage retains both runtime types across Desk and window changes; detached Terminal views stop rendering without ending their process. A detached TerminalRuntime also runs low-frequency app ticks until its surface is visible again or the runtime is disposed; this follows [ADR 0040](./adr/0040-tick-detached-terminal-runtimes.md).
+- Window-local state includes Den Mode, filters, panels, layout metrics, Drawer Preview runtime, and Toast presentation. Window-to-Desk assignment is managed by `ProfileManager` and is not persisted.
 - Persistence never serializes WebKit objects, terminal processes, terminal screens, or scrollback.
 
 This boundary follows [ADR 0008](./adr/0008-codable-den-state-webview-runtime.md).
@@ -94,7 +101,11 @@ Owns Den composition and the workflows connecting Desks, Boards, Sheets, and Ove
 
 Owns Profile identity, Profile-scoped persistence, website-data isolation, and Profile window lifecycle. A Profile owns one Den and may present distinct Desks from it in multiple windows, so this Feature may depend on the Den Feature to create, restore, and present that Den. WebKit storage mechanics may live in `Platform`, while Profile policy remains in the feature.
 
-Optional bundled WebExtensions are also Profile-scoped. `ProfileManager` owns one `MV3WebExtensionHost` per Profile and one extension window per Profile Window. The host is created only when the corresponding Feature is enabled, and each Sheet runtime registers with that host's controller. Bundled extension resources and permissions remain app-defined; arbitrary extension installation is outside this boundary.
+`ProfileManager` owns the lifecycle binding: one `MV3WebExtensionHost` per Profile and one extension window per Profile Window when the capability is enabled. Host implementation, bundled descriptors, resource loading, and WebKit controller integration belong to `Extensions`.
+
+### Extensions
+
+Owns bundled WebExtension descriptors, permissions, resource loading, and the per-Profile MV3 WebKit host. It does not own Profile identity or website-data policy; `Profiles` supplies lifecycle and `WKWebsiteDataStore` bindings. It does not own Den concepts; `Den` supplies Board and Drawer runtime registration at the narrow host boundary. Arbitrary extension installation remains outside this boundary.
 
 ### SheetNavigation
 
@@ -119,6 +130,6 @@ Contains reusable operating-system integration rather than product concepts. Do 
 
 ## Validation
 
-Validation boundaries follow [testing.md](./testing.md). Swift source moves require `just check`; resource moves must additionally verify that the bundled Sheet Navigation script loads at runtime.
+Validation boundaries follow [testing.md](./testing.md). Swift source moves require `just check`; resource moves must additionally verify that the bundled Sheet Navigation script loads at runtime. Changes to Feature ownership or dependency direction must update a relevant ADR or add one.
 
 Architecture decisions live in [docs/adr](./adr). Product terminology remains defined only in [CONTEXT.md](../CONTEXT.md).

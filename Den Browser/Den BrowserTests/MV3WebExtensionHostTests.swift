@@ -26,31 +26,25 @@ struct MV3WebExtensionHostTests {
         second.dispose()
     }
 
-    @Test func registeringRuntimeInAnotherWindowMovesItsTab() {
+    @Test func registeringWebViewInAnotherWindowMovesItsTab() {
         let host = MV3WebExtensionHost(
             profileID: UUID(),
             websiteDataStore: .nonPersistent(),
             userContentController: WKUserContentController())
-        let runtime = BaseWebRuntime(
-            id: UUID(),
-            initialURL: nil,
-            websiteDataStore: .nonPersistent(),
-            userContentController: nil,
-            sheetScale: 100)
+        let webView = WKWebView(frame: .zero)
         let firstWindow = host.window(for: UUID())
         let secondWindow = host.window(for: UUID())
         defer {
-            host.unregister(runtime: runtime)
-            runtime.dispose()
+            host.unregister(webView: webView)
             host.dispose()
         }
 
-        host.register(runtime: runtime, in: firstWindow)
+        host.register(webView: webView, in: firstWindow, initialURL: nil) { _ in }
         #expect(firstWindow.tabs.count == 1)
-        host.register(runtime: runtime, in: firstWindow)
+        host.register(webView: webView, in: firstWindow, initialURL: nil) { _ in }
         #expect(firstWindow.tabs.count == 1)
 
-        host.register(runtime: runtime, in: secondWindow)
+        host.register(webView: webView, in: secondWindow, initialURL: nil) { _ in }
         #expect(firstWindow.tabs.isEmpty)
         #expect(secondWindow.tabs.count == 1)
     }
