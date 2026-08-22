@@ -103,10 +103,15 @@ struct OpenBoardPanel: View {
                             Spacer()
                         }
                         .padding(.horizontal, 8)
+                        .frame(maxWidth: .infinity, alignment: .leading)
                         .frame(height: 30)
                         .background(
                             item.id == selectedRecentItemID ? Color.primary.opacity(0.1) : Color.clear,
-                            in: RoundedRectangle(cornerRadius: DenRadius.small, style: .continuous))
+                            in: RoundedRectangle(
+                                cornerRadius: DenRadius.small,
+                                style: .continuous)
+                        )
+                        .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
                     .accessibilityHint("Opens a new Board")
