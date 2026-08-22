@@ -73,6 +73,6 @@ ui-test target="Den_BrowserUITests":
     rtk test "xcodebuild test -project '{{project}}' -scheme '{{scheme}}' -destination 'platform=macOS' -derivedDataPath '{{ui_test_derived_data}}' -only-testing:'Den BrowserUITests/{{target}}'" || { echo "✗ UI tests failed."; echo '  Inspect: xcrun xcresulttool get test-results summary --path "$(ls -td .derived-data-ui/Logs/Test/*.xcresult | head -n 1)"'; exit 1; }
     echo "✓ UI tests passed"
 
-# Build then run unit tests.
+# Run lint and unit tests.
 [group("test")]
-check: lint build test
+check: lint test
