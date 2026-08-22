@@ -261,9 +261,18 @@ struct DenStoreBoardTests {
                         standardOutput: "")
                 ]))
 
+        store.duplicateFocusedBoardFromFirstSheet()
+        let automaticChild = try #require(store.focusedBoard)
+        #expect(store.focusedDesk?.boards.count == 2)
+        #expect(automaticChild.zmxSessionName == "den-2")
+        #expect(automaticChild.zmxRootSessionName == "den")
+        #expect(automaticChild.terminalWorkingDirectory == "/tmp/project")
+        #expect(store.temporaryContext == nil)
+
+        store.focusBoard(sourceBoard.id)
         store.duplicateFocusedBoard()
         #expect(store.temporaryContext == .zmxDuplication)
-        #expect(store.focusedDesk?.boards.count == 1)
+        #expect(store.focusedDesk?.boards.count == 2)
 
         #expect(store.duplicateFocusedZmxBoard(suffix: "vi"))
         let firstChild = try #require(store.focusedBoard)

@@ -84,7 +84,7 @@ struct KeyboardShortcutsView: View {
                     item(["s"], "Capture Current Sheet Screenshot"),
                     item(["⇧", "S"], "Capture Focused Desk Screenshot"),
                     item(["Return"], "Duplicate Focused Board"),
-                    item(["Shift", "+", "Return"], "New Board from First Sheet"),
+                    item(["Shift", "+", "Return"], "New Board from First Sheet; zmx duplicate"),
                     item(["e"], "Edit Focused Board Link"),
                     item(["r"], "Rename Board"),
                     item(["d"], "Remove Focused Board and focus next Board"),

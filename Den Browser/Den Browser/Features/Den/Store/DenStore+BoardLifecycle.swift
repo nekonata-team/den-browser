@@ -498,6 +498,10 @@ extension DenStore {
         else { return }
 
         let source = state.desks[deskIndex].boards[boardIndex]
+        if source.isZmx {
+            duplicateFocusedZmxBoard(suffix: "")
+            return
+        }
         guard let firstSheetURL = source.firstSheetURL else { return }
         duplicateBoard(
             source,
