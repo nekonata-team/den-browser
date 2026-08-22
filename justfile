@@ -4,6 +4,7 @@ project := "Den Browser/Den Browser.xcodeproj"
 scheme := "Den Browser"
 derived_data := ".derived-data"
 ui_test_derived_data := ".derived-data-ui"
+export SPARKLE_TOOLS := derived_data + "/SourcePackages/artifacts/sparkle/Sparkle/bin"
 swift_format := "xcrun swift-format"
 swift_sources := "Den Browser"
 

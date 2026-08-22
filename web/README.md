@@ -38,6 +38,9 @@ The `nekonata.dev` zone is already managed by Cloudflare. Git integration
 provides production deployments from `main` and preview deployments for other
 branches and pull requests.
 
+The release flow publishes the Sparkle Appcast at `/appcast.xml`. The file is
+generated and committed under `public/` before the Cloudflare Pages deploy.
+
 ## Project structure
 
 ```text

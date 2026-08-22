@@ -1,8 +1,9 @@
-import AppKit
+import Sparkle
 import SwiftUI
 
 @main
 struct Den_BrowserApp: App {
+    private let updaterController: SPUStandardUpdaterController
     @State private var preferences: AppPreferences
     @State private var sheetNavigation: SheetNavigationManager
     @State private var profileManager: ProfileManager
@@ -10,6 +11,10 @@ struct Den_BrowserApp: App {
     @State private var openSettingsCoordinator = OpenSettingsCoordinator()
 
     init() {
+        updaterController = SPUStandardUpdaterController(
+            startingUpdater: true,
+            updaterDelegate: nil,
+            userDriverDelegate: nil)
         let configuration = AppConfiguration.current()
         let preferences = AppPreferences(defaults: configuration.defaults)
         let sheetNavigation = SheetNavigationManager(defaults: configuration.defaults)
@@ -53,6 +58,7 @@ struct Den_BrowserApp: App {
         .commands {
             DenCommands(
                 profileManager: profileManager,
+                updaterController: updaterController,
                 openSettingsCoordinator: openSettingsCoordinator)
         }
 
@@ -97,6 +103,7 @@ private final class OpenSettingsCoordinator {
 
 private struct DenCommands: Commands {
     let profileManager: ProfileManager
+    let updaterController: SPUStandardUpdaterController
     let openSettingsCoordinator: OpenSettingsCoordinator
 
     @FocusedValue(\.denStore) private var store
@@ -105,6 +112,12 @@ private struct DenCommands: Commands {
     @Environment(\.openWindow) private var openWindow
 
     var body: some Commands {
+        CommandGroup(after: .appInfo) {
+            Button("Check for Updates…") {
+                updaterController.checkForUpdates(nil)
+            }
+        }
+
         CommandGroup(replacing: .newItem) {}
 
         CommandGroup(replacing: .saveItem) {

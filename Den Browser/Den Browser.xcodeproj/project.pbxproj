@@ -138,6 +138,7 @@
 			packageProductDependencies = (
 				53A10003301A000000000001 /* GhosttyTerminal */,
 				53A10005301A000000000001 /* GhosttyTheme */,
+				53A10007301A000000000001 /* Sparkle */,
 			);
 			productName = "Den Browser";
 			productReference = 530E9DDB2FFFFED90033427C /* Den Browser.app */;
@@ -219,6 +220,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				53A10002301A000000000001 /* XCRemoteSwiftPackageReference "libghostty-spm" */,
+				53A10006301A000000000001 /* XCRemoteSwiftPackageReference "Sparkle" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 530E9DDC2FFFFED90033427C /* Products */;
@@ -625,6 +627,14 @@
 				version = 1.3.2;
 			};
 		};
+		53A10006301A000000000001 /* XCRemoteSwiftPackageReference "Sparkle" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/sparkle-project/Sparkle.git";
+			requirement = {
+				kind = exactVersion;
+				version = 2.9.6;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -637,6 +647,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 53A10002301A000000000001 /* XCRemoteSwiftPackageReference "libghostty-spm" */;
 			productName = GhosttyTheme;
+		};
+		53A10007301A000000000001 /* Sparkle */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 53A10006301A000000000001 /* XCRemoteSwiftPackageReference "Sparkle" */;
+			productName = Sparkle;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

@@ -1,7 +1,7 @@
 # Releasing Den Browser
 
 Releases are notarized Developer ID builds published through the
-`nekonata-team/homebrew-tap` Cask.
+`nekonata-team/homebrew-tap` Cask and the Sparkle Appcast.
 
 ## One-time setup
 
@@ -9,7 +9,22 @@ Releases are notarized Developer ID builds published through the
 2. Sign in with `gh auth login`.
 3. Make the Developer ID certificate available through the private
    `nekonata-team/certificates` match repository.
-4. Copy `.env.example` to `.env`. Keep the App Store Connect API key outside
+4. Resolve the Xcode package once. This creates the project-local Sparkle tools
+   under `.derived-data/`:
+
+   ```sh
+   just build
+   ```
+
+5. Generate the Sparkle EdDSA key once:
+
+   ```sh
+   just release generate-key
+   ```
+
+   Keep the private key in the login Keychain. Never commit or print it. Add
+   the generated public key to `Den-Browser-Info.plist` as `SUPublicEDKey`.
+6. Copy `.env.example` to `.env`. Keep the App Store Connect API key outside
    this repository and fill in:
 
    ```dotenv
@@ -28,8 +43,8 @@ just release prepare X.Y.Z
 
 This requires a clean working tree, updates the marketing version and build
 number, runs the checks, retrieves the Developer ID certificate from match,
-builds a universal app, notarizes it, and writes the ZIP under
-`.release/vX.Y.Z/`.
+builds a universal app, notarizes it, writes the ZIP under
+`.release/vX.Y.Z/`, and generates `web/public/appcast.xml` from that candidate.
 
 Review the Xcode project version change:
 
@@ -74,10 +89,27 @@ After verifying the candidate, publish it:
 just release publish X.Y.Z
 ```
 
-This commits and pushes the version change, creates and pushes the annotated
-tag, creates a GitHub Release with the notarized ZIP artifact and links to the
-tagged source, MPL 2.0 license, and third-party notices in its release notes,
-opens the Homebrew Cask pull request, and enables rebase auto-merge.
+This commits and pushes the version change and Appcast, creates and pushes the
+annotated tag, creates a GitHub Release with the notarized ZIP artifact and
+links to the tagged source, MPL 2.0 license, and third-party notices in its
+release notes, then opens the Homebrew Cask pull request and enables rebase
+auto-merge.
+
+The Appcast is generated during `prepare`, but `publish` pushes the `main`
+commit only after the GitHub Release exists. This prevents the live Appcast
+from advertising a download URL before the corresponding asset is available.
+
+The Appcast points to the versioned ZIP attached to the GitHub Release. Sparkle
+signs the ZIP with the EdDSA key from the login Keychain. Cloudflare Pages then
+serves the Appcast at `https://den.nekonata.dev/appcast.xml`.
+
+The Homebrew Cask must declare `auto_updates true` because the installed app
+can update itself through Sparkle. This change belongs in the external
+`nekonata-team/homebrew-tap` repository.
+
+The first Sparkle-enabled release is a bootstrap release. Users running an
+older direct-download build must install that release once manually; later
+releases can update through Sparkle.
 
 All orchestration commands stop at the first failure. The component commands
 remain available:
@@ -85,7 +117,9 @@ remain available:
 ```sh
 just release set-version X.Y.Z
 just release candidate vX.Y.Z
+just release generate-key
 just release github vX.Y.Z
+just release appcast vX.Y.Z
 just release homebrew X.Y.Z
 ```
 
