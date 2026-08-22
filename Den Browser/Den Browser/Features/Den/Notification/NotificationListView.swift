@@ -148,6 +148,7 @@ private struct NotificationRow: View {
                     : profileColor.opacity(0.1),
             in: RoundedRectangle(cornerRadius: DenRadius.medium, style: .continuous)
         )
+        .opacity(source == nil ? 0.55 : 1)
         .contentShape(Rectangle())
         .accessibilityElement(children: .combine)
         .accessibilityLabel(notification.title ?? notification.body)
