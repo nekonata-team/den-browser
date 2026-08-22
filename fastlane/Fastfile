@@ -32,7 +32,7 @@ platform :mac do
 
     output = File.join(ROOT, ".release", tag)
     archive = File.join(output, "Den Browser.xcarchive")
-    app = File.join(archive, "Products", "Applications", "Den Browser.app")
+    app = File.join(output, "Den Browser.app")
     zip = File.join(output, "Den-Browser-#{version}-macOS.zip")
 
     FileUtils.rm_rf(output)
@@ -48,10 +48,9 @@ platform :mac do
       archive_path: archive,
       output_directory: output,
       export_method: "developer-id",
-      skip_package_pkg: true,
       clean: true
     )
-    UI.user_error!("Built app not found: #{app}") unless File.directory?(app)
+    UI.user_error!("Exported app not found: #{app}") unless File.directory?(app)
 
     info_plist = File.join(app, "Contents", "Info.plist")
     built_version = sh(
@@ -61,24 +60,6 @@ platform :mac do
       log: false
     ).strip
     UI.user_error!("Built app version is #{built_version}, expected #{version}") unless built_version == version
-
-    signing_identity = sh("security", "find-identity", "-v", "-p", "codesigning", log: false)
-      .lines
-      .filter_map { |line| line[/\"(Developer ID Application:[^\"]+)\"/, 1] }
-      .first
-    UI.user_error!("Developer ID Application certificate not found") unless signing_identity
-
-    sparkle = File.join(app, "Contents", "Frameworks", "Sparkle.framework", "Versions", "B")
-    sign_options = ["--force", "--sign", signing_identity, "--options", "runtime", "--timestamp"]
-    sh("codesign", *sign_options, File.join(sparkle, "XPCServices", "Installer.xpc"))
-    sh(
-      "codesign", *sign_options, "--preserve-metadata=entitlements",
-      File.join(sparkle, "XPCServices", "Downloader.xpc")
-    )
-    sh("codesign", *sign_options, File.join(sparkle, "Autoupdate"))
-    sh("codesign", *sign_options, File.join(sparkle, "Updater.app"))
-    sh("codesign", *sign_options, File.join(app, "Contents", "Frameworks", "Sparkle.framework"))
-    sh("codesign", *sign_options, "--preserve-metadata=entitlements", app)
 
     sh("codesign", "--verify", "--deep", "--strict", "--verbose=2", app)
 
