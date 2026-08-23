@@ -1,0 +1,16 @@
+<?xml version="1.0" standalone="yes"?>
+<rss xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" version="2.0">
+    <channel>
+        <title>Den Browser</title>
+        <item>
+            <title>0.24.0</title>
+            <pubDate>Sun, 23 Aug 2026 15:01:41 +0900</pubDate>
+            <link>https://den.nekonata.dev/</link>
+            <sparkle:fullReleaseNotesLink>https://github.com/nekonata-team/den-browser/releases/tag/v0.24.0</sparkle:fullReleaseNotesLink>
+            <sparkle:version>26</sparkle:version>
+            <sparkle:shortVersionString>0.24.0</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
+            <enclosure url="https://github.com/nekonata-team/den-browser/releases/download/v0.24.0/Den-Browser-0.24.0-macOS.zip" length="25979826" type="application/octet-stream" sparkle:edSignature="t1CCxNW8p0TCpt24TSjO2SnfKzMpeClD0T9LokBXdLAEoeHXS9/J3WK/rn22KuR+ZenYgkWYyW52D1DcZDbsAA=="/>
+        </item>
+    </channel>
+</rss>

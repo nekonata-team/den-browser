@@ -39,6 +39,7 @@ platform :mac do
     FileUtils.mkdir_p(output)
 
     match(type: "developer_id", readonly: true, platform: "macos", skip_provisioning_profiles: true)
+    Actions.lane_context.delete(SharedValues::MATCH_PROVISIONING_PROFILE_MAPPING)
     build_app(
       project: PROJECT,
       scheme: SCHEME,
