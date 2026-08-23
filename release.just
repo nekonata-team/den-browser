@@ -48,6 +48,12 @@ set-version version: (_validate-version version)
 candidate tag: (_validate-tag tag)
     {{fastlane}} release_candidate tag:{{tag}}
 
+# Run release checks before signing and packaging.
+[script]
+verify:
+    just check
+    just ui-test
+
 # Generate the Sparkle EdDSA key in the login Keychain.
 [confirm("Generate Sparkle EdDSA key in the login Keychain?")]
 [script]
@@ -133,8 +139,7 @@ homebrew $version: (_validate-version version)
 
 # Bump version and build a release candidate.
 [confirm("Prepare release candidate?")]
-prepare $version: (_validate-version version) _require-clean
-    just release set-version "$version"
+prepare $version: (_validate-version version) _require-clean (set-version version) verify
     just --yes release candidate "v${version}"
     just --yes release appcast "v${version}"
 

@@ -42,9 +42,15 @@ just release prepare X.Y.Z
 ```
 
 This requires a clean working tree, updates the marketing version and build
-number, runs the checks, retrieves the Developer ID certificate from match,
-builds a universal app, notarizes it, writes the ZIP under
+number, runs the release checks, retrieves the Developer ID certificate from
+match, builds a universal app, notarizes it, writes the ZIP under
 `.release/vX.Y.Z/`, and generates `web/public/appcast.xml` from that candidate.
+
+The release checks run before the artifact pipeline: `just check` runs first,
+then `just ui-test`. Fastlane owns only signing, archiving, exporting,
+notarizing, and packaging. A retry of `just release candidate vX.Y.Z` after a
+Fastlane failure does not repeat the release checks; run `just release verify`
+again when source or version inputs change.
 
 Review the Xcode project version change:
 
@@ -78,8 +84,7 @@ intentionally non-interactive:
 just --yes release ship X.Y.Z
 ```
 
-If either phase fails, the command stops immediately. Use the component
-commands below to inspect and continue a partial release.
+If either phase fails, the command stops immediately.
 
 ## Publish
 
@@ -111,21 +116,8 @@ The first Sparkle-enabled release is a bootstrap release. Users running an
 older direct-download build must install that release once manually; later
 releases can update through Sparkle.
 
-All orchestration commands stop at the first failure. The component commands
-remain available:
-
-```sh
-just release set-version X.Y.Z
-just release candidate vX.Y.Z
-just release generate-key
-just release github vX.Y.Z
-just release appcast vX.Y.Z
-just release homebrew X.Y.Z
-```
-
-After a partial publish, inspect what already exists before using a component
-command to continue. Do not delete or replace a tag, Release, artifact, or pull
-request.
+If a release stops midway, inspect what already exists before resuming. Do not
+delete or replace a tag, Release, artifact, or pull request.
 
 ### Homebrew (First-time setup)
 
