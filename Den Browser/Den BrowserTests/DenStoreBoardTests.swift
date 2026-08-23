@@ -126,7 +126,7 @@ struct DenStoreBoardTests {
         #expect(
             ZmxClient(executablePath: "/opt/homebrew/bin/zmx")
                 .launchCommand(sessionName: board.zmxSessionName ?? "")
-                == "'/opt/homebrew/bin/zmx' attach 'project-a'"
+                == "/usr/bin/env -u ZMX_SESSION '/opt/homebrew/bin/zmx' attach 'project-a'"
         )
         let restored = try JSONDecoder().decode(
             BoardState.self,

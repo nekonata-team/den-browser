@@ -36,7 +36,7 @@ struct TerminalConfigurationSourceTests {
         #expect(
             ZmxClient(executablePath: "/opt/homebrew/bin/zmx")
                 .launchCommand(sessionName: "project's shell")
-                == "'/opt/homebrew/bin/zmx' attach 'project'\\''s shell'"
+                == "/usr/bin/env -u ZMX_SESSION '/opt/homebrew/bin/zmx' attach 'project'\\''s shell'"
         )
         #expect(ZmxClient(executablePath: "/opt/homebrew/bin/zmx").launchCommand(sessionName: "") == nil)
         #expect(ZmxClient(executablePath: "/opt/homebrew/bin/zmx").launchCommand(sessionName: " ") == nil)
@@ -48,7 +48,7 @@ struct TerminalConfigurationSourceTests {
             ZmxClient(executablePath: "/opt/homebrew/bin/zmx")
                 .launchCommand(sessionName: "den-vi", rootSessionName: "den"))
 
-        #expect(command.contains("attach 'den-vi' /bin/sh -lc"))
+        #expect(command.contains("/usr/bin/env -u ZMX_SESSION '/opt/homebrew/bin/zmx' attach 'den-vi' /bin/sh -lc"))
         #expect(command.contains("den.root=den"))
     }
 

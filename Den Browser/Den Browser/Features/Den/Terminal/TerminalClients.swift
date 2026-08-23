@@ -80,11 +80,11 @@ nonisolated struct ZmxClient: Sendable {
         let executablePath = executablePath.trimmingCharacters(in: .whitespacesAndNewlines)
         let sessionName = sessionName.trimmingCharacters(in: .whitespacesAndNewlines)
         guard TerminalExecutablePath.isValid(executablePath), !sessionName.isEmpty else { return nil }
+        let attachCommand = "/usr/bin/env -u ZMX_SESSION \(TerminalExecutablePath.shellQuote(executablePath)) attach"
         guard let rootSessionName = rootSessionName?.trimmingCharacters(in: .whitespacesAndNewlines),
             !rootSessionName.isEmpty
         else {
-            return
-                "\(TerminalExecutablePath.shellQuote(executablePath)) attach \(TerminalExecutablePath.shellQuote(sessionName))"
+            return "\(attachCommand) \(TerminalExecutablePath.shellQuote(sessionName))"
         }
 
         let rootLabel = TerminalExecutablePath.shellQuote("den.root=\(rootSessionName)")
@@ -92,7 +92,7 @@ nonisolated struct ZmxClient: Sendable {
             "\(TerminalExecutablePath.shellQuote(executablePath)) set . \(rootLabel) >/dev/null 2>&1 || true; "
             + "exec \"${SHELL:-/bin/zsh}\" -l"
         return
-            "\(TerminalExecutablePath.shellQuote(executablePath)) attach \(TerminalExecutablePath.shellQuote(sessionName)) /bin/sh -lc "
+            "\(attachCommand) \(TerminalExecutablePath.shellQuote(sessionName)) /bin/sh -lc "
             + TerminalExecutablePath.shellQuote(initializeRootLabel)
     }
 
