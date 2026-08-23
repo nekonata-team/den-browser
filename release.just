@@ -5,9 +5,6 @@ fastlane := "bundle exec fastlane"
 _validate-version $version:
     @[[ "$version" =~ '^[0-9]+\.[0-9]+\.[0-9]+$' ]] || { printf '%s\n' 'usage: version must be X.Y.Z' >&2; exit 1; }
 
-_validate-tag $tag:
-    @[[ "$tag" =~ '^v[0-9]+\.[0-9]+\.[0-9]+$' ]] || { printf '%s\n' 'usage: tag must be vX.Y.Z' >&2; exit 1; }
-
 _require-main:
     @[[ "$(git branch --show-current)" == main ]] || { printf '%s\n' 'release must run on main' >&2; exit 1; }
 
@@ -44,9 +41,8 @@ set-version version: (_validate-version version)
     {{fastlane}} bump_version version:{{version}}
 
 # Build, sign, notarize, and package a release candidate.
-[confirm("Build release candidate?")]
-candidate tag: (_validate-tag tag)
-    {{fastlane}} release_candidate tag:{{tag}}
+candidate version: (_validate-version version)
+    {{fastlane}} release_candidate tag:v{{version}}
 
 # Run release checks before signing and packaging.
 [script]
@@ -64,11 +60,11 @@ generate-key:
 
 # Generate the Appcast for a release candidate archive.
 [script]
-appcast tag: (_validate-tag tag)
+appcast version: (_validate-version version)
     set -euo pipefail
 
-    tag="{{tag}}"
-    version="${tag#v}"
+    version="{{version}}"
+    tag="v${version}"
     zip=".release/${tag}/Den-Browser-${version}-macOS.zip"
     input=".release/${tag}/appcast-input"
     [[ -f "$zip" ]] || { printf '%s\n' "missing candidate: $zip" >&2; exit 1; }
@@ -82,16 +78,16 @@ appcast tag: (_validate-tag tag)
 # Publish a tested release candidate to GitHub.
 [confirm("Publish candidate to GitHub?")]
 [script]
-github $tag: (_validate-tag tag)
+github version: (_validate-version version)
     set -euo pipefail
 
-    tag="{{tag}}"
+    version="{{version}}"
+    tag="v${version}"
     [[ -z "$(git status --porcelain)" ]] || {
         printf '%s\n' "working tree has uncommitted changes" >&2
         exit 1
     }
 
-    version="${tag#v}"
     zip=".release/${tag}/Den-Browser-${version}-macOS.zip"
 
     [[ -f "$zip" ]] || {
@@ -138,22 +134,17 @@ homebrew $version: (_validate-version version)
         --rebase
 
 # Bump version and build a release candidate.
-[confirm("Prepare release candidate?")]
-prepare $version: (_validate-version version) _require-clean (set-version version) verify
-    just --yes release candidate "v${version}"
-    just --yes release appcast "v${version}"
+prepare $version: (_validate-version version) _require-clean (set-version version) verify (candidate version) (appcast version)
 
 # Commit and publish a verified candidate to GitHub and Homebrew.
 [confirm("Publish verified release candidate?")]
-publish $version: (_validate-version version) _require-main
-    just release _commit-version-if-needed
+publish $version: (_validate-version version) _require-main _commit-version-if-needed
     [[ -z "$(git status --porcelain)" ]]
-    just --yes release github "v${version}"
+    just --yes release github "$version"
     git push origin main
     just --yes release homebrew "$version"
 
 # Prepare and publish without manual candidate verification.
 [confirm("Prepare and publish release without manual verification?")]
-ship $version: (_validate-version version) _require-main _require-clean
-    just --yes release prepare "$version"
+ship $version: (_validate-version version) _require-main (prepare version)
     just --yes release publish "$version"
