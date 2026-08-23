@@ -46,6 +46,7 @@ platform :mac do
       archive_path: archive,
       output_directory: output,
       export_method: "developer-id",
+      skip_profile_detection: true,
       clean: true
     )
     UI.user_error!("Exported app not found: #{app}") unless File.directory?(app)
