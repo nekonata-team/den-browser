@@ -61,4 +61,53 @@ extension DenStore {
             }
         }
     }
+
+    func copyFocusedSheetScreenshot() {
+        guard let board = focusedBoard, !board.isTerminal else {
+            showToast("No focused Board.", style: .warning)
+            return
+        }
+
+        let runtime = runtime(for: board)
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+            do {
+                let image = try await ScreenshotCapture.visibleCurrentSheet(in: runtime.webView)
+                try ScreenshotCapture.copyPNG(image)
+                showToast("Copied Current Sheet screenshot to clipboard.", style: .success)
+            } catch {
+                showToast("Screenshot failed: \(error.localizedDescription)", style: .error)
+            }
+        }
+    }
+
+    func copyFocusedDeskScreenshot() {
+        guard let desk = focusedDesk, !desk.boards.isEmpty else {
+            showToast("Focused Desk has no Boards.", style: .warning)
+            return
+        }
+
+        guard !desk.boards.contains(where: \.isTerminal) else {
+            showToast("Desk screenshots do not support Terminal Boards.", style: .warning)
+            return
+        }
+
+        let boards = desk.boards.map { ($0, runtime(for: $0)) }
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+            do {
+                var items: [ScreenshotCapture.DeskItem] = []
+                for (board, runtime) in boards {
+                    let image = try await ScreenshotCapture.visibleCurrentSheet(in: runtime.webView)
+                    items.append(.init(label: board.displayName, image: image))
+                }
+
+                let image = try ScreenshotCapture.composeDesk(items)
+                try ScreenshotCapture.copyPNG(image)
+                showToast("Copied Focused Desk screenshot to clipboard.", style: .success)
+            } catch {
+                showToast("Screenshot failed: \(error.localizedDescription)", style: .error)
+            }
+        }
+    }
 }

@@ -12,6 +12,7 @@ enum ScreenshotCapture {
     enum CaptureError: LocalizedError {
         case imageUnavailable
         case pngEncodingFailed
+        case clipboardWriteFailed
 
         var errorDescription: String? {
             switch self {
@@ -19,6 +20,8 @@ enum ScreenshotCapture {
                 "The Current Sheet could not be captured."
             case .pngEncodingFailed:
                 "The screenshot could not be encoded as PNG."
+            case .clipboardWriteFailed:
+                "The screenshot could not be copied to the clipboard."
             }
         }
     }
@@ -99,13 +102,7 @@ enum ScreenshotCapture {
         suggestedFilename: String,
         attachedTo window: NSWindow?
     ) async throws -> URL? {
-        guard
-            let tiff = image.tiffRepresentation,
-            let bitmap = NSBitmapImageRep(data: tiff),
-            let data = bitmap.representation(using: .png, properties: [:])
-        else {
-            throw CaptureError.pngEncodingFailed
-        }
+        let data = try pngData(for: image)
 
         let panel = NSSavePanel()
         panel.allowedContentTypes = [.png]
@@ -126,6 +123,26 @@ enum ScreenshotCapture {
         guard response == .OK, let destination = panel.url else { return nil }
         try data.write(to: destination, options: .atomic)
         return destination
+    }
+
+    static func copyPNG(_ image: NSImage) throws {
+        let data = try pngData(for: image)
+        let pasteboard = NSPasteboard.general
+        pasteboard.clearContents()
+        guard pasteboard.setData(data, forType: .png) else {
+            throw CaptureError.clipboardWriteFailed
+        }
+    }
+
+    private static func pngData(for image: NSImage) throws -> Data {
+        guard
+            let tiff = image.tiffRepresentation,
+            let bitmap = NSBitmapImageRep(data: tiff),
+            let data = bitmap.representation(using: .png, properties: [:])
+        else {
+            throw CaptureError.pngEncodingFailed
+        }
+        return data
     }
 
     static func suggestedFilename(

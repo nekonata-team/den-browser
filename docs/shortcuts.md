@@ -60,6 +60,8 @@ Essentials are app-wide named Board inputs configured in Settings > Essentials. 
 | `t` | Pause / resume Sheet Navigation for focused Board | Persists independently for each Board. |
 | `s` | Capture Current Sheet screenshot | Captures the visible web content in the Focused Board and opens a macOS save panel for a PNG. |
 | Shift + `s` | Capture Focused Desk screenshot | Captures every Board's visible Current Sheet, preserving Board order and relative widths in one PNG. |
+| Control + `s` | Copy Current Sheet screenshot | Copies the visible web content in the Focused Board to the clipboard as a PNG without opening a save panel. |
+| Control + Shift + `s` | Copy Focused Desk screenshot | Copies the Focused Desk screenshot to the clipboard as a PNG without opening a save panel. |
 | `a` | Keep Current Sheet in Drawer | Keeps the Focused Board's Current Sheet in the Drawer without changing the Current Sheet. |
 | Return | Duplicate focused Board | Web Boards duplicate the Current Sheet. Ordinary Terminal Boards start a new Shell from the saved Working Directory. Zellij Boards reconnect to the same session or show Welcome. zmx Boards open a suffix panel and create an independent session in the same Working Directory; the root session name is used for the new name (`den` + `vi` → `den-vi`). Suffixes accept letters, numbers, `-`, `_`, and `.`; leaving the suffix empty uses an automatic number. |
 | Shift + Return | New Board from First Sheet | Creates a Board to the right from the Focused Board's persisted First Sheet URL, focuses it, then enters Sheet Input. A non-zmx Board without a First Sheet does nothing. For zmx Boards, duplicates immediately with an automatic numeric suffix and no input panel. |
