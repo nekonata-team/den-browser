@@ -4,6 +4,11 @@ import GhosttyTerminal
 
 @MainActor
 final class TerminalRuntime: NSObject, ObservableObject {
+    struct CommandResult: Equatable {
+        let exitCode: Int?
+        let durationNanos: UInt64
+    }
+
     struct Events {
         var onClose: () -> Void
         var onFocus: () -> Void
@@ -14,6 +19,11 @@ final class TerminalRuntime: NSObject, ObservableObject {
     }
 
     let terminalView: AppTerminalView
+    @Published private(set) var progressState: TerminalProgressState?
+    @Published private(set) var progressPercent: Int?
+    @Published private(set) var lastCommandResult: CommandResult?
+    @Published private(set) var lastBellDate: Date?
+    var foregroundProcessGroupID: pid_t? { terminalView.foregroundPid }
     private var controller: TerminalController?
     private var events: Events
     private var hiddenTickTask: Task<Void, Never>?
@@ -97,6 +107,34 @@ extension TerminalRuntime: TerminalSurfaceCloseDelegate {
 extension TerminalRuntime: TerminalSurfaceFocusDelegate {
     func terminalDidChangeFocus(_ focused: Bool) {
         if focused, !isDisposed { events.onFocus() }
+    }
+}
+
+extension TerminalRuntime: TerminalSurfaceBellDelegate {
+    func terminalDidRingBell() {
+        guard !isDisposed else { return }
+        lastBellDate = Date()
+    }
+}
+
+extension TerminalRuntime: TerminalSurfaceProgressReportDelegate {
+    func terminalDidReportProgress(state: TerminalProgressState, percent: Int?) {
+        guard !isDisposed else { return }
+        switch state {
+        case .remove:
+            progressState = nil
+            progressPercent = nil
+        case .set, .error, .indeterminate, .pause:
+            progressState = state
+            progressPercent = percent
+        }
+    }
+}
+
+extension TerminalRuntime: TerminalSurfaceCommandFinishedDelegate {
+    func terminalDidFinishCommand(exitCode: Int?, durationNanos: UInt64) {
+        guard !isDisposed else { return }
+        lastCommandResult = CommandResult(exitCode: exitCode, durationNanos: durationNanos)
     }
 }
 

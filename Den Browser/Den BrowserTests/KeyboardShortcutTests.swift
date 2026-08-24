@@ -346,6 +346,32 @@ struct KeyboardShortcutTests {
         #expect(store.focusedDesk?.focusedBoardID == focusedBoardID)
     }
 
+    @Test func shiftEscapeTogglesBoardActivityAcrossInputContexts() throws {
+        let store = try makeStore(boards: [board("First")])
+        let shiftEscape = try keyEvent(
+            characters: "\u{1B}",
+            charactersIgnoringModifiers: "\u{1B}",
+            modifiers: [.shift],
+            keyCode: 53)
+
+        #expect(KeyboardController.handle(shiftEscape, store: store))
+        #expect(store.isBoardActivityPresented)
+
+        #expect(KeyboardController.handle(shiftEscape, store: store))
+        #expect(!store.isBoardActivityPresented)
+
+        store.isDenMode = true
+        #expect(KeyboardController.handle(shiftEscape, store: store))
+        #expect(store.isBoardActivityPresented)
+
+        let escape = try keyEvent(
+            characters: "\u{1B}",
+            charactersIgnoringModifiers: "\u{1B}",
+            keyCode: 53)
+        #expect(KeyboardController.handle(escape, store: store))
+        #expect(!store.isBoardActivityPresented)
+    }
+
     @Test func denModeToggleRemainsAvailableInDrawer() throws {
         let preferences = try makePreferences()
         let store = try makeStore(boards: [board("First")])

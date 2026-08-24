@@ -16,6 +16,18 @@ final class BoardRuntime: BaseWebRuntime, ObservableObject {
     @Published private(set) var isLoading = false
     @Published private(set) var estimatedProgress = 0.0
     @Published private(set) var isShowingInitialLoadFallback = false
+    @Published private(set) var didTerminateContentProcess = false
+
+    var webProcessIdentifier: pid_t? {
+        guard webView.responds(to: NSSelectorFromString("_webProcessIdentifier")) else { return nil }
+        let identifier = webView._webProcessIdentifier
+        return identifier > 0 ? identifier : nil
+    }
+
+    var webProcessIsResponsive: Bool? {
+        guard webView.responds(to: NSSelectorFromString("_webProcessIsResponsive")) else { return nil }
+        return webView._webProcessIsResponsive
+    }
 
     private var sheetNavigationActions: SheetNavigationManager.Actions
     private var events: Events
@@ -214,10 +226,15 @@ final class BoardRuntime: BaseWebRuntime, ObservableObject {
     }
 
     override func webView(_ webView: WKWebView, didCommit navigation: WKNavigation!) {
+        didTerminateContentProcess = false
         guard isShowingInitialLoadFallback else { return }
         DispatchQueue.main.async { [weak self] in
             self?.isShowingInitialLoadFallback = false
         }
+    }
+
+    override func webViewWebContentProcessDidTerminate(_ webView: WKWebView) {
+        didTerminateContentProcess = true
     }
 
     override func webView(

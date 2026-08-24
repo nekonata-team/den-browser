@@ -134,6 +134,7 @@ class BaseWebRuntime: NSObject, NSWindowDelegate, WKDownloadDelegate, WKNavigati
     func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {}
     func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
     }
+    func webViewWebContentProcessDidTerminate(_ webView: WKWebView) {}
 
     func webView(
         _ webView: WKWebView,

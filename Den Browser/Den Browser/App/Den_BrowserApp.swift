@@ -133,6 +133,15 @@ private struct DenCommands: Commands {
             }
         }
 
+        CommandGroup(after: .toolbar) {
+            Button("Board Activity") { store?.performAppAction(.toggleBoardActivity) }
+                .keyboardShortcut(.escape, modifiers: [.shift])
+                .disabled(
+                    store == nil
+                        || store?.hasPendingConfirmation == true
+                        || store?.isFullscreenActive == true)
+        }
+
         CommandMenu("Profile") {
             ForEach(profileManager.profiles) { profile in
                 Button(profile.name) {

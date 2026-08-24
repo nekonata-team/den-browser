@@ -8,6 +8,8 @@ The eight app-wide shortcuts for toggling Den Mode, moving between Desks, return
 
 The complete in-app guide is available from Settings, the Den menu, and `?` in Den Mode. It uses the current customized bindings.
 
+Board Activity is available from the View menu or with `Shift` + `Escape`. While open, it samples CPU and memory once per second. Web Boards report their WebKit content process and identify shared processes; Terminal Boards report the current foreground process group. Shared WebKit, background Terminal, Network, and GPU work is not assigned to individual Boards.
+
 Essentials are app-wide named Board inputs configured in Settings > Essentials. In Den Mode, `g` opens the Essentials Prefix; press `g` followed by an Essential's case-sensitive key to start its Web, Terminal, Zellij, or zmx Board input in the active Profile window. Hold Shift for an uppercase key. Escape cancels the prefix, and an unregistered second key shows a warning Toast before returning to Den Mode.
 
 | Shortcut | Action | Notes |
@@ -18,6 +20,7 @@ Essentials are app-wide named Board inputs configured in Settings > Essentials. 
 | Command + `L` | Edit Focused Board Link panel | Replaces the Current Sheet with a URL or search on Return. Available in every keyboard context. |
 | Command + `W` | Remove focused Board | Available in every keyboard context. |
 | Shift + Command + `W` | Close Profile window | Settings and other non-Den windows retain Command + `W`. |
+| Shift + Escape | Board Activity | Shows live Web and Terminal Board state across the Den. Press Escape to close it. |
 | Command + `Q` | Quit Den Browser | |
 | Control + Tab | Next Desk | Available in Sheet Input and Den Mode. |
 | Control + Shift + Tab | Previous Desk | Available in Sheet Input and Den Mode. |

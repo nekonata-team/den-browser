@@ -169,6 +169,8 @@ enum AppAction: Equatable {
     case showReplaceDeskPanel
     case showOverview
     case hideOverview
+    case toggleBoardActivity
+    case hideBoardActivity
     case enterOverviewSelection
     case enterOverviewFilterMode
     case exitOverviewFilterMode
@@ -248,6 +250,10 @@ enum KeyboardRouter {
         if character == "q", modifiers == [.command] { return .forward(.nativeCommand) }
         if context.hasPendingConfirmation { return .forward(.temporaryTextInput) }
 
+        if event.isEscape, modifiers == [.shift] {
+            return event.isRepeat ? .consume(.ignoredRepeat) : .perform(.toggleBoardActivity)
+        }
+
         if context.isDrawerOpen,
             let binding = event.binding,
             binding == shortcuts.bindings[.toggleDenMode]
@@ -288,6 +294,9 @@ enum KeyboardRouter {
             return routeBoardWidth(event)
         case .overview:
             return routeOverview(event, context: context)
+        case .boardActivity:
+            if event.isEscape, modifiers == [] { return .perform(.hideBoardActivity) }
+            return .forward(.temporaryTextInput)
         case .drawer:
             return routeDrawer(event, context: context)
         case .zmxSessions:
@@ -724,6 +733,8 @@ enum AppActionHandler {
         case .showReplaceDeskPanel: store.showReplaceDeskPanel()
         case .showOverview: store.showOverview()
         case .hideOverview: store.hideOverview()
+        case .toggleBoardActivity: store.toggleBoardActivity()
+        case .hideBoardActivity: store.hideBoardActivity()
         case .enterOverviewSelection: store.enterOverviewSelection()
         case .enterOverviewFilterMode: store.enterOverviewFilterMode()
         case .exitOverviewFilterMode: store.exitOverviewFilterMode()

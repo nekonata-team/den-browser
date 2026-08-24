@@ -261,6 +261,7 @@ final class DenStore {
     var isReplaceDeskPanelPresented: Bool { temporaryContext == .replaceDesk }
     var isDeskPresetManagementPresented: Bool { temporaryContext == .deskPresetManagement }
     var isOverviewPresented: Bool { temporaryContext == .overview }
+    var isBoardActivityPresented: Bool { temporaryContext == .boardActivity }
     var isKeyboardShortcutsPresented: Bool { temporaryContext == .keyboardShortcuts }
     var isBoardWidthPanelPresented: Bool { temporaryContext == .boardWidth }
     var isSaveDeskPresetPanelPresented: Bool { temporaryContext == .saveDeskPreset }
@@ -715,6 +716,7 @@ enum TemporaryContext: Equatable {
     case replaceDesk
     case deskPresetManagement
     case overview
+    case boardActivity
     case keyboardShortcuts
     case boardWidth
     case saveDeskPreset

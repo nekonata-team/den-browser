@@ -374,6 +374,36 @@ final class Den_BrowserUITests: XCTestCase, BDD {
         }
     }
 
+    // Protects the WKWebView/Ghostty responder boundary: router unit tests cannot prove
+    // the local AppKit monitor receives Shift-Escape while either native surface owns input.
+    @MainActor
+    func testBoardActivityShortcutFromTerminalAndSheetInput() throws {
+        let app = launchApp(boardCount: .two, terminalBoard: true)
+        let activity = app.descendants(matching: .any).matching(identifier: "board-activity").firstMatch
+
+        given("a Terminal Board owns input") {
+            XCTAssertTrue(app.windows["UI Testing · TERMINAL INPUT"].waitForExistence(timeout: 5))
+        }
+
+        when("opening and closing Board Activity from Terminal Input") {
+            app.typeKey(.escape, modifierFlags: [.shift])
+            XCTAssertTrue(activity.waitForExistence(timeout: 5))
+            app.typeKey(.escape, modifierFlags: [])
+        }
+
+        when("moving to the Web Board and opening Board Activity from Sheet Input") {
+            enterDenMode(in: app)
+            app.typeKey("l", modifierFlags: [])
+            app.typeKey(",", modifierFlags: [.control])
+            XCTAssertTrue(app.windows["UI Testing · SHEET INPUT"].waitForExistence(timeout: 5))
+            app.typeKey(.escape, modifierFlags: [.shift])
+        }
+
+        then("Board Activity opens above the Sheet") {
+            XCTAssertTrue(activity.waitForExistence(timeout: 5))
+        }
+    }
+
     @MainActor
     func testDirectDeskSwitchActivatesFocusedNonLeadingBoard() throws {
         let app = launchApp(fixture: .focusedNonLeadingBoard)

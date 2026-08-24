@@ -20,11 +20,17 @@ struct BoardRuntimeWebUITests {
                 onDownloadFailed: { _ in }
             )
         )
+        defer { runtime.dispose() }
 
         #expect(runtime.webView.navigationDelegate === runtime)
         #expect(runtime.webView.uiDelegate === runtime)
         #expect(!runtime.isLoading)
         #expect(runtime.estimatedProgress == 0)
+
+        runtime.webViewWebContentProcessDidTerminate(runtime.webView)
+        #expect(runtime.didTerminateContentProcess)
+        runtime.webView(runtime.webView, didCommit: nil)
+        #expect(!runtime.didTerminateContentProcess)
 
         let selectors = [
             "webView:decidePolicyForNavigationAction:decisionHandler:",

@@ -254,6 +254,10 @@ struct DenView<Header: View>: View {
             OverviewView(profileColor: profileColor, boardHeight: boardHeight)
                 .padding(DenLayout.overlayInset)
                 .transition(DenMotion.transition(reduceMotion: shouldReduceMotion, scale: 0.98))
+        case .boardActivity:
+            BoardActivityView(profileColor: profileColor)
+                .padding(DenLayout.overlayInset)
+                .transition(DenMotion.transition(reduceMotion: shouldReduceMotion, scale: 0.98))
         case .keyboardShortcuts:
             if store.focusedDesk?.boards.isEmpty == false {
                 KeyboardShortcutsView(onClose: store.hideKeyboardShortcuts)

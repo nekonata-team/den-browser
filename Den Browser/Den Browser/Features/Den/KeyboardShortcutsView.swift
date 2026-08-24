@@ -43,6 +43,7 @@ struct KeyboardShortcutsView: View {
                     item(["⌘", "⌥", "⇧", "R"], "Reload Focused Desk Sheets"),
                     item(["⌘", "W"], "Remove Focused Board"),
                     item(["⇧", "⌘", "W"], "Close Profile Window"),
+                    item(["⇧", "Escape"], "Board Activity"),
                     item(["⌘", "Q"], "Quit Den Browser"),
                     item(deskNumberShortcutTokens, "Focus Desk 1–10"),
                 ] + ConfigurableShortcut.allCases.map(customItem)),
