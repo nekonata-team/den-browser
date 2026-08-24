@@ -158,6 +158,7 @@ struct ProfileManagerTests {
         preferences.setMotionPreference(.standard)
         preferences.setNativePictureInPictureEnabled(true)
         preferences.setUBOLiteEnabled(true)
+        preferences.setExternalLinkDestination(.focusedBoard)
         preferences.setSheetScale(80)
         preferences.setZellijPath(" /opt/homebrew/bin/zellij ")
         preferences.setZmxPath(" /opt/homebrew/bin/zmx ")
@@ -170,6 +171,7 @@ struct ProfileManagerTests {
                 "preferences.appearance.motion.mode",
                 "preferences.picture-in-picture.enabled",
                 "preferences.content-blocking.ubolite.enabled",
+                "preferences.external-links.destination",
                 "preferences.appearance.sheet-scale.percent",
                 "preferences.terminal.zellij.executable-path",
                 "preferences.terminal.zmx.executable-path",
@@ -178,6 +180,7 @@ struct ProfileManagerTests {
         #expect(restored.motionPreference == .standard)
         #expect(restored.nativePictureInPictureEnabled)
         #expect(restored.uBOLiteEnabled)
+        #expect(restored.externalLinkDestination == .focusedBoard)
         #expect(restored.sheetScale == 80)
         #expect(restored.zellijPath == "/opt/homebrew/bin/zellij")
         #expect(restored.zmxPath == "/opt/homebrew/bin/zmx")

@@ -194,7 +194,17 @@ final class DenStore {
 
     func handleExternalURL(_ url: URL) {
         let canonicalURL = SheetURLPolicy.canonicalSheetURL(url)
-        if !consumeTerminalURLSuppression(canonicalURL) { keepInDrawer(url) }
+        guard !consumeTerminalURLSuppression(canonicalURL) else { return }
+
+        switch preferences.externalLinkDestination {
+        case .drawerPreview:
+            keepInDrawer(url)
+        case .focusedBoard:
+            addBoard(
+                urlString: url.absoluteString,
+                preferredWidth: focusedBoard?.width,
+                afterBoardID: focusedBoard?.id)
+        }
     }
 
     func cancelTerminalURLRegistration(_ url: URL) {

@@ -2,6 +2,7 @@ import AppKit
 import SwiftUI
 
 struct DefaultBrowserSettingsSection: View {
+    @Environment(AppPreferences.self) private var preferences
     @State private var status: DefaultBrowserStatus = .loading
     @State private var isSettingDefault = false
     @State private var errorMessage: String?
@@ -13,10 +14,14 @@ struct DefaultBrowserSettingsSection: View {
                     .foregroundStyle(.secondary)
             }
 
-            // TODO: Update copy when external links enter the Drawer instead of the Focused Desk.
-            // See ADR 0025: docs/adr/0025-den-level-drawer-for-unplaced-material.md
+            Picker("Open links in", selection: externalLinkDestinationBinding) {
+                ForEach(ExternalLinkDestination.allCases) { destination in
+                    Text(destination.label).tag(destination)
+                }
+            }
+
             SettingsHelpText {
-                Text("Links opened from other apps will open as a new Board in the Focused Desk.")
+                Text(externalLinkDestinationDescription)
             }
 
             SettingsActionRow {
@@ -39,6 +44,23 @@ struct DefaultBrowserSettingsSection: View {
             errorMessage != nil
         } set: { isPresented in
             if !isPresented { errorMessage = nil }
+        }
+    }
+
+    private var externalLinkDestinationBinding: Binding<ExternalLinkDestination> {
+        Binding {
+            preferences.externalLinkDestination
+        } set: { destination in
+            preferences.setExternalLinkDestination(destination)
+        }
+    }
+
+    private var externalLinkDestinationDescription: String {
+        switch preferences.externalLinkDestination {
+        case .drawerPreview:
+            "Links opened from other apps enter the Drawer as a new Drawer Preview."
+        case .focusedBoard:
+            "Links opened from other apps create a new Board to the right of the Focused Board."
         }
     }
 

@@ -55,6 +55,20 @@ enum MotionPreference: String, CaseIterable, Identifiable {
     }
 }
 
+enum ExternalLinkDestination: String, CaseIterable, Identifiable {
+    case drawerPreview = "drawer-preview"
+    case focusedBoard = "focused-board"
+
+    var id: Self { self }
+
+    var label: String {
+        switch self {
+        case .drawerPreview: "Drawer Preview"
+        case .focusedBoard: "Right of Focused Board"
+        }
+    }
+}
+
 @MainActor
 @Observable
 final class AppPreferences {
@@ -62,6 +76,7 @@ final class AppPreferences {
     static let defaultDeskNumberBinding = ShortcutBinding(
         key: .character("1"), modifiers: [.command, .option])
     static let defaultSheetScale = 100
+    static let defaultExternalLinkDestination: ExternalLinkDestination = .drawerPreview
     static let sheetScaleRange = 50...200
 
     private(set) var shortcutOverrides: [ConfigurableShortcut: ShortcutOverride]
@@ -70,6 +85,7 @@ final class AppPreferences {
     private(set) var nativePictureInPictureEnabled: Bool
     private(set) var uBOLiteEnabled: Bool
     private(set) var boardCentering: FocusedBoardCentering
+    private(set) var externalLinkDestination: ExternalLinkDestination
     private(set) var sheetScale: Int
     private(set) var zellijPath: String
     private(set) var zmxPath: String
@@ -87,6 +103,7 @@ final class AppPreferences {
         "preferences.picture-in-picture.enabled"
     private static let uBOLiteEnabledKey = "preferences.content-blocking.ubolite.enabled"
     private static let boardCenteringKey = "preferences.appearance.board-centering.mode"
+    private static let externalLinkDestinationKey = "preferences.external-links.destination"
     private static let sheetScaleKey = "preferences.appearance.sheet-scale.percent"
     private static let zellijPathKey = "preferences.terminal.zellij.executable-path"
     private static let zmxPathKey = "preferences.terminal.zmx.executable-path"
@@ -106,6 +123,9 @@ final class AppPreferences {
         boardCentering =
             defaults.string(forKey: Self.boardCenteringKey).flatMap(FocusedBoardCentering.init(rawValue:))
             ?? .never
+        externalLinkDestination =
+            defaults.string(forKey: Self.externalLinkDestinationKey).flatMap(ExternalLinkDestination.init(rawValue:))
+            ?? Self.defaultExternalLinkDestination
         sheetScale =
             Self.normalizedSheetScale(defaults.object(forKey: Self.sheetScaleKey) as? Int)
             ?? Self.defaultSheetScale
@@ -150,6 +170,11 @@ final class AppPreferences {
     func setBoardCentering(_ mode: FocusedBoardCentering) {
         boardCentering = mode
         defaults.set(mode.rawValue, forKey: Self.boardCenteringKey)
+    }
+
+    func setExternalLinkDestination(_ destination: ExternalLinkDestination) {
+        externalLinkDestination = destination
+        defaults.set(destination.rawValue, forKey: Self.externalLinkDestinationKey)
     }
 
     func setSheetScale(_ scale: Int) {

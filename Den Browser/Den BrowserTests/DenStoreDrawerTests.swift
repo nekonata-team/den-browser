@@ -52,6 +52,29 @@ struct DenStoreDrawerTests {
         #expect(store.state.drawerItems.isEmpty)
     }
 
+    @Test func externalURLCanOpenToRightOfFocusedBoard() throws {
+        let first = board("First", width: 640)
+        let focused = board("Focused", width: 880)
+        let source = desk("Desk", boards: [first, focused], focusedBoardID: focused.id)
+        let suiteName = "ExternalLinkDestinationTests-\(UUID())"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let preferences = AppPreferences(defaults: defaults)
+        preferences.setExternalLinkDestination(.focusedBoard)
+        let store = DenStore(
+            state: DenState(desks: [source], focusedDeskID: source.id),
+            sheetNavigation: SheetNavigationManager(),
+            preferences: preferences)
+        let url = try #require(URL(string: "https://external.example/path"))
+
+        store.handleExternalURL(url)
+
+        #expect(store.focusedDesk?.boards.map(\.label) == ["First", "Focused", "external.example"])
+        #expect(store.focusedDesk?.boards[2].width == focused.width)
+        #expect(store.focusedDesk?.focusedBoardID == store.focusedDesk?.boards[2].id)
+        #expect(store.state.drawerItems.isEmpty)
+    }
+
     @Test func duplicateURLsRemainDistinctAndNewestComesFirst() throws {
         let source = desk("Desk")
         let store = DenStore(state: DenState(desks: [source], focusedDeskID: source.id))
