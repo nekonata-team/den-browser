@@ -285,6 +285,12 @@ struct BoardStrip: View {
             guard let boardID = store.focusedDesk?.focusedBoardID else { return }
             deferBoardAlignment(.center, boardID, animated: true, layoutKey: layoutKey)
         }
+        .onChange(of: store.scrollBoardStripLeftRequest) { _, _ in
+            scrollBoardStripLeft()
+        }
+        .onChange(of: store.scrollBoardStripRightRequest) { _, _ in
+            scrollBoardStripRight()
+        }
         .onChange(of: store.deskFilterSelectionBoardID) { _, boardID in
             guard store.isDeskFilterPresented, let boardID else { return }
             withAnimation(DenMotion.spatial(reduceMotion: shouldReduceMotion)) {
@@ -664,6 +670,52 @@ struct BoardStrip: View {
             containerWidth: scrollGeometry.containerWidth,
             horizontalPadding: boardHorizontalPadding
         )
+    }
+
+    private func scrollBoardStripLeft() {
+        guard
+            !store.isDeskFilterPresented,
+            let boards = store.focusedDesk?.boards,
+            let focusedBoardID = store.focusedDesk?.focusedBoardID,
+            let focusedIndex = boards.firstIndex(where: { $0.id == focusedBoardID }),
+            boards.indices.contains(focusedIndex - 1)
+        else { return }
+
+        let boardID = boards[focusedIndex - 1].id
+        guard let frame = boardFrames[boardID] else {
+            scrollPosition.scrollTo(id: boardID, anchor: .leading)
+            return
+        }
+        scrollBoardStrip(to: clampedScrollX(scrollGeometry.offsetX + frame.minX - boardHorizontalPadding))
+    }
+
+    private func scrollBoardStripRight() {
+        guard
+            !store.isDeskFilterPresented,
+            let boards = store.focusedDesk?.boards,
+            let focusedBoardID = store.focusedDesk?.focusedBoardID,
+            let focusedIndex = boards.firstIndex(where: { $0.id == focusedBoardID }),
+            boards.indices.contains(focusedIndex + 1)
+        else { return }
+
+        let boardID = boards[focusedIndex + 1].id
+        guard
+            let frame = boardFrames[boardID],
+            scrollGeometry.containerWidth > 0
+        else {
+            scrollPosition.scrollTo(id: boardID, anchor: .trailing)
+            return
+        }
+        let trailingEdge = scrollGeometry.containerWidth - boardHorizontalPadding
+        scrollBoardStrip(to: clampedScrollX(scrollGeometry.offsetX + frame.maxX - trailingEdge))
+    }
+
+    private func scrollBoardStrip(to targetOffsetX: CGFloat) {
+        pendingBoardAlignment = nil
+        boardCenteringTask?.cancel()
+        withAnimation(DenMotion.spatial(reduceMotion: shouldReduceMotion)) {
+            scrollPosition.scrollTo(x: targetOffsetX)
+        }
     }
 
     private func clampedScrollX(_ offset: CGFloat) -> CGFloat {

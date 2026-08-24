@@ -33,6 +33,7 @@ Essentials are app-wide named Board inputs configured in Settings > Essentials. 
 | Left / Right or `h` / `l` | Previous / next board | Board navigation. |
 | Up / Down or `j` / `k` | Previous / next desk | Desk navigation. |
 | Shift + movement key | Move focused board | Moves in the same spatial direction. |
+| `<` / `>` | Scroll Board strip left / right | Keeps the Focused Board selected and brings the adjacent Board to the corresponding edge. |
 | `/` | Filter Boards in Focused Desk | Filters by Board Label or Current Sheet URL. Return confirms the query; Left / Right or `h` / `l` selects a match; Return enters it. Escape cancels. |
 | `1` through `9` | Focus desk 1 through 9 | Missing desks are a no-op. |
 | `0` | Focus desk 10 | Missing desk is a no-op. |

@@ -54,6 +54,7 @@ struct KeyboardShortcutsView: View {
                     item(["←", "/", "→", "or", "h", "/", "l"], "Focus previous / next Board"),
                     item(["↑", "/", "↓", "or", "j", "/", "k"], "Focus previous / next Desk"),
                     item(["Shift", "+", "movement"], "Move Focused Board"),
+                    item(["<", "/", ">"], "Scroll Board strip left / right"),
                     item(["/"], "Filter Boards in Focused Desk"),
                     item(["1–9", "/", "0"], "Focus Desk 1–10"),
                     item(["Shift", "+", "digit"], "Move Focused Board to Desk"),

@@ -27,7 +27,13 @@ struct DenStoreDrawerTests {
 
     @Test func terminalURLSuppressesMatchingExternalURLOnce() throws {
         let source = desk("Desk")
-        let store = DenStore(state: DenState(desks: [source], focusedDeskID: source.id))
+        let suiteName = "TerminalURLSuppressionTests-\(UUID())"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let store = DenStore(
+            state: DenState(desks: [source], focusedDeskID: source.id),
+            sheetNavigation: SheetNavigationManager(),
+            preferences: AppPreferences(defaults: defaults))
         let url = try #require(URL(string: "https://terminal.example/path"))
 
         store.registerTerminalURL(url)

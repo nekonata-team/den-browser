@@ -219,6 +219,8 @@ enum AppAction: Equatable {
     case adjustBoardWidth(Double)
     case toggleBoardMaximized
     case centerBoard
+    case scrollBoardStripLeft
+    case scrollBoardStripRight
     case toggleFocusedBoardSheetNavigationPause
     case captureCurrentSheet
     case captureFocusedDesk
@@ -396,6 +398,13 @@ enum KeyboardRouter {
             return event.isRepeat ? .consume(.ignoredRepeat) : .perform(.toggleDrawer)
         }
         if event.isEscape, modifiers == [] { return .perform(.exitDenMode) }
+        if modifiers == [.shift] {
+            switch event.characters {
+            case "<": return .perform(.scrollBoardStripLeft)
+            case ">": return .perform(.scrollBoardStripRight)
+            default: break
+            }
+        }
         if character == "/", modifiers == [] { return .perform(.enterDeskFilter) }
         if let action = movementAction(event, overview: false) { return .perform(action) }
         if isQuestionMark(event) { return .perform(.showKeyboardShortcuts) }
@@ -784,6 +793,8 @@ enum AppActionHandler {
         case .adjustBoardWidth(let amount): store.adjustFocusedBoardWidth(by: amount)
         case .toggleBoardMaximized: store.toggleFocusedBoardMaximized()
         case .centerBoard: store.centerFocusedBoard()
+        case .scrollBoardStripLeft: store.scrollBoardStripLeft()
+        case .scrollBoardStripRight: store.scrollBoardStripRight()
         case .toggleFocusedBoardSheetNavigationPause: store.toggleFocusedBoardSheetNavigationPause()
         case .captureCurrentSheet: store.captureFocusedSheetScreenshot()
         case .captureFocusedDesk: store.captureFocusedDeskScreenshot()

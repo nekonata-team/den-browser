@@ -195,6 +195,32 @@ struct KeyboardShortcutTests {
         }
     }
 
+    @Test func denModeAngleBracketsScrollBoardStripWithoutChangingFocus() throws {
+        let first = board("First")
+        let second = board("Second")
+        let store = try makeStore(boards: [first, second])
+        store.isDenMode = true
+        let right = try keyEvent(
+            characters: ">",
+            charactersIgnoringModifiers: ".",
+            modifiers: [.shift],
+            keyCode: 47)
+
+        #expect(KeyboardController.handle(right, store: store))
+        #expect(store.scrollBoardStripRightRequest == 1)
+        #expect(store.focusedDesk?.focusedBoardID == first.id)
+
+        let left = try keyEvent(
+            characters: "<",
+            charactersIgnoringModifiers: ",",
+            modifiers: [.shift],
+            keyCode: 43)
+
+        #expect(KeyboardController.handle(left, store: store))
+        #expect(store.scrollBoardStripLeftRequest == 1)
+        #expect(store.focusedDesk?.focusedBoardID == first.id)
+    }
+
     @Test func sheetInputCommandOptionDigitFocusesDeskAndLeavesCommandZeroAvailable() throws {
         let movedBoard = board("Moved")
         let firstDesk = DeskState(label: "First", boards: [], focusedBoardID: nil)

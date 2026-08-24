@@ -102,6 +102,16 @@ extension DenStore {
         centerFocusedBoardRequest &+= 1
     }
 
+    func scrollBoardStripLeft() {
+        guard focusedDesk?.focusedBoardID != nil else { return }
+        scrollBoardStripLeftRequest &+= 1
+    }
+
+    func scrollBoardStripRight() {
+        guard focusedDesk?.focusedBoardID != nil else { return }
+        scrollBoardStripRightRequest &+= 1
+    }
+
     func focusDesk(number: Int) {
         guard (1...Self.maximumDeskCount).contains(number) else { return }
         guard state.desks.indices.contains(number - 1) else {
