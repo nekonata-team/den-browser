@@ -578,7 +578,8 @@ struct BoardStrip: View {
 
     private func performBoardCentering(_ boardID: UUID, animated: Bool) {
         guard let frame = boardFrames[boardID] else { return }
-        let targetOffsetX = clampedScrollX(scrollGeometry.offsetX + frame.midX - size.width / 2)
+        let targetOffsetX = clampedScrollX(
+            scrollGeometry.offsetX + frame.midX - scrollGeometry.containerWidth / 2)
         if animated {
             withAnimation(
                 DenMotion.spatial(reduceMotion: shouldReduceMotion),
@@ -607,9 +608,10 @@ struct BoardStrip: View {
         guard
             !store.isDeskFilterPresented,
             store.focusedDesk?.focusedBoardID == boardID,
+            scrollGeometry.containerWidth > 0,
             let frame = boardFrames[boardID]
         else { return }
-        let correction = frame.midX - size.width / 2
+        let correction = frame.midX - scrollGeometry.containerWidth / 2
         let targetOffsetX = clampedScrollX(scrollGeometry.offsetX + correction)
         guard abs(targetOffsetX - scrollGeometry.offsetX) > 1 else { return }
         withAnimation(DenMotion.feedback(reduceMotion: shouldReduceMotion)) {
@@ -658,8 +660,9 @@ struct BoardStrip: View {
 
     private func shouldCenterBoardOnOverflow(_ boardID: UUID?) -> Bool {
         guard let boardID, let frame = boardFrames[boardID] else { return true }
+        let visibleWidth = scrollGeometry.containerWidth > 0 ? scrollGeometry.containerWidth : size.width
         return frame.minX < boardHorizontalPadding
-            || frame.maxX > size.width - boardHorizontalPadding
+            || frame.maxX > visibleWidth - boardHorizontalPadding
     }
 
     private func scrollTargetToRevealBoard(for frame: CGRect) -> CGFloat? {
