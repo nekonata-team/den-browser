@@ -614,7 +614,9 @@ struct BoardStrip: View {
         let correction = frame.midX - scrollGeometry.containerWidth / 2
         let targetOffsetX = clampedScrollX(scrollGeometry.offsetX + correction)
         guard abs(targetOffsetX - scrollGeometry.offsetX) > 1 else { return }
-        withAnimation(DenMotion.feedback(reduceMotion: shouldReduceMotion)) {
+        var transaction = Transaction(animation: nil)
+        transaction.disablesAnimations = true
+        withTransaction(transaction) {
             scrollPosition.scrollTo(x: targetOffsetX)
         }
     }
