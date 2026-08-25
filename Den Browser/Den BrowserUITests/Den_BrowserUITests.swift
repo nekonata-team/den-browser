@@ -599,6 +599,12 @@ final class Den_BrowserUITests: XCTestCase, BDD {
                     && !self.board(.alpha, in: app).exists
                     && !self.board(.bravo, in: app).exists
             }
+            assertEventuallyEqual(
+                actual: { charlieSurface.frame.midX },
+                expected: boardStrip.frame.midX,
+                tolerance: 30,
+                message: "Filtered Board should be centered while filtering"
+            )
         }
 
         when("confirming the filtered selection") {

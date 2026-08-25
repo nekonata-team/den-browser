@@ -87,7 +87,9 @@ struct BoardStrip: View {
         let focusRequest = focusedBoardFocusRequest
         let alignmentTarget = BoardStripAlignmentTarget(
             deskID: store.presentedDeskID,
-            boardID: store.focusedDesk?.focusedBoardID,
+            boardID: store.isDeskFilterPresented
+                ? store.deskFilterSelectionBoardID
+                : store.focusedDesk?.focusedBoardID,
             centering: preferences.boardCentering,
             centersFocusedBoard: shouldCenterFocusedBoard,
             restingScrollX: restingScrollX,
@@ -225,19 +227,29 @@ struct BoardStrip: View {
             }
         }
         .onChange(of: alignmentTarget) { previous, current in
-            guard !current.isDeskFilterPresented else { return }
-            guard !previous.isDeskFilterPresented else {
-                var transaction = Transaction(animation: nil)
-                transaction.disablesAnimations = true
-                withTransaction(transaction) {
-                    scrollPosition.scrollTo(x: scrollGeometry.offsetX)
-                }
+            if previous.isDeskFilterPresented && !current.isDeskFilterPresented {
+                resetBoardStripPosition(to: scrollGeometry.offsetX, animated: false)
                 return
             }
             let animated = previous.deskID == current.deskID
             let focusChanged = previous.boardID != current.boardID
             let layoutChanged = previous.layoutKey != current.layoutKey
             let centeringChanged = previous.centering != current.centering
+            let filterStateChanged = previous.isDeskFilterPresented != current.isDeskFilterPresented
+
+            if current.isDeskFilterPresented {
+                guard filterStateChanged || focusChanged || layoutChanged else { return }
+                if layoutChanged || filterStateChanged {
+                    deferBoardAlignment(
+                        .center,
+                        current.boardID,
+                        animated: false,
+                        layoutKey: current.layoutKey)
+                } else {
+                    centerBoard(current.boardID, animated: false)
+                }
+                return
+            }
 
             if layoutChanged {
                 if current.centering == .never {
@@ -292,12 +304,6 @@ struct BoardStrip: View {
         }
         .onChange(of: store.scrollBoardStripRightRequest) { _, _ in
             scrollBoardStripRight()
-        }
-        .onChange(of: store.deskFilterSelectionBoardID) { _, boardID in
-            guard store.isDeskFilterPresented, let boardID else { return }
-            withAnimation(DenMotion.spatial(reduceMotion: shouldReduceMotion)) {
-                scrollPosition.scrollTo(id: boardID, anchor: .center)
-            }
         }
         .onChange(of: size.width) { _, _ in updateBoardLayout(for: size) }
         .onChange(of: store.boardDragCancellationRequest) { _, _ in cancelBoardDrag() }
@@ -508,8 +514,9 @@ struct BoardStrip: View {
 
     private func centerBoard(_ boardID: UUID?, animated: Bool = true) {
         guard resizingBoardID == nil, !store.isBoardDragging, let boardID else { return }
-        let boardIDs = Set(store.focusedDesk?.boards.map(\.id) ?? [])
+        let boardIDs = Set(alignmentBoards.map(\.id))
         guard
+            boardIDs.contains(boardID),
             boardFrames[boardID] != nil,
             boardIDs.isSubset(of: boardFrames.keys),
             scrollGeometry.containerWidth > 0,
@@ -530,9 +537,10 @@ struct BoardStrip: View {
 
     private func revealBoard(_ boardID: UUID?, animated: Bool = true) {
         guard resizingBoardID == nil, !store.isBoardDragging, let boardID else { return }
-        let boardIDs = Set(store.focusedDesk?.boards.map(\.id) ?? [])
+        let boardIDs = Set(alignmentBoards.map(\.id))
         guard
-            let frame = boardFrames[boardID],
+            boardIDs.contains(boardID),
+            boardFrames[boardID] != nil,
             boardIDs.isSubset(of: boardFrames.keys),
             scrollGeometry.containerWidth > 0,
             scrollGeometry.contentWidth > 0
@@ -546,7 +554,7 @@ struct BoardStrip: View {
             return
         }
 
-        guard let targetOffsetX = scrollTargetToRevealBoard(for: frame) else {
+        guard let targetOffsetX = revealScrollX(for: boardID) else {
             pendingBoardAlignment = nil
             boardCenteringTask?.cancel()
             return
@@ -591,18 +599,11 @@ struct BoardStrip: View {
 
     private func centeredBoardScrollX(for boardID: UUID) -> CGFloat? {
         guard
-            let boards = store.focusedDesk?.boards,
-            let boardIndex = boards.firstIndex(where: { $0.id == boardID })
+            let boardIndex = alignmentBoards.firstIndex(where: { $0.id == boardID })
         else { return nil }
 
-        let params = BoardLayout.Parameters(
-            centering: preferences.boardCentering,
-            boards: boards,
-            maximizedBoardID: store.maximizedBoardID,
-            windowWidth: size.width,
-            horizontalPadding: boardHorizontalPadding,
-            spacing: boardSpacing
-        )
+        let boards = alignmentBoards
+        let params = boardLayoutParameters(for: boards)
         return BoardLayout.centeredScrollX(
             for: boardIndex,
             in: params,
@@ -622,13 +623,13 @@ struct BoardStrip: View {
     }
 
     private func settlePendingBoardAlignment(in frames: [UUID: CGRect]) {
-        let boardIDs = Set(store.focusedDesk?.boards.map(\.id) ?? [])
+        let boardIDs = Set(alignmentBoards.map(\.id))
         guard
             let pending = pendingBoardAlignment,
-            let frame = frames[pending.boardID],
+            frames[pending.boardID] != nil,
             pending.layoutKey == nil || pending.layoutKey == layoutKey,
-            boardIDs.isSubset(of: frames.keys)
-                && scrollGeometry.containerWidth > 0
+            boardIDs.isSubset(of: frames.keys),
+            scrollGeometry.containerWidth > 0
                 && scrollGeometry.contentWidth > 0
                 && (pending.layoutKey == nil || boardFramesMatchLayout(frames))
         else { return }
@@ -642,7 +643,7 @@ struct BoardStrip: View {
             case .center:
                 performBoardCentering(pending.boardID, animated: pending.animated)
             case .visible:
-                guard let targetOffsetX = scrollTargetToRevealBoard(for: frame) else { return }
+                guard let targetOffsetX = revealScrollX(for: pending.boardID) else { return }
                 performBoardVisibility(targetOffsetX, animated: pending.animated)
             case .resting(let targetOffsetX):
                 resetBoardStripPosition(to: targetOffsetX, animated: pending.animated)
@@ -651,31 +652,40 @@ struct BoardStrip: View {
     }
 
     private func boardFramesMatchLayout(_ frames: [UUID: CGRect]) -> Bool {
-        let boards = store.focusedDesk?.boards ?? []
-        return boards.allSatisfy { board in
+        let boards = alignmentBoards
+        let params = boardLayoutParameters(for: boards)
+        return boards.enumerated().allSatisfy { index, board in
             guard let frame = frames[board.id] else { return false }
+            guard let boardRange = BoardLayout.boardContentRange(for: index, in: params) else {
+                return false
+            }
             let expectedWidth =
                 store.maximizedBoardID == board.id
                 ? max(CGFloat(BoardState.minimumWidth), size.width - boardHorizontalPadding * 2)
                 : CGFloat(board.width)
+            let expectedMinX = boardRange.minX - scrollGeometry.offsetX
             return abs(frame.width - expectedWidth) <= 1
+                && abs(frame.minX - expectedMinX) <= 1
         }
     }
 
     private func shouldCenterBoardOnOverflow(_ boardID: UUID?) -> Bool {
-        guard let boardID, let frame = boardFrames[boardID] else { return true }
-        let visibleWidth = scrollGeometry.containerWidth > 0 ? scrollGeometry.containerWidth : size.width
-        return frame.minX < boardHorizontalPadding
-            || frame.maxX > visibleWidth - boardHorizontalPadding
+        guard let boardID else { return true }
+        return revealScrollX(for: boardID) != nil
     }
 
-    private func scrollTargetToRevealBoard(for frame: CGRect) -> CGFloat? {
-        BoardLayout.scrollTargetToRevealBoard(
-            frame: frame,
+    private func revealScrollX(for boardID: UUID) -> CGFloat? {
+        guard
+            let boardIndex = alignmentBoards.firstIndex(where: { $0.id == boardID })
+        else { return nil }
+
+        let boards = alignmentBoards
+        return BoardLayout.scrollTargetToRevealBoard(
+            for: boardIndex,
+            in: boardLayoutParameters(for: boards),
             currentScrollX: scrollGeometry.offsetX,
             contentWidth: scrollGeometry.contentWidth,
-            containerWidth: scrollGeometry.containerWidth,
-            horizontalPadding: boardHorizontalPadding
+            containerWidth: scrollGeometry.containerWidth
         )
     }
 
@@ -689,11 +699,8 @@ struct BoardStrip: View {
         else { return }
 
         let boardID = boards[focusedIndex - 1].id
-        guard let frame = boardFrames[boardID] else {
-            scrollPosition.scrollTo(id: boardID, anchor: .leading)
-            return
-        }
-        scrollBoardStrip(to: clampedScrollX(scrollGeometry.offsetX + frame.minX - boardHorizontalPadding))
+        guard let targetOffsetX = boardEdgeScrollX(for: boardID, edge: .leading) else { return }
+        scrollBoardStrip(to: targetOffsetX)
     }
 
     private func scrollBoardStripRight() {
@@ -706,15 +713,43 @@ struct BoardStrip: View {
         else { return }
 
         let boardID = boards[focusedIndex + 1].id
+        guard let targetOffsetX = boardEdgeScrollX(for: boardID, edge: .trailing) else { return }
+        scrollBoardStrip(to: targetOffsetX)
+    }
+
+    private func boardEdgeScrollX(for boardID: UUID, edge: BoardScrollEdge) -> CGFloat? {
         guard
-            let frame = boardFrames[boardID],
+            let boards = store.focusedDesk?.boards,
+            let boardIndex = boards.firstIndex(where: { $0.id == boardID }),
+            let boardRange = BoardLayout.boardContentRange(
+                for: boardIndex,
+                in: boardLayoutParameters(for: boards)),
             scrollGeometry.containerWidth > 0
-        else {
-            scrollPosition.scrollTo(id: boardID, anchor: .trailing)
-            return
-        }
-        let trailingEdge = scrollGeometry.containerWidth - boardHorizontalPadding
-        scrollBoardStrip(to: clampedScrollX(scrollGeometry.offsetX + frame.maxX - trailingEdge))
+        else { return nil }
+
+        let targetOffsetX =
+            switch edge {
+            case .leading:
+                boardRange.minX - boardHorizontalPadding
+            case .trailing:
+                boardRange.maxX - scrollGeometry.containerWidth + boardHorizontalPadding
+            }
+        return clampedScrollX(targetOffsetX)
+    }
+
+    private func boardLayoutParameters(for boards: [BoardState]) -> BoardLayout.Parameters {
+        BoardLayout.Parameters(
+            centering: preferences.boardCentering,
+            boards: boards,
+            maximizedBoardID: store.maximizedBoardID,
+            windowWidth: size.width,
+            horizontalPadding: boardHorizontalPadding,
+            spacing: boardSpacing
+        )
+    }
+
+    private var alignmentBoards: [BoardState] {
+        store.isDeskFilterPresented ? store.filteredDeskBoards : store.focusedDesk?.boards ?? []
     }
 
     private func scrollBoardStrip(to targetOffsetX: CGFloat) {
@@ -731,6 +766,11 @@ struct BoardStrip: View {
             max(0, scrollGeometry.contentWidth - scrollGeometry.containerWidth)
         )
     }
+}
+
+private enum BoardScrollEdge {
+    case leading
+    case trailing
 }
 
 private struct BoardStripAlignmentTarget: Equatable {

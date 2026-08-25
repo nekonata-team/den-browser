@@ -40,42 +40,42 @@ struct BoardLayoutTests {
         #expect(shouldCenterFocusedBoard(for: .onOverflow, boardCount: 4))
     }
 
-    @Test func revealsAnOffscreenBoardAtTheNearestEdge() {
+    @Test func revealsBoardFromStableLayoutGeometry() {
         #expect(
             BoardLayout.scrollTargetToRevealBoard(
-                frame: CGRect(x: -80, y: 0, width: 320, height: 400),
+                for: 0,
+                in: parameters(centering: .never, boardCount: 3),
                 currentScrollX: 100,
                 contentWidth: 1_500,
-                containerWidth: 1_000,
-                horizontalPadding: 10
-            ) == 10
+                containerWidth: 1_000
+            ) == 0
         )
         #expect(
             BoardLayout.scrollTargetToRevealBoard(
-                frame: CGRect(x: 900, y: 0, width: 320, height: 400),
-                currentScrollX: 200,
+                for: 2,
+                in: parameters(centering: .never, boardCount: 3),
+                currentScrollX: 0,
                 contentWidth: 1_500,
-                containerWidth: 1_000,
-                horizontalPadding: 10
-            ) == 430
+                containerWidth: 500
+            ) == 496
         )
         #expect(
             BoardLayout.scrollTargetToRevealBoard(
-                frame: CGRect(x: 100, y: 0, width: 320, height: 400),
+                for: 1,
+                in: parameters(centering: .never, boardCount: 3),
                 currentScrollX: 200,
                 contentWidth: 1_500,
                 containerWidth: 1_000,
-                horizontalPadding: 10
             ) == nil
         )
         #expect(
             BoardLayout.scrollTargetToRevealBoard(
-                frame: CGRect(x: 1_200, y: 0, width: 320, height: 400),
+                for: 2,
+                in: parameters(centering: .never, boardCount: 3),
                 currentScrollX: 300,
                 contentWidth: 1_500,
-                containerWidth: 1_000,
-                horizontalPadding: 10
-            ) == 500
+                containerWidth: 500
+            ) == 496
         )
     }
 

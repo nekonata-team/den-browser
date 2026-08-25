@@ -49,26 +49,32 @@ struct BoardLayout {
     }
 
     static func scrollTargetToRevealBoard(
-        frame: CGRect,
+        for boardIndex: Int,
+        in params: Parameters,
         currentScrollX: CGFloat,
         contentWidth: CGFloat,
-        containerWidth: CGFloat,
-        horizontalPadding: CGFloat
+        containerWidth: CGFloat
     ) -> CGFloat? {
-        let leadingEdge = horizontalPadding
-        let trailingEdge = containerWidth - horizontalPadding
-        let adjustment: CGFloat
+        guard
+            let boardRange = boardContentRange(for: boardIndex, in: params),
+            containerWidth > 0,
+            contentWidth > 0
+        else { return nil }
 
-        if frame.minX < leadingEdge {
-            adjustment = frame.minX - leadingEdge
-        } else if frame.maxX > trailingEdge {
-            adjustment = frame.maxX - trailingEdge
+        let leadingEdge = currentScrollX + params.horizontalPadding
+        let trailingEdge = currentScrollX + containerWidth - params.horizontalPadding
+        let targetOffsetX: CGFloat
+
+        if boardRange.minX < leadingEdge {
+            targetOffsetX = boardRange.minX - params.horizontalPadding
+        } else if boardRange.maxX > trailingEdge {
+            targetOffsetX = boardRange.maxX - containerWidth + params.horizontalPadding
         } else {
             return nil
         }
 
         let maximumOffset = max(0, contentWidth - containerWidth)
-        return min(max(0, currentScrollX + adjustment), maximumOffset)
+        return min(max(0, targetOffsetX), maximumOffset)
     }
 
     static func centeredScrollX(
@@ -81,14 +87,24 @@ struct BoardLayout {
             return nil
         }
 
+        guard let boardRange = boardContentRange(for: boardIndex, in: params) else { return nil }
+        let boardCenter = (boardRange.minX + boardRange.maxX) / 2
+        let maximumOffset = max(0, contentWidth - containerWidth)
+        return min(max(0, boardCenter - containerWidth / 2), maximumOffset)
+    }
+
+    static func boardContentRange(
+        for boardIndex: Int,
+        in params: Parameters
+    ) -> (minX: CGFloat, maxX: CGFloat)? {
+        guard params.boards.indices.contains(boardIndex) else { return nil }
+
         let paddings = calculatePaddings(for: params)
         let precedingWidth = params.boards.prefix(boardIndex).reduce(0.0) { total, board in
             total + boardWidth(board, in: params) + params.spacing
         }
-        let board = params.boards[boardIndex]
-        let boardCenter = paddings.leading + precedingWidth + boardWidth(board, in: params) / 2
-        let maximumOffset = max(0, contentWidth - containerWidth)
-        return min(max(0, boardCenter - containerWidth / 2), maximumOffset)
+        let minX = paddings.leading + precedingWidth
+        return (minX, minX + boardWidth(params.boards[boardIndex], in: params))
     }
 
     static func restingScrollX(for params: Parameters) -> CGFloat {
