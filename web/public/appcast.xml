@@ -3,6 +3,16 @@
     <channel>
         <title>Den Browser</title>
         <item>
+            <title>0.25.1</title>
+            <pubDate>Wed, 26 Aug 2026 01:35:23 +0900</pubDate>
+            <link>https://den.nekonata.dev/</link>
+            <sparkle:fullReleaseNotesLink>https://github.com/nekonata-team/den-browser/releases/tag/v0.25.1</sparkle:fullReleaseNotesLink>
+            <sparkle:version>28</sparkle:version>
+            <sparkle:shortVersionString>0.25.1</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
+            <enclosure url="https://github.com/nekonata-team/den-browser/releases/download/v0.25.1/Den-Browser-0.25.1-macOS.zip" length="26099495" type="application/octet-stream" sparkle:edSignature="tI+OmSBNQzK8l6ZArnGhlDhB452Rl2PmdQ0ZYoPpHDMdvKAvX2rNEZw14ojZqV3rKSfQ557d7neIjWoIVnLSDg=="/>
+        </item>
+        <item>
             <title>0.25.0</title>
             <pubDate>Tue, 25 Aug 2026 17:42:41 +0900</pubDate>
             <link>https://den.nekonata.dev/</link>
