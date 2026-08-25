@@ -71,6 +71,26 @@ struct BoardLayout {
         return min(max(0, currentScrollX + adjustment), maximumOffset)
     }
 
+    static func centeredScrollX(
+        for boardIndex: Int,
+        in params: Parameters,
+        containerWidth: CGFloat,
+        contentWidth: CGFloat
+    ) -> CGFloat? {
+        guard params.boards.indices.contains(boardIndex), containerWidth > 0, contentWidth > 0 else {
+            return nil
+        }
+
+        let paddings = calculatePaddings(for: params)
+        let precedingWidth = params.boards.prefix(boardIndex).reduce(0.0) { total, board in
+            total + boardWidth(board, in: params) + params.spacing
+        }
+        let board = params.boards[boardIndex]
+        let boardCenter = paddings.leading + precedingWidth + boardWidth(board, in: params) / 2
+        let maximumOffset = max(0, contentWidth - containerWidth)
+        return min(max(0, boardCenter - containerWidth / 2), maximumOffset)
+    }
+
     static func restingScrollX(for params: Parameters) -> CGFloat {
         guard params.centering == .onOverflow, !params.boardsOverflow else { return 0 }
         let centeredPadding = max(
@@ -107,5 +127,9 @@ struct BoardLayout {
             max(params.horizontalPadding, (params.windowWidth - firstBoardWidth) / 2),
             max(params.horizontalPadding, (params.windowWidth - lastBoardWidth) / 2)
         )
+    }
+
+    private static func boardWidth(_ board: BoardState, in params: Parameters) -> CGFloat {
+        params.maximizedBoardID == board.id ? params.maximizedBoardWidth : board.width
     }
 }

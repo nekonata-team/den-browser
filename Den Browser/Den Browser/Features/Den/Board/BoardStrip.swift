@@ -577,24 +577,7 @@ struct BoardStrip: View {
     }
 
     private func performBoardCentering(_ boardID: UUID, animated: Bool) {
-        guard let frame = boardFrames[boardID] else { return }
-        let targetOffsetX = clampedScrollX(
-            scrollGeometry.offsetX + frame.midX - scrollGeometry.containerWidth / 2)
-        if animated {
-            withAnimation(
-                DenMotion.spatial(reduceMotion: shouldReduceMotion),
-                completionCriteria: .logicallyComplete
-            ) {
-                scrollPosition.scrollTo(x: targetOffsetX)
-            } completion: {
-                correctBoardCentering(boardID)
-            }
-        } else {
-            scrollPosition.scrollTo(x: targetOffsetX)
-        }
-    }
-
-    private func performBoardVisibility(_ targetOffsetX: CGFloat, animated: Bool) {
+        guard let targetOffsetX = centeredBoardScrollX(for: boardID) else { return }
         if animated {
             withAnimation(DenMotion.spatial(reduceMotion: shouldReduceMotion)) {
                 scrollPosition.scrollTo(x: targetOffsetX)
@@ -604,19 +587,34 @@ struct BoardStrip: View {
         }
     }
 
-    private func correctBoardCentering(_ boardID: UUID) {
+    private func centeredBoardScrollX(for boardID: UUID) -> CGFloat? {
         guard
-            !store.isDeskFilterPresented,
-            store.focusedDesk?.focusedBoardID == boardID,
-            scrollGeometry.containerWidth > 0,
-            let frame = boardFrames[boardID]
-        else { return }
-        let correction = frame.midX - scrollGeometry.containerWidth / 2
-        let targetOffsetX = clampedScrollX(scrollGeometry.offsetX + correction)
-        guard abs(targetOffsetX - scrollGeometry.offsetX) > 1 else { return }
-        var transaction = Transaction(animation: nil)
-        transaction.disablesAnimations = true
-        withTransaction(transaction) {
+            let boards = store.focusedDesk?.boards,
+            let boardIndex = boards.firstIndex(where: { $0.id == boardID })
+        else { return nil }
+
+        let params = BoardLayout.Parameters(
+            centering: preferences.boardCentering,
+            boards: boards,
+            maximizedBoardID: store.maximizedBoardID,
+            windowWidth: size.width,
+            horizontalPadding: boardHorizontalPadding,
+            spacing: boardSpacing
+        )
+        return BoardLayout.centeredScrollX(
+            for: boardIndex,
+            in: params,
+            containerWidth: scrollGeometry.containerWidth,
+            contentWidth: scrollGeometry.contentWidth
+        )
+    }
+
+    private func performBoardVisibility(_ targetOffsetX: CGFloat, animated: Bool) {
+        if animated {
+            withAnimation(DenMotion.spatial(reduceMotion: shouldReduceMotion)) {
+                scrollPosition.scrollTo(x: targetOffsetX)
+            }
+        } else {
             scrollPosition.scrollTo(x: targetOffsetX)
         }
     }

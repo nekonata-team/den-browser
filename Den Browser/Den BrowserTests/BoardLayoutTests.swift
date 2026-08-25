@@ -63,6 +63,27 @@ struct BoardLayoutTests {
         )
     }
 
+    @Test func centersBoardFromStableLayoutGeometry() {
+        let params = parameters(centering: .always, boardCount: 4)
+
+        #expect(
+            BoardLayout.centeredScrollX(
+                for: 1,
+                in: params,
+                containerWidth: 1_000,
+                contentWidth: 2_000
+            ) == 328
+        )
+        #expect(
+            BoardLayout.centeredScrollX(
+                for: 3,
+                in: params,
+                containerWidth: 1_000,
+                contentWidth: 1_200
+            ) == 200
+        )
+    }
+
     private func paddings(
         for centering: FocusedBoardCentering,
         boardCount: Int
