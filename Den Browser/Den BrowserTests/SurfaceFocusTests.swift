@@ -4,7 +4,7 @@ import Testing
 @testable import Den_Browser
 
 @MainActor
-struct PointerFocusStateTests {
+struct SurfaceFocusTests {
     @Test func firstResponderInsideTargetDoesNotNeedActivation() {
         let target = NSView()
         let child = NSView()
@@ -51,42 +51,5 @@ struct PointerFocusStateTests {
         window.contentView?.addSubview(host)
         await waitForMainQueue()
         #expect(handlingCount == 2)
-    }
-
-    @Test func pointerFocusSuppressesExplicitActivation() {
-        var state = PointerFocusState()
-
-        let handledPointer = state.handlePointerDown()
-        state.updateFocus(true)
-        let activatedAfterPointer = state.shouldActivateFocusRequest()
-        #expect(handledPointer)
-        #expect(!activatedAfterPointer)
-        state.updateFocus(false)
-        state.updateFocus(true)
-        let activatedAfterKeyboardFocus = state.shouldActivateFocusRequest()
-        #expect(activatedAfterKeyboardFocus)
-    }
-
-    @Test func disabledPointerFocusHasNoCallbackOrSuppression() {
-        var state = PointerFocusState()
-        _ = state.handlePointerDown()
-        state.updateEnabled(false)
-
-        let handledPointer = state.handlePointerDown()
-        #expect(!handledPointer)
-        state.updateEnabled(true)
-        state.updateFocus(true)
-        let activated = state.shouldActivateFocusRequest()
-        #expect(activated)
-    }
-
-    @Test func resetClearsPendingPointerFocus() {
-        var state = PointerFocusState()
-        _ = state.handlePointerDown()
-        state.reset()
-
-        state.updateFocus(true)
-        let activated = state.shouldActivateFocusRequest()
-        #expect(activated)
     }
 }

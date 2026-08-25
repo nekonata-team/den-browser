@@ -29,9 +29,7 @@ struct BoardView: View {
             ZStack(alignment: .top) {
                 BoardWebView(
                     webView: runtime.webView,
-                    isFocused: isFocused && !store.isDenMode && store.temporaryContext == nil,
                     isHidden: store.isDrawerOpen || store.isOverviewPresented,
-                    isPointerFocusEnabled: isPointerFocusEnabled,
                     focusRequest: focusRequest,
                     onSurfaceReady: { window in
                         guard runtime.webView.fullscreenState == .notInFullscreen else {
@@ -44,8 +42,14 @@ struct BoardView: View {
                             )
                         else { return true }
                         return window.makeFirstResponder(runtime.webView)
-                    },
-                    onFocus: onFocus
+                    }
+                )
+                .simultaneousGesture(
+                    DragGesture(minimumDistance: 0)
+                        .onEnded { _ in
+                            guard isPointerFocusEnabled else { return }
+                            onFocus()
+                        }
                 )
 
                 if runtime.isShowingInitialLoadFallback {

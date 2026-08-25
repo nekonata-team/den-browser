@@ -27,9 +27,7 @@ struct TerminalBoardView: View {
             TerminalBoardSurface(
                 terminalView: runtime.terminalView,
                 onSurfaceVisibilityChange: { runtime.setSurfaceVisible($0) },
-                isFocused: isFocused && !store.isDenMode && store.temporaryContext == nil,
                 isHidden: store.isDrawerOpen || store.isOverviewPresented,
-                isPointerFocusEnabled: isPointerFocusEnabled,
                 focusRequest: focusRequest,
                 onSurfaceReady: { window in
                     guard
@@ -39,8 +37,14 @@ struct TerminalBoardView: View {
                         )
                     else { return true }
                     return window.makeFirstResponder(runtime.terminalView)
-                },
-                onFocus: onFocus
+                }
+            )
+            .simultaneousGesture(
+                DragGesture(minimumDistance: 0)
+                    .onEnded { _ in
+                        guard isPointerFocusEnabled else { return }
+                        onFocus()
+                    }
             )
             .blur(radius: isFocusModeDeemphasized ? DenLayout.focusModeBlurRadius : 0)
         }
@@ -237,22 +241,16 @@ struct TerminalBoardView: View {
 private struct TerminalBoardSurface: NSViewRepresentable {
     let terminalView: AppTerminalView
     let onSurfaceVisibilityChange: (Bool) -> Void
-    let isFocused: Bool
     let isHidden: Bool
-    let isPointerFocusEnabled: Bool
     let focusRequest: BoardFocusRequest?
     let onSurfaceReady: (NSWindow) -> Bool
-    let onFocus: () -> Void
 
     func makeCoordinator() -> Coordinator { Coordinator() }
 
     func makeNSView(context: Context) -> SurfaceHost<BoardFocusRequest, AppTerminalView> {
         let host = SurfaceHost<BoardFocusRequest, AppTerminalView>(content: terminalView)
-        context.coordinator.startRecognizing(view: terminalView, onFocus: onFocus)
         update(terminalView, coordinator: context.coordinator)
-        host.update(request: focusRequest) { window in
-            context.coordinator.handleFocusRequest(in: window, onSurfaceReady: onSurfaceReady)
-        }
+        host.update(request: focusRequest, onReady: onSurfaceReady)
         return host
     }
 
@@ -260,11 +258,8 @@ private struct TerminalBoardSurface: NSViewRepresentable {
         _ nsView: SurfaceHost<BoardFocusRequest, AppTerminalView>,
         context: Context
     ) {
-        context.coordinator.onFocus = onFocus
         update(terminalView, coordinator: context.coordinator)
-        nsView.update(request: focusRequest) { window in
-            context.coordinator.handleFocusRequest(in: window, onSurfaceReady: onSurfaceReady)
-        }
+        nsView.update(request: focusRequest, onReady: onSurfaceReady)
     }
 
     static func dismantleNSView(
@@ -273,57 +268,15 @@ private struct TerminalBoardSurface: NSViewRepresentable {
     ) {
         coordinator.onSurfaceVisibilityChange?(false)
         coordinator.onSurfaceVisibilityChange = nil
-        coordinator.stopRecognizing()
     }
 
     private func update(_ view: AppTerminalView, coordinator: Coordinator) {
         coordinator.onSurfaceVisibilityChange = onSurfaceVisibilityChange
         view.isHidden = isHidden
         onSurfaceVisibilityChange(!isHidden)
-        coordinator.updatePointerFocusEnabled(isPointerFocusEnabled)
-        coordinator.updateFocus(isFocused)
     }
 
-    final class Coordinator: NSGestureRecognizer {
-        private var pointerFocusState = PointerFocusState()
-        fileprivate var onFocus: (() -> Void)?
+    final class Coordinator {
         fileprivate var onSurfaceVisibilityChange: ((Bool) -> Void)?
-
-        init() { super.init(target: nil, action: nil) }
-        required init?(coder: NSCoder) { super.init(coder: coder) }
-
-        func updatePointerFocusEnabled(_ isEnabled: Bool) {
-            self.isEnabled = isEnabled
-            pointerFocusState.updateEnabled(isEnabled)
-        }
-
-        func updateFocus(_ newValue: Bool) {
-            pointerFocusState.updateFocus(newValue)
-        }
-
-        func handleFocusRequest(
-            in window: NSWindow,
-            onSurfaceReady: (NSWindow) -> Bool
-        ) -> Bool {
-            guard pointerFocusState.shouldActivateFocusRequest() else { return true }
-            return onSurfaceReady(window)
-        }
-
-        func startRecognizing(view: AppTerminalView, onFocus: @escaping () -> Void) {
-            self.onFocus = onFocus
-            guard self.view == nil else { return }
-            view.addGestureRecognizer(self)
-        }
-
-        override func mouseDown(with event: NSEvent) {
-            if pointerFocusState.handlePointerDown() { onFocus?() }
-            state = .failed
-        }
-
-        func stopRecognizing() {
-            view?.removeGestureRecognizer(self)
-            onFocus = nil
-            pointerFocusState.reset()
-        }
     }
 }

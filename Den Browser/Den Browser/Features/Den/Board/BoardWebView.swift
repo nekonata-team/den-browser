@@ -8,95 +8,23 @@ struct BoardFocusRequest: Equatable {
 
 struct BoardWebView: NSViewRepresentable {
     let webView: WKWebView
-    let isFocused: Bool
     let isHidden: Bool
-    let isPointerFocusEnabled: Bool
     let focusRequest: BoardFocusRequest?
     let onSurfaceReady: (NSWindow) -> Bool
-    let onFocus: () -> Void
 
-    func makeCoordinator() -> Coordinator {
-        Coordinator()
-    }
-
-    func makeNSView(context: Context) -> SurfaceHost<BoardFocusRequest, WKWebView> {
+    func makeNSView(context _: Context) -> SurfaceHost<BoardFocusRequest, WKWebView> {
         let host = SurfaceHost<BoardFocusRequest, WKWebView>(content: webView)
-        context.coordinator.startRecognizing(webView: webView, onFocus: onFocus)
         webView.isHidden = isHidden
-        context.coordinator.updatePointerFocusEnabled(isPointerFocusEnabled)
-        context.coordinator.updateFocus(isFocused)
-        host.update(request: focusRequest) { window in
-            context.coordinator.handleFocusRequest(in: window, onSurfaceReady: onSurfaceReady)
-        }
+        host.update(request: focusRequest, onReady: onSurfaceReady)
         return host
     }
 
     func updateNSView(
         _ nsView: SurfaceHost<BoardFocusRequest, WKWebView>,
-        context: Context
+        context _: Context
     ) {
-        context.coordinator.onFocus = onFocus
         webView.isHidden = isHidden
-        context.coordinator.updatePointerFocusEnabled(isPointerFocusEnabled)
-        context.coordinator.updateFocus(isFocused)
-        nsView.update(request: focusRequest) { window in
-            context.coordinator.handleFocusRequest(in: window, onSurfaceReady: onSurfaceReady)
-        }
-    }
-
-    static func dismantleNSView(
-        _ nsView: SurfaceHost<BoardFocusRequest, WKWebView>,
-        coordinator: Coordinator
-    ) {
-        coordinator.stopRecognizing()
-    }
-
-    final class Coordinator: NSGestureRecognizer {
-        private var pointerFocusState = PointerFocusState()
-        fileprivate var onFocus: (() -> Void)?
-
-        init() {
-            super.init(target: nil, action: nil)
-        }
-
-        required init?(coder: NSCoder) {
-            super.init(coder: coder)
-        }
-
-        func startRecognizing(webView: WKWebView, onFocus: @escaping () -> Void) {
-            self.onFocus = onFocus
-            guard view == nil else { return }
-            webView.addGestureRecognizer(self)
-        }
-
-        override func mouseDown(with event: NSEvent) {
-            if pointerFocusState.handlePointerDown() {
-                onFocus?()
-            }
-            state = .failed
-        }
-
-        func updatePointerFocusEnabled(_ isEnabled: Bool) {
-            pointerFocusState.updateEnabled(isEnabled)
-        }
-
-        func stopRecognizing() {
-            view?.removeGestureRecognizer(self)
-            onFocus = nil
-            pointerFocusState.reset()
-        }
-
-        func updateFocus(_ newValue: Bool) {
-            pointerFocusState.updateFocus(newValue)
-        }
-
-        func handleFocusRequest(
-            in window: NSWindow,
-            onSurfaceReady: (NSWindow) -> Bool
-        ) -> Bool {
-            guard pointerFocusState.shouldActivateFocusRequest() else { return true }
-            return onSurfaceReady(window)
-        }
+        nsView.update(request: focusRequest, onReady: onSurfaceReady)
     }
 }
 
@@ -165,48 +93,5 @@ final class SurfaceHost<Request: Equatable, Content: NSView>: NSView {
         guard onReady(window) else { return }
         handledRequest = request
         handledWindow = window
-    }
-}
-
-struct PointerFocusState {
-    private(set) var isEnabled = true
-    private(set) var isFocused = false
-    private var suppressNextActivation = false
-
-    mutating func updateEnabled(_ newValue: Bool) {
-        isEnabled = newValue
-        if !newValue {
-            suppressNextActivation = false
-        }
-    }
-
-    mutating func handlePointerDown() -> Bool {
-        guard isEnabled else { return false }
-        if !isFocused {
-            suppressNextActivation = true
-        }
-        return true
-    }
-
-    mutating func updateFocus(_ newValue: Bool) {
-        guard newValue != isFocused else { return }
-        isFocused = newValue
-
-        if !newValue {
-            suppressNextActivation = false
-        }
-    }
-
-    mutating func shouldActivateFocusRequest() -> Bool {
-        if suppressNextActivation {
-            suppressNextActivation = false
-            return false
-        }
-        return true
-    }
-
-    mutating func reset() {
-        isFocused = false
-        suppressNextActivation = false
     }
 }
