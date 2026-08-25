@@ -5,14 +5,30 @@ import Testing
 @MainActor
 struct BoardLayoutTests {
     @Test func appliesCenteringPaddingForEachMode() {
-        #expect(paddings(for: .always, boardCount: 3) == (leading: 340, trailing: 340))
+        #expect(paddings(for: .always, boardCount: 3) == (leading: 360, trailing: 360))
         #expect(paddings(for: .never, boardCount: 3) == (leading: 10, trailing: 10))
-        #expect(paddings(for: .onOverflow, boardCount: 3) == (leading: 340, trailing: 340))
-        #expect(paddings(for: .onOverflow, boardCount: 4) == (leading: 340, trailing: 340))
+        #expect(paddings(for: .onOverflow, boardCount: 3) == (leading: 360, trailing: 360))
+        #expect(paddings(for: .onOverflow, boardCount: 4) == (leading: 360, trailing: 360))
+    }
+
+    @Test func keepsCenteringPaddingStableWhenEdgeBoardWidthsChange() {
+        let baseParams = parameters(centering: .always, boardCount: 3)
+        var boards = baseParams.boards
+        boards[0].width = 500
+        boards[2].width = 700
+        let params = BoardLayout.Parameters(
+            centering: baseParams.centering,
+            boards: boards,
+            maximizedBoardID: baseParams.maximizedBoardID,
+            windowWidth: baseParams.windowWidth,
+            horizontalPadding: baseParams.horizontalPadding,
+            spacing: baseParams.spacing)
+
+        #expect(BoardLayout.calculatePaddings(for: params) == (leading: 360, trailing: 360))
     }
 
     @Test func keepsOnOverflowCoordinatesStableWhenBoardsStartOverflowing() {
-        #expect(restingScrollX(for: .onOverflow, boardCount: 3) == 328)
+        #expect(restingScrollX(for: .onOverflow, boardCount: 3) == 348)
         #expect(restingScrollX(for: .onOverflow, boardCount: 4) == 0)
     }
 
@@ -72,7 +88,7 @@ struct BoardLayoutTests {
                 in: params,
                 containerWidth: 1_000,
                 contentWidth: 2_000
-            ) == 328
+            ) == 348
         )
         #expect(
             BoardLayout.centeredScrollX(

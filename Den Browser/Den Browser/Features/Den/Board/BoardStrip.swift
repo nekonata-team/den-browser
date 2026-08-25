@@ -4,6 +4,7 @@ private struct BoardStripLayoutKey: Equatable {
     let ids: [UUID]
     let widths: [Double]
     let maximizedBoardID: UUID?
+    let windowWidth: Double
 }
 
 struct BoardStrip: View {
@@ -41,7 +42,8 @@ struct BoardStrip: View {
         return BoardStripLayoutKey(
             ids: boards.map(\.id),
             widths: boards.map(\.width),
-            maximizedBoardID: store.maximizedBoardID
+            maximizedBoardID: store.maximizedBoardID,
+            windowWidth: size.width
         )
     }
 

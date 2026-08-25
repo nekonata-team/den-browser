@@ -96,7 +96,7 @@ struct BoardLayout {
         let centeredPadding = max(
             params.horizontalPadding,
             (params.windowWidth - params.requiredBoardsWidth) / 2)
-        return max(0, edgePaddings(for: params).leading - centeredPadding)
+        return max(0, centeringPadding(for: params) - centeredPadding)
     }
 
     static func calculatePaddings(
@@ -104,29 +104,17 @@ struct BoardLayout {
     ) -> (leading: CGFloat, trailing: CGFloat) {
         switch params.centering {
         case .always, .onOverflow:
-            edgePaddings(for: params)
+            let padding = centeringPadding(for: params)
+            return (padding, padding)
         case .never:
-            (params.horizontalPadding, params.horizontalPadding)
+            return (params.horizontalPadding, params.horizontalPadding)
         }
     }
 
-    private static func edgePaddings(
-        for params: Parameters
-    ) -> (leading: CGFloat, trailing: CGFloat) {
-        let firstBoardWidth =
-            params.boards.first.map {
-                params.maximizedBoardID == $0.id ? params.maximizedBoardWidth : $0.width
-            } ?? params.windowWidth
-
-        let lastBoardWidth =
-            params.boards.last.map {
-                params.maximizedBoardID == $0.id ? params.maximizedBoardWidth : $0.width
-            } ?? params.windowWidth
-
-        return (
-            max(params.horizontalPadding, (params.windowWidth - firstBoardWidth) / 2),
-            max(params.horizontalPadding, (params.windowWidth - lastBoardWidth) / 2)
-        )
+    private static func centeringPadding(for params: Parameters) -> CGFloat {
+        max(
+            params.horizontalPadding,
+            (params.windowWidth - CGFloat(BoardState.minimumWidth)) / 2)
     }
 
     private static func boardWidth(_ board: BoardState, in params: Parameters) -> CGFloat {
