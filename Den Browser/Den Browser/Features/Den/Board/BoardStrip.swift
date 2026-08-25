@@ -630,10 +630,12 @@ struct BoardStrip: View {
                 && scrollGeometry.contentWidth > 0
                 && (pending.layoutKey == nil || boardFramesMatchLayout(frames))
         else { return }
-        self.pendingBoardAlignment = nil
         boardCenteringTask?.cancel()
         boardCenteringTask = Task { @MainActor in
+            await Task.yield()
             guard !Task.isCancelled else { return }
+            guard self.pendingBoardAlignment != nil else { return }
+            self.pendingBoardAlignment = nil
             switch pending.kind {
             case .center:
                 performBoardCentering(pending.boardID, animated: pending.animated)
