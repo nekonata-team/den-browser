@@ -239,7 +239,7 @@ struct BoardStrip: View {
                 resetBoardStripPosition(to: scrollGeometry.offsetX, animated: false)
                 return
             }
-            let animated = previous.deskID == current.deskID
+            let animated = previous.deskID == current.deskID && !previous.layoutKey.ids.isEmpty
             let centeringChanged = previous.centering != current.centering
 
             if current.isDeskFilterPresented {

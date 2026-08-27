@@ -1,4 +1,5 @@
 import Foundation
+import SwiftUI
 
 enum TerminalInputError: Error, Equatable {
     case missingDirectory(String)
@@ -295,14 +296,23 @@ extension DenStore {
             }
         }
 
-        state.desks[deskIndex].boards.insert(board, at: insertIndex)
-        if focus {
-            state.desks[deskIndex].focusedBoardID = board.id
-            setFocusedDesk(state.desks[deskIndex].id)
-            setTemporaryContext(nil)
-            isDenMode = false
+        let insert = { [self] in
+            state.desks[deskIndex].boards.insert(board, at: insertIndex)
+            if focus {
+                state.desks[deskIndex].focusedBoardID = board.id
+                setFocusedDesk(state.desks[deskIndex].id)
+                setTemporaryContext(nil)
+                isDenMode = false
+            }
+            save()
         }
-        save()
+        if state.desks[deskIndex].boards.isEmpty {
+            var transaction = Transaction(animation: nil)
+            transaction.disablesAnimations = true
+            withTransaction(transaction, insert)
+        } else {
+            insert()
+        }
         return true
     }
 
