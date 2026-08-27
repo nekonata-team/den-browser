@@ -29,6 +29,7 @@ struct BoardStrip: View {
     @State private var pendingBoardAlignment: PendingBoardAlignment?
     @State private var boardCenteringTask: Task<Void, Never>?
     @State private var lastAutoScrollTime = 0.0
+    @State private var revealBoardID: UUID?
 
     private var shouldReduceMotion: Bool {
         DenMotion.shouldReduceMotion(
@@ -227,15 +228,19 @@ struct BoardStrip: View {
             }
         }
         .onChange(of: alignmentTarget) { previous, current in
+            let focusChanged = previous.boardID != current.boardID
+            let deskChanged = previous.deskID != current.deskID
+            let layoutChanged = previous.layoutKey != current.layoutKey
+            let filterStateChanged = previous.isDeskFilterPresented != current.isDeskFilterPresented
+            if focusChanged || deskChanged || layoutChanged || filterStateChanged {
+                revealBoardID = nil
+            }
             if previous.isDeskFilterPresented && !current.isDeskFilterPresented {
                 resetBoardStripPosition(to: scrollGeometry.offsetX, animated: false)
                 return
             }
             let animated = previous.deskID == current.deskID
-            let focusChanged = previous.boardID != current.boardID
-            let layoutChanged = previous.layoutKey != current.layoutKey
             let centeringChanged = previous.centering != current.centering
-            let filterStateChanged = previous.isDeskFilterPresented != current.isDeskFilterPresented
 
             if current.isDeskFilterPresented {
                 guard filterStateChanged || focusChanged || layoutChanged else { return }
@@ -295,15 +300,19 @@ struct BoardStrip: View {
             }
         }
         .onChange(of: store.centerFocusedBoardRequest) { _, _ in
+            revealBoardID = nil
             if let pendingBoardAlignment, case .resting = pendingBoardAlignment.kind { return }
             guard let boardID = store.focusedDesk?.focusedBoardID else { return }
             deferBoardAlignment(.center, boardID, animated: true, layoutKey: layoutKey)
         }
-        .onChange(of: store.scrollBoardStripLeftRequest) { _, _ in
-            scrollBoardStripLeft()
+        .onChange(of: store.revealPreviousBoardRequest) { _, _ in
+            revealPreviousBoard()
         }
-        .onChange(of: store.scrollBoardStripRightRequest) { _, _ in
-            scrollBoardStripRight()
+        .onChange(of: store.revealNextBoardRequest) { _, _ in
+            revealNextBoard()
+        }
+        .onChange(of: store.isDenMode) { _, _ in
+            revealBoardID = nil
         }
         .onChange(of: size.width) { _, _ in updateBoardLayout(for: size) }
         .onChange(of: store.boardDragCancellationRequest) { _, _ in cancelBoardDrag() }
@@ -689,31 +698,31 @@ struct BoardStrip: View {
         )
     }
 
-    private func scrollBoardStripLeft() {
-        guard
-            !store.isDeskFilterPresented,
-            let boards = store.focusedDesk?.boards,
-            let focusedBoardID = store.focusedDesk?.focusedBoardID,
-            let focusedIndex = boards.firstIndex(where: { $0.id == focusedBoardID }),
-            boards.indices.contains(focusedIndex - 1)
-        else { return }
-
-        let boardID = boards[focusedIndex - 1].id
-        guard let targetOffsetX = boardEdgeScrollX(for: boardID, edge: .leading) else { return }
-        scrollBoardStrip(to: targetOffsetX)
+    private func revealPreviousBoard() {
+        revealBoard(by: -1, edge: .leading)
     }
 
-    private func scrollBoardStripRight() {
+    private func revealNextBoard() {
+        revealBoard(by: 1, edge: .trailing)
+    }
+
+    private func revealBoard(by delta: Int, edge: BoardScrollEdge) {
         guard
             !store.isDeskFilterPresented,
             let boards = store.focusedDesk?.boards,
-            let focusedBoardID = store.focusedDesk?.focusedBoardID,
-            let focusedIndex = boards.firstIndex(where: { $0.id == focusedBoardID }),
-            boards.indices.contains(focusedIndex + 1)
+            let focusedBoardID = store.focusedDesk?.focusedBoardID
         else { return }
 
-        let boardID = boards[focusedIndex + 1].id
-        guard let targetOffsetX = boardEdgeScrollX(for: boardID, edge: .trailing) else { return }
+        let anchorBoardID = revealBoardID ?? focusedBoardID
+        guard let anchorIndex = boards.firstIndex(where: { $0.id == anchorBoardID }) else { return }
+        let boardIndex = anchorIndex + delta
+        guard
+            boards.indices.contains(boardIndex),
+            let targetOffsetX = boardEdgeScrollX(for: boards[boardIndex].id, edge: edge)
+        else { return }
+
+        let boardID = boards[boardIndex].id
+        revealBoardID = boardID
         scrollBoardStrip(to: targetOffsetX)
     }
 

@@ -4,7 +4,7 @@ Vim-style commands for the Current Sheet are documented in [vim.md](./vim.md).
 
 Den Mode makes Den operations available while a Sheet has keyboard focus. Toggle it with `Control` + `,`. The titlebar identifies the current keyboard context as `DEN MODE` or `SHEET INPUT` during ordinary Board work; it shows only the Profile name while a temporary context is open or no Board is focused. Escape returns to Sheet Input.
 
-The eight app-wide shortcuts for toggling Den Mode, moving between Desks, returning to the Previous Desk, focusing the previous or next Board, and moving the Focused Board left or right can be recorded in Settings > Shortcuts. Each action accepts one logical key plus Control, Option, or Command. Desk and Board focus and movement shortcuts may be cleared; Toggle Den Mode always retains a binding. Conflicts are rejected, changes apply immediately, and each shortcut or the complete set can be reset. If stored shortcut data cannot be read, Den Browser removes it and uses the default.
+The eight app-wide shortcuts for toggling Den Mode, moving between Desks, returning to the Previous Desk, focusing the previous or next Board, and moving the Focused Board left or right can be recorded in Settings > Shortcuts. Each action accepts one logical key plus Control, Option, or Command. Desk and Board shortcuts may be cleared; Toggle Den Mode always retains a binding. Conflicts are rejected, changes apply immediately, and each shortcut or the complete set can be reset. If stored shortcut data cannot be read, Den Browser removes it and uses the default.
 
 The complete in-app guide is available from Settings, the Den menu, and `?` in Den Mode. It uses the current customized bindings.
 
@@ -33,7 +33,7 @@ Essentials are app-wide named Board inputs configured in Settings > Essentials. 
 | Left / Right or `h` / `l` | Previous / next board | Board navigation. |
 | Up / Down or `j` / `k` | Previous / next desk | Desk navigation. |
 | Shift + movement key | Move focused board | Moves in the same spatial direction. |
-| `<` / `>` | Scroll Board strip left / right | Keeps the Focused Board selected and brings the adjacent Board to the corresponding edge. |
+| `<` / `>` | Browse Boards without changing focus | Den Mode shortcut. Moves the Board view to the previous or next Board; repeat to browse continuously. The Focused Board stays selected. `c` returns it to center. |
 | `/` | Filter Boards in Focused Desk | Filters by Board Label or Current Sheet URL. Return confirms the query; Left / Right or `h` / `l` selects a match; Return enters it. Escape cancels. |
 | `1` through `9` | Focus desk 1 through 9 | Missing desks are a no-op. |
 | `0` | Focus desk 10 | Missing desk is a no-op. |

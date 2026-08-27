@@ -195,7 +195,7 @@ struct KeyboardShortcutTests {
         }
     }
 
-    @Test func denModeAngleBracketsScrollBoardStripWithoutChangingFocus() throws {
+    @Test func denModeAngleBracketsBrowseBoardsWithoutChangingFocus() throws {
         let first = board("First")
         let second = board("Second")
         let store = try makeStore(boards: [first, second])
@@ -207,7 +207,7 @@ struct KeyboardShortcutTests {
             keyCode: 47)
 
         #expect(KeyboardController.handle(right, store: store))
-        #expect(store.scrollBoardStripRightRequest == 1)
+        #expect(store.revealNextBoardRequest == 1)
         #expect(store.focusedDesk?.focusedBoardID == first.id)
 
         let left = try keyEvent(
@@ -217,7 +217,7 @@ struct KeyboardShortcutTests {
             keyCode: 43)
 
         #expect(KeyboardController.handle(left, store: store))
-        #expect(store.scrollBoardStripLeftRequest == 1)
+        #expect(store.revealPreviousBoardRequest == 1)
         #expect(store.focusedDesk?.focusedBoardID == first.id)
     }
 

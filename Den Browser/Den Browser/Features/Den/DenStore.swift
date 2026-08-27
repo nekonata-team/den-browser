@@ -100,8 +100,8 @@ final class DenStore {
     var pendingConfirmation: PendingConfirmation?
     var maximizedBoardID: UUID?
     var centerFocusedBoardRequest = 0
-    var scrollBoardStripLeftRequest = 0
-    var scrollBoardStripRightRequest = 0
+    var revealPreviousBoardRequest = 0
+    var revealNextBoardRequest = 0
     var deskFilterCenteringTask: Task<Void, Never>?
     var activeDrag: ActiveDrag? {
         get { storage.activeDrag }

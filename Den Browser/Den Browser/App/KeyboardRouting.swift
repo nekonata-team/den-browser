@@ -219,8 +219,8 @@ enum AppAction: Equatable {
     case adjustBoardWidth(Double)
     case toggleBoardMaximized
     case centerBoard
-    case scrollBoardStripLeft
-    case scrollBoardStripRight
+    case revealPreviousBoard
+    case revealNextBoard
     case toggleFocusedBoardSheetNavigationPause
     case captureCurrentSheet
     case captureFocusedDesk
@@ -402,8 +402,8 @@ enum KeyboardRouter {
         if event.isEscape, modifiers == [] { return .perform(.exitDenMode) }
         if modifiers == [.shift] {
             switch event.characters {
-            case "<": return .perform(.scrollBoardStripLeft)
-            case ">": return .perform(.scrollBoardStripRight)
+            case "<": return .perform(.revealPreviousBoard)
+            case ">": return .perform(.revealNextBoard)
             default: break
             }
         }
@@ -799,8 +799,8 @@ enum AppActionHandler {
         case .adjustBoardWidth(let amount): store.adjustFocusedBoardWidth(by: amount)
         case .toggleBoardMaximized: store.toggleFocusedBoardMaximized()
         case .centerBoard: store.centerFocusedBoard()
-        case .scrollBoardStripLeft: store.scrollBoardStripLeft()
-        case .scrollBoardStripRight: store.scrollBoardStripRight()
+        case .revealPreviousBoard: store.revealPreviousBoard()
+        case .revealNextBoard: store.revealNextBoard()
         case .toggleFocusedBoardSheetNavigationPause: store.toggleFocusedBoardSheetNavigationPause()
         case .captureCurrentSheet: store.captureFocusedSheetScreenshot()
         case .captureFocusedDesk: store.captureFocusedDeskScreenshot()

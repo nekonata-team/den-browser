@@ -54,7 +54,7 @@ struct KeyboardShortcutsView: View {
                     item(["←", "/", "→", "or", "h", "/", "l"], "Focus previous / next Board"),
                     item(["↑", "/", "↓", "or", "j", "/", "k"], "Focus previous / next Desk"),
                     item(["Shift", "+", "movement"], "Move Focused Board"),
-                    item(["<", "/", ">"], "Scroll Board strip left / right"),
+                    item(["<", "/", ">"], "Browse Boards without changing focus"),
                     item(["⌃", "s"], "Copy Current Sheet screenshot to clipboard"),
                     item(["⌃", "⇧", "s"], "Copy Focused Desk screenshot to clipboard"),
                     item(["/"], "Filter Boards in Focused Desk"),
