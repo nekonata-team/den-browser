@@ -377,6 +377,15 @@ extension DenStore {
         }
         disposeRuntime(for: board.id)
 
+        if isOverviewPresented, overviewSelection?.boardID == board.id {
+            let deskBoards = state.desks[indices.desk].boards
+            let nextBoardID =
+                indices.board < deskBoards.count
+                ? deskBoards[indices.board].id
+                : (indices.board > 0 ? deskBoards[indices.board - 1].id : deskBoards.first?.id)
+            overviewSelection = OverviewSelection(deskID: state.desks[indices.desk].id, boardID: nextBoardID)
+        }
+
         save()
     }
 

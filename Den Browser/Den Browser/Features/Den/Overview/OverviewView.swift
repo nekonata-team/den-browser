@@ -16,6 +16,7 @@ struct OverviewView: View {
     @State private var overviewGeometry = OverviewGeometry()
     @State private var scrollSize = CGSize.zero
     @State private var lastAutoScrollTime = 0.0
+    @State private var hoveredBoardID: UUID?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -223,12 +224,30 @@ struct OverviewView: View {
 
     private func overviewBoard(_ board: BoardState, in desk: DeskState) -> some View {
         let isSelected = desk.id == store.overviewSelectionDeskID && board.id == store.overviewSelectionBoardID
-        return Button {
-            store.selectBoardInOverview(board.id)
-        } label: {
-            overviewBoardCard(board, isSelected: isSelected)
+        return ZStack(alignment: .topTrailing) {
+            Button {
+                store.selectBoardInOverview(board.id)
+            } label: {
+                overviewBoardCard(board, isSelected: isSelected)
+            }
+            .buttonStyle(.plain)
+
+            if hoveredBoardID == board.id && overviewDrag == nil {
+                OverviewBoardCloseButton(boardName: board.displayName) {
+                    store.removeBoard(board.id)
+                }
+                .padding(DenOverviewLayout.boardCloseButtonPadding)
+            }
         }
-        .buttonStyle(.plain)
+        .onHover { isHovering in
+            if isHovering {
+                if hoveredBoardID != board.id {
+                    hoveredBoardID = board.id
+                }
+            } else if hoveredBoardID == board.id {
+                hoveredBoardID = nil
+            }
+        }
         .background {
             GeometryReader { proxy in
                 Color.clear.preference(
@@ -252,6 +271,9 @@ struct OverviewView: View {
         .accessibilityHint("Drag to move this Board, or use Board movement actions")
         .accessibilityAction(named: "Enter Board") {
             store.enterOverviewBoard(board.id)
+        }
+        .accessibilityAction(named: "Remove Board") {
+            store.removeBoard(board.id)
         }
         .accessibilityAction(named: "Move Board Left") {
             store.selectBoardInOverview(board.id)
@@ -577,6 +599,36 @@ private enum DenOverviewLayout {
     static let boardSpacing: CGFloat = 10
     static let boardPadding: CGFloat = 10
     static let widthIndicatorHeight: CGFloat = 5
+    static let boardCloseButtonSize: CGFloat = 18
+    static let boardCloseButtonPadding: CGFloat = 6
+}
+
+private struct OverviewBoardCloseButton: View {
+    let boardName: String
+    let onRemove: () -> Void
+
+    @State private var isHovered = false
+
+    var body: some View {
+        Button(action: onRemove) {
+            Image(systemName: "xmark")
+                .font(.system(size: 9, weight: .bold))
+                .foregroundStyle(isHovered ? Color.primary : Color.secondary)
+                .frame(
+                    width: DenOverviewLayout.boardCloseButtonSize,
+                    height: DenOverviewLayout.boardCloseButtonSize
+                )
+                .background(
+                    isHovered ? Color.primary.opacity(0.20) : Color.primary.opacity(0.10),
+                    in: Circle()
+                )
+                .contentShape(Circle())
+        }
+        .buttonStyle(.plain)
+        .onHover { isHovered = $0 }
+        .help("Remove Board")
+        .accessibilityLabel("Remove Board \(boardName)")
+    }
 }
 
 private enum DenOverviewColors {

@@ -95,7 +95,7 @@ Drag a Board header's label or empty area to reorder it within the Focused Desk.
 
 Right-click or Control-click anywhere in a Board header to focus that Board and open its native context menu. The menu can keep a copy of the Current Sheet in the Drawer, duplicate or reload it, maximize or center the Board, move it left, right, or to another numbered Desk, and remove it. zmx Board menus also open zmx Sessions with their Session highlighted. Duplicating a zmx Board opens the same suffix panel as Return. Movement at a Desk edge remains visible but disabled. Right-clicking inside a Sheet continues to use the web content's own context menu.
 
-While Overview is open without a search query, drag a Board card to another position or Desk. Dropping on the left or right half of a Board inserts before or after it; dropping in a Desk row's empty area appends it. Overview remains open with the moved Board selected. Board dragging is disabled while filtering. Board cards use proportional widths and show Web or Terminal identity with an icon, label, and semantic type tint.
+While Overview is open without a search query, drag a Board card to another position or Desk. Dropping on the left or right half of a Board inserts before or after it; dropping in a Desk row's empty area appends it. Overview remains open with the moved Board selected. Board dragging is disabled while filtering. Board cards use proportional widths and show Web or Terminal identity with an icon, label, and semantic type tint. Hovering a Board card shows a close button to remove it.
 
 ## Pointer Desk actions
 

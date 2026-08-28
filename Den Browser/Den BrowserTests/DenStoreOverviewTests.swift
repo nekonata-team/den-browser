@@ -193,6 +193,38 @@ struct DenStoreOverviewTests {
         #expect(!store.isDenMode)
     }
 
+    @Test func removingSelectedBoardInOverviewUpdatesOverviewSelection() {
+        let first = board("First")
+        let second = board("Second")
+        let third = board("Third")
+        let main = desk("Main", boards: [first, second, third], focusedBoardID: second.id)
+        let store = DenStore(state: DenState(desks: [main], focusedDeskID: main.id))
+        store.showOverview()
+        #expect(store.overviewSelectionBoardID == second.id)
+
+        store.removeBoard(second.id)
+
+        #expect(store.state.desks[0].boards.map(\.id) == [first.id, third.id])
+        #expect(store.overviewSelectionDeskID == main.id)
+        #expect(store.overviewSelectionBoardID == third.id)
+        #expect(store.isOverviewPresented)
+    }
+
+    @Test func removingOnlyBoardInDeskInOverviewLeavesDeskWithNilSelection() {
+        let onlyBoard = board("Only")
+        let main = desk("Main", boards: [onlyBoard], focusedBoardID: onlyBoard.id)
+        let store = DenStore(state: DenState(desks: [main], focusedDeskID: main.id))
+        store.showOverview()
+        #expect(store.overviewSelectionBoardID == onlyBoard.id)
+
+        store.removeBoard(onlyBoard.id)
+
+        #expect(store.state.desks[0].boards.isEmpty)
+        #expect(store.overviewSelectionDeskID == main.id)
+        #expect(store.overviewSelectionBoardID == nil)
+        #expect(store.isOverviewPresented)
+    }
+
     private func withStore(desks: [DeskState], body: (DenStore) throws -> Void) rethrows {
         let store = DenStore(state: DenState(desks: desks, focusedDeskID: desks[0].id))
         try body(store)
