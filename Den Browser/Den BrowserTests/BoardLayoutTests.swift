@@ -5,10 +5,10 @@ import Testing
 @MainActor
 struct BoardLayoutTests {
     @Test func appliesCenteringPaddingForEachMode() {
-        #expect(paddings(for: .always, boardCount: 3) == (leading: 360, trailing: 360))
+        #expect(paddings(for: .always, boardCount: 3) == (leading: 500, trailing: 444))
         #expect(paddings(for: .never, boardCount: 3) == (leading: 10, trailing: 10))
-        #expect(paddings(for: .onOverflow, boardCount: 3) == (leading: 360, trailing: 360))
-        #expect(paddings(for: .onOverflow, boardCount: 4) == (leading: 360, trailing: 360))
+        #expect(paddings(for: .onOverflow, boardCount: 3) == (leading: 500, trailing: 444))
+        #expect(paddings(for: .onOverflow, boardCount: 4) == (leading: 500, trailing: 444))
     }
 
     @Test func keepsCenteringPaddingStableWhenEdgeBoardWidthsChange() {
@@ -24,11 +24,11 @@ struct BoardLayoutTests {
             horizontalPadding: baseParams.horizontalPadding,
             spacing: baseParams.spacing)
 
-        #expect(BoardLayout.calculatePaddings(for: params) == (leading: 360, trailing: 360))
+        #expect(BoardLayout.calculatePaddings(for: params) == (leading: 500, trailing: 444))
     }
 
     @Test func keepsOnOverflowCoordinatesStableWhenBoardsStartOverflowing() {
-        #expect(restingScrollX(for: .onOverflow, boardCount: 3) == 348)
+        #expect(restingScrollX(for: .onOverflow, boardCount: 3) == 488)
         #expect(restingScrollX(for: .onOverflow, boardCount: 4) == 0)
     }
 
@@ -65,7 +65,7 @@ struct BoardLayoutTests {
                 in: parameters(centering: .never, boardCount: 3),
                 currentScrollX: 200,
                 contentWidth: 1_500,
-                containerWidth: 1_000,
+                containerWidth: 1_000
             ) == nil
         )
         #expect(
@@ -88,7 +88,7 @@ struct BoardLayoutTests {
                 in: params,
                 containerWidth: 1_000,
                 contentWidth: 2_000
-            ) == 348
+            ) == 488
         )
         #expect(
             BoardLayout.centeredScrollX(

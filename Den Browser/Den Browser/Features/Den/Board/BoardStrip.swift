@@ -165,7 +165,10 @@ struct BoardStrip: View {
                     } label: {
                         Image(systemName: "plus")
                             .font(.headline)
-                            .frame(width: 48, height: 48)
+                            .frame(
+                                width: DenLayout.openBoardAtEndButtonSize,
+                                height: DenLayout.openBoardAtEndButtonSize
+                            )
                             .contentShape(Circle())
                     }
                     .buttonStyle(.plain)

@@ -112,7 +112,7 @@ struct BoardLayout {
         let centeredPadding = max(
             params.horizontalPadding,
             (params.windowWidth - params.requiredBoardsWidth) / 2)
-        return max(0, centeringPadding(for: params) - centeredPadding)
+        return max(0, calculatePaddings(for: params).leading - centeredPadding)
     }
 
     static func calculatePaddings(
@@ -120,17 +120,16 @@ struct BoardLayout {
     ) -> (leading: CGFloat, trailing: CGFloat) {
         switch params.centering {
         case .always, .onOverflow:
-            let padding = centeringPadding(for: params)
-            return (padding, padding)
+            let leading = max(params.horizontalPadding, params.windowWidth / 2)
+            let trailingAdjustment =
+                params.boards.isEmpty
+                ? 0
+                : DenLayout.openBoardAtEndButtonSize + params.spacing
+            let trailing = max(params.horizontalPadding, params.windowWidth / 2 - trailingAdjustment)
+            return (leading, trailing)
         case .never:
             return (params.horizontalPadding, params.horizontalPadding)
         }
-    }
-
-    private static func centeringPadding(for params: Parameters) -> CGFloat {
-        max(
-            params.horizontalPadding,
-            (params.windowWidth - CGFloat(BoardState.minimumWidth)) / 2)
     }
 
     private static func boardWidth(_ board: BoardState, in params: Parameters) -> CGFloat {
