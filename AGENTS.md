@@ -62,22 +62,3 @@ manual candidate verification, `just release publish X.Y.Z`.
   for duplicated or stale product claims.
 
 @RTK.md
-
-<!-- BEGIN my-codex: code-review-graph -->
-## Code Review Graph
-
-When the code-review-graph MCP server is available:
-
-- Use it first for repository exploration, code review, debugging, architecture,
-  and change-impact questions.
-- Start with `get_minimal_context_tool` when the task needs repository-wide
-  context.
-- Prefer targeted graph queries and minimal detail over broad scans.
-- Treat graph results as navigation and analysis hints; verify important
-  conclusions in source files.
-- Use normal file tools when graph data is unavailable, stale, too slow, or
-  insufficient.
-- Do not use graph tools for trivial edits where their overhead is not
-  worthwhile.
-
-<!-- END my-codex: code-review-graph -->
