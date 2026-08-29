@@ -155,6 +155,7 @@ enum AppAction: Equatable {
     case focusDesk(Int)
     case moveFocusedBoardToDesk(Int)
     case showOpenBoardPanel
+    case openBoardFromClipboard
     case hideZmxSessions
     case enterZmxSessionFilter
     case exitZmxSessionFilter
@@ -639,6 +640,7 @@ enum KeyboardRouter {
         binding("i"): KeyboardCommand(action: .toggleNotifications),
         binding("n"): KeyboardCommand(action: .showOpenBoardPanel),
         binding(" "): KeyboardCommand(action: .showOpenBoardPanel),
+        binding("v"): KeyboardCommand(action: .openBoardFromClipboard, repeatPolicy: .ignore),
         binding("n", modifiers: [.shift]): KeyboardCommand(action: .showNewDeskPanel),
         binding("p"): KeyboardCommand(action: .showSaveDeskPresetPanel, repeatPolicy: .ignore),
         binding("p", modifiers: [.shift]): KeyboardCommand(action: .showReplaceDeskPanel, repeatPolicy: .ignore),
@@ -734,6 +736,7 @@ enum AppActionHandler {
         case .focusDesk(let number): store.focusDesk(number: number)
         case .moveFocusedBoardToDesk(let number): store.moveFocusedBoard(toDeskNumber: number)
         case .showOpenBoardPanel: store.showOpenBoardPanel()
+        case .openBoardFromClipboard: store.openBoardFromClipboard()
         case .hideZmxSessions: store.hideZmxSessions()
         case .enterZmxSessionFilter: store.enterZmxSessionFilter()
         case .exitZmxSessionFilter: store.exitZmxSessionFilter()

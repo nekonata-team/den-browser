@@ -1,3 +1,4 @@
+import AppKit
 import Foundation
 import SwiftUI
 
@@ -22,6 +23,23 @@ enum ZmxInput: Equatable {
 }
 
 extension DenStore {
+    func openBoardFromClipboard(pasteboard: NSPasteboard = .general) {
+        guard
+            let text = pasteboard.string(forType: .string)?.trimmingCharacters(in: .whitespacesAndNewlines),
+            !text.isEmpty
+        else {
+            showToast("Clipboard is empty.", style: .warning)
+            return
+        }
+
+        guard openBoard(input: text, afterBoardID: focusedBoard?.id) else {
+            let message = openBoardPanelMessage ?? "Could not open board from clipboard."
+            openBoardPanelMessage = nil
+            showToast(message, style: .warning)
+            return
+        }
+    }
+
     @discardableResult
     func openBoard(input: String, preferredWidth: Double? = nil, afterBoardID: UUID? = nil) -> Bool {
         if let zmx = Self.resolveZmxInput(input) {

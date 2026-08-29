@@ -956,6 +956,40 @@ struct DenStoreBoardTests {
     private func waitForZmxSessionLoad(_ store: DenStore) async {
         await store.zmxSessionRefreshTask?.value
     }
+
+    @Test func openBoardFromClipboardOpensBoardToRightAndExitsDenMode() {
+        let source = desk("Desk", boards: [board("First")])
+        let store = DenStore(state: DenState(desks: [source], focusedDeskID: source.id))
+        store.isDenMode = true
+        #expect(store.isDenMode)
+        #expect(store.focusedDesk?.boards.count == 1)
+
+        let pasteboard = NSPasteboard.withUniqueName()
+        pasteboard.clearContents()
+        pasteboard.setString("https://example.com/clipboard", forType: .string)
+
+        store.openBoardFromClipboard(pasteboard: pasteboard)
+
+        #expect(store.focusedDesk?.boards.count == 2)
+        #expect(store.focusedBoard?.currentSheetURL == URL(string: "https://example.com/clipboard"))
+        #expect(!store.isDenMode)
+        #expect(store.toastMessage == nil)
+    }
+
+    @Test func openBoardFromClipboardShowsWarningToastWhenEmpty() {
+        let source = desk("Desk", boards: [board("First")])
+        let store = DenStore(state: DenState(desks: [source], focusedDeskID: source.id))
+        store.isDenMode = true
+        let initialCount = store.focusedDesk?.boards.count ?? 0
+
+        let pasteboard = NSPasteboard.withUniqueName()
+        pasteboard.clearContents()
+
+        store.openBoardFromClipboard(pasteboard: pasteboard)
+
+        #expect(store.focusedDesk?.boards.count == initialCount)
+        #expect(store.toastMessage?.message == "Clipboard is empty.")
+    }
 }
 
 private struct StubTerminalCommandRunner: TerminalCommandRunning, Sendable {

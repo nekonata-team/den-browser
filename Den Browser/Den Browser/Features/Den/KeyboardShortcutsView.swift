@@ -63,6 +63,7 @@ struct KeyboardShortcutsView: View {
                     item(["i"], "Show Notifications"),
                     item(["↑", "/", "↓"], "Select notification; Return opens it"),
                     item(["n", "/", "Space"], "Open Board"),
+                    item(["v"], "Open Board from clipboard"),
                     item(["⇧", "N"], "New Desk"),
                     item(["p"], "Save Desk as Preset"),
                     item(["⇧", "P"], "Replace Desk from Preset"),

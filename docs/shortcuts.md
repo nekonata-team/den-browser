@@ -41,6 +41,7 @@ Essentials are app-wide named Board inputs configured in Settings > Essentials. 
 | `i` | Show Notifications | Opens the session's notification list. Its trash button clears all Notifications after confirmation. |
 | Up / Down | Select notification | When the notification list is open; Return opens the selected notification and Escape closes the list. |
 | `n` / Space | New Board panel | Creating enters Sheet Input; Escape returns to Den Mode. |
+| `v` | Open Board from clipboard | Creates a Board from copied URL, search, or command input to the right of the Focused Board and enters Sheet Input. Available in Den Mode. |
 | Shift + `n` | New Desk panel | Creating enters Sheet Input; Escape returns to Den Mode. |
 | `p` | Save Desk as Preset panel | Available when the Focused Desk contains a Board. |
 | Shift + `p` | Replace Focused Desk from a Desk Preset | Empty Preset is excluded; replacing an empty Desk applies immediately. |

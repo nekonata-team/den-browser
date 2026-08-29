@@ -325,6 +325,24 @@ struct KeyboardShortcutTests {
         #expect(store.isDenMode)
     }
 
+    @Test func denModeVOpensBoardFromClipboard() throws {
+        let store = try makeStore(boards: [board("First")])
+        store.isDenMode = true
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString("https://example.com/test", forType: .string)
+        defer { NSPasteboard.general.clearContents() }
+
+        let vKey = try keyEvent(
+            characters: "v",
+            charactersIgnoringModifiers: "v",
+            keyCode: 9)
+
+        #expect(KeyboardController.handle(vKey, store: store))
+        #expect(store.focusedDesk?.boards.count == 2)
+        #expect(store.focusedBoard?.currentSheetURL == URL(string: "https://example.com/test"))
+        #expect(!store.isDenMode)
+    }
+
     @Test func notificationArrowsMoveSelectionAndReturnOpensIt() throws {
         let first = board("First")
         let second = board("Second")
@@ -919,7 +937,7 @@ struct KeyboardShortcutTests {
         let store = try makeStore(boards: [board("First")])
         store.isDenMode = true
         let unmapped = try keyEvent(
-            characters: "v", charactersIgnoringModifiers: "v", modifiers: [], keyCode: 9)
+            characters: "b", charactersIgnoringModifiers: "b", modifiers: [], keyCode: 11)
 
         #expect(
             KeyboardController.decision(for: unmapped, store: store)
