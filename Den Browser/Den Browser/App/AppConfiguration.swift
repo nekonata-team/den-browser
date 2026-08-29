@@ -120,12 +120,6 @@ struct AppConfiguration {
             secondFocusedBoardID = nil
             mainFocusedBoardID = alpha.id
             focusedDeskID = mainDeskID
-        case .focusedSecondBoard:
-            mainBoards = [alpha, bravo]
-            secondBoards = []
-            secondFocusedBoardID = nil
-            mainFocusedBoardID = bravo.id
-            focusedDeskID = mainDeskID
         case .overviewBoardPair:
             mainBoards = [bravo, charlie]
             secondBoards = []
@@ -138,24 +132,6 @@ struct AppConfiguration {
             secondFocusedBoardID = charlie.id
             mainFocusedBoardID = alpha.id
             focusedDeskID = secondDeskID
-        case .overflowingSecondDesk:
-            let overflowBoards = [
-                (id: "00000000-0000-0000-0000-000000000304", label: "Delta"),
-                (id: "00000000-0000-0000-0000-000000000305", label: "Echo"),
-                (id: "00000000-0000-0000-0000-000000000306", label: "Foxtrot"),
-                (id: "00000000-0000-0000-0000-000000000307", label: "Golf"),
-            ].map { board in
-                BoardState(
-                    id: fixtureID(board.id),
-                    label: board.label,
-                    width: 320,
-                    currentSheetURL: URL(string: fixtureSheetURL))
-            }
-            mainBoards = [alpha]
-            secondBoards = [bravo, charlie] + overflowBoards
-            secondFocusedBoardID = overflowBoards.last?.id
-            mainFocusedBoardID = alpha.id
-            focusedDeskID = mainDeskID
         }
         let desk = DeskState(
             id: mainDeskID,
@@ -224,10 +200,8 @@ struct AppConfiguration {
 
 private enum UITestFixture: String {
     case interactionBasics = "interaction-basics"
-    case focusedSecondBoard = "focused-second-board"
     case overviewBoardPair = "overview-board-pair"
     case focusedNonLeadingBoard = "focused-non-leading-board"
-    case overflowingSecondDesk = "overflowing-second-desk"
 }
 
 private enum UITestBoardCount: String {

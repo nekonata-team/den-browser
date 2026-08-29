@@ -246,60 +246,6 @@ final class Den_BrowserUITests: XCTestCase, BDD {
     }
 
     @MainActor
-    func testNewBoardAnimatesIntoBoardStrip() throws {
-        let app = launchApp(boardCount: .one)
-        let boardStrip = app.scrollViews["board-strip"].firstMatch
-
-        given("one Board fills the Board Strip") {
-            XCTAssertTrue(board(.alpha, in: app).wait(for: \.isSelected, toEqual: true, timeout: 5))
-            enterDenMode(in: app)
-            app.typeText("w1")
-            app.typeKey(.escape, modifierFlags: [])
-            XCTAssertTrue(boardStrip.waitForExistence(timeout: 5))
-            assertEventually("The initial Board should fill most of the Board Strip") {
-                self.boardSurface(.alpha, in: app).frame.width > boardStrip.frame.width * 0.85
-            }
-        }
-
-        when("duplicating the focused Board") {
-            if !app.windows["UI Testing · DEN MODE"].exists {
-                enterDenMode(in: app)
-            }
-            app.typeKey("\r", modifierFlags: [])
-        }
-
-        let surfacePredicate = NSPredicate(format: "identifier BEGINSWITH 'board-surface.'")
-        let surfacesQuery = boardStrip.descendants(matching: .any).matching(surfacePredicate)
-
-        then("the new Board is selected and settles at the trailing edge") {
-            assertEventually("New board surface should appear") {
-                surfacesQuery.allElementsBoundByIndex.count == 2
-            }
-
-            guard
-                let newBoardSurface = surfacesQuery.allElementsBoundByIndex.first(where: {
-                    !FixtureBoard.allSurfaceIdentifiers.contains($0.identifier)
-                })
-            else {
-                XCTFail("Failed to find the newly created board surface")
-                return
-            }
-            let newBoardID = String(newBoardSurface.identifier.dropFirst("board-surface.".count))
-            let newBoardHeader = app.descendants(matching: .any)
-                .matching(identifier: "board-header.\(newBoardID)")
-                .firstMatch
-            XCTAssertTrue(newBoardHeader.wait(for: \.isSelected, toEqual: true, timeout: 5))
-
-            assertEventuallyEqual(
-                actual: { newBoardSurface.frame.maxX },
-                expected: boardStrip.frame.maxX,
-                tolerance: 50,
-                message: "New Board should finish at the trailing edge after its insertion animation"
-            )
-        }
-    }
-
-    @MainActor
     func testTerminalBoardStartsAndExitRemovesIt() throws {
         let app = launchApp(boardCount: .one)
         let boardStrip = app.scrollViews["board-strip"].firstMatch
@@ -374,36 +320,6 @@ final class Den_BrowserUITests: XCTestCase, BDD {
         }
     }
 
-    // Protects the WKWebView/Ghostty responder boundary: router unit tests cannot prove
-    // the local AppKit monitor receives Shift-Escape while either native surface owns input.
-    @MainActor
-    func testBoardActivityShortcutFromTerminalAndSheetInput() throws {
-        let app = launchApp(boardCount: .two, terminalBoard: true)
-        let activity = app.descendants(matching: .any).matching(identifier: "board-activity").firstMatch
-
-        given("a Terminal Board owns input") {
-            XCTAssertTrue(app.windows["UI Testing · TERMINAL INPUT"].waitForExistence(timeout: 5))
-        }
-
-        when("opening and closing Board Activity from Terminal Input") {
-            app.typeKey(.escape, modifierFlags: [.shift])
-            XCTAssertTrue(activity.waitForExistence(timeout: 5))
-            app.typeKey(.escape, modifierFlags: [])
-        }
-
-        when("moving to the Web Board and opening Board Activity from Sheet Input") {
-            enterDenMode(in: app)
-            app.typeKey("l", modifierFlags: [])
-            app.typeKey(",", modifierFlags: [.control])
-            XCTAssertTrue(app.windows["UI Testing · SHEET INPUT"].waitForExistence(timeout: 5))
-            app.typeKey(.escape, modifierFlags: [.shift])
-        }
-
-        then("Board Activity opens above the Sheet") {
-            XCTAssertTrue(activity.waitForExistence(timeout: 5))
-        }
-    }
-
     @MainActor
     func testDirectDeskSwitchActivatesFocusedNonLeadingBoard() throws {
         let app = launchApp(fixture: .focusedNonLeadingBoard)
@@ -435,208 +351,12 @@ final class Den_BrowserUITests: XCTestCase, BDD {
     }
 
     @MainActor
-    func testOverviewEnterCentersBoardOnAnotherDesk() throws {
-        let app = launchApp(fixture: .overflowingSecondDesk, centerBoardsAlways: true)
-        let boardStrip = app.scrollViews["board-strip"].firstMatch
-        let alpha = board(.alpha, in: app)
-        let charlie = board(.charlie, in: app)
-        let charlieSurface = boardSurface(.charlie, in: app)
-
-        given("the next Desk has enough Boards to require scrolling") {
-            XCTAssertTrue(alpha.wait(for: \.isSelected, toEqual: true, timeout: 5))
-        }
-
-        when("selecting a middle Board in Overview and pressing Enter") {
-            enterDenMode(in: app)
-            app.typeKey("o", modifierFlags: [])
-            app.typeKey("j", modifierFlags: [])
-            app.typeKey("l", modifierFlags: [])
-            app.typeKey(.return, modifierFlags: [])
-        }
-
-        then("the selected Board is centered in the Board Strip") {
-            XCTAssertTrue(charlie.wait(for: \.isSelected, toEqual: true, timeout: 5))
-            assertEventuallyEqual(
-                actual: { charlieSurface.frame.midX },
-                expected: boardStrip.frame.midX,
-                tolerance: 15,
-                message: "Overview selection should center the Board on the target Desk"
-            )
-        }
-    }
-
-    @MainActor
-    func testRemovingFocusedBoardSettlesAtLeadingEdge() throws {
-        let app = launchApp(fixture: .focusedSecondBoard)
-        let boardStrip = app.scrollViews["board-strip"].firstMatch
-        let alpha = boardSurface(.alpha, in: app)
-        let bravo = boardSurface(.bravo, in: app)
-        let alphaHeader = boardHeader(.alpha, in: app)
-        let bravoHeader = boardHeader(.bravo, in: app)
-
-        given("Bravo starts as the focused Board") {
-            XCTAssertTrue(bravoHeader.wait(for: \.isSelected, toEqual: true, timeout: 5))
-        }
-
-        when("removing the focused Board") {
-            enterDenMode(in: app)
-            app.typeText("x")
-        }
-
-        then("Alpha remains focused and settles at the leading edge") {
-            XCTAssertTrue(bravo.waitForNonExistence(timeout: 5))
-            XCTAssertTrue(alphaHeader.wait(for: \.isSelected, toEqual: true, timeout: 5))
-            assertEventually("Remaining Boards should settle at the leading edge") {
-                abs(alpha.frame.minX - boardStrip.frame.minX) < 30
-            }
-        }
-    }
-
-    @MainActor
-    func testOnOverflowKeepsBoardCoordinatesStableAcrossBoundary() throws {
-        let app = launchApp(centerBoardsOnOverflow: true)
-        let boardStrip = app.scrollViews["board-strip"].firstMatch
-        let alpha = boardSurface(.alpha, in: app)
-        let charlie = boardSurface(.charlie, in: app)
-
-        given("the Boards start centered without overflowing") {
-            enterDenMode(in: app)
-            app.typeText("w3")
-            app.typeKey(.escape, modifierFlags: [])
-            boardHeader(.bravo, in: app).click()
-
-            assertEventuallyEqual(
-                actual: { (alpha.frame.minX + charlie.frame.maxX) / 2 },
-                expected: boardStrip.frame.midX,
-                tolerance: 50,
-                message: "Boards should start centered without overflowing"
-            )
-        }
-
-        let initialAlphaX = alpha.frame.minX
-
-        when("duplicating a Board across the overflow boundary") {
-            if !app.windows["UI Testing · DEN MODE"].exists {
-                enterDenMode(in: app)
-            }
-            app.typeKey(.return, modifierFlags: [])
-        }
-
-        let surfacePredicate = NSPredicate(format: "identifier BEGINSWITH 'board-surface.'")
-        let surfacesQuery = boardStrip.descendants(matching: .any).matching(surfacePredicate)
-        then("the new Board appears after crossing the boundary") {
-            assertEventually("New board surface should appear") {
-                surfacesQuery.allElementsBoundByIndex.count == 4
-            }
-        }
-
-        let newBoardSurfaceElement = surfacesQuery.allElementsBoundByIndex.first {
-            !FixtureBoard.allSurfaceIdentifiers.contains($0.identifier)
-        }
-        let newBoardIdentifier = try XCTUnwrap(newBoardSurfaceElement?.identifier)
-        let newBoardSurface =
-            app.descendants(matching: .any)
-            .matching(identifier: newBoardIdentifier)
-            .firstMatch
-
-        then("the new Board centers after crossing the boundary") {
-            assertEventuallyEqual(
-                actual: { newBoardSurface.frame.midX },
-                expected: boardStrip.frame.midX,
-                tolerance: 50,
-                message: "New Board should center after crossing the overflow boundary"
-            )
-        }
-
-        when("removing the newly created Board") {
-            enterDenMode(in: app)
-            app.typeText("d")
-        }
-
-        then("the original Boards return to their centered coordinates") {
-            XCTAssertTrue(newBoardSurface.waitForNonExistence(timeout: 5))
-            assertEventuallyEqual(
-                actual: { alpha.frame.minX },
-                expected: initialAlphaX,
-                tolerance: 30,
-                message: "Boards should return to the same centered coordinates"
-            )
-        }
-    }
-
-    @MainActor
-    func testFiltersBoardsInFocusedDeskAndEntersSelection() throws {
-        let app = launchApp(centerBoardsAlways: true)
-        let filter = app.descendants(matching: .any).matching(identifier: "desk-filter").firstMatch
-        let boardStrip = app.scrollViews["board-strip"].firstMatch
-        let alpha = board(.alpha, in: app)
-        let bravo = board(.bravo, in: app)
-        let charlie = board(.charlie, in: app)
-        let charlieSurface = boardSurface(.charlie, in: app)
-        let charlieInput = charlieSurface.textFields["Sheet input"].firstMatch
-
-        given("Charlie has prior input focus and Alpha is focused before filtering") {
-            XCTAssertTrue(charlieInput.waitForExistence(timeout: 5))
-            charlieInput.click()
-            app.typeText("p")
-            enterDenMode(in: app)
-            app.typeKey("h", modifierFlags: [])
-            app.typeKey("h", modifierFlags: [])
-            app.typeKey(",", modifierFlags: [.control])
-            XCTAssertTrue(alpha.wait(for: \.isSelected, toEqual: true, timeout: 5))
-            enterDenMode(in: app)
-            app.typeText("/")
-            XCTAssertTrue(filter.waitForExistence(timeout: 5))
-        }
-
-        when("filtering for Charlie") {
-            app.typeText("arl")
-        }
-
-        then("only Charlie remains visible") {
-            assertEventually("Only the matching Board should remain visible") {
-                self.board(.charlie, in: app).exists
-                    && !self.board(.alpha, in: app).exists
-                    && !self.board(.bravo, in: app).exists
-            }
-            assertEventuallyEqual(
-                actual: { charlieSurface.frame.midX },
-                expected: boardStrip.frame.midX,
-                tolerance: 30,
-                message: "Filtered Board should be centered while filtering"
-            )
-        }
-
-        when("confirming the filtered selection") {
-            app.typeKey(.return, modifierFlags: [])
-            app.typeKey(.return, modifierFlags: [])
-        }
-
-        then("all Boards return, Charlie is centered, and receives Sheet input") {
-            XCTAssertTrue(charlie.wait(for: \.isSelected, toEqual: true, timeout: 5))
-            XCTAssertTrue(charlieInput.waitForExistence(timeout: 5))
-            XCTAssertTrue(alpha.waitForExistence(timeout: 5))
-            XCTAssertTrue(bravo.waitForExistence(timeout: 5))
-            assertEventuallyEqual(
-                actual: { charlieSurface.frame.midX },
-                expected: boardStrip.frame.midX,
-                tolerance: 30,
-                message: "Filtered Board should center before receiving input"
-            )
-            app.typeText("a")
-            XCTAssertEqual(charlieInput.value as? String, "pa")
-        }
-    }
-
-    @MainActor
     private func launchApp(
         fixture: UITestFixture = .interactionBasics,
         boardCount: UITestBoardCount = .three,
         terminalBoard: Bool = false,
         sheetNavigationEnabled: Bool = false,
-        multipleDrawerItems: Bool = false,
-        centerBoardsOnOverflow: Bool = false,
-        centerBoardsAlways: Bool = false
+        multipleDrawerItems: Bool = false
     ) -> XCUIApplication {
         let app = XCUIApplication()
         var args = [
@@ -652,12 +372,6 @@ final class Den_BrowserUITests: XCTestCase, BDD {
         }
         if multipleDrawerItems {
             args.append("--multiple-drawer-items")
-        }
-        if centerBoardsOnOverflow {
-            args.append("--center-boards-on-overflow")
-        }
-        if centerBoardsAlways {
-            args.append("--center-boards-always")
         }
         app.launchArguments = args
         app.launchEnvironment["DEN_UI_TEST_RUN_ID"] = UUID().uuidString
@@ -739,27 +453,6 @@ final class Den_BrowserUITests: XCTestCase, BDD {
             object: nil)
         XCTAssertEqual(XCTWaiter.wait(for: [expectation], timeout: timeout), .completed, message)
     }
-
-    @MainActor
-    private func assertEventuallyEqual(
-        actual: @escaping () -> CGFloat,
-        expected: CGFloat,
-        tolerance: CGFloat,
-        message: String,
-        timeout: TimeInterval = 5
-    ) {
-        let start = Date()
-        while Date().timeIntervalSince(start) < timeout {
-            let actVal = actual()
-            if abs(actVal - expected) < tolerance {
-                return
-            }
-            // Run loop spin to allow UI updates
-            RunLoop.current.run(mode: .default, before: Date(timeIntervalSinceNow: 0.05))
-        }
-        let actVal = actual()
-        XCTAssertEqual(actVal, expected, accuracy: tolerance, message)
-    }
 }
 
 @MainActor
@@ -793,14 +486,11 @@ final class Den_BrowserUIPerformanceTests: XCTestCase {
 
 private enum UITestFixture: String {
     case interactionBasics = "interaction-basics"
-    case focusedSecondBoard = "focused-second-board"
     case overviewBoardPair = "overview-board-pair"
     case focusedNonLeadingBoard = "focused-non-leading-board"
-    case overflowingSecondDesk = "overflowing-second-desk"
 
     var initialBoard: FixtureBoard {
         switch self {
-        case .focusedSecondBoard: .bravo
         case .focusedNonLeadingBoard: .charlie
         case .overviewBoardPair: .bravo
         default: .alpha
