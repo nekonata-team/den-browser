@@ -6,6 +6,7 @@ import WebKit
 @testable import Den_Browser
 
 @MainActor
+@Suite(.serialized)
 struct ProfileManagerTests {
     @Test func profileModelsRoundTripAndRejectUnknownSchema() throws {
         let profile = ProfileState(

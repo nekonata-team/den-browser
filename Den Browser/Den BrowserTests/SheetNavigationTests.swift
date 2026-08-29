@@ -41,6 +41,7 @@ private final class WebViewLoadWaiter: NSObject, WKNavigationDelegate {
 }
 
 @MainActor
+@Suite(.serialized)
 struct SheetNavigationTests {
     @Test func sheetURLPolicyAcceptsWebAndAbsoluteLocalFileURLs() {
         let supported = [

@@ -5,6 +5,7 @@ import Testing
 @testable import Den_Browser
 
 @MainActor
+@Suite(.serialized)
 struct DenStoreOverviewTests {
 
     @Test func denCommandsAreSuspendedByOverview() throws {

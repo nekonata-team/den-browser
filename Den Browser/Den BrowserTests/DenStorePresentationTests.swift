@@ -5,6 +5,7 @@ import Testing
 @testable import Den_Browser
 
 @MainActor
+@Suite(.serialized)
 struct DenStorePresentationTests {
 
     @Test func resetDenClearsRuntimePresentationAndPersistsFreshState() {

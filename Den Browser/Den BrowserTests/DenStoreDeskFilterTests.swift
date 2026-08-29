@@ -5,6 +5,7 @@ import Testing
 @testable import Den_Browser
 
 @MainActor
+@Suite(.serialized)
 struct DenStoreDeskFilterTests {
     @Test func filteringMatchesBoardLabelAndCurrentSheetURLWithoutChangingFocus() {
         let alpha = board("Alpha", url: "https://search.example/")

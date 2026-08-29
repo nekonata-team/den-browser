@@ -5,6 +5,7 @@ import Testing
 @testable import Den_Browser
 
 @MainActor
+@Suite(.serialized)
 struct DenStoreDrawerTests {
     @Test func keepPreservesDeskLayoutAndOpensNewestItem() throws {
         let existingBoard = board("Existing", url: "https://desk.example/")

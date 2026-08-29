@@ -5,6 +5,7 @@ import WebKit
 @testable import Den_Browser
 
 @MainActor
+@Suite(.serialized)
 struct MV3WebExtensionHostTests {
     @Test func controllerConfigurationIsProfileScoped() {
         let firstProfileID = UUID()

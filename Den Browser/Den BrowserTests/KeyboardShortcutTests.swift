@@ -37,6 +37,7 @@ private final class TestUserDefaults: UserDefaults {
 }
 
 @MainActor
+@Suite(.serialized)
 struct KeyboardShortcutTests {
     @Test func shortcutOverridesPersistClearAndReset() throws {
         let suiteName = "KeyboardShortcutTests-\(UUID())"
@@ -161,10 +162,13 @@ struct KeyboardShortcutTests {
             label: "Second",
             boards: [movedBoard],
             focusedBoardID: movedBoard.id)
+        let preferences = try makePreferences()
         let store = DenStore(
             state: DenState(
                 desks: [firstDesk, secondDesk],
-                focusedDeskID: secondDesk.id))
+                focusedDeskID: secondDesk.id),
+            sheetNavigation: SheetNavigationManager(),
+            preferences: preferences)
         store.isDenMode = true
 
         let shiftOne = try keyEvent(
@@ -250,11 +254,13 @@ struct KeyboardShortcutTests {
             label: "Second",
             boards: [movedBoard],
             focusedBoardID: movedBoard.id)
+        let preferences = try makePreferences()
         let store = DenStore(
             state: DenState(
                 desks: [firstDesk, secondDesk],
-                focusedDeskID: secondDesk.id))
-        let preferences = try makePreferences()
+                focusedDeskID: secondDesk.id),
+            sheetNavigation: SheetNavigationManager(),
+            preferences: preferences)
         let commandOptionOne = try keyEvent(
             characters: "1",
             charactersIgnoringModifiers: "1",
@@ -277,11 +283,13 @@ struct KeyboardShortcutTests {
         let firstDesk = DeskState(label: "First", boards: [])
         let secondDesk = DeskState(label: "Second", boards: [])
         let thirdDesk = DeskState(label: "Third", boards: [])
+        let preferences = try makePreferences()
         let store = DenStore(
             state: DenState(
                 desks: [firstDesk, secondDesk, thirdDesk],
-                focusedDeskID: firstDesk.id))
-        let preferences = try makePreferences()
+                focusedDeskID: firstDesk.id),
+            sheetNavigation: SheetNavigationManager(),
+            preferences: preferences)
 
         let next = try keyEvent(
             characters: "\t",

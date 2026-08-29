@@ -4,6 +4,7 @@ import Testing
 @testable import Den_Browser
 
 @MainActor
+@Suite(.serialized)
 struct DenStoreBoardActivityTests {
     @Test func enteringBoardFromActivityFocusesItsDeskAndClosesActivity() {
         let first = BoardState(label: "First", width: 520, currentSheetURL: nil)

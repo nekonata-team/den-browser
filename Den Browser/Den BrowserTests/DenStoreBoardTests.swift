@@ -7,6 +7,7 @@ import WebKit
 @testable import Den_Browser
 
 @MainActor
+@Suite(.serialized)
 struct DenStoreBoardTests {
 
     @Test func terminalInputResolvesHomeRelativeAndAbsoluteDirectories() throws {

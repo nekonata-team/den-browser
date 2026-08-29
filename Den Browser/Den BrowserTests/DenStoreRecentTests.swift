@@ -5,14 +5,18 @@ import WebKit
 @testable import Den_Browser
 
 @MainActor
+@Suite(.serialized)
 struct DenStoreRecentTests {
     @Test func openBoardStoresAndReusesRecentItemsInMostRecentOrder() throws {
+        let (preferences, defaults, suiteName) = makePreferences()
+        defer { defaults.removePersistentDomain(forName: suiteName) }
         let source = desk("Desk")
         var savedItems: [RecentItem] = []
         let store = DenStore(
             state: DenState(desks: [source], focusedDeskID: source.id),
             websiteDataStore: .default(),
             sheetNavigation: SheetNavigationManager(),
+            preferences: preferences,
             recentItems: [],
             onSave: nil,
             onRecentItemsSave: {
@@ -33,11 +37,14 @@ struct DenStoreRecentTests {
     }
 
     @Test func recentSearchDeduplicationIgnoresCaseAndRepeatedWhitespace() {
+        let (preferences, defaults, suiteName) = makePreferences()
+        defer { defaults.removePersistentDomain(forName: suiteName) }
         let source = desk("Desk")
         let store = DenStore(
             state: DenState(desks: [source], focusedDeskID: source.id),
             websiteDataStore: .default(),
             sheetNavigation: SheetNavigationManager(),
+            preferences: preferences,
             recentItems: [],
             onSave: nil,
             onRecentItemsSave: { _ in true })
@@ -49,11 +56,14 @@ struct DenStoreRecentTests {
     }
 
     @Test func pastedLineBreaksDoNotBreakURLOrSearchInput() throws {
+        let (preferences, defaults, suiteName) = makePreferences()
+        defer { defaults.removePersistentDomain(forName: suiteName) }
         let source = desk("Desk")
         let store = DenStore(
             state: DenState(desks: [source], focusedDeskID: source.id),
             websiteDataStore: .default(),
             sheetNavigation: SheetNavigationManager(),
+            preferences: preferences,
             recentItems: [],
             onSave: nil,
             onRecentItemsSave: { _ in true })
@@ -74,12 +84,15 @@ struct DenStoreRecentTests {
     }
 
     @Test func recentKeepsOneHundredItemsAndClearPersists() {
+        let (preferences, defaults, suiteName) = makePreferences()
+        defer { defaults.removePersistentDomain(forName: suiteName) }
         let source = desk("Desk")
         var savedItems: [RecentItem] = []
         let store = DenStore(
             state: DenState(desks: [source], focusedDeskID: source.id),
             websiteDataStore: .default(),
             sheetNavigation: SheetNavigationManager(),
+            preferences: preferences,
             recentItems: [],
             onSave: nil,
             onRecentItemsSave: {
@@ -102,12 +115,15 @@ struct DenStoreRecentTests {
     }
 
     @Test func failedRecentSaveRestoresItemsWithoutBlockingBoardCreation() {
+        let (preferences, defaults, suiteName) = makePreferences()
+        defer { defaults.removePersistentDomain(forName: suiteName) }
         let source = desk("Desk")
         let original: [RecentItem] = [.search("existing")]
         let store = DenStore(
             state: DenState(desks: [source], focusedDeskID: source.id),
             websiteDataStore: .default(),
             sheetNavigation: SheetNavigationManager(),
+            preferences: preferences,
             recentItems: original,
             onSave: nil,
             onRecentItemsSave: { _ in false })
@@ -119,11 +135,9 @@ struct DenStoreRecentTests {
     }
 
     @Test func terminalAndZellijInputsBecomeRecentItems() throws {
-        let source = desk("Desk")
-        let suiteName = "DenStoreRecentTerminalTests-\(UUID().uuidString)"
-        let defaults = UserDefaults(suiteName: suiteName)!
+        let (preferences, defaults, suiteName) = makePreferences()
         defer { defaults.removePersistentDomain(forName: suiteName) }
-        let preferences = AppPreferences(defaults: defaults)
+        let source = desk("Desk")
         preferences.setZellijPath("/opt/homebrew/bin/zellij")
         preferences.setZmxPath("/opt/homebrew/bin/zmx")
         let store = DenStore(
@@ -151,6 +165,8 @@ struct DenStoreRecentTests {
     }
 
     @Test func openingTerminalRecentRevalidatesDirectoryAndMovesItToTheFront() throws {
+        let (preferences, defaults, suiteName) = makePreferences()
+        defer { defaults.removePersistentDomain(forName: suiteName) }
         let source = desk("Desk")
         let directory = FileManager.default.temporaryDirectory.standardizedFileURL.path
         let item = RecentItem.terminal(workingDirectory: directory)
@@ -158,6 +174,7 @@ struct DenStoreRecentTests {
             state: DenState(desks: [source], focusedDeskID: source.id),
             websiteDataStore: .default(),
             sheetNavigation: SheetNavigationManager(),
+            preferences: preferences,
             recentItems: [.search("existing"), item],
             onSave: nil,
             onRecentItemsSave: { _ in true })
@@ -169,6 +186,8 @@ struct DenStoreRecentTests {
     }
 
     @Test func missingTerminalRecentShowsErrorWithoutCreatingBoard() {
+        let (preferences, defaults, suiteName) = makePreferences()
+        defer { defaults.removePersistentDomain(forName: suiteName) }
         let source = desk("Desk")
         let item = RecentItem.terminal(
             workingDirectory: "/missing/den-browser-\(UUID().uuidString)")
@@ -176,6 +195,7 @@ struct DenStoreRecentTests {
             state: DenState(desks: [source], focusedDeskID: source.id),
             websiteDataStore: .default(),
             sheetNavigation: SheetNavigationManager(),
+            preferences: preferences,
             recentItems: [item],
             onSave: nil,
             onRecentItemsSave: { _ in true })
@@ -188,11 +208,9 @@ struct DenStoreRecentTests {
     }
 
     @Test func openingZellijRecentCreatesBoardAndMovesItToTheFront() {
-        let source = desk("Desk")
-        let suiteName = "DenStoreRecentZellijTests-\(UUID().uuidString)"
-        let defaults = UserDefaults(suiteName: suiteName)!
+        let (preferences, defaults, suiteName) = makePreferences()
         defer { defaults.removePersistentDomain(forName: suiteName) }
-        let preferences = AppPreferences(defaults: defaults)
+        let source = desk("Desk")
         preferences.setZellijPath("/opt/homebrew/bin/zellij")
         let item = RecentItem.zellij(sessionName: "project-a")
         let store = DenStore(
@@ -212,11 +230,9 @@ struct DenStoreRecentTests {
     }
 
     @Test func openingZmxRecentCreatesBoardAndMovesItToTheFront() {
-        let source = desk("Desk")
-        let suiteName = "DenStoreRecentZmxTests-\(UUID().uuidString)"
-        let defaults = UserDefaults(suiteName: suiteName)!
+        let (preferences, defaults, suiteName) = makePreferences()
         defer { defaults.removePersistentDomain(forName: suiteName) }
-        let preferences = AppPreferences(defaults: defaults)
+        let source = desk("Desk")
         preferences.setZmxPath("/opt/homebrew/bin/zmx")
         let item = RecentItem.zmx(sessionName: "project-a")
         let store = DenStore(
@@ -236,11 +252,9 @@ struct DenStoreRecentTests {
     }
 
     @Test func openingZellijRecentWithoutConfigurationShowsError() {
-        let source = desk("Desk")
-        let suiteName = "DenStoreRecentMissingZellijTests-\(UUID().uuidString)"
-        let defaults = UserDefaults(suiteName: suiteName)!
+        let (preferences, defaults, suiteName) = makePreferences()
         defer { defaults.removePersistentDomain(forName: suiteName) }
-        let preferences = AppPreferences(defaults: defaults)
+        let source = desk("Desk")
         let item = RecentItem.zellij(sessionName: nil)
         let store = DenStore(
             state: DenState(desks: [source], focusedDeskID: source.id),
@@ -259,11 +273,9 @@ struct DenStoreRecentTests {
     }
 
     @Test func openingZmxRecentWithoutConfigurationShowsError() {
-        let source = desk("Desk")
-        let suiteName = "DenStoreRecentMissingZmxTests-\(UUID().uuidString)"
-        let defaults = UserDefaults(suiteName: suiteName)!
+        let (preferences, defaults, suiteName) = makePreferences()
         defer { defaults.removePersistentDomain(forName: suiteName) }
-        let preferences = AppPreferences(defaults: defaults)
+        let source = desk("Desk")
         let item = RecentItem.zmx(sessionName: "project-a")
         let store = DenStore(
             state: DenState(desks: [source], focusedDeskID: source.id),
@@ -279,6 +291,12 @@ struct DenStoreRecentTests {
         #expect(store.focusedDesk?.boards.isEmpty == true)
         #expect(store.openBoardPanelMessage?.contains("absolute zmx executable path") == true)
         #expect(store.recentItems == [item])
+    }
+
+    private func makePreferences() -> (AppPreferences, UserDefaults, String) {
+        let suiteName = "DenStoreRecentTests-\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suiteName) ?? .standard
+        return (AppPreferences(defaults: defaults), defaults, suiteName)
     }
 
     private func desk(_ label: String) -> DeskState {
