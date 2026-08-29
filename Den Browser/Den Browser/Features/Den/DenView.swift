@@ -83,62 +83,10 @@ struct DenView<Header: View>: View {
                         for: geometry.size,
                         shouldShowHeader: shouldShowHeader))
 
-                if store.isNotificationListPresented {
-                    Rectangle()
-                        .fill(.clear)
-                        .contentShape(Rectangle())
-                        .onTapGesture { store.closeNotificationList() }
-                        .accessibilityHidden(true)
-                        .zIndex(4)
-
-                    NotificationListView(profileColor: profileColor)
-                        .padding(
-                            .top,
-                            shouldShowHeader
-                                ? DenLayout.denHeaderHeight + DenLayout.panelGap
-                                : DenLayout.outerInset
-                        )
-                        .padding(.trailing, DenLayout.outerInset)
-                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
-                        .transition(DenMotion.transition(reduceMotion: shouldReduceMotion, scale: 0.96))
-                        .zIndex(5)
-                }
-
-                if store.isDrawerOpen {
-                    Rectangle()
-                        .fill(.clear)
-                        .contentShape(Rectangle())
-                        .onTapGesture {
-                            store.closeDrawer()
-                        }
-                        .accessibilityHidden(true)
-                        .zIndex(2)
-                }
-
-                DrawerView(
-                    availableHeight: geometry.size.height,
-                    profileColor: profileColor,
-                    shouldShowHeader: shouldShowHeader
-                )
-                .padding(.horizontal, DenLayout.outerInset)
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
-                .offset(y: store.isDrawerOpen ? 0 : geometry.size.height)
-                .allowsHitTesting(store.isDrawerOpen)
-                .accessibilityHidden(!store.isDrawerOpen)
-                .zIndex(3)
-
-                if let toast = store.toastMessage {
-                    ToastView(toast: toast, onTap: store.handleToastTap)
-                        .padding(.trailing, 20)
-                        .padding(.bottom, 20)
-                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
-                        .transition(
-                            systemReduceMotion
-                                ? .opacity
-                                : .move(edge: .bottom).combined(with: .opacity)
-                        )
-                        .zIndex(10)
-                }
+                notificationsOverlay
+                drawerOverlay(in: geometry.size)
+                toastOverlay
+                indicatorOverlay
             }
             .onChange(of: preferences.sheetScale) { _, scale in
                 store.applySheetScale(scale)
@@ -471,6 +419,108 @@ struct DenView<Header: View>: View {
         )
     }
 
+    @ViewBuilder
+    private var notificationsOverlay: some View {
+        if store.isNotificationListPresented {
+            Rectangle()
+                .fill(.clear)
+                .contentShape(Rectangle())
+                .onTapGesture { store.closeNotificationList() }
+                .accessibilityHidden(true)
+                .zIndex(4)
+
+            NotificationListView(profileColor: profileColor)
+                .padding(
+                    .top,
+                    shouldShowHeader
+                        ? DenLayout.denHeaderHeight + DenLayout.panelGap
+                        : DenLayout.outerInset
+                )
+                .padding(.trailing, DenLayout.outerInset)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
+                .transition(DenMotion.transition(reduceMotion: shouldReduceMotion, scale: 0.96))
+                .zIndex(5)
+        }
+    }
+
+    @ViewBuilder
+    private func drawerOverlay(in size: CGSize) -> some View {
+        if store.isDrawerOpen {
+            Rectangle()
+                .fill(.clear)
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    store.closeDrawer()
+                }
+                .accessibilityHidden(true)
+                .zIndex(2)
+        }
+
+        DrawerView(
+            availableHeight: size.height,
+            profileColor: profileColor,
+            shouldShowHeader: shouldShowHeader
+        )
+        .padding(.horizontal, DenLayout.outerInset)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
+        .offset(y: store.isDrawerOpen ? 0 : size.height)
+        .allowsHitTesting(store.isDrawerOpen)
+        .accessibilityHidden(!store.isDrawerOpen)
+        .zIndex(3)
+    }
+
+    @ViewBuilder
+    private var toastOverlay: some View {
+        if let toast = store.toastMessage {
+            ToastView(toast: toast, onTap: store.handleToastTap)
+                .padding(.trailing, 20)
+                .padding(.bottom, 20)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
+                .transition(
+                    systemReduceMotion
+                        ? .opacity
+                        : .move(edge: .bottom).combined(with: .opacity)
+                )
+                .zIndex(10)
+        }
+    }
+
+    @ViewBuilder
+    private var indicatorOverlay: some View {
+        if shouldShowBoardIndicator {
+            boardIndicator
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
+                .padding(.bottom, DenLayout.outerInset)
+                .allowsHitTesting(store.temporaryContext == nil)
+                .accessibilityHidden(store.temporaryContext != nil)
+                .transition(.opacity)
+        }
+    }
+
+    private var shouldShowBoardIndicator: Bool {
+        !store.isZenViewPresented
+            && store.temporaryContext == nil
+            && (store.focusedDesk?.boards.count ?? 0) > 1
+    }
+
+    private var boardIndicator: some View {
+        let boards =
+            store.isDeskFilterPresented
+            ? store.filteredDeskBoards
+            : store.focusedDesk?.boards ?? []
+        let focusedBoardID =
+            store.isDeskFilterPresented
+            ? store.deskFilterSelectionBoardID
+            : store.focusedDesk?.focusedBoardID
+
+        return BoardStripIndicator(
+            boards: boards,
+            focusedBoardID: focusedBoardID,
+            reduceMotion: shouldReduceMotion,
+            onSelect: { store.focusBoard($0) }
+        )
+    }
+
     private func openBoard(defaultBoardWidth: Double) {
         store.openBoard(
             input: urlText,
@@ -518,4 +568,38 @@ extension DenView where Header == EmptyView {
     DenView()
         .environment(DenStore())
         .environment(AppPreferences())
+}
+
+private struct BoardStripIndicator: View {
+    private static let dotHeight: CGFloat = 6
+
+    let boards: [BoardState]
+    let focusedBoardID: UUID?
+    let reduceMotion: Bool
+    let onSelect: (UUID) -> Void
+
+    var body: some View {
+        HStack(spacing: 8) {
+            ForEach(boards) { board in
+                let isFocused = board.id == focusedBoardID
+                Button {
+                    onSelect(board.id)
+                } label: {
+                    Capsule()
+                        .fill(isFocused ? Color.primary : Color.primary.opacity(0.28))
+                        .frame(width: isFocused ? 18 : Self.dotHeight, height: Self.dotHeight)
+                        .padding(.horizontal, 2)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .help(board.displayName)
+                .accessibilityLabel("\(board.displayName) Board")
+            }
+        }
+        .frame(height: Self.dotHeight)
+        .animation(DenMotion.spatial(reduceMotion: reduceMotion), value: focusedBoardID)
+        .animation(DenMotion.spatial(reduceMotion: reduceMotion), value: boards.map(\.id))
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("board-strip-indicator")
+    }
 }

@@ -68,9 +68,13 @@ struct BoardStrip: View {
             store.isDeskFilterPresented
             ? store.filteredDeskBoards
             : store.focusedDesk?.boards ?? []
+        let shouldShowIndicator = !store.isZenViewPresented && boards.count > 1
         let topInset = shouldShowHeader ? DenLayout.denHeaderHeight : DenLayout.outerInset
-        let bottomInset = DenLayout.outerInset
-        let boardHeight = DenLayout.boardHeight(for: size, shouldShowHeader: shouldShowHeader)
+        let bottomInset = DenLayout.outerInset + (shouldShowIndicator ? DenLayout.boardIndicatorHeight : 0)
+        let boardHeight = DenLayout.boardHeight(
+            for: size,
+            shouldShowHeader: shouldShowHeader,
+            shouldShowIndicator: shouldShowIndicator)
         let maximizedBoardWidth = max(
             CGFloat(BoardState.minimumWidth),
             size.width - boardHorizontalPadding * 2)

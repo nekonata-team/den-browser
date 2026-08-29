@@ -15,12 +15,18 @@ enum DenLayout {
     static let openBoardAtEndButtonSize: CGFloat = 48
     static let focusModeBlurRadius: CGFloat = 8
     static let focusModeHaloRadius: CGFloat = 24
+    static let boardIndicatorHeight: CGFloat = 14
 
     static let denHeaderHeight = deskSwitcherHeight
 
-    static func boardHeight(for size: CGSize, shouldShowHeader: Bool) -> CGFloat {
+    static func boardHeight(
+        for size: CGSize,
+        shouldShowHeader: Bool,
+        shouldShowIndicator: Bool = false
+    ) -> CGFloat {
         let topInset = shouldShowHeader ? denHeaderHeight : outerInset
-        return max(minimumBoardHeight, size.height - topInset - outerInset)
+        let bottomInset = outerInset + (shouldShowIndicator ? boardIndicatorHeight : 0)
+        return max(minimumBoardHeight, size.height - topInset - bottomInset)
     }
 }
 

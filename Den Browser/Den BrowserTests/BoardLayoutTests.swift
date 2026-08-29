@@ -100,6 +100,17 @@ struct BoardLayoutTests {
         )
     }
 
+    @Test func calculatesBoardHeightWithOptionalIndicator() {
+        let size = CGSize(width: 1000, height: 800)
+        let heightWithHeader = DenLayout.boardHeight(for: size, shouldShowHeader: true, shouldShowIndicator: false)
+        let heightWithoutHeader = DenLayout.boardHeight(for: size, shouldShowHeader: false, shouldShowIndicator: false)
+        let heightWithIndicator = DenLayout.boardHeight(for: size, shouldShowHeader: true, shouldShowIndicator: true)
+
+        #expect(heightWithHeader == 800 - DenLayout.denHeaderHeight - DenLayout.outerInset)
+        #expect(heightWithoutHeader == 800 - DenLayout.outerInset - DenLayout.outerInset)
+        #expect(heightWithIndicator == heightWithHeader - DenLayout.boardIndicatorHeight)
+    }
+
     private func paddings(
         for centering: FocusedBoardCentering,
         boardCount: Int
