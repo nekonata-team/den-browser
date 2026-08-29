@@ -33,38 +33,6 @@ final class Den_BrowserUITests: XCTestCase, BDD {
     }
 
     @MainActor
-    func testSheetInputAndDenModeFocusCycle() throws {
-        let app = launchApp(boardCount: .one)
-        let sheetInput = app.textFields["Sheet input"].firstMatch
-
-        given("the initial Sheet input is visible") {
-            XCTAssertTrue(sheetInput.waitForExistence(timeout: 10))
-            XCTAssertTrue(app.windows["UI Testing · SHEET INPUT"].waitForExistence(timeout: 5))
-        }
-
-        when("entering Den Mode after typing into the Sheet input") {
-            sheetInput.click()
-            sheetInput.typeText("a")
-            sheetInput.typeKey(",", modifierFlags: .control)
-            assertDenMode(in: app)
-        }
-
-        when("returning to Sheet mode") {
-            app.typeKey(",", modifierFlags: .control)
-            XCTAssertTrue(app.windows["UI Testing · SHEET INPUT"].waitForExistence(timeout: 5))
-        }
-
-        when("typing more input") {
-            XCTAssertTrue(sheetInput.waitForExistence(timeout: 5))
-            app.typeText("!")
-        }
-
-        then("the Sheet input regains focus and retains the previous text") {
-            XCTAssertEqual(sheetInput.value as? String, "a!")
-        }
-    }
-
-    @MainActor
     func testClickingInputOnUnfocusedBoardPreservesClickedResponder() throws {
         let app = launchApp(boardCount: .two)
         let alpha = board(.alpha, in: app)
@@ -88,39 +56,15 @@ final class Den_BrowserUITests: XCTestCase, BDD {
     }
 
     @MainActor
-    func testDrawerPreviewReceivesVimAndFormInput() throws {
-        let app = launchApp(boardCount: .one, sheetNavigationEnabled: true)
-
-        let drawer = app.descendants(matching: .any).matching(identifier: "drawer").firstMatch
-        let previewContent = app.staticTexts["result:pending"].firstMatch
-        let sheetInput = app.textFields["Sheet input"].firstMatch
-
-        given("Sheet Navigation is enabled and a Drawer preview is focused") {
-            enterDenMode(in: app)
-            app.typeKey(.tab, modifierFlags: [])
-            XCTAssertTrue(drawer.waitForExistence(timeout: 5))
-            XCTAssertTrue(previewContent.waitForExistence(timeout: 10))
-        }
-
-        when("moving to the Sheet input and typing") {
-            app.typeText("gi")
-            XCTAssertTrue(sheetInput.waitForExistence(timeout: 5))
-            app.typeText("a")
-        }
-
-        then("the Drawer preview forwards input to the Sheet") {
-            XCTAssertEqual(sheetInput.value as? String, "a")
-        }
-    }
-
-    @MainActor
-    func testDrawerPreviewRetainsSheetNavigationAfterDiscardingIntoNextPreview() throws {
+    func testDrawerPreviewReceivesVimAndFormInputAndRetainsAfterDiscarding() throws {
         let app = launchApp(
             boardCount: .one,
             sheetNavigationEnabled: true,
             multipleDrawerItems: true)
 
         let drawer = app.descendants(matching: .any).matching(identifier: "drawer").firstMatch
+        let previewContent = app.staticTexts["result:pending"].firstMatch
+        let sheetInput = app.textFields["Sheet input"].firstMatch
         let nextDrawerItem = app.buttons
             .matching(NSPredicate(format: "label BEGINSWITH %@", "Next Drawer Fixture"))
             .firstMatch
@@ -128,15 +72,27 @@ final class Den_BrowserUITests: XCTestCase, BDD {
             .matching(NSPredicate(format: "label BEGINSWITH %@", "Drawer Fixture"))
             .firstMatch
 
-        given("two Drawer items exist and the first preview is focused") {
+        given("Sheet Navigation is enabled, two Drawer items exist, and the first preview is focused") {
             enterDenMode(in: app)
             app.typeKey(.tab, modifierFlags: [])
             XCTAssertTrue(drawer.waitForExistence(timeout: 5))
+            XCTAssertTrue(previewContent.waitForExistence(timeout: 10))
             XCTAssertTrue(nextDrawerItem.waitForExistence(timeout: 10))
             XCTAssertTrue(drawerItem.exists)
         }
 
+        when("moving to the Sheet input and typing in the first preview") {
+            app.typeText("gi")
+            XCTAssertTrue(sheetInput.waitForExistence(timeout: 5))
+            app.typeText("a")
+        }
+
+        then("the first Drawer preview accepts Sheet input") {
+            XCTAssertEqual(sheetInput.value as? String, "a")
+        }
+
         when("discarding the focused Drawer preview") {
+            app.typeKey(.escape, modifierFlags: [])
             app.typeText("x")
         }
 
@@ -145,18 +101,17 @@ final class Den_BrowserUITests: XCTestCase, BDD {
             XCTAssertTrue(drawerItem.exists)
         }
 
-        let sheetInput = app.textFields["Sheet input"].firstMatch
         when("using Sheet Navigation in the remaining preview") {
             app.typeText("gi")
         }
 
         when("typing into the Sheet input from the remaining preview") {
             XCTAssertTrue(sheetInput.waitForExistence(timeout: 5))
-            app.typeText("a")
+            app.typeText("b")
         }
 
         then("the remaining preview accepts Sheet input") {
-            XCTAssertEqual(sheetInput.value as? String, "a")
+            XCTAssertEqual(sheetInput.value as? String, "b")
         }
     }
 
@@ -246,40 +201,7 @@ final class Den_BrowserUITests: XCTestCase, BDD {
     }
 
     @MainActor
-    func testTerminalBoardStartsAndExitRemovesIt() throws {
-        let app = launchApp(boardCount: .one)
-        let boardStrip = app.scrollViews["board-strip"].firstMatch
-        let surfacePredicate = NSPredicate(format: "identifier BEGINSWITH 'board-surface.'")
-        let surfaces = boardStrip.descendants(matching: .any).matching(surfacePredicate)
-
-        when("creating a Terminal Board from the Open Board panel") {
-            app.typeKey("t", modifierFlags: .command)
-            let input = app.textFields["open-board-input"].firstMatch
-            XCTAssertTrue(input.waitForExistence(timeout: 5))
-            input.typeText(":terminal /tmp")
-            input.typeKey(.return, modifierFlags: [])
-        }
-
-        then("a second Board appears") {
-            assertEventually("Terminal Board should appear", timeout: 10) {
-                surfaces.allElementsBoundByIndex.count == 2
-            }
-        }
-
-        when("the Shell exits") {
-            app.typeText("exit")
-            app.typeKey(.return, modifierFlags: [])
-        }
-
-        then("the Terminal Board is removed") {
-            assertEventually("Terminal Board should be removed", timeout: 10) {
-                surfaces.allElementsBoundByIndex.count == 1
-            }
-        }
-    }
-
-    @MainActor
-    func testTerminalBoardDenModeToggleDoesNotExitImmediately() throws {
+    func testTerminalBoardDenModeToggleAndExit() throws {
         let app = launchApp(boardCount: .two, terminalBoard: true)
         let alpha = board(.alpha, in: app)
         let bravo = board(.bravo, in: app)
@@ -321,7 +243,7 @@ final class Den_BrowserUITests: XCTestCase, BDD {
     }
 
     @MainActor
-    func testDirectDeskSwitchActivatesFocusedNonLeadingBoard() throws {
+    func testDirectDeskSwitchAndDenModeFocusCycle() throws {
         let app = launchApp(fixture: .focusedNonLeadingBoard)
         let alpha = board(.alpha, in: app)
         let charlie = board(.charlie, in: app)
@@ -334,6 +256,14 @@ final class Den_BrowserUITests: XCTestCase, BDD {
             app.typeText("a")
         }
 
+        when("toggling Den Mode without changing Desks") {
+            charlieInput.typeKey(",", modifierFlags: .control)
+            assertDenMode(in: app)
+            app.typeKey(",", modifierFlags: .control)
+            XCTAssertTrue(app.windows["UI Testing · SHEET INPUT"].waitForExistence(timeout: 5))
+            app.typeText("b")
+        }
+
         when("switching away and returning by Desk number") {
             enterDenMode(in: app)
             app.typeKey("1", modifierFlags: [])
@@ -343,10 +273,10 @@ final class Den_BrowserUITests: XCTestCase, BDD {
             XCTAssertTrue(charlie.wait(for: \.isSelected, toEqual: true, timeout: 5))
         }
 
-        then("the Focused Board receives Sheet Input") {
+        then("the Focused Board receives Sheet Input across both cycles") {
             XCTAssertTrue(charlieInput.waitForExistence(timeout: 5))
-            app.typeText("b")
-            XCTAssertEqual(charlieInput.value as? String, "ab")
+            app.typeText("c")
+            XCTAssertEqual(charlieInput.value as? String, "abc")
         }
     }
 
