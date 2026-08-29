@@ -70,6 +70,22 @@ struct DenStorePersistenceTests {
         #expect(restored.desks.map(\.focusedBoardID) == [firstBoards[1].id, secondBoards[0].id])
     }
 
+    @Test func persistedStateRestoresDeskScrollOffset() throws {
+        let first = desk("First", boards: [board("One")])
+        var persistedState: DenState?
+        let writer = DenStore(state: DenState(desks: [first], focusedDeskID: first.id)) {
+            persistedState = $0
+        }
+
+        writer.saveDeskScrollOffset(350.0, for: first.id)
+        let restored = try #require(persistedState)
+        #expect(restored.desks[0].scrollOffsetX == 350.0)
+
+        writer.saveDeskScrollOffset(nil, for: first.id)
+        let cleared = try #require(persistedState)
+        #expect(cleared.desks[0].scrollOffsetX == nil)
+    }
+
     private func withStore(desks: [DeskState], body: (DenStore) throws -> Void) rethrows {
         let store = DenStore(state: DenState(desks: desks, focusedDeskID: desks[0].id))
         try body(store)

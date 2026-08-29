@@ -392,6 +392,22 @@ struct DenStoreDeskTests {
         }
     }
 
+    @Test func savesAndRetrievesDeskScrollOffset() {
+        let deskA = desk("Desk A")
+        let deskB = desk("Desk B")
+        withStore(desks: [deskA, deskB]) { store in
+            #expect(store.deskScrollOffset(for: deskA.id) == nil)
+
+            store.saveDeskScrollOffset(420.5, for: deskA.id)
+            #expect(store.deskScrollOffset(for: deskA.id) == 420.5)
+            #expect(store.deskScrollOffset(for: deskB.id) == nil)
+
+            store.saveDeskScrollOffset(120.0, for: deskB.id)
+            #expect(store.deskScrollOffset(for: deskA.id) == 420.5)
+            #expect(store.deskScrollOffset(for: deskB.id) == 120.0)
+        }
+    }
+
     private func withStore(desks: [DeskState], body: (DenStore) throws -> Void) rethrows {
         let store = DenStore(state: DenState(desks: desks, focusedDeskID: desks[0].id))
         try body(store)

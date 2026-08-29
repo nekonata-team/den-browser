@@ -208,6 +208,20 @@ struct BoardStrip: View {
             scrollGeometry = geometry
             settlePendingBoardAlignment(in: boardFrames)
         }
+        .onScrollPhaseChange { oldPhase, newPhase in
+            guard !store.isDeskFilterPresented else { return }
+            let wasUserScrolling = oldPhase == .interacting || oldPhase == .decelerating || oldPhase == .tracking
+            if wasUserScrolling && newPhase == .idle {
+                if let boardID = store.focusedDesk?.focusedBoardID,
+                    let centered = centeredBoardScrollX(for: boardID),
+                    abs(scrollGeometry.offsetX - centered) < 2.0
+                {
+                    store.saveDeskScrollOffset(nil, for: store.presentedDeskID)
+                } else if scrollGeometry.containerWidth > 0 && scrollGeometry.contentWidth > 0 {
+                    store.saveDeskScrollOffset(scrollGeometry.offsetX, for: store.presentedDeskID)
+                }
+            }
+        }
         .coordinateSpace(name: BoardStripCoordinateSpace.name)
         .scrollIndicators(.never)
         .accessibilityIdentifier("board-strip")
@@ -220,7 +234,9 @@ struct BoardStrip: View {
             updateBoardLayout(for: size)
             guard !didScrollToRestoredFocusedBoard else { return }
             didScrollToRestoredFocusedBoard = true
-            if preferences.boardCentering == .never {
+            if let savedOffset = store.deskScrollOffset(for: store.presentedDeskID) {
+                resetBoardStripPosition(to: savedOffset, animated: false)
+            } else if preferences.boardCentering == .never {
                 revealBoard(store.focusedDesk?.focusedBoardID, animated: false)
             } else {
                 alignBoardStrip(
@@ -257,6 +273,17 @@ struct BoardStrip: View {
                     centerBoard(current.boardID, animated: false)
                 }
                 return
+            }
+
+            if deskChanged, let deskID = current.deskID, let savedOffset = store.deskScrollOffset(for: deskID) {
+                if let boardID = current.boardID {
+                    deferBoardAlignment(
+                        .resting(savedOffset),
+                        boardID,
+                        animated: false,
+                        layoutKey: current.layoutKey)
+                    return
+                }
             }
 
             if layoutChanged {
@@ -653,9 +680,11 @@ struct BoardStrip: View {
             self.pendingBoardAlignment = nil
             switch pending.kind {
             case .center:
+                store.saveDeskScrollOffset(nil, for: self.store.presentedDeskID)
                 performBoardCentering(pending.boardID, animated: pending.animated)
             case .visible:
                 guard let targetOffsetX = revealScrollX(for: pending.boardID) else { return }
+                store.saveDeskScrollOffset(nil, for: self.store.presentedDeskID)
                 performBoardVisibility(targetOffsetX, animated: pending.animated)
             case .resting(let targetOffsetX):
                 resetBoardStripPosition(to: targetOffsetX, animated: pending.animated)
@@ -767,6 +796,7 @@ struct BoardStrip: View {
     private func scrollBoardStrip(to targetOffsetX: CGFloat) {
         pendingBoardAlignment = nil
         boardCenteringTask?.cancel()
+        store.saveDeskScrollOffset(targetOffsetX, for: store.presentedDeskID)
         withAnimation(DenMotion.spatial(reduceMotion: shouldReduceMotion)) {
             scrollPosition.scrollTo(x: targetOffsetX)
         }

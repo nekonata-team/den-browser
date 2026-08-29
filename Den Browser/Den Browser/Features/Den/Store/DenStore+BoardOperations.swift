@@ -20,6 +20,7 @@ extension DenStore {
         }
         setFocusedDesk(deskID)
         state.desks[indices.desk].focusedBoardID = boardID
+        state.desks[indices.desk].scrollOffsetX = nil
         if exitsDenMode {
             isDenMode = false
         }
@@ -98,7 +99,11 @@ extension DenStore {
     }
 
     func centerFocusedBoard() {
-        guard focusedDesk?.focusedBoardID != nil else { return }
+        guard let focusedDeskIndex, focusedDesk?.focusedBoardID != nil else { return }
+        if state.desks[focusedDeskIndex].scrollOffsetX != nil {
+            state.desks[focusedDeskIndex].scrollOffsetX = nil
+            save()
+        }
         centerFocusedBoardRequest &+= 1
     }
 
@@ -268,6 +273,7 @@ extension DenStore {
 
         let nextIndex = wrappedIndex(currentIndex + delta, count: boards.count)
         state.desks[deskIndex].focusedBoardID = boards[nextIndex].id
+        state.desks[deskIndex].scrollOffsetX = nil
         save()
     }
 
