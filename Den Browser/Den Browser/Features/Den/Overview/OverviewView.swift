@@ -113,11 +113,17 @@ struct OverviewView: View {
             }
             .overlay(alignment: .topLeading) {
                 if let drag = overviewDrag, let board = draggedOverviewBoard {
-                    overviewBoardCard(board, isSelected: true)
-                        .scaleEffect(shouldReduceMotion ? 1 : 1.03)
-                        .shadow(color: .black.opacity(0.32), radius: 18, y: 10)
-                        .position(drag.previewCenter)
-                        .allowsHitTesting(false)
+                    OverviewBoardCard(
+                        board: board,
+                        isSelected: true,
+                        profileColor: profileColor,
+                        boardHeight: boardHeight,
+                        differentiateWithoutColor: differentiateWithoutColor
+                    )
+                    .scaleEffect(shouldReduceMotion ? 1 : 1.03)
+                    .shadow(color: .black.opacity(0.32), radius: 18, y: 10)
+                    .position(drag.previewCenter)
+                    .allowsHitTesting(false)
                 }
             }
             .overlay(alignment: .topLeading) {
@@ -201,7 +207,11 @@ struct OverviewView: View {
 
             HStack(alignment: .top, spacing: DenOverviewLayout.boardSpacing) {
                 if filteredBoards.isEmpty {
-                    emptyDeskCard(desk)
+                    OverviewEmptyDeskCard(
+                        desk: desk,
+                        onSelect: { store.selectDeskInOverview(desk.id) },
+                        onEnter: { store.enterOverviewDesk(desk.id) }
+                    )
                 } else {
                     ForEach(filteredBoards) { board in
                         overviewBoard(board, in: desk)
@@ -228,7 +238,13 @@ struct OverviewView: View {
             Button {
                 store.selectBoardInOverview(board.id)
             } label: {
-                overviewBoardCard(board, isSelected: isSelected)
+                OverviewBoardCard(
+                    board: board,
+                    isSelected: isSelected,
+                    profileColor: profileColor,
+                    boardHeight: boardHeight,
+                    differentiateWithoutColor: differentiateWithoutColor
+                )
             }
             .buttonStyle(.plain)
 
@@ -299,43 +315,6 @@ struct OverviewView: View {
         .id(board.id)
     }
 
-    private func emptyDeskCard(_ desk: DeskState) -> some View {
-        Button {
-            store.selectDeskInOverview(desk.id)
-        } label: {
-            Text("Empty")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .frame(
-                    width: DenOverviewLayout.emptyBoardWidth,
-                    height: DenOverviewLayout.boardCardHeight
-                )
-                .background(
-                    Color.primary.opacity(0.06),
-                    in: RoundedRectangle(
-                        cornerRadius: DenRadius.medium,
-                        style: .continuous
-                    )
-                )
-        }
-        .buttonStyle(.plain)
-        .contentShape(Rectangle())
-        .background {
-            GeometryReader { proxy in
-                Color.clear.preference(
-                    key: OverviewEmptyBoardFramePreferenceKey.self,
-                    value: [desk.id: proxy.frame(in: .named(OverviewCoordinateSpace.name))])
-            }
-        }
-        .accessibilityLabel("Empty Desk \(desk.label)")
-        .accessibilityHint("Double-click to enter this Desk")
-        .accessibilityAddTraits(.isButton)
-        .simultaneousGesture(
-            TapGesture(count: 2).onEnded {
-                store.enterOverviewDesk(desk.id)
-            })
-    }
-
     private func overviewBoardAccessibilityLabel(for board: BoardState) -> String {
         let detail: String?
         if let zmxSessionName = board.zmxSessionName {
@@ -350,92 +329,9 @@ struct OverviewView: View {
             detail = nil
         }
 
-        return [overviewBoardKindLabel(for: board) + " Board \(board.displayName)", detail]
+        return [OverviewBoardCard.kindLabel(for: board) + " Board \(board.displayName)", detail]
             .compactMap { $0 }
             .joined(separator: ", ")
-    }
-
-    private func overviewBoardCard(_ board: BoardState, isSelected: Bool) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack(spacing: 6) {
-                Image(systemName: overviewBoardSystemImage(for: board))
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(overviewBoardTypeColor(for: board))
-                    .accessibilityHidden(true)
-
-                Text(overviewBoardKindLabel(for: board))
-                    .font(.caption2.weight(.medium))
-                    .foregroundStyle(overviewBoardTypeColor(for: board))
-            }
-
-            Text(board.displayName)
-                .font(.caption.weight(.semibold))
-                .lineLimit(2)
-
-            Text(overviewBoardDetail(for: board))
-                .font(.caption2)
-                .foregroundStyle(.secondary)
-                .lineLimit(1)
-
-            Spacer(minLength: 0)
-
-            Capsule()
-                .fill(.secondary.opacity(0.35))
-                .frame(maxWidth: .infinity)
-                .frame(height: DenOverviewLayout.widthIndicatorHeight)
-        }
-        .padding(DenOverviewLayout.boardPadding)
-        .frame(
-            width: overviewBoardCardWidth(for: board),
-            height: DenOverviewLayout.boardCardHeight,
-            alignment: .leading
-        )
-        .foregroundStyle(.primary)
-        .background(
-            overviewBoardBackground(for: board, isSelected: isSelected),
-            in: RoundedRectangle(cornerRadius: DenRadius.medium, style: .continuous)
-        )
-        .overlay {
-            RoundedRectangle(cornerRadius: DenRadius.medium, style: .continuous)
-                .stroke(
-                    isSelected
-                        ? (differentiateWithoutColor ? Color.primary : profileColor.opacity(0.86))
-                        : Color.primary.opacity(0.12),
-                    lineWidth: isSelected ? 2 : 1)
-        }
-    }
-
-    private func overviewBoardCardWidth(for board: BoardState) -> CGFloat {
-        CGFloat(board.width) * DenOverviewLayout.boardCardHeight / boardHeight
-    }
-
-    private func overviewBoardSystemImage(for board: BoardState) -> String {
-        board.isTerminal ? "terminal" : "globe"
-    }
-
-    private func overviewBoardTypeColor(for board: BoardState) -> Color {
-        board.isTerminal ? DenOverviewColors.terminal : DenOverviewColors.web
-    }
-
-    private func overviewBoardBackground(for board: BoardState, isSelected: Bool) -> Color {
-        if isSelected { return profileColor.opacity(0.18) }
-        return overviewBoardTypeColor(for: board).opacity(0.09)
-    }
-
-    private func overviewBoardKindLabel(for board: BoardState) -> String {
-        if board.isZmx { return "zmx" }
-        if board.isZellij { return "Zellij" }
-        if board.isTerminal { return "Terminal" }
-        return "Web"
-    }
-
-    private func overviewBoardDetail(for board: BoardState) -> String {
-        board.zmxSessionName
-            ?? board.zellijSessionName
-            ?? board.terminalWorkingDirectory
-            ?? board.currentSheetURL?.host(percentEncoded: false)
-            ?? board.currentSheetURL?.absoluteString
-            ?? ""
     }
 
     private func updateOverviewBoardDrag(_ board: BoardState, value: DragGesture.Value) {
@@ -685,5 +581,136 @@ private struct OverviewEmptyBoardFramePreferenceKey: PreferenceKey {
 
     static func reduce(value: inout [UUID: CGRect], nextValue: () -> [UUID: CGRect]) {
         value.merge(nextValue(), uniquingKeysWith: { $1 })
+    }
+}
+
+private struct OverviewEmptyDeskCard: View {
+    let desk: DeskState
+    let onSelect: () -> Void
+    let onEnter: () -> Void
+
+    var body: some View {
+        Button(action: onSelect) {
+            Text("Empty")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .frame(
+                    width: DenOverviewLayout.emptyBoardWidth,
+                    height: DenOverviewLayout.boardCardHeight
+                )
+                .background(
+                    Color.primary.opacity(0.06),
+                    in: RoundedRectangle(
+                        cornerRadius: DenRadius.medium,
+                        style: .continuous
+                    )
+                )
+        }
+        .buttonStyle(.plain)
+        .contentShape(Rectangle())
+        .background {
+            GeometryReader { proxy in
+                Color.clear.preference(
+                    key: OverviewEmptyBoardFramePreferenceKey.self,
+                    value: [desk.id: proxy.frame(in: .named(OverviewCoordinateSpace.name))])
+            }
+        }
+        .accessibilityLabel("Empty Desk \(desk.label)")
+        .accessibilityHint("Double-click to enter this Desk")
+        .accessibilityAddTraits(.isButton)
+        .simultaneousGesture(
+            TapGesture(count: 2).onEnded(onEnter)
+        )
+    }
+}
+
+private struct OverviewBoardCard: View {
+    let board: BoardState
+    let isSelected: Bool
+    let profileColor: Color
+    let boardHeight: CGFloat
+    let differentiateWithoutColor: Bool
+
+    static func kindLabel(for board: BoardState) -> String {
+        if board.isZmx { return "zmx" }
+        if board.isZellij { return "Zellij" }
+        if board.isTerminal { return "Terminal" }
+        return "Web"
+    }
+
+    private var cardWidth: CGFloat {
+        CGFloat(board.width) * DenOverviewLayout.boardCardHeight / boardHeight
+    }
+
+    private var systemImage: String {
+        board.isTerminal ? "terminal" : "globe"
+    }
+
+    private var typeColor: Color {
+        board.isTerminal ? DenOverviewColors.terminal : DenOverviewColors.web
+    }
+
+    private var backgroundColor: Color {
+        if isSelected { return profileColor.opacity(0.18) }
+        return typeColor.opacity(0.09)
+    }
+
+    private var detailText: String {
+        board.zmxSessionName
+            ?? board.zellijSessionName
+            ?? board.terminalWorkingDirectory
+            ?? board.currentSheetURL?.host(percentEncoded: false)
+            ?? board.currentSheetURL?.absoluteString
+            ?? ""
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 6) {
+                Image(systemName: systemImage)
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(typeColor)
+                    .accessibilityHidden(true)
+
+                Text(Self.kindLabel(for: board))
+                    .font(.caption2.weight(.medium))
+                    .foregroundStyle(typeColor)
+            }
+
+            Text(board.displayName)
+                .font(.caption.weight(.semibold))
+                .lineLimit(2)
+
+            Text(detailText)
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+
+            Spacer(minLength: 0)
+
+            Capsule()
+                .fill(.secondary.opacity(0.35))
+                .frame(maxWidth: .infinity)
+                .frame(height: DenOverviewLayout.widthIndicatorHeight)
+        }
+        .padding(DenOverviewLayout.boardPadding)
+        .frame(
+            width: cardWidth,
+            height: DenOverviewLayout.boardCardHeight,
+            alignment: .leading
+        )
+        .foregroundStyle(.primary)
+        .background(
+            backgroundColor,
+            in: RoundedRectangle(cornerRadius: DenRadius.medium, style: .continuous)
+        )
+        .overlay {
+            RoundedRectangle(cornerRadius: DenRadius.medium, style: .continuous)
+                .stroke(
+                    isSelected
+                        ? (differentiateWithoutColor ? Color.primary : profileColor.opacity(0.86))
+                        : Color.primary.opacity(0.12),
+                    lineWidth: isSelected ? 2 : 1)
+        }
     }
 }
