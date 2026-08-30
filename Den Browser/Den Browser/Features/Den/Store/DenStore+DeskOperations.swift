@@ -175,4 +175,18 @@ extension DenStore {
         isDenMode = false
         save()
     }
+
+    func deskScrollOffset(for deskID: UUID) -> CGFloat? {
+        guard let desk = state.desks.first(where: { $0.id == deskID }) else { return nil }
+        return desk.scrollOffsetX.map { CGFloat($0) }
+    }
+
+    func saveDeskScrollOffset(_ offset: CGFloat?, for deskID: UUID) {
+        guard let deskIndex = state.desks.firstIndex(where: { $0.id == deskID }) else { return }
+        let current = state.desks[deskIndex].scrollOffsetX
+        let newDouble = offset.map { Double($0) }
+        guard current != newDouble else { return }
+        state.desks[deskIndex].scrollOffsetX = newDouble
+        save()
+    }
 }

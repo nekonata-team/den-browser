@@ -148,20 +148,6 @@ final class DenStore {
     var selectedDrawerItemID: UUID?
     var expandedDrawerItemID: UUID? { state.expandedDrawerItemID }
     private(set) var toastMessage: ToastMessage?
-
-    func deskScrollOffset(for deskID: UUID) -> CGFloat? {
-        guard let desk = state.desks.first(where: { $0.id == deskID }) else { return nil }
-        return desk.scrollOffsetX.map { CGFloat($0) }
-    }
-
-    func saveDeskScrollOffset(_ offset: CGFloat?, for deskID: UUID) {
-        guard let deskIndex = state.desks.firstIndex(where: { $0.id == deskID }) else { return }
-        let current = state.desks[deskIndex].scrollOffsetX
-        let newDouble = offset.map { Double($0) }
-        guard current != newDouble else { return }
-        state.desks[deskIndex].scrollOffsetX = newDouble
-        save()
-    }
     let sheetNavigation: SheetNavigationManager
     let preferences: AppPreferences
     let websiteDataStore: WKWebsiteDataStore
