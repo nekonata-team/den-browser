@@ -15,5 +15,7 @@ struct ProcessResourceSamplerTests {
         #expect(usage?.memoryBytes ?? 0 > 0)
         #expect(usage?.processCount == 1)
         #expect(groupPIDs.contains(getpid()))
+        #expect(ProcessResourceSampler.processGroupPIDs(0).isEmpty)
+        #expect(ProcessResourceSampler.processGroupPIDs(-1).isEmpty)
     }
 }

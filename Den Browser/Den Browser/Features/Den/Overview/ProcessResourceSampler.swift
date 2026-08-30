@@ -55,12 +55,13 @@ struct ProcessResourceSampler {
         guard processGroupID > 0 else { return [] }
         let capacity = max(proc_listpgrppids(processGroupID, nil, 0), 0)
         guard capacity > 0 else { return [] }
-        var pids = [pid_t](repeating: 0, count: Int(capacity) / MemoryLayout<pid_t>.stride)
+        var pids = [pid_t](repeating: 0, count: Int(capacity))
         let count = pids.withUnsafeMutableBytes {
             proc_listpgrppids(processGroupID, $0.baseAddress, Int32($0.count))
         }
         guard count > 0 else { return [] }
-        return Array(pids.prefix(Int(count))).filter { $0 > 0 }
+        let pidCount = min(Int(count), pids.count)
+        return Array(pids.prefix(pidCount)).filter { $0 > 0 }
     }
 
     private static func sample(pids: [pid_t]) -> ProcessResourceSample? {
