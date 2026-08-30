@@ -6,6 +6,30 @@ import WebKit
 
 @MainActor
 struct BoardRuntimeWebUITests {
+    @Test func runtimeReportsNativeLinkActivationOnly() {
+        var activationCount = 0
+        let runtime = BoardRuntime(
+            board: BoardState(label: "Board", width: 320, currentSheetURL: nil),
+            websiteDataStore: .nonPersistent(),
+            sheetNavigation: SheetNavigationManager(scriptSource: ""),
+            sheetScale: 100,
+            sheetNavigationActions: noOpSheetNavigationActions(),
+            events: .init(
+                onChange: { _, _, _ in },
+                onFullscreenChange: nil,
+                onLinkActivated: { activationCount += 1 },
+                onDownloadFinished: { _ in },
+                onDownloadFailed: { _ in }
+            )
+        )
+        defer { runtime.dispose() }
+
+        runtime.handleLinkActivation(navigationType: .linkActivated)
+        runtime.handleLinkActivation(navigationType: .other)
+
+        #expect(activationCount == 1)
+    }
+
     @Test func runtimeHandlesWebPageDialogsAndOpenPanels() {
         let runtime = BoardRuntime(
             board: BoardState(label: "Board", width: 320, currentSheetURL: nil),

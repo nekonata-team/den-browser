@@ -5,7 +5,7 @@ extension DenStore {
     func runtime(for board: BoardState) -> BoardRuntime {
         precondition(!board.isTerminal, "Terminal Board cannot create a web runtime")
         let actions = sheetNavigationActions(for: board)
-        let events = boardRuntimeEvents()
+        let events = boardRuntimeEvents(for: board)
         storage.runtimeOwners[board.id] = self
         if let runtime = runtimes[board.id] {
             runtime.updateOwner(sheetNavigationActions: actions, events: events)
@@ -133,13 +133,16 @@ extension DenStore {
             })
     }
 
-    private func boardRuntimeEvents() -> BoardRuntime.Events {
+    private func boardRuntimeEvents(for board: BoardState) -> BoardRuntime.Events {
         .init(
             onChange: { [weak self] boardID, url, title in
                 self?.updateBoard(boardID: boardID, url: url, title: title)
             },
             onFullscreenChange: { [weak self] boardID, isFullscreen in
                 self?.updateFullscreenStatus(boardID: boardID, isFullscreen: isFullscreen)
+            },
+            onLinkActivated: { [weak self] in
+                self?.prepareBoardLinkFocus(board.id)
             },
             onDownloadFinished: { [weak self] filename in
                 self?.showToast("Downloaded \(filename).", style: .success)
@@ -182,6 +185,9 @@ extension DenStore {
                     cancelTerminalURLRegistration(canonicalURL)
                     return
                 }
+            },
+            onLinkActivated: { [weak self] in
+                self?.prepareBoardLinkFocus(board.id)
             },
             onNotification: { [weak self] title, body in
                 self?.recordNotification(title: title, body: body, boardID: board.id)

@@ -8,6 +8,7 @@ final class BoardRuntime: BaseWebRuntime, ObservableObject {
     struct Events {
         var onChange: (UUID, URL?, String?) -> Void
         var onFullscreenChange: ((UUID, Bool) -> Void)?
+        var onLinkActivated: () -> Void = {}
         var onDownloadFinished: (String) -> Void = { _ in }
         var onDownloadFailed: (String) -> Void = { _ in }
     }
@@ -204,6 +205,11 @@ final class BoardRuntime: BaseWebRuntime, ObservableObject {
         return false
     }
 
+    override func handleLinkActivation(navigationType: WKNavigationType) {
+        guard navigationType == .linkActivated else { return }
+        events.onLinkActivated()
+    }
+
     private func openBoardFromModifierClick(_ url: URL, modifierFlags: NSEvent.ModifierFlags) {
         if modifierFlags.contains(.shift) {
             sheetNavigationActions.onOpenBoard(url)
@@ -283,22 +289,24 @@ final class BoardRuntime: BaseWebRuntime, ObservableObject {
         for navigationAction: WKNavigationAction,
         windowFeatures: WKWindowFeatures
     ) -> WKWebView? {
-        guard navigationAction.targetFrame == nil else { return nil }
+        guard navigationAction.targetFrame == nil, let url = navigationAction.request.url else {
+            return nil
+        }
+
+        handleLinkActivation(navigationType: navigationAction.navigationType)
 
         if SheetNavigationPolicy.shouldOpenExternalApplication(
             navigationType: navigationAction.navigationType,
-            url: navigationAction.request.url
-        ), let url = navigationAction.request.url {
+            url: url
+        ) {
             NSWorkspace.shared.open(url)
             return nil
         }
 
-        if let url = navigationAction.request.url,
-            SheetNavigationPolicy.shouldOpenTargetlessNavigationInNewBoard(
-                navigationType: navigationAction.navigationType,
-                url: url
-            )
-        {
+        if SheetNavigationPolicy.shouldOpenTargetlessNavigationInNewBoard(
+            navigationType: navigationAction.navigationType,
+            url: url
+        ) {
             if SheetNavigationPolicy.shouldOpenLinkInNewBoard(
                 navigationType: navigationAction.navigationType,
                 modifierFlags: navigationAction.modifierFlags,

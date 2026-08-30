@@ -351,6 +351,26 @@ struct DenStoreBoardTests {
         #expect(store.focusedBoard?.id == terminal.id)
     }
 
+    @Test func boardLinkFocusIntentDoesNotConsumeNewerIntent() {
+        let firstBoard = BoardState(label: "First", width: 520, currentSheetURL: nil)
+        let secondBoard = BoardState(label: "Second", width: 520, currentSheetURL: nil)
+        let source = desk("Desk", boards: [firstBoard, secondBoard], focusedBoardID: firstBoard.id)
+        let store = DenStore(state: DenState(desks: [source], focusedDeskID: source.id))
+
+        store.prepareBoardLinkFocus(firstBoard.id)
+        #expect(store.pendingBoardLinkFocus != nil)
+        guard let firstIntent = store.pendingBoardLinkFocus else { return }
+        store.prepareBoardLinkFocus(secondBoard.id)
+        #expect(store.pendingBoardLinkFocus != nil)
+        guard let secondIntent = store.pendingBoardLinkFocus else { return }
+
+        store.consumeBoardLinkFocus(firstIntent)
+        #expect(store.pendingBoardLinkFocus == secondIntent)
+
+        store.consumeBoardLinkFocus(secondIntent)
+        #expect(store.pendingBoardLinkFocus == nil)
+    }
+
     @Test func terminalLinkCreatesBackgroundBoardWithoutDrawer() throws {
         let terminal = BoardState(width: 520, workingDirectory: "/tmp")
         let source = desk("Desk", boards: [terminal], focusedBoardID: terminal.id)

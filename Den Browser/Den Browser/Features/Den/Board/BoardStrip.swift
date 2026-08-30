@@ -98,6 +98,7 @@ struct BoardStrip: View {
             centering: preferences.boardCentering,
             centersFocusedBoard: shouldCenterFocusedBoard,
             restingScrollX: restingScrollX,
+            pendingBoardLinkFocus: store.pendingBoardLinkFocus,
             isDeskFilterPresented: store.isDeskFilterPresented,
             layoutKey: layoutKey
         )
@@ -262,6 +263,17 @@ struct BoardStrip: View {
                 resetBoardStripPosition(to: scrollGeometry.offsetX, animated: false)
                 return
             }
+
+            if let linkFocus = current.pendingBoardLinkFocus {
+                if current.boardID == linkFocus.boardID {
+                    scheduleBoardLinkFocusConsumption(linkFocus)
+                    return
+                }
+                if layoutChanged {
+                    return
+                }
+            }
+
             let animated = previous.deskID == current.deskID && !previous.layoutKey.ids.isEmpty
             let centeringChanged = previous.centering != current.centering
 
@@ -540,6 +552,12 @@ struct BoardStrip: View {
             centerBoard(boardID ?? store.focusedDesk?.focusedBoardID, animated: animated)
         } else {
             resetBoardStripPosition(to: restingScrollX, animated: animated)
+        }
+    }
+
+    private func scheduleBoardLinkFocusConsumption(_ intent: BoardLinkFocusIntent) {
+        DispatchQueue.main.async {
+            store.consumeBoardLinkFocus(intent)
         }
     }
 
@@ -825,6 +843,7 @@ private struct BoardStripAlignmentTarget: Equatable {
     let centering: FocusedBoardCentering
     let centersFocusedBoard: Bool
     let restingScrollX: CGFloat
+    let pendingBoardLinkFocus: BoardLinkFocusIntent?
     let isDeskFilterPresented: Bool
     let layoutKey: BoardStripLayoutKey
 }

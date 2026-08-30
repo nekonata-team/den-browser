@@ -81,6 +81,27 @@ struct TerminalRuntimeTests {
         runtime.dispose()
     }
 
+    @Test func terminalOpenURLNotifiesLinkActivationBeforeURL() {
+        var callbacks: [String] = []
+        let runtime = TerminalRuntime(
+            workingDirectory: FileManager.default.homeDirectoryForCurrentUser.path,
+            events: .init(
+                onClose: {},
+                onFocus: {},
+                onWorkingDirectoryChange: { _ in },
+                onTitleChange: { _ in },
+                onOpenURL: { _ in callbacks.append("url") },
+                onLinkActivated: { callbacks.append("link") },
+                onNotification: { _, _ in }
+            )
+        )
+
+        runtime.terminalDidRequestOpenURL("https://example.com/path", kind: .text)
+
+        #expect(callbacks == ["link", "url"])
+        runtime.dispose()
+    }
+
     @Test func terminalActivityCallbacksUpdateLiveState() {
         let runtime = TerminalRuntime(
             workingDirectory: FileManager.default.homeDirectoryForCurrentUser.path,

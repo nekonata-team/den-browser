@@ -118,6 +118,10 @@ class BaseWebRuntime: NSObject, NSWindowDelegate, WKDownloadDelegate, WKNavigati
         return false
     }
 
+    func handleLinkActivation(navigationType: WKNavigationType) {
+        // Overridden by subclasses when link activation affects Board state.
+    }
+
     func notifyDownloadFinished(filename: String) {
         // Overridden by subclasses
     }
@@ -145,6 +149,8 @@ class BaseWebRuntime: NSObject, NSWindowDelegate, WKDownloadDelegate, WKNavigati
             decisionHandler(.allow)
             return
         }
+
+        handleLinkActivation(navigationType: navigationAction.navigationType)
 
         if navigationAction.shouldPerformDownload {
             decisionHandler(.download)
@@ -214,6 +220,8 @@ class BaseWebRuntime: NSObject, NSWindowDelegate, WKDownloadDelegate, WKNavigati
         guard navigationAction.targetFrame == nil, let url = navigationAction.request.url else {
             return nil
         }
+
+        handleLinkActivation(navigationType: navigationAction.navigationType)
 
         if navigationAction.shouldPerformDownload {
             load(url)

@@ -38,6 +38,16 @@ final class DenStorage {
     }
 }
 
+struct BoardLinkFocusIntent: Equatable {
+    let id: UUID
+    let boardID: UUID
+
+    init(boardID: UUID) {
+        id = UUID()
+        self.boardID = boardID
+    }
+}
+
 @MainActor
 @Observable
 final class DenStore {
@@ -99,6 +109,7 @@ final class DenStore {
     var zmxSessionRefreshTask: Task<Void, Never>?
     var pendingConfirmation: PendingConfirmation?
     var maximizedBoardID: UUID?
+    var pendingBoardLinkFocus: BoardLinkFocusIntent?
     var centerFocusedBoardRequest = 0
     var revealPreviousBoardRequest = 0
     var revealNextBoardRequest = 0
@@ -478,6 +489,7 @@ final class DenStore {
         boardWidthPanelMessage = nil
         pendingConfirmation = nil
         maximizedBoardID = nil
+        pendingBoardLinkFocus = nil
         dismissDeskFilter()
         overviewSelection = nil
         overviewQuery = ""
@@ -495,6 +507,15 @@ final class DenStore {
         isDenMode = false
         save()
         showToast("Reset Den completed.", style: .success)
+    }
+
+    func prepareBoardLinkFocus(_ boardID: UUID) {
+        pendingBoardLinkFocus = BoardLinkFocusIntent(boardID: boardID)
+    }
+
+    func consumeBoardLinkFocus(_ intent: BoardLinkFocusIntent) {
+        guard pendingBoardLinkFocus == intent else { return }
+        pendingBoardLinkFocus = nil
     }
 
     func showToast(_ message: String, style: ToastMessage.ToastStyle = .info) {
