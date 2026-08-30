@@ -304,10 +304,10 @@ class BaseWebRuntime: NSObject, NSWindowDelegate, WKDownloadDelegate, WKNavigati
             }
         }
 
-        if let window = webView.window {
+        if let window = webView.window ?? NSApp.keyWindow {
             panel.beginSheetModal(for: window, completionHandler: complete)
         } else {
-            complete(panel.runModal())
+            panel.begin(completionHandler: complete)
         }
     }
 
