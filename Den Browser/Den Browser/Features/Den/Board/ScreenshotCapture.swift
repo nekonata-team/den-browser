@@ -57,44 +57,40 @@ enum ScreenshotCapture {
         let canvasSize = CGSize(
             width: (naturalContentWidth + gapWidth) * scale,
             height: (items.map(\.image.size.height).max() ?? 0) * scale + deskHeaderHeight)
-        let result = NSImage(size: canvasSize)
+        return NSImage(size: canvasSize, flipped: false) { _ in
+            NSColor.windowBackgroundColor.setFill()
+            NSBezierPath(rect: NSRect(origin: .zero, size: canvasSize)).fill()
 
-        result.lockFocus()
-        defer { result.unlockFocus() }
+            var horizontalOffset: CGFloat = 0
+            for item in items {
+                let sheetSize = CGSize(
+                    width: item.image.size.width * scale,
+                    height: item.image.size.height * scale)
+                let sheetRect = NSRect(
+                    x: horizontalOffset,
+                    y: canvasSize.height - deskHeaderHeight - sheetSize.height,
+                    width: sheetSize.width,
+                    height: sheetSize.height)
+                item.image.draw(in: sheetRect)
 
-        NSColor.windowBackgroundColor.setFill()
-        NSBezierPath(rect: NSRect(origin: .zero, size: canvasSize)).fill()
+                let headerRect = NSRect(
+                    x: horizontalOffset,
+                    y: canvasSize.height - deskHeaderHeight,
+                    width: sheetSize.width,
+                    height: deskHeaderHeight)
+                NSColor.controlBackgroundColor.setFill()
+                NSBezierPath(rect: headerRect).fill()
+                (item.label as NSString).draw(
+                    in: headerRect.insetBy(dx: 10, dy: 9),
+                    withAttributes: [
+                        .font: NSFont.systemFont(ofSize: 13, weight: .semibold),
+                        .foregroundColor: NSColor.labelColor,
+                    ])
 
-        var horizontalOffset: CGFloat = 0
-        for item in items {
-            let sheetSize = CGSize(
-                width: item.image.size.width * scale,
-                height: item.image.size.height * scale)
-            let sheetRect = NSRect(
-                x: horizontalOffset,
-                y: canvasSize.height - deskHeaderHeight - sheetSize.height,
-                width: sheetSize.width,
-                height: sheetSize.height)
-            item.image.draw(in: sheetRect)
-
-            let headerRect = NSRect(
-                x: horizontalOffset,
-                y: canvasSize.height - deskHeaderHeight,
-                width: sheetSize.width,
-                height: deskHeaderHeight)
-            NSColor.controlBackgroundColor.setFill()
-            NSBezierPath(rect: headerRect).fill()
-            (item.label as NSString).draw(
-                in: headerRect.insetBy(dx: 10, dy: 9),
-                withAttributes: [
-                    .font: NSFont.systemFont(ofSize: 13, weight: .semibold),
-                    .foregroundColor: NSColor.labelColor,
-                ])
-
-            horizontalOffset += sheetSize.width + scaledSpacing
+                horizontalOffset += sheetSize.width + scaledSpacing
+            }
+            return true
         }
-
-        return result
     }
 
     static func savePNG(

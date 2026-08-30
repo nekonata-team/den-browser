@@ -41,12 +41,7 @@ extension DenStore {
         Task { @MainActor [weak self] in
             guard let self else { return }
             do {
-                var items: [ScreenshotCapture.DeskItem] = []
-                for (board, runtime) in boards {
-                    let image = try await ScreenshotCapture.visibleCurrentSheet(in: runtime.webView)
-                    items.append(.init(label: board.displayName, image: image))
-                }
-
+                let items = try await captureDeskItems(for: boards)
                 let image = try ScreenshotCapture.composeDesk(items)
                 let filename = ScreenshotCapture.suggestedFilename(scope: "Desk Screenshot")
                 if let destination = try await ScreenshotCapture.savePNG(
@@ -96,12 +91,7 @@ extension DenStore {
         Task { @MainActor [weak self] in
             guard let self else { return }
             do {
-                var items: [ScreenshotCapture.DeskItem] = []
-                for (board, runtime) in boards {
-                    let image = try await ScreenshotCapture.visibleCurrentSheet(in: runtime.webView)
-                    items.append(.init(label: board.displayName, image: image))
-                }
-
+                let items = try await captureDeskItems(for: boards)
                 let image = try ScreenshotCapture.composeDesk(items)
                 try ScreenshotCapture.copyPNG(image)
                 showToast("Copied Focused Desk screenshot to clipboard.", style: .success)
@@ -109,5 +99,16 @@ extension DenStore {
                 showToast("Screenshot failed: \(error.localizedDescription)", style: .error)
             }
         }
+    }
+
+    private func captureDeskItems(
+        for boards: [(BoardState, BoardRuntime)]
+    ) async throws -> [ScreenshotCapture.DeskItem] {
+        var items: [ScreenshotCapture.DeskItem] = []
+        for (board, runtime) in boards {
+            let image = try await ScreenshotCapture.visibleCurrentSheet(in: runtime.webView)
+            items.append(.init(label: board.displayName, image: image))
+        }
+        return items
     }
 }
