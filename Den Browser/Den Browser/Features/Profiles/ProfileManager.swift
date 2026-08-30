@@ -171,8 +171,8 @@ final class ProfileManager {
         let profileURL = profileURL(for: profileID)
         let hadDocument = FileManager.default.fileExists(atPath: profileURL.path)
         do {
-            if hadDocument { try FileManager.default.removeItem(at: profileURL) }
             try await removeDataStore(dataStoreID)
+            if hadDocument { try FileManager.default.removeItem(at: profileURL) }
             profiles.removeAll { $0.id == profileID }
             persistedProfiles.removeValue(forKey: profileID)
             do {
@@ -182,14 +182,6 @@ final class ProfileManager {
             }
             return true
         } catch {
-            if hadDocument, let persisted = persistedProfiles[profileID] {
-                do {
-                    try save(persisted)
-                } catch {
-                    reportSaveError(error)
-                    return false
-                }
-            }
             errorMessage = "Could not delete Profile: \(error.localizedDescription)"
             return false
         }

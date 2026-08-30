@@ -397,6 +397,7 @@ struct ProfileManagerTests {
 
         #expect(!(await manager.deleteProfile(work.id)))
         #expect(manager.profile(id: work.id) != nil)
+        #expect(manager.store(for: work.id) != nil)
         #expect(FileManager.default.fileExists(atPath: profileURL(work.id, in: directory).path))
         #expect(makeProfileManager(directory: directory).profile(id: work.id) != nil)
     }
