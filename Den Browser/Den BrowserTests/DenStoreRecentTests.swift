@@ -8,298 +8,204 @@ import WebKit
 @Suite(.serialized)
 struct DenStoreRecentTests {
     @Test func openBoardStoresAndReusesRecentItemsInMostRecentOrder() throws {
-        let (preferences, defaults, suiteName) = makePreferences()
-        defer { defaults.removePersistentDomain(forName: suiteName) }
-        let source = desk("Desk")
         var savedItems: [RecentItem] = []
-        let store = DenStore(
-            state: DenState(desks: [source], focusedDeskID: source.id),
-            websiteDataStore: .default(),
-            sheetNavigation: SheetNavigationManager(),
-            preferences: preferences,
-            recentItems: [],
-            onSave: nil,
+        let expectedURL = try #require(URL(string: "https://EXAMPLE.com/"))
+        withTestStore(
             onRecentItemsSave: {
                 savedItems = $0
                 return true
+            },
+            body: { store in
+                store.openBoard(input: "example.com")
+                store.openBoard(input: "Swift Observation")
+                store.openBoard(input: "https://EXAMPLE.com/")
+
+                #expect(
+                    store.recentItems == [
+                        .url(expectedURL),
+                        .search("Swift Observation"),
+                    ])
+                #expect(savedItems == store.recentItems)
             })
-
-        store.openBoard(input: "example.com")
-        store.openBoard(input: "Swift Observation")
-        store.openBoard(input: "https://EXAMPLE.com/")
-
-        #expect(
-            store.recentItems == [
-                .url(try #require(URL(string: "https://EXAMPLE.com/"))),
-                .search("Swift Observation"),
-            ])
-        #expect(savedItems == store.recentItems)
     }
 
     @Test func recentSearchDeduplicationIgnoresCaseAndRepeatedWhitespace() {
-        let (preferences, defaults, suiteName) = makePreferences()
-        defer { defaults.removePersistentDomain(forName: suiteName) }
-        let source = desk("Desk")
-        let store = DenStore(
-            state: DenState(desks: [source], focusedDeskID: source.id),
-            websiteDataStore: .default(),
-            sheetNavigation: SheetNavigationManager(),
-            preferences: preferences,
-            recentItems: [],
-            onSave: nil,
-            onRecentItemsSave: { _ in true })
+        withTestStore(
+            onRecentItemsSave: { _ in true },
+            body: { store in
+                store.openBoard(input: "Swift   Observation")
+                store.openBoard(input: "swift observation")
 
-        store.openBoard(input: "Swift   Observation")
-        store.openBoard(input: "swift observation")
-
-        #expect(store.recentItems == [.search("swift observation")])
+                #expect(store.recentItems == [.search("swift observation")])
+            })
     }
 
     @Test func pastedLineBreaksDoNotBreakURLOrSearchInput() throws {
-        let (preferences, defaults, suiteName) = makePreferences()
-        defer { defaults.removePersistentDomain(forName: suiteName) }
-        let source = desk("Desk")
-        let store = DenStore(
-            state: DenState(desks: [source], focusedDeskID: source.id),
-            websiteDataStore: .default(),
-            sheetNavigation: SheetNavigationManager(),
-            preferences: preferences,
-            recentItems: [],
-            onSave: nil,
-            onRecentItemsSave: { _ in true })
+        try withTestStore(
+            onRecentItemsSave: { _ in true },
+            body: { store in
+                store.openBoard(input: "https://example.com/long-\npath")
+                store.openBoard(input: "Swift\nObservation")
 
-        store.openBoard(input: "https://example.com/long-\npath")
-        store.openBoard(input: "Swift\nObservation")
-
-        #expect(store.focusedDesk?.boards.first?.currentSheetURL == URL(string: "https://example.com/long-path"))
-        let searchURL = try #require(
-            store.focusedDesk?.boards.last?.currentSheetURL
-                .flatMap { URLComponents(url: $0, resolvingAgainstBaseURL: false) })
-        #expect(searchURL.queryItems == [URLQueryItem(name: "q", value: "Swift Observation")])
-        #expect(
-            store.recentItems == [
-                .search("Swift Observation"),
-                .url(URL(string: "https://example.com/long-path")!),
-            ])
+                #expect(
+                    store.focusedDesk?.boards.first?.currentSheetURL == URL(string: "https://example.com/long-path"))
+                let searchURL = try #require(
+                    store.focusedDesk?.boards.last?.currentSheetURL
+                        .flatMap { URLComponents(url: $0, resolvingAgainstBaseURL: false) })
+                #expect(searchURL.queryItems == [URLQueryItem(name: "q", value: "Swift Observation")])
+                #expect(
+                    store.recentItems == [
+                        .search("Swift Observation"),
+                        .url(URL(string: "https://example.com/long-path")!),
+                    ])
+            })
     }
 
     @Test func recentKeepsOneHundredItemsAndClearPersists() {
-        let (preferences, defaults, suiteName) = makePreferences()
-        defer { defaults.removePersistentDomain(forName: suiteName) }
-        let source = desk("Desk")
         var savedItems: [RecentItem] = []
-        let store = DenStore(
-            state: DenState(desks: [source], focusedDeskID: source.id),
-            websiteDataStore: .default(),
-            sheetNavigation: SheetNavigationManager(),
-            preferences: preferences,
-            recentItems: [],
-            onSave: nil,
+        withTestStore(
             onRecentItemsSave: {
                 savedItems = $0
                 return true
+            },
+            body: { store in
+                for index in 0...100 {
+                    store.openBoard(input: "https://example.com/\(index)")
+                }
+
+                #expect(store.recentItems.count == 100)
+                #expect(store.recentItems.first == .url(URL(string: "https://example.com/100")!))
+                #expect(store.recentItems.last == .url(URL(string: "https://example.com/1")!))
+
+                store.clearRecent()
+
+                #expect(store.recentItems.isEmpty)
+                #expect(savedItems.isEmpty)
             })
-
-        for index in 0...100 {
-            store.openBoard(input: "https://example.com/\(index)")
-        }
-
-        #expect(store.recentItems.count == 100)
-        #expect(store.recentItems.first == .url(URL(string: "https://example.com/100")!))
-        #expect(store.recentItems.last == .url(URL(string: "https://example.com/1")!))
-
-        store.clearRecent()
-
-        #expect(store.recentItems.isEmpty)
-        #expect(savedItems.isEmpty)
     }
 
     @Test func failedRecentSaveRestoresItemsWithoutBlockingBoardCreation() {
-        let (preferences, defaults, suiteName) = makePreferences()
-        defer { defaults.removePersistentDomain(forName: suiteName) }
-        let source = desk("Desk")
         let original: [RecentItem] = [.search("existing")]
-        let store = DenStore(
-            state: DenState(desks: [source], focusedDeskID: source.id),
-            websiteDataStore: .default(),
-            sheetNavigation: SheetNavigationManager(),
-            preferences: preferences,
+        withTestStore(
             recentItems: original,
-            onSave: nil,
-            onRecentItemsSave: { _ in false })
+            onRecentItemsSave: { _ in false },
+            body: { store in
+                store.openBoard(input: "new search")
 
-        store.openBoard(input: "new search")
-
-        #expect(store.recentItems == original)
-        #expect(store.focusedDesk?.boards.count == 1)
+                #expect(store.recentItems == original)
+                #expect(store.focusedDesk?.boards.count == 1)
+            })
     }
 
-    @Test func terminalAndZellijInputsBecomeRecentItems() throws {
-        let (preferences, defaults, suiteName) = makePreferences()
-        defer { defaults.removePersistentDomain(forName: suiteName) }
-        let source = desk("Desk")
-        preferences.setZellijPath("/opt/homebrew/bin/zellij")
-        preferences.setZmxPath("/opt/homebrew/bin/zmx")
-        let store = DenStore(
-            state: DenState(desks: [source], focusedDeskID: source.id),
-            sheetNavigation: SheetNavigationManager(),
-            preferences: preferences)
-        let home = FileManager.default.homeDirectoryForCurrentUser.standardizedFileURL.path
-        let directory = FileManager.default.temporaryDirectory.standardizedFileURL.path
+    @Test func terminalAndZellijInputsBecomeRecentItems() {
+        withTestStore { store in
+            store.preferences.setZellijPath("/opt/homebrew/bin/zellij")
+            store.preferences.setZmxPath("/opt/homebrew/bin/zmx")
+            let home = FileManager.default.homeDirectoryForCurrentUser.standardizedFileURL.path
+            let directory = FileManager.default.temporaryDirectory.standardizedFileURL.path
 
-        store.openBoard(input: ":terminal")
-        store.openBoard(input: ":terminal ~")
-        store.openBoard(input: ":terminal \(directory)")
-        store.openBoard(input: ":zellij")
-        store.openBoard(input: ":zellij project-a")
-        store.openBoard(input: ":zmx project-a")
+            store.openBoard(input: ":terminal")
+            store.openBoard(input: ":terminal ~")
+            store.openBoard(input: ":terminal \(directory)")
+            store.openBoard(input: ":zellij")
+            store.openBoard(input: ":zellij project-a")
+            store.openBoard(input: ":zmx project-a")
 
-        #expect(
-            store.recentItems == [
-                .zmx(sessionName: "project-a"),
-                .zellij(sessionName: "project-a"),
-                .zellij(sessionName: nil),
-                .terminal(workingDirectory: directory),
-                .terminal(workingDirectory: home),
-            ])
+            #expect(
+                store.recentItems == [
+                    .zmx(sessionName: "project-a"),
+                    .zellij(sessionName: "project-a"),
+                    .zellij(sessionName: nil),
+                    .terminal(workingDirectory: directory),
+                    .terminal(workingDirectory: home),
+                ])
+        }
     }
 
-    @Test func openingTerminalRecentRevalidatesDirectoryAndMovesItToTheFront() throws {
-        let (preferences, defaults, suiteName) = makePreferences()
-        defer { defaults.removePersistentDomain(forName: suiteName) }
-        let source = desk("Desk")
+    @Test func openingTerminalRecentRevalidatesDirectoryAndMovesItToTheFront() {
         let directory = FileManager.default.temporaryDirectory.standardizedFileURL.path
         let item = RecentItem.terminal(workingDirectory: directory)
-        let store = DenStore(
-            state: DenState(desks: [source], focusedDeskID: source.id),
-            websiteDataStore: .default(),
-            sheetNavigation: SheetNavigationManager(),
-            preferences: preferences,
+        withTestStore(
             recentItems: [.search("existing"), item],
-            onSave: nil,
-            onRecentItemsSave: { _ in true })
+            onRecentItemsSave: { _ in true },
+            body: { store in
+                store.openBoard(recentItem: item)
 
-        store.openBoard(recentItem: item)
-
-        #expect(store.focusedBoard?.terminalWorkingDirectory == directory)
-        #expect(store.recentItems.first == item)
+                #expect(store.focusedBoard?.terminalWorkingDirectory == directory)
+                #expect(store.recentItems.first == item)
+            })
     }
 
     @Test func missingTerminalRecentShowsErrorWithoutCreatingBoard() {
-        let (preferences, defaults, suiteName) = makePreferences()
-        defer { defaults.removePersistentDomain(forName: suiteName) }
-        let source = desk("Desk")
         let item = RecentItem.terminal(
             workingDirectory: "/missing/den-browser-\(UUID().uuidString)")
-        let store = DenStore(
-            state: DenState(desks: [source], focusedDeskID: source.id),
-            websiteDataStore: .default(),
-            sheetNavigation: SheetNavigationManager(),
-            preferences: preferences,
+        withTestStore(
             recentItems: [item],
-            onSave: nil,
-            onRecentItemsSave: { _ in true })
+            onRecentItemsSave: { _ in true },
+            body: { store in
+                store.openBoard(recentItem: item)
 
-        store.openBoard(recentItem: item)
-
-        #expect(store.focusedDesk?.boards.isEmpty == true)
-        #expect(store.openBoardPanelMessage?.contains("does not exist") == true)
-        #expect(store.recentItems == [item])
+                #expect(store.focusedDesk?.boards.isEmpty == true)
+                #expect(store.openBoardPanelMessage?.contains("does not exist") == true)
+                #expect(store.recentItems == [item])
+            })
     }
 
     @Test func openingZellijRecentCreatesBoardAndMovesItToTheFront() {
-        let (preferences, defaults, suiteName) = makePreferences()
-        defer { defaults.removePersistentDomain(forName: suiteName) }
-        let source = desk("Desk")
-        preferences.setZellijPath("/opt/homebrew/bin/zellij")
         let item = RecentItem.zellij(sessionName: "project-a")
-        let store = DenStore(
-            state: DenState(desks: [source], focusedDeskID: source.id),
-            websiteDataStore: .default(),
-            sheetNavigation: SheetNavigationManager(),
-            preferences: preferences,
+        withTestStore(
             recentItems: [.search("existing"), item],
-            onSave: nil,
-            onRecentItemsSave: { _ in true })
+            onRecentItemsSave: { _ in true },
+            body: { store in
+                store.preferences.setZellijPath("/opt/homebrew/bin/zellij")
+                store.openBoard(recentItem: item)
 
-        store.openBoard(recentItem: item)
-
-        #expect(store.focusedBoard?.isZellij == true)
-        #expect(store.focusedBoard?.zellijSessionName == "project-a")
-        #expect(store.recentItems.first == item)
+                #expect(store.focusedBoard?.isZellij == true)
+                #expect(store.focusedBoard?.zellijSessionName == "project-a")
+                #expect(store.recentItems.first == item)
+            })
     }
 
     @Test func openingZmxRecentCreatesBoardAndMovesItToTheFront() {
-        let (preferences, defaults, suiteName) = makePreferences()
-        defer { defaults.removePersistentDomain(forName: suiteName) }
-        let source = desk("Desk")
-        preferences.setZmxPath("/opt/homebrew/bin/zmx")
         let item = RecentItem.zmx(sessionName: "project-a")
-        let store = DenStore(
-            state: DenState(desks: [source], focusedDeskID: source.id),
-            websiteDataStore: .default(),
-            sheetNavigation: SheetNavigationManager(),
-            preferences: preferences,
+        withTestStore(
             recentItems: [.search("existing"), item],
-            onSave: nil,
-            onRecentItemsSave: { _ in true })
+            onRecentItemsSave: { _ in true },
+            body: { store in
+                store.preferences.setZmxPath("/opt/homebrew/bin/zmx")
+                store.openBoard(recentItem: item)
 
-        store.openBoard(recentItem: item)
-
-        #expect(store.focusedBoard?.isZmx == true)
-        #expect(store.focusedBoard?.zmxSessionName == "project-a")
-        #expect(store.recentItems.first == item)
+                #expect(store.focusedBoard?.isZmx == true)
+                #expect(store.focusedBoard?.zmxSessionName == "project-a")
+                #expect(store.recentItems.first == item)
+            })
     }
 
     @Test func openingZellijRecentWithoutConfigurationShowsError() {
-        let (preferences, defaults, suiteName) = makePreferences()
-        defer { defaults.removePersistentDomain(forName: suiteName) }
-        let source = desk("Desk")
         let item = RecentItem.zellij(sessionName: nil)
-        let store = DenStore(
-            state: DenState(desks: [source], focusedDeskID: source.id),
-            websiteDataStore: .default(),
-            sheetNavigation: SheetNavigationManager(),
-            preferences: preferences,
+        withTestStore(
             recentItems: [item],
-            onSave: nil,
-            onRecentItemsSave: { _ in true })
+            onRecentItemsSave: { _ in true },
+            body: { store in
+                store.openBoard(recentItem: item)
 
-        store.openBoard(recentItem: item)
-
-        #expect(store.focusedDesk?.boards.isEmpty == true)
-        #expect(store.openBoardPanelMessage?.contains("absolute Zellij executable path") == true)
-        #expect(store.recentItems == [item])
+                #expect(store.focusedDesk?.boards.isEmpty == true)
+                #expect(store.openBoardPanelMessage?.contains("absolute Zellij executable path") == true)
+                #expect(store.recentItems == [item])
+            })
     }
 
     @Test func openingZmxRecentWithoutConfigurationShowsError() {
-        let (preferences, defaults, suiteName) = makePreferences()
-        defer { defaults.removePersistentDomain(forName: suiteName) }
-        let source = desk("Desk")
         let item = RecentItem.zmx(sessionName: "project-a")
-        let store = DenStore(
-            state: DenState(desks: [source], focusedDeskID: source.id),
-            websiteDataStore: .default(),
-            sheetNavigation: SheetNavigationManager(),
-            preferences: preferences,
+        withTestStore(
             recentItems: [item],
-            onSave: nil,
-            onRecentItemsSave: { _ in true })
+            onRecentItemsSave: { _ in true },
+            body: { store in
+                store.openBoard(recentItem: item)
 
-        store.openBoard(recentItem: item)
-
-        #expect(store.focusedDesk?.boards.isEmpty == true)
-        #expect(store.openBoardPanelMessage?.contains("absolute zmx executable path") == true)
-        #expect(store.recentItems == [item])
-    }
-
-    private func makePreferences() -> (AppPreferences, UserDefaults, String) {
-        let suiteName = "DenStoreRecentTests-\(UUID().uuidString)"
-        let defaults = UserDefaults(suiteName: suiteName) ?? .standard
-        return (AppPreferences(defaults: defaults), defaults, suiteName)
-    }
-
-    private func desk(_ label: String) -> DeskState {
-        DeskState(label: label, boards: [])
+                #expect(store.focusedDesk?.boards.isEmpty == true)
+                #expect(store.openBoardPanelMessage?.contains("absolute zmx executable path") == true)
+                #expect(store.recentItems == [item])
+            })
     }
 }

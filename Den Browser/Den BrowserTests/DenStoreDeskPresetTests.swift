@@ -157,11 +157,6 @@ struct DenStoreDeskPresetTests {
         }
     }
 
-    private func withStore(desks: [DeskState], body: (DenStore) throws -> Void) rethrows {
-        let store = DenStore(state: DenState(desks: desks, focusedDeskID: desks[0].id))
-        try body(store)
-    }
-
     private func desk(_ label: String, boards: [BoardState] = [], focusedBoardID: UUID? = nil) -> DeskState {
         DeskState(label: label, boards: boards, focusedBoardID: focusedBoardID)
     }

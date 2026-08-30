@@ -162,13 +162,8 @@ struct KeyboardShortcutTests {
             label: "Second",
             boards: [movedBoard],
             focusedBoardID: movedBoard.id)
-        let preferences = try makePreferences()
-        let store = DenStore(
-            state: DenState(
-                desks: [firstDesk, secondDesk],
-                focusedDeskID: secondDesk.id),
-            sheetNavigation: SheetNavigationManager(),
-            preferences: preferences)
+        let store = try makeStore(desks: [firstDesk, secondDesk])
+        store.focusDesk(secondDesk.id)
         store.isDenMode = true
 
         let shiftOne = try keyEvent(
@@ -254,13 +249,9 @@ struct KeyboardShortcutTests {
             label: "Second",
             boards: [movedBoard],
             focusedBoardID: movedBoard.id)
-        let preferences = try makePreferences()
-        let store = DenStore(
-            state: DenState(
-                desks: [firstDesk, secondDesk],
-                focusedDeskID: secondDesk.id),
-            sheetNavigation: SheetNavigationManager(),
-            preferences: preferences)
+        let store = try makeStore(desks: [firstDesk, secondDesk])
+        store.focusDesk(secondDesk.id)
+        let preferences = store.preferences
         let commandOptionOne = try keyEvent(
             characters: "1",
             charactersIgnoringModifiers: "1",
@@ -283,13 +274,8 @@ struct KeyboardShortcutTests {
         let firstDesk = DeskState(label: "First", boards: [])
         let secondDesk = DeskState(label: "Second", boards: [])
         let thirdDesk = DeskState(label: "Third", boards: [])
-        let preferences = try makePreferences()
-        let store = DenStore(
-            state: DenState(
-                desks: [firstDesk, secondDesk, thirdDesk],
-                focusedDeskID: firstDesk.id),
-            sheetNavigation: SheetNavigationManager(),
-            preferences: preferences)
+        let store = try makeStore(desks: [firstDesk, secondDesk, thirdDesk])
+        let preferences = store.preferences
 
         let next = try keyEvent(
             characters: "\t",
@@ -790,14 +776,8 @@ struct KeyboardShortcutTests {
     }
 
     @Test func zmxSessionsEscapeClosesPanel() throws {
-        let initialBoard = board("First")
-        let desk = DeskState(label: "Desk", boards: [initialBoard], focusedBoardID: initialBoard.id)
-        let preferences = try makePreferences()
-        preferences.setZmxPath("/missing/zmx")
-        let store = DenStore(
-            state: DenState(desks: [desk], focusedDeskID: desk.id),
-            sheetNavigation: SheetNavigationManager(),
-            preferences: preferences)
+        let store = try makeStore(boards: [board("First")])
+        store.preferences.setZmxPath("/missing/zmx")
         let escape = try keyEvent(
             characters: "\u{1B}", charactersIgnoringModifiers: "\u{1B}", keyCode: 53)
 
@@ -810,19 +790,14 @@ struct KeyboardShortcutTests {
     }
 
     @Test func zmxSessionsArrowSelectionAndActionsUseTheFocusedSession() async throws {
-        let desk = DeskState(label: "Desk", boards: [], focusedBoardID: nil)
-        let preferences = try makePreferences()
-        preferences.setZmxPath("/opt/homebrew/bin/zmx")
-        let store = DenStore(
-            state: DenState(desks: [desk], focusedDeskID: desk.id),
-            sheetNavigation: SheetNavigationManager(),
-            preferences: preferences,
+        let store = try makeStore(
             terminalCommandRunner: ZmxKeyboardCommandRunner(
                 responses: [
                     ["list"]: TerminalCommandResult(
                         terminationStatus: 0,
                         standardOutput: "name=den\nname=den-vi\tden.root=den\n")
                 ]))
+        store.preferences.setZmxPath("/opt/homebrew/bin/zmx")
         store.showZmxSessions()
         await waitForZmxSessionLoad(store)
 
@@ -1203,13 +1178,19 @@ struct KeyboardShortcutTests {
         return AppPreferences(defaults: defaults)
     }
 
-    private func makeStore(boards: [BoardState]) throws -> DenStore {
-        let desk = DeskState(label: "Desk", boards: boards, focusedBoardID: boards.first?.id)
+    private func makeStore(
+        desks: [DeskState]? = nil,
+        boards: [BoardState] = [],
+        terminalCommandRunner: any TerminalCommandRunning = ProcessTerminalCommandRunner()
+    ) throws -> DenStore {
+        let storeDesks = desks ?? [DeskState(label: "Desk", boards: boards, focusedBoardID: boards.first?.id)]
         let defaults = try #require(TestUserDefaults(suiteName: "KeyboardShortcutStore-\(UUID())"))
         return DenStore(
-            state: DenState(desks: [desk], focusedDeskID: desk.id),
-            sheetNavigation: SheetNavigationManager(),
-            preferences: AppPreferences(defaults: defaults))
+            state: DenState(desks: storeDesks, focusedDeskID: storeDesks.first?.id ?? UUID()),
+            websiteDataStore: .nonPersistent(),
+            sheetNavigation: SheetNavigationManager(defaults: defaults, scriptSource: ""),
+            preferences: AppPreferences(defaults: defaults),
+            terminalCommandRunner: terminalCommandRunner)
     }
 
     private func keyEvent(

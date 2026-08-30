@@ -388,7 +388,7 @@ final class DenStore {
         webExtensionWindow: MV3WebExtensionWindow? = nil,
         deskPresets: [PersonalDeskPreset] = [],
         recentItems: [RecentItem] = [],
-        onSave: ((DenState) -> Void)?,
+        onSave: ((DenState) -> Void)? = nil,
         onDeskPresetsSave: (([PersonalDeskPreset]) -> Void)? = nil,
         onRecentItemsSave: (([RecentItem]) -> Bool)? = nil
     ) {

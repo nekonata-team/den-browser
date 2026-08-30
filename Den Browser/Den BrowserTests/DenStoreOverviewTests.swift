@@ -226,11 +226,6 @@ struct DenStoreOverviewTests {
         #expect(store.isOverviewPresented)
     }
 
-    private func withStore(desks: [DeskState], body: (DenStore) throws -> Void) rethrows {
-        let store = DenStore(state: DenState(desks: desks, focusedDeskID: desks[0].id))
-        try body(store)
-    }
-
     private func keyEvent(_ character: String, keyCode: UInt16) -> NSEvent? {
         NSEvent.keyEvent(
             with: .keyDown,

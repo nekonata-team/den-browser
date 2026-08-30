@@ -46,126 +46,103 @@ struct DenStoreBoardTests {
 
     @Test func zellijBoardsPersistOptionalSessionNames() throws {
         let source = desk("Desk")
-        let suiteName = "DenStoreZellijTests-\(UUID().uuidString)"
-        let defaults = UserDefaults(suiteName: suiteName)!
-        defer { defaults.removePersistentDomain(forName: suiteName) }
-        let preferences = AppPreferences(defaults: defaults)
-        preferences.setZellijPath("/opt/homebrew/bin/zellij")
-        let store = DenStore(
-            state: DenState(desks: [source], focusedDeskID: source.id),
-            sheetNavigation: SheetNavigationManager(),
-            preferences: preferences)
+        try withTestStore(desks: [source]) { store in
+            store.preferences.setZellijPath("/opt/homebrew/bin/zellij")
 
-        store.openBoard(input: ":zellij project-a")
-        let named = try #require(store.focusedBoard)
-        #expect(named.isTerminal)
-        #expect(named.isZellij)
-        #expect(named.zellijSessionName == "project-a")
-        #expect(
-            ZellijClient(executablePath: "/opt/homebrew/bin/zellij")
-                .launchCommand(sessionName: named.zellijSessionName)
-                == "'/opt/homebrew/bin/zellij' attach --create 'project-a'"
-        )
-        let restoredNamed = try JSONDecoder().decode(
-            BoardState.self,
-            from: JSONEncoder().encode(named))
-        #expect(restoredNamed.content == .zellij(ZellijBoardState(sessionName: "project-a")))
+            store.openBoard(input: ":zellij project-a")
+            let named = try #require(store.focusedBoard)
+            #expect(named.isTerminal)
+            #expect(named.isZellij)
+            #expect(named.zellijSessionName == "project-a")
+            #expect(
+                ZellijClient(executablePath: "/opt/homebrew/bin/zellij")
+                    .launchCommand(sessionName: named.zellijSessionName)
+                    == "'/opt/homebrew/bin/zellij' attach --create 'project-a'"
+            )
+            let restoredNamed = try JSONDecoder().decode(
+                BoardState.self,
+                from: JSONEncoder().encode(named))
+            #expect(restoredNamed.content == .zellij(ZellijBoardState(sessionName: "project-a")))
 
-        store.openBoard(input: ":zellij")
-        let welcome = try #require(store.focusedBoard)
-        #expect(welcome.isZellij)
-        #expect(welcome.zellijSessionName == nil)
-        #expect(
-            ZellijClient(executablePath: "/opt/homebrew/bin/zellij")
-                .launchCommand(sessionName: welcome.zellijSessionName)
-                == "'/opt/homebrew/bin/zellij' -l welcome"
-        )
-        let restoredWelcome = try JSONDecoder().decode(
-            BoardState.self,
-            from: JSONEncoder().encode(welcome))
-        #expect(restoredWelcome.content == .zellij(ZellijBoardState(sessionName: nil)))
+            store.openBoard(input: ":zellij")
+            let welcome = try #require(store.focusedBoard)
+            #expect(welcome.isZellij)
+            #expect(welcome.zellijSessionName == nil)
+            #expect(
+                ZellijClient(executablePath: "/opt/homebrew/bin/zellij")
+                    .launchCommand(sessionName: welcome.zellijSessionName)
+                    == "'/opt/homebrew/bin/zellij' -l welcome"
+            )
+            let restoredWelcome = try JSONDecoder().decode(
+                BoardState.self,
+                from: JSONEncoder().encode(welcome))
+            #expect(restoredWelcome.content == .zellij(ZellijBoardState(sessionName: nil)))
+        }
     }
 
     @Test func zellijBoardRequiresConfiguredAbsoluteExecutablePath() {
         let source = desk("Desk")
-        let suiteName = "DenStoreZellijMissingPathTests-\(UUID().uuidString)"
-        let defaults = UserDefaults(suiteName: suiteName)!
-        defer { defaults.removePersistentDomain(forName: suiteName) }
-        let preferences = AppPreferences(defaults: defaults)
-        let store = DenStore(
-            state: DenState(desks: [source], focusedDeskID: source.id),
-            sheetNavigation: SheetNavigationManager(),
-            preferences: preferences)
+        withTestStore(desks: [source]) { store in
+            store.openBoard(input: ":zellij")
 
-        store.openBoard(input: ":zellij")
-
-        #expect(store.focusedBoard?.isZellij != true)
-        #expect(store.openBoardPanelMessage?.contains("absolute Zellij executable path") == true)
-        #expect(store.recentItems.isEmpty)
+            #expect(store.focusedBoard?.isZellij != true)
+            #expect(store.openBoardPanelMessage?.contains("absolute Zellij executable path") == true)
+            #expect(store.recentItems.isEmpty)
+        }
     }
 
     @Test func zmxBoardsPersistNamedSessionAndOpenSessionsList() async throws {
         let source = desk("Desk")
-        let suiteName = "DenStoreZmxTests-\(UUID().uuidString)"
-        let defaults = UserDefaults(suiteName: suiteName)!
-        defer { defaults.removePersistentDomain(forName: suiteName) }
-        let preferences = AppPreferences(defaults: defaults)
-        preferences.setZmxPath("/opt/homebrew/bin/zmx")
-        let store = DenStore(
-            state: DenState(desks: [source], focusedDeskID: source.id),
-            sheetNavigation: SheetNavigationManager(),
-            preferences: preferences,
-            terminalCommandRunner: StubTerminalCommandRunner(responses: [
-                ["list"]: TerminalCommandResult(terminationStatus: 0, standardOutput: "")
-            ]))
+        let runner = StubTerminalCommandRunner(responses: [
+            ["list"]: TerminalCommandResult(terminationStatus: 0, standardOutput: "")
+        ])
+        try await withTestStore(desks: [source], terminalCommandRunner: runner) {
+            store in
+            store.preferences.setZmxPath("/opt/homebrew/bin/zmx")
 
-        store.openBoard(input: ":zmx project-a")
-        let board = try #require(store.focusedBoard)
-        #expect(board.isTerminal)
-        #expect(board.isZmx)
-        #expect(board.zmxSessionName == "project-a")
-        #expect(
-            ZmxClient(executablePath: "/opt/homebrew/bin/zmx")
-                .launchCommand(sessionName: board.zmxSessionName ?? "")
-                == "/usr/bin/env -u ZMX_SESSION '/opt/homebrew/bin/zmx' attach 'project-a'"
-        )
-        let restored = try JSONDecoder().decode(
-            BoardState.self,
-            from: JSONEncoder().encode(board))
-        #expect(
-            restored.content
-                == .zmx(
-                    ZmxBoardState(
-                        sessionName: "project-a",
-                        workingDirectory: FileManager.default.homeDirectoryForCurrentUser.path)))
+            store.openBoard(input: ":zmx project-a")
+            let board = try #require(store.focusedBoard)
+            #expect(board.isTerminal)
+            #expect(board.isZmx)
+            #expect(board.zmxSessionName == "project-a")
+            #expect(
+                ZmxClient(executablePath: "/opt/homebrew/bin/zmx")
+                    .launchCommand(sessionName: board.zmxSessionName ?? "")
+                    == "/usr/bin/env -u ZMX_SESSION '/opt/homebrew/bin/zmx' attach 'project-a'"
+            )
+            let restored = try JSONDecoder().decode(
+                BoardState.self,
+                from: JSONEncoder().encode(board))
+            #expect(
+                restored.content
+                    == .zmx(
+                        ZmxBoardState(
+                            sessionName: "project-a",
+                            workingDirectory: FileManager.default.homeDirectoryForCurrentUser.path)))
 
-        store.openBoard(input: ":zmx")
-        await waitForZmxSessionLoad(store)
-        #expect(store.focusedDesk?.boards.count == 1)
-        #expect(store.isZmxSessionsPresented)
-        #expect(store.recentItems.first == .zmx(sessionName: ""))
-        #expect(RecentItem.zmx(sessionName: "").displayText == ":zmx")
+            store.openBoard(input: ":zmx")
+            await waitForZmxSessionLoad(store)
+            #expect(store.focusedDesk?.boards.count == 1)
+            #expect(store.isZmxSessionsPresented)
+            #expect(store.recentItems.first == .zmx(sessionName: ""))
+            #expect(RecentItem.zmx(sessionName: "").displayText == ":zmx")
 
-        store.hideZmxSessions()
-        store.openBoard(recentItem: .zmx(sessionName: ""))
-        await waitForZmxSessionLoad(store)
-        #expect(store.isZmxSessionsPresented)
+            store.hideZmxSessions()
+            store.openBoard(recentItem: .zmx(sessionName: ""))
+            await waitForZmxSessionLoad(store)
+            #expect(store.isZmxSessionsPresented)
 
-        store.hideZmxSessions()
-        store.showOpenBoardPanel()
-        store.openBoard(input: ":zmx")
-        await waitForZmxSessionLoad(store)
-        store.hideZmxSessions()
-        #expect(store.isOpenBoardPanelPresented)
+            store.hideZmxSessions()
+            store.showOpenBoardPanel()
+            store.openBoard(input: ":zmx")
+            await waitForZmxSessionLoad(store)
+            store.hideZmxSessions()
+            #expect(store.isOpenBoardPanelPresented)
+        }
     }
 
     @Test func zmxSessionsGroupChildrenOpenBoardsAndKillOneSession() async {
         let source = desk("Desk")
-        let suiteName = "DenStoreZmxSessionsTests-\(UUID().uuidString)"
-        let defaults = UserDefaults(suiteName: suiteName)!
-        defer { defaults.removePersistentDomain(forName: suiteName) }
-        let preferences = AppPreferences(defaults: defaults)
-        preferences.setZmxPath("/opt/homebrew/bin/zmx")
         let commandRunner = StubTerminalCommandRunner(
             responses: [
                 ["list"]: TerminalCommandResult(
@@ -175,45 +152,45 @@ struct DenStoreBoardTests {
                     terminationStatus: 0,
                     standardOutput: ""),
             ])
-        let store = DenStore(
-            state: DenState(desks: [source], focusedDeskID: source.id),
-            sheetNavigation: SheetNavigationManager(),
-            preferences: preferences,
-            terminalCommandRunner: commandRunner)
+        await withTestStore(
+            desks: [source], terminalCommandRunner: commandRunner
+        ) { store in
+            store.preferences.setZmxPath("/opt/homebrew/bin/zmx")
 
-        store.showZmxSessions(selectedSessionName: "den-vi")
-        await waitForZmxSessionLoad(store)
+            store.showZmxSessions(selectedSessionName: "den-vi")
+            await waitForZmxSessionLoad(store)
 
-        #expect(
-            store.zmxSessionGroups == [
-                ZmxSessionGroup(rootSessionName: "den", isRootActive: true, childSessionNames: ["den-vi"]),
-                ZmxSessionGroup(
-                    rootSessionName: "old-root",
-                    isRootActive: false,
-                    childSessionNames: ["old-root-debug"]),
-            ])
-        #expect(store.zmxSessionSelectedName == "den-vi")
-        store.setZmxSessionQuery("vi")
-        #expect(
-            store.filteredZmxSessionGroups
-                == [ZmxSessionGroup(rootSessionName: "den", isRootActive: true, childSessionNames: ["den-vi"])]
-        )
-        store.clearZmxSessionFilter()
+            #expect(
+                store.zmxSessionGroups == [
+                    ZmxSessionGroup(rootSessionName: "den", isRootActive: true, childSessionNames: ["den-vi"]),
+                    ZmxSessionGroup(
+                        rootSessionName: "old-root",
+                        isRootActive: false,
+                        childSessionNames: ["old-root-debug"]),
+                ])
+            #expect(store.zmxSessionSelectedName == "den-vi")
+            store.setZmxSessionQuery("vi")
+            #expect(
+                store.filteredZmxSessionGroups
+                    == [ZmxSessionGroup(rootSessionName: "den", isRootActive: true, childSessionNames: ["den-vi"])]
+            )
+            store.clearZmxSessionFilter()
 
-        store.openZmxSession("den-vi")
-        #expect(store.focusedBoard?.zmxSessionName == "den-vi")
-        #expect(!store.isZmxSessionsPresented)
+            store.openZmxSession("den-vi")
+            #expect(store.focusedBoard?.zmxSessionName == "den-vi")
+            #expect(!store.isZmxSessionsPresented)
 
-        store.showZmxSessions()
-        await waitForZmxSessionLoad(store)
-        store.openZmxSession("den-vi")
-        #expect(store.focusedDesk?.boards.count == 1)
+            store.showZmxSessions()
+            await waitForZmxSessionLoad(store)
+            store.openZmxSession("den-vi")
+            #expect(store.focusedDesk?.boards.count == 1)
 
-        store.showZmxSessions()
-        await waitForZmxSessionLoad(store)
-        store.killZmxSession("den-vi")
-        await waitForZmxSessionLoad(store)
-        #expect(store.zmxSessionsMessage == nil)
+            store.showZmxSessions()
+            await waitForZmxSessionLoad(store)
+            store.killZmxSession("den-vi")
+            await waitForZmxSessionLoad(store)
+            #expect(store.zmxSessionsMessage == nil)
+        }
     }
 
     @Test func changingWebExtensionHostKeepsTerminalRuntimeAlive() {
@@ -246,76 +223,66 @@ struct DenStoreBoardTests {
             zmxSessionName: "den",
             workingDirectory: "/tmp/project")
         let source = desk("Desk", boards: [sourceBoard], focusedBoardID: sourceBoard.id)
-        let suiteName = "DenStoreZmxDuplicationTests-\(UUID().uuidString)"
-        let defaults = UserDefaults(suiteName: suiteName)!
-        defer { defaults.removePersistentDomain(forName: suiteName) }
-        let preferences = AppPreferences(defaults: defaults)
-        preferences.setZmxPath("/usr/bin/zmx")
-        let store = DenStore(
-            state: DenState(desks: [source], focusedDeskID: source.id),
-            sheetNavigation: SheetNavigationManager(),
-            preferences: preferences,
-            terminalCommandRunner: StubTerminalCommandRunner(
-                responses: [
-                    ["list", "--short"]: TerminalCommandResult(
-                        terminationStatus: 0,
-                        standardOutput: "")
-                ]))
+        let runner = StubTerminalCommandRunner(
+            responses: [
+                ["list", "--short"]: TerminalCommandResult(
+                    terminationStatus: 0,
+                    standardOutput: "")
+            ])
+        try withTestStore(desks: [source], terminalCommandRunner: runner) {
+            store in
+            store.preferences.setZmxPath("/usr/bin/zmx")
 
-        store.duplicateFocusedBoardFromFirstSheet()
-        let automaticChild = try #require(store.focusedBoard)
-        #expect(store.focusedDesk?.boards.count == 2)
-        #expect(automaticChild.zmxSessionName == "den-2")
-        #expect(automaticChild.zmxRootSessionName == "den")
-        #expect(automaticChild.terminalWorkingDirectory == "/tmp/project")
-        #expect(store.temporaryContext == nil)
+            store.duplicateFocusedBoardFromFirstSheet()
+            let automaticChild = try #require(store.focusedBoard)
+            #expect(store.focusedDesk?.boards.count == 2)
+            #expect(automaticChild.zmxSessionName == "den-2")
+            #expect(automaticChild.zmxRootSessionName == "den")
+            #expect(automaticChild.terminalWorkingDirectory == "/tmp/project")
+            #expect(store.temporaryContext == nil)
 
-        store.focusBoard(sourceBoard.id)
-        store.duplicateFocusedBoard()
-        #expect(store.temporaryContext == .zmxDuplication)
-        #expect(store.focusedDesk?.boards.count == 2)
+            store.focusBoard(sourceBoard.id)
+            store.duplicateFocusedBoard()
+            #expect(store.temporaryContext == .zmxDuplication)
+            #expect(store.focusedDesk?.boards.count == 2)
 
-        #expect(store.duplicateFocusedZmxBoard(suffix: "vi"))
-        let firstChild = try #require(store.focusedBoard)
-        #expect(firstChild.zmxSessionName == "den-vi")
-        #expect(firstChild.zmxRootSessionName == "den")
-        #expect(firstChild.terminalWorkingDirectory == "/tmp/project")
-        #expect(store.recentItems.first == .zmx(sessionName: "den-vi"))
-        let restoredChild = try JSONDecoder().decode(
-            BoardState.self,
-            from: JSONEncoder().encode(firstChild))
-        #expect(
-            restoredChild.content
-                == .zmx(
-                    ZmxBoardState(
-                        sessionName: "den-vi",
-                        workingDirectory: "/tmp/project",
-                        rootSessionName: "den")))
+            #expect(store.duplicateFocusedZmxBoard(suffix: "vi"))
+            let firstChild = try #require(store.focusedBoard)
+            #expect(firstChild.zmxSessionName == "den-vi")
+            #expect(firstChild.zmxRootSessionName == "den")
+            #expect(firstChild.terminalWorkingDirectory == "/tmp/project")
+            #expect(store.recentItems.first == .zmx(sessionName: "den-vi"))
+            let restoredChild = try JSONDecoder().decode(
+                BoardState.self,
+                from: JSONEncoder().encode(firstChild))
+            #expect(
+                restoredChild.content
+                    == .zmx(
+                        ZmxBoardState(
+                            sessionName: "den-vi",
+                            workingDirectory: "/tmp/project",
+                            rootSessionName: "den")))
 
-        store.duplicateFocusedBoard()
-        #expect(store.duplicateFocusedZmxBoard(suffix: "nvim"))
-        #expect(store.focusedBoard?.zmxSessionName == "den-nvim")
-        #expect(store.focusedBoard?.zmxRootSessionName == "den")
-        #expect(store.recentItems.first == .zmx(sessionName: "den-nvim"))
+            store.duplicateFocusedBoard()
+            #expect(store.duplicateFocusedZmxBoard(suffix: "nvim"))
+            #expect(store.focusedBoard?.zmxSessionName == "den-nvim")
+            #expect(store.focusedBoard?.zmxRootSessionName == "den")
+            #expect(store.recentItems.first == .zmx(sessionName: "den-nvim"))
 
-        store.focusBoard(firstChild.id)
-        store.duplicateFocusedBoard()
-        #expect(store.duplicateFocusedZmxBoard(suffix: "vi"))
-        #expect(store.focusedBoard?.zmxSessionName == "den-vi-2")
-        #expect(store.recentItems.first == .zmx(sessionName: "den-vi-2"))
+            store.focusBoard(firstChild.id)
+            store.duplicateFocusedBoard()
+            #expect(store.duplicateFocusedZmxBoard(suffix: "vi"))
+            #expect(store.focusedBoard?.zmxSessionName == "den-vi-2")
+            #expect(store.recentItems.first == .zmx(sessionName: "den-vi-2"))
+        }
     }
 
-    @Test func zmxBoardDuplicationUsesTheSourceRootLabel() throws {
+    @Test func zmxBoardDuplicationUsesTheSourceRootLabel() {
         let sourceBoard = BoardState(
             width: 640,
             zmxSessionName: "den-vi",
             workingDirectory: "/tmp/project")
         let source = desk("Desk", boards: [sourceBoard], focusedBoardID: sourceBoard.id)
-        let suiteName = "DenStoreZmxRootLabelTests-\(UUID().uuidString)"
-        let defaults = UserDefaults(suiteName: suiteName)!
-        defer { defaults.removePersistentDomain(forName: suiteName) }
-        let preferences = AppPreferences(defaults: defaults)
-        preferences.setZmxPath("/usr/bin/zmx")
         let commandRunner = StubTerminalCommandRunner(
             responses: [
                 ["list", "--short"]: TerminalCommandResult(
@@ -325,17 +292,17 @@ struct DenStoreBoardTests {
                     terminationStatus: 0,
                     standardOutput: "den\n"),
             ])
-        let store = DenStore(
-            state: DenState(desks: [source], focusedDeskID: source.id),
-            sheetNavigation: SheetNavigationManager(),
-            preferences: preferences,
-            terminalCommandRunner: commandRunner)
+        withTestStore(
+            desks: [source], terminalCommandRunner: commandRunner
+        ) { store in
+            store.preferences.setZmxPath("/usr/bin/zmx")
 
-        store.duplicateFocusedBoard()
-        #expect(store.zmxDuplicationRootSessionName == "den")
-        #expect(store.duplicateFocusedZmxBoard(suffix: "nvim"))
-        #expect(store.focusedBoard?.zmxSessionName == "den-nvim")
-        #expect(store.focusedBoard?.zmxRootSessionName == "den")
+            store.duplicateFocusedBoard()
+            #expect(store.zmxDuplicationRootSessionName == "den")
+            #expect(store.duplicateFocusedZmxBoard(suffix: "nvim"))
+            #expect(store.focusedBoard?.zmxSessionName == "den-nvim")
+            #expect(store.focusedBoard?.zmxRootSessionName == "den")
+        }
     }
 
     @Test func invalidTerminalInputDoesNotCreateRecentItem() {
@@ -924,10 +891,6 @@ struct DenStoreBoardTests {
 
             #expect(store.focusedDesk?.focusedBoardID == second.id)
         }
-    }
-    private func withStore(desks: [DeskState], body: (DenStore) throws -> Void) rethrows {
-        let store = DenStore(state: DenState(desks: desks, focusedDeskID: desks[0].id))
-        try body(store)
     }
 
     private func arrowEvent(

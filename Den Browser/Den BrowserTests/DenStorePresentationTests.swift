@@ -678,17 +678,6 @@ struct DenStorePresentationTests {
         }
     }
 
-    private func withStore(desks: [DeskState], body: (DenStore) throws -> Void) rethrows {
-        let suiteName = "DenStorePresentationTests-\(UUID())"
-        let defaults = UserDefaults(suiteName: suiteName) ?? UserDefaults()
-        defer { defaults.removePersistentDomain(forName: suiteName) }
-        let store = DenStore(
-            state: DenState(desks: desks, focusedDeskID: desks[0].id),
-            sheetNavigation: SheetNavigationManager(),
-            preferences: AppPreferences(defaults: defaults))
-        try body(store)
-    }
-
     private func arrowEvent(
         _ specialKey: NSEvent.SpecialKey,
         modifiers: NSEvent.ModifierFlags
