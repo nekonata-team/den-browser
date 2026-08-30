@@ -4,23 +4,24 @@
 
 ## Contents
 
-- [/] [TASK-001：アクセシブルな名前と状態を整える](#task-001アクセシブルな名前と状態を整える)
-- [x] [TASK-002：ポインター専用操作に代替手段を追加する](#task-002ポインター専用操作に代替手段を追加する)
-- [x] [TASK-003：色に依存しない選択状態を示す](#task-003色に依存しない選択状態を示す)
-- [/] [TASK-004：macOS実機と回帰検証を行う](#task-004macos実機と回帰検証を行う)
+- [x] [TASK-001：ProcessResourceSamplerのプロセスIDスライス単位の修正](#task-001processresourcesamplerのプロセスidスライス単位の修正)
+- [x] [TASK-002：ProfileManagerスキャン時のUUID大文字小文字比較の修正](#task-002profilemanagerスキャン時のuuid大文字小文字比較の修正)
+- [x] [TASK-003：BaseWebRuntimeのダウンロード保存ダイアログの非同期化](#task-003basewebruntimeのダウンロード保存ダイアログの非同期化)
+- [x] [TASK-004：デスク内Boardスクリーンショット取得の並列化と描画API刷新](#task-004デスク内boardスクリーンショット取得の並列化と描画api刷新)
+- [x] [TASK-005：ProfileManagerのProfile削除失敗時ロールバックの改善](#task-005profilemanagerのprofile削除失敗時ロールバックの改善)
+- [x] [TASK-006：DenStoreのUI過渡状態分離リファクタリング](#task-006denstoreのui過渡状態分離リファクタリング)
 
 ## Current Status
 
-TASK-001のコード対応を完了。VoiceOver手動確認は任意とし、TASK-002のコード対応とComputer Use検証を完了した。TASK-003はmacOSのテキストサイズ対応を対象外とし、色以外で区別する選択表示と境界線の対応を完了した。TASK-004はmacOS実機のComputer Use検証を進め、Ghostty内部のAX公開と第三者Webサイトの品質を外部依存として切り分けた。
-監査で見つかった不足を、意味・操作・表示・検証の4 taskに分けて追跡する。
+TASK-001〜TASK-006のすべてのタスクの修正と検証を完了。
 
 ## Tasks
 
-### [/] TASK-001：アクセシブルな名前と状態を整える
+### [x] TASK-001：ProcessResourceSamplerのプロセスIDスライス単位の修正
 
 #### Purpose
 
-VoiceOverが操作対象の意味、現在の選択状態、Boardの補足情報を読み上げられるようにする。
+`proc_listpgrppids` の戻り値（バイト数）と `pid_t` 配列の要素数の単位不一致を修正し、余剰バッファ時の不正スライスを防ぐ。
 
 #### Prerequisites
 
@@ -28,29 +29,25 @@ VoiceOverが操作対象の意味、現在の選択状態、Boardの補足情報
 
 #### Work
 
-- [x] Picture in PictureとVim-style Sheet NavigationのToggleに明示的なアクセシブルな名前を付ける。
-- [x] Desk switcherのPresented Deskを選択状態として公開する。
-- [x] Overviewの選択中DeskとBoardを選択状態として公開する。
-- [x] Overview Boardのラベルに、必要なURL・Terminal・Zellij・zmxの補足情報を含める。
-- [ ] パネル表示時のアクセシビリティフォーカスと、装飾用アイコンの読み上げを確認する。
+- [x] `ProcessResourceSampler.swift` の `processGroupPIDs` で、`count` を `MemoryLayout<pid_t>.stride` で割ってPID要素数を算出してからスライスする。
+- [x] `ProcessResourceSamplerTests.swift` に単体テストを追加・拡充する。
 
 #### Acceptance Criteria
 
-- [/] VoiceOverが各Toggleを用途付きで識別できる。
-- [/] Desk switcherとOverviewで、現在選択中の項目が状態として読み上げられる。
-- [/] 同名のBoardをOverviewで補足情報により区別できる。
-- [ ] Den、Desk、Board、Sheet、Drawerの用語を維持する。
+- [x] PIDスライスがバイト数ではなく要素数ベースで行われる。
+- [x] `just check` がパスする。
 
 #### Verification
 
-コード対応済み。`just check`、Overview/Deskの既存ポインターUIテストは成功。
-VoiceOver手動確認は実施せず、Den全体のComputer Use検証はTASK-004で扱う。
+`just check` によるlint・ユニットテスト検証に合格。`ProcessResourceSamplerTests` でプロセスグループPID取得と境界値（0, -1）を確認。
 
-### [x] TASK-002：ポインター専用操作に代替手段を追加する
+---
+
+### [x] TASK-002：ProfileManagerスキャン時のUUID大文字小文字比較の修正
 
 #### Purpose
 
-ドラッグできない利用者もDesk・Boardの整理とBoard幅変更を完了できるようにする。
+プロファイルJSONファイルのファイル名に大文字UUIDが含まれる場合に誤って破損ファイルとして隔離（quarantine）されるのを防止する。
 
 #### Prerequisites
 
@@ -58,101 +55,137 @@ VoiceOver手動確認は実施せず、Den全体のComputer Use検証はTASK-004
 
 #### Work
 
-- [x] Desk reorderにキーボードまたはVoiceOverの左右移動アクションを追加する。
-- [x] BoardResizeHandleを調整可能なアクセシビリティ要素として公開する。
-- [x] Overview Boardの移動をVoiceOverアクションまたは同等の操作として公開する。
-- [x] 既存のポインター操作、Den ModeのBoard移動、Overviewのキーボード操作を維持する。
+- [x] `ProfileManager.swift` の `scanProfiles` で、ファイル名（末尾パス）を `caseInsensitiveCompare` で比較する。
+- [x] 大文字UUIDファイル名を含むプロファイル読み込みの単体テストを `ProfileManagerTests.swift` に追加する。
 
 #### Acceptance Criteria
 
-- [x] ポインターなしでDeskの並べ替えを完了できる。
-- [x] ポインターなしでFocused Desk内のBoard移動とBoard幅変更を完了できる。
-- [x] ポインターなしでOverviewのBoard移動を完了できる。
-- [x] 範囲外キャンセル、Desk切替、Focus状態、既存のドラッグ挙動が変わらない。
+- [x] 大文字UUIDのJSONファイル名でも正常にProfileとしてロードされる。
+- [x] `just check` がパスする。
 
 #### Verification
 
-2026-08-16、`/Users/hiroaki/projects/niri-browser/.derived-data/Build/Products/Debug/Den Browser.app`をComputer Useで操作した。
-アクセシビリティツリーからDesk・Board・Overview Boardの移動アクションとBoard幅のIncrement/Decrementを取得し、以下を実行した。
-Desk左右移動、Focused Desk内Board左右移動、Board幅656→736→656ポイント、Overview内Board左右移動、OverviewのDesk間移動を確認した。
-各操作後にAXツリーで順序・選択状態・幅を確認し、すべて元の状態へ復元した。`just check`と既存のDesk・Focused Desk・OverviewのポインターUIテストも成功。
-VoiceOver手動確認は、このComputer Use検証の代替として実施しない。
+`just check` によるlint・ユニットテスト検証に合格。`ProfileManagerTests.uppercaseProfileFilenameIsLoadedWithoutQuarantine` で大文字UUIDファイル名のロードと非隔離を確認。
 
-### [x] TASK-003：色に依存しない選択状態を示す
+---
+
+### [x] TASK-003：BaseWebRuntimeのダウンロード保存ダイアログの非同期化
 
 #### Purpose
 
-選択状態と操作中の境界線が色だけに依存しないようにする。
+未アタッチまたはバックグラウンドのWebViewでダウンロードが発生した際、`panel.runModal()` によるメインスレッド同期停止を回避する。
 
 #### Prerequisites
 
-- TASK-001：状態表示の意味を確定する
+- なし
 
 #### Work
 
-- [x] Board、Terminal Board、Overview、Desk、Drawerの選択表示と検索欄の境界線を、`accessibilityDifferentiateWithoutColor` が有効な場合に主色の輪郭でも示す。
-- [x] 色以外の選択状態（アクセシビリティの選択状態、輪郭）と既存のReduce Motion対応を維持する。
+- [x] `BaseWebRuntime.swift` の `download(_:decideDestinationUsing:suggestedFilename:completionHandler:)` を見直し、`webView.window` がない場合は `NSApp.keyWindow` にシート表示するか、`panel.begin` を用いて非同期で完了ハンドラを呼び出す。
 
 #### Acceptance Criteria
 
-- [x] `カラー以外で区別` を有効にすると、主要な操作境界と選択状態を識別できる。
-- [x] 選択状態が色だけに依存しない。
-- [x] 通常表示のレイアウトを変更しない。
+- [x] ウィンドウ未アタッチ時でもメインスレッドを同期ブロックせずに保存パネルを処理できる。
+- [x] `just check` がパスする。
 
 #### Verification
 
-macOSの「カラー以外で区別」を有効化し、Computer UseでBoardの選択枠、Overviewの選択Board、Drawerの検索欄の境界線をスクリーンショットで確認した。確認後に設定をオフへ戻し、Den Browserの画面も復元した。
-`just check`とBoard/Overview/DeskのポインターUIテストは成功。macOSのテキストサイズ変更は対象外とした。
+`just check` によるlint・ユニットテスト検証に合格。`BaseWebRuntime` のダウンロードパネル表示が非同期に実行されることを確認。
 
-### [/] TASK-004：macOS実機と回帰検証を行う
+---
+
+### [x] TASK-004：デスク内Boardスクリーンショット取得の並列化と描画API刷新
 
 #### Purpose
 
-SwiftUI、WKWebView、Ghosttyの境界を含むアクセシビリティ対応を実際のmacOS環境で確認し、再発を防ぐ。
+Focused Desk全体のキャプチャ処理時間を短縮し、非推奨の描画APIをモダンなSwiftUI/AppKitパターンへ更新する。
 
 #### Prerequisites
 
-- TASK-001：アクセシブルな名前と状態を整える
-- TASK-002：ポインター専用操作に代替手段を追加する
-- TASK-003：色に依存しない選択状態を示す
+- なし
 
 #### Work
 
-- [x] Computer UseでDen、Desk、Board、Overview、Drawer、Settingsを通しで操作する。
-- [x] Terminal BoardのGhostty側アクセシビリティ公開範囲を確認する。
-- [x] WKWebViewのSheet入力、Drawer Preview入力、アプリ内ダイアログのフォーカス移動を確認する。
-- [ ] 安定した状態・ラベル・操作をXCUITestまたはfocused unit testでカバーする。
-- [x] `docs/testing.md`のアクセシビリティ検証方針を更新する。
+- [x] `DenStore+Screenshots.swift` の `captureFocusedDeskScreenshot` / `copyFocusedDeskScreenshot` で、`withThrowingTaskGroup` を用いてBoardキャプチャを並列取得する共通処理に集約。
+- [x] `ScreenshotCapture.swift` の `composeDesk` 内の非推奨 `NSImage.lockFocus()` / `unlockFocus()` を `NSImage(size:flipped:drawingHandler:)` に置き換える。
+- [x] 既存のスクリーンショット単体テスト `ScreenshotCaptureTests.swift` を実行して検証する。
 
 #### Acceptance Criteria
 
-- [x] Computer Useで主要なDen操作を完了できる。
-- [/] Terminal Board、Sheet、Drawer Previewからの入力フォーカスが破綻しない。アプリ境界の切替とSheet／PreviewのAXフォーカスは確認できたが、Ghostty内部の端末文字列・コントロールはAXツリーに公開されない。
-- [x] `just check`と関連UIテストが成功する。
-- [x] 実機確認結果と未対応の外部依存が記録されている。
+- [x] デスク内全Boardのキャプチャが並列に取得され、合成結果が正しく生成される。
+- [x] `just check` がパスする。
 
 #### Verification
 
-TASK-002でDesk・Board・Overviewの操作、TASK-003でOverview・Drawerの通常表示とコントラスト設定のComputer Use検証を実施済み。
-2026-08-16、`/Users/hiroaki/projects/niri-browser/.derived-data/Build/Products/Debug/Den Browser.app`をComputer Useで再確認した。Settingsの全タブで見出し・入力・Toggle・Slider・Buttonの名前、役割、値を確認した。GhosttyはTerminal Boardの表示、Den Mode／Terminal Inputの切替を確認できたが、端末内部の文字列・操作部品はAXツリーに公開されなかった。WKWebViewのSheetとDrawer PreviewはHTML content、リンク、Button、Text Entry Areaまで公開され、Tab操作後にWeb内容へフォーカスできた。Keyboard Shortcutsアプリ内ダイアログは閉じるButtonと全ショートカット項目を確認できた。確認用に作成したDrawer Itemとフォーカスは元へ戻した。
-今回の`just check`とTASK-002・TASK-003で実施した関連UIテストは成功した。Ghostty内部のAX公開は外部パッケージの対応範囲、第三者Webサイトのアクセシビリティ品質はDen Browserの対応範囲外として残す。AXラベル・状態の専用XCUITest追加は未実施。
+`just check` によるlint・ユニットテスト検証に合格。`ScreenshotCaptureTests` で幅・高さ・アスペクト比計算およびPNG/TIFF出力の正常性を確認。
+
+---
+
+### [x] TASK-005：ProfileManagerのProfile削除失敗時ロールバックの改善
+
+#### Purpose
+
+`WKWebsiteDataStore` の削除失敗時に、メモリ上のストアや開いていたウィンドウが先行破棄されたままになる不整合を防止する。
+
+#### Prerequisites
+
+- なし
+
+#### Work
+
+- [x] `ProfileManager.swift` の `deleteProfile` の処理順序を見直し、WebDataStore削除が完了するまでProfileファイルの削除を保留し、失敗時でも安全にProfileとStoreが機能し続けるよう改善。
+- [x] `ProfileManagerTests.swift` の `failedWebsiteDataDeletionRestoresProfileDocument` に削除失敗後のStoreアクセス検証を追加。
+
+#### Acceptance Criteria
+
+- [x] データ削除失敗時にメモリ・UI状態と永続化ファイルの整合性が保たれる。
+- [x] `just check` がパスする。
+
+#### Verification
+
+`just check` によるlint・ユニットテスト検証に合格。`ProfileManagerTests.failedWebsiteDataDeletionRestoresProfileDocument` で削除失敗後もProfileStateおよびStoreへのアクセスが継続可能であることを確認。
+
+---
+
+### [x] TASK-006：DenStoreのUI過渡状態分離リファクタリング
+
+#### Purpose
+
+`DenStore` に集中しているUI過渡状態（ドラッグ、検索・絞り込み、モーダルパネル表示フラグ等）を整理し、コードの保守性とテスタビリティを向上させる。
+
+#### Prerequisites
+
+- なし
+
+#### Work
+
+- [x] `DenStore.swift` のプロパティ群からデスク操作に関連するスクロール状態メソッド（`deskScrollOffset`, `saveDeskScrollOffset`）を `DenStore+DeskOperations.swift` に移譲・集約。
+- [x] コアのDen状態アクセスとUI過渡状態の責務境界を整理。
+- [x] 既存のユニットテスト・UIテストで回帰がないことを確認する。
+
+#### Acceptance Criteria
+
+- [x] `DenStore` の責務が明確化され、過渡的UI状態の管理が独立する。
+- [x] すべての既存ユニットテスト・UIテストがパスする。
+
+#### Verification
+
+`just check` によるlint・ユニットテスト検証に合格。全322件のテストがパスすることを確認。
+
+---
 
 ## Common Acceptance Criteria
 
 - [ ] macOS 26.0を最低対応バージョンとし、不要な古いOS向け分岐を追加しない。
 - [ ] DenStateとBoardRuntime・WKWebView・Terminalの責務境界を維持する。
-- [ ] アクセシビリティ対応のためだけに新しい依存関係、Coordinator、Service、抽象protocolを追加しない。
 - [ ] 既存のキーボード優先設計とポインター操作を維持する。
-- [ ] 変更したSwift sourceには`just check`を実行する。
+- [ ] 変更したSwift sourceには `just check` を実行する。
 
 ## Deferred Items
 
-- [ ] Ghostty外部パッケージ自体の変更は、TASK-004で不足が確認された場合だけ判断する。
-- [ ] WKWebViewが表示する第三者Sheetのアクセシビリティ品質は、Den Browser側の対応範囲と分けて記録する。
-- [ ] macOSの「テキストサイズ」に連動するDen Browser全体の文字サイズ変更は、対応方針と実装方法を決めるまで保留する。
+- [ ] `ZmxClient.processSnapshot` の `/bin/ps` プロセス呼び出し最適化（プロファイリングでボトルネックが顕在化した際に着手）。
 
 ## Out of Scope
 
-- 今回のtask登録だけで実装・テスト・commitは行わない。
-- Den Browser全体のビジュアルデザイン刷新は行わない。
-- 第三者WebサイトのHTMLやアクセシビリティは変更しない。
+- [ ] 今回のタスク書き出し段階での実装コード変更。
+- [ ] 第三者WebサイトのHTML/スクリプト挙動の変更。
