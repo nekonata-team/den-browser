@@ -540,7 +540,8 @@ final class ProfileManager {
                     quarantine(url)
                     return nil
                 }
-                guard profile.profile.id.uuidString.lowercased() == url.deletingPathExtension().lastPathComponent else {
+                let filename = url.deletingPathExtension().lastPathComponent
+                guard profile.profile.id.uuidString.caseInsensitiveCompare(filename) == .orderedSame else {
                     quarantine(url)
                     return nil
                 }

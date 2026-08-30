@@ -437,6 +437,21 @@ struct ProfileManagerTests {
         #expect(names.contains { $0.hasPrefix("\(mismatchedURL.lastPathComponent).corrupt-") })
     }
 
+    @Test func uppercaseProfileFilenameIsLoadedWithoutQuarantine() throws {
+        let directory = temporaryProfileDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let manager = makeProfileManager(directory: directory)
+        let work = try #require(manager.createProfile(name: "Work", color: .purple))
+        let uppercaseURL = directory.appending(path: "\(work.id.uuidString.uppercased()).json")
+        try FileManager.default.moveItem(at: profileURL(work.id, in: directory), to: uppercaseURL)
+
+        let restored = makeProfileManager(directory: directory)
+        let names = try FileManager.default.contentsOfDirectory(atPath: directory.path)
+
+        #expect(restored.profile(id: work.id)?.name == "Work")
+        #expect(!names.contains { $0.contains(".corrupt-") })
+    }
+
     @Test func removedBoardRestorationIsLimitedToCurrentAppRun() throws {
         let directory = temporaryProfileDirectory()
         defer { try? FileManager.default.removeItem(at: directory) }
