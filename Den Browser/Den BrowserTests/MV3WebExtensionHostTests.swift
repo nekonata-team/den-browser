@@ -73,35 +73,37 @@ struct MV3WebExtensionHostTests {
         #expect(webExtension.hasInjectedContent)
     }
 
-    @Test func bundledUBOLReleaseIsManifestV3() async throws {
-        let resourceURL = URL(fileURLWithPath: #filePath)
+    @Test func descriptorSupportsDirectoryURL() {
+        let tempDir = FileManager.default.temporaryDirectory
+        let descriptor = WebExtensionDescriptor(
+            identifier: "custom.extension",
+            directoryURL: tempDir,
+            preapproveRequestedAccess: true)
+
+        #expect(descriptor.identifier == "custom.extension")
+        #expect(descriptor.directoryURL == tempDir)
+        #expect(descriptor.preapproveRequestedAccess)
+        #expect(descriptor.resourceURL() == tempDir)
+    }
+
+    @Test func uboliteInstallerTracksInstallationState() {
+        let nonExistentDir = FileManager.default.temporaryDirectory
+            .appending(path: "test-non-existent-\(UUID().uuidString)")
+        let installer = UBOLiteInstaller(directoryURL: nonExistentDir)
+
+        #expect(!installer.isInstalled)
+        #expect(installer.installedVersion == nil)
+        #expect(installer.descriptor == nil)
+    }
+
+    @Test func uboliteInstallerReadsInstalledVersionFromManifest() {
+        let fixtureDir = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()
-            .deletingLastPathComponent()
-            .appending(
-                path: "Den Browser/Resources/WebExtensions/uBOLite.safari.zip",
-                directoryHint: .notDirectory)
-        let webExtension = try await WKWebExtension(resourceBaseURL: resourceURL)
+            .appending(path: "Fixtures/MV3Extension", directoryHint: .isDirectory)
+        let installer = UBOLiteInstaller(directoryURL: fixtureDir)
 
-        #expect(webExtension.manifestVersion == 3)
-        #expect(webExtension.hasBackgroundContent)
-        #expect(webExtension.hasContentModificationRules)
-        #expect(!webExtension.hasInjectedContent)
-
-        let configuration = WKWebExtensionController.Configuration(identifier: UUID())
-        configuration.defaultWebsiteDataStore = .nonPersistent()
-        let controller = WKWebExtensionController(configuration: configuration)
-        let context = WKWebExtensionContext(for: webExtension)
-        context.unsupportedAPIs = ["browser.storage.sync"]
-        let expirationDate = Date.distantFuture
-        context.grantedPermissions = Dictionary(
-            uniqueKeysWithValues: webExtension.requestedPermissions.map { ($0, expirationDate) })
-        context.grantedPermissionMatchPatterns = Dictionary(
-            uniqueKeysWithValues: webExtension.requestedPermissionMatchPatterns.map { ($0, expirationDate) })
-
-        try controller.load(context)
-        #expect(context.errors.isEmpty)
-        #expect(context.action(for: nil) != nil)
-        #expect(context.optionsPageURL != nil)
-        try controller.unload(context)
+        #expect(installer.isInstalled)
+        #expect(installer.installedVersion == "1.0.0")
+        #expect(installer.descriptor != nil)
     }
 }

@@ -24,7 +24,8 @@ final class ProfileManager {
     @ObservationIgnored private var webExtensionHosts: [UUID: MV3WebExtensionHost] = [:]
     @ObservationIgnored private let sheetNavigation: SheetNavigationManager
     @ObservationIgnored private let preferences: AppPreferences
-    @ObservationIgnored private let webExtensionDescriptors: [BundledWebExtensionDescriptor]
+    @ObservationIgnored let uboliteInstaller: UBOLiteInstaller
+    @ObservationIgnored private let webExtensionDescriptors: [WebExtensionDescriptor]
     @ObservationIgnored private let removeDataStore: (UUID) async throws -> Void
     @ObservationIgnored private let removeWebsiteDataTypes: (WKWebsiteDataStore, Set<String>) async throws -> Void
     @ObservationIgnored private let initialProfile: PersistedProfile?
@@ -40,16 +41,18 @@ final class ProfileManager {
         directoryURL: URL = ProfileManager.defaultDirectoryURL(),
         sheetNavigation: SheetNavigationManager,
         preferences: AppPreferences = AppPreferences(),
+        uboliteInstaller: UBOLiteInstaller = UBOLiteInstaller(),
         removeDataStore: @escaping (UUID) async throws -> Void = ProfileManager.removeWebsiteDataStore,
         removeWebsiteDataTypes: @escaping (WKWebsiteDataStore, Set<String>) async throws -> Void = ProfileManager
             .removeWebsiteDataTypes,
         initialProfile: PersistedProfile? = nil,
         websiteDataStore: ((WebProfileStore) -> WKWebsiteDataStore)? = nil,
-        webExtensionDescriptors: [BundledWebExtensionDescriptor] = []
+        webExtensionDescriptors: [WebExtensionDescriptor] = []
     ) {
         self.directoryURL = directoryURL
         self.sheetNavigation = sheetNavigation
         self.preferences = preferences
+        self.uboliteInstaller = uboliteInstaller
         self.removeDataStore = removeDataStore
         self.removeWebsiteDataTypes = removeWebsiteDataTypes
         self.initialProfile = initialProfile
@@ -242,6 +245,32 @@ final class ProfileManager {
             anchorView: anchorView)
     }
 
+    func presentUBOLiteOptions() {
+        guard preferences.uBOLiteEnabled else { return }
+        let target = extensionPresentationTarget()
+        let profileID = target?.registration.profileID ?? personalProfileID
+        guard let host = webExtensionHost(for: profileID) else { return }
+        host.presentOptionsPage()
+    }
+
+    @discardableResult
+    func updateUBOLite() async -> Bool {
+        let success = await uboliteInstaller.install()
+        if success, preferences.uBOLiteEnabled {
+            let hosts = Array(webExtensionHosts.values)
+            webExtensionHosts.removeAll()
+            hosts.forEach { $0.dispose() }
+
+            for (windowID, store) in stores {
+                let profileID = storeProfileIDs[windowID]
+                let host = profileID.flatMap(webExtensionHost(for:))
+                let extensionWindow = host?.window(for: windowID)
+                store.updateWebExtensionHost(host, window: extensionWindow)
+            }
+        }
+        return success
+    }
+
     func register(window: NSWindow, for route: ProfileWindowRoute) {
         let profileID = resolvedProfileID(route.profileID)
         windows[route.windowID] = RegisteredWindow(profileID: profileID, window: window)
@@ -369,8 +398,16 @@ final class ProfileManager {
         return nil
     }
 
+    private var effectiveDescriptors: [WebExtensionDescriptor] {
+        if !webExtensionDescriptors.isEmpty {
+            return webExtensionDescriptors
+        }
+        return uboliteInstaller.descriptor.map { [$0] } ?? []
+    }
+
     private func webExtensionHost(for profileID: UUID) -> MV3WebExtensionHost? {
-        guard preferences.uBOLiteEnabled, !webExtensionDescriptors.isEmpty else { return nil }
+        let descriptors = effectiveDescriptors
+        guard preferences.uBOLiteEnabled, !descriptors.isEmpty else { return nil }
         if let host = webExtensionHosts[profileID] {
             return host
         }
@@ -378,7 +415,7 @@ final class ProfileManager {
             profileID: profileID,
             websiteDataStore: profileWebsiteDataStore(for: profileID),
             userContentController: sheetNavigation.userContentController,
-            descriptors: webExtensionDescriptors)
+            descriptors: descriptors)
         webExtensionHosts[profileID] = host
         return host
     }

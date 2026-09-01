@@ -1,10 +1,10 @@
 ---
-status: superseded by ADR-0013
+status: superseded by ADR-0013 and ADR-0044
 ---
 
 # Offer curated web extensions as Features
 
-Superseded by ADR 0013. The Vimium C PoC loaded a `WKWebExtension` context but did not produce usable Sheet navigation, so Den Browser did not validate curated WebExtensions as a product capability.
+Superseded by ADR 0013 (which removed bundled Vimium C) and ADR 0044 (which replaced bundled extension archives with on-demand installation). The Vimium C PoC loaded a `WKWebExtension` context but did not produce usable Sheet navigation, so Den Browser did not validate curated WebExtensions as a product capability.
 
 Den Browser may bundle selected WebExtensions and expose them as optional Features. Each Feature is disabled by default and requires explicit user consent before receiving access to Sheets.
 

@@ -7,11 +7,24 @@ import WebKit
 /// Extensions are deliberately described by the app instead of being installed from
 /// arbitrary paths. This keeps the first host surface small and makes the set of
 /// code that runs in a Profile auditable.
-struct BundledWebExtensionDescriptor: Equatable {
+struct WebExtensionDescriptor: Equatable {
     let identifier: String
-    let resourceName: String
+    let directoryURL: URL?
+    let resourceName: String?
     let resourceSubdirectory: String?
     let preapproveRequestedAccess: Bool
+
+    init(
+        identifier: String,
+        directoryURL: URL,
+        preapproveRequestedAccess: Bool = false
+    ) {
+        self.identifier = identifier
+        self.directoryURL = directoryURL
+        self.resourceName = nil
+        self.resourceSubdirectory = nil
+        self.preapproveRequestedAccess = preapproveRequestedAccess
+    }
 
     init(
         identifier: String,
@@ -20,18 +33,25 @@ struct BundledWebExtensionDescriptor: Equatable {
         preapproveRequestedAccess: Bool = false
     ) {
         self.identifier = identifier
+        self.directoryURL = nil
         self.resourceName = resourceName
         self.resourceSubdirectory = resourceSubdirectory
         self.preapproveRequestedAccess = preapproveRequestedAccess
     }
 
-    func resourceURL(in bundle: Bundle) -> URL? {
-        bundle.url(
+    func resourceURL(in bundle: Bundle = .main) -> URL? {
+        if let directoryURL {
+            return FileManager.default.fileExists(atPath: directoryURL.path) ? directoryURL : nil
+        }
+        guard let resourceName else { return nil }
+        return bundle.url(
             forResource: resourceName,
             withExtension: nil,
             subdirectory: resourceSubdirectory)
     }
 }
+
+typealias BundledWebExtensionDescriptor = WebExtensionDescriptor
 
 @MainActor
 protocol WebExtensionHost: AnyObject {
@@ -162,6 +182,11 @@ final class MV3WebExtensionHost: NSObject, WKWebExtensionControllerDelegate, Web
         presentPendingActionPopupIfPossible()
     }
 
+    func presentOptionsPage() {
+        guard let context = contexts.values.first else { return }
+        _ = presentOptionsPage(for: context)
+    }
+
     func activate(webView: WKWebView) {
         guard let tab = tabs[ObjectIdentifier(webView)] else { return }
         activate(tab)
@@ -229,7 +254,7 @@ final class MV3WebExtensionHost: NSObject, WKWebExtensionControllerDelegate, Web
     private func loadBundledExtensions() {
         for descriptor in descriptors {
             guard let resourceURL = descriptor.resourceURL(in: bundle) else {
-                assertionFailure("Bundled WebExtension resource not found: \(descriptor.resourceName)")
+                assertionFailure("WebExtension resource not found: \(descriptor.identifier)")
                 extensionLoadFinished()
                 continue
             }
@@ -336,11 +361,11 @@ final class MV3WebExtensionHost: NSObject, WKWebExtensionControllerDelegate, Web
     private func presentPendingActionPopupIfPossible() {
         guard isReady,
             let context = contexts.values.first,
-            let extensionWindow = focusedWindowID.flatMap({ windows[$0] }),
-            let tab = extensionWindow.activeTab,
             pendingActionPopupWindow != nil
         else { return }
         pendingActionPopupWindow = nil
+        let extensionWindow = focusedWindowID.flatMap({ windows[$0] }) ?? windows.values.first
+        let tab = extensionWindow?.activeTab
         context.performAction(for: tab)
     }
 

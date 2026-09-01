@@ -101,11 +101,11 @@ Owns Den composition and the workflows connecting Desks, Boards, Sheets, and Ove
 
 Owns Profile identity, Profile-scoped persistence, website-data isolation, and Profile window lifecycle. A Profile owns one Den and may present distinct Desks from it in multiple windows, so this Feature may depend on the Den Feature to create, restore, and present that Den. WebKit storage mechanics may live in `Platform`, while Profile policy remains in the feature.
 
-`ProfileManager` owns the lifecycle binding: one `MV3WebExtensionHost` per Profile and one extension window per Profile Window when the capability is enabled. Host implementation, bundled descriptors, resource loading, and WebKit controller integration belong to `Extensions`.
+`ProfileManager` owns the lifecycle binding: one `MV3WebExtensionHost` per Profile and one extension window per Profile Window when the capability is enabled. Host implementation, curated descriptors, on-demand installation, resource loading, and WebKit controller integration belong to `Extensions`.
 
 ### Extensions
 
-Owns bundled WebExtension descriptors, permissions, resource loading, and the per-Profile MV3 WebKit host. It does not own Profile identity or website-data policy; `Profiles` supplies lifecycle and `WKWebsiteDataStore` bindings. It does not own Den concepts; `Den` supplies Board and Drawer runtime registration at the narrow host boundary. Arbitrary extension installation remains outside this boundary.
+Owns curated WebExtension descriptors, permissions, on-demand installation, resource loading, and the per-Profile MV3 WebKit host. It does not own Profile identity or website-data policy; `Profiles` supplies lifecycle and `WKWebsiteDataStore` bindings. It does not own Den concepts; `Den` supplies Board and Drawer runtime registration at the narrow host boundary. Arbitrary extension installation remains outside this boundary.
 
 ### SheetNavigation
 

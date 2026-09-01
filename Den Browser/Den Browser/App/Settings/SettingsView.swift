@@ -57,35 +57,109 @@ struct SettingsView: View {
                 }
 
                 Section("Content Blocking") {
-                    LabeledContent {
-                        Toggle("", isOn: uBOLiteBinding)
-                            .labelsHidden()
-                    } label: {
-                        VStack(alignment: .leading, spacing: 3) {
-                            Text("uBlock Origin Lite")
-                            SettingsHelpText {
-                                Text("Use the bundled MV3 content blocker on every Sheet.")
+                    if profileManager.uboliteInstaller.isInstalled {
+                        LabeledContent {
+                            Toggle("", isOn: uBOLiteBinding)
+                                .labelsHidden()
+                        } label: {
+                            VStack(alignment: .leading, spacing: 3) {
+                                Text("uBlock Origin Lite")
+                                SettingsHelpText {
+                                    Text("Use MV3 content blocking on every Sheet.")
+                                }
+                                Text("Changing this setting reloads open Sheets.")
+                                    .font(.caption2)
+                                    .foregroundStyle(.secondary)
                             }
-                            Text("Changing this setting reloads open Sheets.")
-                                .font(.caption2)
-                                .foregroundStyle(.secondary)
                         }
-                    }
 
-                    if preferences.uBOLiteEnabled {
+                        if preferences.uBOLiteEnabled {
+                            SettingsActionRow {
+                                Button {
+                                    profileManager.presentUBOLitePopup(anchorView: uBOLitePopupAnchorView)
+                                } label: {
+                                    Label("Open uBlock Origin Lite", systemImage: "shield.lefthalf.filled")
+                                }
+                                .background(
+                                    PopupAnchorView { view in
+                                        guard uBOLitePopupAnchorView !== view else { return }
+                                        uBOLitePopupAnchorView = view
+                                    }
+                                    .allowsHitTesting(false)
+                                )
+
+                                Button {
+                                    profileManager.presentUBOLiteOptions()
+                                } label: {
+                                    Label("Open Settings Dashboard", systemImage: "gearshape")
+                                }
+                            }
+                        }
+
+                        if let version = profileManager.uboliteInstaller.installedVersion {
+                            SettingsHelpText {
+                                Text("Installed version: \(version)")
+                            }
+                        }
+
                         SettingsActionRow {
                             Button {
-                                profileManager.presentUBOLitePopup(anchorView: uBOLitePopupAnchorView)
-                            } label: {
-                                Label("Open uBlock Origin Lite", systemImage: "shield.lefthalf.filled")
-                            }
-                            .background(
-                                PopupAnchorView { view in
-                                    guard uBOLitePopupAnchorView !== view else { return }
-                                    uBOLitePopupAnchorView = view
+                                Task {
+                                    await profileManager.updateUBOLite()
                                 }
-                                .allowsHitTesting(false)
-                            )
+                            } label: {
+                                if profileManager.uboliteInstaller.isBusy {
+                                    HStack(spacing: 6) {
+                                        ProgressView()
+                                            .controlSize(.small)
+                                        Text("Updating…")
+                                    }
+                                } else {
+                                    Label("Check for Updates", systemImage: "arrow.triangle.2.circlepath")
+                                }
+                            }
+                            .disabled(profileManager.uboliteInstaller.isBusy)
+
+                            Button("Uninstall uBlock Origin Lite", role: .destructive) {
+                                profileManager.setUBOLiteEnabled(false)
+                                profileManager.uboliteInstaller.uninstall()
+                            }
+                            .disabled(profileManager.uboliteInstaller.isBusy)
+                        }
+                    } else {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("uBlock Origin Lite")
+                            SettingsHelpText {
+                                Text(
+                                    "Fast, efficient MV3 content blocker. Download and install to enable content blocking across Sheets."
+                                )
+                            }
+
+                            Button {
+                                Task {
+                                    let success = await profileManager.uboliteInstaller.install()
+                                    if success {
+                                        profileManager.setUBOLiteEnabled(true)
+                                    }
+                                }
+                            } label: {
+                                if profileManager.uboliteInstaller.isBusy {
+                                    HStack(spacing: 6) {
+                                        ProgressView()
+                                            .controlSize(.small)
+                                        Text("Installing…")
+                                    }
+                                } else {
+                                    Label("Install uBlock Origin Lite", systemImage: "arrow.down.circle")
+                                }
+                            }
+                            .disabled(profileManager.uboliteInstaller.isBusy)
+
+                            if case .error(let message) = profileManager.uboliteInstaller.state {
+                                Text(message)
+                                    .font(.caption2)
+                                    .foregroundStyle(.red)
+                            }
                         }
                     }
                 }

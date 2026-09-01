@@ -14,9 +14,6 @@ mod web
 # Prepare and publish signed releases.
 mod release
 
-# Maintain bundled MV3 WebExtensions.
-mod mv3
-
 # Format all Swift sources in place.
 [group("quality")]
 format:
