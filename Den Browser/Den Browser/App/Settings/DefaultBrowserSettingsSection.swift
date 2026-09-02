@@ -31,7 +31,9 @@ struct DefaultBrowserSettingsSection: View {
                 .disabled(status.isDenBrowser || isSettingDefault)
             }
         }
-        .onAppear(perform: refreshStatus)
+        .task {
+            await refreshStatus()
+        }
         .alert("Could Not Set Default Browser", isPresented: errorAlertBinding) {
             Button("OK") { errorMessage = nil }
         } message: {
@@ -64,8 +66,11 @@ struct DefaultBrowserSettingsSection: View {
         }
     }
 
-    private func refreshStatus() {
-        status = .fromDefaultApplications()
+    private func refreshStatus() async {
+        let newStatus = await Task.detached(priority: .userInitiated) {
+            DefaultBrowserStatus.fromDefaultApplications()
+        }.value
+        status = newStatus
     }
 
     private func makeDefaultBrowser() {
@@ -73,14 +78,13 @@ struct DefaultBrowserSettingsSection: View {
         isSettingDefault = true
 
         Task { @MainActor in
-            var failed = false
             for scheme in DefaultBrowserStatus.urlSchemes {
-                failed = await Self.setDefaultApplication(applicationURL, for: scheme) != nil || failed
+                _ = await Self.setDefaultApplication(applicationURL, for: scheme)
             }
 
+            await refreshStatus()
             isSettingDefault = false
-            refreshStatus()
-            if failed {
+            if !status.isDenBrowser {
                 errorMessage = "macOS did not accept the change. You can set the default browser in System Settings."
             }
         }
@@ -98,8 +102,8 @@ struct DefaultBrowserSettingsSection: View {
     }
 }
 
-private enum DefaultBrowserStatus {
-    static let urlSchemes = ["http", "https"]
+private enum DefaultBrowserStatus: Sendable {
+    nonisolated static let urlSchemes = ["http", "https"]
 
     case loading
     case denBrowser
@@ -122,14 +126,15 @@ private enum DefaultBrowserStatus {
         return false
     }
 
-    static func fromDefaultApplications() -> Self {
+    nonisolated static func fromDefaultApplications() -> Self {
         let applications: [URL] = urlSchemes.compactMap { scheme -> URL? in
             guard let url = URL(string: "\(scheme)://example.com") else { return nil }
             return NSWorkspace.shared.urlForApplication(toOpen: url)
         }
         guard applications.count == urlSchemes.count else { return .unavailable }
 
-        if applications.allSatisfy({ $0.path == Bundle.main.bundleURL.path }) {
+        guard let bundleIdentifier = Bundle.main.bundleIdentifier else { return .unavailable }
+        if applications.allSatisfy({ Bundle(url: $0)?.bundleIdentifier == bundleIdentifier }) {
             return .denBrowser
         }
 
