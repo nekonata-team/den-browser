@@ -258,7 +258,10 @@ extension DenStore {
 
     func placeDrawerItemAsBoard(_ itemID: UUID) {
         guard let item = state.drawerItems.first(where: { $0.id == itemID }) else { return }
-        addBoard(urlString: item.url.absoluteString, preferredWidth: focusedBoard?.width)
+        addBoard(
+            urlString: item.url.absoluteString,
+            preferredWidth: focusedBoard?.width,
+            recentItem: .url(SheetURLPolicy.canonicalSheetURL(item.url)))
         discardDrawerItem(itemID, advancesPreview: false, recordsDiscardHistory: false)
         closeDrawer()
     }

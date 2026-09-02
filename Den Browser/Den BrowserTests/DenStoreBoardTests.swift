@@ -124,7 +124,7 @@ struct DenStoreBoardTests {
             await waitForZmxSessionLoad(store)
             #expect(store.focusedDesk?.boards.count == 1)
             #expect(store.isZmxSessionsPresented)
-            #expect(store.recentItems.first == .zmx(sessionName: ""))
+            #expect(store.recentItems.first == .zmx(sessionName: "project-a"))
             #expect(RecentItem.zmx(sessionName: "").displayText == ":zmx")
 
             store.hideZmxSessions()
@@ -178,6 +178,7 @@ struct DenStoreBoardTests {
 
             store.openZmxSession("den-vi")
             #expect(store.focusedBoard?.zmxSessionName == "den-vi")
+            #expect(store.recentItems.first == .zmx(sessionName: "den-vi"))
             #expect(!store.isZmxSessionsPresented)
 
             store.showZmxSessions()
@@ -383,6 +384,7 @@ struct DenStoreBoardTests {
         #expect(store.focusedDesk?.boards.map(\.currentSheetURL) == [nil, url])
         #expect(store.focusedDesk?.focusedBoardID == terminal.id)
         #expect(store.state.drawerItems.isEmpty)
+        #expect(store.recentItems == [.url(url)])
 
         store.handleExternalURL(url)
 

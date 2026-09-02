@@ -109,7 +109,12 @@ extension DenStore {
             hideZmxSessions(returnToSource: false)
             return
         }
-        guard addZmxBoard(sessionName: sessionName) else { return }
+        guard
+            addZmxBoard(
+                sessionName: sessionName,
+                recentItem: .zmx(
+                    sessionName: sessionName.trimmingCharacters(in: .whitespacesAndNewlines)))
+        else { return }
     }
 
     func openSelectedZmxSession() {

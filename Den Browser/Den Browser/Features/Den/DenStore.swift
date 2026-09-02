@@ -216,7 +216,8 @@ final class DenStore {
             addBoard(
                 urlString: url.absoluteString,
                 preferredWidth: focusedBoard?.width,
-                afterBoardID: focusedBoard?.id)
+                afterBoardID: focusedBoard?.id,
+                recentItem: .url(canonicalURL))
         }
     }
 

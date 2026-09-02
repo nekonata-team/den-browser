@@ -50,7 +50,6 @@ extension DenStore {
             }
             guard case .session(let sessionName) = zmx else {
                 showZmxSessions(returnsToOpenBoard: temporaryContext == .openBoard)
-                saveRecentItem(.zmx(sessionName: ""))
                 return true
             }
             guard
@@ -112,11 +111,16 @@ extension DenStore {
             }
         }
         guard let resolution = resolveOpenBoardInput(input) else { return false }
-        guard addBoard(urlString: input, preferredWidth: preferredWidth, afterBoardID: afterBoardID) else {
+        let recentItem = input.count <= Self.maximumPersistedRecentInputLength ? resolution.item : nil
+        guard
+            addBoard(
+                urlString: input,
+                preferredWidth: preferredWidth,
+                afterBoardID: afterBoardID,
+                recentItem: recentItem)
+        else {
             return false
         }
-        guard input.count <= Self.maximumPersistedRecentInputLength else { return true }
-        saveRecentItem(resolution.item)
         return true
     }
 
@@ -246,13 +250,18 @@ extension DenStore {
         urlString: String,
         preferredWidth: Double? = nil,
         afterBoardID: UUID? = nil,
-        focus: Bool = true
+        focus: Bool = true,
+        recentItem: RecentItem? = nil
     ) -> Bool {
         guard let url = normalizedURL(from: urlString) else { return false }
         let label = url.host(percentEncoded: false) ?? url.absoluteString
         let width = preferredWidth ?? inheritedBoardWidth
         let board = BoardState(label: label, width: width, currentSheetURL: url)
-        return insertBoard(board, afterBoardID: afterBoardID, focus: focus)
+        guard insertBoard(board, afterBoardID: afterBoardID, focus: focus) else { return false }
+        if let recentItem {
+            saveRecentItem(recentItem)
+        }
+        return true
     }
 
     @discardableResult
@@ -286,14 +295,19 @@ extension DenStore {
         sessionName: String,
         preferredWidth: Double? = nil,
         afterBoardID: UUID? = nil,
-        focus: Bool = true
+        focus: Bool = true,
+        recentItem: RecentItem? = nil
     ) -> Bool {
         let normalizedSessionName = sessionName.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !normalizedSessionName.isEmpty else { return false }
         let board = BoardState(
             width: preferredWidth ?? inheritedBoardWidth,
             zmxSessionName: normalizedSessionName)
-        return insertBoard(board, afterBoardID: afterBoardID, focus: focus)
+        guard insertBoard(board, afterBoardID: afterBoardID, focus: focus) else { return false }
+        if let recentItem {
+            saveRecentItem(recentItem)
+        }
+        return true
     }
 
     @discardableResult

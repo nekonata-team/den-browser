@@ -68,14 +68,19 @@ extension DenStore {
     private func sheetNavigationActions(for board: BoardState) -> SheetNavigationManager.Actions {
         .init(
             onOpenBoard: { [weak self] url in
-                self?.addBoard(urlString: url.absoluteString, preferredWidth: board.width, afterBoardID: board.id)
+                self?.addBoard(
+                    urlString: url.absoluteString,
+                    preferredWidth: board.width,
+                    afterBoardID: board.id,
+                    recentItem: .url(SheetURLPolicy.canonicalSheetURL(url)))
             },
             onOpenBoardInBackground: { [weak self] url in
                 self?.addBoard(
                     urlString: url.absoluteString,
                     preferredWidth: board.width,
                     afterBoardID: board.id,
-                    focus: false)
+                    focus: false,
+                    recentItem: .url(SheetURLPolicy.canonicalSheetURL(url)))
             },
             onKeepInDrawer: { [weak self] url in self?.keepInDrawer(url, opensDrawer: false) },
             onEditCurrentSheet: { [weak self] in
@@ -87,7 +92,11 @@ extension DenStore {
                 self?.showOpenBoardPanel(initialURL: url)
             },
             onPasteURLInNewBoard: { [weak self] url in
-                self?.addBoard(urlString: url.absoluteString, preferredWidth: board.width, afterBoardID: board.id)
+                self?.addBoard(
+                    urlString: url.absoluteString,
+                    preferredWidth: board.width,
+                    afterBoardID: board.id,
+                    recentItem: .url(SheetURLPolicy.canonicalSheetURL(url)))
             },
             onCopyURLSucceeded: { [weak self] in
                 self?.showToast("Copied Current Sheet URL.", style: .success)
@@ -179,7 +188,8 @@ extension DenStore {
                         urlString: canonicalURL.absoluteString,
                         preferredWidth: board.width,
                         afterBoardID: board.id,
-                        focus: false)
+                        focus: false,
+                        recentItem: .url(canonicalURL))
                 else {
                     cancelTerminalURLRegistration(canonicalURL)
                     return

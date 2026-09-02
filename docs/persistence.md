@@ -41,6 +41,8 @@ Nested objects use these keys:
 - `DeskPresetBoard`: `label`, `width`, optional `customLabel`, and equivalent Web, Terminal, Zellij, or zmx `content`
 - `RecentItem`: `kind`, plus `url` for a URL, `query` for a search term, `workingDirectory` for a Terminal location, optional `sessionName` for a Zellij session intent, or `sessionName` for a zmx session intent used by Open Board
 
+Recent Items are recorded when a new Board is successfully opened from an input, including an Essential, an explicit link-to-new-Board action, a Drawer placement, or a zmx Session selection. Sheet navigation, Board restoration, and Drawer Preview do not create Recent Items. Opening the zmx Sessions picker without selecting a session does not create one.
+
 A missing optional Current Sheet URL means the Board has no Current Sheet. A missing First Sheet URL means the Board cannot use the persisted First Sheet return action. Board Sheet URLs normalize HTTP(S) root paths to `/` before persistence. Absolute local file URLs are stored with the same Foundation `URL` `Codable` representation; no file contents, access bookmarks, or existence state are persisted. A moved, deleted, or machine-specific local file may therefore fail to load after restoration without invalidating the saved Board, Drawer Item, Recent Item, or Desk Preset.
 
 Version 1 documents decode as Web Boards and are written back as version 2. An ordinary Terminal Board restores a new Shell in the saved Working Directory. Named Zellij restoration runs `zellij attach --create <sessionName>`; an unnamed Zellij Board runs `zellij -l welcome`. zmx restoration runs `zmx attach <sessionName>`.

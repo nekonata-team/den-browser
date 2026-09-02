@@ -80,6 +80,7 @@ struct DenStoreDrawerTests {
         #expect(store.focusedDesk?.boards[2].width == focused.width)
         #expect(store.focusedDesk?.focusedBoardID == store.focusedDesk?.boards[2].id)
         #expect(store.state.drawerItems.isEmpty)
+        #expect(store.recentItems == [.url(url)])
     }
 
     @Test func duplicateURLsRemainDistinctAndNewestComesFirst() throws {
@@ -184,6 +185,7 @@ struct DenStoreDrawerTests {
         #expect(store.focusedDesk?.boards.map(\.currentSheetURL) == [existingBoard.currentSheetURL, url])
         #expect(store.focusedBoard?.currentSheetURL == url)
         #expect(store.focusedBoard?.width == existingBoard.width)
+        #expect(store.recentItems == [.url(url)])
         #expect(store.recentlyDiscardedDrawerItems.isEmpty)
         #expect(!store.isDrawerOpen)
     }

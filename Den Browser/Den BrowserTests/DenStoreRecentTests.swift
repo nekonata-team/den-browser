@@ -122,6 +122,28 @@ struct DenStoreRecentTests {
         }
     }
 
+    @Test func essentialLaunchBecomesRecentItem() throws {
+        let essential = Essential(name: "Docs", key: "d", input: "https://docs.example/")
+        let expectedURL = try #require(URL(string: essential.input))
+        withTestStore { store in
+            #expect(store.preferences.setEssentials([essential]))
+
+            store.launchEssential(id: essential.id)
+
+            #expect(store.recentItems == [.url(expectedURL)])
+        }
+    }
+
+    @Test func openingZmxSessionsPickerDoesNotCreateRecentItem() {
+        withTestStore { store in
+            store.preferences.setZmxPath("/opt/homebrew/bin/zmx")
+
+            store.openBoard(input: ":zmx")
+
+            #expect(store.recentItems.isEmpty)
+        }
+    }
+
     @Test func openingTerminalRecentRevalidatesDirectoryAndMovesItToTheFront() {
         let directory = FileManager.default.temporaryDirectory.standardizedFileURL.path
         let item = RecentItem.terminal(workingDirectory: directory)
