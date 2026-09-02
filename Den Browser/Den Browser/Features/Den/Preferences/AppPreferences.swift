@@ -82,7 +82,6 @@ final class AppPreferences {
     private(set) var shortcutOverrides: [ConfigurableShortcut: ShortcutOverride]
     private(set) var deskNumberBinding: ShortcutBinding?
     private(set) var motionPreference: MotionPreference
-    private(set) var nativePictureInPictureEnabled: Bool
     private(set) var uBOLiteEnabled: Bool
     private(set) var boardCentering: FocusedBoardCentering
     private(set) var externalLinkDestination: ExternalLinkDestination
@@ -99,8 +98,6 @@ final class AppPreferences {
     private static let deskNumberShortcutDisabledKey =
         "preferences.shortcuts.desk-number.disabled"
     private static let motionKey = "preferences.appearance.motion.mode"
-    private static let nativePictureInPictureEnabledKey =
-        "preferences.picture-in-picture.enabled"
     private static let uBOLiteEnabledKey = "preferences.content-blocking.ubolite.enabled"
     private static let boardCenteringKey = "preferences.appearance.board-centering.mode"
     private static let externalLinkDestinationKey = "preferences.external-links.destination"
@@ -117,8 +114,6 @@ final class AppPreferences {
         motionPreference =
             defaults.string(forKey: Self.motionKey).flatMap(MotionPreference.init(rawValue:))
             ?? .followSystem
-        nativePictureInPictureEnabled = defaults.bool(
-            forKey: Self.nativePictureInPictureEnabledKey)
         uBOLiteEnabled = defaults.bool(forKey: Self.uBOLiteEnabledKey)
         boardCentering =
             defaults.string(forKey: Self.boardCenteringKey).flatMap(FocusedBoardCentering.init(rawValue:))
@@ -150,11 +145,6 @@ final class AppPreferences {
             version += 1
             defaults.set(version, forKey: schemaVersionKey)
         }
-    }
-
-    func setNativePictureInPictureEnabled(_ enabled: Bool) {
-        nativePictureInPictureEnabled = enabled
-        defaults.set(enabled, forKey: Self.nativePictureInPictureEnabledKey)
     }
 
     func setUBOLiteEnabled(_ enabled: Bool) {

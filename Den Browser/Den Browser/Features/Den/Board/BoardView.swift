@@ -221,12 +221,10 @@ struct BoardView: View {
             Label("Capture Current Sheet Screenshot...", systemImage: "camera")
         }
 
-        if preferences.nativePictureInPictureEnabled {
-            Button {
-                runtime.togglePictureInPicture()
-            } label: {
-                Label("Toggle Picture in Picture", systemImage: "pip")
-            }
+        Button {
+            runtime.togglePictureInPicture()
+        } label: {
+            Label("Toggle Picture in Picture", systemImage: "pip")
         }
 
         Divider()

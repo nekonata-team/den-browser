@@ -4,7 +4,7 @@ status: accepted
 
 # Defer migration to WebKit for SwiftUI
 
-Den Browser will keep its live Sheet runtimes on `WKWebView` instead of migrating them to `WebPage` and SwiftUI `WebView`. WebKit for SwiftUI covers much of the ordinary browsing surface, but the macOS 26.5 SDK does not expose enough control to preserve Den Browser's link routing, download lifecycle, programmatic page zoom, experimental Picture in Picture, and first-responder behavior without new AppKit escape hatches. Replacing the current bridge would therefore move complexity rather than remove it.
+Den Browser will keep its live Sheet runtimes on `WKWebView` instead of migrating them to `WebPage` and SwiftUI `WebView`. WebKit for SwiftUI covers much of the ordinary browsing surface, but the macOS 26.5 SDK does not expose enough control to preserve Den Browser's link routing, download lifecycle, programmatic page zoom, native Picture in Picture, and first-responder behavior without new AppKit escape hatches. Replacing the current bridge would therefore move complexity rather than remove it.
 
 This decision was evaluated with Xcode and the macOS 26.5 SDK. Apple's web documentation may describe APIs newer than the installed SDK; an API is not treated as available until it compiles against the project's supported toolchain.
 
@@ -20,7 +20,7 @@ This decision was evaluated with Xcode and the macOS 26.5 SDK. Apple's web docum
 | Handle JavaScript `alert`, `confirm`, and `prompt` | `WebPage.DialogPresenting` provides async handlers for all three operations. | Available. |
 | Handle file and directory upload constraints | `DialogPresenting.handleFileInputPrompt` supplies `WKOpenPanelParameters` and returns selected URLs. | Available, subject to a sandboxed file/directory upload test. |
 | Observe element fullscreen | SwiftUI `WebView` has `webViewElementFullscreenBehavior`, and `WebPage` exposes `fullscreenState`. | Available. |
-| Toggle native Picture in Picture with the experimental preference | `WebPage.Configuration` does not expose `WKPreferences` or an equivalent PiP setting. JavaScript remains callable, but the private preference used by ADR 0021 cannot be configured. | Blocking gap while the experimental feature remains supported. |
+| Toggle native Picture in Picture | `WebPage.Configuration` does not expose `WKPreferences` or an equivalent PiP setting. JavaScript remains callable, but the private preference used by ADR 0045 cannot be configured. | Blocking gap while the built-in Feature remains supported. |
 | Apply persisted page zoom, navigate history, and reload | `WebPage` exposes its back-forward list, item loading, and reload. SwiftUI exposes magnification gestures but no equivalent to programmatically setting `WKWebView.pageZoom`. | Partial; page zoom is a blocking gap. |
 | Move first responder to a focused Board or an opened Drawer Preview | SwiftUI focus APIs exist, but `WebView` does not expose the underlying `NSView` for `makeFirstResponder`. | Unconfirmed. A prototype must prove initial Vim input, pointer focus changes, fullscreen transitions, and Drawer Preview focus. |
 | Keep live web objects out of persisted `DenState` | A runtime can own one `WebPage`, and Apple specifies that a `WebPage` binds to only one `WebView` at a time. | Available. `BoardRuntime` and `DrawerPreviewRuntime` remain the ownership boundary. |
@@ -35,7 +35,7 @@ Reevaluate this decision when the supported macOS SDK provides all of the follow
 - modifier flags on `WebPage.NavigationAction` in the shipping SDK;
 - a public download lifecycle hook with destination, completion, and failure control;
 - programmatic page zoom;
-- either the required PiP configuration or a decision to remove the experimental PiP feature;
+- the required PiP configuration;
 - a proven SwiftUI focus path for Board and Drawer Preview web content.
 
 At reevaluation, build an isolated prototype first. It must cover the compatibility table and the current Sheet Navigation and critical UI test intent before any production runtime is replaced.

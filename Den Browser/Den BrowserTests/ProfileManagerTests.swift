@@ -157,7 +157,6 @@ struct ProfileManagerTests {
         #expect(preferences.sheetScale == AppPreferences.defaultSheetScale)
 
         preferences.setMotionPreference(.standard)
-        preferences.setNativePictureInPictureEnabled(true)
         preferences.setUBOLiteEnabled(true)
         preferences.setExternalLinkDestination(.focusedBoard)
         preferences.setSheetScale(80)
@@ -170,7 +169,6 @@ struct ProfileManagerTests {
             storedKeys == [
                 "preferences.schema.version",
                 "preferences.appearance.motion.mode",
-                "preferences.picture-in-picture.enabled",
                 "preferences.content-blocking.ubolite.enabled",
                 "preferences.external-links.destination",
                 "preferences.appearance.sheet-scale.percent",
@@ -179,7 +177,6 @@ struct ProfileManagerTests {
             ])
         #expect(defaults.integer(forKey: "preferences.schema.version") == 1)
         #expect(restored.motionPreference == .standard)
-        #expect(restored.nativePictureInPictureEnabled)
         #expect(restored.uBOLiteEnabled)
         #expect(restored.externalLinkDestination == .focusedBoard)
         #expect(restored.sheetScale == 80)

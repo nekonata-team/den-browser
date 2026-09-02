@@ -1,8 +1,10 @@
 ---
-status: accepted
+status: superseded by ADR-0045
 ---
 
 # Experimental native Picture in Picture with Board-level control
+
+Superseded by [ADR 0045](./0045-provide-picture-in-picture-as-a-built-in-feature.md), which keeps Board-level PiP control but makes the Feature available by default without a user setting.
 
 Den Browser provides an optional, experimental native Picture in Picture (PiP) feature for macOS WKWebView. To bypass standard App Sandbox restrictions and coordinate floating media presentation, the app utilizes the private WebKit preferences interface `_allowsPictureInPictureMediaPlayback` (guarded by dynamic selector checks to prevent runtime crashes if removed in future macOS updates) and registers a temporary sandbox entitlement for `com.apple.PIPAgent`.
 

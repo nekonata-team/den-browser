@@ -49,24 +49,6 @@ private struct FeaturesSettingsView: View {
 
             SheetNavigationSettingsSection()
 
-            Section("Experimental Picture in Picture") {
-                LabeledContent {
-                    Toggle("Picture in Picture", isOn: pipBinding)
-                        .labelsHidden()
-                } label: {
-                    VStack(alignment: .leading, spacing: 3) {
-                        SettingsHelpText {
-                            Text("Allows playing video in a Picture-in-Picture window.")
-                        }
-                        Text(
-                            "Note: Uses private APIs. Future macOS updates may break it. Changes apply to new sheets or after restart."
-                        )
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                    }
-                }
-            }
-
             Section("Content Blocking") {
                 if profileManager.uboliteInstaller.isInstalled {
                     LabeledContent {
@@ -174,14 +156,6 @@ private struct FeaturesSettingsView: View {
                     }
                 }
             }
-        }
-    }
-
-    private var pipBinding: Binding<Bool> {
-        Binding {
-            preferences.nativePictureInPictureEnabled
-        } set: { enabled in
-            preferences.setNativePictureInPictureEnabled(enabled)
         }
     }
 

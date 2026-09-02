@@ -28,7 +28,6 @@ extension DenStore {
             webExtensionHost: webExtensionHost,
             webExtensionWindow: webExtensionWindow,
             sheetScale: preferences.sheetScale,
-            nativePictureInPictureEnabled: preferences.nativePictureInPictureEnabled,
             sheetNavigationActions: actions,
             events: events
         )

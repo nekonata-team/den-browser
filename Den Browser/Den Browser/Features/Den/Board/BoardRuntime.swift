@@ -47,7 +47,6 @@ final class BoardRuntime: BaseWebRuntime, ObservableObject {
         webExtensionHost: WebExtensionHost? = nil,
         webExtensionWindow: MV3WebExtensionWindow? = nil,
         sheetScale: Int,
-        nativePictureInPictureEnabled: Bool = false,
         sheetNavigationActions: SheetNavigationManager.Actions,
         events: Events
     ) {
@@ -69,10 +68,7 @@ final class BoardRuntime: BaseWebRuntime, ObservableObject {
             enableElementFullscreen: true
         )
 
-        Self.configureNativePictureInPicture(
-            preferences: webView.configuration.preferences,
-            enabled: nativePictureInPictureEnabled
-        )
+        Self.configureNativePictureInPicture(preferences: webView.configuration.preferences)
 
         sheetNavigation.didOpen(
             webView,
@@ -134,19 +130,14 @@ final class BoardRuntime: BaseWebRuntime, ObservableObject {
     }
 
     private static func configureNativePictureInPicture(
-        preferences: WKPreferences,
-        enabled: Bool
+        preferences: WKPreferences
     ) {
-        guard enabled else {
-            return
-        }
-
         let selector = NSSelectorFromString("_setAllowsPictureInPictureMediaPlayback:")
 
         guard preferences.responds(to: selector) else {
             #if DEBUG
                 print(
-                    "[DenBrowser] Warning: nativePictureInPictureEnabled is true, but WKPreferences does not respond to _setAllowsPictureInPictureMediaPlayback:"
+                    "[DenBrowser] Warning: WKPreferences does not respond to _setAllowsPictureInPictureMediaPlayback:"
                 )
             #endif
             return

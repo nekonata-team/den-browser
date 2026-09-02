@@ -6,7 +6,7 @@ Den Browser persists only state needed to restore user-owned work. Version 2 add
 
 - Each Profile owns one versioned JSON `PersistedProfile` document containing `ProfileState`, `DenState`, Drawer Items, Personal Desk Presets, and Recent.
 - A versioned JSON `ProfileIndex` stores Profile order.
-- App-wide preferences use typed, independent `UserDefaults` keys.
+- App-wide preferences use typed, independent `UserDefaults` keys. Retired keys may remain in `UserDefaults` and are ignored.
 - WebKit owns website data in each Profile's `WKWebsiteDataStore`.
 - Live Web and Terminal runtimes, `WKWebView`, Shell, Zellij, and zmx processes, terminal screens, scrollback, transient presentation state, Recently Removed Boards, and recently discarded Drawer Item restoration history are not persisted.
 
@@ -63,7 +63,6 @@ Version 1 documents decode as Web Boards and are written back as version 2. An o
 | `appearance` | Motion mode | `preferences.appearance.motion.mode` | `MotionPreference.rawValue` | `follow-system` | Appearance > Motion |
 | `appearance` | Board centering mode | `preferences.appearance.board-centering.mode` | `FocusedBoardCentering.rawValue` | `never` | Appearance > Board Centering |
 | `appearance` | Sheet scale | `preferences.appearance.sheet-scale.percent` | `Int` (`50...200`) | `100` | Appearance > Sheet Scale |
-| `picture-in-picture` | Enabled | `preferences.picture-in-picture.enabled` | `Bool` | `false` | Features > Experimental Picture in Picture |
 | `content-blocking` | uBlock Origin Lite enabled | `preferences.content-blocking.ubolite.enabled` | `Bool` | `false` | Features > Content Blocking |
 | `terminal` | Zellij executable path | `preferences.terminal.zellij.executable-path` | `String` | Empty | Terminal > Zellij |
 | `terminal` | zmx executable path | `preferences.terminal.zmx.executable-path` | `String` | Empty | Terminal > zmx |
