@@ -6,7 +6,7 @@ enum DeskPresetSelection: Hashable {
 }
 
 struct DeskPresetPicker: View {
-    @Binding var selection: DeskPresetSelection
+    let initialSelection: DeskPresetSelection
     @Binding var query: String
     @Binding var isManaging: Bool
     let allowsEmptyPreset: Bool
@@ -15,6 +15,24 @@ struct DeskPresetPicker: View {
 
     @Environment(DenStore.self) private var store
     @State private var scrollPosition = ScrollPosition()
+    @State private var selection: DeskPresetSelection
+
+    init(
+        initialSelection: DeskPresetSelection,
+        query: Binding<String>,
+        isManaging: Binding<Bool>,
+        allowsEmptyPreset: Bool,
+        isSearchFocused: FocusState<Bool>.Binding,
+        onConfirm: @escaping (DeskPresetSelection) -> Void
+    ) {
+        self.initialSelection = initialSelection
+        self._query = query
+        self._isManaging = isManaging
+        self.allowsEmptyPreset = allowsEmptyPreset
+        self.isSearchFocused = isSearchFocused
+        self.onConfirm = onConfirm
+        self._selection = State(initialValue: initialSelection)
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -91,14 +109,21 @@ struct DeskPresetPicker: View {
         }
         .onChange(of: store.deskPresets.map(\.id)) { _, ids in
             if case .personal(let id) = selection, !ids.contains(id) {
-                selection = matchingChoices.first?.selection ?? .builtIn(.empty)
+                let fallback = matchingChoices.first?.selection ?? .builtIn(.empty)
+                selection = fallback
             }
         }
         .onChange(of: query) { _, _ in ensureValidSelection() }
-        .onChange(of: selection) { _, selection in
-            scrollPosition.scrollTo(id: scrollID(for: selection), anchor: .center)
+        .onChange(of: initialSelection) { _, newSelection in
+            selection = newSelection
         }
-        .onAppear { ensureValidSelection() }
+        .onChange(of: selection) { _, newSelection in
+            scrollPosition.scrollTo(id: scrollID(for: newSelection), anchor: .center)
+        }
+        .onAppear {
+            selection = initialSelection
+            ensureValidSelection()
+        }
     }
 
     private var presetChoices: some View {
@@ -179,8 +204,9 @@ struct DeskPresetPicker: View {
             onConfirm(choice.selection)
         } label: {
             HStack {
-                Image(systemName: selection == choice.selection ? "chevron.right" : "circle")
-                    .foregroundStyle(selection == choice.selection ? Color.accentColor : Color.secondary)
+                let isSelected = selection == choice.selection
+                Image(systemName: isSelected ? "chevron.right" : "circle")
+                    .foregroundStyle(isSelected ? Color.accentColor : Color.secondary)
                     .frame(width: 16)
                 Text(choice.label)
                 Spacer()
@@ -271,7 +297,6 @@ struct DeskPresetPicker: View {
             let choice = matchingChoices.first(where: { $0.selection == selection })
                 ?? matchingChoices.first
         else { return }
-        selection = choice.selection
         onConfirm(choice.selection)
     }
 

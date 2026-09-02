@@ -3,7 +3,6 @@ import SwiftUI
 struct NewDeskPanel: View {
     @Environment(DenStore.self) private var store
     @State private var selectedDeskPreset: DeskPresetSelection = .builtIn(.empty)
-    @State private var activeDeskPreset: DeskPresetSelection = .builtIn(.empty)
     @State private var query = ""
     @State private var isManaging = false
     @State private var isChoosing = true
@@ -31,7 +30,7 @@ struct NewDeskPanel: View {
 
             if isChoosing {
                 DeskPresetPicker(
-                    selection: $activeDeskPreset,
+                    initialSelection: selectedDeskPreset,
                     query: $query,
                     isManaging: $isManaging,
                     allowsEmptyPreset: !store.isReplaceDeskPanelPresented,
@@ -102,7 +101,6 @@ struct NewDeskPanel: View {
             let initialPreset: DeskPresetSelection =
                 store.isReplaceDeskPanelPresented ? .builtIn(.chatGPT) : .builtIn(.empty)
             selectedDeskPreset = initialPreset
-            activeDeskPreset = initialPreset
             newDeskLabel =
                 store.isReplaceDeskPanelPresented ? BuiltInDeskPreset.chatGPT.label : BuiltInDeskPreset.empty.label
             query = ""
@@ -189,7 +187,6 @@ struct NewDeskPanel: View {
 
     private func confirmDeskPreset(_ selection: DeskPresetSelection) {
         let label = deskPresetLabel(for: selection)
-        activeDeskPreset = selection
         selectedDeskPreset = selection
         newDeskLabel = label
         newDeskLabelSelection = TextSelection(range: label.startIndex..<label.endIndex)
@@ -199,7 +196,6 @@ struct NewDeskPanel: View {
     }
 
     private func beginDeskPresetSelection() {
-        activeDeskPreset = selectedDeskPreset
         isChoosing = true
         isManaging = false
         DispatchQueue.main.async { isSearchFocused = true }
@@ -222,7 +218,6 @@ struct NewDeskPanel: View {
         let fallback: DeskPresetSelection =
             store.isReplaceDeskPanelPresented ? .builtIn(.chatGPT) : .builtIn(.empty)
         selectedDeskPreset = fallback
-        activeDeskPreset = fallback
         newDeskLabel = deskPresetLabel(for: fallback)
     }
 }
