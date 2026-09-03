@@ -2,43 +2,86 @@ import AppKit
 import SwiftUI
 
 struct SettingsView: View {
+    @State private var selection: SettingsSection? = .profiles
+
     var body: some View {
-        TabView {
-            ProfilesSettingsView()
-                .tabItem {
-                    Label("Profiles", systemImage: "person.2")
+        NavigationSplitView {
+            List(SettingsSection.allCases, selection: $selection) { section in
+                Label(section.title, systemImage: section.systemImage)
+                    .tag(section)
+            }
+            .listStyle(.sidebar)
+            .toolbar(removing: .sidebarToggle)
+            .navigationSplitViewColumnWidth(min: 160, ideal: 180, max: 220)
+        } detail: {
+            Group {
+                switch selection ?? .profiles {
+                case .profiles:
+                    ProfilesSettingsView()
+                case .appearance:
+                    AppearanceSettingsView()
+                case .shortcuts:
+                    ShortcutsSettingsView()
+                case .essentials:
+                    EssentialsSettingsView()
+                case .terminal:
+                    TerminalSettingsView()
+                case .web:
+                    WebSettingsView()
                 }
-
-            AppearanceSettingsView()
-                .tabItem {
-                    Label("Appearance", systemImage: "circle.lefthalf.filled")
-                }
-
-            ShortcutsSettingsView()
-                .tabItem {
-                    Label("Shortcuts", systemImage: "keyboard")
-                }
-
-            EssentialsSettingsView()
-                .tabItem {
-                    Label("Essentials", systemImage: "sparkles")
-                }
-
-            TerminalSettingsView()
-                .tabItem {
-                    Label("Terminal", systemImage: "terminal")
-                }
-
-            FeaturesSettingsView()
-                .tabItem {
-                    Label("Features", systemImage: "puzzlepiece.extension")
-                }
+            }
+            .navigationTitle((selection ?? .profiles).title)
         }
-        .frame(width: 520, height: 500)
+        .frame(minWidth: 760, idealWidth: 820, minHeight: 520, idealHeight: 560)
     }
 }
 
-private struct FeaturesSettingsView: View {
+private enum SettingsSection: String, CaseIterable, Identifiable {
+    case profiles
+    case appearance
+    case shortcuts
+    case essentials
+    case terminal
+    case web
+
+    var id: Self { self }
+
+    var title: String {
+        switch self {
+        case .profiles:
+            "Profiles"
+        case .appearance:
+            "Appearance"
+        case .shortcuts:
+            "Shortcuts"
+        case .essentials:
+            "Essentials"
+        case .terminal:
+            "Terminal"
+        case .web:
+            "Web"
+        }
+    }
+
+    var systemImage: String {
+        switch self {
+        case .profiles:
+            "person.2"
+        case .appearance:
+            "circle.lefthalf.filled"
+        case .shortcuts:
+            "keyboard"
+        case .essentials:
+            "sparkles"
+        case .terminal:
+            "terminal"
+        case .web:
+            "globe"
+        }
+    }
+}
+
+private struct WebSettingsView: View {
     @Environment(AppPreferences.self) private var preferences
     @Environment(ProfileManager.self) private var profileManager
     @State private var uBOLitePopupAnchorView: NSView?

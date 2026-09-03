@@ -45,7 +45,7 @@ extension DenStore {
         if let zmx = Self.resolveZmxInput(input) {
             guard zmxClient.isConfigured else {
                 openBoardPanelMessage =
-                    "Set an absolute zmx executable path in Settings > Features > Terminal."
+                    "Set an absolute zmx executable path in Settings > Terminal."
                 return false
             }
             guard case .session(let sessionName) = zmx else {
@@ -68,7 +68,7 @@ extension DenStore {
         if let zellij = Self.resolveZellijInput(input) {
             guard zellijClient.isConfigured else {
                 openBoardPanelMessage =
-                    "Set an absolute Zellij executable path in Settings > Features > Terminal."
+                    "Set an absolute Zellij executable path in Settings > Terminal."
                 return false
             }
             let sessionName: String?
@@ -191,7 +191,7 @@ extension DenStore {
         case .zellij(let sessionName):
             guard zellijClient.isConfigured else {
                 openBoardPanelMessage =
-                    "Set an absolute Zellij executable path in Settings > Features > Terminal."
+                    "Set an absolute Zellij executable path in Settings > Terminal."
                 return
             }
             guard
@@ -210,7 +210,7 @@ extension DenStore {
             }
             guard zmxClient.isConfigured else {
                 openBoardPanelMessage =
-                    "Set an absolute zmx executable path in Settings > Features > Terminal."
+                    "Set an absolute zmx executable path in Settings > Terminal."
                 return
             }
             guard

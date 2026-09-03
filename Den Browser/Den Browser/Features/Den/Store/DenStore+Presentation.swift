@@ -65,7 +65,7 @@ extension DenStore {
 
     func showZmxSessions(selectedSessionName: String? = nil, returnsToOpenBoard: Bool = false) {
         guard zmxClient.isConfigured else {
-            showToast("Set an absolute zmx executable path in Settings > Features > Terminal.", style: .warning)
+            showToast("Set an absolute zmx executable path in Settings > Terminal.", style: .warning)
             return
         }
         zmxSessionSelectedName = selectedSessionName

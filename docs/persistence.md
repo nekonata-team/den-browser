@@ -56,16 +56,16 @@ Version 1 documents decode as Web Boards and are written back as version 2. An o
 | Domain | Setting | Key | Stored value | Default | Settings location |
 | --- | --- | --- | --- | --- | --- |
 | `schema` | Version | `preferences.schema.version` | `Int` | `1` | Internal |
-| `sheet-navigation` | Enabled | `preferences.sheet-navigation.enabled` | `Bool` | `false` | Features > Vim-style Sheet Navigation |
-| `sheet-navigation` | Hint alphabet | `preferences.sheet-navigation.hint-alphabet` | `String` | `asdfghjkl` | Features > Vim-style Sheet Navigation |
-| `sheet-navigation` | Ignored hosts | `preferences.sheet-navigation.ignored-hosts` | `[String]` | `[]` | Features > Vim-style Sheet Navigation |
+| `sheet-navigation` | Enabled | `preferences.sheet-navigation.enabled` | `Bool` | `false` | Web > Vim-style Sheet Navigation |
+| `sheet-navigation` | Hint alphabet | `preferences.sheet-navigation.hint-alphabet` | `String` | `asdfghjkl` | Web > Vim-style Sheet Navigation |
+| `sheet-navigation` | Ignored hosts | `preferences.sheet-navigation.ignored-hosts` | `[String]` | `[]` | Web > Vim-style Sheet Navigation |
 | `shortcuts` | Action override | `preferences.shortcuts.actions.<action-id>` | Property-list encoded `ShortcutOverride` | Absent; uses the action default | Shortcuts > Shortcuts |
 | `shortcuts` | Desk number binding | `preferences.shortcuts.desk-number.binding` | Property-list encoded `ShortcutBinding` | `Command` + `Option` + digit | Shortcuts > Focus Desk 1–10 |
 | `shortcuts` | Desk number disabled | `preferences.shortcuts.desk-number.disabled` | `Bool` | Absent / `false` | Shortcuts > Focus Desk 1–10 |
 | `appearance` | Motion mode | `preferences.appearance.motion.mode` | `MotionPreference.rawValue` | `follow-system` | Appearance > Motion |
 | `appearance` | Board centering mode | `preferences.appearance.board-centering.mode` | `FocusedBoardCentering.rawValue` | `never` | Appearance > Board Centering |
 | `appearance` | Sheet scale | `preferences.appearance.sheet-scale.percent` | `Int` (`50...200`) | `100` | Appearance > Sheet Scale |
-| `content-blocking` | uBlock Origin Lite enabled | `preferences.content-blocking.ubolite.enabled` | `Bool` | `false` | Features > Content Blocking |
+| `content-blocking` | uBlock Origin Lite enabled | `preferences.content-blocking.ubolite.enabled` | `Bool` | `false` | Web > Content Blocking |
 | `terminal` | Zellij executable path | `preferences.terminal.zellij.executable-path` | `String` | Empty | Terminal > Zellij |
 | `terminal` | zmx executable path | `preferences.terminal.zmx.executable-path` | `String` | Empty | Terminal > zmx |
 | `essentials` | Items | `preferences.essentials.items` | Property-list encoded `[Essential]` | Absent | Essentials |
