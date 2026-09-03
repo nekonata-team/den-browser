@@ -78,7 +78,7 @@ struct DenView<Header: View>: View {
                 }
 
                 activePanel(
-                    defaultBoardWidth: defaultBoardWidth(in: geometry.size),
+                    newBoardWidth: newBoardWidth(in: geometry.size),
                     boardHeight: DenLayout.boardHeight(
                         for: geometry.size,
                         shouldShowHeader: shouldShowHeader))
@@ -176,12 +176,12 @@ struct DenView<Header: View>: View {
     }
 
     @ViewBuilder
-    private func activePanel(defaultBoardWidth: CGFloat, boardHeight: CGFloat) -> some View {
+    private func activePanel(newBoardWidth: CGFloat, boardHeight: CGFloat) -> some View {
         switch store.temporaryContext {
         case .essentialsPrefix:
             panelOverlay(essentialsPrefixPanel)
         case .openBoard:
-            panelOverlay(openBoardPanel(defaultBoardWidth: defaultBoardWidth))
+            panelOverlay(openBoardPanel(newBoardWidth: newBoardWidth))
         case .zmxSessions:
             panelOverlay(ZmxSessionsPanel(profileColor: profileColor))
         case .zmxDuplication:
@@ -304,24 +304,21 @@ struct DenView<Header: View>: View {
         }
     }
 
-    private func defaultBoardWidth(in size: CGSize) -> Double {
-        if let focusedBoard = store.focusedBoard {
-            return focusedBoard.width
-        }
-        return (size.width - DenLayout.outerInset * 2 - DenLayout.outerInset) / 2
+    private func newBoardWidth(in size: CGSize) -> Double {
+        DenLayout.newBoardWidth(in: size, focusedBoardWidth: store.focusedBoard?.width)
     }
 
-    private func openBoardPanel(defaultBoardWidth: Double) -> some View {
+    private func openBoardPanel(newBoardWidth: Double) -> some View {
         OpenBoardPanel(
             urlText: $urlText,
             isFocused: $isOpenPanelFocused,
-            defaultBoardWidth: defaultBoardWidth,
+            newBoardWidth: newBoardWidth,
             initialURL: store.openBoardPanelInitialURL,
             recentItems: store.recentItems,
             message: store.openBoardPanelMessage,
-            onSubmit: { openBoard(defaultBoardWidth: $0) },
+            onSubmit: { openBoard(newBoardWidth: $0) },
             onOpenRecent: { item, width in
-                openBoard(item, defaultBoardWidth: width)
+                openBoard(item, newBoardWidth: width)
             },
             onClearRecent: store.clearRecent,
             onDismiss: dismissOpenBoardPanel,
@@ -521,20 +518,20 @@ struct DenView<Header: View>: View {
         )
     }
 
-    private func openBoard(defaultBoardWidth: Double) {
+    private func openBoard(newBoardWidth: Double) {
         store.openBoard(
             input: urlText,
-            preferredWidth: defaultBoardWidth,
+            preferredWidth: newBoardWidth,
             afterBoardID: openBoardAfterBoardID)
         guard !store.isOpenBoardPanelPresented else { return }
         urlText = ""
         openBoardAfterBoardID = nil
     }
 
-    private func openBoard(_ item: RecentItem, defaultBoardWidth: Double) {
+    private func openBoard(_ item: RecentItem, newBoardWidth: Double) {
         store.openBoard(
             recentItem: item,
-            preferredWidth: defaultBoardWidth,
+            preferredWidth: newBoardWidth,
             afterBoardID: openBoardAfterBoardID)
         guard !store.isOpenBoardPanelPresented else { return }
         urlText = ""

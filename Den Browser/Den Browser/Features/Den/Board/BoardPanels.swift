@@ -7,7 +7,7 @@ struct OpenBoardPanel: View {
     @FocusState.Binding var isFocused: Bool
     @State private var selectedRecentItemID: RecentItem?
 
-    let defaultBoardWidth: Double
+    let newBoardWidth: Double
     let initialURL: URL?
     let recentItems: [RecentItem]
     let message: String?
@@ -62,9 +62,9 @@ struct OpenBoardPanel: View {
                 .onSubmit {
                     TextInputComposition.performUnlessActive {
                         if let selected = filteredRecentItems.first(where: { $0.id == selectedRecentItemID }) {
-                            onOpenRecent(selected, defaultBoardWidth)
+                            onOpenRecent(selected, newBoardWidth)
                         } else {
-                            onSubmit(defaultBoardWidth)
+                            onSubmit(newBoardWidth)
                         }
                     }
                 }
@@ -91,7 +91,7 @@ struct OpenBoardPanel: View {
 
                 ForEach(filteredRecentItems) { item in
                     Button {
-                        onOpenRecent(item, defaultBoardWidth)
+                        onOpenRecent(item, newBoardWidth)
                     } label: {
                         HStack(spacing: DenPanelLayout.controlSpacing) {
                             Image(systemName: item.systemImage)

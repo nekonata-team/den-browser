@@ -481,6 +481,14 @@ struct DenStoreBoardTests {
         }
     }
 
+    @Test func newBoardInheritsFocusedWidthWhenPreferredWidthIsUnset() {
+        let source = board("Source", width: 760)
+        let focusedDesk = desk("Focused", boards: [source], focusedBoardID: source.id)
+        let focusedStore = DenStore(state: DenState(desks: [focusedDesk], focusedDeskID: focusedDesk.id))
+        focusedStore.addBoard(urlString: "https://example.com")
+        #expect(focusedStore.focusedBoard?.width == 760)
+    }
+
     @Test func updateBoardKeepsCurrentSheetForUnsupportedURL() throws {
         let board = board("Board", url: "https://before.example/")
         let source = desk("Desk", boards: [board], focusedBoardID: board.id)

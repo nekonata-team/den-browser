@@ -19,6 +19,10 @@ enum DenLayout {
 
     static let denHeaderHeight = deskSwitcherHeight
 
+    static func newBoardWidth(in size: CGSize, focusedBoardWidth: Double?) -> Double {
+        focusedBoardWidth ?? Double((size.width - outerInset * 2 - outerInset) / 2)
+    }
+
     static func boardHeight(
         for size: CGSize,
         shouldShowHeader: Bool,
