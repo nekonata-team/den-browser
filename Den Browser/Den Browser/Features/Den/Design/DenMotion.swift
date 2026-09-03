@@ -31,9 +31,6 @@ enum DenMotion {
     }
 
     static func boardTransition(reduceMotion: Bool) -> AnyTransition {
-        .asymmetric(
-            insertion: transition(reduceMotion: reduceMotion, scale: 0.98),
-            removal: .opacity
-        )
+        reduceMotion ? .identity : .opacity
     }
 }
