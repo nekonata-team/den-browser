@@ -54,6 +54,9 @@ struct ProfileWindowView: View {
             .onOpenURL { url in
                 store.handleExternalURL(url)
             }
+            .onAppear {
+                PerformanceTrace.mark("ProfileWindowView.onAppear (window content presented)", category: "Launch")
+            }
             .sheet(
                 isPresented: Binding(
                     get: {

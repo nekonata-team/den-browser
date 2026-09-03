@@ -46,6 +46,11 @@ lsp-config:
 run: build
     open "{{derived_data}}/Build/Products/Debug/Den Browser.app"
 
+# Benchmark startup and idle resource usage.
+[group("development")]
+benchmark *args: build
+    ./scripts/measure {{args}}
+
 # Remove all derived data build directories.
 [group("development")]
 clean:

@@ -55,6 +55,7 @@ final class BoardRuntime: BaseWebRuntime, ObservableObject {
         self.webExtensionWindow = webExtensionWindow
         self.sheetNavigationActions = sheetNavigationActions
         self.events = events
+        PerformanceTrace.mark("BoardRuntime.init (\(board.id.uuidString.prefix(8)))", category: "Board")
 
         super.init(
             id: board.id,
@@ -218,11 +219,13 @@ final class BoardRuntime: BaseWebRuntime, ObservableObject {
     }
 
     override func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+        PerformanceTrace.mark("BoardRuntime.didFinish navigation (\(id.uuidString.prefix(8)))", category: "Board")
         sheetNavigation.refreshConfiguration(for: webView)
         updateFavicon()
     }
 
     override func webView(_ webView: WKWebView, didCommit navigation: WKNavigation!) {
+        PerformanceTrace.mark("BoardRuntime.didCommit navigation (\(id.uuidString.prefix(8)))", category: "Board")
         didTerminateContentProcess = false
         guard isShowingInitialLoadFallback else { return }
         DispatchQueue.main.async { [weak self] in

@@ -36,6 +36,7 @@ final class TerminalRuntime: NSObject, ObservableObject {
     private static let hiddenTickInterval = Duration.seconds(1)
 
     init(workingDirectory: String, command: String? = nil, events: Events) {
+        PerformanceTrace.mark("TerminalRuntime.init (dir: \(workingDirectory))", category: "Terminal")
         self.events = events
         terminalView = AppTerminalView(frame: .zero)
         super.init()

@@ -11,15 +11,18 @@ struct Den_BrowserApp: App {
     @State private var openSettingsCoordinator = OpenSettingsCoordinator()
 
     init() {
+        PerformanceTrace.mark("App.init start", category: "Launch")
         updaterController = SPUStandardUpdaterController(
             startingUpdater: true,
             updaterDelegate: nil,
             userDriverDelegate: nil)
+        PerformanceTrace.mark("UpdaterController initialized", category: "Launch")
         let configuration = AppConfiguration.current()
         let preferences = AppPreferences(defaults: configuration.defaults)
         let sheetNavigation = SheetNavigationManager(defaults: configuration.defaults)
         _preferences = State(initialValue: preferences)
         _sheetNavigation = State(initialValue: sheetNavigation)
+        PerformanceTrace.mark("Preferences & Configuration initialized", category: "Launch")
         let manager = ProfileManager(
             directoryURL: configuration.profileDirectoryURL,
             sheetNavigation: sheetNavigation,
@@ -27,6 +30,7 @@ struct Den_BrowserApp: App {
             initialProfile: configuration.initialProfile,
             websiteDataStore: configuration.websiteDataStore)
         _profileManager = State(initialValue: manager)
+        PerformanceTrace.mark("ProfileManager initialized", category: "Launch")
     }
 
     var body: some Scene {

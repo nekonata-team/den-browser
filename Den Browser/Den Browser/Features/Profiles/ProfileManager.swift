@@ -524,8 +524,12 @@ final class ProfileManager {
     }
 
     private func load() {
+        PerformanceTrace.mark("ProfileManager.load start", category: "Launch")
+        let signpost = PerformanceTrace.beginInterval("ProfileManager.load")
+        defer { PerformanceTrace.endInterval("ProfileManager.load", signpost) }
         try? FileManager.default.createDirectory(at: directoryURL, withIntermediateDirectories: true)
         var loaded = scanProfiles()
+        PerformanceTrace.mark("ProfileManager.scanProfiles finished (\(loaded.count) found)", category: "Launch")
         let indexURL = directoryURL.appending(path: "profile-index.json")
         if let index = decode(ProfileIndex.self, from: indexURL) {
             let byID = Dictionary(uniqueKeysWithValues: loaded.map { ($0.profile.id, $0) })
@@ -557,6 +561,7 @@ final class ProfileManager {
         } catch {
             reportSaveError(error)
         }
+        PerformanceTrace.mark("ProfileManager.load completed (\(profiles.count) profiles loaded)", category: "Launch")
     }
 
     private func scanProfiles() -> [PersistedProfile] {
