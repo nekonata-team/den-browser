@@ -15,6 +15,7 @@ struct BoardView: View {
     let width: Double
     let height: Double
     let isPointerFocusEnabled: Bool
+    var isVisibleInViewport: Bool = true
     let onFocus: () -> Void
     let onGoToFirst: () -> Void
     let onGoBack: () -> Void
@@ -29,7 +30,7 @@ struct BoardView: View {
             ZStack(alignment: .top) {
                 BoardWebView(
                     webView: runtime.webView,
-                    isHidden: store.isDrawerOpen || store.isOverviewPresented,
+                    isHidden: !isVisibleInViewport || store.isDrawerOpen || store.isOverviewPresented,
                     focusRequest: focusRequest,
                     onSurfaceReady: { window in
                         guard runtime.webView.fullscreenState == .notInFullscreen else {

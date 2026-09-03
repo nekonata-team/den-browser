@@ -16,6 +16,7 @@ struct TerminalBoardView: View {
     let width: Double
     let height: Double
     let isPointerFocusEnabled: Bool
+    var isVisibleInViewport: Bool = true
     let onFocus: () -> Void
     let onRemove: () -> Void
     let onDragChanged: (DragGesture.Value) -> Void
@@ -27,7 +28,7 @@ struct TerminalBoardView: View {
             TerminalBoardSurface(
                 terminalView: runtime.terminalView,
                 onSurfaceVisibilityChange: { runtime.setSurfaceVisible($0) },
-                isHidden: store.isDrawerOpen || store.isOverviewPresented,
+                isHidden: !isVisibleInViewport || store.isDrawerOpen || store.isOverviewPresented,
                 focusRequest: focusRequest,
                 onSurfaceReady: { window in
                     guard

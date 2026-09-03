@@ -30,6 +30,8 @@ struct BoardStrip: View {
     @State private var boardCenteringTask: Task<Void, Never>?
     @State private var lastAutoScrollTime = 0.0
     @State private var revealBoardID: UUID?
+    @State private var activatedBoardIDs: Set<UUID> = []
+    @State private var visibleBoardIDs: Set<UUID> = []
 
     private var shouldReduceMotion: Bool {
         DenMotion.shouldReduceMotion(
@@ -89,7 +91,6 @@ struct BoardStrip: View {
         let paddings = BoardLayout.calculatePaddings(for: layoutParams)
         let shouldCenterFocusedBoard = BoardLayout.shouldCenterFocusedBoard(for: layoutParams)
         let restingScrollX = BoardLayout.restingScrollX(for: layoutParams)
-        let focusRequest = focusedBoardFocusRequest
         let alignmentTarget = BoardStripAlignmentTarget(
             deskID: store.presentedDeskID,
             boardID: store.isDeskFilterPresented
@@ -106,13 +107,28 @@ struct BoardStrip: View {
         return ScrollView(.horizontal) {
             HStack(alignment: .top, spacing: boardSpacing) {
                 ForEach(boards) { board in
+                    let isFocused = store.focusedDesk?.focusedBoardID == board.id
+                    let isVisible = visibleBoardIDs.contains(board.id) || isFocused
+                    let isActivated = activatedBoardIDs.contains(board.id) || isVisible
+
                     boardView(
                         board,
-                        width: store.maximizedBoardID == board.id ? maximizedBoardWidth : board.width,
-                        height: boardHeight,
+                        size: CGSize(
+                            width: store.maximizedBoardID == board.id ? maximizedBoardWidth : board.width,
+                            height: boardHeight
+                        ),
                         containerSize: size,
-                        focusRequest: focusRequest
+                        isActivated: isActivated,
+                        isVisible: isVisible
                     )
+                    .onScrollVisibilityChange(threshold: 0.05) { visible in
+                        if visible {
+                            visibleBoardIDs.insert(board.id)
+                            activatedBoardIDs.insert(board.id)
+                        } else {
+                            visibleBoardIDs.remove(board.id)
+                        }
+                    }
                     .disabled(store.isDeskFilterPresented)
                     .overlay {
                         if store.isDeskFilterPresented {
@@ -230,6 +246,10 @@ struct BoardStrip: View {
         .coordinateSpace(name: BoardStripCoordinateSpace.name)
         .scrollIndicators(.never)
         .accessibilityIdentifier("board-strip")
+        .onChange(of: store.presentedDeskID) { _, _ in
+            activatedBoardIDs.removeAll()
+            visibleBoardIDs.removeAll()
+        }
         .onPreferenceChange(BoardFramePreferenceKey.self) { frames in
             boardFrames = frames
             alignDraggedBoard(to: frames)
@@ -376,17 +396,17 @@ struct BoardStrip: View {
     @ViewBuilder
     private func boardView(
         _ board: BoardState,
-        width: CGFloat,
-        height: CGFloat,
+        size: CGSize,
         containerSize: CGSize,
-        focusRequest: BoardFocusRequest?
+        isActivated: Bool,
+        isVisible: Bool
     ) -> some View {
         let focused =
             store.isDeskFilterPresented
             ? board.id == store.deskFilterSelectionBoardID
             : board.id == store.focusedDesk?.focusedBoardID
         let pointerFocusEnabled = !store.isDeskFilterPresented && isPointerFocusEnabled(for: board.id)
-        let boardFocusRequest = focusRequest?.boardID == board.id ? focusRequest : nil
+        let boardFocusRequest = focusedBoardFocusRequest?.boardID == board.id ? focusedBoardFocusRequest : nil
         let focus = {
             if store.isDeskFilterPresented {
                 store.confirmDeskFilterSelection(board.id)
@@ -395,7 +415,19 @@ struct BoardStrip: View {
             }
         }
 
-        if board.isTerminal {
+        if !isActivated {
+            UnactivatedBoardView(
+                board: board,
+                isFocused: focused,
+                profileColor: profileColor,
+                width: size.width,
+                height: size.height,
+                isPointerFocusEnabled: pointerFocusEnabled,
+                onFocus: focus,
+                onRemove: { store.removeBoard(board.id) },
+                onDragChanged: { updateBoardDrag(board, value: $0, in: containerSize) },
+                onDragEnded: { finishBoardDrag(value: $0, in: containerSize) })
+        } else if board.isTerminal {
             TerminalBoardView(
                 board: board,
                 isFocused: focused,
@@ -403,9 +435,10 @@ struct BoardStrip: View {
                 isDragging: boardDrag?.boardID == board.id,
                 runtime: store.terminalRuntime(for: board),
                 profileColor: profileColor,
-                width: width,
-                height: height,
+                width: size.width,
+                height: size.height,
                 isPointerFocusEnabled: pointerFocusEnabled,
+                isVisibleInViewport: isVisible,
                 onFocus: focus,
                 onRemove: { store.removeBoard(board.id) },
                 onDragChanged: { updateBoardDrag(board, value: $0, in: containerSize) },
@@ -418,9 +451,10 @@ struct BoardStrip: View {
                 isDragging: boardDrag?.boardID == board.id,
                 runtime: store.runtime(for: board),
                 profileColor: profileColor,
-                width: width,
-                height: height,
+                width: size.width,
+                height: size.height,
                 isPointerFocusEnabled: pointerFocusEnabled,
+                isVisibleInViewport: isVisible,
                 onFocus: focus,
                 onGoToFirst: { store.goToFirstSheetInBoard(board.id) },
                 onGoBack: { store.goBackInBoard(board.id) },
@@ -941,5 +975,80 @@ struct BoardResizeHandle: View {
                 onResize(adjustedWidth)
                 onResizeEnd()
             }
+    }
+}
+
+private struct UnactivatedBoardView: View {
+    @Environment(DenStore.self) private var store
+    let board: BoardState
+    let isFocused: Bool
+    let profileColor: Color
+    let width: Double
+    let height: Double
+    let isPointerFocusEnabled: Bool
+    let onFocus: () -> Void
+    let onRemove: () -> Void
+    let onDragChanged: (DragGesture.Value) -> Void
+    let onDragEnded: (DragGesture.Value) -> Void
+
+    var body: some View {
+        VStack(spacing: 0) {
+            header
+            Color.clear
+        }
+        .frame(width: width, height: height)
+        .clipShape(RoundedRectangle(cornerRadius: DenRadius.large, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: DenRadius.large, style: .continuous)
+                .stroke(borderColor, lineWidth: isFocused ? 2 : 1)
+        }
+        .shadow(
+            color: .black.opacity(isFocused ? 0.42 : 0.30),
+            radius: isFocused ? 34 : 24, x: 0, y: 22
+        )
+    }
+
+    private var header: some View {
+        HStack(spacing: DenLayout.outerInset) {
+            dragHandle
+            Button(action: onRemove) {
+                Image(systemName: "xmark")
+                    .frame(width: DenLayout.boardControlSize, height: DenLayout.boardControlSize)
+            }
+            .buttonStyle(.borderless)
+            .foregroundStyle(.primary)
+            .help("Remove Board")
+            .accessibilityLabel("Remove Board")
+        }
+        .padding(.horizontal, DenLayout.chromeHorizontalPadding)
+        .frame(height: DenLayout.boardHeaderHeight)
+        .background(store.isDenMode && isFocused ? profileColor.opacity(0.12) : Color.clear)
+        .background(.regularMaterial)
+    }
+
+    private var dragHandle: some View {
+        HStack(spacing: 8) {
+            Image(
+                systemName: board.isZellij
+                    ? "rectangle.3.group"
+                    : (board.isZmx ? "arrow.triangle.2.circlepath" : (board.isTerminal ? "terminal" : "globe"))
+            )
+            .foregroundStyle(.secondary)
+            .frame(width: 16, height: 16)
+            BoardHeaderTitle(board: board, isFocused: isFocused)
+            Spacer(minLength: 8)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .contentShape(Rectangle())
+        .onTapGesture { if isPointerFocusEnabled { onFocus() } }
+        .gesture(
+            DragGesture(coordinateSpace: .named(BoardStripCoordinateSpace.name))
+                .onChanged { if isPointerFocusEnabled { onDragChanged($0) } }
+                .onEnded { if isPointerFocusEnabled { onDragEnded($0) } }
+        )
+    }
+
+    private var borderColor: Color {
+        isFocused ? profileColor.opacity(0.75) : Color.primary.opacity(0.16)
     }
 }
