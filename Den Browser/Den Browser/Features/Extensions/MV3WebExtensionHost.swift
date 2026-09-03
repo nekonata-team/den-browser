@@ -84,6 +84,7 @@ final class MV3WebExtensionHost: NSObject, WKWebExtensionControllerDelegate, Web
     private var windows: [UUID: MV3WebExtensionWindow] = [:]
     private var tabs: [ObjectIdentifier: MV3WebExtensionTab] = [:]
     private var pendingInitialLoads: [ObjectIdentifier: URL] = [:]
+    private var pendingOptionsPageRequest = false
     private var remainingExtensionLoads: Int
     private var isReady: Bool
     private var focusedWindowID: UUID?
@@ -183,8 +184,12 @@ final class MV3WebExtensionHost: NSObject, WKWebExtensionControllerDelegate, Web
     }
 
     func presentOptionsPage() {
-        guard let context = contexts.values.first else { return }
-        _ = presentOptionsPage(for: context)
+        guard !isDisposed else { return }
+        if let context = contexts.values.first {
+            _ = presentOptionsPage(for: context)
+        } else if !isReady {
+            pendingOptionsPageRequest = true
+        }
     }
 
     func activate(webView: WKWebView) {
@@ -224,6 +229,7 @@ final class MV3WebExtensionHost: NSObject, WKWebExtensionControllerDelegate, Web
         windows.removeAll()
         tabs.removeAll()
         pendingInitialLoads.removeAll()
+        pendingOptionsPageRequest = false
         optionsWindow?.close()
         optionsWindow = nil
         popupPresentationWindow = nil
@@ -302,6 +308,12 @@ final class MV3WebExtensionHost: NSObject, WKWebExtensionControllerDelegate, Web
         pendingInitialLoads.removeAll()
         for (key, url) in pendingLoads {
             tabs[key]?.loadInitialURL(url)
+        }
+        if pendingOptionsPageRequest {
+            pendingOptionsPageRequest = false
+            if let context = contexts.values.first {
+                _ = presentOptionsPage(for: context)
+            }
         }
         presentPendingActionPopupIfPossible()
     }

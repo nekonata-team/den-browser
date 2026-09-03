@@ -148,12 +148,13 @@ private struct FeaturesSettingsView: View {
                         }
                         .disabled(profileManager.uboliteInstaller.isBusy)
 
-                        if case .error(let message) = profileManager.uboliteInstaller.state {
-                            Text(message)
-                                .font(.caption2)
-                                .foregroundStyle(.red)
-                        }
                     }
+                }
+
+                if case .error(let message) = profileManager.uboliteInstaller.state {
+                    Text(message)
+                        .font(.caption2)
+                        .foregroundStyle(.red)
                 }
             }
         }

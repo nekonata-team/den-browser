@@ -166,10 +166,25 @@ final class UBOLiteInstaller {
 
             let parentDir = directoryURL.deletingLastPathComponent()
             try FileManager.default.createDirectory(at: parentDir, withIntermediateDirectories: true)
+            var backupURL: URL?
             if FileManager.default.fileExists(atPath: directoryURL.path) {
-                try FileManager.default.removeItem(at: directoryURL)
+                let backup = parentDir.appending(
+                    path: ".ubolite-backup-\(UUID().uuidString)",
+                    directoryHint: .isDirectory)
+                try FileManager.default.moveItem(at: directoryURL, to: backup)
+                backupURL = backup
             }
-            try FileManager.default.moveItem(at: unpackDir, to: directoryURL)
+            do {
+                try FileManager.default.moveItem(at: unpackDir, to: directoryURL)
+            } catch {
+                if let backupURL {
+                    try? FileManager.default.moveItem(at: backupURL, to: directoryURL)
+                }
+                throw error
+            }
+            if let backupURL {
+                try? FileManager.default.removeItem(at: backupURL)
+            }
 
             refreshInstalledStatus()
             state = .idle
@@ -182,12 +197,18 @@ final class UBOLiteInstaller {
 
     @discardableResult
     func uninstall() -> Bool {
-        if FileManager.default.fileExists(atPath: directoryURL.path) {
-            try? FileManager.default.removeItem(at: directoryURL)
+        do {
+            if FileManager.default.fileExists(atPath: directoryURL.path) {
+                try FileManager.default.removeItem(at: directoryURL)
+            }
+            refreshInstalledStatus()
+            state = .idle
+            return !isInstalled
+        } catch {
+            refreshInstalledStatus()
+            state = .error(error.localizedDescription)
+            return false
         }
-        refreshInstalledStatus()
-        state = .idle
-        return true
     }
 
     var descriptor: WebExtensionDescriptor? {
