@@ -376,18 +376,7 @@ struct DenView<Header: View>: View {
     }
 
     private func restoreFocusedSheetFirstResponder() {
-        DispatchQueue.main.async {
-            let target: NSView?
-            if let webView = store.focusedRuntime?.webView {
-                target = webView
-            } else {
-                target = store.focusedTerminalRuntime?.terminalView
-            }
-            guard let target, let window = target.window,
-                needsFirstResponderActivation(window.firstResponder, target: target)
-            else { return }
-            _ = window.makeFirstResponder(target)
-        }
+        store.restoreFocusedFirstResponder()
     }
 
     private var renameBoardPanel: some View {

@@ -3,6 +3,35 @@ import Combine
 import Foundation
 import WebKit
 
+final class BoardWKWebView: WKWebView {
+    var isFocusAllowed: () -> Bool = { false }
+    var onUserInteraction: (() -> Void)?
+    var onRejectedFocus: (() -> Void)?
+
+    override func mouseDown(with event: NSEvent) {
+        onUserInteraction?()
+        super.mouseDown(with: event)
+    }
+
+    override func otherMouseDown(with event: NSEvent) {
+        onUserInteraction?()
+        super.otherMouseDown(with: event)
+    }
+
+    override func rightMouseDown(with event: NSEvent) {
+        onUserInteraction?()
+        super.rightMouseDown(with: event)
+    }
+
+    override func becomeFirstResponder() -> Bool {
+        guard isFocusAllowed() else {
+            onRejectedFocus?()
+            return false
+        }
+        return super.becomeFirstResponder()
+    }
+}
+
 @MainActor
 final class BoardRuntime: BaseWebRuntime, ObservableObject {
     struct Events {
@@ -11,6 +40,9 @@ final class BoardRuntime: BaseWebRuntime, ObservableObject {
         var onLinkActivated: () -> Void = {}
         var onDownloadFinished: (String) -> Void = { _ in }
         var onDownloadFailed: (String) -> Void = { _ in }
+        var onFocus: () -> Void = {}
+        var isFocused: () -> Bool = { false }
+        var restoreFocusedFirstResponder: () -> Void = {}
     }
 
     @Published private(set) var faviconURL: URL?
@@ -66,8 +98,23 @@ final class BoardRuntime: BaseWebRuntime, ObservableObject {
             userContentController: sheetNavigation.userContentController,
             webExtensionController: webExtensionHost?.controller,
             sheetScale: sheetScale,
-            enableElementFullscreen: true
+            enableElementFullscreen: true,
+            makeWebView: { configuration in
+                BoardWKWebView(frame: .zero, configuration: configuration)
+            }
         )
+
+        if let boardWebView = webView as? BoardWKWebView {
+            boardWebView.isFocusAllowed = { [weak self] in
+                self?.events.isFocused() ?? false
+            }
+            boardWebView.onUserInteraction = { [weak self] in
+                self?.events.onFocus()
+            }
+            boardWebView.onRejectedFocus = { [weak self] in
+                self?.events.restoreFocusedFirstResponder()
+            }
+        }
 
         Self.configureNativePictureInPicture(preferences: webView.configuration.preferences)
 
@@ -124,6 +171,17 @@ final class BoardRuntime: BaseWebRuntime, ObservableObject {
         self.sheetNavigationActions = sheetNavigationActions
         self.events = events
         sheetNavigation.updateActions(sheetNavigationActions, for: webView)
+        if let boardWebView = webView as? BoardWKWebView {
+            boardWebView.isFocusAllowed = { [weak self] in
+                self?.events.isFocused() ?? false
+            }
+            boardWebView.onUserInteraction = { [weak self] in
+                self?.events.onFocus()
+            }
+            boardWebView.onRejectedFocus = { [weak self] in
+                self?.events.restoreFocusedFirstResponder()
+            }
+        }
     }
 
     func activateWebExtensionTab() {

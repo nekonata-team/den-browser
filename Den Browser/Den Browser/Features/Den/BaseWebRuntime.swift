@@ -32,7 +32,8 @@ class BaseWebRuntime: NSObject, NSWindowDelegate, WKDownloadDelegate, WKNavigati
         userContentController: WKUserContentController?,
         webExtensionController: WKWebExtensionController? = nil,
         sheetScale: Int,
-        enableElementFullscreen: Bool = true
+        enableElementFullscreen: Bool = true,
+        makeWebView: ((WKWebViewConfiguration) -> WKWebView)? = nil
     ) {
         self.id = id
 
@@ -44,7 +45,8 @@ class BaseWebRuntime: NSObject, NSWindowDelegate, WKDownloadDelegate, WKNavigati
         configuration.webExtensionController = webExtensionController
         configuration.preferences.isElementFullscreenEnabled = enableElementFullscreen
 
-        webView = WKWebView(frame: .zero, configuration: configuration)
+        let webView = makeWebView?(configuration) ?? WKWebView(frame: .zero, configuration: configuration)
+        self.webView = webView
         let fallbackColor = DenSurfaceColors.webViewFallbackBackground
         webView.underPageBackgroundColor = NSColor(
             calibratedRed: fallbackColor.red,

@@ -157,7 +157,37 @@ extension DenStore {
             },
             onDownloadFailed: { [weak self] message in
                 self?.showToast("Download failed: \(message)", style: .error)
+            },
+            onFocus: { [weak self] in
+                guard
+                    let self,
+                    !self.isDenMode,
+                    self.temporaryContext == nil
+                else { return }
+                self.focusBoard(board.id, exitsDenMode: true)
+            },
+            isFocused: { [weak self] in
+                self?.focusedDesk?.focusedBoardID == board.id
+            },
+            restoreFocusedFirstResponder: { [weak self] in
+                self?.restoreFocusedFirstResponder()
             })
+    }
+
+    func restoreFocusedFirstResponder() {
+        DispatchQueue.main.async { [weak self] in
+            guard let self else { return }
+            let target: NSView?
+            if let webView = self.focusedRuntime?.webView {
+                target = webView
+            } else {
+                target = self.focusedTerminalRuntime?.terminalView
+            }
+            guard let target, let window = target.window,
+                needsFirstResponderActivation(window.firstResponder, target: target)
+            else { return }
+            _ = window.makeFirstResponder(target)
+        }
     }
 
     private func terminalRuntimeEvents(for board: BoardState) -> TerminalRuntime.Events {
