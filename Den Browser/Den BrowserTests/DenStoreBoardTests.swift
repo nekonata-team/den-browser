@@ -489,6 +489,37 @@ struct DenStoreBoardTests {
         #expect(focusedStore.focusedBoard?.width == 760)
     }
 
+    @Test func emptyDeskInheritsTwoBoardFitWidthWhenPreferredWidthIsUnset() {
+        let emptyDesk = desk("Empty")
+        let store = DenStore(state: DenState(desks: [emptyDesk], focusedDeskID: emptyDesk.id))
+
+        #expect(store.inheritedBoardWidth == BuiltInDeskPreset.boardWidth)
+
+        store.updateBoardLayout(availableWidth: 1376, spacing: 12)
+        #expect(store.inheritedBoardWidth == 682)
+
+        store.addBoard(urlString: "https://example.com")
+        #expect(store.focusedBoard?.width == 682)
+    }
+
+    @Test func emptyDeskAppliesFitWidthToClipboardAndEssential() {
+        let emptyDesk = desk("Empty")
+        let essential = Essential(name: "Search", key: "s", input: "https://example.com")
+        let store = DenStore(state: DenState(desks: [emptyDesk], focusedDeskID: emptyDesk.id))
+        #expect(store.preferences.setEssentials([essential]))
+        store.updateBoardLayout(availableWidth: 1000, spacing: 12)
+
+        store.launchEssential(id: essential.id)
+        #expect(store.focusedBoard?.width == 494)
+
+        store.state.desks[0].boards.removeAll()
+        let pasteboard = NSPasteboard.withUniqueName()
+        pasteboard.clearContents()
+        pasteboard.setString("https://clipboard.example.com", forType: .string)
+        store.openBoardFromClipboard(pasteboard: pasteboard)
+        #expect(store.focusedBoard?.width == 494)
+    }
+
     @Test func updateBoardKeepsCurrentSheetForUnsupportedURL() throws {
         let board = board("Board", url: "https://before.example/")
         let source = desk("Desk", boards: [board], focusedBoardID: board.id)

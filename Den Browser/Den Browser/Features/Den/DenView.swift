@@ -91,6 +91,18 @@ struct DenView<Header: View>: View {
             .onChange(of: preferences.sheetScale) { _, scale in
                 store.applySheetScale(scale)
             }
+            .onAppear {
+                store.updateBoardLayout(
+                    availableWidth: geometry.size.width - DenLayout.outerInset * 2,
+                    spacing: DenLayout.outerInset
+                )
+            }
+            .onChange(of: geometry.size.width) { _, width in
+                store.updateBoardLayout(
+                    availableWidth: width - DenLayout.outerInset * 2,
+                    spacing: DenLayout.outerInset
+                )
+            }
             .animation(DenMotion.feedback(reduceMotion: shouldReduceMotion), value: store.temporaryContext)
             .animation(DenMotion.feedback(reduceMotion: shouldReduceMotion), value: store.isDeskFilterPresented)
             .animation(DenMotion.spatial(reduceMotion: shouldReduceMotion), value: store.isZenViewPresented)

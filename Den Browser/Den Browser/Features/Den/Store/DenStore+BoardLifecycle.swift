@@ -348,8 +348,14 @@ extension DenStore {
         return true
     }
 
-    private var inheritedBoardWidth: Double {
-        focusedBoard?.width ?? 520
+    var inheritedBoardWidth: Double {
+        if let focusedBoard {
+            return focusedBoard.width
+        }
+        if let fitWidth = boardWidth(toFit: 2) {
+            return BoardState.constrainedWidth(fitWidth)
+        }
+        return BuiltInDeskPreset.boardWidth
     }
 
     func launchEssential(id: UUID) {
