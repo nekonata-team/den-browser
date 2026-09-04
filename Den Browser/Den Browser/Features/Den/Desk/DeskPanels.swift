@@ -136,6 +136,8 @@ struct NewDeskPanel: View {
             preset.boards
         case .personal(let id):
             store.deskPresets.first(where: { $0.id == id })?.boards ?? []
+        case .newDesk:
+            []
         }
     }
 
@@ -145,6 +147,8 @@ struct NewDeskPanel: View {
             preset.label
         case .personal(let id):
             store.deskPresets.first(where: { $0.id == id })?.label ?? BuiltInDeskPreset.empty.label
+        case .newDesk(let label):
+            label
         }
     }
 
@@ -163,6 +167,8 @@ struct NewDeskPanel: View {
                 result = store.replaceFocusedDesk(label: newDeskLabel, preset: preset)
             case .personal(let id):
                 result = store.replaceFocusedDesk(label: newDeskLabel, personalPresetID: id)
+            case .newDesk:
+                result = .unavailable
             }
             if result == .applied {
                 resetDeskPresetPanel()
@@ -175,6 +181,8 @@ struct NewDeskPanel: View {
             store.createDesk(label: newDeskLabel, preset: preset)
         case .personal(let id):
             store.createDesk(label: newDeskLabel, personalPresetID: id)
+        case .newDesk:
+            store.createDesk(label: newDeskLabel, preset: .empty)
         }
         resetDeskPresetPanel()
     }
@@ -186,7 +194,19 @@ struct NewDeskPanel: View {
     }
 
     private func confirmDeskPreset(_ selection: DeskPresetSelection) {
-        let label = deskPresetLabel(for: selection)
+        if case .newDesk(let label) = selection {
+            guard store.canCreateDesk else {
+                presentDeskDetails(for: selection, label: label)
+                return
+            }
+            store.createDesk(label: label, preset: .empty)
+            resetDeskPresetPanel()
+            return
+        }
+        presentDeskDetails(for: selection, label: deskPresetLabel(for: selection))
+    }
+
+    private func presentDeskDetails(for selection: DeskPresetSelection, label: String) {
         selectedDeskPreset = selection
         newDeskLabel = label
         newDeskLabelSelection = TextSelection(range: label.startIndex..<label.endIndex)
@@ -207,6 +227,8 @@ struct NewDeskPanel: View {
             preset.label
         case .personal(let id):
             store.deskPresets.first(where: { $0.id == id })?.label ?? BuiltInDeskPreset.empty.label
+        case .newDesk(let label):
+            label
         }
     }
 

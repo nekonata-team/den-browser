@@ -3,6 +3,7 @@ import SwiftUI
 enum DeskPresetSelection: Hashable {
     case builtIn(BuiltInDeskPreset)
     case personal(UUID)
+    case newDesk(label: String)
 }
 
 struct DeskPresetPicker: View {
@@ -234,6 +235,7 @@ struct DeskPresetPicker: View {
         switch selection {
         case .builtIn(let preset): "builtIn:\(preset.rawValue)"
         case .personal(let id): "personal:\(id.uuidString)"
+        case .newDesk(let label): "newDesk:\(label)"
         }
     }
 
@@ -255,23 +257,11 @@ struct DeskPresetPicker: View {
     }
 
     private var matchingChoices: [DeskPresetChoice] {
-        let trimmedQuery = query.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmedQuery.isEmpty else { return allChoices }
-
-        var ranked: [(choice: DeskPresetChoice, score: Int, index: Int)] = []
-        for (index, choice) in allChoices.enumerated() {
-            if let score = DeskPresetSearch.score(
-                query: trimmedQuery,
-                label: choice.label,
-                boards: choice.boards
-            ) {
-                ranked.append((choice, score, index))
-            }
-        }
-        ranked.sort { lhs, rhs in
-            lhs.score == rhs.score ? lhs.index < rhs.index : lhs.score < rhs.score
-        }
-        return ranked.map(\.choice)
+        DeskPresetSearch.matchingChoices(
+            allChoices: allChoices,
+            query: query,
+            allowsEmptyPreset: allowsEmptyPreset
+        )
     }
 
     private var filteredPersonalPresets: [PersonalDeskPreset] {
@@ -312,7 +302,7 @@ struct DeskPresetPicker: View {
     }
 }
 
-private struct DeskPresetChoice {
+struct DeskPresetChoice: Equatable {
     let selection: DeskPresetSelection
     let label: String
     let boards: [DeskPresetBoard]
@@ -320,6 +310,40 @@ private struct DeskPresetChoice {
 }
 
 enum DeskPresetSearch {
+    static func matchingChoices(
+        allChoices: [DeskPresetChoice],
+        query: String,
+        allowsEmptyPreset: Bool
+    ) -> [DeskPresetChoice] {
+        let trimmedQuery = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedQuery.isEmpty else { return allChoices }
+
+        var ranked: [(choice: DeskPresetChoice, score: Int, index: Int)] = []
+        for (index, choice) in allChoices.enumerated() {
+            if let score = score(
+                query: trimmedQuery,
+                label: choice.label,
+                boards: choice.boards
+            ) {
+                ranked.append((choice, score, index))
+            }
+        }
+        ranked.sort { lhs, rhs in
+            lhs.score == rhs.score ? lhs.index < rhs.index : lhs.score < rhs.score
+        }
+        if ranked.isEmpty, allowsEmptyPreset {
+            return [
+                DeskPresetChoice(
+                    selection: .newDesk(label: trimmedQuery),
+                    label: "Create \"\(trimmedQuery)\"",
+                    boards: [],
+                    sourceLabel: "Empty Desk"
+                )
+            ]
+        }
+        return ranked.map(\.choice)
+    }
+
     static func score(query: String, label: String, boards: [DeskPresetBoard]) -> Int? {
         let tokens = query.split(whereSeparator: \.isWhitespace).map(String.init)
         guard !tokens.isEmpty else { return 0 }

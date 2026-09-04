@@ -32,6 +32,63 @@ struct DenStoreDeskPresetTests {
         #expect(DeskPresetSearch.score(query: "claude", label: "Research", boards: boards) == nil)
     }
 
+    @Test func matchingChoicesProvidesCustomEmptyFallbackWhenNoPresetsMatch() throws {
+        let emptyChoice = DeskPresetChoice(
+            selection: .builtIn(.empty),
+            label: "Empty",
+            boards: [],
+            sourceLabel: "Built-in"
+        )
+        let chatChoice = DeskPresetChoice(
+            selection: .builtIn(.chatGPT),
+            label: "ChatGPT",
+            boards: BuiltInDeskPreset.chatGPT.boards,
+            sourceLabel: "Built-in"
+        )
+        let choices = [emptyChoice, chatChoice]
+
+        // 1. Whitespace query returns all choices unchanged
+        #expect(
+            DeskPresetSearch.matchingChoices(
+                allChoices: choices,
+                query: "   ",
+                allowsEmptyPreset: true
+            ) == choices
+        )
+
+        // 2. Query matching an existing preset returns matched choices without custom empty fallback
+        let matched = DeskPresetSearch.matchingChoices(
+            allChoices: choices,
+            query: "chat",
+            allowsEmptyPreset: true
+        )
+        #expect(matched == [chatChoice])
+
+        // 3. Query with no matches creates custom empty choice when empty preset is allowed
+        let fallback = DeskPresetSearch.matchingChoices(
+            allChoices: choices,
+            query: "  Project X  ",
+            allowsEmptyPreset: true
+        )
+        #expect(
+            fallback == [
+                DeskPresetChoice(
+                    selection: .newDesk(label: "Project X"),
+                    label: "Create \"Project X\"",
+                    boards: [],
+                    sourceLabel: "Empty Desk"
+                )
+            ])
+
+        // 4. Query with no matches returns empty when empty preset is not allowed (e.g. Replace Desk)
+        let noFallback = DeskPresetSearch.matchingChoices(
+            allChoices: choices,
+            query: "Project X",
+            allowsEmptyPreset: false
+        )
+        #expect(noFallback.isEmpty)
+    }
+
     @Test func personalPresetCapturesStableBoardStateAndCreatesIndependentDesk() throws {
         let first = board("Mail", width: 420, url: "https://mail.example.com/inbox?label=work#today")
         let second = board("Notes", width: 760, url: "")
