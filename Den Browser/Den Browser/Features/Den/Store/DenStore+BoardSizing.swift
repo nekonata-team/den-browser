@@ -32,12 +32,12 @@ extension DenStore {
     }
 
     func boardWidth(toFit count: Int) -> Double? {
-        guard (1...9).contains(count), let boardLayoutMetrics else { return nil }
-        let width =
-            (boardLayoutMetrics.availableWidth - boardLayoutMetrics.spacing * Double(count - 1))
-            / Double(count)
-        guard width >= BoardState.minimumWidth else { return nil }
-        return width
+        guard let boardLayoutMetrics else { return nil }
+        return DenLayout.boardWidth(
+            toFit: count,
+            in: boardLayoutMetrics.availableWidth,
+            spacing: boardLayoutMetrics.spacing
+        )
     }
 
     func canResizeFocusedDeskBoards(toFit count: Int) -> Bool {

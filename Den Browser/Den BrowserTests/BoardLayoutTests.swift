@@ -118,6 +118,14 @@ struct BoardLayoutTests {
         #expect(DenLayout.newBoardWidth(in: size, focusedBoardWidth: 760) == 760)
     }
 
+    @Test func boardWidthCalculatesEvenDistributionConstrainedToLimits() {
+        #expect(DenLayout.boardWidth(toFit: 2, in: 1000, spacing: 10) == 495)
+        #expect(DenLayout.boardWidth(toFit: 0, in: 1000) == nil)
+        #expect(DenLayout.boardWidth(toFit: 10, in: 1000) == nil)
+        #expect(DenLayout.boardWidth(toFit: 4, in: 800, spacing: 12) == nil)
+        #expect(DenLayout.boardWidth(toFit: 1, in: 2000) == 2000)
+    }
+
     private func paddings(
         for centering: FocusedBoardCentering,
         boardCount: Int
