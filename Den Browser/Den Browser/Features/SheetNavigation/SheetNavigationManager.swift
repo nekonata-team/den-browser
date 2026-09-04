@@ -24,6 +24,8 @@ final class SheetNavigationManager {
         var onPasteURLInNewBoard: (URL) -> Void = { _ in }
         var onCopyURLSucceeded: () -> Void = {}
         var onCopyURLFailed: () -> Void = {}
+        var onCopyMarkdownLinkSucceeded: () -> Void = {}
+        var onCopyMarkdownLinkFailed: () -> Void = {}
         var onPasteURLFailed: () -> Void = {}
         var onOpenBoardPanel: () -> Void = {}
         var onShowOverview: () -> Void = {}
@@ -220,6 +222,22 @@ final class SheetNavigationManager {
                 actions.onCopyURLFailed()
             }
             return copied
+        case "copyMarkdownLink":
+            guard let actions = actionsByWebView[ObjectIdentifier(webView)] else { return false }
+            guard let url = webView.url else {
+                actions.onCopyMarkdownLinkFailed()
+                return false
+            }
+            let rawTitle = (message["title"] as? String) ?? webView.title ?? ""
+            let markdown = Self.markdownLink(title: rawTitle, url: url)
+            NSPasteboard.general.clearContents()
+            let copied = NSPasteboard.general.setString(markdown, forType: .string)
+            if copied {
+                actions.onCopyMarkdownLinkSucceeded()
+            } else {
+                actions.onCopyMarkdownLinkFailed()
+            }
+            return copied
         case "openBoard", "commandOpenBoard":
             guard
                 let urlString = message["url"] as? String,
@@ -411,6 +429,20 @@ final class SheetNavigationManager {
         else { return "" }
         return source
     }()
+
+    static func markdownLink(title: String, url: URL) -> String {
+        let collapsedTitle =
+            title
+            .components(separatedBy: .whitespacesAndNewlines)
+            .filter { !$0.isEmpty }
+            .joined(separator: " ")
+        let sanitizedTitle = collapsedTitle.isEmpty ? url.absoluteString : collapsedTitle
+        let escapedTitle =
+            sanitizedTitle
+            .replacingOccurrences(of: "[", with: "\\[")
+            .replacingOccurrences(of: "]", with: "\\]")
+        return "[\(escapedTitle)](\(url.absoluteString))"
+    }
 
     static let enabledKey = "preferences.sheet-navigation.enabled"
     private static let hintAlphabetKey = "preferences.sheet-navigation.hint-alphabet"

@@ -301,6 +301,12 @@ extension DenStore {
             onCopyURLFailed: { [weak self] in
                 self?.showToast("Could not copy Current Sheet URL.", style: .error)
             },
+            onCopyMarkdownLinkSucceeded: { [weak self] in
+                self?.showToast("Copied Current Sheet Markdown link.", style: .success)
+            },
+            onCopyMarkdownLinkFailed: { [weak self] in
+                self?.showToast("Could not copy Current Sheet Markdown link.", style: .error)
+            },
             onPasteURLFailed: { [weak self] in
                 self?.showToast("Clipboard does not contain a supported URL.", style: .warning)
             },

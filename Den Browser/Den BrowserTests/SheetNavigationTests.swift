@@ -467,6 +467,15 @@ struct SheetNavigationTests {
         #expect(manager.handleScriptMessage(["action": "copyURL"], from: webView))
         #expect(store.toastMessage?.message == "Copied Current Sheet URL.")
 
+        #expect(
+            manager.handleScriptMessage(
+                ["action": "copyMarkdownLink", "title": "Example [Page]\n Title "],
+                from: webView))
+        #expect(store.toastMessage?.message == "Copied Current Sheet Markdown link.")
+        #expect(
+            NSPasteboard.general.string(forType: .string)
+                == "[Example \\[Page\\] Title](https://source.example/)")
+
         NSPasteboard.general.clearContents()
         #expect(
             NSPasteboard.general.setString(
@@ -514,6 +523,15 @@ struct SheetNavigationTests {
         #expect(manager.handleScriptMessage(["action": "copyURL"], from: runtime.webView))
         #expect(store.toastMessage?.message == "Copied Current Sheet URL.")
 
+        #expect(
+            manager.handleScriptMessage(
+                ["action": "copyMarkdownLink", "title": "Drawer Preview"],
+                from: runtime.webView))
+        #expect(store.toastMessage?.message == "Copied Current Sheet Markdown link.")
+        #expect(
+            NSPasteboard.general.string(forType: .string)
+                == "[Drawer Preview](https://drawer.example/)")
+
         NSPasteboard.general.clearContents()
         for action in ["pasteURL", "pasteURLInNewBoard"] {
             #expect(!manager.handleScriptMessage(["action": action], from: runtime.webView))
@@ -533,6 +551,40 @@ struct SheetNavigationTests {
 
         #expect(!manager.handleScriptMessage(["action": "copyURL"], from: webView))
         #expect(didReportFailure)
+    }
+
+    @Test func sheetNavigationReportsCopyMarkdownLinkFailureWithoutCurrentURL() {
+        let manager = SheetNavigationManager(scriptSource: "")
+        let webView = WKWebView()
+        var didReportFailure = false
+        manager.didOpen(
+            webView,
+            actions: .init(onCopyMarkdownLinkFailed: { didReportFailure = true })
+        )
+        manager.setEnabled(true)
+
+        #expect(!manager.handleScriptMessage(["action": "copyMarkdownLink"], from: webView))
+        #expect(didReportFailure)
+    }
+
+    @Test func markdownLinkFormatsAndEscapesTitleCorrectly() {
+        let url = URL(string: "https://example.com/path")!
+
+        #expect(
+            SheetNavigationManager.markdownLink(title: "Hello World", url: url)
+                == "[Hello World](https://example.com/path)")
+        #expect(
+            SheetNavigationManager.markdownLink(title: "  Hello \n\t World  ", url: url)
+                == "[Hello World](https://example.com/path)")
+        #expect(
+            SheetNavigationManager.markdownLink(title: "Swift [5.10] Release [Notes]", url: url)
+                == "[Swift \\[5.10\\] Release \\[Notes\\]](https://example.com/path)")
+        #expect(
+            SheetNavigationManager.markdownLink(title: "", url: url)
+                == "[https://example.com/path](https://example.com/path)")
+        #expect(
+            SheetNavigationManager.markdownLink(title: "   \n  ", url: url)
+                == "[https://example.com/path](https://example.com/path)")
     }
 
     @Test func commandClickCanOpenLinkWhenSheetNavigationIsDisabled() {
@@ -674,6 +726,36 @@ struct SheetNavigationTests {
         store.hideOverview()
         try await dispatchSheetKey("o", in: webView)
         #expect(store.temporaryContext == .essentialsPrefix)
+    }
+
+    @Test func sheetNavigationDispatchesYmToCopyMarkdownLink() async throws {
+        let source = try sheetNavigationScriptSource().replacingOccurrences(
+            of: "if (!event.isTrusted ||",
+            with: "if ("
+        )
+        let manager = SheetNavigationManager(scriptSource: source)
+        let board = board("Source", url: "https://source.example/")
+        let desk = desk("Desk", boards: [board], focusedBoardID: board.id)
+        let store = DenStore(
+            state: DenState(desks: [desk], focusedDeskID: desk.id),
+            sheetNavigation: manager
+        )
+        let webView = store.runtime(for: board).webView
+        let waiter = WebViewLoadWaiter()
+
+        manager.setEnabled(true)
+        await waiter.load(
+            "<html><head><title>My Sheet</title></head><body>Hello</body></html>",
+            baseURL: URL(string: "https://source.example/sheet")!,
+            in: webView
+        )
+        defer { NSPasteboard.general.clearContents() }
+
+        try await dispatchSheetKey("y", in: webView)
+        try await dispatchSheetKey("m", in: webView)
+
+        #expect(store.toastMessage?.message == "Copied Current Sheet Markdown link.")
+        #expect(NSPasteboard.general.string(forType: .string) == "[My Sheet](https://source.example/sheet)")
     }
 
     @Test func sheetNavigationRoutesBoardBoundaryCommands() async throws {
@@ -880,6 +962,8 @@ struct SheetNavigationTests {
             onPasteURLInNewBoard: { _ in },
             onCopyURLSucceeded: {},
             onCopyURLFailed: {},
+            onCopyMarkdownLinkSucceeded: {},
+            onCopyMarkdownLinkFailed: {},
             onPasteURLFailed: {},
             onOpenBoardPanel: {},
             onShowOverview: {},

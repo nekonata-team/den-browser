@@ -51,6 +51,7 @@ A numeric prefix repeats relative scrolling commands. For example, `5j`, `3k`, a
 | `t` | Open the Open Board panel. |
 | `T` | Open Overview to browse Boards and Desks. |
 | `yy` | Copy the Current Sheet URL. |
+| `ym` | Copy the Current Sheet Markdown link. |
 | `x` | Remove the focused Board. |
 | `gx` | Remove the focused Board and focus the next Board; if none exists, focus the previous Board. |
 | `X` | Restore the recently removed Board. |
