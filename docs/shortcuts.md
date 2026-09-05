@@ -68,6 +68,7 @@ Essentials are app-wide named Board inputs configured in Settings > Essentials. 
 | Shift + Return | New Board from First Sheet | Creates a Board to the right from the Focused Board's persisted First Sheet URL, focuses it, then enters Sheet Input. A non-zmx Board without a First Sheet does nothing. For zmx Boards, duplicates immediately with an automatic numeric suffix and no input panel. |
 | `e` | Edit Focused Board Link panel | Replaces the Current Sheet with a URL or search on Return. Escape returns to Den Mode. |
 | `r` | Rename focused Board | Opens the Rename Board panel; Return confirms, Escape returns to Den Mode. |
+| `b` | Save focused Board as Essential | Opens the Save as Essential panel for the Focused Board. Escape returns to Den Mode. |
 | `d` | Remove focused Board and focus the next Board | If no next Board exists, focuses the previous Board. Releases its live Sheet runtime. Key repeat is ignored. |
 | `x` | Remove focused Board and focus the previous Board | If no previous Board exists, focuses the next Board. Releases its live Sheet runtime. Key repeat is ignored. |
 | `u` | Restore Recently Removed Board | Restores the newest retained Board; repeat to restore older retained Boards. Available for the current app run. Key repeat is ignored. |

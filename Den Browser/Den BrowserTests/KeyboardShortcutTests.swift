@@ -337,6 +337,28 @@ struct KeyboardShortcutTests {
         #expect(!store.isDenMode)
     }
 
+    @Test func denModeBKeyOpensSaveEssentialPanelForFocusedBoard() throws {
+        let board = BoardState(
+            label: "Niri",
+            width: 520,
+            currentSheetURL: URL(string: "https://github.com/YaLTeR/niri")
+        )
+        let desk = DeskState(label: "Dev", boards: [board], focusedBoardID: board.id)
+        let store = DenStore(state: DenState(desks: [desk], focusedDeskID: desk.id))
+        store.isDenMode = true
+
+        let bKey = try keyEvent(
+            characters: "b",
+            charactersIgnoringModifiers: "b",
+            keyCode: 11
+        )
+
+        #expect(KeyboardController.handle(bKey, store: store))
+        #expect(store.isSaveEssentialPanelPresented)
+        #expect(store.saveEssentialDraft?.name == "Niri")
+        #expect(store.saveEssentialDraft?.input == "https://github.com/YaLTeR/niri")
+    }
+
     @Test func notificationArrowsMoveSelectionAndReturnOpensIt() throws {
         let first = board("First")
         let second = board("Second")
@@ -920,7 +942,7 @@ struct KeyboardShortcutTests {
         let store = try makeStore(boards: [board("First")])
         store.isDenMode = true
         let unmapped = try keyEvent(
-            characters: "b", charactersIgnoringModifiers: "b", modifiers: [], keyCode: 11)
+            characters: "m", charactersIgnoringModifiers: "m", modifiers: [], keyCode: 46)
 
         #expect(
             KeyboardController.decision(for: unmapped, store: store)

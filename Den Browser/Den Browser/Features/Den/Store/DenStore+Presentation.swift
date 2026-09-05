@@ -203,4 +203,70 @@ extension DenStore {
             setTemporaryContext(nil)
         }
     }
+
+    var isSaveEssentialPanelPresented: Bool {
+        temporaryContext == .saveEssential
+    }
+
+    func showSaveEssentialPanel(name: String = "", key: String = "", input: String = "") {
+        saveEssentialDraft = SaveEssentialDraft(name: name, key: key, input: input)
+        setTemporaryContext(.saveEssential)
+    }
+
+    func showSaveEssentialPanel(for board: BoardState) {
+        focusBoard(board.id)
+        showSaveEssentialPanel(
+            name: board.defaultEssentialName,
+            key: "",
+            input: board.essentialInput ?? ""
+        )
+    }
+
+    func showSaveEssentialPanel(for item: RecentItem) {
+        showSaveEssentialPanel(
+            name: item.defaultEssentialName,
+            key: "",
+            input: item.displayText
+        )
+    }
+
+    func hideSaveEssentialPanel() {
+        if temporaryContext == .saveEssential {
+            setTemporaryContext(nil)
+        }
+    }
+
+    func saveFocusedBoardAsEssential() {
+        guard let focusedBoard else {
+            showToast("No focused board.", style: .warning)
+            return
+        }
+        showSaveEssentialPanel(for: focusedBoard)
+    }
+
+    @discardableResult
+    func saveEssential(name: String, key: String, input: String) -> Bool {
+        let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedKey = key == " " ? key : key.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedInput = input.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        guard !trimmedName.isEmpty, trimmedKey.count == 1, !trimmedInput.isEmpty else {
+            return false
+        }
+
+        if essentials.contains(where: { $0.key == trimmedKey }) {
+            return false
+        }
+
+        var updated = preferences.essentials
+        let newEssential = Essential(name: trimmedName, key: trimmedKey, input: trimmedInput)
+        updated.append(newEssential)
+        guard preferences.setEssentials(updated) else {
+            return false
+        }
+
+        hideSaveEssentialPanel()
+        showToast("Saved Essential '\(trimmedName)'.", style: .success)
+        return true
+    }
 }

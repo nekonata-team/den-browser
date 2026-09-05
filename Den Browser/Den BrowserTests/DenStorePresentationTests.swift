@@ -678,6 +678,93 @@ struct DenStorePresentationTests {
         }
     }
 
+    @Test func showSaveEssentialPanelForBoardPopulatesDraftAndSetsContext() {
+        let board = BoardState(
+            label: "Example Docs",
+            width: 520,
+            currentSheetURL: URL(string: "https://docs.example.com/api")
+        )
+        let desk = DeskState(label: "Work", boards: [board], focusedBoardID: board.id)
+        let store = DenStore(state: DenState(desks: [desk], focusedDeskID: desk.id))
+
+        store.showSaveEssentialPanel(for: board)
+
+        #expect(store.isSaveEssentialPanelPresented)
+        #expect(
+            store.saveEssentialDraft
+                == SaveEssentialDraft(
+                    name: "Example Docs",
+                    key: "",
+                    input: "https://docs.example.com/api"
+                ))
+
+        store.hideSaveEssentialPanel()
+        #expect(!store.isSaveEssentialPanelPresented)
+        #expect(store.saveEssentialDraft == nil)
+    }
+
+    @Test func showSaveEssentialPanelForTerminalBoardPopulatesDraft() {
+        let terminalBoard = BoardState(
+            label: "Project Shell",
+            width: 520,
+            workingDirectory: "/Users/test/projects/demo"
+        )
+        let desk = DeskState(label: "Terminal", boards: [terminalBoard], focusedBoardID: terminalBoard.id)
+        let store = DenStore(state: DenState(desks: [desk], focusedDeskID: desk.id))
+
+        store.showSaveEssentialPanel(for: terminalBoard)
+
+        #expect(store.isSaveEssentialPanelPresented)
+        #expect(store.saveEssentialDraft?.name == "Project Shell")
+        #expect(store.saveEssentialDraft?.input == ":terminal /Users/test/projects/demo")
+    }
+
+    @Test func showSaveEssentialPanelForRecentItemPopulatesDraft() {
+        let store = DenStore(state: .sample)
+        let recent = RecentItem.url(URL(string: "https://github.com/apple/swift")!)
+
+        store.showSaveEssentialPanel(for: recent)
+
+        #expect(store.isSaveEssentialPanelPresented)
+        #expect(store.saveEssentialDraft?.name == "github.com")
+        #expect(store.saveEssentialDraft?.input == "https://github.com/apple/swift")
+    }
+
+    @Test func saveEssentialValidatesInputAndUpdatesPreferences() {
+        withTestStore { store in
+            store.showSaveEssentialPanel(name: "Test", key: "", input: "https://test.com")
+            #expect(store.isSaveEssentialPanelPresented)
+
+            // Invalid: empty key
+            #expect(!store.saveEssential(name: "Test", key: "", input: "https://test.com"))
+            #expect(store.isSaveEssentialPanelPresented)
+
+            // Invalid: multi-char key
+            #expect(!store.saveEssential(name: "Test", key: "ab", input: "https://test.com"))
+
+            // Valid save
+            #expect(store.saveEssential(name: "Test", key: "t", input: "https://test.com"))
+            #expect(!store.isSaveEssentialPanelPresented)
+            #expect(store.essentials.contains { $0.key == "t" && $0.name == "Test" })
+            #expect(store.toastMessage?.message == "Saved Essential 'Test'.")
+            #expect(store.toastMessage?.style == .success)
+
+            // Duplicate key conflict rejected
+            store.showSaveEssentialPanel(name: "Another", key: "t", input: "https://another.com")
+            #expect(!store.saveEssential(name: "Another", key: "t", input: "https://another.com"))
+            #expect(store.isSaveEssentialPanelPresented)
+        }
+    }
+
+    @Test func saveFocusedBoardAsEssentialShowsToastWhenNoBoardFocused() {
+        withTestStore(desks: [desk("Empty")]) { store in
+            store.saveFocusedBoardAsEssential()
+            #expect(!store.isSaveEssentialPanelPresented)
+            #expect(store.toastMessage?.message == "No focused board.")
+            #expect(store.toastMessage?.style == .warning)
+        }
+    }
+
     private func arrowEvent(
         _ specialKey: NSEvent.SpecialKey,
         modifiers: NSEvent.ModifierFlags

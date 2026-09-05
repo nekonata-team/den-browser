@@ -92,6 +92,7 @@ struct KeyboardShortcutsView: View {
                     item(["Shift", "+", "Return"], "New Board from First Sheet; zmx duplicate"),
                     item(["e"], "Edit Focused Board Link"),
                     item(["r"], "Rename Board"),
+                    item(["b"], "Save Board as Essential"),
                     item(["d"], "Remove Focused Board and focus next Board"),
                     item(["x"], "Remove Focused Board and focus previous Board"),
                     item(["u"], "Restore Removed Board"),
@@ -175,7 +176,7 @@ struct KeyboardShortcutsView: View {
 
 struct ShortcutChip: View {
     let tokens: [String]
-    let width: CGFloat
+    var width: CGFloat?
     var isRecording = false
 
     var body: some View {

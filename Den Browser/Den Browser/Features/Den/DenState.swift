@@ -514,6 +514,24 @@ struct BoardState: Codable, Equatable, Identifiable {
         customLabel ?? label
     }
 
+    var defaultEssentialName: String {
+        displayName
+    }
+
+    var essentialInput: String? {
+        switch content {
+        case .web(let web):
+            return (web.currentSheetURL ?? web.firstSheetURL)?.absoluteString
+        case .terminal(let terminal):
+            let homeDirectory = FileManager.default.homeDirectoryForCurrentUser.standardizedFileURL.path
+            return terminal.workingDirectory == homeDirectory ? ":terminal" : ":terminal \(terminal.workingDirectory)"
+        case .zellij(let zellij):
+            return zellij.sessionName.map { ":zellij \($0)" } ?? ":zellij"
+        case .zmx(let zmx):
+            return zmx.sessionName.isEmpty ? ":zmx" : ":zmx \(zmx.sessionName)"
+        }
+    }
+
     static func constrainedWidth(_ width: Double) -> Double {
         min(max(width, minimumWidth), maximumWidth)
     }

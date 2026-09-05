@@ -210,6 +210,8 @@ struct DenView<Header: View>: View {
             panelOverlay(renameBoardPanel)
         case .renameDesk:
             panelOverlay(renameDeskPanel)
+        case .saveEssential:
+            panelOverlay(saveEssentialPanel)
         case .overview:
             OverviewView(profileColor: profileColor, boardHeight: boardHeight)
                 .padding(DenLayout.overlayInset)
@@ -327,12 +329,16 @@ struct DenView<Header: View>: View {
             newBoardWidth: newBoardWidth,
             initialURL: store.openBoardPanelInitialURL,
             recentItems: store.recentItems,
+            essentials: store.essentials,
             message: store.openBoardPanelMessage,
             onSubmit: { openBoard(newBoardWidth: $0) },
             onOpenRecent: { item, width in
                 openBoard(item, newBoardWidth: width)
             },
             onClearRecent: store.clearRecent,
+            onSaveAsEssential: { item in
+                store.showSaveEssentialPanel(for: item)
+            },
             onDismiss: dismissOpenBoardPanel,
             onInputChange: { store.openBoardPanelMessage = nil }
         )
@@ -397,6 +403,10 @@ struct DenView<Header: View>: View {
 
     private var renameDeskPanel: some View {
         RenameDeskPanel(text: $renameText, isFocused: $isRenamePanelFocused)
+    }
+
+    private var saveEssentialPanel: some View {
+        SaveEssentialPanel()
     }
 
     private var boardWidthPanel: some View {

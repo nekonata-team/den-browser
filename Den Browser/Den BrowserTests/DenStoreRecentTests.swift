@@ -230,4 +230,26 @@ struct DenStoreRecentTests {
                 #expect(store.recentItems == [item])
             })
     }
+
+    @Test func recentItemMatchesEssentialByInput() {
+        let urlItem = RecentItem.url(URL(string: "https://example.com/")!)
+        let searchItem = RecentItem.search("rust docs")
+        let terminalItem = RecentItem.terminal(workingDirectory: "/tmp/project")
+        let zellijItem = RecentItem.zellij(sessionName: "dev")
+        let zmxItem = RecentItem.zmx(sessionName: "work")
+
+        let urlEssential = Essential(name: "Example", key: "e", input: "https://example.com")
+        let searchEssential = Essential(name: "Rust", key: "r", input: "rust docs")
+        let terminalEssential = Essential(name: "Terminal", key: "t", input: ":terminal /tmp/project")
+        let zellijEssential = Essential(name: "Zellij", key: "z", input: ":zellij dev")
+        let zmxEssential = Essential(name: "zmx", key: "x", input: ":zmx work")
+        let unrelatedEssential = Essential(name: "Other", key: "o", input: "https://other.com")
+
+        #expect(urlItem.matches(essential: urlEssential))
+        #expect(searchItem.matches(essential: searchEssential))
+        #expect(terminalItem.matches(essential: terminalEssential))
+        #expect(zellijItem.matches(essential: zellijEssential))
+        #expect(zmxItem.matches(essential: zmxEssential))
+        #expect(!urlItem.matches(essential: unrelatedEssential))
+    }
 }

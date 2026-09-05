@@ -112,6 +112,37 @@ enum RecentItem: Codable, Equatable, Hashable, Identifiable {
         }
     }
 
+    var defaultEssentialName: String {
+        switch self {
+        case .url(let url):
+            return url.host ?? url.absoluteString
+        case .search(let query):
+            return query
+        case .terminal(let workingDirectory):
+            let home = FileManager.default.homeDirectoryForCurrentUser.standardizedFileURL.path
+            if workingDirectory == home {
+                return "Terminal"
+            }
+            return URL(fileURLWithPath: workingDirectory).lastPathComponent
+        case .zellij(let sessionName):
+            return sessionName ?? "Zellij"
+        case .zmx(let sessionName):
+            return sessionName.isEmpty ? "zmx" : sessionName
+        }
+    }
+
+    func matches(essential: Essential) -> Bool {
+        if displayText == essential.input { return true }
+        if case .url(let itemURL) = self {
+            if let essentialURL = URL(string: essential.input) {
+                return itemURL.standardized == essentialURL.standardized
+                    || itemURL.absoluteString.trimmingCharacters(in: ["/"])
+                        == essentialURL.absoluteString.trimmingCharacters(in: ["/"])
+            }
+        }
+        return false
+    }
+
     var systemImage: String {
         switch self {
         case .url: "link"

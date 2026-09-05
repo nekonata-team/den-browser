@@ -164,6 +164,12 @@ struct TerminalBoardView: View {
         }
         Button {
             store.focusBoard(board.id)
+            store.showSaveEssentialPanel(for: board)
+        } label: {
+            Label("Save as Essential…", systemImage: "sparkles")
+        }
+        Button {
+            store.focusBoard(board.id)
             store.toggleFocusedBoardMaximized()
         } label: {
             Label(

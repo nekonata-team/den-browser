@@ -183,6 +183,13 @@ struct BoardView: View {
         }
 
         Button {
+            store.focusBoard(board.id)
+            store.showSaveEssentialPanel(for: board)
+        } label: {
+            Label("Save as Essential…", systemImage: "sparkles")
+        }
+
+        Button {
             runtime.webView.reload()
         } label: {
             Label("Reload Current Sheet", systemImage: "arrow.clockwise")

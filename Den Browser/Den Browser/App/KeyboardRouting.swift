@@ -235,6 +235,7 @@ enum AppAction: Equatable {
     case restoreBoard
     case showRenameBoardPanel
     case showRenameDeskPanel
+    case saveFocusedBoardAsEssential
     case deleteDesk
     case showEditBoardLinkPanel
     case duplicateBoard
@@ -307,7 +308,7 @@ enum KeyboardRouter {
         case .zmxSessions:
             return routeZmxSessions(event, context: context)
         case .openBoard, .zmxDuplication, .editBoardLink, .newDesk, .replaceDesk, .deskPresetManagement,
-            .saveDeskPreset, .renameBoard, .renameDesk:
+            .saveDeskPreset, .renameBoard, .renameDesk, .saveEssential:
             return .forward(.temporaryTextInput)
         case nil:
             break
@@ -674,6 +675,7 @@ enum KeyboardRouter {
         binding("r", modifiers: [.shift]): KeyboardCommand(action: .showRenameDeskPanel, repeatPolicy: .ignore),
         binding("d"): KeyboardCommand(action: .removeBoardAndFocusNext, repeatPolicy: .ignore),
         binding("d", modifiers: [.shift]): KeyboardCommand(action: .deleteDesk),
+        binding("b"): KeyboardCommand(action: .saveFocusedBoardAsEssential, repeatPolicy: .ignore),
         binding("e"): KeyboardCommand(action: .showEditBoardLinkPanel, repeatPolicy: .ignore),
         ShortcutBinding(key: .returnKey, modifiers: [.shift]): KeyboardCommand(
             action: .duplicateFirstSheet, repeatPolicy: .ignore),
@@ -817,6 +819,7 @@ enum AppActionHandler {
         case .restoreBoard: store.restoreRecentlyRemovedBoard()
         case .showRenameBoardPanel: store.showRenameBoardPanel()
         case .showRenameDeskPanel: store.showRenameDeskPanel()
+        case .saveFocusedBoardAsEssential: store.saveFocusedBoardAsEssential()
         case .deleteDesk: store.deleteFocusedDesk()
         case .showEditBoardLinkPanel: store.showEditBoardLinkPanel()
         case .duplicateBoard: store.duplicateFocusedBoard()

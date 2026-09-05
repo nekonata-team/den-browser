@@ -83,6 +83,7 @@ final class DenStore {
     private(set) var presentedDeskID: UUID
     private(set) var temporaryContext: TemporaryContext?
     private(set) var zmxDuplicationRootSessionName: String?
+    var saveEssentialDraft: SaveEssentialDraft?
     var isZenViewPresented = false
     var isFocusModePresented = false
     var isNotificationListPresented = false
@@ -736,6 +737,9 @@ final class DenStore {
         if temporaryContext == .zmxDuplication, context != .zmxDuplication {
             zmxDuplicationRootSessionName = nil
         }
+        if temporaryContext == .saveEssential, context != .saveEssential {
+            saveEssentialDraft = nil
+        }
         temporaryContext = context
     }
 }
@@ -757,6 +761,13 @@ enum TemporaryContext: Equatable {
     case renameBoard
     case renameDesk
     case drawer
+    case saveEssential
+}
+
+struct SaveEssentialDraft: Equatable {
+    var name: String
+    var key: String
+    var input: String
 }
 
 enum DenFilterPhase: Equatable {

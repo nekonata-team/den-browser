@@ -10,10 +10,12 @@ struct OpenBoardPanel: View {
     let newBoardWidth: Double
     let initialURL: URL?
     let recentItems: [RecentItem]
+    var essentials: [Essential] = []
     let message: String?
     let onSubmit: (Double) -> Void
     let onOpenRecent: (RecentItem, Double) -> Void
     let onClearRecent: () -> Void
+    var onSaveAsEssential: ((RecentItem) -> Void)?
     let onDismiss: () -> Void
     let onInputChange: () -> Void
 
@@ -90,31 +92,75 @@ struct OpenBoardPanel: View {
                 }
 
                 ForEach(filteredRecentItems) { item in
-                    Button {
-                        onOpenRecent(item, newBoardWidth)
-                    } label: {
-                        HStack(spacing: DenPanelLayout.controlSpacing) {
-                            Image(systemName: item.systemImage)
-                                .foregroundStyle(.secondary)
-                                .frame(width: 16)
-                            Text(item.displayText)
-                                .lineLimit(1)
-                                .truncationMode(.middle)
-                            Spacer()
+                    let matchedEssential = essentials.first { item.matches(essential: $0) }
+                    HStack(spacing: DenPanelLayout.controlSpacing) {
+                        Button {
+                            onOpenRecent(item, newBoardWidth)
+                        } label: {
+                            HStack(spacing: DenPanelLayout.controlSpacing) {
+                                Image(systemName: item.systemImage)
+                                    .foregroundStyle(.secondary)
+                                    .frame(width: 16)
+                                Text(item.displayText)
+                                    .lineLimit(1)
+                                    .truncationMode(.middle)
+                                Spacer(minLength: 0)
+                            }
+                            .contentShape(Rectangle())
                         }
-                        .padding(.horizontal, 8)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .frame(height: 30)
-                        .background(
-                            item.id == selectedRecentItemID ? Color.primary.opacity(0.1) : Color.clear,
-                            in: RoundedRectangle(
-                                cornerRadius: DenRadius.small,
-                                style: .continuous)
-                        )
-                        .contentShape(Rectangle())
+                        .buttonStyle(.plain)
+                        .accessibilityHint("Opens a new Board")
+
+                        if let matchedEssential {
+                            HStack(spacing: 4) {
+                                ShortcutChip(tokens: [matchedEssential.displayKey])
+                                Image(systemName: "sparkles")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                                    .frame(width: 20, height: 20)
+                            }
+                            .help("Essential: \(matchedEssential.name) [\(matchedEssential.displayKey)]")
+                            .accessibilityLabel(
+                                "Essential: \(matchedEssential.name), key \(matchedEssential.displayKey)")
+                        } else if let onSaveAsEssential {
+                            Button {
+                                onSaveAsEssential(item)
+                            } label: {
+                                Image(systemName: "sparkles")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                                    .frame(width: 20, height: 20)
+                                    .contentShape(Rectangle())
+                            }
+                            .buttonStyle(.plain)
+                            .help("Save as Essential…")
+                            .accessibilityLabel("Save as Essential…")
+                        }
                     }
-                    .buttonStyle(.plain)
-                    .accessibilityHint("Opens a new Board")
+                    .padding(.horizontal, 8)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .frame(height: 30)
+                    .background(
+                        item.id == selectedRecentItemID ? Color.primary.opacity(0.1) : Color.clear,
+                        in: RoundedRectangle(
+                            cornerRadius: DenRadius.small,
+                            style: .continuous)
+                    )
+                    .contextMenu {
+                        if let matchedEssential {
+                            Button {
+                            } label: {
+                                Label("Saved as Essential [\(matchedEssential.displayKey)]", systemImage: "sparkles")
+                            }
+                            .disabled(true)
+                        } else if let onSaveAsEssential {
+                            Button {
+                                onSaveAsEssential(item)
+                            } label: {
+                                Label("Save as Essential…", systemImage: "sparkles")
+                            }
+                        }
+                    }
                 }
             }
 
@@ -317,5 +363,140 @@ struct BoardWidthPanel: View {
         }
         .denPanel(width: DenPanelLayout.compactWidth)
         .onExitCommand { store.hideBoardWidthPanel() }
+    }
+}
+
+struct SaveEssentialPanel: View {
+    @Environment(DenStore.self) private var store
+
+    @State private var name = ""
+    @State private var key = ""
+    @State private var input = ""
+    @State private var errorMessage: String?
+    @FocusState private var focusedField: Field?
+
+    private enum Field: Hashable {
+        case name, key, input
+    }
+
+    private var conflictingEssential: Essential? {
+        let trimmedKey = key == " " ? key : key.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedKey.isEmpty else { return nil }
+        return store.essentials.first { $0.key == trimmedKey }
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: DenPanelLayout.contentSpacing) {
+            DenPanelHeader(systemImage: "sparkles") {
+                Text("Save as Essential")
+                    .font(.headline)
+            }
+
+            VStack(alignment: .leading, spacing: DenPanelLayout.controlSpacing) {
+                TextField("Name", text: $name, prompt: Text("e.g. ChatGPT"))
+                    .focused($focusedField, equals: .name)
+                    .onSubmit { focusedField = .key }
+
+                HStack(spacing: DenPanelLayout.controlSpacing) {
+                    TextField("Key", text: $key, prompt: Text("e.g. c or C"))
+                        .focused($focusedField, equals: .key)
+                        .frame(width: 90)
+                        .onChange(of: key) { _, value in
+                            if value.count > 1 {
+                                key = String(value.prefix(1))
+                            }
+                            errorMessage = nil
+                        }
+                        .onSubmit {
+                            if input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                                focusedField = .input
+                            } else {
+                                save()
+                            }
+                        }
+
+                    if let conflict = conflictingEssential {
+                        Text("Already used by '\(conflict.name)'")
+                            .font(.caption)
+                            .foregroundStyle(.red)
+                            .lineLimit(1)
+                    } else if !store.essentials.isEmpty {
+                        Text("Existing keys: \(usedKeysString)")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                    }
+                }
+
+                TextField(
+                    "Input",
+                    text: $input,
+                    prompt: Text("URL, search, :terminal, :zellij, or :zmx")
+                )
+                .focused($focusedField, equals: .input)
+                .onSubmit { save() }
+            }
+
+            if let errorMessage {
+                Text(errorMessage)
+                    .font(.caption)
+                    .foregroundStyle(.red)
+            }
+
+            HStack {
+                Text("Press Return to save, Escape to cancel")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Spacer()
+                Button("Save Essential", action: save)
+                    .buttonStyle(.glassProminent)
+                    .disabled(!canSave)
+            }
+        }
+        .denPanel(width: 380)
+        .onAppear {
+            if let draft = store.saveEssentialDraft {
+                name = draft.name
+                key = draft.key
+                input = draft.input
+            }
+            DispatchQueue.main.async {
+                if name.isEmpty {
+                    focusedField = .name
+                } else if key.isEmpty {
+                    focusedField = .key
+                } else {
+                    focusedField = .input
+                }
+            }
+        }
+        .onExitCommand { store.hideSaveEssentialPanel() }
+    }
+
+    private var usedKeysString: String {
+        store.essentials.map(\.displayKey).joined(separator: ", ")
+    }
+
+    private var canSave: Bool {
+        let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedKey = key == " " ? key : key.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedInput = input.trimmingCharacters(in: .whitespacesAndNewlines)
+        return !trimmedName.isEmpty && trimmedKey.count == 1 && !trimmedInput.isEmpty && conflictingEssential == nil
+    }
+
+    private func save() {
+        TextInputComposition.performUnlessActive {
+            guard canSave else {
+                if let conflict = conflictingEssential {
+                    errorMessage = "Key '\(conflict.displayKey)' is already used by '\(conflict.name)'."
+                } else {
+                    errorMessage = "Enter a name, one key, and an input."
+                }
+                return
+            }
+            if !store.saveEssential(name: name, key: key, input: input) {
+                errorMessage = "Could not save Essential."
+            }
+        }
     }
 }
