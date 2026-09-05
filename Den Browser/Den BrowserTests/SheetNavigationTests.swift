@@ -324,6 +324,141 @@ struct SheetNavigationTests {
         #expect(hasFindBar)
     }
 
+    @Test func sheetNavigationFindHighlightsAndNavigatesMatches() async throws {
+        let source = try sheetNavigationScriptSource().replacingOccurrences(
+            of: "if (!event.isTrusted ||",
+            with: "if ("
+        )
+        let manager = SheetNavigationManager(scriptSource: source)
+        manager.setEnabled(true)
+        let webView = makeSheetNavigationWebView(manager: manager)
+        let waiter = WebViewLoadWaiter()
+
+        await waiter.load(
+            """
+            <!doctype html>
+            <p>apple banana apple cherry apple</p>
+            """,
+            baseURL: URL(string: "https://example.com/")!,
+            in: webView
+        )
+
+        try await dispatchSheetKey("/", in: webView)
+        let hasFindBar =
+            (try await webView.evaluateJavaScript(
+                "document.querySelector('[data-den-sheet-find]') !== null") as? Bool) ?? false
+        #expect(hasFindBar)
+
+        _ = try await webView.evaluateJavaScript(
+            """
+            {
+                const input = document.querySelector('[data-den-sheet-find] input');
+                input.value = 'apple';
+                input.dispatchEvent(new Event('input', { bubbles: true }));
+            }
+            """
+        )
+
+        let initialMatchCount = try #require(
+            await webView.callAsyncJavaScript(
+                "return CSS.highlights.get('den-find')?.size ?? 0;",
+                in: nil,
+                contentWorld: SheetNavigationManager.contentWorld
+            ) as? Int)
+        let initialStatus = try #require(
+            await webView.evaluateJavaScript(
+                "document.querySelector('[data-den-sheet-find] span:last-child')?.textContent") as? String)
+        #expect(initialMatchCount == 3)
+        #expect(initialStatus == "1 / 3")
+
+        _ = try await webView.evaluateJavaScript(
+            """
+            {
+                const input = document.querySelector('[data-den-sheet-find] input');
+                input.value = 'nonexistent';
+                input.dispatchEvent(new Event('input', { bubbles: true }));
+            }
+            """
+        )
+
+        let noMatchStatus = try #require(
+            await webView.evaluateJavaScript(
+                "document.querySelector('[data-den-sheet-find] span:last-child')?.textContent") as? String)
+        let isInputFocusedOnNoMatch =
+            (try await webView.evaluateJavaScript(
+                "document.activeElement === document.querySelector('[data-den-sheet-find] input')") as? Bool) ?? false
+        #expect(noMatchStatus == "No matches")
+        #expect(isInputFocusedOnNoMatch)
+
+        _ = try await webView.evaluateJavaScript(
+            """
+            {
+                const input = document.querySelector('[data-den-sheet-find] input');
+                input.value = 'apple';
+                input.dispatchEvent(new Event('input', { bubbles: true }));
+            }
+            """
+        )
+
+        _ = try await webView.evaluateJavaScript(
+            """
+            {
+                const input = document.querySelector('[data-den-sheet-find] input');
+                input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }));
+            }
+            """
+        )
+
+        try await dispatchSheetKey("n", in: webView)
+        let secondStatus = try #require(
+            await webView.evaluateJavaScript(
+                "document.querySelector('[data-den-sheet-find] span:last-child')?.textContent") as? String)
+        #expect(secondStatus == "2 / 3")
+
+        try await dispatchSheetKey("n", in: webView)
+        let thirdStatus = try #require(
+            await webView.evaluateJavaScript(
+                "document.querySelector('[data-den-sheet-find] span:last-child')?.textContent") as? String)
+        #expect(thirdStatus == "3 / 3")
+
+        try await dispatchSheetKey("n", in: webView)
+        let wrappedStatus = try #require(
+            await webView.evaluateJavaScript(
+                "document.querySelector('[data-den-sheet-find] span:last-child')?.textContent") as? String)
+        #expect(wrappedStatus == "1 / 3")
+
+        try await dispatchSheetKey("N", shift: true, in: webView)
+        let prevStatus = try #require(
+            await webView.evaluateJavaScript(
+                "document.querySelector('[data-den-sheet-find] span:last-child')?.textContent") as? String)
+        #expect(prevStatus == "3 / 3")
+        let findBarBeforeEscape =
+            (try await webView.evaluateJavaScript(
+                "document.querySelector('[data-den-sheet-find]') !== null") as? Bool) ?? false
+        #expect(findBarBeforeEscape)
+
+        try await dispatchSheetKey("Escape", in: webView)
+
+        let findBarAfterEscape =
+            (try await webView.evaluateJavaScript(
+                "document.querySelector('[data-den-sheet-find]') !== null") as? Bool) ?? false
+        let hasInContentWorld =
+            (try await webView.callAsyncJavaScript(
+                "return CSS.highlights.has('den-find');",
+                in: nil,
+                contentWorld: SheetNavigationManager.contentWorld
+            ) as? Bool) ?? false
+        let sizeInContentWorld =
+            (try await webView.callAsyncJavaScript(
+                "return CSS.highlights.get('den-find')?.size ?? 0;",
+                in: nil,
+                contentWorld: SheetNavigationManager.contentWorld
+            ) as? Int) ?? 0
+        #expect(!findBarAfterEscape)
+        #expect(!hasInContentWorld)
+        #expect(sizeInContentWorld == 0)
+    }
+
     @Test func sheetNavigationFocusesEditableControlsInDocumentOrder() async throws {
         let source = try sheetNavigationScriptSource().replacingOccurrences(
             of: "if (!event.isTrusted ||",

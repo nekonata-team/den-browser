@@ -12,8 +12,16 @@
   let pendingKey = "";
   let pendingTimer = null;
   let lastFindQuery = "";
-  let overlay = null;
+  let findMatches = [];
+  let findActiveIndex = -1;
+  let findInitialScroll = null;
+  let findState = "inactive";
+  let findHighlight = null;
+  let findActiveHighlight = null;
   let findBar = null;
+  let findInput = null;
+  let findCountLabel = null;
+  let overlay = null;
   let helpOverlay = null;
   const supportedSheetProtocols = new Set(["http:", "https:", "file:"]);
 
@@ -133,7 +141,7 @@
 
   function closeTransientUI() {
     closeHints();
-    closeFind();
+    clearFind();
     closeHelp();
   }
 
@@ -265,9 +273,38 @@
     target.scrollTo(axis === "x" ? { left: position } : { top: position });
   }
 
+  function clearHighlights() {
+    try {
+      findHighlight?.clear();
+    } catch (_) {}
+    try {
+      findActiveHighlight?.clear();
+    } catch (_) {}
+    if (typeof CSS !== "undefined" && CSS.highlights) {
+      try {
+        CSS.highlights.delete("den-find");
+        CSS.highlights.delete("den-find-active");
+      } catch (_) {}
+    }
+    findHighlight = null;
+    findActiveHighlight = null;
+  }
+
   function closeFind() {
     findBar?.remove();
     findBar = null;
+    findInput = null;
+    findCountLabel = null;
+  }
+
+  function clearFind() {
+    findMatches = [];
+    findActiveIndex = -1;
+    findInitialScroll = null;
+    findState = "inactive";
+    clearHighlights();
+    document.getElementById("den-find-styles")?.remove();
+    closeFind();
   }
 
   function closeHelp() {
@@ -335,58 +372,253 @@
     helpOverlay = container;
   }
 
-  function runFind(backward = false) {
-    if (!lastFindQuery) return;
-    window.find(lastFindQuery, false, backward, true, false, true, false);
+  function ensureFindStyles() {
+    if (document.getElementById("den-find-styles")) return;
+    const style = document.createElement("style");
+    style.id = "den-find-styles";
+    style.textContent = `
+      ::highlight(den-find) {
+        background-color: #ffd75a;
+        color: #171100;
+      }
+      ::highlight(den-find-active) {
+        background-color: #ff922b;
+        color: #000000;
+      }
+    `;
+    (document.head || document.documentElement).append(style);
+  }
+
+  function collectMatches(query) {
+    findMatches = [];
+    if (!query) return;
+    const root = document.body || document.documentElement;
+    if (!root) return;
+
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode(node) {
+        const p = node.parentElement;
+        if (!p || /^(SCRIPT|STYLE|NOSCRIPT|TEXTAREA|INPUT|SELECT)$/.test(p.tagName)) return NodeFilter.FILTER_REJECT;
+        if (p.closest("[data-den-sheet-find], [data-den-sheet-hints], [data-den-sheet-help]")) return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      },
+    });
+
+    const sensitive = query.toLowerCase() !== query;
+    const targetQuery = sensitive ? query : query.toLowerCase();
+    let node;
+    while ((node = walker.nextNode()) && findMatches.length < 1000) {
+      const text = sensitive ? node.data : node.data.toLowerCase();
+      let index = 0;
+      while ((index = text.indexOf(targetQuery, index)) !== -1 && findMatches.length < 1000) {
+        const range = new Range();
+        range.setStart(node, index);
+        range.setEnd(node, index + query.length);
+        findMatches.push(range);
+        index += query.length;
+      }
+    }
+  }
+
+  function findInitialMatchIndex() {
+    if (findMatches.length === 0) return -1;
+    const index = findMatches.findIndex((r) => r.getBoundingClientRect().top >= 0);
+    return index === -1 ? 0 : index;
+  }
+
+  function scrollMatchIntoView(range) {
+    const element = range.startContainer.parentElement;
+    if (!element) return;
+    const rect = range.getBoundingClientRect();
+    if (rect.top < 30 || rect.bottom > (window.innerHeight - 30)) {
+      element.scrollIntoView({ behavior: "auto", block: "center", inline: "nearest" });
+    }
+  }
+
+  function updateFindStatus() {
+    if (!findCountLabel) return;
+    if (!lastFindQuery) {
+      findCountLabel.textContent = "";
+      return;
+    }
+    if (findMatches.length === 0) {
+      findCountLabel.textContent = "No matches";
+      findCountLabel.style.color = "#ff6b6b";
+    } else {
+      findCountLabel.textContent = `${findActiveIndex + 1} / ${findMatches.length}`;
+      findCountLabel.style.color = "#b8bcc2";
+    }
+  }
+
+  function updateHighlights(targetIndex = 0) {
+    if (findMatches.length === 0) {
+      findActiveIndex = -1;
+      clearHighlights();
+      updateFindStatus();
+      if (findState === "input" && findInput && document.activeElement !== findInput) {
+        findInput.focus();
+      }
+      return;
+    }
+
+    findActiveIndex =
+      ((targetIndex % findMatches.length) + findMatches.length) % findMatches.length;
+    const activeRange = findMatches[findActiveIndex];
+
+    if (
+      typeof Highlight !== "undefined" &&
+      typeof CSS !== "undefined" &&
+      CSS.highlights
+    ) {
+      ensureFindStyles();
+      if (!findHighlight) {
+        findHighlight = new Highlight();
+        CSS.highlights.set("den-find", findHighlight);
+      } else {
+        findHighlight.clear();
+      }
+      for (const range of findMatches) {
+        findHighlight.add(range);
+      }
+
+      if (!findActiveHighlight) {
+        findActiveHighlight = new Highlight();
+        CSS.highlights.set("den-find-active", findActiveHighlight);
+      } else {
+        findActiveHighlight.clear();
+      }
+      findActiveHighlight.add(activeRange);
+    } else {
+      const selection = window.getSelection();
+      selection?.removeAllRanges();
+      selection?.addRange(activeRange);
+    }
+
+    scrollMatchIntoView(activeRange);
+    updateFindStatus();
+  }
+
+  function stepFind(delta = 1) {
+    if (findMatches.length === 0) {
+      if (lastFindQuery) {
+        collectMatches(lastFindQuery);
+        if (findMatches.length === 0) {
+          updateFindStatus();
+          return;
+        }
+        findActiveIndex = 0;
+      } else {
+        return;
+      }
+    }
+    updateHighlights(findActiveIndex + delta);
   }
 
   function openFind() {
     closeHints();
-    closeFind();
-    const container = document.createElement("div");
-    container.setAttribute("data-den-sheet-find", "");
-    Object.assign(container.style, {
-      position: "fixed",
-      right: "16px",
-      bottom: "16px",
-      zIndex: "2147483647",
-      display: "flex",
-      alignItems: "center",
-      gap: "6px",
-      padding: "6px 9px",
-      border: "1px solid #666",
-      borderRadius: "6px",
-      background: "#202124",
-      color: "white",
-      font: "13px ui-monospace, monospace",
-      boxShadow: "0 4px 18px #0008",
-    });
-    const label = document.createElement("span");
-    label.textContent = "/";
-    const input = document.createElement("input");
-    input.type = "text";
-    input.value = lastFindQuery;
-    input.setAttribute("aria-label", "Find in Current Sheet");
-    Object.assign(input.style, {
-      width: "220px",
-      border: "0",
-      outline: "0",
-      background: "transparent",
-      color: "white",
-      font: "inherit",
-    });
-    input.addEventListener("keydown", (event) => {
-      if (event.key !== "Enter") return;
-      event.preventDefault();
-      lastFindQuery = input.value;
-      closeFind();
-      runFind(event.shiftKey);
-    });
-    container.append(label, input);
-    document.documentElement.append(container);
-    findBar = container;
-    input.focus();
-    input.select();
+    closeHelp();
+
+    findInitialScroll = { x: window.scrollX, y: window.scrollY };
+    findState = "input";
+
+    if (!findBar) {
+      const container = document.createElement("div");
+      container.setAttribute("data-den-sheet-find", "");
+      Object.assign(container.style, {
+        position: "fixed",
+        right: "16px",
+        bottom: "16px",
+        zIndex: "2147483647",
+        display: "flex",
+        alignItems: "center",
+        gap: "8px",
+        padding: "6px 10px",
+        minWidth: "280px",
+        boxSizing: "border-box",
+        border: "1px solid #555",
+        borderRadius: "6px",
+        background: "#202124f0",
+        color: "white",
+        font: "13px ui-monospace, monospace",
+        boxShadow: "0 4px 18px #0008",
+      });
+
+      const label = document.createElement("span");
+      label.textContent = "/";
+      label.style.color = "#ffd75a";
+      label.style.fontWeight = "bold";
+      label.style.flexShrink = "0";
+
+      const input = document.createElement("input");
+      input.type = "text";
+      input.setAttribute("aria-label", "Find in Current Sheet");
+      Object.assign(input.style, {
+        flex: "1",
+        minWidth: "80px",
+        border: "0",
+        outline: "0",
+        background: "transparent",
+        color: "white",
+        font: "inherit",
+      });
+
+      const countLabel = document.createElement("span");
+      Object.assign(countLabel.style, {
+        font: "12px ui-monospace, monospace",
+        fontVariantNumeric: "tabular-nums",
+        whiteSpace: "nowrap",
+        textAlign: "right",
+        flexShrink: "0",
+      });
+
+      input.addEventListener("input", () => {
+        lastFindQuery = input.value;
+        collectMatches(lastFindQuery);
+        updateHighlights(findInitialMatchIndex());
+      });
+
+      input.addEventListener("keydown", (event) => {
+        if (event.key === "Enter") {
+          consume(event);
+          if (event.shiftKey) {
+            stepFind(-1);
+          }
+          findState = "confirmed";
+          input.blur();
+          (document.body || document.documentElement)?.focus();
+          return;
+        }
+        if (event.key === "Escape") {
+          consume(event);
+          if (findInitialScroll) {
+            window.scrollTo(findInitialScroll.x, findInitialScroll.y);
+          }
+          clearFind();
+        }
+      });
+
+      input.addEventListener("focus", () => {
+        findState = "input";
+      });
+
+      container.append(label, input, countLabel);
+      document.documentElement.append(container);
+
+      findBar = container;
+      findInput = input;
+      findCountLabel = countLabel;
+    }
+
+    findInput.value = lastFindQuery;
+    findInput.focus();
+    findInput.select();
+
+    if (lastFindQuery) {
+      collectMatches(lastFindQuery);
+      updateHighlights(findInitialMatchIndex());
+    } else {
+      updateFindStatus();
+    }
   }
 
   function goUp(root) {
@@ -472,8 +704,8 @@
       case "x": postMessage({ action: "removeBoard" }); break;
       case "X": postMessage({ action: "restoreBoard" }); break;
       case "/": openFind(); break;
-      case "n": runFind(false); break;
-      case "N": runFind(true); break;
+      case "n": stepFind(count); break;
+      case "N": stepFind(-count); break;
       default: return false;
     }
     consume(event);
@@ -484,11 +716,16 @@
     if (!event.isTrusted || !enabled || ignored || paused || hasDisallowedModifier(event)) return;
     if (["Shift", "Control", "Alt", "Meta"].includes(event.key)) return;
 
-    if (findBar) {
-      if (event.key === "Escape") {
-        consume(event);
-        closeFind();
+    if (event.key === "Escape" && (findBar || findMatches.length > 0)) {
+      consume(event);
+      if (findInitialScroll && findState === "input") {
+        window.scrollTo(findInitialScroll.x, findInitialScroll.y);
       }
+      clearFind();
+      return;
+    }
+
+    if (findState === "input") {
       return;
     }
 

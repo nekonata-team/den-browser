@@ -60,10 +60,10 @@ A numeric prefix repeats relative scrolling commands. For example, `5j`, `3k`, a
 
 | Keys | Action |
 | --- | --- |
-| `/` | Open find input for the Current Sheet. |
+| `/` | Open find input for the Current Sheet with instant search and match highlights. |
 | `n` / `N` | Repeat the last find forward / backward. |
-| `Return` | Run the entered find. |
-| `Escape` | Cancel find input. |
+| `Return` | Confirm find and return to Sheet navigation. |
+| `Escape` | Cancel find input or clear active find highlights. |
 
 ## Deliberately deferred
 
