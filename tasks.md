@@ -4,173 +4,115 @@
 
 ## Contents
 
-- [x] [TASK-001：ProcessResourceSamplerのプロセスIDスライス単位の修正](#task-001processresourcesamplerのプロセスidスライス単位の修正)
-- [x] [TASK-002：ProfileManagerスキャン時のUUID大文字小文字比較の修正](#task-002profilemanagerスキャン時のuuid大文字小文字比較の修正)
-- [x] [TASK-003：BaseWebRuntimeのダウンロード保存ダイアログの非同期化](#task-003basewebruntimeのダウンロード保存ダイアログの非同期化)
-- [x] [TASK-004：デスク内Boardスクリーンショット取得の並列化と描画API刷新](#task-004デスク内boardスクリーンショット取得の並列化と描画api刷新)
-- [x] [TASK-005：ProfileManagerのProfile削除失敗時ロールバックの改善](#task-005profilemanagerのprofile削除失敗時ロールバックの改善)
-- [x] [TASK-006：DenStoreのUI過渡状態分離リファクタリング](#task-006denstoreのui過渡状態分離リファクタリング)
+- [x] [TASK-007：Board共通表現の集約](#task-007board共通表現の集約)
+- [ ] [TASK-008：パネルの状態所有整理](#task-008パネルの状態所有整理)
+- [ ] [TASK-009：zmx Sessionsの責務分離](#task-009zmx-sessionsの責務分離)
 
 ## Current Status
 
-TASK-001〜TASK-006のすべてのタスクの修正と検証を完了。
+TASK-001〜TASK-006は実装コミットと完了・検証記録（`64d670b`）を確認し、台帳から削除済み。詳細はGit履歴を参照する。
+TASK-006はデスクスクロール操作の移譲（`1e60166`）。今回の責務分離はTASK-007〜TASK-009で扱う。
+
+作業場所は `refactor/view-store-boundaries` worktree。TASK-007を完了。次はTASK-008。
+TASK-007でBoard共通表現を集約し、重複とDenStoreへの依存を差分で確認した。
+
+## Purpose and Goals
+
+変更箇所を予測しやすくし、同じ変更の重複と意図しない影響を減らす。行数削減やAtomic化自体は目的にしない。
+
+- Web／Terminal Boardの共通表現を一箇所で変更できる。
+- 入力途中の値・フォーカスはパネル、表示切替・確定操作はDenStoreという所有境界を明確にする。
+- zmx Sessionsの一覧取得・検索・選択をBoard操作なしで検証できる。
+- 既存の入力保持、フォーカス、ドラッグ、パネル排他、複数ウィンドウ、runtime寿命、永続化の振る舞いを維持する。
 
 ## Tasks
 
-### [x] TASK-001：ProcessResourceSamplerのプロセスIDスライス単位の修正
+### [x] TASK-007：Board共通表現の集約
 
 #### Purpose
 
-`proc_listpgrppids` の戻り値（バイト数）と `pid_t` 配列の要素数の単位不一致を修正し、余剰バッファ時の不正スライスを防ぐ。
+Web／Terminal Boardで重複する表現・操作を集約し、片方だけの修正による差異を防ぐ。
 
 #### Prerequisites
 
-- なし
+- なし。実装前に対象コードと呼び出し元を確認し、共通部分と固有部分を確定する。
 
 #### Work
 
-- [x] `ProcessResourceSampler.swift` の `processGroupPIDs` で、`count` を `MemoryLayout<pid_t>.stride` で割ってPID要素数を算出してからスライスする。
-- [x] `ProcessResourceSamplerTests.swift` に単体テストを追加・拡充する。
+- [x] 枠・影・選択表示を共通Modifierへ、ドラッグヘッダーを小さなViewへ集約する。
+- [x] 既存の `BoardHeaderTitle`、`DenPanelHeader`、`.denPanel()` を再利用する。
+- [x] 共通部品は必要な値と操作closureを受け取り、DenStoreへの直接依存を避ける。
+- [x] Web／Terminal固有の入力処理とnative surfaceの寿命を維持する。
 
 #### Acceptance Criteria
 
-- [x] PIDスライスがバイト数ではなく要素数ベースで行われる。
-- [x] `just check` がパスする。
+- [x] 共通の枠・影・選択表示・ドラッグヘッダーの変更が一箇所で済む。
+- [x] 固有動作を大量の条件分岐や汎用設定へ置き換えていない。
+- [x] ドラッグ、アクセシビリティ、Focus Mode、native入力の既存動作を維持する。
 
 #### Verification
 
-`just check` によるlint・ユニットテスト検証に合格。`ProcessResourceSamplerTests` でプロセスグループPID取得と境界値（0, -1）を確認。
+`just check` 合格。既存unit test合格。作業中アプリでWeb／Terminal Boardの共通枠、影、選択表示、ドラッグヘッダーを確認。
+`CODE_SIGNING_ALLOWED=NO` ではRunnerがテスト本体前に `signal kill` で終了した。署名有効（指定なし）で `testClickingInputOnUnfocusedBoardPreservesClickedResponder` と `testOrganizesBoardsUsingPointer` が合格し、UIテスト失敗原因を確認した。
 
 ---
 
-### [x] TASK-002：ProfileManagerスキャン時のUUID大文字小文字比較の修正
+### [ ] TASK-008：パネルの状態所有整理
 
 #### Purpose
 
-プロファイルJSONファイルのファイル名に大文字UUIDが含まれる場合に誤って破損ファイルとして隔離（quarantine）されるのを防止する。
+DenViewの合成責務と、各パネルの編集状態の所有を分け、変更対象をパネル内に絞れるようにする。
 
 #### Prerequisites
 
-- なし
+- なし。TASK-007とは独立して実装可能。
 
 #### Work
 
-- [x] `ProfileManager.swift` の `scanProfiles` で、ファイル名（末尾パス）を `caseInsensitiveCompare` で比較する。
-- [x] 大文字UUIDファイル名を含むプロファイル読み込みの単体テストを `ProfileManagerTests.swift` に追加する。
+- [ ] DenViewと各パネルの入力・フォーカス・送信処理を調べ、現行の入力保持条件を確認する。
+- [ ] 入力途中の文字列と `FocusState` を各パネルへ寄せる。閉じた後も保持が必要な値は、その寿命を満たす所有場所を明示する。
+- [ ] パネルの排他表示、Den Mode、確定操作はDenStoreに残す。
+- [ ] 所有境界を説明する必要がある箇所を `docs/architecture.md` に反映する。
 
 #### Acceptance Criteria
 
-- [x] 大文字UUIDのJSONファイル名でも正常にProfileとしてロードされる。
-- [x] `just check` がパスする。
+- [ ] パネル固有の編集状態・初期化・後始末の所在が明確で、DenViewから不要なBinding中継が減っている。
+- [ ] 閉じる・再表示・切替・確定・取消で、入力保持とフォーカスの既存動作が変わらない。
+- [ ] TASK-007と合わせ、重複・依存の削減を最終差分で確認できる。
 
 #### Verification
 
-`just check` によるlint・ユニットテスト検証に合格。`ProfileManagerTests.uppercaseProfileFilenameIsLoadedWithoutQuarantine` で大文字UUIDファイル名のロードと非隔離を確認。
+未実施。状態遷移の既存unit testを実行し、未保護の意味のある契約だけを追加する。`just check` と対象パネルの入力保持・フォーカス確認の結果を記録する。
 
 ---
 
-### [x] TASK-003：BaseWebRuntimeのダウンロード保存ダイアログの非同期化
+### [ ] TASK-009：zmx Sessionsの責務分離
 
 #### Purpose
 
-未アタッチまたはバックグラウンドのWebViewでダウンロードが発生した際、`panel.runModal()` によるメインスレッド同期停止を回避する。
+一覧取得・検索・選択をBoard操作から分け、責務単位で理解・検証できる境界を作る。
 
 #### Prerequisites
 
-- なし
+- TASK-007、TASK-008の完了と、初回差分での重複・依存削減の確認。
 
 #### Work
 
-- [x] `BaseWebRuntime.swift` の `download(_:decideDestinationUsing:suggestedFilename:completionHandler:)` を見直し、`webView.window` がない場合は `NSApp.keyWindow` にシート表示するか、`panel.begin` を用いて非同期で完了ハンドラを呼び出す。
+- [ ] 一覧取得・検索・選択・非同期Taskを、状態と操作を一緒に持つ専用モデルへ移す。
+- [ ] セッション終了処理とパネル表示・非表示時のTask寿命も確認し、所有を明示する。
+- [ ] Boardを開く操作とパネル遷移はDenStoreが連携する。
+- [ ] `docs/architecture.md` の単一Feature store方針と整合するよう、採用した境界を更新する。ADRの作成・更新が必要なら `domain-modeling` を使う。
 
 #### Acceptance Criteria
 
-- [x] ウィンドウ未アタッチ時でもメインスレッドを同期ブロックせずに保存パネルを処理できる。
-- [x] `just check` がパスする。
+- [ ] 一覧取得・検索・選択をDenStoreやBoard runtimeの生成なしで検証できる。
+- [ ] 状態だけを移して転送プロパティを並べる分割になっていない。
+- [ ] ウィンドウ固有状態、取得失敗、更新競合、閉じた後の非同期結果の扱いを維持する。
+- [ ] 既存Boardへのフォーカスと、新規Board作成の動作を維持する。
 
 #### Verification
 
-`just check` によるlint・ユニットテスト検証に合格。`BaseWebRuntime` のダウンロードパネル表示が非同期に実行されることを確認。
-
----
-
-### [x] TASK-004：デスク内Boardスクリーンショット取得の並列化と描画API刷新
-
-#### Purpose
-
-Focused Desk全体のキャプチャ処理時間を短縮し、非推奨の描画APIをモダンなSwiftUI/AppKitパターンへ更新する。
-
-#### Prerequisites
-
-- なし
-
-#### Work
-
-- [x] `DenStore+Screenshots.swift` の `captureFocusedDeskScreenshot` / `copyFocusedDeskScreenshot` で、`withThrowingTaskGroup` を用いてBoardキャプチャを並列取得する共通処理に集約。
-- [x] `ScreenshotCapture.swift` の `composeDesk` 内の非推奨 `NSImage.lockFocus()` / `unlockFocus()` を `NSImage(size:flipped:drawingHandler:)` に置き換える。
-- [x] 既存のスクリーンショット単体テスト `ScreenshotCaptureTests.swift` を実行して検証する。
-
-#### Acceptance Criteria
-
-- [x] デスク内全Boardのキャプチャが並列に取得され、合成結果が正しく生成される。
-- [x] `just check` がパスする。
-
-#### Verification
-
-`just check` によるlint・ユニットテスト検証に合格。`ScreenshotCaptureTests` で幅・高さ・アスペクト比計算およびPNG/TIFF出力の正常性を確認。
-
----
-
-### [x] TASK-005：ProfileManagerのProfile削除失敗時ロールバックの改善
-
-#### Purpose
-
-`WKWebsiteDataStore` の削除失敗時に、メモリ上のストアや開いていたウィンドウが先行破棄されたままになる不整合を防止する。
-
-#### Prerequisites
-
-- なし
-
-#### Work
-
-- [x] `ProfileManager.swift` の `deleteProfile` の処理順序を見直し、WebDataStore削除が完了するまでProfileファイルの削除を保留し、失敗時でも安全にProfileとStoreが機能し続けるよう改善。
-- [x] `ProfileManagerTests.swift` の `failedWebsiteDataDeletionRestoresProfileDocument` に削除失敗後のStoreアクセス検証を追加。
-
-#### Acceptance Criteria
-
-- [x] データ削除失敗時にメモリ・UI状態と永続化ファイルの整合性が保たれる。
-- [x] `just check` がパスする。
-
-#### Verification
-
-`just check` によるlint・ユニットテスト検証に合格。`ProfileManagerTests.failedWebsiteDataDeletionRestoresProfileDocument` で削除失敗後もProfileStateおよびStoreへのアクセスが継続可能であることを確認。
-
----
-
-### [x] TASK-006：DenStoreのUI過渡状態分離リファクタリング
-
-#### Purpose
-
-`DenStore` に集中しているUI過渡状態（ドラッグ、検索・絞り込み、モーダルパネル表示フラグ等）を整理し、コードの保守性とテスタビリティを向上させる。
-
-#### Prerequisites
-
-- なし
-
-#### Work
-
-- [x] `DenStore.swift` のプロパティ群からデスク操作に関連するスクロール状態メソッド（`deskScrollOffset`, `saveDeskScrollOffset`）を `DenStore+DeskOperations.swift` に移譲・集約。
-- [x] コアのDen状態アクセスとUI過渡状態の責務境界を整理。
-- [x] 既存のユニットテスト・UIテストで回帰がないことを確認する。
-
-#### Acceptance Criteria
-
-- [x] `DenStore` の責務が明確化され、過渡的UI状態の管理が独立する。
-- [x] すべての既存ユニットテスト・UIテストがパスする。
-
-#### Verification
-
-`just check` によるlint・ユニットテスト検証に合格。全322件のテストがパスすることを確認。
+未実施。専用モデルの意味のある振る舞いとDenStoreとの連携をfocused unit testで検証し、`just check` の結果を記録する。
 
 ---
 
@@ -180,12 +122,20 @@ Focused Desk全体のキャプチャ処理時間を短縮し、非推奨の描�
 - [ ] DenStateとBoardRuntime・WKWebView・Terminalの責務境界を維持する。
 - [ ] 既存のキーボード優先設計とポインター操作を維持する。
 - [ ] 変更したSwift sourceには `just check` を実行する。
+- [ ] Profile共有状態とウィンドウ固有状態の境界を維持し、永続化形式・runtime寿命を変更しない。
+- [ ] `docs/testing.md` に従い、実装詳細ではなく意味のある振る舞いを最小のテストで保護する。
+- [ ] 差分を自己レビューし、関連検証と問題修正を行い、再レビューで対処可能な問題がなくなるまで繰り返す。
+- [ ] 変更したドキュメントのリンク・重複・古い記述を確認する。
 
 ## Deferred Items
 
+- [ ] Runtime管理の分離。Profile共有runtimeとウィンドウ別callback再割当の境界を別途調査してから判断する。
 - [ ] `ZmxClient.processSnapshot` の `/bin/ps` プロセス呼び出し最適化（プロファイリングでボトルネックが顕在化した際に着手）。
 
 ## Out of Scope
 
 - [ ] 今回のタスク書き出し段階での実装コード変更。
 - [ ] 第三者WebサイトのHTML/スクリプト挙動の変更。
+- [ ] 全Viewの細分化、Atoms／Moleculesの階層導入、Desk／Board別Storeへの機械的分割。
+- [ ] 汎用フレームワーク・不要なprotocolやservice層の導入。
+- [ ] 性能改善、UI仕様変更、行数削減だけを目的とした変更。

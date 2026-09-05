@@ -49,34 +49,20 @@ struct TerminalBoardView: View {
             )
             .blur(radius: isFocusModeDeemphasized ? DenLayout.focusModeBlurRadius : 0)
         }
-        .frame(width: width, height: height)
-        .accessibilityElement(children: .contain)
-        .accessibilityIdentifier("board-surface.\(board.id.uuidString.lowercased())")
-        .clipShape(RoundedRectangle(cornerRadius: DenRadius.large, style: .continuous))
-        .overlay {
-            RoundedRectangle(cornerRadius: DenRadius.large, style: .continuous)
-                .stroke(borderColor, lineWidth: isFocused ? 2 : 1)
-        }
-        .shadow(
-            color: .black.opacity(isDragging ? 0.55 : (isFocused ? 0.42 : 0.30)),
-            radius: isDragging ? 42 : (isFocused ? 34 : 24), x: 0, y: isDragging ? 28 : 22
+        .modifier(
+            BoardSurfaceModifier(
+                boardID: board.id,
+                isFocused: isFocused,
+                isDragging: isDragging,
+                profileColor: profileColor,
+                width: width,
+                height: height,
+                isFocusModeDeemphasized: isFocusModeDeemphasized,
+                isFocusModeFocused: isFocusModeFocused,
+                differentiateWithoutColor: differentiateWithoutColor,
+                shouldReduceMotion: shouldReduceMotion
+            )
         )
-        .shadow(
-            color: focusModeHaloColor,
-            radius: isFocusModeFocused ? DenLayout.focusModeHaloRadius : 0,
-            x: 0,
-            y: 0
-        )
-        .scaleEffect(isDragging && !shouldReduceMotion ? 1.02 : 1)
-        .animation(DenMotion.feedback(reduceMotion: shouldReduceMotion), value: isFocused)
-        .animation(DenMotion.feedback(reduceMotion: shouldReduceMotion), value: isDragging)
-        .animation(
-            DenMotion.feedback(reduceMotion: shouldReduceMotion),
-            value: isFocusModeDeemphasized
-        )
-        .animation(
-            DenMotion.feedback(reduceMotion: shouldReduceMotion),
-            value: isFocusModeFocused)
     }
 
     private var isFocusModeDeemphasized: Bool {
@@ -87,13 +73,33 @@ struct TerminalBoardView: View {
         store.isFocusModePresented && isFocused
     }
 
-    private var focusModeHaloColor: Color {
-        isFocusModeFocused ? profileColor.opacity(0.24) : .clear
-    }
-
     private var header: some View {
         HStack(spacing: DenLayout.outerInset) {
-            dragHandle
+            BoardDragHeader(
+                board: board,
+                isFocused: isFocused,
+                isDragging: isDragging,
+                isPointerFocusEnabled: isPointerFocusEnabled,
+                onFocus: onFocus,
+                onDragChanged: onDragChanged,
+                onDragEnded: onDragEnded,
+                onMoveLeft: {
+                    store.focusBoard(board.id)
+                    store.moveFocusedBoardLeft()
+                },
+                onMoveRight: {
+                    store.focusBoard(board.id)
+                    store.moveFocusedBoardRight()
+                },
+                leadingContent: {
+                    Image(
+                        systemName: board.isZellij
+                            ? "rectangle.3.group"
+                            : (board.isZmx ? "arrow.triangle.2.circlepath" : "terminal")
+                    )
+                    .foregroundStyle(.secondary)
+                }
+            )
             Button(action: onRemove) {
                 Image(systemName: "xmark")
                     .frame(width: DenLayout.boardControlSize, height: DenLayout.boardControlSize)
@@ -109,45 +115,6 @@ struct TerminalBoardView: View {
         .background(store.isDenMode && isFocused ? profileColor.opacity(0.12) : Color.clear)
         .background(.regularMaterial)
         .contextMenu { boardContextMenu }
-    }
-
-    private var dragHandle: some View {
-        HStack(spacing: 8) {
-            Image(
-                systemName: board.isZellij
-                    ? "rectangle.3.group"
-                    : (board.isZmx ? "arrow.triangle.2.circlepath" : "terminal")
-            )
-            .foregroundStyle(.secondary)
-            .frame(width: 16, height: 16)
-            .accessibilityHidden(true)
-            BoardHeaderTitle(board: board, isFocused: isFocused)
-            Spacer(minLength: 8)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .contentShape(Rectangle())
-        .onTapGesture { if isPointerFocusEnabled { onFocus() } }
-        .gesture(
-            DragGesture(coordinateSpace: .named(BoardStripCoordinateSpace.name))
-                .onChanged { if isPointerFocusEnabled { onDragChanged($0) } }
-                .onEnded { if isPointerFocusEnabled { onDragEnded($0) } }
-        )
-        .pointerStyle(isDragging ? .grabActive : .grabIdle)
-        .help("Drag to move Board")
-        .accessibilityHint(
-            "Drag to reorder this Board within the Focused Desk, or use Board movement actions"
-        )
-        .accessibilityElement(children: .combine)
-        .accessibilityIdentifier("board-header.\(board.id.uuidString.lowercased())")
-        .accessibilityAddTraits(isFocused ? .isSelected : [])
-        .accessibilityAction(named: "Move Board Left") {
-            store.focusBoard(board.id)
-            store.moveFocusedBoardLeft()
-        }
-        .accessibilityAction(named: "Move Board Right") {
-            store.focusBoard(board.id)
-            store.moveFocusedBoardRight()
-        }
     }
 
     @ViewBuilder
@@ -226,12 +193,6 @@ struct TerminalBoardView: View {
         } label: {
             Label("Remove Board", systemImage: "xmark")
         }
-    }
-
-    private var borderColor: Color {
-        isFocused
-            ? (differentiateWithoutColor ? .primary : profileColor.opacity(0.75))
-            : Color.primary.opacity(0.16)
     }
 
     private var boardDeskID: UUID? {

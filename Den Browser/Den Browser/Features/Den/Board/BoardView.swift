@@ -63,34 +63,19 @@ struct BoardView: View {
             }
             .blur(radius: isFocusModeDeemphasized ? DenLayout.focusModeBlurRadius : 0)
         }
-        .frame(width: width, height: height)
-        .accessibilityElement(children: .contain)
-        .accessibilityIdentifier("board-surface.\(board.id.uuidString.lowercased())")
-        .clipShape(RoundedRectangle(cornerRadius: DenRadius.large, style: .continuous))
-        .overlay {
-            RoundedRectangle(cornerRadius: DenRadius.large, style: .continuous)
-                .stroke(borderColor, lineWidth: isFocused ? 2 : 1)
-        }
-        .shadow(
-            color: .black.opacity(isDragging ? 0.55 : (isFocused ? 0.42 : 0.30)),
-            radius: isDragging ? 42 : (isFocused ? 34 : 24), x: 0, y: isDragging ? 28 : 22
-        )
-        .shadow(
-            color: focusModeHaloColor,
-            radius: isFocusModeFocused ? DenLayout.focusModeHaloRadius : 0,
-            x: 0,
-            y: 0
-        )
-        .scaleEffect(isDragging && !shouldReduceMotion ? 1.02 : 1)
-        .animation(DenMotion.feedback(reduceMotion: shouldReduceMotion), value: isFocused)
-        .animation(DenMotion.feedback(reduceMotion: shouldReduceMotion), value: isDragging)
-        .animation(
-            DenMotion.feedback(reduceMotion: shouldReduceMotion),
-            value: isFocusModeDeemphasized
-        )
-        .animation(
-            DenMotion.feedback(reduceMotion: shouldReduceMotion),
-            value: isFocusModeFocused
+        .modifier(
+            BoardSurfaceModifier(
+                boardID: board.id,
+                isFocused: isFocused,
+                isDragging: isDragging,
+                profileColor: profileColor,
+                width: width,
+                height: height,
+                isFocusModeDeemphasized: isFocusModeDeemphasized,
+                isFocusModeFocused: isFocusModeFocused,
+                differentiateWithoutColor: differentiateWithoutColor,
+                shouldReduceMotion: shouldReduceMotion
+            )
         )
         .onAppear {
             store.sheetNavigation.refreshConfiguration(for: runtime.webView)
@@ -131,17 +116,6 @@ struct BoardView: View {
         store.isFocusModePresented && isFocused
     }
 
-    private var focusModeHaloColor: Color {
-        isFocusModeFocused ? profileColor.opacity(0.24) : .clear
-    }
-
-    private var borderColor: Color {
-        if isFocused {
-            return differentiateWithoutColor ? .primary : profileColor.opacity(0.75)
-        }
-        return Color.primary.opacity(0.16)
-    }
-
     private var header: some View {
         headerContent
             .contextMenu {
@@ -153,7 +127,31 @@ struct BoardView: View {
 
     private var headerContent: some View {
         HStack(spacing: DenLayout.outerInset) {
-            dragHandle
+            BoardDragHeader(
+                board: board,
+                isFocused: isFocused,
+                isDragging: isDragging,
+                isPointerFocusEnabled: isPointerFocusEnabled,
+                onFocus: onFocus,
+                onDragChanged: onDragChanged,
+                onDragEnded: onDragEnded,
+                onMoveLeft: {
+                    store.focusBoard(board.id)
+                    store.moveFocusedBoardLeft()
+                },
+                onMoveRight: {
+                    store.focusBoard(board.id)
+                    store.moveFocusedBoardRight()
+                },
+                leadingContent: {
+                    AsyncImage(url: runtime.faviconURL) { image in
+                        image.resizable().scaledToFit()
+                    } placeholder: {
+                        Image(systemName: "globe")
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            )
 
             navigationButtons
         }
@@ -290,56 +288,6 @@ struct BoardView: View {
             store.removeBoard(board.id)
         } label: {
             Label("Remove Board", systemImage: "xmark")
-        }
-    }
-
-    private var dragHandle: some View {
-        HStack(spacing: 8) {
-            AsyncImage(url: runtime.faviconURL) { image in
-                image.resizable().scaledToFit()
-            } placeholder: {
-                Image(systemName: "globe")
-                    .foregroundStyle(.secondary)
-            }
-            .frame(width: 16, height: 16)
-            .accessibilityHidden(true)
-
-            BoardHeaderTitle(board: board, isFocused: isFocused)
-
-            Spacer(minLength: 8)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .contentShape(Rectangle())
-        .onTapGesture {
-            guard isPointerFocusEnabled else { return }
-            onFocus()
-        }
-        .gesture(
-            DragGesture(coordinateSpace: .named(BoardStripCoordinateSpace.name))
-                .onChanged { value in
-                    guard isPointerFocusEnabled else { return }
-                    onDragChanged(value)
-                }
-                .onEnded { value in
-                    guard isPointerFocusEnabled else { return }
-                    onDragEnded(value)
-                }
-        )
-        .pointerStyle(isDragging ? .grabActive : .grabIdle)
-        .help("Drag to move Board")
-        .accessibilityHint(
-            "Drag to reorder this Board within the Focused Desk, or use Board movement actions"
-        )
-        .accessibilityElement(children: .combine)
-        .accessibilityIdentifier("board-header.\(board.id.uuidString.lowercased())")
-        .accessibilityAddTraits(isFocused ? .isSelected : [])
-        .accessibilityAction(named: "Move Board Left") {
-            store.focusBoard(board.id)
-            store.moveFocusedBoardLeft()
-        }
-        .accessibilityAction(named: "Move Board Right") {
-            store.focusBoard(board.id)
-            store.moveFocusedBoardRight()
         }
     }
 
