@@ -145,6 +145,20 @@ struct ProfileManagerTests {
             })
     }
 
+    @Test func searchEnginePreferencePersistsAndDefaultsToGoogle() throws {
+        let suiteName = "SearchEngineTests-\(UUID().uuidString)"
+        let defaults = try #require(UserDefaults(suiteName: suiteName))
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let preferences = AppPreferences(defaults: defaults)
+        #expect(preferences.searchEngine == .google)
+        for engine in SearchEngine.allCases {
+            preferences.setSearchEngine(engine)
+            #expect(AppPreferences(defaults: defaults).searchEngine == engine)
+        }
+        defaults.set("unknown", forKey: "preferences.search.engine")
+        #expect(AppPreferences(defaults: defaults).searchEngine == .google)
+    }
+
     @Test func appPreferencesPersistByKey() {
         let suiteName = "AppPreferencesTests-\(UUID().uuidString)"
         let defaults = UserDefaults(suiteName: suiteName)!

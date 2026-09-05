@@ -39,6 +39,36 @@ struct Essential: Codable, Equatable, Hashable, Identifiable {
     }
 }
 
+enum SearchEngine: String, CaseIterable, Identifiable {
+    case google
+    case duckDuckGo
+    case bing
+    case brave
+    case yahooJapan
+
+    var id: Self { self }
+
+    var label: String {
+        switch self {
+        case .google: "Google"
+        case .duckDuckGo: "DuckDuckGo"
+        case .bing: "Bing"
+        case .brave: "Brave Search"
+        case .yahooJapan: "Yahoo! JAPAN"
+        }
+    }
+
+    var searchURL: String {
+        switch self {
+        case .google: "https://www.google.com/search"
+        case .duckDuckGo: "https://duckduckgo.com/"
+        case .bing: "https://www.bing.com/search"
+        case .brave: "https://search.brave.com/search"
+        case .yahooJapan: "https://search.yahoo.co.jp/search"
+        }
+    }
+}
+
 enum MotionPreference: String, CaseIterable, Identifiable {
     case followSystem = "follow-system"
     case standard
@@ -89,6 +119,7 @@ final class AppPreferences {
     private(set) var zellijPath: String
     private(set) var zmxPath: String
     private(set) var essentials: [Essential]
+    private(set) var searchEngine: SearchEngine
 
     @ObservationIgnored private let defaults: UserDefaults
 
@@ -105,6 +136,7 @@ final class AppPreferences {
     private static let zellijPathKey = "preferences.terminal.zellij.executable-path"
     private static let zmxPathKey = "preferences.terminal.zmx.executable-path"
     private static let essentialsKey = "preferences.essentials.items"
+    private static let searchEngineKey = "preferences.search.engine"
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
@@ -127,6 +159,7 @@ final class AppPreferences {
         zellijPath = defaults.string(forKey: Self.zellijPathKey) ?? ""
         zmxPath = defaults.string(forKey: Self.zmxPathKey) ?? ""
         essentials = Self.loadEssentials(defaults)
+        searchEngine = defaults.string(forKey: Self.searchEngineKey).flatMap(SearchEngine.init(rawValue:)) ?? .google
         loadShortcutOverrides()
     }
 
@@ -145,6 +178,11 @@ final class AppPreferences {
             version += 1
             defaults.set(version, forKey: schemaVersionKey)
         }
+    }
+
+    func setSearchEngine(_ engine: SearchEngine) {
+        searchEngine = engine
+        defaults.set(engine.rawValue, forKey: Self.searchEngineKey)
     }
 
     func setUBOLiteEnabled(_ enabled: Bool) {

@@ -688,8 +688,10 @@ extension DenStore {
             return (url, .url(url))
         }
 
-        var components = URLComponents(string: "https://www.google.com/search")
-        components?.queryItems = [URLQueryItem(name: "q", value: trimmed)]
+        var components = URLComponents(string: preferences.searchEngine.searchURL)
+        components?.queryItems = [
+            URLQueryItem(name: preferences.searchEngine == .yahooJapan ? "p" : "q", value: trimmed)
+        ]
         guard let url = components?.url else { return nil }
         return (url, .search(trimmed))
     }

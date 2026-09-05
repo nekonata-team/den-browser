@@ -90,6 +90,20 @@ private struct WebSettingsView: View {
         SettingsForm {
             DefaultBrowserSettingsSection()
 
+            Section("Search") {
+                Picker(
+                    "Search Engine",
+                    selection: Binding(get: { preferences.searchEngine }, set: { preferences.setSearchEngine($0) })
+                ) {
+                    ForEach(SearchEngine.allCases) { engine in
+                        Text(engine.label).tag(engine)
+                    }
+                }
+                SettingsHelpText {
+                    Text("Used for search terms across all Profiles. Existing Sheets stay unchanged.")
+                }
+            }
+
             SheetNavigationSettingsSection()
 
             Section("Content Blocking") {

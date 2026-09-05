@@ -391,28 +391,53 @@ struct DenStoreBoardTests {
         #expect(store.state.drawerItems.isEmpty)
     }
 
+    @Test func searchesUseCurrentEngineAndPreserveQueryAndExplicitURLs() throws {
+        try withTestStore { store in
+            let query = "日本語 & C++ # Swift?"
+            for engine in SearchEngine.allCases {
+                store.preferences.setSearchEngine(engine)
+                store.openBoard(recentItem: .search(query))
+                let url = try #require(store.focusedBoard?.currentSheetURL)
+                let components = try #require(URLComponents(url: url, resolvingAgainstBaseURL: false))
+                #expect(components.host == URL(string: engine.searchURL)?.host)
+                #expect(components.path == URL(string: engine.searchURL)?.path)
+                let queryParameter = engine == .yahooJapan ? "p" : "q"
+                #expect(components.queryItems == [URLQueryItem(name: queryParameter, value: query)])
+                #expect(components.fragment == nil)
+                #expect(store.recentItems.first == .search(query))
+            }
+            let existingURL = store.focusedBoard?.currentSheetURL
+            store.preferences.setSearchEngine(.duckDuckGo)
+            #expect(store.focusedBoard?.currentSheetURL == existingURL)
+            #expect(store.navigateFocusedBoard(urlString: "example.com/path?q=literal"))
+            #expect(store.focusedBoard?.currentSheetURL == URL(string: "https://example.com/path?q=literal"))
+            #expect(store.navigateFocusedBoard(urlString: query))
+            #expect(store.focusedBoard?.currentSheetURL?.host == "duckduckgo.com")
+        }
+    }
+
     @Test func openBoardAcceptsWebHostsAndSearchesInvalidURLs() throws {
-        let source = desk("Desk")
-        let store = DenStore(state: DenState(desks: [source], focusedDeskID: source.id))
+        try withTestStore { store in
 
-        store.addBoard(urlString: "localhost:3000")
-        let localURL = try #require(store.focusedDesk?.boards.last?.currentSheetURL)
-        #expect(localURL.scheme == "https")
-        #expect(localURL.host == "localhost")
-        #expect(localURL.port == 3000)
+            store.addBoard(urlString: "localhost:3000")
+            let localURL = try #require(store.focusedDesk?.boards.last?.currentSheetURL)
+            #expect(localURL.scheme == "https")
+            #expect(localURL.host == "localhost")
+            #expect(localURL.port == 3000)
 
-        store.addBoard(urlString: "swift: concurrency")
-        let searchURL = try #require(
-            store.focusedDesk?.boards.last?.currentSheetURL
-                .flatMap { URLComponents(url: $0, resolvingAgainstBaseURL: false) })
-        #expect(searchURL.host == "www.google.com")
-        #expect(searchURL.queryItems == [URLQueryItem(name: "q", value: "swift: concurrency")])
+            store.addBoard(urlString: "swift: concurrency")
+            let searchURL = try #require(
+                store.focusedDesk?.boards.last?.currentSheetURL
+                    .flatMap { URLComponents(url: $0, resolvingAgainstBaseURL: false) })
+            #expect(searchURL.host == "www.google.com")
+            #expect(searchURL.queryItems == [URLQueryItem(name: "q", value: "swift: concurrency")])
 
-        store.addBoard(urlString: "https://")
-        let invalidURLSearch = try #require(
-            store.focusedDesk?.boards.last?.currentSheetURL
-                .flatMap { URLComponents(url: $0, resolvingAgainstBaseURL: false) })
-        #expect(invalidURLSearch.queryItems == [URLQueryItem(name: "q", value: "https://")])
+            store.addBoard(urlString: "https://")
+            let invalidURLSearch = try #require(
+                store.focusedDesk?.boards.last?.currentSheetURL
+                    .flatMap { URLComponents(url: $0, resolvingAgainstBaseURL: false) })
+            #expect(invalidURLSearch.queryItems == [URLQueryItem(name: "q", value: "https://")])
+        }
     }
 
     @Test func localFileURLParticipatesInBoardRecentDrawerAndPresetWorkflows() throws {
