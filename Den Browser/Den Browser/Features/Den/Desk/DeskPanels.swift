@@ -246,10 +246,9 @@ struct NewDeskPanel: View {
 
 struct SaveDeskPresetPanel: View {
     @Environment(DenStore.self) private var store
-    @Binding var label: String
-    @Binding var message: String?
-    @FocusState.Binding var isFocused: Bool
-    let onSave: () -> Void
+    @State private var label = ""
+    @State private var message: String?
+    @FocusState private var isFocused: Bool
 
     var body: some View {
         VStack(alignment: .leading, spacing: DenPanelLayout.contentSpacing) {
@@ -266,14 +265,14 @@ struct SaveDeskPresetPanel: View {
             .labelsHidden()
             .textFieldStyle(.roundedBorder)
             .focused($isFocused)
-            .onSubmit { TextInputComposition.performUnlessActive(onSave) }
+            .onSubmit { TextInputComposition.performUnlessActive(save) }
             DeskPresetPreview(boards: store.focusedDesk?.boards.map(DeskPresetBoard.init) ?? [])
             HStack {
                 Text(message ?? "Captures the current Board arrangement")
                     .font(.caption)
                     .foregroundStyle(message == nil ? Color.secondary : Color.red)
                 Spacer()
-                Button("Save Preset", action: onSave)
+                Button("Save Preset", action: save)
                     .buttonStyle(.glassProminent)
                     .disabled(label.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
             }
@@ -286,12 +285,27 @@ struct SaveDeskPresetPanel: View {
         }
         .onExitCommand { store.hideSaveDeskPresetPanel() }
     }
+
+    private func save() {
+        switch store.saveFocusedDeskAsPreset(label: label) {
+        case .created:
+            store.hideSaveDeskPresetPanel()
+        case .replacementPending:
+            message = nil
+        case .invalidLabel:
+            message = "Enter a Preset label"
+        case .emptyDesk:
+            message = "A Personal Desk Preset needs at least one Board"
+        case .reservedLabel:
+            message = "Built-in Desk Preset labels are reserved"
+        }
+    }
 }
 
 struct RenameDeskPanel: View {
     @Environment(DenStore.self) private var store
-    @Binding var text: String
-    @FocusState.Binding var isFocused: Bool
+    @State private var text = ""
+    @FocusState private var isFocused: Bool
 
     var body: some View {
         VStack(alignment: .leading, spacing: DenPanelLayout.contentSpacing) {

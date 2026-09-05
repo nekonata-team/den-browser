@@ -9,21 +9,6 @@ struct DenView<Header: View>: View {
     @Environment(DenStore.self) private var store
     @Environment(AppPreferences.self) private var preferences
     @Environment(\.accessibilityReduceMotion) private var systemReduceMotion
-    @Environment(\.accessibilityDifferentiateWithoutColor) private var differentiateWithoutColor
-    @State private var urlText = ""
-    @State private var openBoardAfterBoardID: UUID?
-    @State private var editBoardLinkText = ""
-    @State private var saveDeskPresetLabel = ""
-    @State private var saveDeskPresetMessage: String?
-    @State private var zmxDuplicationText = ""
-
-    @FocusState private var isOpenPanelFocused: Bool
-    @FocusState private var isEditBoardLinkPanelFocused: Bool
-    @FocusState private var isSaveDeskPresetLabelFocused: Bool
-    @FocusState private var isZmxDuplicationPanelFocused: Bool
-    @State private var renameText = ""
-    @FocusState private var isRenamePanelFocused: Bool
-    @FocusState private var isDeskFilterFocused: Bool
 
     init(
         profileName: String? = nil,
@@ -66,7 +51,7 @@ struct DenView<Header: View>: View {
                 }
 
                 if store.isDeskFilterPresented {
-                    deskFilterOverlay
+                    DeskFilterOverlay(profileColor: profileColor)
                         .padding(
                             .top,
                             shouldShowHeader
@@ -131,85 +116,29 @@ struct DenView<Header: View>: View {
         return "\(profileTitle) · \(store.isDenMode ? "DEN MODE" : store.contentInputLabel.uppercased())"
     }
 
-    private var deskFilterOverlay: some View {
-        HStack(spacing: 8) {
-            Image(systemName: "magnifyingglass")
-                .foregroundStyle(store.isDeskFilterInputActive ? .primary : .secondary)
-                .accessibilityHidden(true)
-
-            TextField(
-                text: Binding(
-                    get: { store.deskFilterQuery },
-                    set: { store.setDeskFilterQuery($0) }
-                ),
-                prompt: Text("Filter boards")
-            ) {
-                Text("Filter Boards")
-            }
-            .labelsHidden()
-            .textFieldStyle(.plain)
-            .focused($isDeskFilterFocused)
-            .disabled(!store.isDeskFilterInputActive)
-            .accessibilityIdentifier("desk-filter-input")
-
-            Text("\(store.filteredDeskBoards.count)/\(store.focusedDesk?.boards.count ?? 0)")
-                .font(.caption.monospacedDigit())
-                .foregroundStyle(.secondary)
-        }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 8)
-        .frame(width: DenLayout.deskFilterWidth)
-        .background(
-            .regularMaterial,
-            in: RoundedRectangle(cornerRadius: DenRadius.medium, style: .continuous)
-        )
-        .overlay {
-            RoundedRectangle(cornerRadius: DenRadius.medium, style: .continuous)
-                .stroke(
-                    store.isDeskFilterInputActive
-                        ? (differentiateWithoutColor ? Color.primary : profileColor.opacity(0.86))
-                        : Color.primary.opacity(0.16),
-                    lineWidth: store.isDeskFilterInputActive ? 1.5 : 1
-                )
-        }
-        .shadow(color: .black.opacity(0.25), radius: 16, y: 8)
-        .onTapGesture {
-            store.enterDeskFilter()
-        }
-        .onAppear {
-            DispatchQueue.main.async {
-                isDeskFilterFocused = store.isDeskFilterInputActive
-            }
-        }
-        .onChange(of: store.isDeskFilterInputActive) { _, isActive in
-            isDeskFilterFocused = isActive
-        }
-        .accessibilityIdentifier("desk-filter")
-    }
-
     @ViewBuilder
     private func activePanel(newBoardWidth: CGFloat, boardHeight: CGFloat) -> some View {
         switch store.temporaryContext {
         case .essentialsPrefix:
             panelOverlay(essentialsPrefixPanel)
         case .openBoard:
-            panelOverlay(openBoardPanel(newBoardWidth: newBoardWidth))
+            panelOverlay(OpenBoardPanel(newBoardWidth: newBoardWidth))
         case .zmxSessions:
             panelOverlay(ZmxSessionsPanel(profileColor: profileColor))
         case .zmxDuplication:
-            panelOverlay(zmxDuplicationPanel)
+            panelOverlay(ZmxDuplicationPanel())
         case .editBoardLink:
-            panelOverlay(editBoardLinkPanel)
+            panelOverlay(EditBoardLinkPanel())
         case .newDesk, .replaceDesk, .deskPresetManagement:
             panelOverlay(newDeskPanel)
         case .boardWidth:
             panelOverlay(boardWidthPanel)
         case .saveDeskPreset:
-            panelOverlay(saveDeskPresetPanel)
+            panelOverlay(SaveDeskPresetPanel())
         case .renameBoard:
-            panelOverlay(renameBoardPanel)
+            panelOverlay(RenameBoardPanel())
         case .renameDesk:
-            panelOverlay(renameDeskPanel)
+            panelOverlay(RenameDeskPanel())
         case .saveEssential:
             panelOverlay(saveEssentialPanel)
         case .overview:
@@ -295,114 +224,8 @@ struct DenView<Header: View>: View {
         .denPanel(width: 300)
     }
 
-    private var saveDeskPresetPanel: some View {
-        SaveDeskPresetPanel(
-            label: $saveDeskPresetLabel,
-            message: $saveDeskPresetMessage,
-            isFocused: $isSaveDeskPresetLabelFocused,
-            onSave: saveDeskPreset)
-    }
-
-    private func saveDeskPreset() {
-        switch store.saveFocusedDeskAsPreset(label: saveDeskPresetLabel) {
-        case .created:
-            store.hideSaveDeskPresetPanel()
-        case .replacementPending:
-            saveDeskPresetMessage = nil
-        case .invalidLabel:
-            saveDeskPresetMessage = "Enter a Preset label"
-        case .emptyDesk:
-            saveDeskPresetMessage = "A Personal Desk Preset needs at least one Board"
-        case .reservedLabel:
-            saveDeskPresetMessage = "Built-in Desk Preset labels are reserved"
-        }
-    }
-
     private func newBoardWidth(in size: CGSize) -> Double {
         DenLayout.newBoardWidth(in: size, focusedBoardWidth: store.focusedBoard?.width)
-    }
-
-    private func openBoardPanel(newBoardWidth: Double) -> some View {
-        OpenBoardPanel(
-            urlText: $urlText,
-            isFocused: $isOpenPanelFocused,
-            newBoardWidth: newBoardWidth,
-            initialURL: store.openBoardPanelInitialURL,
-            recentItems: store.recentItems,
-            essentials: store.essentials,
-            message: store.openBoardPanelMessage,
-            onSubmit: { openBoard(newBoardWidth: $0) },
-            onOpenRecent: { item, width in
-                openBoard(item, newBoardWidth: width)
-            },
-            onClearRecent: store.clearRecent,
-            onSaveAsEssential: { item in
-                store.showSaveEssentialPanel(for: item)
-            },
-            onDismiss: dismissOpenBoardPanel,
-            onInputChange: { store.openBoardPanelMessage = nil }
-        )
-    }
-
-    private var editBoardLinkPanel: some View {
-        EditBoardLinkPanel(
-            text: $editBoardLinkText,
-            isFocused: $isEditBoardLinkPanelFocused,
-            onSubmit: editFocusedBoardLink,
-            onDismiss: dismissEditBoardLinkPanel
-        )
-    }
-
-    private var zmxDuplicationPanel: some View {
-        ZmxDuplicationPanel(
-            text: zmxDuplicationTextBinding,
-            isFocused: $isZmxDuplicationPanelFocused,
-            rootSessionName: store.zmxDuplicationRootSessionName
-                ?? store.focusedBoard?.zmxSessionName
-                ?? "zmx",
-            onSubmit: duplicateFocusedZmxBoard,
-            onDismiss: dismissZmxDuplicationPanel)
-    }
-
-    private var zmxDuplicationTextBinding: Binding<String> {
-        Binding(
-            get: { zmxDuplicationText },
-            set: { zmxDuplicationText = ZmxSessionNameGenerator.normalizedSuffix($0) })
-    }
-
-    private func dismissOpenBoardPanel() {
-        store.hideOpenBoardPanel()
-        openBoardAfterBoardID = nil
-        restoreFocusedSheetFirstResponder()
-    }
-
-    private func dismissEditBoardLinkPanel() {
-        store.hideEditBoardLinkPanel()
-        restoreFocusedSheetFirstResponder()
-    }
-
-    private func duplicateFocusedZmxBoard() {
-        guard store.duplicateFocusedZmxBoard(suffix: zmxDuplicationText) else { return }
-        zmxDuplicationText = ""
-        restoreFocusedSheetFirstResponder()
-    }
-
-    private func dismissZmxDuplicationPanel() {
-        store.hideZmxDuplicationPanel()
-        zmxDuplicationText = ""
-        restoreFocusedSheetFirstResponder()
-    }
-
-    private func restoreFocusedSheetFirstResponder() {
-        store.restoreFocusedFirstResponder()
-    }
-
-    private var renameBoardPanel: some View {
-        RenameBoardPanel(text: $renameText, isFocused: $isRenamePanelFocused)
-    }
-
-    private var renameDeskPanel: some View {
-        RenameDeskPanel(text: $renameText, isFocused: $isRenamePanelFocused)
     }
 
     private var saveEssentialPanel: some View {
@@ -421,8 +244,7 @@ struct DenView<Header: View>: View {
             boardSpacing: DenLayout.outerInset,
             boardHorizontalPadding: DenLayout.outerInset,
             onOpenBoardAtEnd: { boardID in
-                openBoardAfterBoardID = boardID
-                store.showOpenBoardPanel()
+                store.showOpenBoardPanel(afterBoardID: boardID)
             }
         )
     }
@@ -529,32 +351,6 @@ struct DenView<Header: View>: View {
         )
     }
 
-    private func openBoard(newBoardWidth: Double) {
-        store.openBoard(
-            input: urlText,
-            preferredWidth: newBoardWidth,
-            afterBoardID: openBoardAfterBoardID)
-        guard !store.isOpenBoardPanelPresented else { return }
-        urlText = ""
-        openBoardAfterBoardID = nil
-    }
-
-    private func openBoard(_ item: RecentItem, newBoardWidth: Double) {
-        store.openBoard(
-            recentItem: item,
-            preferredWidth: newBoardWidth,
-            afterBoardID: openBoardAfterBoardID)
-        guard !store.isOpenBoardPanelPresented else { return }
-        urlText = ""
-        openBoardAfterBoardID = nil
-    }
-
-    private func editFocusedBoardLink() {
-        if store.navigateFocusedBoard(urlString: editBoardLinkText) {
-            editBoardLinkText = ""
-        }
-    }
-
     private var shouldReduceMotion: Bool {
         DenMotion.shouldReduceMotion(
             preference: preferences.motionPreference,
@@ -569,6 +365,69 @@ extension DenView where Header == EmptyView {
         self.init(profileName: profileName, profileColor: profileColor, shouldShowHeader: false) {
             EmptyView()
         }
+    }
+}
+
+private struct DeskFilterOverlay: View {
+    @Environment(DenStore.self) private var store
+    @Environment(\.accessibilityDifferentiateWithoutColor) private var differentiateWithoutColor
+    let profileColor: Color
+    @FocusState private var isFocused: Bool
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "magnifyingglass")
+                .foregroundStyle(store.isDeskFilterInputActive ? .primary : .secondary)
+                .accessibilityHidden(true)
+
+            TextField(
+                text: Binding(
+                    get: { store.deskFilterQuery },
+                    set: { store.setDeskFilterQuery($0) }
+                ),
+                prompt: Text("Filter boards")
+            ) {
+                Text("Filter Boards")
+            }
+            .labelsHidden()
+            .textFieldStyle(.plain)
+            .focused($isFocused)
+            .disabled(!store.isDeskFilterInputActive)
+            .accessibilityIdentifier("desk-filter-input")
+
+            Text("\(store.filteredDeskBoards.count)/\(store.focusedDesk?.boards.count ?? 0)")
+                .font(.caption.monospacedDigit())
+                .foregroundStyle(.secondary)
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .frame(width: DenLayout.deskFilterWidth)
+        .background(
+            .regularMaterial,
+            in: RoundedRectangle(cornerRadius: DenRadius.medium, style: .continuous)
+        )
+        .overlay {
+            RoundedRectangle(cornerRadius: DenRadius.medium, style: .continuous)
+                .stroke(
+                    store.isDeskFilterInputActive
+                        ? (differentiateWithoutColor ? Color.primary : profileColor.opacity(0.86))
+                        : Color.primary.opacity(0.16),
+                    lineWidth: store.isDeskFilterInputActive ? 1.5 : 1
+                )
+        }
+        .shadow(color: .black.opacity(0.25), radius: 16, y: 8)
+        .onTapGesture {
+            store.enterDeskFilter()
+        }
+        .onAppear {
+            DispatchQueue.main.async {
+                isFocused = store.isDeskFilterInputActive
+            }
+        }
+        .onChange(of: store.isDeskFilterInputActive) { _, isActive in
+            isFocused = isActive
+        }
+        .accessibilityIdentifier("desk-filter")
     }
 }
 

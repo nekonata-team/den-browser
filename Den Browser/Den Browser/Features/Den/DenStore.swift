@@ -97,6 +97,8 @@ final class DenStore {
     var overviewFilterPhase: DenFilterPhase = .inactive
     var boardWidthPanelMessage: String?
     var openBoardPanelInitialURL: URL?
+    var openBoardPanelInput = ""
+    var openBoardAfterBoardID: UUID?
     var openBoardPanelMessage: String?
     var zmxSessionGroups: [ZmxSessionGroup] = []
     var zmxSessionProcessNames: [String: String] = [:]

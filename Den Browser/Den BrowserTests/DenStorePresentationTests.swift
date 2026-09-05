@@ -79,6 +79,33 @@ struct DenStorePresentationTests {
         #expect(store.toastMessage?.message == "Build: Finished")
     }
 
+    @Test func openBoardPanelRetainsDraftAndReplacesItForExplicitURL() throws {
+        let board = board("Insert After")
+        let focusedDesk = desk("Desk", boards: [board], focusedBoardID: board.id)
+        let store = DenStore(
+            state: DenState(
+                desks: [focusedDesk],
+                focusedDeskID: focusedDesk.id))
+        let url = try #require(URL(string: "https://example.com/current"))
+
+        store.showOpenBoardPanel()
+        store.openBoardPanelInput = "unfinished search"
+        store.hideOpenBoardPanel()
+
+        #expect(store.openBoardPanelInput == "unfinished search")
+        #expect(store.openBoardAfterBoardID == nil)
+
+        store.showOpenBoardPanel(initialURL: url, afterBoardID: board.id)
+
+        #expect(store.openBoardPanelInput == url.absoluteString)
+        #expect(store.openBoardAfterBoardID == board.id)
+
+        store.hideOpenBoardPanel()
+
+        #expect(store.openBoardPanelInput == url.absoluteString)
+        #expect(store.openBoardAfterBoardID == nil)
+    }
+
     @Test func recordingNotificationAddsUnreadHistoryAndTargetedToast() {
         let target = board("Terminal")
         let desk = desk("Desk", boards: [target], focusedBoardID: target.id)

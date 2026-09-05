@@ -5,7 +5,7 @@
 ## Contents
 
 - [x] [TASK-007：Board共通表現の集約](#task-007board共通表現の集約)
-- [ ] [TASK-008：パネルの状態所有整理](#task-008パネルの状態所有整理)
+- [x] [TASK-008：パネルの状態所有整理](#task-008パネルの状態所有整理)
 - [ ] [TASK-009：zmx Sessionsの責務分離](#task-009zmx-sessionsの責務分離)
 
 ## Current Status
@@ -13,8 +13,9 @@
 TASK-001〜TASK-006は実装コミットと完了・検証記録（`64d670b`）を確認し、台帳から削除済み。詳細はGit履歴を参照する。
 TASK-006はデスクスクロール操作の移譲（`1e60166`）。今回の責務分離はTASK-007〜TASK-009で扱う。
 
-作業場所は `refactor/view-store-boundaries` worktree。TASK-007を完了。次はTASK-008。
+作業場所は `refactor/view-store-boundaries` worktree。TASK-008まで完了。次はTASK-009。
 TASK-007でBoard共通表現を集約し、重複とDenStoreへの依存を差分で確認した。
+TASK-008でパネルのdraft・FocusState・送信処理を各パネルへ移し、Open Boardの保持が必要なdraftだけDenStoreのwindow-local状態に残した。
 
 ## Purpose and Goals
 
@@ -57,7 +58,7 @@ Web／Terminal Boardで重複する表現・操作を集約し、片方だけの
 
 ---
 
-### [ ] TASK-008：パネルの状態所有整理
+### [x] TASK-008：パネルの状態所有整理
 
 #### Purpose
 
@@ -69,20 +70,21 @@ DenViewの合成責務と、各パネルの編集状態の所有を分け、変�
 
 #### Work
 
-- [ ] DenViewと各パネルの入力・フォーカス・送信処理を調べ、現行の入力保持条件を確認する。
-- [ ] 入力途中の文字列と `FocusState` を各パネルへ寄せる。閉じた後も保持が必要な値は、その寿命を満たす所有場所を明示する。
-- [ ] パネルの排他表示、Den Mode、確定操作はDenStoreに残す。
-- [ ] 所有境界を説明する必要がある箇所を `docs/architecture.md` に反映する。
+- [x] DenViewと各パネルの入力・フォーカス・送信処理を調べ、現行の入力保持条件を確認する。
+- [x] 入力途中の文字列と `FocusState` を各パネルへ寄せる。閉じた後も保持が必要な値は、その寿命を満たす所有場所を明示する。
+- [x] パネルの排他表示、Den Mode、確定操作はDenStoreに残す。
+- [x] 所有境界を説明する必要がある箇所を `docs/architecture.md` に反映する。
 
 #### Acceptance Criteria
 
-- [ ] パネル固有の編集状態・初期化・後始末の所在が明確で、DenViewから不要なBinding中継が減っている。
-- [ ] 閉じる・再表示・切替・確定・取消で、入力保持とフォーカスの既存動作が変わらない。
-- [ ] TASK-007と合わせ、重複・依存の削減を最終差分で確認できる。
+- [x] パネル固有の編集状態・初期化・後始末の所在が明確で、DenViewから不要なBinding中継が減っている。
+- [x] 閉じる・再表示・切替・確定・取消で、入力保持とフォーカスの既存動作が変わらない。
+- [x] TASK-007と合わせ、重複・依存の削減を最終差分で確認できる。
 
 #### Verification
 
-未実施。状態遷移の既存unit testを実行し、未保護の意味のある契約だけを追加する。`just check` と対象パネルの入力保持・フォーカス確認の結果を記録する。
+`just check` 合格。Open Board draftの保持・明示URLによる置換・Board挿入位置の解除をunit testで確認。パネルの状態・FocusState・送信処理は各パネルへ移管し、DenStoreの排他表示と確定APIを維持。
+署名有効のUI testは新規DerivedData（`.derived-data-ui-fresh`）で `testClickingInputOnUnfocusedBoardPreservesClickedResponder` が合格。既存`.derived-data-ui`では古いRunner生成物の再利用により起動前`signal kill`となった。
 
 ---
 

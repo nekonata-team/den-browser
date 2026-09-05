@@ -3,35 +3,32 @@ import SwiftUI
 struct OpenBoardPanel: View {
     private static let maximumVisibleRecentItemCount = 5
 
-    @Binding var urlText: String
-    @FocusState.Binding var isFocused: Bool
+    @Environment(DenStore.self) private var store
+    @FocusState private var isFocused: Bool
     @State private var selectedRecentItemID: RecentItem?
 
     let newBoardWidth: Double
-    let initialURL: URL?
-    let recentItems: [RecentItem]
-    var essentials: [Essential] = []
-    let message: String?
-    let onSubmit: (Double) -> Void
-    let onOpenRecent: (RecentItem, Double) -> Void
-    let onClearRecent: () -> Void
-    var onSaveAsEssential: ((RecentItem) -> Void)?
-    let onDismiss: () -> Void
-    let onInputChange: () -> Void
 
     private var filteredRecentItems: [RecentItem] {
-        let query = urlText.trimmingCharacters(in: .whitespacesAndNewlines)
+        let query = store.openBoardPanelInput.trimmingCharacters(in: .whitespacesAndNewlines)
         return Array(
-            recentItems.lazy.filter {
+            store.recentItems.lazy.filter {
                 query.isEmpty || $0.displayText.localizedCaseInsensitiveContains(query)
             }.prefix(Self.maximumVisibleRecentItemCount))
+    }
+
+    private var urlTextBinding: Binding<String> {
+        Binding(
+            get: { store.openBoardPanelInput },
+            set: { store.openBoardPanelInput = $0 }
+        )
     }
 
     var body: some View {
         VStack(alignment: .leading, spacing: DenPanelLayout.contentSpacing) {
             DenPanelHeader(systemImage: "plus.rectangle.on.rectangle") {
                 TextField(
-                    text: $urlText,
+                    text: urlTextBinding,
                     prompt: Text("https://example.com, search, or :terminal / :zellij / :zmx")
                 ) {
                     Text("Open URL, search, or command")
@@ -58,21 +55,21 @@ struct OpenBoardPanel: View {
                             $0.id == selectedRecentItemID
                         })
                     else { return .ignored }
-                    urlText = selected.displayText
+                    store.openBoardPanelInput = selected.displayText
                     return .handled
                 }
                 .onSubmit {
                     TextInputComposition.performUnlessActive {
                         if let selected = filteredRecentItems.first(where: { $0.id == selectedRecentItemID }) {
-                            onOpenRecent(selected, newBoardWidth)
+                            openRecent(selected)
                         } else {
-                            onSubmit(newBoardWidth)
+                            openBoard()
                         }
                     }
                 }
             }
 
-            if let message {
+            if let message = store.openBoardPanelMessage {
                 Text(message)
                     .font(.caption)
                     .foregroundStyle(.red)
@@ -84,7 +81,7 @@ struct OpenBoardPanel: View {
                         .font(.caption.weight(.semibold))
                         .foregroundStyle(.secondary)
                     Spacer()
-                    Button("Clear", action: onClearRecent)
+                    Button("Clear", action: store.clearRecent)
                         .buttonStyle(.plain)
                         .font(.caption)
                         .foregroundStyle(.secondary)
@@ -92,10 +89,10 @@ struct OpenBoardPanel: View {
                 }
 
                 ForEach(filteredRecentItems) { item in
-                    let matchedEssential = essentials.first { item.matches(essential: $0) }
+                    let matchedEssential = store.essentials.first { item.matches(essential: $0) }
                     HStack(spacing: DenPanelLayout.controlSpacing) {
                         Button {
-                            onOpenRecent(item, newBoardWidth)
+                            openRecent(item)
                         } label: {
                             HStack(spacing: DenPanelLayout.controlSpacing) {
                                 Image(systemName: item.systemImage)
@@ -122,9 +119,9 @@ struct OpenBoardPanel: View {
                             .help("Essential: \(matchedEssential.name) [\(matchedEssential.displayKey)]")
                             .accessibilityLabel(
                                 "Essential: \(matchedEssential.name), key \(matchedEssential.displayKey)")
-                        } else if let onSaveAsEssential {
+                        } else {
                             Button {
-                                onSaveAsEssential(item)
+                                store.showSaveEssentialPanel(for: item)
                             } label: {
                                 Image(systemName: "sparkles")
                                     .font(.caption)
@@ -153,9 +150,9 @@ struct OpenBoardPanel: View {
                                 Label("Saved as Essential [\(matchedEssential.displayKey)]", systemImage: "sparkles")
                             }
                             .disabled(true)
-                        } else if let onSaveAsEssential {
+                        } else {
                             Button {
-                                onSaveAsEssential(item)
+                                store.showSaveEssentialPanel(for: item)
                             } label: {
                                 Label("Save as Essential…", systemImage: "sparkles")
                             }
@@ -175,16 +172,40 @@ struct OpenBoardPanel: View {
         }
         .denPanel()
         .onAppear {
-            if let initialURL {
-                urlText = initialURL.absoluteString
+            if let initialURL = store.openBoardPanelInitialURL {
+                store.openBoardPanelInput = initialURL.absoluteString
             }
             DispatchQueue.main.async { isFocused = true }
         }
-        .onChange(of: urlText) { _, _ in
+        .onChange(of: store.openBoardPanelInput) { _, _ in
             selectedRecentItemID = nil
-            onInputChange()
+            store.openBoardPanelMessage = nil
         }
-        .onExitCommand(perform: onDismiss)
+        .onExitCommand {
+            store.hideOpenBoardPanel()
+            store.restoreFocusedFirstResponder()
+        }
+    }
+
+    private func openBoard() {
+        store.openBoard(
+            input: store.openBoardPanelInput,
+            preferredWidth: newBoardWidth,
+            afterBoardID: store.openBoardAfterBoardID)
+        finishOpeningBoardIfNeeded()
+    }
+
+    private func openRecent(_ item: RecentItem) {
+        store.openBoard(
+            recentItem: item,
+            preferredWidth: newBoardWidth,
+            afterBoardID: store.openBoardAfterBoardID)
+        finishOpeningBoardIfNeeded()
+    }
+
+    private func finishOpeningBoardIfNeeded() {
+        guard !store.isOpenBoardPanelPresented else { return }
+        store.clearOpenBoardPanelDraft()
     }
 
     private func moveRecentSelection(by offset: Int) {
@@ -201,10 +222,8 @@ struct OpenBoardPanel: View {
 struct EditBoardLinkPanel: View {
     @Environment(DenStore.self) private var store
 
-    @Binding var text: String
-    @FocusState.Binding var isFocused: Bool
-    let onSubmit: () -> Void
-    let onDismiss: () -> Void
+    @State private var text = ""
+    @FocusState private var isFocused: Bool
 
     var body: some View {
         VStack(alignment: .leading, spacing: DenPanelLayout.contentSpacing) {
@@ -219,7 +238,7 @@ struct EditBoardLinkPanel: View {
                 .textFieldStyle(.plain)
                 .font(.title3.weight(.medium))
                 .focused($isFocused)
-                .onSubmit { TextInputComposition.performUnlessActive(onSubmit) }
+                .onSubmit { TextInputComposition.performUnlessActive(submit) }
             }
 
             HStack(spacing: DenPanelLayout.contentSpacing) {
@@ -236,23 +255,42 @@ struct EditBoardLinkPanel: View {
             text = store.focusedBoard?.currentSheetURL?.absoluteString ?? ""
             DispatchQueue.main.async { isFocused = true }
         }
-        .onExitCommand(perform: onDismiss)
+        .onExitCommand {
+            store.hideEditBoardLinkPanel()
+            store.restoreFocusedFirstResponder()
+        }
+    }
+
+    private func submit() {
+        if store.navigateFocusedBoard(urlString: text) {
+            text = ""
+        }
     }
 }
 
 struct ZmxDuplicationPanel: View {
-    @Binding var text: String
-    @FocusState.Binding var isFocused: Bool
+    @Environment(DenStore.self) private var store
+    @State private var text = ""
+    @FocusState private var isFocused: Bool
 
-    let rootSessionName: String
-    let onSubmit: () -> Void
-    let onDismiss: () -> Void
+    private var rootSessionName: String {
+        store.zmxDuplicationRootSessionName
+            ?? store.focusedBoard?.zmxSessionName
+            ?? "zmx"
+    }
+
+    private var textBinding: Binding<String> {
+        Binding(
+            get: { text },
+            set: { text = ZmxSessionNameGenerator.normalizedSuffix($0) }
+        )
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: DenPanelLayout.contentSpacing) {
             DenPanelHeader(systemImage: "plus.square.on.square") {
                 TextField(
-                    text: $text,
+                    text: textBinding,
                     prompt: Text("Optional suffix, e.g. vi")
                 ) {
                     Text("Duplicate zmx Board")
@@ -262,7 +300,7 @@ struct ZmxDuplicationPanel: View {
                 .font(.title3.weight(.medium))
                 .focused($isFocused)
                 .accessibilityIdentifier("zmx-duplication-input")
-                .onSubmit { TextInputComposition.performUnlessActive(onSubmit) }
+                .onSubmit { TextInputComposition.performUnlessActive(submit) }
             }
 
             Text("Creates \(rootSessionName)-… in the same Working Directory")
@@ -282,14 +320,24 @@ struct ZmxDuplicationPanel: View {
             text = ""
             DispatchQueue.main.async { isFocused = true }
         }
-        .onExitCommand(perform: onDismiss)
+        .onExitCommand {
+            store.hideZmxDuplicationPanel()
+            text = ""
+            store.restoreFocusedFirstResponder()
+        }
+    }
+
+    private func submit() {
+        guard store.duplicateFocusedZmxBoard(suffix: text) else { return }
+        text = ""
+        store.restoreFocusedFirstResponder()
     }
 }
 
 struct RenameBoardPanel: View {
     @Environment(DenStore.self) private var store
-    @Binding var text: String
-    @FocusState.Binding var isFocused: Bool
+    @State private var text = ""
+    @FocusState private var isFocused: Bool
 
     var body: some View {
         VStack(alignment: .leading, spacing: DenPanelLayout.contentSpacing) {

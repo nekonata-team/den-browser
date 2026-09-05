@@ -84,7 +84,7 @@ Persisted Profile data remains separate from live Web and Terminal runtime objec
 - `TerminalRuntime` owns one libghostty surface and Shell, Zellij, or zmx process. One controller is used per Terminal Board.
 - Each Profile has one shared `DenStorage` for persisted data, Profile-shared transient state, and live runtime registries. Profile-shared transient state includes Notifications, active drag state, Recently Removed Boards, and discarded Drawer Item restoration history. Each Profile window has a `DenStore` for its presented Desk and window-local presentation state.
 - `DenView` renders only the Desk assigned to its window. Shared runtime storage retains both runtime types across Desk and window changes; detached Terminal views stop rendering without ending their process. A detached TerminalRuntime also runs low-frequency app ticks until its surface is visible again or the runtime is disposed; this follows [ADR 0040](./adr/0040-tick-detached-terminal-runtimes.md).
-- Window-local state includes Den Mode, filters, panels, layout metrics, Drawer Preview runtime, and Toast presentation. Window-to-Desk assignment is managed by `ProfileManager` and is not persisted.
+- Window-local state includes Den Mode, filters, panel presentation and workflows, layout metrics, Drawer Preview runtime, and Toast presentation. Each panel owns its transient draft values and `FocusState`; a draft that must survive panel replacement, such as Open Board input, remains in the window-local `DenStore`. Window-to-Desk assignment is managed by `ProfileManager` and is not persisted.
 - Persistence never serializes WebKit objects, terminal processes, terminal screens, or scrollback.
 
 This boundary follows [ADR 0008](./adr/0008-codable-den-state-webview-runtime.md).
@@ -95,7 +95,7 @@ Terminal embedding and its security boundary follow [ADR 0032](./adr/0032-embed-
 
 ### Den
 
-Owns Den composition and the workflows connecting Desks, Boards, Sheets, and Overview. It also owns preferences for Den, Board, and shared presentation behavior, even when those preferences apply across every Profile. Sheet Navigation preferences remain owned by `SheetNavigation`. `DenStore` remains one Feature store split into focused extensions under `Store`. Board, Desk, Sheet, and Overview remain inside this Feature because their UI and behavior depend on `DenStore`, while `DenView` composes them. Making them top-level Features would create immediate conceptual dependency cycles. Do not introduce repository, coordinator, or service layers solely to mirror folders.
+Owns Den composition and the workflows connecting Desks, Boards, Sheets, and Overview. It also owns preferences for Den, Board, and shared presentation behavior, even when those preferences apply across every Profile. Sheet Navigation preferences remain owned by `SheetNavigation`. `DenStore` remains one Feature store split into focused extensions under `Store`; it owns exclusive panel presentation and commit operations. Board, Desk, Sheet, and Overview remain inside this Feature because their UI and behavior depend on `DenStore`, while `DenView` composes them and each panel owns its editing draft and focus. Making them top-level Features would create immediate conceptual dependency cycles. Do not introduce repository, coordinator, or service layers solely to mirror folders.
 
 ### Profiles
 

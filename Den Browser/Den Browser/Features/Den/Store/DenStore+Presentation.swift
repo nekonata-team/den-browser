@@ -49,8 +49,12 @@ extension DenStore {
         }
     }
 
-    func showOpenBoardPanel(initialURL: URL? = nil) {
+    func showOpenBoardPanel(initialURL: URL? = nil, afterBoardID: UUID? = nil) {
         openBoardPanelInitialURL = initialURL
+        openBoardAfterBoardID = afterBoardID
+        if let initialURL {
+            openBoardPanelInput = initialURL.absoluteString
+        }
         openBoardPanelMessage = nil
         setTemporaryContext(.openBoard)
     }
@@ -58,9 +62,15 @@ extension DenStore {
     func hideOpenBoardPanel() {
         if temporaryContext == .openBoard {
             openBoardPanelInitialURL = nil
+            openBoardAfterBoardID = nil
             openBoardPanelMessage = nil
             setTemporaryContext(nil)
         }
+    }
+
+    func clearOpenBoardPanelDraft() {
+        openBoardPanelInput = ""
+        openBoardAfterBoardID = nil
     }
 
     func showZmxSessions(selectedSessionName: String? = nil, returnsToOpenBoard: Bool = false) {
