@@ -37,6 +37,9 @@ Automated unit tests own:
 - Routing Sheet Navigation callbacks and WebKit stores to their owning Profile.
 - The pointer-focus state machine used to coordinate board selection and WebKit focus.
 
+Unit tests must never read or write user defaults (`UserDefaults.standard`). Any test that touches `AppPreferences`, `setEssentials`, or creates a `DenStore` that interacts with preferences must use `withTestStore` or an isolated `UserDefaults(suiteName:)`.
+
+
 XCUITests own native UI integration, including:
 
 - SwiftUI-specific gesture identity (e.g. pointer drag-and-drop between Boards), which cannot be simulated in unit tests.

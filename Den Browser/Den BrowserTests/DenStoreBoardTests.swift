@@ -505,19 +505,20 @@ struct DenStoreBoardTests {
     @Test func emptyDeskAppliesFitWidthToClipboardAndEssential() {
         let emptyDesk = desk("Empty")
         let essential = Essential(name: "Search", key: "s", input: "https://example.com")
-        let store = DenStore(state: DenState(desks: [emptyDesk], focusedDeskID: emptyDesk.id))
-        #expect(store.preferences.setEssentials([essential]))
-        store.updateBoardLayout(availableWidth: 1000, spacing: 12)
+        withTestStore(desks: [emptyDesk]) { store in
+            #expect(store.preferences.setEssentials([essential]))
+            store.updateBoardLayout(availableWidth: 1000, spacing: 12)
 
-        store.launchEssential(id: essential.id)
-        #expect(store.focusedBoard?.width == 494)
+            store.launchEssential(id: essential.id)
+            #expect(store.focusedBoard?.width == 494)
 
-        store.state.desks[0].boards.removeAll()
-        let pasteboard = NSPasteboard.withUniqueName()
-        pasteboard.clearContents()
-        pasteboard.setString("https://clipboard.example.com", forType: .string)
-        store.openBoardFromClipboard(pasteboard: pasteboard)
-        #expect(store.focusedBoard?.width == 494)
+            store.state.desks[0].boards.removeAll()
+            let pasteboard = NSPasteboard.withUniqueName()
+            pasteboard.clearContents()
+            pasteboard.setString("https://clipboard.example.com", forType: .string)
+            store.openBoardFromClipboard(pasteboard: pasteboard)
+            #expect(store.focusedBoard?.width == 494)
+        }
     }
 
     @Test func updateBoardKeepsCurrentSheetForUnsupportedURL() throws {
