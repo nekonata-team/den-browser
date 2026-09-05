@@ -73,7 +73,7 @@ test:
 # Run deterministic macOS UI interaction tests. Pass a target to run a specific class or case (e.g. just ui-test Den_BrowserUITests/testNewBoardIsCenteredAfterCreation).
 [group("test")]
 ui-test target="Den_BrowserUITests":
-    rtk test "xcodebuild test -project '{{project}}' -scheme '{{scheme}}' -destination 'platform=macOS,arch=arm64' -derivedDataPath '{{ui_test_derived_data}}' -only-testing:'Den BrowserUITests/{{target}}' CODE_SIGNING_ALLOWED=NO" || { echo "✗ UI tests failed."; echo '  Inspect: xcrun xcresulttool get test-results summary --path "$(ls -td .derived-data-ui/Logs/Test/*.xcresult | head -n 1)"'; exit 1; }
+    rtk test "xcodebuild test -project '{{project}}' -scheme '{{scheme}}' -destination 'platform=macOS,arch=arm64' -derivedDataPath '{{ui_test_derived_data}}' -only-testing:'Den BrowserUITests/{{target}}'" || { echo "✗ UI tests failed."; echo '  Inspect: xcrun xcresulttool get test-results summary --path "$(ls -td .derived-data-ui/Logs/Test/*.xcresult | head -n 1)"'; exit 1; }
     echo "✓ UI tests passed"
 
 # Run lint and unit tests.
