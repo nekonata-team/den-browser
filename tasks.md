@@ -6,16 +6,17 @@
 
 - [x] [TASK-007：Board共通表現の集約](#task-007board共通表現の集約)
 - [x] [TASK-008：パネルの状態所有整理](#task-008パネルの状態所有整理)
-- [ ] [TASK-009：zmx Sessionsの責務分離](#task-009zmx-sessionsの責務分離)
+- [x] [TASK-009：zmx Sessionsの責務分離](#task-009zmx-sessionsの責務分離)
 
 ## Current Status
 
 TASK-001〜TASK-006は実装コミットと完了・検証記録（`64d670b`）を確認し、台帳から削除済み。詳細はGit履歴を参照する。
 TASK-006はデスクスクロール操作の移譲（`1e60166`）。今回の責務分離はTASK-007〜TASK-009で扱う。
 
-作業場所は `refactor/view-store-boundaries` worktree。TASK-008まで完了。次はTASK-009。
+作業場所は `refactor/view-store-boundaries` worktree。TASK-009まで完了。コミットは保留。
 TASK-007でBoard共通表現を集約し、重複とDenStoreへの依存を差分で確認した。
 TASK-008でパネルのdraft・FocusState・送信処理を各パネルへ移し、Open Boardの保持が必要なdraftだけDenStoreのwindow-local状態に残した。
+TASK-009でzmx Sessionsの一覧・検索・選択・終了Taskを`ZmxSessionsModel`へ移し、DenStoreはBoard起動とパネル遷移を連携する境界に整理した。
 
 ## Purpose and Goals
 
@@ -88,7 +89,7 @@ DenViewの合成責務と、各パネルの編集状態の所有を分け、変�
 
 ---
 
-### [ ] TASK-009：zmx Sessionsの責務分離
+### [x] TASK-009：zmx Sessionsの責務分離
 
 #### Purpose
 
@@ -100,21 +101,21 @@ DenViewの合成責務と、各パネルの編集状態の所有を分け、変�
 
 #### Work
 
-- [ ] 一覧取得・検索・選択・非同期Taskを、状態と操作を一緒に持つ専用モデルへ移す。
-- [ ] セッション終了処理とパネル表示・非表示時のTask寿命も確認し、所有を明示する。
-- [ ] Boardを開く操作とパネル遷移はDenStoreが連携する。
-- [ ] `docs/architecture.md` の単一Feature store方針と整合するよう、採用した境界を更新する。ADRの作成・更新が必要なら `domain-modeling` を使う。
+- [x] 一覧取得・検索・選択・非同期Taskを、状態と操作を一緒に持つ専用モデルへ移す。
+- [x] セッション終了処理とパネル表示・非表示時のTask寿命も確認し、所有を明示する。
+- [x] Boardを開く操作とパネル遷移はDenStoreが連携する。
+- [x] `docs/architecture.md` の単一Feature store方針と整合するよう、採用した境界を更新する。ADRの作成・更新が必要なら `domain-modeling` を使う。
 
 #### Acceptance Criteria
 
-- [ ] 一覧取得・検索・選択をDenStoreやBoard runtimeの生成なしで検証できる。
-- [ ] 状態だけを移して転送プロパティを並べる分割になっていない。
-- [ ] ウィンドウ固有状態、取得失敗、更新競合、閉じた後の非同期結果の扱いを維持する。
-- [ ] 既存Boardへのフォーカスと、新規Board作成の動作を維持する。
+- [x] 一覧取得・検索・選択をDenStoreやBoard runtimeの生成なしで検証できる。
+- [x] 状態だけを移して転送プロパティを並べる分割になっていない。
+- [x] ウィンドウ固有状態、取得失敗、更新競合、閉じた後の非同期結果の扱いを維持する。
+- [x] 既存Boardへのフォーカスと、新規Board作成の動作を維持する。
 
 #### Verification
 
-未実施。専用モデルの意味のある振る舞いとDenStoreとの連携をfocused unit testで検証し、`just check` の結果を記録する。
+`ZmxSessionsModelTests`で一覧取得・検索・選択・取得失敗をDenStoreなしで検証。既存`DenStoreBoardTests`と`KeyboardShortcutTests`でBoard作成・既存Boardフォーカス・キーボード連携を検証。`just check` 合格。コミットなし。
 
 ---
 

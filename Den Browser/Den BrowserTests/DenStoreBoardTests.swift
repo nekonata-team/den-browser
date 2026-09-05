@@ -161,17 +161,17 @@ struct DenStoreBoardTests {
             await waitForZmxSessionLoad(store)
 
             #expect(
-                store.zmxSessionGroups == [
+                store.zmxSessions.groups == [
                     ZmxSessionGroup(rootSessionName: "den", isRootActive: true, childSessionNames: ["den-vi"]),
                     ZmxSessionGroup(
                         rootSessionName: "old-root",
                         isRootActive: false,
                         childSessionNames: ["old-root-debug"]),
                 ])
-            #expect(store.zmxSessionSelectedName == "den-vi")
-            store.setZmxSessionQuery("vi")
+            #expect(store.zmxSessions.selectedSessionName == "den-vi")
+            store.zmxSessions.setQuery("vi")
             #expect(
-                store.filteredZmxSessionGroups
+                store.zmxSessions.filteredGroups
                     == [ZmxSessionGroup(rootSessionName: "den", isRootActive: true, childSessionNames: ["den-vi"])]
             )
             store.clearZmxSessionFilter()
@@ -190,7 +190,7 @@ struct DenStoreBoardTests {
             await waitForZmxSessionLoad(store)
             store.killZmxSession("den-vi")
             await waitForZmxSessionLoad(store)
-            #expect(store.zmxSessionsMessage == nil)
+            #expect(store.zmxSessions.message == nil)
         }
     }
 
@@ -1005,7 +1005,7 @@ struct DenStoreBoardTests {
     }
 
     private func waitForZmxSessionLoad(_ store: DenStore) async {
-        await store.zmxSessionRefreshTask?.value
+        await store.zmxSessions.waitForRefresh()
     }
 
     @Test func openBoardFromClipboardOpensBoardToRightAndExitsDenMode() {

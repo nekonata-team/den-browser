@@ -836,14 +836,14 @@ struct KeyboardShortcutTests {
         let escape = try keyEvent(
             characters: "\u{1B}", charactersIgnoringModifiers: "\u{1B}", keyCode: 53)
 
-        #expect(store.zmxSessionSelectedName == "den")
+        #expect(store.zmxSessions.selectedSessionName == "den")
         #expect(
             KeyboardController.decision(for: down, store: store)
                 == .perform(.moveZmxSessionSelection(1)))
         #expect(KeyboardController.handle(down, store: store))
-        #expect(store.zmxSessionSelectedName == "den-vi")
+        #expect(store.zmxSessions.selectedSessionName == "den-vi")
         #expect(KeyboardController.handle(upArrow, store: store))
-        #expect(store.zmxSessionSelectedName == "den")
+        #expect(store.zmxSessions.selectedSessionName == "den")
         #expect(
             KeyboardController.decision(for: returnKey, store: store)
                 == .perform(.openSelectedZmxSession))
@@ -851,13 +851,13 @@ struct KeyboardShortcutTests {
             KeyboardController.decision(for: filter, store: store)
                 == .perform(.enterZmxSessionFilter))
         #expect(KeyboardController.handle(filter, store: store))
-        #expect(store.isZmxSessionFilterInputActive)
+        #expect(store.zmxSessions.isFilterInputActive)
         #expect(
             KeyboardController.decision(for: deleteKey, store: store)
                 == .forward(.filterTextInput))
         #expect(KeyboardController.handle(escape, store: store))
-        #expect(!store.isZmxSessionFilterInputActive)
-        #expect(store.zmxSessionQuery.isEmpty)
+        #expect(!store.zmxSessions.isFilterInputActive)
+        #expect(store.zmxSessions.query.isEmpty)
         #expect(
             KeyboardController.decision(for: escape, store: store)
                 == .perform(.hideZmxSessions))
@@ -871,7 +871,7 @@ struct KeyboardShortcutTests {
             KeyboardController.decision(for: reload, store: store)
                 == .perform(.refreshZmxSessions))
         #expect(KeyboardController.handle(delete, store: store))
-        #expect(store.zmxSessionPendingDeletion == "den")
+        #expect(store.zmxSessions.pendingDeletion == "den")
         #expect(
             KeyboardController.decision(for: returnKey, store: store)
                 == .forward(.temporaryTextInput))
@@ -1260,7 +1260,7 @@ struct KeyboardShortcutTests {
     }
 
     private func waitForZmxSessionLoad(_ store: DenStore) async {
-        await store.zmxSessionRefreshTask?.value
+        await store.zmxSessions.waitForRefresh()
     }
 }
 

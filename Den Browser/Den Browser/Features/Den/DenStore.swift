@@ -100,16 +100,7 @@ final class DenStore {
     var openBoardPanelInput = ""
     var openBoardAfterBoardID: UUID?
     var openBoardPanelMessage: String?
-    var zmxSessionGroups: [ZmxSessionGroup] = []
-    var zmxSessionProcessNames: [String: String] = [:]
-    var zmxSessionsMessage: String?
-    var zmxSessionsIsLoading = false
-    var zmxSessionSelectedName: String?
-    var zmxSessionQuery = ""
-    var zmxSessionFilterPhase: DenFilterPhase = .inactive
-    var zmxSessionPendingDeletion: String?
     var zmxSessionsReturnToOpenBoard = false
-    var zmxSessionRefreshTask: Task<Void, Never>?
     var pendingConfirmation: PendingConfirmation?
     var maximizedBoardID: UUID?
     var pendingBoardLinkFocus: BoardLinkFocusIntent?
@@ -173,6 +164,7 @@ final class DenStore {
             executablePath: preferences.zmxPath,
             commandRunner: terminalCommandRunner)
     }
+    let zmxSessions = ZmxSessionsModel()
     private(set) var webExtensionHost: WebExtensionHost?
     private(set) var webExtensionWindow: MV3WebExtensionWindow?
 
@@ -279,7 +271,6 @@ final class DenStore {
 
     var isOpenBoardPanelPresented: Bool { temporaryContext == .openBoard }
     var isZmxSessionsPresented: Bool { temporaryContext == .zmxSessions }
-    var isZmxSessionFilterInputActive: Bool { zmxSessionFilterPhase == .filtering }
     var isNewDeskPanelPresented: Bool {
         temporaryContext == .newDesk
             || temporaryContext == .replaceDesk
@@ -321,7 +312,7 @@ final class DenStore {
         return true
     }
     var hasPendingConfirmation: Bool {
-        pendingConfirmation != nil || zmxSessionPendingDeletion != nil
+        pendingConfirmation != nil || zmxSessions.pendingDeletion != nil
     }
 
     convenience init() {
@@ -738,6 +729,9 @@ final class DenStore {
         }
         if temporaryContext == .zmxDuplication, context != .zmxDuplication {
             zmxDuplicationRootSessionName = nil
+        }
+        if temporaryContext == .zmxSessions, context != .zmxSessions {
+            zmxSessions.stop()
         }
         if temporaryContext == .saveEssential, context != .saveEssential {
             saveEssentialDraft = nil

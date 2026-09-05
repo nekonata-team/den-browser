@@ -78,26 +78,14 @@ extension DenStore {
             showToast("Set an absolute zmx executable path in Settings > Terminal.", style: .warning)
             return
         }
-        zmxSessionSelectedName = selectedSessionName
-        zmxSessionQuery = ""
-        zmxSessionFilterPhase = .inactive
         zmxSessionsReturnToOpenBoard = returnsToOpenBoard
-        refreshZmxSessions()
+        zmxSessions.start(client: zmxClient, selectedSessionName: selectedSessionName)
         setTemporaryContext(.zmxSessions)
     }
 
     func hideZmxSessions(returnToSource: Bool = true) {
         if temporaryContext == .zmxSessions {
             let returnsToOpenBoard = returnToSource && zmxSessionsReturnToOpenBoard
-            zmxSessionRefreshTask?.cancel()
-            zmxSessionRefreshTask = nil
-            zmxSessionsIsLoading = false
-            zmxSessionGroups = []
-            zmxSessionsMessage = nil
-            zmxSessionSelectedName = nil
-            zmxSessionQuery = ""
-            zmxSessionFilterPhase = .inactive
-            zmxSessionPendingDeletion = nil
             zmxSessionsReturnToOpenBoard = false
             setTemporaryContext(returnsToOpenBoard ? .openBoard : nil)
         }

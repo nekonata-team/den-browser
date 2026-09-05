@@ -62,8 +62,8 @@ struct InputContext {
         isDrawerFilterSelecting = store.isDrawerFilterSelecting
         isOverviewFilterInputActive = store.isOverviewFilterInputActive
         hasOverviewQuery = !store.overviewQuery.isEmpty
-        isZmxSessionFilterInputActive = store.isZmxSessionFilterInputActive
-        hasZmxSessionQuery = !store.zmxSessionQuery.isEmpty
+        isZmxSessionFilterInputActive = store.zmxSessions.isFilterInputActive
+        hasZmxSessionQuery = !store.zmxSessions.query.isEmpty
         isNotificationListPresented = store.isNotificationListPresented
     }
 

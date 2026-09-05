@@ -29,29 +29,29 @@ struct ZmxSessionsPanel: View {
 
             searchField
 
-            if store.zmxSessionsIsLoading && store.zmxSessionGroups.isEmpty {
+            if model.isLoading && model.groups.isEmpty {
                 ProgressView("Loading zmx Sessions…")
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, DenPanelLayout.contentSpacing)
-            } else if let message = store.zmxSessionsMessage {
+            } else if let message = model.message {
                 Text(message).font(.caption).foregroundStyle(.red)
-            } else if store.zmxSessionGroups.isEmpty {
+            } else if model.groups.isEmpty {
                 ContentUnavailableView("No zmx Sessions", systemImage: "terminal")
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, DenPanelLayout.contentSpacing)
-            } else if store.filteredZmxSessionGroups.isEmpty {
-                ContentUnavailableView.search(text: store.zmxSessionQuery)
+            } else if model.filteredGroups.isEmpty {
+                ContentUnavailableView.search(text: model.query)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, DenPanelLayout.contentSpacing)
             } else {
                 ScrollViewReader { proxy in
                     ScrollView {
                         LazyVStack(alignment: .leading, spacing: DenPanelLayout.controlSpacing) {
-                            ForEach(store.filteredZmxSessionGroups) { group in
+                            ForEach(model.filteredGroups) { group in
                                 sessionRow(
                                     group.rootSessionName,
                                     detail: group.isRootActive
-                                        ? store.zmxSessionProcessName(for: group.rootSessionName)
+                                        ? model.processName(for: group.rootSessionName)
                                         : "Missing root",
                                     isChild: false,
                                     isActionable: group.isRootActive
@@ -60,7 +60,7 @@ struct ZmxSessionsPanel: View {
                                 ForEach(group.childSessionNames, id: \.self) { sessionName in
                                     sessionRow(
                                         sessionName,
-                                        detail: store.zmxSessionProcessName(for: sessionName),
+                                        detail: model.processName(for: sessionName),
                                         isChild: true,
                                         isActionable: true
                                     )
@@ -72,7 +72,7 @@ struct ZmxSessionsPanel: View {
                     .onAppear {
                         scrollToSelected(using: proxy)
                     }
-                    .onChange(of: store.zmxSessionSelectedName) { _, _ in
+                    .onChange(of: model.selectedSessionName) { _, _ in
                         scrollToSelected(using: proxy)
                     }
                 }
@@ -85,38 +85,40 @@ struct ZmxSessionsPanel: View {
         }
         .denPanel(width: 460)
         .confirmationDialog(
-            "Delete \(store.zmxSessionPendingDeletion ?? "zmx Session")?",
+            "Delete \(model.pendingDeletion ?? "zmx Session")?",
             isPresented: Binding(
-                get: { store.zmxSessionPendingDeletion != nil },
-                set: { if !$0 { store.zmxSessionPendingDeletion = nil } })
+                get: { model.pendingDeletion != nil },
+                set: { if !$0 { model.clearPendingDeletion() } })
         ) {
             Button(role: .destructive) {
-                if let pendingDeletion = store.zmxSessionPendingDeletion {
+                if let pendingDeletion = model.pendingDeletion {
                     store.killZmxSession(pendingDeletion)
                 }
             } label: {
                 Label("Delete Session", systemImage: "trash")
             }
             .keyboardShortcut(.defaultAction)
-            Button("Cancel", role: .cancel) { store.zmxSessionPendingDeletion = nil }
+            Button("Cancel", role: .cancel) { model.clearPendingDeletion() }
         } message: {
             Text("This ends the Session and all its attached clients. Child Sessions remain running.")
         }
         .onExitCommand { store.hideZmxSessions() }
-        .onChange(of: store.isZmxSessionFilterInputActive) { _, isActive in
+        .onChange(of: model.isFilterInputActive) { _, isActive in
             isSearchFocused = isActive
         }
     }
 
+    private var model: ZmxSessionsModel { store.zmxSessions }
+
     private var searchField: some View {
         HStack(spacing: 8) {
             Image(systemName: "magnifyingglass")
-                .foregroundStyle(store.isZmxSessionFilterInputActive ? .primary : .secondary)
+                .foregroundStyle(model.isFilterInputActive ? .primary : .secondary)
                 .accessibilityHidden(true)
             TextField(
                 text: Binding(
-                    get: { store.zmxSessionQuery },
-                    set: { store.setZmxSessionQuery($0) }
+                    get: { model.query },
+                    set: { model.setQuery($0) }
                 ),
                 prompt: Text("Filter zmx Sessions")
             ) {
@@ -125,12 +127,12 @@ struct ZmxSessionsPanel: View {
             .labelsHidden()
             .textFieldStyle(.plain)
             .focused($isSearchFocused)
-            .disabled(!store.isZmxSessionFilterInputActive)
+            .disabled(!model.isFilterInputActive)
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
         .background(
-            Color.primary.opacity(store.isZmxSessionFilterInputActive ? 0.08 : 0.04),
+            Color.primary.opacity(model.isFilterInputActive ? 0.08 : 0.04),
             in: RoundedRectangle(cornerRadius: DenRadius.medium, style: .continuous)
         )
         .onTapGesture { store.enterZmxSessionFilter() }
@@ -189,23 +191,23 @@ struct ZmxSessionsPanel: View {
         .padding(.horizontal, 8)
         .frame(minHeight: 36)
         .background(
-            isActionable && store.zmxSessionSelectedName == sessionName
+            isActionable && model.selectedSessionName == sessionName
                 ? (differentiateWithoutColor ? Color.primary : profileColor.opacity(0.2))
                 : Color.primary.opacity(0.06),
             in: RoundedRectangle(cornerRadius: DenRadius.small)
         )
         .contentShape(RoundedRectangle(cornerRadius: DenRadius.small))
         .onTapGesture {
-            if isActionable { store.zmxSessionSelectedName = sessionName }
+            if isActionable { model.select(sessionName: sessionName) }
         }
         .accessibilityAddTraits(
-            isActionable && store.zmxSessionSelectedName == sessionName ? .isSelected : []
+            isActionable && model.selectedSessionName == sessionName ? .isSelected : []
         )
         .accessibilityElement(children: .combine)
     }
 
     private func scrollToSelected(using proxy: ScrollViewProxy) {
-        guard let selectedName = store.zmxSessionSelectedName else { return }
+        guard let selectedName = model.selectedSessionName else { return }
         proxy.scrollTo(selectedName, anchor: .center)
     }
 }
