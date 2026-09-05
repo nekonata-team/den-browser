@@ -38,8 +38,12 @@ platform :mac do
     FileUtils.rm_rf(output)
     FileUtils.mkdir_p(output)
 
-    match(type: "developer_id", readonly: true, platform: "macos", skip_provisioning_profiles: true)
-    Actions.lane_context.delete(SharedValues::MATCH_PROVISIONING_PROFILE_MAPPING)
+    match(
+      type: "developer_id",
+      readonly: true,
+      platform: "macos",
+      app_identifier: "dev.nekonata.denbrowser"
+    )
     build_app(
       project: PROJECT,
       scheme: SCHEME,
@@ -47,7 +51,6 @@ platform :mac do
       archive_path: archive,
       output_directory: output,
       export_method: "developer-id",
-      skip_profile_detection: true,
       clean: true
     )
     UI.user_error!("Exported app not found: #{app}") unless File.directory?(app)
