@@ -42,6 +42,7 @@ manual candidate verification, `just release publish X.Y.Z`.
 - `docs/keyboard-input.md`: keyboard implementation contract and diagnostic path
 - `docs/poc.md`: current acceptance criteria and exploratory checks
 - `docs/architecture.md` and `docs/adr/`: architecture and product decisions
+- `docs/cli.md`: command-line interface specification and agent integration
 - `docs/testing.md`: automated and exploratory validation
 - `docs/releasing.md`: signed release and publishing workflow
 

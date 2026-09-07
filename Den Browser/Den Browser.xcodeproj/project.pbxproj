@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		531CEFA4304D48CF00C9C636 /* den in CopyFiles */ = {isa = PBXBuildFile; fileRef = 531CEF98304D46A100C9C636 /* den */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
+		531CEFB2304D500000C9C636 /* ArgumentParser in Frameworks */ = {isa = PBXBuildFile; productRef = 531CEFB1304D500000C9C636 /* ArgumentParser */; };
 		533B2064303A206F00B2A985 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = 533B2063303A206F00B2A985 /* Sparkle */; };
 		53A10001301A000000000001 /* GhosttyTerminal in Frameworks */ = {isa = PBXBuildFile; productRef = 53A10003301A000000000001 /* GhosttyTerminal */; };
 		53A10004301A000000000001 /* GhosttyTheme in Frameworks */ = {isa = PBXBuildFile; productRef = 53A10005301A000000000001 /* GhosttyTheme */; };
@@ -27,15 +29,52 @@
 			remoteGlobalIDString = 530E9DDA2FFFFED90033427C;
 			remoteInfo = "Den Browser";
 		};
+		531CEFA1304D489200C9C636 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 530E9DD32FFFFED90033427C /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 531CEF97304D46A100C9C636;
+			remoteInfo = den;
+		};
 /* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		531CEF96304D46A100C9C636 /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = /usr/share/man/man1/;
+			dstSubfolderSpec = 0;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 1;
+		};
+		531CEFA3304D489500C9C636 /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 6;
+			files = (
+				531CEFA4304D48CF00C9C636 /* den in CopyFiles */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		530E9DDB2FFFFED90033427C /* Den Browser.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Den Browser.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		530E9DE82FFFFEDB0033427C /* Den BrowserTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "Den BrowserTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		530E9DF22FFFFEDB0033427C /* Den BrowserUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "Den BrowserUITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
+		531CEF98304D46A100C9C636 /* den */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = den; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		531CEFA0304D475F00C9C636 /* Exceptions for "Den Browser" folder in "den" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Platform/IPC/IPCTypes.swift,
+			);
+			target = 531CEF97304D46A100C9C636 /* den */;
+		};
 		531DA46B3012544F00589CAD /* Exceptions for "Den Browser" folder in "Den Browser" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
@@ -50,22 +89,24 @@
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
 				531DA46B3012544F00589CAD /* Exceptions for "Den Browser" folder in "Den Browser" target */,
+				531CEFA0304D475F00C9C636 /* Exceptions for "Den Browser" folder in "den" target */,
 			);
 			path = "Den Browser";
 			sourceTree = "<group>";
 		};
 		530E9DEB2FFFFEDB0033427C /* Den BrowserTests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-			);
 			path = "Den BrowserTests";
 			sourceTree = "<group>";
 		};
 		530E9DF52FFFFEDB0033427C /* Den BrowserUITests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-			);
 			path = "Den BrowserUITests";
+			sourceTree = "<group>";
+		};
+		531CEF99304D46A100C9C636 /* den */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = den;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -95,6 +136,14 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		531CEF95304D46A100C9C636 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				531CEFB2304D500000C9C636 /* ArgumentParser in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -104,6 +153,7 @@
 				530E9DDD2FFFFED90033427C /* Den Browser */,
 				530E9DEB2FFFFEDB0033427C /* Den BrowserTests */,
 				530E9DF52FFFFEDB0033427C /* Den BrowserUITests */,
+				531CEF99304D46A100C9C636 /* den */,
 				533B2065303A208600B2A985 /* Frameworks */,
 				530E9DDC2FFFFED90033427C /* Products */,
 			);
@@ -115,6 +165,7 @@
 				530E9DDB2FFFFED90033427C /* Den Browser.app */,
 				530E9DE82FFFFEDB0033427C /* Den BrowserTests.xctest */,
 				530E9DF22FFFFEDB0033427C /* Den BrowserUITests.xctest */,
+				531CEF98304D46A100C9C636 /* den */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -136,10 +187,12 @@
 				530E9DD72FFFFED90033427C /* Sources */,
 				530E9DD82FFFFED90033427C /* Frameworks */,
 				530E9DD92FFFFED90033427C /* Resources */,
+				531CEFA3304D489500C9C636 /* CopyFiles */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				531CEFA2304D489200C9C636 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				530E9DDD2FFFFED90033427C /* Den Browser */,
@@ -196,6 +249,29 @@
 			productReference = 530E9DF22FFFFEDB0033427C /* Den BrowserUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
 		};
+		531CEF97304D46A100C9C636 /* den */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 531CEF9E304D46A100C9C636 /* Build configuration list for PBXNativeTarget "den" */;
+			buildPhases = (
+				531CEF94304D46A100C9C636 /* Sources */,
+				531CEF95304D46A100C9C636 /* Frameworks */,
+				531CEF96304D46A100C9C636 /* CopyFiles */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				531CEF99304D46A100C9C636 /* den */,
+			);
+			name = den;
+			packageProductDependencies = (
+				531CEFB1304D500000C9C636 /* ArgumentParser */,
+			);
+			productName = den;
+			productReference = 531CEF98304D46A100C9C636 /* den */;
+			productType = "com.apple.product-type.tool";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -217,6 +293,9 @@
 						CreatedOnToolsVersion = 26.6;
 						TestTargetID = 530E9DDA2FFFFED90033427C;
 					};
+					531CEF97304D46A100C9C636 = {
+						CreatedOnToolsVersion = 26.6;
+					};
 				};
 			};
 			buildConfigurationList = 530E9DD62FFFFED90033427C /* Build configuration list for PBXProject "Den Browser" */;
@@ -231,6 +310,7 @@
 			packageReferences = (
 				53A10002301A000000000001 /* XCRemoteSwiftPackageReference "libghostty-spm" */,
 				533B2062303A206F00B2A985 /* XCRemoteSwiftPackageReference "Sparkle" */,
+				531CEFB0304D500000C9C636 /* XCRemoteSwiftPackageReference "swift-argument-parser" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 530E9DDC2FFFFED90033427C /* Products */;
@@ -240,6 +320,7 @@
 				530E9DDA2FFFFED90033427C /* Den Browser */,
 				530E9DE72FFFFEDB0033427C /* Den BrowserTests */,
 				530E9DF12FFFFEDB0033427C /* Den BrowserUITests */,
+				531CEF97304D46A100C9C636 /* den */,
 			);
 		};
 /* End PBXProject section */
@@ -290,6 +371,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		531CEF94304D46A100C9C636 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -302,6 +390,11 @@
 			isa = PBXTargetDependency;
 			target = 530E9DDA2FFFFED90033427C /* Den Browser */;
 			targetProxy = 530E9DF32FFFFEDB0033427C /* PBXContainerItemProxy */;
+		};
+		531CEFA2304D489200C9C636 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 531CEF97304D46A100C9C636 /* den */;
+			targetProxy = 531CEFA1304D489200C9C636 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -593,6 +686,34 @@
 			};
 			name = Release;
 		};
+		531CEF9C304D46A100C9C636 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = F79C2UJ844;
+				ENABLE_HARDENED_RUNTIME = YES;
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		531CEF9D304D46A100C9C636 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = F79C2UJ844;
+				ENABLE_HARDENED_RUNTIME = YES;
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -632,9 +753,26 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
+		531CEF9E304D46A100C9C636 /* Build configuration list for PBXNativeTarget "den" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				531CEF9C304D46A100C9C636 /* Debug */,
+				531CEF9D304D46A100C9C636 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
+		531CEFB0304D500000C9C636 /* XCRemoteSwiftPackageReference "swift-argument-parser" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/apple/swift-argument-parser.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.5.0;
+			};
+		};
 		533B2062303A206F00B2A985 /* XCRemoteSwiftPackageReference "Sparkle" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/sparkle-project/Sparkle.git";
@@ -654,6 +792,11 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		531CEFB1304D500000C9C636 /* ArgumentParser */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 531CEFB0304D500000C9C636 /* XCRemoteSwiftPackageReference "swift-argument-parser" */;
+			productName = ArgumentParser;
+		};
 		533B2063303A206F00B2A985 /* Sparkle */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 533B2062303A206F00B2A985 /* XCRemoteSwiftPackageReference "Sparkle" */;

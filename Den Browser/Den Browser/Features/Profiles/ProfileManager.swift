@@ -398,6 +398,17 @@ final class ProfileManager {
         return nil
     }
 
+    func activeStore() -> DenStore? {
+        if let target = extensionPresentationTarget() {
+            return stores[target.windowID]
+        }
+        return stores.values.first
+    }
+
+    var allStores: [DenStore] {
+        Array(stores.values)
+    }
+
     private var effectiveDescriptors: [WebExtensionDescriptor] {
         if !webExtensionDescriptors.isEmpty {
             return webExtensionDescriptors

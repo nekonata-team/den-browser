@@ -34,7 +34,7 @@ final class TerminalRuntime: NSObject, ObservableObject {
     // Keep libghostty app_tick processing while the surface's display link is paused.
     private static let hiddenTickInterval = Duration.seconds(1)
 
-    init(workingDirectory: String, command: String? = nil, events: Events) {
+    init(workingDirectory: String, command: String? = nil, boardID: UUID? = nil, events: Events) {
         PerformanceTrace.mark("TerminalRuntime.init (dir: \(workingDirectory))", category: "Terminal")
         self.events = events
         terminalView = AppTerminalView(frame: .zero)
@@ -45,8 +45,17 @@ final class TerminalRuntime: NSObject, ObservableObject {
             theme: resolution.theme)
         self.controller = controller
         terminalView.delegate = self
+
+        var envVars: [String: String] = [:]
+        if let boardID {
+            envVars["DEN_BOARD_ID"] = boardID.uuidString
+            let home = FileManager.default.homeDirectoryForCurrentUser.path
+            envVars["DEN_SOCKET"] = "\(home)/.den/den.sock"
+        }
+
         terminalView.configuration = TerminalSurfaceOptions(
             workingDirectory: workingDirectory,
+            envVars: envVars,
             context: .window)
         terminalView.controller = controller
     }

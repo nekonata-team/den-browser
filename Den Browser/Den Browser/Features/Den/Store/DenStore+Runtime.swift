@@ -60,6 +60,7 @@ extension DenStore {
         let runtime = TerminalRuntime(
             workingDirectory: board.terminalWorkingDirectory ?? FileManager.default.homeDirectoryForCurrentUser.path,
             command: command,
+            boardID: board.id,
             events: events)
         terminalRuntimes[board.id] = runtime
         return runtime

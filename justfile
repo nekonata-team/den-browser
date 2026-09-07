@@ -46,6 +46,11 @@ lsp-config:
 run: build
     open "{{derived_data}}/Build/Products/Debug/Den Browser.app"
 
+# Run the bundled den CLI.
+[group("development")]
+den *args:
+    "{{derived_data}}/Build/Products/Debug/Den Browser.app/Contents/MacOS/den" {{args}}
+
 # Benchmark startup and idle resource usage.
 [group("development")]
 benchmark *args: build

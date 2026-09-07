@@ -127,4 +127,25 @@ struct TerminalRuntimeTests {
         #expect(runtime.progressPercent == nil)
         runtime.dispose()
     }
+
+    @Test func terminalRuntimeConfiguresEnvironmentVariables() {
+        let boardID = UUID()
+        let runtime = TerminalRuntime(
+            workingDirectory: FileManager.default.homeDirectoryForCurrentUser.path,
+            boardID: boardID,
+            events: .init(
+                onClose: {},
+                onFocus: {},
+                onWorkingDirectoryChange: { _ in },
+                onTitleChange: { _ in },
+                onOpenURL: { _ in },
+                onNotification: { _, _ in }
+            )
+        )
+
+        let envVars = runtime.terminalView.configuration.envVars
+        #expect(envVars["DEN_BOARD_ID"] == boardID.uuidString)
+        #expect(envVars["DEN_SOCKET"]?.contains(".den/den.sock") == true)
+        runtime.dispose()
+    }
 }

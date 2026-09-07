@@ -31,6 +31,7 @@ struct Den_BrowserApp: App {
             websiteDataStore: configuration.websiteDataStore)
         _profileManager = State(initialValue: manager)
         PerformanceTrace.mark("ProfileManager initialized", category: "Launch")
+        DenIPCService.shared.start(profileManager: manager)
     }
 
     var body: some Scene {
