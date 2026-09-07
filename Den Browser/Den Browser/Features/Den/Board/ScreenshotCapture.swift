@@ -130,7 +130,7 @@ enum ScreenshotCapture {
         }
     }
 
-    private static func pngData(for image: NSImage) throws -> Data {
+    static func pngData(for image: NSImage) throws -> Data {
         guard
             let tiff = image.tiffRepresentation,
             let bitmap = NSBitmapImageRep(data: tiff),

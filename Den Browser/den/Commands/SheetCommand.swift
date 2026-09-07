@@ -9,8 +9,17 @@ struct SheetCommand: ParsableCommand {
             SheetOpenCommand.self,
             SheetURLCommand.self,
             SheetReloadCommand.self,
+            SheetBackCommand.self,
+            SheetForwardCommand.self,
+            SheetPressCommand.self,
+            SheetScrollCommand.self,
+            SheetWaitCommand.self,
             SheetEvalCommand.self,
             SheetTextCommand.self,
+            SheetSnapshotCommand.self,
+            SheetClickCommand.self,
+            SheetFillCommand.self,
+            SheetScreenshotCommand.self,
         ]
     )
 }
@@ -78,5 +87,136 @@ struct SheetTextCommand: ParsableCommand {
 
     func run() throws {
         try DenIPCClient.execute(command: "sheet.text", args: [], target: target)
+    }
+}
+
+struct SheetSnapshotCommand: ParsableCommand {
+    static let configuration = CommandConfiguration(
+        commandName: "snapshot",
+        abstract: "Extract semantic DOM tree with short references (@e1, @e2)")
+
+    @OptionGroup var target: TargetOptions
+    @Flag(name: [.customShort("i"), .long], help: "Filter to interactive elements only")
+    var interactive: Bool = false
+
+    func run() throws {
+        let args = interactive ? ["-i"] : []
+        try DenIPCClient.execute(command: "sheet.snapshot", args: args, target: target)
+    }
+}
+
+struct SheetClickCommand: ParsableCommand {
+    static let configuration = CommandConfiguration(
+        commandName: "click",
+        abstract: "Click an element by reference (@e1) or CSS selector")
+
+    @OptionGroup var target: TargetOptions
+    @Argument(help: "Element reference (@e1) or CSS selector to click")
+    var targetElement: String
+
+    func run() throws {
+        try DenIPCClient.execute(command: "sheet.click", args: [targetElement], target: target)
+    }
+}
+
+struct SheetFillCommand: ParsableCommand {
+    static let configuration = CommandConfiguration(
+        commandName: "fill",
+        abstract: "Fill an input or textarea with text by reference or selector")
+
+    @OptionGroup var target: TargetOptions
+    @Argument(help: "Element reference (@e1) or CSS selector to fill")
+    var targetElement: String
+    @Argument(parsing: .remaining, help: "Text value to fill into the input")
+    var valueParts: [String]
+
+    func run() throws {
+        let value = valueParts.joined(separator: " ")
+        guard !value.isEmpty else {
+            throw ValidationError("Please provide a text value to fill")
+        }
+        try DenIPCClient.execute(command: "sheet.fill", args: [targetElement, value], target: target)
+    }
+}
+
+struct SheetScreenshotCommand: ParsableCommand {
+    static let configuration = CommandConfiguration(
+        commandName: "screenshot",
+        abstract: "Capture a PNG screenshot of target Web Board")
+
+    @OptionGroup var target: TargetOptions
+    @Argument(help: "Destination file path for PNG screenshot (optional)")
+    var outputPath: String?
+
+    func run() throws {
+        let args = outputPath.map { [$0] } ?? []
+        try DenIPCClient.execute(command: "sheet.screenshot", args: args, target: target)
+    }
+}
+
+struct SheetBackCommand: ParsableCommand {
+    static let configuration = CommandConfiguration(
+        commandName: "back",
+        abstract: "Navigate back in browsing history")
+
+    @OptionGroup var target: TargetOptions
+
+    func run() throws {
+        try DenIPCClient.execute(command: "sheet.back", args: [], target: target)
+    }
+}
+
+struct SheetForwardCommand: ParsableCommand {
+    static let configuration = CommandConfiguration(
+        commandName: "forward",
+        abstract: "Navigate forward in browsing history")
+
+    @OptionGroup var target: TargetOptions
+
+    func run() throws {
+        try DenIPCClient.execute(command: "sheet.forward", args: [], target: target)
+    }
+}
+
+struct SheetPressCommand: ParsableCommand {
+    static let configuration = CommandConfiguration(
+        commandName: "press",
+        abstract: "Dispatch key events (Enter, Escape, Tab, arrows) to the active element")
+
+    @OptionGroup var target: TargetOptions
+    @Argument(help: "Key to press (e.g. Enter, Escape, Tab, ArrowDown, ArrowUp)")
+    var key: String
+
+    func run() throws {
+        try DenIPCClient.execute(command: "sheet.press", args: [key], target: target)
+    }
+}
+
+struct SheetScrollCommand: ParsableCommand {
+    static let configuration = CommandConfiguration(
+        commandName: "scroll",
+        abstract: "Scroll the page (down, up, top, bottom, or pixel amount)")
+
+    @OptionGroup var target: TargetOptions
+    @Argument(help: "Direction (down, up, top, bottom) or pixel amount (optional, defaults to down)")
+    var direction: String?
+
+    func run() throws {
+        let args = direction.map { [$0] } ?? []
+        try DenIPCClient.execute(command: "sheet.scroll", args: args, target: target)
+    }
+}
+
+struct SheetWaitCommand: ParsableCommand {
+    static let configuration = CommandConfiguration(
+        commandName: "wait",
+        abstract: "Wait for a duration in seconds (2, 0.5) or until a selector appears")
+
+    @OptionGroup var target: TargetOptions
+    @Argument(help: "Duration in seconds (e.g. 2, 0.5) or CSS selector/ref (@e1)")
+    var targetValue: String
+
+    func run() throws {
+        try DenIPCClient.execute(command: "sheet.wait", args: [targetValue], target: target)
     }
 }

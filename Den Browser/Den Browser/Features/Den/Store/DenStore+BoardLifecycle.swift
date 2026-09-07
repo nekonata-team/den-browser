@@ -191,14 +191,14 @@ extension DenStore {
     }
 
     @discardableResult
-    func addBoard(
+    func createBoard(
         urlString: String,
         preferredWidth: Double? = nil,
         afterBoardID: UUID? = nil,
         focus: Bool = true,
         recentItem: RecentItem? = nil
-    ) -> Bool {
-        guard let url = normalizedURL(from: urlString) else { return false }
+    ) -> UUID? {
+        guard let url = normalizedURL(from: urlString) else { return nil }
         let label = url.host(percentEncoded: false) ?? url.absoluteString
         let width = preferredWidth ?? inheritedBoardWidth
         let board = BoardState(label: label, width: width, currentSheetURL: url)
@@ -207,12 +207,29 @@ extension DenStore {
             if let backgroundLinkFocus {
                 consumeBoardLinkFocus(backgroundLinkFocus)
             }
-            return false
+            return nil
         }
         if let recentItem {
             saveRecentItem(recentItem)
         }
-        return true
+        return board.id
+    }
+
+    @discardableResult
+    func addBoard(
+        urlString: String,
+        preferredWidth: Double? = nil,
+        afterBoardID: UUID? = nil,
+        focus: Bool = true,
+        recentItem: RecentItem? = nil
+    ) -> Bool {
+        createBoard(
+            urlString: urlString,
+            preferredWidth: preferredWidth,
+            afterBoardID: afterBoardID,
+            focus: focus,
+            recentItem: recentItem
+        ) != nil
     }
 
     @discardableResult

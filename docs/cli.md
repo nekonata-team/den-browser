@@ -62,6 +62,15 @@ Commands operating on the Current Sheet of the resolved Web Board.
 | `den sheet reload` | None | Reload the current sheet. | `den sheet reload` |
 | `den sheet eval` | `<script>` | Evaluate JavaScript and return the result. | `den sheet eval document.title` |
 | `den sheet text` | None | Extract visible text content (`innerText`) from the sheet. | `den sheet text` |
+| `den sheet back` | None | Navigate back in browsing history. | `den sheet back` |
+| `den sheet forward` | None | Navigate forward in browsing history. | `den sheet forward` |
+| `den sheet press` | `<key>` | Dispatch key events (`Enter`, `Escape`, `Tab`, arrows) to the active element. | `den sheet press Enter` |
+| `den sheet scroll` | `[<direction>]` | Scroll the page (`down`, `up`, `top`, `bottom`, or pixel amount). Defaults to `down`. | `den sheet scroll down` |
+| `den sheet wait` | `<target>` | Wait for a duration in seconds (`2`, `0.5`) or until a selector/ref appears. | `den sheet wait "#results"` |
+| `den sheet snapshot` | `[-i]` | Extract semantic DOM tree with short references (`@e1`, `@e2`). `-i` filters to interactive elements only. | `den sheet snapshot -i` |
+| `den sheet click` | `<target>` | Click an element by reference (`@e1`) or CSS selector. | `den sheet click @e1` |
+| `den sheet fill` | `<target> <value>` | Fill an input/textarea with text by reference or selector. | `den sheet fill @e2 "search query"` |
+| `den sheet screenshot` | `[<path>]` | Save a PNG screenshot of the web sheet (defaults to temporary directory). | `den sheet screenshot /tmp/screen.png` |
 
 ### 3.2 `den board` (Board Surfaces & Layout)
 Commands operating on Boards within the active Desk.
@@ -69,7 +78,8 @@ Commands operating on Boards within the active Desk.
 | Command | Arguments | Description | Example |
 |---|---|---|---|
 | `den board list` | None | List all Boards on the active Desk with ID, type (`web`/`terminal`), and label. | `den board list` |
-| `den board new` | `<url>` | Open a **new** Web Board with `<url>` on the active Desk. | `den board new https://example.com` |
+| `den board new` | `<url>` | Open a **new** Web Board with `<url>` on the active Desk and return its UUID. | `den board new https://example.com` |
+| `den board close` | `[<id>]` | Close the specified Board or the target Web Board. | `den board close` |
 
 ### 3.3 `den desk` (Desks & Workspaces)
 Commands operating on Desks within the Den.

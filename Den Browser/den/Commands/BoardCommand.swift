@@ -8,6 +8,7 @@ struct BoardCommand: ParsableCommand {
         subcommands: [
             BoardListCommand.self,
             BoardNewCommand.self,
+            BoardCloseCommand.self,
         ]
     )
 }
@@ -34,5 +35,20 @@ struct BoardNewCommand: ParsableCommand {
 
     func run() throws {
         try DenIPCClient.execute(command: "board.new", args: [url], target: target)
+    }
+}
+
+struct BoardCloseCommand: ParsableCommand {
+    static let configuration = CommandConfiguration(
+        commandName: "close",
+        abstract: "Close the specified Board or target Web Board")
+
+    @OptionGroup var target: TargetOptions
+    @Argument(help: "UUID of the Board to close (optional, defaults to target Web Board)")
+    var boardID: String?
+
+    func run() throws {
+        let args = boardID.map { [$0] } ?? []
+        try DenIPCClient.execute(command: "board.close", args: args, target: target)
     }
 }

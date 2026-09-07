@@ -66,7 +66,8 @@ enum DenIPCClient {
         }
 
         guard connectResult == 0 else {
-            fputs("Error: Could not connect to Den Browser at \(socketPath). Is Den Browser running?\n", stderr)
+            let errMsg = String(cString: strerror(errno))
+            fputs("Error: Could not connect to Den Browser at \(socketPath): \(errMsg)\n", stderr)
             throw ExitCode.failure
         }
 
