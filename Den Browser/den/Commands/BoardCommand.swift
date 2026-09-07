@@ -32,9 +32,15 @@ struct BoardNewCommand: ParsableCommand {
 
     @OptionGroup var target: TargetOptions
     @Argument(help: "URL or search query for the new board") var url: String
+    @Flag(name: .long, help: "Focus the newly created Board")
+    var focus: Bool = false
 
     func run() throws {
-        try DenIPCClient.execute(command: "board.new", args: [url], target: target)
+        var args = [url]
+        if focus {
+            args.append("--focus")
+        }
+        try DenIPCClient.execute(command: "board.new", args: args, target: target)
     }
 }
 

@@ -78,7 +78,7 @@ Commands operating on Boards within the active Desk.
 | Command | Arguments | Description | Example |
 |---|---|---|---|
 | `den board list` | None | List all Boards on the active Desk with ID, type (`web`/`terminal`), and label. | `den board list` |
-| `den board new` | `<url>` | Open a **new** Web Board with `<url>` on the active Desk and return its UUID. | `den board new https://example.com` |
+| `den board new` | `<url> [--focus]` | Open a **new** Web Board with `<url>` on the active Desk (does not steal focus unless `--focus` is given) and return its UUID. | `den board new https://example.com` |
 | `den board close` | `[<id>]` | Close the specified Board or the target Web Board. | `den board close` |
 
 ### 3.3 `den desk` (Desks & Workspaces)

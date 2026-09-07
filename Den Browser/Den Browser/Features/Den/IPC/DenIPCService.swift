@@ -202,8 +202,8 @@ final class DenIPCService {
             return .success(list)
 
         case "board.new":
-            guard let urlString = request.args.first, !urlString.isEmpty else {
-                return .failure("Usage: den board new <url>")
+            guard let urlString = request.args.first(where: { !$0.hasPrefix("-") }), !urlString.isEmpty else {
+                return .failure("Usage: den board new <url> [--focus]")
             }
             guard
                 let (store, _) = DenIPCTargetResolver.resolveStoreAndDesk(
@@ -213,8 +213,13 @@ final class DenIPCService {
             else {
                 return .failure("No active store found")
             }
+            let shouldFocus = request.args.contains("--focus")
             let callerID = request.callerBoardID.flatMap(UUID.init)
-            if let boardID = store.createBoard(urlString: urlString, afterBoardID: callerID ?? store.focusedBoard?.id) {
+            if let boardID = store.createBoard(
+                urlString: urlString,
+                afterBoardID: callerID ?? store.focusedBoard?.id,
+                focus: shouldFocus
+            ) {
                 return .success(boardID.uuidString)
             }
             return .failure("Failed to open board with \(urlString)")
