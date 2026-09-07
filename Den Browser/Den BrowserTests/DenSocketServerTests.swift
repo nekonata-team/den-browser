@@ -16,7 +16,7 @@ struct DenSocketServerTests {
                 return (try? JSONEncoder().encode(DenIPCResponse.failure("decode error"))) ?? Data()
             }
             if request.command == "ping" {
-                var responseData = (try? JSONEncoder().encode(DenIPCResponse.success("pong"))) ?? Data()
+                var responseData = (try? JSONEncoder().encode(DenIPCResponse.success(message: "pong"))) ?? Data()
                 responseData.append(UInt8(ascii: "\n"))
                 return responseData
             }
@@ -67,7 +67,7 @@ struct DenSocketServerTests {
         }
 
         let response = try JSONDecoder().decode(DenIPCResponse.self, from: responseData)
-        #expect(response.success == true)
-        #expect(response.result == "pong")
+        #expect(response.isOk == true)
+        #expect(response.message == "pong")
     }
 }

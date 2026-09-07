@@ -106,16 +106,38 @@ enum DenIPCClient {
                 print(jsonString.trimmingCharacters(in: .whitespacesAndNewlines))
             }
         } else {
-            if response.success {
-                if let result = response.result, !result.isEmpty {
-                    print(result)
+            if response.isOk {
+                if let boardId = response.boardId {
+                    print(boardId)
+                } else if let boards = response.boards {
+                    for currentBoard in boards {
+                        let urlSuffix = currentBoard.url.map { " (\($0))" } ?? ""
+                        print("[\(currentBoard.type)] \(currentBoard.id) - \(currentBoard.label)\(urlSuffix)")
+                    }
+                } else if let desks = response.desks {
+                    for currentDesk in desks {
+                        let mark = currentDesk.isActive ? "*" : " "
+                        print("\(mark) \(currentDesk.id) - \(currentDesk.label) (\(currentDesk.boardCount) boards)")
+                    }
+                } else if let snapshot = response.snapshot {
+                    print(snapshot)
+                } else if let url = response.url {
+                    print(url)
+                } else if let text = response.text {
+                    print(text)
+                } else if let value = response.value {
+                    print(value)
+                } else if let screenshotPath = response.screenshotPath {
+                    print(screenshotPath)
+                } else if let message = response.message {
+                    print(message)
                 }
             } else {
                 fputs("Error: \(response.error ?? "Unknown error")\n", stderr)
             }
         }
 
-        if !response.success {
+        if !response.isOk {
             throw ExitCode.failure
         }
     }

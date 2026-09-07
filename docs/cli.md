@@ -100,17 +100,45 @@ $ den sheet url
 https://example.com/docs
 ```
 
-### Non-TTY / `--json` Output (Agent Mode)
-When piped or when `--json` is supplied, `den` outputs single-line JSON on standard output with standard Unix exit codes:
+### Non-TTY / `--json` Output (Agent & `jq` Mode)
+When piped or when `--json` is supplied, `den` outputs single-line JSON on standard output with standard Unix exit codes. Properties are flat and use `snake_case` for direct 1-level `jq` access:
 
-**Success (`exit 0`)**:
+**Board Creation (`board new`)**:
 ```json
-{"success":true,"result":"https://example.com/docs"}
+{"ok":true,"board_id":"4F72344C-F4E3-438D-99CB-2F12A79F0004"}
+```
+```bash
+BOARD_ID=$(den board new https://example.com | jq -r .board_id)
 ```
 
-**Failure (`exit 1` or exit code > 0)**:
+**Board Listing (`board list`)**:
 ```json
-{"success":false,"error":"No Web Board found on active Desk"}
+{"ok":true,"boards":[{"id":"4F72344C-...","label":"Example","type":"web","url":"https://example.com"}]}
+```
+```bash
+den board list | jq -r '.boards[] | select(.type == "web") | .id'
+```
+
+**Desk Listing (`desk list`)**:
+```json
+{"ok":true,"desks":[{"board_count":2,"id":"93F4BD61-...","is_active":true,"label":"Main"}]}
+```
+
+**Sheet URL / Snapshot / Value**:
+```json
+{"ok":true,"url":"https://example.com/docs"}
+{"ok":true,"snapshot":"@e1 [a] \"Learn more\"\n@e2 [button] \"Submit\""}
+{"ok":true,"value":"42"}
+```
+
+**Actions (`click`, `fill`, `press`, `scroll`, `wait`, `open`)**:
+```json
+{"message":"Clicked @e1","ok":true}
+```
+
+**Failure (`exit 1`)**:
+```json
+{"error":"Element not found: @e1","ok":false}
 ```
 
 ---

@@ -75,15 +75,15 @@ final class DenIPCService {
                     return .failure("Invalid URL: \(urlString)")
                 }
                 runtime.load(url)
-                return .success("Navigated to \(url.absoluteString)")
+                return .success(message: "Navigated to \(url.absoluteString)", url: url.absoluteString)
 
             case "sheet.reload":
                 runtime.webView.reload()
-                return .success("Reloaded")
+                return .success(message: "Reloaded")
 
             case "sheet.url":
                 let currentURL = runtime.webView.url?.absoluteString ?? board.currentSheetURL?.absoluteString ?? ""
-                return .success(currentURL)
+                return .success(url: currentURL)
 
             case "sheet.eval":
                 let script = request.args.joined(separator: " ")
@@ -92,39 +92,39 @@ final class DenIPCService {
                 }
                 let evalResult = try await runtime.webView.evaluateJavaScript(script)
                 if let evalResult {
-                    return .success("\(evalResult)")
+                    return .success(value: "\(evalResult)")
                 }
-                return .success("undefined")
+                return .success(value: "undefined")
 
             case "sheet.text":
                 let evalResult = try await runtime.webView.evaluateJavaScript("document.body.innerText")
-                return .success("\(evalResult ?? "")")
+                return .success(text: "\(evalResult ?? "")")
 
             case "sheet.back":
                 guard runtime.webView.canGoBack else {
                     return .failure("Cannot go back: no previous page in history")
                 }
                 runtime.webView.goBack()
-                return .success("Navigated back")
+                return .success(message: "Navigated back")
 
             case "sheet.forward":
                 guard runtime.webView.canGoForward else {
                     return .failure("Cannot go forward: no forward page in history")
                 }
                 runtime.webView.goForward()
-                return .success("Navigated forward")
+                return .success(message: "Navigated forward")
 
             case "sheet.press":
                 guard let key = request.args.first, !key.isEmpty else {
                     return .failure("Usage: den sheet press <key>")
                 }
                 try await SheetInteraction.press(key: key, in: runtime.webView)
-                return .success("Pressed \(key)")
+                return .success(message: "Pressed \(key)")
 
             case "sheet.scroll":
                 let direction = request.args.first?.lowercased() ?? "down"
                 let message = try await SheetInteraction.scroll(direction: direction, in: runtime.webView)
-                return .success(message)
+                return .success(message: message)
 
             case "sheet.wait":
                 guard let target = request.args.first, !target.isEmpty else {
@@ -133,10 +133,10 @@ final class DenIPCService {
                 if let seconds = Double(target), seconds >= 0 {
                     let milliseconds = Int(seconds * 1000)
                     try? await Task.sleep(for: .milliseconds(milliseconds))
-                    return .success("Waited \(seconds)s")
+                    return .success(message: "Waited \(seconds)s")
                 }
                 try await SheetInteraction.waitForElement(target: target, in: runtime.webView)
-                return .success("Element appeared: \(target)")
+                return .success(message: "Element appeared: \(target)")
 
             case "sheet.screenshot":
                 let image = try await ScreenshotCapture.visibleCurrentSheet(in: runtime.webView)
@@ -149,7 +149,7 @@ final class DenIPCService {
                     return FileManager.default.temporaryDirectory.appendingPathComponent(filename)
                 }()
                 try data.write(to: targetURL)
-                return .success(targetURL.path)
+                return .success(screenshotPath: targetURL.path)
 
             case "sheet.snapshot":
                 let interactiveOnly = request.args.contains("-i") || request.args.contains("--interactive")
@@ -157,14 +157,14 @@ final class DenIPCService {
                     in: runtime.webView,
                     interactiveOnly: interactiveOnly
                 )
-                return .success(snapshot)
+                return .success(snapshot: snapshot)
 
             case "sheet.click":
                 guard let target = request.args.first, !target.isEmpty else {
                     return .failure("Usage: den sheet click <@ref|selector>")
                 }
                 try await SheetInteraction.click(target: target, in: runtime.webView)
-                return .success("Clicked \(target)")
+                return .success(message: "Clicked \(target)")
 
             case "sheet.fill":
                 guard request.args.count >= 2 else {
@@ -173,7 +173,7 @@ final class DenIPCService {
                 let target = request.args[0]
                 let value = request.args.dropFirst().joined(separator: " ")
                 try await SheetInteraction.fill(target: target, value: value, in: runtime.webView)
-                return .success("Filled \(target)")
+                return .success(message: "Filled \(target)")
 
             default:
                 return .failure("Unknown sheet command: \(command)")
@@ -196,10 +196,15 @@ final class DenIPCService {
             else {
                 return .failure("No active Desk")
             }
-            let list = desk.boards.map { currentBoard in
-                "[\(currentBoard.isTerminal ? "terminal" : "web")] \(currentBoard.id.uuidString) - \(currentBoard.label)"
-            }.joined(separator: "\n")
-            return .success(list)
+            let boards = desk.boards.map { currentBoard in
+                DenBoardInfo(
+                    id: currentBoard.id.uuidString,
+                    type: currentBoard.isTerminal ? "terminal" : "web",
+                    label: currentBoard.label,
+                    url: currentBoard.currentSheetURL?.absoluteString
+                )
+            }
+            return .success(boards: boards)
 
         case "board.new":
             guard let urlString = request.args.first(where: { !$0.hasPrefix("-") }), !urlString.isEmpty else {
@@ -220,7 +225,7 @@ final class DenIPCService {
                 afterBoardID: callerID ?? store.focusedBoard?.id,
                 focus: shouldFocus
             ) {
-                return .success(boardID.uuidString)
+                return .success(boardId: boardID.uuidString)
             }
             return .failure("Failed to open board with \(urlString)")
 
@@ -230,7 +235,10 @@ final class DenIPCService {
                 for candidateStore in allStores {
                     for desk in candidateStore.state.desks where desk.boards.contains(where: { $0.id == targetID }) {
                         candidateStore.removeBoard(targetID)
-                        return .success("Closed Board \(targetID.uuidString)")
+                        return .success(
+                            message: "Closed Board \(targetID.uuidString)",
+                            closedBoardId: targetID.uuidString
+                        )
                     }
                 }
                 return .failure("Board not found: \(idString)")
@@ -244,7 +252,10 @@ final class DenIPCService {
                 return .failure("No target Board to close")
             }
             store.removeBoard(board.id)
-            return .success("Closed Board \(board.id.uuidString)")
+            return .success(
+                message: "Closed Board \(board.id.uuidString)",
+                closedBoardId: board.id.uuidString
+            )
 
         default:
             return .failure("Unknown board command: \(command)")
@@ -265,12 +276,15 @@ final class DenIPCService {
                 return .failure("No active store found")
             }
             let presentedID = store.presentedDeskID
-            let list = store.state.desks.map { currentDesk in
-                let mark = currentDesk.id == presentedID ? "*" : " "
-                return
-                    "\(mark) \(currentDesk.id.uuidString) - \(currentDesk.label) (\(currentDesk.boards.count) boards)"
-            }.joined(separator: "\n")
-            return .success(list)
+            let desks = store.state.desks.map { currentDesk in
+                DenDeskInfo(
+                    id: currentDesk.id.uuidString,
+                    label: currentDesk.label,
+                    isActive: currentDesk.id == presentedID,
+                    boardCount: currentDesk.boards.count
+                )
+            }
+            return .success(desks: desks)
 
         default:
             return .failure("Unknown desk command: \(command)")
