@@ -4,8 +4,8 @@
 
 ## Contents
 
-- [/] [TASK-010：リンク操作の移動抑制を操作内で完結させる](#task-010リンク操作の移動抑制を操作内で完結させる)
-- [/] [TASK-011：最新の配置要求を優先し遅延処理を失効させる](#task-011最新の配置要求を優先し遅延処理を失効させる)
+- [x] [TASK-010：リンク操作の移動抑制を操作内で完結させる](#task-010リンク操作の移動抑制を操作内で完結させる)
+- [x] [TASK-011：最新の配置要求を優先し遅延処理を失効させる](#task-011最新の配置要求を優先し遅延処理を失効させる)
 - [ ] [TASK-012：移動途中のFocus再指定を調査し原因確定後に修正する](#task-012移動途中のfocus再指定を調査し原因確定後に修正する)
 - [ ] [TASK-013：Desk切替をまたぐスクロール位置保存を調査する](#task-013desk切替をまたぐスクロール位置保存を調査する)
 
@@ -18,9 +18,9 @@ TASK-001〜TASK-009は再利用しない。旧内容はGit履歴（直近の台�
 調査場所は `/Users/hiroaki/projects/niri-browser`。
 実装開始時にブランチ、worktree、未コミット変更、対象コードの現状を再確認する。
 
-- TASK-010：実装・unit test・自己レビュー完了。実機WebKitでの連続操作確認と人間承認待ち。
-- TASK-011：実装・unit test・自己レビュー完了。保存位置復元中の明示中央配置、要求の識別・失効、Desk／Board／View変更時の取消を反映。実機確認と人間承認待ち。
-- TASK-012、TASK-013：競合の候補。再現または因果関係を確認する前に修正しない。
+- TASK-010：実装・unit test・自己レビュー・人間確認完了。Acceptance確認済み。
+- TASK-011：実装・unit test・自己レビュー・人間確認完了。保存位置復元中の明示中央配置、要求の識別・失効、Desk／Board／View変更時の取消を反映。Acceptance確認済み。
+- TASK-013：競合の候補。再現または因果関係を確認する前に修正しない。
 - 調査時の基準結果：`just test` は362件成功。
 - `just ui-test Den_BrowserUITests/testDirectDeskSwitchAndDenModeFocusCycle` は1件成功。Desk往復後のSheet Inputを検証する既存テストであり、移動途中の表示や今回の競合を保証するものではない。
 - 上記は変更前の結果。各タスクの完了検証として流用しない。
@@ -43,7 +43,7 @@ BoardのFocus移動、Desk移動、リンクからのBoard作成で、選択状�
 
 ## Tasks
 
-### [/] TASK-010：リンク操作の移動抑制を操作内で完結させる
+### [x] TASK-010：リンク操作の移動抑制を操作内で完結させる
 
 #### Purpose
 
@@ -71,20 +71,20 @@ BoardのFocus移動、Desk移動、リンクからのBoard作成で、選択状�
 
 #### Acceptance Criteria
 
-- [ ] リンク元AからBを作成してFocusした後、後続のFocus・Desk移動・配置変更が古いリンク抑制に妨げられない。
-- [ ] 同一Board内のリンククリックや背景Board作成で、不必要な中央配置が発生しない。
-- [ ] 連続するリンク操作で、古い消費通知が最新操作の状態を消さない。
+- [x] リンク元AからBを作成してFocusした後、後続のFocus・Desk移動・配置変更が古いリンク抑制に妨げられない。
+- [x] 同一Board内のリンククリックや背景Board作成で、不必要な中央配置が発生しない。
+- [x] 連続するリンク操作で、古い消費通知が最新操作の状態を消さない。
 
 #### Verification
 
 2026-09-07実施。
 - `just check` 成功。swift-format、swiftlint、unit test 364件成功。
 - 回帰テストで「Foreground Board作成は抑制を残さない」「Background Board作成の抑制は次のFocusで失効する」「古いconsume通知は新しい印を消さない」を確認。
-- WebKit固有の実機連続操作（通常クリック、Cmd-click、Cmd-Shift-click、targetless navigation、Terminalリンク、Sheet Navigation）は未確認。TASK-010完了前に人間確認する。
+- WebKit固有の実機連続操作（通常クリック、Cmd-click、Cmd-Shift-click、targetless navigation、Terminalリンク、Sheet Navigation）は、今回の人間確認では追加再現なし。問題が再発した場合は新規起票する。
 
 ---
 
-### [/] TASK-011：最新の配置要求を優先し遅延処理を失効させる
+### [x] TASK-011：最新の配置要求を優先し遅延処理を失効させる
 
 #### Purpose
 
@@ -112,16 +112,16 @@ BoardのFocus移動、Desk移動、リンクからのBoard作成で、選択状�
 
 #### Acceptance Criteria
 
-- [ ] 保存位置の復元待ちに中央配置を要求すると、最新要求が適用される。
-- [ ] 自動配置・復元は、新しい明示操作がない場合に従来どおり機能する。
-- [ ] 旧要求の遅延完了が、新しい要求・別Desk・削除済みBoardへ作用しない。
-- [ ] レイアウト待ちを維持しつつ、連続入力をアニメーション完了まで待たせない。
+- [x] 保存位置の復元待ちに中央配置を要求すると、最新要求が適用される。
+- [x] 自動配置・復元は、新しい明示操作がない場合に従来どおり機能する。
+- [x] 旧要求の遅延完了が、新しい要求・別Desk・削除済みBoardへ作用しない。
+- [x] レイアウト待ちを維持しつつ、連続入力をアニメーション完了まで待たせない。
 
 #### Verification
 
 2026-09-09：`just check` 成功（format、lint、Den BrowserTests）。追加した `BoardAlignmentTests` で、古い要求の完了が新しいpendingを有効扱いしないこと、対象Desk／Board不一致を無効とすることを検証。
 実時間sleepは追加せず、要求ID・Desk・Board・layoutKeyを適用直前に再検証。Desk変更、空Desk、Board削除、View破棄は共通取消経路へ接続した。
-最大化、Board幅変更、Desk Filter確定は既存のlayoutKey検証経路を再利用。実機での連続操作確認とAcceptance Criteriaの判定は未実施。
+最大化、Board幅変更、Desk Filter確定は既存のlayoutKey検証経路を再利用。人間確認でAcceptance Criteriaを確認済み。
 
 ---
 
