@@ -345,8 +345,6 @@ final class BoardRuntime: BaseWebRuntime, ObservableObject {
             return nil
         }
 
-        handleLinkActivation(navigationType: navigationAction.navigationType)
-
         if SheetNavigationPolicy.shouldOpenExternalApplication(
             navigationType: navigationAction.navigationType,
             url: url

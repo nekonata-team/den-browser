@@ -18,6 +18,7 @@ extension DenStore {
             }
             return
         }
+        pendingBoardLinkFocus = nil
         setFocusedDesk(deskID)
         state.desks[indices.desk].focusedBoardID = boardID
         state.desks[indices.desk].scrollOffsetX = nil

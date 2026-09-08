@@ -372,6 +372,39 @@ struct DenStoreBoardTests {
         #expect(store.pendingBoardLinkFocus == nil)
     }
 
+    @Test func focusedBoardCreationEndsLinkFocusSuppression() throws {
+        let source = BoardState(label: "Source", width: 520, currentSheetURL: nil)
+        let desk = desk("Desk", boards: [source], focusedBoardID: source.id)
+        let store = DenStore(state: DenState(desks: [desk], focusedDeskID: desk.id))
+
+        store.prepareBoardLinkFocus(source.id)
+        #expect(store.addBoard(urlString: "https://focused.example", afterBoardID: source.id))
+
+        #expect(store.pendingBoardLinkFocus == nil)
+        #expect(store.focusedBoard?.currentSheetURL?.host == "focused.example")
+    }
+
+    @Test func backgroundBoardFocusSuppressionEndsOnNextFocus() throws {
+        let source = BoardState(label: "Source", width: 520, currentSheetURL: nil)
+        let other = BoardState(label: "Other", width: 520, currentSheetURL: nil)
+        let desk = desk("Desk", boards: [source, other], focusedBoardID: source.id)
+        let store = DenStore(state: DenState(desks: [desk], focusedDeskID: desk.id))
+
+        #expect(
+            store.addBoard(
+                urlString: "https://background.example",
+                afterBoardID: source.id,
+                focus: false))
+        let intent = try #require(store.pendingBoardLinkFocus)
+        #expect(store.focusedBoard?.id == source.id)
+
+        store.focusBoard(other.id)
+
+        #expect(store.pendingBoardLinkFocus == nil)
+        store.consumeBoardLinkFocus(intent)
+        #expect(store.pendingBoardLinkFocus == nil)
+    }
+
     @Test func terminalLinkCreatesBackgroundBoardWithoutDrawer() throws {
         let terminal = BoardState(width: 520, workingDirectory: "/tmp")
         let source = desk("Desk", boards: [terminal], focusedBoardID: terminal.id)

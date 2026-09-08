@@ -231,9 +231,6 @@ extension DenStore {
                     return
                 }
             },
-            onLinkActivated: { [weak self] in
-                self?.prepareBoardLinkFocus(board.id)
-            },
             onNotification: { [weak self] title, body in
                 self?.recordNotification(title: title, body: body, boardID: board.id)
             })

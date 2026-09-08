@@ -15,7 +15,6 @@ final class TerminalRuntime: NSObject, ObservableObject {
         var onWorkingDirectoryChange: (String) -> Void
         var onTitleChange: (String) -> Void
         var onOpenURL: (String) -> Void
-        var onLinkActivated: () -> Void = {}
         var onNotification: (String, String) -> Void
     }
 
@@ -157,7 +156,6 @@ extension TerminalRuntime: TerminalSurfaceTitleDelegate {
 extension TerminalRuntime: TerminalSurfaceOpenURLDelegate {
     func terminalDidRequestOpenURL(_ url: String, kind _: TerminalOpenURLKind) {
         guard !isDisposed else { return }
-        events.onLinkActivated()
         events.onOpenURL(url)
     }
 }

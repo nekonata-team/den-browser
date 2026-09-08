@@ -4,141 +4,223 @@
 
 ## Contents
 
-- [x] [TASK-007：Board共通表現の集約](#task-007board共通表現の集約)
-- [x] [TASK-008：パネルの状態所有整理](#task-008パネルの状態所有整理)
-- [x] [TASK-009：zmx Sessionsの責務分離](#task-009zmx-sessionsの責務分離)
+- [/] [TASK-010：リンク操作の移動抑制を操作内で完結させる](#task-010リンク操作の移動抑制を操作内で完結させる)
+- [ ] [TASK-011：最新の配置要求を優先し遅延処理を失効させる](#task-011最新の配置要求を優先し遅延処理を失効させる)
+- [ ] [TASK-012：移動途中のFocus再指定を調査し原因確定後に修正する](#task-012移動途中のfocus再指定を調査し原因確定後に修正する)
+- [ ] [TASK-013：Desk切替をまたぐスクロール位置保存を調査する](#task-013desk切替をまたぐスクロール位置保存を調査する)
 
 ## Current Status
 
-TASK-001〜TASK-006は実装コミットと完了・検証記録（`64d670b`）を確認し、台帳から削除済み。詳細はGit履歴を参照する。
-TASK-006はデスクスクロール操作の移譲（`1e60166`）。今回の責務分離はTASK-007〜TASK-009で扱う。
+2026-09-07のアニメーション調査を、別の実装エージェントへ引き継ぐための台帳。
+アプリコードは未変更。ユーザー承認により旧タスク本文を置き換えた。
+TASK-001〜TASK-009は再利用しない。旧内容はGit履歴（直近の台帳更新は `e68c011`）を参照する。
 
-作業場所は `refactor/view-store-boundaries` worktree。TASK-009まで完了。コミットは保留。
-TASK-007でBoard共通表現を集約し、重複とDenStoreへの依存を差分で確認した。
-TASK-008でパネルのdraft・FocusState・送信処理を各パネルへ移し、Open Boardの保持が必要なdraftだけDenStoreのwindow-local状態に残した。
-TASK-009でzmx Sessionsの一覧・検索・選択・終了Taskを`ZmxSessionsModel`へ移し、DenStoreはBoard起動とパネル遷移を連携する境界に整理した。
+調査場所は `/Users/hiroaki/projects/niri-browser`。
+実装開始時にブランチ、worktree、未コミット変更、対象コードの現状を再確認する。
+
+- TASK-010：実装・unit test・自己レビュー完了。実機WebKitでの連続操作確認と人間承認待ち。
+- TASK-011：コード上の不備を確認済み。ただし、報告された稀な表示異常との対応は実機で未確定。
+- TASK-012、TASK-013：競合の候補。再現または因果関係を確認する前に修正しない。
+- 調査時の基準結果：`just test` は362件成功。
+- `just ui-test Den_BrowserUITests/testDirectDeskSwitchAndDenModeFocusCycle` は1件成功。Desk往復後のSheet Inputを検証する既存テストであり、移動途中の表示や今回の競合を保証するものではない。
+- 上記は変更前の結果。各タスクの完了検証として流用しない。
 
 ## Purpose and Goals
 
-変更箇所を予測しやすくし、同じ変更の重複と意図しない影響を減らす。行数削減やAtomic化自体は目的にしない。
+BoardのFocus移動、Desk移動、リンクからのBoard作成で、選択状態と表示位置の意図しない食い違いを防ぐ。
+最初に直す対象はアニメーション時間・曲線ではなく、配置要求の優先順位、適用条件、失効条件とする。
 
-- Web／Terminal Boardの共通表現を一箇所で変更できる。
-- 入力途中の値・フォーカスはパネル、表示切替・確定操作はDenStoreという所有境界を明確にする。
-- zmx Sessionsの一覧取得・検索・選択をBoard操作なしで検証できる。
-- 既存の入力保持、フォーカス、ドラッグ、パネル排他、複数ウィンドウ、runtime寿命、永続化の振る舞いを維持する。
+- 新しい明示操作が、古い自動配置・復元要求によって捨てられない。
+- リンク操作の移動抑制が、無関係な後続操作へ残らない。
+- 旧Deskのスクロール・遅延処理が新Deskに作用しない。
+- 連続入力で待機中または進行中の移動先を更新できる。
+- `Always`、`When Overflowing`、`Never`、Reduced Motionの既存方針を維持する。
+
+実装前に [CONTEXT.md](CONTEXT.md)、[DESIGN.md](DESIGN.md)、[architecture.md](docs/architecture.md)、[testing.md](docs/testing.md)、
+[ADR 0029](docs/adr/0029-keep-boards-spatially-visible.md)、[ADR 0037](docs/adr/0037-present-distinct-desks-in-profile-windows.md)、
+[ADR 0046](docs/adr/0046-activate-boards-on-viewport-visibility.md) を読む。
+キーボード経路を変更する場合は [keyboard-input.md](docs/keyboard-input.md) も読む。
 
 ## Tasks
 
-### [x] TASK-007：Board共通表現の集約
+### [/] TASK-010：リンク操作の移動抑制を操作内で完結させる
 
 #### Purpose
 
-Web／Terminal Boardで重複する表現・操作を集約し、片方だけの修正による差異を防ぐ。
+リンク元へのクリックFocusを抑制する状態が、新規Boardの配置や次のDesk切替まで抑制する不備を解消する。
 
 #### Prerequisites
 
-- なし。実装前に対象コードと呼び出し元を確認し、共通部分と固有部分を確定する。
+- なし。呼び出し元とイベント順序を確認し、意味のある最小の失敗検証を用意する。
+
+#### Evidence and Entry Points
+
+- [BaseWebRuntime.swift](<Den Browser/Den Browser/Features/Den/BaseWebRuntime.swift>) の `decidePolicyFor` は、リンク処理の前に `handleLinkActivation` を呼ぶ。
+- [DenStore+Runtime.swift](<Den Browser/Den Browser/Features/Den/Store/DenStore+Runtime.swift>) の `onLinkActivated` は、リンク元Board IDで `prepareBoardLinkFocus` を呼ぶ。
+- [BoardRuntime.swift](<Den Browser/Den Browser/Features/Den/Board/BoardRuntime.swift>) の `openBoardFromModifierClick` は、Shift付きなら新規BoardをFocusする。targetless navigationにも新規Board作成経路がある。
+- [BoardStrip.swift](<Den Browser/Den Browser/Features/Den/Board/BoardStrip.swift>) の `onChange(of: alignmentTarget)` は、Focus先がリンク元と一致した場合だけ消費を予約する。不一致かつ `layoutChanged` なら、抑制状態を残してreturnする。
+- リンク元Aへの印と新規Board BへのFocusが同じ描画更新にまとまると、この不一致経路へ入る。その後のDesk変更も同じ条件で早期終了し得る。
 
 #### Work
 
-- [x] 枠・影・選択表示を共通Modifierへ、ドラッグヘッダーを小さなViewへ集約する。
-- [x] 既存の `BoardHeaderTitle`、`DenPanelHeader`、`.denPanel()` を再利用する。
-- [x] 共通部品は必要な値と操作closureを受け取り、DenStoreへの直接依存を避ける。
-- [x] Web／Terminal固有の入力処理とnative surfaceの寿命を維持する。
+- [x] Webの通常クリック、Cmd-click、Cmd-Shift-click、targetless navigation、Terminalリンク、Sheet Navigation経由の呼び出しを追い、印の設定・消費・取消の範囲を確定する。
+- [x] 抑制をリンク元へのクリックFocusに限定する。明示的なFocus変更、Desk変更、対象Board削除、処理完了後へ残さない。
+- [x] 新規BoardをFocusする経路には、そのBoardに対する通常の配置方針を適用する。背景作成は既存のFocusと表示位置を維持する。
+- [x] `consumeBoardLinkFocus` の古い通知が新しい印を消さない契約を維持する。印を追加するだけの局所対処を各呼び出し元へ重複させない。
+- [x] [shortcuts.md](docs/shortcuts.md) の既存記述で「リンククリック時の自動センタリング抑制」と新規Board操作の関係を確認した。追加変更なし。
 
 #### Acceptance Criteria
 
-- [x] 共通の枠・影・選択表示・ドラッグヘッダーの変更が一箇所で済む。
-- [x] 固有動作を大量の条件分岐や汎用設定へ置き換えていない。
-- [x] ドラッグ、アクセシビリティ、Focus Mode、native入力の既存動作を維持する。
+- [ ] リンク元AからBを作成してFocusした後、後続のFocus・Desk移動・配置変更が古いリンク抑制に妨げられない。
+- [ ] 同一Board内のリンククリックや背景Board作成で、不必要な中央配置が発生しない。
+- [ ] 連続するリンク操作で、古い消費通知が最新操作の状態を消さない。
 
 #### Verification
 
-`just check` 合格。既存unit test合格。作業中アプリでWeb／Terminal Boardの共通枠、影、選択表示、ドラッグヘッダーを確認。
-`CODE_SIGNING_ALLOWED=NO` ではRunnerがテスト本体前に `signal kill` で終了した。署名有効（指定なし）で `testClickingInputOnUnfocusedBoardPreservesClickedResponder` と `testOrganizesBoardsUsingPointer` が合格し、UIテスト失敗原因を確認した。
+2026-09-07実施。
+- `just check` 成功。swift-format、swiftlint、unit test 364件成功。
+- 回帰テストで「Foreground Board作成は抑制を残さない」「Background Board作成の抑制は次のFocusで失効する」「古いconsume通知は新しい印を消さない」を確認。
+- WebKit固有の実機連続操作（通常クリック、Cmd-click、Cmd-Shift-click、targetless navigation、Terminalリンク、Sheet Navigation）は未確認。TASK-010完了前に人間確認する。
 
 ---
 
-### [x] TASK-008：パネルの状態所有整理
+### [ ] TASK-011：最新の配置要求を優先し遅延処理を失効させる
 
 #### Purpose
 
-DenViewの合成責務と、各パネルの編集状態の所有を分け、変更対象をパネル内に絞れるようにする。
+位置復元中に新しい中央配置要求を捨てる不備を直し、配置処理の受付・置換・適用条件を追跡可能にする。
 
 #### Prerequisites
 
-- なし。TASK-007とは独立して実装可能。
+- TASK-010完了。リンク抑制の修正を前提に、同じBoardStrip内の配置処理を整理する。
+
+#### Evidence and Entry Points
+
+- [BoardStrip.swift](<Den Browser/Den Browser/Features/Den/Board/BoardStrip.swift>) の `centerFocusedBoardRequest` observerは、待機要求が `.resting` なら無条件にreturnする。
+- Desk切替時の保存位置復元も、非overflow時の自動整列も `.resting` を使う。
+- [DenStore+BoardOperations.swift](<Den Browser/Den Browser/Features/Den/Store/DenStore+BoardOperations.swift>) の `centerFocusedBoard()` は保存位置を消すため、新要求が捨てられるとStoreと表示が食い違う。
+- `centerBoard`、`revealBoard`、`deferBoardAlignment`、`settlePendingBoardAlignment` で要求の設定・取消が分散している。後者はTaskのyield前に条件を検証し、yield後は取消状態とpendingの有無だけを確認している。
 
 #### Work
 
-- [x] DenViewと各パネルの入力・フォーカス・送信処理を調べ、現行の入力保持条件を確認する。
-- [x] 入力途中の文字列と `FocusState` を各パネルへ寄せる。閉じた後も保持が必要な値は、その寿命を満たす所有場所を明示する。
-- [x] パネルの排他表示、Den Mode、確定操作はDenStoreに残す。
-- [x] 所有境界を説明する必要がある箇所を `docs/architecture.md` に反映する。
+- [ ] 明示的な中央配置と自動配置・復元の発生元を確認し、同じ更新内の自動要求と後から来た明示操作を区別する。
+- [ ] 後から来た明示操作で待機中の復元要求を置き換える。一律の `.resting` 優先を解消する。
+- [ ] BoardStrip内の既存 `PendingBoardAlignment` を活用し、受付・置換・取消・適用の重複を必要な範囲で集約する。
+- [ ] 遅延処理の適用直前に、要求の識別、対象Desk、対象Boardの存続、必要なレイアウト条件を検証する。古い要求が新しいpendingを消さないようにする。
+- [ ] Desk変更、空Desk、対象Board削除、View破棄時の失効を確認する。固定sleepや待機Taskを追加して順序問題を隠さない。
+- [ ] [BoardLayout.swift](<Den Browser/Den Browser/Features/Den/Board/BoardLayout.swift>) の純粋な座標計算と [DenMotion.swift](<Den Browser/Den Browser/Features/Den/Design/DenMotion.swift>) を再利用する。要求ID等は必要な最小構成とし、汎用アニメーション管理層を作らない。
 
 #### Acceptance Criteria
 
-- [x] パネル固有の編集状態・初期化・後始末の所在が明確で、DenViewから不要なBinding中継が減っている。
-- [x] 閉じる・再表示・切替・確定・取消で、入力保持とフォーカスの既存動作が変わらない。
-- [x] TASK-007と合わせ、重複・依存の削減を最終差分で確認できる。
+- [ ] 保存位置の復元待ちに中央配置を要求すると、最新要求が適用される。
+- [ ] 自動配置・復元は、新しい明示操作がない場合に従来どおり機能する。
+- [ ] 旧要求の遅延完了が、新しい要求・別Desk・削除済みBoardへ作用しない。
+- [ ] レイアウト待ちを維持しつつ、連続入力をアニメーション完了まで待たせない。
 
 #### Verification
 
-`just check` 合格。Open Board draftの保持・明示URLによる置換・Board挿入位置の解除をunit testで確認。パネルの状態・FocusState・送信処理は各パネルへ移管し、DenStoreの排他表示と確定APIを維持。
-署名有効のUI testは新規DerivedData（`.derived-data-ui-fresh`）で `testClickingInputOnUnfocusedBoardPreservesClickedResponder` が合格。既存`.derived-data-ui`では古いRunner生成物の再利用により起動前`signal kill`となった。
+未実施。「古い復元より新しい明示操作が優先される」「失効した処理は状態と表示を変更しない」を最小のテストで検証する。
+実時間sleepに依存せず、要求の受付と適用を分けて順序を制御できる形を優先する。
+最大化、Board幅変更、Desk Filter確定も配置要求の呼び出し元として影響を確認する。
 
 ---
 
-### [x] TASK-009：zmx Sessionsの責務分離
+### [ ] TASK-012：移動途中のFocus再指定を調査し原因確定後に修正する
 
 #### Purpose
 
-一覧取得・検索・選択をBoard操作から分け、責務単位で理解・検証できる境界を作る。
+移動途中でFocusを戻した際、前の移動が続いて選択と表示位置が離れる候補を確認する。
 
 #### Prerequisites
 
-- TASK-007、TASK-008の完了と、初回差分での重複・依存削減の確認。
+- TASK-011完了。待機要求の競合と、開始済みスクロールの再指定を分けて調べる。
+
+#### Evidence and Entry Points
+
+[BoardStrip.swift](<Den Browser/Den Browser/Features/Den/Board/BoardStrip.swift>) の `revealBoard` は、
+現在の座標で対象が可視ならpendingとTaskを取り消してreturnする。
+この分岐には、開始済み `ScrollPosition` アニメーションを停止・再指定する処理がない。
+SwiftUIがこの場合に実際にどう動くかは未確認であり、現時点では不具合と断定しない。
 
 #### Work
 
-- [x] 一覧取得・検索・選択・非同期Taskを、状態と操作を一緒に持つ専用モデルへ移す。
-- [x] セッション終了処理とパネル表示・非表示時のTask寿命も確認し、所有を明示する。
-- [x] Boardを開く操作とパネル遷移はDenStoreが連携する。
-- [x] `docs/architecture.md` の単一Feature store方針と整合するよう、採用した境界を更新する。ADRの作成・更新が必要なら `domain-modeling` を使う。
+- [ ] `Never`／`When Overflowing` で、画面外Boardへの移動途中に画面内BoardへFocusを戻す。比較として `Always` とReduced Motionも確認する。
+- [ ] Focus ID、現在位置、要求した移動先、scroll phaseの順序を必要な範囲で観測する。単発操作の最終座標だけで判定しない。
+- [ ] 原因が確認できた場合のみ、現在位置に加えて進行中の移動先を考慮し、最新操作に合わせて停止・再指定する。
+- [ ] 未再現または正常動作なら、その条件と結果を記録し、推測の修正を入れない。根拠が足りなければDeferred Itemsへ移す。
 
 #### Acceptance Criteria
 
-- [x] 一覧取得・検索・選択をDenStoreやBoard runtimeの生成なしで検証できる。
-- [x] 状態だけを移して転送プロパティを並べる分割になっていない。
-- [x] ウィンドウ固有状態、取得失敗、更新競合、閉じた後の非同期結果の扱いを維持する。
-- [x] 既存Boardへのフォーカスと、新規Board作成の動作を維持する。
+- [ ] 再現結果と因果関係、または修正不要と判断した根拠が記録されている。
+- [ ] 修正する場合、最新Focusへの可視性・中央配置方針を満たし、古い移動先へ進み続けない。
+- [ ] 連続入力、逆方向への入力、ユーザーの直接スクロールを不必要に妨げない。
 
 #### Verification
 
-`ZmxSessionsModelTests`で一覧取得・検索・選択・取得失敗をDenStoreなしで検証。既存`DenStoreBoardTests`と`KeyboardShortcutTests`でBoard作成・既存Boardフォーカス・キーボード連携を検証。`just check` 合格。コミットなし。
+未実施。判断ロジックはunit test、進行中スクロールの視覚的挙動は探索確認で検証する。
+XCUITestを追加する場合は、保護するnative境界とunit testでは観測できない失敗を事前に記録する。
+単なるボタンクリックや見た目だけを理由に追加しない。
+
+---
+
+### [ ] TASK-013：Desk切替をまたぐスクロール位置保存を調査する
+
+#### Purpose
+
+旧Deskで始めたスクロールの終了通知が、新Deskの保存位置を上書きする候補を確認する。
+
+#### Prerequisites
+
+- TASK-011完了。配置要求のDesk所有と失効条件を前提に、スクロール操作の所有を確認する。
+
+#### Evidence and Entry Points
+
+[BoardStrip.swift](<Den Browser/Den Browser/Features/Den/Board/BoardStrip.swift>) の `onScrollPhaseChange` は、
+操作開始時のDeskを保持せず、終了時の `store.presentedDeskID` に `scrollGeometry.offsetX` を保存する。
+同じScrollViewを使ったDesk切替で、慣性スクロールの終了通知がどの順序になるかは未確認。
+
+#### Work
+
+- [ ] 異なる保存位置を持つDeskを用意し、直接操作・慣性スクロール中にDeskを切り替える。旧Deskと新Desk両方の保存値・復元位置を確認する。
+- [ ] 再現した場合は、操作開始時のDeskに所有を結び付け、Desk切替後の古い終了通知を破棄する。
+- [ ] 保存時の座標には、必要に応じて通知時点の [ScrollPhaseChangeContext.geometry](https://developer.apple.com/documentation/swiftui/scrollphasechangecontext/geometry) を使う。別callbackで保持した座標との順序依存を避ける。
+- [ ] 原因未確定なら修正せず、検証条件と不足する証拠を記録する。未解決の候補はDeferred Itemsへ移す。
+
+#### Acceptance Criteria
+
+- [ ] 再現結果と因果関係、または修正不要と判断した根拠が記録されている。
+- [ ] 修正する場合、旧Deskの操作終了が新Deskの保存位置を上書きしない。
+- [ ] Deskごとの手動スクロール位置の復元と、明示的なFocus／中央配置による保存位置解除を維持する。
+
+#### Verification
+
+未実施。所有Deskと失効判断はunit testで検証し、慣性スクロール中のDesk切替は探索確認で補う。
+通常のDesk往復だけではこの競合の検証にならない。
 
 ---
 
 ## Common Acceptance Criteria
 
-- [ ] macOS 26.0を最低対応バージョンとし、不要な古いOS向け分岐を追加しない。
-- [ ] DenStateとBoardRuntime・WKWebView・Terminalの責務境界を維持する。
-- [ ] 既存のキーボード優先設計とポインター操作を維持する。
-- [ ] 変更したSwift sourceには `just check` を実行する。
-- [ ] Profile共有状態とウィンドウ固有状態の境界を維持し、永続化形式・runtime寿命を変更しない。
-- [ ] `docs/testing.md` に従い、実装詳細ではなく意味のある振る舞いを最小のテストで保護する。
-- [ ] 差分を自己レビューし、関連検証と問題修正を行い、再レビューで対処可能な問題がなくなるまで繰り返す。
-- [ ] 変更したドキュメントのリンク・重複・古い記述を確認する。
+- [ ] 明確な原因が確認できた範囲だけ修正する。未再現候補を「修正済み」と記録しない。
+- [ ] macOS 26.0を最低対応とし、到達不能な旧OS向け分岐を追加しない。
+- [ ] DenStateとlive runtimeの分離、Profile共有状態とwindow-local状態、runtime寿命を維持する。アニメーション調停状態を永続化しない。
+- [ ] Board作成の前景／背景の区別、クリックFocus、Den Mode、Deskの保存位置復元を維持する。
+- [ ] `DenMotion` 経由のbounce-free motionとReduced Motionを維持する。
+- [ ] 新しいテストの前に、バグを一般化した不変条件を記録する。実装詳細や一回限りの再現値を固定しない。
+- [ ] `just --list` を確認し、Swift変更後は `just check` を実行する。native入力に影響する場合は該当する既存のfocused UI testも実行する。
+- [ ] 少なくとも一回自己レビューする。明確な問題を修正したら関連レビュー・検証を繰り返し、最新の検証成功と対処可能な指摘なしを確認して止める。
+- [ ] 各Verificationへ、実行コマンド・結果・再現条件・未確認事項を記録する。
+- [ ] 挙動の明確化はDESIGN.mdまたはdocs/shortcuts.md等の所有文書へ反映する。CONTEXT.md／ADRを変える場合はdomain-modelingスキルを使う。
+- [ ] 最終差分の不要な抽象化、ドキュメントリンク、重複・古い主張を確認する。
 
 ## Deferred Items
 
-- [ ] Runtime管理の分離。Profile共有runtimeとウィンドウ別callback再割当の境界を別途調査してから判断する。
-- [ ] `ZmxClient.processSnapshot` の `/bin/ps` プロセス呼び出し最適化（プロファイリングでボトルネックが顕在化した際に着手）。
+現時点ではなし。TASK-012／TASK-013を原因未確定で保留する場合は、IDと未解決事項・検証条件をここに残す。
 
 ## Out of Scope
 
-- [ ] 今回のタスク書き出し段階での実装コード変更。
-- [ ] 第三者WebサイトのHTML/スクリプト挙動の変更。
-- [ ] 全Viewの細分化、Atoms／Moleculesの階層導入、Desk／Board別Storeへの機械的分割。
-- [ ] 汎用フレームワーク・不要なprotocolやservice層の導入。
-- [ ] 性能改善、UI仕様変更、行数削減だけを目的とした変更。
+- 今回の台帳更新でのアプリコード変更、タスク実装、コミット。
+- 根拠のないアニメーション曲線・時間の調整、Desk切替演出の新設。
+- 汎用アニメーションフレームワーク、新規依存、全面的なStore／View分割。
+- runtime遅延アタッチ、WebKit／Terminal描画停止、性能改善の再設計。
+- 第三者Webサイト、永続化形式、無関係なUX・機能の変更。

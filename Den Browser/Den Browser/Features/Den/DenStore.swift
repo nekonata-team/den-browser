@@ -480,8 +480,11 @@ final class DenStore {
         showToast("Reset Den completed.", style: .success)
     }
 
-    func prepareBoardLinkFocus(_ boardID: UUID) {
-        pendingBoardLinkFocus = BoardLinkFocusIntent(boardID: boardID)
+    @discardableResult
+    func prepareBoardLinkFocus(_ boardID: UUID) -> BoardLinkFocusIntent {
+        let intent = BoardLinkFocusIntent(boardID: boardID)
+        pendingBoardLinkFocus = intent
+        return intent
     }
 
     func consumeBoardLinkFocus(_ intent: BoardLinkFocusIntent) {
@@ -590,6 +593,7 @@ final class DenStore {
         previousFocusedDeskID = presentedDeskID
         presentedDeskID = deskID
         state.focusedDeskID = deskID
+        pendingBoardLinkFocus = nil
         return true
     }
 
@@ -612,6 +616,9 @@ final class DenStore {
     @discardableResult
     func removeBoard(at indices: (desk: Int, board: Int), focusNext: Bool = false) -> BoardState {
         let board = state.desks[indices.desk].boards.remove(at: indices.board)
+        if pendingBoardLinkFocus?.boardID == board.id {
+            pendingBoardLinkFocus = nil
+        }
         let boards = state.desks[indices.desk].boards
         guard state.desks[indices.desk].focusedBoardID == board.id else { return board }
 

@@ -289,9 +289,7 @@ struct BoardStrip: View {
                     scheduleBoardLinkFocusConsumption(linkFocus)
                     return
                 }
-                if layoutChanged {
-                    return
-                }
+                scheduleBoardLinkFocusConsumption(linkFocus)
             }
 
             let animated = previous.deskID == current.deskID && !previous.layoutKey.ids.isEmpty

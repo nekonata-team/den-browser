@@ -202,7 +202,13 @@ extension DenStore {
         let label = url.host(percentEncoded: false) ?? url.absoluteString
         let width = preferredWidth ?? inheritedBoardWidth
         let board = BoardState(label: label, width: width, currentSheetURL: url)
-        guard insertBoard(board, afterBoardID: afterBoardID, focus: focus) else { return false }
+        let backgroundLinkFocus = !focus ? afterBoardID.map(prepareBoardLinkFocus) : nil
+        guard insertBoard(board, afterBoardID: afterBoardID, focus: focus) else {
+            if let backgroundLinkFocus {
+                consumeBoardLinkFocus(backgroundLinkFocus)
+            }
+            return false
+        }
         if let recentItem {
             saveRecentItem(recentItem)
         }
@@ -276,6 +282,7 @@ extension DenStore {
         let insert = { [self] in
             state.desks[deskIndex].boards.insert(board, at: insertIndex)
             if focus {
+                pendingBoardLinkFocus = nil
                 state.desks[deskIndex].focusedBoardID = board.id
                 setFocusedDesk(state.desks[deskIndex].id)
                 setTemporaryContext(nil)

@@ -152,8 +152,6 @@ class BaseWebRuntime: NSObject, NSWindowDelegate, WKDownloadDelegate, WKNavigati
             return
         }
 
-        handleLinkActivation(navigationType: navigationAction.navigationType)
-
         if navigationAction.shouldPerformDownload {
             decisionHandler(.download)
             return
@@ -178,6 +176,7 @@ class BaseWebRuntime: NSObject, NSWindowDelegate, WKDownloadDelegate, WKNavigati
             return
         }
 
+        handleLinkActivation(navigationType: navigationAction.navigationType)
         decisionHandler(.allow)
     }
 
@@ -223,8 +222,6 @@ class BaseWebRuntime: NSObject, NSWindowDelegate, WKDownloadDelegate, WKNavigati
             return nil
         }
 
-        handleLinkActivation(navigationType: navigationAction.navigationType)
-
         if navigationAction.shouldPerformDownload {
             load(url)
         } else if navigationAction.navigationType == .linkActivated,
@@ -239,6 +236,7 @@ class BaseWebRuntime: NSObject, NSWindowDelegate, WKDownloadDelegate, WKNavigati
                 button: MouseButton(rawValue: navigationAction.buttonNumber),
                 opensNewContext: true
             ) {
+                handleLinkActivation(navigationType: navigationAction.navigationType)
                 return makeAuxiliaryWebView(configuration: configuration, sourceWebView: webView)
             }
         } else {
