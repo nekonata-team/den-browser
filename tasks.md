@@ -5,7 +5,7 @@
 ## Contents
 
 - [/] [TASK-010：リンク操作の移動抑制を操作内で完結させる](#task-010リンク操作の移動抑制を操作内で完結させる)
-- [ ] [TASK-011：最新の配置要求を優先し遅延処理を失効させる](#task-011最新の配置要求を優先し遅延処理を失効させる)
+- [/] [TASK-011：最新の配置要求を優先し遅延処理を失効させる](#task-011最新の配置要求を優先し遅延処理を失効させる)
 - [ ] [TASK-012：移動途中のFocus再指定を調査し原因確定後に修正する](#task-012移動途中のfocus再指定を調査し原因確定後に修正する)
 - [ ] [TASK-013：Desk切替をまたぐスクロール位置保存を調査する](#task-013desk切替をまたぐスクロール位置保存を調査する)
 
@@ -19,7 +19,7 @@ TASK-001〜TASK-009は再利用しない。旧内容はGit履歴（直近の台�
 実装開始時にブランチ、worktree、未コミット変更、対象コードの現状を再確認する。
 
 - TASK-010：実装・unit test・自己レビュー完了。実機WebKitでの連続操作確認と人間承認待ち。
-- TASK-011：コード上の不備を確認済み。ただし、報告された稀な表示異常との対応は実機で未確定。
+- TASK-011：実装・unit test・自己レビュー完了。保存位置復元中の明示中央配置、要求の識別・失効、Desk／Board／View変更時の取消を反映。実機確認と人間承認待ち。
 - TASK-012、TASK-013：競合の候補。再現または因果関係を確認する前に修正しない。
 - 調査時の基準結果：`just test` は362件成功。
 - `just ui-test Den_BrowserUITests/testDirectDeskSwitchAndDenModeFocusCycle` は1件成功。Desk往復後のSheet Inputを検証する既存テストであり、移動途中の表示や今回の競合を保証するものではない。
@@ -84,7 +84,7 @@ BoardのFocus移動、Desk移動、リンクからのBoard作成で、選択状�
 
 ---
 
-### [ ] TASK-011：最新の配置要求を優先し遅延処理を失効させる
+### [/] TASK-011：最新の配置要求を優先し遅延処理を失効させる
 
 #### Purpose
 
@@ -103,12 +103,12 @@ BoardのFocus移動、Desk移動、リンクからのBoard作成で、選択状�
 
 #### Work
 
-- [ ] 明示的な中央配置と自動配置・復元の発生元を確認し、同じ更新内の自動要求と後から来た明示操作を区別する。
-- [ ] 後から来た明示操作で待機中の復元要求を置き換える。一律の `.resting` 優先を解消する。
-- [ ] BoardStrip内の既存 `PendingBoardAlignment` を活用し、受付・置換・取消・適用の重複を必要な範囲で集約する。
-- [ ] 遅延処理の適用直前に、要求の識別、対象Desk、対象Boardの存続、必要なレイアウト条件を検証する。古い要求が新しいpendingを消さないようにする。
-- [ ] Desk変更、空Desk、対象Board削除、View破棄時の失効を確認する。固定sleepや待機Taskを追加して順序問題を隠さない。
-- [ ] [BoardLayout.swift](<Den Browser/Den Browser/Features/Den/Board/BoardLayout.swift>) の純粋な座標計算と [DenMotion.swift](<Den Browser/Den Browser/Features/Den/Design/DenMotion.swift>) を再利用する。要求ID等は必要な最小構成とし、汎用アニメーション管理層を作らない。
+- [x] 明示的な中央配置と自動配置・復元の発生元を確認し、同じ更新内の自動要求と後から来た明示操作を区別する。
+- [x] 後から来た明示操作で待機中の復元要求を置き換える。一律の `.resting` 優先を解消する。
+- [x] BoardStrip内の既存 `PendingBoardAlignment` を活用し、受付・置換・取消・適用の重複を必要な範囲で集約する。
+- [x] 遅延処理の適用直前に、要求の識別、対象Desk、対象Boardの存続、必要なレイアウト条件を検証する。古い要求が新しいpendingを消さないようにする。
+- [x] Desk変更、空Desk、対象Board削除、View破棄時の失効を確認する。固定sleepや待機Taskを追加して順序問題を隠さない。
+- [x] [BoardLayout.swift](<Den Browser/Den Browser/Features/Den/Board/BoardLayout.swift>) の純粋な座標計算と [DenMotion.swift](<Den Browser/Den Browser/Features/Den/Design/DenMotion.swift>) を再利用する。要求ID等は必要な最小構成とし、汎用アニメーション管理層を作らない。
 
 #### Acceptance Criteria
 
@@ -119,9 +119,9 @@ BoardのFocus移動、Desk移動、リンクからのBoard作成で、選択状�
 
 #### Verification
 
-未実施。「古い復元より新しい明示操作が優先される」「失効した処理は状態と表示を変更しない」を最小のテストで検証する。
-実時間sleepに依存せず、要求の受付と適用を分けて順序を制御できる形を優先する。
-最大化、Board幅変更、Desk Filter確定も配置要求の呼び出し元として影響を確認する。
+2026-09-09：`just check` 成功（format、lint、Den BrowserTests）。追加した `BoardAlignmentTests` で、古い要求の完了が新しいpendingを有効扱いしないこと、対象Desk／Board不一致を無効とすることを検証。
+実時間sleepは追加せず、要求ID・Desk・Board・layoutKeyを適用直前に再検証。Desk変更、空Desk、Board削除、View破棄は共通取消経路へ接続した。
+最大化、Board幅変更、Desk Filter確定は既存のlayoutKey検証経路を再利用。実機での連続操作確認とAcceptance Criteriaの判定は未実施。
 
 ---
 
