@@ -30,14 +30,27 @@ If no such boundary exists, add or update the focused unit test instead. Use exp
 
 Automated unit tests own:
 
-- `DenStore` and other pure state transitions, including board focus, ordering, moving, holding, placing, canceling, and closing.
-- State persistence and restoration.
-- Terminal command parsing, Zellij and zmx command resolution, named theme resolution, and Web/Terminal/Zellij/zmx Board lifecycle transitions.
-- Profile model coding, ordering, CRUD, corruption recovery, per-Profile Den restoration, Profile-window Desk assignment, and app-wide preference persistence.
-- Routing Sheet Navigation callbacks and WebKit stores to their owning Profile.
-- The pointer-focus state machine used to coordinate board selection and WebKit focus.
+- Pure domain state transitions (focus, ordering, moving, removal, restoration, and navigation).
+- State persistence, serialization, and schema migration.
+- Command parsing, process resolution, and lifecycle state machines (Terminal, CLI, IPC).
+- Profile lifecycle, workspace isolation, storage routing, and window assignment.
+- App preferences and configuration persistence.
+- Pointer-focus coordination and responder arbitration logic.
 
-Unit tests must never read or write user defaults (`UserDefaults.standard`). Any test that touches `AppPreferences`, `setEssentials`, or creates a `DenStore` that interacts with preferences must use `withTestStore` or an isolated `UserDefaults(suiteName:)`.
+Unit tests must never read or write shared user defaults (`UserDefaults.standard`). Any test touching preferences or configuration must use isolated test containers or suite names.
+
+### Unit test structure and boundary rules
+
+Unit tests follow the Arrange-Act-Assert (AAA) pattern for consistency across the test suite, using explicit section comments (`// Arrange`, `// Act`, `// Assert`):
+
+- `// Arrange`: Set up the initial state, fixtures, stubs, and isolated dependencies.
+- `// Act`: Perform the single operation, transition, or method invocation under test.
+- `// Assert`: Verify expected outcomes, state changes, and invariants with `#expect` or `#require`.
+
+Boundary rules:
+- **Direct boundary verification**: Test each component directly at its public interface. Do not exercise subsystem logic through outer orchestrators (e.g. test workspace state transitions directly, not through profile coordination).
+- **One component per test suite**: Cross-cutting or independent components (such as preferences, IPC resolution, motion policies, or persistence models) belong in their own dedicated test files, not mixed into neighboring suites.
+- **Focused state transitions**: Avoid long interleaved act-assert-act chains in a single test; split distinct state transitions, error branches, and edge cases into focused, single-purpose tests.
 
 
 XCUITests own native UI integration, including:

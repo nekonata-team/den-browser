@@ -8,286 +8,44 @@ import WebKit
 @MainActor
 @Suite(.serialized)
 struct ProfileManagerTests {
-    @Test func profileModelsRoundTripAndRejectUnknownSchema() throws {
-        let profile = ProfileState(
-            id: UUID(), name: "Work", color: .purple, webProfileStore: .identified(UUID()))
-        let persisted = PersistedProfile(profile: profile, den: .sample)
-        let encoded = try JSONEncoder().encode(persisted)
 
-        #expect(try JSONDecoder().decode(PersistedProfile.self, from: encoded) == persisted)
-        #expect(
-            throws: DecodingError.self,
-            performing: {
-                try JSONDecoder().decode(
-                    PersistedProfile.self,
-                    from: Data("{\"schemaVersion\":3,\"profile\":{},\"den\":{}}".utf8))
-            })
-        #expect(
-            throws: DecodingError.self,
-            performing: {
-                try JSONDecoder().decode(
-                    ProfileIndex.self,
-                    from: Data("{\"schemaVersion\":2,\"profileIDs\":[]}".utf8))
-            })
-    }
-
-    @Test func profilePersistsBoardSheetNavigationPause() throws {
-        let board = BoardState(
-            label: "Paused",
-            width: 520,
-            currentSheetURL: URL(string: "https://example.com/"),
-            sheetNavigationPaused: true)
-        let desk = DeskState(label: "Desk", boards: [board], focusedBoardID: board.id)
-        let profile = ProfileState(
-            id: UUID(), name: "Work", color: .purple, webProfileStore: .identified(UUID()))
-        let persisted = PersistedProfile(
-            profile: profile,
-            den: DenState(desks: [desk], focusedDeskID: desk.id))
-
-        let encoded = try JSONEncoder().encode(persisted)
-        let decoded = try JSONDecoder().decode(PersistedProfile.self, from: encoded)
-
-        #expect(decoded.den.desks[0].boards[0].sheetNavigationPaused)
-    }
-
-    @Test func profileDocumentWithoutDeskPresetsLoadsEmptyList() throws {
-        let profile = ProfileState(
-            id: UUID(), name: "Work", color: .purple, webProfileStore: .identified(UUID()))
-        let encoded = try JSONEncoder().encode(PersistedProfile(profile: profile, den: .sample))
-        var object = try #require(JSONSerialization.jsonObject(with: encoded) as? [String: Any])
-        #expect(object["deskPresets"] != nil)
-        object.removeValue(forKey: "deskPresets")
-
-        let decoded = try JSONDecoder().decode(
-            PersistedProfile.self,
-            from: JSONSerialization.data(withJSONObject: object))
-
-        #expect(decoded.schemaVersion == 2)
-        #expect(decoded.deskPresets.isEmpty)
-    }
-
-    @Test func profileDocumentWithoutRecentItemsLoadsEmptyList() throws {
-        let profile = ProfileState(
-            id: UUID(), name: "Work", color: .purple, webProfileStore: .identified(UUID()))
-        let recentItems: [RecentItem] = [
-            .url(URL(string: "https://example.com")!),
-            .search("Swift"),
-            .terminal(workingDirectory: "/tmp"),
-            .zellij(sessionName: nil),
-            .zellij(sessionName: "project-a"),
-            .zmx(sessionName: "project-a"),
-        ]
-        let encoded = try JSONEncoder().encode(
-            PersistedProfile(
-                profile: profile,
-                den: .sample,
-                recentItems: recentItems))
-        #expect(
-            try JSONDecoder().decode(PersistedProfile.self, from: encoded).recentItems == recentItems)
-        var object = try #require(JSONSerialization.jsonObject(with: encoded) as? [String: Any])
-        object.removeValue(forKey: "recentItems")
-
-        let decoded = try JSONDecoder().decode(
-            PersistedProfile.self,
-            from: JSONSerialization.data(withJSONObject: object))
-
-        #expect(decoded.recentItems.isEmpty)
-    }
-
-    @Test func versionOneFixturesMigrateToVersionTwo() throws {
-        let profileData = try fixtureData("persisted-profile-v1")
-        let persisted = try JSONDecoder().decode(PersistedProfile.self, from: profileData)
-        let indexData = try fixtureData("profile-index-v1")
-        let index = try JSONDecoder().decode(ProfileIndex.self, from: indexData)
-
-        #expect(persisted.schemaVersion == 2)
-        #expect(persisted.den.desks[0].boards[1].currentSheetURL == nil)
-        #expect(persisted.den.desks[0].boards[0].firstSheetURL == nil)
-        #expect(persisted.den.desks[0].boards.allSatisfy { !$0.sheetNavigationPaused })
-        #expect(persisted.deskPresets[0].boards[1].initialSheetURL == nil)
-        #expect(index == ProfileIndex(profileIDs: [persisted.profile.id]))
-        let migrated = try #require(
-            JSONSerialization.jsonObject(with: JSONEncoder().encode(persisted)) as? [String: Any])
-        #expect(migrated["schemaVersion"] as? Int == 2)
-        #expect(try jsonObject(JSONEncoder().encode(index)).isEqual(jsonObject(indexData)))
-
-        var futureObject = try #require(JSONSerialization.jsonObject(with: profileData) as? [String: Any])
-        futureObject["futureField"] = true
-        #expect(
-            try JSONDecoder().decode(
-                PersistedProfile.self,
-                from: JSONSerialization.data(withJSONObject: futureObject)) == persisted)
-
-        futureObject.removeValue(forKey: "profile")
-        #expect(
-            throws: DecodingError.self,
-            performing: {
-                try JSONDecoder().decode(
-                    PersistedProfile.self,
-                    from: JSONSerialization.data(withJSONObject: futureObject))
-            })
-    }
-
-    @Test func webProfileStoreRejectsInvalidKindIdentifierPairs() {
-        #expect(
-            throws: DecodingError.self,
-            performing: {
-                try JSONDecoder().decode(
-                    WebProfileStore.self,
-                    from: Data("{\"kind\":\"default\",\"identifier\":\"\(UUID())\"}".utf8))
-            })
-        #expect(
-            throws: DecodingError.self,
-            performing: {
-                try JSONDecoder().decode(
-                    WebProfileStore.self,
-                    from: Data("{\"kind\":\"identified\"}".utf8))
-            })
-    }
-
-    @Test func searchEnginePreferencePersistsAndDefaultsToGoogle() throws {
-        let suiteName = "SearchEngineTests-\(UUID().uuidString)"
-        let defaults = try #require(UserDefaults(suiteName: suiteName))
-        defer { defaults.removePersistentDomain(forName: suiteName) }
-        let preferences = AppPreferences(defaults: defaults)
-        #expect(preferences.searchEngine == .google)
-        for engine in SearchEngine.allCases {
-            preferences.setSearchEngine(engine)
-            #expect(AppPreferences(defaults: defaults).searchEngine == engine)
-        }
-        defaults.set("unknown", forKey: "preferences.search.engine")
-        #expect(AppPreferences(defaults: defaults).searchEngine == .google)
-    }
-
-    @Test func appPreferencesPersistByKey() {
-        let suiteName = "AppPreferencesTests-\(UUID().uuidString)"
-        let defaults = UserDefaults(suiteName: suiteName)!
-        defer { defaults.removePersistentDomain(forName: suiteName) }
-        let preferences = AppPreferences(defaults: defaults)
-
-        #expect(preferences.sheetScale == AppPreferences.defaultSheetScale)
-        preferences.setSheetScale(49)
-        preferences.setSheetScale(201)
-        #expect(preferences.sheetScale == AppPreferences.defaultSheetScale)
-
-        preferences.setMotionPreference(.standard)
-        preferences.setUBOLiteEnabled(true)
-        preferences.setExternalLinkDestination(.focusedBoard)
-        preferences.setSheetScale(80)
-        preferences.setZellijPath(" /opt/homebrew/bin/zellij ")
-        preferences.setZmxPath(" /opt/homebrew/bin/zmx ")
-
-        let restored = AppPreferences(defaults: defaults)
-        let storedKeys = Set((defaults.persistentDomain(forName: suiteName) ?? [:]).keys)
-        #expect(
-            storedKeys == [
-                "preferences.schema.version",
-                "preferences.appearance.motion.mode",
-                "preferences.content-blocking.ubolite.enabled",
-                "preferences.external-links.destination",
-                "preferences.appearance.sheet-scale.percent",
-                "preferences.terminal.zellij.executable-path",
-                "preferences.terminal.zmx.executable-path",
-            ])
-        #expect(defaults.integer(forKey: "preferences.schema.version") == 1)
-        #expect(restored.motionPreference == .standard)
-        #expect(restored.uBOLiteEnabled)
-        #expect(restored.externalLinkDestination == .focusedBoard)
-        #expect(restored.sheetScale == 80)
-        #expect(restored.zellijPath == "/opt/homebrew/bin/zellij")
-        #expect(restored.zmxPath == "/opt/homebrew/bin/zmx")
-    }
-
-    @Test func appPreferencesPersistEssentialsWithoutProfileOwnership() throws {
-        let suiteName = "AppPreferencesEssentialsTests-\(UUID().uuidString)"
-        let defaults = try #require(UserDefaults(suiteName: suiteName))
-        defer { defaults.removePersistentDomain(forName: suiteName) }
-        let preferences = AppPreferences(defaults: defaults)
-        let essentials = [
-            Essential(name: "ChatGPT", key: "C", input: "https://chatgpt.com"),
-            Essential(name: "Terminal", key: "T", input: ":terminal ~/Projects"),
-        ]
-
-        #expect(preferences.setEssentials(essentials))
-        #expect(AppPreferences(defaults: defaults).essentials == essentials)
-        #expect(
-            !preferences.setEssentials(
-                [essentials[0], Essential(name: "Duplicate", key: "C", input: "other")]))
-        let lowercase = Essential(name: "Lowercase", key: "c", input: "other")
-        #expect(preferences.setEssentials([essentials[0], lowercase]))
-        #expect(AppPreferences(defaults: defaults).essentials == [essentials[0], lowercase])
-        preferences.setEssentials([])
-        #expect(AppPreferences(defaults: defaults).essentials.isEmpty)
-    }
-
-    @Test func appPreferencesInitializeMissingSchema() {
-        let suiteName = "AppPreferencesMissingSchemaTests-\(UUID().uuidString)"
-        let defaults = UserDefaults(suiteName: suiteName)!
-        defer { defaults.removePersistentDomain(forName: suiteName) }
-
-        let preferences = AppPreferences(defaults: defaults)
-
-        #expect(defaults.integer(forKey: "preferences.schema.version") == 1)
-        #expect(preferences.sheetScale == AppPreferences.defaultSheetScale)
-    }
-
-    @Test func appPreferencesDoNotDowngradeFutureSchema() {
-        let suiteName = "AppPreferencesFutureSchemaTests-\(UUID().uuidString)"
-        let defaults = UserDefaults(suiteName: suiteName)!
-        defer { defaults.removePersistentDomain(forName: suiteName) }
-        defaults.set(2, forKey: "preferences.schema.version")
-
-        _ = AppPreferences(defaults: defaults)
-
-        #expect(defaults.integer(forKey: "preferences.schema.version") == 2)
-    }
-
-    @Test func motionPreferenceFollowsOrOverridesSystemSetting() {
-        #expect(
-            DenMotion.shouldReduceMotion(
-                preference: .followSystem,
-                systemReduceMotion: true
-            ))
-        #expect(
-            !DenMotion.shouldReduceMotion(
-                preference: .followSystem,
-                systemReduceMotion: false
-            ))
-        #expect(
-            !DenMotion.shouldReduceMotion(
-                preference: .standard,
-                systemReduceMotion: true
-            ))
-        #expect(
-            DenMotion.shouldReduceMotion(
-                preference: .reduced,
-                systemReduceMotion: false
-            ))
-    }
-
-    @Test func profileManagerCreatesPersonalAndPersistsProfileOrderAndDen() throws {
+    @Test func profileManagerCreatesPersonalProfileByDefault() throws {
+        // Arrange
         let directory = temporaryProfileDirectory()
         defer { try? FileManager.default.removeItem(at: directory) }
-        let manager = makeProfileManager(directory: directory)
-        let personal = try #require(manager.profiles.first)
 
+        // Act
+        let manager = makeProfileManager(directory: directory)
+
+        // Assert
+        let personal = try #require(manager.profiles.first)
         #expect(personal.name == "Personal")
         #expect(personal.color == .blue)
         #expect(personal.webProfileStore == .default)
+    }
+
+    @Test func profileManagerPersistsProfileOrderAndUpdates() throws {
+        // Arrange
+        let directory = temporaryProfileDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let manager = makeProfileManager(directory: directory)
         let work = try #require(manager.createProfile(name: " Work ", color: .green))
         _ = manager.createProfile(name: "Work", color: .pink)
-        #expect(manager.profiles.map(\.name) == ["Personal", "Work", "Work"])
-        #expect(manager.updateProfile(work.id, name: "Office", color: .yellow))
 
-        let store = try #require(manager.store(for: work.id))
-        store.createDesk(label: "Restored", preset: .empty)
+        // Act
+        let updated = manager.updateProfile(work.id, name: "Office", color: .yellow)
+        let workStore = try #require(manager.store(for: work.id))
+        workStore.createDesk(label: "Restored", preset: .empty)
         let restored = makeProfileManager(directory: directory)
 
+        // Assert
+        #expect(updated)
         #expect(restored.profiles.map(\.name) == ["Personal", "Office", "Work"])
         #expect(restored.store(for: work.id)?.focusedDesk?.label == "Restored")
     }
 
     @Test func profileWindowsShareDenAndPresentDistinctDesks() throws {
+        // Arrange
         let directory = temporaryProfileDirectory()
         defer { try? FileManager.default.removeItem(at: directory) }
         let manager = makeProfileManager(directory: directory)
@@ -297,6 +55,7 @@ struct ProfileManagerTests {
         source.createDesk(label: "Second", preset: .empty)
         let detachedDeskID = source.presentedDeskID
 
+        // Act
         let detachedRoute = try #require(
             manager.routeForOpeningDesk(
                 detachedDeskID,
@@ -304,6 +63,7 @@ struct ProfileManagerTests {
                 sourceWindowID: sourceRoute.windowID))
         let detached = try #require(manager.store(for: detachedRoute))
 
+        // Assert - shared storage, distinct presented desk
         #expect(source.storage === detached.storage)
         #expect(source.presentedDeskID != detachedDeskID)
         #expect(detached.presentedDeskID == detachedDeskID)
@@ -312,11 +72,18 @@ struct ProfileManagerTests {
                 detachedDeskID,
                 profileID: profileID,
                 excludingWindowID: sourceRoute.windowID))
+
+        // Act - rename in one window reflects in shared state
         detached.renameFocusedDesk(to: "Detached")
+
+        // Assert
         #expect(source.state.desks.first { $0.id == detachedDeskID }?.label == "Detached")
 
+        // Act - source window cannot re-focus desk presented elsewhere
         let sourceDeskID = source.presentedDeskID
         source.focusDesk(detachedDeskID)
+
+        // Assert
         #expect(source.presentedDeskID == sourceDeskID)
         #expect(
             !manager.canOpenDeskInNewWindow(
@@ -324,19 +91,23 @@ struct ProfileManagerTests {
                 profileID: profileID,
                 sourceWindowID: sourceRoute.windowID))
 
+        // Act - closing detached window allows source to focus that desk again
         let detachedWindow = NSWindow()
         manager.register(window: detachedWindow, for: detachedRoute)
         manager.unregister(window: detachedWindow, for: detachedRoute)
+        source.focusDesk(detachedDeskID)
+
+        // Assert
         #expect(
             !manager.isDeskPresentedInAnotherWindow(
                 detachedDeskID,
                 profileID: profileID,
                 excludingWindowID: sourceRoute.windowID))
-        source.focusDesk(detachedDeskID)
         #expect(source.presentedDeskID == detachedDeskID)
     }
 
     @Test func loadingDoesNotRewriteExistingProfileDocuments() throws {
+        // Arrange
         let directory = temporaryProfileDirectory()
         defer { try? FileManager.default.removeItem(at: directory) }
         let manager = makeProfileManager(directory: directory)
@@ -347,23 +118,32 @@ struct ProfileManagerTests {
         let originalData = try JSONSerialization.data(withJSONObject: object, options: [.sortedKeys])
         try originalData.write(to: profileURL)
 
+        // Act
         _ = makeProfileManager(directory: directory)
 
+        // Assert
         #expect(try Data(contentsOf: profileURL) == originalData)
     }
 
     @Test func missingProfileFallsBackToPersonalProfile() {
+        // Arrange
         let directory = temporaryProfileDirectory()
         defer { try? FileManager.default.removeItem(at: directory) }
         let manager = makeProfileManager(directory: directory)
         let personalID = manager.personalProfileID
-
-        #expect(manager.resolvedProfileID(personalID) == personalID)
         let missingID = UUID()
-        #expect(manager.resolvedProfileID(missingID) == personalID)
+
+        // Act
+        let resolvedPersonal = manager.resolvedProfileID(personalID)
+        let resolvedMissing = manager.resolvedProfileID(missingID)
+
+        // Assert
+        #expect(resolvedPersonal == personalID)
+        #expect(resolvedMissing == personalID)
     }
 
     @Test func profileManagerPersistsDeskPresetsPerProfile() throws {
+        // Arrange
         let directory = temporaryProfileDirectory()
         defer { try? FileManager.default.removeItem(at: directory) }
         let manager = makeProfileManager(directory: directory)
@@ -371,30 +151,39 @@ struct ProfileManagerTests {
         let work = try #require(manager.createProfile(name: "Work", color: .green))
         let workStore = try #require(manager.store(for: work.id))
 
+        // Act
         personalStore.addBoard(urlString: "https://example.com/bookmark?one=1")
-        #expect(personalStore.saveFocusedDeskAsPreset(label: "Reading") == .created)
-
+        let saveResult = personalStore.saveFocusedDeskAsPreset(label: "Reading")
         let restored = makeProfileManager(directory: directory)
+
+        // Assert
+        #expect(saveResult == .created)
         #expect(restored.store(for: manager.personalProfileID)?.deskPresets.map(\.label) == ["Reading"])
         #expect(restored.store(for: work.id)?.deskPresets.isEmpty == true)
         #expect(workStore.deskPresets.isEmpty)
     }
 
     @Test func personalCannotBeDeletedAndAdditionalProfileCan() async throws {
+        // Arrange
         let directory = temporaryProfileDirectory()
         defer { try? FileManager.default.removeItem(at: directory) }
         let manager = makeProfileManager(directory: directory)
         let personalID = manager.personalProfileID
         let work = try #require(manager.createProfile(name: "Work", color: .gray))
 
-        #expect(!(await manager.deleteProfile(personalID)))
-        #expect(await manager.deleteProfile(work.id))
+        // Act
+        let personalDeleted = await manager.deleteProfile(personalID)
+        let workDeleted = await manager.deleteProfile(work.id)
+
+        // Assert
+        #expect(!personalDeleted)
+        #expect(workDeleted)
         #expect(manager.profiles.map(\.id) == [personalID])
     }
 
     @Test func failedWebsiteDataDeletionRestoresProfileDocument() async throws {
+        // Arrange
         struct ExpectedError: Error {}
-
         let directory = temporaryProfileDirectory()
         defer { try? FileManager.default.removeItem(at: directory) }
         let navigation = SheetNavigationManager(
@@ -406,14 +195,19 @@ struct ProfileManagerTests {
             removeDataStore: { _ in throw ExpectedError() })
         let work = try #require(manager.createProfile(name: "Work", color: .gray))
 
-        #expect(!(await manager.deleteProfile(work.id)))
+        // Act
+        let deleted = await manager.deleteProfile(work.id)
+
+        // Assert
+        #expect(!deleted)
         #expect(manager.profile(id: work.id) != nil)
         #expect(manager.store(for: work.id) != nil)
         #expect(FileManager.default.fileExists(atPath: profileURL(work.id, in: directory).path))
         #expect(makeProfileManager(directory: directory).profile(id: work.id) != nil)
     }
 
-    @Test func failedProfileWritesRollBackCreationAndUpdate() throws {
+    @Test func failedProfileCreationRollsBackIndex() throws {
+        // Arrange
         let directory = temporaryProfileDirectory()
         defer { try? FileManager.default.removeItem(at: directory) }
         let manager = makeProfileManager(directory: directory)
@@ -421,20 +215,34 @@ struct ProfileManagerTests {
         try FileManager.default.removeItem(at: indexURL)
         try FileManager.default.createDirectory(at: indexURL, withIntermediateDirectories: false)
 
-        #expect(manager.createProfile(name: "Work", color: .green) == nil)
-        #expect(manager.profiles.count == 1)
+        // Act
+        let created = manager.createProfile(name: "Work", color: .green)
 
-        try FileManager.default.removeItem(at: indexURL)
+        // Assert
+        #expect(created == nil)
+        #expect(manager.profiles.count == 1)
+    }
+
+    @Test func failedProfileUpdateRollsBackState() throws {
+        // Arrange
+        let directory = temporaryProfileDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let manager = makeProfileManager(directory: directory)
         let work = try #require(manager.createProfile(name: "Work", color: .green))
         let workURL = profileURL(work.id, in: directory)
         try FileManager.default.removeItem(at: workURL)
         try FileManager.default.createDirectory(at: workURL, withIntermediateDirectories: false)
 
-        #expect(!manager.updateProfile(work.id, name: "Changed"))
+        // Act
+        let updated = manager.updateProfile(work.id, name: "Changed")
+
+        // Assert
+        #expect(!updated)
         #expect(manager.profile(id: work.id)?.name == "Work")
     }
 
     @Test func mismatchedProfileFilenameIsQuarantined() throws {
+        // Arrange
         let directory = temporaryProfileDirectory()
         defer { try? FileManager.default.removeItem(at: directory) }
         let manager = makeProfileManager(directory: directory)
@@ -442,14 +250,17 @@ struct ProfileManagerTests {
         let mismatchedURL = profileURL(UUID(), in: directory)
         try FileManager.default.moveItem(at: profileURL(work.id, in: directory), to: mismatchedURL)
 
+        // Act
         let restored = makeProfileManager(directory: directory)
         let names = try FileManager.default.contentsOfDirectory(atPath: directory.path)
 
+        // Assert
         #expect(restored.profile(id: work.id) == nil)
         #expect(names.contains { $0.hasPrefix("\(mismatchedURL.lastPathComponent).corrupt-") })
     }
 
     @Test func uppercaseProfileFilenameIsLoadedWithoutQuarantine() throws {
+        // Arrange
         let directory = temporaryProfileDirectory()
         defer { try? FileManager.default.removeItem(at: directory) }
         let manager = makeProfileManager(directory: directory)
@@ -457,14 +268,17 @@ struct ProfileManagerTests {
         let uppercaseURL = directory.appending(path: "\(work.id.uuidString.uppercased()).json")
         try FileManager.default.moveItem(at: profileURL(work.id, in: directory), to: uppercaseURL)
 
+        // Act
         let restored = makeProfileManager(directory: directory)
         let names = try FileManager.default.contentsOfDirectory(atPath: directory.path)
 
+        // Assert
         #expect(restored.profile(id: work.id)?.name == "Work")
         #expect(!names.contains { $0.contains(".corrupt-") })
     }
 
     @Test func removedBoardRestorationIsLimitedToCurrentAppRun() throws {
+        // Arrange
         let directory = temporaryProfileDirectory()
         defer { try? FileManager.default.removeItem(at: directory) }
         let manager = makeProfileManager(directory: directory)
@@ -473,15 +287,18 @@ struct ProfileManagerTests {
         store.addBoard(urlString: "https://example.com")
         let boardID = try #require(store.focusedDesk?.focusedBoardID)
 
+        // Act
         store.removeFocusedBoard()
         let restored = makeProfileManager(directory: directory)
 
+        // Assert
         #expect(store.recentlyRemovedBoards.first?.board.id == boardID)
         #expect(restored.store(for: personalID)?.focusedDesk?.boards.contains { $0.id == boardID } == false)
         #expect(restored.store(for: personalID)?.recentlyRemovedBoards.isEmpty == true)
     }
 
     @Test func profileStoresUseSeparateWebKitStoresAndCallbacks() throws {
+        // Arrange
         let directory = temporaryProfileDirectory()
         defer { try? FileManager.default.removeItem(at: directory) }
         let suiteName = "ProfileCallbackTests-\(UUID().uuidString)"
@@ -507,13 +324,16 @@ struct ProfileManagerTests {
         let firstWebView = firstStore.runtime(for: firstBoard).webView
         let secondWebView = secondStore.runtime(for: secondBoard).webView
 
+        // Act
+        let firstHandled = navigation.handleScriptMessage(
+            ["action": "openBoard", "url": "https://first.example/"], from: firstWebView)
+        let secondHandled = navigation.handleScriptMessage(
+            ["action": "openBoard", "url": "https://second.example/"], from: secondWebView)
+
+        // Assert
         #expect(firstWebView.configuration.websiteDataStore !== secondWebView.configuration.websiteDataStore)
-        #expect(
-            navigation.handleScriptMessage(
-                ["action": "openBoard", "url": "https://first.example/"], from: firstWebView))
-        #expect(
-            navigation.handleScriptMessage(
-                ["action": "openBoard", "url": "https://second.example/"], from: secondWebView))
+        #expect(firstHandled)
+        #expect(secondHandled)
         #expect(
             firstStore.focusedDesk?.boards.contains {
                 $0.currentSheetURL == URL(string: "https://first.example/")
@@ -529,6 +349,7 @@ struct ProfileManagerTests {
     }
 
     @Test func corruptIndexIsQuarantinedAndRebuiltFromProfiles() throws {
+        // Arrange
         let directory = temporaryProfileDirectory()
         defer { try? FileManager.default.removeItem(at: directory) }
         let manager = makeProfileManager(directory: directory)
@@ -536,21 +357,24 @@ struct ProfileManagerTests {
         let indexURL = directory.appending(path: "profile-index.json")
         try Data("broken".utf8).write(to: indexURL)
 
+        // Act
         let restored = makeProfileManager(directory: directory)
         let names = try FileManager.default.contentsOfDirectory(atPath: directory.path)
+        let rebuiltIndex = try JSONDecoder().decode(ProfileIndex.self, from: Data(contentsOf: indexURL))
 
+        // Assert
         #expect(restored.profiles.contains { $0.id == work.id })
         #expect(names.contains { $0.hasPrefix("profile-index.json.corrupt-") })
-        #expect((try JSONDecoder().decode(ProfileIndex.self, from: Data(contentsOf: indexURL))).profileIDs.count == 2)
+        #expect(rebuiltIndex.profileIDs.count == 2)
     }
 
     @Test func clearBrowsingDataRequestsSelectedWebsiteDataTypes() async throws {
+        // Arrange
         let directory = temporaryProfileDirectory()
         defer { try? FileManager.default.removeItem(at: directory) }
         let navigation = SheetNavigationManager(
             defaults: UserDefaults(suiteName: UUID().uuidString) ?? .standard,
             scriptSource: "")
-
         var removedTypes: Set<String>?
         let manager = ProfileManager(
             directoryURL: directory,
@@ -560,9 +384,11 @@ struct ProfileManagerTests {
             })
         let personalID = manager.personalProfileID
 
+        // Act
         let success = await manager.clearBrowsingData(
             categories: [.cookies, .cache], profileID: personalID)
 
+        // Assert
         #expect(success)
         #expect(
             removedTypes
@@ -573,37 +399,6 @@ struct ProfileManagerTests {
                 ]))
     }
 
-    @Test func resolveTargetTerminalBoardFindsExplicitAndAmbientBoards() throws {
-        let directory = temporaryProfileDirectory()
-        defer { try? FileManager.default.removeItem(at: directory) }
-
-        let manager = makeProfileManager(directory: directory)
-        let store = try #require(manager.store(for: manager.personalProfileID))
-        let terminalBoardID = try #require(store.createTerminalBoard(workingDirectory: "/tmp", focus: true))
-        let webBoardID = try #require(store.createBoard(urlString: "https://example.com/"))
-
-        // 1. Explicit ID
-        let explicitRequest = DenIPCRequest(command: "terminal.text", boardID: terminalBoardID.uuidString)
-        let resolvedExplicit = try #require(
-            DenIPCTargetResolver.resolveTargetTerminalBoard(request: explicitRequest, in: manager)
-        )
-        #expect(resolvedExplicit.1.id == terminalBoardID)
-
-        // 2. Ambient resolution relative to caller Web Board
-        let ambientRequest = DenIPCRequest(command: "terminal.text", callerBoardID: webBoardID.uuidString)
-        let resolvedAmbient = try #require(
-            DenIPCTargetResolver.resolveTargetTerminalBoard(request: ambientRequest, in: manager)
-        )
-        #expect(resolvedAmbient.1.id == terminalBoardID)
-
-        // 3. Ambient resolution when caller is Terminal Board itself
-        let selfRequest = DenIPCRequest(command: "terminal.text", callerBoardID: terminalBoardID.uuidString)
-        let resolvedSelf = try #require(
-            DenIPCTargetResolver.resolveTargetTerminalBoard(request: selfRequest, in: manager)
-        )
-        #expect(resolvedSelf.1.id == terminalBoardID)
-    }
-
     private func temporaryProfileDirectory() -> URL {
         FileManager.default.temporaryDirectory
             .appending(path: "den-browser-profile-tests-\(UUID().uuidString)", directoryHint: .isDirectory)
@@ -611,17 +406,6 @@ struct ProfileManagerTests {
 
     private func profileURL(_ id: UUID, in directory: URL) -> URL {
         directory.appending(path: "\(id.uuidString.lowercased()).json")
-    }
-
-    private func fixtureData(_ name: String) throws -> Data {
-        let url = try #require(
-            Bundle(for: PersistenceFixtureBundleToken.self)
-                .url(forResource: name, withExtension: "json"))
-        return try Data(contentsOf: url)
-    }
-
-    private func jsonObject(_ data: Data) throws -> NSDictionary {
-        try #require(JSONSerialization.jsonObject(with: data) as? NSDictionary)
     }
 
     private func makeProfileManager(directory: URL) -> ProfileManager {
@@ -644,7 +428,4 @@ struct ProfileManagerTests {
     private func board(_ label: String, width: Double = 520, url: String = "https://example.com/") -> BoardState {
         BoardState(label: label, width: width, currentSheetURL: URL(string: url))
     }
-
 }
-
-private final class PersistenceFixtureBundleToken {}

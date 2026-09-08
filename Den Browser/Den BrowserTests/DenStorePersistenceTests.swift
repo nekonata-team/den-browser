@@ -8,9 +8,10 @@ import Testing
 @Suite(.serialized)
 struct DenStorePersistenceTests {
 
-    @Test func sheetScaleAppliesToNewAndLiveBoardRuntimes() {
+    @Test func sheetScaleAppliesToNewBoardRuntime() throws {
+        // Arrange
         let suiteName = "SheetScaleTests-\(UUID())"
-        let defaults = UserDefaults(suiteName: suiteName)!
+        let defaults = try #require(UserDefaults(suiteName: suiteName))
         defer { defaults.removePersistentDomain(forName: suiteName) }
         let preferences = AppPreferences(defaults: defaults)
         preferences.setSheetScale(80)
@@ -22,26 +23,54 @@ struct DenStorePersistenceTests {
             sheetNavigation: sheetNavigation,
             preferences: preferences)
 
+        // Act
         let runtime = store.runtime(for: board)
-        #expect(runtime.webView.pageZoom == 0.8)
 
+        // Assert
+        #expect(runtime.webView.pageZoom == 0.8)
+    }
+
+    @Test func sheetScaleAppliesToLiveBoardRuntime() throws {
+        // Arrange
+        let suiteName = "SheetScaleLiveTests-\(UUID())"
+        let defaults = try #require(UserDefaults(suiteName: suiteName))
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let preferences = AppPreferences(defaults: defaults)
+        preferences.setSheetScale(80)
+        let sheetNavigation = SheetNavigationManager(defaults: defaults)
+        let board = board("Board")
+        let source = desk("Desk", boards: [board], focusedBoardID: board.id)
+        let store = DenStore(
+            state: DenState(desks: [source], focusedDeskID: source.id),
+            sheetNavigation: sheetNavigation,
+            preferences: preferences)
+        let runtime = store.runtime(for: board)
         preferences.setSheetScale(90)
+
+        // Act
         store.applySheetScale(preferences.sheetScale)
+
+        // Assert
         #expect(runtime.webView.pageZoom == 0.9)
     }
 
     @Test func emptyPersistedDenRecoversAndSavesOneDesk() {
+        // Arrange
         var savedState: DenState?
+
+        // Act
         let store = DenStore(
             state: DenState(desks: [], focusedDeskID: UUID()),
             onSave: { savedState = $0 })
 
+        // Assert
         #expect(store.state.desks.count == 1)
         #expect(store.focusedDesk != nil)
         #expect(savedState == store.state)
     }
 
     @Test func persistedStateRestoresDeskAndBoardDataAndFocus() throws {
+        // Arrange
         let firstBoards = [
             board("One", width: 440, url: "https://one.example/path"),
             board("Two", width: 760, url: "https://two.example/"),
@@ -54,9 +83,11 @@ struct DenStorePersistenceTests {
             persistedState = $0
         }
 
+        // Act
         writer.focusDesk(first.id)
-        let restored = try #require(persistedState)
 
+        // Assert
+        let restored = try #require(persistedState)
         #expect(restored == writer.state)
         #expect(restored.desks.map(\.id) == [first.id, second.id])
         #expect(restored.desks[0].boards.map(\.id) == firstBoards.map(\.id))
@@ -72,17 +103,34 @@ struct DenStorePersistenceTests {
     }
 
     @Test func persistedStateRestoresDeskScrollOffset() throws {
+        // Arrange
         let first = desk("First", boards: [board("One")])
         var persistedState: DenState?
         let writer = DenStore(state: DenState(desks: [first], focusedDeskID: first.id)) {
             persistedState = $0
         }
 
+        // Act
         writer.saveDeskScrollOffset(350.0, for: first.id)
+
+        // Assert
         let restored = try #require(persistedState)
         #expect(restored.desks[0].scrollOffsetX == 350.0)
+    }
 
+    @Test func persistedStateClearsDeskScrollOffset() throws {
+        // Arrange
+        let first = desk("First", boards: [board("One")])
+        var persistedState: DenState?
+        let writer = DenStore(state: DenState(desks: [first], focusedDeskID: first.id)) {
+            persistedState = $0
+        }
+        writer.saveDeskScrollOffset(350.0, for: first.id)
+
+        // Act
         writer.saveDeskScrollOffset(nil, for: first.id)
+
+        // Assert
         let cleared = try #require(persistedState)
         #expect(cleared.desks[0].scrollOffsetX == nil)
     }

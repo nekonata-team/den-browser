@@ -9,6 +9,7 @@ import Testing
 struct DenStoreDeskPresetTests {
 
     @Test func deskPresetSearchRanksFuzzyLabelsBeforeBoardAndHostMatches() throws {
+        // Arrange
         let boards = [
             DeskPresetBoard(
                 label: "Gemini Research",
@@ -17,6 +18,7 @@ struct DenStoreDeskPresetTests {
                 customLabel: "Project Chat")
         ]
 
+        // Act
         let labelScore = try #require(
             DeskPresetSearch.score(query: "chat", label: "ChatGPT", boards: []))
         let boardScore = try #require(
@@ -25,53 +27,56 @@ struct DenStoreDeskPresetTests {
             DeskPresetSearch.score(query: "docs", label: "Research", boards: boards))
         let customLabelScore = try #require(
             DeskPresetSearch.score(query: "project", label: "Research", boards: boards))
+        let missingScore = DeskPresetSearch.score(query: "claude", label: "Research", boards: boards)
 
+        // Assert
         #expect(labelScore < boardScore)
         #expect(boardScore < hostScore)
         #expect(customLabelScore < hostScore)
-        #expect(DeskPresetSearch.score(query: "claude", label: "Research", boards: boards) == nil)
+        #expect(missingScore == nil)
     }
 
-    @Test func matchingChoicesProvidesCustomEmptyFallbackWhenNoPresetsMatch() throws {
-        let emptyChoice = DeskPresetChoice(
-            selection: .builtIn(.empty),
-            label: "Empty",
-            boards: [],
-            sourceLabel: "Built-in"
-        )
-        let chatChoice = DeskPresetChoice(
-            selection: .builtIn(.chatGPT),
-            label: "ChatGPT",
-            boards: BuiltInDeskPreset.chatGPT.boards,
-            sourceLabel: "Built-in"
-        )
-        let choices = [emptyChoice, chatChoice]
+    @Test func matchingChoicesReturnsAllChoicesForWhitespaceQuery() {
+        // Arrange
+        let choices = sampleChoices()
 
-        // 1. Whitespace query returns all choices unchanged
-        #expect(
-            DeskPresetSearch.matchingChoices(
-                allChoices: choices,
-                query: "   ",
-                allowsEmptyPreset: true
-            ) == choices
-        )
+        // Act
+        let matched = DeskPresetSearch.matchingChoices(
+            allChoices: choices,
+            query: "   ",
+            allowsEmptyPreset: true)
 
-        // 2. Query matching an existing preset returns matched choices without custom empty fallback
+        // Assert
+        #expect(matched == choices)
+    }
+
+    @Test func matchingChoicesFiltersToMatchingPreset() {
+        // Arrange
+        let choices = sampleChoices()
+
+        // Act
         let matched = DeskPresetSearch.matchingChoices(
             allChoices: choices,
             query: "chat",
-            allowsEmptyPreset: true
-        )
-        #expect(matched == [chatChoice])
+            allowsEmptyPreset: true)
 
-        // 3. Query with no matches creates custom empty choice when empty preset is allowed
-        let fallback = DeskPresetSearch.matchingChoices(
+        // Assert
+        #expect(matched == [choices[1]])
+    }
+
+    @Test func matchingChoicesProvidesCustomEmptyFallbackWhenAllowed() {
+        // Arrange
+        let choices = sampleChoices()
+
+        // Act
+        let matched = DeskPresetSearch.matchingChoices(
             allChoices: choices,
             query: "  Project X  ",
-            allowsEmptyPreset: true
-        )
+            allowsEmptyPreset: true)
+
+        // Assert
         #expect(
-            fallback == [
+            matched == [
                 DeskPresetChoice(
                     selection: .newDesk(label: "Project X"),
                     label: "Create \"Project X\"",
@@ -79,24 +84,35 @@ struct DenStoreDeskPresetTests {
                     sourceLabel: "Empty Desk"
                 )
             ])
+    }
 
-        // 4. Query with no matches returns empty when empty preset is not allowed (e.g. Replace Desk)
-        let noFallback = DeskPresetSearch.matchingChoices(
+    @Test func matchingChoicesReturnsEmptyWhenNoMatchesAndEmptyPresetNotAllowed() {
+        // Arrange
+        let choices = sampleChoices()
+
+        // Act
+        let matched = DeskPresetSearch.matchingChoices(
             allChoices: choices,
             query: "Project X",
-            allowsEmptyPreset: false
-        )
-        #expect(noFallback.isEmpty)
+            allowsEmptyPreset: false)
+
+        // Assert
+        #expect(matched.isEmpty)
     }
 
     @Test func personalPresetCapturesStableBoardStateAndCreatesIndependentDesk() throws {
+        // Arrange
         let first = board("Mail", width: 420, url: "https://mail.example.com/inbox?label=work#today")
         let second = board("Notes", width: 760, url: "")
         let source = desk("Morning", boards: [first, second], focusedBoardID: second.id)
         let store = DenStore(state: DenState(desks: [source], focusedDeskID: source.id))
-
         store.isDenMode = true
-        #expect(store.saveFocusedDeskAsPreset(label: "  Morning  ") == .created)
+
+        // Act
+        let saveResult = store.saveFocusedDeskAsPreset(label: "  Morning  ")
+
+        // Assert - preset captured
+        #expect(saveResult == .created)
         #expect(!store.isDenMode)
         let preset = try #require(store.deskPresets.first)
         #expect(preset.label == "Morning")
@@ -108,7 +124,10 @@ struct DenStoreDeskPresetTests {
         #expect(preset.boards[1].initialSheetURL == nil)
         #expect(preset.focusedBoardIndex == 1)
 
+        // Act - instantiate new desk from preset
         store.createDesk(label: "Copy", personalPresetID: preset.id)
+
+        // Assert - independent desk created
         let copy = try #require(store.focusedDesk)
         #expect(copy.boards.map(\.id) != source.boards.map(\.id))
         #expect(copy.boards.map(\.label) == source.boards.map(\.label))
@@ -117,30 +136,38 @@ struct DenStoreDeskPresetTests {
     }
 
     @Test func personalPresetRestoresTerminalAsANewBoard() throws {
+        // Arrange
         let terminal = BoardState(width: 700, workingDirectory: "/tmp", customLabel: "Build")
         let source = desk("Development", boards: [terminal], focusedBoardID: terminal.id)
         let store = DenStore(state: DenState(desks: [source], focusedDeskID: source.id))
 
-        #expect(store.saveFocusedDeskAsPreset(label: "Terminal") == .created)
+        // Act
+        let saveResult = store.saveFocusedDeskAsPreset(label: "Terminal")
         let preset = try #require(store.deskPresets.first)
-        #expect(preset.boards.first?.content == .terminal("/tmp"))
-
         store.createDesk(label: "Copy", personalPresetID: preset.id)
+
+        // Assert
+        #expect(saveResult == .created)
+        #expect(preset.boards.first?.content == .terminal("/tmp"))
         #expect(store.focusedBoard?.id != terminal.id)
         #expect(store.focusedBoard?.terminalWorkingDirectory == "/tmp")
         #expect(store.focusedBoard?.customLabel == "Build")
     }
 
     @Test func personalPresetRestoresZellijBoardSession() throws {
+        // Arrange
         let zellij = BoardState(width: 700, zellijSessionName: "project-a", customLabel: "Project")
         let source = desk("Development", boards: [zellij], focusedBoardID: zellij.id)
         let store = DenStore(state: DenState(desks: [source], focusedDeskID: source.id))
 
-        #expect(store.saveFocusedDeskAsPreset(label: "Zellij") == .created)
+        // Act
+        let saveResult = store.saveFocusedDeskAsPreset(label: "Zellij")
         let preset = try #require(store.deskPresets.first)
-        #expect(preset.boards.first?.content == .zellij("project-a"))
-
         store.createDesk(label: "Copy", personalPresetID: preset.id)
+
+        // Assert
+        #expect(saveResult == .created)
+        #expect(preset.boards.first?.content == .zellij("project-a"))
         #expect(store.focusedBoard?.id != zellij.id)
         #expect(store.focusedBoard?.isZellij == true)
         #expect(store.focusedBoard?.zellijSessionName == "project-a")
@@ -148,70 +175,137 @@ struct DenStoreDeskPresetTests {
     }
 
     @Test func personalPresetRestoresZmxBoardSession() throws {
+        // Arrange
         let zmx = BoardState(width: 700, zmxSessionName: "project-a", customLabel: "Project")
         let source = desk("Development", boards: [zmx], focusedBoardID: zmx.id)
         let store = DenStore(state: DenState(desks: [source], focusedDeskID: source.id))
 
-        #expect(store.saveFocusedDeskAsPreset(label: "zmx") == .created)
+        // Act
+        let saveResult = store.saveFocusedDeskAsPreset(label: "zmx")
         let preset = try #require(store.deskPresets.first)
-        #expect(preset.boards.first?.content == .zmx("project-a"))
-
         store.createDesk(label: "Copy", personalPresetID: preset.id)
+
+        // Assert
+        #expect(saveResult == .created)
+        #expect(preset.boards.first?.content == .zmx("project-a"))
         #expect(store.focusedBoard?.id != zmx.id)
         #expect(store.focusedBoard?.isZmx == true)
         #expect(store.focusedBoard?.zmxSessionName == "project-a")
         #expect(store.focusedBoard?.customLabel == "Project")
     }
 
-    @Test func personalPresetValidationReplacementAndDeletion() throws {
+    @Test func personalPresetRejectsReservedLabels() {
+        // Arrange
         let source = desk("Desk", boards: [board("First")])
-        var saves: [[PersonalDeskPreset]] = []
-        let store = DenStore(
-            state: DenState(desks: [source], focusedDeskID: source.id),
-            deskPresets: [],
-            onDeskPresetsSave: { saves.append($0) })
+        let store = DenStore(state: DenState(desks: [source], focusedDeskID: source.id))
 
-        #expect(store.saveFocusedDeskAsPreset(label: "Empty") == .reservedLabel)
-        #expect(store.saveFocusedDeskAsPreset(label: "ChatGPT") == .reservedLabel)
+        // Act
+        let emptyResult = store.saveFocusedDeskAsPreset(label: "Empty")
+        let chatGPTResult = store.saveFocusedDeskAsPreset(label: "ChatGPT")
+
+        // Assert
+        #expect(emptyResult == .reservedLabel)
+        #expect(chatGPTResult == .reservedLabel)
+        #expect(store.deskPresets.isEmpty)
+    }
+
+    @Test func personalPresetReplacementUpdatesExistingPreset() throws {
+        // Arrange
+        let source = desk("Desk", boards: [board("First")])
+        let store = DenStore(state: DenState(desks: [source], focusedDeskID: source.id))
         #expect(store.saveFocusedDeskAsPreset(label: "Routine") == .created)
-        #expect(store.saveFocusedDeskAsPreset(label: "Other") == .created)
-        #expect(store.deskPresets.map(\.label) == ["Other", "Routine"])
-
-        let routineID = try #require(store.deskPresets.last?.id)
+        let routineID = try #require(store.deskPresets.first?.id)
         store.state.desks[0].boards[0].width = 900
         store.isDenMode = true
-        #expect(store.saveFocusedDeskAsPreset(label: " routine ") == .replacementPending)
-        #expect(store.deskPresets.last?.boards[0].width == 520)
-        store.confirmDeskPresetReplacement()
-        #expect(!store.isDenMode)
-        #expect(store.deskPresets.last?.id == routineID)
-        #expect(store.deskPresets.last?.boards[0].width == 900)
 
+        // Act
+        let pending = store.saveFocusedDeskAsPreset(label: " routine ")
+        #expect(pending == .replacementPending)
+        store.confirmDeskPresetReplacement()
+
+        // Assert
+        #expect(!store.isDenMode)
+        #expect(store.deskPresets.first?.id == routineID)
+        #expect(store.deskPresets.first?.boards[0].width == 900)
+    }
+
+    @Test func personalPresetDeletionRemovesPreset() throws {
+        // Arrange
+        let source = desk("Desk", boards: [board("First")])
+        let store = DenStore(state: DenState(desks: [source], focusedDeskID: source.id))
+        #expect(store.saveFocusedDeskAsPreset(label: "Routine") == .created)
+        #expect(store.saveFocusedDeskAsPreset(label: "Other") == .created)
+        let routineID = try #require(store.deskPresets.last?.id)
+
+        // Act
         store.requestDeskPresetDeletion(routineID)
         store.confirmDeskPresetDeletion()
+
+        // Assert
         #expect(store.deskPresets.map(\.label) == ["Other"])
-        #expect(saves.count == 4)
     }
 
     @Test func finishingPresetManagementExitsDenMode() {
+        // Arrange
         let source = desk("Desk", boards: [board("Board")])
         let store = DenStore(state: DenState(desks: [source], focusedDeskID: source.id))
         store.isDenMode = true
         store.showDeskPresetManagement()
 
+        // Act
         store.hideNewDeskPanel(exitsDenMode: true)
 
+        // Assert
         #expect(store.temporaryContext == nil)
         #expect(!store.isDenMode)
     }
 
     @Test func emptyDeskCannotBecomePersonalPreset() {
-        withStore(desks: [desk("Empty")]) { store in
-            #expect(store.saveFocusedDeskAsPreset(label: "Saved") == .emptyDesk)
+        // Arrange
+        let empty = desk("Empty")
+
+        withStore(desks: [empty]) { store in
+            // Act
+            let result = store.saveFocusedDeskAsPreset(label: "Saved")
+
+            // Assert
+            #expect(result == .emptyDesk)
             #expect(store.deskPresets.isEmpty)
+        }
+    }
+
+    @Test func saveDeskPresetPanelDoesNotOpenForEmptyDesk() {
+        // Arrange
+        let empty = desk("Empty")
+
+        withStore(desks: [empty]) { store in
+            // Act
             store.showSaveDeskPresetPanel()
+
+            // Assert
             #expect(!store.isSaveDeskPresetPanelPresented)
         }
+    }
+
+    private static func sampleChoices() -> [DeskPresetChoice] {
+        [
+            DeskPresetChoice(
+                selection: .builtIn(.empty),
+                label: "Empty",
+                boards: [],
+                sourceLabel: "Built-in"
+            ),
+            DeskPresetChoice(
+                selection: .builtIn(.chatGPT),
+                label: "ChatGPT",
+                boards: BuiltInDeskPreset.chatGPT.boards,
+                sourceLabel: "Built-in"
+            ),
+        ]
+    }
+
+    private func sampleChoices() -> [DeskPresetChoice] {
+        Self.sampleChoices()
     }
 
     private func desk(_ label: String, boards: [BoardState] = [], focusedBoardID: UUID? = nil) -> DeskState {

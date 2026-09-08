@@ -9,6 +9,7 @@ import Testing
 struct DenStoreOverviewTests {
 
     @Test func denCommandsAreSuspendedByOverview() throws {
+        // Arrange
         let first = board("First")
         let second = board("Second")
         try withStore(desks: [desk("Desk", boards: [first, second], focusedBoardID: first.id)]) { store in
@@ -17,9 +18,15 @@ struct DenStoreOverviewTests {
             let editLink = try #require(keyEvent("l", keyCode: 37))
             let removeBoard = try #require(keyEvent("w", keyCode: 13))
 
-            #expect(KeyboardController.handle(openBoard, store: store))
-            #expect(KeyboardController.handle(editLink, store: store))
-            #expect(KeyboardController.handle(removeBoard, store: store))
+            // Act
+            let openHandled = KeyboardController.handle(openBoard, store: store)
+            let editHandled = KeyboardController.handle(editLink, store: store)
+            let removeHandled = KeyboardController.handle(removeBoard, store: store)
+
+            // Assert
+            #expect(openHandled)
+            #expect(editHandled)
+            #expect(removeHandled)
             #expect(store.isOverviewPresented)
             #expect(!store.isOpenBoardPanelPresented)
             #expect(!store.isEditBoardLinkPanelPresented)
@@ -28,14 +35,17 @@ struct DenStoreOverviewTests {
     }
 
     @Test func temporaryContextsAreExclusiveAndClearOverviewSelection() {
+        // Arrange
         let board = board("Board")
         withStore(desks: [desk("Desk", boards: [board], focusedBoardID: board.id)]) { store in
             store.showOverview()
             #expect(store.temporaryContext == .overview)
             #expect(store.overviewSelectionBoardID == board.id)
 
+            // Act
             store.showOpenBoardPanel()
 
+            // Assert
             #expect(store.temporaryContext == .openBoard)
             #expect(store.overviewSelectionDeskID == nil)
             #expect(store.overviewSelectionBoardID == nil)
@@ -43,65 +53,144 @@ struct DenStoreOverviewTests {
         }
     }
 
-    @Test func overviewFilteringAndNavigation() {
+    @Test func overviewInitializesWithFirstBoardSelected() {
+        // Arrange
+        let googleBoard = board("Google", url: "https://google.com")
+        let desk1 = desk("Main", boards: [googleBoard], focusedBoardID: googleBoard.id)
+
+        // Act
+        withStore(desks: [desk1]) { store in
+            store.showOverview()
+
+            // Assert
+            #expect(store.overviewQuery == "")
+            #expect(store.overviewFilterPhase == .inactive)
+            #expect(store.overviewSelectionDeskID == desk1.id)
+            #expect(store.overviewSelectionBoardID == googleBoard.id)
+        }
+    }
+
+    @Test func overviewQuerySelectsFirstMatchingBoard() {
+        // Arrange
         let googleBoard = board("Google", url: "https://google.com")
         let githubBoard = board("GitHub", url: "https://github.com")
         let desk1 = desk("Main", boards: [googleBoard], focusedBoardID: googleBoard.id)
         let desk2 = desk("Dev", boards: [githubBoard], focusedBoardID: githubBoard.id)
 
         withStore(desks: [desk1, desk2]) { store in
-            // 1. Show overview
             store.showOverview()
-            #expect(store.overviewQuery == "")
-            #expect(store.overviewFilterPhase == .inactive)
-            #expect(store.overviewSelectionDeskID == desk1.id)
-            #expect(store.overviewSelectionBoardID == googleBoard.id)
 
-            // 2. Set query matching githubBoard
+            // Act
             store.setOverviewQuery("git")
+
+            // Assert
             #expect(store.overviewQuery == "git")
-            // Selection should jump to first matching board (githubBoard in desk2)
             #expect(store.overviewSelectionDeskID == desk2.id)
             #expect(store.overviewSelectionBoardID == githubBoard.id)
+        }
+    }
 
-            // 3. Re-set query matching googleBoard
+    @Test func overviewFilterMatchesCorrectBoards() {
+        // Arrange
+        let googleBoard = board("Google", url: "https://google.com")
+        let githubBoard = board("GitHub", url: "https://github.com")
+        let desk1 = desk("Main", boards: [googleBoard], focusedBoardID: googleBoard.id)
+        let desk2 = desk("Dev", boards: [githubBoard], focusedBoardID: githubBoard.id)
+
+        withStore(desks: [desk1, desk2]) { store in
+            store.showOverview()
+
+            // Act
             store.setOverviewQuery("oog")
+
+            // Assert
             #expect(store.overviewSelectionDeskID == desk1.id)
             #expect(store.overviewSelectionBoardID == googleBoard.id)
-
-            // 4. Test matchesOverviewFilter
             #expect(store.matchesOverviewFilter(googleBoard, in: desk1))
             #expect(!store.matchesOverviewFilter(githubBoard, in: desk2))
+        }
+    }
 
-            // 5. Non-matching query clears selection
+    @Test func overviewNonMatchingQueryClearsSelection() {
+        // Arrange
+        let googleBoard = board("Google", url: "https://google.com")
+        let desk1 = desk("Main", boards: [googleBoard], focusedBoardID: googleBoard.id)
+
+        withStore(desks: [desk1]) { store in
+            store.showOverview()
+
+            // Act
             store.setOverviewQuery("nonexistent")
+
+            // Assert
             #expect(store.overviewSelectionDeskID == nil)
             #expect(store.overviewSelectionBoardID == nil)
+        }
+    }
 
-            // 6. Enter filter mode, type query, and confirm it
+    @Test func overviewFilterModeConfirmsQueryAndEntersSelectingPhase() {
+        // Arrange
+        let googleBoard = board("Google", url: "https://google.com")
+        let desk1 = desk("Main", boards: [googleBoard], focusedBoardID: googleBoard.id)
+
+        withStore(desks: [desk1]) { store in
+            store.showOverview()
+
+            // Act
             store.enterOverviewFilterMode()
             #expect(store.overviewFilterPhase == .filtering)
-            store.setOverviewQuery("git")
+            store.setOverviewQuery("goog")
             store.confirmOverviewFilterQuery()
-            #expect(store.overviewFilterPhase == .selecting)
-            #expect(store.overviewQuery == "git")
 
-            // 7. Clear query in normal mode
+            // Assert
+            #expect(store.overviewFilterPhase == .selecting)
+            #expect(store.overviewQuery == "goog")
+        }
+    }
+
+    @Test func overviewClearQueryRestoresDefaultSelection() {
+        // Arrange
+        let googleBoard = board("Google", url: "https://google.com")
+        let githubBoard = board("GitHub", url: "https://github.com")
+        let desk1 = desk("Main", boards: [googleBoard], focusedBoardID: googleBoard.id)
+        let desk2 = desk("Dev", boards: [githubBoard], focusedBoardID: githubBoard.id)
+
+        withStore(desks: [desk1, desk2]) { store in
+            store.showOverview()
+            store.setOverviewQuery("git")
+
+            // Act
             store.clearOverviewQuery()
+
+            // Assert
             #expect(store.overviewQuery == "")
             #expect(store.overviewFilterPhase == .inactive)
             #expect(store.overviewSelectionDeskID == desk2.id)
             #expect(store.overviewSelectionBoardID == githubBoard.id)
+        }
+    }
 
-            // 8. Escape clears filter mode and query
+    @Test func overviewExitFilterModeClearsQueryAndPhase() {
+        // Arrange
+        let googleBoard = board("Google", url: "https://google.com")
+        let desk1 = desk("Main", boards: [googleBoard], focusedBoardID: googleBoard.id)
+
+        withStore(desks: [desk1]) { store in
+            store.showOverview()
             store.enterOverviewFilterMode()
+            store.setOverviewQuery("goog")
+
+            // Act
             store.exitOverviewFilterMode()
+
+            // Assert
             #expect(store.overviewFilterPhase == .inactive)
             #expect(store.overviewQuery == "")
         }
     }
 
     @Test func overviewBoardDragMovesAcrossDesksOnlyOnCommit() {
+        // Arrange
         let first = board("First")
         let second = board("Second")
         let third = board("Third")
@@ -113,9 +202,17 @@ struct DenStoreOverviewTests {
             onSave: { _ in saveCount += 1 })
         store.showOverview()
 
-        #expect(store.beginOverviewBoardDrag(second.id))
+        // Act - begin drag
+        let dragBegun = store.beginOverviewBoardDrag(second.id)
+
+        // Assert - drag begun without mutating order yet
+        #expect(dragBegun)
         #expect(store.state.desks[0].boards.map(\.id) == [first.id, second.id])
+
+        // Act - finish drag into target desk
         store.finishOverviewBoardDrag(second.id, toDeskID: other.id, at: 0)
+
+        // Assert - order committed
         #expect(store.state.desks[0].boards.map(\.id) == [first.id])
         #expect(store.state.desks[1].boards.map(\.id) == [second.id, third.id])
         #expect(store.overviewSelectionBoardID == second.id)
@@ -123,6 +220,7 @@ struct DenStoreOverviewTests {
     }
 
     @Test func overviewBoardDragCancellationLeavesEveryDeskUnchanged() {
+        // Arrange
         let first = board("First")
         let second = board("Second")
         let third = board("Third")
@@ -133,12 +231,13 @@ struct DenStoreOverviewTests {
             state: DenState(desks: [main, other], focusedDeskID: main.id),
             onSave: { _ in saveCount += 1 })
         store.showOverview()
-
         #expect(store.beginOverviewBoardDrag(first.id))
         store.moveOverviewSelectionBoardRight()
-        #expect(store.state.desks[0].boards.map(\.id) == [first.id, second.id])
+
+        // Act
         store.cancelOverviewBoardDrag()
 
+        // Assert
         #expect(store.state.desks[0].boards.map(\.id) == [first.id, second.id])
         #expect(store.state.desks[1].boards.map(\.id) == [third.id])
         #expect(store.activeDrag == nil)
@@ -146,17 +245,23 @@ struct DenStoreOverviewTests {
     }
 
     @Test func overviewBoardDragIsUnavailableWhileFiltering() {
+        // Arrange
         let first = board("First")
         let desk = desk("Desk", boards: [first], focusedBoardID: first.id)
         let store = DenStore(state: DenState(desks: [desk], focusedDeskID: desk.id))
         store.showOverview()
         store.setOverviewQuery("First")
 
-        #expect(!store.beginOverviewBoardDrag(first.id))
+        // Act
+        let begun = store.beginOverviewBoardDrag(first.id)
+
+        // Assert
+        #expect(!begun)
         #expect(store.activeDrag == nil)
     }
 
     @Test func overviewMovementActionsMoveSelectedBoardWithinAndAcrossDesks() {
+        // Arrange
         let first = board("First")
         let second = board("Second")
         let third = board("Third")
@@ -165,12 +270,18 @@ struct DenStoreOverviewTests {
         let store = DenStore(state: DenState(desks: [main, other], focusedDeskID: main.id))
         store.showOverview()
 
+        // Act - move within desk
         store.selectBoardInOverview(second.id)
         store.moveOverviewSelectionBoardLeft()
+
+        // Assert
         #expect(store.state.desks[0].boards.map(\.id) == [second.id, first.id])
         #expect(store.overviewSelectionBoardID == second.id)
 
+        // Act - move to next desk
         store.moveOverviewSelectionBoardToNextDesk()
+
+        // Assert
         #expect(store.state.desks[0].boards.map(\.id) == [first.id])
         #expect(store.state.desks[1].boards.map(\.id) == [third.id, second.id])
         #expect(store.overviewSelectionDeskID == other.id)
@@ -178,6 +289,7 @@ struct DenStoreOverviewTests {
     }
 
     @Test func enteringAnEmptyDeskFromOverviewLeavesOverview() {
+        // Arrange
         let board = board("Board")
         let main = desk("Main", boards: [board], focusedBoardID: board.id)
         let empty = desk("Empty")
@@ -185,8 +297,10 @@ struct DenStoreOverviewTests {
             state: DenState(desks: [main, empty], focusedDeskID: main.id))
         store.showOverview()
 
+        // Act
         store.enterOverviewDesk(empty.id)
 
+        // Assert
         #expect(store.presentedDeskID == empty.id)
         #expect(store.focusedDesk?.id == empty.id)
         #expect(store.focusedBoard == nil)
@@ -195,6 +309,7 @@ struct DenStoreOverviewTests {
     }
 
     @Test func removingSelectedBoardInOverviewUpdatesOverviewSelection() {
+        // Arrange
         let first = board("First")
         let second = board("Second")
         let third = board("Third")
@@ -203,8 +318,10 @@ struct DenStoreOverviewTests {
         store.showOverview()
         #expect(store.overviewSelectionBoardID == second.id)
 
+        // Act
         store.removeBoard(second.id)
 
+        // Assert
         #expect(store.state.desks[0].boards.map(\.id) == [first.id, third.id])
         #expect(store.overviewSelectionDeskID == main.id)
         #expect(store.overviewSelectionBoardID == third.id)
@@ -212,14 +329,17 @@ struct DenStoreOverviewTests {
     }
 
     @Test func removingOnlyBoardInDeskInOverviewLeavesDeskWithNilSelection() {
+        // Arrange
         let onlyBoard = board("Only")
         let main = desk("Main", boards: [onlyBoard], focusedBoardID: onlyBoard.id)
         let store = DenStore(state: DenState(desks: [main], focusedDeskID: main.id))
         store.showOverview()
         #expect(store.overviewSelectionBoardID == onlyBoard.id)
 
+        // Act
         store.removeBoard(onlyBoard.id)
 
+        // Assert
         #expect(store.state.desks[0].boards.isEmpty)
         #expect(store.overviewSelectionDeskID == main.id)
         #expect(store.overviewSelectionBoardID == nil)
