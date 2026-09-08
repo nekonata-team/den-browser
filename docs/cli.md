@@ -161,14 +161,8 @@ This equips the agent with the procedural knowledge in `.agents/skills/den/SKILL
 
 ## 6. Future Roadmap
 
-- **`den sheet`**:
-  - `den sheet back`, `den sheet forward`
-  - `den sheet screenshot [--output <path>]`
-  - `den sheet click <selector>`, `den sheet fill <selector> <text>`
 - **`den board`**:
-  - `den board remove [<id>]`
   - `den board focus <id>`
-  - `den board new-terminal [<path>]`
 - **`den desk`**:
   - `den desk switch <id|label>`
   - `den desk new [<label>]`
@@ -176,4 +170,5 @@ This equips the agent with the procedural knowledge in `.agents/skills/den/SKILL
   - `den drawer list`
   - `den drawer add <url>`
 - **`den terminal`**:
+  - `den terminal new [<path>]`
   - `den terminal send <text>`
