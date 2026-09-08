@@ -25,6 +25,14 @@ brew install --cask nekonata-team/tap/den-browser
 
 Upgrade with `brew upgrade --cask den-browser`.
 
+### Agent Skill
+
+Coding agents (Claude Code, Cursor, etc.) can drive adjacent Web Boards via the bundled CLI:
+
+```sh
+npx skills add nekonata-team/den-browser --skill den
+```
+
 ## Core model
 
 - **Profile**: An isolated web identity with its own sign-ins, site data, and
@@ -78,6 +86,7 @@ These commands disable code signing. Run `just --list` for the available tasks.
 - [docs/shortcuts.md](./docs/shortcuts.md): Den Mode keyboard commands
 - [docs/desk-presets.md](./docs/desk-presets.md): Desk Preset behavior
 - [docs/vim.md](./docs/vim.md): Vim-style Sheet Navigation
+- [docs/cli.md](./docs/cli.md): CLI reference and agent skill integration
 - [docs/architecture.md](./docs/architecture.md): source organization and boundaries
 - [docs/testing.md](./docs/testing.md): automated and exploratory validation
 - [docs/releasing.md](./docs/releasing.md): signed release workflow

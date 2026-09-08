@@ -143,7 +143,23 @@ den board list | jq -r '.boards[] | select(.type == "web") | .id'
 
 ---
 
-## 5. Future Roadmap
+## 5. Agent Skill Integration (`skills.sh`)
+
+Autonomous coding agents (such as Claude Code, Cursor, Antigravity, Windsurf) can install the official Den Browser agent skill directly from GitHub via `npx skills`:
+
+```bash
+# Install to the current project (default)
+npx skills add nekonata-team/den-browser --skill den
+
+# Install to the user-level agent environment
+npx skills add nekonata-team/den-browser --skill den --global
+```
+
+This equips the agent with the procedural knowledge in `.agents/skills/den/SKILL.md` to autonomously reason over web elements using the Snapshot + Ref model, navigate history, and control Web Boards.
+
+---
+
+## 6. Future Roadmap
 
 - **`den sheet`**:
   - `den sheet back`, `den sheet forward`

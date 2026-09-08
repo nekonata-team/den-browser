@@ -25,6 +25,14 @@ brew install --cask nekonata-team/tap/den-browser
 
 更新には `brew upgrade --cask den-browser` を使用します。
 
+### エージェントスキル
+
+コーディングエージェント（Claude Code、Cursor など）から隣接するWeb Boardを操作するためのスキル:
+
+```sh
+npx skills add nekonata-team/den-browser --skill den
+```
+
 ## 作業モデル
 
 - **Profile**: ログイン状態、サイトデータ、DenをほかのProfileから分離する
@@ -74,6 +82,7 @@ just check
 - [docs/shortcuts.md](./docs/shortcuts.md): Den Modeのキーボード操作
 - [docs/desk-presets.md](./docs/desk-presets.md): Desk Presetの挙動
 - [docs/vim.md](./docs/vim.md): Vim-style Sheet Navigation
+- [docs/cli.md](./docs/cli.md): CLIリファレンスとエージェントスキル
 - [docs/architecture.md](./docs/architecture.md): ソース構成と境界
 - [docs/testing.md](./docs/testing.md): 自動テストと手動検証
 - [docs/releasing.md](./docs/releasing.md): 署名付きリリース手順
