@@ -1,5 +1,6 @@
 import AppKit
 import Combine
+import GhosttyKit
 import GhosttyTerminal
 
 @MainActor
@@ -62,6 +63,59 @@ final class TerminalRuntime: NSObject, ObservableObject {
 
     func updateOwner(events: Events) {
         self.events = events
+    }
+
+    func sendText(_ text: String) {
+        terminalView.sendText(text)
+    }
+
+    func readViewportText() -> String? {
+        guard let surface = rawGhosttySurface else { return nil }
+        let topLeft = ghostty_point_s(
+            tag: GHOSTTY_POINT_VIEWPORT,
+            coord: GHOSTTY_POINT_COORD_TOP_LEFT,
+            x: 0,
+            y: 0
+        )
+        let bottomRight = ghostty_point_s(
+            tag: GHOSTTY_POINT_VIEWPORT,
+            coord: GHOSTTY_POINT_COORD_BOTTOM_RIGHT,
+            x: 0,
+            y: 0
+        )
+        let selection = ghostty_selection_s(
+            top_left: topLeft,
+            bottom_right: bottomRight,
+            rectangle: false
+        )
+
+        var out = ghostty_text_s()
+        guard ghostty_surface_read_text(surface, selection, &out) else {
+            return nil
+        }
+        defer { ghostty_surface_free_text(surface, &out) }
+
+        guard let textPtr = out.text, out.text_len > 0 else {
+            return ""
+        }
+        let bytes = UnsafeBufferPointer(start: textPtr, count: Int(out.text_len))
+            .map { UInt8(bitPattern: $0) }
+        return String(bytes: bytes, encoding: .utf8) ?? ""
+    }
+
+    private var rawGhosttySurface: ghostty_surface_t? {
+        for coreChild in Mirror(reflecting: terminalView).children where coreChild.label == "core" {
+            for surfaceChild in Mirror(reflecting: coreChild.value).children where surfaceChild.label == "surface" {
+                if let surfaceObj = surfaceChild.value as? TerminalSurface {
+                    for ptrChild in Mirror(reflecting: surfaceObj).children where ptrChild.label == "surface" {
+                        if let ptr = ptrChild.value as? ghostty_surface_t {
+                            return ptr
+                        }
+                    }
+                }
+            }
+        }
+        return nil
     }
 
     func setSurfaceVisible(_ visible: Bool) {

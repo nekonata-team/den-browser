@@ -573,6 +573,37 @@ struct ProfileManagerTests {
                 ]))
     }
 
+    @Test func resolveTargetTerminalBoardFindsExplicitAndAmbientBoards() throws {
+        let directory = temporaryProfileDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+
+        let manager = makeProfileManager(directory: directory)
+        let store = try #require(manager.store(for: manager.personalProfileID))
+        let terminalBoardID = try #require(store.createTerminalBoard(workingDirectory: "/tmp", focus: true))
+        let webBoardID = try #require(store.createBoard(urlString: "https://example.com/"))
+
+        // 1. Explicit ID
+        let explicitRequest = DenIPCRequest(command: "terminal.text", boardID: terminalBoardID.uuidString)
+        let resolvedExplicit = try #require(
+            DenIPCTargetResolver.resolveTargetTerminalBoard(request: explicitRequest, in: manager)
+        )
+        #expect(resolvedExplicit.1.id == terminalBoardID)
+
+        // 2. Ambient resolution relative to caller Web Board
+        let ambientRequest = DenIPCRequest(command: "terminal.text", callerBoardID: webBoardID.uuidString)
+        let resolvedAmbient = try #require(
+            DenIPCTargetResolver.resolveTargetTerminalBoard(request: ambientRequest, in: manager)
+        )
+        #expect(resolvedAmbient.1.id == terminalBoardID)
+
+        // 3. Ambient resolution when caller is Terminal Board itself
+        let selfRequest = DenIPCRequest(command: "terminal.text", callerBoardID: terminalBoardID.uuidString)
+        let resolvedSelf = try #require(
+            DenIPCTargetResolver.resolveTargetTerminalBoard(request: selfRequest, in: manager)
+        )
+        #expect(resolvedSelf.1.id == terminalBoardID)
+    }
+
     private func temporaryProfileDirectory() -> URL {
         FileManager.default.temporaryDirectory
             .appending(path: "den-browser-profile-tests-\(UUID().uuidString)", directoryHint: .isDirectory)

@@ -1074,6 +1074,19 @@ struct DenStoreBoardTests {
         #expect(store.focusedDesk?.boards.count == initialCount)
         #expect(store.toastMessage?.message == "Clipboard is empty.")
     }
+
+    @Test func createTerminalBoardAddsBoardToActiveDeskAndFocuses() throws {
+        let source = desk("Desk", boards: [board("First")])
+        try withTestStore(desks: [source]) { store in
+            let dir = FileManager.default.temporaryDirectory.path
+            let boardID = try #require(store.createTerminalBoard(workingDirectory: dir, focus: true))
+
+            let createdBoard = try #require(store.board(for: boardID))
+            #expect(createdBoard.isTerminal)
+            #expect(createdBoard.terminalWorkingDirectory == dir)
+            #expect(store.focusedBoard?.id == boardID)
+        }
+    }
 }
 
 private struct StubTerminalCommandRunner: TerminalCommandRunning, Sendable {

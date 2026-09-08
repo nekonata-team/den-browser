@@ -585,6 +585,11 @@ final class DenStore {
         return nil
     }
 
+    func board(for boardID: UUID) -> BoardState? {
+        guard let indices = boardIndices(for: boardID) else { return nil }
+        return state.desks[indices.desk].boards[indices.board]
+    }
+
     @discardableResult
     func setFocusedDesk(_ deskID: UUID) -> Bool {
         guard presentedDeskID != deskID else { return false }

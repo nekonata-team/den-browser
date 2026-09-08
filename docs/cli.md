@@ -98,6 +98,16 @@ Commands operating on the Den-wide Drawer for web material whose Desk context is
 | `den drawer place` | `<id>` | Place a Drawer Item onto the active Desk as a Web Board (item leaves Drawer). | `den drawer place 4F72344C-...` |
 | `den drawer discard` | `<id>` | Discard a Drawer Item without placing it onto a Desk. | `den drawer discard 4F72344C-...` |
 
+### 3.5 `den terminal` (Terminal Boards)
+Commands operating on native Terminal Boards.
+
+| Command | Arguments | Description | Example |
+|---|---|---|---|
+| `den terminal list` | None | List Terminal Boards on active Desk with ID, label, working directory, and foreground PID. | `den terminal list` |
+| `den terminal new` | `[<path>] [--run <cmd>] [--focus]` | Spawn a Terminal Board, optionally running an initial command in an interactive shell. | `den terminal new . --run "npm test" --focus` |
+| `den terminal text` | `[--board <id>]` | Read visible terminal screen buffer as clean plain text. | `den terminal text` |
+| `den terminal send` | `<text> [--board <id>]` | Inject raw text or escape sequences into terminal pty. | `den terminal send "git status\n"` |
+
 ---
 
 ## 4. Output Contract (Dual Human + Agent Ergonomics)
@@ -113,7 +123,7 @@ https://example.com/docs
 ### Non-TTY / `--json` Output (Agent & `jq` Mode)
 When piped or when `--json` is supplied, `den` outputs single-line JSON on standard output with standard Unix exit codes. Properties are flat and use `snake_case` for direct 1-level `jq` access:
 
-**Board Creation (`board new`)**:
+**Board Creation (`board new`, `terminal new`)**:
 ```json
 {"ok":true,"board_id":"4F72344C-F4E3-438D-99CB-2F12A79F0004"}
 ```
@@ -127,6 +137,19 @@ BOARD_ID=$(den board new https://example.com | jq -r .board_id)
 ```
 ```bash
 den board list | jq -r '.boards[] | select(.type == "web") | .id'
+```
+
+**Terminal Listing (`terminal list`)**:
+```json
+{"ok":true,"terminals":[{"foreground_pid":87498,"id":"C40D049C-...","label":"main","working_directory":"/Users/hiroaki/Documents/main"}]}
+```
+```bash
+den terminal list | jq -r '.terminals[] | .id'
+```
+
+**Terminal Screen Buffer (`terminal text`)**:
+```json
+{"ok":true,"text":"$ npm test\nPASS ..."}
 ```
 
 **Desk Listing (`desk list`)**:
@@ -151,7 +174,7 @@ den board list | jq -r '.boards[] | select(.type == "web") | .id'
 {"ok":true,"value":"42"}
 ```
 
-**Actions (`click`, `fill`, `press`, `scroll`, `wait`, `open`, `place`, `discard`)**:
+**Actions (`click`, `fill`, `press`, `scroll`, `wait`, `open`, `place`, `discard`, `send`)**:
 ```json
 {"message":"Clicked @e1","ok":true}
 ```
@@ -186,6 +209,3 @@ This equips the agent with the procedural knowledge in `.agents/skills/den/SKILL
 - **`den desk`**:
   - `den desk switch <id|label>`
   - `den desk new [<label>]`
-- **`den terminal`**:
-  - `den terminal new [<path>]`
-  - `den terminal send <text>`

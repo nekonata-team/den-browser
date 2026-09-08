@@ -148,4 +148,31 @@ struct TerminalRuntimeTests {
         #expect(envVars["DEN_SOCKET"]?.contains(".den/den.sock") == true)
         runtime.dispose()
     }
+
+    @Test func terminalRuntimeReadViewportTextAndSendText() {
+        let runtime = TerminalRuntime(
+            workingDirectory: FileManager.default.homeDirectoryForCurrentUser.path,
+            events: .init(
+                onClose: {},
+                onFocus: {},
+                onWorkingDirectoryChange: { _ in },
+                onTitleChange: { _ in },
+                onOpenURL: { _ in },
+                onNotification: { _, _ in }
+            )
+        )
+
+        let window = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 800, height: 600),
+            styleMask: [.titled],
+            backing: .buffered,
+            defer: false
+        )
+        window.contentView = runtime.terminalView
+
+        runtime.sendText("echo hello\n")
+        let text = runtime.readViewportText()
+        #expect(text != nil)
+        runtime.dispose()
+    }
 }

@@ -51,6 +51,8 @@ final class DenIPCService {
             return handleDeskCommand(command, request: request)
         } else if command.hasPrefix("drawer.") {
             return handleDrawerCommand(command, request: request)
+        } else if command.hasPrefix("terminal.") {
+            return handleTerminalCommand(command, request: request)
         }
         return .failure("Unknown command: \(request.command)")
     }
@@ -368,5 +370,134 @@ final class DenIPCService {
         let lower = idString.lowercased()
         let matches = store.state.drawerItems.filter { $0.id.uuidString.lowercased().hasPrefix(lower) }
         return matches.count == 1 ? matches.first : nil
+    }
+
+    // MARK: - Terminal Commands
+
+    private func handleTerminalCommand(_ command: String, request: DenIPCRequest) -> DenIPCResponse {
+        switch command {
+        case "terminal.list":
+            guard
+                let (store, desk) = DenIPCTargetResolver.resolveStoreAndDesk(
+                    callerBoardID: request.callerBoardID,
+                    in: profileManager
+                )
+            else {
+                return .failure("No active Desk")
+            }
+            let terminals = desk.boards.filter(\.isTerminal).map { board in
+                let runtime = store.terminalRuntimes[board.id]
+                return DenTerminalInfo(
+                    id: board.id.uuidString,
+                    label: board.label,
+                    workingDirectory: board.terminalWorkingDirectory,
+                    foregroundPid: runtime?.foregroundProcessGroupID.map(Int.init)
+                )
+            }
+            return .success(terminals: terminals)
+
+        case "terminal.new":
+            guard
+                let (store, _) = DenIPCTargetResolver.resolveStoreAndDesk(
+                    callerBoardID: request.callerBoardID,
+                    in: profileManager
+                )
+            else {
+                return .failure("No active store found")
+            }
+
+            var workingDir: String?
+            var runCommand: String?
+            let shouldFocus = request.args.contains("--focus")
+
+            var argIndex = 0
+            while argIndex < request.args.count {
+                let arg = request.args[argIndex]
+                if arg == "--focus" {
+                    argIndex += 1
+                } else if arg == "--run", argIndex + 1 < request.args.count {
+                    runCommand = request.args[argIndex + 1]
+                    argIndex += 2
+                } else if !arg.hasPrefix("-") && workingDir == nil {
+                    workingDir = arg
+                    argIndex += 1
+                } else {
+                    argIndex += 1
+                }
+            }
+
+            let resolvedDir: String
+            if let dir = workingDir {
+                switch BoardInputResolver.validateTerminalWorkingDirectory(dir) {
+                case .success(let path):
+                    resolvedDir = path
+                case .failure(let error):
+                    return .failure(error.message)
+                }
+            } else {
+                resolvedDir = FileManager.default.homeDirectoryForCurrentUser.path
+            }
+
+            let callerID = request.callerBoardID.flatMap(UUID.init)
+            guard
+                let boardID = store.createTerminalBoard(
+                    workingDirectory: resolvedDir,
+                    afterBoardID: callerID ?? store.focusedBoard?.id,
+                    focus: shouldFocus
+                )
+            else {
+                return .failure("Failed to create terminal board")
+            }
+
+            if let runCommand, let board = store.board(for: boardID) {
+                let runtime = store.terminalRuntime(for: board)
+                Task { @MainActor in
+                    try? await Task.sleep(for: .milliseconds(150))
+                    let commandText = runCommand.hasSuffix("\n") ? runCommand : runCommand + "\n"
+                    runtime.sendText(commandText)
+                }
+            }
+
+            return .success(boardId: boardID.uuidString)
+
+        case "terminal.text":
+            guard
+                let (store, board) = DenIPCTargetResolver.resolveTargetTerminalBoard(
+                    request: request,
+                    in: profileManager
+                )
+            else {
+                return .failure("No Terminal Board found")
+            }
+            let runtime = store.terminalRuntime(for: board)
+            guard let text = runtime.readViewportText() else {
+                return .failure("Failed to read terminal screen")
+            }
+            return .success(text: text)
+
+        case "terminal.send":
+            guard
+                let (store, board) = DenIPCTargetResolver.resolveTargetTerminalBoard(
+                    request: request,
+                    in: profileManager
+                )
+            else {
+                return .failure("No Terminal Board found")
+            }
+            guard let rawText = request.args.first, !rawText.isEmpty else {
+                return .failure("Usage: den terminal send <text> [--board <id>]")
+            }
+            let text =
+                rawText
+                .replacingOccurrences(of: "\\n", with: "\n")
+                .replacingOccurrences(of: "\\r", with: "\r")
+                .replacingOccurrences(of: "\\t", with: "\t")
+            let runtime = store.terminalRuntime(for: board)
+            runtime.sendText(text)
+            return .success(message: "Sent text to Terminal Board \(board.id.uuidString)")
+
+        default:
+            return .failure("Unknown terminal command: \(command)")
+        }
     }
 }

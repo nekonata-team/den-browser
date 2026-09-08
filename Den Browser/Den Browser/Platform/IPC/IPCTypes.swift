@@ -35,6 +35,20 @@ nonisolated struct DenDrawerItemInfo: Codable, Sendable {
     var title: String?
 }
 
+nonisolated struct DenTerminalInfo: Codable, Sendable {
+    var id: String
+    var label: String
+    var workingDirectory: String?
+    var foregroundPid: Int?
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case label
+        case workingDirectory = "working_directory"
+        case foregroundPid = "foreground_pid"
+    }
+}
+
 nonisolated struct DenIPCResponse: Codable, Sendable {
     var isOk: Bool
     var error: String?
@@ -45,6 +59,7 @@ nonisolated struct DenIPCResponse: Codable, Sendable {
     var desks: [DenDeskInfo]?
     var drawerItemId: String?
     var drawerItems: [DenDrawerItemInfo]?
+    var terminals: [DenTerminalInfo]?
     var url: String?
     var snapshot: String?
     var text: String?
@@ -61,6 +76,7 @@ nonisolated struct DenIPCResponse: Codable, Sendable {
         case desks
         case drawerItemId = "drawer_item_id"
         case drawerItems = "drawer_items"
+        case terminals
         case url
         case snapshot
         case text
@@ -76,6 +92,7 @@ nonisolated struct DenIPCResponse: Codable, Sendable {
         desks: [DenDeskInfo]? = nil,
         drawerItemId: String? = nil,
         drawerItems: [DenDrawerItemInfo]? = nil,
+        terminals: [DenTerminalInfo]? = nil,
         url: String? = nil,
         snapshot: String? = nil,
         text: String? = nil,
@@ -92,6 +109,7 @@ nonisolated struct DenIPCResponse: Codable, Sendable {
             desks: desks,
             drawerItemId: drawerItemId,
             drawerItems: drawerItems,
+            terminals: terminals,
             url: url,
             snapshot: snapshot,
             text: text,

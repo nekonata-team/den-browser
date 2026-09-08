@@ -1,0 +1,78 @@
+import ArgumentParser
+import Foundation
+
+struct TerminalCommand: ParsableCommand {
+    static let configuration = CommandConfiguration(
+        commandName: "terminal",
+        abstract: "Control and inspect Terminal Boards",
+        subcommands: [
+            TerminalListCommand.self,
+            TerminalNewCommand.self,
+            TerminalTextCommand.self,
+            TerminalSendCommand.self,
+        ]
+    )
+}
+
+struct TerminalListCommand: ParsableCommand {
+    static let configuration = CommandConfiguration(
+        commandName: "list",
+        abstract: "List Terminal Boards on the active Desk")
+
+    @OptionGroup var target: TargetOptions
+
+    func run() throws {
+        try DenIPCClient.execute(command: "terminal.list", args: [], target: target)
+    }
+}
+
+struct TerminalNewCommand: ParsableCommand {
+    static let configuration = CommandConfiguration(
+        commandName: "new",
+        abstract: "Create a new Terminal Board")
+
+    @OptionGroup var target: TargetOptions
+    @Argument(help: "Working directory for the terminal board") var path: String?
+    @Option(name: .customLong("run"), help: "Initial command to run in the terminal") var runCommand: String?
+    @Flag(name: .long, help: "Focus the new terminal board") var focus = false
+
+    func run() throws {
+        var args: [String] = []
+        if let path {
+            let resolved = URL(fileURLWithPath: path).standardizedFileURL.path
+            args.append(resolved)
+        }
+        if let runCommand {
+            args.append(contentsOf: ["--run", runCommand])
+        }
+        if focus {
+            args.append("--focus")
+        }
+        try DenIPCClient.execute(command: "terminal.new", args: args, target: target)
+    }
+}
+
+struct TerminalTextCommand: ParsableCommand {
+    static let configuration = CommandConfiguration(
+        commandName: "text",
+        abstract: "Dump visible screen text of Terminal Board")
+
+    @OptionGroup var target: TargetOptions
+
+    func run() throws {
+        try DenIPCClient.execute(command: "terminal.text", args: [], target: target)
+    }
+}
+
+struct TerminalSendCommand: ParsableCommand {
+    static let configuration = CommandConfiguration(
+        commandName: "send",
+        abstract: "Send text to Terminal Board")
+
+    @OptionGroup var target: TargetOptions
+    @Argument(help: "Text to send to the terminal") var text: String
+
+    func run() throws {
+        try DenIPCClient.execute(command: "terminal.send", args: [text], target: target)
+    }
+}

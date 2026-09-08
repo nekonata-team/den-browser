@@ -233,16 +233,34 @@ extension DenStore {
     }
 
     @discardableResult
+    func createTerminalBoard(
+        workingDirectory: String? = nil,
+        preferredWidth: Double? = nil,
+        afterBoardID: UUID? = nil,
+        focus: Bool = true
+    ) -> UUID? {
+        let dir = workingDirectory ?? FileManager.default.homeDirectoryForCurrentUser.path
+        let board = BoardState(
+            width: preferredWidth ?? inheritedBoardWidth,
+            workingDirectory: dir
+        )
+        guard insertBoard(board, afterBoardID: afterBoardID, focus: focus) else { return nil }
+        return board.id
+    }
+
+    @discardableResult
     func addTerminalBoard(
         workingDirectory: String,
         preferredWidth: Double? = nil,
         afterBoardID: UUID? = nil,
         focus: Bool = true
     ) -> Bool {
-        let board = BoardState(
-            width: preferredWidth ?? inheritedBoardWidth,
-            workingDirectory: workingDirectory)
-        return insertBoard(board, afterBoardID: afterBoardID, focus: focus)
+        createTerminalBoard(
+            workingDirectory: workingDirectory,
+            preferredWidth: preferredWidth,
+            afterBoardID: afterBoardID,
+            focus: focus
+        ) != nil
     }
 
     @discardableResult
