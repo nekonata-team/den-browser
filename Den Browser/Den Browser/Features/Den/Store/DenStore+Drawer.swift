@@ -10,15 +10,16 @@ extension DenStore {
         return state.drawerItems.first { $0.id == selectedDrawerItemID }
     }
 
+    @discardableResult
     func keepInDrawer(
         _ url: URL,
         title: String? = nil,
         opensDrawer: Bool = true,
         selectsItem: Bool = true
-    ) {
+    ) -> UUID? {
         guard SheetURLPolicy.isSupported(url) else {
             showToast("Only HTTP, HTTPS, and local file URLs are supported.", style: .warning)
-            return
+            return nil
         }
         if selectsItem {
             releaseDrawerPreview()
@@ -36,9 +37,11 @@ extension DenStore {
         }
         save()
         showToast("Kept in Drawer.", style: .success)
+        return item.id
     }
 
-    func keepInDrawerInBackground(_ url: URL, title: String? = nil) {
+    @discardableResult
+    func keepInDrawerInBackground(_ url: URL, title: String? = nil) -> UUID? {
         keepInDrawer(url, title: title, opensDrawer: false, selectsItem: false)
     }
 
@@ -160,8 +163,11 @@ extension DenStore {
         toggleDrawerItem(selectedDrawerItemID)
     }
 
-    func discardDrawerItem(_ itemID: UUID) {
+    @discardableResult
+    func discardDrawerItem(_ itemID: UUID) -> Bool {
+        guard state.drawerItems.contains(where: { $0.id == itemID }) else { return false }
         discardDrawerItem(itemID, advancesPreview: true)
+        return true
     }
 
     private func discardDrawerItem(
@@ -256,14 +262,18 @@ extension DenStore {
         }
     }
 
-    func placeDrawerItemAsBoard(_ itemID: UUID) {
-        guard let item = state.drawerItems.first(where: { $0.id == itemID }) else { return }
-        addBoard(
-            urlString: item.url.absoluteString,
-            preferredWidth: focusedBoard?.width,
-            recentItem: .url(SheetURLPolicy.canonicalSheetURL(item.url)))
+    @discardableResult
+    func placeDrawerItemAsBoard(_ itemID: UUID) -> UUID? {
+        guard let item = state.drawerItems.first(where: { $0.id == itemID }) else { return nil }
+        guard
+            let boardID = createBoard(
+                urlString: item.url.absoluteString,
+                preferredWidth: focusedBoard?.width,
+                recentItem: .url(SheetURLPolicy.canonicalSheetURL(item.url)))
+        else { return nil }
         discardDrawerItem(itemID, advancesPreview: false, recordsDiscardHistory: false)
         closeDrawer()
+        return boardID
     }
 
     func placeSelectedDrawerItemAsBoard() {

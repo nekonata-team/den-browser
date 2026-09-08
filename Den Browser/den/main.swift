@@ -8,6 +8,7 @@ struct DenCLI: ParsableCommand {
             SheetCommand.self,
             BoardCommand.self,
             DeskCommand.self,
+            DrawerCommand.self,
         ]
     )
 }

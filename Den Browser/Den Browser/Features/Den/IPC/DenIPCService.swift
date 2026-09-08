@@ -49,6 +49,8 @@ final class DenIPCService {
             return handleBoardCommand(command, request: request)
         } else if command.hasPrefix("desk.") {
             return handleDeskCommand(command, request: request)
+        } else if command.hasPrefix("drawer.") {
+            return handleDrawerCommand(command, request: request)
         }
         return .failure("Unknown command: \(request.command)")
     }
@@ -289,5 +291,82 @@ final class DenIPCService {
         default:
             return .failure("Unknown desk command: \(command)")
         }
+    }
+
+    // MARK: - Drawer Commands
+
+    private func handleDrawerCommand(_ command: String, request: DenIPCRequest) -> DenIPCResponse {
+        guard
+            let (store, _) = DenIPCTargetResolver.resolveStoreAndDesk(
+                callerBoardID: request.callerBoardID,
+                in: profileManager
+            )
+        else {
+            return .failure("No active store found")
+        }
+
+        switch command {
+        case "drawer.list":
+            let items = store.state.drawerItems.map { item in
+                DenDrawerItemInfo(
+                    id: item.id.uuidString,
+                    url: item.url.absoluteString,
+                    title: item.title
+                )
+            }
+            return .success(drawerItems: items)
+
+        case "drawer.keep":
+            guard let urlString = request.args.first(where: { !$0.hasPrefix("-") }), !urlString.isEmpty else {
+                return .failure("Usage: den drawer keep <url> [--title <title>]")
+            }
+            guard let url = URL(string: urlString), SheetURLPolicy.isSupported(url) else {
+                return .failure("Invalid or unsupported URL: \(urlString)")
+            }
+            var title: String?
+            if let titleIndex = request.args.firstIndex(of: "--title"), titleIndex + 1 < request.args.count {
+                title = request.args[titleIndex + 1]
+            }
+            if let itemID = store.keepInDrawerInBackground(url, title: title) {
+                return .success(message: "Kept in Drawer: \(urlString)", drawerItemId: itemID.uuidString)
+            }
+            return .failure("Failed to keep in Drawer: \(urlString)")
+
+        case "drawer.place":
+            guard let idString = request.args.first(where: { !$0.hasPrefix("-") }), !idString.isEmpty else {
+                return .failure("Usage: den drawer place <id>")
+            }
+            guard let item = findDrawerItem(in: store, matching: idString) else {
+                return .failure("Drawer Item not found: \(idString)")
+            }
+            if let boardID = store.placeDrawerItemAsBoard(item.id) {
+                return .success(message: "Placed Drawer Item as Board", boardId: boardID.uuidString)
+            }
+            return .failure("Failed to place Drawer Item as Board: \(idString)")
+
+        case "drawer.discard":
+            guard let idString = request.args.first(where: { !$0.hasPrefix("-") }), !idString.isEmpty else {
+                return .failure("Usage: den drawer discard <id>")
+            }
+            guard let item = findDrawerItem(in: store, matching: idString) else {
+                return .failure("Drawer Item not found: \(idString)")
+            }
+            if store.discardDrawerItem(item.id) {
+                return .success(message: "Discarded Drawer Item: \(item.displayName)")
+            }
+            return .failure("Failed to discard Drawer Item: \(idString)")
+
+        default:
+            return .failure("Unknown drawer command: \(command)")
+        }
+    }
+
+    private func findDrawerItem(in store: DenStore, matching idString: String) -> DrawerItem? {
+        if let exactID = UUID(uuidString: idString) {
+            return store.state.drawerItems.first { $0.id == exactID }
+        }
+        let lower = idString.lowercased()
+        let matches = store.state.drawerItems.filter { $0.id.uuidString.lowercased().hasPrefix(lower) }
+        return matches.count == 1 ? matches.first : nil
     }
 }

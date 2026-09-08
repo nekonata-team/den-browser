@@ -88,6 +88,16 @@ Commands operating on Desks within the Den.
 |---|---|---|---|
 | `den desk list` | None | List all Desks in the Den with ID, label, board count, and active status. | `den desk list` |
 
+### 3.4 `den drawer` (Drawer & Web Material)
+Commands operating on the Den-wide Drawer for web material whose Desk context is not yet settled.
+
+| Command | Arguments | Description | Example |
+|---|---|---|---|
+| `den drawer list` | None | List all items in the Drawer with ID, title, and URL. | `den drawer list` |
+| `den drawer keep` | `<url> [--title <text>]` | Keep a URL in the Drawer as a Drawer Item without changing Desk layout. | `den drawer keep https://example.com` |
+| `den drawer place` | `<id>` | Place a Drawer Item onto the active Desk as a Web Board (item leaves Drawer). | `den drawer place 4F72344C-...` |
+| `den drawer discard` | `<id>` | Discard a Drawer Item without placing it onto a Desk. | `den drawer discard 4F72344C-...` |
+
 ---
 
 ## 4. Output Contract (Dual Human + Agent Ergonomics)
@@ -124,6 +134,16 @@ den board list | jq -r '.boards[] | select(.type == "web") | .id'
 {"ok":true,"desks":[{"board_count":2,"id":"93F4BD61-...","is_active":true,"label":"Main"}]}
 ```
 
+**Drawer Items (`drawer list`)**:
+```json
+{"drawer_items":[{"id":"4F72344C-...","title":"Example Docs","url":"https://example.com"}],"ok":true}
+```
+
+**Drawer Item Keep (`drawer keep`)**:
+```json
+{"drawer_item_id":"4F72344C-...","message":"Kept in Drawer: https://example.com","ok":true}
+```
+
 **Sheet URL / Snapshot / Value**:
 ```json
 {"ok":true,"url":"https://example.com/docs"}
@@ -131,7 +151,7 @@ den board list | jq -r '.boards[] | select(.type == "web") | .id'
 {"ok":true,"value":"42"}
 ```
 
-**Actions (`click`, `fill`, `press`, `scroll`, `wait`, `open`)**:
+**Actions (`click`, `fill`, `press`, `scroll`, `wait`, `open`, `place`, `discard`)**:
 ```json
 {"message":"Clicked @e1","ok":true}
 ```
@@ -166,9 +186,6 @@ This equips the agent with the procedural knowledge in `.agents/skills/den/SKILL
 - **`den desk`**:
   - `den desk switch <id|label>`
   - `den desk new [<label>]`
-- **`den drawer`**:
-  - `den drawer list`
-  - `den drawer add <url>`
 - **`den terminal`**:
   - `den terminal new [<path>]`
   - `den terminal send <text>`

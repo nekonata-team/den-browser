@@ -190,6 +190,26 @@ struct DenStoreDrawerTests {
         #expect(!store.isDrawerOpen)
     }
 
+    @Test func keepAndPlaceReturnIdentifiersAndDiscardReturnsSuccess() throws {
+        let source = desk("Desk")
+        let store = DenStore(state: DenState(desks: [source], focusedDeskID: source.id))
+        let url = try #require(URL(string: "https://drawer.example/item"))
+
+        let itemID = store.keepInDrawer(url, title: "Test Item")
+        #expect(itemID != nil)
+        #expect(store.state.drawerItems.first?.id == itemID)
+
+        let placedBoardID = store.placeDrawerItemAsBoard(try #require(itemID))
+        #expect(placedBoardID != nil)
+        #expect(store.focusedBoard?.id == placedBoardID)
+        #expect(store.state.drawerItems.isEmpty)
+
+        let secondURL = try #require(URL(string: "https://drawer.example/discard-me"))
+        let secondItemID = try #require(store.keepInDrawer(secondURL))
+        #expect(store.discardDrawerItem(secondItemID))
+        #expect(!store.discardDrawerItem(secondItemID))
+    }
+
     @Test func discardingSelectedItemSelectsItsNeighborAndClosesWhenEmpty() throws {
         let source = desk("Desk")
         let store = DenStore(state: DenState(desks: [source], focusedDeskID: source.id))

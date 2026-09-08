@@ -29,6 +29,12 @@ nonisolated struct DenDeskInfo: Codable, Sendable {
     }
 }
 
+nonisolated struct DenDrawerItemInfo: Codable, Sendable {
+    var id: String
+    var url: String
+    var title: String?
+}
+
 nonisolated struct DenIPCResponse: Codable, Sendable {
     var isOk: Bool
     var error: String?
@@ -37,6 +43,8 @@ nonisolated struct DenIPCResponse: Codable, Sendable {
     var closedBoardId: String?
     var boards: [DenBoardInfo]?
     var desks: [DenDeskInfo]?
+    var drawerItemId: String?
+    var drawerItems: [DenDrawerItemInfo]?
     var url: String?
     var snapshot: String?
     var text: String?
@@ -51,6 +59,8 @@ nonisolated struct DenIPCResponse: Codable, Sendable {
         case closedBoardId = "closed_board_id"
         case boards
         case desks
+        case drawerItemId = "drawer_item_id"
+        case drawerItems = "drawer_items"
         case url
         case snapshot
         case text
@@ -64,6 +74,8 @@ nonisolated struct DenIPCResponse: Codable, Sendable {
         closedBoardId: String? = nil,
         boards: [DenBoardInfo]? = nil,
         desks: [DenDeskInfo]? = nil,
+        drawerItemId: String? = nil,
+        drawerItems: [DenDrawerItemInfo]? = nil,
         url: String? = nil,
         snapshot: String? = nil,
         text: String? = nil,
@@ -78,6 +90,8 @@ nonisolated struct DenIPCResponse: Codable, Sendable {
             closedBoardId: closedBoardId,
             boards: boards,
             desks: desks,
+            drawerItemId: drawerItemId,
+            drawerItems: drawerItems,
             url: url,
             snapshot: snapshot,
             text: text,
@@ -95,6 +109,8 @@ nonisolated struct DenIPCResponse: Codable, Sendable {
             closedBoardId: nil,
             boards: nil,
             desks: nil,
+            drawerItemId: nil,
+            drawerItems: nil,
             url: nil,
             snapshot: nil,
             text: nil,

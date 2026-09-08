@@ -119,6 +119,13 @@ enum DenIPCClient {
                         let mark = currentDesk.isActive ? "*" : " "
                         print("\(mark) \(currentDesk.id) - \(currentDesk.label) (\(currentDesk.boardCount) boards)")
                     }
+                } else if let drawerItems = response.drawerItems {
+                    for item in drawerItems {
+                        let titleSuffix = item.title.map { " - \($0)" } ?? ""
+                        print("\(item.id)\(titleSuffix) (\(item.url))")
+                    }
+                } else if let drawerItemId = response.drawerItemId {
+                    print(drawerItemId)
                 } else if let snapshot = response.snapshot {
                     print(snapshot)
                 } else if let url = response.url {
