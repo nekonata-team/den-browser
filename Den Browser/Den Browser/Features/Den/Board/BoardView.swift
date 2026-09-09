@@ -188,6 +188,12 @@ struct BoardView: View {
         }
 
         Button {
+            store.copyBoardID(board.id)
+        } label: {
+            Label("Copy Board ID", systemImage: "doc.on.doc")
+        }
+
+        Button {
             runtime.webView.reload()
         } label: {
             Label("Reload Current Sheet", systemImage: "arrow.clockwise")

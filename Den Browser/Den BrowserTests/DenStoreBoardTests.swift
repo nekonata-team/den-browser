@@ -1087,6 +1087,30 @@ struct DenStoreBoardTests {
             #expect(store.focusedBoard?.id == boardID)
         }
     }
+
+    @Test func copyBoardIDCopiesLowercasedUUIDToPasteboardAndShowsToast() {
+        let firstBoard = board("First")
+        let source = desk("Desk", boards: [firstBoard])
+        withTestStore(desks: [source]) { store in
+            let pasteboard = NSPasteboard.withUniqueName()
+            store.copyBoardID(firstBoard.id, pasteboard: pasteboard)
+
+            #expect(pasteboard.string(forType: .string) == firstBoard.id.uuidString.lowercased())
+            #expect(store.toastMessage?.message == "Copied Board ID.")
+            #expect(store.toastMessage?.style == .success)
+        }
+    }
+
+    @Test func copyBoardIDIgnoresUnknownBoardID() {
+        let source = desk("Desk", boards: [board("First")])
+        withTestStore(desks: [source]) { store in
+            let pasteboard = NSPasteboard.withUniqueName()
+            store.copyBoardID(UUID(), pasteboard: pasteboard)
+
+            #expect(pasteboard.string(forType: .string) == nil)
+            #expect(store.toastMessage == nil)
+        }
+    }
 }
 
 private struct StubTerminalCommandRunner: TerminalCommandRunning, Sendable {

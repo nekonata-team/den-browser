@@ -136,6 +136,11 @@ struct TerminalBoardView: View {
             Label("Save as Essential…", systemImage: "sparkles")
         }
         Button {
+            store.copyBoardID(board.id)
+        } label: {
+            Label("Copy Board ID", systemImage: "doc.on.doc")
+        }
+        Button {
             store.focusBoard(board.id)
             store.toggleFocusedBoardMaximized()
         } label: {

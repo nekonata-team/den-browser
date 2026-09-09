@@ -125,6 +125,12 @@ struct DeskSwitcher: View {
             }
             .disabled(!canOpenInNewWindow(desk.id))
 
+            Button {
+                store.copyDeskID(desk.id)
+            } label: {
+                Label("Copy Desk ID", systemImage: "doc.on.doc")
+            }
+
             Divider()
 
             Button {

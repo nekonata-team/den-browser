@@ -1,3 +1,4 @@
+import AppKit
 import Foundation
 
 extension DenStore {
@@ -327,5 +328,12 @@ extension DenStore {
         setFocusedDesk(state.desks[targetDeskIndex].id)
         isDenMode = false
         save()
+    }
+
+    func copyBoardID(_ boardID: UUID, pasteboard: NSPasteboard = .general) {
+        guard state.desks.contains(where: { $0.boards.contains { $0.id == boardID } }) else { return }
+        pasteboard.clearContents()
+        pasteboard.setString(boardID.uuidString.lowercased(), forType: .string)
+        showToast("Copied Board ID.", style: .success)
     }
 }

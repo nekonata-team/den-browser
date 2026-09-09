@@ -409,6 +409,29 @@ struct DenStoreDeskTests {
         }
     }
 
+    @Test func copyDeskIDCopiesLowercasedUUIDToPasteboardAndShowsToast() {
+        let deskA = desk("Desk A")
+        withStore(desks: [deskA]) { store in
+            let pasteboard = NSPasteboard.withUniqueName()
+            store.copyDeskID(deskA.id, pasteboard: pasteboard)
+
+            #expect(pasteboard.string(forType: .string) == deskA.id.uuidString.lowercased())
+            #expect(store.toastMessage?.message == "Copied Desk ID.")
+            #expect(store.toastMessage?.style == .success)
+        }
+    }
+
+    @Test func copyDeskIDIgnoresUnknownDeskID() {
+        let deskA = desk("Desk A")
+        withStore(desks: [deskA]) { store in
+            let pasteboard = NSPasteboard.withUniqueName()
+            store.copyDeskID(UUID(), pasteboard: pasteboard)
+
+            #expect(pasteboard.string(forType: .string) == nil)
+            #expect(store.toastMessage == nil)
+        }
+    }
+
     private func desk(_ label: String, boards: [BoardState] = [], focusedBoardID: UUID? = nil) -> DeskState {
         DeskState(label: label, boards: boards, focusedBoardID: focusedBoardID)
     }

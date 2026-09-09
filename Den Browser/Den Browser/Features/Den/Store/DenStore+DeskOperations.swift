@@ -1,3 +1,4 @@
+import AppKit
 import Foundation
 
 enum DeskReplacementResult: Equatable {
@@ -188,5 +189,12 @@ extension DenStore {
         guard current != newDouble else { return }
         state.desks[deskIndex].scrollOffsetX = newDouble
         save()
+    }
+
+    func copyDeskID(_ deskID: UUID, pasteboard: NSPasteboard = .general) {
+        guard state.desks.contains(where: { $0.id == deskID }) else { return }
+        pasteboard.clearContents()
+        pasteboard.setString(deskID.uuidString.lowercased(), forType: .string)
+        showToast("Copied Desk ID.", style: .success)
     }
 }
