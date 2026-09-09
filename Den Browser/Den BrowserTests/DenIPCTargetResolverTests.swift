@@ -14,7 +14,9 @@ struct DenIPCTargetResolverTests {
         let manager = makeProfileManager(directory: directory)
         let store = try #require(manager.store(for: manager.personalProfileID))
         let terminalBoardID = try #require(store.createTerminalBoard(workingDirectory: "/tmp", focus: true))
-        let explicitRequest = DenIPCRequest(command: "terminal.text", boardID: terminalBoardID.uuidString)
+        let explicitRequest = DenIPCRequest(
+            command: .terminal(.text),
+            boardID: terminalBoardID.uuidString)
 
         // Act
         let resolved = DenIPCTargetResolver.resolveTargetTerminalBoard(request: explicitRequest, in: manager)
@@ -32,7 +34,9 @@ struct DenIPCTargetResolverTests {
         let store = try #require(manager.store(for: manager.personalProfileID))
         let terminalBoardID = try #require(store.createTerminalBoard(workingDirectory: "/tmp", focus: true))
         let webBoardID = try #require(store.createBoard(urlString: "https://example.com/"))
-        let ambientRequest = DenIPCRequest(command: "terminal.text", callerBoardID: webBoardID.uuidString)
+        let ambientRequest = DenIPCRequest(
+            command: .terminal(.text),
+            callerBoardID: webBoardID.uuidString)
 
         // Act
         let resolved = DenIPCTargetResolver.resolveTargetTerminalBoard(request: ambientRequest, in: manager)
@@ -49,7 +53,9 @@ struct DenIPCTargetResolverTests {
         let manager = makeProfileManager(directory: directory)
         let store = try #require(manager.store(for: manager.personalProfileID))
         let terminalBoardID = try #require(store.createTerminalBoard(workingDirectory: "/tmp", focus: true))
-        let selfRequest = DenIPCRequest(command: "terminal.text", callerBoardID: terminalBoardID.uuidString)
+        let selfRequest = DenIPCRequest(
+            command: .terminal(.text),
+            callerBoardID: terminalBoardID.uuidString)
 
         // Act
         let resolved = DenIPCTargetResolver.resolveTargetTerminalBoard(request: selfRequest, in: manager)
@@ -68,7 +74,7 @@ struct DenIPCTargetResolverTests {
         _ = try #require(store.createTerminalBoard(workingDirectory: "/tmp", focus: true))
 
         let nonExistentID = UUID().uuidString
-        let request = DenIPCRequest(command: "terminal.kill", boardID: nonExistentID)
+        let request = DenIPCRequest(command: .terminal(.kill), boardID: nonExistentID)
 
         // Act
         let resolved = DenIPCTargetResolver.resolveTargetTerminalBoard(request: request, in: manager)
@@ -86,7 +92,7 @@ struct DenIPCTargetResolverTests {
         _ = try #require(store.createBoard(urlString: "https://example.com/"))
 
         let nonExistentID = UUID().uuidString
-        let request = DenIPCRequest(command: "sheet.eval", boardID: nonExistentID)
+        let request = DenIPCRequest(command: .sheet(.eval), boardID: nonExistentID)
 
         // Act
         let resolved = DenIPCTargetResolver.resolveTargetWebBoard(request: request, in: manager)
@@ -114,7 +120,7 @@ struct DenIPCTargetResolverTests {
         _ = store.setFocusedDesk(desk2.id)
         let terminalBoardID = try #require(store.createTerminalBoard(workingDirectory: "/tmp", focus: true))
 
-        let ambientRequest = DenIPCRequest(command: "sheet.url", callerBoardID: terminalBoardID.uuidString)
+        let ambientRequest = DenIPCRequest(command: .sheet(.url), callerBoardID: terminalBoardID.uuidString)
 
         // Act
         let resolved = DenIPCTargetResolver.resolveTargetWebBoard(request: ambientRequest, in: manager)
@@ -132,7 +138,7 @@ struct DenIPCTargetResolverTests {
         let boardID = try #require(store.createBoard(urlString: "https://example.com/"))
         let service = DenIPCService(profileManager: manager)
 
-        let request = DenIPCRequest(command: "board.close", args: ["not-a-valid-uuid"])
+        let request = DenIPCRequest(command: .board(.close), args: ["not-a-valid-uuid"])
 
         // Act
         let response = await service.handleRequest(request)
@@ -153,7 +159,7 @@ struct DenIPCTargetResolverTests {
         let service = DenIPCService(profileManager: manager)
 
         let nonExistentID = UUID().uuidString
-        let request = DenIPCRequest(command: "board.close", args: [nonExistentID])
+        let request = DenIPCRequest(command: .board(.close), args: [nonExistentID])
 
         // Act
         let response = await service.handleRequest(request)

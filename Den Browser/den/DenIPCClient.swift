@@ -14,7 +14,7 @@ struct TargetOptions: ParsableArguments {
 }
 
 enum DenIPCClient {
-    static func execute(command: String, args: [String], target: TargetOptions) throws {
+    static func execute(command: DenIPCCommand, args: [String], target: TargetOptions) throws {
         let env = ProcessInfo.processInfo.environment
         let callerBoardID = env["DEN_BOARD_ID"]
 

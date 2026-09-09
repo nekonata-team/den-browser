@@ -1,7 +1,99 @@
 import Foundation
 
+nonisolated enum DenIPCCommand: Equatable, Sendable {
+    enum Sheet: String, CaseIterable, Sendable {
+        case open
+        case url
+        case reload
+        case eval
+        case text
+        case back
+        case forward
+        case press
+        case scroll
+        case wait
+        case screenshot
+        case snapshot
+        case click
+        case fill
+    }
+
+    enum Board: String, CaseIterable, Sendable {
+        case list
+        case new
+        case close
+    }
+
+    enum Desk: String, CaseIterable, Sendable {
+        case list
+    }
+
+    enum Drawer: String, CaseIterable, Sendable {
+        case list
+        case keep
+        case place
+        case discard
+    }
+
+    enum Terminal: String, CaseIterable, Sendable {
+        case list
+        case new
+        case text
+        case send
+        case kill
+    }
+
+    case sheet(Sheet)
+    case board(Board)
+    case desk(Desk)
+    case drawer(Drawer)
+    case terminal(Terminal)
+
+    private static let allCommands: [Self] =
+        Sheet.allCases.map { .sheet($0) }
+        + Board.allCases.map { .board($0) }
+        + Desk.allCases.map { .desk($0) }
+        + Drawer.allCases.map { .drawer($0) }
+        + Terminal.allCases.map { .terminal($0) }
+
+    init?(wireValue: String) {
+        guard let command = Self.allCommands.first(where: { $0.wireValue == wireValue }) else {
+            return nil
+        }
+        self = command
+    }
+
+    var wireValue: String {
+        switch self {
+        case .sheet(let command): "sheet.\(command.rawValue)"
+        case .board(let command): "board.\(command.rawValue)"
+        case .desk(let command): "desk.\(command.rawValue)"
+        case .drawer(let command): "drawer.\(command.rawValue)"
+        case .terminal(let command): "terminal.\(command.rawValue)"
+        }
+    }
+}
+
+extension DenIPCCommand: Codable {
+    init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        let wireValue = try container.decode(String.self).lowercased()
+        guard let command = DenIPCCommand(wireValue: wireValue) else {
+            throw DecodingError.dataCorruptedError(
+                in: container,
+                debugDescription: "Unknown IPC command: \(wireValue)")
+        }
+        self = command
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        try container.encode(wireValue)
+    }
+}
+
 nonisolated struct DenIPCRequest: Codable, Sendable {
-    var command: String
+    var command: DenIPCCommand
     var args: [String] = []
     var boardID: String?
     var deskID: String?

@@ -33,7 +33,7 @@ struct SheetOpenCommand: ParsableCommand {
     @Argument(help: "URL or search query to open") var url: String
 
     func run() throws {
-        try DenIPCClient.execute(command: "sheet.open", args: [url], target: target)
+        try DenIPCClient.execute(command: .sheet(.open), args: [url], target: target)
     }
 }
 
@@ -45,7 +45,7 @@ struct SheetURLCommand: ParsableCommand {
     @OptionGroup var target: TargetOptions
 
     func run() throws {
-        try DenIPCClient.execute(command: "sheet.url", args: [], target: target)
+        try DenIPCClient.execute(command: .sheet(.url), args: [], target: target)
     }
 }
 
@@ -57,7 +57,7 @@ struct SheetReloadCommand: ParsableCommand {
     @OptionGroup var target: TargetOptions
 
     func run() throws {
-        try DenIPCClient.execute(command: "sheet.reload", args: [], target: target)
+        try DenIPCClient.execute(command: .sheet(.reload), args: [], target: target)
     }
 }
 
@@ -74,7 +74,7 @@ struct SheetEvalCommand: ParsableCommand {
         guard !script.isEmpty else {
             throw ValidationError("Please provide JavaScript code to evaluate")
         }
-        try DenIPCClient.execute(command: "sheet.eval", args: [script], target: target)
+        try DenIPCClient.execute(command: .sheet(.eval), args: [script], target: target)
     }
 }
 
@@ -86,7 +86,7 @@ struct SheetTextCommand: ParsableCommand {
     @OptionGroup var target: TargetOptions
 
     func run() throws {
-        try DenIPCClient.execute(command: "sheet.text", args: [], target: target)
+        try DenIPCClient.execute(command: .sheet(.text), args: [], target: target)
     }
 }
 
@@ -101,7 +101,7 @@ struct SheetSnapshotCommand: ParsableCommand {
 
     func run() throws {
         let args = interactive ? ["-i"] : []
-        try DenIPCClient.execute(command: "sheet.snapshot", args: args, target: target)
+        try DenIPCClient.execute(command: .sheet(.snapshot), args: args, target: target)
     }
 }
 
@@ -115,7 +115,7 @@ struct SheetClickCommand: ParsableCommand {
     var targetElement: String
 
     func run() throws {
-        try DenIPCClient.execute(command: "sheet.click", args: [targetElement], target: target)
+        try DenIPCClient.execute(command: .sheet(.click), args: [targetElement], target: target)
     }
 }
 
@@ -135,7 +135,7 @@ struct SheetFillCommand: ParsableCommand {
         guard !value.isEmpty else {
             throw ValidationError("Please provide a text value to fill")
         }
-        try DenIPCClient.execute(command: "sheet.fill", args: [targetElement, value], target: target)
+        try DenIPCClient.execute(command: .sheet(.fill), args: [targetElement, value], target: target)
     }
 }
 
@@ -150,7 +150,7 @@ struct SheetScreenshotCommand: ParsableCommand {
 
     func run() throws {
         let args = outputPath.map { [$0] } ?? []
-        try DenIPCClient.execute(command: "sheet.screenshot", args: args, target: target)
+        try DenIPCClient.execute(command: .sheet(.screenshot), args: args, target: target)
     }
 }
 
@@ -162,7 +162,7 @@ struct SheetBackCommand: ParsableCommand {
     @OptionGroup var target: TargetOptions
 
     func run() throws {
-        try DenIPCClient.execute(command: "sheet.back", args: [], target: target)
+        try DenIPCClient.execute(command: .sheet(.back), args: [], target: target)
     }
 }
 
@@ -174,7 +174,7 @@ struct SheetForwardCommand: ParsableCommand {
     @OptionGroup var target: TargetOptions
 
     func run() throws {
-        try DenIPCClient.execute(command: "sheet.forward", args: [], target: target)
+        try DenIPCClient.execute(command: .sheet(.forward), args: [], target: target)
     }
 }
 
@@ -188,7 +188,7 @@ struct SheetPressCommand: ParsableCommand {
     var key: String
 
     func run() throws {
-        try DenIPCClient.execute(command: "sheet.press", args: [key], target: target)
+        try DenIPCClient.execute(command: .sheet(.press), args: [key], target: target)
     }
 }
 
@@ -203,7 +203,7 @@ struct SheetScrollCommand: ParsableCommand {
 
     func run() throws {
         let args = direction.map { [$0] } ?? []
-        try DenIPCClient.execute(command: "sheet.scroll", args: args, target: target)
+        try DenIPCClient.execute(command: .sheet(.scroll), args: args, target: target)
     }
 }
 
@@ -217,6 +217,6 @@ struct SheetWaitCommand: ParsableCommand {
     var targetValue: String
 
     func run() throws {
-        try DenIPCClient.execute(command: "sheet.wait", args: [targetValue], target: target)
+        try DenIPCClient.execute(command: .sheet(.wait), args: [targetValue], target: target)
     }
 }

@@ -47,27 +47,26 @@ final class DenIPCService {
     }
 
     func handleRequest(_ request: DenIPCRequest) async -> DenIPCResponse {
-        let command = request.command.lowercased()
-        if command.hasPrefix("sheet.") {
+        switch request.command {
+        case .sheet(let command):
             return await handleSheetCommand(command, request: request)
-        } else if command.hasPrefix("board.") {
+        case .board(let command):
             return handleBoardCommand(command, request: request)
-        } else if command.hasPrefix("desk.") {
+        case .desk(let command):
             return handleDeskCommand(command, request: request)
-        } else if command.hasPrefix("drawer.") {
+        case .drawer(let command):
             return handleDrawerCommand(command, request: request)
-        } else if command.hasPrefix("terminal.") {
+        case .terminal(let command):
             return handleTerminalCommand(command, request: request)
         }
-        return .failure("Unknown command: \(request.command)")
     }
 
     // MARK: - Sheet Commands
 
-    private func handleSheetCommand(_ command: String, request: DenIPCRequest) async -> DenIPCResponse {
+    private func handleSheetCommand(_ command: DenIPCCommand.Sheet, request: DenIPCRequest) async -> DenIPCResponse {
         guard let (store, board) = DenIPCTargetResolver.resolveTargetWebBoard(request: request, in: profileManager)
         else {
-            if command == "sheet.open" {
+            if command == .open {
                 return .failure("No Web Board found. Use 'den board new <url>' to create a new board.")
             }
             return .failure("No Web Board found")
@@ -76,7 +75,7 @@ final class DenIPCService {
 
         do {
             switch command {
-            case "sheet.open":
+            case .open:
                 guard let urlString = request.args.first, !urlString.isEmpty else {
                     return .failure("Usage: den sheet open <url>")
                 }
@@ -86,15 +85,15 @@ final class DenIPCService {
                 runtime.load(url)
                 return .success(message: "Navigated to \(url.absoluteString)", url: url.absoluteString)
 
-            case "sheet.reload":
+            case .reload:
                 runtime.webView.reload()
                 return .success(message: "Reloaded")
 
-            case "sheet.url":
+            case .url:
                 let currentURL = runtime.webView.url?.absoluteString ?? board.currentSheetURL?.absoluteString ?? ""
                 return .success(url: currentURL)
 
-            case "sheet.eval":
+            case .eval:
                 let script = request.args.joined(separator: " ")
                 guard !script.isEmpty else {
                     return .failure("Usage: den sheet eval <javascript>")
@@ -105,37 +104,37 @@ final class DenIPCService {
                 }
                 return .success(value: "undefined")
 
-            case "sheet.text":
+            case .text:
                 let evalResult = try await runtime.webView.evaluateJavaScript("document.body.innerText")
                 return .success(text: "\(evalResult ?? "")")
 
-            case "sheet.back":
+            case .back:
                 guard runtime.webView.canGoBack else {
                     return .failure("Cannot go back: no previous page in history")
                 }
                 runtime.webView.goBack()
                 return .success(message: "Navigated back")
 
-            case "sheet.forward":
+            case .forward:
                 guard runtime.webView.canGoForward else {
                     return .failure("Cannot go forward: no forward page in history")
                 }
                 runtime.webView.goForward()
                 return .success(message: "Navigated forward")
 
-            case "sheet.press":
+            case .press:
                 guard let key = request.args.first, !key.isEmpty else {
                     return .failure("Usage: den sheet press <key>")
                 }
                 try await SheetInteraction.press(key: key, in: runtime.webView)
                 return .success(message: "Pressed \(key)")
 
-            case "sheet.scroll":
+            case .scroll:
                 let direction = request.args.first?.lowercased() ?? "down"
                 let message = try await SheetInteraction.scroll(direction: direction, in: runtime.webView)
                 return .success(message: message)
 
-            case "sheet.wait":
+            case .wait:
                 guard let target = request.args.first, !target.isEmpty else {
                     return .failure("Usage: den sheet wait <duration-or-selector>")
                 }
@@ -147,7 +146,7 @@ final class DenIPCService {
                 try await SheetInteraction.waitForElement(target: target, in: runtime.webView)
                 return .success(message: "Element appeared: \(target)")
 
-            case "sheet.screenshot":
+            case .screenshot:
                 let image = try await ScreenshotCapture.visibleCurrentSheet(in: runtime.webView)
                 let data = try ScreenshotCapture.pngData(for: image)
                 let targetURL: URL = {
@@ -160,7 +159,7 @@ final class DenIPCService {
                 try data.write(to: targetURL)
                 return .success(screenshotPath: targetURL.path)
 
-            case "sheet.snapshot":
+            case .snapshot:
                 let interactiveOnly = request.args.contains("-i") || request.args.contains("--interactive")
                 let snapshot = try await SheetInteraction.snapshot(
                     in: runtime.webView,
@@ -168,14 +167,14 @@ final class DenIPCService {
                 )
                 return .success(snapshot: snapshot)
 
-            case "sheet.click":
+            case .click:
                 guard let target = request.args.first, !target.isEmpty else {
                     return .failure("Usage: den sheet click <@ref|selector>")
                 }
                 try await SheetInteraction.click(target: target, in: runtime.webView)
                 return .success(message: "Clicked \(target)")
 
-            case "sheet.fill":
+            case .fill:
                 guard request.args.count >= 2 else {
                     return .failure("Usage: den sheet fill <@ref|selector> <value>")
                 }
@@ -184,8 +183,6 @@ final class DenIPCService {
                 try await SheetInteraction.fill(target: target, value: value, in: runtime.webView)
                 return .success(message: "Filled \(target)")
 
-            default:
-                return .failure("Unknown sheet command: \(command)")
             }
         } catch {
             return .failure(error.localizedDescription)
@@ -194,9 +191,9 @@ final class DenIPCService {
 
     // MARK: - Board Commands
 
-    private func handleBoardCommand(_ command: String, request: DenIPCRequest) -> DenIPCResponse {
+    private func handleBoardCommand(_ command: DenIPCCommand.Board, request: DenIPCRequest) -> DenIPCResponse {
         switch command {
-        case "board.list":
+        case .list:
             guard
                 let (_, desk) = DenIPCTargetResolver.resolveStoreAndDesk(
                     callerBoardID: request.callerBoardID,
@@ -215,7 +212,7 @@ final class DenIPCService {
             }
             return .success(boards: boards)
 
-        case "board.new":
+        case .new:
             guard let urlString = request.args.first(where: { !$0.hasPrefix("-") }), !urlString.isEmpty else {
                 return .failure("Usage: den board new <url> [--focus]")
             }
@@ -238,7 +235,7 @@ final class DenIPCService {
             }
             return .failure("Failed to open board with \(urlString)")
 
-        case "board.close":
+        case .close:
             if let idString = request.args.first ?? request.boardID {
                 guard let targetID = UUID(uuidString: idString) else {
                     return .failure("Invalid board ID: \(idString)")
@@ -267,16 +264,14 @@ final class DenIPCService {
                 closedBoardId: board.id.uuidString
             )
 
-        default:
-            return .failure("Unknown board command: \(command)")
         }
     }
 
     // MARK: - Desk Commands
 
-    private func handleDeskCommand(_ command: String, request: DenIPCRequest) -> DenIPCResponse {
+    private func handleDeskCommand(_ command: DenIPCCommand.Desk, request: DenIPCRequest) -> DenIPCResponse {
         switch command {
-        case "desk.list":
+        case .list:
             guard
                 let (store, _) = DenIPCTargetResolver.resolveStoreAndDesk(
                     callerBoardID: request.callerBoardID,
@@ -296,14 +291,12 @@ final class DenIPCService {
             }
             return .success(desks: desks)
 
-        default:
-            return .failure("Unknown desk command: \(command)")
         }
     }
 
     // MARK: - Drawer Commands
 
-    private func handleDrawerCommand(_ command: String, request: DenIPCRequest) -> DenIPCResponse {
+    private func handleDrawerCommand(_ command: DenIPCCommand.Drawer, request: DenIPCRequest) -> DenIPCResponse {
         guard
             let (store, _) = DenIPCTargetResolver.resolveStoreAndDesk(
                 callerBoardID: request.callerBoardID,
@@ -314,7 +307,7 @@ final class DenIPCService {
         }
 
         switch command {
-        case "drawer.list":
+        case .list:
             let items = store.state.drawerItems.map { item in
                 DenDrawerItemInfo(
                     id: item.id.uuidString,
@@ -324,7 +317,7 @@ final class DenIPCService {
             }
             return .success(drawerItems: items)
 
-        case "drawer.keep":
+        case .keep:
             guard let urlString = request.args.first(where: { !$0.hasPrefix("-") }), !urlString.isEmpty else {
                 return .failure("Usage: den drawer keep <url> [--title <title>]")
             }
@@ -340,7 +333,7 @@ final class DenIPCService {
             }
             return .failure("Failed to keep in Drawer: \(urlString)")
 
-        case "drawer.place":
+        case .place:
             guard let idString = request.args.first(where: { !$0.hasPrefix("-") }), !idString.isEmpty else {
                 return .failure("Usage: den drawer place <id>")
             }
@@ -352,7 +345,7 @@ final class DenIPCService {
             }
             return .failure("Failed to place Drawer Item as Board: \(idString)")
 
-        case "drawer.discard":
+        case .discard:
             guard let idString = request.args.first(where: { !$0.hasPrefix("-") }), !idString.isEmpty else {
                 return .failure("Usage: den drawer discard <id>")
             }
@@ -364,8 +357,6 @@ final class DenIPCService {
             }
             return .failure("Failed to discard Drawer Item: \(idString)")
 
-        default:
-            return .failure("Unknown drawer command: \(command)")
         }
     }
 
@@ -380,9 +371,9 @@ final class DenIPCService {
 
     // MARK: - Terminal Commands
 
-    private func handleTerminalCommand(_ command: String, request: DenIPCRequest) -> DenIPCResponse {
+    private func handleTerminalCommand(_ command: DenIPCCommand.Terminal, request: DenIPCRequest) -> DenIPCResponse {
         switch command {
-        case "terminal.list":
+        case .list:
             guard
                 let (store, desk) = DenIPCTargetResolver.resolveStoreAndDesk(
                     callerBoardID: request.callerBoardID,
@@ -402,7 +393,7 @@ final class DenIPCService {
             }
             return .success(terminals: terminals)
 
-        case "terminal.new":
+        case .new:
             guard
                 let (store, _) = DenIPCTargetResolver.resolveStoreAndDesk(
                     callerBoardID: request.callerBoardID,
@@ -466,7 +457,7 @@ final class DenIPCService {
 
             return .success(boardId: boardID.uuidString)
 
-        case "terminal.text":
+        case .text:
             guard
                 let (store, board) = DenIPCTargetResolver.resolveTargetTerminalBoard(
                     request: request,
@@ -481,7 +472,7 @@ final class DenIPCService {
             }
             return .success(text: text)
 
-        case "terminal.send":
+        case .send:
             guard
                 let (store, board) = DenIPCTargetResolver.resolveTargetTerminalBoard(
                     request: request,
@@ -502,7 +493,7 @@ final class DenIPCService {
             runtime.sendText(text)
             return .success(message: "Sent text to Terminal Board \(board.id.uuidString)")
 
-        case "terminal.kill":
+        case .kill:
             guard
                 let (store, board) = DenIPCTargetResolver.resolveTargetTerminalBoard(
                     request: request,
@@ -523,8 +514,6 @@ final class DenIPCService {
                 return .failure(error.localizedDescription)
             }
 
-        default:
-            return .failure("Unknown terminal command: \(command)")
         }
     }
 

@@ -22,7 +22,7 @@ struct DrawerListCommand: ParsableCommand {
     @OptionGroup var target: TargetOptions
 
     func run() throws {
-        try DenIPCClient.execute(command: "drawer.list", args: [], target: target)
+        try DenIPCClient.execute(command: .drawer(.list), args: [], target: target)
     }
 }
 
@@ -40,7 +40,7 @@ struct DrawerKeepCommand: ParsableCommand {
         if let title {
             args.append(contentsOf: ["--title", title])
         }
-        try DenIPCClient.execute(command: "drawer.keep", args: args, target: target)
+        try DenIPCClient.execute(command: .drawer(.keep), args: args, target: target)
     }
 }
 
@@ -53,7 +53,7 @@ struct DrawerPlaceCommand: ParsableCommand {
     @Argument(help: "ID of the Drawer Item to place") var itemID: String
 
     func run() throws {
-        try DenIPCClient.execute(command: "drawer.place", args: [itemID], target: target)
+        try DenIPCClient.execute(command: .drawer(.place), args: [itemID], target: target)
     }
 }
 
@@ -66,6 +66,6 @@ struct DrawerDiscardCommand: ParsableCommand {
     @Argument(help: "ID of the Drawer Item to discard") var itemID: String
 
     func run() throws {
-        try DenIPCClient.execute(command: "drawer.discard", args: [itemID], target: target)
+        try DenIPCClient.execute(command: .drawer(.discard), args: [itemID], target: target)
     }
 }

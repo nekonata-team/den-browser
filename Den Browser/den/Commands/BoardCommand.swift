@@ -21,7 +21,7 @@ struct BoardListCommand: ParsableCommand {
     @OptionGroup var target: TargetOptions
 
     func run() throws {
-        try DenIPCClient.execute(command: "board.list", args: [], target: target)
+        try DenIPCClient.execute(command: .board(.list), args: [], target: target)
     }
 }
 
@@ -40,7 +40,7 @@ struct BoardNewCommand: ParsableCommand {
         if focus {
             args.append("--focus")
         }
-        try DenIPCClient.execute(command: "board.new", args: args, target: target)
+        try DenIPCClient.execute(command: .board(.new), args: args, target: target)
     }
 }
 
@@ -55,6 +55,6 @@ struct BoardCloseCommand: ParsableCommand {
 
     func run() throws {
         let args = boardID.map { [$0] } ?? []
-        try DenIPCClient.execute(command: "board.close", args: args, target: target)
+        try DenIPCClient.execute(command: .board(.close), args: args, target: target)
     }
 }
