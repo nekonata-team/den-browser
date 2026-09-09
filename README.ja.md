@@ -9,7 +9,7 @@ Den Browserは、長時間続くWeb・ターミナル作業のためのキーボ
 作業面として保持し、調査、AIチャット、開発、執筆、ドキュメント作業を
 後からすぐ再開できます。
 
-> **現在の状態:** 主要機能が動作する、開発継続中のmacOS向けPoCです。
+> **現在の状態:** 主要機能が動作する、開発継続中のmacOS向けブラウザです。
 
 SafariやChromeなどの汎用ブラウザを置き換えるものではありません。日常の
 ブラウジングには普段のブラウザを使い、空間記憶と長く続く文脈が役立つ
@@ -57,8 +57,7 @@ Den Browserは、[Niri](https://github.com/niri-wm/niri)の空間的なウィン
 - Current Sheet内のコンテンツを操作する、任意のファーストパーティ製
   Vim-style Sheet Navigation。
 
-詳しいキーボード操作は[docs/shortcuts.md](./docs/shortcuts.md)、現在の受け入れ
-基準と手動確認項目は[docs/poc.md](./docs/poc.md)を参照してください。
+詳しいキーボード操作は[docs/shortcuts.md](./docs/shortcuts.md)を参照してください。
 
 ## 開発
 

@@ -9,7 +9,7 @@ keeps parallel tasks as persistent work surfaces instead of growing tab and term
 so research, AI chats, development, writing, and documentation stay easy to
 revisit.
 
-> **Status:** Functional macOS proof of concept under active development.
+> **Status:** macOS companion browser under active development.
 
 Den Browser complements Safari, Chrome, or another general-purpose browser. It
 is for work that benefits from spatial memory and long-lived context, not for
@@ -60,9 +60,7 @@ complete product language.
 - Optional first-party Vim-style Sheet Navigation for content inside the
   Current Sheet.
 
-See [docs/shortcuts.md](./docs/shortcuts.md) for complete keyboard controls and
-[docs/poc.md](./docs/poc.md) for current acceptance criteria and exploratory
-checks.
+See [docs/shortcuts.md](./docs/shortcuts.md) for complete keyboard controls.
 
 ## Development
 

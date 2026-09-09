@@ -1,6 +1,6 @@
 # Testing
 
-Den Browser uses automated tests for stable product behavior and exploratory human validation for areas where automation is not reliable. The outcome-level PoC criteria live in [poc.md](./poc.md); this document defines the validation boundary rather than providing an exhaustive operation checklist.
+Den Browser uses automated tests for stable product behavior and exploratory human validation for areas where automation is not reliable, building on the foundational architecture established in [ADR 0000](./adr/0000-poc-accepted.md). This document defines the validation boundary rather than providing an exhaustive operation checklist.
 
 ## XCUITest admission rule
 
@@ -124,6 +124,5 @@ just check
 `just lint` runs Xcode-bundled `swift-format` in strict mode, including style and enabled safety rules. `just format` applies same configuration. Builds treat compiler warnings as errors.
 
 Before merge, run `just check`, then only the focused UI tests admitted by the rule above, then code review. Add
-exploratory validation when warranted, such as for UI behavior changes or milestone acceptance; use
-[poc.md](./poc.md) as the source of truth for outcome-level PoC criteria. Do not add step-by-step procedures to
-that document; turn reproducible findings into automated tests or tracked issues.
+exploratory validation when warranted, such as for UI behavior changes or milestone acceptance. Turn
+reproducible findings into automated unit or UI tests rather than manual checklists.

@@ -40,7 +40,6 @@ manual candidate verification, `just release publish X.Y.Z`.
 - `DESIGN.md`: UI design rules
 - `docs/shortcuts.md`: complete keyboard and pointer controls
 - `docs/keyboard-input.md`: keyboard implementation contract and diagnostic path
-- `docs/poc.md`: current acceptance criteria and exploratory checks
 - `docs/architecture.md` and `docs/adr/`: architecture and product decisions
 - `docs/cli.md`: command-line interface specification and agent integration
 - `docs/testing.md`: automated and exploratory validation
@@ -51,8 +50,8 @@ manual candidate verification, `just release publish X.Y.Z`.
 - Use the `domain-modeling` skill when creating or updating `CONTEXT.md` or ADRs.
 - Keep README focused on product positioning, target work, status, requirements,
   installation, core concepts, a short feature summary, and entry-point links.
-- Do not add exhaustive feature lists, shortcut maps, implementation details, or
-  PoC test cases to README. Put them in their owning document above.
+- Do not add exhaustive feature lists, shortcut maps, or implementation details
+  to README. Put them in their owning document above.
 - When behavior changes, update the owning source-of-truth document and affected
   tests. Update README only when public positioning, status, requirements,
   installation, core concepts, or documentation entry points change.

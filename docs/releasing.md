@@ -58,8 +58,7 @@ Review the Xcode project version change:
 git diff "Den Browser/Den Browser.xcodeproj/project.pbxproj"
 ```
 
-Extract the application from the ZIP and complete the applicable checks in
-[poc.md](./poc.md).
+Extract the application from the ZIP and verify candidate behavior:
 
 Confirm that Gatekeeper accepts the app, it launches on Apple Silicon, and its
 Profiles and Den state survive an upgrade. Confirm `codesign` reports Hardened
