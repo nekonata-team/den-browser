@@ -59,6 +59,70 @@ struct DenIPCTargetResolverTests {
         #expect(target.1.id == terminalBoardID)
     }
 
+    @Test func resolveTargetTerminalBoardReturnsNilForUnknownExplicitBoard() throws {
+        // Arrange
+        let directory = temporaryProfileDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let manager = makeProfileManager(directory: directory)
+        let store = try #require(manager.store(for: manager.personalProfileID))
+        _ = try #require(store.createTerminalBoard(workingDirectory: "/tmp", focus: true))
+
+        let nonExistentID = UUID().uuidString
+        let request = DenIPCRequest(command: "terminal.kill", boardID: nonExistentID)
+
+        // Act
+        let resolved = DenIPCTargetResolver.resolveTargetTerminalBoard(request: request, in: manager)
+
+        // Assert: MUST NOT fall back to the active terminal board
+        #expect(resolved == nil)
+    }
+
+    @Test func resolveTargetWebBoardReturnsNilForUnknownExplicitBoard() throws {
+        // Arrange
+        let directory = temporaryProfileDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let manager = makeProfileManager(directory: directory)
+        let store = try #require(manager.store(for: manager.personalProfileID))
+        _ = try #require(store.createBoard(urlString: "https://example.com/"))
+
+        let nonExistentID = UUID().uuidString
+        let request = DenIPCRequest(command: "sheet.eval", boardID: nonExistentID)
+
+        // Act
+        let resolved = DenIPCTargetResolver.resolveTargetWebBoard(request: request, in: manager)
+
+        // Assert: MUST NOT fall back to the active web board
+        #expect(resolved == nil)
+    }
+
+    @Test func resolveTargetWebBoardReturnsNilWhenCallerDeskHasNoWebBoard() throws {
+        // Arrange
+        let directory = temporaryProfileDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let manager = makeProfileManager(directory: directory)
+        let store = try #require(manager.store(for: manager.personalProfileID))
+
+        // Desk 1 has a web board
+        _ = try #require(store.createBoard(urlString: "https://example.com/"))
+
+        // Create Desk 2 with only a terminal board
+        store.createDesk(label: "Terminal Only", preset: .empty)
+        guard let desk2 = store.state.desks.last else {
+            Issue.record("Desk 2 missing")
+            return
+        }
+        _ = store.setFocusedDesk(desk2.id)
+        let terminalBoardID = try #require(store.createTerminalBoard(workingDirectory: "/tmp", focus: true))
+
+        let ambientRequest = DenIPCRequest(command: "sheet.url", callerBoardID: terminalBoardID.uuidString)
+
+        // Act
+        let resolved = DenIPCTargetResolver.resolveTargetWebBoard(request: ambientRequest, in: manager)
+
+        // Assert: MUST NOT fall back to Desk 1's web board
+        #expect(resolved == nil)
+    }
+
     private func temporaryProfileDirectory() -> URL {
         FileManager.default.temporaryDirectory
             .appending(path: "den-browser-ipc-resolver-tests-\(UUID().uuidString)", directoryHint: .isDirectory)
