@@ -4,7 +4,7 @@ import Foundation
 struct DrawerCommand: ParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "drawer",
-        abstract: "Inspect and manage items in the Drawer",
+        abstract: "Inspect and manage Drawer Items in the Drawer",
         subcommands: [
             DrawerListCommand.self,
             DrawerKeepCommand.self,
@@ -17,7 +17,7 @@ struct DrawerCommand: ParsableCommand {
 struct DrawerListCommand: ParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "list",
-        abstract: "List all items in the Drawer")
+        abstract: "List all Drawer Items in the Drawer")
 
     @OptionGroup var target: TargetOptions
 

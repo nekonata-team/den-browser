@@ -58,9 +58,9 @@ Commands operating on the Current Sheet of the resolved Web Board.
 
 | Command | Arguments | Description | Example |
 |---|---|---|---|
-| `den sheet open` | `<url>` | Navigate the current sheet to `<url>`. | `den sheet open https://example.com` |
-| `den sheet url` | None | Print the current URL of the sheet. | `den sheet url` |
-| `den sheet reload` | None | Reload the current sheet. | `den sheet reload` |
+| `den sheet open` | `<url>` | Navigate Current Sheet in the target Web Board to `<url>` or a search query. | `den sheet open https://example.com` |
+| `den sheet url` | None | Print Current Sheet URL of the target Web Board. | `den sheet url` |
+| `den sheet reload` | None | Reload Current Sheet in the target Web Board. | `den sheet reload` |
 | `den sheet eval` | `<script>` | Evaluate JavaScript and return the result. | `den sheet eval document.title` |
 | `den sheet text` | None | Extract visible text content (`innerText`) from the sheet. | `den sheet text` |
 | `den sheet back` | None | Navigate back in browsing history. | `den sheet back` |
@@ -94,7 +94,7 @@ Commands operating on the Den-wide Drawer for web material whose Desk context is
 
 | Command | Arguments | Description | Example |
 |---|---|---|---|
-| `den drawer list` | None | List all items in the Drawer with ID, title, and URL. | `den drawer list` |
+| `den drawer list` | None | List all Drawer Items in the Drawer with ID, title, and URL. | `den drawer list` |
 | `den drawer keep` | `<url> [--title <text>]` | Keep a URL in the Drawer as a Drawer Item without changing Desk layout. | `den drawer keep https://example.com` |
 | `den drawer place` | `<id>` | Place a Drawer Item onto the active Desk as a Web Board (item leaves Drawer). | `den drawer place 4F72344C-...` |
 | `den drawer discard` | `<id>` | Discard a Drawer Item without placing it onto a Desk. | `den drawer discard 4F72344C-...` |
@@ -104,8 +104,8 @@ Commands operating on native Terminal Boards.
 
 | Command | Arguments | Description | Example |
 |---|---|---|---|
-| `den terminal list` | None | List Terminal Boards on active Desk with ID, label, working directory, and foreground PID. | `den terminal list` |
-| `den terminal new` | `[<path>] [--run <cmd>] [--focus]` | Spawn a Terminal Board, optionally running an initial command in an interactive shell. | `den terminal new . --run "npm test" --focus` |
+| `den terminal list` | None | List all Terminal Boards on the active Desk with ID, label, working directory, and foreground PID. | `den terminal list` |
+| `den terminal new` | `[<path>] [--run <cmd>] [--focus]` | Open a new Terminal Board, optionally running an initial command in an interactive shell. | `den terminal new . --run "npm test" --focus` |
 | `den terminal text` | `[--board <id>]` | Read visible terminal screen buffer as clean plain text. | `den terminal text` |
 | `den terminal send` | `<text> [--board <id>]` | Inject raw text or escape sequences into terminal pty. | `den terminal send "git status\n"` |
 | `den terminal kill` | `[-s <signal>] [--board <id>]` | Send a POSIX signal to the foreground process group (defaults to `TERM`). | `den terminal kill -s TERM` |

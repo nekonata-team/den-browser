@@ -4,7 +4,7 @@ import Foundation
 struct TerminalCommand: ParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "terminal",
-        abstract: "Control and inspect Terminal Boards",
+        abstract: "Inspect and control Terminal Boards on the active Desk",
         subcommands: [
             TerminalListCommand.self,
             TerminalNewCommand.self,
@@ -18,7 +18,7 @@ struct TerminalCommand: ParsableCommand {
 struct TerminalListCommand: ParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "list",
-        abstract: "List Terminal Boards on the active Desk")
+        abstract: "List all Terminal Boards on the active Desk")
 
     @OptionGroup var target: TargetOptions
 
@@ -30,7 +30,7 @@ struct TerminalListCommand: ParsableCommand {
 struct TerminalNewCommand: ParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "new",
-        abstract: "Create a new Terminal Board")
+        abstract: "Open a new Terminal Board")
 
     @OptionGroup var target: TargetOptions
     @Argument(help: "Working directory for the terminal board") var path: String?
@@ -56,7 +56,7 @@ struct TerminalNewCommand: ParsableCommand {
 struct TerminalTextCommand: ParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "text",
-        abstract: "Dump visible screen text of Terminal Board")
+        abstract: "Print visible screen text from the target Terminal Board")
 
     @OptionGroup var target: TargetOptions
 
@@ -68,7 +68,7 @@ struct TerminalTextCommand: ParsableCommand {
 struct TerminalSendCommand: ParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "send",
-        abstract: "Send text to Terminal Board")
+        abstract: "Send text to the target Terminal Board")
 
     @OptionGroup var target: TargetOptions
     @Argument(help: "Text to send to the terminal") var text: String
@@ -81,7 +81,7 @@ struct TerminalSendCommand: ParsableCommand {
 struct TerminalKillCommand: ParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "kill",
-        abstract: "Send a signal to foreground process group of Terminal Board")
+        abstract: "Send a signal to the foreground process group of the target Terminal Board")
 
     @OptionGroup var target: TargetOptions
     @Option(name: [.short, .customLong("signal")], help: "Signal name or number to send (default: TERM)")

@@ -4,7 +4,7 @@ import Foundation
 struct BoardCommand: ParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "board",
-        abstract: "Inspect and manage boards on the active Desk",
+        abstract: "Inspect and manage Boards on the active Desk",
         subcommands: [
             BoardListCommand.self,
             BoardNewCommand.self,
@@ -16,7 +16,7 @@ struct BoardCommand: ParsableCommand {
 struct BoardListCommand: ParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "list",
-        abstract: "List all boards on the active Desk")
+        abstract: "List all Boards on the active Desk")
 
     @OptionGroup var target: TargetOptions
 
@@ -28,7 +28,7 @@ struct BoardListCommand: ParsableCommand {
 struct BoardNewCommand: ParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "new",
-        abstract: "Open a new Web Board with a URL")
+        abstract: "Open a new Web Board with a URL or search query")
 
     @OptionGroup var target: TargetOptions
     @Argument(help: "URL or search query for the new board") var url: String

@@ -4,7 +4,7 @@ import Foundation
 struct SheetCommand: ParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "sheet",
-        abstract: "Inspect and control web screens in Web Boards",
+        abstract: "Inspect and control Sheets in Web Boards",
         subcommands: [
             SheetOpenCommand.self,
             SheetURLCommand.self,
@@ -27,7 +27,7 @@ struct SheetCommand: ParsableCommand {
 struct SheetOpenCommand: ParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "open",
-        abstract: "Navigate current sheet in target Web Board to a URL")
+        abstract: "Navigate Current Sheet in the target Web Board to a URL or search query")
 
     @OptionGroup var target: TargetOptions
     @Argument(help: "URL or search query to open") var url: String
@@ -40,7 +40,7 @@ struct SheetOpenCommand: ParsableCommand {
 struct SheetURLCommand: ParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "url",
-        abstract: "Print current URL of target Web Board")
+        abstract: "Print Current Sheet URL of the target Web Board")
 
     @OptionGroup var target: TargetOptions
 
@@ -52,7 +52,7 @@ struct SheetURLCommand: ParsableCommand {
 struct SheetReloadCommand: ParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "reload",
-        abstract: "Reload current sheet in target Web Board")
+        abstract: "Reload Current Sheet in the target Web Board")
 
     @OptionGroup var target: TargetOptions
 
@@ -64,7 +64,7 @@ struct SheetReloadCommand: ParsableCommand {
 struct SheetEvalCommand: ParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "eval",
-        abstract: "Evaluate JavaScript in target Web Board")
+        abstract: "Evaluate JavaScript in the target Web Board")
 
     @OptionGroup var target: TargetOptions
     @Argument(parsing: .remaining, help: "JavaScript code to evaluate") var scriptParts: [String]
@@ -81,7 +81,7 @@ struct SheetEvalCommand: ParsableCommand {
 struct SheetTextCommand: ParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "text",
-        abstract: "Print visible text of target Web Board")
+        abstract: "Print visible text from the target Web Board")
 
     @OptionGroup var target: TargetOptions
 
@@ -142,7 +142,7 @@ struct SheetFillCommand: ParsableCommand {
 struct SheetScreenshotCommand: ParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "screenshot",
-        abstract: "Capture a PNG screenshot of target Web Board")
+        abstract: "Capture a PNG screenshot of the target Web Board")
 
     @OptionGroup var target: TargetOptions
     @Argument(help: "Destination file path for PNG screenshot (optional)")
