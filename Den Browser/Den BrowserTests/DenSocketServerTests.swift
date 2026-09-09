@@ -15,8 +15,8 @@ struct DenSocketServerTests {
             guard let request = try? JSONDecoder().decode(DenIPCRequest.self, from: incomingData) else {
                 return (try? JSONEncoder().encode(DenIPCResponse.failure("decode error"))) ?? Data()
             }
-            if request.command == .sheet(.url) {
-                var responseData = (try? JSONEncoder().encode(DenIPCResponse.success(message: "pong"))) ?? Data()
+            if request.command == .health {
+                var responseData = (try? JSONEncoder().encode(DenIPCResponse.success())) ?? Data()
                 responseData.append(UInt8(ascii: "\n"))
                 return responseData
             }
@@ -47,7 +47,7 @@ struct DenSocketServerTests {
         }
         #expect(connectResult == 0)
 
-        var requestData = try JSONEncoder().encode(DenIPCRequest(command: .sheet(.url)))
+        var requestData = try JSONEncoder().encode(DenIPCRequest(command: .health))
         requestData.append(UInt8(ascii: "\n"))
 
         requestData.withUnsafeBytes { rawBuffer in
@@ -68,6 +68,6 @@ struct DenSocketServerTests {
 
         let response = try JSONDecoder().decode(DenIPCResponse.self, from: responseData)
         #expect(response.isOk == true)
-        #expect(response.message == "pong")
+        #expect(response.message == nil)
     }
 }

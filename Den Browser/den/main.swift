@@ -5,6 +5,7 @@ struct DenCLI: ParsableCommand {
         commandName: "den",
         abstract: "Control and inspect Den Browser from terminal or external shell",
         subcommands: [
+            HealthCommand.self,
             SheetCommand.self,
             BoardCommand.self,
             DeskCommand.self,

@@ -48,9 +48,11 @@ nonisolated enum DenIPCCommand: Equatable, Sendable {
     case desk(Desk)
     case drawer(Drawer)
     case terminal(Terminal)
+    case health
 
     private static let allCommands: [Self] =
-        Sheet.allCases.map { .sheet($0) }
+        [.health]
+        + Sheet.allCases.map { .sheet($0) }
         + Board.allCases.map { .board($0) }
         + Desk.allCases.map { .desk($0) }
         + Drawer.allCases.map { .drawer($0) }
@@ -70,6 +72,7 @@ nonisolated enum DenIPCCommand: Equatable, Sendable {
         case .desk(let command): "desk.\(command.rawValue)"
         case .drawer(let command): "drawer.\(command.rawValue)"
         case .terminal(let command): "terminal.\(command.rawValue)"
+        case .health: "health"
         }
     }
 }

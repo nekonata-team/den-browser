@@ -107,7 +107,9 @@ enum DenIPCClient {
             }
         } else {
             if response.isOk {
-                if let boardId = response.boardId {
+                if command == .health {
+                    print("healthy")
+                } else if let boardId = response.boardId {
                     print(boardId)
                 } else if let boards = response.boards {
                     for currentBoard in boards {

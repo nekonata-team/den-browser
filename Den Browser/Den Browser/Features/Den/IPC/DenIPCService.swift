@@ -48,6 +48,8 @@ final class DenIPCService {
 
     func handleRequest(_ request: DenIPCRequest) async -> DenIPCResponse {
         switch request.command {
+        case .health:
+            return .success()
         case .sheet(let command):
             return await handleSheetCommand(command, request: request)
         case .board(let command):

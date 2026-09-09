@@ -62,6 +62,7 @@ Agents can spawn, observe, and interact with background jobs, dev servers, or TU
 ## 6. Command Discovery & Scripting
 
 - Run `den --help` or `den <domain> --help` (`den sheet --help`, `den terminal --help`, `den drawer --help`) for all commands and options.
+- Run `den health` to check whether Den Browser is ready to accept IPC requests. It does not target a Desk or Board; TTY output is `healthy`, while `--json` or piped output is `{"ok":true}`.
 - When piped (e.g. `| jq`) or with `--json`, commands emit single-line JSON with `ok: true/false`:
   - Entities: `.board_id`, `.drawer_item_id`, `.url`, `.text`, `.value`
   - Collections: `.boards[]`, `.terminals[]`, `.drawer_items[]`, `.desks[]`

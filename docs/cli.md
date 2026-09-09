@@ -14,6 +14,8 @@ Den CLI follows a strict resource-oriented pattern:
 den <domain> <action> [arguments...] [options...]
 ```
 
+`den health` is an application-level readiness check. It does not target a Desk or Board.
+
 Each `<domain>` corresponds directly to a core domain entity defined in [CONTEXT.md](../CONTEXT.md) and reflects the directory structure in `Den Browser/Features/Den/`:
 
 ```text
@@ -53,7 +55,21 @@ For `sheet` commands, target Web Board resolution follows this priority:
 
 ## 3. Command Specification (v1)
 
-### 3.1 `den sheet` (Web Screen & Content)
+### 3.1 `den health` (Den Readiness)
+
+Checks whether Den Browser is accepting IPC requests.
+
+| Command | Arguments | Description | Example |
+|---|---|---|---|
+| `den health` | None | Check whether Den Browser is ready. | `den health` |
+
+On a TTY, it prints `healthy`. With `--json` or when piped, it returns:
+
+```json
+{"ok":true}
+```
+
+### 3.2 `den sheet` (Web Screen & Content)
 Commands operating on the Current Sheet of the resolved Web Board.
 
 | Command | Arguments | Description | Example |
@@ -73,7 +89,7 @@ Commands operating on the Current Sheet of the resolved Web Board.
 | `den sheet fill` | `<target> <value>` | Fill an input/textarea with text by reference or selector. | `den sheet fill @e2 "search query"` |
 | `den sheet screenshot` | `[<path>]` | Save a PNG screenshot of the web sheet (defaults to temporary directory). | `den sheet screenshot /tmp/screen.png` |
 
-### 3.2 `den board` (Board Surfaces & Layout)
+### 3.3 `den board` (Board Surfaces & Layout)
 Commands operating on Boards within the active Desk.
 
 | Command | Arguments | Description | Example |
@@ -82,14 +98,14 @@ Commands operating on Boards within the active Desk.
 | `den board new` | `<url> [--focus]` | Open a **new** Web Board with `<url>` on the active Desk (does not steal focus unless `--focus` is given) and return its UUID. | `den board new https://example.com` |
 | `den board close` | `[<id>]` | Close the specified Board or the target Web Board. Closing by explicit `<id>` fails (`exit 1`) without closing the active Board if the ID is invalid or not found. | `den board close` |
 
-### 3.3 `den desk` (Desks & Workspaces)
+### 3.4 `den desk` (Desks & Workspaces)
 Commands operating on Desks within the Den.
 
 | Command | Arguments | Description | Example |
 |---|---|---|---|
 | `den desk list` | None | List all Desks in the Den with ID, label, board count, and active status. | `den desk list` |
 
-### 3.4 `den drawer` (Drawer & Web Material)
+### 3.5 `den drawer` (Drawer & Web Material)
 Commands operating on the Den-wide Drawer for web material whose Desk context is not yet settled.
 
 | Command | Arguments | Description | Example |
@@ -99,7 +115,7 @@ Commands operating on the Den-wide Drawer for web material whose Desk context is
 | `den drawer place` | `<id>` | Place a Drawer Item onto the active Desk as a Web Board (item leaves Drawer). | `den drawer place 4F72344C-...` |
 | `den drawer discard` | `<id>` | Discard a Drawer Item without placing it onto a Desk. | `den drawer discard 4F72344C-...` |
 
-### 3.5 `den terminal` (Terminal Boards)
+### 3.6 `den terminal` (Terminal Boards)
 Commands operating on native Terminal Boards.
 
 | Command | Arguments | Description | Example |
