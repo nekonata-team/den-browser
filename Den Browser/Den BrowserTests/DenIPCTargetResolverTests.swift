@@ -123,6 +123,47 @@ struct DenIPCTargetResolverTests {
         #expect(resolved == nil)
     }
 
+    @Test func boardCloseReturnsErrorAndDoesNotCloseActiveBoardOnInvalidID() async throws {
+        // Arrange
+        let directory = temporaryProfileDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let manager = makeProfileManager(directory: directory)
+        let store = try #require(manager.store(for: manager.personalProfileID))
+        let boardID = try #require(store.createBoard(urlString: "https://example.com/"))
+        let service = DenIPCService(profileManager: manager)
+
+        let request = DenIPCRequest(command: "board.close", args: ["not-a-valid-uuid"])
+
+        // Act
+        let response = await service.handleRequest(request)
+
+        // Assert: Must return failure and active board must still exist
+        #expect(response.isOk == false)
+        #expect(response.error?.contains("Invalid board ID") == true)
+        #expect(store.board(for: boardID) != nil)
+    }
+
+    @Test func boardCloseReturnsErrorAndDoesNotCloseActiveBoardOnNonExistentUUID() async throws {
+        // Arrange
+        let directory = temporaryProfileDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let manager = makeProfileManager(directory: directory)
+        let store = try #require(manager.store(for: manager.personalProfileID))
+        let boardID = try #require(store.createBoard(urlString: "https://example.com/"))
+        let service = DenIPCService(profileManager: manager)
+
+        let nonExistentID = UUID().uuidString
+        let request = DenIPCRequest(command: "board.close", args: [nonExistentID])
+
+        // Act
+        let response = await service.handleRequest(request)
+
+        // Assert: Must return failure and active board must still exist
+        #expect(response.isOk == false)
+        #expect(response.error?.contains("Board not found") == true)
+        #expect(store.board(for: boardID) != nil)
+    }
+
     private func temporaryProfileDirectory() -> URL {
         FileManager.default.temporaryDirectory
             .appending(path: "den-browser-ipc-resolver-tests-\(UUID().uuidString)", directoryHint: .isDirectory)

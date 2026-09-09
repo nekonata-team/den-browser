@@ -9,6 +9,10 @@ final class DenIPCService {
     private var server: DenSocketServer?
     private weak var profileManager: ProfileManager?
 
+    init(profileManager: ProfileManager? = nil) {
+        self.profileManager = profileManager
+    }
+
     func start(profileManager: ProfileManager) {
         self.profileManager = profileManager
         let server = DenSocketServer()
@@ -42,7 +46,7 @@ final class DenIPCService {
         return responseData
     }
 
-    private func handleRequest(_ request: DenIPCRequest) async -> DenIPCResponse {
+    func handleRequest(_ request: DenIPCRequest) async -> DenIPCResponse {
         let command = request.command.lowercased()
         if command.hasPrefix("sheet.") {
             return await handleSheetCommand(command, request: request)
@@ -235,16 +239,17 @@ final class DenIPCService {
             return .failure("Failed to open board with \(urlString)")
 
         case "board.close":
-            if let idString = request.args.first ?? request.boardID, let targetID = UUID(uuidString: idString) {
+            if let idString = request.args.first ?? request.boardID {
+                guard let targetID = UUID(uuidString: idString) else {
+                    return .failure("Invalid board ID: \(idString)")
+                }
                 let allStores = profileManager?.allStores ?? []
-                for candidateStore in allStores {
-                    for desk in candidateStore.state.desks where desk.boards.contains(where: { $0.id == targetID }) {
-                        candidateStore.removeBoard(targetID)
-                        return .success(
-                            message: "Closed Board \(targetID.uuidString)",
-                            closedBoardId: targetID.uuidString
-                        )
-                    }
+                for candidateStore in allStores where candidateStore.boardIndices(for: targetID) != nil {
+                    candidateStore.removeBoard(targetID)
+                    return .success(
+                        message: "Closed Board \(targetID.uuidString)",
+                        closedBoardId: targetID.uuidString
+                    )
                 }
                 return .failure("Board not found: \(idString)")
             }
