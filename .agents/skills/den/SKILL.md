@@ -52,6 +52,7 @@ Agents can spawn, observe, and interact with background jobs, dev servers, or TU
 - List: `den terminal list` (returns `id`, `label`, `working_directory`, `foreground_pid`).
 - Observe screen: `den terminal text [--board <id>]` (reads clean visible viewport text buffer; ideal for checking build output, logs, or TUI state).
 - Send input: `den terminal send "<text>\n" [--board <id>]` (injects characters or escape sequences into terminal pty).
+- Stop process: `den terminal kill [-s <signal>] [--board <id>]` (sends POSIX signal to foreground process group; defaults to `TERM`, e.g. for restarting dev servers).
 
 ### Safety & Policy Boundary
 

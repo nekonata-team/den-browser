@@ -175,4 +175,38 @@ struct TerminalRuntimeTests {
         #expect(text != nil)
         runtime.dispose()
     }
+
+    @Test func terminalRuntimeSendSignalFailsWhenNoProcessRunning() {
+        let runtime = TerminalRuntime(
+            workingDirectory: FileManager.default.homeDirectoryForCurrentUser.path,
+            events: .init(
+                onClose: {},
+                onFocus: {},
+                onWorkingDirectoryChange: { _ in },
+                onTitleChange: { _ in },
+                onOpenURL: { _ in },
+                onNotification: { _, _ in }
+            )
+        )
+
+        #expect(throws: TerminalRuntime.SignalError.self) {
+            try runtime.sendSignal(SIGTERM)
+        }
+        runtime.dispose()
+    }
+
+    @Test func denIPCServiceParseSignalSupportsNamesAndNumbers() {
+        #expect(DenIPCService.parseSignal("TERM") == .init(number: SIGTERM, name: "SIGTERM"))
+        #expect(DenIPCService.parseSignal("sigterm") == .init(number: SIGTERM, name: "SIGTERM"))
+        #expect(DenIPCService.parseSignal("15") == .init(number: SIGTERM, name: "SIGTERM"))
+        #expect(DenIPCService.parseSignal("INT") == .init(number: SIGINT, name: "SIGINT"))
+        #expect(DenIPCService.parseSignal("SIGINT") == .init(number: SIGINT, name: "SIGINT"))
+        #expect(DenIPCService.parseSignal("2") == .init(number: SIGINT, name: "SIGINT"))
+        #expect(DenIPCService.parseSignal("KILL") == .init(number: SIGKILL, name: "SIGKILL"))
+        #expect(DenIPCService.parseSignal("9") == .init(number: SIGKILL, name: "SIGKILL"))
+        #expect(DenIPCService.parseSignal("HUP") == .init(number: SIGHUP, name: "SIGHUP"))
+        #expect(DenIPCService.parseSignal("1") == .init(number: SIGHUP, name: "SIGHUP"))
+        #expect(DenIPCService.parseSignal("UNKNOWN") == nil)
+        #expect(DenIPCService.parseSignal("999") == nil)
+    }
 }

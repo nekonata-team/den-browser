@@ -10,6 +10,7 @@ struct TerminalCommand: ParsableCommand {
             TerminalNewCommand.self,
             TerminalTextCommand.self,
             TerminalSendCommand.self,
+            TerminalKillCommand.self,
         ]
     )
 }
@@ -74,5 +75,19 @@ struct TerminalSendCommand: ParsableCommand {
 
     func run() throws {
         try DenIPCClient.execute(command: "terminal.send", args: [text], target: target)
+    }
+}
+
+struct TerminalKillCommand: ParsableCommand {
+    static let configuration = CommandConfiguration(
+        commandName: "kill",
+        abstract: "Send a signal to foreground process group of Terminal Board")
+
+    @OptionGroup var target: TargetOptions
+    @Option(name: [.short, .customLong("signal")], help: "Signal name or number to send (default: TERM)")
+    var signal: String = "TERM"
+
+    func run() throws {
+        try DenIPCClient.execute(command: "terminal.kill", args: [signal], target: target)
     }
 }

@@ -1,3 +1,4 @@
+import Darwin
 import Foundation
 import WebKit
 
@@ -332,5 +333,24 @@ extension DenStore {
             changed = true
         }
         if changed { save() }
+    }
+
+    func foregroundProcessGroupID(for board: BoardState) -> pid_t? {
+        guard board.isTerminal else { return nil }
+        if board.isZmx, let sessionName = board.zmxSessionName {
+            return zmxClient.foregroundProcessGroupID(for: sessionName)
+        }
+        return terminalRuntimes[board.id]?.foregroundProcessGroupID
+    }
+
+    func sendSignal(_ signal: Int32, to board: BoardState) throws -> pid_t {
+        guard let pid = foregroundProcessGroupID(for: board), pid > 1, pid != getpid() else {
+            throw TerminalRuntime.SignalError("No foreground process found to signal")
+        }
+        if killpg(pid, signal) == 0 || kill(pid, signal) == 0 {
+            return pid
+        }
+        let err = String(cString: strerror(errno))
+        throw TerminalRuntime.SignalError("Failed to send signal \(signal) to process \(pid): \(err)")
     }
 }

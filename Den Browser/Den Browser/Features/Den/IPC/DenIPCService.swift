@@ -1,3 +1,4 @@
+import Darwin
 import Foundation
 import WebKit
 
@@ -386,12 +387,12 @@ final class DenIPCService {
                 return .failure("No active Desk")
             }
             let terminals = desk.boards.filter(\.isTerminal).map { board in
-                let runtime = store.terminalRuntimes[board.id]
+                let foregroundPid = store.foregroundProcessGroupID(for: board)
                 return DenTerminalInfo(
                     id: board.id.uuidString,
                     label: board.label,
                     workingDirectory: board.terminalWorkingDirectory,
-                    foregroundPid: runtime?.foregroundProcessGroupID.map(Int.init)
+                    foregroundPid: foregroundPid.map(Int.init)
                 )
             }
             return .success(terminals: terminals)
@@ -496,8 +497,58 @@ final class DenIPCService {
             runtime.sendText(text)
             return .success(message: "Sent text to Terminal Board \(board.id.uuidString)")
 
+        case "terminal.kill":
+            guard
+                let (store, board) = DenIPCTargetResolver.resolveTargetTerminalBoard(
+                    request: request,
+                    in: profileManager
+                )
+            else {
+                return .failure("No Terminal Board found")
+            }
+            let rawSignal = request.args.first?.trimmingCharacters(in: .whitespacesAndNewlines)
+            let signalName = (rawSignal?.isEmpty == false) ? (rawSignal ?? "TERM") : "TERM"
+            guard let parsed = Self.parseSignal(signalName) else {
+                return .failure("Unknown signal: \(signalName)")
+            }
+            do {
+                let pid = try store.sendSignal(parsed.number, to: board)
+                return .success(message: "Sent \(parsed.name) to process group \(pid) (Board \(board.id.uuidString))")
+            } catch {
+                return .failure(error.localizedDescription)
+            }
+
         default:
             return .failure("Unknown terminal command: \(command)")
+        }
+    }
+
+    struct ParsedSignal: Equatable {
+        let number: Int32
+        let name: String
+    }
+
+    static func parseSignal(_ raw: String) -> ParsedSignal? {
+        let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
+        let name = trimmed.hasPrefix("SIG") ? String(trimmed.dropFirst(3)) : trimmed
+        switch name {
+        case "HUP", "1": return ParsedSignal(number: SIGHUP, name: "SIGHUP")
+        case "INT", "2": return ParsedSignal(number: SIGINT, name: "SIGINT")
+        case "QUIT", "3": return ParsedSignal(number: SIGQUIT, name: "SIGQUIT")
+        case "ABRT", "6": return ParsedSignal(number: SIGABRT, name: "SIGABRT")
+        case "KILL", "9": return ParsedSignal(number: SIGKILL, name: "SIGKILL")
+        case "ALRM", "14": return ParsedSignal(number: SIGALRM, name: "SIGALRM")
+        case "TERM", "15": return ParsedSignal(number: SIGTERM, name: "SIGTERM")
+        case "STOP", "17": return ParsedSignal(number: SIGSTOP, name: "SIGSTOP")
+        case "TSTP", "18": return ParsedSignal(number: SIGTSTP, name: "SIGTSTP")
+        case "CONT", "19": return ParsedSignal(number: SIGCONT, name: "SIGCONT")
+        case "USR1", "30": return ParsedSignal(number: SIGUSR1, name: "SIGUSR1")
+        case "USR2", "31": return ParsedSignal(number: SIGUSR2, name: "SIGUSR2")
+        default:
+            if let num = Int32(name), num > 0, num < 32 {
+                return ParsedSignal(number: num, name: "SIG\(num)")
+            }
+            return nil
         }
     }
 }

@@ -141,6 +141,22 @@ nonisolated struct ZmxClient: Sendable {
         sessionSnapshot()?.groups
     }
 
+    func foregroundProcessGroupID(for sessionName: String) -> pid_t? {
+        guard isConfigured,
+            let sessions = sessionsWithRootLabels(),
+            let session = sessions.first(where: { $0.name == sessionName }),
+            let sessionPID = session.pid,
+            let processes = processSnapshot(),
+            let sessionProcess = processes[sessionPID]
+        else { return nil }
+
+        let foregroundProcessGroupID = sessionProcess.terminalProcessGroupID
+        if foregroundProcessGroupID > 0 {
+            return pid_t(foregroundProcessGroupID)
+        }
+        return pid_t(sessionPID)
+    }
+
     private func makeSessionGroups(from sessions: [ZmxSessionInfo]) -> [ZmxSessionGroup] {
         var childrenByRoot: [String: [String]] = [:]
         var rootSessionNames = Set(sessions.map(\.name))

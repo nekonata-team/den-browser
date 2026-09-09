@@ -107,6 +107,7 @@ Commands operating on native Terminal Boards.
 | `den terminal new` | `[<path>] [--run <cmd>] [--focus]` | Spawn a Terminal Board, optionally running an initial command in an interactive shell. | `den terminal new . --run "npm test" --focus` |
 | `den terminal text` | `[--board <id>]` | Read visible terminal screen buffer as clean plain text. | `den terminal text` |
 | `den terminal send` | `<text> [--board <id>]` | Inject raw text or escape sequences into terminal pty. | `den terminal send "git status\n"` |
+| `den terminal kill` | `[-s <signal>] [--board <id>]` | Send a POSIX signal to the foreground process group (defaults to `TERM`). | `den terminal kill -s TERM` |
 
 ---
 

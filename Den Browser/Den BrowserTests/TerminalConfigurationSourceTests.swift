@@ -102,6 +102,27 @@ struct TerminalConfigurationSourceTests {
             ])
     }
 
+    @Test func zmxClientResolvesForegroundProcessGroupID() {
+        let client = ZmxClient(
+            executablePath: "/opt/homebrew/bin/zmx",
+            commandRunner: StubTerminalCommandRunner(
+                responses: [
+                    ["list"]: TerminalCommandResult(
+                        terminationStatus: 0,
+                        standardOutput: "name=den-web\tpid=100\nname=den-idle\tpid=200\n"),
+                    ["-axo", "pid=,ppid=,pgid=,tpgid=,command="]: TerminalCommandResult(
+                        terminationStatus: 0,
+                        standardOutput:
+                            "100 1 100 600 /bin/zsh\n"
+                            + "600 100 600 600 /opt/just web dev\n"
+                            + "200 1 200 0 /bin/zsh\n"),
+                ]))
+
+        #expect(client.foregroundProcessGroupID(for: "den-web") == 600)
+        #expect(client.foregroundProcessGroupID(for: "den-idle") == 200)
+        #expect(client.foregroundProcessGroupID(for: "non-existent") == nil)
+    }
+
     @Test func zmxClientUsesUnknownWhenProcessSnapshotFails() throws {
         let client = ZmxClient(
             executablePath: "/opt/homebrew/bin/zmx",
