@@ -18,10 +18,11 @@ Each `<domain>` corresponds directly to a core domain entity defined in [CONTEXT
 
 ```text
 Den (Application Workspace) ─── den
+ ├── Drawer (Temporary Web Material) ─── den drawer <action>
  ├── Desk (Virtual Workspace) ─── den desk <action>
       └── Board (Work Surface) ─── den board <action>
            ├── [Web] Sheet (Web Screen) ─── den sheet <action>
-           └── [Terminal] Session ─── den terminal <action> (Future)
+           └── [Terminal] Session ─── den terminal <action>
 ```
 
 ---
@@ -37,15 +38,15 @@ When a command is received with `DEN_BOARD_ID`:
 1. Den Browser dynamically locates the Desk that currently contains that Terminal Board. Moving Boards across Desks does not break targeting because Desk membership is evaluated dynamically from live state.
 2. The nearest adjacent Web Board on that Desk is resolved (scanned rightward, then leftward).
 
-For `sheet` commands, the target Web Board resolution follows this priority:
-1. **Explicit Board ID**: Supplied via `--board <id>`.
+For `sheet` commands, target Web Board resolution follows this priority:
+1. **Explicit Board ID**: Supplied via `--board <id>`. If specified, the target must be a valid UUID for an existing Board; invalid or non-existent IDs fail immediately (`exit 1`) with an error and never fall back to ambient candidates.
 2. **Adjacent Web Board**: Resolved relative to `callerBoardID` on its current Desk.
 3. **Focused Board**: The currently focused Board on the active Desk, if it is a Web Board.
 4. **First Web Board**: The first Web Board found on the active Desk.
 
 ### Global Options
 - `--json`: Force output as structured JSON. When standard output is redirected or piped (non-TTY), JSON output is enabled automatically.
-- `--board <id>`: Explicitly target a specific Board by its UUID.
+- `--board <id>`: Explicitly target a specific Board by its UUID. Fails immediately if not found or invalid.
 - `--socket <path>`: Override the Unix domain socket path (defaults to `~/.den/den.sock` or `$DEN_SOCKET`).
 
 ---
@@ -79,7 +80,7 @@ Commands operating on Boards within the active Desk.
 |---|---|---|---|
 | `den board list` | None | List all Boards on the active Desk with ID, type (`web`/`terminal`), and label. | `den board list` |
 | `den board new` | `<url> [--focus]` | Open a **new** Web Board with `<url>` on the active Desk (does not steal focus unless `--focus` is given) and return its UUID. | `den board new https://example.com` |
-| `den board close` | `[<id>]` | Close the specified Board or the target Web Board. | `den board close` |
+| `den board close` | `[<id>]` | Close the specified Board or the target Web Board. Closing by explicit `<id>` fails (`exit 1`) without closing the active Board if the ID is invalid or not found. | `den board close` |
 
 ### 3.3 `den desk` (Desks & Workspaces)
 Commands operating on Desks within the Den.
