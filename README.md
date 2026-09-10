@@ -33,6 +33,15 @@ Coding agents (Claude Code, Cursor, etc.) can drive adjacent Web Boards via the 
 npx skills add nekonata-team/den-browser --skill den
 ```
 
+From a Terminal Board, the bundled `den` CLI can inspect and control the
+adjacent Web Board:
+
+```sh
+den board list
+den sheet snapshot -i
+den sheet text
+```
+
 ## Core model
 
 - **Profile**: An isolated web identity with its own sign-ins, site data, and

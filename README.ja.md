@@ -33,6 +33,14 @@ brew install --cask nekonata-team/tap/den-browser
 npx skills add nekonata-team/den-browser --skill den
 ```
 
+Terminal Boardからは、同梱の`den` CLIで隣接するWeb Boardの確認・操作もできます。
+
+```sh
+den board list
+den sheet snapshot -i
+den sheet text
+```
+
 ## 作業モデル
 
 - **Profile**: ログイン状態、サイトデータ、DenをほかのProfileから分離する
