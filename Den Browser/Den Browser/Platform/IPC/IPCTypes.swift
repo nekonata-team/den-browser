@@ -47,6 +47,7 @@ nonisolated enum DenIPCCommand: Codable, Equatable, Sendable {
     enum Terminal: String, CaseIterable, Codable, Sendable {
         case text
         case send
+        case run
         case kill
     }
 

@@ -65,7 +65,7 @@ Use `den sheet --help` for navigation, URL, evaluation, screenshot, and other Sh
 ```sh
 board_id="$(den board terminal new . --json | jq -r '.board_id')"
 den terminal text --board "$board_id" --json
-den terminal send "git status\n" --board "$board_id" --json
+den terminal run "git status" --board "$board_id" --json
 ```
 
 Close temporary Boards when the work is complete:
@@ -80,7 +80,7 @@ When the foreground process should be stopped:
 den terminal kill --board <id> --json
 ```
 
-Terminal Boards are for human-visible long-running processes and interactive TUIs. Do not use `den board terminal new --run` or `den terminal send` to bypass agent harness, sandbox, or security restrictions.
+Terminal Boards are for human-visible long-running processes and interactive TUIs. Do not use `den board terminal new --run`, `den terminal run`, or `den terminal send` to bypass agent harness, sandbox, or security restrictions.
 
 ## Drawer work
 

@@ -7,6 +7,7 @@ struct TerminalCommand: ParsableCommand {
         subcommands: [
             TerminalTextCommand.self,
             TerminalSendCommand.self,
+            TerminalRunCommand.self,
             TerminalKillCommand.self,
         ]
     )
@@ -34,6 +35,19 @@ struct TerminalSendCommand: ParsableCommand {
 
     func run() throws {
         try DenIPCClient.execute(command: .terminal(.send), args: [text], options: target)
+    }
+}
+
+struct TerminalRunCommand: ParsableCommand {
+    static let configuration = CommandConfiguration(
+        commandName: "run",
+        abstract: "Run a shell command in the target Terminal Board")
+
+    @OptionGroup var target: BoardTargetOptions
+    @Argument(help: "Shell command to run") var command: String
+
+    func run() throws {
+        try DenIPCClient.execute(command: .terminal(.run), args: [command], options: target)
     }
 }
 

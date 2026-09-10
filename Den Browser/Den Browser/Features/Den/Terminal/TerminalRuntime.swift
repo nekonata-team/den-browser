@@ -69,6 +69,44 @@ final class TerminalRuntime: NSObject, ObservableObject {
         terminalView.sendText(text)
     }
 
+    func runCommand(_ command: String) {
+        terminalView.sendText(command)
+
+        let timestamp = ProcessInfo.processInfo.systemUptime
+        let windowNumber = terminalView.window?.windowNumber ?? 0
+        let event = NSEvent.keyEvent(
+            with: .keyDown,
+            location: .zero,
+            modifierFlags: [],
+            timestamp: timestamp,
+            windowNumber: windowNumber,
+            context: nil,
+            characters: "\r",
+            charactersIgnoringModifiers: "\r",
+            isARepeat: false,
+            keyCode: 36
+        )
+        if let event {
+            terminalView.keyDown(with: event)
+        }
+
+        let keyUp = NSEvent.keyEvent(
+            with: .keyUp,
+            location: .zero,
+            modifierFlags: [],
+            timestamp: timestamp,
+            windowNumber: windowNumber,
+            context: nil,
+            characters: "\r",
+            charactersIgnoringModifiers: "\r",
+            isARepeat: false,
+            keyCode: 36
+        )
+        if let keyUp {
+            terminalView.keyUp(with: keyUp)
+        }
+    }
+
     struct SignalError: LocalizedError, Equatable {
         let message: String
         var errorDescription: String? { message }

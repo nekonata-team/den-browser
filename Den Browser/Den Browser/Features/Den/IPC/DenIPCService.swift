@@ -333,8 +333,7 @@ final class DenIPCService {
             let runtime = store.terminalRuntime(for: board)
             Task { @MainActor in
                 try? await Task.sleep(for: .milliseconds(150))
-                let commandText = runCommand.hasSuffix("\n") ? runCommand : runCommand + "\n"
-                runtime.sendText(commandText)
+                runtime.runCommand(runCommand)
             }
         }
 
@@ -482,6 +481,22 @@ final class DenIPCService {
             let runtime = store.terminalRuntime(for: board)
             runtime.sendText(text)
             return .success(message: "Sent text to Terminal Board \(board.id.uuidString)")
+
+        case .run:
+            guard
+                let (store, board) = DenIPCTargetResolver.resolveTargetTerminalBoard(
+                    request: request,
+                    in: profileManager
+                )
+            else {
+                return .failure("No Terminal Board found")
+            }
+            guard let command = request.args.first, !command.isEmpty else {
+                return .failure("Usage: den terminal run <command> [--board <id>]")
+            }
+            let runtime = store.terminalRuntime(for: board)
+            runtime.runCommand(command)
+            return .success(message: "Ran command in Terminal Board \(board.id.uuidString)")
 
         case .kill:
             guard

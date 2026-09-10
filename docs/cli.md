@@ -138,7 +138,8 @@ Commands operating on Terminal Sessions in the target Terminal Board.
 | Command | Arguments | Description | Example |
 |---|---|---|---|
 | `den terminal text` | `[--board <id>]` | Read visible terminal screen buffer as clean plain text. | `den terminal text` |
-| `den terminal send` | `<text> [--board <id>]` | Inject raw text or escape sequences into terminal pty. | `den terminal send "git status\n"` |
+| `den terminal send` | `<text> [--board <id>]` | Inject raw text or escape sequences into the Terminal Session without executing it. | `den terminal send "git status"` |
+| `den terminal run` | `<command> [--board <id>]` | Send a shell command and press Enter in the target Terminal Board. | `den terminal run "git status"` |
 | `den terminal kill` | `[-s <signal>] [--board <id>]` | Send a POSIX signal to the foreground process group (defaults to `TERM`). | `den terminal kill -s TERM` |
 
 ---

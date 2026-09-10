@@ -176,6 +176,45 @@ struct TerminalRuntimeTests {
         runtime.dispose()
     }
 
+    @Test func terminalRuntimeRunCommandExecutesShellCommand() async {
+        let runtime = TerminalRuntime(
+            workingDirectory: FileManager.default.homeDirectoryForCurrentUser.path,
+            command: "/bin/zsh -f",
+            events: .init(
+                onClose: {},
+                onFocus: {},
+                onWorkingDirectoryChange: { _ in },
+                onTitleChange: { _ in },
+                onOpenURL: { _ in },
+                onNotification: { _, _ in }
+            )
+        )
+        let window = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 800, height: 600),
+            styleMask: [.titled],
+            backing: .buffered,
+            defer: false
+        )
+        window.contentView = runtime.terminalView
+        window.makeKeyAndOrderFront(nil)
+        defer {
+            runtime.dispose()
+            window.orderOut(nil)
+        }
+
+        let marker = "den_terminal_run_marker"
+        runtime.runCommand("printf \(marker)")
+
+        for _ in 0..<40 {
+            if runtime.readViewportText()?.contains(marker) == true {
+                break
+            }
+            try? await Task.sleep(for: .milliseconds(50))
+        }
+
+        #expect(runtime.readViewportText()?.contains(marker) == true)
+    }
+
     @Test func terminalRuntimeSendSignalFailsWhenNoProcessRunning() {
         let runtime = TerminalRuntime(
             workingDirectory: FileManager.default.homeDirectoryForCurrentUser.path,
