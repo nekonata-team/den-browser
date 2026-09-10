@@ -1,67 +1,91 @@
 ---
 name: den
-description: Control and drive Den Browser via the first-party den CLI. Use when browsing websites, inspecting page content, clicking or filling forms, capturing screenshots, managing Web and Terminal Boards, staging material in the Drawer, or observing and interacting with terminal processes.
+description: Control Den Browser through its first-party den CLI when inspecting or operating Web Boards, Terminal Boards, Sheets, or Drawer items.
 ---
 
 # Den Browser (`den`)
 
-Den Browser is a macOS companion browser organizing web and terminal work into Desks and horizontal Board layouts.
-Its bundled CLI (`den`) allows agents in Terminal Boards to drive adjacent web content, manage workspace layout, and observe terminal sessions.
+Den Browser is a macOS companion browser for long-running web work. It organizes web pages and terminal processes into Desks and horizontal Boards.
 
-## 1. Domain Model
+Use Den's bundled `den` CLI to inspect and control that workspace.
 
-- Desk: Broad work context holding Boards in a horizontal work area. Multiple Desks can exist; one is active.
-- Board: Work surface within a Desk.
-  - Web Board: Displays a web browsing Sheet.
-  - Terminal Board: Runs a native Ghostty terminal surface with shell/TUI processes.
-- Sheet: Web screen held within a Web Board.
-- Drawer: Den-wide staging area for web material whose Desk context is not yet settled.
+## Domain model
 
-## 2. Ambient Spatial Targeting (Zero-Config)
+- **Den**: The application workspace.
+- **Desk**: A work context containing an ordered collection of Boards.
+- **Board**: A work surface on a Desk.
+  - **Web Board**: Contains a web **Sheet**.
+  - **Terminal Board**: Contains a native Terminal Session. Ordinary Shell, Zellij, and zmx surfaces are Terminal Boards.
+- **Drawer**: Den-wide staging for web material before it is placed on a Desk.
 
-When running inside a Terminal Board in Den Browser:
-- Environment variables `DEN_BOARD_ID` and `DEN_SOCKET` are set automatically.
-- `den sheet ...` commands automatically target the nearest adjacent Web Board on the current Desk. Specify `--board <id>` only to target another Web Board.
-- `den terminal text` and `den terminal send` default to the calling Terminal Board when executed within one. Specify `--board <id>` only to target another Terminal Board.
-- `den board web new <url>` opens a Web Board adjacent to you without stealing terminal focus.
+A Sheet is part of a Web Board. A Terminal Session is part of a Terminal Board.
 
-## 3. Web Interaction Philosophy (Snapshot + Ref)
+## CLI usage
 
-Follow this canonical interaction loop:
-1. Open: `den board web new <url>` (returns `board_id`).
-2. Wait: `den sheet wait 1` (let DOM settle; can also wait for selectors: `den sheet wait "#submit"`).
-3. Observe: `den sheet snapshot -i` (get compact `@e1`, `@e2` refs for interactive elements; avoids dumping raw HTML).
-4. Act: `den sheet click @e1`, `den sheet fill @e2 "text"`, `den sheet press Enter`, `den sheet scroll down`.
-5. Inspect: `den sheet url`, `den sheet text`, `den sheet eval "..."`, `den sheet screenshot [path]`.
-6. Clean up: `den board close` when finished.
+Check the executable for available commands and exact options:
 
-References belong to the latest snapshot. After navigation or DOM changes, wait if needed and take a new snapshot before reusing refs.
+```sh
+den --help
+den <domain> --help
+den board web --help
+den board terminal --help
+```
 
-## 4. Drawer Workflow (Staging Material)
+Use `--json` for every operational command. Use TTY output only when presenting results to a person. `--help` is the exception.
 
-Use the Drawer to collect URLs during research without cluttering the active Desk:
-- Keep: `den drawer keep <url> [--title <text>]` (stores item in Drawer).
-- List: `den drawer list` (returns items with id, title, url).
-- Place: `den drawer place <id>` (promotes item onto the active Desk as a Web Board).
-- Discard: `den drawer discard <id>` (removes item from Drawer).
+Read JSON fields instead of parsing TTY text. Collections are under `.boards[]`, `.desks[]`, and `.drawer_items[]`. Common fields include `.id`, `.board_id`, `.closed_board_id`, `.drawer_item_id`, `.url`, `.text`, `.snapshot`, `.value`, `.screenshot_path`, `.session_name`, and `.message`.
 
-## 5. Terminal Board Observation & Control
+If readiness is uncertain, run `den health --json`; it does not target a Desk or Board. When running inside a Terminal Board, Den provides `DEN_BOARD_ID` and `DEN_SOCKET`. Use ambient targeting by default. Use `--board <id>` for a newly created Board, an ambiguous target, or another Board. `den sheet` requires a Web Board, and `den terminal` requires a Terminal Board.
 
-Agents can spawn, observe, and interact with background jobs, dev servers, or TUIs:
-- Spawn: `den board terminal new [<path>] [--run "<cmd>"] [--focus]` (opens a Terminal Board; `--run` executes inside an interactive shell so session stays alive).
-- Observe screen: `den terminal text [--board <id>]` (reads clean visible viewport text buffer; ideal for checking build output, logs, or TUI state).
-- Send input: `den terminal send "<text>\n" [--board <id>]` (injects characters or escape sequences into terminal pty).
-- Stop process: `den terminal kill [-s <signal>] [--board <id>]` (sends POSIX signal to foreground process group; defaults to `TERM`, e.g. for restarting dev servers).
+Use `den board list --json` to discover Boards on the active Desk. `den board list -l` is for people who need full Board IDs in TTY output.
 
-### Safety & Policy Boundary
+## Web interaction
 
-- Never bypass harness constraints: Do not use `den board terminal new --run` or `den terminal send` to execute commands that are denied, restricted, or blocked by your agent harness, sandbox, or security policies. Den must never serve as an escape hatch to evade environment restrictions.
-- Intended use only: Terminal Boards are strictly for human-visible, long-running processes (e.g. dev servers, watcher tasks) and interactive TUIs, not for arbitrary unconstrained command proxying.
+Take a new snapshot after navigation or a DOM change. Snapshot references are valid only for the latest snapshot. Wait for a selector when the next element is created asynchronously; a fixed duration is only a fallback.
 
-## 6. Command Discovery & Scripting
+```sh
+board_id="$(den board web new https://example.com --json | jq -r '.board_id')"
+den sheet snapshot -i --board "$board_id" --json
+den sheet click @e1 --board "$board_id" --json
+den sheet fill @e2 "query" --board "$board_id" --json
+den sheet text --board "$board_id" --json
+```
 
-- Run `den --help` or `den <domain> --help` (`den board --help`, `den board web --help`, `den board terminal --help`, `den sheet --help`, `den terminal --help`, `den drawer --help`) for all commands and options.
-- Run `den health` to check whether Den Browser is ready to accept IPC requests. It does not target a Desk or Board; TTY output is `healthy`, while `--json` or piped output is `{"ok":true}`.
-- When piped (e.g. `| jq`) or with `--json`, commands emit single-line JSON with `ok: true/false`:
-  - Entities: `.board_id`, `.drawer_item_id`, `.url`, `.text`, `.value`
-  - Collections: `.boards[]` (`id`, `type`, `label`, optional `url` or `session_name`), `.drawer_items[]`, `.desks[]`
+When a target is not ready yet:
+
+```sh
+den sheet wait "#results" --board "$board_id" --json
+den sheet snapshot -i --board "$board_id" --json
+```
+
+Use `den sheet --help` for navigation, URL, evaluation, screenshot, and other Sheet operations.
+
+## Terminal work
+
+```sh
+board_id="$(den board terminal new . --json | jq -r '.board_id')"
+den terminal text --board "$board_id" --json
+den terminal send "git status\n" --board "$board_id" --json
+```
+
+Close temporary Boards when the work is complete:
+
+```sh
+den board close --board <id> --json
+```
+
+When the foreground process should be stopped:
+
+```sh
+den terminal kill --board <id> --json
+```
+
+Terminal Boards are for human-visible long-running processes and interactive TUIs. Do not use `den board terminal new --run` or `den terminal send` to bypass agent harness, sandbox, or security restrictions.
+
+## Drawer work
+
+```sh
+den drawer keep https://example.com --json
+den drawer list --json
+den drawer place <drawer-item-id> --json
+```
