@@ -29,7 +29,7 @@ Den controls feel like a calm desk laid over live web sheets. Web content remain
 - Let SwiftUI semantic colors express standard hierarchy: use `primary`, `secondary`, and `tertiary` for Den text, icons, and neutral chrome.
 - Resolve Den chrome in its dark appearance so semantic colors stay legible. Do not hard-code black or white for standard text and icons.
 - Reserve fixed colors for semantic meaning such as errors; use the active Profile color for Den atmosphere and focus, plus the dark background gradient and shadows.
-- Profile palette colors identify Profiles and tint the active Den context. They may appear on the Focused Board, Overview Selection, Desk switcher, and ambient background.
+- Profile colors identify Profiles and tint the active Den context. They may be built-in presets or user-selected colors, and may appear on the Focused Board, Overview Selection, Desk switcher, and ambient background.
 - In Den Mode, shift the Den background darker and subtly tint the Focused Board header with the active Profile color. Keep Sheets unchanged.
 
 ## Interaction rules

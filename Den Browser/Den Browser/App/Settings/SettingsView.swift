@@ -33,6 +33,9 @@ struct SettingsView: View {
             .navigationTitle((selection ?? .profiles).title)
         }
         .frame(minWidth: 760, idealWidth: 820, minHeight: 520, idealHeight: 560)
+        .onDisappear {
+            NSColorPanel.shared.close()
+        }
     }
 }
 
@@ -475,7 +478,6 @@ private struct ProfilesSettingsView: View {
 
             Section("New Profile") {
                 HStack {
-                    ProfileColorDot(color: newColor)
                     TextField(
                         text: $newName,
                         prompt: Text("e.g. Work")
@@ -486,13 +488,12 @@ private struct ProfilesSettingsView: View {
                     .onSubmit {
                         TextInputComposition.performUnlessActive(createProfile)
                     }
-                    Picker("Color", selection: $newColor) {
-                        ForEach(ProfileColor.allCases) { color in
-                            Text(color.label).tag(color)
-                        }
+                    HStack(spacing: 8) {
+                        ColorPicker("Color", selection: newColorBinding, supportsOpacity: false)
+                            .labelsHidden()
+                            .accessibilityLabel("New profile color")
+                        ProfileColorPalette(selection: $newColor)
                     }
-                    .labelsHidden()
-                    .frame(width: 100)
                 }
                 SettingsActionRow {
                     Button("Create Profile") {
@@ -559,15 +560,44 @@ private struct ProfilesSettingsView: View {
         guard profileManager.createProfile(name: newName, color: newColor) != nil else { return }
         newName = ""
     }
+
+    private var newColorBinding: Binding<Color> {
+        Binding {
+            newColor.color
+        } set: { color in
+            if let profileColor = ProfileColor(color: color) {
+                newColor = profileColor
+            }
+        }
+    }
 }
 
-private struct ProfileColorDot: View {
-    let color: ProfileColor
+private struct ProfileColorPalette: View {
+    @Binding var selection: ProfileColor
 
     var body: some View {
-        Circle()
-            .fill(color.color)
-            .frame(width: 10, height: 10)
+        HStack(spacing: 4) {
+            ForEach(ProfileColor.presets) { preset in
+                Button {
+                    selection = preset
+                } label: {
+                    Circle()
+                        .fill(preset.color)
+                        .frame(width: 16, height: 16)
+                        .overlay {
+                            Circle()
+                                .strokeBorder(
+                                    Color.primary.opacity(selection == preset ? 0.9 : 0.25),
+                                    lineWidth: selection == preset ? 2 : 1)
+                        }
+                        .padding(2)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(preset.label)
+                .accessibilityAddTraits(selection == preset ? [.isSelected] : [])
+            }
+        }
+        .fixedSize()
     }
 }
 
@@ -588,7 +618,6 @@ private struct ProfileSettingsRow: View {
 
     var body: some View {
         HStack {
-            ProfileColorDot(color: profile.color)
             TextField(
                 text: $name,
                 prompt: Text("e.g. Work")
@@ -597,13 +626,12 @@ private struct ProfileSettingsRow: View {
             }
             .labelsHidden()
             .onSubmit { TextInputComposition.performUnlessActive(saveName) }
-            Picker("Color", selection: colorBinding) {
-                ForEach(ProfileColor.allCases) { color in
-                    Text(color.label).tag(color)
-                }
+            HStack(spacing: 8) {
+                ColorPicker("Color", selection: colorBinding, supportsOpacity: false)
+                    .labelsHidden()
+                    .accessibilityLabel("Profile color for \(profile.name)")
+                ProfileColorPalette(selection: profileColorBinding)
             }
-            .labelsHidden()
-            .frame(width: 100)
             Button {
                 profileManager.clearBrowsingDataProfileID = profile.id
                 profileManager.clearBrowsingDataWindowID = nil
@@ -634,7 +662,16 @@ private struct ProfileSettingsRow: View {
         }
     }
 
-    private var colorBinding: Binding<ProfileColor> {
+    private var colorBinding: Binding<Color> {
+        Binding {
+            profileColorBinding.wrappedValue.color
+        } set: { color in
+            guard let profileColor = ProfileColor(color: color) else { return }
+            _ = profileManager.updateProfile(profile.id, color: profileColor)
+        }
+    }
+
+    private var profileColorBinding: Binding<ProfileColor> {
         Binding {
             profileManager.profile(id: profile.id)?.color ?? profile.color
         } set: { color in

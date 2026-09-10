@@ -1,9 +1,46 @@
+import AppKit
 import Foundation
 import SwiftUI
 import WebKit
 
-enum ProfileColor: String, CaseIterable, Codable, Identifiable {
+struct ProfileRGB: Codable, Equatable, Hashable, Sendable {
+    var red: UInt8
+    var green: UInt8
+    var blue: UInt8
+
+    init(red: UInt8, green: UInt8, blue: UInt8) {
+        self.red = red
+        self.green = green
+        self.blue = blue
+    }
+
+    var color: Color {
+        Color(
+            .sRGB,
+            red: Double(red) / 255,
+            green: Double(green) / 255,
+            blue: Double(blue) / 255,
+            opacity: 1)
+    }
+
+    init?(color: Color) {
+        guard let color = NSColor(color).usingColorSpace(.sRGB) else { return nil }
+        self.init(
+            red: Self.component(color.redComponent),
+            green: Self.component(color.greenComponent),
+            blue: Self.component(color.blueComponent))
+    }
+
+    private static func component(_ value: CGFloat) -> UInt8 {
+        UInt8((min(max(value, 0), 1) * 255).rounded())
+    }
+}
+
+enum ProfileColor: Codable, Equatable, Hashable, Identifiable {
     case blue, purple, pink, green, yellow, gray
+    case custom(ProfileRGB)
+
+    static let presets: [ProfileColor] = [.blue, .purple, .pink, .green, .yellow, .gray]
 
     var id: Self { self }
 
@@ -15,10 +52,87 @@ enum ProfileColor: String, CaseIterable, Codable, Identifiable {
         case .green: .green
         case .yellow: .yellow
         case .gray: .gray
+        case .custom(let rgb): rgb.color
         }
     }
 
-    var label: String { rawValue.capitalized }
+    var label: String {
+        switch self {
+        case .blue: "Blue"
+        case .purple: "Purple"
+        case .pink: "Pink"
+        case .green: "Green"
+        case .yellow: "Yellow"
+        case .gray: "Gray"
+        case .custom: "Custom"
+        }
+    }
+
+    init?(color: Color) {
+        guard let rgb = ProfileRGB(color: color) else { return nil }
+        self = .custom(rgb)
+    }
+
+    private enum CodingKeys: String, CodingKey { case kind, red, green, blue }
+    private enum Kind: String, Codable { case sRGB }
+
+    init(from decoder: Decoder) throws {
+        let singleValue = try decoder.singleValueContainer()
+        if let preset = try? singleValue.decode(String.self) {
+            switch preset {
+            case "blue": self = .blue
+            case "purple": self = .purple
+            case "pink": self = .pink
+            case "green": self = .green
+            case "yellow": self = .yellow
+            case "gray": self = .gray
+            default:
+                throw DecodingError.dataCorruptedError(
+                    in: singleValue, debugDescription: "Unknown ProfileColor preset")
+            }
+            return
+        }
+
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        guard try container.decode(Kind.self, forKey: .kind) == .sRGB else {
+            throw DecodingError.dataCorruptedError(
+                forKey: .kind, in: container, debugDescription: "Unsupported ProfileColor kind")
+        }
+        self = .custom(
+            ProfileRGB(
+                red: try container.decode(UInt8.self, forKey: .red),
+                green: try container.decode(UInt8.self, forKey: .green),
+                blue: try container.decode(UInt8.self, forKey: .blue)))
+    }
+
+    func encode(to encoder: Encoder) throws {
+        switch self {
+        case .blue:
+            var container = encoder.singleValueContainer()
+            try container.encode("blue")
+        case .purple:
+            var container = encoder.singleValueContainer()
+            try container.encode("purple")
+        case .pink:
+            var container = encoder.singleValueContainer()
+            try container.encode("pink")
+        case .green:
+            var container = encoder.singleValueContainer()
+            try container.encode("green")
+        case .yellow:
+            var container = encoder.singleValueContainer()
+            try container.encode("yellow")
+        case .gray:
+            var container = encoder.singleValueContainer()
+            try container.encode("gray")
+        case .custom(let rgb):
+            var container = encoder.container(keyedBy: CodingKeys.self)
+            try container.encode(Kind.sRGB, forKey: .kind)
+            try container.encode(rgb.red, forKey: .red)
+            try container.encode(rgb.green, forKey: .green)
+            try container.encode(rgb.blue, forKey: .blue)
+        }
+    }
 }
 
 enum WebProfileStore: Equatable, Sendable {

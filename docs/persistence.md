@@ -27,7 +27,7 @@ Den Browser persists only state needed to restore user-owned work. Version 2 add
 
 Nested objects use these keys:
 
-- `ProfileState`: `id`, `name`, `color`, `webProfileStore`
+- `ProfileState`: `id`, `name`, `color` (a preset name or custom sRGB components), `webProfileStore`
 - `WebProfileStore`: `kind`, optional `identifier`
 - `DenState`: `desks`, `focusedDeskID`, optional `drawerItems`, optional `expandedDrawerItemID`
 - `DrawerItem`: `id`, `url`, optional `title`
@@ -87,6 +87,9 @@ supports is not overwritten or downgraded.
   schema version.
 - New fields must be optional or decode with a default when absent.
 - Decoders ignore unknown keys so newer additive documents remain readable.
+- A supported release must read data written by earlier supported releases. Downgrades
+  are not supported.
+- Schema versions are bumped only for breaking persistence changes.
 - Breaking changes require a new schema version and an explicit migration before writing the new format.
 - Version 1 fixtures in `Den Browser/Den BrowserTests/Fixtures` are the executable format contract.
 
