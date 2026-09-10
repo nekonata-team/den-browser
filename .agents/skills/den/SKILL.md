@@ -64,4 +64,4 @@ Agents can spawn, observe, and interact with background jobs, dev servers, or TU
 - Run `den health` to check whether Den Browser is ready to accept IPC requests. It does not target a Desk or Board; TTY output is `healthy`, while `--json` or piped output is `{"ok":true}`.
 - When piped (e.g. `| jq`) or with `--json`, commands emit single-line JSON with `ok: true/false`:
   - Entities: `.board_id`, `.drawer_item_id`, `.url`, `.text`, `.value`
-  - Collections: `.boards[]`, `.drawer_items[]`, `.desks[]`
+  - Collections: `.boards[]` (`id`, `type`, `label`, optional `url` or `session_name`), `.drawer_items[]`, `.desks[]`

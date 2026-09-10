@@ -208,8 +208,9 @@ final class DenIPCService {
                 DenBoardInfo(
                     id: currentBoard.id.uuidString,
                     type: currentBoard.isTerminal ? "terminal" : "web",
-                    label: currentBoard.label,
-                    url: currentBoard.currentSheetURL?.absoluteString
+                    label: currentBoard.displayName,
+                    url: currentBoard.currentSheetURL?.absoluteString,
+                    sessionName: currentBoard.zellijSessionName ?? currentBoard.zmxSessionName
                 )
             }
             return .success(boards: boards)

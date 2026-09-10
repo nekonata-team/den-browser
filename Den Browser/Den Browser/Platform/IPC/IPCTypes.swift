@@ -72,6 +72,15 @@ nonisolated struct DenBoardInfo: Codable, Sendable {
     var type: String
     var label: String
     var url: String?
+    var sessionName: String?
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case type
+        case label
+        case url
+        case sessionName = "session_name"
+    }
 }
 
 nonisolated struct DenDeskInfo: Codable, Sendable {

@@ -141,8 +141,12 @@ enum DenIPCClient {
                     print(boardId)
                 } else if let boards = response.boards {
                     for currentBoard in boards {
-                        let urlSuffix = currentBoard.url.map { " (\($0))" } ?? ""
-                        print("[\(currentBoard.type)] \(currentBoard.id) - \(currentBoard.label)\(urlSuffix)")
+                        let secondary = currentBoard.url ?? currentBoard.sessionName
+                        let secondarySuffix = secondary.map { " (\($0))" } ?? ""
+                        print(
+                            "[\(currentBoard.type)] \(currentBoard.id) - "
+                                + "\(currentBoard.label)\(secondarySuffix)"
+                        )
                     }
                 } else if let desks = response.desks {
                     for currentDesk in desks {

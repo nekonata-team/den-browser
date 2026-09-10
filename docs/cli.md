@@ -100,7 +100,7 @@ Commands operating on Boards within the active Desk.
 
 | Command | Arguments | Description | Example |
 |---|---|---|---|
-| `den board list` | None | List all Boards on the active Desk with ID, type (`web`/`terminal`), and label. | `den board list` |
+| `den board list` | None | List all Boards on the active Desk with ID, type (`web`/`terminal`), label, and type-specific secondary information. | `den board list` |
 | `den board close` | `[--board <id>]` | Close the specified Board or the target Web Board. Explicit IDs fail (`exit 1`) if invalid or not found. | `den board close --board 4F72344C-...` |
 
 ### 3.4 `den board web` (Web Boards)
@@ -171,6 +171,7 @@ BOARD_ID=$(den board web new https://example.com | jq -r .board_id)
 ```bash
 den board list | jq -r '.boards[] | select(.type == "web") | .id'
 ```
+Web Boards include `url`; Zellij and zmx Terminal Boards include `session_name` when a named session is attached.
 
 **Terminal Screen Buffer (`terminal text`)**:
 ```json
