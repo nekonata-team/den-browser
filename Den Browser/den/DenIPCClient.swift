@@ -17,12 +17,22 @@ struct BoardTargetOptions: ParsableArguments {
     var boardID: String?
 }
 
+private struct CLIOutputOptions {
+    let isJSON: Bool
+    let showBoardIDs: Bool
+}
+
 enum DenIPCClient {
-    static func execute(command: DenIPCCommand, args: [String], options: CLIOptions) throws {
+    static func execute(
+        command: DenIPCCommand,
+        args: [String],
+        options: CLIOptions,
+        showBoardIDs: Bool = false
+    ) throws {
         try execute(
             command: command,
             args: args,
-            isJSON: options.isJSON,
+            output: CLIOutputOptions(isJSON: options.isJSON, showBoardIDs: showBoardIDs),
             boardID: nil,
             socketPath: options.socketPath)
     }
@@ -31,7 +41,7 @@ enum DenIPCClient {
         try execute(
             command: command,
             args: args,
-            isJSON: options.common.isJSON,
+            output: CLIOutputOptions(isJSON: options.common.isJSON, showBoardIDs: false),
             boardID: options.boardID,
             socketPath: options.common.socketPath)
     }
@@ -39,7 +49,7 @@ enum DenIPCClient {
     private static func execute(
         command: DenIPCCommand,
         args: [String],
-        isJSON: Bool,
+        output: CLIOutputOptions,
         boardID: String?,
         socketPath: String?
     ) throws {
@@ -127,7 +137,7 @@ enum DenIPCClient {
             throw ExitCode.failure
         }
 
-        let isJSONOutput = isJSON || isatty(STDOUT_FILENO) == 0
+        let isJSONOutput = output.isJSON || isatty(STDOUT_FILENO) == 0
 
         if isJSONOutput {
             if let jsonString = String(data: responseData, encoding: .utf8) {
@@ -140,11 +150,20 @@ enum DenIPCClient {
                 } else if let boardId = response.boardId {
                     print(boardId)
                 } else if let boards = response.boards {
+
+                    let typeColumnWidth =
+                        boards
+                        .map { "[\($0.type)]".count }
+                        .max() ?? 0
+
                     for currentBoard in boards {
+                        let type = "[\(currentBoard.type)]"
+                            .padding(toLength: typeColumnWidth, withPad: " ", startingAt: 0)
+                        let boardIDPrefix = output.showBoardIDs ? "\(currentBoard.id) - " : ""
                         let secondary = currentBoard.url ?? currentBoard.sessionName
                         let secondarySuffix = secondary.map { " (\($0))" } ?? ""
                         print(
-                            "[\(currentBoard.type)] \(currentBoard.id) - "
+                            "\(type) \(boardIDPrefix)"
                                 + "\(currentBoard.label)\(secondarySuffix)"
                         )
                     }

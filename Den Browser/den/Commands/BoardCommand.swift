@@ -19,11 +19,24 @@ struct BoardListCommand: ParsableCommand {
         commandName: "list",
         abstract: "List all Boards on the active Desk")
 
-    @OptionGroup var options: CLIOptions
+    @OptionGroup var options: BoardListOptions
 
     func run() throws {
-        try DenIPCClient.execute(command: .board(.list), args: [], options: options)
+        try DenIPCClient.execute(
+            command: .board(.list),
+            args: [],
+            options: options.common,
+            showBoardIDs: options.showBoardIDs)
     }
+}
+
+struct BoardListOptions: ParsableArguments {
+    @OptionGroup var common: CLIOptions
+
+    @Flag(
+        name: [.customShort("l"), .customLong("long")],
+        help: "Show full Board IDs in human-readable output")
+    var showBoardIDs = false
 }
 
 struct BoardWebCommand: ParsableCommand {

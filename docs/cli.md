@@ -100,7 +100,7 @@ Commands operating on Boards within the active Desk.
 
 | Command | Arguments | Description | Example |
 |---|---|---|---|
-| `den board list` | None | List all Boards on the active Desk with ID, type (`web`/`terminal`), label, and type-specific secondary information. | `den board list` |
+| `den board list` | `[-l]` | List all Boards on the active Desk with type (`web`/`terminal`), label, and type-specific secondary information. Use `-l` to include full Board IDs in human-readable output. | `den board list -l` |
 | `den board close` | `[--board <id>]` | Close the specified Board or the target Web Board. Explicit IDs fail (`exit 1`) if invalid or not found. | `den board close --board 4F72344C-...` |
 
 ### 3.4 `den board web` (Web Boards)
