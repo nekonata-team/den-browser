@@ -29,11 +29,11 @@ struct SheetOpenCommand: ParsableCommand {
         commandName: "open",
         abstract: "Navigate Current Sheet in the target Web Board to a URL or search query")
 
-    @OptionGroup var target: TargetOptions
+    @OptionGroup var target: BoardTargetOptions
     @Argument(help: "URL or search query to open") var url: String
 
     func run() throws {
-        try DenIPCClient.execute(command: .sheet(.open), args: [url], target: target)
+        try DenIPCClient.execute(command: .sheet(.open), args: [url], options: target)
     }
 }
 
@@ -42,10 +42,10 @@ struct SheetURLCommand: ParsableCommand {
         commandName: "url",
         abstract: "Print Current Sheet URL of the target Web Board")
 
-    @OptionGroup var target: TargetOptions
+    @OptionGroup var target: BoardTargetOptions
 
     func run() throws {
-        try DenIPCClient.execute(command: .sheet(.url), args: [], target: target)
+        try DenIPCClient.execute(command: .sheet(.url), args: [], options: target)
     }
 }
 
@@ -54,10 +54,10 @@ struct SheetReloadCommand: ParsableCommand {
         commandName: "reload",
         abstract: "Reload Current Sheet in the target Web Board")
 
-    @OptionGroup var target: TargetOptions
+    @OptionGroup var target: BoardTargetOptions
 
     func run() throws {
-        try DenIPCClient.execute(command: .sheet(.reload), args: [], target: target)
+        try DenIPCClient.execute(command: .sheet(.reload), args: [], options: target)
     }
 }
 
@@ -66,7 +66,7 @@ struct SheetEvalCommand: ParsableCommand {
         commandName: "eval",
         abstract: "Evaluate JavaScript in the target Web Board")
 
-    @OptionGroup var target: TargetOptions
+    @OptionGroup var target: BoardTargetOptions
     @Argument(parsing: .remaining, help: "JavaScript code to evaluate") var scriptParts: [String]
 
     func run() throws {
@@ -74,7 +74,7 @@ struct SheetEvalCommand: ParsableCommand {
         guard !script.isEmpty else {
             throw ValidationError("Please provide JavaScript code to evaluate")
         }
-        try DenIPCClient.execute(command: .sheet(.eval), args: [script], target: target)
+        try DenIPCClient.execute(command: .sheet(.eval), args: [script], options: target)
     }
 }
 
@@ -83,10 +83,10 @@ struct SheetTextCommand: ParsableCommand {
         commandName: "text",
         abstract: "Print visible text from the target Web Board")
 
-    @OptionGroup var target: TargetOptions
+    @OptionGroup var target: BoardTargetOptions
 
     func run() throws {
-        try DenIPCClient.execute(command: .sheet(.text), args: [], target: target)
+        try DenIPCClient.execute(command: .sheet(.text), args: [], options: target)
     }
 }
 
@@ -95,13 +95,13 @@ struct SheetSnapshotCommand: ParsableCommand {
         commandName: "snapshot",
         abstract: "Extract semantic DOM tree with short references (@e1, @e2)")
 
-    @OptionGroup var target: TargetOptions
+    @OptionGroup var target: BoardTargetOptions
     @Flag(name: [.customShort("i"), .long], help: "Filter to interactive elements only")
     var interactive: Bool = false
 
     func run() throws {
         let args = interactive ? ["-i"] : []
-        try DenIPCClient.execute(command: .sheet(.snapshot), args: args, target: target)
+        try DenIPCClient.execute(command: .sheet(.snapshot), args: args, options: target)
     }
 }
 
@@ -110,12 +110,12 @@ struct SheetClickCommand: ParsableCommand {
         commandName: "click",
         abstract: "Click an element by reference (@e1) or CSS selector")
 
-    @OptionGroup var target: TargetOptions
+    @OptionGroup var target: BoardTargetOptions
     @Argument(help: "Element reference (@e1) or CSS selector to click")
     var targetElement: String
 
     func run() throws {
-        try DenIPCClient.execute(command: .sheet(.click), args: [targetElement], target: target)
+        try DenIPCClient.execute(command: .sheet(.click), args: [targetElement], options: target)
     }
 }
 
@@ -124,7 +124,7 @@ struct SheetFillCommand: ParsableCommand {
         commandName: "fill",
         abstract: "Fill an input or textarea with text by reference or selector")
 
-    @OptionGroup var target: TargetOptions
+    @OptionGroup var target: BoardTargetOptions
     @Argument(help: "Element reference (@e1) or CSS selector to fill")
     var targetElement: String
     @Argument(parsing: .remaining, help: "Text value to fill into the input")
@@ -135,7 +135,7 @@ struct SheetFillCommand: ParsableCommand {
         guard !value.isEmpty else {
             throw ValidationError("Please provide a text value to fill")
         }
-        try DenIPCClient.execute(command: .sheet(.fill), args: [targetElement, value], target: target)
+        try DenIPCClient.execute(command: .sheet(.fill), args: [targetElement, value], options: target)
     }
 }
 
@@ -144,13 +144,13 @@ struct SheetScreenshotCommand: ParsableCommand {
         commandName: "screenshot",
         abstract: "Capture a PNG screenshot of the target Web Board")
 
-    @OptionGroup var target: TargetOptions
+    @OptionGroup var target: BoardTargetOptions
     @Argument(help: "Destination file path for PNG screenshot (optional)")
     var outputPath: String?
 
     func run() throws {
         let args = outputPath.map { [$0] } ?? []
-        try DenIPCClient.execute(command: .sheet(.screenshot), args: args, target: target)
+        try DenIPCClient.execute(command: .sheet(.screenshot), args: args, options: target)
     }
 }
 
@@ -159,10 +159,10 @@ struct SheetBackCommand: ParsableCommand {
         commandName: "back",
         abstract: "Navigate back in browsing history")
 
-    @OptionGroup var target: TargetOptions
+    @OptionGroup var target: BoardTargetOptions
 
     func run() throws {
-        try DenIPCClient.execute(command: .sheet(.back), args: [], target: target)
+        try DenIPCClient.execute(command: .sheet(.back), args: [], options: target)
     }
 }
 
@@ -171,10 +171,10 @@ struct SheetForwardCommand: ParsableCommand {
         commandName: "forward",
         abstract: "Navigate forward in browsing history")
 
-    @OptionGroup var target: TargetOptions
+    @OptionGroup var target: BoardTargetOptions
 
     func run() throws {
-        try DenIPCClient.execute(command: .sheet(.forward), args: [], target: target)
+        try DenIPCClient.execute(command: .sheet(.forward), args: [], options: target)
     }
 }
 
@@ -183,12 +183,12 @@ struct SheetPressCommand: ParsableCommand {
         commandName: "press",
         abstract: "Dispatch key events (Enter, Escape, Tab, arrows) to the active element")
 
-    @OptionGroup var target: TargetOptions
+    @OptionGroup var target: BoardTargetOptions
     @Argument(help: "Key to press (e.g. Enter, Escape, Tab, ArrowDown, ArrowUp)")
     var key: String
 
     func run() throws {
-        try DenIPCClient.execute(command: .sheet(.press), args: [key], target: target)
+        try DenIPCClient.execute(command: .sheet(.press), args: [key], options: target)
     }
 }
 
@@ -197,13 +197,13 @@ struct SheetScrollCommand: ParsableCommand {
         commandName: "scroll",
         abstract: "Scroll the page (down, up, top, bottom, or pixel amount)")
 
-    @OptionGroup var target: TargetOptions
+    @OptionGroup var target: BoardTargetOptions
     @Argument(help: "Direction (down, up, top, bottom) or pixel amount (optional, defaults to down)")
     var direction: String?
 
     func run() throws {
         let args = direction.map { [$0] } ?? []
-        try DenIPCClient.execute(command: .sheet(.scroll), args: args, target: target)
+        try DenIPCClient.execute(command: .sheet(.scroll), args: args, options: target)
     }
 }
 
@@ -212,11 +212,11 @@ struct SheetWaitCommand: ParsableCommand {
         commandName: "wait",
         abstract: "Wait for a duration in seconds (2, 0.5) or until a selector appears")
 
-    @OptionGroup var target: TargetOptions
+    @OptionGroup var target: BoardTargetOptions
     @Argument(help: "Duration in seconds (e.g. 2, 0.5) or CSS selector/ref (@e1)")
     var targetValue: String
 
     func run() throws {
-        try DenIPCClient.execute(command: .sheet(.wait), args: [targetValue], target: target)
+        try DenIPCClient.execute(command: .sheet(.wait), args: [targetValue], options: target)
     }
 }

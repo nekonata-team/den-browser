@@ -6,9 +6,9 @@ struct HealthCommand: ParsableCommand {
         abstract: "Check whether Den Browser is ready"
     )
 
-    @OptionGroup var target: TargetOptions
+    @OptionGroup var options: CLIOptions
 
     func run() throws {
-        try DenIPCClient.execute(command: .health, args: [], target: target)
+        try DenIPCClient.execute(command: .health, args: [], options: options)
     }
 }

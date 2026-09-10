@@ -16,9 +16,9 @@ struct DeskListCommand: ParsableCommand {
         commandName: "list",
         abstract: "List all Desks in the Den")
 
-    @OptionGroup var target: TargetOptions
+    @OptionGroup var options: CLIOptions
 
     func run() throws {
-        try DenIPCClient.execute(command: .desk(.list), args: [], target: target)
+        try DenIPCClient.execute(command: .desk(.list), args: [], options: options)
     }
 }

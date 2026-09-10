@@ -19,10 +19,10 @@ struct DrawerListCommand: ParsableCommand {
         commandName: "list",
         abstract: "List all Drawer Items in the Drawer")
 
-    @OptionGroup var target: TargetOptions
+    @OptionGroup var options: CLIOptions
 
     func run() throws {
-        try DenIPCClient.execute(command: .drawer(.list), args: [], target: target)
+        try DenIPCClient.execute(command: .drawer(.list), args: [], options: options)
     }
 }
 
@@ -31,7 +31,7 @@ struct DrawerKeepCommand: ParsableCommand {
         commandName: "keep",
         abstract: "Keep a URL in the Drawer as a Drawer Item")
 
-    @OptionGroup var target: TargetOptions
+    @OptionGroup var options: CLIOptions
     @Argument(help: "URL to keep in the Drawer") var url: String
     @Option(name: .long, help: "Optional title for the Drawer Item") var title: String?
 
@@ -40,7 +40,7 @@ struct DrawerKeepCommand: ParsableCommand {
         if let title {
             args.append(contentsOf: ["--title", title])
         }
-        try DenIPCClient.execute(command: .drawer(.keep), args: args, target: target)
+        try DenIPCClient.execute(command: .drawer(.keep), args: args, options: options)
     }
 }
 
@@ -49,11 +49,11 @@ struct DrawerPlaceCommand: ParsableCommand {
         commandName: "place",
         abstract: "Place a Drawer Item into the active Desk as a Web Board")
 
-    @OptionGroup var target: TargetOptions
+    @OptionGroup var options: CLIOptions
     @Argument(help: "ID of the Drawer Item to place") var itemID: String
 
     func run() throws {
-        try DenIPCClient.execute(command: .drawer(.place), args: [itemID], target: target)
+        try DenIPCClient.execute(command: .drawer(.place), args: [itemID], options: options)
     }
 }
 
@@ -62,10 +62,10 @@ struct DrawerDiscardCommand: ParsableCommand {
         commandName: "discard",
         abstract: "Discard a Drawer Item without placing it into a Desk")
 
-    @OptionGroup var target: TargetOptions
+    @OptionGroup var options: CLIOptions
     @Argument(help: "ID of the Drawer Item to discard") var itemID: String
 
     func run() throws {
-        try DenIPCClient.execute(command: .drawer(.discard), args: [itemID], target: target)
+        try DenIPCClient.execute(command: .drawer(.discard), args: [itemID], options: options)
     }
 }

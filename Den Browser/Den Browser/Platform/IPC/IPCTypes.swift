@@ -1,7 +1,7 @@
 import Foundation
 
-nonisolated enum DenIPCCommand: Equatable, Sendable {
-    enum Sheet: String, CaseIterable, Sendable {
+nonisolated enum DenIPCCommand: Codable, Equatable, Sendable {
+    enum Sheet: String, CaseIterable, Codable, Sendable {
         case open
         case url
         case reload
@@ -18,26 +18,33 @@ nonisolated enum DenIPCCommand: Equatable, Sendable {
         case fill
     }
 
-    enum Board: String, CaseIterable, Sendable {
-        case list
+    enum WebBoard: String, CaseIterable, Codable, Sendable {
         case new
-        case close
     }
 
-    enum Desk: String, CaseIterable, Sendable {
+    enum TerminalBoard: String, CaseIterable, Codable, Sendable {
+        case new
+    }
+
+    enum Board: Codable, Equatable, Sendable {
+        case list
+        case close
+        case web(WebBoard)
+        case terminal(TerminalBoard)
+    }
+
+    enum Desk: String, CaseIterable, Codable, Sendable {
         case list
     }
 
-    enum Drawer: String, CaseIterable, Sendable {
+    enum Drawer: String, CaseIterable, Codable, Sendable {
         case list
         case keep
         case place
         case discard
     }
 
-    enum Terminal: String, CaseIterable, Sendable {
-        case list
-        case new
+    enum Terminal: String, CaseIterable, Codable, Sendable {
         case text
         case send
         case kill
@@ -50,49 +57,6 @@ nonisolated enum DenIPCCommand: Equatable, Sendable {
     case terminal(Terminal)
     case health
 
-    private static let allCommands: [Self] =
-        [.health]
-        + Sheet.allCases.map { .sheet($0) }
-        + Board.allCases.map { .board($0) }
-        + Desk.allCases.map { .desk($0) }
-        + Drawer.allCases.map { .drawer($0) }
-        + Terminal.allCases.map { .terminal($0) }
-
-    init?(wireValue: String) {
-        guard let command = Self.allCommands.first(where: { $0.wireValue == wireValue }) else {
-            return nil
-        }
-        self = command
-    }
-
-    var wireValue: String {
-        switch self {
-        case .sheet(let command): "sheet.\(command.rawValue)"
-        case .board(let command): "board.\(command.rawValue)"
-        case .desk(let command): "desk.\(command.rawValue)"
-        case .drawer(let command): "drawer.\(command.rawValue)"
-        case .terminal(let command): "terminal.\(command.rawValue)"
-        case .health: "health"
-        }
-    }
-}
-
-extension DenIPCCommand: Codable {
-    init(from decoder: Decoder) throws {
-        let container = try decoder.singleValueContainer()
-        let wireValue = try container.decode(String.self).lowercased()
-        guard let command = DenIPCCommand(wireValue: wireValue) else {
-            throw DecodingError.dataCorruptedError(
-                in: container,
-                debugDescription: "Unknown IPC command: \(wireValue)")
-        }
-        self = command
-    }
-
-    func encode(to encoder: Encoder) throws {
-        var container = encoder.singleValueContainer()
-        try container.encode(wireValue)
-    }
 }
 
 nonisolated struct DenIPCRequest: Codable, Sendable {
@@ -130,20 +94,6 @@ nonisolated struct DenDrawerItemInfo: Codable, Sendable {
     var title: String?
 }
 
-nonisolated struct DenTerminalInfo: Codable, Sendable {
-    var id: String
-    var label: String
-    var workingDirectory: String?
-    var foregroundPid: Int?
-
-    enum CodingKeys: String, CodingKey {
-        case id
-        case label
-        case workingDirectory = "working_directory"
-        case foregroundPid = "foreground_pid"
-    }
-}
-
 nonisolated struct DenIPCResponse: Codable, Sendable {
     var isOk: Bool
     var error: String?
@@ -154,7 +104,6 @@ nonisolated struct DenIPCResponse: Codable, Sendable {
     var desks: [DenDeskInfo]?
     var drawerItemId: String?
     var drawerItems: [DenDrawerItemInfo]?
-    var terminals: [DenTerminalInfo]?
     var url: String?
     var snapshot: String?
     var text: String?
@@ -171,7 +120,6 @@ nonisolated struct DenIPCResponse: Codable, Sendable {
         case desks
         case drawerItemId = "drawer_item_id"
         case drawerItems = "drawer_items"
-        case terminals
         case url
         case snapshot
         case text
@@ -187,7 +135,6 @@ nonisolated struct DenIPCResponse: Codable, Sendable {
         desks: [DenDeskInfo]? = nil,
         drawerItemId: String? = nil,
         drawerItems: [DenDrawerItemInfo]? = nil,
-        terminals: [DenTerminalInfo]? = nil,
         url: String? = nil,
         snapshot: String? = nil,
         text: String? = nil,
@@ -204,7 +151,6 @@ nonisolated struct DenIPCResponse: Codable, Sendable {
             desks: desks,
             drawerItemId: drawerItemId,
             drawerItems: drawerItems,
-            terminals: terminals,
             url: url,
             snapshot: snapshot,
             text: text,

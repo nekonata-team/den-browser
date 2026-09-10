@@ -138,7 +138,7 @@ struct DenIPCTargetResolverTests {
         let boardID = try #require(store.createBoard(urlString: "https://example.com/"))
         let service = DenIPCService(profileManager: manager)
 
-        let request = DenIPCRequest(command: .board(.close), args: ["not-a-valid-uuid"])
+        let request = DenIPCRequest(command: .board(.close), boardID: "not-a-valid-uuid")
 
         // Act
         let response = await service.handleRequest(request)
@@ -159,7 +159,7 @@ struct DenIPCTargetResolverTests {
         let service = DenIPCService(profileManager: manager)
 
         let nonExistentID = UUID().uuidString
-        let request = DenIPCRequest(command: .board(.close), args: [nonExistentID])
+        let request = DenIPCRequest(command: .board(.close), boardID: nonExistentID)
 
         // Act
         let response = await service.handleRequest(request)
@@ -167,6 +167,26 @@ struct DenIPCTargetResolverTests {
         // Assert: Must return failure and active board must still exist
         #expect(response.isOk == false)
         #expect(response.error?.contains("Board not found") == true)
+        #expect(store.board(for: boardID) != nil)
+    }
+
+    @Test func boardCloseRejectsPositionalBoardID() async throws {
+        // Arrange
+        let directory = temporaryProfileDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let manager = makeProfileManager(directory: directory)
+        let store = try #require(manager.store(for: manager.personalProfileID))
+        let boardID = try #require(store.createBoard(urlString: "https://example.com/"))
+        let service = DenIPCService(profileManager: manager)
+
+        let request = DenIPCRequest(command: .board(.close), args: [boardID.uuidString])
+
+        // Act
+        let response = await service.handleRequest(request)
+
+        // Assert: The deprecated positional form must not fall back to the ambient target.
+        #expect(response.isOk == false)
+        #expect(response.error?.contains("Usage: den board close [--board <id>]") == true)
         #expect(store.board(for: boardID) != nil)
     }
 

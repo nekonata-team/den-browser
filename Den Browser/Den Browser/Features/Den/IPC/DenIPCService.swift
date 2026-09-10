@@ -69,7 +69,7 @@ final class DenIPCService {
         guard let (store, board) = DenIPCTargetResolver.resolveTargetWebBoard(request: request, in: profileManager)
         else {
             if command == .open {
-                return .failure("No Web Board found. Use 'den board new <url>' to create a new board.")
+                return .failure("No Web Board found. Use 'den board web new <url>' to create a new board.")
             }
             return .failure("No Web Board found")
         }
@@ -214,9 +214,9 @@ final class DenIPCService {
             }
             return .success(boards: boards)
 
-        case .new:
+        case .web(.new):
             guard let urlString = request.args.first(where: { !$0.hasPrefix("-") }), !urlString.isEmpty else {
-                return .failure("Usage: den board new <url> [--focus]")
+                return .failure("Usage: den board web new <url> [--focus]")
             }
             guard
                 let (store, _) = DenIPCTargetResolver.resolveStoreAndDesk(
@@ -237,8 +237,14 @@ final class DenIPCService {
             }
             return .failure("Failed to open board with \(urlString)")
 
+        case .terminal(.new):
+            return handleTerminalBoardNew(request: request)
+
         case .close:
-            if let idString = request.args.first ?? request.boardID {
+            guard request.args.isEmpty else {
+                return .failure("Usage: den board close [--board <id>]")
+            }
+            if let idString = request.boardID {
                 guard let targetID = UUID(uuidString: idString) else {
                     return .failure("Invalid board ID: \(idString)")
                 }
@@ -267,6 +273,71 @@ final class DenIPCService {
             )
 
         }
+    }
+
+    private func handleTerminalBoardNew(request: DenIPCRequest) -> DenIPCResponse {
+        guard
+            let (store, _) = DenIPCTargetResolver.resolveStoreAndDesk(
+                callerBoardID: request.callerBoardID,
+                in: profileManager
+            )
+        else {
+            return .failure("No active store found")
+        }
+
+        var workingDir: String?
+        var runCommand: String?
+        let shouldFocus = request.args.contains("--focus")
+
+        var argIndex = 0
+        while argIndex < request.args.count {
+            let arg = request.args[argIndex]
+            if arg == "--focus" {
+                argIndex += 1
+            } else if arg == "--run", argIndex + 1 < request.args.count {
+                runCommand = request.args[argIndex + 1]
+                argIndex += 2
+            } else if !arg.hasPrefix("-") && workingDir == nil {
+                workingDir = arg
+                argIndex += 1
+            } else {
+                argIndex += 1
+            }
+        }
+
+        let resolvedDir: String
+        if let dir = workingDir {
+            switch BoardInputResolver.validateTerminalWorkingDirectory(dir) {
+            case .success(let path):
+                resolvedDir = path
+            case .failure(let error):
+                return .failure(error.message)
+            }
+        } else {
+            resolvedDir = FileManager.default.homeDirectoryForCurrentUser.path
+        }
+
+        let callerID = request.callerBoardID.flatMap(UUID.init)
+        guard
+            let boardID = store.createTerminalBoard(
+                workingDirectory: resolvedDir,
+                afterBoardID: callerID ?? store.focusedBoard?.id,
+                focus: shouldFocus
+            )
+        else {
+            return .failure("Failed to create terminal board")
+        }
+
+        if let runCommand, let board = store.board(for: boardID) {
+            let runtime = store.terminalRuntime(for: board)
+            Task { @MainActor in
+                try? await Task.sleep(for: .milliseconds(150))
+                let commandText = runCommand.hasSuffix("\n") ? runCommand : runCommand + "\n"
+                runtime.sendText(commandText)
+            }
+        }
+
+        return .success(boardId: boardID.uuidString)
     }
 
     // MARK: - Desk Commands
@@ -375,90 +446,6 @@ final class DenIPCService {
 
     private func handleTerminalCommand(_ command: DenIPCCommand.Terminal, request: DenIPCRequest) -> DenIPCResponse {
         switch command {
-        case .list:
-            guard
-                let (store, desk) = DenIPCTargetResolver.resolveStoreAndDesk(
-                    callerBoardID: request.callerBoardID,
-                    in: profileManager
-                )
-            else {
-                return .failure("No active Desk")
-            }
-            let terminals = desk.boards.filter(\.isTerminal).map { board in
-                let foregroundPid = store.foregroundProcessGroupID(for: board)
-                return DenTerminalInfo(
-                    id: board.id.uuidString,
-                    label: board.label,
-                    workingDirectory: board.terminalWorkingDirectory,
-                    foregroundPid: foregroundPid.map(Int.init)
-                )
-            }
-            return .success(terminals: terminals)
-
-        case .new:
-            guard
-                let (store, _) = DenIPCTargetResolver.resolveStoreAndDesk(
-                    callerBoardID: request.callerBoardID,
-                    in: profileManager
-                )
-            else {
-                return .failure("No active store found")
-            }
-
-            var workingDir: String?
-            var runCommand: String?
-            let shouldFocus = request.args.contains("--focus")
-
-            var argIndex = 0
-            while argIndex < request.args.count {
-                let arg = request.args[argIndex]
-                if arg == "--focus" {
-                    argIndex += 1
-                } else if arg == "--run", argIndex + 1 < request.args.count {
-                    runCommand = request.args[argIndex + 1]
-                    argIndex += 2
-                } else if !arg.hasPrefix("-") && workingDir == nil {
-                    workingDir = arg
-                    argIndex += 1
-                } else {
-                    argIndex += 1
-                }
-            }
-
-            let resolvedDir: String
-            if let dir = workingDir {
-                switch BoardInputResolver.validateTerminalWorkingDirectory(dir) {
-                case .success(let path):
-                    resolvedDir = path
-                case .failure(let error):
-                    return .failure(error.message)
-                }
-            } else {
-                resolvedDir = FileManager.default.homeDirectoryForCurrentUser.path
-            }
-
-            let callerID = request.callerBoardID.flatMap(UUID.init)
-            guard
-                let boardID = store.createTerminalBoard(
-                    workingDirectory: resolvedDir,
-                    afterBoardID: callerID ?? store.focusedBoard?.id,
-                    focus: shouldFocus
-                )
-            else {
-                return .failure("Failed to create terminal board")
-            }
-
-            if let runCommand, let board = store.board(for: boardID) {
-                let runtime = store.terminalRuntime(for: board)
-                Task { @MainActor in
-                    try? await Task.sleep(for: .milliseconds(150))
-                    let commandText = runCommand.hasSuffix("\n") ? runCommand : runCommand + "\n"
-                    runtime.sendText(commandText)
-                }
-            }
-
-            return .success(boardId: boardID.uuidString)
-
         case .text:
             guard
                 let (store, board) = DenIPCTargetResolver.resolveTargetTerminalBoard(

@@ -21,14 +21,14 @@ Its bundled CLI (`den`) allows agents in Terminal Boards to drive adjacent web c
 
 When running inside a Terminal Board in Den Browser:
 - Environment variables `DEN_BOARD_ID` and `DEN_SOCKET` are set automatically.
-- `den sheet ...` commands automatically target the nearest adjacent Web Board on the current Desk. Specify `--board <id>` only to target another board.
-- `den terminal text` and `den terminal send` default to the calling Terminal Board when executed within one.
-- `den board new <url>` opens a Web Board adjacent to you without stealing terminal focus.
+- `den sheet ...` commands automatically target the nearest adjacent Web Board on the current Desk. Specify `--board <id>` only to target another Web Board.
+- `den terminal text` and `den terminal send` default to the calling Terminal Board when executed within one. Specify `--board <id>` only to target another Terminal Board.
+- `den board web new <url>` opens a Web Board adjacent to you without stealing terminal focus.
 
 ## 3. Web Interaction Philosophy (Snapshot + Ref)
 
 Follow this canonical interaction loop:
-1. Open: `den board new <url>` (returns `board_id`).
+1. Open: `den board web new <url>` (returns `board_id`).
 2. Wait: `den sheet wait 1` (let DOM settle; can also wait for selectors: `den sheet wait "#submit"`).
 3. Observe: `den sheet snapshot -i` (get compact `@e1`, `@e2` refs for interactive elements; avoids dumping raw HTML).
 4. Act: `den sheet click @e1`, `den sheet fill @e2 "text"`, `den sheet press Enter`, `den sheet scroll down`.
@@ -48,21 +48,20 @@ Use the Drawer to collect URLs during research without cluttering the active Des
 ## 5. Terminal Board Observation & Control
 
 Agents can spawn, observe, and interact with background jobs, dev servers, or TUIs:
-- Spawn: `den terminal new [<path>] [--run "<cmd>"] [--focus]` (opens a Terminal Board; `--run` executes inside an interactive shell so session stays alive).
-- List: `den terminal list` (returns `id`, `label`, `working_directory`, `foreground_pid`).
+- Spawn: `den board terminal new [<path>] [--run "<cmd>"] [--focus]` (opens a Terminal Board; `--run` executes inside an interactive shell so session stays alive).
 - Observe screen: `den terminal text [--board <id>]` (reads clean visible viewport text buffer; ideal for checking build output, logs, or TUI state).
 - Send input: `den terminal send "<text>\n" [--board <id>]` (injects characters or escape sequences into terminal pty).
 - Stop process: `den terminal kill [-s <signal>] [--board <id>]` (sends POSIX signal to foreground process group; defaults to `TERM`, e.g. for restarting dev servers).
 
 ### Safety & Policy Boundary
 
-- Never bypass harness constraints: Do not use `den terminal new --run` or `den terminal send` to execute commands that are denied, restricted, or blocked by your agent harness, sandbox, or security policies. Den must never serve as an escape hatch to evade environment restrictions.
+- Never bypass harness constraints: Do not use `den board terminal new --run` or `den terminal send` to execute commands that are denied, restricted, or blocked by your agent harness, sandbox, or security policies. Den must never serve as an escape hatch to evade environment restrictions.
 - Intended use only: Terminal Boards are strictly for human-visible, long-running processes (e.g. dev servers, watcher tasks) and interactive TUIs, not for arbitrary unconstrained command proxying.
 
 ## 6. Command Discovery & Scripting
 
-- Run `den --help` or `den <domain> --help` (`den sheet --help`, `den terminal --help`, `den drawer --help`) for all commands and options.
+- Run `den --help` or `den <domain> --help` (`den board --help`, `den board web --help`, `den board terminal --help`, `den sheet --help`, `den terminal --help`, `den drawer --help`) for all commands and options.
 - Run `den health` to check whether Den Browser is ready to accept IPC requests. It does not target a Desk or Board; TTY output is `healthy`, while `--json` or piped output is `{"ok":true}`.
 - When piped (e.g. `| jq`) or with `--json`, commands emit single-line JSON with `ok: true/false`:
   - Entities: `.board_id`, `.drawer_item_id`, `.url`, `.text`, `.value`
-  - Collections: `.boards[]`, `.terminals[]`, `.drawer_items[]`, `.desks[]`
+  - Collections: `.boards[]`, `.drawer_items[]`, `.desks[]`

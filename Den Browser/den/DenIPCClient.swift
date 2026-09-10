@@ -2,24 +2,52 @@ import ArgumentParser
 import Darwin
 import Foundation
 
-struct TargetOptions: ParsableArguments {
+struct CLIOptions: ParsableArguments {
     @Flag(name: .customLong("json"), help: "Output response as JSON")
     var isJSON = false
-
-    @Option(name: .customLong("board"), help: "Target specific Board ID (defaults to adjacent Web Board)")
-    var boardID: String?
 
     @Option(name: .customLong("socket"), help: "Custom socket path (defaults to ~/.den/den.sock)")
     var socketPath: String?
 }
 
+struct BoardTargetOptions: ParsableArguments {
+    @OptionGroup var common: CLIOptions
+
+    @Option(name: .customLong("board"), help: "Target specific Board ID (defaults to the ambient Board)")
+    var boardID: String?
+}
+
 enum DenIPCClient {
-    static func execute(command: DenIPCCommand, args: [String], target: TargetOptions) throws {
+    static func execute(command: DenIPCCommand, args: [String], options: CLIOptions) throws {
+        try execute(
+            command: command,
+            args: args,
+            isJSON: options.isJSON,
+            boardID: nil,
+            socketPath: options.socketPath)
+    }
+
+    static func execute(command: DenIPCCommand, args: [String], options: BoardTargetOptions) throws {
+        try execute(
+            command: command,
+            args: args,
+            isJSON: options.common.isJSON,
+            boardID: options.boardID,
+            socketPath: options.common.socketPath)
+    }
+
+    private static func execute(
+        command: DenIPCCommand,
+        args: [String],
+        isJSON: Bool,
+        boardID: String?,
+        socketPath: String?
+    ) throws {
         let env = ProcessInfo.processInfo.environment
         let callerBoardID = env["DEN_BOARD_ID"]
 
         let socketPath: String = {
-            if let custom = target.socketPath { return custom }
+            if let custom = socketPath { return custom }
             if let envSocket = env["DEN_SOCKET"], !envSocket.isEmpty { return envSocket }
             let home = FileManager.default.homeDirectoryForCurrentUser.path
             return "\(home)/.den/den.sock"
@@ -28,7 +56,7 @@ enum DenIPCClient {
         let request = DenIPCRequest(
             command: command,
             args: args,
-            boardID: target.boardID,
+            boardID: boardID,
             deskID: nil,
             callerBoardID: callerBoardID)
 
@@ -99,7 +127,7 @@ enum DenIPCClient {
             throw ExitCode.failure
         }
 
-        let isJSONOutput = target.isJSON || isatty(STDOUT_FILENO) == 0
+        let isJSONOutput = isJSON || isatty(STDOUT_FILENO) == 0
 
         if isJSONOutput {
             if let jsonString = String(data: responseData, encoding: .utf8) {
@@ -120,12 +148,6 @@ enum DenIPCClient {
                     for currentDesk in desks {
                         let mark = currentDesk.isActive ? "*" : " "
                         print("\(mark) \(currentDesk.id) - \(currentDesk.label) (\(currentDesk.boardCount) boards)")
-                    }
-                } else if let terminals = response.terminals {
-                    for terminal in terminals {
-                        let pidSuffix = terminal.foregroundPid.map { " (pid: \($0))" } ?? ""
-                        let dirSuffix = terminal.workingDirectory.map { " [\($0)]" } ?? ""
-                        print("\(terminal.id) - \(terminal.label)\(dirSuffix)\(pidSuffix)")
                     }
                 } else if let drawerItems = response.drawerItems {
                     for item in drawerItems {

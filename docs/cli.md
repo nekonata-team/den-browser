@@ -23,8 +23,10 @@ Den (Application Workspace) ─── den
  ├── Drawer (Temporary Web Material) ─── den drawer <action>
  ├── Desk (Virtual Workspace) ─── den desk <action>
       └── Board (Work Surface) ─── den board <action>
-           ├── [Web] Sheet (Web Screen) ─── den sheet <action>
-           └── [Terminal] Session ─── den terminal <action>
+           ├── Web Board ─── den board web <action>
+           │    └── Sheet (Web Screen) ─── den sheet <action>
+           └── Terminal Board ─── den board terminal <action>
+                └── Terminal Session ─── den terminal <action>
 ```
 
 ---
@@ -38,7 +40,7 @@ When `den` is executed from a shell inside a Terminal Board, Den Browser automat
 
 When a command is received with `DEN_BOARD_ID`:
 1. Den Browser dynamically locates the Desk that currently contains that Terminal Board. Moving Boards across Desks does not break targeting because Desk membership is evaluated dynamically from live state.
-2. The nearest adjacent Web Board on that Desk is resolved (scanned rightward, then leftward).
+2. Board-targeting commands resolve the appropriate Board on that Desk. Web commands scan for a Web Board; Terminal commands scan for a Terminal Board.
 
 For `sheet` commands, target Web Board resolution follows this priority:
 1. **Explicit Board ID**: Supplied via `--board <id>`. If specified, the target must be a valid UUID for an existing Board; invalid or non-existent IDs fail immediately (`exit 1`) with an error and never fall back to ambient candidates.
@@ -46,10 +48,14 @@ For `sheet` commands, target Web Board resolution follows this priority:
 3. **Focused Board**: The currently focused Board on the active Desk, if it is a Web Board.
 4. **First Web Board**: The first Web Board found on the active Desk.
 
+For `terminal` commands, the caller's Terminal Board is preferred; otherwise the nearest Terminal Board is resolved relative to the caller on the current Desk.
+
 ### Global Options
 - `--json`: Force output as structured JSON. When standard output is redirected or piped (non-TTY), JSON output is enabled automatically.
-- `--board <id>`: Explicitly target a specific Board by its UUID. Fails immediately if not found or invalid.
 - `--socket <path>`: Override the Unix domain socket path (defaults to `~/.den/den.sock` or `$DEN_SOCKET`).
+
+### Board Targeting
+- `--board <id>`: Explicitly target a specific Board by its UUID. Available on `den sheet`, `den terminal`, and `den board close`; fails immediately if not found or invalid.
 
 ---
 
@@ -95,17 +101,28 @@ Commands operating on Boards within the active Desk.
 | Command | Arguments | Description | Example |
 |---|---|---|---|
 | `den board list` | None | List all Boards on the active Desk with ID, type (`web`/`terminal`), and label. | `den board list` |
-| `den board new` | `<url> [--focus]` | Open a **new** Web Board with `<url>` on the active Desk (does not steal focus unless `--focus` is given) and return its UUID. | `den board new https://example.com` |
-| `den board close` | `[<id>]` | Close the specified Board or the target Web Board. Closing by explicit `<id>` fails (`exit 1`) without closing the active Board if the ID is invalid or not found. | `den board close` |
+| `den board close` | `[--board <id>]` | Close the specified Board or the target Web Board. Explicit IDs fail (`exit 1`) if invalid or not found. | `den board close --board 4F72344C-...` |
 
-### 3.4 `den desk` (Desks & Workspaces)
+### 3.4 `den board web` (Web Boards)
+
+| Command | Arguments | Description | Example |
+|---|---|---|---|
+| `den board web new` | `<url> [--focus]` | Open a **new** Web Board with `<url>` on the active Desk and return its UUID. | `den board web new https://example.com` |
+
+### 3.5 `den board terminal` (Terminal Boards)
+
+| Command | Arguments | Description | Example |
+|---|---|---|---|
+| `den board terminal new` | `[<path>] [--run <cmd>] [--focus]` | Open a new Terminal Board, optionally running an initial command in an interactive shell. | `den board terminal new . --run "npm test" --focus` |
+
+### 3.6 `den desk` (Desks & Workspaces)
 Commands operating on Desks within the Den.
 
 | Command | Arguments | Description | Example |
 |---|---|---|---|
 | `den desk list` | None | List all Desks in the Den with ID, label, board count, and active status. | `den desk list` |
 
-### 3.5 `den drawer` (Drawer & Web Material)
+### 3.7 `den drawer` (Drawer & Web Material)
 Commands operating on the Den-wide Drawer for web material whose Desk context is not yet settled.
 
 | Command | Arguments | Description | Example |
@@ -115,13 +132,11 @@ Commands operating on the Den-wide Drawer for web material whose Desk context is
 | `den drawer place` | `<id>` | Place a Drawer Item onto the active Desk as a Web Board (item leaves Drawer). | `den drawer place 4F72344C-...` |
 | `den drawer discard` | `<id>` | Discard a Drawer Item without placing it onto a Desk. | `den drawer discard 4F72344C-...` |
 
-### 3.6 `den terminal` (Terminal Boards)
-Commands operating on native Terminal Boards.
+### 3.8 `den terminal` (Terminal Sessions)
+Commands operating on Terminal Sessions in the target Terminal Board.
 
 | Command | Arguments | Description | Example |
 |---|---|---|---|
-| `den terminal list` | None | List all Terminal Boards on the active Desk with ID, label, working directory, and foreground PID. | `den terminal list` |
-| `den terminal new` | `[<path>] [--run <cmd>] [--focus]` | Open a new Terminal Board, optionally running an initial command in an interactive shell. | `den terminal new . --run "npm test" --focus` |
 | `den terminal text` | `[--board <id>]` | Read visible terminal screen buffer as clean plain text. | `den terminal text` |
 | `den terminal send` | `<text> [--board <id>]` | Inject raw text or escape sequences into terminal pty. | `den terminal send "git status\n"` |
 | `den terminal kill` | `[-s <signal>] [--board <id>]` | Send a POSIX signal to the foreground process group (defaults to `TERM`). | `den terminal kill -s TERM` |
@@ -141,12 +156,12 @@ https://example.com/docs
 ### Non-TTY / `--json` Output (Agent & `jq` Mode)
 When piped or when `--json` is supplied, `den` outputs single-line JSON on standard output with standard Unix exit codes. Properties are flat and use `snake_case` for direct 1-level `jq` access:
 
-**Board Creation (`board new`, `terminal new`)**:
+**Board Creation (`board web new`, `board terminal new`)**:
 ```json
 {"ok":true,"board_id":"4F72344C-F4E3-438D-99CB-2F12A79F0004"}
 ```
 ```bash
-BOARD_ID=$(den board new https://example.com | jq -r .board_id)
+BOARD_ID=$(den board web new https://example.com | jq -r .board_id)
 ```
 
 **Board Listing (`board list`)**:
@@ -155,14 +170,6 @@ BOARD_ID=$(den board new https://example.com | jq -r .board_id)
 ```
 ```bash
 den board list | jq -r '.boards[] | select(.type == "web") | .id'
-```
-
-**Terminal Listing (`terminal list`)**:
-```json
-{"ok":true,"terminals":[{"foreground_pid":87498,"id":"C40D049C-...","label":"main","working_directory":"/Users/hiroaki/Documents/main"}]}
-```
-```bash
-den terminal list | jq -r '.terminals[] | .id'
 ```
 
 **Terminal Screen Buffer (`terminal text`)**:
