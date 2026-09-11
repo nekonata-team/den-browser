@@ -359,6 +359,56 @@ struct KeyboardShortcutTests {
         #expect(store.saveEssentialDraft?.input == "https://github.com/YaLTeR/niri")
     }
 
+    @Test func denModeMKeyTogglesBoardMarkAndShiftMJumps() throws {
+        let first = board("First")
+        let second = board("Second")
+        let store = try makeStore(boards: [first, second])
+        store.isDenMode = true
+
+        let mKey = try keyEvent(
+            characters: "m",
+            charactersIgnoringModifiers: "m",
+            keyCode: 46
+        )
+        let shiftMKey = try keyEvent(
+            characters: "M",
+            charactersIgnoringModifiers: "m",
+            modifiers: [.shift],
+            keyCode: 46
+        )
+
+        // Focus is on first board. Press 'm' to mark.
+        #expect(KeyboardController.handle(mKey, store: store))
+        #expect(store.focusedDesk?.markedBoardID == first.id)
+        #expect(store.toastMessage?.message == "Marked Board")
+
+        // Move to second board.
+        store.focusBoard(second.id)
+        #expect(store.focusedBoard?.id == second.id)
+
+        // Press 'Shift + m' to jump to marked first board.
+        #expect(KeyboardController.handle(shiftMKey, store: store))
+        #expect(store.focusedBoard?.id == first.id)
+
+        // Press 'Shift + m' again to return to second board (A <-> B toggle).
+        #expect(KeyboardController.handle(shiftMKey, store: store))
+        #expect(store.focusedBoard?.id == second.id)
+
+        // Press 'm' on second board to move mark.
+        #expect(KeyboardController.handle(mKey, store: store))
+        #expect(store.focusedDesk?.markedBoardID == second.id)
+
+        // Press 'm' again on second board to unmark.
+        #expect(KeyboardController.handle(mKey, store: store))
+        #expect(store.focusedDesk?.markedBoardID == nil)
+        #expect(store.toastMessage?.message == "Unmarked Board")
+
+        // Press 'Shift + m' with no mark shows warning.
+        #expect(KeyboardController.handle(shiftMKey, store: store))
+        #expect(store.toastMessage?.message == "No mark in Desk")
+        #expect(store.toastMessage?.style == .warning)
+    }
+
     @Test func notificationArrowsMoveSelectionAndReturnOpensIt() throws {
         let first = board("First")
         let second = board("Second")
@@ -942,7 +992,7 @@ struct KeyboardShortcutTests {
         let store = try makeStore(boards: [board("First")])
         store.isDenMode = true
         let unmapped = try keyEvent(
-            characters: "m", charactersIgnoringModifiers: "m", modifiers: [], keyCode: 46)
+            characters: "y", charactersIgnoringModifiers: "y", modifiers: [], keyCode: 16)
 
         #expect(
             KeyboardController.decision(for: unmapped, store: store)

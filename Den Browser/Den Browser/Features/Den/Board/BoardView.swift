@@ -427,13 +427,23 @@ struct BoardView: View {
 struct BoardHeaderTitle: View {
     let board: BoardState
     let isFocused: Bool
+    var isMarked: Bool = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text(board.displayName)
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(.primary)
-                .lineLimit(1)
+            HStack(spacing: 4) {
+                Text(board.displayName)
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.primary)
+                    .lineLimit(1)
+
+                if isMarked {
+                    Image(systemName: "bookmark.fill")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                        .help("Marked Board")
+                }
+            }
 
             if let supplementaryText {
                 Text(supplementaryText)
@@ -458,6 +468,7 @@ struct BoardHeaderTitle: View {
 
     private var accessibilityLabel: String {
         [
+            isMarked ? "Marked board" : nil,
             "Board: \(board.displayName)",
             supplementaryText,
             isFocused ? "Focused board" : "Board",

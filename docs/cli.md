@@ -107,7 +107,7 @@ Commands operating on Boards within the active Desk.
 
 | Command | Arguments | Description | Example |
 |---|---|---|---|
-| `den board web new` | `<url> [--focus]` | Open a **new** Web Board with `<url>` on the active Desk and return its UUID. | `den board web new https://example.com` |
+| `den board web new` | `<url> [--focus]` | Open a **new** Web Board with `<url>` on the active Desk, start its Web runtime immediately, and return its UUID. Use `den sheet wait` to wait for loaded content. | `den board web new https://example.com` |
 
 ### 3.5 `den board terminal` (Terminal Boards)
 
@@ -129,7 +129,7 @@ Commands operating on the Den-wide Drawer for web material whose Desk context is
 |---|---|---|---|
 | `den drawer list` | None | List all Drawer Items in the Drawer with ID, title, and URL. | `den drawer list` |
 | `den drawer keep` | `<url> [--title <text>]` | Keep a URL in the Drawer as a Drawer Item without changing Desk layout. | `den drawer keep https://example.com` |
-| `den drawer place` | `<id>` | Place a Drawer Item onto the active Desk as a Web Board (item leaves Drawer). | `den drawer place 4F72344C-...` |
+| `den drawer place` | `<id>` | Place a Drawer Item onto the active Desk as a Web Board, start its Web runtime immediately, and remove the item from the Drawer. | `den drawer place 4F72344C-...` |
 | `den drawer discard` | `<id>` | Discard a Drawer Item without placing it onto a Desk. | `den drawer discard 4F72344C-...` |
 
 ### 3.8 `den terminal` (Terminal Sessions)

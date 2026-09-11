@@ -84,6 +84,8 @@ struct KeyboardShortcutsView: View {
                     item(["w", "then", "- / = / 1–9"], "Resize all Boards"),
                     item(["f"], "Toggle maximized Board"),
                     item(["c"], "Center Focused Board"),
+                    item(["m"], "Mark / unmark Focused Board"),
+                    item(["⇧", "M"], "Jump to marked Board / return to origin"),
                     item(["t"], "Pause / resume Sheet Navigation for Focused Board"),
                     item(["a"], "Keep Current Sheet in Drawer"),
                     item(["s"], "Capture Current Sheet Screenshot"),

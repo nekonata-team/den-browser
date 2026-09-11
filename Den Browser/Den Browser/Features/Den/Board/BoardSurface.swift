@@ -54,6 +54,7 @@ struct BoardSurfaceModifier: ViewModifier {
 }
 
 struct BoardDragHeader<LeadingContent: View>: View {
+    @Environment(DenStore.self) private var store
     let board: BoardState
     let isFocused: Bool
     let isDragging: Bool
@@ -95,7 +96,11 @@ struct BoardDragHeader<LeadingContent: View>: View {
                 .frame(width: 16, height: 16)
                 .accessibilityHidden(true)
 
-            BoardHeaderTitle(board: board, isFocused: isFocused)
+            BoardHeaderTitle(
+                board: board,
+                isFocused: isFocused,
+                isMarked: store.focusedDesk?.markedBoardID == board.id
+            )
 
             Spacer(minLength: 8)
         }

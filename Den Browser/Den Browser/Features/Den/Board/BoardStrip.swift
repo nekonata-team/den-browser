@@ -1107,7 +1107,11 @@ private struct UnactivatedBoardView: View {
             )
             .foregroundStyle(.secondary)
             .frame(width: 16, height: 16)
-            BoardHeaderTitle(board: board, isFocused: isFocused)
+            BoardHeaderTitle(
+                board: board,
+                isFocused: isFocused,
+                isMarked: store.focusedDesk?.markedBoardID == board.id
+            )
             Spacer(minLength: 8)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)

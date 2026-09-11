@@ -241,6 +241,7 @@ struct OverviewView: View {
                 OverviewBoardCard(
                     board: board,
                     isSelected: isSelected,
+                    isMarked: desk.markedBoardID == board.id,
                     profileColor: profileColor,
                     boardHeight: boardHeight,
                     differentiateWithoutColor: differentiateWithoutColor
@@ -280,7 +281,7 @@ struct OverviewView: View {
         .allowsHitTesting(overviewDrag == nil || overviewDrag?.boardID == board.id)
         .zIndex(overviewDrag?.boardID == board.id ? 2 : 1)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(overviewBoardAccessibilityLabel(for: board))
+        .accessibilityLabel(overviewBoardAccessibilityLabel(for: board, in: desk))
         .accessibilityValue(isSelected ? "Selected Board" : "")
         .accessibilityAddTraits(isSelected ? .isSelected : [])
         .accessibilityIdentifier("overview-board.\(board.id.uuidString.lowercased())")
@@ -315,7 +316,7 @@ struct OverviewView: View {
         .id(board.id)
     }
 
-    private func overviewBoardAccessibilityLabel(for board: BoardState) -> String {
+    private func overviewBoardAccessibilityLabel(for board: BoardState, in desk: DeskState) -> String {
         let detail: String?
         if let zmxSessionName = board.zmxSessionName {
             detail = "zmx session \(zmxSessionName)"
@@ -329,9 +330,14 @@ struct OverviewView: View {
             detail = nil
         }
 
-        return [OverviewBoardCard.kindLabel(for: board) + " Board \(board.displayName)", detail]
-            .compactMap { $0 }
-            .joined(separator: ", ")
+        let isMarked = desk.markedBoardID == board.id
+        return [
+            isMarked ? "Marked board" : nil,
+            OverviewBoardCard.kindLabel(for: board) + " Board \(board.displayName)",
+            detail,
+        ]
+        .compactMap { $0 }
+        .joined(separator: ", ")
     }
 
     private func updateOverviewBoardDrag(_ board: BoardState, value: DragGesture.Value) {
@@ -627,6 +633,7 @@ private struct OverviewEmptyDeskCard: View {
 private struct OverviewBoardCard: View {
     let board: BoardState
     let isSelected: Bool
+    var isMarked: Bool = false
     let profileColor: Color
     let boardHeight: CGFloat
     let differentiateWithoutColor: Bool
@@ -675,6 +682,13 @@ private struct OverviewBoardCard: View {
                 Text(Self.kindLabel(for: board))
                     .font(.caption2.weight(.medium))
                     .foregroundStyle(typeColor)
+
+                if isMarked {
+                    Spacer(minLength: 0)
+                    Image(systemName: "bookmark.fill")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
             }
 
             Text(board.displayName)

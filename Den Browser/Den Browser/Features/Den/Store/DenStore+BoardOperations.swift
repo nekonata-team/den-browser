@@ -336,4 +336,44 @@ extension DenStore {
         pasteboard.setString(boardID.uuidString.lowercased(), forType: .string)
         showToast("Copied Board ID.", style: .success)
     }
+
+    func toggleBoardMark() {
+        guard let deskIndex = focusedDeskIndex,
+            let focusedBoardID = state.desks[deskIndex].focusedBoardID
+        else { return }
+
+        if state.desks[deskIndex].markedBoardID == focusedBoardID {
+            state.desks[deskIndex].markedBoardID = nil
+            showToast("Unmarked Board")
+        } else {
+            state.desks[deskIndex].markedBoardID = focusedBoardID
+            showToast("Marked Board")
+        }
+        save()
+    }
+
+    func jumpToMarkedBoard() {
+        guard let deskIndex = focusedDeskIndex else { return }
+        let desk = state.desks[deskIndex]
+        guard let markedBoardID = desk.markedBoardID,
+            desk.boards.contains(where: { $0.id == markedBoardID })
+        else {
+            showToast("No mark in Desk", style: .warning)
+            return
+        }
+
+        let currentBoardID = desk.focusedBoardID
+        if currentBoardID != markedBoardID {
+            markJumpOriginBoardIDByDesk[desk.id] = currentBoardID
+            focusBoard(markedBoardID)
+            centerFocusedBoard()
+        } else if let originID = markJumpOriginBoardIDByDesk[desk.id],
+            originID != markedBoardID,
+            desk.boards.contains(where: { $0.id == originID })
+        {
+            markJumpOriginBoardIDByDesk[desk.id] = markedBoardID
+            focusBoard(originID)
+            centerFocusedBoard()
+        }
+    }
 }

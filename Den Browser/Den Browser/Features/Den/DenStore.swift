@@ -180,6 +180,7 @@ final class DenStore {
     @ObservationIgnored var toastTask: Task<Void, Never>?
     @ObservationIgnored private var terminalURLSuppressionTracker = TerminalURLSuppressionTracker()
     @ObservationIgnored private var previousFocusedDeskID: UUID?
+    @ObservationIgnored var markJumpOriginBoardIDByDesk: [UUID: UUID] = [:]
     @ObservationIgnored private let terminalCommandRunner: any TerminalCommandRunning
     @ObservationIgnored let canPresentDesk: ((UUID) -> Bool)?
     @ObservationIgnored private let onDeskPresentationRequest: ((UUID) -> Bool)?
@@ -624,6 +625,12 @@ final class DenStore {
         if pendingBoardLinkFocus?.boardID == board.id {
             pendingBoardLinkFocus = nil
         }
+        if state.desks[indices.desk].markedBoardID == board.id {
+            state.desks[indices.desk].markedBoardID = nil
+        }
+        if markJumpOriginBoardIDByDesk[state.desks[indices.desk].id] == board.id {
+            markJumpOriginBoardIDByDesk.removeValue(forKey: state.desks[indices.desk].id)
+        }
         let boards = state.desks[indices.desk].boards
         guard state.desks[indices.desk].focusedBoardID == board.id else { return board }
 
@@ -662,6 +669,11 @@ final class DenStore {
             let boards = state.desks[deskIndex].boards
             if !boards.contains(where: { $0.id == state.desks[deskIndex].focusedBoardID }) {
                 state.desks[deskIndex].focusedBoardID = boards.first?.id
+            }
+            if let markedBoardID = state.desks[deskIndex].markedBoardID,
+                !boards.contains(where: { $0.id == markedBoardID })
+            {
+                state.desks[deskIndex].markedBoardID = nil
             }
         }
     }

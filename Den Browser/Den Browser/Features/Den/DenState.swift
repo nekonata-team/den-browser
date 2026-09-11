@@ -83,19 +83,22 @@ struct DeskState: Codable, Equatable, Identifiable {
     var boards: [BoardState]
     var focusedBoardID: UUID?
     var scrollOffsetX: Double?
+    var markedBoardID: UUID?
 
     init(
         id: UUID = UUID(),
         label: String,
         boards: [BoardState],
         focusedBoardID: UUID? = nil,
-        scrollOffsetX: Double? = nil
+        scrollOffsetX: Double? = nil,
+        markedBoardID: UUID? = nil
     ) {
         self.id = id
         self.label = label
         self.boards = boards
         self.focusedBoardID = focusedBoardID ?? boards.first?.id
         self.scrollOffsetX = scrollOffsetX
+        self.markedBoardID = markedBoardID
     }
 }
 

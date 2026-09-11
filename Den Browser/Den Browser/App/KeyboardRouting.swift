@@ -150,6 +150,8 @@ enum AppAction: Equatable {
     case focusNextBoard
     case moveFocusedBoardLeft
     case moveFocusedBoardRight
+    case toggleBoardMark
+    case jumpToMarkedBoard
     case moveFocusedBoardToPreviousDesk
     case moveFocusedBoardToNextDesk
     case focusDesk(Int)
@@ -675,6 +677,8 @@ enum KeyboardRouter {
         binding("r", modifiers: [.shift]): KeyboardCommand(action: .showRenameDeskPanel, repeatPolicy: .ignore),
         binding("d"): KeyboardCommand(action: .removeBoardAndFocusNext, repeatPolicy: .ignore),
         binding("d", modifiers: [.shift]): KeyboardCommand(action: .deleteDesk),
+        binding("m"): KeyboardCommand(action: .toggleBoardMark, repeatPolicy: .ignore),
+        binding("m", modifiers: [.shift]): KeyboardCommand(action: .jumpToMarkedBoard, repeatPolicy: .ignore),
         binding("b"): KeyboardCommand(action: .saveFocusedBoardAsEssential, repeatPolicy: .ignore),
         binding("e"): KeyboardCommand(action: .showEditBoardLinkPanel, repeatPolicy: .ignore),
         ShortcutBinding(key: .returnKey, modifiers: [.shift]): KeyboardCommand(
@@ -733,6 +737,8 @@ enum AppActionHandler {
         case .focusNextBoard: store.focusNextBoard()
         case .moveFocusedBoardLeft: store.moveFocusedBoardLeft()
         case .moveFocusedBoardRight: store.moveFocusedBoardRight()
+        case .toggleBoardMark: store.toggleBoardMark()
+        case .jumpToMarkedBoard: store.jumpToMarkedBoard()
         case .moveFocusedBoardToPreviousDesk: store.moveFocusedBoardToPreviousDesk()
         case .moveFocusedBoardToNextDesk: store.moveFocusedBoardToNextDesk()
         case .focusDesk(let number): store.focusDesk(number: number)

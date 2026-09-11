@@ -1111,6 +1111,70 @@ struct DenStoreBoardTests {
             #expect(store.toastMessage == nil)
         }
     }
+
+    @Test func toggleBoardMarkSetsAndClearsMark() {
+        let firstBoard = board("First")
+        let secondBoard = board("Second")
+        let source = desk("Desk", boards: [firstBoard, secondBoard])
+        withTestStore(desks: [source]) { store in
+            store.focusBoard(firstBoard.id)
+
+            store.toggleBoardMark()
+            #expect(store.focusedDesk?.markedBoardID == firstBoard.id)
+            #expect(store.toastMessage?.message == "Marked Board")
+
+            store.toggleBoardMark()
+            #expect(store.focusedDesk?.markedBoardID == nil)
+            #expect(store.toastMessage?.message == "Unmarked Board")
+
+            store.focusBoard(secondBoard.id)
+            store.toggleBoardMark()
+            #expect(store.focusedDesk?.markedBoardID == secondBoard.id)
+            #expect(store.toastMessage?.message == "Marked Board")
+        }
+    }
+
+    @Test func jumpToMarkedBoardTogglesBetweenMarkedAndOrigin() {
+        let firstBoard = board("First")
+        let secondBoard = board("Second")
+        let source = desk("Desk", boards: [firstBoard, secondBoard])
+        withTestStore(desks: [source]) { store in
+            store.focusBoard(firstBoard.id)
+            store.toggleBoardMark()
+
+            store.focusBoard(secondBoard.id)
+            #expect(store.focusedBoard?.id == secondBoard.id)
+
+            store.jumpToMarkedBoard()
+            #expect(store.focusedBoard?.id == firstBoard.id)
+
+            store.jumpToMarkedBoard()
+            #expect(store.focusedBoard?.id == secondBoard.id)
+        }
+    }
+
+    @Test func jumpToMarkedBoardShowsWarningWhenNoMark() {
+        let source = desk("Desk", boards: [board("First")])
+        withTestStore(desks: [source]) { store in
+            store.jumpToMarkedBoard()
+            #expect(store.toastMessage?.message == "No mark in Desk")
+            #expect(store.toastMessage?.style == .warning)
+        }
+    }
+
+    @Test func removingMarkedBoardClearsMark() {
+        let firstBoard = board("First")
+        let secondBoard = board("Second")
+        let source = desk("Desk", boards: [firstBoard, secondBoard])
+        withTestStore(desks: [source]) { store in
+            store.focusBoard(firstBoard.id)
+            store.toggleBoardMark()
+            #expect(store.focusedDesk?.markedBoardID == firstBoard.id)
+
+            store.removeBoard(firstBoard.id)
+            #expect(store.focusedDesk?.markedBoardID == nil)
+        }
+    }
 }
 
 private struct StubTerminalCommandRunner: TerminalCommandRunning, Sendable {

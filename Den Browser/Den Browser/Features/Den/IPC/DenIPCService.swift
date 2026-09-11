@@ -233,7 +233,8 @@ final class DenIPCService {
                 urlString: urlString,
                 afterBoardID: callerID ?? store.focusedBoard?.id,
                 focus: shouldFocus
-            ) {
+            ), let board = store.board(for: boardID) {
+                _ = store.runtime(for: board)
                 return .success(boardId: boardID.uuidString)
             }
             return .failure("Failed to open board with \(urlString)")
@@ -413,7 +414,10 @@ final class DenIPCService {
             guard let item = findDrawerItem(in: store, matching: idString) else {
                 return .failure("Drawer Item not found: \(idString)")
             }
-            if let boardID = store.placeDrawerItemAsBoard(item.id) {
+            if let boardID = store.placeDrawerItemAsBoard(item.id),
+                let board = store.board(for: boardID)
+            {
+                _ = store.runtime(for: board)
                 return .success(message: "Placed Drawer Item as Board", boardId: boardID.uuidString)
             }
             return .failure("Failed to place Drawer Item as Board: \(idString)")
