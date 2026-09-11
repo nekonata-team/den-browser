@@ -44,7 +44,7 @@ lsp-config:
 # Build and launch the application locally.
 [group("development")]
 run: build
-    open "{{derived_data}}/Build/Products/Debug/Den Browser.app"
+    open -n "{{derived_data}}/Build/Products/Debug/Den Browser.app"
 
 # Run the bundled den CLI.
 [group("development")]
