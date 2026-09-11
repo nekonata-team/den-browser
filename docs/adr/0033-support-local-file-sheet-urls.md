@@ -4,7 +4,7 @@ status: accepted
 
 # Support local file Sheet URLs
 
-Den Browser supports absolute local `file://` URLs as Sheet URLs alongside HTTP and HTTPS. Local file Sheets participate in the existing Board, Recent, Drawer, Desk Preset, restoration, link, and Vim-style Sheet Navigation workflows. The Open Board and Current Sheet URL fields remain the only direct entry points: Den does not interpret filesystem paths, add a file picker, or register as a document reader.
+Den Browser supports absolute local `file://` URLs as Sheet URLs alongside HTTP and HTTPS. Local file Sheets participate in the existing Board, Recent, Drawer, Desk Preset, restoration, link, and Vim-style Sheet Navigation workflows. The Open Board and Current Sheet URL fields remain the direct entry points for local file Sheets. Terminal Board link activation delegates an explicit local `file://` URL or an existing local file path to macOS's default application; it does not create a Sheet. Den does not add a file picker or register as a document reader.
 
 The app accepts `file:///...` and `file://localhost/...`, canonicalizing the latter to a local URL. Relative `file:` URLs and remote file authorities are rejected. Persisted state stores only the URL through the existing Foundation `URL` representation. It does not validate continued existence or add security-scoped bookmarks, so local file Sheets are intentionally machine- and path-dependent.
 

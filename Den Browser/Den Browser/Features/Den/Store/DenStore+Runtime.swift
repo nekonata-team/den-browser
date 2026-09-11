@@ -1,3 +1,4 @@
+import AppKit
 import Darwin
 import Foundation
 import WebKit
@@ -217,25 +218,39 @@ extension DenStore {
                 self?.updateTerminalBoard(boardID: board.id, title: title)
             },
             onOpenURL: { [weak self] url in
-                guard let self, let resolvedURL = URL(string: url), SheetURLPolicy.isSupported(resolvedURL)
-                else { return }
-                let canonicalURL = SheetURLPolicy.canonicalSheetURL(resolvedURL)
-                registerTerminalURL(canonicalURL)
-                guard
-                    addBoard(
-                        urlString: canonicalURL.absoluteString,
-                        preferredWidth: board.width,
-                        afterBoardID: board.id,
-                        focus: false,
-                        recentItem: .url(canonicalURL))
-                else {
-                    cancelTerminalURLRegistration(canonicalURL)
-                    return
-                }
+                self?.handleTerminalURL(url, boardID: board.id)
             },
             onNotification: { [weak self] title, body in
                 self?.recordNotification(title: title, body: body, boardID: board.id)
             })
+    }
+
+    func handleTerminalURL(_ rawURL: String, boardID: UUID) {
+        guard
+            let board = board(for: boardID),
+            let link = TerminalLinkResolver.resolve(
+                rawURL,
+                relativeTo: board.terminalWorkingDirectory
+                    ?? FileManager.default.homeDirectoryForCurrentUser.path)
+        else { return }
+
+        switch link {
+        case .localFile(let fileURL):
+            _ = NSWorkspace.shared.open(fileURL)
+        case .web(let resolvedURL):
+            registerTerminalURL(resolvedURL)
+            guard
+                addBoard(
+                    urlString: resolvedURL.absoluteString,
+                    preferredWidth: board.width,
+                    afterBoardID: board.id,
+                    focus: false,
+                    recentItem: .url(resolvedURL))
+            else {
+                cancelTerminalURLRegistration(resolvedURL)
+                return
+            }
+        }
     }
 
     func applySheetScale(_ scale: Int) {
