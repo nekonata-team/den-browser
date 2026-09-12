@@ -64,6 +64,10 @@ _Avoid_: Tab title, page title, board name
 The horizontal size of a board within a desk. A board width can be adjusted to fit the work.
 _Avoid_: Window size, pane size
 
+**Anchor Board**:
+A user-designated Board within a Desk that acts as a return anchor during horizontal navigation across Boards. A Desk has at most one Anchor Board at a time.
+_Avoid_: Marked Board, Pinned Board, Home Board
+
 **Sheet**:
 A web screen held within a board. A sheet is the content being viewed, not the work surface itself.
 _Avoid_: Page, view, document

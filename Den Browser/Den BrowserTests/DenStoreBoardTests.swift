@@ -1112,67 +1112,67 @@ struct DenStoreBoardTests {
         }
     }
 
-    @Test func toggleBoardMarkSetsAndClearsMark() {
+    @Test func toggleAnchorBoardSetsAndClearsAnchor() {
         let firstBoard = board("First")
         let secondBoard = board("Second")
         let source = desk("Desk", boards: [firstBoard, secondBoard])
         withTestStore(desks: [source]) { store in
             store.focusBoard(firstBoard.id)
 
-            store.toggleBoardMark()
-            #expect(store.focusedDesk?.markedBoardID == firstBoard.id)
-            #expect(store.toastMessage?.message == "Marked Board")
+            store.toggleAnchorBoard()
+            #expect(store.focusedDesk?.anchorBoardID == firstBoard.id)
+            #expect(store.toastMessage?.message == "Set Anchor Board")
 
-            store.toggleBoardMark()
-            #expect(store.focusedDesk?.markedBoardID == nil)
-            #expect(store.toastMessage?.message == "Unmarked Board")
+            store.toggleAnchorBoard()
+            #expect(store.focusedDesk?.anchorBoardID == nil)
+            #expect(store.toastMessage?.message == "Cleared Anchor Board")
 
             store.focusBoard(secondBoard.id)
-            store.toggleBoardMark()
-            #expect(store.focusedDesk?.markedBoardID == secondBoard.id)
-            #expect(store.toastMessage?.message == "Marked Board")
+            store.toggleAnchorBoard()
+            #expect(store.focusedDesk?.anchorBoardID == secondBoard.id)
+            #expect(store.toastMessage?.message == "Set Anchor Board")
         }
     }
 
-    @Test func jumpToMarkedBoardTogglesBetweenMarkedAndOrigin() {
+    @Test func jumpToAnchorBoardTogglesBetweenAnchorAndOrigin() {
         let firstBoard = board("First")
         let secondBoard = board("Second")
         let source = desk("Desk", boards: [firstBoard, secondBoard])
         withTestStore(desks: [source]) { store in
             store.focusBoard(firstBoard.id)
-            store.toggleBoardMark()
+            store.toggleAnchorBoard()
 
             store.focusBoard(secondBoard.id)
             #expect(store.focusedBoard?.id == secondBoard.id)
 
-            store.jumpToMarkedBoard()
+            store.jumpToAnchorBoard()
             #expect(store.focusedBoard?.id == firstBoard.id)
 
-            store.jumpToMarkedBoard()
+            store.jumpToAnchorBoard()
             #expect(store.focusedBoard?.id == secondBoard.id)
         }
     }
 
-    @Test func jumpToMarkedBoardShowsWarningWhenNoMark() {
+    @Test func jumpToAnchorBoardShowsWarningWhenNoAnchor() {
         let source = desk("Desk", boards: [board("First")])
         withTestStore(desks: [source]) { store in
-            store.jumpToMarkedBoard()
-            #expect(store.toastMessage?.message == "No mark in Desk")
+            store.jumpToAnchorBoard()
+            #expect(store.toastMessage?.message == "No Anchor Board in Desk")
             #expect(store.toastMessage?.style == .warning)
         }
     }
 
-    @Test func removingMarkedBoardClearsMark() {
+    @Test func removingAnchorBoardClearsAnchor() {
         let firstBoard = board("First")
         let secondBoard = board("Second")
         let source = desk("Desk", boards: [firstBoard, secondBoard])
         withTestStore(desks: [source]) { store in
             store.focusBoard(firstBoard.id)
-            store.toggleBoardMark()
-            #expect(store.focusedDesk?.markedBoardID == firstBoard.id)
+            store.toggleAnchorBoard()
+            #expect(store.focusedDesk?.anchorBoardID == firstBoard.id)
 
             store.removeBoard(firstBoard.id)
-            #expect(store.focusedDesk?.markedBoardID == nil)
+            #expect(store.focusedDesk?.anchorBoardID == nil)
         }
     }
 }

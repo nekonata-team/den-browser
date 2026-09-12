@@ -99,7 +99,7 @@ struct BoardDragHeader<LeadingContent: View>: View {
             BoardHeaderTitle(
                 board: board,
                 isFocused: isFocused,
-                isMarked: store.focusedDesk?.markedBoardID == board.id
+                isAnchor: store.focusedDesk?.anchorBoardID == board.id
             )
 
             Spacer(minLength: 8)

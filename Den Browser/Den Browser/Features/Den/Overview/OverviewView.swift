@@ -241,7 +241,7 @@ struct OverviewView: View {
                 OverviewBoardCard(
                     board: board,
                     isSelected: isSelected,
-                    isMarked: desk.markedBoardID == board.id,
+                    isAnchor: desk.anchorBoardID == board.id,
                     profileColor: profileColor,
                     boardHeight: boardHeight,
                     differentiateWithoutColor: differentiateWithoutColor
@@ -330,9 +330,9 @@ struct OverviewView: View {
             detail = nil
         }
 
-        let isMarked = desk.markedBoardID == board.id
+        let isAnchor = desk.anchorBoardID == board.id
         return [
-            isMarked ? "Marked board" : nil,
+            isAnchor ? "Anchor board" : nil,
             OverviewBoardCard.kindLabel(for: board) + " Board \(board.displayName)",
             detail,
         ]
@@ -633,7 +633,7 @@ private struct OverviewEmptyDeskCard: View {
 private struct OverviewBoardCard: View {
     let board: BoardState
     let isSelected: Bool
-    var isMarked: Bool = false
+    var isAnchor: Bool = false
     let profileColor: Color
     let boardHeight: CGFloat
     let differentiateWithoutColor: Bool
@@ -683,9 +683,9 @@ private struct OverviewBoardCard: View {
                     .font(.caption2.weight(.medium))
                     .foregroundStyle(typeColor)
 
-                if isMarked {
+                if isAnchor {
                     Spacer(minLength: 0)
-                    Image(systemName: "bookmark.fill")
+                    Image(systemName: "anchor")
                         .font(.caption2)
                         .foregroundStyle(.secondary)
                 }

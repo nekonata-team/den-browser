@@ -359,7 +359,7 @@ struct KeyboardShortcutTests {
         #expect(store.saveEssentialDraft?.input == "https://github.com/YaLTeR/niri")
     }
 
-    @Test func denModeMKeyTogglesBoardMarkAndShiftMJumps() throws {
+    @Test func denModeMKeyTogglesAnchorBoardAndShiftMJumps() throws {
         let first = board("First")
         let second = board("Second")
         let store = try makeStore(boards: [first, second])
@@ -377,16 +377,16 @@ struct KeyboardShortcutTests {
             keyCode: 46
         )
 
-        // Focus is on first board. Press 'm' to mark.
+        // Focus is on first board. Press 'm' to set anchor.
         #expect(KeyboardController.handle(mKey, store: store))
-        #expect(store.focusedDesk?.markedBoardID == first.id)
-        #expect(store.toastMessage?.message == "Marked Board")
+        #expect(store.focusedDesk?.anchorBoardID == first.id)
+        #expect(store.toastMessage?.message == "Set Anchor Board")
 
         // Move to second board.
         store.focusBoard(second.id)
         #expect(store.focusedBoard?.id == second.id)
 
-        // Press 'Shift + m' to jump to marked first board.
+        // Press 'Shift + m' to jump to anchor first board.
         #expect(KeyboardController.handle(shiftMKey, store: store))
         #expect(store.focusedBoard?.id == first.id)
 
@@ -394,18 +394,18 @@ struct KeyboardShortcutTests {
         #expect(KeyboardController.handle(shiftMKey, store: store))
         #expect(store.focusedBoard?.id == second.id)
 
-        // Press 'm' on second board to move mark.
+        // Press 'm' on second board to move anchor.
         #expect(KeyboardController.handle(mKey, store: store))
-        #expect(store.focusedDesk?.markedBoardID == second.id)
+        #expect(store.focusedDesk?.anchorBoardID == second.id)
 
-        // Press 'm' again on second board to unmark.
+        // Press 'm' again on second board to clear anchor.
         #expect(KeyboardController.handle(mKey, store: store))
-        #expect(store.focusedDesk?.markedBoardID == nil)
-        #expect(store.toastMessage?.message == "Unmarked Board")
+        #expect(store.focusedDesk?.anchorBoardID == nil)
+        #expect(store.toastMessage?.message == "Cleared Anchor Board")
 
-        // Press 'Shift + m' with no mark shows warning.
+        // Press 'Shift + m' with no anchor shows warning.
         #expect(KeyboardController.handle(shiftMKey, store: store))
-        #expect(store.toastMessage?.message == "No mark in Desk")
+        #expect(store.toastMessage?.message == "No Anchor Board in Desk")
         #expect(store.toastMessage?.style == .warning)
     }
 

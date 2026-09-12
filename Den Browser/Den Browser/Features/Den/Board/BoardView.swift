@@ -427,7 +427,7 @@ struct BoardView: View {
 struct BoardHeaderTitle: View {
     let board: BoardState
     let isFocused: Bool
-    var isMarked: Bool = false
+    var isAnchor: Bool = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -437,11 +437,11 @@ struct BoardHeaderTitle: View {
                     .foregroundStyle(.primary)
                     .lineLimit(1)
 
-                if isMarked {
-                    Image(systemName: "bookmark.fill")
+                if isAnchor {
+                    Image(systemName: "anchor")
                         .font(.caption2)
                         .foregroundStyle(.secondary)
-                        .help("Marked Board")
+                        .help("Anchor Board")
                 }
             }
 
@@ -468,7 +468,7 @@ struct BoardHeaderTitle: View {
 
     private var accessibilityLabel: String {
         [
-            isMarked ? "Marked board" : nil,
+            isAnchor ? "Anchor board" : nil,
             "Board: \(board.displayName)",
             supplementaryText,
             isFocused ? "Focused board" : "Board",

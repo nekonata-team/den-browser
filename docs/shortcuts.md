@@ -58,8 +58,8 @@ Essentials are app-wide named Board inputs configured in Settings > Essentials. 
 | `w`, then `-` / `=` or `1` through `9` | Resize all Boards | `-` and `=` adjust every Board in the Focused Desk by 80pt and keep the panel open. Digits persistently resize every Board to fit the current window width. Escape or `w` cancels. |
 | `f` | Toggle maximized focused board | Uses the available Den width without changing its persisted Board Width. |
 | `c` | Center focused board | Uses edge space to center the first and last Board too. |
-| `m` | Mark / unmark focused Board | Toggles the anchor mark for the Focused Board in this Desk. Marked Boards display a bookmark indicator in their header and Overview card. |
-| Shift + `m` | Jump to marked Board / return to origin | Jumps to the marked Board in this Desk and centers it. Pressing again returns to the previous Board (A ⇄ B toggle). Shows a warning toast when no Board is marked. |
+| `m` | Set / clear Anchor Board | Toggles the Anchor Board for the Focused Desk. The Anchor Board displays an anchor indicator in its header and Overview card. |
+| Shift + `m` | Jump to Anchor Board / return to origin | Jumps to the Anchor Board in this Desk and centers it. Pressing again returns to the previous Board (A ⇄ B toggle). Shows a warning toast when no Anchor Board is set. |
 | `t` | Pause / resume Sheet Navigation for focused Board | Persists independently for each Board. |
 | `s` | Capture Current Sheet screenshot | Captures the visible web content in the Focused Board and opens a macOS save panel for a PNG. |
 | Shift + `s` | Capture Focused Desk screenshot | Captures every Board's visible Current Sheet, preserving Board order and relative widths in one PNG. |

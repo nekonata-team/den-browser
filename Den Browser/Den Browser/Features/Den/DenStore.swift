@@ -180,7 +180,7 @@ final class DenStore {
     @ObservationIgnored var toastTask: Task<Void, Never>?
     @ObservationIgnored private var terminalURLSuppressionTracker = TerminalURLSuppressionTracker()
     @ObservationIgnored private var previousFocusedDeskID: UUID?
-    @ObservationIgnored var markJumpOriginBoardIDByDesk: [UUID: UUID] = [:]
+    @ObservationIgnored var anchorJumpOriginBoardIDByDesk: [UUID: UUID] = [:]
     @ObservationIgnored private let terminalCommandRunner: any TerminalCommandRunning
     @ObservationIgnored let canPresentDesk: ((UUID) -> Bool)?
     @ObservationIgnored private let onDeskPresentationRequest: ((UUID) -> Bool)?
@@ -625,11 +625,11 @@ final class DenStore {
         if pendingBoardLinkFocus?.boardID == board.id {
             pendingBoardLinkFocus = nil
         }
-        if state.desks[indices.desk].markedBoardID == board.id {
-            state.desks[indices.desk].markedBoardID = nil
+        if state.desks[indices.desk].anchorBoardID == board.id {
+            state.desks[indices.desk].anchorBoardID = nil
         }
-        if markJumpOriginBoardIDByDesk[state.desks[indices.desk].id] == board.id {
-            markJumpOriginBoardIDByDesk.removeValue(forKey: state.desks[indices.desk].id)
+        if anchorJumpOriginBoardIDByDesk[state.desks[indices.desk].id] == board.id {
+            anchorJumpOriginBoardIDByDesk.removeValue(forKey: state.desks[indices.desk].id)
         }
         let boards = state.desks[indices.desk].boards
         guard state.desks[indices.desk].focusedBoardID == board.id else { return board }
@@ -670,10 +670,10 @@ final class DenStore {
             if !boards.contains(where: { $0.id == state.desks[deskIndex].focusedBoardID }) {
                 state.desks[deskIndex].focusedBoardID = boards.first?.id
             }
-            if let markedBoardID = state.desks[deskIndex].markedBoardID,
-                !boards.contains(where: { $0.id == markedBoardID })
+            if let anchorBoardID = state.desks[deskIndex].anchorBoardID,
+                !boards.contains(where: { $0.id == anchorBoardID })
             {
-                state.desks[deskIndex].markedBoardID = nil
+                state.desks[deskIndex].anchorBoardID = nil
             }
         }
     }
