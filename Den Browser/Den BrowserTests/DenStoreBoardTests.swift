@@ -405,17 +405,21 @@ struct DenStoreBoardTests {
         #expect(store.pendingBoardLinkFocus == nil)
     }
 
-    @Test func terminalLinkCreatesBackgroundBoardWithoutDrawer() throws {
+    @Test func terminalLinkCreatesFocusedBoardWithoutDrawer() throws {
+        // Arrange
         let terminal = BoardState(width: 520, workingDirectory: "/tmp")
         let source = desk("Desk", boards: [terminal], focusedBoardID: terminal.id)
         let store = DenStore(state: DenState(desks: [source], focusedDeskID: source.id))
         let url = try #require(URL(string: "https://terminal-link.example/path"))
         defer { store.releaseRuntimes() }
 
+        // Act
         store.terminalRuntime(for: terminal).terminalDidRequestOpenURL(url.absoluteString, kind: .text)
 
-        #expect(store.focusedDesk?.boards.map(\.currentSheetURL) == [nil, url])
-        #expect(store.focusedDesk?.focusedBoardID == terminal.id)
+        // Assert
+        let createdBoard = try #require(store.focusedDesk?.boards.last)
+        #expect(createdBoard.currentSheetURL == url)
+        #expect(store.focusedDesk?.focusedBoardID == createdBoard.id)
         #expect(store.state.drawerItems.isEmpty)
         #expect(store.recentItems == [.url(url)])
     }

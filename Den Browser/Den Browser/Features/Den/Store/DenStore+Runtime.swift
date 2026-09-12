@@ -242,7 +242,7 @@ extension DenStore {
                 urlString: resolvedURL.absoluteString,
                 preferredWidth: board.width,
                 afterBoardID: board.id,
-                focus: false,
+                focus: true,
                 recentItem: .url(resolvedURL))
         }
     }
