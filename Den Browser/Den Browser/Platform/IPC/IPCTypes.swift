@@ -53,6 +53,7 @@ nonisolated enum DenIPCCommand: Codable, Equatable, Sendable {
 
     enum Profile: String, CaseIterable, Codable, Sendable {
         case list
+        case open
     }
 
     case sheet(Sheet)

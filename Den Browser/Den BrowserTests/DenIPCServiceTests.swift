@@ -125,4 +125,111 @@ struct DenIPCServiceTests {
         let desks = try #require(response.desks)
         #expect(desks.contains(where: { $0.label == "Work Desk" }))
     }
+
+    @Test func profileOpenCommandOpensWindowWhenClosed() async throws {
+        // Arrange
+        let directory = FileManager.default.temporaryDirectory
+            .appending(path: "den-browser-ipc-profile-open-\(UUID().uuidString)", directoryHint: .isDirectory)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let suiteName = "IPCServiceProfileOpenPreferences-\(UUID().uuidString)"
+        let manager = ProfileManager(
+            directoryURL: directory,
+            sheetNavigation: SheetNavigationManager(
+                defaults: UserDefaults(suiteName: suiteName) ?? .standard,
+                scriptSource: ""),
+            preferences: AppPreferences(defaults: UserDefaults(suiteName: suiteName) ?? .standard),
+            removeDataStore: { _ in })
+        let profile2 = try #require(manager.createProfile(name: "Work", color: .blue))
+        var openedProfileID: UUID?
+        manager.openWindowAction = { route in
+            openedProfileID = route.profileID
+        }
+        let service = DenIPCService(profileManager: manager)
+
+        // Act
+        let response = await service.handleRequest(
+            DenIPCRequest(command: .profile(.open), args: [profile2.id.uuidString]))
+
+        // Assert
+        #expect(response.isOk)
+        #expect(response.message?.contains("Opened window for profile 'Work'") == true)
+        #expect(openedProfileID == profile2.id)
+    }
+
+    @Test func profileOpenCommandActivatesExistingWindow() async throws {
+        // Arrange
+        let directory = FileManager.default.temporaryDirectory
+            .appending(path: "den-browser-ipc-profile-activate-\(UUID().uuidString)", directoryHint: .isDirectory)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let suiteName = "IPCServiceProfileActivatePreferences-\(UUID().uuidString)"
+        let manager = ProfileManager(
+            directoryURL: directory,
+            sheetNavigation: SheetNavigationManager(
+                defaults: UserDefaults(suiteName: suiteName) ?? .standard,
+                scriptSource: ""),
+            preferences: AppPreferences(defaults: UserDefaults(suiteName: suiteName) ?? .standard),
+            removeDataStore: { _ in })
+        let route = ProfileWindowRoute(profileID: manager.personalProfileID)
+        _ = try #require(manager.store(for: route))
+        let window = NSWindow()
+        manager.register(window: window, for: route)
+        let service = DenIPCService(profileManager: manager)
+
+        // Act
+        let response = await service.handleRequest(
+            DenIPCRequest(command: .profile(.open), args: [manager.personalProfileID.uuidString]))
+
+        // Assert
+        #expect(response.isOk)
+        #expect(response.message?.contains("Activated window") == true)
+    }
+
+    @Test func profileOpenCommandRejectsInvalidProfileID() async throws {
+        // Arrange
+        let directory = FileManager.default.temporaryDirectory
+            .appending(path: "den-browser-ipc-profile-invalid-\(UUID().uuidString)", directoryHint: .isDirectory)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let suiteName = "IPCServiceProfileInvalidPreferences-\(UUID().uuidString)"
+        let manager = ProfileManager(
+            directoryURL: directory,
+            sheetNavigation: SheetNavigationManager(
+                defaults: UserDefaults(suiteName: suiteName) ?? .standard,
+                scriptSource: ""),
+            preferences: AppPreferences(defaults: UserDefaults(suiteName: suiteName) ?? .standard),
+            removeDataStore: { _ in })
+        let service = DenIPCService(profileManager: manager)
+
+        // Act
+        let response = await service.handleRequest(
+            DenIPCRequest(command: .profile(.open), args: ["not-a-valid-uuid"]))
+
+        // Assert
+        #expect(response.isOk == false)
+        #expect(response.error?.contains("Invalid profile ID") == true)
+    }
+
+    @Test func profileOpenCommandFailsForUnknownProfileID() async throws {
+        // Arrange
+        let directory = FileManager.default.temporaryDirectory
+            .appending(path: "den-browser-ipc-profile-unknown-\(UUID().uuidString)", directoryHint: .isDirectory)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let suiteName = "IPCServiceProfileUnknownPreferences-\(UUID().uuidString)"
+        let manager = ProfileManager(
+            directoryURL: directory,
+            sheetNavigation: SheetNavigationManager(
+                defaults: UserDefaults(suiteName: suiteName) ?? .standard,
+                scriptSource: ""),
+            preferences: AppPreferences(defaults: UserDefaults(suiteName: suiteName) ?? .standard),
+            removeDataStore: { _ in })
+        let service = DenIPCService(profileManager: manager)
+        let unknownUUID = UUID().uuidString
+
+        // Act
+        let response = await service.handleRequest(
+            DenIPCRequest(command: .profile(.open), args: [unknownUUID]))
+
+        // Assert
+        #expect(response.isOk == false)
+        #expect(response.error?.contains("Profile not found") == true)
+    }
 }

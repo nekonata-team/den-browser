@@ -312,6 +312,18 @@ final class ProfileManager {
         return true
     }
 
+    var openWindowAction: ((ProfileWindowRoute) -> Void)?
+
+    @discardableResult
+    func openWindow(for profileID: UUID) -> Bool {
+        if activateWindow(for: profileID) {
+            return true
+        }
+        guard let openWindowAction else { return false }
+        openWindowAction(ProfileWindowRoute(profileID: profileID))
+        return true
+    }
+
     func canOpenDeskInNewWindow(
         _ deskID: UUID,
         profileID: UUID,

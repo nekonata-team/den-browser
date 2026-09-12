@@ -153,11 +153,12 @@ Commands operating on Terminal Sessions in the target Terminal Board.
 | `den terminal kill` | `[-s <signal>] [--board <id>]` | Send a POSIX signal to the foreground process group (defaults to `TERM`). | `den terminal kill -s TERM` |
 
 ### 3.9 `den profile` (Profiles)
-Commands inspecting profiles in Den Browser.
+Commands inspecting and managing profiles in Den Browser.
 
 | Command | Arguments | Description | Example |
 |---|---|---|---|
 | `den profile list` | None | List all profiles with name, UUID, active status, and open window status. | `den profile list` |
+| `den profile open` | `<uuid>` | Open a window for the specified profile, or activate it if already open. | `den profile open 3FA85F64-...` |
 
 ---
 
@@ -258,3 +259,5 @@ This equips the agent with the procedural knowledge in `.agents/skills/den/SKILL
 - **`den desk`**:
   - `den desk switch <id|label>`
   - `den desk new [<label>]`
+- **`den profile`**:
+  - `den profile close <uuid>`

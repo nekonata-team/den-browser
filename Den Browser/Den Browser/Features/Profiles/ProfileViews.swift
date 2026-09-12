@@ -6,6 +6,7 @@ struct ProfileWindowView: View {
 
     @Environment(ProfileManager.self) private var profileManager
     @Environment(\.appearsActive) private var appearsActive
+    @Environment(\.openWindow) private var openWindow
 
     var body: some View {
         content
@@ -13,6 +14,11 @@ struct ProfileWindowView: View {
                 preferring: appearsActive ? ["*"] : [],
                 allowing: appearsActive ? [] : ["*"]
             )
+            .onAppear {
+                profileManager.openWindowAction = { [openWindow] targetRoute in
+                    openWindow(value: targetRoute)
+                }
+            }
             .onChange(of: appearsActive, initial: true) { _, isActive in
                 guard isActive else { return }
                 profileManager.focusWebExtensionWindow(for: route)

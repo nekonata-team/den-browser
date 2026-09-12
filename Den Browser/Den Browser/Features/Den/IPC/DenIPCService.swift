@@ -510,6 +510,26 @@ final class DenIPCService {
                 )
             }
             return .success(profiles: profiles)
+
+        case .open:
+            guard let targetIDString = request.args.first ?? request.profileID, !targetIDString.isEmpty else {
+                return .failure("Usage: den profile open <uuid>")
+            }
+            guard let targetUUID = UUID(uuidString: targetIDString) else {
+                return .failure("Invalid profile ID: \(targetIDString)")
+            }
+            guard let profile = profileManager.profile(id: targetUUID) else {
+                return .failure("Profile not found: \(targetIDString)")
+            }
+            let wasAlreadyOpen = profileManager.hasWindow(for: profile.id)
+            guard profileManager.openWindow(for: profile.id) else {
+                return .failure("Failed to open window for profile '\(targetIDString)'")
+            }
+            let message =
+                wasAlreadyOpen
+                ? "Activated window for profile '\(profile.name)'"
+                : "Opened window for profile '\(profile.name)'"
+            return .success(message: message)
         }
     }
 
