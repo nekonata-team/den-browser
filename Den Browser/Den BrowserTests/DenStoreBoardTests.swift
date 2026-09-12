@@ -418,10 +418,6 @@ struct DenStoreBoardTests {
         #expect(store.focusedDesk?.focusedBoardID == terminal.id)
         #expect(store.state.drawerItems.isEmpty)
         #expect(store.recentItems == [.url(url)])
-
-        store.handleExternalURL(url)
-
-        #expect(store.state.drawerItems.isEmpty)
     }
 
     @Test func searchesUseCurrentEngineAndPreserveQueryAndExplicitURLs() throws {

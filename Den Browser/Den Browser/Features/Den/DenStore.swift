@@ -178,7 +178,6 @@ final class DenStore {
     }
     @ObservationIgnored var drawerPreviewRuntime: DrawerPreviewRuntime?
     @ObservationIgnored var toastTask: Task<Void, Never>?
-    @ObservationIgnored private var terminalURLSuppressionTracker = TerminalURLSuppressionTracker()
     @ObservationIgnored private var previousFocusedDeskID: UUID?
     @ObservationIgnored var anchorJumpOriginBoardIDByDesk: [UUID: UUID] = [:]
     @ObservationIgnored private let terminalCommandRunner: any TerminalCommandRunning
@@ -188,13 +187,7 @@ final class DenStore {
     var onRecentItemsSave: (([RecentItem]) -> Bool)? { storage.onRecentItemsSave }
     var boardLayoutMetrics: BoardLayoutMetrics?
 
-    func registerTerminalURL(_ url: URL) {
-        terminalURLSuppressionTracker.register(url)
-    }
-
     func handleExternalURL(_ url: URL) {
-        guard !terminalURLSuppressionTracker.consume(url) else { return }
-
         switch preferences.externalLinkDestination {
         case .drawerPreview:
             keepInDrawer(url)
@@ -205,10 +198,6 @@ final class DenStore {
                 afterBoardID: focusedBoard?.id,
                 recentItem: .url(SheetURLPolicy.canonicalSheetURL(url)))
         }
-    }
-
-    func cancelTerminalURLRegistration(_ url: URL) {
-        terminalURLSuppressionTracker.cancel(url)
     }
 
     var focusedDesk: DeskState? {

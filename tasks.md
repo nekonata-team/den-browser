@@ -4,223 +4,234 @@
 
 ## Contents
 
-- [x] [TASK-010：リンク操作の移動抑制を操作内で完結させる](#task-010リンク操作の移動抑制を操作内で完結させる)
-- [x] [TASK-011：最新の配置要求を優先し遅延処理を失効させる](#task-011最新の配置要求を優先し遅延処理を失効させる)
-- [ ] [TASK-012：移動途中のFocus再指定を調査し原因確定後に修正する](#task-012移動途中のfocus再指定を調査し原因確定後に修正する)
-- [ ] [TASK-013：Desk切替をまたぐスクロール位置保存を調査する](#task-013desk切替をまたぐスクロール位置保存を調査する)
+- [ ] [GHOSTTY-001：upstream mainをForkし配布経路を確立する](#ghostty-001upstream-mainをforkし配布経路を確立する)
+- [ ] [GHOSTTY-002：hidden・detached Surfaceのtick寿命をForkで分離する](#ghostty-002hiddendetached-surfaceのtick寿命をforkで分離する)
+- [ ] [GHOSTTY-003：Window非attachのexec SurfaceをForkで開始する](#ghostty-003window非attachのexec-surfaceをforkで開始する)
+- [/] [GHOSTTY-004：Terminal Cmd-clickのURL actionをForkで完結する](#ghostty-004terminal-cmd-clickのurl-actionをforkで完結する)
+- [/] [GHOSTTY-005：DenをFork版へ移行しCLI Terminal Boardを起動する](#ghostty-005denをfork版へ移行しcli-terminal-boardを起動する)
+- [/] [GHOSTTY-006：Denの暫定workaroundを削除して統合検証する](#ghostty-006denの暫定workaroundを削除して統合検証する)
 
 ## Current Status
 
-2026-09-07のアニメーション調査を、別の実装エージェントへ引き継ぐための台帳。
-アプリコードは未変更。ユーザー承認により旧タスク本文を置き換えた。
-TASK-001〜TASK-009は再利用しない。旧内容はGit履歴（直近の台帳更新は `e68c011`）を参照する。
+2026-09-12時点でForkは未作成。まず`Lakr233/libghostty-spm`の公開最新版を適用し、URL actionとTerminal入力の挙動を確認した。
+Denは`libghostty-spm` `1.6.20260909`（`7e45d27160f9b34aca9ca5c9820e9207482f9f04`）と`MSDisplayLink` `2.2.0`を固定している。
+最新版の`TerminalController`は、`TerminalSurfaceOpenURLDelegate`を持つhostの`OPEN_URL` actionを処理済みとして返す。これにより、Den側の`TerminalURLSuppressionTracker`、`registerTerminalURL`、`cancelTerminalURLRegistration`ワークアラウンドを削除した。
+`den terminal send`、`den terminal run`、`den board terminal new /tmp --run ... --focus`でTerminal入力とcommand実行を実機確認し、テスト用Boardは削除済み。`just check`も成功している。
 
-調査場所は `/Users/hiroaki/projects/niri-browser`。
-実装開始時にブランチ、worktree、未コミット変更、対象コードの現状を再確認する。
+Fork元は`Lakr233/libghostty-spm`の`main`（`1.6.20260909`、`7e45d27160f9b34aca9ca5c9820e9207482f9f04`）とする。
 
-- TASK-010：実装・unit test・自己レビュー・人間確認完了。Acceptance確認済み。
-- TASK-011：実装・unit test・自己レビュー・人間確認完了。保存位置復元中の明示中央配置、要求の識別・失効、Desk／Board／View変更時の取消を反映。Acceptance確認済み。
-- TASK-013：競合の候補。再現または因果関係を確認する前に修正しない。
-- 調査時の基準結果：`just test` は362件成功。
-- `just ui-test Den_BrowserUITests/testDirectDeskSwitchAndDenModeFocusCycle` は1件成功。Desk往復後のSheet Inputを検証する既存テストであり、移動途中の表示や今回の競合を保証するものではない。
-- 上記は変更前の結果。各タスクの完了検証として流用しない。
+upstreamはhidden Surfaceのgrid・scrollback・Session維持とoccluded時のwake-up drainを実装済みである。
+一方でSurface作成は`AppTerminalView.window != nil`を必要とするため、Boardが未表示でView未生成のCLI経路は解決しない。
+透明・画面外`NSWindow`を維持するDen側workaroundは採用しない。
 
-## Purpose and Goals
+実装開始時に、Fork元revision、Denの未コミット変更、`Package.resolved`、Forkのrelease asset配布先を再確認する。
 
-BoardのFocus移動、Desk移動、リンクからのBoard作成で、選択状態と表示位置の意図しない食い違いを防ぐ。
-最初に直す対象はアニメーション時間・曲線ではなく、配置要求の優先順位、適用条件、失効条件とする。
+## Goal
 
-- 新しい明示操作が、古い自動配置・復元要求によって捨てられない。
-- リンク操作の移動抑制が、無関係な後続操作へ残らない。
-- 旧Deskのスクロール・遅延処理が新Deskに作用しない。
-- 連続入力で待機中または進行中の移動先を更新できる。
-- `Always`、`When Overflowing`、`Never`、Reduced Motionの既存方針を維持する。
+Terminal Sessionの実行寿命を描画Viewのattach状態から分離する。
 
-実装前に [CONTEXT.md](CONTEXT.md)、[DESIGN.md](DESIGN.md)、[architecture.md](docs/architecture.md)、[testing.md](docs/testing.md)、
-[ADR 0029](docs/adr/0029-keep-boards-spatially-visible.md)、[ADR 0037](docs/adr/0037-present-distinct-desks-in-profile-windows.md)、
-[ADR 0046](docs/adr/0046-activate-boards-on-viewport-visibility.md) を読む。
-キーボード経路を変更する場合は [keyboard-input.md](docs/keyboard-input.md) も読む。
+- CLIで作成したTerminal Boardは、表示・Focus・`NSWindow` attach前に`.exec` Surface、PTY、shellを開始する。
+- detachまたは非表示は描画を停止しても、exec Surface、grid、scrollback、PTY、shell、必要な`app_tick`を停止しない。
+- 後からBoard Viewをattachしても、Surfaceをrebuildせず、既存のSessionとscrollbackを表示する。
+- Surface ready通知をcommand dispatchの同期点とし、固定sleepを置かない。
+- `DenState`にはlive Surface、PTY、View、Windowを保存しない。
 
 ## Tasks
 
-### [x] TASK-010：リンク操作の移動抑制を操作内で完結させる
+### [ ] GHOSTTY-001：upstream mainをForkし配布経路を確立する
 
 #### Purpose
 
-リンク元へのクリックFocusを抑制する状態が、新規Boardの配置や次のDesk切替まで抑制する不備を解消する。
-
-#### Prerequisites
-
-- なし。呼び出し元とイベント順序を確認し、意味のある最小の失敗検証を用意する。
-
-#### Evidence and Entry Points
-
-- [BaseWebRuntime.swift](<Den Browser/Den Browser/Features/Den/BaseWebRuntime.swift>) の `decidePolicyFor` は、リンク処理の前に `handleLinkActivation` を呼ぶ。
-- [DenStore+Runtime.swift](<Den Browser/Den Browser/Features/Den/Store/DenStore+Runtime.swift>) の `onLinkActivated` は、リンク元Board IDで `prepareBoardLinkFocus` を呼ぶ。
-- [BoardRuntime.swift](<Den Browser/Den Browser/Features/Den/Board/BoardRuntime.swift>) の `openBoardFromModifierClick` は、Shift付きなら新規BoardをFocusする。targetless navigationにも新規Board作成経路がある。
-- [BoardStrip.swift](<Den Browser/Den Browser/Features/Den/Board/BoardStrip.swift>) の `onChange(of: alignmentTarget)` は、Focus先がリンク元と一致した場合だけ消費を予約する。不一致かつ `layoutChanged` なら、抑制状態を残してreturnする。
-- リンク元Aへの印と新規Board BへのFocusが同じ描画更新にまとまると、この不一致経路へ入る。その後のDesk変更も同じ条件で早期終了し得る。
+最新upstreamのhidden Surface改善を取り込み、Denが再現可能に参照できるForkとbinary XCFramework配布経路を確立する。
 
 #### Work
 
-- [x] Webの通常クリック、Cmd-click、Cmd-Shift-click、targetless navigation、Terminalリンク、Sheet Navigation経由の呼び出しを追い、印の設定・消費・取消の範囲を確定する。
-- [x] 抑制をリンク元へのクリックFocusに限定する。明示的なFocus変更、Desk変更、対象Board削除、処理完了後へ残さない。
-- [x] 新規BoardをFocusする経路には、そのBoardに対する通常の配置方針を適用する。背景作成は既存のFocusと表示位置を維持する。
-- [x] `consumeBoardLinkFocus` の古い通知が新しい印を消さない契約を維持する。印を追加するだけの局所対処を各呼び出し元へ重複させない。
-- [x] [shortcuts.md](docs/shortcuts.md) の既存記述で「リンククリック時の自動センタリング抑制」と新規Board操作の関係を確認した。追加変更なし。
+- [ ] `Lakr233/libghostty-spm`の`main`をForkし、Fork作成時点のupstream revisionを記録する。
+- [ ] Fork remoteを追加し、upstream remoteをread-onlyで保持する。Den本体とForkの作業treeを分ける。
+- [ ] Forkの`Package.swift`がFork所有のXCFramework release assetとchecksumを参照するようにする。upstream release URLへの暗黙依存を残さない。
+- [ ] Forkで`Ghostty.ref`、patch stack、`build.sh`、package testを実行できることを確認する。
+- [ ] upstream `main`取り込みとFork固有差分を分離したcommit構成を定める。
 
 #### Acceptance Criteria
 
-- [x] リンク元AからBを作成してFocusした後、後続のFocus・Desk移動・配置変更が古いリンク抑制に妨げられない。
-- [x] 同一Board内のリンククリックや背景Board作成で、不必要な中央配置が発生しない。
-- [x] 連続するリンク操作で、古い消費通知が最新操作の状態を消さない。
+- [ ] Forkを新規cloneして依存解決・build・testを再現できる。
+- [ ] Fork固有のrelease assetとchecksumがupstream assetに依存しない。
+- [ ] Fork差分がSurface lifecycleと必要な配布設定に限定される。
 
 #### Verification
 
-2026-09-07実施。
-- `just check` 成功。swift-format、swiftlint、unit test 364件成功。
-- 回帰テストで「Foreground Board作成は抑制を残さない」「Background Board作成の抑制は次のFocusで失効する」「古いconsume通知は新しい印を消さない」を確認。
-- WebKit固有の実機連続操作（通常クリック、Cmd-click、Cmd-Shift-click、targetless navigation、Terminalリンク、Sheet Navigation）は、今回の人間確認では追加再現なし。問題が再発した場合は新規起票する。
+- [ ] Forkから新規cloneし、`swift package resolve`とpackage testを実行する。
+- [ ] package release assetを別cloneから取得し、checksumを検証する。
 
 ---
 
-### [x] TASK-011：最新の配置要求を優先し遅延処理を失効させる
+### [ ] GHOSTTY-002：hidden・detached Surfaceのtick寿命をForkで分離する
 
 #### Purpose
 
-位置復元中に新しい中央配置要求を捨てる不備を直し、配置処理の受付・置換・適用条件を追跡可能にする。
-
-#### Prerequisites
-
-- TASK-010完了。リンク抑制の修正を前提に、同じBoardStrip内の配置処理を整理する。
+描画visibility、View attach、`app_tick`を別の寿命として扱い、Denの1秒ごとの`controller.tick()`応急処置を不要にする。
 
 #### Evidence and Entry Points
 
-- [BoardStrip.swift](<Den Browser/Den Browser/Features/Den/Board/BoardStrip.swift>) の `centerFocusedBoardRequest` observerは、待機要求が `.resting` なら無条件にreturnする。
-- Desk切替時の保存位置復元も、非overflow時の自動整列も `.resting` を使う。
-- [DenStore+BoardOperations.swift](<Den Browser/Den Browser/Features/Den/Store/DenStore+BoardOperations.swift>) の `centerFocusedBoard()` は保存位置を消すため、新要求が捨てられるとStoreと表示が食い違う。
-- `centerBoard`、`revealBoard`、`deferBoardAlignment`、`settlePendingBoardAlignment` で要求の設定・取消が分散している。後者はTaskのyield前に条件を検証し、yield後は取消状態とpendingの有無だけを確認している。
+- current upstreamはoccluded Surfaceのwake-upをdrainするが、detached Surfaceのtickを止める。
+- `TerminalSurfaceCoordinator`はSurface lifecycle、metrics、wake-up処理を集約している。
+- Denの`TerminalRuntime`はhidden Terminalに対する定期`controller.tick()`応急処置を持つ。
 
 #### Work
 
-- [x] 明示的な中央配置と自動配置・復元の発生元を確認し、同じ更新内の自動要求と後から来た明示操作を区別する。
-- [x] 後から来た明示操作で待機中の復元要求を置き換える。一律の `.resting` 優先を解消する。
-- [x] BoardStrip内の既存 `PendingBoardAlignment` を活用し、受付・置換・取消・適用の重複を必要な範囲で集約する。
-- [x] 遅延処理の適用直前に、要求の識別、対象Desk、対象Boardの存続、必要なレイアウト条件を検証する。古い要求が新しいpendingを消さないようにする。
-- [x] Desk変更、空Desk、対象Board削除、View破棄時の失効を確認する。固定sleepや待機Taskを追加して順序問題を隠さない。
-- [x] [BoardLayout.swift](<Den Browser/Den Browser/Features/Den/Board/BoardLayout.swift>) の純粋な座標計算と [DenMotion.swift](<Den Browser/Den Browser/Features/Den/Design/DenMotion.swift>) を再利用する。要求ID等は必要な最小構成とし、汎用アニメーション管理層を作らない。
+- [ ] Surface作成可能条件、描画可能条件、wake-up / `app_tick`実行可能条件を別々に定義する。
+- [ ] hidden Surfaceでは描画を止めてもPTY callback、title、PWD、bell、child exitをdrainするFork側経路を実装する。
+- [ ] detached exec Surfaceで必要なtickを維持し、attach / visibilityによるrendering停止と混同しない。
+- [ ] idle時に不要なdisplay linkやtimerを保持せず、必要なwake-upだけでtickする。
+- [ ] Den側の1秒ごとの`controller.tick()`応急処置を削除できるFork API・契約を提供する。
 
 #### Acceptance Criteria
 
-- [x] 保存位置の復元待ちに中央配置を要求すると、最新要求が適用される。
-- [x] 自動配置・復元は、新しい明示操作がない場合に従来どおり機能する。
-- [x] 旧要求の遅延完了が、新しい要求・別Desk・削除済みBoardへ作用しない。
-- [x] レイアウト待ちを維持しつつ、連続入力をアニメーション完了まで待たせない。
+- [ ] hidden / detached状態でも必要なcallbackとchild exitが届く。
+- [ ] 描画停止中にper-frame pollingや固定interval timerを常駐させない。
+- [ ] Denは独自tick loopなしでTerminal Sessionを維持できる。
 
 #### Verification
 
-2026-09-09：`just check` 成功（format、lint、Den BrowserTests）。追加した `BoardAlignmentTests` で、古い要求の完了が新しいpendingを有効扱いしないこと、対象Desk／Board不一致を無効とすることを検証。
-実時間sleepは追加せず、要求ID・Desk・Board・layoutKeyを適用直前に再検証。Desk変更、空Desk、Board削除、View破棄は共通取消経路へ接続した。
-最大化、Board幅変更、Desk Filter確定は既存のlayoutKey検証経路を再利用。人間確認でAcceptance Criteriaを確認済み。
+- [ ] Fork package testでhidden、detached、idle、child exitの各状態遷移を検証する。
+- [ ] AppKit実機でhidden Terminalのresource usageとcallback deliveryを確認する。
 
 ---
 
-### [ ] TASK-012：移動途中のFocus再指定を調査し原因確定後に修正する
+### [ ] GHOSTTY-003：Window非attachのexec SurfaceをForkで開始する
 
 #### Purpose
 
-移動途中でFocusを戻した際、前の移動が続いて選択と表示位置が離れる候補を確認する。
+透明・画面外Windowを作らず、有効なframeを持つ未attach `AppTerminalView`で`.exec` Surface、PTY、shellを開始する。
 
 #### Prerequisites
 
-- TASK-011完了。待機要求の競合と、開始済みスクロールの再指定を分けて調べる。
-
-#### Evidence and Entry Points
-
-[BoardStrip.swift](<Den Browser/Den Browser/Features/Den/Board/BoardStrip.swift>) の `revealBoard` は、
-現在の座標で対象が可視ならpendingとTaskを取り消してreturnする。
-この分岐には、開始済み `ScrollPosition` アニメーションを停止・再指定する処理がない。
-SwiftUIがこの場合に実際にどう動くかは未確認であり、現時点では不具合と断定しない。
+- GHOSTTY-002完了。
 
 #### Work
 
-- [ ] `Never`／`When Overflowing` で、画面外Boardへの移動途中に画面内BoardへFocusを戻す。比較として `Always` とReduced Motionも確認する。
-- [ ] Focus ID、現在位置、要求した移動先、scroll phaseの順序を必要な範囲で観測する。単発操作の最終座標だけで判定しない。
-- [ ] 原因が確認できた場合のみ、現在位置に加えて進行中の移動先を考慮し、最新操作に合わせて停止・再指定する。
-- [ ] 未再現または正常動作なら、その条件と結果を記録し、推測の修正を入れない。根拠が足りなければDeferred Itemsへ移す。
+- [ ] `TerminalSurfaceCoordinator.rebuildIfReady()`の`isAttached()`依存を、Surface作成と描画attachの別契約へ置き換える。
+- [ ] `NSView`未attach時のmacOS backend resource要件を検証し、wrapperだけで成立するか、raw Ghostty patchが必要かを確定する。
+- [ ] `.exec` Surfaceの作成、ready callback、input、output、viewport readをWindow未所属で動作させる。
+- [ ] 後からViewをWindowへattachしても同じSurface、child process、grid、scrollbackを維持する。attachでrebuildしない。
+- [ ] Surface freeまたはRuntime disposeだけがPTY停止の境界であることを保証する。
 
 #### Acceptance Criteria
 
-- [ ] 再現結果と因果関係、または修正不要と判断した根拠が記録されている。
-- [ ] 修正する場合、最新Focusへの可視性・中央配置方針を満たし、古い移動先へ進み続けない。
-- [ ] 連続入力、逆方向への入力、ユーザーの直接スクロールを不必要に妨げない。
+- [ ] `NSWindow`未所属のViewで`/bin/zsh -f`を起動し、command outputを読める。
+- [ ] attach前後で同一Surface、同一child process、scrollbackが維持される。
+- [ ] 固定delay、ポーリング、画面外Window、Window orderingを追加しない。
 
 #### Verification
 
-未実施。判断ロジックはunit test、進行中スクロールの視覚的挙動は探索確認で検証する。
-XCUITestを追加する場合は、保護するnative境界とunit testでは観測できない失敗を事前に記録する。
-単なるボタンクリックや見た目だけを理由に追加しない。
+- [ ] Fork package testで未attach exec、attach後の継続、dispose時の終了を個別に検証する。
+- [ ] AppKit実機で未attach開始→attach→disposeを実施し、Crash ReporterとMetal resource警告を確認する。
 
 ---
 
-### [ ] TASK-013：Desk切替をまたぐスクロール位置保存を調査する
+### [ ] GHOSTTY-004：Terminal Cmd-clickのURL actionをForkで完結する
 
 #### Purpose
 
-旧Deskで始めたスクロールの終了通知が、新Deskの保存位置を上書きする候補を確認する。
-
-#### Prerequisites
-
-- TASK-011完了。配置要求のDesk所有と失効条件を前提に、スクロール操作の所有を確認する。
-
-#### Evidence and Entry Points
-
-[BoardStrip.swift](<Den Browser/Den Browser/Features/Den/Board/BoardStrip.swift>) の `onScrollPhaseChange` は、
-操作開始時のDeskを保持せず、終了時の `store.presentedDeskID` に `scrollGeometry.offsetX` を保存する。
-同じScrollViewを使ったDesk切替で、慣性スクロールの終了通知がどの順序になるかは未確認。
+TerminalのCmd-clickでDenのBoardを作成した後、デフォルトブラウザも開く二重処理をFork側で止める。
 
 #### Work
 
-- [ ] 異なる保存位置を持つDeskを用意し、直接操作・慣性スクロール中にDeskを切り替える。旧Deskと新Desk両方の保存値・復元位置を確認する。
-- [ ] 再現した場合は、操作開始時のDeskに所有を結び付け、Desk切替後の古い終了通知を破棄する。
-- [ ] 保存時の座標には、必要に応じて通知時点の [ScrollPhaseChangeContext.geometry](https://developer.apple.com/documentation/swiftui/scrollphasechangecontext/geometry) を使う。別callbackで保持した座標との順序依存を避ける。
-- [ ] 原因未確定なら修正せず、検証条件と不足する証拠を記録する。未解決の候補はDeferred Itemsへ移す。
+- [ ] `GHOSTTY_ACTION_OPEN_URL`の`action_cb`で、hostがURLを処理した場合は処理済みを返す契約を実装する。
+- [ ] URL action callbackの未処理・拒否・処理済みの戻り値を明確にし、既存プラットフォームのURL挙動を回帰させない。
+- [ ] Fork package testでCmd-click URL actionがhostへ一度だけ届き、デフォルトブラウザ起動へfall throughしないことを確認する。
 
 #### Acceptance Criteria
 
-- [ ] 再現結果と因果関係、または修正不要と判断した根拠が記録されている。
-- [ ] 修正する場合、旧Deskの操作終了が新Deskの保存位置を上書きしない。
-- [ ] Deskごとの手動スクロール位置の復元と、明示的なFocus／中央配置による保存位置解除を維持する。
+- [x] Denが処理したTerminal URLは、公開最新版からmacOSのデフォルトブラウザへ渡らないことをAppKit実機で確認した。
+- [ ] hostが処理しないURLは、既存のfallback方針を維持する。
 
 #### Verification
 
-未実施。所有Deskと失効判断はunit testで検証し、慣性スクロール中のDesk切替は探索確認で補う。
-通常のDesk往復だけではこの競合の検証にならない。
+- [ ] Fork package testでhandled / unhandled / rejected URL actionを検証する。
+- [x] AppKit実機でTerminal Cmd-clickを確認する。
 
 ---
 
-## Common Acceptance Criteria
+### [ ] GHOSTTY-005：DenをFork版へ移行しCLI Terminal Boardを起動する
 
-- [ ] 明確な原因が確認できた範囲だけ修正する。未再現候補を「修正済み」と記録しない。
-- [ ] macOS 26.0を最低対応とし、到達不能な旧OS向け分岐を追加しない。
-- [ ] DenStateとlive runtimeの分離、Profile共有状態とwindow-local状態、runtime寿命を維持する。アニメーション調停状態を永続化しない。
-- [ ] Board作成の前景／背景の区別、クリックFocus、Den Mode、Deskの保存位置復元を維持する。
-- [ ] `DenMotion` 経由のbounce-free motionとReduced Motionを維持する。
-- [ ] 新しいテストの前に、バグを一般化した不変条件を記録する。実装詳細や一回限りの再現値を固定しない。
-- [ ] `just --list` を確認し、Swift変更後は `just check` を実行する。native入力に影響する場合は該当する既存のfocused UI testも実行する。
-- [ ] 少なくとも一回自己レビューする。明確な問題を修正したら関連レビュー・検証を繰り返し、最新の検証成功と対処可能な指摘なしを確認して止める。
-- [ ] 各Verificationへ、実行コマンド・結果・再現条件・未確認事項を記録する。
-- [ ] 挙動の明確化はDESIGN.mdまたはdocs/shortcuts.md等の所有文書へ反映する。CONTEXT.md／ADRを変える場合はdomain-modelingスキルを使う。
-- [ ] 最終差分の不要な抽象化、ドキュメントリンク、重複・古い主張を確認する。
+#### Purpose
 
-## Deferred Items
+Fork APIを使い、CLIで作成したTerminal BoardのTerminal SessionをBoard表示前に開始する。
 
-現時点ではなし。TASK-012／TASK-013を原因未確定で保留する場合は、IDと未解決事項・検証条件をここに残す。
+#### Prerequisites
+
+- GHOSTTY-001、GHOSTTY-002、GHOSTTY-003、GHOSTTY-004完了。
+
+#### Work
+
+- [ ] Denのpackage URL、revision、checksumをFork版へ更新し、既存Ghostty API利用箇所を最新APIへ移行する。
+- [ ] `DenStore.terminalRuntime(for:)`を唯一のlive Terminal Runtime生成経路として維持する。
+- [ ] `den board terminal new`でRuntimeとdetached exec Sessionを開始する。`--run`はSurface ready通知後に一度だけ送る。
+- [ ] `den terminal`のinput・signal・viewport・close経路がattach前後で同じTerminal Sessionを対象とすることを確認する。
+- [ ] Fork URL action対応後、`TerminalURLSuppressionTracker`、`registerTerminalURL`、`cancelTerminalURLRegistration`を削除する。
+- [ ] CLI仕様と所有文書を更新する。`den sheet wait`と異なり、Terminal Board creationはSession開始まで保証することを明記する。
+
+#### Acceptance Criteria
+
+- [ ] `den board terminal new <path> --run <command>`はBoardを表示またはFocusせずにshellを開始し、commandを実行する。
+- [ ] 直後にBoardを表示しても新しいPTY、再実行、scrollback消失が起きない。
+- [ ] Terminal Cmd-clickでDenのBoardだけが作成され、デフォルトブラウザを開かない。
+- [ ] Web Boardの即時runtime起動と既存Terminal Board操作を回帰させない。
+
+#### Verification
+
+- [ ] isolated profileでDenを起動し、CLIからTerminal Boardを作成してmarker commandの実行を確認する。
+- [ ] Terminal Runtimeの安定したStore契約をunit testで確認する。native Surface lifecycleはFork package testと実機確認で検証する。
+- [x] Swift変更後に`just check`を実行する。
+
+---
+
+### [ ] GHOSTTY-006：Denの暫定workaroundを削除して統合検証する
+
+#### Purpose
+
+Fork経路へ完全に切り替え、Den側にSurface lifecycleを偽装・再実装するworkaroundを残さない。
+
+#### Prerequisites
+
+- GHOSTTY-005完了。
+
+#### Work
+
+- [ ] 未コミットの透明・画面外`NSWindow` bootstrap host、input queue、関連lifecycle補助を削除する。
+- [ ] Fork APIが置き換えるhidden tick応急処置を削除する。
+- [x] 公開最新版のURL action対応を確認し、Den側のURL suppression workaroundを削除する。
+- [ ] CLI Terminal Board作成がForkのdetached exec APIだけで起動するよう呼び出しを整理する。
+- [ ] obsolete documentation、backlog項目、テスト用artifactを削除またはFork実装後の事実へ更新する。
+- [ ] 変更差分を自己レビューし、Window resource、Surface二重生成、child process leak、固定delayがないことを確認する。
+
+#### Acceptance Criteria
+
+- [ ] Denのproduction codeに透明Window、画面外Window、Window ordering、固定sleep、polling retry、独自tick loop、URL suppression workaroundが残らない。
+- [ ] Fork packageとDenの責務境界が明確で、DenはTerminal Sessionのnative lifecycleを再実装しない。
+- [ ] Fork不在では不可能だったCLI作成Terminal Board起動が、通常のDen Runtime lifecycle内で動く。
+
+#### Verification
+
+- [ ] `just check`を実行する。
+- [ ] CLI作成→未表示でcommand実行→Board表示→output確認→Board削除の実機シナリオを実施する。
+- [ ] Terminal Cmd-click、hidden / detach、child exitを実機確認する。
+- [ ] 最新のFork revision、実行コマンド、結果、未確認事項を各タスクへ記録する。
+
+## Common Constraints
+
+- macOS 26.0を最低対応とし、到達不能な旧OS fallbackを追加しない。
+- Surface、PTY、shell、`NSView`、`NSWindow`、`BoardRuntime`はlive stateであり、`DenState`へ永続化しない。
+- CLI commandの成功応答とTerminal Session readyを混同しない。`--run`はSurface ready callbackを待つ。
+- `.exec` backendを維持する。host-managed I/Oで既存PTYを再実装しない。
+- Forkはupstream `main`からの変更を最小に保ち、upstream追従可能なcommit構成にする。
+- Fork・Den双方で、実行した検証、実機条件、既知の制約を記録する。
 
 ## Out of Scope
 
-- 今回の台帳更新でのアプリコード変更、タスク実装、コミット。
-- 根拠のないアニメーション曲線・時間の調整、Desk切替演出の新設。
-- 汎用アニメーションフレームワーク、新規依存、全面的なStore／View分割。
-- runtime遅延アタッチ、WebKit／Terminal描画停止、性能改善の再設計。
-- 第三者Webサイト、永続化形式、無関係なUX・機能の変更。
+- この台帳更新でのFork作成、GitHub release作成、依存更新、アプリコード変更、コミット。
+- raw Ghostty本体へのForkまたはpatch。`libghostty-spm`側だけで成立しないと実証された場合に限り再検討する。
+- transparent / offscreen `NSWindow`を恒久対策として採用すること。
+- PTY transportをDenで再実装するための`InMemoryTerminalSession`移行。
+- 無関係なTerminal UI、Desk、Web Board、永続化形式の変更。

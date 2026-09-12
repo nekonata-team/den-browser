@@ -238,18 +238,12 @@ extension DenStore {
         case .localFile(let fileURL):
             _ = NSWorkspace.shared.open(fileURL)
         case .web(let resolvedURL):
-            registerTerminalURL(resolvedURL)
-            guard
-                addBoard(
-                    urlString: resolvedURL.absoluteString,
-                    preferredWidth: board.width,
-                    afterBoardID: board.id,
-                    focus: false,
-                    recentItem: .url(resolvedURL))
-            else {
-                cancelTerminalURLRegistration(resolvedURL)
-                return
-            }
+            _ = addBoard(
+                urlString: resolvedURL.absoluteString,
+                preferredWidth: board.width,
+                afterBoardID: board.id,
+                focus: false,
+                recentItem: .url(resolvedURL))
         }
     }
 

@@ -66,11 +66,11 @@ final class TerminalRuntime: NSObject, ObservableObject {
     }
 
     func sendText(_ text: String) {
-        terminalView.sendText(text)
+        terminalView.paste(text: text)
     }
 
     func runCommand(_ command: String) {
-        terminalView.sendText(command)
+        terminalView.paste(text: command)
 
         let timestamp = ProcessInfo.processInfo.systemUptime
         let windowNumber = terminalView.window?.windowNumber ?? 0
