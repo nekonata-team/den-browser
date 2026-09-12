@@ -538,6 +538,26 @@ struct KeyboardShortcutTests {
         #expect(store.state.drawerItems.count == 2)
     }
 
+    @Test func drawerFKeyTogglesPresentationStyle() throws {
+        let store = try makeStore(boards: [board("First")])
+        store.keepInDrawer(try #require(URL(string: "https://example.com/")))
+        store.openDrawer()
+        store.isDenMode = true
+
+        #expect(store.preferences.drawerStyle == .floating)
+
+        let fKey = try keyEvent(
+            characters: "f",
+            charactersIgnoringModifiers: "f",
+            keyCode: 3
+        )
+        #expect(KeyboardController.handle(fKey, store: store))
+        #expect(store.preferences.drawerStyle == .bottom)
+
+        #expect(KeyboardController.handle(fKey, store: store))
+        #expect(store.preferences.drawerStyle == .floating)
+    }
+
     @Test func denModeShiftDDoesNothingInDrawerFilterModeOrOnRepeat() throws {
         let store = try makeStore(boards: [board("First")])
         store.keepInDrawer(try #require(URL(string: "https://example.com/")))

@@ -99,6 +99,20 @@ enum ExternalLinkDestination: String, CaseIterable, Identifiable {
     }
 }
 
+enum DrawerStyle: String, CaseIterable, Identifiable {
+    case floating
+    case bottom
+
+    var id: Self { self }
+
+    var label: String {
+        switch self {
+        case .floating: "Floating"
+        case .bottom: "Bottom"
+        }
+    }
+}
+
 @MainActor
 @Observable
 final class AppPreferences {
@@ -107,6 +121,7 @@ final class AppPreferences {
         key: .character("1"), modifiers: [.command, .option])
     static let defaultSheetScale = 100
     static let defaultExternalLinkDestination: ExternalLinkDestination = .drawerPreview
+    static let defaultDrawerStyle: DrawerStyle = .floating
     static let sheetScaleRange = 50...200
 
     private(set) var shortcutOverrides: [ConfigurableShortcut: ShortcutOverride]
@@ -115,6 +130,7 @@ final class AppPreferences {
     private(set) var uBOLiteEnabled: Bool
     private(set) var boardCentering: FocusedBoardCentering
     private(set) var externalLinkDestination: ExternalLinkDestination
+    private(set) var drawerStyle: DrawerStyle
     private(set) var sheetScale: Int
     private(set) var zellijPath: String
     private(set) var zmxPath: String
@@ -132,6 +148,7 @@ final class AppPreferences {
     private static let uBOLiteEnabledKey = "preferences.content-blocking.ubolite.enabled"
     private static let boardCenteringKey = "preferences.appearance.board-centering.mode"
     private static let externalLinkDestinationKey = "preferences.external-links.destination"
+    private static let drawerStyleKey = "preferences.drawer.style"
     private static let sheetScaleKey = "preferences.appearance.sheet-scale.percent"
     private static let zellijPathKey = "preferences.terminal.zellij.executable-path"
     private static let zmxPathKey = "preferences.terminal.zmx.executable-path"
@@ -153,6 +170,9 @@ final class AppPreferences {
         externalLinkDestination =
             defaults.string(forKey: Self.externalLinkDestinationKey).flatMap(ExternalLinkDestination.init(rawValue:))
             ?? Self.defaultExternalLinkDestination
+        drawerStyle =
+            defaults.string(forKey: Self.drawerStyleKey).flatMap(DrawerStyle.init(rawValue:))
+            ?? Self.defaultDrawerStyle
         sheetScale =
             Self.normalizedSheetScale(defaults.object(forKey: Self.sheetScaleKey) as? Int)
             ?? Self.defaultSheetScale
@@ -203,6 +223,15 @@ final class AppPreferences {
     func setExternalLinkDestination(_ destination: ExternalLinkDestination) {
         externalLinkDestination = destination
         defaults.set(destination.rawValue, forKey: Self.externalLinkDestinationKey)
+    }
+
+    func setDrawerStyle(_ style: DrawerStyle) {
+        drawerStyle = style
+        defaults.set(style.rawValue, forKey: Self.drawerStyleKey)
+    }
+
+    func toggleDrawerStyle() {
+        setDrawerStyle(drawerStyle == .floating ? .bottom : .floating)
     }
 
     func setSheetScale(_ scale: Int) {

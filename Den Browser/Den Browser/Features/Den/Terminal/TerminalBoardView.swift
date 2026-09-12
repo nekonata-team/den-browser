@@ -28,7 +28,7 @@ struct TerminalBoardView: View {
             TerminalBoardSurface(
                 terminalView: runtime.terminalView,
                 onSurfaceVisibilityChange: { runtime.setSurfaceVisible($0) },
-                isHidden: !isVisibleInViewport || store.isDrawerOpen || store.isOverviewPresented,
+                isHidden: !isVisibleInViewport || store.isOverviewPresented,
                 focusRequest: focusRequest,
                 onSurfaceReady: { window in
                     guard

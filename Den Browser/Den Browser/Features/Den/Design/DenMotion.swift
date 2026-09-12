@@ -30,6 +30,10 @@ enum DenMotion {
         reduceMotion ? .opacity : .scale(scale: scale).combined(with: .opacity)
     }
 
+    static func transition(reduceMotion: Bool, edge: Edge) -> AnyTransition {
+        reduceMotion ? .opacity : .move(edge: edge).combined(with: .opacity)
+    }
+
     static func boardTransition(reduceMotion: Bool) -> AnyTransition {
         reduceMotion ? .identity : .opacity
     }

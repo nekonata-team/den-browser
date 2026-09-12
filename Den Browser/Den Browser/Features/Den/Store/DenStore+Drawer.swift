@@ -58,6 +58,10 @@ extension DenStore {
         }
     }
 
+    func toggleDrawerStyle() {
+        preferences.toggleDrawerStyle()
+    }
+
     func openDrawer() {
         setTemporaryContext(.drawer)
         selectedDrawerItemID = selectedDrawerItemID ?? state.drawerItems.first?.id

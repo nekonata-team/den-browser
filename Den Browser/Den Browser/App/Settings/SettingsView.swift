@@ -408,6 +408,19 @@ private struct AppearanceSettingsView: View {
                     Text(motionDescription)
                 }
             }
+
+            Section("Drawer") {
+                Picker("Drawer Style", selection: drawerStyleBinding) {
+                    ForEach(DrawerStyle.allCases) { style in
+                        Text(style.label).tag(style)
+                    }
+                }
+                .pickerStyle(.radioGroup)
+
+                SettingsHelpText {
+                    Text(drawerStyleDescription)
+                }
+            }
         }
     }
 
@@ -435,6 +448,23 @@ private struct AppearanceSettingsView: View {
             preferences.motionPreference
         } set: { preference in
             preferences.setMotionPreference(preference)
+        }
+    }
+
+    private var drawerStyleBinding: Binding<DrawerStyle> {
+        Binding {
+            preferences.drawerStyle
+        } set: { style in
+            preferences.setDrawerStyle(style)
+        }
+    }
+
+    private var drawerStyleDescription: String {
+        switch preferences.drawerStyle {
+        case .floating:
+            "Show the Drawer as a centered floating card. Press f while open to expand to full width."
+        case .bottom:
+            "Show the Drawer as a full-width bottom sheet. Press f while open to contract to floating."
         }
     }
 

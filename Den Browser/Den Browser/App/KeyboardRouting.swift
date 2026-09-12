@@ -194,6 +194,7 @@ enum AppAction: Equatable {
     case adjustFocusedDeskBoardWidths(Double)
     case resizeFocusedDeskBoards(Int)
     case toggleDrawer
+    case toggleDrawerStyle
     case closeDrawer
     case enterDrawerFilterMode
     case exitDrawerFilterMode
@@ -492,6 +493,7 @@ enum KeyboardRouter {
             let action: AppAction? =
                 switch event.character?.lowercased() {
                 case "/": .enterDrawerFilterMode
+                case "f": .toggleDrawerStyle
                 case "j": .selectDrawerItem(1)
                 case "k": .selectDrawerItem(-1)
                 case "p": .placeSelectedDrawerItemAsBoard
@@ -507,7 +509,7 @@ enum KeyboardRouter {
             guard let action else { return .consume(.exclusiveContext) }
             if event.isRepeat {
                 switch action {
-                case .placeSelectedDrawerItemAsBoard, .discardSelectedDrawerItem:
+                case .placeSelectedDrawerItemAsBoard, .discardSelectedDrawerItem, .toggleDrawerStyle:
                     return .consume(.ignoredRepeat)
                 default:
                     break
@@ -781,6 +783,7 @@ enum AppActionHandler {
         case .adjustFocusedDeskBoardWidths(let amount): store.adjustFocusedDeskBoardWidths(by: amount)
         case .resizeFocusedDeskBoards(let count): store.resizeFocusedDeskBoards(toFit: count)
         case .toggleDrawer: store.toggleDrawer()
+        case .toggleDrawerStyle: store.toggleDrawerStyle()
         case .closeDrawer: store.closeDrawer()
         case .enterDrawerFilterMode: store.enterDrawerFilterMode()
         case .exitDrawerFilterMode: store.exitDrawerFilterMode()

@@ -221,4 +221,23 @@ struct AppPreferencesTests {
             #expect(shouldReduce == testCase.expected)
         }
     }
+
+    @Test func drawerStylePersistsAndToggles() throws {
+        let suiteName = "AppPreferencesDrawerTests-\(UUID().uuidString)"
+        let defaults = try #require(UserDefaults(suiteName: suiteName))
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let preferences = AppPreferences(defaults: defaults)
+
+        #expect(preferences.drawerStyle == .floating)
+
+        preferences.toggleDrawerStyle()
+        #expect(preferences.drawerStyle == .bottom)
+        #expect(defaults.string(forKey: "preferences.drawer.style") == "bottom")
+
+        let restored = AppPreferences(defaults: defaults)
+        #expect(restored.drawerStyle == .bottom)
+
+        restored.toggleDrawerStyle()
+        #expect(restored.drawerStyle == .floating)
+    }
 }

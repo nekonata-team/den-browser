@@ -7,6 +7,7 @@ struct DrawerView: View {
     @Environment(\.accessibilityDifferentiateWithoutColor) private var differentiateWithoutColor
 
     let availableHeight: CGFloat
+    let availableWidth: CGFloat
     let profileColor: Color
     var shouldShowHeader: Bool = true
 
@@ -20,25 +21,14 @@ struct DrawerView: View {
             Divider()
             drawerContents
         }
-        .frame(maxWidth: .infinity)
-        .frame(height: drawerHeight, alignment: .top)
+        .frame(width: drawerWidth, height: drawerHeight, alignment: .top)
         .background(.regularMaterial)
-        .clipShape(
-            UnevenRoundedRectangle(
-                topLeadingRadius: DenRadius.large,
-                topTrailingRadius: DenRadius.large,
-                style: .continuous
-            )
-        )
+        .clipShape(drawerShape)
         .overlay {
-            UnevenRoundedRectangle(
-                topLeadingRadius: DenRadius.large,
-                topTrailingRadius: DenRadius.large,
-                style: .continuous
-            )
-            .strokeBorder(Color.primary.opacity(0.14))
+            drawerShape
+                .strokeBorder(Color.primary.opacity(0.14))
         }
-        .shadow(color: .black.opacity(0.4), radius: 28, y: -12)
+        .shadow(color: .black.opacity(isBottomStyle ? 0.4 : 0.35), radius: 28, y: shadowY)
         .animation(DenMotion.feedback(reduceMotion: shouldReduceMotion), value: store.expandedDrawerItemID)
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("drawer")
@@ -93,6 +83,21 @@ struct DrawerView: View {
                     .buttonStyle(.plain)
                     .accessibilityLabel("Search Drawer Items")
                     .help("Search Drawer Items (/)")
+
+                    Button {
+                        store.toggleDrawerStyle()
+                    } label: {
+                        Image(
+                            systemName: isBottomStyle
+                                ? "arrow.down.right.and.arrow.up.left"
+                                : "arrow.up.left.and.arrow.down.right"
+                        )
+                        .font(.system(size: 12, weight: .semibold))
+                        .frame(width: 30, height: 30)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(isBottomStyle ? "Contract Drawer (f)" : "Expand Drawer (f)")
+                    .help(isBottomStyle ? "Contract Drawer (f)" : "Expand Drawer (f)")
 
                     DenCloseButton(label: "Close Drawer") {
                         store.closeDrawer()
@@ -317,15 +322,54 @@ struct DrawerView: View {
         "drawer-item-\(itemID.uuidString)"
     }
 
-    private var drawerHeight: CGFloat {
-        max(
-            DenDrawerLayout.minimumHeight,
-            availableHeight - DenDrawerLayout.windowClearance(shouldShowHeader: shouldShowHeader)
+    private var isBottomStyle: Bool {
+        store.preferences.drawerStyle == .bottom
+    }
+
+    private var drawerShape: UnevenRoundedRectangle {
+        UnevenRoundedRectangle(
+            topLeadingRadius: DenRadius.large,
+            bottomLeadingRadius: isBottomStyle ? 0 : DenRadius.large,
+            bottomTrailingRadius: isBottomStyle ? 0 : DenRadius.large,
+            topTrailingRadius: DenRadius.large,
+            style: .continuous
         )
     }
 
+    private var shadowY: CGFloat {
+        isBottomStyle ? -12 : 12
+    }
+
+    private var drawerWidth: CGFloat {
+        if isBottomStyle {
+            return availableWidth - DenLayout.outerInset * 2
+        }
+        return min(availableWidth - DenLayout.overlayInset * 2, DenDrawerLayout.floatingWidth)
+    }
+
+    private var drawerHeight: CGFloat {
+        if isBottomStyle {
+            return max(
+                DenDrawerLayout.bottomMinimumHeight,
+                availableHeight - DenDrawerLayout.windowClearance(shouldShowHeader: shouldShowHeader)
+            )
+        }
+        let preferredHeight: CGFloat
+        if store.state.drawerItems.isEmpty {
+            preferredHeight = DenDrawerLayout.emptyHeight
+        } else if store.expandedDrawerItemID != nil {
+            preferredHeight = DenDrawerLayout.floatingExpandedHeight
+        } else {
+            preferredHeight = DenDrawerLayout.floatingHeight
+        }
+        return min(availableHeight - DenLayout.overlayInset * 2, preferredHeight)
+    }
+
     private var previewHeight: CGFloat {
-        max(DenDrawerLayout.minimumHeight, drawerHeight - DenDrawerLayout.previewReservedHeight)
+        if isBottomStyle {
+            return max(DenDrawerLayout.bottomMinimumHeight, drawerHeight - DenDrawerLayout.previewReservedHeight)
+        }
+        return max(240, drawerHeight - DenDrawerLayout.previewReservedHeight)
     }
 
     private var shouldReduceMotion: Bool {
@@ -355,11 +399,15 @@ struct DrawerView: View {
 }
 
 private enum DenDrawerLayout {
-    static let headerHorizontalPadding: CGFloat = 14
-    static let searchFieldWidth: CGFloat = 320
+    static let headerHorizontalPadding: CGFloat = 16
+    static let searchFieldWidth: CGFloat = 300
     static let itemHeight: CGFloat = 46
     static let itemButtonWidth: CGFloat = 28
-    static let minimumHeight: CGFloat = 360
+    static let floatingWidth: CGFloat = 680
+    static let floatingHeight: CGFloat = 480
+    static let floatingExpandedHeight: CGFloat = 620
+    static let emptyHeight: CGFloat = 300
+    static let bottomMinimumHeight: CGFloat = 360
     static let previewReservedHeight: CGFloat = 160
 
     static func windowClearance(shouldShowHeader: Bool) -> CGFloat {
