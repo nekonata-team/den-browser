@@ -27,6 +27,8 @@ final class TerminalRuntime: NSObject, ObservableObject {
     var foregroundProcessGroupID: pid_t? { terminalView.foregroundPid }
     private var controller: TerminalController?
     private var events: Events
+    private var isSurfaceReady = false
+    private var pendingCommands: [String] = []
     private var hiddenTickTask: Task<Void, Never>?
     private var isDisposed = false
     private var isCloseNotificationScheduled = false
@@ -70,6 +72,15 @@ final class TerminalRuntime: NSObject, ObservableObject {
     }
 
     func runCommand(_ command: String) {
+        guard isSurfaceReady else {
+            pendingCommands.append(command)
+            return
+        }
+
+        sendCommand(command)
+    }
+
+    private func sendCommand(_ command: String) {
         terminalView.paste(text: command)
 
         let timestamp = ProcessInfo.processInfo.systemUptime
@@ -190,6 +201,7 @@ final class TerminalRuntime: NSObject, ObservableObject {
     func dispose() {
         guard !isDisposed else { return }
         isDisposed = true
+        pendingCommands.removeAll()
         stopHiddenTicking()
         terminalView.setSurfaceVisible(false)
         terminalView.delegate = nil
@@ -211,6 +223,23 @@ final class TerminalRuntime: NSObject, ObservableObject {
     private func stopHiddenTicking() {
         hiddenTickTask?.cancel()
         hiddenTickTask = nil
+    }
+}
+
+extension TerminalRuntime: TerminalSurfaceLifecycleDelegate {
+    func terminalDidAttachSurface(_: TerminalSurface) {
+        guard !isDisposed else { return }
+        isSurfaceReady = true
+
+        let commands = pendingCommands
+        pendingCommands.removeAll()
+        for command in commands {
+            sendCommand(command)
+        }
+    }
+
+    func terminalDidDetachSurface() {
+        isSurfaceReady = false
     }
 }
 

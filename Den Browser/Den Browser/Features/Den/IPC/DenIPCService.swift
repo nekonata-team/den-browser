@@ -332,10 +332,7 @@ final class DenIPCService {
 
         if let runCommand, let board = store.board(for: boardID) {
             let runtime = store.terminalRuntime(for: board)
-            Task { @MainActor in
-                try? await Task.sleep(for: .milliseconds(150))
-                runtime.runCommand(runCommand)
-            }
+            runtime.runCommand(runCommand)
         }
 
         return .success(boardId: boardID.uuidString)

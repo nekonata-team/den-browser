@@ -17,6 +17,7 @@
 Denは`libghostty-spm` `1.6.20260909`（`7e45d27160f9b34aca9ca5c9820e9207482f9f04`）と`MSDisplayLink` `2.2.0`を固定している。
 最新版の`TerminalController`は、`TerminalSurfaceOpenURLDelegate`を持つhostの`OPEN_URL` actionを処理済みとして返す。これにより、Den側の`TerminalURLSuppressionTracker`、`registerTerminalURL`、`cancelTerminalURLRegistration`ワークアラウンドを削除した。
 `den terminal send`、`den terminal run`、`den board terminal new /tmp --run ... --focus`でTerminal入力とcommand実行を実機確認し、テスト用Boardは削除済み。`just check`も成功している。
+Den側は既存の`TerminalSurfaceLifecycleDelegate`を利用し、Surface ready前の`--run`を保留してready後に実行するようにした。150ms固定待機は削除済みである。未activate・Detach時にready通知が来ない問題は未解決のまま、別タスクとして扱う。
 
 Fork元は`Lakr233/libghostty-spm`の`main`（`1.6.20260909`、`7e45d27160f9b34aca9ca5c9820e9207482f9f04`）とする。
 
@@ -167,7 +168,8 @@ Fork APIを使い、CLIで作成したTerminal BoardのTerminal SessionをBoard�
 
 - [ ] Denのpackage URL、revision、checksumをFork版へ更新し、既存Ghostty API利用箇所を最新APIへ移行する。
 - [ ] `DenStore.terminalRuntime(for:)`を唯一のlive Terminal Runtime生成経路として維持する。
-- [ ] `den board terminal new`でRuntimeとdetached exec Sessionを開始する。`--run`はSurface ready通知後に一度だけ送る。
+- [x] Surface ready前の`--run`を保留し、既存の`TerminalSurfaceLifecycleDelegate`通知後に一度だけ送る。150ms固定待機を削除する。
+- [ ] `den board terminal new`でRuntimeとdetached exec Sessionを表示・Focus前に開始する。
 - [ ] `den terminal`のinput・signal・viewport・close経路がattach前後で同じTerminal Sessionを対象とすることを確認する。
 - [ ] Fork URL action対応後、`TerminalURLSuppressionTracker`、`registerTerminalURL`、`cancelTerminalURLRegistration`を削除する。
 - [ ] CLI仕様と所有文書を更新する。`den sheet wait`と異なり、Terminal Board creationはSession開始まで保証することを明記する。
