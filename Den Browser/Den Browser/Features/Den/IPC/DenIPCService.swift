@@ -60,18 +60,25 @@ final class DenIPCService {
             return handleDrawerCommand(command, request: request)
         case .terminal(let command):
             return handleTerminalCommand(command, request: request)
+        case .profile(let command):
+            return handleProfileCommand(command, request: request)
         }
     }
 
     // MARK: - Sheet Commands
 
     private func handleSheetCommand(_ command: DenIPCCommand.Sheet, request: DenIPCRequest) async -> DenIPCResponse {
-        guard let (store, board) = DenIPCTargetResolver.resolveTargetWebBoard(request: request, in: profileManager)
-        else {
-            if command == .open {
+        let store: DenStore
+        let board: BoardState
+        switch DenIPCTargetResolver.resolveTargetWebBoardResult(request: request, in: profileManager) {
+        case .success(let target):
+            store = target.0
+            board = target.1
+        case .failure(let error):
+            if command == .open && error == .noTargetBoard("Web") {
                 return .failure("No Web Board found. Use 'den board web new <url>' to create a new board.")
             }
-            return .failure("No Web Board found")
+            return .failure(error.localizedDescription)
         }
         let runtime = store.runtime(for: board)
 
@@ -196,13 +203,12 @@ final class DenIPCService {
     private func handleBoardCommand(_ command: DenIPCCommand.Board, request: DenIPCRequest) -> DenIPCResponse {
         switch command {
         case .list:
-            guard
-                let (_, desk) = DenIPCTargetResolver.resolveStoreAndDesk(
-                    callerBoardID: request.callerBoardID,
-                    in: profileManager
-                )
-            else {
-                return .failure("No active Desk")
+            let desk: DeskState
+            switch DenIPCTargetResolver.resolveStoreAndDesk(request: request, in: profileManager) {
+            case .success(let target):
+                desk = target.1
+            case .failure(let error):
+                return .failure(error.localizedDescription)
             }
             let boards = desk.boards.map { currentBoard in
                 DenBoardInfo(
@@ -219,13 +225,12 @@ final class DenIPCService {
             guard let urlString = request.args.first(where: { !$0.hasPrefix("-") }), !urlString.isEmpty else {
                 return .failure("Usage: den board web new <url> [--focus]")
             }
-            guard
-                let (store, _) = DenIPCTargetResolver.resolveStoreAndDesk(
-                    callerBoardID: request.callerBoardID,
-                    in: profileManager
-                )
-            else {
-                return .failure("No active store found")
+            let store: DenStore
+            switch DenIPCTargetResolver.resolveStoreAndDesk(request: request, in: profileManager) {
+            case .success(let target):
+                store = target.0
+            case .failure(let error):
+                return .failure(error.localizedDescription)
             }
             let shouldFocus = request.args.contains("--focus")
             let callerID = request.callerBoardID.flatMap(UUID.init)
@@ -246,45 +251,33 @@ final class DenIPCService {
             guard request.args.isEmpty else {
                 return .failure("Usage: den board close [--board <id>]")
             }
-            if let idString = request.boardID {
-                guard let targetID = UUID(uuidString: idString) else {
-                    return .failure("Invalid board ID: \(idString)")
-                }
-                let allStores = profileManager?.allStores ?? []
-                for candidateStore in allStores where candidateStore.boardIndices(for: targetID) != nil {
-                    candidateStore.removeBoard(targetID)
-                    return .success(
-                        message: "Closed Board \(targetID.uuidString)",
-                        closedBoardId: targetID.uuidString
-                    )
-                }
-                return .failure("Board not found: \(idString)")
+            let targetResult: Result<(DenStore, BoardState), DenIPCTargetResolver.TargetResolutionError>
+            if request.boardID != nil {
+                targetResult = DenIPCTargetResolver.resolveTargetAnyBoardResult(request: request, in: profileManager)
+            } else {
+                targetResult = DenIPCTargetResolver.resolveTargetWebBoardResult(request: request, in: profileManager)
             }
-            guard
-                let (store, board) = DenIPCTargetResolver.resolveTargetWebBoard(
-                    request: request,
-                    in: profileManager
+            switch targetResult {
+            case .success(let (store, board)):
+                store.removeBoard(board.id)
+                return .success(
+                    message: "Closed Board \(board.id.uuidString)",
+                    closedBoardId: board.id.uuidString
                 )
-            else {
-                return .failure("No target Board to close")
+            case .failure(let error):
+                return .failure(error.localizedDescription)
             }
-            store.removeBoard(board.id)
-            return .success(
-                message: "Closed Board \(board.id.uuidString)",
-                closedBoardId: board.id.uuidString
-            )
 
         }
     }
 
     private func handleTerminalBoardNew(request: DenIPCRequest) -> DenIPCResponse {
-        guard
-            let (store, _) = DenIPCTargetResolver.resolveStoreAndDesk(
-                callerBoardID: request.callerBoardID,
-                in: profileManager
-            )
-        else {
-            return .failure("No active store found")
+        let store: DenStore
+        switch DenIPCTargetResolver.resolveStoreAndDesk(request: request, in: profileManager) {
+        case .success(let target):
+            store = target.0
+        case .failure(let error):
+            return .failure(error.localizedDescription)
         }
 
         var workingDir: String?
@@ -343,13 +336,12 @@ final class DenIPCService {
     private func handleDeskCommand(_ command: DenIPCCommand.Desk, request: DenIPCRequest) -> DenIPCResponse {
         switch command {
         case .list:
-            guard
-                let (store, _) = DenIPCTargetResolver.resolveStoreAndDesk(
-                    callerBoardID: request.callerBoardID,
-                    in: profileManager
-                )
-            else {
-                return .failure("No active store found")
+            let store: DenStore
+            switch DenIPCTargetResolver.resolveStoreAndDesk(request: request, in: profileManager) {
+            case .success(let target):
+                store = target.0
+            case .failure(let error):
+                return .failure(error.localizedDescription)
             }
             let presentedID = store.presentedDeskID
             let desks = store.state.desks.map { currentDesk in
@@ -368,13 +360,12 @@ final class DenIPCService {
     // MARK: - Drawer Commands
 
     private func handleDrawerCommand(_ command: DenIPCCommand.Drawer, request: DenIPCRequest) -> DenIPCResponse {
-        guard
-            let (store, _) = DenIPCTargetResolver.resolveStoreAndDesk(
-                callerBoardID: request.callerBoardID,
-                in: profileManager
-            )
-        else {
-            return .failure("No active store found")
+        let store: DenStore
+        switch DenIPCTargetResolver.resolveStoreAndDesk(request: request, in: profileManager) {
+        case .success(let target):
+            store = target.0
+        case .failure(let error):
+            return .failure(error.localizedDescription)
         }
 
         switch command {
@@ -446,16 +437,18 @@ final class DenIPCService {
     // MARK: - Terminal Commands
 
     private func handleTerminalCommand(_ command: DenIPCCommand.Terminal, request: DenIPCRequest) -> DenIPCResponse {
+        let store: DenStore
+        let board: BoardState
+        switch DenIPCTargetResolver.resolveTargetTerminalBoardResult(request: request, in: profileManager) {
+        case .success(let target):
+            store = target.0
+            board = target.1
+        case .failure(let error):
+            return .failure(error.localizedDescription)
+        }
+
         switch command {
         case .text:
-            guard
-                let (store, board) = DenIPCTargetResolver.resolveTargetTerminalBoard(
-                    request: request,
-                    in: profileManager
-                )
-            else {
-                return .failure("No Terminal Board found")
-            }
             let runtime = store.terminalRuntime(for: board)
             guard let text = runtime.readViewportText() else {
                 return .failure("Failed to read terminal screen")
@@ -463,14 +456,6 @@ final class DenIPCService {
             return .success(text: text)
 
         case .send:
-            guard
-                let (store, board) = DenIPCTargetResolver.resolveTargetTerminalBoard(
-                    request: request,
-                    in: profileManager
-                )
-            else {
-                return .failure("No Terminal Board found")
-            }
             guard let rawText = request.args.first, !rawText.isEmpty else {
                 return .failure("Usage: den terminal send <text> [--board <id>]")
             }
@@ -484,14 +469,6 @@ final class DenIPCService {
             return .success(message: "Sent text to Terminal Board \(board.id.uuidString)")
 
         case .run:
-            guard
-                let (store, board) = DenIPCTargetResolver.resolveTargetTerminalBoard(
-                    request: request,
-                    in: profileManager
-                )
-            else {
-                return .failure("No Terminal Board found")
-            }
             guard let command = request.args.first, !command.isEmpty else {
                 return .failure("Usage: den terminal run <command> [--board <id>]")
             }
@@ -500,14 +477,6 @@ final class DenIPCService {
             return .success(message: "Ran command in Terminal Board \(board.id.uuidString)")
 
         case .kill:
-            guard
-                let (store, board) = DenIPCTargetResolver.resolveTargetTerminalBoard(
-                    request: request,
-                    in: profileManager
-                )
-            else {
-                return .failure("No Terminal Board found")
-            }
             let rawSignal = request.args.first?.trimmingCharacters(in: .whitespacesAndNewlines)
             let signalName = (rawSignal?.isEmpty == false) ? (rawSignal ?? "TERM") : "TERM"
             guard let parsed = Self.parseSignal(signalName) else {
@@ -520,6 +489,27 @@ final class DenIPCService {
                 return .failure(error.localizedDescription)
             }
 
+        }
+    }
+
+    // MARK: - Profile Commands
+
+    private func handleProfileCommand(_ command: DenIPCCommand.Profile, request: DenIPCRequest) -> DenIPCResponse {
+        guard let profileManager else {
+            return .failure("Profile manager unavailable")
+        }
+        switch command {
+        case .list:
+            let activeID = profileManager.activeProfileID()
+            let profiles = profileManager.profiles.map { profile in
+                DenProfileInfo(
+                    id: profile.id.uuidString,
+                    name: profile.name,
+                    isActive: profile.id == activeID,
+                    hasWindow: profileManager.hasWindow(for: profile.id)
+                )
+            }
+            return .success(profiles: profiles)
         }
     }
 

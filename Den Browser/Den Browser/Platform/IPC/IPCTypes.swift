@@ -51,11 +51,16 @@ nonisolated enum DenIPCCommand: Codable, Equatable, Sendable {
         case kill
     }
 
+    enum Profile: String, CaseIterable, Codable, Sendable {
+        case list
+    }
+
     case sheet(Sheet)
     case board(Board)
     case desk(Desk)
     case drawer(Drawer)
     case terminal(Terminal)
+    case profile(Profile)
     case health
 
 }
@@ -66,6 +71,7 @@ nonisolated struct DenIPCRequest: Codable, Sendable {
     var boardID: String?
     var deskID: String?
     var callerBoardID: String?
+    var profileID: String?
 }
 
 nonisolated struct DenBoardInfo: Codable, Sendable {
@@ -104,6 +110,20 @@ nonisolated struct DenDrawerItemInfo: Codable, Sendable {
     var title: String?
 }
 
+nonisolated struct DenProfileInfo: Codable, Sendable {
+    var id: String
+    var name: String
+    var isActive: Bool
+    var hasWindow: Bool
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case name
+        case isActive = "is_active"
+        case hasWindow = "has_window"
+    }
+}
+
 nonisolated struct DenIPCResponse: Codable, Sendable {
     var isOk: Bool
     var error: String?
@@ -114,6 +134,7 @@ nonisolated struct DenIPCResponse: Codable, Sendable {
     var desks: [DenDeskInfo]?
     var drawerItemId: String?
     var drawerItems: [DenDrawerItemInfo]?
+    var profiles: [DenProfileInfo]?
     var url: String?
     var snapshot: String?
     var text: String?
@@ -130,6 +151,7 @@ nonisolated struct DenIPCResponse: Codable, Sendable {
         case desks
         case drawerItemId = "drawer_item_id"
         case drawerItems = "drawer_items"
+        case profiles
         case url
         case snapshot
         case text
@@ -145,6 +167,7 @@ nonisolated struct DenIPCResponse: Codable, Sendable {
         desks: [DenDeskInfo]? = nil,
         drawerItemId: String? = nil,
         drawerItems: [DenDrawerItemInfo]? = nil,
+        profiles: [DenProfileInfo]? = nil,
         url: String? = nil,
         snapshot: String? = nil,
         text: String? = nil,
@@ -161,6 +184,7 @@ nonisolated struct DenIPCResponse: Codable, Sendable {
             desks: desks,
             drawerItemId: drawerItemId,
             drawerItems: drawerItems,
+            profiles: profiles,
             url: url,
             snapshot: snapshot,
             text: text,
@@ -180,6 +204,7 @@ nonisolated struct DenIPCResponse: Codable, Sendable {
             desks: nil,
             drawerItemId: nil,
             drawerItems: nil,
+            profiles: nil,
             url: nil,
             snapshot: nil,
             text: nil,

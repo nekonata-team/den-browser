@@ -8,6 +8,9 @@ struct CLIOptions: ParsableArguments {
 
     @Option(name: .customLong("socket"), help: "Custom socket path (defaults to ~/.den/den.sock)")
     var socketPath: String?
+
+    @Option(name: .customLong("profile"), help: "Target Profile UUID (defaults to $DEN_PROFILE or ambient)")
+    var profileID: String?
 }
 
 struct BoardTargetOptions: ParsableArguments {
@@ -32,32 +35,35 @@ enum DenIPCClient {
         try execute(
             command: command,
             args: args,
+            options: options,
             output: CLIOutputOptions(isJSON: options.isJSON, showBoardIDs: showBoardIDs),
-            boardID: nil,
-            socketPath: options.socketPath)
+            boardID: nil
+        )
     }
 
     static func execute(command: DenIPCCommand, args: [String], options: BoardTargetOptions) throws {
         try execute(
             command: command,
             args: args,
+            options: options.common,
             output: CLIOutputOptions(isJSON: options.common.isJSON, showBoardIDs: false),
-            boardID: options.boardID,
-            socketPath: options.common.socketPath)
+            boardID: options.boardID
+        )
     }
 
     private static func execute(
         command: DenIPCCommand,
         args: [String],
+        options: CLIOptions,
         output: CLIOutputOptions,
-        boardID: String?,
-        socketPath: String?
+        boardID: String?
     ) throws {
         let env = ProcessInfo.processInfo.environment
         let callerBoardID = env["DEN_BOARD_ID"]
+        let effectiveProfileID = options.profileID ?? env["DEN_PROFILE"]
 
         let socketPath: String = {
-            if let custom = socketPath { return custom }
+            if let custom = options.socketPath { return custom }
             if let envSocket = env["DEN_SOCKET"], !envSocket.isEmpty { return envSocket }
             let home = FileManager.default.homeDirectoryForCurrentUser.path
             return "\(home)/.den/den.sock"
@@ -68,7 +74,8 @@ enum DenIPCClient {
             args: args,
             boardID: boardID,
             deskID: nil,
-            callerBoardID: callerBoardID)
+            callerBoardID: callerBoardID,
+            profileID: effectiveProfileID)
 
         guard let requestData = try? JSONEncoder().encode(request) else {
             fputs("Error: Failed to encode request\n", stderr)
@@ -166,6 +173,18 @@ enum DenIPCClient {
                             "\(type) \(boardIDPrefix)"
                                 + "\(currentBoard.label)\(secondarySuffix)"
                         )
+                    }
+                } else if let profiles = response.profiles {
+                    let nameWidth = profiles.map(\.name.count).max() ?? 4
+                    let paddedNameHeader = "NAME".padding(toLength: max(nameWidth, 4), withPad: " ", startingAt: 0)
+                    print("  \(paddedNameHeader)  ID                                    ACTIVE  WINDOW")
+                    for profile in profiles {
+                        let mark = profile.isActive ? "*" : " "
+                        let paddedName = profile.name.padding(toLength: max(nameWidth, 4), withPad: " ", startingAt: 0)
+                        let activeStr = (profile.isActive ? "yes" : "no").padding(
+                            toLength: 6, withPad: " ", startingAt: 0)
+                        let windowStr = profile.hasWindow ? "yes" : "no"
+                        print("\(mark) \(paddedName)  \(profile.id)  \(activeStr)  \(windowStr)")
                     }
                 } else if let desks = response.desks {
                     for currentDesk in desks {

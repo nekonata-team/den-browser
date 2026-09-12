@@ -11,6 +11,7 @@ struct DenCLI: ParsableCommand {
             DeskCommand.self,
             DrawerCommand.self,
             TerminalCommand.self,
+            ProfileCommand.self,
         ]
     )
 }

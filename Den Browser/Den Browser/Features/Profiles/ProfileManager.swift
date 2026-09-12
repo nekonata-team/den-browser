@@ -405,6 +405,35 @@ final class ProfileManager {
         return stores.values.first
     }
 
+    func activeProfileID() -> UUID? {
+        if let target = extensionPresentationTarget() {
+            return storeProfileIDs[target.windowID]
+        }
+        if let firstWindowID = stores.keys.first {
+            return storeProfileIDs[firstWindowID]
+        }
+        return nil
+    }
+
+    func store(forProfileID profileID: UUID) -> DenStore? {
+        if let target = extensionPresentationTarget(),
+            storeProfileIDs[target.windowID] == profileID,
+            let store = stores[target.windowID]
+        {
+            return store
+        }
+        for (windowID, pID) in storeProfileIDs where pID == profileID {
+            if let store = stores[windowID] {
+                return store
+            }
+        }
+        return nil
+    }
+
+    func hasWindow(for profileID: UUID) -> Bool {
+        storeProfileIDs.values.contains(profileID)
+    }
+
     var allStores: [DenStore] {
         Array(stores.values)
     }

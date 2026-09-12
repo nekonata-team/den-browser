@@ -20,6 +20,7 @@ Each `<domain>` corresponds directly to a core domain entity defined in [CONTEXT
 
 ```text
 Den (Application Workspace) ─── den
+ ├── Profile (Isolated Browser Profile) ─── den profile <action>
  ├── Drawer (Temporary Web Material) ─── den drawer <action>
  ├── Desk (Virtual Workspace) ─── den desk <action>
       └── Board (Work Surface) ─── den board <action>
@@ -36,7 +37,15 @@ Den (Application Workspace) ─── den
 ### Ambient Targeting
 When `den` is executed from a shell inside a Terminal Board, Den Browser automatically injects:
 - `DEN_BOARD_ID`: The immutable UUID of the calling Terminal Board.
+- `DEN_PROFILE`: The UUID of the Profile owning the calling Terminal Board.
 - `DEN_SOCKET`: The path to the IPC domain socket (defaults to `~/.den/den.sock`).
+
+#### Profile Resolution
+Target Profile resolution follows this strict priority:
+1. **Explicit Profile ID**: Supplied via `--profile <uuid>`. If specified, it must be a valid UUID of an existing profile with an active window; invalid UUIDs, non-existent profiles, or profiles without an active window fail immediately (`exit 1`) with an explicit error and never fall back.
+2. **Ambient Profile**: From `$DEN_PROFILE`. Follows the same strict validation as explicit profile ID.
+3. **Ambient Board**: From `$DEN_BOARD_ID`. Locates the profile store containing that Board.
+4. **Active Profile**: Fallback to the active window's profile (for external shells without profile scoping).
 
 When a command is received with `DEN_BOARD_ID`:
 1. Den Browser dynamically locates the Desk that currently contains that Terminal Board. Moving Boards across Desks does not break targeting because Desk membership is evaluated dynamically from live state.
@@ -53,6 +62,7 @@ For `terminal` commands, the caller's Terminal Board is preferred; otherwise the
 ### Global Options
 - `--json`: Force output as structured JSON. When standard output is redirected or piped (non-TTY), JSON output is enabled automatically.
 - `--socket <path>`: Override the Unix domain socket path (defaults to `~/.den/den.sock` or `$DEN_SOCKET`).
+- `--profile <uuid>`: Target specific Profile UUID (defaults to `$DEN_PROFILE` or ambient Profile). Fails immediately (`exit 1`) if invalid, not found, or has no active window.
 
 ### Board Targeting
 - `--board <id>`: Explicitly target a specific Board by its UUID. Available on `den sheet`, `den terminal`, and `den board close`; fails immediately if not found or invalid.
@@ -142,6 +152,13 @@ Commands operating on Terminal Sessions in the target Terminal Board.
 | `den terminal run` | `<command> [--board <id>]` | Send a shell command and press Enter in the target Terminal Board. | `den terminal run "git status"` |
 | `den terminal kill` | `[-s <signal>] [--board <id>]` | Send a POSIX signal to the foreground process group (defaults to `TERM`). | `den terminal kill -s TERM` |
 
+### 3.9 `den profile` (Profiles)
+Commands inspecting profiles in Den Browser.
+
+| Command | Arguments | Description | Example |
+|---|---|---|---|
+| `den profile list` | None | List all profiles with name, UUID, active status, and open window status. | `den profile list` |
+
 ---
 
 ## 4. Output Contract (Dual Human + Agent Ergonomics)
@@ -182,6 +199,11 @@ Web Boards include `url`; Zellij and zmx Terminal Boards include `session_name` 
 **Desk Listing (`desk list`)**:
 ```json
 {"ok":true,"desks":[{"board_count":2,"id":"93F4BD61-...","is_active":true,"label":"Main"}]}
+```
+
+**Profile Listing (`profile list`)**:
+```json
+{"ok":true,"profiles":[{"has_window":true,"id":"3FA85F64-...","is_active":true,"name":"Default"}]}
 ```
 
 **Drawer Items (`drawer list`)**:
