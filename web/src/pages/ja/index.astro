@@ -14,7 +14,7 @@ import Layout from '../../layouts/Layout.astro';
 
 			<!-- Subtitle -->
 			<p class="text-zinc-400 text-lg md:text-xl max-w-2xl leading-relaxed mb-8">
-				長時間続くWeb・ターミナル作業のための、macOS向けキーボードファーストな空間ブラウザ。タブの山に迷うことなく、調査、AIチャット、開発、執筆などの並行作業をスムーズに再開できます。
+				長時間続くWeb・ターミナル作業のための、macOS向けキーボードファーストな空間ブラウザ。タブの山に迷うことなく、調査、開発、そして同じDeskで人間とAIエージェントが並走する作業空間を提供します。
 			</p>
 
 			<!-- Quick CTA -->
@@ -68,7 +68,7 @@ import Layout from '../../layouts/Layout.astro';
 		</div>
 
 		<!-- Install Section -->
-		<div id="install" class="mx-auto w-full max-w-lg glass-panel rounded-2xl p-5 flex flex-col gap-3 scroll-mt-24">
+		<div id="install" class="mx-auto w-full max-w-xl glass-panel rounded-2xl p-5 flex flex-col gap-3 scroll-mt-24">
 			<div class="flex items-center justify-between text-xs text-zinc-500 px-1">
 				<span class="font-semibold uppercase tracking-wider">Homebrew Cask でインストール</span>
 				<span>macOS 26+</span>
@@ -87,8 +87,28 @@ import Layout from '../../layouts/Layout.astro';
 					</svg>
 				</button>
 			</div>
+
+			<div class="flex items-center justify-between text-xs text-zinc-500 px-1 pt-1 border-t border-white/5">
+				<span class="font-semibold uppercase tracking-wider">Agent Skill</span>
+				<span>Claude Code, Codex 等</span>
+			</div>
+			<div class="flex items-center justify-between bg-black/40 rounded-xl border border-white/5 p-3 group hover:border-white/10 transition-colors gap-3">
+				<div class="overflow-x-auto min-w-0 flex-1">
+					<code class="font-mono text-xs sm:text-[13px] text-cyan-300 select-all whitespace-nowrap block">npx skills add nekonata-team/den-browser --skill den</code>
+				</div>
+				<button class="copy-btn glass-button p-2.5 shrink-0 active:scale-95 transition-transform" aria-label="Agent Skill インストールコマンドをコピー">
+					<svg class="copy-icon h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+						<rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+						<path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+					</svg>
+					<svg class="success-icon h-4 w-4 text-cyan-400 hidden" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+						<polyline points="20 6 9 17 4 12"></polyline>
+					</svg>
+				</button>
+			</div>
+
 			<p class="text-xs text-zinc-500 text-center px-2">
-				Homebrew版は <code>brew upgrade --cask den-browser</code> で更新できます。直接ダウンロード版はアプリ内で更新を確認できます。
+				Homebrew版は <code>brew upgrade --cask den-browser</code> で更新。Terminal Boardから同梱の <code>den</code> CLIで隣のWeb画面を操作できます。
 			</p>
 			<a href="https://github.com/nekonata-team/den-browser/releases/latest" target="_blank" rel="noopener noreferrer" class="glass-button text-xs self-center">
 				GitHub Releasesからダウンロード
@@ -132,7 +152,7 @@ import Layout from '../../layouts/Layout.astro';
 					<div class="text-[10px] font-bold text-pink-400 uppercase tracking-widest">Content</div>
 					<h3 class="text-xl font-bold text-white">Sheet & Terminal</h3>
 					<p class="text-zinc-400 text-sm leading-relaxed">
-						Board内に保持される履歴スタック付きのWeb画面、またはシームレスに動くTerminal / Zellij / zmx セッション。
+						Board内に保持される履歴スタック付きのWeb画面、または対話的なTerminal、Zellij、AIコーディングエージェントのセッション。
 					</p>
 				</div>
 			</div>
@@ -164,7 +184,7 @@ import Layout from '../../layouts/Layout.astro';
 					</p>
 				</div>
 
-				<!-- Feature 2: Terminal & Zellij Integration -->
+				<!-- Feature 2: Integrated Terminal -->
 				<div class="glass-card rounded-2xl p-8 border border-white/10 flex flex-col gap-4">
 					<div class="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center border border-emerald-500/30">
 						<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 text-emerald-400">
@@ -172,27 +192,31 @@ import Layout from '../../layouts/Layout.astro';
 							<line x1="12" y1="19" x2="20" y2="19"></line>
 						</svg>
 					</div>
-					<h3 class="text-xl font-semibold text-white">ターミナル & Zellij 統合</h3>
+					<h3 class="text-xl font-semibold text-white">統合ターミナル</h3>
 					<p class="text-zinc-400 leading-relaxed">
 						WebのBoardと同じDesk上に、通常のシェルやZellij/zmxセッションを並列配置。Web調査とCLI作業の行き来を、キーボード操作でシームレスに完結できます。
 					</p>
 				</div>
 
-				<!-- Feature 3: uBlock Origin Lite -->
+				<!-- Feature 3: 人間とAIエージェントの並走 -->
 				<div class="glass-card rounded-2xl p-8 border border-white/10 flex flex-col gap-4">
 					<div class="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center border border-purple-500/30">
 						<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 text-purple-400">
-							<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
-							<path d="m9 12 2 2 4-4"></path>
+							<path d="M12 8V4H8"></path>
+							<rect width="16" height="12" x="4" y="8" rx="2"></rect>
+							<path d="M2 14h2"></path>
+							<path d="M20 14h2"></path>
+							<path d="M15 13v2"></path>
+							<path d="M9 13v2"></path>
 						</svg>
 					</div>
-					<h3 class="text-xl font-semibold text-white">uBlock Origin Lite 内蔵</h3>
+					<h3 class="text-xl font-semibold text-white">人間とAIエージェントの並走</h3>
 					<p class="text-zinc-400 leading-relaxed">
-						uBlock Origin Lite（uBOL）を標準搭載。不要な広告やトラッカーを効果的に遮断し、軽快でクリーンなブラウジング環境を提供します。
+						同梱の <code class="bg-white/5 px-1 rounded border border-white/10 text-zinc-300">den</code> CLI により、Terminal Board で動く AI コーディングエージェント（Claude Code、Codex 等）が隣接する Web Board を直接操作。CDP 不要・設定ゼロで、トークン消費を抑えた軽量 Snapshot（<code class="bg-white/5 px-1 rounded border border-white/10 text-zinc-300">@e1</code>, <code class="bg-white/5 px-1 rounded border border-white/10 text-zinc-300">@e2</code>）を使って画面を検証できます。
 					</p>
 				</div>
 
-				<!-- Feature 4: Keyboard Control -->
+				<!-- Feature 4: キーボード & Vim ナビゲーション -->
 				<div class="glass-card rounded-2xl p-8 border border-white/10 flex flex-col gap-4">
 					<div class="w-10 h-10 rounded-xl bg-pink-500/10 flex items-center justify-center border border-pink-500/30">
 						<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 text-pink-400">
@@ -205,9 +229,9 @@ import Layout from '../../layouts/Layout.astro';
 							<path d="M7 16h10"></path>
 						</svg>
 					</div>
-					<h3 class="text-xl font-semibold text-white">キーボード主体の操作設計</h3>
+					<h3 class="text-xl font-semibold text-white">キーボード & Vim ナビゲーション</h3>
 					<p class="text-zinc-400 leading-relaxed">
-						Den Mode (<code class="bg-white/5 px-1 rounded border border-white/10 text-zinc-300">Ctrl + ,</code>) やVim風操作で画面全体を制御。ボードの切り替えや伸縮 (<code class="bg-white/5 px-1 rounded border border-white/10 text-zinc-300">-</code>/<code class="bg-white/5 px-1 rounded border border-white/10 text-zinc-300">=</code>)、デスク移動、よく使う入力の呼び出し (Essentials: <code class="bg-white/5 px-1 rounded border border-white/10 text-zinc-300">g</code>) がキーボードから行えます。
+						Den Mode (<code class="bg-white/5 px-1 rounded border border-white/10 text-zinc-300">Ctrl + ,</code>) でボード伸縮やデスク移動。さらにWeb画面内もVim風キーバインド（スクロールやリンクヒント <code class="bg-white/5 px-1 rounded border border-white/10 text-zinc-300">f</code>）に対応。マウスに手を伸ばさず、Webとワークスペース全体を巡回できます。
 					</p>
 				</div>
 
@@ -227,17 +251,17 @@ import Layout from '../../layouts/Layout.astro';
 					</p>
 				</div>
 
-				<!-- Feature 6: Zen View & Focus Mode -->
+				<!-- Feature 6: uBlock Origin Lite 内蔵 -->
 				<div class="glass-card rounded-2xl p-8 border border-white/10 flex flex-col gap-4">
 					<div class="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center border border-blue-500/30">
 						<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 text-blue-400">
-							<circle cx="12" cy="12" r="10"></circle>
-							<circle cx="12" cy="12" r="3"></circle>
+							<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+							<path d="m9 12 2 2 4-4"></path>
 						</svg>
 					</div>
-					<h3 class="text-xl font-semibold text-white">Zen View と Focus Mode</h3>
+					<h3 class="text-xl font-semibold text-white">uBlock Origin Lite 内蔵</h3>
 					<p class="text-zinc-400 leading-relaxed">
-						<code class="bg-white/5 px-1 rounded border border-white/10 text-zinc-300">z</code> キーでUI表示を消し去る「Zen View」、<code class="bg-white/5 px-1 rounded border border-white/10 text-zinc-300">Shift + F</code> でフォーカス中のBoard以外をソフトに減光・ぼかす「Focus Mode」により、作業への深い没入をサポートします。
+						uBlock Origin Lite（uBOL）を標準搭載。不要な広告やトラッカーを効果的に遮断し、軽快でクリーンなブラウジング環境を提供します。
 					</p>
 				</div>
 			</div>
@@ -248,14 +272,14 @@ import Layout from '../../layouts/Layout.astro';
 	<section class="py-24 border-t border-white/5 bg-gradient-to-b from-transparent to-cyan-950/10 px-6">
 		<div class="mx-auto max-w-4xl text-center flex flex-col items-center">
 			<h2 class="text-3xl sm:text-4xl font-extrabold text-white mb-4">
-				Webとターミナル作業を、あなたのMacに。
+				Webも、開発も、AIエージェントとの並走も。
 			</h2>
 			<p class="text-zinc-400 text-base sm:text-lg max-w-xl mb-10 leading-relaxed">
 				永続する空間キャンバス、統合ターミナル、そして完全なキーボード操作を体験してください。
 			</p>
 
 			<!-- Install Box (Bottom) -->
-			<div class="w-full max-w-lg glass-panel rounded-2xl p-5 flex flex-col gap-3">
+			<div class="w-full max-w-xl glass-panel rounded-2xl p-5 flex flex-col gap-3">
 				<div class="flex items-center justify-between text-xs text-zinc-500 px-1">
 					<span class="font-semibold uppercase tracking-wider">Homebrew Cask でインストール</span>
 					<span>macOS 26+</span>
@@ -274,8 +298,28 @@ import Layout from '../../layouts/Layout.astro';
 						</svg>
 					</button>
 				</div>
+
+				<div class="flex items-center justify-between text-xs text-zinc-500 px-1 pt-1 border-t border-white/5">
+					<span class="font-semibold uppercase tracking-wider">Agent Skill</span>
+					<span>Claude Code, Codex 等</span>
+				</div>
+				<div class="flex items-center justify-between bg-black/40 rounded-xl border border-white/5 p-3 group hover:border-white/10 transition-colors gap-3">
+					<div class="overflow-x-auto min-w-0 flex-1">
+						<code class="font-mono text-xs sm:text-[13px] text-cyan-300 select-all whitespace-nowrap block">npx skills add nekonata-team/den-browser --skill den</code>
+					</div>
+					<button class="copy-btn glass-button p-2.5 shrink-0 active:scale-95 transition-transform" aria-label="Agent Skill インストールコマンドをコピー">
+						<svg class="copy-icon h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+							<rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+							<path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+						</svg>
+						<svg class="success-icon h-4 w-4 text-cyan-400 hidden" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+							<polyline points="20 6 9 17 4 12"></polyline>
+						</svg>
+					</button>
+				</div>
+
 				<p class="text-xs text-zinc-500 text-center px-2">
-					Homebrew版は <code>brew upgrade --cask den-browser</code> で更新できます。直接ダウンロード版はアプリ内で更新を確認できます。
+					Homebrew版は <code>brew upgrade --cask den-browser</code> で更新。Terminal Boardから同梱の <code>den</code> CLIで隣のWeb画面を操作できます。
 				</p>
 				<a href="https://github.com/nekonata-team/den-browser/releases/latest" target="_blank" rel="noopener noreferrer" class="glass-button text-xs self-center">
 					GitHub Releasesからダウンロード

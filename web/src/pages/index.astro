@@ -14,7 +14,7 @@ import Layout from '../layouts/Layout.astro';
 
 			<!-- Subtitle -->
 			<p class="text-zinc-400 text-lg md:text-xl max-w-2xl leading-relaxed mb-8">
-				A keyboard-first spatial companion browser for macOS. Built for parallel web tasks, AI chats, research, development, and terminal workflows.
+				A keyboard-first spatial companion browser for macOS. Built for parallel web tasks, research, development, and humans working side-by-side with AI coding agents.
 			</p>
 
 			<!-- Quick CTA -->
@@ -68,7 +68,7 @@ import Layout from '../layouts/Layout.astro';
 		</div>
 
 		<!-- Install Section -->
-		<div id="install" class="mx-auto w-full max-w-lg glass-panel rounded-2xl p-5 flex flex-col gap-3 scroll-mt-24">
+		<div id="install" class="mx-auto w-full max-w-xl glass-panel rounded-2xl p-5 flex flex-col gap-3 scroll-mt-24">
 			<div class="flex items-center justify-between text-xs text-zinc-500 px-1">
 				<span class="font-semibold uppercase tracking-wider">Install via Homebrew Cask</span>
 				<span>macOS 26+</span>
@@ -87,8 +87,28 @@ import Layout from '../layouts/Layout.astro';
 					</svg>
 				</button>
 			</div>
+
+			<div class="flex items-center justify-between text-xs text-zinc-500 px-1 pt-1 border-t border-white/5">
+				<span class="font-semibold uppercase tracking-wider">Agent Skill</span>
+				<span>Claude Code, Codex, etc.</span>
+			</div>
+			<div class="flex items-center justify-between bg-black/40 rounded-xl border border-white/5 p-3 group hover:border-white/10 transition-colors gap-3">
+				<div class="overflow-x-auto min-w-0 flex-1">
+					<code class="font-mono text-xs sm:text-[13px] text-cyan-300 select-all whitespace-nowrap block">npx skills add nekonata-team/den-browser --skill den</code>
+				</div>
+				<button class="copy-btn glass-button p-2.5 shrink-0 active:scale-95 transition-transform" aria-label="Copy agent skill command">
+					<svg class="copy-icon h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+						<rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+						<path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+					</svg>
+					<svg class="success-icon h-4 w-4 text-cyan-400 hidden" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+						<polyline points="20 6 9 17 4 12"></polyline>
+					</svg>
+				</button>
+			</div>
+
 			<p class="text-xs text-zinc-500 text-center px-2">
-				Homebrew updates with <code>brew upgrade --cask den-browser</code>. Direct downloads can check for updates in-app.
+				Homebrew updates with <code>brew upgrade --cask den-browser</code>. Terminal Boards drive adjacent Web Boards via bundled <code>den</code> CLI.
 			</p>
 			<a href="https://github.com/nekonata-team/den-browser/releases/latest" target="_blank" rel="noopener noreferrer" class="glass-button text-xs self-center">
 				Download from GitHub Releases
@@ -132,7 +152,7 @@ import Layout from '../layouts/Layout.astro';
 					<div class="text-[10px] font-bold text-pink-400 uppercase tracking-widest">Content</div>
 					<h3 class="text-xl font-bold text-white">Sheet & Terminal</h3>
 					<p class="text-zinc-400 text-sm leading-relaxed">
-						Web screens held within a board with persistent navigation history, or interactive Terminal, Zellij, and zmx sessions.
+						Web screens held within a board with persistent navigation history, or interactive Terminal, Zellij, and AI coding agent sessions.
 					</p>
 				</div>
 			</div>
@@ -164,7 +184,7 @@ import Layout from '../layouts/Layout.astro';
 					</p>
 				</div>
 
-				<!-- Feature 2: Integrated Terminal & Zellij -->
+				<!-- Feature 2: Integrated Terminal -->
 				<div class="glass-card rounded-2xl p-8 border border-white/10 flex flex-col gap-4">
 					<div class="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center border border-emerald-500/30">
 						<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 text-emerald-400">
@@ -172,27 +192,31 @@ import Layout from '../layouts/Layout.astro';
 							<line x1="12" y1="19" x2="20" y2="19"></line>
 						</svg>
 					</div>
-					<h3 class="text-xl font-semibold text-white">Integrated Terminal & Zellij</h3>
+					<h3 class="text-xl font-semibold text-white">Integrated Terminal</h3>
 					<p class="text-zinc-400 leading-relaxed">
 						Place native shell, Zellij, or zmx terminal sessions side-by-side with your Web Boards on the same Desk. Seamlessly bridge web research and CLI tasks from your keyboard.
 					</p>
 				</div>
 
-				<!-- Feature 3: Built-in Content Blocking -->
+				<!-- Feature 3: Built for Humans & AI Agents -->
 				<div class="glass-card rounded-2xl p-8 border border-white/10 flex flex-col gap-4">
 					<div class="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center border border-purple-500/30">
 						<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 text-purple-400">
-							<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
-							<path d="m9 12 2 2 4-4"></path>
+							<path d="M12 8V4H8"></path>
+							<rect width="16" height="12" x="4" y="8" rx="2"></rect>
+							<path d="M2 14h2"></path>
+							<path d="M20 14h2"></path>
+							<path d="M15 13v2"></path>
+							<path d="M9 13v2"></path>
 						</svg>
 					</div>
-					<h3 class="text-xl font-semibold text-white">Built-in Content Blocking (uBOL)</h3>
+					<h3 class="text-xl font-semibold text-white">Built for Humans & AI Agents</h3>
 					<p class="text-zinc-400 leading-relaxed">
-						Bundled with uBlock Origin Lite out of the box. Blocks intrusive ads, popups, and trackers for a lightweight, distraction-free web experience.
+						The bundled <code class="bg-white/5 px-1 rounded border border-white/10 text-zinc-300">den</code> CLI lets coding agents (Claude Code, Codex, etc.) inspect and drive Web Boards right from an adjacent Terminal Board. Uses token-efficient DOM snapshots (<code class="bg-white/5 px-1 rounded border border-white/10 text-zinc-300">@e1</code>, <code class="bg-white/5 px-1 rounded border border-white/10 text-zinc-300">@e2</code>) with zero setup.
 					</p>
 				</div>
 
-				<!-- Feature 4: Keyboard Control -->
+				<!-- Feature 4: Keyboard-First & Vim Navigation -->
 				<div class="glass-card rounded-2xl p-8 border border-white/10 flex flex-col gap-4">
 					<div class="w-10 h-10 rounded-xl bg-pink-500/10 flex items-center justify-center border border-pink-500/30">
 						<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 text-pink-400">
@@ -205,9 +229,9 @@ import Layout from '../layouts/Layout.astro';
 							<path d="M7 16h10"></path>
 						</svg>
 					</div>
-					<h3 class="text-xl font-semibold text-white">Keyboard-First Control</h3>
+					<h3 class="text-xl font-semibold text-white">Keyboard-First & Vim Navigation</h3>
 					<p class="text-zinc-400 leading-relaxed">
-						Toggle Den Mode (<code class="bg-white/5 px-1 rounded border border-white/10 text-zinc-300">Ctrl + ,</code>) or use Vim-style commands to navigate and resize boards (<code class="bg-white/5 px-1 rounded border border-white/10 text-zinc-300">-</code>/<code class="bg-white/5 px-1 rounded border border-white/10 text-zinc-300">=</code>), switch desks, and launch saved Essentials (<code class="bg-white/5 px-1 rounded border border-white/10 text-zinc-300">g</code>) purely from the keyboard.
+						Toggle Den Mode (<code class="bg-white/5 px-1 rounded border border-white/10 text-zinc-300">Ctrl + ,</code>) to manage boards and desks, and navigate web sheets mouse-free with first-party Vim keybindings (scrolling, link hints with <code class="bg-white/5 px-1 rounded border border-white/10 text-zinc-300">f</code>). Complete control without touching the mouse.
 					</p>
 				</div>
 
@@ -227,17 +251,17 @@ import Layout from '../layouts/Layout.astro';
 					</p>
 				</div>
 
-				<!-- Feature 6: Zen View & Focus Mode -->
+				<!-- Feature 6: Built-in Content Blocking (uBOL) -->
 				<div class="glass-card rounded-2xl p-8 border border-white/10 flex flex-col gap-4">
 					<div class="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center border border-blue-500/30">
 						<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 text-blue-400">
-							<circle cx="12" cy="12" r="10"></circle>
-							<circle cx="12" cy="12" r="3"></circle>
+							<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+							<path d="m9 12 2 2 4-4"></path>
 						</svg>
 					</div>
-					<h3 class="text-xl font-semibold text-white">Zen View & Focus Mode</h3>
+					<h3 class="text-xl font-semibold text-white">Built-in Content Blocking (uBOL)</h3>
 					<p class="text-zinc-400 leading-relaxed">
-						Press <code class="bg-white/5 px-1 rounded border border-white/10 text-zinc-300">z</code> for Zen View to strip away all UI chrome, or <code class="bg-white/5 px-1 rounded border border-white/10 text-zinc-300">Shift + F</code> for Focus Mode to softly dim background boards and zero in on your active task.
+						Bundled with uBlock Origin Lite out of the box. Blocks intrusive ads, popups, and trackers for a lightweight, distraction-free web experience.
 					</p>
 				</div>
 			</div>
@@ -248,14 +272,14 @@ import Layout from '../layouts/Layout.astro';
 	<section class="py-24 border-t border-white/5 bg-gradient-to-b from-transparent to-cyan-950/10 px-6">
 		<div class="mx-auto max-w-4xl text-center flex flex-col items-center">
 			<h2 class="text-3xl sm:text-4xl font-extrabold text-white mb-4">
-				Ready to transform your web workflow?
+				Browse, build, and run side-by-side with AI agents.
 			</h2>
 			<p class="text-zinc-400 text-base sm:text-lg max-w-xl mb-10 leading-relaxed">
 				Experience persistent spatial browsing, integrated terminals, and keyboard-first orchestration on macOS.
 			</p>
 
 			<!-- Install Box (Bottom) -->
-			<div class="w-full max-w-lg glass-panel rounded-2xl p-5 flex flex-col gap-3">
+			<div class="w-full max-w-xl glass-panel rounded-2xl p-5 flex flex-col gap-3">
 				<div class="flex items-center justify-between text-xs text-zinc-500 px-1">
 					<span class="font-semibold uppercase tracking-wider">Install via Homebrew Cask</span>
 					<span>macOS 26+</span>
@@ -274,8 +298,28 @@ import Layout from '../layouts/Layout.astro';
 						</svg>
 					</button>
 				</div>
+
+				<div class="flex items-center justify-between text-xs text-zinc-500 px-1 pt-1 border-t border-white/5">
+					<span class="font-semibold uppercase tracking-wider">Agent Skill</span>
+					<span>Claude Code, Codex, etc.</span>
+				</div>
+				<div class="flex items-center justify-between bg-black/40 rounded-xl border border-white/5 p-3 group hover:border-white/10 transition-colors gap-3">
+					<div class="overflow-x-auto min-w-0 flex-1">
+						<code class="font-mono text-xs sm:text-[13px] text-cyan-300 select-all whitespace-nowrap block">npx skills add nekonata-team/den-browser --skill den</code>
+					</div>
+					<button class="copy-btn glass-button p-2.5 shrink-0 active:scale-95 transition-transform" aria-label="Copy agent skill command">
+						<svg class="copy-icon h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+							<rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+							<path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+						</svg>
+						<svg class="success-icon h-4 w-4 text-cyan-400 hidden" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+							<polyline points="20 6 9 17 4 12"></polyline>
+						</svg>
+					</button>
+				</div>
+
 				<p class="text-xs text-zinc-500 text-center px-2">
-					Homebrew updates with <code>brew upgrade --cask den-browser</code>. Direct downloads can check for updates in-app.
+					Homebrew updates with <code>brew upgrade --cask den-browser</code>. Terminal Boards drive adjacent Web Boards via bundled <code>den</code> CLI.
 				</p>
 				<a href="https://github.com/nekonata-team/den-browser/releases/latest" target="_blank" rel="noopener noreferrer" class="glass-button text-xs self-center">
 					Download from GitHub Releases

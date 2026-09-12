@@ -14,8 +14,8 @@ const t = useTranslations(lang);
 const homePath = lang === 'en' ? '/' : '/ja/';
 const alternatePath = lang === 'en' ? `/ja${Astro.url.pathname}` : Astro.url.pathname.replace(/^\/ja/, '') || '/';
 const pageDescription = description ?? (lang === 'ja'
-	? 'macOSのための、キーボードファーストな空間ブラウザ。Web、AIチャット、調査、開発、ターミナル作業を並列化。'
-	: 'Den Browser - A keyboard-first spatial browser for macOS. Parallel web work, the Niri way.');
+	? 'macOSのための、キーボードファーストな空間ブラウザ。Web調査、開発、そして同じDeskで人間とAIエージェントが並走する作業空間。'
+	: 'Den Browser - A keyboard-first spatial browser for macOS. Web, terminal, and AI agent workflows, the Niri way.');
 ---
 
 <!DOCTYPE html>
