@@ -16,5 +16,6 @@ xcuserdata/
 *.p8
 *.p12
 *.provisionprofile
+*.profraw
 fastlane/report.xml
 scripts/measure
