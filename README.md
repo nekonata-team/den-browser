@@ -42,6 +42,18 @@ den sheet snapshot -i
 den sheet text
 ```
 
+### Ghostty configuration
+
+Terminal Boards read your Ghostty configuration from the standard XDG and macOS
+locations. Choose only the settings you want, for example:
+
+```ini
+theme = dark:Catppuccin Mocha,light:Catppuccin Latte
+copy-on-select = clipboard
+```
+
+Den resolves theme names from its bundled catalog. See [Ghostty's configuration reference](https://ghostty.org/docs/config/reference).
+
 ## Core model
 
 - **Profile**: An isolated web identity with its own sign-ins, site data, and

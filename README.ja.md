@@ -41,6 +41,18 @@ den sheet snapshot -i
 den sheet text
 ```
 
+### Ghostty設定
+
+Terminal Boardは、標準のXDG/macOS設定ファイルを読み込みます。
+必要な設定だけ選択できます。例えば、次のように指定します。
+
+```ini
+theme = dark:Catppuccin Mocha,light:Catppuccin Latte
+copy-on-select = clipboard
+```
+
+Denはテーマ名を同梱カタログから解決します。詳しくは[Ghosttyの設定リファレンス](https://ghostty.org/docs/config/reference)を参照してください。
+
 ## 作業モデル
 
 - **Profile**: ログイン状態、サイトデータ、DenをほかのProfileから分離する
