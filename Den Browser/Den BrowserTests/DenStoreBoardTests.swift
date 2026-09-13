@@ -701,6 +701,26 @@ struct DenStoreBoardTests {
         }
     }
 
+    @Test func rapidBoardReorderingKeepsFocusAndRequestsCentering() {
+        let boards = [board("A"), board("B"), board("C"), board("D")]
+        withStore(desks: [desk("Desk", boards: boards, focusedBoardID: boards[0].id)]) { store in
+            store.moveFocusedBoardRight()
+            #expect(store.focusedDesk?.focusedBoardID == boards[0].id)
+            #expect(store.focusedDesk?.boards.map(\.id) == [boards[1].id, boards[0].id, boards[2].id, boards[3].id])
+            #expect(store.centerFocusedBoardRequest == 1)
+
+            store.moveFocusedBoardRight()
+            #expect(store.focusedDesk?.focusedBoardID == boards[0].id)
+            #expect(store.focusedDesk?.boards.map(\.id) == [boards[1].id, boards[2].id, boards[0].id, boards[3].id])
+            #expect(store.centerFocusedBoardRequest == 2)
+
+            store.moveFocusedBoardRight()
+            #expect(store.focusedDesk?.focusedBoardID == boards[0].id)
+            #expect(store.focusedDesk?.boards.map(\.id) == [boards[1].id, boards[2].id, boards[3].id, boards[0].id])
+            #expect(store.centerFocusedBoardRequest == 3)
+        }
+    }
+
     @Test func boardDragPersistsOnlyItsFinalOrder() {
         let boards = [board("A"), board("B"), board("C")]
         let source = desk("Desk", boards: boards, focusedBoardID: boards[0].id)
