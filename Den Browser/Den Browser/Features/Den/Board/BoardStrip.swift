@@ -329,7 +329,8 @@ struct BoardStrip: View {
 
             let isResizing =
                 previous.layoutKey.windowWidth != current.layoutKey.windowWidth
-                || previous.layoutKey.widths != current.layoutKey.widths
+                || (previous.layoutKey.ids == current.layoutKey.ids
+                    && previous.layoutKey.widths != current.layoutKey.widths)
                 || resizingBoardID != nil
             let animated =
                 previous.deskID == current.deskID
