@@ -298,6 +298,40 @@ struct TerminalConfigurationSourceTests {
         right.keycode = 124
         #expect(ghostty_config_key_is_binding(config, right))
     }
+
+    @Test func embeddedConfigurationUnbindsGhosttyQuitShortcut() throws {
+        // Arrange
+        let resolution = TerminalConfigurationSource.make(
+            arguments: ["--ui-testing"])
+        guard case let .generated(contents) = resolution.configSource else {
+            Issue.record("Expected a generated Ghostty config")
+            return
+        }
+        #expect(contents.contains("keybind = super+q=unbind"))
+
+        let generatedURL = FileManager.default.temporaryDirectory
+            .appending(path: "den-browser-terminal-quit-" + UUID().uuidString + ".conf")
+        try contents.write(to: generatedURL, atomically: true, encoding: .utf8)
+        defer { try? FileManager.default.removeItem(at: generatedURL) }
+
+        // Act
+        #expect(ghostty_init(0, nil) == GHOSTTY_SUCCESS)
+        guard let config = ghostty_config_new() else {
+            Issue.record("ghostty_config_new returned nil")
+            return
+        }
+        defer { ghostty_config_free(config) }
+        ghostty_config_load_file(config, generatedURL.path)
+        ghostty_config_finalize(config)
+
+        // Assert
+        #expect(ghostty_config_diagnostics_count(config) == 0)
+        var quit = ghostty_input_key_s()
+        quit.action = GHOSTTY_ACTION_PRESS
+        quit.mods = GHOSTTY_MODS_SUPER
+        quit.keycode = 12
+        #expect(!ghostty_config_key_is_binding(config, quit))
+    }
 }
 
 private struct StubTerminalCommandRunner: TerminalCommandRunning, Sendable {
