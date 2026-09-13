@@ -23,41 +23,6 @@ enum SheetInteractionError: LocalizedError {
 
 @MainActor
 enum SheetInteraction {
-    private static func highlightSnippet(color: ProfileRGB? = nil) -> String {
-        let rgb = color ?? ProfileRGB(red: 6, green: 182, blue: 212)
-        let red = rgb.red
-        let green = rgb.green
-        let blue = rgb.blue
-        return """
-            function showHighlight(target) {
-                try {
-                    document.querySelectorAll('[data-den-highlight]').forEach(el => el.remove());
-                    const rect = target.getBoundingClientRect();
-                    const indicator = document.createElement('div');
-                    indicator.setAttribute('data-den-highlight', '');
-                    Object.assign(indicator.style, {
-                        position: 'fixed',
-                        left: `${rect.left - 2}px`,
-                        top: `${rect.top - 2}px`,
-                        width: `${rect.width + 4}px`,
-                        height: `${rect.height + 4}px`,
-                        borderRadius: '6px',
-                        boxShadow: '0 0 0 3px rgb(\(red), \(green), \(blue)), 0 0 16px rgba(\(red), \(green), \(blue), 0.6)',
-                        background: 'rgba(\(red), \(green), \(blue), 0.15)',
-                        pointerEvents: 'none',
-                        zIndex: '2147483647',
-                        transition: 'opacity 0.6s ease-out',
-                        opacity: '1',
-                    });
-                    (document.body || document.documentElement).appendChild(indicator);
-                    requestAnimationFrame(() => {
-                        indicator.style.opacity = '0';
-                    });
-                    setTimeout(() => indicator.remove(), 650);
-                } catch {}
-            }
-            """
-    }
 
     static func snapshot(in webView: WKWebView, interactiveOnly: Bool) async throws -> String {
         let script = """
@@ -112,7 +77,27 @@ enum SheetInteraction {
         return "\(evalResult ?? "")"
     }
 
-    static func click(target: String, in webView: WKWebView, highlightColor: ProfileRGB? = nil) async throws {
+    private static func extractRect(from evalResult: Any?) throws -> CGRect {
+        guard let dict = evalResult as? [String: Any] else {
+            throw SheetInteractionError.executionFailed("Invalid evaluation result")
+        }
+        if let isSuccess = dict["ok"] as? Bool, !isSuccess {
+            let errMsg = (dict["error"] as? String) ?? "Operation failed"
+            throw SheetInteractionError.executionFailed(errMsg)
+        }
+        guard let rect = dict["rect"] as? [String: Any],
+            let originX = (rect["x"] as? NSNumber)?.doubleValue,
+            let originY = (rect["y"] as? NSNumber)?.doubleValue,
+            let width = (rect["width"] as? NSNumber)?.doubleValue,
+            let height = (rect["height"] as? NSNumber)?.doubleValue
+        else {
+            return .zero
+        }
+        return CGRect(x: originX, y: originY, width: width, height: height)
+    }
+
+    @discardableResult
+    static func click(target: String, in webView: WKWebView) async throws -> CGRect {
         let escapedTarget = target.replacingOccurrences(of: "\\", with: "\\\\").replacingOccurrences(
             of: "\"", with: "\\\"")
         let script = """
@@ -124,10 +109,9 @@ enum SheetInteraction {
                     el = document.querySelector(target);
                 }
                 if (!el) return { ok: false, error: `Element not found: ${target}` };
-                \(highlightSnippet(color: highlightColor))
-                showHighlight(el);
                 el.scrollIntoView({ block: 'nearest', inline: 'nearest' });
                 el.focus();
+                const r = el.getBoundingClientRect();
                 const mousedown = new MouseEvent('mousedown', { bubbles: true, cancelable: true, view: window });
                 const mouseup = new MouseEvent('mouseup', { bubbles: true, cancelable: true, view: window });
                 const click = new MouseEvent('click', { bubbles: true, cancelable: true, view: window });
@@ -135,19 +119,15 @@ enum SheetInteraction {
                 el.dispatchEvent(mouseup);
                 el.dispatchEvent(click);
                 if (typeof el.click === 'function') el.click();
-                return { ok: true };
+                return { ok: true, rect: { x: r.left, y: r.top, width: r.width, height: r.height } };
             })("\(escapedTarget)")
             """
         let evalResult = try await webView.evaluateJavaScript(script)
-        if let dict = evalResult as? [String: Any], let isSuccess = dict["ok"] as? Bool, !isSuccess {
-            let errMsg = (dict["error"] as? String) ?? "Failed to click element"
-            throw SheetInteractionError.executionFailed(errMsg)
-        }
+        return try extractRect(from: evalResult)
     }
 
-    static func fill(target: String, value: String, in webView: WKWebView, highlightColor: ProfileRGB? = nil)
-        async throws
-    {
+    @discardableResult
+    static func fill(target: String, value: String, in webView: WKWebView) async throws -> CGRect {
         let escapedTarget = target.replacingOccurrences(of: "\\", with: "\\\\").replacingOccurrences(
             of: "\"", with: "\\\"")
         let escapedValue = value.replacingOccurrences(of: "\\", with: "\\\\").replacingOccurrences(
@@ -161,21 +141,17 @@ enum SheetInteraction {
                     el = document.querySelector(target);
                 }
                 if (!el) return { ok: false, error: `Element not found: ${target}` };
-                \(highlightSnippet(color: highlightColor))
-                showHighlight(el);
                 el.scrollIntoView({ block: 'nearest', inline: 'nearest' });
                 el.focus();
+                const r = el.getBoundingClientRect();
                 el.value = value;
                 el.dispatchEvent(new Event('input', { bubbles: true }));
                 el.dispatchEvent(new Event('change', { bubbles: true }));
-                return { ok: true };
+                return { ok: true, rect: { x: r.left, y: r.top, width: r.width, height: r.height } };
             })("\(escapedTarget)", "\(escapedValue)")
             """
         let evalResult = try await webView.evaluateJavaScript(script)
-        if let dict = evalResult as? [String: Any], let isSuccess = dict["ok"] as? Bool, !isSuccess {
-            let errMsg = (dict["error"] as? String) ?? "Failed to fill element"
-            throw SheetInteractionError.executionFailed(errMsg)
-        }
+        return try extractRect(from: evalResult)
     }
 
     static func press(key: String, in webView: WKWebView) async throws {

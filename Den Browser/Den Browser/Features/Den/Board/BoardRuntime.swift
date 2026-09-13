@@ -45,11 +45,18 @@ final class BoardRuntime: BaseWebRuntime, ObservableObject {
         var restoreFocusedFirstResponder: () -> Void = {}
     }
 
+    struct ActionHighlight: Equatable {
+        let id = UUID()
+        let rect: CGRect
+    }
+
     @Published private(set) var faviconURL: URL?
     @Published private(set) var isLoading = false
     @Published private(set) var estimatedProgress = 0.0
     @Published private(set) var isShowingInitialLoadFallback = false
     @Published private(set) var didTerminateContentProcess = false
+    @Published private(set) var actionHighlight: ActionHighlight?
+    private var actionHighlightTask: Task<Void, Never>?
 
     var webProcessIdentifier: pid_t? {
         guard webView.responds(to: NSSelectorFromString("_webProcessIdentifier")) else { return nil }
@@ -205,7 +212,21 @@ final class BoardRuntime: BaseWebRuntime, ObservableObject {
         preferences._allowsPictureInPictureMediaPlayback = true
     }
 
+    func triggerActionHighlight(_ rect: CGRect) {
+        guard rect.width > 0, rect.height > 0 else { return }
+        actionHighlightTask?.cancel()
+        actionHighlight = ActionHighlight(rect: rect)
+        actionHighlightTask = Task { @MainActor [weak self] in
+            try? await Task.sleep(for: .milliseconds(650))
+            guard !Task.isCancelled else { return }
+            self?.actionHighlight = nil
+        }
+    }
+
     override func dispose() {
+        actionHighlightTask?.cancel()
+        actionHighlightTask = nil
+        actionHighlight = nil
         webExtensionHost?.unregister(webView: webView)
         sheetNavigation.didClose(webView)
         isLoading = false

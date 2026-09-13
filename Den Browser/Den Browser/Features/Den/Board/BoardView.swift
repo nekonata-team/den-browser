@@ -60,6 +60,11 @@ struct BoardView: View {
                 if runtime.isLoading {
                     loadingIndicator
                 }
+
+                if let highlight = runtime.actionHighlight {
+                    ActionHighlightView(rect: highlight.rect, color: profileColor)
+                        .id(highlight.id)
+                }
             }
             .blur(radius: isFocusModeDeemphasized ? DenLayout.focusModeBlurRadius : 0)
         }
@@ -480,4 +485,26 @@ struct BoardHeaderTitle: View {
 
 enum BoardStripCoordinateSpace {
     static let name = "board-strip"
+}
+
+private struct ActionHighlightView: View {
+    let rect: CGRect
+    let color: Color
+    @State private var opacity: Double = 1.0
+
+    var body: some View {
+        RoundedRectangle(cornerRadius: 6)
+            .stroke(color, lineWidth: 3)
+            .background(RoundedRectangle(cornerRadius: 6).fill(color.opacity(0.15)))
+            .shadow(color: color.opacity(0.6), radius: 8)
+            .frame(width: max(0, rect.width + 4), height: max(0, rect.height + 4))
+            .position(x: rect.midX, y: rect.midY)
+            .opacity(opacity)
+            .allowsHitTesting(false)
+            .onAppear {
+                withAnimation(.easeOut(duration: 0.6)) {
+                    opacity = 0
+                }
+            }
+    }
 }

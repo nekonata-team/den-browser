@@ -180,10 +180,8 @@ final class DenIPCService {
                 guard let target = request.args.first, !target.isEmpty else {
                     return .failure("Usage: den sheet click <@ref|selector>")
                 }
-                let profileColor = profileManager?.profileID(for: store).flatMap {
-                    profileManager?.profile(id: $0)?.color.rgb
-                }
-                try await SheetInteraction.click(target: target, in: runtime.webView, highlightColor: profileColor)
+                let rect = try await SheetInteraction.click(target: target, in: runtime.webView)
+                runtime.triggerActionHighlight(rect)
                 return .success(message: "Clicked \(target)")
 
             case .fill:
@@ -192,11 +190,8 @@ final class DenIPCService {
                 }
                 let target = request.args[0]
                 let value = request.args.dropFirst().joined(separator: " ")
-                let profileColor = profileManager?.profileID(for: store).flatMap {
-                    profileManager?.profile(id: $0)?.color.rgb
-                }
-                try await SheetInteraction.fill(
-                    target: target, value: value, in: runtime.webView, highlightColor: profileColor)
+                let rect = try await SheetInteraction.fill(target: target, value: value, in: runtime.webView)
+                runtime.triggerActionHighlight(rect)
                 return .success(message: "Filled \(target)")
 
             }

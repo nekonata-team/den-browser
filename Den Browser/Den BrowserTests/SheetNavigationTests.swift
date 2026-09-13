@@ -1048,7 +1048,7 @@ struct SheetNavigationTests {
         #expect(observedURL == expectedURL)
     }
 
-    @Test func sheetInteractionClickAndFillTriggerVisualHighlight() async throws {
+    @Test func sheetInteractionClickAndFillReturnRectAndLeaveDOMUntouched() async throws {
         let webView = WKWebView(frame: NSRect(x: 0, y: 0, width: 800, height: 600))
         let waiter = WebViewLoadWaiter()
         await waiter.load(
@@ -1056,8 +1056,8 @@ struct SheetNavigationTests {
             <!doctype html>
             <html>
             <body>
-              <button id="test-btn" onclick="this.textContent = 'clicked'">Click Me</button>
-              <input id="test-input" type="text" value="">
+              <button id="test-btn" style="position:absolute;left:20px;top:30px;width:100px;height:40px;" onclick="this.textContent = 'clicked'">Click Me</button>
+              <input id="test-input" style="position:absolute;left:20px;top:80px;width:150px;height:30px;" type="text" value="">
             </body>
             </html>
             """,
@@ -1065,27 +1065,45 @@ struct SheetNavigationTests {
             in: webView
         )
 
-        try await SheetInteraction.click(
-            target: "#test-btn", in: webView, highlightColor: ProfileRGB(red: 255, green: 0, blue: 0))
+        let clickRect = try await SheetInteraction.click(target: "#test-btn", in: webView)
         let clickedText =
             try await webView.evaluateJavaScript("document.getElementById('test-btn').textContent") as? String
         #expect(clickedText == "clicked")
+        #expect(clickRect.width > 0 && clickRect.height > 0)
 
-        let btnHighlightStyle =
-            try await webView.evaluateJavaScript(
-                "document.querySelector('[data-den-highlight]')?.style.boxShadow") as? String
-        #expect(btnHighlightStyle?.contains("rgb(255, 0, 0)") == true)
+        let clickHighlight =
+            try await webView.evaluateJavaScript("document.querySelector('[data-den-highlight]')")
+        #expect(clickHighlight is NSNull || clickHighlight == nil)
 
-        try await SheetInteraction.fill(
-            target: "#test-input", value: "hello agent", in: webView,
-            highlightColor: ProfileRGB(red: 0, green: 255, blue: 0))
+        let fillRect = try await SheetInteraction.fill(target: "#test-input", value: "hello agent", in: webView)
         let inputValue = try await webView.evaluateJavaScript("document.getElementById('test-input').value") as? String
         #expect(inputValue == "hello agent")
+        #expect(fillRect.width > 0 && fillRect.height > 0)
 
-        let inputHighlightStyle =
-            try await webView.evaluateJavaScript(
-                "document.querySelector('[data-den-highlight]')?.style.boxShadow") as? String
-        #expect(inputHighlightStyle?.contains("rgb(0, 255, 0)") == true)
+        let fillHighlight =
+            try await webView.evaluateJavaScript("document.querySelector('[data-den-highlight]')")
+        #expect(fillHighlight is NSNull || fillHighlight == nil)
+    }
+
+    @Test func boardRuntimeTriggerActionHighlightSetsAndClearsHighlight() async throws {
+        let navigation = SheetNavigationManager(scriptSource: "")
+        let board = BoardState(label: "Test", width: 520, currentSheetURL: nil)
+        let runtime = BoardRuntime(
+            board: board,
+            websiteDataStore: .nonPersistent(),
+            sheetNavigation: navigation,
+            sheetScale: 100,
+            sheetNavigationActions: noOpSheetNavigationActions(),
+            events: boardRuntimeEvents()
+        )
+        defer { runtime.dispose() }
+
+        #expect(runtime.actionHighlight == nil)
+        runtime.triggerActionHighlight(CGRect(x: 10, y: 10, width: 50, height: 20))
+        #expect(runtime.actionHighlight?.rect == CGRect(x: 10, y: 10, width: 50, height: 20))
+
+        try await Task.sleep(for: .milliseconds(750))
+        #expect(runtime.actionHighlight == nil)
     }
 
     private var sheetNavigationTestHTML: String {
