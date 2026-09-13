@@ -176,6 +176,31 @@ struct DenStoreDeskTests {
         #expect(store.focusedDesk?.id == third.id)
     }
 
+    @Test func focusDeskEnsuresFocusedObjects() {
+        let boardItem = board("Board")
+        let first = desk("First", boards: [boardItem])
+        let second = desk("Second")
+        let store = DenStore(state: DenState(desks: [second, first], focusedDeskID: second.id))
+
+        store.state.desks[1].focusedBoardID = nil
+        #expect(store.state.desks[1].focusedBoardID == nil)
+
+        store.focusDesk(first.id)
+        #expect(store.focusedDesk?.id == first.id)
+        #expect(store.focusedDesk?.focusedBoardID == boardItem.id)
+    }
+
+    @Test func focusDeskByNumberDelegatesToFocusDesk() {
+        let first = desk("First")
+        let second = desk("Second")
+        let store = DenStore(state: DenState(desks: [first, second], focusedDeskID: first.id))
+
+        store.isDenMode = true
+        store.focusDesk(number: 2)
+        #expect(store.focusedDesk?.id == second.id)
+        #expect(!store.isDenMode)
+    }
+
     @Test func deskLinkExportPreservesBoardOrderAndSkipsEmptyBoards() throws {
         let first = BoardState(
             label: "First [Reference]",

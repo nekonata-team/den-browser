@@ -6,6 +6,7 @@ extension DenStore {
         guard setFocusedDesk(deskID) || presentedDeskID == deskID else { return }
         dismissDeskFilter()
         isDenMode = false
+        ensureFocusedObjects()
         save()
     }
 
@@ -125,12 +126,7 @@ extension DenStore {
             showToast("Desk \(number) does not exist.", style: .warning)
             return
         }
-        dismissDeskFilter()
-        let targetDeskID = state.desks[number - 1].id
-        setFocusedDesk(targetDeskID)
-        isDenMode = false
-        ensureFocusedObjects()
-        save()
+        focusDesk(state.desks[number - 1].id)
     }
 
     func moveFocusedBoard(toDeskNumber number: Int) {
