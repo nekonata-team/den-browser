@@ -45,6 +45,7 @@ struct DenStorePersistenceTests {
             sheetNavigation: sheetNavigation,
             preferences: preferences)
         let runtime = store.runtime(for: board)
+        runtime.webView.magnification = 1.2
         preferences.setSheetScale(90)
 
         // Act
@@ -52,6 +53,58 @@ struct DenStorePersistenceTests {
 
         // Assert
         #expect(runtime.webView.pageZoom == 0.9)
+        #expect(runtime.webView.magnification == 1)
+    }
+
+    @Test func focusedBoardContentSizeIncreaseAdjustsLiveWebRuntime() throws {
+        // Arrange
+        let suiteName = "BoardContentSizeIncreaseTests-\(UUID())"
+        let defaults = try #require(UserDefaults(suiteName: suiteName))
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let preferences = AppPreferences(defaults: defaults)
+        let sheetNavigation = SheetNavigationManager(defaults: defaults)
+        let board = board("Board")
+        let source = desk("Desk", boards: [board], focusedBoardID: board.id)
+        let store = DenStore(
+            state: DenState(desks: [source], focusedDeskID: source.id),
+            sheetNavigation: sheetNavigation,
+            preferences: preferences)
+        let runtime = store.runtime(for: board)
+        runtime.webView.magnification = 1.2
+
+        // Act
+        store.adjustFocusedBoardContentSize(by: 1)
+
+        // Assert
+        #expect(runtime.webView.pageZoom == 1.1)
+        #expect(runtime.webView.magnification == 1)
+        #expect(store.state.desks[0].boards[0] == board)
+    }
+
+    @Test func focusedBoardContentSizeResetReturnsToGlobalScale() throws {
+        // Arrange
+        let suiteName = "BoardContentSizeResetTests-\(UUID())"
+        let defaults = try #require(UserDefaults(suiteName: suiteName))
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let preferences = AppPreferences(defaults: defaults)
+        preferences.setSheetScale(80)
+        let sheetNavigation = SheetNavigationManager(defaults: defaults)
+        let board = board("Board")
+        let source = desk("Desk", boards: [board], focusedBoardID: board.id)
+        let store = DenStore(
+            state: DenState(desks: [source], focusedDeskID: source.id),
+            sheetNavigation: sheetNavigation,
+            preferences: preferences)
+        let runtime = store.runtime(for: board)
+        runtime.webView.pageZoom = 1.4
+        runtime.webView.magnification = 1.2
+
+        // Act
+        store.resetFocusedBoardContentSize()
+
+        // Assert
+        #expect(runtime.webView.pageZoom == 0.8)
+        #expect(runtime.webView.magnification == 1)
     }
 
     @Test func emptyPersistedDenRecoversAndSavesOneDesk() {

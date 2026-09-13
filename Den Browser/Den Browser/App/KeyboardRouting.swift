@@ -47,6 +47,7 @@ struct InputContext {
     let hasZmxSessionQuery: Bool
     let hasZmxSessionSelection: Bool
     let isNotificationListPresented: Bool
+    let hasFocusedBoard: Bool
 
     init(store: DenStore, event: NSEvent) {
         isFullscreenActive = store.isFullscreenActive
@@ -67,6 +68,7 @@ struct InputContext {
         hasZmxSessionQuery = !store.zmxSessions.query.isEmpty
         hasZmxSessionSelection = store.zmxSessions.hasMarkedSessions
         isNotificationListPresented = store.isNotificationListPresented
+        hasFocusedBoard = store.focusedBoard != nil
     }
 
     private static func isDrawerPreviewFirstResponder(_ event: NSEvent, store: DenStore) -> Bool {
@@ -152,6 +154,9 @@ enum AppAction: Equatable {
     case focusNextBoard
     case moveFocusedBoardLeft
     case moveFocusedBoardRight
+    case increaseFocusedBoardContentSize
+    case decreaseFocusedBoardContentSize
+    case resetFocusedBoardContentSize
     case toggleAnchorBoard
     case jumpToAnchorBoard
     case moveFocusedBoardToPreviousDesk
@@ -323,6 +328,18 @@ enum KeyboardRouter {
 
         if let character, ["l", "t", "w"].contains(character), modifiers == [.command] {
             return .forward(.nativeCommand)
+        }
+
+        if context.hasFocusedBoard {
+            if character == "=", modifiers == [.command] || modifiers == [.command, .shift] {
+                return .perform(.increaseFocusedBoardContentSize)
+            }
+            if character == "-", modifiers == [.command] {
+                return .perform(.decreaseFocusedBoardContentSize)
+            }
+            if character == "0", modifiers == [.command] {
+                return .perform(.resetFocusedBoardContentSize)
+            }
         }
 
         if !context.isDenMode,
@@ -768,6 +785,9 @@ enum AppActionHandler {
         case .focusNextBoard: store.focusNextBoard()
         case .moveFocusedBoardLeft: store.moveFocusedBoardLeft()
         case .moveFocusedBoardRight: store.moveFocusedBoardRight()
+        case .increaseFocusedBoardContentSize: store.adjustFocusedBoardContentSize(by: 1)
+        case .decreaseFocusedBoardContentSize: store.adjustFocusedBoardContentSize(by: -1)
+        case .resetFocusedBoardContentSize: store.resetFocusedBoardContentSize()
         case .toggleAnchorBoard: store.toggleAnchorBoard()
         case .jumpToAnchorBoard: store.jumpToAnchorBoard()
         case .moveFocusedBoardToPreviousDesk: store.moveFocusedBoardToPreviousDesk()

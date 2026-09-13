@@ -22,6 +22,8 @@ Available globally or while focused in a Sheet.
 | `Command` + `R` | Reload Current Sheet |
 | `Shift` + `Command` + `R` | Hard reload Current Sheet (bypass cache) |
 | `Shift` + `Option` + `Command` + `R` | Reload Focused Desk sheets |
+| `Command` + `+` / `-` | Increase / decrease Focused Board content size (Sheet scale or Terminal font size) |
+| `Command` + `0` | Reset Focused Board content size |
 | `Shift` + `Escape` | Toggle Board Activity monitor |
 | `Command` + `Q` | Quit Den Browser |
 | `Control` + `Tab` | Next Desk |
@@ -153,9 +155,12 @@ Open with `o` in Den Mode.
 
 ## Pointer Controls
 
+- **Board Content**:
+  - Pinch in or out over a Web Board to adjust the Current Sheet's scale for that Board.
+  - Pinch in or out over a Terminal Board to adjust its font size for that Board.
 - **Board Headers**:
   - Drag label or empty area to reorder within the Desk.
-  - Right-click or Control-click for context menu (copy ID, keep in Drawer, duplicate, reload, center, maximize, move to Desk, remove).
+  - Right-click or Control-click for context menu (copy ID, keep in Drawer, duplicate, reload, adjust or reset content size, center, maximize, move to Desk, remove).
 - **Desk Switcher**:
   - Click `+` after the last Desk to create a new Desk.
   - Drag Desk button to reorder Desks.

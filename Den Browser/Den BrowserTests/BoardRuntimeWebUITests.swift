@@ -25,6 +25,25 @@ struct BoardRuntimeWebUITests {
         #expect(runtime.webView.configuration.preferences._allowsPictureInPictureMediaPlayback)
     }
 
+    @Test func runtimeEnablesNativeMagnification() {
+        let runtime = BoardRuntime(
+            board: BoardState(label: "Board", width: 320, currentSheetURL: nil),
+            websiteDataStore: .nonPersistent(),
+            sheetNavigation: SheetNavigationManager(scriptSource: ""),
+            sheetScale: 100,
+            sheetNavigationActions: noOpSheetNavigationActions(),
+            events: .init(
+                onChange: { _, _, _ in },
+                onFullscreenChange: nil,
+                onDownloadFinished: { _ in },
+                onDownloadFailed: { _ in }
+            )
+        )
+        defer { runtime.dispose() }
+
+        #expect(runtime.webView.allowsMagnification)
+    }
+
     @Test func runtimeReportsNativeLinkActivationOnly() {
         var activationCount = 0
         let runtime = BoardRuntime(

@@ -179,6 +179,32 @@ private struct DenCommands: Commands {
                 Button("Open Board") { store?.performAppAction(.showOpenBoardPanel) }
                     .keyboardShortcut("t", modifiers: [.command])
                     .disabled(store == nil)
+                Menu("Content Size") {
+                    Button(
+                        store?.focusedBoard?.isTerminal == true
+                            ? "Increase Font Size" : "Increase Sheet Scale"
+                    ) {
+                        store?.performAppAction(.increaseFocusedBoardContentSize)
+                    }
+                    .keyboardShortcut("=", modifiers: [.command, .shift])
+
+                    Button(
+                        store?.focusedBoard?.isTerminal == true
+                            ? "Decrease Font Size" : "Decrease Sheet Scale"
+                    ) {
+                        store?.performAppAction(.decreaseFocusedBoardContentSize)
+                    }
+                    .keyboardShortcut("-", modifiers: [.command])
+
+                    Button(
+                        store?.focusedBoard?.isTerminal == true
+                            ? "Reset Font Size" : "Reset Sheet Scale"
+                    ) {
+                        store?.performAppAction(.resetFocusedBoardContentSize)
+                    }
+                    .keyboardShortcut("0", modifiers: [.command])
+                }
+                .disabled(store?.focusedBoard == nil)
                 Button("Edit Focused Board Link") {
                     store?.performAppAction(.showEditBoardLinkPanel)
                 }

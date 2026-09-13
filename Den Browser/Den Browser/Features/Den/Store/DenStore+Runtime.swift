@@ -249,9 +249,40 @@ extension DenStore {
 
     func applySheetScale(_ scale: Int) {
         for runtime in runtimes.values {
+            runtime.webView.magnification = 1
             runtime.webView.pageZoom = CGFloat(scale) / 100
         }
+        drawerPreviewRuntime?.webView.magnification = 1
         drawerPreviewRuntime?.webView.pageZoom = CGFloat(scale) / 100
+    }
+
+    func adjustFocusedBoardContentSize(by delta: Int) {
+        guard let board = focusedBoard, delta != 0 else { return }
+        if board.isTerminal {
+            terminalRuntime(for: board).adjustFontSize(by: delta)
+            return
+        }
+
+        let webView = runtime(for: board).webView
+        webView.magnification = 1
+        let currentScale = Int((webView.pageZoom * 100).rounded())
+        let scale = min(
+            max(currentScale + delta * 10, AppPreferences.sheetScaleRange.lowerBound),
+            AppPreferences.sheetScaleRange.upperBound
+        )
+        webView.pageZoom = CGFloat(scale) / 100
+    }
+
+    func resetFocusedBoardContentSize() {
+        guard let board = focusedBoard else { return }
+        if board.isTerminal {
+            terminalRuntime(for: board).resetFontSize()
+            return
+        }
+
+        let webView = runtime(for: board).webView
+        webView.magnification = 1
+        webView.pageZoom = CGFloat(preferences.sheetScale) / 100
     }
 
     func releaseRuntimes() {

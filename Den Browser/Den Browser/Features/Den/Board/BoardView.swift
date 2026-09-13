@@ -1,5 +1,4 @@
 import SwiftUI
-import WebKit
 
 struct BoardView: View {
     @Environment(DenStore.self) private var store
@@ -52,7 +51,6 @@ struct BoardView: View {
                             onFocus()
                         }
                 )
-
                 if runtime.isShowingInitialLoadFallback {
                     initialLoadFallback
                 }
@@ -242,6 +240,29 @@ struct BoardView: View {
             runtime.togglePictureInPicture()
         } label: {
             Label("Toggle Picture in Picture", systemImage: "pip")
+        }
+
+        Divider()
+
+        Button {
+            store.focusBoard(board.id)
+            store.adjustFocusedBoardContentSize(by: 1)
+        } label: {
+            Label("Increase Sheet Scale", systemImage: "plus")
+        }
+
+        Button {
+            store.focusBoard(board.id)
+            store.adjustFocusedBoardContentSize(by: -1)
+        } label: {
+            Label("Decrease Sheet Scale", systemImage: "minus")
+        }
+
+        Button {
+            store.focusBoard(board.id)
+            store.resetFocusedBoardContentSize()
+        } label: {
+            Label("Reset Sheet Scale", systemImage: "arrow.counterclockwise")
         }
 
         Divider()

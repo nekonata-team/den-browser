@@ -270,6 +270,48 @@ struct KeyboardShortcutTests {
         #expect(store.state.focusedDeskID == firstDesk.id)
     }
 
+    @Test func contentSizeShortcutsRouteToTheFocusedBoardInEveryInputMode() throws {
+        let store = try makeStore(boards: [board("Focused")])
+        let increase = try keyEvent(
+            characters: "=",
+            charactersIgnoringModifiers: "=",
+            modifiers: [.command],
+            keyCode: 24)
+        let plus = try keyEvent(
+            characters: "+",
+            charactersIgnoringModifiers: "=",
+            modifiers: [.command, .shift],
+            keyCode: 24)
+        let decrease = try keyEvent(
+            characters: "-",
+            charactersIgnoringModifiers: "-",
+            modifiers: [.command],
+            keyCode: 27)
+        let reset = try keyEvent(
+            characters: "0",
+            charactersIgnoringModifiers: "0",
+            modifiers: [.command],
+            keyCode: 29)
+
+        #expect(
+            KeyboardController.decision(for: increase, store: store)
+                == .perform(.increaseFocusedBoardContentSize))
+        #expect(
+            KeyboardController.decision(for: plus, store: store)
+                == .perform(.increaseFocusedBoardContentSize))
+        #expect(
+            KeyboardController.decision(for: decrease, store: store)
+                == .perform(.decreaseFocusedBoardContentSize))
+        #expect(
+            KeyboardController.decision(for: reset, store: store)
+                == .perform(.resetFocusedBoardContentSize))
+
+        store.isDenMode = true
+        #expect(
+            KeyboardController.decision(for: decrease, store: store)
+                == .perform(.decreaseFocusedBoardContentSize))
+    }
+
     @Test func controlTabDeskShortcutsNavigateAndReturn() throws {
         let firstDesk = DeskState(label: "First", boards: [])
         let secondDesk = DeskState(label: "Second", boards: [])

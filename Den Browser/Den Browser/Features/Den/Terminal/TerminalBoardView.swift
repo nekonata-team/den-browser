@@ -22,6 +22,9 @@ struct TerminalBoardView: View {
     let onDragChanged: (DragGesture.Value) -> Void
     let onDragEnded: (DragGesture.Value) -> Void
 
+    @State private var isMagnifying = false
+    @State private var appliedFontSizeSteps = 0
+
     var body: some View {
         VStack(spacing: 0) {
             header
@@ -45,6 +48,28 @@ struct TerminalBoardView: View {
                     .onEnded { _ in
                         guard isPointerFocusEnabled else { return }
                         onFocus()
+                    }
+            )
+            .simultaneousGesture(
+                MagnifyGesture(minimumScaleDelta: 0.01)
+                    .onChanged { value in
+                        guard isPointerFocusEnabled else { return }
+                        if !isMagnifying {
+                            isMagnifying = true
+                            appliedFontSizeSteps = 0
+                            onFocus()
+                        }
+
+                        let targetSteps = Int(
+                            ((value.magnification - 1) / 0.1).rounded(.towardZero)
+                        )
+                        let delta = targetSteps - appliedFontSizeSteps
+                        guard delta != 0 else { return }
+                        appliedFontSizeSteps += runtime.adjustFontSize(by: delta)
+                    }
+                    .onEnded { _ in
+                        isMagnifying = false
+                        appliedFontSizeSteps = 0
                     }
             )
             .blur(radius: isFocusModeDeemphasized ? DenLayout.focusModeBlurRadius : 0)
@@ -162,6 +187,25 @@ struct TerminalBoardView: View {
             } label: {
                 Label("zmx Sessions…", systemImage: "arrow.triangle.2.circlepath")
             }
+        }
+        Divider()
+        Button {
+            store.focusBoard(board.id)
+            store.adjustFocusedBoardContentSize(by: 1)
+        } label: {
+            Label("Increase Font Size", systemImage: "plus")
+        }
+        Button {
+            store.focusBoard(board.id)
+            store.adjustFocusedBoardContentSize(by: -1)
+        } label: {
+            Label("Decrease Font Size", systemImage: "minus")
+        }
+        Button {
+            store.focusBoard(board.id)
+            store.resetFocusedBoardContentSize()
+        } label: {
+            Label("Reset Font Size", systemImage: "arrow.counterclockwise")
         }
         Divider()
         Button {

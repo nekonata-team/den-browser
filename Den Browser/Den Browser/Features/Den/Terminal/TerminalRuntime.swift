@@ -172,16 +172,40 @@ final class TerminalRuntime: NSObject, ObservableObject {
         return String(bytes: bytes, encoding: .utf8) ?? ""
     }
 
-    private var rawGhosttySurface: ghostty_surface_t? {
+    @discardableResult
+    func adjustFontSize(by steps: Int) -> Int {
+        guard steps != 0, let surface = ghosttyTerminalSurface else { return 0 }
+
+        let action = steps > 0 ? "increase_font_size:1" : "decrease_font_size:1"
+        var applied = 0
+        for _ in 0..<abs(steps) {
+            guard surface.performBindingAction(action) else { break }
+            applied += steps > 0 ? 1 : -1
+        }
+        return applied
+    }
+
+    @discardableResult
+    func resetFontSize() -> Bool {
+        ghosttyTerminalSurface?.performBindingAction("reset_font_size") ?? false
+    }
+
+    private var ghosttyTerminalSurface: TerminalSurface? {
         for coreChild in Mirror(reflecting: terminalView).children where coreChild.label == "core" {
             for surfaceChild in Mirror(reflecting: coreChild.value).children where surfaceChild.label == "surface" {
-                if let surfaceObj = surfaceChild.value as? TerminalSurface {
-                    for ptrChild in Mirror(reflecting: surfaceObj).children where ptrChild.label == "surface" {
-                        if let ptr = ptrChild.value as? ghostty_surface_t {
-                            return ptr
-                        }
-                    }
+                if let surface = surfaceChild.value as? TerminalSurface {
+                    return surface
                 }
+            }
+        }
+        return nil
+    }
+
+    private var rawGhosttySurface: ghostty_surface_t? {
+        guard let surface = ghosttyTerminalSurface else { return nil }
+        for ptrChild in Mirror(reflecting: surface).children where ptrChild.label == "surface" {
+            if let ptr = ptrChild.value as? ghostty_surface_t {
+                return ptr
             }
         }
         return nil

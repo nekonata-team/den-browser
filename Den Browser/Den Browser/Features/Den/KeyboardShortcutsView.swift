@@ -41,6 +41,8 @@ struct KeyboardShortcutsView: View {
                     item(["⌘", "R"], "Reload Current Sheet"),
                     item(["⇧", "⌘", "R"], "Hard Reload Current Sheet"),
                     item(["⌘", "⌥", "⇧", "R"], "Reload Focused Desk Sheets"),
+                    item(["⌘", "+", "/", "-"], "Increase / decrease Focused Board content size"),
+                    item(["⌘", "0"], "Reset Focused Board content size"),
                     item(["⌘", "W"], "Remove Focused Board"),
                     item(["⇧", "⌘", "W"], "Close Profile Window"),
                     item(["⇧", "Escape"], "Board Activity"),

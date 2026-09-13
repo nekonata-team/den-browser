@@ -110,6 +110,7 @@ final class BoardRuntime: BaseWebRuntime, ObservableObject {
                 BoardWKWebView(frame: .zero, configuration: configuration)
             }
         )
+        webView.allowsMagnification = true
 
         if let boardWebView = webView as? BoardWKWebView {
             boardWebView.isFocusAllowed = { [weak self] in
