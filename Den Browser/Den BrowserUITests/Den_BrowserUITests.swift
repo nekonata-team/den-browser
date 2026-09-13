@@ -63,7 +63,7 @@ final class Den_BrowserUITests: XCTestCase, BDD {
             multipleDrawerItems: true)
 
         let drawer = app.descendants(matching: .any).matching(identifier: "drawer").firstMatch
-        let previewContent = app.staticTexts["result:pending"].firstMatch
+        let previewContent = drawer.staticTexts["result:pending"].firstMatch
         let sheetInput = app.textFields["Sheet input"].firstMatch
         let nextDrawerItem = app.buttons
             .matching(NSPredicate(format: "label BEGINSWITH %@", "Next Drawer Fixture"))
@@ -91,9 +91,8 @@ final class Den_BrowserUITests: XCTestCase, BDD {
             XCTAssertEqual(sheetInput.value as? String, "a")
         }
 
-        when("discarding the focused Drawer preview") {
-            app.typeKey(.escape, modifierFlags: [])
-            app.typeText("x")
+        when("discarding the focused Drawer Item") {
+            app.typeKey("w", modifierFlags: [.command])
         }
 
         then("the next Drawer preview remains visible") {

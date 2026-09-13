@@ -521,6 +521,39 @@ struct KeyboardShortcutTests {
         #expect(store.expandedDrawerItemID == previewID)
     }
 
+    @Test func drawerCommandWDiscardsSelectedItemWithoutRemovingBoard() throws {
+        let store = try makeStore(boards: [board("First")])
+        store.keepInDrawer(try #require(URL(string: "https://first.example/")))
+        store.keepInDrawer(try #require(URL(string: "https://second.example/")))
+        let selectedItemID = try #require(store.selectedDrawerItemID)
+        let commandW = try keyEvent(
+            characters: "w",
+            charactersIgnoringModifiers: "w",
+            modifiers: [.command],
+            keyCode: 13)
+
+        #expect(
+            KeyboardController.decision(for: commandW, store: store)
+                == .perform(.discardSelectedDrawerItem(focusNext: true)))
+        #expect(KeyboardController.handle(commandW, store: store))
+        #expect(store.state.drawerItems.count == 1)
+        #expect(!store.state.drawerItems.contains { $0.id == selectedItemID })
+        #expect(store.focusedDesk?.boards.count == 1)
+        #expect(store.isDrawerOpen)
+
+        let repeatedCommandW = try keyEvent(
+            characters: "w",
+            charactersIgnoringModifiers: "w",
+            modifiers: [.command],
+            isARepeat: true,
+            keyCode: 13)
+        #expect(
+            KeyboardController.decision(for: repeatedCommandW, store: store)
+                == .consume(.ignoredRepeat))
+        #expect(KeyboardController.handle(repeatedCommandW, store: store))
+        #expect(store.state.drawerItems.count == 1)
+    }
+
     @Test func denModeShiftDRequestsDrawerClearConfirmation() throws {
         let store = try makeStore(boards: [board("First")])
         store.keepInDrawer(try #require(URL(string: "https://first.example/")))

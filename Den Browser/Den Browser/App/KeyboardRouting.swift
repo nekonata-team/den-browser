@@ -450,8 +450,15 @@ enum KeyboardRouter {
     }
 
     private static func routeDrawer(_ event: KeyEvent, context: InputContext) -> InputDecision {
-        if !context.isDenMode, context.isDrawerPreviewFirstResponder { return .forward(.drawerPreview) }
         let modifiers = event.modifiers
+        let character = event.character?.lowercased()
+
+        if modifiers == [.command], character == "w" {
+            return event.isRepeat
+                ? .consume(.ignoredRepeat)
+                : .perform(.discardSelectedDrawerItem(focusNext: true))
+        }
+        if !context.isDenMode, context.isDrawerPreviewFirstResponder { return .forward(.drawerPreview) }
 
         if context.isDrawerFilterInputActive {
             if event.hasMarkedText { return .forward(.filterTextInput) }

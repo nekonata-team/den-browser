@@ -51,6 +51,7 @@ Future media support must not turn the initial design into a speculative generic
 - Drawer Items form a vertical accordion. One item at a time expands into a live `WKWebView` Drawer Preview.
 - When External Links is set to Drawer Preview, opening an external URL captures, selects, and expands a new Drawer Item.
 - Closing the Drawer keeps its expanded Preview identity and live runtime for the next open during the current app run. Collapsing a Preview clears that identity and releases the runtime. Both operations keep the Drawer Item.
+- `Command` + `W` discards the selected Drawer Item from any Drawer context, including a focused Preview.
 - Discarding an expanded Preview advances to the next visible Drawer Item's Preview, or the previous visible Item when the discarded Item was last; discarding a non-expanded Item does not change the current Preview.
 - `u` restores the newest discarded Drawer Item, and repeated use restores older retained items. Restoration returns to the Drawer with the item selected and expanded; when invoked in Den Mode, it keeps Den Mode active. The history is limited to ten items and lasts only for the current app run.
 - Placement creates a Board to the right of the Focused Board, focuses it, removes the Drawer Item, and closes the Drawer.
