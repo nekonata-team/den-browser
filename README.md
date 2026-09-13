@@ -101,17 +101,11 @@ These commands disable code signing. Run `just --list` for the available tasks.
 ## Documentation
 
 - [CONTEXT.md](./CONTEXT.md): product language and domain model
-- [DESIGN.md](./DESIGN.md): visual and interaction rules
-- [docs/shortcuts.md](./docs/shortcuts.md): Den Mode keyboard commands
-- [docs/desk-presets.md](./docs/desk-presets.md): Desk Preset behavior
-- [docs/vim.md](./docs/vim.md): Vim-style Sheet Navigation
+- [docs/shortcuts.md](./docs/shortcuts.md): keyboard and pointer controls
 - [docs/cli.md](./docs/cli.md): CLI reference and agent skill integration
-- [docs/architecture.md](./docs/architecture.md): source organization and boundaries
-- [docs/testing.md](./docs/testing.md): automated and exploratory validation
-- [docs/releasing.md](./docs/releasing.md): signed release workflow
-- [docs/adr](./docs/adr): product and architecture decisions
-- [web/README.md](./web/README.md): public website and deployment
 - [THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md): bundled software licenses
+
+See [AGENTS.md](./AGENTS.md) for internal architecture, testing, and developer documentation.
 
 ## License
 

@@ -40,10 +40,14 @@ manual candidate verification, `just release publish X.Y.Z`.
 - `DESIGN.md`: UI design rules
 - `docs/shortcuts.md`: complete keyboard and pointer controls
 - `docs/keyboard-input.md`: keyboard implementation contract and diagnostic path
+- `docs/desk-presets.md`: desk preset behavior and state
+- `docs/vim.md`: Vim-style sheet navigation
+- `docs/persistence.md`: local persistence and preference schema
 - `docs/architecture.md` and `docs/adr/`: architecture and product decisions
 - `docs/cli.md`: command-line interface specification and agent integration
 - `docs/testing.md`: automated and exploratory validation
 - `docs/releasing.md`: signed release and publishing workflow
+- `web/README.md`: public website and deployment
 
 ## Documentation operation
 

@@ -56,6 +56,8 @@ Version 1 documents decode as Web Boards and are written back as version 2. An o
 | Domain | Setting | Key | Stored value | Default | Settings location |
 | --- | --- | --- | --- | --- | --- |
 | `schema` | Version | `preferences.schema.version` | `Int` | `1` | Internal |
+| `search` | Engine | `preferences.search.engine` | `SearchEngine.rawValue` | `google` | Web > Search |
+| `external-links` | Destination | `preferences.external-links.destination` | `ExternalLinkDestination.rawValue` | `drawer-preview` | Web > Sheet Navigation |
 | `sheet-navigation` | Enabled | `preferences.sheet-navigation.enabled` | `Bool` | `false` | Web > Vim-style Sheet Navigation |
 | `sheet-navigation` | Hint alphabet | `preferences.sheet-navigation.hint-alphabet` | `String` | `asdfghjkl` | Web > Vim-style Sheet Navigation |
 | `sheet-navigation` | Ignored hosts | `preferences.sheet-navigation.ignored-hosts` | `[String]` | `[]` | Web > Vim-style Sheet Navigation |

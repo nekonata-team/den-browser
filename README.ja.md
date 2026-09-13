@@ -97,17 +97,11 @@ just check
 ## ドキュメント
 
 - [CONTEXT.md](./CONTEXT.md): プロダクト用語とドメインモデル
-- [DESIGN.md](./DESIGN.md): ビジュアルとインタラクションのルール
-- [docs/shortcuts.md](./docs/shortcuts.md): Den Modeのキーボード操作
-- [docs/desk-presets.md](./docs/desk-presets.md): Desk Presetの挙動
-- [docs/vim.md](./docs/vim.md): Vim-style Sheet Navigation
+- [docs/shortcuts.md](./docs/shortcuts.md): キーボードとポインタ操作
 - [docs/cli.md](./docs/cli.md): CLIリファレンスとエージェントスキル
-- [docs/architecture.md](./docs/architecture.md): ソース構成と境界
-- [docs/testing.md](./docs/testing.md): 自動テストと手動検証
-- [docs/releasing.md](./docs/releasing.md): 署名付きリリース手順
-- [docs/adr](./docs/adr): プロダクトとアーキテクチャの意思決定
-- [web/README.md](./web/README.md): 公開サイトとデプロイ
 - [THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md): 同梱ソフトウェアのライセンス
+
+アーキテクチャやテスト等の開発者向けドキュメントは [AGENTS.md](./AGENTS.md) を参照してください。
 
 ## ライセンス
 
