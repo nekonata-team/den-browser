@@ -45,6 +45,7 @@ struct InputContext {
     let hasOverviewQuery: Bool
     let isZmxSessionFilterInputActive: Bool
     let hasZmxSessionQuery: Bool
+    let hasZmxSessionSelection: Bool
     let isNotificationListPresented: Bool
 
     init(store: DenStore, event: NSEvent) {
@@ -64,6 +65,7 @@ struct InputContext {
         hasOverviewQuery = !store.overviewQuery.isEmpty
         isZmxSessionFilterInputActive = store.zmxSessions.isFilterInputActive
         hasZmxSessionQuery = !store.zmxSessions.query.isEmpty
+        hasZmxSessionSelection = store.zmxSessions.hasMarkedSessions
         isNotificationListPresented = store.isNotificationListPresented
     }
 
@@ -161,9 +163,11 @@ enum AppAction: Equatable {
     case hideZmxSessions
     case enterZmxSessionFilter
     case exitZmxSessionFilter
-    case confirmZmxSessionFilterQuery
     case clearZmxSessionFilter
     case moveZmxSessionSelection(Int)
+    case toggleZmxSessionSelection
+    case selectAllZmxSessions
+    case clearZmxSessionSelection
     case openSelectedZmxSession
     case deleteSelectedZmxSession
     case refreshZmxSessions
@@ -584,17 +588,34 @@ enum KeyboardRouter {
         let modifiers = event.modifiers
         if context.isZmxSessionFilterInputActive {
             if event.hasMarkedText { return .forward(.filterTextInput) }
+            if modifiers == [.command], event.character?.lowercased() == "a" {
+                return .perform(.selectAllZmxSessions)
+            }
             if event.isEscape, modifiers == [] { return .perform(.exitZmxSessionFilter) }
-            if event.key == .returnKey, modifiers == [] { return .perform(.confirmZmxSessionFilterQuery) }
+            if event.key == .upArrow, modifiers == [] {
+                return .perform(.moveZmxSessionSelection(-1))
+            }
+            if event.key == .downArrow, modifiers == [] {
+                return .perform(.moveZmxSessionSelection(1))
+            }
+            if event.key == .returnKey, modifiers == [] { return .perform(.openSelectedZmxSession) }
             return .forward(.filterTextInput)
         }
-        guard modifiers == [] else { return .consume(.exclusiveContext) }
         if event.isEscape {
+            guard modifiers == [] else { return .consume(.exclusiveContext) }
+            if context.hasZmxSessionSelection { return .perform(.clearZmxSessionSelection) }
             return .perform(context.hasZmxSessionQuery ? .clearZmxSessionFilter : .hideZmxSessions)
         }
+        if modifiers == [.command], event.character?.lowercased() == "a" {
+            return .perform(.selectAllZmxSessions)
+        }
+        guard modifiers == [] else { return .consume(.exclusiveContext) }
         if event.character?.lowercased() == "/" { return .perform(.enterZmxSessionFilter) }
         if event.key == .upArrow { return .perform(.moveZmxSessionSelection(-1)) }
         if event.key == .downArrow { return .perform(.moveZmxSessionSelection(1)) }
+        if event.character?.lowercased() == "k" { return .perform(.moveZmxSessionSelection(-1)) }
+        if event.character?.lowercased() == "j" { return .perform(.moveZmxSessionSelection(1)) }
+        if event.character == " " { return .perform(.toggleZmxSessionSelection) }
         if event.key == .returnKey { return .perform(.openSelectedZmxSession) }
         if event.key == .backspace || event.key == .deleteForward {
             return .perform(.deleteSelectedZmxSession)
@@ -758,9 +779,11 @@ enum AppActionHandler {
         case .hideZmxSessions: store.hideZmxSessions()
         case .enterZmxSessionFilter: store.enterZmxSessionFilter()
         case .exitZmxSessionFilter: store.exitZmxSessionFilter()
-        case .confirmZmxSessionFilterQuery: store.confirmZmxSessionFilterQuery()
         case .clearZmxSessionFilter: store.clearZmxSessionFilter()
         case .moveZmxSessionSelection(let offset): store.selectZmxSession(by: offset)
+        case .toggleZmxSessionSelection: store.toggleZmxSessionSelection()
+        case .selectAllZmxSessions: store.selectAllZmxSessions()
+        case .clearZmxSessionSelection: store.clearZmxSessionSelection()
         case .openSelectedZmxSession: store.openSelectedZmxSession()
         case .deleteSelectedZmxSession: store.requestZmxSessionDeletion()
         case .refreshZmxSessions: store.refreshZmxSessions()

@@ -102,6 +102,18 @@ struct KeyboardShortcutsView: View {
                     item(["⇧", "R"], "Rename Desk"),
                 ]),
             ShortcutGuideSection(
+                title: "zmx Sessions",
+                items: [
+                    item(["↑", "/", "↓", "or", "k", "/", "j"], "Focus previous / next Session"),
+                    item(["Space"], "Mark / unmark Focused Session"),
+                    item(["⌘", "A"], "Mark all visible Sessions"),
+                    item(["Return"], "Open Focused Session as a Board"),
+                    item(["x", "/", "Delete"], "End marked or Focused Sessions"),
+                    item(["r"], "Refresh Sessions"),
+                    item(["/"], "Filter Sessions"),
+                    item(["Escape"], "Exit filtering, clear marks or query, then close"),
+                ]),
+            ShortcutGuideSection(
                 title: "Overview",
                 items: [
                     item(["←", "/", "→", "or", "h", "/", "l"], "Select Board"),

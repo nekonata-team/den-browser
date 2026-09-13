@@ -17,13 +17,15 @@ final class ZmxSessionsModel {
     private(set) var message: String?
     private(set) var isLoading = false
     private(set) var selectedSessionName: String?
+    private(set) var markedSessionNames: Set<String> = []
     private(set) var filterPhase: DenFilterPhase = .inactive
-    private(set) var pendingDeletion: String?
+    private(set) var pendingDeletion: [String] = []
     private(set) var query = ""
 
     @ObservationIgnored private var client: ZmxClient
     @ObservationIgnored private var refreshTask: Task<Void, Never>?
     @ObservationIgnored private var killTask: Task<Void, Never>?
+    @ObservationIgnored private var selectionFallbackAfterDeletion: String?
     @ObservationIgnored private var refreshGeneration = 0
     @ObservationIgnored private var lifecycleGeneration = 0
 
@@ -60,7 +62,17 @@ final class ZmxSessionsModel {
         }
     }
 
+    var markedSessionCount: Int { markedSessionNames.count }
+
+    var hasMarkedSessions: Bool { !markedSessionNames.isEmpty }
+
+    var activeSessionCount: Int { activeSessionNames.count }
+
     var isFilterInputActive: Bool { filterPhase == .filtering }
+
+    func isMarked(_ sessionName: String) -> Bool {
+        markedSessionNames.contains(sessionName)
+    }
 
     func processName(for sessionName: String) -> String? {
         processNames[sessionName]
@@ -74,9 +86,11 @@ final class ZmxSessionsModel {
         lifecycleGeneration += 1
         self.client = client
         self.selectedSessionName = selectedSessionName
+        markedSessionNames = []
+        selectionFallbackAfterDeletion = nil
         query = ""
         filterPhase = .inactive
-        pendingDeletion = nil
+        pendingDeletion = []
         refresh()
     }
 
@@ -91,9 +105,11 @@ final class ZmxSessionsModel {
         message = nil
         isLoading = false
         selectedSessionName = nil
+        markedSessionNames = []
+        selectionFallbackAfterDeletion = nil
         query = ""
         filterPhase = .inactive
-        pendingDeletion = nil
+        pendingDeletion = []
     }
 
     func refresh(using client: ZmxClient? = nil) {
@@ -119,6 +135,8 @@ final class ZmxSessionsModel {
                 self.processNames = [:]
                 self.message = "Could not list zmx Sessions."
                 self.selectedSessionName = nil
+                self.markedSessionNames = []
+                self.selectionFallbackAfterDeletion = nil
                 return
             }
             self.groups = snapshot.groups
@@ -146,6 +164,23 @@ final class ZmxSessionsModel {
         selectedSessionName = sessionName
     }
 
+    func toggleMarking(_ sessionName: String) {
+        guard sessionNames.contains(sessionName) else { return }
+        if markedSessionNames.contains(sessionName) {
+            markedSessionNames.remove(sessionName)
+        } else {
+            markedSessionNames.insert(sessionName)
+        }
+    }
+
+    func markAllVisible() {
+        markedSessionNames = Set(sessionNames)
+    }
+
+    func clearMarks() {
+        markedSessionNames = []
+    }
+
     func enterFilter() {
         filterPhase = .filtering
         updateSelection()
@@ -162,11 +197,6 @@ final class ZmxSessionsModel {
         updateSelection()
     }
 
-    func confirmFilterQuery() {
-        guard filterPhase == .filtering else { return }
-        filterPhase = .selecting
-    }
-
     func clearFilter() {
         filterPhase = .inactive
         query = ""
@@ -174,36 +204,90 @@ final class ZmxSessionsModel {
     }
 
     func requestDeletion(sessionName: String? = nil) {
-        pendingDeletion = sessionName ?? selectedSessionName
+        let targets =
+            if let sessionName {
+                [sessionName]
+            } else if !markedSessionNames.isEmpty {
+                activeSessionNames.filter(markedSessionNames.contains)
+            } else {
+                selectedSessionName.map { [$0] } ?? []
+            }
+        pendingDeletion = targets
     }
 
     func clearPendingDeletion() {
-        pendingDeletion = nil
+        pendingDeletion = []
     }
 
     func kill(_ sessionName: String, using client: ZmxClient? = nil) {
+        kill([sessionName], using: client)
+    }
+
+    func kill(_ sessionNames: [String], using client: ZmxClient? = nil) {
         if let client { self.client = client }
         let client = self.client
         let lifecycleGeneration = lifecycleGeneration
-        pendingDeletion = nil
+        let sessionNames = sessionNames.uniqued()
+        guard !sessionNames.isEmpty else { return }
+        selectionFallbackAfterDeletion = selectionFallback(for: Set(sessionNames))
+        pendingDeletion = []
+        markedSessionNames.subtract(sessionNames)
         killTask?.cancel()
         killTask = Task { [weak self, client] in
-            let didKill = await Task.detached(priority: .userInitiated) {
-                client.killSession(sessionName)
+            let failedSessionNames = await Task.detached(priority: .userInitiated) {
+                sessionNames.filter { !client.killSession($0) }
             }.value
             guard !Task.isCancelled, let self else { return }
             guard self.lifecycleGeneration == lifecycleGeneration else { return }
-            guard didKill else {
-                self.message = "Could not kill \(sessionName)."
-                return
-            }
             self.refresh(using: client)
+            if !failedSessionNames.isEmpty {
+                self.message = "Could not end \(failedSessionNames.joined(separator: ", "))."
+            }
         }
     }
 
     private func updateSelection() {
         let names = sessionNames
-        if let selectedSessionName, names.contains(selectedSessionName) { return }
-        selectedSessionName = names.first
+        let activeNames = Set(activeSessionNames)
+        markedSessionNames = markedSessionNames.filter(activeNames.contains)
+        if let selectedSessionName, names.contains(selectedSessionName) {
+            selectionFallbackAfterDeletion = nil
+            return
+        }
+        selectedSessionName =
+            selectionFallbackAfterDeletion.flatMap { fallback in
+                names.contains(fallback) ? fallback : nil
+            } ?? names.first
+        selectionFallbackAfterDeletion = nil
+    }
+
+    private func selectionFallback(for deletedSessionNames: Set<String>) -> String? {
+        guard
+            let selectedSessionName,
+            deletedSessionNames.contains(selectedSessionName),
+            let selectedIndex = sessionNames.firstIndex(of: selectedSessionName)
+        else { return nil }
+
+        if let next = sessionNames.dropFirst(selectedIndex + 1).first(where: {
+            !deletedSessionNames.contains($0)
+        }) {
+            return next
+        }
+        return sessionNames[..<selectedIndex].reversed().first(where: {
+            !deletedSessionNames.contains($0)
+        })
+    }
+
+    private var activeSessionNames: [String] {
+        groups.flatMap { group in
+            (group.isRootActive ? [group.rootSessionName] : []) + group.childSessionNames
+        }
+    }
+}
+
+private extension Array where Element == String {
+    func uniqued() -> [String] {
+        var seen = Set<String>()
+        return filter { seen.insert($0).inserted }
     }
 }

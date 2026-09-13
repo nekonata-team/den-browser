@@ -278,7 +278,7 @@ final class DenStore {
         return true
     }
     var hasPendingConfirmation: Bool {
-        pendingConfirmation != nil || zmxSessions.pendingDeletion != nil
+        pendingConfirmation != nil || !zmxSessions.pendingDeletion.isEmpty
     }
 
     convenience init() {

@@ -964,6 +964,11 @@ struct KeyboardShortcutTests {
         let deleteKey = try keyEvent(
             characters: "x", charactersIgnoringModifiers: "x", keyCode: 7)
         let reload = try keyEvent(characters: "r", charactersIgnoringModifiers: "r", keyCode: 15)
+        let jKey = try keyEvent(characters: "j", charactersIgnoringModifiers: "j", keyCode: 38)
+        let kKey = try keyEvent(characters: "k", charactersIgnoringModifiers: "k", keyCode: 40)
+        let space = try keyEvent(characters: " ", charactersIgnoringModifiers: " ", keyCode: 49)
+        let selectAll = try keyEvent(
+            characters: "a", charactersIgnoringModifiers: "a", modifiers: [.command], keyCode: 0)
         let filter = try keyEvent(characters: "/", charactersIgnoringModifiers: "/", keyCode: 44)
         let escape = try keyEvent(
             characters: "\u{1B}", charactersIgnoringModifiers: "\u{1B}", keyCode: 53)
@@ -977,6 +982,25 @@ struct KeyboardShortcutTests {
         #expect(KeyboardController.handle(upArrow, store: store))
         #expect(store.zmxSessions.selectedSessionName == "den")
         #expect(
+            KeyboardController.decision(for: jKey, store: store)
+                == .perform(.moveZmxSessionSelection(1)))
+        #expect(KeyboardController.handle(jKey, store: store))
+        #expect(store.zmxSessions.selectedSessionName == "den-vi")
+        #expect(KeyboardController.handle(kKey, store: store))
+        #expect(store.zmxSessions.selectedSessionName == "den")
+        #expect(KeyboardController.handle(space, store: store))
+        #expect(store.zmxSessions.markedSessionNames == ["den"])
+        #expect(
+            KeyboardController.decision(for: selectAll, store: store)
+                == .perform(.selectAllZmxSessions))
+        #expect(KeyboardController.handle(selectAll, store: store))
+        #expect(store.zmxSessions.markedSessionNames == ["den", "den-vi"])
+        #expect(
+            KeyboardController.decision(for: escape, store: store)
+                == .perform(.clearZmxSessionSelection))
+        #expect(KeyboardController.handle(escape, store: store))
+        #expect(store.zmxSessions.markedSessionNames.isEmpty)
+        #expect(
             KeyboardController.decision(for: returnKey, store: store)
                 == .perform(.openSelectedZmxSession))
         #expect(
@@ -985,8 +1009,14 @@ struct KeyboardShortcutTests {
         #expect(KeyboardController.handle(filter, store: store))
         #expect(store.zmxSessions.isFilterInputActive)
         #expect(
+            KeyboardController.decision(for: selectAll, store: store)
+                == .perform(.selectAllZmxSessions))
+        #expect(
             KeyboardController.decision(for: deleteKey, store: store)
                 == .forward(.filterTextInput))
+        #expect(
+            KeyboardController.decision(for: returnKey, store: store)
+                == .perform(.openSelectedZmxSession))
         #expect(KeyboardController.handle(escape, store: store))
         #expect(!store.zmxSessions.isFilterInputActive)
         #expect(store.zmxSessions.query.isEmpty)
@@ -1003,7 +1033,7 @@ struct KeyboardShortcutTests {
             KeyboardController.decision(for: reload, store: store)
                 == .perform(.refreshZmxSessions))
         #expect(KeyboardController.handle(delete, store: store))
-        #expect(store.zmxSessions.pendingDeletion == "den")
+        #expect(store.zmxSessions.pendingDeletion == ["den"])
         #expect(
             KeyboardController.decision(for: returnKey, store: store)
                 == .forward(.temporaryTextInput))

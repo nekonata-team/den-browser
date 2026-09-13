@@ -95,6 +95,25 @@ Toggle with `Control` + `,`. Press `Escape` to exit to Sheet Input.
 
 ---
 
+## zmx Sessions
+
+Open from the Den menu, a zmx Board's context menu, or `:zmx` in the Open Board panel.
+
+| Shortcut | Action |
+| --- | --- |
+| `Up` / `Down` or `k` / `j` | Focus the previous / next Session |
+| `Space` | Mark / unmark the Focused Session |
+| `Command` + `A` | Mark all visible Sessions |
+| `Return` | Open the Focused Session as a Board |
+| `x` / `Delete` / `Backspace` | End marked Sessions, or the Focused Session |
+| `r` | Refresh Sessions while preserving focus and marks |
+| `/` | Activate Session filtering |
+| `Escape` | Exit filtering, clear marks or the query, then close the panel |
+
+Mouse clicks can focus or mark individual Sessions. Ending a Session closes its attached Board, which can be restored from Recently Removed Boards; child Sessions remain running unless they are also marked.
+
+---
+
 ## Drawer and Overview
 
 ### Drawer Controls

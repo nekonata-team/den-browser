@@ -9,16 +9,25 @@ extension DenStore {
         zmxSessions.select(by: offset)
     }
 
+    func toggleZmxSessionSelection() {
+        guard let sessionName = zmxSessions.selectedSessionName else { return }
+        zmxSessions.toggleMarking(sessionName)
+    }
+
+    func selectAllZmxSessions() {
+        zmxSessions.markAllVisible()
+    }
+
+    func clearZmxSessionSelection() {
+        zmxSessions.clearMarks()
+    }
+
     func enterZmxSessionFilter() {
         zmxSessions.enterFilter()
     }
 
     func exitZmxSessionFilter() {
         zmxSessions.exitFilter()
-    }
-
-    func confirmZmxSessionFilterQuery() {
-        zmxSessions.confirmFilterQuery()
     }
 
     func clearZmxSessionFilter() {
@@ -49,6 +58,19 @@ extension DenStore {
     }
 
     func killZmxSession(_ sessionName: String) {
-        zmxSessions.kill(sessionName, using: zmxClient)
+        killZmxSessions([sessionName])
+    }
+
+    func killZmxSessions(_ sessionNames: [String]) {
+        zmxSessions.kill(sessionNames, using: zmxClient)
+    }
+
+    func zmxBoardLocation(for sessionName: String) -> String? {
+        for desk in state.desks {
+            if let board = desk.boards.first(where: { $0.zmxSessionName == sessionName }) {
+                return "\(desk.label) · \(board.displayName)"
+            }
+        }
+        return nil
     }
 }
