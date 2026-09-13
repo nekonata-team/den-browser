@@ -458,6 +458,7 @@ enum KeyboardRouter {
                 ? .consume(.ignoredRepeat)
                 : .perform(.discardSelectedDrawerItem(focusNext: true))
         }
+        if event.isEscape, modifiers == [.control] { return .perform(.closeDrawer) }
         if !context.isDenMode, context.isDrawerPreviewFirstResponder { return .forward(.drawerPreview) }
 
         if context.isDrawerFilterInputActive {

@@ -554,6 +554,32 @@ struct KeyboardShortcutTests {
         #expect(store.state.drawerItems.count == 1)
     }
 
+    @Test func drawerControlEscapeClosesDrawerWithOrWithoutPreview() throws {
+        let store = try makeStore(boards: [board("First")])
+        store.keepInDrawer(try #require(URL(string: "https://preview.example/")))
+        let itemID = try #require(store.expandedDrawerItemID)
+        let controlEscape = try keyEvent(
+            characters: "\u{1B}",
+            charactersIgnoringModifiers: "\u{1B}",
+            modifiers: [.control],
+            keyCode: 53)
+
+        #expect(
+            KeyboardController.decision(for: controlEscape, store: store)
+                == .perform(.closeDrawer))
+        #expect(KeyboardController.handle(controlEscape, store: store))
+        #expect(!store.isDrawerOpen)
+        #expect(store.expandedDrawerItemID == itemID)
+
+        store.openDrawer()
+        store.toggleDrawerItem(itemID)
+        store.isDenMode = true
+
+        #expect(KeyboardController.handle(controlEscape, store: store))
+        #expect(!store.isDrawerOpen)
+        #expect(store.state.drawerItems.count == 1)
+    }
+
     @Test func denModeShiftDRequestsDrawerClearConfirmation() throws {
         let store = try makeStore(boards: [board("First")])
         store.keepInDrawer(try #require(URL(string: "https://first.example/")))
@@ -651,7 +677,7 @@ struct KeyboardShortcutTests {
         #expect(store.isDrawerFilterInputActive)
     }
 
-    @Test func drawerFilterPassesModifiedReturnAndEscapeToTextInput() throws {
+    @Test func drawerFilterPassesModifiedReturnAndControlEscapeClosesDrawer() throws {
         let store = try makeStore(boards: [board("First")])
         store.keepInDrawer(try #require(URL(string: "https://example.com/")))
         store.isDenMode = true
@@ -662,15 +688,18 @@ struct KeyboardShortcutTests {
             charactersIgnoringModifiers: "\r",
             modifiers: [.shift],
             keyCode: 36)
-        let modifiedEscape = try keyEvent(
+        let controlEscape = try keyEvent(
             characters: "\u{1B}",
             charactersIgnoringModifiers: "\u{1B}",
-            modifiers: [.command],
+            modifiers: [.control],
             keyCode: 53)
 
         #expect(!KeyboardController.handle(modifiedReturn, store: store))
-        #expect(!KeyboardController.handle(modifiedEscape, store: store))
-        #expect(store.isDrawerFilterInputActive)
+        #expect(
+            KeyboardController.decision(for: controlEscape, store: store)
+                == .perform(.closeDrawer))
+        #expect(KeyboardController.handle(controlEscape, store: store))
+        #expect(!store.isDrawerOpen)
     }
 
     @Test func overviewFilterUsesTwoPhaseSelection() throws {

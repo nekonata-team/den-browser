@@ -116,6 +116,7 @@ struct KeyboardShortcutsView: View {
                 items: [
                     item(["Tab"], "Close Drawer in Den Mode"),
                     item(["⌘", "W"], "Discard selected Drawer Item and focus next"),
+                    item(["⌃", "Escape"], "Close Drawer"),
                     item(["/"], "Search Drawer Items in Den Mode"),
                     item(["↑", "/", "↓", "or", "k", "/", "j"], "Select Drawer Item"),
                     item(["Return"], "Toggle Drawer Preview"),
