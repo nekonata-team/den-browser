@@ -621,8 +621,12 @@ final class DenStore {
             anchorJumpOriginBoardIDByDesk.removeValue(forKey: state.desks[indices.desk].id)
         }
         let boards = state.desks[indices.desk].boards
+        if boards.isEmpty {
+            state.desks[indices.desk].scrollOffsetX = nil
+        }
         guard state.desks[indices.desk].focusedBoardID == board.id else { return board }
 
+        state.desks[indices.desk].scrollOffsetX = nil
         let focusedBoardID: UUID?
         if focusNext && indices.board < boards.count {
             focusedBoardID = boards[indices.board].id
