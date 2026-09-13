@@ -196,18 +196,15 @@ struct DenStoreDeskTests {
         #expect(store.focusedDesk?.id == third.id)
     }
 
-    @Test func focusDeskEnsuresFocusedObjects() {
+    @Test func normalizedPersistedStateEnsuresFocusedObjects() {
         let boardItem = board("Board")
-        let first = desk("First", boards: [boardItem])
+        let first = desk("First", boards: [boardItem], focusedBoardID: UUID())
         let second = desk("Second")
-        let store = DenStore(state: DenState(desks: [second, first], focusedDeskID: second.id))
+        let rawState = DenState(desks: [second, first], focusedDeskID: UUID())
 
-        store.state.desks[1].focusedBoardID = nil
-        #expect(store.state.desks[1].focusedBoardID == nil)
-
-        store.focusDesk(first.id)
-        #expect(store.focusedDesk?.id == first.id)
-        #expect(store.focusedDesk?.focusedBoardID == boardItem.id)
+        let normalized = DenStore.normalizedPersistedState(rawState)
+        #expect(normalized.focusedDeskID == second.id)
+        #expect(normalized.desks[1].focusedBoardID == boardItem.id)
     }
 
     @Test func focusDeskByNumberDelegatesToFocusDesk() {

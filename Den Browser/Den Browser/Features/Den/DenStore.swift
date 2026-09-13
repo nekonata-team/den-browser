@@ -366,10 +366,9 @@ final class DenStore {
         self.terminalCommandRunner = terminalCommandRunner
         self.webExtensionHost = webExtensionHost
         self.webExtensionWindow = webExtensionWindow
-        canPresentDesk = nil
+        self.canPresentDesk = nil
         onDeskPresentationRequest = nil
         onWillResetDen = nil
-        ensureFocusedObjects()
         if let restoredDrawerItemID = self.state.expandedDrawerItemID,
             self.state.drawerItems.contains(where: { $0.id == restoredDrawerItemID })
         {
@@ -409,7 +408,6 @@ final class DenStore {
         self.canPresentDesk = canPresentDesk
         self.onDeskPresentationRequest = onDeskPresentationRequest
         self.onWillResetDen = onWillResetDen
-        ensureFocusedObjects()
         if let restoredDrawerItemID = state.expandedDrawerItemID,
             state.drawerItems.contains(where: { $0.id == restoredDrawerItemID })
         {
@@ -418,13 +416,30 @@ final class DenStore {
     }
 
     static func normalizedPersistedState(_ state: DenState) -> DenState {
+        if state.desks.isEmpty {
+            return .sample
+        }
         var copy = state
+        if !copy.desks.contains(where: { $0.id == copy.focusedDeskID }),
+            let firstDeskID = copy.desks.first?.id
+        {
+            copy.focusedDeskID = firstDeskID
+        }
         for deskIndex in copy.desks.indices {
             for boardIndex in copy.desks[deskIndex].boards.indices {
                 copy.desks[deskIndex].boards[boardIndex].currentSheetURL =
                     copy.desks[deskIndex].boards[boardIndex].currentSheetURL.map(SheetURLPolicy.canonicalSheetURL)
                 copy.desks[deskIndex].boards[boardIndex].firstSheetURL =
                     copy.desks[deskIndex].boards[boardIndex].firstSheetURL.map(SheetURLPolicy.canonicalSheetURL)
+            }
+            let boards = copy.desks[deskIndex].boards
+            if !boards.contains(where: { $0.id == copy.desks[deskIndex].focusedBoardID }) {
+                copy.desks[deskIndex].focusedBoardID = boards.first?.id
+            }
+            if let anchorBoardID = copy.desks[deskIndex].anchorBoardID,
+                !boards.contains(where: { $0.id == anchorBoardID })
+            {
+                copy.desks[deskIndex].anchorBoardID = nil
             }
         }
         return copy
@@ -604,7 +619,6 @@ final class DenStore {
         }
         dismissDeskFilter()
         isDenMode = false
-        ensureFocusedObjects()
         save()
     }
 
@@ -637,38 +651,6 @@ final class DenStore {
         }
         state.desks[indices.desk].focusedBoardID = focusedBoardID
         return board
-    }
-
-    func ensureFocusedObjects() {
-        if state.desks.isEmpty {
-            state = .sample
-            presentedDeskID = state.focusedDeskID
-            return
-        }
-
-        if !state.desks.contains(where: { $0.id == state.focusedDeskID }),
-            let firstDeskID = state.desks.first?.id
-        {
-            state.focusedDeskID = firstDeskID
-        }
-        if !state.desks.contains(where: { $0.id == presentedDeskID }),
-            let firstDeskID = state.desks.first(where: { canPresentDesk?($0.id) ?? true })?.id
-                ?? state.desks.first?.id
-        {
-            presentedDeskID = firstDeskID
-        }
-
-        for deskIndex in state.desks.indices {
-            let boards = state.desks[deskIndex].boards
-            if !boards.contains(where: { $0.id == state.desks[deskIndex].focusedBoardID }) {
-                state.desks[deskIndex].focusedBoardID = boards.first?.id
-            }
-            if let anchorBoardID = state.desks[deskIndex].anchorBoardID,
-                !boards.contains(where: { $0.id == anchorBoardID })
-            {
-                state.desks[deskIndex].anchorBoardID = nil
-            }
-        }
     }
 
     func save() {

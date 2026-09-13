@@ -6,7 +6,6 @@ extension DenStore {
         guard setFocusedDesk(deskID) || presentedDeskID == deskID else { return }
         dismissDeskFilter()
         isDenMode = false
-        ensureFocusedObjects()
         save()
     }
 
@@ -256,7 +255,6 @@ extension DenStore {
         let nextIndex = wrappedIndex(currentIndex + delta, count: state.desks.count)
         let targetDeskID = state.desks[nextIndex].id
         setFocusedDesk(targetDeskID)
-        ensureFocusedObjects()
         save()
     }
 
