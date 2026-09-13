@@ -44,6 +44,13 @@ enum ProfileColor: Codable, Equatable, Hashable, Identifiable {
 
     var id: Self { self }
 
+    var rgb: ProfileRGB {
+        switch self {
+        case .custom(let rgb): rgb
+        default: ProfileRGB(color: color) ?? ProfileRGB(red: 0, green: 0, blue: 0)
+        }
+    }
+
     var color: Color {
         switch self {
         case .blue: .blue

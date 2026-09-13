@@ -22,6 +22,10 @@ struct ProfileManagerTests {
         #expect(personal.name == "Personal")
         #expect(personal.color == .blue)
         #expect(personal.webProfileStore == .default)
+
+        let personalStore = try #require(manager.store(for: personal.id))
+        #expect(manager.profileID(for: personalStore) == personal.id)
+        #expect(ProfileColor.presets.allSatisfy { $0.rgb.red > 0 || $0.rgb.green > 0 || $0.rgb.blue > 0 })
     }
 
     @Test func profileManagerPersistsProfileOrderAndUpdates() throws {

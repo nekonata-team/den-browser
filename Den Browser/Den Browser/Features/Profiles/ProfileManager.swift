@@ -442,6 +442,13 @@ final class ProfileManager {
         return nil
     }
 
+    func profileID(for store: DenStore) -> UUID? {
+        for (windowID, storeInstance) in stores where storeInstance === store {
+            return storeProfileIDs[windowID]
+        }
+        return nil
+    }
+
     func hasWindow(for profileID: UUID) -> Bool {
         storeProfileIDs.values.contains(profileID)
     }

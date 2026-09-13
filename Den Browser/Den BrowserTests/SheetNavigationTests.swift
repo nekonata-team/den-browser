@@ -1048,6 +1048,46 @@ struct SheetNavigationTests {
         #expect(observedURL == expectedURL)
     }
 
+    @Test func sheetInteractionClickAndFillTriggerVisualHighlight() async throws {
+        let webView = WKWebView(frame: NSRect(x: 0, y: 0, width: 800, height: 600))
+        let waiter = WebViewLoadWaiter()
+        await waiter.load(
+            """
+            <!doctype html>
+            <html>
+            <body>
+              <button id="test-btn" onclick="this.textContent = 'clicked'">Click Me</button>
+              <input id="test-input" type="text" value="">
+            </body>
+            </html>
+            """,
+            baseURL: URL(string: "https://example.com/")!,
+            in: webView
+        )
+
+        try await SheetInteraction.click(
+            target: "#test-btn", in: webView, highlightColor: ProfileRGB(red: 255, green: 0, blue: 0))
+        let clickedText =
+            try await webView.evaluateJavaScript("document.getElementById('test-btn').textContent") as? String
+        #expect(clickedText == "clicked")
+
+        let btnHighlightStyle =
+            try await webView.evaluateJavaScript(
+                "document.querySelector('[data-den-highlight]')?.style.boxShadow") as? String
+        #expect(btnHighlightStyle?.contains("rgb(255, 0, 0)") == true)
+
+        try await SheetInteraction.fill(
+            target: "#test-input", value: "hello agent", in: webView,
+            highlightColor: ProfileRGB(red: 0, green: 255, blue: 0))
+        let inputValue = try await webView.evaluateJavaScript("document.getElementById('test-input').value") as? String
+        #expect(inputValue == "hello agent")
+
+        let inputHighlightStyle =
+            try await webView.evaluateJavaScript(
+                "document.querySelector('[data-den-highlight]')?.style.boxShadow") as? String
+        #expect(inputHighlightStyle?.contains("rgb(0, 255, 0)") == true)
+    }
+
     private var sheetNavigationTestHTML: String {
         """
         <!doctype html>
