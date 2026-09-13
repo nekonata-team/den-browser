@@ -160,6 +160,26 @@ struct DenStoreDeskTests {
         }
     }
 
+    @Test func confirmingDeletionOfUnfocusedDeskClearsPreviousFocusedDeskID() {
+        let first = desk("First")
+        let secondBoard = board("SecondBoard")
+        let second = desk("Second", boards: [secondBoard])
+        let third = desk("Third")
+        withStore(desks: [first, second, third]) { store in
+            store.focusDesk(second.id)
+            store.deleteFocusedDesk()
+            #expect(store.deskPendingDeletion?.id == second.id)
+
+            // Switch to third desk, then confirm deletion of second desk
+            store.focusDesk(third.id)
+            #expect(store.previousFocusedDeskID == second.id)
+
+            store.confirmDeskDeletion()
+            #expect(store.state.desks.map(\.id) == [first.id, third.id])
+            #expect(store.previousFocusedDeskID == nil)
+        }
+    }
+
     @Test func returnToPreviousDeskTogglesBetweenMostRecentDesks() {
         let first = desk("First")
         let second = desk("Second")

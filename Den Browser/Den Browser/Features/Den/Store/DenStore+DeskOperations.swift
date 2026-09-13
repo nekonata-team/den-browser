@@ -155,9 +155,13 @@ extension DenStore {
         }
 
         state.desks.remove(at: deskIndex)
+        if previousFocusedDeskID == deskID {
+            previousFocusedDeskID = nil
+        }
         if presentedDeskID == deskID {
             setFocusedDesk(replacementDeskID)
         }
+        ensureFocusedObjects()
         if isOverviewPresented {
             overviewSelection = OverviewSelection(
                 deskID: presentedDeskID,

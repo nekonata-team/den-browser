@@ -178,7 +178,7 @@ final class DenStore {
     }
     @ObservationIgnored var drawerPreviewRuntime: DrawerPreviewRuntime?
     @ObservationIgnored var toastTask: Task<Void, Never>?
-    @ObservationIgnored private var previousFocusedDeskID: UUID?
+    @ObservationIgnored var previousFocusedDeskID: UUID?
     @ObservationIgnored var anchorJumpOriginBoardIDByDesk: [UUID: UUID] = [:]
     @ObservationIgnored private let terminalCommandRunner: any TerminalCommandRunning
     @ObservationIgnored let canPresentDesk: ((UUID) -> Bool)?
