@@ -224,7 +224,10 @@ extension DenStore {
 
     private func moveOverviewDeskSelection(by delta: Int) {
         let matchingDesks = state.desks.filter { desk in
-            desk.boards.contains { matchesOverviewFilter($0, in: desk) }
+            if overviewQuery.isEmpty {
+                return true
+            }
+            return desk.boards.contains { matchesOverviewFilter($0, in: desk) }
         }
         guard !matchingDesks.isEmpty else { return }
 
@@ -233,9 +236,12 @@ extension DenStore {
 
         let targetDesk = matchingDesks[nextIndex]
         let targetBoards = targetDesk.boards.filter { matchesOverviewFilter($0, in: targetDesk) }
+        let targetBoardID =
+            targetBoards.first(where: { $0.id == targetDesk.focusedBoardID })?.id
+            ?? targetBoards.first?.id
         overviewSelection = OverviewSelection(
             deskID: targetDesk.id,
-            boardID: targetBoards.first?.id)
+            boardID: targetBoardID)
     }
 
     private func moveOverviewSelectionBoard(by delta: Int) {

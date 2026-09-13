@@ -387,6 +387,28 @@ struct DenStoreOverviewTests {
         #expect(store.isOverviewPresented)
     }
 
+    @Test func moveOverviewDeskSelectionCanSelectEmptyDesk() {
+        let board1 = board("Board1")
+        let first = desk("First", boards: [board1], focusedBoardID: board1.id)
+        let empty = desk("Empty")
+        let store = DenStore(state: DenState(desks: [first, empty], focusedDeskID: first.id))
+        store.showOverview()
+        #expect(store.overviewSelectionDeskID == first.id)
+        #expect(store.overviewSelectionBoardID == board1.id)
+
+        store.selectNextDeskInOverview()
+        #expect(store.overviewSelectionDeskID == empty.id)
+        #expect(store.overviewSelectionBoardID == nil)
+
+        store.selectNextDeskInOverview()
+        #expect(store.overviewSelectionDeskID == first.id)
+        #expect(store.overviewSelectionBoardID == board1.id)
+
+        store.selectPreviousDeskInOverview()
+        #expect(store.overviewSelectionDeskID == empty.id)
+        #expect(store.overviewSelectionBoardID == nil)
+    }
+
     private func keyEvent(_ character: String, keyCode: UInt16) -> NSEvent? {
         NSEvent.keyEvent(
             with: .keyDown,
