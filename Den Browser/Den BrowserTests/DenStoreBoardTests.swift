@@ -579,6 +579,28 @@ struct DenStoreBoardTests {
         }
     }
 
+    @Test func emptyDeskReceivesFocusedBoardIDWhenAddingBoardInBackground() {
+        let firstDesk = desk("First", boards: [board("Main")], focusedBoardID: nil)
+        let emptyDesk = desk("Empty")
+        let store = DenStore(state: DenState(desks: [firstDesk, emptyDesk], focusedDeskID: firstDesk.id))
+
+        // Open board on emptyDesk without focus
+        _ = store.addBoard(
+            urlString: "https://example.com",
+            focus: false)
+        #expect(store.state.desks[0].boards.count == 2)
+
+        // Focus empty desk and open in background
+        store.focusDesk(emptyDesk.id)
+        #expect(store.state.desks[1].focusedBoardID == nil)
+        _ = store.addBoard(
+            urlString: "https://example.com",
+            focus: false)
+
+        #expect(store.state.desks[1].boards.count == 1)
+        #expect(store.state.desks[1].focusedBoardID == store.state.desks[1].boards[0].id)
+    }
+
     @Test func updateBoardKeepsCurrentSheetForUnsupportedURL() throws {
         let board = board("Board", url: "https://before.example/")
         let source = desk("Desk", boards: [board], focusedBoardID: board.id)

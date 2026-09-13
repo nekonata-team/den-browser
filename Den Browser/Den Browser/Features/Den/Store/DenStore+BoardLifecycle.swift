@@ -322,6 +322,8 @@ extension DenStore {
                 setFocusedDesk(state.desks[deskIndex].id)
                 setTemporaryContext(nil)
                 isDenMode = false
+            } else if state.desks[deskIndex].focusedBoardID == nil {
+                state.desks[deskIndex].focusedBoardID = board.id
             }
             save()
         }
