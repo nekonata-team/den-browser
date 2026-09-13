@@ -248,7 +248,7 @@ npx skills add nekonata-team/den-browser --skill den
 npx skills add nekonata-team/den-browser --skill den --global
 ```
 
-This equips the agent with the procedural knowledge in `.agents/skills/den/SKILL.md` to autonomously reason over web elements using the Snapshot + Ref model, navigate history, and control Web Boards.
+This equips the agent with the procedural knowledge in `.agents/skills/den/SKILL.md` to autonomously reason over web elements using the Snapshot + Ref model, navigate history, and control Web Boards. The skill resolves `den` from `PATH` (linked automatically when installed via Homebrew Cask) or falls back to `/Applications/Den Browser.app/Contents/MacOS/den`.
 
 ---
 

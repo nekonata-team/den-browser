@@ -22,6 +22,8 @@ A Sheet is part of a Web Board. A Terminal Session is part of a Terminal Board.
 
 ## CLI usage
 
+If `den` is not in PATH, use `/Applications/Den Browser.app/Contents/MacOS/den`.
+
 Check the executable for available commands and exact options:
 
 ```sh
