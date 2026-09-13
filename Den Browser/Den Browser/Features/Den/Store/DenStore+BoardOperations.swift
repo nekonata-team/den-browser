@@ -261,15 +261,16 @@ extension DenStore {
     }
 
     private func moveBoardFocus(by delta: Int) {
-        guard
-            let deskIndex = focusedDeskIndex,
-            let currentIndex = focusedBoardIndex(in: deskIndex)
-        else { return }
-
+        guard let deskIndex = focusedDeskIndex else { return }
         let boards = state.desks[deskIndex].boards
         guard !boards.isEmpty else { return }
 
-        let nextIndex = wrappedIndex(currentIndex + delta, count: boards.count)
+        let nextIndex: Int
+        if let currentIndex = focusedBoardIndex(in: deskIndex) {
+            nextIndex = wrappedIndex(currentIndex + delta, count: boards.count)
+        } else {
+            nextIndex = delta >= 0 ? 0 : boards.count - 1
+        }
         state.desks[deskIndex].focusedBoardID = boards[nextIndex].id
         state.desks[deskIndex].scrollOffsetX = nil
         save()

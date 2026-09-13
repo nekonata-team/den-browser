@@ -634,6 +634,21 @@ struct DenStoreBoardTests {
         }
     }
 
+    @Test func boardFocusRecoversWhenNoBoardIsFocused() {
+        let boards = [board("A"), board("B"), board("C")]
+        let deskState = desk("Desk", boards: boards)
+        let store = DenStore(state: DenState(desks: [deskState], focusedDeskID: deskState.id))
+        store.state.desks[0].focusedBoardID = nil
+        #expect(store.focusedDesk?.focusedBoardID == nil)
+
+        store.focusNextBoard()
+        #expect(store.focusedDesk?.focusedBoardID == boards[0].id)
+
+        store.state.desks[0].focusedBoardID = nil
+        store.focusPreviousBoard()
+        #expect(store.focusedDesk?.focusedBoardID == boards[2].id)
+    }
+
     @Test func boardBoundaryFocusStaysWithinSourceDesk() {
         let boards = [board("A"), board("B"), board("C")]
         let sourceDesk = desk("Source", boards: boards, focusedBoardID: boards[1].id)
