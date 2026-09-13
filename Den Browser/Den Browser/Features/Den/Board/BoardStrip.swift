@@ -330,7 +330,8 @@ struct BoardStrip: View {
                 }
             }
 
-            if layoutChanged {
+            let isInitialAlignment = previous.boardID == nil && current.boardID != nil
+            if layoutChanged || isInitialAlignment {
                 if current.centering == .never {
                     deferBoardAlignment(
                         .visible,

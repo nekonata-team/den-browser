@@ -219,6 +219,47 @@ struct DenStoreOverviewTests {
         #expect(saveCount == 1)
     }
 
+    @Test func overviewBoardDragIntoEmptyDeskFocusesMovedBoard() {
+        // Arrange
+        let first = board("First")
+        let second = board("Second")
+        let main = desk("Main", boards: [first, second], focusedBoardID: first.id)
+        let empty = desk("Empty")
+        let store = DenStore(state: DenState(desks: [main, empty], focusedDeskID: main.id))
+        store.showOverview()
+
+        // Act
+        #expect(store.beginOverviewBoardDrag(second.id))
+        store.finishOverviewBoardDrag(second.id, toDeskID: empty.id, at: 0)
+
+        // Assert
+        #expect(store.state.desks[0].boards.map(\.id) == [first.id])
+        #expect(store.state.desks[1].boards.map(\.id) == [second.id])
+        #expect(store.state.desks[1].focusedBoardID == second.id)
+        #expect(store.overviewSelectionBoardID == second.id)
+    }
+
+    @Test func overviewMovementActionIntoEmptyDeskFocusesMovedBoard() {
+        // Arrange
+        let first = board("First")
+        let second = board("Second")
+        let main = desk("Main", boards: [first, second], focusedBoardID: first.id)
+        let empty = desk("Empty")
+        let store = DenStore(state: DenState(desks: [main, empty], focusedDeskID: main.id))
+        store.showOverview()
+
+        // Act
+        store.selectBoardInOverview(second.id)
+        store.moveOverviewSelectionBoardToNextDesk()
+
+        // Assert
+        #expect(store.state.desks[0].boards.map(\.id) == [first.id])
+        #expect(store.state.desks[1].boards.map(\.id) == [second.id])
+        #expect(store.state.desks[1].focusedBoardID == second.id)
+        #expect(store.overviewSelectionDeskID == empty.id)
+        #expect(store.overviewSelectionBoardID == second.id)
+    }
+
     @Test func overviewBoardDragCancellationLeavesEveryDeskUnchanged() {
         // Arrange
         let first = board("First")

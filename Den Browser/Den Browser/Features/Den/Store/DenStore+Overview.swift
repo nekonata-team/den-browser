@@ -100,6 +100,8 @@ extension DenStore {
             state.desks[deskIndex].boards.contains(where: { $0.id == boardID })
         {
             state.desks[deskIndex].focusedBoardID = boardID
+        } else if state.desks[deskIndex].focusedBoardID == nil {
+            state.desks[deskIndex].focusedBoardID = state.desks[deskIndex].boards.first?.id
         }
         isDenMode = false
         hideOverview()
@@ -158,7 +160,7 @@ extension DenStore {
         let board = removeBoard(at: source)
         let insertionIndex = min(max(targetIndex, 0), state.desks[targetDeskIndex].boards.count)
         state.desks[targetDeskIndex].boards.insert(board, at: insertionIndex)
-        if keepsDeskFocus {
+        if keepsDeskFocus || state.desks[targetDeskIndex].focusedBoardID == nil {
             state.desks[targetDeskIndex].focusedBoardID = boardID
         }
         overviewSelection = OverviewSelection(deskID: deskID, boardID: boardID)
@@ -277,6 +279,9 @@ extension DenStore {
         }
 
         state.desks[targetDeskIndex].boards.insert(board, at: insertIndex)
+        if state.desks[targetDeskIndex].focusedBoardID == nil {
+            state.desks[targetDeskIndex].focusedBoardID = board.id
+        }
         overviewSelection = OverviewSelection(
             deskID: state.desks[targetDeskIndex].id,
             boardID: board.id)
