@@ -685,7 +685,7 @@ private struct OverviewBoardCard: View {
 
                 if isAnchor {
                     Spacer(minLength: 0)
-                    Image(systemName: "anchor")
+                    Image(systemName: "pin.fill")
                         .font(.caption2)
                         .foregroundStyle(.secondary)
                 }

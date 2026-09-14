@@ -464,7 +464,7 @@ struct BoardHeaderTitle: View {
                     .lineLimit(1)
 
                 if isAnchor {
-                    Image(systemName: "anchor")
+                    Image(systemName: "pin.fill")
                         .font(.caption2)
                         .foregroundStyle(.secondary)
                         .help("Anchor Board")
