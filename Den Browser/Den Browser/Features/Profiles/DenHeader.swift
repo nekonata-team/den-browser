@@ -1,3 +1,4 @@
+import SFSafeSymbols
 import SwiftUI
 
 struct DenHeader: View {
@@ -73,7 +74,7 @@ private struct NotificationButton: View {
         Button {
             store.toggleNotificationList()
         } label: {
-            Image(systemName: store.unreadNotificationCount > 0 ? "bell.badge" : "bell")
+            Image(systemSymbol: store.unreadNotificationCount > 0 ? .bellBadge : .bell)
                 .font(.system(size: 13, weight: .semibold))
                 .frame(width: 30, height: 30)
         }
@@ -98,7 +99,7 @@ private struct SaveDeskPresetButton: View {
         Button {
             store.showSaveDeskPresetPanel()
         } label: {
-            Image(systemName: "bookmark")
+            Image(systemSymbol: .bookmark)
                 .font(.system(size: 13, weight: .semibold))
                 .frame(width: 30, height: 30)
         }
@@ -125,7 +126,7 @@ private struct ProfileChip: View {
                         openWindow(value: ProfileWindowRoute(profileID: item.id))
                     }
                 } label: {
-                    Label(item.name, systemImage: item.id == profile.id ? "checkmark" : "person.crop.circle")
+                    Label(item.name, systemSymbol: item.id == profile.id ? .checkmark : .personCropCircle)
                 }
             }
 
@@ -149,7 +150,7 @@ private struct ProfileChip: View {
                 Text("Manage Profiles…")
             }
         } label: {
-            Image(systemName: "person.fill")
+            Image(systemSymbol: .personFill)
                 .font(.system(size: 13, weight: .semibold))
                 .frame(width: 30, height: 30)
         }

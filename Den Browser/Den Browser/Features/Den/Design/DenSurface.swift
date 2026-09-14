@@ -1,3 +1,4 @@
+import SFSafeSymbols
 import SwiftUI
 
 struct DenBackground: View {
@@ -36,7 +37,7 @@ struct DenCloseButton: View {
 
     var body: some View {
         Button(action: action) {
-            Image(systemName: "xmark")
+            Image(systemSymbol: .xmark)
                 .font(.system(size: 12, weight: .semibold))
                 .frame(width: 30, height: 30)
         }

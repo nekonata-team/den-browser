@@ -1,4 +1,5 @@
 import GhosttyTerminal
+import SFSafeSymbols
 import SwiftUI
 
 struct TerminalBoardView: View {
@@ -118,15 +119,15 @@ struct TerminalBoardView: View {
                 },
                 leadingContent: {
                     Image(
-                        systemName: board.isZellij
-                            ? "rectangle.3.group"
-                            : (board.isZmx ? "arrow.triangle.2.circlepath" : "terminal")
+                        systemSymbol: board.isZellij
+                            ? .rectangle3Group
+                            : (board.isZmx ? .arrowTrianglehead2ClockwiseRotate90 : .appleTerminal)
                     )
                     .foregroundStyle(.secondary)
                 }
             )
             Button(action: onRemove) {
-                Image(systemName: "xmark")
+                Image(systemSymbol: .xmark)
                     .frame(width: DenLayout.boardControlSize, height: DenLayout.boardControlSize)
             }
             .buttonStyle(.borderless)
@@ -152,18 +153,18 @@ struct TerminalBoardView: View {
                 board.isZellij
                     ? "Duplicate Zellij Board"
                     : (board.isZmx ? "Duplicate zmx Board…" : "Duplicate Terminal Board"),
-                systemImage: "plus.square.on.square")
+                systemSymbol: .plusSquareOnSquare)
         }
         Button {
             store.focusBoard(board.id)
             store.showSaveEssentialPanel(for: board)
         } label: {
-            Label("Save as Essential…", systemImage: "sparkles")
+            Label("Save as Essential…", systemSymbol: .sparkles)
         }
         Button {
             store.copyBoardID(board.id)
         } label: {
-            Label("Copy Board ID", systemImage: "doc.on.doc")
+            Label("Copy Board ID", systemSymbol: .documentOnDocument)
         }
         Button {
             store.focusBoard(board.id)
@@ -171,21 +172,21 @@ struct TerminalBoardView: View {
         } label: {
             Label(
                 store.maximizedBoardID == board.id ? "Restore Board Size" : "Maximize Board",
-                systemImage: store.maximizedBoardID == board.id
-                    ? "arrow.down.right.and.arrow.up.left" : "arrow.up.left.and.arrow.down.right")
+                systemSymbol: store.maximizedBoardID == board.id
+                    ? .arrowDownRightAndArrowUpLeft : .arrowUpLeftAndArrowDownRight)
         }
         Button {
             store.focusBoard(board.id)
             store.centerFocusedBoard()
         } label: {
-            Label("Center Board", systemImage: "scope")
+            Label("Center Board", systemSymbol: .scope)
         }
         if board.isZmx {
             Button {
                 store.focusBoard(board.id)
                 store.showZmxSessions(selectedSessionName: board.zmxSessionName)
             } label: {
-                Label("zmx Sessions…", systemImage: "arrow.triangle.2.circlepath")
+                Label("zmx Sessions…", systemSymbol: .arrowTrianglehead2ClockwiseRotate90)
             }
         }
         Divider()
@@ -193,33 +194,33 @@ struct TerminalBoardView: View {
             store.focusBoard(board.id)
             store.adjustFocusedBoardContentSize(by: 1)
         } label: {
-            Label("Increase Font Size", systemImage: "plus")
+            Label("Increase Font Size", systemSymbol: .plus)
         }
         Button {
             store.focusBoard(board.id)
             store.adjustFocusedBoardContentSize(by: -1)
         } label: {
-            Label("Decrease Font Size", systemImage: "minus")
+            Label("Decrease Font Size", systemSymbol: .minus)
         }
         Button {
             store.focusBoard(board.id)
             store.resetFocusedBoardContentSize()
         } label: {
-            Label("Reset Font Size", systemImage: "arrow.counterclockwise")
+            Label("Reset Font Size", systemSymbol: .arrowCounterclockwise)
         }
         Divider()
         Button {
             store.focusBoard(board.id)
             store.moveFocusedBoardLeft()
         } label: {
-            Label("Move Board Left", systemImage: "arrow.left")
+            Label("Move Board Left", systemSymbol: .arrowLeft)
         }
         .disabled(!store.canMoveBoard(board.id, by: -1))
         Button {
             store.focusBoard(board.id)
             store.moveFocusedBoardRight()
         } label: {
-            Label("Move Board Right", systemImage: "arrow.right")
+            Label("Move Board Right", systemSymbol: .arrowRight)
         }
         .disabled(!store.canMoveBoard(board.id, by: 1))
         if store.state.desks.count > 1 {
@@ -233,14 +234,14 @@ struct TerminalBoardView: View {
                     }
                 }
             } label: {
-                Label("Move to Desk", systemImage: "rectangle.stack")
+                Label("Move to Desk", systemSymbol: .rectangleStack)
             }
         }
         Divider()
         Button(role: .destructive) {
             store.removeBoard(board.id)
         } label: {
-            Label("Remove Board", systemImage: "xmark")
+            Label("Remove Board", systemSymbol: .xmark)
         }
     }
 

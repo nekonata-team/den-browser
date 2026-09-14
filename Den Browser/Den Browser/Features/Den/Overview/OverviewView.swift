@@ -1,3 +1,4 @@
+import SFSafeSymbols
 import SwiftUI
 
 struct OverviewView: View {
@@ -25,7 +26,7 @@ struct OverviewView: View {
                     .font(.title3.bold())
 
                 HStack(spacing: 8) {
-                    Image(systemName: "magnifyingglass")
+                    Image(systemSymbol: .magnifyingglass)
                         .foregroundStyle(store.isOverviewFilterInputActive ? .primary : .secondary)
                         .accessibilityHidden(true)
 
@@ -513,7 +514,7 @@ private struct OverviewBoardCloseButton: View {
 
     var body: some View {
         Button(action: onRemove) {
-            Image(systemName: "xmark")
+            Image(systemSymbol: .xmark)
                 .font(.system(size: 9, weight: .bold))
                 .foregroundStyle(isHovered ? Color.primary : Color.secondary)
                 .frame(
@@ -649,8 +650,8 @@ private struct OverviewBoardCard: View {
         CGFloat(board.width) * DenOverviewLayout.boardCardHeight / boardHeight
     }
 
-    private var systemImage: String {
-        board.isTerminal ? "terminal" : "globe"
+    private var systemSymbol: SFSymbol {
+        board.isTerminal ? .appleTerminal : .globe
     }
 
     private var typeColor: Color {
@@ -674,7 +675,7 @@ private struct OverviewBoardCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 6) {
-                Image(systemName: systemImage)
+                Image(systemSymbol: systemSymbol)
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(typeColor)
                     .accessibilityHidden(true)
@@ -685,7 +686,7 @@ private struct OverviewBoardCard: View {
 
                 if isAnchor {
                     Spacer(minLength: 0)
-                    Image(systemName: "pin.fill")
+                    Image(systemSymbol: .pinFill)
                         .font(.caption2)
                         .foregroundStyle(.secondary)
                 }

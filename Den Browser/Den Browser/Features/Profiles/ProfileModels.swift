@@ -1,5 +1,6 @@
 import AppKit
 import Foundation
+import SFSafeSymbols
 import SwiftUI
 import WebKit
 
@@ -264,13 +265,13 @@ enum RecentItem: Codable, Equatable, Hashable, Identifiable {
         return false
     }
 
-    var systemImage: String {
+    var systemSymbol: SFSymbol {
         switch self {
-        case .url: "link"
-        case .search: "magnifyingglass"
-        case .terminal: "terminal"
-        case .zellij: "rectangle.split.3x1"
-        case .zmx: "arrow.triangle.2.circlepath"
+        case .url: .link
+        case .search: .magnifyingglass
+        case .terminal: .appleTerminal
+        case .zellij: .rectangleSplit3x1
+        case .zmx: .arrowTrianglehead2ClockwiseRotate90
         }
     }
 

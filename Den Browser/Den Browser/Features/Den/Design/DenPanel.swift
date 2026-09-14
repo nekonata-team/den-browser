@@ -1,17 +1,18 @@
+import SFSafeSymbols
 import SwiftUI
 
 struct DenPanelHeader<Content: View>: View {
-    let systemImage: String
+    let systemSymbol: SFSymbol
     let content: Content
 
-    init(systemImage: String, @ViewBuilder content: () -> Content) {
-        self.systemImage = systemImage
+    init(systemSymbol: SFSymbol, @ViewBuilder content: () -> Content) {
+        self.systemSymbol = systemSymbol
         self.content = content()
     }
 
     var body: some View {
         HStack(spacing: DenPanelLayout.controlSpacing) {
-            Image(systemName: systemImage)
+            Image(systemSymbol: systemSymbol)
                 .foregroundStyle(.secondary)
             content
         }

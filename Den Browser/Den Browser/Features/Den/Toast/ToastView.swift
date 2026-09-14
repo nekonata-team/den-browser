@@ -1,3 +1,4 @@
+import SFSafeSymbols
 import SwiftUI
 
 struct ToastView: View {
@@ -7,7 +8,7 @@ struct ToastView: View {
     var body: some View {
         Button(action: onTap) {
             HStack(alignment: .top, spacing: 8) {
-                Image(systemName: toast.style.systemImage)
+                Image(systemSymbol: toast.style.systemSymbol)
                     .font(.system(size: 13, weight: .semibold))
                     .foregroundStyle(toast.style.iconColor)
 

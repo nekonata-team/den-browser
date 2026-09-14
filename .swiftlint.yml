@@ -17,3 +17,10 @@ disabled_rules:
   - line_length
   - type_body_length
   - type_name
+
+custom_rules:
+  unsafe_sf_symbol:
+    name: "Unsafe SF Symbol"
+    regex: '\b(?:systemName|systemImage)\s*:'
+    message: "Use SFSafeSymbols' typed systemSymbol API."
+    severity: error

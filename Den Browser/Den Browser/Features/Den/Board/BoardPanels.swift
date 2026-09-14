@@ -1,3 +1,4 @@
+import SFSafeSymbols
 import SwiftUI
 
 struct OpenBoardPanel: View {
@@ -26,7 +27,7 @@ struct OpenBoardPanel: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: DenPanelLayout.contentSpacing) {
-            DenPanelHeader(systemImage: "plus.rectangle.on.rectangle") {
+            DenPanelHeader(systemSymbol: .plusRectangleOnRectangle) {
                 TextField(
                     text: urlTextBinding,
                     prompt: Text("https://example.com, search, or :terminal / :zellij / :zmx")
@@ -95,7 +96,7 @@ struct OpenBoardPanel: View {
                             openRecent(item)
                         } label: {
                             HStack(spacing: DenPanelLayout.controlSpacing) {
-                                Image(systemName: item.systemImage)
+                                Image(systemSymbol: item.systemSymbol)
                                     .foregroundStyle(.secondary)
                                     .frame(width: 16)
                                 Text(item.displayText)
@@ -111,7 +112,7 @@ struct OpenBoardPanel: View {
                         if let matchedEssential {
                             HStack(spacing: 4) {
                                 ShortcutChip(tokens: [matchedEssential.displayKey])
-                                Image(systemName: "sparkles")
+                                Image(systemSymbol: .sparkles)
                                     .font(.caption)
                                     .foregroundStyle(.secondary)
                                     .frame(width: 20, height: 20)
@@ -123,7 +124,7 @@ struct OpenBoardPanel: View {
                             Button {
                                 store.showSaveEssentialPanel(for: item)
                             } label: {
-                                Image(systemName: "sparkles")
+                                Image(systemSymbol: .sparkles)
                                     .font(.caption)
                                     .foregroundStyle(.secondary)
                                     .frame(width: 20, height: 20)
@@ -147,14 +148,14 @@ struct OpenBoardPanel: View {
                         if let matchedEssential {
                             Button {
                             } label: {
-                                Label("Saved as Essential [\(matchedEssential.displayKey)]", systemImage: "sparkles")
+                                Label("Saved as Essential [\(matchedEssential.displayKey)]", systemSymbol: .sparkles)
                             }
                             .disabled(true)
                         } else {
                             Button {
                                 store.showSaveEssentialPanel(for: item)
                             } label: {
-                                Label("Save as Essential…", systemImage: "sparkles")
+                                Label("Save as Essential…", systemSymbol: .sparkles)
                             }
                         }
                     }
@@ -227,7 +228,7 @@ struct EditBoardLinkPanel: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: DenPanelLayout.contentSpacing) {
-            DenPanelHeader(systemImage: "link") {
+            DenPanelHeader(systemSymbol: .link) {
                 TextField(
                     text: $text,
                     prompt: Text("https://example.com or search")
@@ -288,7 +289,7 @@ struct ZmxDuplicationPanel: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: DenPanelLayout.contentSpacing) {
-            DenPanelHeader(systemImage: "plus.square.on.square") {
+            DenPanelHeader(systemSymbol: .plusSquareOnSquare) {
                 TextField(
                     text: textBinding,
                     prompt: Text("Optional suffix, e.g. vi")
@@ -341,7 +342,7 @@ struct RenameBoardPanel: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: DenPanelLayout.contentSpacing) {
-            DenPanelHeader(systemImage: "pencil") {
+            DenPanelHeader(systemSymbol: .pencil) {
                 TextField(
                     text: $text,
                     prompt: Text("Board label, or leave empty")
@@ -435,7 +436,7 @@ struct SaveEssentialPanel: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: DenPanelLayout.contentSpacing) {
-            DenPanelHeader(systemImage: "sparkles") {
+            DenPanelHeader(systemSymbol: .sparkles) {
                 Text("Save as Essential")
                     .font(.headline)
             }

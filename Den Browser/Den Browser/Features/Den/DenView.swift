@@ -1,3 +1,4 @@
+import SFSafeSymbols
 import SwiftUI
 
 struct DenView<Header: View>: View {
@@ -186,7 +187,7 @@ struct DenView<Header: View>: View {
 
     private var essentialsPrefixPanel: some View {
         VStack(alignment: .leading, spacing: DenPanelLayout.contentSpacing) {
-            DenPanelHeader(systemImage: "sparkles") {
+            DenPanelHeader(systemSymbol: .sparkles) {
                 Text("Essentials")
                     .font(.headline)
             }
@@ -387,7 +388,7 @@ private struct DeskFilterOverlay: View {
 
     var body: some View {
         HStack(spacing: 8) {
-            Image(systemName: "magnifyingglass")
+            Image(systemSymbol: .magnifyingglass)
                 .foregroundStyle(store.isDeskFilterInputActive ? .primary : .secondary)
                 .accessibilityHidden(true)
 

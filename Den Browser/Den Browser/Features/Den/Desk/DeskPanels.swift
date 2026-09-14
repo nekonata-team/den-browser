@@ -1,3 +1,4 @@
+import SFSafeSymbols
 import SwiftUI
 
 struct NewDeskPanel: View {
@@ -15,10 +16,10 @@ struct NewDeskPanel: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             DenPanelHeader(
-                systemImage: store.isDeskPresetManagementPresented
-                    ? "bookmark"
+                systemSymbol: store.isDeskPresetManagementPresented
+                    ? .bookmark
                     : store.isReplaceDeskPanelPresented
-                        ? "rectangle.stack.badge.minus" : "rectangle.stack.badge.plus"
+                        ? .rectangleStackBadgeMinus : .rectangleStackBadgePlus
             ) {
                 Text(
                     store.isDeskPresetManagementPresented
@@ -253,7 +254,7 @@ struct SaveDeskPresetPanel: View {
     var body: some View {
         VStack(alignment: .leading, spacing: DenPanelLayout.contentSpacing) {
             HStack(spacing: DenPanelLayout.controlSpacing) {
-                Image(systemName: "bookmark").foregroundStyle(.secondary)
+                Image(systemSymbol: .bookmark).foregroundStyle(.secondary)
                 Text("Save Desk as Preset").font(.headline)
             }
             TextField(
@@ -309,7 +310,7 @@ struct RenameDeskPanel: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: DenPanelLayout.contentSpacing) {
-            DenPanelHeader(systemImage: "pencil") {
+            DenPanelHeader(systemSymbol: .pencil) {
                 TextField(
                     text: $text,
                     prompt: Text("Desk label")

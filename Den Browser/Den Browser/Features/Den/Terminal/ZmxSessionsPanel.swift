@@ -1,3 +1,4 @@
+import SFSafeSymbols
 import SwiftUI
 
 struct ZmxSessionsPanel: View {
@@ -21,7 +22,7 @@ struct ZmxSessionsPanel: View {
                     .font(.caption)
                     .foregroundStyle(.red)
             } else if model.groups.isEmpty {
-                ContentUnavailableView("No zmx Sessions", systemImage: "terminal")
+                ContentUnavailableView("No zmx Sessions", systemSymbol: .appleTerminal)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, DenPanelLayout.contentSpacing)
             } else if model.filteredGroups.isEmpty {
@@ -45,7 +46,7 @@ struct ZmxSessionsPanel: View {
                 let targets = model.pendingDeletion
                 store.killZmxSessions(targets)
             } label: {
-                Label(pendingDeletionActionLabel, systemImage: "xmark.circle")
+                Label(pendingDeletionActionLabel, systemSymbol: .xmarkCircle)
             }
             .keyboardShortcut(.defaultAction)
             Button("Cancel", role: .cancel) { model.clearPendingDeletion() }
@@ -62,7 +63,7 @@ struct ZmxSessionsPanel: View {
 
     private var header: some View {
         HStack(spacing: DenPanelLayout.controlSpacing) {
-            DenPanelHeader(systemImage: "arrow.triangle.2.circlepath") {
+            DenPanelHeader(systemSymbol: .arrowTrianglehead2ClockwiseRotate90) {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("zmx Sessions")
                         .font(.headline)
@@ -81,7 +82,7 @@ struct ZmxSessionsPanel: View {
                 .help("End selected Sessions")
             }
             Button(action: store.refreshZmxSessions) {
-                Label("Refresh", systemImage: "arrow.clockwise")
+                Label("Refresh", systemSymbol: .arrowClockwise)
                     .labelStyle(.iconOnly)
                     .frame(width: 30, height: 30)
             }
@@ -95,7 +96,7 @@ struct ZmxSessionsPanel: View {
 
     private var searchField: some View {
         HStack(spacing: 8) {
-            Image(systemName: "magnifyingglass")
+            Image(systemSymbol: .magnifyingglass)
                 .foregroundStyle(model.isFilterInputActive ? .primary : .secondary)
                 .accessibilityHidden(true)
             TextField(
@@ -163,7 +164,7 @@ struct ZmxSessionsPanel: View {
 
     private func missingRootRow(_ sessionName: String) -> some View {
         HStack(spacing: DenPanelLayout.controlSpacing) {
-            Image(systemName: "exclamationmark.triangle")
+            Image(systemSymbol: .exclamationmarkTriangle)
                 .foregroundStyle(.secondary)
             Text("Missing root")
                 .font(.caption.weight(.medium))
@@ -191,7 +192,7 @@ struct ZmxSessionsPanel: View {
             Button {
                 model.toggleMarking(sessionName)
             } label: {
-                Image(systemName: isMarked ? "checkmark.circle.fill" : "circle")
+                Image(systemSymbol: isMarked ? .checkmarkCircleFill : .circle)
                     .imageScale(.medium)
                     .frame(width: 24, height: 24)
             }
@@ -201,7 +202,7 @@ struct ZmxSessionsPanel: View {
             .accessibilityLabel(isMarked ? "Deselect \(sessionName)" : "Select \(sessionName)")
 
             if isChild {
-                Image(systemName: "arrow.turn.down.right")
+                Image(systemSymbol: .arrowTurnDownRight)
                     .foregroundStyle(.secondary)
                     .accessibilityHidden(true)
             }
@@ -231,7 +232,7 @@ struct ZmxSessionsPanel: View {
             Button {
                 store.openZmxSession(sessionName)
             } label: {
-                Label("Open", systemImage: "arrow.up.right.square")
+                Label("Open", systemSymbol: .arrowUpRightSquare)
                     .labelStyle(.iconOnly)
                     .frame(width: 28, height: 28)
             }
@@ -243,7 +244,7 @@ struct ZmxSessionsPanel: View {
             Button(role: .destructive) {
                 store.requestZmxSessionDeletion(sessionName)
             } label: {
-                Label("End", systemImage: "xmark.circle")
+                Label("End", systemSymbol: .xmarkCircle)
                     .labelStyle(.iconOnly)
                     .frame(width: 28, height: 28)
             }

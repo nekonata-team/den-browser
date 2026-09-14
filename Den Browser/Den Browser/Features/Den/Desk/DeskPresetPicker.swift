@@ -1,3 +1,4 @@
+import SFSafeSymbols
 import SwiftUI
 
 enum DeskPresetSelection: Hashable {
@@ -165,7 +166,7 @@ struct DeskPresetPicker: View {
         VStack(spacing: 6) {
             if filteredPersonalPresets.isEmpty {
                 if query.isEmpty {
-                    ContentUnavailableView("No Personal Desk Presets", systemImage: "bookmark")
+                    ContentUnavailableView("No Personal Desk Presets", systemSymbol: .bookmark)
                         .frame(maxWidth: .infinity, minHeight: 220)
                 } else {
                     ContentUnavailableView.search(text: query)
@@ -184,7 +185,7 @@ struct DeskPresetPicker: View {
                         Button(role: .destructive) {
                             store.requestDeskPresetDeletion(preset.id)
                         } label: {
-                            Image(systemName: "trash")
+                            Image(systemSymbol: .trash)
                         }
                         .accessibilityLabel("Delete \(preset.label)")
                     }
@@ -206,7 +207,7 @@ struct DeskPresetPicker: View {
         } label: {
             HStack {
                 let isSelected = selection == choice.selection
-                Image(systemName: isSelected ? "chevron.right" : "circle")
+                Image(systemSymbol: isSelected ? .chevronRight : .circle)
                     .foregroundStyle(isSelected ? Color.accentColor : Color.secondary)
                     .frame(width: 16)
                 Text(choice.label)

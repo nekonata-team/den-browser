@@ -1,3 +1,4 @@
+import SFSafeSymbols
 import SwiftUI
 
 struct BoardStripLayoutKey: Equatable {
@@ -184,7 +185,7 @@ struct BoardStrip: View {
                     Button {
                         onOpenBoardAtEnd(lastBoardID)
                     } label: {
-                        Image(systemName: "plus")
+                        Image(systemSymbol: .plus)
                             .font(.headline)
                             .frame(
                                 width: DenLayout.openBoardAtEndButtonSize,
@@ -1116,7 +1117,7 @@ private struct UnactivatedBoardView: View {
         HStack(spacing: DenLayout.outerInset) {
             dragHandle
             Button(action: onRemove) {
-                Image(systemName: "xmark")
+                Image(systemSymbol: .xmark)
                     .frame(width: DenLayout.boardControlSize, height: DenLayout.boardControlSize)
             }
             .buttonStyle(.borderless)
@@ -1133,9 +1134,11 @@ private struct UnactivatedBoardView: View {
     private var dragHandle: some View {
         HStack(spacing: 8) {
             Image(
-                systemName: board.isZellij
-                    ? "rectangle.3.group"
-                    : (board.isZmx ? "arrow.triangle.2.circlepath" : (board.isTerminal ? "terminal" : "globe"))
+                systemSymbol: board.isZellij
+                    ? .rectangle3Group
+                    : (board.isZmx
+                        ? .arrowTrianglehead2ClockwiseRotate90
+                        : (board.isTerminal ? .appleTerminal : .globe))
             )
             .foregroundStyle(.secondary)
             .frame(width: 16, height: 16)

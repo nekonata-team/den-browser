@@ -1,3 +1,4 @@
+import SFSafeSymbols
 import SwiftUI
 import WebKit
 
@@ -64,7 +65,7 @@ struct DrawerView: View {
                     Button(role: .destructive) {
                         store.requestDrawerClearConfirmation()
                     } label: {
-                        Image(systemName: "trash")
+                        Image(systemSymbol: .trash)
                             .font(.system(size: 12, weight: .semibold))
                             .frame(width: 30, height: 30)
                     }
@@ -76,7 +77,7 @@ struct DrawerView: View {
                     Button {
                         store.enterDrawerFilterMode()
                     } label: {
-                        Image(systemName: "magnifyingglass")
+                        Image(systemSymbol: .magnifyingglass)
                             .font(.system(size: 12, weight: .semibold))
                             .frame(width: 30, height: 30)
                     }
@@ -88,9 +89,9 @@ struct DrawerView: View {
                         store.toggleDrawerStyle()
                     } label: {
                         Image(
-                            systemName: isBottomStyle
-                                ? "arrow.down.right.and.arrow.up.left"
-                                : "arrow.up.left.and.arrow.down.right"
+                            systemSymbol: isBottomStyle
+                                ? .arrowDownRightAndArrowUpLeft
+                                : .arrowUpLeftAndArrowDownRight
                         )
                         .font(.system(size: 12, weight: .semibold))
                         .frame(width: 30, height: 30)
@@ -106,7 +107,7 @@ struct DrawerView: View {
             }
 
             HStack(spacing: 8) {
-                Image(systemName: "magnifyingglass")
+                Image(systemSymbol: .magnifyingglass)
                     .foregroundStyle(store.isDrawerFilterInputActive ? .primary : .secondary)
                     .accessibilityHidden(true)
                 TextField(
@@ -168,7 +169,7 @@ struct DrawerView: View {
                 if store.state.drawerItems.isEmpty {
                     ContentUnavailableView(
                         "Drawer is empty",
-                        systemImage: "tray",
+                        systemSymbol: .tray,
                         description: Text("Keep a Current Sheet here before its work context is settled.")
                     )
                 } else if store.filteredDrawerItems.isEmpty {
@@ -204,7 +205,7 @@ struct DrawerView: View {
                     store.toggleDrawerItem(item.id)
                 } label: {
                     HStack(spacing: 10) {
-                        Image(systemName: "link")
+                        Image(systemSymbol: .link)
                             .foregroundStyle(.secondary)
 
                         VStack(alignment: .leading, spacing: 2) {
@@ -221,9 +222,9 @@ struct DrawerView: View {
                         Spacer(minLength: 12)
 
                         Image(
-                            systemName: store.expandedDrawerItemID == item.id
-                                ? "chevron.down"
-                                : "chevron.right"
+                            systemSymbol: store.expandedDrawerItemID == item.id
+                                ? .chevronDown
+                                : .chevronRight
                         )
                         .font(.caption)
                         .frame(width: 12)
@@ -248,7 +249,7 @@ struct DrawerView: View {
                 Button {
                     store.placeDrawerItemAsBoard(item.id)
                 } label: {
-                    Image(systemName: "rectangle.stack.badge.plus")
+                    Image(systemSymbol: .rectangleStackBadgePlus)
                         .foregroundStyle(.primary)
                         .frame(
                             width: DenDrawerLayout.itemButtonWidth,
@@ -261,7 +262,7 @@ struct DrawerView: View {
                 Button(role: .destructive) {
                     store.discardDrawerItem(item.id)
                 } label: {
-                    Image(systemName: "trash")
+                    Image(systemSymbol: .trash)
                         .font(.system(size: 12, weight: .semibold))
                         .foregroundStyle(hoveredDiscardItemID == item.id ? .red : .primary)
                         .frame(

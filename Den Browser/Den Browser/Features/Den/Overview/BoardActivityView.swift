@@ -1,5 +1,6 @@
 import AppKit
 import GhosttyTerminal
+import SFSafeSymbols
 import SwiftUI
 
 struct BoardActivityView: View {
@@ -21,7 +22,7 @@ struct BoardActivityView: View {
                 if store.state.desks.allSatisfy({ $0.boards.isEmpty }) {
                     ContentUnavailableView(
                         "No Boards",
-                        systemImage: "rectangle.stack",
+                        systemSymbol: .rectangleStack,
                         description: Text("Board Activity appears after a Board is opened.")
                     )
                     .frame(maxWidth: .infinity, minHeight: 320)
@@ -37,8 +38,8 @@ struct BoardActivityView: View {
                                     } label: {
                                         HStack(spacing: 6) {
                                             Image(
-                                                systemName: collapsedDeskIDs.contains(desk.id)
-                                                    ? "chevron.right" : "chevron.down"
+                                                systemSymbol: collapsedDeskIDs.contains(desk.id)
+                                                    ? .chevronRight : .chevronDown
                                             )
                                             .frame(width: 10)
                                             Text(desk.label)
@@ -166,7 +167,7 @@ private struct BoardActivityRow: View {
                 HStack(spacing: 12) {
                     boardStateIcon
                         .frame(width: 14)
-                    Image(systemName: board.isTerminal ? "terminal" : "globe")
+                    Image(systemSymbol: board.isTerminal ? .appleTerminal : .globe)
                         .foregroundStyle(board.isTerminal ? .orange : .blue)
                         .frame(width: 20)
                     VStack(alignment: .leading, spacing: 3) {
@@ -206,7 +207,7 @@ private struct BoardActivityRow: View {
                     NSPasteboard.general.clearContents()
                     NSPasteboard.general.setString(String(processIdentifier), forType: .string)
                 } label: {
-                    Image(systemName: "doc.on.doc")
+                    Image(systemSymbol: .documentOnDocument)
                         .frame(width: BoardActivityColumns.copyButton)
                         .contentShape(Rectangle())
                 }
@@ -227,7 +228,7 @@ private struct BoardActivityRow: View {
             Button {
                 isRemoveConfirmationPresented = true
             } label: {
-                Image(systemName: "xmark")
+                Image(systemSymbol: .xmark)
                     .font(.caption.weight(.semibold))
                     .frame(width: 22, height: 22)
                     .background(.thinMaterial, in: Circle())
@@ -293,7 +294,7 @@ private struct BoardActivityRow: View {
         } else if terminalRuntime != nil {
             TerminalActivityStateIcon()
         } else {
-            Image(systemName: "circle")
+            Image(systemSymbol: .circle)
                 .foregroundStyle(.secondary)
                 .accessibilityLabel("Not active")
         }
@@ -337,7 +338,7 @@ private struct WebActivityStateIcon: View {
     @ViewBuilder
     var body: some View {
         if runtime.didTerminateContentProcess {
-            Image(systemName: "xmark.circle.fill")
+            Image(systemSymbol: .xmarkCircleFill)
                 .foregroundStyle(.red)
                 .accessibilityLabel("Content process ended")
         } else if runtime.isLoading {
@@ -346,11 +347,11 @@ private struct WebActivityStateIcon: View {
                 .accessibilityLabel("Loading")
                 .accessibilityValue("\(Int(runtime.estimatedProgress * 100)) percent")
         } else if runtime.webProcessIsResponsive == false {
-            Image(systemName: "exclamationmark.circle.fill")
+            Image(systemSymbol: .exclamationmarkCircleFill)
                 .foregroundStyle(.red)
                 .accessibilityLabel("Not responding")
         } else {
-            Image(systemName: "circle.fill")
+            Image(systemSymbol: .circleFill)
                 .foregroundStyle(.green)
                 .accessibilityLabel("Ready")
         }
@@ -359,7 +360,7 @@ private struct WebActivityStateIcon: View {
 
 private struct TerminalActivityStateIcon: View {
     var body: some View {
-        Image(systemName: "circle.fill")
+        Image(systemSymbol: .circleFill)
             .foregroundStyle(.green)
             .accessibilityLabel("Running")
     }
@@ -378,7 +379,7 @@ private struct TerminalActivityStatus: View {
                     .foregroundStyle(result.exitCode == 0 ? Color.secondary : Color.red)
             }
             if let lastBellDate = runtime.lastBellDate {
-                Label(lastBellDate.formatted(date: .omitted, time: .shortened), systemImage: "bell")
+                Label(lastBellDate.formatted(date: .omitted, time: .shortened), systemSymbol: .bell)
                     .foregroundStyle(.secondary)
             }
         }

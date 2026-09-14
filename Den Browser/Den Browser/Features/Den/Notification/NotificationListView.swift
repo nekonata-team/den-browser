@@ -1,4 +1,5 @@
 import Foundation
+import SFSafeSymbols
 import SwiftUI
 
 struct DenNotification: Equatable, Identifiable {
@@ -34,7 +35,7 @@ struct NotificationListView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: DenPanelLayout.contentSpacing) {
             HStack {
-                Image(systemName: "bell")
+                Image(systemSymbol: .bell)
                     .foregroundStyle(.secondary)
                 Text("Notifications")
                     .font(.headline)
@@ -47,7 +48,7 @@ struct NotificationListView: View {
                 Button(role: .destructive) {
                     store.requestNotificationClearConfirmation()
                 } label: {
-                    Image(systemName: "trash")
+                    Image(systemSymbol: .trash)
                         .font(.system(size: 12, weight: .semibold))
                         .frame(width: 30, height: 30)
                 }
@@ -59,7 +60,7 @@ struct NotificationListView: View {
             }
 
             if store.notifications.isEmpty {
-                ContentUnavailableView("No Notifications", systemImage: "bell")
+                ContentUnavailableView("No Notifications", systemSymbol: .bell)
                     .frame(maxWidth: .infinity, minHeight: 160)
             } else {
                 ScrollViewReader { proxy in

@@ -1,4 +1,5 @@
 import Foundation
+import SFSafeSymbols
 import SwiftUI
 
 struct DeskSwitcher: View {
@@ -36,7 +37,7 @@ struct DeskSwitcher: View {
                         Button {
                             store.showNewDeskPanel()
                         } label: {
-                            Image(systemName: "plus")
+                            Image(systemSymbol: .plus)
                                 .font(.system(size: 13, weight: .semibold))
                                 .frame(width: 30, height: 30)
                         }
@@ -95,7 +96,7 @@ struct DeskSwitcher: View {
                 .lineLimit(1)
 
             if isPresentedElsewhere {
-                Image(systemName: "macwindow")
+                Image(systemSymbol: .macwindow)
                     .font(.caption2)
                     .foregroundStyle(.secondary)
                     .help("Open in another window")
@@ -121,14 +122,14 @@ struct DeskSwitcher: View {
             Button {
                 onOpenInNewWindow(desk.id)
             } label: {
-                Label("Open Desk in New Window", systemImage: "macwindow.badge.plus")
+                Label("Open Desk in New Window", systemSymbol: .macwindowBadgePlus)
             }
             .disabled(!canOpenInNewWindow(desk.id))
 
             Button {
                 store.copyDeskID(desk.id)
             } label: {
-                Label("Copy Desk ID", systemImage: "doc.on.doc")
+                Label("Copy Desk ID", systemSymbol: .documentOnDocument)
             }
 
             Divider()
@@ -137,7 +138,7 @@ struct DeskSwitcher: View {
                 store.focusDesk(desk.id)
                 store.showRenameDeskPanel()
             } label: {
-                Label("Rename Desk", systemImage: "pencil")
+                Label("Rename Desk", systemSymbol: .pencil)
             }
             .disabled(!store.canSelectDesk(desk.id))
 
@@ -145,7 +146,7 @@ struct DeskSwitcher: View {
                 store.focusDesk(desk.id)
                 store.deleteFocusedDesk()
             } label: {
-                Label("Delete Desk", systemImage: "trash")
+                Label("Delete Desk", systemSymbol: .trash)
             }
             .disabled(!store.canSelectDesk(desk.id) || !store.canDeleteFocusedDesk)
 
@@ -155,7 +156,7 @@ struct DeskSwitcher: View {
                 store.focusDesk(desk.id)
                 store.showSaveDeskPresetPanel()
             } label: {
-                Label("Save Desk as Preset...", systemImage: "square.and.arrow.down")
+                Label("Save Desk as Preset...", systemSymbol: .squareAndArrowDown)
             }
             .disabled(!store.canSelectDesk(desk.id) || desk.boards.isEmpty)
 
@@ -163,14 +164,14 @@ struct DeskSwitcher: View {
                 Button {
                     store.exportDeskLinks(for: desk.id)
                 } label: {
-                    Label("Save Desk Links as Markdown...", systemImage: "arrow.down.doc")
+                    Label("Save Desk Links as Markdown...", systemSymbol: .arrowDownDocument)
                 }
                 .disabled(!store.canExportDeskLinks(for: desk.id))
 
                 Button {
                     store.copyDeskLinks(for: desk.id)
                 } label: {
-                    Label("Copy Desk Links as Markdown", systemImage: "doc.on.doc")
+                    Label("Copy Desk Links as Markdown", systemSymbol: .documentOnDocument)
                 }
                 .disabled(!store.canExportDeskLinks(for: desk.id))
 
@@ -180,7 +181,7 @@ struct DeskSwitcher: View {
                     store.focusDesk(desk.id)
                     store.captureFocusedDeskScreenshot()
                 } label: {
-                    Label("Capture Desk Screenshot...", systemImage: "camera.on.rectangle")
+                    Label("Capture Desk Screenshot...", systemSymbol: .cameraOnRectangle)
                 }
                 .disabled(!store.canSelectDesk(desk.id) || desk.boards.isEmpty)
             }
@@ -189,14 +190,14 @@ struct DeskSwitcher: View {
                 store.focusDesk(desk.id)
                 store.showReplaceDeskPanel()
             } label: {
-                Label("Replace Desk...", systemImage: "rectangle.stack.badge.minus")
+                Label("Replace Desk...", systemSymbol: .rectangleStackBadgeMinus)
             }
             .disabled(!store.canSelectDesk(desk.id))
 
             Button {
                 store.showDeskPresetManagement()
             } label: {
-                Label("Manage Presets...", systemImage: "slider.horizontal.3")
+                Label("Manage Presets...", systemSymbol: .sliderHorizontal3)
             }
 
             Divider()
@@ -204,7 +205,7 @@ struct DeskSwitcher: View {
             Button {
                 store.showNewDeskPanel()
             } label: {
-                Label("New Desk...", systemImage: "plus")
+                Label("New Desk...", systemSymbol: .plus)
             }
             .disabled(!store.canCreateDesk)
         }

@@ -1,3 +1,4 @@
+import SFSafeSymbols
 import SwiftUI
 
 struct BoardView: View {
@@ -150,7 +151,7 @@ struct BoardView: View {
                     AsyncImage(url: runtime.faviconURL) { image in
                         image.resizable().scaledToFit()
                     } placeholder: {
-                        Image(systemName: "globe")
+                        Image(systemSymbol: .globe)
                             .foregroundStyle(.secondary)
                     }
                 }
@@ -170,7 +171,7 @@ struct BoardView: View {
             store.focusBoard(board.id)
             store.duplicateFocusedBoard()
         } label: {
-            Label("Duplicate Current Sheet", systemImage: "plus.square.on.square")
+            Label("Duplicate Current Sheet", systemSymbol: .plusSquareOnSquare)
         }
         .onAppear {
             store.focusBoard(board.id)
@@ -180,39 +181,39 @@ struct BoardView: View {
             store.focusBoard(board.id)
             store.keepFocusedSheetInDrawer()
         } label: {
-            Label("Keep Current Sheet in Drawer", systemImage: "tray.and.arrow.down")
+            Label("Keep Current Sheet in Drawer", systemSymbol: .trayAndArrowDown)
         }
 
         Button {
             store.focusBoard(board.id)
             store.showSaveEssentialPanel(for: board)
         } label: {
-            Label("Save as Essential…", systemImage: "sparkles")
+            Label("Save as Essential…", systemSymbol: .sparkles)
         }
 
         Button {
             store.copyBoardID(board.id)
         } label: {
-            Label("Copy Board ID", systemImage: "doc.on.doc")
+            Label("Copy Board ID", systemSymbol: .documentOnDocument)
         }
 
         Button {
             runtime.webView.reload()
         } label: {
-            Label("Reload Current Sheet", systemImage: "arrow.clockwise")
+            Label("Reload Current Sheet", systemSymbol: .arrowClockwise)
         }
 
         Button {
             runtime.webView.reloadFromOrigin()
         } label: {
-            Label("Hard Reload Current Sheet", systemImage: "arrow.clockwise.circle")
+            Label("Hard Reload Current Sheet", systemSymbol: .arrowClockwiseCircle)
         }
 
         Button {
             store.focusBoard(board.id)
             store.goToFirstSheetInFocusedBoard()
         } label: {
-            Label("Return to First Sheet", systemImage: "backward.end")
+            Label("Return to First Sheet", systemSymbol: .backwardEnd)
         }
         .disabled(!canReturnToFirstSheet)
 
@@ -224,7 +225,7 @@ struct BoardView: View {
                     board.sheetNavigationPaused
                         ? "Resume Sheet Navigation for this Board"
                         : "Pause Sheet Navigation for this Board",
-                    systemImage: board.sheetNavigationPaused ? "play.circle" : "pause.circle"
+                    systemSymbol: board.sheetNavigationPaused ? .playCircle : .pauseCircle
                 )
             }
         }
@@ -233,13 +234,13 @@ struct BoardView: View {
             store.focusBoard(board.id)
             store.captureFocusedSheetScreenshot()
         } label: {
-            Label("Capture Current Sheet Screenshot...", systemImage: "camera")
+            Label("Capture Current Sheet Screenshot...", systemSymbol: .camera)
         }
 
         Button {
             runtime.togglePictureInPicture()
         } label: {
-            Label("Toggle Picture in Picture", systemImage: "pip")
+            Label("Toggle Picture in Picture", systemSymbol: .pip)
         }
 
         Divider()
@@ -248,21 +249,21 @@ struct BoardView: View {
             store.focusBoard(board.id)
             store.adjustFocusedBoardContentSize(by: 1)
         } label: {
-            Label("Increase Sheet Scale", systemImage: "plus")
+            Label("Increase Sheet Scale", systemSymbol: .plus)
         }
 
         Button {
             store.focusBoard(board.id)
             store.adjustFocusedBoardContentSize(by: -1)
         } label: {
-            Label("Decrease Sheet Scale", systemImage: "minus")
+            Label("Decrease Sheet Scale", systemSymbol: .minus)
         }
 
         Button {
             store.focusBoard(board.id)
             store.resetFocusedBoardContentSize()
         } label: {
-            Label("Reset Sheet Scale", systemImage: "arrow.counterclockwise")
+            Label("Reset Sheet Scale", systemSymbol: .arrowCounterclockwise)
         }
 
         Divider()
@@ -271,14 +272,14 @@ struct BoardView: View {
             store.focusBoard(board.id)
             store.toggleFocusedBoardMaximized()
         } label: {
-            Label(maximizationLabel, systemImage: maximizationSystemImage)
+            Label(maximizationLabel, systemSymbol: maximizationSystemSymbol)
         }
 
         Button {
             store.focusBoard(board.id)
             store.centerFocusedBoard()
         } label: {
-            Label("Center Board", systemImage: "scope")
+            Label("Center Board", systemSymbol: .scope)
         }
 
         Divider()
@@ -287,7 +288,7 @@ struct BoardView: View {
             store.focusBoard(board.id)
             store.moveFocusedBoardLeft()
         } label: {
-            Label("Move Board Left", systemImage: "arrow.left")
+            Label("Move Board Left", systemSymbol: .arrowLeft)
         }
         .disabled(!store.canMoveBoard(board.id, by: -1))
 
@@ -295,7 +296,7 @@ struct BoardView: View {
             store.focusBoard(board.id)
             store.moveFocusedBoardRight()
         } label: {
-            Label("Move Board Right", systemImage: "arrow.right")
+            Label("Move Board Right", systemSymbol: .arrowRight)
         }
         .disabled(!store.canMoveBoard(board.id, by: 1))
 
@@ -310,7 +311,7 @@ struct BoardView: View {
                     }
                 }
             } label: {
-                Label("Move to Desk", systemImage: "rectangle.stack")
+                Label("Move to Desk", systemSymbol: .rectangleStack)
             }
         }
 
@@ -319,7 +320,7 @@ struct BoardView: View {
         Button(role: .destructive) {
             store.removeBoard(board.id)
         } label: {
-            Label("Remove Board", systemImage: "xmark")
+            Label("Remove Board", systemSymbol: .xmark)
         }
     }
 
@@ -330,8 +331,7 @@ struct BoardView: View {
                     store.toggleBoardSheetNavigationPause(board.id)
                 } label: {
                     Image(
-                        systemName: board.sheetNavigationPaused
-                            ? "pause.circle.fill" : "keyboard"
+                        systemSymbol: board.sheetNavigationPaused ? .pauseCircleFill : .keyboard
                     )
                     .frame(width: DenLayout.boardControlSize, height: DenLayout.boardControlSize)
                 }
@@ -348,7 +348,7 @@ struct BoardView: View {
 
             withBoardContextMenu(
                 Button(action: onGoToFirst) {
-                    Image(systemName: "backward.end")
+                    Image(systemSymbol: .backwardEnd)
                         .frame(width: DenLayout.boardControlSize, height: DenLayout.boardControlSize)
                 }
                 .buttonStyle(.borderless)
@@ -364,7 +364,7 @@ struct BoardView: View {
 
             withBoardContextMenu(
                 Button(action: onGoBack) {
-                    Image(systemName: "chevron.left")
+                    Image(systemSymbol: .chevronLeft)
                         .frame(width: DenLayout.boardControlSize, height: DenLayout.boardControlSize)
                 }
                 .buttonStyle(.borderless)
@@ -380,7 +380,7 @@ struct BoardView: View {
 
             withBoardContextMenu(
                 Button(action: onGoForward) {
-                    Image(systemName: "chevron.right")
+                    Image(systemSymbol: .chevronRight)
                         .frame(width: DenLayout.boardControlSize, height: DenLayout.boardControlSize)
                 }
                 .buttonStyle(.borderless)
@@ -396,7 +396,7 @@ struct BoardView: View {
 
             withBoardContextMenu(
                 Button(action: onRemove) {
-                    Image(systemName: "xmark")
+                    Image(systemSymbol: .xmark)
                         .frame(width: DenLayout.boardControlSize, height: DenLayout.boardControlSize)
                 }
                 .buttonStyle(.borderless)
@@ -436,10 +436,10 @@ struct BoardView: View {
         store.maximizedBoardID == board.id ? "Restore Board Size" : "Maximize Board"
     }
 
-    private var maximizationSystemImage: String {
+    private var maximizationSystemSymbol: SFSymbol {
         store.maximizedBoardID == board.id
-            ? "arrow.down.right.and.arrow.up.left"
-            : "arrow.up.left.and.arrow.down.right"
+            ? .arrowDownRightAndArrowUpLeft
+            : .arrowUpLeftAndArrowDownRight
     }
 
     private var shouldReduceMotion: Bool {
@@ -464,7 +464,7 @@ struct BoardHeaderTitle: View {
                     .lineLimit(1)
 
                 if isAnchor {
-                    Image(systemName: "pin.fill")
+                    Image(systemSymbol: .pinFill)
                         .font(.caption2)
                         .foregroundStyle(.secondary)
                         .help("Anchor Board")

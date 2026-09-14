@@ -1,4 +1,5 @@
 import AppKit
+import SFSafeSymbols
 import SwiftUI
 
 struct SettingsView: View {
@@ -7,7 +8,7 @@ struct SettingsView: View {
     var body: some View {
         NavigationSplitView {
             List(SettingsSection.allCases, selection: $selection) { section in
-                Label(section.title, systemImage: section.systemImage)
+                Label(section.title, systemSymbol: section.systemSymbol)
                     .tag(section)
             }
             .listStyle(.sidebar)
@@ -66,20 +67,20 @@ private enum SettingsSection: String, CaseIterable, Identifiable {
         }
     }
 
-    var systemImage: String {
+    var systemSymbol: SFSymbol {
         switch self {
         case .profiles:
-            "person.2"
+            .person2
         case .appearance:
-            "circle.lefthalf.filled"
+            .circleLefthalfFilled
         case .shortcuts:
-            "keyboard"
+            .keyboard
         case .essentials:
-            "sparkles"
+            .sparkles
         case .terminal:
-            "terminal"
+            .appleTerminal
         case .web:
-            "globe"
+            .globe
         }
     }
 }
@@ -131,7 +132,7 @@ private struct WebSettingsView: View {
                             Button {
                                 profileManager.presentUBOLitePopup(anchorView: uBOLitePopupAnchorView)
                             } label: {
-                                Label("Open uBlock Origin Lite", systemImage: "shield.lefthalf.filled")
+                                Label("Open uBlock Origin Lite", systemSymbol: .shieldLefthalfFilled)
                             }
                             .background(
                                 PopupAnchorView { view in
@@ -144,7 +145,7 @@ private struct WebSettingsView: View {
                             Button {
                                 profileManager.presentUBOLiteOptions()
                             } label: {
-                                Label("Open Settings Dashboard", systemImage: "gearshape")
+                                Label("Open Settings Dashboard", systemSymbol: .gearshape)
                             }
                         }
                     }
@@ -168,7 +169,7 @@ private struct WebSettingsView: View {
                                     Text("Updating…")
                                 }
                             } else {
-                                Label("Check for Updates", systemImage: "arrow.triangle.2.circlepath")
+                                Label("Check for Updates", systemSymbol: .arrowTrianglehead2ClockwiseRotate90)
                             }
                         }
                         .disabled(profileManager.uboliteInstaller.isBusy)
@@ -203,7 +204,7 @@ private struct WebSettingsView: View {
                                     Text("Installing…")
                                 }
                             } else {
-                                Label("Install uBlock Origin Lite", systemImage: "arrow.down.circle")
+                                Label("Install uBlock Origin Lite", systemSymbol: .arrowDownCircle)
                             }
                         }
                         .disabled(profileManager.uboliteInstaller.isBusy)
@@ -666,7 +667,7 @@ private struct ProfileSettingsRow: View {
                 profileManager.clearBrowsingDataProfileID = profile.id
                 profileManager.clearBrowsingDataWindowID = nil
             } label: {
-                Image(systemName: "eraser")
+                Image(systemSymbol: .eraser)
             }
             .buttonStyle(.borderless)
             .help("Clear Browsing Data…")
@@ -674,7 +675,7 @@ private struct ProfileSettingsRow: View {
 
             if canDelete {
                 Button(role: .destructive, action: onDelete) {
-                    Image(systemName: "trash")
+                    Image(systemSymbol: .trash)
                 }
                 .buttonStyle(.borderless)
                 .help("Delete Profile")
@@ -682,7 +683,7 @@ private struct ProfileSettingsRow: View {
             } else {
                 Button {
                 } label: {
-                    Image(systemName: "trash")
+                    Image(systemSymbol: .trash)
                 }
                 .buttonStyle(.borderless)
                 .disabled(true)

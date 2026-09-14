@@ -1,4 +1,5 @@
 import AppKit
+import SFSafeSymbols
 import SwiftUI
 
 struct ProfileWindowView: View {
@@ -85,7 +86,7 @@ struct ProfileWindowView: View {
                 }
             }
         } else {
-            ContentUnavailableView("Profile unavailable", systemImage: "person.crop.circle.badge.exclamationmark")
+            ContentUnavailableView("Profile unavailable", systemSymbol: .personCropCircleBadgeExclamationmark)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
     }

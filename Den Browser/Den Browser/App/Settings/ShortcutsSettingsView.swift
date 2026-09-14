@@ -1,4 +1,5 @@
 import AppKit
+import SFSafeSymbols
 import SwiftUI
 
 struct ShortcutsSettingsView: View {
@@ -86,7 +87,7 @@ struct ShortcutsSettingsView: View {
                     stopRecording()
                     preferences.clearDeskNumberBinding()
                 } label: {
-                    Image(systemName: "xmark")
+                    Image(systemSymbol: .xmark)
                         .frame(width: 14, height: 14)
                 }
                 .buttonStyle(.borderless)
@@ -98,7 +99,7 @@ struct ShortcutsSettingsView: View {
                     stopRecording()
                     preferences.resetDeskNumberBinding()
                 } label: {
-                    Image(systemName: "arrow.counterclockwise")
+                    Image(systemSymbol: .arrowCounterclockwise)
                         .frame(width: 14, height: 14)
                 }
                 .buttonStyle(.borderless)
@@ -141,7 +142,7 @@ struct ShortcutsSettingsView: View {
                         stopRecording()
                         preferences.clearShortcut(for: action)
                     } label: {
-                        Image(systemName: "xmark")
+                        Image(systemSymbol: .xmark)
                             .frame(width: 14, height: 14)
                     }
                     .buttonStyle(.borderless)
@@ -154,7 +155,7 @@ struct ShortcutsSettingsView: View {
                     stopRecording()
                     preferences.resetShortcut(for: action)
                 } label: {
-                    Image(systemName: "arrow.counterclockwise")
+                    Image(systemSymbol: .arrowCounterclockwise)
                         .frame(width: 14, height: 14)
                 }
                 .buttonStyle(.borderless)

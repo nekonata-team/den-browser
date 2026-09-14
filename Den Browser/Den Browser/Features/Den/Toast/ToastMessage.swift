@@ -1,3 +1,4 @@
+import SFSafeSymbols
 import SwiftUI
 
 enum ToastTarget: Equatable {
@@ -41,12 +42,12 @@ struct ToastMessage: Equatable, Identifiable {
         case warning
         case error
 
-        var systemImage: String {
+        var systemSymbol: SFSymbol {
             switch self {
-            case .success: "checkmark.circle.fill"
-            case .info: "info.circle.fill"
-            case .warning: "exclamationmark.triangle.fill"
-            case .error: "xmark.octagon.fill"
+            case .success: .checkmarkCircleFill
+            case .info: .infoCircleFill
+            case .warning: .exclamationmarkTriangleFill
+            case .error: .xmarkOctagonFill
             }
         }
 

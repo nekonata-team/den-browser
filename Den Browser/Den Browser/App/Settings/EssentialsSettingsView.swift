@@ -1,3 +1,4 @@
+import SFSafeSymbols
 import SwiftUI
 
 struct EssentialsSettingsView: View {
@@ -63,7 +64,7 @@ struct EssentialsSettingsView: View {
                 errorMessage = nil
                 editingEssential = EssentialEditorState(essential: essential)
             } label: {
-                Image(systemName: "pencil")
+                Image(systemSymbol: .pencil)
             }
             .buttonStyle(.borderless)
             .accessibilityLabel("Edit Essential \(essential.name)")
@@ -71,7 +72,7 @@ struct EssentialsSettingsView: View {
             Button {
                 deleteEssential(essential)
             } label: {
-                Image(systemName: "trash")
+                Image(systemSymbol: .trash)
             }
             .buttonStyle(.borderless)
             .accessibilityLabel("Delete Essential \(essential.name)")
