@@ -53,6 +53,7 @@ final class SheetNavigationManager {
 
     @ObservationIgnored private let defaults: UserDefaults
     @ObservationIgnored private let scriptSource: String
+    @ObservationIgnored private var reduceMotion = false
     @ObservationIgnored private let webViews = NSHashTable<WKWebView>.weakObjects()
     @ObservationIgnored private let messageHandler = SheetNavigationMessageHandler()
     @ObservationIgnored private var actionsByWebView: [ObjectIdentifier: Actions] = [:]
@@ -89,6 +90,12 @@ final class SheetNavigationManager {
         guard enabled != isEnabled else { return }
         isEnabled = enabled
         defaults.set(enabled, forKey: Self.enabledKey)
+        applyConfiguration()
+    }
+
+    func setReduceMotion(_ reduceMotion: Bool) {
+        guard reduceMotion != self.reduceMotion else { return }
+        self.reduceMotion = reduceMotion
         applyConfiguration()
     }
 
@@ -413,6 +420,7 @@ final class SheetNavigationManager {
             "alphabet": hintAlphabet,
             "ignoredHosts": ignoredHosts,
             "paused": webView.map { pausedByWebView[ObjectIdentifier($0)] ?? false } ?? false,
+            "reduceMotion": reduceMotion,
         ]
         guard let data = try? JSONSerialization.data(withJSONObject: configuration) else {
             return ""

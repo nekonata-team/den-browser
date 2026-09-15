@@ -156,6 +156,10 @@ struct SheetNavigationTests {
         #expect(!manager.isEnabled)
         #expect(manager.hintAlphabet == "asdfghjkl")
         #expect(manager.userContentController.userScripts[0].source.contains("\"enabled\":false"))
+        #expect(manager.userContentController.userScripts[0].source.contains("\"reduceMotion\":false"))
+
+        manager.setReduceMotion(true)
+        #expect(manager.userContentController.userScripts[0].source.contains("\"reduceMotion\":true"))
 
         manager.setEnabled(true)
         #expect(manager.setHintAlphabet("Aa1a"))
@@ -207,6 +211,7 @@ struct SheetNavigationTests {
         _ = try await webView.evaluateJavaScript("scrollTo(0, 0)")
         manager.refreshConfiguration(for: webView)
         try await dispatchSheetKey("j", in: webView)
+        try await SheetInteraction.waitForFunction(expression: "scrollY > 0", in: webView)
 
         let resumedScrollY = try #require(await webView.evaluateJavaScript("scrollY") as? Int)
         #expect(resumedScrollY > 0)
@@ -294,7 +299,9 @@ struct SheetNavigationTests {
         let webView = makeSheetNavigationWebView(manager: manager)
         let waiter = WebViewLoadWaiter()
 
+        manager.setReduceMotion(true)
         await waiter.load(sheetNavigationTestHTML, baseURL: URL(string: "https://example.com/")!, in: webView)
+        manager.refreshConfiguration(for: webView)
         _ = try await webView.evaluateJavaScript("scrollTo(300, 300)")
         try await dispatchSheetKey("G", shift: true, in: webView)
         let afterBottom = try #require(await webView.evaluateJavaScript("[scrollX, scrollY]") as? [Int])

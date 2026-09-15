@@ -21,6 +21,8 @@ Press `?` in Sheet Input to open the in-Sheet command guide. Press `Escape` to c
 
 A numeric prefix repeats relative scrolling commands. For example, `5j`, `3k`, and `2d` multiply their normal distance. Absolute commands ignore the prefix.
 
+Scrolling commands follow Den's Motion setting; Follow System respects macOS Reduce Motion.
+
 ### Hints
 
 | Keys | Action |

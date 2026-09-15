@@ -23,6 +23,7 @@
   let findCountLabel = null;
   let overlay = null;
   let helpOverlay = null;
+  let reduceMotion = false;
   const supportedSheetProtocols = new Set(["http:", "https:", "file:"]);
 
   const actionableSelector =
@@ -262,7 +263,7 @@
     target.scrollBy({
       left: axis === "x" ? direction * distance : 0,
       top: axis === "y" ? direction * distance : 0,
-      behavior: "auto",
+      behavior: reduceMotion ? "auto" : "smooth",
     });
   }
 
@@ -270,7 +271,15 @@
     const target = scrollTarget(axis);
     if (!target) return;
     const position = end ? (axis === "x" ? target.scrollWidth : target.scrollHeight) : 0;
-    target.scrollTo(axis === "x" ? { left: position } : { top: position });
+    const isDocument = target === document.scrollingElement;
+    const currentLeft = isDocument ? window.scrollX : target.scrollLeft;
+    const currentTop = isDocument ? window.scrollY : target.scrollTop;
+    const options = {
+      behavior: reduceMotion ? "auto" : "smooth",
+      left: axis === "x" ? position : currentLeft,
+      top: axis === "y" ? position : currentTop,
+    };
+    target.scrollTo(options);
   }
 
   function clearHighlights() {
@@ -809,6 +818,7 @@
     configure(configuration) {
       enabled = configuration.enabled;
       alphabet = configuration.alphabet;
+      reduceMotion = configuration.reduceMotion;
       const hostname = location.hostname.toLowerCase().replace(/\.$/, "");
       ignored = configuration.ignoredHosts.some(
         (host) => hostname === host || hostname.endsWith(`.${host}`),

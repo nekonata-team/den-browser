@@ -78,10 +78,14 @@ struct DenView<Header: View>: View {
                 store.applySheetScale(scale)
             }
             .onAppear {
+                store.sheetNavigation.setReduceMotion(shouldReduceMotion)
                 store.updateBoardLayout(
                     availableWidth: geometry.size.width - DenLayout.outerInset * 2,
                     spacing: DenLayout.outerInset
                 )
+            }
+            .onChange(of: shouldReduceMotion) { _, reduceMotion in
+                store.sheetNavigation.setReduceMotion(reduceMotion)
             }
             .onChange(of: geometry.size.width) { _, width in
                 store.updateBoardLayout(
