@@ -354,7 +354,7 @@ struct BoardStrip: View {
             }
 
             if let deskID = current.deskID, let savedOffset = store.deskScrollOffset(for: deskID) {
-                if deskChanged || layoutChanged {
+                if deskChanged || (layoutChanged && !focusChanged) {
                     if let boardID = current.boardID {
                         deferBoardAlignment(
                             .resting(savedOffset),
@@ -662,7 +662,8 @@ struct BoardStrip: View {
             boardIDs.isSubset(of: boardFrames.keys),
             scrollGeometry.containerWidth > 0,
             scrollGeometry.contentWidth > 0,
-            abs(scrollGeometry.containerWidth - size.width) <= 1
+            abs(scrollGeometry.containerWidth - size.width) <= 1,
+            abs(scrollGeometry.contentWidth - expectedContentWidth(for: alignmentBoards)) <= 1
         else {
             setPendingBoardAlignment(
                 PendingBoardAlignment(
@@ -687,7 +688,8 @@ struct BoardStrip: View {
             boardIDs.isSubset(of: boardFrames.keys),
             scrollGeometry.containerWidth > 0,
             scrollGeometry.contentWidth > 0,
-            abs(scrollGeometry.containerWidth - size.width) <= 1
+            abs(scrollGeometry.containerWidth - size.width) <= 1,
+            abs(scrollGeometry.contentWidth - expectedContentWidth(for: alignmentBoards)) <= 1
         else {
             setPendingBoardAlignment(
                 PendingBoardAlignment(
@@ -824,6 +826,9 @@ struct BoardStrip: View {
                 return false
             }
         }
+        guard abs(scrollGeometry.contentWidth - expectedContentWidth(for: alignmentBoards)) <= 1 else {
+            return false
+        }
         return pending.layoutKey == nil || boardFramesMatchLayout(frames)
     }
 
@@ -921,6 +926,14 @@ struct BoardStrip: View {
             windowWidth: size.width,
             horizontalPadding: boardHorizontalPadding,
             spacing: boardSpacing
+        )
+    }
+
+    private func expectedContentWidth(for boards: [BoardState]) -> CGFloat {
+        let params = boardLayoutParameters(for: boards)
+        return BoardLayout.contentWidth(
+            for: params,
+            isDeskFilterPresented: store.isDeskFilterPresented
         )
     }
 

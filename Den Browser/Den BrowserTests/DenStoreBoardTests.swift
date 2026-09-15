@@ -896,6 +896,30 @@ struct DenStoreBoardTests {
         #expect(store.state.desks[0].scrollOffsetX == nil)
     }
 
+    @Test func duplicatingFocusedBoardClearsScrollOffsetX() {
+        let boardA = board("A")
+        let boardB = board("B")
+        var deskState = desk("Desk", boards: [boardA, boardB], focusedBoardID: boardB.id)
+        deskState.scrollOffsetX = 350.0
+        let store = DenStore(state: DenState(desks: [deskState], focusedDeskID: deskState.id))
+        #expect(store.state.desks[0].scrollOffsetX == 350.0)
+
+        store.duplicateFocusedBoard()
+        #expect(store.state.desks[0].boards.count == 3)
+        #expect(store.state.desks[0].scrollOffsetX == nil)
+    }
+
+    @Test func insertingFocusedBoardClearsScrollOffsetX() {
+        let boardA = board("A")
+        var deskState = desk("Desk", boards: [boardA], focusedBoardID: boardA.id)
+        deskState.scrollOffsetX = 200.0
+        let store = DenStore(state: DenState(desks: [deskState], focusedDeskID: deskState.id))
+        #expect(store.state.desks[0].scrollOffsetX == 200.0)
+
+        _ = store.addBoard(urlString: "https://example.com", focus: true)
+        #expect(store.state.desks[0].scrollOffsetX == nil)
+    }
+
     @Test func removalHistoryKeepsNewestBoardsAndDoesNotPersistThem() throws {
         let boards = [board("First"), board("Second")]
         let source = desk("Source", boards: boards, focusedBoardID: boards[0].id)

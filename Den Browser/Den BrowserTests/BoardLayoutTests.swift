@@ -100,6 +100,19 @@ struct BoardLayoutTests {
         )
     }
 
+    @Test func calculatesContentWidthForEachMode() {
+        let alwaysParams = parameters(centering: .always, boardCount: 3)
+        #expect(BoardLayout.contentWidth(for: alwaysParams) == 1_976)
+        #expect(BoardLayout.contentWidth(for: alwaysParams, isDeskFilterPresented: true) == 1_920)
+
+        let neverParams = parameters(centering: .never, boardCount: 3)
+        #expect(BoardLayout.contentWidth(for: neverParams) == 1_052)
+        #expect(BoardLayout.contentWidth(for: neverParams, isDeskFilterPresented: true) == 996)
+
+        let emptyParams = parameters(centering: .always, boardCount: 0)
+        #expect(BoardLayout.contentWidth(for: emptyParams) == 1_000)
+    }
+
     @Test func calculatesBoardHeightWithOptionalIndicator() {
         let size = CGSize(width: 1000, height: 800)
         let heightWithHeader = DenLayout.boardHeight(for: size, shouldShowHeader: true, shouldShowIndicator: false)

@@ -132,6 +132,19 @@ struct BoardLayout {
         }
     }
 
+    static func contentWidth(
+        for params: Parameters,
+        isDeskFilterPresented: Bool = false
+    ) -> CGFloat {
+        guard !params.boards.isEmpty else { return params.windowWidth }
+        let paddings = calculatePaddings(for: params)
+        let openAtEndWidth =
+            isDeskFilterPresented
+            ? 0
+            : DenLayout.openBoardAtEndButtonSize + params.spacing
+        return paddings.leading + params.requiredBoardsWidth + openAtEndWidth + paddings.trailing
+    }
+
     private static func boardWidth(_ board: BoardState, in params: Parameters) -> CGFloat {
         params.maximizedBoardID == board.id ? params.maximizedBoardWidth : board.width
     }
