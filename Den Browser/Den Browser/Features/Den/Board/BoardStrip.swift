@@ -165,7 +165,6 @@ struct BoardStrip: View {
                                 width: boardSpacing,
                                 onResizeStart: {
                                     resizingBoardID = board.id
-                                    store.focusBoard(board.id)
                                 },
                                 onResize: { store.resizeBoard(board.id, to: $0) },
                                 onResizeEnd: {
