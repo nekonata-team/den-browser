@@ -319,7 +319,6 @@ extension DenStore {
             if focus {
                 pendingBoardLinkFocus = nil
                 state.desks[deskIndex].focusedBoardID = board.id
-                state.desks[deskIndex].scrollOffsetX = nil
                 setFocusedDesk(state.desks[deskIndex].id)
                 setTemporaryContext(nil)
                 isDenMode = false
@@ -459,7 +458,6 @@ extension DenStore {
                 customLabel: source.customLabel)
             state.desks[deskIndex].boards.insert(board, at: boardIndex + 1)
             state.desks[deskIndex].focusedBoardID = board.id
-            state.desks[deskIndex].scrollOffsetX = nil
             isDenMode = false
             save()
             return
@@ -472,7 +470,6 @@ extension DenStore {
                 customLabel: source.customLabel)
             state.desks[deskIndex].boards.insert(board, at: boardIndex + 1)
             state.desks[deskIndex].focusedBoardID = board.id
-            state.desks[deskIndex].scrollOffsetX = nil
             isDenMode = false
             save()
             return
@@ -527,7 +524,6 @@ extension DenStore {
             customLabel: source.customLabel)
         state.desks[deskIndex].boards.insert(board, at: boardIndex + 1)
         state.desks[deskIndex].focusedBoardID = board.id
-        state.desks[deskIndex].scrollOffsetX = nil
         setTemporaryContext(nil)
         isDenMode = false
         save()
@@ -573,7 +569,6 @@ extension DenStore {
         )
         state.desks[deskIndex].boards.insert(board, at: boardIndex + 1)
         state.desks[deskIndex].focusedBoardID = board.id
-        state.desks[deskIndex].scrollOffsetX = nil
         isDenMode = false
         save()
     }

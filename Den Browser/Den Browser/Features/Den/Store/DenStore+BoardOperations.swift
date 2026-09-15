@@ -22,7 +22,6 @@ extension DenStore {
         pendingBoardLinkFocus = nil
         setFocusedDesk(deskID)
         state.desks[indices.desk].focusedBoardID = boardID
-        state.desks[indices.desk].scrollOffsetX = nil
         if exitsDenMode {
             isDenMode = false
         }
@@ -270,7 +269,6 @@ extension DenStore {
             nextIndex = delta >= 0 ? 0 : boards.count - 1
         }
         state.desks[deskIndex].focusedBoardID = boards[nextIndex].id
-        state.desks[deskIndex].scrollOffsetX = nil
         save()
     }
 

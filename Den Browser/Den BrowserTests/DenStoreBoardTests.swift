@@ -920,6 +920,23 @@ struct DenStoreBoardTests {
         #expect(store.state.desks[0].scrollOffsetX == nil)
     }
 
+    @Test func deskStateFocusedBoardIDChangeClearsScrollOffsetX() {
+        let boardA = board("A")
+        let boardB = board("B")
+        var deskState = desk("Desk", boards: [boardA, boardB], focusedBoardID: boardA.id)
+        deskState.scrollOffsetX = 150.0
+
+        deskState.focusedBoardID = boardA.id
+        #expect(deskState.scrollOffsetX == 150.0)
+
+        deskState.focusedBoardID = boardB.id
+        #expect(deskState.scrollOffsetX == nil)
+
+        deskState.scrollOffsetX = 200.0
+        deskState.focusedBoardID = nil
+        #expect(deskState.scrollOffsetX == nil)
+    }
+
     @Test func removalHistoryKeepsNewestBoardsAndDoesNotPersistThem() throws {
         let boards = [board("First"), board("Second")]
         let source = desk("Source", boards: boards, focusedBoardID: boards[0].id)

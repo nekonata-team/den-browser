@@ -81,7 +81,13 @@ struct DeskState: Codable, Equatable, Identifiable {
     var id: UUID
     var label: String
     var boards: [BoardState]
-    var focusedBoardID: UUID?
+    var focusedBoardID: UUID? {
+        didSet {
+            if focusedBoardID != oldValue {
+                scrollOffsetX = nil
+            }
+        }
+    }
     var scrollOffsetX: Double?
     var anchorBoardID: UUID?
 

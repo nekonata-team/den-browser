@@ -640,7 +640,6 @@ final class DenStore {
         }
         guard state.desks[indices.desk].focusedBoardID == board.id else { return board }
 
-        state.desks[indices.desk].scrollOffsetX = nil
         let focusedBoardID: UUID?
         if focusNext && indices.board < boards.count {
             focusedBoardID = boards[indices.board].id
