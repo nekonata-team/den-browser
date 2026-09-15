@@ -139,21 +139,91 @@ final class DenIPCService {
                 return .success(message: "Pressed \(key)")
 
             case .scroll:
-                let direction = request.args.first?.lowercased() ?? "down"
+                let direction = request.args.first ?? "down"
                 let message = try await SheetInteraction.scroll(direction: direction, in: runtime.webView)
                 return .success(message: message)
 
             case .wait:
-                guard let target = request.args.first, !target.isEmpty else {
-                    return .failure("Usage: den sheet wait <duration-or-selector>")
+                let target = firstPositionalArgument(
+                    in: request.args,
+                    optionsWithValues: ["--url", "--state", "--timeout", "--text", "--load", "--fn"]
+                )
+                let urlPattern = optionValue("--url", in: request.args)
+                let textValue = optionValue("--text", in: request.args)
+                let loadValue = optionValue("--load", in: request.args)
+                let functionValue = optionValue("--fn", in: request.args)
+                let modes = [target, urlPattern, textValue, loadValue, functionValue].compactMap { $0 }.count
+                guard modes == 1 else {
+                    return .failure("Provide exactly one of a selector/ref, --url, --text, --load, or --fn")
                 }
-                if let seconds = Double(target), seconds >= 0 {
-                    let milliseconds = Int(seconds * 1000)
-                    try? await Task.sleep(for: .milliseconds(milliseconds))
-                    return .success(message: "Waited \(seconds)s")
+                if target == nil, optionValue("--state", in: request.args) != nil {
+                    return .failure("--state requires a selector or element reference")
                 }
-                try await SheetInteraction.waitForElement(target: target, in: runtime.webView)
-                return .success(message: "Element appeared: \(target)")
+                if let target, Double(target) != nil {
+                    return .failure(
+                        "Duration waits are no longer supported; use --state, --url, --text, --load, or --fn")
+                }
+                let timeout = try timeoutValue(in: request.args)
+
+                if let urlPattern {
+                    try await SheetInteraction.waitForURL(
+                        pattern: urlPattern,
+                        in: runtime.webView,
+                        timeout: timeout
+                    )
+                    return .success(message: "URL matched \(urlPattern)")
+                }
+
+                if let textValue {
+                    guard !textValue.isEmpty else {
+                        return .failure("Text must not be empty")
+                    }
+                    try await SheetInteraction.waitForText(
+                        text: textValue,
+                        in: runtime.webView,
+                        timeout: timeout
+                    )
+                    return .success(message: "Text matched: \(textValue)")
+                }
+
+                if let loadValue {
+                    guard let loadState = SheetLoadState(rawValue: loadValue.lowercased()) else {
+                        return .failure("Invalid load state: \(loadValue)")
+                    }
+                    try await SheetInteraction.waitForLoadState(
+                        loadState,
+                        in: runtime.webView,
+                        timeout: timeout
+                    )
+                    return .success(message: "Load state reached: \(loadState.rawValue)")
+                }
+
+                if let functionValue {
+                    guard !functionValue.isEmpty else {
+                        return .failure("JavaScript condition must not be empty")
+                    }
+                    try await SheetInteraction.waitForFunction(
+                        expression: functionValue,
+                        in: runtime.webView,
+                        timeout: timeout
+                    )
+                    return .success(message: "Condition matched")
+                }
+
+                guard let target else {
+                    return .failure("Usage: den sheet wait <selector|ref> [--state <state>]")
+                }
+                let stateValue = optionValue("--state", in: request.args)?.lowercased() ?? "attached"
+                guard let state = SheetWaitState(rawValue: stateValue) else {
+                    return .failure("Invalid state: \(stateValue)")
+                }
+                try await SheetInteraction.waitForElement(
+                    target: target,
+                    state: state,
+                    in: runtime.webView,
+                    timeout: timeout
+                )
+                return .success(message: "Waited for \(stateValue): \(target)")
 
             case .screenshot:
                 let image = try await ScreenshotCapture.visibleCurrentSheet(in: runtime.webView)
@@ -169,20 +239,58 @@ final class DenIPCService {
                 return .success(screenshotPath: targetURL.path)
 
             case .snapshot:
-                let interactiveOnly = request.args.contains("-i") || request.args.contains("--interactive")
+                let interactiveOnly = !request.args.contains("--full")
+                let within = optionValue("--within", in: request.args)
                 let snapshot = try await SheetInteraction.snapshot(
                     in: runtime.webView,
-                    interactiveOnly: interactiveOnly
+                    interactiveOnly: interactiveOnly,
+                    within: within
                 )
                 return .success(snapshot: snapshot)
 
-            case .click:
-                guard let target = request.args.first, !target.isEmpty else {
-                    return .failure("Usage: den sheet click <@ref|selector>")
+            case .query:
+                guard
+                    let selector = firstPositionalArgument(in: request.args, optionsWithValues: ["--fields"]),
+                    !selector.isEmpty
+                else {
+                    return .failure("Usage: den sheet query <selector>")
                 }
-                let rect = try await SheetInteraction.click(target: target, in: runtime.webView)
+                let fields = try SheetInteraction.queryFields(
+                    from: optionValue("--fields", in: request.args)
+                )
+                let elements = try await SheetInteraction.query(
+                    selector: selector,
+                    visibleOnly: request.args.contains("--visible"),
+                    all: request.args.contains("--all"),
+                    fields: fields,
+                    in: runtime.webView
+                )
+                return .success(elements: elements)
+
+            case .click:
+                let target = firstPositionalArgument(
+                    in: request.args,
+                    optionsWithValues: ["--role", "--name"]
+                )
+                let role = optionValue("--role", in: request.args)
+                let name = optionValue("--name", in: request.args)
+                let exact = request.args.contains("--exact")
+                if target == nil && (role == nil || name == nil) {
+                    return .failure("Usage: den sheet click <@ref|selector> or --role <role> --name <name>")
+                }
+                if target != nil && (role != nil || name != nil) {
+                    return .failure("Provide either a selector/ref or --role and --name, not both")
+                }
+                let rect = try await SheetInteraction.click(
+                    target: target,
+                    role: role,
+                    name: name,
+                    exact: exact,
+                    in: runtime.webView
+                )
                 runtime.triggerActionHighlight(rect)
-                return .success(message: "Clicked \(target)")
+                let description = target ?? "role=\(role ?? ""), name=\(name ?? "")"
+                return .success(message: "Clicked \(description)")
 
             case .fill:
                 guard request.args.count >= 2 else {
@@ -194,10 +302,121 @@ final class DenIPCService {
                 runtime.triggerActionHighlight(rect)
                 return .success(message: "Filled \(target)")
 
+            case .get:
+                guard let kind = request.args.first?.lowercased() else {
+                    return .failure("Usage: den sheet get <text|value|attr|count> ...")
+                }
+                switch kind {
+                case "text":
+                    guard request.args.count == 2, let target = request.args.last, !target.isEmpty else {
+                        return .failure("Usage: den sheet get text <@ref|selector>")
+                    }
+                    let text = try await SheetInteraction.text(target: target, in: runtime.webView)
+                    return .success(text: text)
+
+                case "value":
+                    guard request.args.count == 2, let target = request.args.last, !target.isEmpty else {
+                        return .failure("Usage: den sheet get value <@ref|selector>")
+                    }
+                    let value = try await SheetInteraction.value(target: target, in: runtime.webView)
+                    return .success(value: value)
+
+                case "attr":
+                    guard request.args.count == 3 else {
+                        return .failure("Usage: den sheet get attr <@ref|selector> <attribute>")
+                    }
+                    let target = request.args[1]
+                    let attribute = request.args[2]
+                    guard !target.isEmpty, !attribute.isEmpty else {
+                        return .failure("Usage: den sheet get attr <@ref|selector> <attribute>")
+                    }
+                    let value = try await SheetInteraction.attribute(
+                        target: target,
+                        name: attribute,
+                        in: runtime.webView
+                    )
+                    return .success(attribute: value)
+
+                case "count":
+                    guard request.args.count == 2, let selector = request.args.last, !selector.isEmpty else {
+                        return .failure("Usage: den sheet get count <selector>")
+                    }
+                    let count = try await SheetInteraction.count(selector: selector, in: runtime.webView)
+                    return .success(count: count)
+
+                default:
+                    return .failure("Unknown get target: \(kind)")
+                }
+
+            case .isState:
+                guard request.args.count == 2 else {
+                    return .failure("Usage: den sheet is <visible|enabled|checked> <@ref|selector>")
+                }
+                let state = request.args[0].lowercased()
+                let target = request.args[1]
+                guard !target.isEmpty else {
+                    return .failure("Usage: den sheet is <visible|enabled|checked> <@ref|selector>")
+                }
+                switch state {
+                case "visible":
+                    let visible = try await SheetInteraction.isVisible(target: target, in: runtime.webView)
+                    return .success(visible: visible)
+                case "enabled":
+                    let enabled = try await SheetInteraction.isEnabled(target: target, in: runtime.webView)
+                    return .success(enabled: enabled)
+                case "checked":
+                    let checked = try await SheetInteraction.isChecked(target: target, in: runtime.webView)
+                    return .success(checked: checked)
+                default:
+                    return .failure("Unknown element state: \(state)")
+                }
+
             }
         } catch {
             return .failure(error.localizedDescription)
         }
+    }
+
+    private func firstPositionalArgument(in args: [String], optionsWithValues: Set<String>) -> String? {
+        var index = args.startIndex
+        while index < args.endIndex {
+            let argument = args[index]
+            if argument.hasPrefix("--") {
+                if argument.contains("=") {
+                    index = args.index(after: index)
+                } else if optionsWithValues.contains(argument) {
+                    index = args.index(index, offsetBy: min(2, args.distance(from: index, to: args.endIndex)))
+                } else {
+                    index = args.index(after: index)
+                }
+            } else if argument.hasPrefix("-") {
+                index = args.index(after: index)
+            } else {
+                return argument
+            }
+        }
+        return nil
+    }
+
+    private func optionValue(_ option: String, in args: [String]) -> String? {
+        if let index = args.firstIndex(of: option), args.index(after: index) < args.endIndex {
+            let value = args[args.index(after: index)]
+            if !value.hasPrefix("-") {
+                return value
+            }
+        }
+        let prefix = option + "="
+        return args.first(where: { $0.hasPrefix(prefix) }).map { String($0.dropFirst(prefix.count)) }
+    }
+
+    private func timeoutValue(in args: [String]) throws -> TimeInterval {
+        guard let rawTimeout = optionValue("--timeout", in: args) else {
+            return 10
+        }
+        guard let timeout = Double(rawTimeout), timeout.isFinite, timeout >= 0 else {
+            throw SheetInteractionError.invalidArgument("Timeout must be a finite non-negative number")
+        }
+        return timeout
     }
 
     // MARK: - Board Commands

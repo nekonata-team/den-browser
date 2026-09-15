@@ -404,6 +404,7 @@ final class SheetNavigationManager {
                 forMainFrameOnly: true,
                 in: Self.contentWorld
             ))
+        SheetDOMRuntime.install(on: userContentController)
     }
 
     private func configurationJavaScript(for webView: WKWebView?) -> String {

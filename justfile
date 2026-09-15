@@ -1,4 +1,5 @@
 set shell := ["zsh", "-cu"]
+set positional-arguments := true
 
 project := "Den Browser/Den Browser.xcodeproj"
 scheme := "Den Browser"
@@ -49,7 +50,7 @@ run: build
 # Run the bundled den CLI.
 [group("development")]
 den *args:
-    "{{derived_data}}/Build/Products/Debug/Den Browser.app/Contents/MacOS/den" {{args}}
+    "{{derived_data}}/Build/Products/Debug/Den Browser.app/Contents/MacOS/den" "$@"
 
 # Benchmark startup and idle resource usage.
 [group("development")]

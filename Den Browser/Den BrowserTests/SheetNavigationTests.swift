@@ -530,7 +530,7 @@ struct SheetNavigationTests {
             events: boardRuntimeEvents())
 
         #expect(runtime.webView.configuration.userContentController === manager.userContentController)
-        #expect(manager.userContentController.userScripts.count == 1)
+        #expect(manager.userContentController.userScripts.count == 2)
     }
 
     @Test func sheetNavigationCanOpenLinkAsAdjacentBoard() {
@@ -1049,7 +1049,12 @@ struct SheetNavigationTests {
     }
 
     @Test func sheetInteractionClickAndFillReturnRectAndLeaveDOMUntouched() async throws {
-        let webView = WKWebView(frame: NSRect(x: 0, y: 0, width: 800, height: 600))
+        let configuration = WKWebViewConfiguration()
+        SheetDOMRuntime.install(on: configuration.userContentController)
+        let webView = WKWebView(
+            frame: NSRect(x: 0, y: 0, width: 800, height: 600),
+            configuration: configuration
+        )
         let waiter = WebViewLoadWaiter()
         await waiter.load(
             """

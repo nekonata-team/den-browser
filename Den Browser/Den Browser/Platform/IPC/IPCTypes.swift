@@ -14,6 +14,9 @@ nonisolated enum DenIPCCommand: Codable, Equatable, Sendable {
         case wait
         case screenshot
         case snapshot
+        case query
+        case get
+        case isState = "is"
         case click
         case fill
     }
@@ -111,6 +114,54 @@ nonisolated struct DenDrawerItemInfo: Codable, Sendable {
     var title: String?
 }
 
+nonisolated struct DenSheetElementInfo: Codable, Sendable {
+    var ref: String
+    var tag: String?
+    var role: String?
+    var name: String?
+    var text: String?
+    var value: String?
+    var checked: Bool?
+    var disabled: Bool?
+    var selected: Bool?
+    var expanded: Bool?
+    var visible: Bool
+    var attributes: [String: String]?
+
+    enum CodingKeys: String, CodingKey {
+        case ref
+        case tag
+        case role
+        case name
+        case text
+        case value
+        case checked
+        case disabled
+        case selected
+        case expanded
+        case visible
+        case attributes
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(ref, forKey: .ref)
+        try container.encodeIfPresent(tag, forKey: .tag)
+        try container.encodeIfPresent(role, forKey: .role)
+        try container.encodeIfPresent(name, forKey: .name)
+        try container.encodeIfPresent(text, forKey: .text)
+        try container.encodeIfPresent(value, forKey: .value)
+        try container.encodeIfPresent(checked, forKey: .checked)
+        try container.encodeIfPresent(disabled, forKey: .disabled)
+        try container.encodeIfPresent(selected, forKey: .selected)
+        try container.encodeIfPresent(expanded, forKey: .expanded)
+        try container.encode(visible, forKey: .visible)
+        if let attributes, !attributes.isEmpty {
+            try container.encode(attributes, forKey: .attributes)
+        }
+    }
+}
+
 nonisolated struct DenProfileInfo: Codable, Sendable {
     var id: String
     var name: String
@@ -138,8 +189,14 @@ nonisolated struct DenIPCResponse: Codable, Sendable {
     var profiles: [DenProfileInfo]?
     var url: String?
     var snapshot: String?
+    var elements: [DenSheetElementInfo]?
     var text: String?
     var value: String?
+    var checked: Bool?
+    var attribute: String?
+    var count: Int?
+    var visible: Bool?
+    var enabled: Bool?
     var screenshotPath: String?
 
     enum CodingKeys: String, CodingKey {
@@ -155,8 +212,14 @@ nonisolated struct DenIPCResponse: Codable, Sendable {
         case profiles
         case url
         case snapshot
+        case elements
         case text
         case value
+        case checked
+        case attribute
+        case count
+        case visible
+        case enabled
         case screenshotPath = "screenshot_path"
     }
 
@@ -171,8 +234,14 @@ nonisolated struct DenIPCResponse: Codable, Sendable {
         profiles: [DenProfileInfo]? = nil,
         url: String? = nil,
         snapshot: String? = nil,
+        elements: [DenSheetElementInfo]? = nil,
         text: String? = nil,
         value: String? = nil,
+        checked: Bool? = nil,
+        attribute: String? = nil,
+        count: Int? = nil,
+        visible: Bool? = nil,
+        enabled: Bool? = nil,
         screenshotPath: String? = nil
     ) -> DenIPCResponse {
         DenIPCResponse(
@@ -188,8 +257,14 @@ nonisolated struct DenIPCResponse: Codable, Sendable {
             profiles: profiles,
             url: url,
             snapshot: snapshot,
+            elements: elements,
             text: text,
             value: value,
+            checked: checked,
+            attribute: attribute,
+            count: count,
+            visible: visible,
+            enabled: enabled,
             screenshotPath: screenshotPath
         )
     }
@@ -208,8 +283,14 @@ nonisolated struct DenIPCResponse: Codable, Sendable {
             profiles: nil,
             url: nil,
             snapshot: nil,
+            elements: nil,
             text: nil,
             value: nil,
+            checked: nil,
+            attribute: nil,
+            count: nil,
+            visible: nil,
+            enabled: nil,
             screenshotPath: nil
         )
     }

@@ -98,11 +98,14 @@ Commands operating on the Current Sheet of the resolved Web Board.
 | `den sheet back` | None | Navigate back in browsing history. | `den sheet back` |
 | `den sheet forward` | None | Navigate forward in browsing history. | `den sheet forward` |
 | `den sheet press` | `<key>` | Dispatch key events (`Enter`, `Escape`, `Tab`, arrows) to the active element. | `den sheet press Enter` |
-| `den sheet scroll` | `[<direction>]` | Scroll the page (`down`, `up`, `top`, `bottom`, or pixel amount). Defaults to `down`. | `den sheet scroll down` |
-| `den sheet wait` | `<target>` | Wait for a duration in seconds (`2`, `0.5`) or until a selector/ref appears. | `den sheet wait "#results"` |
-| `den sheet snapshot` | `[-i]` | Extract semantic DOM tree with short references (`@e1`, `@e2`). `-i` filters to interactive elements only. | `den sheet snapshot -i` |
-| `den sheet click` | `<target>` | Click an element by reference (`@e1`) or CSS selector. | `den sheet click @e1` |
-| `den sheet fill` | `<target> <value>` | Fill an input/textarea with text by reference or selector. | `den sheet fill @e2 "search query"` |
+| `den sheet scroll` | `[<direction-or-target>]` | Scroll the page (`down`, `up`, `top`, `bottom`, or pixel amount), or scroll a ref/selector into view. Defaults to `down`. | `den sheet scroll @e2` |
+| `den sheet wait` | `[<target>] [--state <state>] [--url <glob>] [--text <text>] [--load <state>] [--fn <expression>] [--timeout <seconds>]` | Wait for one selector/ref state, URL glob, visible page text, load state (`domcontentloaded`, `load`, or `networkidle`), or JavaScript condition. Matching selectors use any visible element for `visible`, and succeed when all matches are hidden or absent for `hidden` and `detached`. The default timeout is 10 seconds. | `den sheet wait --text "Saved"` |
+| `den sheet snapshot` | `[--full] [-i] [--within <target>]` | Extract the compact interactive semantic tree by default with short references (`@e1`, `@e2`) and control states such as `checked`, `unchecked`, `disabled`, `selected`, and `expanded`. `--full` includes all eligible visible semantic elements; `-i`/`--interactive` selects the default compact form explicitly; `--within` scopes either form to one selector or ref. | `den sheet snapshot --within '[role=dialog]'` |
+| `den sheet query` | `<selector> [--visible] [--all] [--fields <list>]` | Return matching elements as structured JSON. Every result includes `ref` and `visible`; the default fields are `tag,role,name,text`. Use `value`, `checked`, `disabled`, `selected`, `expanded`, `class`, or `attr:<name>` for additional fields. `--visible` filters matches and `--all` returns every match instead of the first. | `den sheet query "tr.zA" --visible --all --fields text,attr:data-email,class --json` |
+| `den sheet get` | `<text\|value\|attr\|count> ...` | Read text, a form value, an attribute, or the number of elements matching a selector. | `den sheet get attr @e1 data-email --json` |
+| `den sheet is` | `<visible\|enabled\|checked> <target>` | Check one current boolean state for an element. | `den sheet is checked @e3 --json` |
+| `den sheet click` | `[<target>] [--role <role> --name <name>] [--exact]` | Click by ref/selector or by an accessible role and name. Semantic matching requires both `--role` and `--name`; `--exact` requires an exact name match. The action dispatches synthetic pointer and mouse events, then one click activation. | `den sheet click --role option --name GitHub --exact --json` |
+| `den sheet fill` | `<target> <value>` | Fill an input/textarea with text by reference or selector. An empty value is valid. | `den sheet fill @e2 "search query"` |
 | `den sheet screenshot` | `[<path>]` | Save a PNG screenshot of the web sheet (defaults to temporary directory). | `den sheet screenshot /tmp/screen.png` |
 
 ### 3.3 `den board` (Board Surfaces & Layout)
@@ -217,12 +220,23 @@ Web Boards include `url`; Zellij and zmx Terminal Boards include `session_name` 
 {"drawer_item_id":"4F72344C-...","message":"Kept in Drawer: https://example.com","ok":true}
 ```
 
-**Sheet URL / Snapshot / Value**:
+**Sheet URL / Text / Snapshot / Query / Get / Is**:
 ```json
 {"ok":true,"url":"https://example.com/docs"}
-{"ok":true,"snapshot":"@e1 [a] \"Learn more\"\n@e2 [button] \"Submit\""}
+{"ok":true,"text":"Visible text from the element"}
+{"ok":true,"snapshot":"@e1 [button] \"Submit\""}
+{"ok":true,"elements":[{"ref":"@e1","tag":"button","role":"option","name":"GitHub","text":"GitHub","visible":true,"attributes":{"class":"choice","data-email":"github@example.com"}}]}
+{"ok":true,"attribute":"github@example.com"}
+{"ok":true,"count":12}
 {"ok":true,"value":"42"}
+{"ok":true,"checked":true}
+{"ok":true,"visible":false}
+{"ok":true,"enabled":true}
 ```
+
+Query fields that are unavailable on an element are omitted. `attributes` contains requested `class` or `attr:<name>` values that exist on the element. The `value` response can be an empty string. Snapshot omits form values; use `get value` when a value is needed.
+
+Element names use labels and visible content rather than form values, except for input buttons whose value is their caption. Native disabled state, including inheritance from a disabled fieldset, takes precedence over `aria-disabled="false"`. URL globs match literal segments in order without overlap; `*` matches zero or more characters.
 
 **Actions (`click`, `fill`, `press`, `scroll`, `wait`, `open`, `place`, `discard`, `send`)**:
 ```json

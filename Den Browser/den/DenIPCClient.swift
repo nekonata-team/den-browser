@@ -200,12 +200,36 @@ enum DenIPCClient {
                     print(drawerItemId)
                 } else if let snapshot = response.snapshot {
                     print(snapshot)
+                } else if let elements = response.elements {
+                    for element in elements {
+                        var line = element.ref
+                        if let tag = element.tag {
+                            line += " <\(tag)>"
+                        }
+                        if let role = element.role {
+                            line += " [\(role)]"
+                        }
+                        if let text = element.text, !text.isEmpty {
+                            line += " \"\(text)\""
+                        }
+                        print(line)
+                    }
                 } else if let url = response.url {
                     print(url)
                 } else if let text = response.text {
                     print(text)
                 } else if let value = response.value {
                     print(value)
+                } else if let checked = response.checked {
+                    print(checked ? "true" : "false")
+                } else if let attribute = response.attribute {
+                    print(attribute)
+                } else if let count = response.count {
+                    print(count)
+                } else if let visible = response.visible {
+                    print(visible ? "true" : "false")
+                } else if let enabled = response.enabled {
+                    print(enabled ? "true" : "false")
                 } else if let screenshotPath = response.screenshotPath {
                     print(screenshotPath)
                 } else if let message = response.message {
