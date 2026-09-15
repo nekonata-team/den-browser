@@ -30,7 +30,8 @@ struct BoardView: View {
             ZStack(alignment: .top) {
                 BoardWebView(
                     webView: runtime.webView,
-                    isHidden: !isVisibleInViewport || store.isOverviewPresented,
+                    isHidden: !isVisibleInViewport || store.isOverviewPresented
+                        || (store.isDrawerOpen && preferences.drawerStyle == .bottom),
                     focusRequest: focusRequest,
                     onSurfaceReady: { window in
                         guard runtime.webView.fullscreenState == .notInFullscreen else {
