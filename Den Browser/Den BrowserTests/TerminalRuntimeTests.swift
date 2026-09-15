@@ -6,6 +6,12 @@ import Testing
 
 @MainActor
 struct TerminalRuntimeTests {
+    @Test func terminalViewReportsAnEmptySelectionWithoutMarkedText() {
+        let view = DenTerminalView(frame: .zero)
+
+        #expect(view.selectedRange() == NSRange(location: 0, length: 0))
+    }
+
     @Test func terminalCloseNotificationIsDeferredAndCoalesced() async {
         func waitForMainQueue() async {
             await withCheckedContinuation { continuation in

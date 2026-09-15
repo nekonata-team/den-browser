@@ -3,6 +3,14 @@ import Combine
 import GhosttyKit
 import GhosttyTerminal
 
+final class DenTerminalView: AppTerminalView {
+    override func selectedRange() -> NSRange {
+        let range = super.selectedRange()
+        // macOS Dictation rejects NSTextInputClient targets that report NSNotFound here.
+        return range.location == NSNotFound ? NSRange(location: 0, length: 0) : range
+    }
+}
+
 @MainActor
 final class TerminalRuntime: NSObject, ObservableObject {
     struct CommandResult: Equatable {
@@ -40,7 +48,7 @@ final class TerminalRuntime: NSObject, ObservableObject {
     init(workingDirectory: String, command: String? = nil, boardID: UUID? = nil, events: Events) {
         PerformanceTrace.mark("TerminalRuntime.init (dir: \(workingDirectory))", category: "Terminal")
         self.events = events
-        terminalView = AppTerminalView(frame: .zero)
+        terminalView = DenTerminalView(frame: .zero)
         super.init()
         let resolution = TerminalConfigurationSource.make(commandOverride: command)
         let controller = TerminalController(
