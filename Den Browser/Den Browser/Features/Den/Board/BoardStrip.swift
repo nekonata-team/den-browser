@@ -315,7 +315,11 @@ struct BoardStrip: View {
                 return
             }
             if current.boardID == nil {
-                cancelPendingBoardAlignment()
+                if deskChanged {
+                    resetBoardStripPosition(to: 0, animated: false)
+                } else {
+                    cancelPendingBoardAlignment()
+                }
                 return
             }
 
@@ -366,7 +370,7 @@ struct BoardStrip: View {
             }
 
             let isInitialAlignment = previous.boardID == nil && current.boardID != nil
-            if layoutChanged || isInitialAlignment {
+            if deskChanged || layoutChanged || isInitialAlignment {
                 if current.centering == .never {
                     deferBoardAlignment(
                         .visible,
@@ -833,19 +837,13 @@ struct BoardStrip: View {
 
     private func boardFramesMatchLayout(_ frames: [UUID: CGRect]) -> Bool {
         let boards = alignmentBoards
-        let params = boardLayoutParameters(for: boards)
-        return boards.enumerated().allSatisfy { index, board in
+        return boards.allSatisfy { board in
             guard let frame = frames[board.id] else { return false }
-            guard let boardRange = BoardLayout.boardContentRange(for: index, in: params) else {
-                return false
-            }
             let expectedWidth =
                 store.maximizedBoardID == board.id
                 ? max(CGFloat(BoardState.minimumWidth), size.width - boardHorizontalPadding * 2)
                 : CGFloat(board.width)
-            let expectedMinX = boardRange.minX - scrollGeometry.offsetX
             return abs(frame.width - expectedWidth) <= 1
-                && abs(frame.minX - expectedMinX) <= 1
         }
     }
 
