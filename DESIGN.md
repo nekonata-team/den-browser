@@ -59,13 +59,19 @@ Den controls feel like a calm desk laid over live web sheets. Web content remain
 - Shortcut recording commits a valid binding immediately and reports invalid or conflicting input inline.
 - Search and filter fields are transient and never use the persisted-settings contract.
 
-## Transient feedback
+## Error and feedback presentation
 
-Use a Toast when an app-owned operation has no otherwise visible result, or when its failure or blocked state needs explanation.
+Error and feedback presentation is strictly unified into three channels:
 
-Do not use a Toast when the result is already communicated by visible UI state, such as changed content, focus, navigation, selection, or layout.
-
-Keep Toasts concise and non-blocking. Prefer direct UI state for persistent or actionable feedback.
+- **Action feedback (Toast)**:
+  - Use a Toast (`store.showToast`) when an app-owned operation has no otherwise visible result, or when an action, navigation, or clipboard command fails or is blocked without form context.
+  - Do not use a Toast when the result is already communicated by visible UI state, such as changed content, focus, navigation, selection, or layout.
+  - Keep Toasts concise and non-blocking. Never block the user with a modal dialog for actionable or transient operations.
+- **Form and input validation (Inline)**:
+  - Use inline validation messages (`DenValidationMessage`) directly within the active panel or settings section for invalid formats, missing fields, or shortcut conflicts.
+  - Keep validation inline with the draft so the user can correct the input immediately.
+- **Blockers and destructive actions (Dialog / Alert)**:
+  - Use modal alerts and confirmation dialogs (`.alert`, `.confirmationDialog` / `DenDialogs`) exclusively for irreversible destructive operations (deleting a Desk, clearing browsing data) or system-level configuration blockers where work cannot continue without user action.
 
 ## Zen View
 

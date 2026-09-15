@@ -26,7 +26,7 @@ struct EssentialsSettingsView: View {
                 }
 
                 if let errorMessage {
-                    SettingsValidationMessage(errorMessage)
+                    DenValidationMessage(errorMessage)
                 }
             }
 
@@ -175,7 +175,7 @@ private struct EssentialEditorView: View {
             .formStyle(.grouped)
 
             if let errorMessage {
-                SettingsValidationMessage(errorMessage)
+                DenValidationMessage(errorMessage)
             }
 
             HStack {

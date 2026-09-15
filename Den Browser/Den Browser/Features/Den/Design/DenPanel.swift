@@ -30,3 +30,17 @@ extension View {
             )
     }
 }
+
+struct DenValidationMessage: View {
+    private let message: String
+
+    init(_ message: String) {
+        self.message = message
+    }
+
+    var body: some View {
+        Text(message)
+            .font(.caption)
+            .foregroundStyle(.red)
+    }
+}

@@ -71,9 +71,7 @@ struct OpenBoardPanel: View {
             }
 
             if let message = store.openBoardPanelMessage {
-                Text(message)
-                    .font(.caption)
-                    .foregroundStyle(.red)
+                DenValidationMessage(message)
             }
 
             if !filteredRecentItems.isEmpty {
@@ -487,9 +485,7 @@ struct SaveEssentialPanel: View {
             }
 
             if let errorMessage {
-                Text(errorMessage)
-                    .font(.caption)
-                    .foregroundStyle(.red)
+                DenValidationMessage(errorMessage)
             }
 
             HStack {

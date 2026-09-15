@@ -32,7 +32,7 @@ struct SheetNavigationSettingsSection: View {
                 }
 
                 if hintAlphabetIsInvalid {
-                    SettingsValidationMessage("Use at least two distinct ASCII letters or digits.")
+                    DenValidationMessage("Use at least two distinct ASCII letters or digits.")
                 }
 
                 SettingsActionRow {
@@ -53,7 +53,7 @@ struct SheetNavigationSettingsSection: View {
                 }
 
                 if ignoredSitesAreInvalid {
-                    SettingsValidationMessage("Enter hostnames or URLs, one per line.")
+                    DenValidationMessage("Enter hostnames or URLs, one per line.")
                 }
 
                 SettingsActionRow {

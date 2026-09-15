@@ -42,17 +42,3 @@ struct SettingsHelpText<Content: View>: View {
             .foregroundStyle(.secondary)
     }
 }
-
-struct SettingsValidationMessage: View {
-    private let message: String
-
-    init(_ message: String) {
-        self.message = message
-    }
-
-    var body: some View {
-        Text(message)
-            .font(.caption)
-            .foregroundStyle(.red)
-    }
-}

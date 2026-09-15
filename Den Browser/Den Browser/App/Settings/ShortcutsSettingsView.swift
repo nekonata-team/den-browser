@@ -109,7 +109,7 @@ struct ShortcutsSettingsView: View {
             }
 
             if recordingDeskNumberShortcut, let errorMessage {
-                SettingsValidationMessage(errorMessage)
+                DenValidationMessage(errorMessage)
             }
         }
     }
@@ -165,7 +165,7 @@ struct ShortcutsSettingsView: View {
             }
 
             if recordingAction == action, let errorMessage {
-                SettingsValidationMessage(errorMessage)
+                DenValidationMessage(errorMessage)
             } else if optionCharacterWarning(for: action) {
                 SettingsHelpText {
                     Text("This shortcut may replace text input in Sheets.")
