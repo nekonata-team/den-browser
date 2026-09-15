@@ -622,6 +622,42 @@ struct KeyboardShortcutTests {
         #expect(store.state.drawerItems.count == 1)
     }
 
+    @Test func drawerConsumesUnmappedKeysWhenPreviewIsNotFocused() throws {
+        let store = try makeStore(boards: [board("First")])
+        store.keepInDrawer(try #require(URL(string: "https://example.com/")))
+        let itemID = try #require(store.selectedDrawerItemID)
+        store.toggleDrawerItem(itemID)
+        #expect(!store.isDenMode)
+        #expect(store.isDrawerOpen)
+        #expect(store.expandedDrawerItemID == nil)
+
+        let letterA = try keyEvent(
+            characters: "a", charactersIgnoringModifiers: "a", keyCode: 0)
+        let space = try keyEvent(
+            characters: " ", charactersIgnoringModifiers: " ", keyCode: 49)
+        let tab = try keyEvent(
+            characters: "\t", charactersIgnoringModifiers: "\t", keyCode: 48)
+
+        #expect(
+            KeyboardController.decision(for: letterA, store: store)
+                == .consume(.exclusiveContext))
+        #expect(KeyboardController.handle(letterA, store: store))
+
+        #expect(
+            KeyboardController.decision(for: space, store: store)
+                == .consume(.exclusiveContext))
+        #expect(KeyboardController.handle(space, store: store))
+
+        #expect(
+            KeyboardController.decision(for: tab, store: store)
+                == .consume(.exclusiveContext))
+        #expect(KeyboardController.handle(tab, store: store))
+
+        #expect(store.isDrawerOpen)
+        #expect(store.state.drawerItems.count == 1)
+        #expect(store.focusedDesk?.boards.count == 1)
+    }
+
     @Test func denModeShiftDRequestsDrawerClearConfirmation() throws {
         let store = try makeStore(boards: [board("First")])
         store.keepInDrawer(try #require(URL(string: "https://first.example/")))

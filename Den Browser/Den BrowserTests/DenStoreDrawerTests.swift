@@ -589,9 +589,17 @@ struct DenStoreDrawerTests {
         #expect(!store.isDenMode)
 
         for (key, keyCode) in [("d", 2), ("x", 7), ("j", 38), ("k", 40), ("p", 35), ("/", 44)] {
-            #expect(!KeyboardController.handle(try keyEvent(key, keyCode: UInt16(keyCode)), store: store))
+            let event = try keyEvent(key, keyCode: UInt16(keyCode))
+            #expect(
+                KeyboardController.decision(for: event, store: store)
+                    == .consume(.exclusiveContext))
+            #expect(KeyboardController.handle(event, store: store))
         }
-        #expect(!KeyboardController.handle(try keyEvent(.tab, keyCode: 48), store: store))
+        let tab = try keyEvent(.tab, keyCode: 48)
+        #expect(
+            KeyboardController.decision(for: tab, store: store)
+                == .consume(.exclusiveContext))
+        #expect(KeyboardController.handle(tab, store: store))
         #expect(store.state.drawerItems.count == 2)
         #expect(store.isDrawerOpen)
     }

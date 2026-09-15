@@ -560,7 +560,7 @@ enum KeyboardRouter {
         return switch event.key {
         case .downArrow: .perform(.selectDrawerItem(1))
         case .upArrow: .perform(.selectDrawerItem(-1))
-        default: .forward(.temporaryTextInput)
+        default: .consume(.exclusiveContext)
         }
     }
 
