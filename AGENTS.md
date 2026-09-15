@@ -4,7 +4,7 @@
 
 Den Browser is a macOS-first companion browser for long-running web work. It is a SwiftUI app with AppKit bridges and `WKWebView`.
 
-Read [CONTEXT.md](./CONTEXT.md) before changing product behavior or user-visible wording. It defines project terms such as Den, Desk, Board, and Sheet; do not replace them with browser-tab language.
+Read [CONTEXT.md](./CONTEXT.md) when changing product behavior or user-visible wording. It defines project terms such as Den, Desk, Board, and Sheet; do not replace them with browser-tab language.
 
 ## Platform baseline
 
@@ -18,14 +18,14 @@ The minimum supported platform is macOS 26.0 for the app and its tests.
 
 ## Implementation flow
 
-1. Read `CONTEXT.md`, `docs/architecture.md`, relevant ADRs in `docs/adr/`, and affected code/tests. Read `docs/testing.md` before adding or updating any tests (unit or UI). For every XCUITest, record the native UI boundary it protects and why a unit test cannot observe the failure; ordinary Button clicks do not qualify. Read `docs/keyboard-input.md` before changing keyboard routing, Commands, shortcut recording, or local key handling.
+1. Read `CONTEXT.md` when the change touches product behavior or user-visible wording. Read `docs/architecture.md` and relevant ADRs in `docs/adr/` when the change affects architecture or records a design decision. Read affected code/tests. Read `docs/testing.md` before adding or updating any tests (unit or UI). For every XCUITest, record the native UI boundary it protects and why a unit test cannot observe the failure; ordinary Button clicks do not qualify. Read `docs/keyboard-input.md` before changing keyboard routing, Commands, shortcut recording, or local key handling.
 2. Keep persisted `DenState` separate from live `BoardRuntime`/`WKWebView` objects.
-3. Add or update focused unit tests for stable `DenStore` behavior.
-4. Choose validation in proportion to the change. Run `just check` before handoff for Swift source, Xcode settings, or test and validation configuration changes. Otherwise, run focused validation that exercises the changed behavior.
+3. Add or update focused unit tests for changed stable `DenStore` behavior when existing tests do not already protect it.
+4. Choose validation in proportion to the change. Run `just check` before handoff for Swift source, Xcode settings, or test and validation configuration changes. Otherwise, run focused validation that exercises the changed behavior. Reuse successful checks when the final diff does not affect what they cover.
 
 ## Commands
 
-Run `just --list`. These commands are preferred for use in this project.
+Run `just --list` when choosing a project task; reuse the result while the justfile is unchanged. These commands are preferred for use in this project.
 
 ## Release
 
@@ -51,7 +51,7 @@ manual candidate verification, `just release publish X.Y.Z`.
 
 ## Documentation operation
 
-- Use the `domain-modeling` skill when creating or updating `CONTEXT.md` or ADRs.
+- Use the `domain-modeling` skill when changing domain terms, their meanings, or architectural decisions in `CONTEXT.md` or ADRs.
 - Keep README focused on product positioning, target work, status, requirements,
   installation, core concepts, a short feature summary, and entry-point links.
 - Do not add exhaustive feature lists, shortcut maps, or implementation details

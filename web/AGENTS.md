@@ -12,7 +12,7 @@ Manage the background server with `astro dev stop`, `astro dev status`, and `ast
 
 Full documentation: https://docs.astro.build
 
-Consult these guides before working on related tasks:
+Consult the guide relevant to the task when its framework behavior or project conventions need confirmation:
 
 - [Adding pages, dynamic routes, or middleware](https://docs.astro.build/en/guides/routing/)
 - [Working with Astro components](https://docs.astro.build/en/basics/astro-components/)
