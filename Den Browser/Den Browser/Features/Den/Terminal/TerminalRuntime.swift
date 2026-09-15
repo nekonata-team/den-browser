@@ -199,12 +199,16 @@ final class TerminalRuntime: NSObject, ObservableObject {
     }
 
     private var ghosttyTerminalSurface: TerminalSurface? {
-        for coreChild in Mirror(reflecting: terminalView).children where coreChild.label == "core" {
-            for surfaceChild in Mirror(reflecting: coreChild.value).children where surfaceChild.label == "surface" {
-                if let surface = surfaceChild.value as? TerminalSurface {
-                    return surface
+        var viewMirror: Mirror? = Mirror(reflecting: terminalView)
+        while let mirror = viewMirror {
+            for coreChild in mirror.children where coreChild.label == "core" {
+                for surfaceChild in Mirror(reflecting: coreChild.value).children where surfaceChild.label == "surface" {
+                    if let surface = surfaceChild.value as? TerminalSurface {
+                        return surface
+                    }
                 }
             }
+            viewMirror = mirror.superclassMirror
         }
         return nil
     }
