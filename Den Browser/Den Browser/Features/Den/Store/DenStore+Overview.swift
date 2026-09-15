@@ -28,7 +28,7 @@ extension DenStore {
     }
 
     func setOverviewQuery(_ query: String) {
-        overviewQuery = query
+        overviewQuery = SheetURLPolicy.stripNewlines(query)
         updateOverviewSelectionForFilter()
     }
 

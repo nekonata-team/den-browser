@@ -443,6 +443,11 @@ private struct DeskFilterOverlay: View {
         .onChange(of: store.isDeskFilterInputActive) { _, isActive in
             isFocused = isActive
         }
+        .onChange(of: store.deskFilterQuery) { _, newValue in
+            if isFocused {
+                TextInputComposition.syncActiveFieldEditor(to: newValue)
+            }
+        }
         .accessibilityIdentifier("desk-filter")
     }
 }

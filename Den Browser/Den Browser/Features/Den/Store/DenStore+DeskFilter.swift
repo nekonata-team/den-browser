@@ -13,7 +13,7 @@ extension DenStore {
     }
 
     func setDeskFilterQuery(_ query: String) {
-        deskFilterQuery = query
+        deskFilterQuery = SheetURLPolicy.stripNewlines(query)
         updateDeskFilterSelection()
     }
 

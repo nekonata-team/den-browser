@@ -97,7 +97,14 @@ final class DenStore {
     var overviewFilterPhase: DenFilterPhase = .inactive
     var boardWidthPanelMessage: String?
     var openBoardPanelInitialURL: URL?
-    var openBoardPanelInput = ""
+    var openBoardPanelInput = "" {
+        didSet {
+            let stripped = SheetURLPolicy.stripNewlines(openBoardPanelInput)
+            if openBoardPanelInput != stripped {
+                openBoardPanelInput = stripped
+            }
+        }
+    }
     var openBoardAfterBoardID: UUID?
     var openBoardPanelMessage: String?
     var zmxSessionsReturnToOpenBoard = false

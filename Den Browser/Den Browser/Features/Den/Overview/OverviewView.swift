@@ -157,6 +157,11 @@ struct OverviewView: View {
         .onChange(of: store.isOverviewFilterInputActive) { _, newValue in
             isSearchFocused = newValue
         }
+        .onChange(of: store.overviewQuery) { _, newValue in
+            if isSearchFocused {
+                TextInputComposition.syncActiveFieldEditor(to: newValue)
+            }
+        }
         .onChange(of: store.overviewSelectionBoardID) { _, boardID in
             scrollToSelection(boardID)
         }

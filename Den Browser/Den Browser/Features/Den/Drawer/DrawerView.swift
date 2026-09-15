@@ -161,6 +161,11 @@ struct DrawerView: View {
                 restoreKeyboardFocus()
             }
         }
+        .onChange(of: store.drawerQuery) { _, newValue in
+            if isSearchFocused {
+                TextInputComposition.syncActiveFieldEditor(to: newValue)
+            }
+        }
     }
 
     private var drawerContents: some View {

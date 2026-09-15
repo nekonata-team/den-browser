@@ -58,6 +58,21 @@ struct DenStoreRecentTests {
                         .search("Swift Observation"),
                         .url(URL(string: "https://example.com/long-path")!),
                     ])
+
+                store.openBoardPanelInput = "https://example.com/sub-\npage"
+                #expect(store.openBoardPanelInput == "https://example.com/sub-page")
+
+                store.openBoardPanelInput = "search\nquery"
+                #expect(store.openBoardPanelInput == "searchquery")
+
+                store.setDeskFilterQuery("desk\nfilter")
+                #expect(store.deskFilterQuery == "deskfilter")
+
+                store.setOverviewQuery("overview\nquery")
+                #expect(store.overviewQuery == "overviewquery")
+
+                store.setDrawerQuery("drawer\nquery")
+                #expect(store.drawerQuery == "drawerquery")
             })
     }
 

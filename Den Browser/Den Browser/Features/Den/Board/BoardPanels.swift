@@ -176,9 +176,12 @@ struct OpenBoardPanel: View {
             }
             DispatchQueue.main.async { isFocused = true }
         }
-        .onChange(of: store.openBoardPanelInput) { _, _ in
+        .onChange(of: store.openBoardPanelInput) { _, newValue in
             selectedRecentItemID = nil
             store.openBoardPanelMessage = nil
+            if isFocused {
+                TextInputComposition.syncActiveFieldEditor(to: newValue)
+            }
         }
         .onExitCommand {
             store.hideOpenBoardPanel()
@@ -238,6 +241,15 @@ struct EditBoardLinkPanel: View {
                 .font(.title3.weight(.medium))
                 .focused($isFocused)
                 .onSubmit { TextInputComposition.performUnlessActive(submit) }
+                .onChange(of: text) { _, newValue in
+                    let stripped = SheetURLPolicy.stripNewlines(newValue)
+                    if newValue != stripped {
+                        text = stripped
+                    }
+                    if isFocused {
+                        TextInputComposition.syncActiveFieldEditor(to: stripped)
+                    }
+                }
             }
 
             HStack(spacing: DenPanelLayout.contentSpacing) {

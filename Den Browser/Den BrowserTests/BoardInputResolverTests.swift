@@ -45,4 +45,14 @@ struct BoardInputResolverTests {
         let search = BoardInputResolver.resolveOpenBoardInput("hello world", searchEngine: .google)
         #expect(search?.url.absoluteString == "https://www.google.com/search?q=hello%20world")
     }
+
+    @Test func stripsNewlinesWithoutChangingOtherCharacters() {
+        #expect(
+            SheetURLPolicy.stripNewlines("https://example.com/long-\npath/to/\r\npage")
+                == "https://example.com/long-path/to/page")
+        #expect(
+            SheetURLPolicy.stripNewlines("  search query  ")
+                == "  search query  ")
+        #expect(SheetURLPolicy.stripNewlines("single line text") == "single line text")
+    }
 }

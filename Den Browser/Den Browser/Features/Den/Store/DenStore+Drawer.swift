@@ -89,7 +89,7 @@ extension DenStore {
     }
 
     func setDrawerQuery(_ query: String) {
-        drawerQuery = query
+        drawerQuery = SheetURLPolicy.stripNewlines(query)
         updateDrawerSelectionForFilter()
     }
 

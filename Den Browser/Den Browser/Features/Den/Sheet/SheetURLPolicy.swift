@@ -8,6 +8,11 @@ enum SheetURLPolicy {
             .joined(separator: separator)
     }
 
+    static func stripNewlines(_ text: String) -> String {
+        guard text.contains(where: \.isNewline) else { return text }
+        return text.filter { !$0.isNewline }
+    }
+
     static func isSupported(_ url: URL) -> Bool {
         guard let scheme = url.scheme?.lowercased() else { return false }
         if scheme == "http" || scheme == "https" {
