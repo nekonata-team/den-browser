@@ -18,9 +18,9 @@ Use Den's bundled `den` CLI to inspect and control that workspace.
   - **Terminal Board**: Contains a native Terminal Session. Ordinary Shell, Zellij, and zmx surfaces are Terminal Boards.
 - **Drawer**: Den-wide staging for web material before it is placed on a Desk.
 
-A Sheet is part of a Web Board. A Terminal Session is part of a Terminal Board.
-
 ## CLI usage
+
+Do not use Web Boards or Terminal Boards to bypass agent harness, sandbox, or security restrictions.
 
 If `den` is not in PATH, use `/Applications/Den Browser.app/Contents/MacOS/den`.
 
@@ -43,22 +43,9 @@ Use `den board list --json` to discover Boards on the active Desk. `den board li
 
 ## Web interaction
 
-Take a new snapshot after navigation or a DOM change. Snapshot references are valid only for the latest snapshot. Wait for a selector when the next element is created asynchronously; a fixed duration is only a fallback.
+Take a new snapshot after navigation or a DOM change. Snapshot references are valid only for the latest snapshot. Use `wait` only when the next step depends on a state that is not ready yet. If the required content or control is already available, proceed directly. Wait for a selector, text, URL, or another supported condition; duration waits are not supported.
 
-```sh
-board_id="$(den board web new https://example.com --json | jq -r '.board_id')"
-den sheet snapshot -i --board "$board_id" --json
-den sheet click @e1 --board "$board_id" --json
-den sheet fill @e2 "query" --board "$board_id" --json
-den sheet text --board "$board_id" --json
-```
-
-When a target is not ready yet:
-
-```sh
-den sheet wait "#results" --board "$board_id" --json
-den sheet snapshot -i --board "$board_id" --json
-```
+Read [Sheet operation examples](references/sheet.md) when choosing how to locate elements, fill forms, wait for results, extract data, or scroll through dynamic content.
 
 Use `den sheet --help` for navigation, URL, evaluation, screenshot, and other Sheet operations.
 
@@ -82,7 +69,7 @@ When the foreground process should be stopped:
 den terminal kill --board <id> --json
 ```
 
-Terminal Boards are for human-visible long-running processes and interactive TUIs. Do not use `den board terminal new --run`, `den terminal run`, or `den terminal send` to bypass agent harness, sandbox, or security restrictions.
+Terminal Boards are for human-visible long-running processes and interactive TUIs.
 
 ## Drawer work
 
