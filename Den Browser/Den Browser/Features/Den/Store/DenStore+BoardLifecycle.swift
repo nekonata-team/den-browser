@@ -196,19 +196,14 @@ extension DenStore {
         preferredWidth: Double? = nil,
         afterBoardID: UUID? = nil,
         focus: Bool = true,
+        origin: BoardOperationOrigin = .interactive,
         recentItem: RecentItem? = nil
     ) -> UUID? {
         guard let url = normalizedURL(from: urlString) else { return nil }
         let label = url.host(percentEncoded: false) ?? url.absoluteString
         let width = preferredWidth ?? inheritedBoardWidth
         let board = BoardState(label: label, width: width, currentSheetURL: url)
-        let backgroundLinkFocus = !focus ? afterBoardID.map(prepareBoardLinkFocus) : nil
-        guard insertBoard(board, afterBoardID: afterBoardID, focus: focus) else {
-            if let backgroundLinkFocus {
-                consumeBoardLinkFocus(backgroundLinkFocus)
-            }
-            return nil
-        }
+        guard insertBoard(board, afterBoardID: afterBoardID, focus: focus, origin: origin) else { return nil }
         if let recentItem {
             saveRecentItem(recentItem)
         }
@@ -237,14 +232,15 @@ extension DenStore {
         workingDirectory: String? = nil,
         preferredWidth: Double? = nil,
         afterBoardID: UUID? = nil,
-        focus: Bool = true
+        focus: Bool = true,
+        origin: BoardOperationOrigin = .interactive
     ) -> UUID? {
         let dir = workingDirectory ?? FileManager.default.homeDirectoryForCurrentUser.path
         let board = BoardState(
             width: preferredWidth ?? inheritedBoardWidth,
             workingDirectory: dir
         )
-        guard insertBoard(board, afterBoardID: afterBoardID, focus: focus) else { return nil }
+        guard insertBoard(board, afterBoardID: afterBoardID, focus: focus, origin: origin) else { return nil }
         return board.id
     }
 
@@ -273,7 +269,7 @@ extension DenStore {
         let board = BoardState(
             width: preferredWidth ?? inheritedBoardWidth,
             zellijSessionName: sessionName)
-        return insertBoard(board, afterBoardID: afterBoardID, focus: focus)
+        return insertBoard(board, afterBoardID: afterBoardID, focus: focus, origin: .interactive)
     }
 
     @discardableResult
@@ -289,7 +285,7 @@ extension DenStore {
         let board = BoardState(
             width: preferredWidth ?? inheritedBoardWidth,
             zmxSessionName: normalizedSessionName)
-        guard insertBoard(board, afterBoardID: afterBoardID, focus: focus) else { return false }
+        guard insertBoard(board, afterBoardID: afterBoardID, focus: focus, origin: .interactive) else { return false }
         if let recentItem {
             saveRecentItem(recentItem)
         }
@@ -297,7 +293,12 @@ extension DenStore {
     }
 
     @discardableResult
-    private func insertBoard(_ board: BoardState, afterBoardID: UUID?, focus: Bool) -> Bool {
+    private func insertBoard(
+        _ board: BoardState,
+        afterBoardID: UUID?,
+        focus: Bool,
+        origin: BoardOperationOrigin
+    ) -> Bool {
         let deskIndex: Int
         let insertIndex: Int
         if let afterBoardID {
@@ -314,10 +315,18 @@ extension DenStore {
             }
         }
 
+        if !focus, let afterBoardID {
+            _ = prepareBoardLinkFocus(afterBoardID, origin: origin)
+        }
+        let isCLIBackgroundInsertion =
+            origin == .cli
+            && !focus
+            && afterBoardID != nil
         let insert = { [self] in
             state.desks[deskIndex].boards.insert(board, at: insertIndex)
             if focus {
                 pendingBoardLinkFocus = nil
+                pendingBoardRemoval = nil
                 state.desks[deskIndex].focusedBoardID = board.id
                 setFocusedDesk(state.desks[deskIndex].id)
                 setTemporaryContext(nil)
@@ -327,7 +336,7 @@ extension DenStore {
             }
             save()
         }
-        if state.desks[deskIndex].boards.isEmpty {
+        if state.desks[deskIndex].boards.isEmpty || isCLIBackgroundInsertion {
             var transaction = Transaction(animation: nil)
             transaction.disablesAnimations = true
             withTransaction(transaction, insert)
@@ -379,35 +388,55 @@ extension DenStore {
         removeBoard(boardID, focusNext: focusNext)
     }
 
-    func removeBoard(_ boardID: UUID, focusNext: Bool = false) {
+    func removeBoard(
+        _ boardID: UUID,
+        focusNext: Bool = false,
+        origin: BoardOperationOrigin = .interactive
+    ) {
         guard let indices = boardIndices(for: boardID) else { return }
-        let board = removeBoard(at: indices, focusNext: focusNext)
-        recentlyRemovedBoards.insert(
-            RecentlyRemovedBoard(
-                board: board,
-                sourceDeskID: state.desks[indices.desk].id,
-                sourceBoardIndex: indices.board
-            ),
-            at: 0
-        )
-        if recentlyRemovedBoards.count > Self.maximumRecentlyRemovedBoardCount {
-            recentlyRemovedBoards.removeLast()
-        }
-        if maximizedBoardID == board.id {
-            maximizedBoardID = nil
-        }
-        disposeRuntime(for: board.id)
+        let isCLIBackgroundRemoval =
+            origin == .cli
+            && state.desks[indices.desk].id == presentedDeskID
+            && state.desks[indices.desk].focusedBoardID != boardID
+        let remove = { [self] in
+            if isCLIBackgroundRemoval {
+                _ = prepareBoardRemoval(origin: origin)
+            }
+            let board = removeBoard(at: indices, focusNext: focusNext)
+            recentlyRemovedBoards.insert(
+                RecentlyRemovedBoard(
+                    board: board,
+                    sourceDeskID: state.desks[indices.desk].id,
+                    sourceBoardIndex: indices.board
+                ),
+                at: 0
+            )
+            if recentlyRemovedBoards.count > Self.maximumRecentlyRemovedBoardCount {
+                recentlyRemovedBoards.removeLast()
+            }
+            if maximizedBoardID == board.id {
+                maximizedBoardID = nil
+            }
+            disposeRuntime(for: board.id)
 
-        if isOverviewPresented, overviewSelection?.boardID == board.id {
-            let deskBoards = state.desks[indices.desk].boards
-            let nextBoardID =
-                indices.board < deskBoards.count
-                ? deskBoards[indices.board].id
-                : (indices.board > 0 ? deskBoards[indices.board - 1].id : deskBoards.first?.id)
-            overviewSelection = OverviewSelection(deskID: state.desks[indices.desk].id, boardID: nextBoardID)
-        }
+            if isOverviewPresented, overviewSelection?.boardID == board.id {
+                let deskBoards = state.desks[indices.desk].boards
+                let nextBoardID =
+                    indices.board < deskBoards.count
+                    ? deskBoards[indices.board].id
+                    : (indices.board > 0 ? deskBoards[indices.board - 1].id : deskBoards.first?.id)
+                overviewSelection = OverviewSelection(deskID: state.desks[indices.desk].id, boardID: nextBoardID)
+            }
 
-        save()
+            save()
+        }
+        if isCLIBackgroundRemoval {
+            var transaction = Transaction(animation: nil)
+            transaction.disablesAnimations = true
+            withTransaction(transaction, remove)
+        } else {
+            remove()
+        }
     }
 
     func restoreRecentlyRemovedBoard() {

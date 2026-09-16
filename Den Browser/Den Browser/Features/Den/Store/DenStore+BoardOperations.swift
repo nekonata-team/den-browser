@@ -20,6 +20,7 @@ extension DenStore {
             return
         }
         pendingBoardLinkFocus = nil
+        pendingBoardRemoval = nil
         setFocusedDesk(deskID)
         state.desks[indices.desk].focusedBoardID = boardID
         if exitsDenMode {

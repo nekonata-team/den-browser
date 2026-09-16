@@ -6,6 +6,38 @@ struct BoardStripLayoutKey: Equatable {
     let widths: [Double]
     let maximizedBoardID: UUID?
     let windowWidth: Double
+
+    func insertedWidth(
+        before boardID: UUID,
+        comparedTo previous: Self,
+        spacing: CGFloat
+    ) -> CGFloat {
+        guard let boardIndex = ids.firstIndex(of: boardID) else { return 0 }
+
+        let previousIDs = Set(previous.ids)
+        var insertedWidth: CGFloat = 0
+        for index in ids.indices where index < boardIndex {
+            guard widths.indices.contains(index), !previousIDs.contains(ids[index]) else { continue }
+            insertedWidth += CGFloat(widths[index]) + spacing
+        }
+        return insertedWidth
+    }
+
+    func removedWidth(
+        before boardID: UUID,
+        comparedTo current: Self,
+        spacing: CGFloat
+    ) -> CGFloat {
+        guard let boardIndex = ids.firstIndex(of: boardID) else { return 0 }
+
+        let currentIDs = Set(current.ids)
+        var removedWidth: CGFloat = 0
+        for index in ids.indices where index < boardIndex {
+            guard widths.indices.contains(index), !currentIDs.contains(ids[index]) else { continue }
+            removedWidth += CGFloat(widths[index]) + spacing
+        }
+        return removedWidth
+    }
 }
 
 struct BoardStrip: View {
@@ -101,6 +133,7 @@ struct BoardStrip: View {
             centersFocusedBoard: shouldCenterFocusedBoard,
             restingScrollX: restingScrollX,
             pendingBoardLinkFocus: store.pendingBoardLinkFocus,
+            pendingBoardRemoval: store.pendingBoardRemoval,
             isDeskFilterPresented: store.isDeskFilterPresented,
             layoutKey: layoutKey
         )
@@ -329,6 +362,44 @@ struct BoardStrip: View {
                     return
                 }
                 scheduleBoardLinkFocusConsumption(linkFocus)
+
+                if linkFocus.origin == .cli,
+                    layoutChanged && !focusChanged,
+                    current.layoutKey.ids.count > previous.layoutKey.ids.count,
+                    let focusedBoardID = current.boardID
+                {
+                    let insertedWidth = current.layoutKey.insertedWidth(
+                        before: focusedBoardID,
+                        comparedTo: previous.layoutKey,
+                        spacing: boardSpacing)
+                    deferBoardAlignment(
+                        .preserveFocusedBoard(scrollGeometry.offsetX + insertedWidth),
+                        focusedBoardID,
+                        animated: false,
+                        layoutKey: current.layoutKey)
+                    return
+                }
+            }
+
+            if let removal = current.pendingBoardRemoval {
+                scheduleBoardRemovalConsumption(removal)
+
+                if removal.origin == .cli,
+                    layoutChanged && !focusChanged,
+                    current.layoutKey.ids.count < previous.layoutKey.ids.count,
+                    let focusedBoardID = current.boardID
+                {
+                    let removedWidth = previous.layoutKey.removedWidth(
+                        before: focusedBoardID,
+                        comparedTo: current.layoutKey,
+                        spacing: boardSpacing)
+                    deferBoardAlignment(
+                        .preserveFocusedBoard(scrollGeometry.offsetX - removedWidth),
+                        focusedBoardID,
+                        animated: false,
+                        layoutKey: current.layoutKey)
+                    return
+                }
             }
 
             let isResizing =
@@ -645,6 +716,12 @@ struct BoardStrip: View {
         }
     }
 
+    private func scheduleBoardRemovalConsumption(_ intent: BoardRemovalIntent) {
+        DispatchQueue.main.async {
+            store.consumeBoardRemoval(intent)
+        }
+    }
+
     private func resetBoardStripPosition(to horizontalOffset: CGFloat = 0, animated: Bool) {
         cancelPendingBoardAlignment()
         if animated {
@@ -786,6 +863,10 @@ struct BoardStrip: View {
             performBoardVisibility(targetOffsetX, animated: pending.animated)
         case .resting(let targetOffsetX):
             resetBoardStripPosition(to: targetOffsetX, animated: pending.animated)
+        case .preserveFocusedBoard(let targetOffsetX):
+            let targetOffsetX = clampedScrollX(targetOffsetX)
+            store.saveDeskScrollOffset(targetOffsetX, for: pending.deskID)
+            resetBoardStripPosition(to: targetOffsetX, animated: false)
         }
     }
 
@@ -966,6 +1047,7 @@ private struct BoardStripAlignmentTarget: Equatable {
     let centersFocusedBoard: Bool
     let restingScrollX: CGFloat
     let pendingBoardLinkFocus: BoardLinkFocusIntent?
+    let pendingBoardRemoval: BoardRemovalIntent?
     let isDeskFilterPresented: Bool
     let layoutKey: BoardStripLayoutKey
 }
@@ -974,6 +1056,7 @@ enum BoardAlignmentKind {
     case center
     case resting(CGFloat)
     case visible
+    case preserveFocusedBoard(CGFloat)
 }
 
 struct PendingBoardAlignment {

@@ -458,7 +458,8 @@ final class DenIPCService {
             if let boardID = store.createBoard(
                 urlString: urlString,
                 afterBoardID: callerID ?? store.focusedBoard?.id,
-                focus: shouldFocus
+                focus: shouldFocus,
+                origin: .cli
             ), let board = store.board(for: boardID) {
                 _ = store.runtime(for: board)
                 return .success(boardId: boardID.uuidString)
@@ -480,7 +481,7 @@ final class DenIPCService {
             }
             switch targetResult {
             case .success(let (store, board)):
-                store.removeBoard(board.id)
+                store.removeBoard(board.id, origin: .cli)
                 return .success(
                     message: "Closed Board \(board.id.uuidString)",
                     closedBoardId: board.id.uuidString
@@ -538,7 +539,8 @@ final class DenIPCService {
             let boardID = store.createTerminalBoard(
                 workingDirectory: resolvedDir,
                 afterBoardID: callerID ?? store.focusedBoard?.id,
-                focus: shouldFocus
+                focus: shouldFocus,
+                origin: .cli
             )
         else {
             return .failure("Failed to create terminal board")

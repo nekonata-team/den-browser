@@ -38,13 +38,30 @@ final class DenStorage {
     }
 }
 
+enum BoardOperationOrigin: Equatable {
+    case interactive
+    case cli
+}
+
 struct BoardLinkFocusIntent: Equatable {
     let id: UUID
     let boardID: UUID
+    let origin: BoardOperationOrigin
 
-    init(boardID: UUID) {
+    init(boardID: UUID, origin: BoardOperationOrigin = .interactive) {
         id = UUID()
         self.boardID = boardID
+        self.origin = origin
+    }
+}
+
+struct BoardRemovalIntent: Equatable {
+    let id: UUID
+    let origin: BoardOperationOrigin
+
+    init(origin: BoardOperationOrigin) {
+        id = UUID()
+        self.origin = origin
     }
 }
 
@@ -111,6 +128,7 @@ final class DenStore {
     var pendingConfirmation: PendingConfirmation?
     var maximizedBoardID: UUID?
     var pendingBoardLinkFocus: BoardLinkFocusIntent?
+    var pendingBoardRemoval: BoardRemovalIntent?
     var centerFocusedBoardRequest = 0
     var revealPreviousBoardRequest = 0
     var revealNextBoardRequest = 0
@@ -473,6 +491,7 @@ final class DenStore {
         pendingConfirmation = nil
         maximizedBoardID = nil
         pendingBoardLinkFocus = nil
+        pendingBoardRemoval = nil
         dismissDeskFilter()
         overviewSelection = nil
         overviewQuery = ""
@@ -493,8 +512,11 @@ final class DenStore {
     }
 
     @discardableResult
-    func prepareBoardLinkFocus(_ boardID: UUID) -> BoardLinkFocusIntent {
-        let intent = BoardLinkFocusIntent(boardID: boardID)
+    func prepareBoardLinkFocus(
+        _ boardID: UUID,
+        origin: BoardOperationOrigin = .interactive
+    ) -> BoardLinkFocusIntent {
+        let intent = BoardLinkFocusIntent(boardID: boardID, origin: origin)
         pendingBoardLinkFocus = intent
         return intent
     }
@@ -502,6 +524,18 @@ final class DenStore {
     func consumeBoardLinkFocus(_ intent: BoardLinkFocusIntent) {
         guard pendingBoardLinkFocus == intent else { return }
         pendingBoardLinkFocus = nil
+    }
+
+    @discardableResult
+    func prepareBoardRemoval(origin: BoardOperationOrigin) -> BoardRemovalIntent {
+        let intent = BoardRemovalIntent(origin: origin)
+        pendingBoardRemoval = intent
+        return intent
+    }
+
+    func consumeBoardRemoval(_ intent: BoardRemovalIntent) {
+        guard pendingBoardRemoval == intent else { return }
+        pendingBoardRemoval = nil
     }
 
     func showToast(_ message: String, style: ToastMessage.ToastStyle = .info) {
@@ -611,6 +645,7 @@ final class DenStore {
         presentedDeskID = deskID
         state.focusedDeskID = deskID
         pendingBoardLinkFocus = nil
+        pendingBoardRemoval = nil
         return true
     }
 

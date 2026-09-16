@@ -361,6 +361,7 @@ struct DenStoreBoardTests {
         store.prepareBoardLinkFocus(firstBoard.id)
         #expect(store.pendingBoardLinkFocus != nil)
         guard let firstIntent = store.pendingBoardLinkFocus else { return }
+        #expect(firstIntent.origin == .interactive)
         store.prepareBoardLinkFocus(secondBoard.id)
         #expect(store.pendingBoardLinkFocus != nil)
         guard let secondIntent = store.pendingBoardLinkFocus else { return }
@@ -396,6 +397,7 @@ struct DenStoreBoardTests {
                 afterBoardID: source.id,
                 focus: false))
         let intent = try #require(store.pendingBoardLinkFocus)
+        #expect(intent.origin == .interactive)
         #expect(store.focusedBoard?.id == source.id)
 
         store.focusBoard(other.id)
@@ -403,6 +405,36 @@ struct DenStoreBoardTests {
         #expect(store.pendingBoardLinkFocus == nil)
         store.consumeBoardLinkFocus(intent)
         #expect(store.pendingBoardLinkFocus == nil)
+    }
+
+    @Test func cliBackgroundBoardCarriesCLIInsertionOrigin() throws {
+        let source = BoardState(label: "Source", width: 520, currentSheetURL: nil)
+        let other = BoardState(label: "Other", width: 520, currentSheetURL: nil)
+        let desk = desk("Desk", boards: [source, other], focusedBoardID: source.id)
+        let store = DenStore(state: DenState(desks: [desk], focusedDeskID: desk.id))
+
+        #expect(
+            store.createBoard(
+                urlString: "https://cli.example",
+                afterBoardID: source.id,
+                focus: false,
+                origin: .cli) != nil)
+        let intent = try #require(store.pendingBoardLinkFocus)
+
+        #expect(intent.origin == .cli)
+    }
+
+    @Test func cliBackgroundBoardRemovalCarriesCLIOperationOrigin() throws {
+        let left = BoardState(label: "Left", width: 520, currentSheetURL: nil)
+        let focused = BoardState(label: "Focused", width: 520, currentSheetURL: nil)
+        let source = desk("Desk", boards: [left, focused], focusedBoardID: focused.id)
+        let store = DenStore(state: DenState(desks: [source], focusedDeskID: source.id))
+
+        store.removeBoard(left.id, origin: .cli)
+
+        let intent = try #require(store.pendingBoardRemoval)
+        #expect(intent.origin == .cli)
+        #expect(store.focusedBoard?.id == focused.id)
     }
 
     @Test func terminalLinkCreatesFocusedBoardWithoutDrawer() throws {

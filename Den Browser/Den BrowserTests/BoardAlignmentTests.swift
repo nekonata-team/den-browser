@@ -83,4 +83,43 @@ struct BoardAlignmentTests {
         #expect(target1 != nil)
         #expect(target0 != target1)
     }
+
+    @Test func insertedBoardWidthBeforeFocusedBoardIncludesItsSpacing() {
+        let leftBoard = UUID()
+        let focusedBoard = UUID()
+        let insertedBoard = UUID()
+        let previous = BoardStripLayoutKey(
+            ids: [leftBoard, focusedBoard],
+            widths: [400, 600],
+            maximizedBoardID: nil,
+            windowWidth: 1_000)
+        let current = BoardStripLayoutKey(
+            ids: [leftBoard, insertedBoard, focusedBoard],
+            widths: [400, 320, 600],
+            maximizedBoardID: nil,
+            windowWidth: 1_000)
+
+        #expect(current.insertedWidth(before: focusedBoard, comparedTo: previous, spacing: 12) == 332)
+        #expect(current.insertedWidth(before: leftBoard, comparedTo: previous, spacing: 12) == 0)
+        #expect(current.insertedWidth(before: focusedBoard, comparedTo: current, spacing: 12) == 0)
+    }
+
+    @Test func removedBoardWidthBeforeFocusedBoardIncludesItsSpacing() {
+        let leftBoard = UUID()
+        let removedBoard = UUID()
+        let focusedBoard = UUID()
+        let previous = BoardStripLayoutKey(
+            ids: [leftBoard, removedBoard, focusedBoard],
+            widths: [400, 320, 600],
+            maximizedBoardID: nil,
+            windowWidth: 1_000)
+        let current = BoardStripLayoutKey(
+            ids: [leftBoard, focusedBoard],
+            widths: [400, 600],
+            maximizedBoardID: nil,
+            windowWidth: 1_000)
+
+        #expect(previous.removedWidth(before: focusedBoard, comparedTo: current, spacing: 12) == 332)
+        #expect(previous.removedWidth(before: leftBoard, comparedTo: current, spacing: 12) == 0)
+    }
 }
