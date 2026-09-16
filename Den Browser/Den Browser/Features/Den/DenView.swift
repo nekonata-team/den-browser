@@ -281,38 +281,35 @@ struct DenView<Header: View>: View {
 
     @ViewBuilder
     private func drawerOverlay(in size: CGSize) -> some View {
-        if store.isDrawerOpen {
-            let isBottom = preferences.drawerStyle == .bottom
+        let isBottom = preferences.drawerStyle == .bottom
 
-            Rectangle()
-                .fill(Color.black.opacity(0.18))
-                .contentShape(Rectangle())
-                .onTapGesture {
-                    store.closeDrawer()
-                }
-                .accessibilityHidden(true)
-                .transition(.opacity)
-                .zIndex(2)
+        ZStack(alignment: isBottom ? .bottom : .center) {
+            if store.isDrawerOpen {
+                Color.clear
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        store.closeDrawer()
+                    }
+                    .accessibilityHidden(true)
+                    .transition(.opacity)
 
-            DrawerView(
-                availableHeight: size.height,
-                availableWidth: size.width,
-                profileColor: profileColor,
-                shouldShowHeader: shouldShowHeader
-            )
-            .padding(.horizontal, isBottom ? DenLayout.outerInset : 0)
-            .frame(
-                maxWidth: .infinity,
-                maxHeight: .infinity,
-                alignment: isBottom ? .bottom : .center
-            )
-            .transition(
-                isBottom
-                    ? DenMotion.transition(reduceMotion: shouldReduceMotion, edge: .bottom)
-                    : DenMotion.transition(reduceMotion: shouldReduceMotion, scale: 0.96)
-            )
-            .zIndex(3)
+                DrawerView(
+                    availableHeight: size.height,
+                    availableWidth: size.width,
+                    profileColor: profileColor,
+                    shouldShowHeader: shouldShowHeader
+                )
+                .padding(.horizontal, isBottom ? DenLayout.outerInset : 0)
+                .transition(
+                    isBottom
+                        ? DenMotion.transition(reduceMotion: shouldReduceMotion, edge: .bottom)
+                        : DenMotion.transition(reduceMotion: shouldReduceMotion, scale: 0.96)
+                )
+            }
         }
+        .frame(width: size.width, height: size.height)
+        .allowsHitTesting(store.isDrawerOpen)
+        .zIndex(3)
     }
 
     @ViewBuilder
