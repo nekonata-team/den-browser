@@ -1,6 +1,15 @@
 import SFSafeSymbols
 import SwiftUI
 
+private enum DenOverlayLayer {
+    static let activePanel: Double = 1
+    static let deskFilter: Double = 2
+    static let drawer: Double = 3
+    static let notificationDismissArea: Double = 4
+    static let notificationList: Double = 5
+    static let toast: Double = 10
+}
+
 struct DenView<Header: View>: View {
     private let profileName: String?
     private let profileColor: Color
@@ -60,14 +69,17 @@ struct DenView<Header: View>: View {
                                 : DenLayout.outerInset
                         )
                         .transition(DenMotion.transition(reduceMotion: shouldReduceMotion, scale: 0.96))
-                        .zIndex(2)
+                        .zIndex(DenOverlayLayer.deskFilter)
                 }
 
                 activePanel(
                     newBoardWidth: newBoardWidth(in: geometry.size),
                     boardHeight: DenLayout.boardHeight(
                         for: geometry.size,
-                        shouldShowHeader: shouldShowHeader))
+                        shouldShowHeader: shouldShowHeader
+                    )
+                )
+                .zIndex(DenOverlayLayer.activePanel)
 
                 notificationsOverlay
                 drawerOverlay(in: geometry.size)
@@ -263,7 +275,7 @@ struct DenView<Header: View>: View {
                 .contentShape(Rectangle())
                 .onTapGesture { store.closeNotificationList() }
                 .accessibilityHidden(true)
-                .zIndex(4)
+                .zIndex(DenOverlayLayer.notificationDismissArea)
 
             NotificationListView(profileColor: profileColor)
                 .padding(
@@ -275,7 +287,7 @@ struct DenView<Header: View>: View {
                 .padding(.trailing, DenLayout.outerInset)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
                 .transition(DenMotion.transition(reduceMotion: shouldReduceMotion, scale: 0.96))
-                .zIndex(5)
+                .zIndex(DenOverlayLayer.notificationList)
         }
     }
 
@@ -309,7 +321,7 @@ struct DenView<Header: View>: View {
         }
         .frame(width: size.width, height: size.height)
         .allowsHitTesting(store.isDrawerOpen)
-        .zIndex(3)
+        .zIndex(DenOverlayLayer.drawer)
     }
 
     @ViewBuilder
@@ -324,7 +336,7 @@ struct DenView<Header: View>: View {
                         ? .opacity
                         : .move(edge: .bottom).combined(with: .opacity)
                 )
-                .zIndex(10)
+                .zIndex(DenOverlayLayer.toast)
         }
     }
 
