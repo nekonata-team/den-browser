@@ -6,7 +6,7 @@ import WebKit
 @testable import Den_Browser
 
 @MainActor
-private final class SheetInteractionWebViewLoadWaiter: NSObject, WKNavigationDelegate {
+final class SheetInteractionWebViewLoadWaiter: NSObject, WKNavigationDelegate {
     private var continuation: CheckedContinuation<Void, Never>?
 
     func load(_ html: String, baseURL: URL, in webView: WKWebView) async {
@@ -434,5 +434,37 @@ struct SheetInteractionTests {
             in: webView
         )
         #expect(visibleElements.isEmpty)
+    }
+
+    @Test func clickResultExtractsHrefForLinkElement() async throws {
+        // Arrange
+        let webView = makeWebView()
+        let waiter = SheetInteractionWebViewLoadWaiter()
+        let html = """
+            <!DOCTYPE html>
+            <html>
+            <body>
+                <a id="nav-link" href="https://example.com/target"><span>Click me</span></a>
+                <button id="regular-btn">Button</button>
+            </body>
+            </html>
+            """
+        await waiter.load(html, baseURL: URL(string: "https://example.com")!, in: webView)
+
+        // Act
+        let linkResult = try await SheetInteraction.clickResult(
+            target: "#nav-link span",
+            newBoard: true,
+            in: webView
+        )
+        let btnResult = try await SheetInteraction.clickResult(
+            target: "#regular-btn",
+            newBoard: true,
+            in: webView
+        )
+
+        // Assert
+        #expect(linkResult.href == "https://example.com/target")
+        #expect(btnResult.href == nil)
     }
 }

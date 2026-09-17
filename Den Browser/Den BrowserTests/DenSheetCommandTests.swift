@@ -226,4 +226,49 @@ struct DenSheetCommandTests {
         #expect(process.terminationStatus == 0)
         #expect(response.snapshot == "stdin-ok")
     }
+
+    @Test func clickForwardsNewBoardAndFocusFlags() async throws {
+        // Arrange
+        let socketPath = FileManager.default.temporaryDirectory
+            .appendingPathComponent("den-cli-\(UUID().uuidString).sock").path
+        let server = DenSocketServer(socketPath: socketPath)
+        try server.start { data in
+            do {
+                let request = try JSONDecoder().decode(DenIPCRequest.self, from: data)
+                let isExpected =
+                    request.command == .sheet(.click)
+                    && request.args == ["@e1", "--new-board", "--focus"]
+                return try JSONEncoder().encode(
+                    DenIPCResponse.success(boardId: isExpected ? "created-board-id" : "unexpected")
+                )
+            } catch {
+                return Data()
+            }
+        }
+        defer { server.stop() }
+
+        let process = Process()
+        process.executableURL = Bundle.main.bundleURL.appendingPathComponent("Contents/MacOS/den")
+        process.arguments = ["sheet", "click", "@e1", "--new-board", "--focus", "--socket", socketPath]
+        let output = Pipe()
+        process.standardOutput = output
+
+        // Act
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, any Error>) in
+            process.terminationHandler = { _ in continuation.resume() }
+            do {
+                try process.run()
+            } catch {
+                continuation.resume(throwing: error)
+            }
+        }
+        let response = try JSONDecoder().decode(
+            DenIPCResponse.self,
+            from: output.fileHandleForReading.readDataToEndOfFile()
+        )
+
+        // Assert
+        #expect(process.terminationStatus == 0)
+        #expect(response.boardId == "created-board-id")
+    }
 }

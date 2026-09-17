@@ -171,6 +171,11 @@ enum SheetInteraction {
         return try rawElements.map(elementInfo(from:))
     }
 
+    struct ClickResult: Sendable {
+        var rect: CGRect
+        var href: String?
+    }
+
     @discardableResult
     static func click(
         target: String? = nil,
@@ -179,6 +184,25 @@ enum SheetInteraction {
         exact: Bool = false,
         in webView: WKWebView
     ) async throws -> CGRect {
+        try await clickResult(
+            target: target,
+            role: role,
+            name: name,
+            exact: exact,
+            newBoard: false,
+            in: webView
+        ).rect
+    }
+
+    @discardableResult
+    static func clickResult(
+        target: String? = nil,
+        role: String? = nil,
+        name: String? = nil,
+        exact: Bool = false,
+        newBoard: Bool = false,
+        in webView: WKWebView
+    ) async throws -> ClickResult {
         let hasSemanticTarget = role != nil || name != nil
         guard hasSemanticTarget ? target == nil && role != nil && name != nil : target != nil else {
             throw SheetInteractionError.invalidArgument(
@@ -244,13 +268,18 @@ enum SheetInteraction {
             el.dispatchEvent(new MouseEvent('mousedown', pointerBase));
             el.dispatchEvent(new PointerEvent('pointerup', { ...pointerBase, buttons: 0 }));
             el.dispatchEvent(new MouseEvent('mouseup', { ...pointerBase, buttons: 0 }));
+            const linkEl = el.closest('a[href]');
+            const href = linkEl ? linkEl.href : null;
+            if (\(newBoard)) {
+                return { ok: true, rect: { x: rect.left, y: rect.top, width: rect.width, height: rect.height }, href: href };
+            }
             if (typeof el.click !== 'function') return { ok: false, error: 'Element is not clickable' };
             el.click();
-            return { ok: true, rect: { x: rect.left, y: rect.top, width: rect.width, height: rect.height } };
+            return { ok: true, rect: { x: rect.left, y: rect.top, width: rect.width, height: rect.height }, href: href };
             """
         )
         let result = try await evaluate(script, in: webView)
-        return try extractRect(from: result, scale: webView.pageZoom * webView.magnification)
+        return try extractClickResult(from: result, scale: webView.pageZoom * webView.magnification)
     }
 
     @discardableResult
@@ -791,6 +820,13 @@ enum SheetInteraction {
             throw SheetInteractionError.executionFailed(message)
         }
         return dictionary
+    }
+
+    private static func extractClickResult(from evalResult: Any?, scale: CGFloat = 1) throws -> ClickResult {
+        let dictionary = try resultDictionary(from: evalResult)
+        let rect = try extractRect(from: evalResult, scale: scale)
+        let href = dictionary["href"] as? String
+        return ClickResult(rect: rect, href: href)
     }
 
     private static func extractRect(from evalResult: Any?, scale: CGFloat = 1) throws -> CGRect {

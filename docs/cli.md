@@ -104,7 +104,7 @@ Commands operating on the Current Sheet of the resolved Web Board.
 | `den sheet query` | `<selector> [--visible] [--all] [--fields <list>]` | Return matching elements as structured JSON. Every result includes `ref` and `visible`; the default fields are `tag,role,name,text`. Use `value`, `checked`, `disabled`, `selected`, `expanded`, `class`, or `attr:<name>` for additional fields. `--visible` filters matches and `--all` returns every match instead of the first. | `den sheet query "tr.zA" --visible --all --fields text,attr:data-email,class --json` |
 | `den sheet get` | `<text\|value\|attr\|count> ...` | Read text, a form value, an attribute, or the number of elements matching a selector. | `den sheet get attr @e1 data-email --json` |
 | `den sheet is` | `<visible\|enabled\|checked> <target>` | Check one current boolean state for an element. | `den sheet is checked @e3 --json` |
-| `den sheet click` | `[<target>] [--role <role> --name <name>] [--exact]` | Click by ref/selector or by an accessible role and name. Semantic matching requires both `--role` and `--name`; `--exact` requires an exact name match. The action dispatches synthetic pointer and mouse events, then one click activation. | `den sheet click --role option --name GitHub --exact --json` |
+| `den sheet click` | `[<target>] [--role <role> --name <name>] [--exact] [--new-board] [--focus]` | Click by ref/selector or by an accessible role and name. Semantic matching requires both `--role` and `--name`; `--exact` requires an exact name match. Use `--new-board` to open a clicked link in a new Web Board, returning `board_id`; add `--focus` to focus the new Board. | `den sheet click @e1 --new-board --json` |
 | `den sheet fill` | `<target> <value>` | Fill an input/textarea with text by reference or selector. An empty value is valid. | `den sheet fill @e2 "search query"` |
 | `den sheet interact` | `[<script-or-file>] [--full]` | Execute multiple sheet actions in order from a script, script file, or stdin (`-`) and return a final semantic snapshot. Actions follow standard `den sheet` subcommand syntax (e.g. `click`, `fill`, `wait`); execution stops at the first failure. Use `--full` for the complete semantic tree. | `den sheet interact "click @e1; fill @e2 'query'"` |
 | `den sheet screenshot` | `[<path>]` | Save a PNG screenshot of the web sheet (defaults to temporary directory). | `den sheet screenshot /tmp/screen.png` |
@@ -251,6 +251,11 @@ Element names use labels and visible content rather than form values, except for
 **Actions (`click`, `fill`, `press`, `scroll`, `wait`, `open`, `place`, `discard`, `send`)**:
 ```json
 {"message":"Clicked @e1","ok":true}
+```
+
+**Click in New Board (`sheet click --new-board`)**:
+```json
+{"board_id":"8E192A0B-...","message":"Opened @e1 in new Board","ok":true,"url":"https://example.com/docs"}
 ```
 
 **Failure (`exit 1`)**:

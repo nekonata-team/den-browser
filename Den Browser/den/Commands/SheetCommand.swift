@@ -159,6 +159,10 @@ struct SheetClickCommand: ParsableCommand {
     var name: String?
     @Flag(name: .long, help: "Require an exact accessible-name match")
     var exact: Bool = false
+    @Flag(name: .long, help: "Open the clicked link in a new Web Board")
+    var newBoard: Bool = false
+    @Flag(name: .long, help: "Focus the newly created Web Board (with --new-board)")
+    var focus: Bool = false
 
     func run() throws {
         var args = targetElement.map { [$0] } ?? []
@@ -170,6 +174,12 @@ struct SheetClickCommand: ParsableCommand {
         }
         if exact {
             args.append("--exact")
+        }
+        if newBoard {
+            args.append("--new-board")
+        }
+        if focus {
+            args.append("--focus")
         }
         try DenIPCClient.execute(command: .sheet(.click), args: args, options: target)
     }

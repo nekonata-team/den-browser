@@ -278,21 +278,47 @@ final class DenIPCService {
                 let role = optionValue("--role", in: request.args)
                 let name = optionValue("--name", in: request.args)
                 let exact = request.args.contains("--exact")
+                let newBoard = request.args.contains("--new-board")
+                let shouldFocus = request.args.contains("--focus")
                 if target == nil && (role == nil || name == nil) {
                     return .failure("Usage: den sheet click <@ref|selector> or --role <role> --name <name>")
                 }
                 if target != nil && (role != nil || name != nil) {
                     return .failure("Provide either a selector/ref or --role and --name, not both")
                 }
-                let rect = try await SheetInteraction.click(
+                let clickResult = try await SheetInteraction.clickResult(
                     target: target,
                     role: role,
                     name: name,
                     exact: exact,
+                    newBoard: newBoard,
                     in: runtime.webView
                 )
-                runtime.triggerActionHighlight(rect)
+                runtime.triggerActionHighlight(clickResult.rect)
                 let description = target ?? "role=\(role ?? ""), name=\(name ?? "")"
+
+                if newBoard {
+                    guard let href = clickResult.href, !href.isEmpty else {
+                        return .failure("Element is not a link with an href: \(description)")
+                    }
+                    guard
+                        let newBoardID = store.createBoard(
+                            urlString: href,
+                            afterBoardID: board.id,
+                            focus: shouldFocus,
+                            origin: .cli
+                        ), let newBoard = store.board(for: newBoardID)
+                    else {
+                        return .failure("Failed to create new Web Board for \(href)")
+                    }
+                    _ = store.runtime(for: newBoard)
+                    return .success(
+                        message: "Opened \(description) in new Board",
+                        boardId: newBoardID.uuidString,
+                        url: href
+                    )
+                }
+
                 return .success(message: "Clicked \(description)")
 
             case .fill:

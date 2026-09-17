@@ -318,4 +318,52 @@ struct DenIPCServiceTests {
         #expect(response.isOk == false)
         #expect(response.error?.contains("No focused Board found") == true)
     }
+
+    @Test func sheetClickWithNewBoardCreatesWebBoard() async throws {
+        // Arrange
+        let directory = FileManager.default.temporaryDirectory
+            .appending(path: "den-browser-ipc-sheet-click-\(UUID().uuidString)", directoryHint: .isDirectory)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let suiteName = "IPCServiceSheetClickPreferences-\(UUID().uuidString)"
+        let manager = ProfileManager(
+            directoryURL: directory,
+            sheetNavigation: SheetNavigationManager(
+                defaults: UserDefaults(suiteName: suiteName) ?? .standard,
+                scriptSource: ""),
+            preferences: AppPreferences(defaults: UserDefaults(suiteName: suiteName) ?? .standard),
+            removeDataStore: { _ in })
+        let store = try #require(manager.store(for: manager.personalProfileID))
+        let boardID = try #require(store.createBoard(urlString: "https://example.com/"))
+        let board = try #require(store.board(for: boardID))
+        let runtime = store.runtime(for: board)
+
+        let waiter = SheetInteractionWebViewLoadWaiter()
+        let html = """
+            <!DOCTYPE html>
+            <html>
+            <body>
+                <a id="test-link" href="https://example.com/subpage">Subpage</a>
+            </body>
+            </html>
+            """
+        await waiter.load(html, baseURL: URL(string: "https://example.com")!, in: runtime.webView)
+
+        let service = DenIPCService(profileManager: manager)
+
+        // Act
+        let response = await service.handleRequest(
+            DenIPCRequest(
+                command: .sheet(.click),
+                args: ["#test-link", "--new-board"],
+                boardID: boardID.uuidString
+            )
+        )
+
+        // Assert
+        #expect(response.isOk)
+        let newBoardIDString = try #require(response.boardId)
+        let newBoardUUID = try #require(UUID(uuidString: newBoardIDString))
+        #expect(store.board(for: newBoardUUID) != nil)
+        #expect(response.url == "https://example.com/subpage")
+    }
 }
