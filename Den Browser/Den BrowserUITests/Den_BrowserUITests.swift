@@ -131,7 +131,7 @@ final class Den_BrowserUITests: XCTestCase, BDD {
             let start = boardHeader(.bravo, in: app)
                 .coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
             let end = charlie.coordinate(withNormalizedOffset: CGVector(dx: 0.75, dy: 0.1))
-            start.press(forDuration: 0.5, thenDragTo: end)
+            start.click(forDuration: 0.5, thenDragTo: end)
         }
 
         then("Bravo is positioned to the right of Charlie") {
@@ -165,7 +165,7 @@ final class Den_BrowserUITests: XCTestCase, BDD {
         when("dragging Bravo to the right of Charlie") {
             let start = bravo.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
             let end = charlie.coordinate(withNormalizedOffset: CGVector(dx: 0.75, dy: 0.5))
-            start.press(forDuration: 0.5, thenDragTo: end)
+            start.click(forDuration: 0.5, thenDragTo: end)
         }
 
         then("Bravo is positioned to the right of Charlie in Overview") {
@@ -189,7 +189,7 @@ final class Den_BrowserUITests: XCTestCase, BDD {
         when("dragging Second to the right of Third") {
             let start = second.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
             let end = third.coordinate(withNormalizedOffset: CGVector(dx: 0.8, dy: 0.5))
-            start.press(forDuration: 0.5, thenDragTo: end)
+            start.click(forDuration: 0.5, thenDragTo: end)
         }
 
         then("Second is positioned to the right of Third") {
