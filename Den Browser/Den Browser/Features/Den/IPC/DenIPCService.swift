@@ -513,10 +513,32 @@ final class DenIPCService {
                     type: currentBoard.isTerminal ? "terminal" : "web",
                     label: currentBoard.displayName,
                     url: currentBoard.currentSheetURL?.absoluteString,
-                    sessionName: currentBoard.zellijSessionName ?? currentBoard.zmxSessionName
+                    sessionName: currentBoard.zellijSessionName ?? currentBoard.zmxSessionName,
+                    isFocused: currentBoard.id == desk.focusedBoardID
                 )
             }
             return .success(boards: boards)
+
+        case .focused:
+            let desk: DeskState
+            switch DenIPCTargetResolver.resolveStoreAndDesk(request: request, in: profileManager) {
+            case .success(let target):
+                desk = target.1
+            case .failure(let error):
+                return .failure(error.localizedDescription)
+            }
+            guard let focusedBoard = desk.boards.first(where: { $0.id == desk.focusedBoardID }) else {
+                return .failure("No focused Board found")
+            }
+            let info = DenBoardInfo(
+                id: focusedBoard.id.uuidString,
+                type: focusedBoard.isTerminal ? "terminal" : "web",
+                label: focusedBoard.displayName,
+                url: focusedBoard.currentSheetURL?.absoluteString,
+                sessionName: focusedBoard.zellijSessionName ?? focusedBoard.zmxSessionName,
+                isFocused: true
+            )
+            return .success(boardId: info.id, board: info)
 
         case .web(.new):
             guard let urlString = request.args.first(where: { !$0.hasPrefix("-") }), !urlString.isEmpty else {

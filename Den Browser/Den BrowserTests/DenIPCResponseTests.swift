@@ -60,4 +60,35 @@ struct DenIPCResponseTests {
         #expect((object["completed_actions"] as? NSNumber)?.intValue == 2)
         #expect((object["failed_action_index"] as? NSNumber)?.intValue == 2)
     }
+
+    @Test func boardPayloadKeepsFocusedStateInJSON() throws {
+        // Arrange
+        let board = DenBoardInfo(
+            id: "4F72344C-F4E3-438D-99CB-2F12A79F0004",
+            type: "web",
+            label: "Example",
+            url: "https://example.com",
+            sessionName: nil,
+            isFocused: true
+        )
+        let response = DenIPCResponse.success(
+            boardId: board.id,
+            board: board,
+            boards: [board]
+        )
+
+        // Act
+        let data = try JSONEncoder().encode(response)
+        let object = try #require(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        let encodedBoard = try #require(object["board"] as? [String: Any])
+        let encodedBoards = try #require(object["boards"] as? [[String: Any]])
+
+        // Assert
+        #expect(object["ok"] as? Bool == true)
+        #expect(object["board_id"] as? String == "4F72344C-F4E3-438D-99CB-2F12A79F0004")
+        #expect(encodedBoard["id"] as? String == "4F72344C-F4E3-438D-99CB-2F12A79F0004")
+        #expect(encodedBoard["type"] as? String == "web")
+        #expect(encodedBoard["is_focused"] as? Bool == true)
+        #expect(encodedBoards.first?["is_focused"] as? Bool == true)
+    }
 }

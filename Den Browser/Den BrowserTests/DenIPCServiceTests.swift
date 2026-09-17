@@ -232,4 +232,90 @@ struct DenIPCServiceTests {
         #expect(response.isOk == false)
         #expect(response.error?.contains("Profile not found") == true)
     }
+
+    @Test func boardListCommandIncludesFocusedState() async throws {
+        // Arrange
+        let directory = FileManager.default.temporaryDirectory
+            .appending(path: "den-browser-ipc-board-list-\(UUID().uuidString)", directoryHint: .isDirectory)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let suiteName = "IPCServiceBoardListPreferences-\(UUID().uuidString)"
+        let manager = ProfileManager(
+            directoryURL: directory,
+            sheetNavigation: SheetNavigationManager(
+                defaults: UserDefaults(suiteName: suiteName) ?? .standard,
+                scriptSource: ""),
+            preferences: AppPreferences(defaults: UserDefaults(suiteName: suiteName) ?? .standard),
+            removeDataStore: { _ in })
+        let store = try #require(manager.store(for: manager.personalProfileID))
+        let boardID = try #require(store.createBoard(urlString: "https://example.com/"))
+        store.focusBoard(boardID)
+        let service = DenIPCService(profileManager: manager)
+
+        // Act
+        let response = await service.handleRequest(DenIPCRequest(command: .board(.list)))
+
+        // Assert
+        #expect(response.isOk)
+        let boards = try #require(response.boards)
+        let matched = try #require(boards.first(where: { $0.id == boardID.uuidString }))
+        #expect(matched.isFocused == true)
+    }
+
+    @Test func boardFocusedCommandReturnsCurrentlyFocusedBoard() async throws {
+        // Arrange
+        let directory = FileManager.default.temporaryDirectory
+            .appending(path: "den-browser-ipc-board-focused-\(UUID().uuidString)", directoryHint: .isDirectory)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let suiteName = "IPCServiceBoardFocusedPreferences-\(UUID().uuidString)"
+        let manager = ProfileManager(
+            directoryURL: directory,
+            sheetNavigation: SheetNavigationManager(
+                defaults: UserDefaults(suiteName: suiteName) ?? .standard,
+                scriptSource: ""),
+            preferences: AppPreferences(defaults: UserDefaults(suiteName: suiteName) ?? .standard),
+            removeDataStore: { _ in })
+        let store = try #require(manager.store(for: manager.personalProfileID))
+        let boardID = try #require(store.createBoard(urlString: "https://example.com/"))
+        store.focusBoard(boardID)
+        let service = DenIPCService(profileManager: manager)
+
+        // Act
+        let response = await service.handleRequest(DenIPCRequest(command: .board(.focused)))
+
+        // Assert
+        #expect(response.isOk)
+        #expect(response.boardId == boardID.uuidString)
+        let board = try #require(response.board)
+        #expect(board.id == boardID.uuidString)
+        #expect(board.isFocused == true)
+        #expect(board.type == "web")
+    }
+
+    @Test func boardFocusedCommandFailsWhenNoBoardsExist() async throws {
+        // Arrange
+        let directory = FileManager.default.temporaryDirectory
+            .appending(path: "den-browser-ipc-board-none-\(UUID().uuidString)", directoryHint: .isDirectory)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let suiteName = "IPCServiceBoardNonePreferences-\(UUID().uuidString)"
+        let manager = ProfileManager(
+            directoryURL: directory,
+            sheetNavigation: SheetNavigationManager(
+                defaults: UserDefaults(suiteName: suiteName) ?? .standard,
+                scriptSource: ""),
+            preferences: AppPreferences(defaults: UserDefaults(suiteName: suiteName) ?? .standard),
+            removeDataStore: { _ in })
+        let store = try #require(manager.store(for: manager.personalProfileID))
+        // Remove existing default boards if any
+        if let focused = store.focusedBoard {
+            store.removeBoard(focused.id)
+        }
+        let service = DenIPCService(profileManager: manager)
+
+        // Act
+        let response = await service.handleRequest(DenIPCRequest(command: .board(.focused)))
+
+        // Assert
+        #expect(response.isOk == false)
+        #expect(response.error?.contains("No focused Board found") == true)
+    }
 }

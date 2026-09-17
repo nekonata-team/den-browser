@@ -154,6 +154,12 @@ enum DenIPCClient {
             if response.isOk {
                 if command == .health {
                     print("healthy")
+                } else if let board = response.board {
+                    let type = "[\(board.type)]"
+                    let boardIDPrefix = output.showBoardIDs ? "\(board.id) - " : ""
+                    let secondary = board.url ?? board.sessionName
+                    let secondarySuffix = secondary.map { " (\($0))" } ?? ""
+                    print("* \(type) \(boardIDPrefix)\(board.label)\(secondarySuffix)")
                 } else if let boardId = response.boardId {
                     print(boardId)
                 } else if let boards = response.boards {
@@ -164,13 +170,14 @@ enum DenIPCClient {
                         .max() ?? 0
 
                     for currentBoard in boards {
+                        let mark = currentBoard.isFocused ? "*" : " "
                         let type = "[\(currentBoard.type)]"
                             .padding(toLength: typeColumnWidth, withPad: " ", startingAt: 0)
                         let boardIDPrefix = output.showBoardIDs ? "\(currentBoard.id) - " : ""
                         let secondary = currentBoard.url ?? currentBoard.sessionName
                         let secondarySuffix = secondary.map { " (\($0))" } ?? ""
                         print(
-                            "\(type) \(boardIDPrefix)"
+                            "\(mark) \(type) \(boardIDPrefix)"
                                 + "\(currentBoard.label)\(secondarySuffix)"
                         )
                     }

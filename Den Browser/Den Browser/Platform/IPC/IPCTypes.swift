@@ -33,6 +33,7 @@ nonisolated enum DenIPCCommand: Codable, Equatable, Sendable {
 
     enum Board: Codable, Equatable, Sendable {
         case list
+        case focused
         case close
         case web(WebBoard)
         case terminal(TerminalBoard)
@@ -92,6 +93,7 @@ nonisolated struct DenBoardInfo: Codable, Sendable {
     var label: String
     var url: String?
     var sessionName: String?
+    var isFocused: Bool
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -99,6 +101,23 @@ nonisolated struct DenBoardInfo: Codable, Sendable {
         case label
         case url
         case sessionName = "session_name"
+        case isFocused = "is_focused"
+    }
+
+    init(
+        id: String,
+        type: String,
+        label: String,
+        url: String? = nil,
+        sessionName: String? = nil,
+        isFocused: Bool = false
+    ) {
+        self.id = id
+        self.type = type
+        self.label = label
+        self.url = url
+        self.sessionName = sessionName
+        self.isFocused = isFocused
     }
 }
 
@@ -190,6 +209,7 @@ nonisolated struct DenIPCResponse: Codable, Sendable {
     var message: String?
     var boardId: String?
     var closedBoardId: String?
+    var board: DenBoardInfo?
     var boards: [DenBoardInfo]?
     var desks: [DenDeskInfo]?
     var drawerItemId: String?
@@ -215,6 +235,7 @@ nonisolated struct DenIPCResponse: Codable, Sendable {
         case message
         case boardId = "board_id"
         case closedBoardId = "closed_board_id"
+        case board
         case boards
         case desks
         case drawerItemId = "drawer_item_id"
@@ -239,6 +260,7 @@ nonisolated struct DenIPCResponse: Codable, Sendable {
         message: String? = nil,
         boardId: String? = nil,
         closedBoardId: String? = nil,
+        board: DenBoardInfo? = nil,
         boards: [DenBoardInfo]? = nil,
         desks: [DenDeskInfo]? = nil,
         drawerItemId: String? = nil,
@@ -264,6 +286,7 @@ nonisolated struct DenIPCResponse: Codable, Sendable {
             message: message,
             boardId: boardId,
             closedBoardId: closedBoardId,
+            board: board,
             boards: boards,
             desks: desks,
             drawerItemId: drawerItemId,
@@ -297,6 +320,7 @@ nonisolated struct DenIPCResponse: Codable, Sendable {
             message: nil,
             boardId: nil,
             closedBoardId: nil,
+            board: nil,
             boards: nil,
             desks: nil,
             drawerItemId: nil,

@@ -115,6 +115,7 @@ Commands operating on Boards within the active Desk.
 | Command | Arguments | Description | Example |
 |---|---|---|---|
 | `den board list` | `[-l]` | List all Boards on the active Desk with type (`web`/`terminal`), label, and type-specific secondary information. Use `-l` to include full Board IDs in human-readable output. | `den board list -l` |
+| `den board focused` | `[-l]` | Show the currently focused Board on the active Desk. Use `-l` to include full Board ID in human-readable output. | `den board focused -l` |
 | `den board close` | `[--board <id>]` | Close the specified Board or the target Web Board. Explicit IDs fail (`exit 1`) if invalid or not found. | `den board close --board 4F72344C-...` |
 
 ### 3.4 `den board web` (Web Boards)
@@ -189,12 +190,20 @@ BOARD_ID=$(den board web new https://example.com | jq -r .board_id)
 
 **Board Listing (`board list`)**:
 ```json
-{"ok":true,"boards":[{"id":"4F72344C-...","label":"Example","type":"web","url":"https://example.com"}]}
+{"ok":true,"boards":[{"id":"4F72344C-...","is_focused":true,"label":"Example","type":"web","url":"https://example.com"}]}
 ```
 ```bash
 den board list | jq -r '.boards[] | select(.type == "web") | .id'
 ```
-Web Boards include `url`; Zellij and zmx Terminal Boards include `session_name` when a named session is attached.
+Web Boards include `url`; Zellij and zmx Terminal Boards include `session_name` when a named session is attached. `is_focused` indicates whether the Board is currently focused on the Desk.
+
+**Board Focused (`board focused`)**:
+```json
+{"board":{"id":"4F72344C-...","is_focused":true,"label":"Example","type":"web","url":"https://example.com"},"board_id":"4F72344C-...","ok":true}
+```
+```bash
+BOARD_ID=$(den board focused | jq -r .board_id)
+```
 
 **Terminal Screen Buffer (`terminal text`)**:
 ```json

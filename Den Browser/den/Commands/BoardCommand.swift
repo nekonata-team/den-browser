@@ -7,6 +7,7 @@ struct BoardCommand: ParsableCommand {
         abstract: "Inspect and manage Boards on the active Desk",
         subcommands: [
             BoardListCommand.self,
+            BoardFocusedCommand.self,
             BoardWebCommand.self,
             BoardTerminalCommand.self,
             BoardCloseCommand.self,
@@ -36,6 +37,31 @@ struct BoardListOptions: ParsableArguments {
     @Flag(
         name: [.customShort("l"), .customLong("long")],
         help: "Show full Board IDs in human-readable output")
+    var showBoardIDs = false
+}
+
+struct BoardFocusedCommand: ParsableCommand {
+    static let configuration = CommandConfiguration(
+        commandName: "focused",
+        abstract: "Show the currently focused Board on the active Desk")
+
+    @OptionGroup var options: BoardFocusedOptions
+
+    func run() throws {
+        try DenIPCClient.execute(
+            command: .board(.focused),
+            args: [],
+            options: options.common,
+            showBoardIDs: options.showBoardIDs)
+    }
+}
+
+struct BoardFocusedOptions: ParsableArguments {
+    @OptionGroup var common: CLIOptions
+
+    @Flag(
+        name: [.customShort("l"), .customLong("long")],
+        help: "Show full Board ID in human-readable output")
     var showBoardIDs = false
 }
 
