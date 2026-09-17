@@ -22,6 +22,7 @@ struct SheetCommand: ParsableCommand {
             SheetIsCommand.self,
             SheetClickCommand.self,
             SheetFillCommand.self,
+            SheetInteractCommand.self,
             SheetScreenshotCommand.self,
         ]
     )
@@ -191,6 +192,222 @@ struct SheetFillCommand: ParsableCommand {
         }
         let value = valueParts.joined(separator: " ")
         try DenIPCClient.execute(command: .sheet(.fill), args: [targetElement, value], options: target)
+    }
+}
+
+struct SheetInteractCommand: ParsableCommand {
+    static let configuration = CommandConfiguration(
+        commandName: "interact",
+        abstract: "Run multiple Sheet actions from a script, file, or stdin and return a final semantic snapshot",
+        discussion: """
+            Executes a series of Sheet actions line-by-line and returns the final semantic snapshot.
+            Each line or semicolon-separated statement uses the same syntax as 'den sheet <subcommand>'.
+
+            Available actions:
+              click <ref|selector>              Click an element (e.g. click @e1)
+              fill <ref|selector> <text>        Fill an input or textarea with text
+              press <key>                       Press a key (Enter, Escape, Tab, ArrowDown, etc.)
+              scroll [direction|ref|selector]   Scroll the page or scroll an element into view
+              wait <ref|--load|--url|--text>    Wait for DOM state, load state, or URL
+              screenshot [output-path]          Capture a PNG screenshot
+              open <url>                        Navigate to a URL
+              reload                            Reload current Sheet
+              back / forward                    Navigate history
+              eval <javascript>                 Evaluate JavaScript code
+
+            Examples:
+              den sheet interact "click @e1; fill @e2 Hello; press Enter"
+              den sheet interact << 'EOF'
+              click @e1
+              fill @e2 "query text"
+              press Enter
+              wait --load networkidle
+              screenshot /tmp/result.png
+              EOF
+              den sheet interact path/to/script.den
+            """)
+
+    @OptionGroup var target: BoardTargetOptions
+    @Argument(help: "Script text, script file path, or - for stdin (defaults to stdin if piped)")
+    var scriptOrPath: String?
+    @Flag(name: .long, help: "Include the full semantic tree in the final snapshot")
+    var full: Bool = false
+
+    func run() throws {
+        let script = try readScript()
+        let steps = try DenSheetScriptParser.parse(script)
+        guard !steps.isEmpty else {
+            throw ValidationError("Script contains no valid actions")
+        }
+        let encoded = try JSONEncoder().encode(steps)
+        guard let jsonString = String(data: encoded, encoding: .utf8) else {
+            throw ValidationError("Failed to encode script actions")
+        }
+
+        var args = [jsonString]
+        if full { args.append("--full") }
+        try DenIPCClient.execute(command: .sheet(.interact), args: args, options: target)
+    }
+
+    private func readScript() throws -> String {
+        guard let scriptOrPath else {
+            guard isatty(fileno(stdin)) == 0 else {
+                throw ValidationError("Please provide a script, a script file path, or pipe script into stdin")
+            }
+            return try readStandardInput()
+        }
+
+        if scriptOrPath == "-" {
+            return try readStandardInput()
+        }
+        if FileManager.default.fileExists(atPath: scriptOrPath) {
+            guard let content = try? String(contentsOfFile: scriptOrPath, encoding: .utf8) else {
+                throw ValidationError("Could not read file at \(scriptOrPath)")
+            }
+            return content
+        }
+        return scriptOrPath
+    }
+
+    private func readStandardInput() throws -> String {
+        let data = FileHandle.standardInput.readDataToEndOfFile()
+        guard
+            let text = String(data: data, encoding: .utf8),
+            !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        else {
+            throw ValidationError("Standard input was empty")
+        }
+        return text
+    }
+}
+
+private enum DenSheetScriptParser {
+    static func parse(_ script: String) throws -> [DenSheetInteractStep] {
+        var steps: [DenSheetInteractStep] = []
+        let lines = script.components(separatedBy: .newlines)
+
+        for (zeroBasedIndex, rawLine) in lines.enumerated() {
+            let lineNumber = zeroBasedIndex + 1
+            let trimmed = rawLine.trimmingCharacters(in: .whitespaces)
+            if trimmed.isEmpty || trimmed.hasPrefix("#") {
+                continue
+            }
+
+            let commandStrings = try splitCommands(trimmed, line: lineNumber)
+            for commandString in commandStrings {
+                let tokens = try splitTokens(commandString, line: lineNumber)
+                guard let commandName = tokens.first else { continue }
+                guard let sheetCommand = DenIPCCommand.Sheet(rawValue: commandName),
+                    sheetCommand != .interact
+                else {
+                    throw ValidationError(
+                        "Line \(lineNumber): Unknown or unsupported sheet action '\(commandName)'")
+                }
+                steps.append(DenSheetInteractStep(line: lineNumber, text: commandString, args: tokens))
+            }
+        }
+        return steps
+    }
+
+    static func splitCommands(_ line: String, line lineNumber: Int) throws -> [String] {
+        var commands: [String] = []
+        var current = ""
+        var inSingleQuote = false
+        var inDoubleQuote = false
+        var isEscaped = false
+
+        for char in line {
+            if isEscaped {
+                current.append(char)
+                isEscaped = false
+                continue
+            }
+            if char == "\\" && !inSingleQuote {
+                current.append(char)
+                isEscaped = true
+                continue
+            }
+            if char == "'" && !inDoubleQuote {
+                inSingleQuote.toggle()
+                current.append(char)
+                continue
+            }
+            if char == "\"" && !inSingleQuote {
+                inDoubleQuote.toggle()
+                current.append(char)
+                continue
+            }
+            if char == ";" && !inSingleQuote && !inDoubleQuote {
+                let trimmed = current.trimmingCharacters(in: .whitespaces)
+                if !trimmed.isEmpty {
+                    commands.append(trimmed)
+                }
+                current = ""
+                continue
+            }
+            current.append(char)
+        }
+
+        if isEscaped || inSingleQuote || inDoubleQuote {
+            throw ValidationError("Line \(lineNumber): Unterminated quote or escape sequence")
+        }
+
+        let trimmed = current.trimmingCharacters(in: .whitespaces)
+        if !trimmed.isEmpty {
+            commands.append(trimmed)
+        }
+        return commands
+    }
+
+    static func splitTokens(_ commandString: String, line lineNumber: Int) throws -> [String] {
+        var tokens: [String] = []
+        var current = ""
+        var inSingleQuote = false
+        var inDoubleQuote = false
+        var isEscaped = false
+        var hasToken = false
+
+        for char in commandString {
+            if isEscaped {
+                current.append(char)
+                hasToken = true
+                isEscaped = false
+                continue
+            }
+            if char == "\\" && !inSingleQuote {
+                isEscaped = true
+                continue
+            }
+            if char == "'" && !inDoubleQuote {
+                inSingleQuote.toggle()
+                hasToken = true
+                continue
+            }
+            if char == "\"" && !inSingleQuote {
+                inDoubleQuote.toggle()
+                hasToken = true
+                continue
+            }
+            if char.isWhitespace && !inSingleQuote && !inDoubleQuote {
+                if hasToken {
+                    tokens.append(current)
+                    current = ""
+                    hasToken = false
+                }
+                continue
+            }
+            current.append(char)
+            hasToken = true
+        }
+
+        if isEscaped || inSingleQuote || inDoubleQuote {
+            throw ValidationError("Line \(lineNumber): Unterminated quote or escape sequence")
+        }
+
+        if hasToken {
+            tokens.append(current)
+        }
+        return tokens
     }
 }
 

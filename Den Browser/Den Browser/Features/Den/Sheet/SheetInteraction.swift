@@ -408,31 +408,56 @@ enum SheetInteraction {
 
     static func press(key: String, in webView: WKWebView) async throws {
         let keyLiteral = try javascriptLiteral(key)
-        let script = operationScript(
-            """
-            const key = \(keyLiteral);
-            const el = document.activeElement || document.body;
-            const keyData = {
-                key: key,
-                code: key === ' ' ? 'Space' : key,
-                bubbles: true,
-                cancelable: true,
-                view: window
-            };
-            el.dispatchEvent(new KeyboardEvent('keydown', keyData));
-            el.dispatchEvent(new KeyboardEvent('keypress', keyData));
-            el.dispatchEvent(new KeyboardEvent('keyup', keyData));
-            if (key === 'Enter') {
-                if (el.form && typeof el.form.requestSubmit === 'function') {
-                    el.form.requestSubmit();
-                } else if (el.tagName === 'A' && typeof el.click === 'function') {
-                    el.click();
+        let script = """
+            (() => {
+                const key = \(keyLiteral);
+                const el = document.activeElement || document.body;
+                const keyCodes = {
+                    Enter: 13,
+                    Escape: 27,
+                    Tab: 9,
+                    ArrowDown: 40,
+                    ArrowLeft: 37,
+                    ArrowRight: 39,
+                    ArrowUp: 38,
+                    Backspace: 8,
+                    Delete: 46,
+                    Home: 36,
+                    End: 35,
+                    PageDown: 34,
+                    PageUp: 33,
+                    Space: 32,
+                };
+                const keyCode = keyCodes[key] || (key === ' ' ? 32 : 0);
+                const keyData = {
+                    key: key,
+                    code: key === ' ' ? 'Space' : key,
+                    bubbles: true,
+                    cancelable: true,
+                    view: window
+                };
+                const makeKeyboardEvent = type => {
+                    const event = new KeyboardEvent(type, keyData);
+                    if (keyCode) {
+                        Object.defineProperty(event, 'keyCode', { value: keyCode });
+                        Object.defineProperty(event, 'which', { value: keyCode });
+                    }
+                    return event;
+                };
+                el.dispatchEvent(makeKeyboardEvent('keydown'));
+                el.dispatchEvent(makeKeyboardEvent('keypress'));
+                el.dispatchEvent(makeKeyboardEvent('keyup'));
+                if (key === 'Enter') {
+                    if (el.form && typeof el.form.requestSubmit === 'function') {
+                        el.form.requestSubmit();
+                    } else if (el.tagName === 'A' && typeof el.click === 'function') {
+                        el.click();
+                    }
                 }
-            }
-            return { ok: true };
+                return { ok: true };
+            })()
             """
-        )
-        _ = try await evaluate(script, in: webView)
+        _ = try await webView.evaluateJavaScript(script)
     }
 
     static func scroll(direction: String, in webView: WKWebView) async throws -> String {

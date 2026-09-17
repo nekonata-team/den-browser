@@ -40,4 +40,24 @@ struct DenIPCResponseTests {
         #expect(encodedElement["value"] as? String == "")
         #expect((encodedElement["checked"] as? NSNumber)?.boolValue == false)
     }
+
+    @Test func failedInteractResponseKeepsProgressAndSnapshot() throws {
+        // Arrange
+        let response = DenIPCResponse.failure(
+            "Element not found: @e3",
+            snapshot: "@e1 button \"Done\"",
+            completedActions: 2,
+            failedActionIndex: 2
+        )
+
+        // Act
+        let data = try JSONEncoder().encode(response)
+        let object = try #require(JSONSerialization.jsonObject(with: data) as? [String: Any])
+
+        // Assert
+        #expect(object["ok"] as? Bool == false)
+        #expect(object["snapshot"] as? String == "@e1 button \"Done\"")
+        #expect((object["completed_actions"] as? NSNumber)?.intValue == 2)
+        #expect((object["failed_action_index"] as? NSNumber)?.intValue == 2)
+    }
 }

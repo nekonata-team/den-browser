@@ -43,6 +43,8 @@ Use `den board list --json` to discover Boards on the active Desk. `den board li
 
 ## Web interaction
 
+For a short sequence whose next actions are already known, prefer `den sheet interact` to combine them and receive one final snapshot. Use role/name or a CSS selector when an action changes the DOM; a ref may become stale after that change.
+
 Take a new snapshot after navigation or a DOM change. Snapshot references are valid only for the latest snapshot. Use `wait` only when the next step depends on a state that is not ready yet. If the required content or control is already available, proceed directly. Wait for a selector, text, URL, or another supported condition; duration waits are not supported.
 
 Read [Sheet operation examples](references/sheet.md) when choosing how to locate elements, fill forms, wait for results, extract data, or scroll through dynamic content.

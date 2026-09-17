@@ -106,6 +106,7 @@ Commands operating on the Current Sheet of the resolved Web Board.
 | `den sheet is` | `<visible\|enabled\|checked> <target>` | Check one current boolean state for an element. | `den sheet is checked @e3 --json` |
 | `den sheet click` | `[<target>] [--role <role> --name <name>] [--exact]` | Click by ref/selector or by an accessible role and name. Semantic matching requires both `--role` and `--name`; `--exact` requires an exact name match. The action dispatches synthetic pointer and mouse events, then one click activation. | `den sheet click --role option --name GitHub --exact --json` |
 | `den sheet fill` | `<target> <value>` | Fill an input/textarea with text by reference or selector. An empty value is valid. | `den sheet fill @e2 "search query"` |
+| `den sheet interact` | `[<script-or-file>] [--full]` | Execute multiple sheet actions in order from a script, script file, or stdin (`-`) and return a final semantic snapshot. Actions follow standard `den sheet` subcommand syntax (e.g. `click`, `fill`, `wait`); execution stops at the first failure. Use `--full` for the complete semantic tree. | `den sheet interact "click @e1; fill @e2 'query'"` |
 | `den sheet screenshot` | `[<path>]` | Save a PNG screenshot of the web sheet (defaults to temporary directory). | `den sheet screenshot /tmp/screen.png` |
 
 ### 3.3 `den board` (Board Surfaces & Layout)

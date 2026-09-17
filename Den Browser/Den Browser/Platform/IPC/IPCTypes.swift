@@ -19,6 +19,8 @@ nonisolated enum DenIPCCommand: Codable, Equatable, Sendable {
         case isState = "is"
         case click
         case fill
+        case interact
+
     }
 
     enum WebBoard: String, CaseIterable, Codable, Sendable {
@@ -67,6 +69,12 @@ nonisolated enum DenIPCCommand: Codable, Equatable, Sendable {
     case profile(Profile)
     case health
 
+}
+
+nonisolated struct DenSheetInteractStep: Codable, Equatable, Sendable {
+    var line: Int
+    var text: String
+    var args: [String]
 }
 
 nonisolated struct DenIPCRequest: Codable, Sendable {
@@ -198,6 +206,8 @@ nonisolated struct DenIPCResponse: Codable, Sendable {
     var visible: Bool?
     var enabled: Bool?
     var screenshotPath: String?
+    var completedActions: Int?
+    var failedActionIndex: Int?
 
     enum CodingKeys: String, CodingKey {
         case isOk = "ok"
@@ -221,6 +231,8 @@ nonisolated struct DenIPCResponse: Codable, Sendable {
         case visible
         case enabled
         case screenshotPath = "screenshot_path"
+        case completedActions = "completed_actions"
+        case failedActionIndex = "failed_action_index"
     }
 
     static func success(
@@ -242,7 +254,9 @@ nonisolated struct DenIPCResponse: Codable, Sendable {
         count: Int? = nil,
         visible: Bool? = nil,
         enabled: Bool? = nil,
-        screenshotPath: String? = nil
+        screenshotPath: String? = nil,
+        completedActions: Int? = nil,
+        failedActionIndex: Int? = nil
     ) -> DenIPCResponse {
         DenIPCResponse(
             isOk: true,
@@ -265,11 +279,18 @@ nonisolated struct DenIPCResponse: Codable, Sendable {
             count: count,
             visible: visible,
             enabled: enabled,
-            screenshotPath: screenshotPath
+            screenshotPath: screenshotPath,
+            completedActions: completedActions,
+            failedActionIndex: failedActionIndex
         )
     }
 
-    static func failure(_ error: String) -> DenIPCResponse {
+    static func failure(
+        _ error: String,
+        snapshot: String? = nil,
+        completedActions: Int? = nil,
+        failedActionIndex: Int? = nil
+    ) -> DenIPCResponse {
         DenIPCResponse(
             isOk: false,
             error: error,
@@ -282,7 +303,7 @@ nonisolated struct DenIPCResponse: Codable, Sendable {
             drawerItems: nil,
             profiles: nil,
             url: nil,
-            snapshot: nil,
+            snapshot: snapshot,
             elements: nil,
             text: nil,
             value: nil,
@@ -291,7 +312,9 @@ nonisolated struct DenIPCResponse: Codable, Sendable {
             count: nil,
             visible: nil,
             enabled: nil,
-            screenshotPath: nil
+            screenshotPath: nil,
+            completedActions: completedActions,
+            failedActionIndex: failedActionIndex
         )
     }
 }

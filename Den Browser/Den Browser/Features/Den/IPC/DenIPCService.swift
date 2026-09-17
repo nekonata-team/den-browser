@@ -131,6 +131,9 @@ final class DenIPCService {
                 runtime.webView.goForward()
                 return .success(message: "Navigated forward")
 
+            case .interact:
+                return await handleSheetInteract(request: request, runtime: runtime)
+
             case .press:
                 guard let key = request.args.first, !key.isEmpty else {
                     return .failure("Usage: den sheet press <key>")
@@ -374,6 +377,79 @@ final class DenIPCService {
             }
         } catch {
             return .failure(error.localizedDescription)
+        }
+    }
+
+    private func handleSheetInteract(
+        request: DenIPCRequest,
+        runtime: BoardRuntime
+    ) async -> DenIPCResponse {
+        guard
+            let stepsJSON = request.args.first(where: { !$0.hasPrefix("-") }),
+            let data = stepsJSON.data(using: .utf8),
+            let steps = try? JSONDecoder().decode([DenSheetInteractStep].self, from: data),
+            !steps.isEmpty
+        else {
+            return .failure("Usage: den sheet interact <script-or-file>")
+        }
+
+        var completedActions = 0
+        for (index, step) in steps.enumerated() {
+            guard let commandName = step.args.first,
+                let sheetCommand = DenIPCCommand.Sheet(rawValue: commandName),
+                sheetCommand != .interact
+            else {
+                let snapshot = try? await SheetInteraction.snapshot(
+                    in: runtime.webView,
+                    interactiveOnly: !request.args.contains("--full")
+                )
+                return .failure(
+                    "Line \(step.line): Unknown sheet command '\(step.args.first ?? "")'",
+                    snapshot: snapshot,
+                    completedActions: completedActions,
+                    failedActionIndex: index
+                )
+            }
+
+            let actionArguments = Array(step.args.dropFirst())
+            let actionResponse = await handleSheetCommand(
+                sheetCommand,
+                request: DenIPCRequest(
+                    command: .sheet(sheetCommand),
+                    args: actionArguments,
+                    boardID: request.boardID,
+                    deskID: request.deskID,
+                    callerBoardID: request.callerBoardID,
+                    profileID: request.profileID
+                )
+            )
+            guard actionResponse.isOk else {
+                let snapshot = try? await SheetInteraction.snapshot(
+                    in: runtime.webView,
+                    interactiveOnly: !request.args.contains("--full")
+                )
+                let reason = actionResponse.error ?? "Interact action failed"
+                return .failure(
+                    "Line \(step.line) (\(step.text)): \(reason)",
+                    snapshot: snapshot,
+                    completedActions: completedActions,
+                    failedActionIndex: index
+                )
+            }
+            completedActions += 1
+        }
+
+        do {
+            let snapshot = try await SheetInteraction.snapshot(
+                in: runtime.webView,
+                interactiveOnly: !request.args.contains("--full")
+            )
+            return .success(snapshot: snapshot, completedActions: completedActions)
+        } catch {
+            return .failure(
+                error.localizedDescription,
+                completedActions: completedActions
+            )
         }
     }
 

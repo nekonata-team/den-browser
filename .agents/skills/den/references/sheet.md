@@ -2,7 +2,7 @@
 
 Replace sample URLs, selectors, names, and references with targets observed in the actual Sheet.
 
-## 1. Open a Sheet and read its content
+## Open a Sheet and read its content
 
 ```sh
 board_id="$(den board web new https://example.com --json | jq -er '.board_id')"
@@ -14,7 +14,7 @@ den sheet snapshot -i --board "$board_id" --json
 
 For an existing Web Board, set `board_id` to its `.id` from the Board list. To navigate that Board, use `den sheet open <url> --board "$board_id" --json`.
 
-## 2. Locate an element and click it
+## Locate an element and click it
 
 ```sh
 den sheet snapshot -i --board "$board_id" --json
@@ -35,7 +35,7 @@ Choose the target form that fits the evidence available:
 
 For repeated labels, inspect a narrower region with `snapshot --within '<selector>'` and select its intended reference. Use `--full` when the compact snapshot omits the semantic content you need.
 
-## 3. Fill a search form and wait for results
+## Fill a search form and wait for results
 
 Assume inspection found `input[name="q"]`, a button named `Search`, and a results container `#results` that appears asynchronously after submission. The next step needs those results.
 
@@ -53,7 +53,45 @@ Choose a wait condition that distinguishes the new result from the previous stat
 
 Each `wait` accepts one condition: a selector/ref, `--text`, `--url`, `--load`, or `--fn`. `--state` accompanies a selector/ref; states are `attached`, `visible`, `hidden`, and `detached`. The default timeout is 10 seconds. `is` reads a state immediately; it does not wait for a transition.
 
-## 4. Read element data and state
+## Batch actions with `interact`
+
+Use `interact` when two or more next actions are already known. It executes multiple `den sheet` actions in order from a script, script file, or stdin (`-`) and returns one final semantic snapshot, reducing CLI round trips. Use `--full` when the final snapshot needs the complete semantic tree.
+
+Actions follow standard `den sheet` subcommand syntax (such as `click`, `fill`, `press`, `scroll`, `wait`), with one action per line or separated by semicolons (`;`). Blank lines and lines starting with `#` are ignored. Scripts can also be stored in a file and passed by path (`den sheet interact ./actions.den --board "$board_id" --json`).
+
+For example, via heredoc / stdin:
+
+```sh
+den sheet interact - --board "$board_id" --json << 'EOF'
+fill @e2 "Buy groceries"
+press Enter
+fill @e2 "Read release notes"
+press Enter
+EOF
+```
+
+Or as an inline script:
+
+```sh
+den sheet interact "click @e1; fill @e2 'query'; press Enter" --board "$board_id" --json
+```
+
+Actions run against the current Sheet state, but intermediate snapshots are not returned. If an action changes the DOM, do not queue later actions with refs that may disappear. Prefer a role/name or CSS selector that can be resolved again, include a condition-based `wait`, or split the sequence and take a new snapshot.
+
+For example, this handles a control that is removed and then added asynchronously:
+
+```sh
+den sheet interact - --board "$board_id" --json << 'EOF'
+click --role button --name "Remove" --exact
+wait #checkbox --state detached
+click --role button --name "Add" --exact
+wait #checkbox --state attached
+EOF
+```
+
+`wait` waits for a condition, not for an arbitrary duration. On success, read `.snapshot` and `.completed_actions`. On failure, inspect `.error`, `.snapshot`, `.completed_actions`, and `.failed_action_index` before deciding whether to refresh the snapshot or retry.
+
+## Read element data and state
 
 For a Sheet with inspected result links and a search form:
 
@@ -79,7 +117,7 @@ Read the corresponding JSON fields:
 
 Use `query --all` for a collection; without `--all`, query returns the first match. Unavailable query fields are omitted. Use `is visible` or `is checked` for `.visible` or `.checked`. A successful state query can return `false`; `.ok` indicates command success, not the element's state.
 
-## 5. Scroll and inspect newly loaded content
+## Scroll and inspect newly loaded content
 
 Assume inspection established that scrolling loads more results asynchronously and that `#result-21` identifies a new item that must exist before scrolling it into view:
 
@@ -91,7 +129,3 @@ den sheet snapshot -i --board "$board_id" --json
 ```
 
 `scroll down` moves within the Sheet; scrolling to a selector brings an existing element into view. For more items, repeat only until the requested content is found or the observed end condition is reached.
-
-## When an operation fails
-
-Failures return `.ok: false` and `.error`, with exit code 1. Inspect the error before continuing. Check the target with `den sheet url --board "$board_id" --json`, refresh the snapshot if the DOM changed, and verify that the wait condition describes the expected transition. A successful click or fill does not by itself establish that the application finished processing it.

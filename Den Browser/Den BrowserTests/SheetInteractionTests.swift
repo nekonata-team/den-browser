@@ -307,6 +307,33 @@ struct SheetInteractionTests {
         #expect(!finalChecked)
     }
 
+    @Test func pressProvidesLegacyKeyCodes() async throws {
+        // Arrange
+        let webView = makeWebView()
+        let waiter = SheetInteractionWebViewLoadWaiter()
+        await waiter.load(
+            """
+            <!doctype html>
+            <input id="name"
+                onkeydown="this.dataset.key = event.key; this.dataset.keyCode = event.keyCode; this.dataset.which = event.which;">
+            """,
+            baseURL: URL(string: "https://example.com/")!,
+            in: webView
+        )
+
+        // Act
+        try await SheetInteraction.fill(target: "#name", value: "", in: webView)
+        try await SheetInteraction.press(key: "Enter", in: webView)
+        let key = try await SheetInteraction.attribute(target: "#name", name: "data-key", in: webView)
+        let keyCode = try await SheetInteraction.attribute(target: "#name", name: "data-key-code", in: webView)
+        let which = try await SheetInteraction.attribute(target: "#name", name: "data-which", in: webView)
+
+        // Assert
+        #expect(key == "Enter")
+        #expect(keyCode == "13")
+        #expect(which == "13")
+    }
+
     @Test func scrollAcceptsAnElementTarget() async throws {
         // Arrange
         let webView = makeWebView()
