@@ -1062,6 +1062,7 @@ struct SheetNavigationTests {
             frame: NSRect(x: 0, y: 0, width: 800, height: 600),
             configuration: configuration
         )
+        webView.pageZoom = 1.5
         let waiter = WebViewLoadWaiter()
         await waiter.load(
             """
@@ -1069,7 +1070,7 @@ struct SheetNavigationTests {
             <html>
             <body>
               <button id="test-btn" style="position:absolute;left:20px;top:30px;width:100px;height:40px;" onclick="this.textContent = 'clicked'">Click Me</button>
-              <input id="test-input" style="position:absolute;left:20px;top:80px;width:150px;height:30px;" type="text" value="">
+              <input id="test-input" style="box-sizing:border-box;position:absolute;left:20px;top:80px;width:150px;height:30px;" type="text" value="">
             </body>
             </html>
             """,
@@ -1081,7 +1082,7 @@ struct SheetNavigationTests {
         let clickedText =
             try await webView.evaluateJavaScript("document.getElementById('test-btn').textContent") as? String
         #expect(clickedText == "clicked")
-        #expect(clickRect.width > 0 && clickRect.height > 0)
+        #expect(clickRect == CGRect(x: 30, y: 45, width: 150, height: 60))
 
         let clickHighlight =
             try await webView.evaluateJavaScript("document.querySelector('[data-den-highlight]')")
@@ -1090,7 +1091,7 @@ struct SheetNavigationTests {
         let fillRect = try await SheetInteraction.fill(target: "#test-input", value: "hello agent", in: webView)
         let inputValue = try await webView.evaluateJavaScript("document.getElementById('test-input').value") as? String
         #expect(inputValue == "hello agent")
-        #expect(fillRect.width > 0 && fillRect.height > 0)
+        #expect(fillRect == CGRect(x: 30, y: 120, width: 225, height: 45))
 
         let fillHighlight =
             try await webView.evaluateJavaScript("document.querySelector('[data-den-highlight]')")

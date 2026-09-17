@@ -250,7 +250,7 @@ enum SheetInteraction {
             """
         )
         let result = try await evaluate(script, in: webView)
-        return try extractRect(from: result)
+        return try extractRect(from: result, scale: webView.pageZoom * webView.magnification)
     }
 
     @discardableResult
@@ -278,7 +278,7 @@ enum SheetInteraction {
             """
         )
         let result = try await evaluate(script, in: webView)
-        return try extractRect(from: result)
+        return try extractRect(from: result, scale: webView.pageZoom * webView.magnification)
     }
 
     static func value(target: String, in webView: WKWebView) async throws -> String {
@@ -768,7 +768,7 @@ enum SheetInteraction {
         return dictionary
     }
 
-    private static func extractRect(from evalResult: Any?) throws -> CGRect {
+    private static func extractRect(from evalResult: Any?, scale: CGFloat = 1) throws -> CGRect {
         let dictionary = try resultDictionary(from: evalResult)
         guard let rect = dictionary["rect"] as? [String: Any],
             let originX = (rect["x"] as? NSNumber)?.doubleValue,
@@ -778,7 +778,12 @@ enum SheetInteraction {
         else {
             return .zero
         }
-        return CGRect(x: originX, y: originY, width: width, height: height)
+        return CGRect(
+            x: originX * scale,
+            y: originY * scale,
+            width: width * scale,
+            height: height * scale
+        )
     }
 
     private static func elementInfo(from rawElement: Any) throws -> DenSheetElementInfo {
