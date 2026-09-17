@@ -47,6 +47,15 @@ lsp-config:
 run: build
     open -n "{{derived_data}}/Build/Products/Debug/Den Browser.app"
 
+# Quit Den Browser.
+[group("development")]
+quit:
+    osascript -e 'tell application "Den Browser" to quit'
+
+# Quit Den Browser, then build and launch it again.
+[group("development")]
+restart: quit && run
+
 # Run the bundled den CLI.
 [group("development")]
 den *args:
