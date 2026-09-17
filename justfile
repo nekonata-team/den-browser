@@ -32,10 +32,10 @@ lint:
     {{swift_format}} lint --strict --recursive --parallel --configuration .swift-format "{{swift_sources}}"
     swiftlint lint --strict
 
-# Build macOS app without code signing.
+# Build macOS app with development signing.
 [group("build")]
 build:
-    rtk xcodebuild build -project "{{project}}" -scheme "{{scheme}}" -destination 'platform=macOS,arch=arm64' -derivedDataPath "{{derived_data}}" CODE_SIGNING_ALLOWED=NO
+    rtk xcodebuild build -project "{{project}}" -scheme "{{scheme}}" -destination 'platform=macOS,arch=arm64' -derivedDataPath "{{derived_data}}"
 
 # Bind SourceKit-LSP to this Xcode project.
 [group("development")]
