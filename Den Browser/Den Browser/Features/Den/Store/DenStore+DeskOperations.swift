@@ -139,7 +139,7 @@ extension DenStore {
             state.desks.count > 1,
             let deskIndex = state.desks.firstIndex(where: { $0.id == deskID })
         else { return }
-        let replacementCandidates = state.desks.dropFirst(deskIndex + 1) + state.desks.prefix(deskIndex).reversed()
+        let replacementCandidates = state.desks.prefix(deskIndex).reversed() + state.desks.dropFirst(deskIndex + 1)
         guard
             let replacementDeskID = replacementCandidates.first(where: {
                 $0.id != deskID && (canPresentDesk?($0.id) ?? true)
@@ -166,6 +166,7 @@ extension DenStore {
                 deskID: presentedDeskID,
                 boardID: focusedDesk?.focusedBoardID)
         }
+        isDenMode = false
         save()
     }
 

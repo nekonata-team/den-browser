@@ -34,5 +34,5 @@ The operation-specific rules for returning to Sheet Input are updated by [ADR 00
 - A Den has at most ten desks. `1` through `9` focus desks one through nine, and `0` focuses desk ten. A missing desk is a no-op.
 - Shift plus a digit moves the focused board to that desk, immediately after its focused board, then focuses the moved board.
 - `x` and `d` remove the Focused Board without site-provided confirmation, and `u` restores the newest Recently Removed Board. Repeating `u` restores older retained Boards. Key repeat does not repeat these actions. Removal releases the live sheet runtime; restoration recreates it from the Current Sheet URL.
-- Shift plus `d` deletes the focused desk only when it is empty and another desk remains.
-- Navigation, layout, Board Removal, Board Restoration, and Desk deletion keep Den Mode active. Creating a board or desk, or duplicating a Current Sheet, returns to Sheet Input.
+- Shift plus `d` deletes the focused desk when another desk remains; deleting a desk containing Boards requires confirmation.
+- Navigation, layout, Board Removal, and Board Restoration keep Den Mode active. Creating or deleting a desk, creating a board, or duplicating a Current Sheet returns to Sheet Input.

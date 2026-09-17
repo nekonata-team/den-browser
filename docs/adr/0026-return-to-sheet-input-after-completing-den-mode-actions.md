@@ -29,7 +29,7 @@ Organization:
 
 - Moving the Focused Board left or right.
 - Moving the Focused Board to the previous or next Desk.
-- Board Removal, Board Restoration, and deletion of an eligible empty Desk.
+- Board Removal and Board Restoration.
 - Overview Selection movement, Overview filtering, and moving the selected Board while Overview remains open.
 - Drawer filtering and candidate selection while the Drawer remains open.
 
@@ -40,7 +40,7 @@ Adjustment:
 - Maximizing or centering the Focused Board.
 - Toggling Zen View.
 
-Board Removal and Board Restoration remain repeatable, but their key bindings do not repeat while held. Restoration remains limited to the retained Recently Removed Boards, newest first, and Desk deletion remains limited to an eligible empty Desk.
+Board Removal and Board Restoration remain repeatable, but their key bindings do not repeat while held. Restoration remains limited to the retained Recently Removed Boards, newest first. Desk deletion returns to Sheet Input after a successful deletion, including after confirming deletion of its Boards.
 
 ## Return to Sheet Input
 
@@ -50,7 +50,11 @@ Direct work-target confirmation:
 - Clicking a Board header or Current Sheet to select that Board, including the already Focused Board.
 - Entering the Overview Selection, including when it is already the Focused Board in the Focused Desk.
 - Moving the Focused Board to a numbered Desk with Shift plus a digit, when the Board actually moves.
+
+Structural change completion:
+
 - Creating a Board or Desk, including a Desk created from a Built-in or Personal Desk Preset.
+- Successfully deleting a Desk, including after confirming deletion of its Boards.
 - Duplicating the Focused Board's Current Sheet.
 
 Work-content confirmation:
@@ -68,7 +72,7 @@ Entering web fullscreen also clears Den Mode because Den commands are unavailabl
 
 ## Pointer behavior
 
-The Current Sheet click that returns to Sheet Input also reaches the web content; it is not a separate activation click. Pointer-based organization and adjustment, including Board dragging, resizing, and Removal, keep Den Mode active.
+The Current Sheet click that returns to Sheet Input also reaches the web content; it is not a separate activation click. Pointer-based organization and adjustment, including Board dragging, resizing, and Removal, keep Den Mode active. A successful pointer-triggered Desk deletion returns to Sheet Input.
 
 ## Temporary-context exclusivity
 

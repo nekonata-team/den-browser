@@ -10,11 +10,13 @@ struct DenStoreDeskTests {
 
     @Test func createsEmptyDeskAfterFocusedDesk() {
         withStore(desks: [desk("First"), desk("Second")]) { store in
+            store.isDenMode = true
             store.createDesk(label: "  Writing  ", preset: .empty)
 
             #expect(store.state.desks.map(\.label) == ["First", "Writing", "Second"])
             #expect(store.focusedDesk?.label == "Writing")
             #expect(store.focusedDesk?.boards.isEmpty == true)
+            #expect(!store.isDenMode)
         }
     }
 
@@ -147,16 +149,29 @@ struct DenStoreDeskTests {
         }
     }
 
-    @Test func deletingEmptyDeskFocusesDeskThatTakesItsPosition() {
+    @Test func deletingEmptyDeskFocusesPreviousDeskWhenAvailable() {
         let first = desk("First")
         let empty = desk("Empty")
         let third = desk("Third")
         withStore(desks: [first, empty, third]) { store in
             store.focusDesk(empty.id)
+            store.isDenMode = true
             store.deleteFocusedDesk()
 
             #expect(store.state.desks.map(\.id) == [first.id, third.id])
-            #expect(store.focusedDesk?.id == third.id)
+            #expect(store.focusedDesk?.id == first.id)
+            #expect(!store.isDenMode)
+        }
+    }
+
+    @Test func deletingFirstDeskFocusesNextDeskWhenPreviousDeskIsUnavailable() {
+        let first = desk("First")
+        let second = desk("Second")
+        withStore(desks: [first, second]) { store in
+            store.deleteFocusedDesk()
+
+            #expect(store.state.desks.map(\.id) == [second.id])
+            #expect(store.focusedDesk?.id == second.id)
         }
     }
 
@@ -338,6 +353,20 @@ struct DenStoreDeskTests {
             #expect(store.state.desks.map(\.id) == [empty.id])
             #expect(store.focusedDesk?.id == empty.id)
             #expect(store.deskPendingDeletion == nil)
+        }
+    }
+
+    @Test func confirmingDeskDeletionExitsDenModeAfterSuccessfulDeletion() {
+        let populated = desk("Populated", boards: [board("Board")])
+        let empty = desk("Empty")
+        withStore(desks: [populated, empty]) { store in
+            store.isDenMode = true
+            store.deleteFocusedDesk()
+
+            #expect(store.isDenMode)
+            store.confirmDeskDeletion()
+
+            #expect(!store.isDenMode)
         }
     }
 
