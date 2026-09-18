@@ -113,6 +113,9 @@ extension DenStore {
             onCopyMarkdownLinkFailed: { [weak self] in
                 self?.showToast("Could not copy Current Sheet Markdown link.", style: .error)
             },
+            onCopyBoardID: { [weak self] in
+                self?.copyBoardID(board.id)
+            },
             onPasteURLFailed: { [weak self] in
                 self?.showToast("Clipboard does not contain a supported URL.", style: .warning)
             },

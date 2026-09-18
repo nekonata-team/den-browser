@@ -54,6 +54,7 @@ Scrolling commands follow Den's Motion setting; Follow System respects macOS Red
 | `T` | Open Overview to browse Boards and Desks. |
 | `yy` | Copy the Current Sheet URL. |
 | `ym` | Copy the Current Sheet Markdown link. |
+| `yb` | Copy the Current Sheet's Board ID. |
 | `x` | Remove the focused Board. |
 | `gx` | Remove the focused Board and focus the next Board; if none exists, focus the previous Board. |
 | `X` | Restore the recently removed Board. |

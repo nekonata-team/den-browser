@@ -900,6 +900,38 @@ struct SheetNavigationTests {
         #expect(NSPasteboard.general.string(forType: .string) == "[My Sheet](https://source.example/sheet)")
     }
 
+    @Test func sheetNavigationDispatchesYbToCopyBoardID() async throws {
+        // Arrange
+        let source = try sheetNavigationScriptSource().replacingOccurrences(
+            of: "if (!event.isTrusted ||",
+            with: "if (")
+        let manager = SheetNavigationManager(scriptSource: source)
+        let board = board("Source", url: "https://source.example/")
+        let desk = desk("Desk", boards: [board], focusedBoardID: board.id)
+        let store = DenStore(
+            state: DenState(desks: [desk], focusedDeskID: desk.id),
+            sheetNavigation: manager
+        )
+        let webView = store.runtime(for: board).webView
+        let waiter = WebViewLoadWaiter()
+
+        manager.setEnabled(true)
+        await waiter.load(
+            "<html><body>Current Sheet</body></html>",
+            baseURL: URL(string: "https://source.example/sheet")!,
+            in: webView
+        )
+        defer { NSPasteboard.general.clearContents() }
+
+        // Act
+        try await dispatchSheetKey("y", in: webView)
+        try await dispatchSheetKey("b", in: webView)
+
+        // Assert
+        #expect(store.toastMessage?.message == "Copied Board ID.")
+        #expect(NSPasteboard.general.string(forType: .string) == board.id.uuidString.lowercased())
+    }
+
     @Test func sheetNavigationRoutesBoardBoundaryCommands() async throws {
         let source = try sheetNavigationScriptSource().replacingOccurrences(
             of: "if (!event.isTrusted ||",

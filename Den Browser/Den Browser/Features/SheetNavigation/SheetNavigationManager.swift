@@ -26,6 +26,7 @@ final class SheetNavigationManager {
         var onCopyURLFailed: () -> Void = {}
         var onCopyMarkdownLinkSucceeded: () -> Void = {}
         var onCopyMarkdownLinkFailed: () -> Void = {}
+        var onCopyBoardID: () -> Void = {}
         var onPasteURLFailed: () -> Void = {}
         var onOpenBoardPanel: () -> Void = {}
         var onShowOverview: () -> Void = {}
@@ -245,6 +246,10 @@ final class SheetNavigationManager {
                 actions.onCopyMarkdownLinkFailed()
             }
             return copied
+        case "copyBoardID":
+            guard let actions = actionsByWebView[ObjectIdentifier(webView)] else { return false }
+            actions.onCopyBoardID()
+            return true
         case "openBoard", "commandOpenBoard":
             guard
                 let urlString = message["url"] as? String,

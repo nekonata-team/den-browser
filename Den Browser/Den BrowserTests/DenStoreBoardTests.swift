@@ -1267,6 +1267,46 @@ struct DenStoreBoardTests {
         }
     }
 
+    @Test func copyFocusedBoardLocationCopiesWebTerminalAndSessionLocations() {
+        let cases: [(BoardState, String, String)] = [
+            (
+                BoardState(label: "Web", width: 520, currentSheetURL: URL(string: "https://example.com/sheet")),
+                "https://example.com/sheet",
+                "Copied Current Sheet URL."
+            ),
+            (
+                BoardState(label: "Terminal", width: 520, workingDirectory: "/tmp/project"),
+                "/tmp/project",
+                "Copied Terminal working directory."
+            ),
+            (
+                BoardState(label: "Zellij", width: 520, zellijSessionName: "project-a"),
+                "project-a",
+                "Copied Zellij session name."
+            ),
+            (
+                BoardState(label: "zmx", width: 520, zmxSessionName: "project-b"),
+                "project-b",
+                "Copied zmx session name."
+            ),
+        ]
+
+        for (board, expectedValue, expectedToast) in cases {
+            // Arrange
+            let source = desk("Desk", boards: [board], focusedBoardID: board.id)
+            let pasteboard = NSPasteboard.withUniqueName()
+            withTestStore(desks: [source]) { store in
+                // Act
+                store.copyFocusedBoardLocation(pasteboard: pasteboard)
+
+                // Assert
+                #expect(pasteboard.string(forType: .string) == expectedValue)
+                #expect(store.toastMessage?.message == expectedToast)
+                #expect(store.toastMessage?.style == .success)
+            }
+        }
+    }
+
     @Test func toggleAnchorBoardSetsAndClearsAnchor() {
         let firstBoard = board("First")
         let secondBoard = board("Second")

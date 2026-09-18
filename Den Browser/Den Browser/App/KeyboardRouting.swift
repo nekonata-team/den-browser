@@ -239,6 +239,8 @@ enum AppAction: Equatable {
     case captureFocusedDesk
     case copyCurrentSheetScreenshot
     case copyFocusedDeskScreenshot
+    case copyFocusedBoardLocation
+    case copyFocusedBoardID
     case keepCurrentSheetInDrawer
     case toggleZenView
     case toggleFocusMode
@@ -717,6 +719,8 @@ enum KeyboardRouter {
             action: .copyCurrentSheetScreenshot, repeatPolicy: .ignore),
         binding("s", modifiers: [.control, .shift]): KeyboardCommand(
             action: .copyFocusedDeskScreenshot, repeatPolicy: .ignore),
+        binding("y"): KeyboardCommand(action: .copyFocusedBoardLocation, repeatPolicy: .ignore),
+        binding("y", modifiers: [.shift]): KeyboardCommand(action: .copyFocusedBoardID, repeatPolicy: .ignore),
         binding("a"): KeyboardCommand(action: .keepCurrentSheetInDrawer, repeatPolicy: .ignore),
         binding("z"): KeyboardCommand(action: .toggleZenView, repeatPolicy: .ignore),
         binding("x"): KeyboardCommand(action: .removeBoard, repeatPolicy: .ignore),
@@ -871,6 +875,11 @@ enum AppActionHandler {
         case .captureFocusedDesk: store.captureFocusedDeskScreenshot()
         case .copyCurrentSheetScreenshot: store.copyFocusedSheetScreenshot()
         case .copyFocusedDeskScreenshot: store.copyFocusedDeskScreenshot()
+        case .copyFocusedBoardLocation: store.copyFocusedBoardLocation()
+        case .copyFocusedBoardID:
+            if let boardID = store.focusedBoard?.id {
+                store.copyBoardID(boardID)
+            }
         case .keepCurrentSheetInDrawer: store.keepFocusedSheetInDrawer()
         case .toggleZenView: store.toggleZenView()
         case .toggleFocusMode: store.toggleFocusMode()

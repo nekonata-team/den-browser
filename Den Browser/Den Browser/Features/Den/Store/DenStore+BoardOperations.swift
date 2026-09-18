@@ -331,6 +331,33 @@ extension DenStore {
         showToast("Copied Board ID.", style: .success)
     }
 
+    func copyFocusedBoardLocation(pasteboard: NSPasteboard = .general) {
+        guard let board = focusedBoard else { return }
+
+        let value: String
+        let message: String
+        switch board.content {
+        case .web(let web):
+            guard let url = web.currentSheetURL ?? web.firstSheetURL else { return }
+            value = url.absoluteString
+            message = "Copied Current Sheet URL."
+        case .terminal(let terminal):
+            value = terminal.workingDirectory
+            message = "Copied Terminal working directory."
+        case .zellij(let zellij):
+            guard let sessionName = zellij.sessionName, !sessionName.isEmpty else { return }
+            value = sessionName
+            message = "Copied Zellij session name."
+        case .zmx(let zmx):
+            value = zmx.sessionName
+            message = "Copied zmx session name."
+        }
+
+        pasteboard.clearContents()
+        pasteboard.setString(value, forType: .string)
+        showToast(message, style: .success)
+    }
+
     func toggleAnchorBoard() {
         guard let deskIndex = focusedDeskIndex,
             let focusedBoardID = state.desks[deskIndex].focusedBoardID

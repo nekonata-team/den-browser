@@ -90,6 +90,8 @@ Toggle with `Control` + `,`. Press `Escape` to exit to Sheet Input.
 | `a` | Keep Current Sheet in Drawer |
 | `s` / `Shift` + `S` | Capture screenshot of Sheet / Desk to file |
 | `Control` + `s` / `Control` + `Shift` + `S` | Copy screenshot of Sheet / Desk to clipboard |
+| `y` | Copy Focused Board URL, working directory, or session name |
+| `Shift` + `Y` | Copy Focused Board ID |
 | `t` | Pause / resume Sheet Navigation for Focused Board |
 
 - Sheet navigation, reload, and screenshot commands do not apply to Terminal Boards.

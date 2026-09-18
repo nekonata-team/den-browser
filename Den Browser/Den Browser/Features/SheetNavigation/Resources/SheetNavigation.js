@@ -353,7 +353,7 @@
     const sections = [
       ["Scrolling", [["j / k", "scroll down / up"], ["d / u", "scroll half page down / up"], ["h / l", "scroll left / right"], ["gg / G", "top / bottom"], ["zH / zL", "left / right edge"]]],
       ["Hints", [["f / Space", "activate a Current Sheet target"], ["F", "open link as a new Board"], ["a", "keep link in Drawer"]]],
-      ["Boards and Sheets", [["gt / gT", "next / previous Board in the Desk"], ["g0 / g$", "first / last Board in the Desk"], ["g[ / g]", "First / latest Sheet"], ["H / L", "back / forward in Sheet Stack"], ["r", "reload Current Sheet"], ["gu / gU", "URL parent / root"], ["ge / gE", "edit URL / open URL in new Board"], ["o", "open Essentials; press an Essential key"], ["t / T", "Open Board / Overview"], ["x / gx", "remove Board / remove and focus next Board"], ["yy / ym", "copy Current Sheet URL / Markdown link"]]],
+      ["Boards and Sheets", [["gt / gT", "next / previous Board in the Desk"], ["g0 / g$", "first / last Board in the Desk"], ["g[ / g]", "First / latest Sheet"], ["H / L", "back / forward in Sheet Stack"], ["r", "reload Current Sheet"], ["gu / gU", "URL parent / root"], ["ge / gE", "edit URL / open URL in new Board"], ["o", "open Essentials; press an Essential key"], ["t / T", "Open Board / Overview"], ["x / gx", "remove Board / remove and focus next Board"], ["yy / ym / yb", "copy Current Sheet URL / Markdown link / Board ID"]]],
       ["Find", [["/", "find in Current Sheet"], ["n / N", "next / previous match"]]],
     ];
 
@@ -667,6 +667,9 @@
           title: document.title,
           url: location.href,
         });
+        break;
+      case "yb":
+        postMessage({ action: "copyBoardID" });
         break;
       default:
         countPrefix = count === 1 ? "" : String(count);

@@ -242,6 +242,31 @@ struct KeyboardShortcutTests {
                 == .perform(.copyFocusedDeskScreenshot))
     }
 
+    @Test func denModeYCopiesFocusedBoardLocationAndShiftYCopiesBoardID() throws {
+        // Arrange
+        let store = try makeStore(boards: [board("First")])
+        store.isDenMode = true
+        let locationEvent = try keyEvent(
+            characters: "y",
+            charactersIgnoringModifiers: "y",
+            keyCode: 16)
+        let boardIDEvent = try keyEvent(
+            characters: "Y",
+            charactersIgnoringModifiers: "y",
+            modifiers: [.shift],
+            keyCode: 16)
+
+        // Act
+        let locationDecision = KeyboardController.decision(for: locationEvent, store: store)
+        let boardIDDecision = KeyboardController.decision(for: boardIDEvent, store: store)
+
+        // Assert
+        #expect(
+            locationDecision == .perform(.copyFocusedBoardLocation))
+        #expect(
+            boardIDDecision == .perform(.copyFocusedBoardID))
+    }
+
     @Test func sheetInputCommandOptionDigitFocusesDeskAndLeavesCommandZeroAvailable() throws {
         let movedBoard = board("Moved")
         let firstDesk = DeskState(label: "First", boards: [], focusedBoardID: nil)
@@ -1182,7 +1207,7 @@ struct KeyboardShortcutTests {
         let store = try makeStore(boards: [board("First")])
         store.isDenMode = true
         let unmapped = try keyEvent(
-            characters: "y", charactersIgnoringModifiers: "y", modifiers: [], keyCode: 16)
+            characters: "q", charactersIgnoringModifiers: "q", modifiers: [], keyCode: 12)
 
         #expect(
             KeyboardController.decision(for: unmapped, store: store)
