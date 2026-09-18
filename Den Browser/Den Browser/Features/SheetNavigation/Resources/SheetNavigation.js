@@ -24,6 +24,7 @@
   let overlay = null;
   let helpOverlay = null;
   let reduceMotion = false;
+  let selectedScrollTarget = null;
   const supportedSheetProtocols = new Set(["http:", "https:", "file:"]);
 
   const actionableSelector =
@@ -35,7 +36,12 @@
     activate: {
       selector: actionableSelector,
       accepts: () => true,
-      activate(target) {
+      activate(target, hint) {
+        if (hint?.scrollable) {
+          selectedScrollTarget = target;
+          return;
+        }
+        selectedScrollTarget = null;
         target.click();
       },
     },
@@ -146,6 +152,15 @@
     closeHelp();
   }
 
+  function isScrollableElement(element, axis) {
+    if (!(element instanceof Element)) return false;
+    const style = getComputedStyle(element);
+    const overflow = axis === "x" ? style.overflowX : style.overflowY;
+    const scrollSize = axis === "x" ? element.scrollWidth : element.scrollHeight;
+    const clientSize = axis === "x" ? element.clientWidth : element.clientHeight;
+    return /(auto|scroll)/.test(overflow) && scrollSize > clientSize;
+  }
+
   function openHints(action) {
     closeHints();
     hintAction = action;
@@ -155,6 +170,15 @@
       if (!isVisibleAndEnabled(target)) return false;
       return configuration.accepts(target);
     });
+    const scrollableTargets = action === "activate"
+      ? Array.from(document.querySelectorAll("*")).filter((target) => {
+        return target !== document.scrollingElement &&
+          !target.matches(actionableSelector) &&
+          isVisibleAndEnabled(target) &&
+          (isScrollableElement(target, "x") || isScrollableElement(target, "y"));
+      })
+      : [];
+    targets.push(...scrollableTargets);
     if (targets.length === 0) return;
 
     const container = document.createElement("div");
@@ -171,20 +195,21 @@
       const rect = target.getBoundingClientRect();
       const marker = document.createElement("span");
       marker.textContent = targetLabels[index];
+      const scrollable = scrollableTargets.includes(target);
       Object.assign(marker.style, {
         position: "fixed",
         left: `${Math.max(0, rect.left)}px`,
         top: `${Math.max(0, rect.top)}px`,
         padding: "1px 4px",
-        border: "1px solid #6b4d00",
+        border: `1px solid ${scrollable ? "#6b0000" : "#6b4d00"}`,
         borderRadius: "3px",
-        background: "#ffd75a",
+        background: scrollable ? "#ff8a8a" : "#ffd75a",
         color: "#171100",
         font: "bold 12px ui-monospace, monospace",
         lineHeight: "16px",
       });
       container.append(marker);
-      hints.push({ target, label: targetLabels[index], marker });
+      hints.push({ target, label: targetLabels[index], marker, scrollable });
     });
     document.documentElement.append(container);
     overlay = container;
@@ -203,7 +228,7 @@
     if (matching.length === 1 && matching[0].label === prefix) {
       const target = matching[0].target;
       closeHints();
-      hintActions[hintAction].activate(target);
+      hintActions[hintAction].activate(target, matching[0]);
     } else if (matching.length === 0) {
       closeHints();
     }
@@ -242,13 +267,15 @@
   }
 
   function scrollTarget(axis) {
+    if (selectedScrollTarget?.isConnected && isScrollableElement(selectedScrollTarget, axis)) {
+      return selectedScrollTarget;
+    }
+    if (selectedScrollTarget && !selectedScrollTarget.isConnected) {
+      selectedScrollTarget = null;
+    }
     let element = document.elementFromPoint(innerWidth / 2, innerHeight * 0.75);
     while (element && element !== document.documentElement) {
-      const style = getComputedStyle(element);
-      const overflow = axis === "x" ? style.overflowX : style.overflowY;
-      const scrollSize = axis === "x" ? element.scrollWidth : element.scrollHeight;
-      const clientSize = axis === "x" ? element.clientWidth : element.clientHeight;
-      if (/(auto|scroll)/.test(overflow) && scrollSize > clientSize) return element;
+      if (isScrollableElement(element, axis)) return element;
       element = element.parentElement;
     }
     return document.scrollingElement;
@@ -352,7 +379,7 @@
 
     const sections = [
       ["Scrolling", [["j / k", "scroll down / up"], ["d / u", "scroll half page down / up"], ["h / l", "scroll left / right"], ["gg / G", "top / bottom"], ["zH / zL", "left / right edge"]]],
-      ["Hints", [["f / Space", "activate a Current Sheet target"], ["F", "open link as a new Board"], ["a", "keep link in Drawer"]]],
+      ["Hints", [["f / Space", "activate a target or select a scrollable area"], ["Escape", "cancel hints or return to document scrolling"], ["F", "open link as a new Board"], ["a", "keep link in Drawer"]]],
       ["Boards and Sheets", [["gt / gT", "next / previous Board in the Desk"], ["g0 / g$", "first / last Board in the Desk"], ["g[ / g]", "First / latest Sheet"], ["H / L", "back / forward in Sheet Stack"], ["r", "reload Current Sheet"], ["gu / gU", "URL parent / root"], ["ge / gE", "edit URL / open URL in new Board"], ["o", "open Essentials; press an Essential key"], ["t / T", "Open Board / Overview"], ["x / gx", "remove Board / remove and focus next Board"], ["yy / ym / yb", "copy Current Sheet URL / Markdown link / Board ID"]]],
       ["Find", [["/", "find in Current Sheet"], ["n / N", "next / previous match"]]],
     ];
@@ -764,6 +791,12 @@
       return;
     }
 
+    if (event.key === "Escape" && selectedScrollTarget) {
+      consume(event);
+      selectedScrollTarget = null;
+      return;
+    }
+
     if (event.key === "Escape" && isEditable(document.activeElement)) {
       if (event.isComposing) return;
       consume(event);
@@ -828,6 +861,7 @@
       );
       paused = configuration.paused === true;
       if (!enabled || ignored || paused) {
+        selectedScrollTarget = null;
         closeTransientUI();
         resetCommand();
       }

@@ -27,10 +27,10 @@ Scrolling commands follow Den's Motion setting; Follow System respects macOS Red
 
 | Keys | Action |
 | --- | --- |
-| `f` or `Space` | Show hints and activate a target in the Current Sheet. |
+| `f` or `Space` | Show hints; activate a target or select a scrollable area for subsequent motions. |
 | `F` | Show link hints and open the selected link as a new Board to the right. |
 | `a` | Show link hints and keep the selected link in the Drawer. |
-| `Escape` | Cancel hints. |
+| `Escape` | Cancel hints or return scrolling to the document. |
 
 `Space` remains an alias for the existing interaction. `F` only includes links with an `href`; controls that cannot sensibly open as a new Board are excluded.
 
@@ -77,4 +77,4 @@ Scrolling commands follow Den's Motion setting; Follow System respects macOS Red
 
 ## Implementation boundary
 
-The injected script owns key sequences, counts, scrolling, hints, and find presentation. It and its native message bridge run in a dedicated `WKContentWorld`; the bridge accepts only main-frame requests while the Feature is enabled and the Sheet is not ignored. Swift owns privileged pasteboard and Board operations. Settings and Ignored Sites apply immediately to open and future Sheets.
+The injected script owns key sequences, counts, scrolling-target selection, hints, and find presentation. It and its native message bridge run in a dedicated `WKContentWorld`; the bridge accepts only main-frame requests while the Feature is enabled and the Sheet is not ignored. Swift owns privileged pasteboard and Board operations. Settings and Ignored Sites apply immediately to open and future Sheets.

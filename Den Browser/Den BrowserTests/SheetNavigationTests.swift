@@ -331,6 +331,49 @@ struct SheetNavigationTests {
         #expect(hasFindBar)
     }
 
+    @Test func sheetNavigationHintsScrollableAreasForLocalScrolling() async throws {
+        // Arrange
+        let source = try sheetNavigationScriptSource().replacingOccurrences(
+            of: "if (!event.isTrusted ||",
+            with: "if (")
+        let manager = SheetNavigationManager(scriptSource: source)
+        manager.setEnabled(true)
+        manager.setReduceMotion(true)
+        let webView = makeSheetNavigationWebView(manager: manager)
+        let waiter = WebViewLoadWaiter()
+        let html = """
+            <!doctype html>
+            <style>
+              html, body { margin: 0; height: 4000px; }
+              #panel { width: 300px; height: 200px; overflow: auto; }
+              #content { height: 4000px; }
+            </style>
+            <div id="panel"><div id="content">Scrollable panel</div></div>
+            """
+
+        await waiter.load(html, baseURL: URL(string: "https://example.com/")!, in: webView)
+        manager.refreshConfiguration(for: webView)
+
+        // Act
+        try await dispatchSheetKey("f", in: webView)
+        let hintCount = try #require(
+            await webView.evaluateJavaScript(
+                "document.querySelectorAll('[data-den-sheet-hints] span').length") as? Int)
+        try await dispatchSheetKey("a", in: webView)
+        try await dispatchSheetKey("j", in: webView)
+        let panelScrollTop = try #require(
+            await webView.evaluateJavaScript("document.getElementById('panel').scrollTop") as? Int)
+        try await dispatchSheetKey("Escape", in: webView)
+        try await dispatchSheetKey("j", in: webView)
+        let documentScrollTop = try #require(
+            await webView.evaluateJavaScript("document.scrollingElement.scrollTop") as? Int)
+
+        // Assert
+        #expect(hintCount == 1)
+        #expect(panelScrollTop == 60)
+        #expect(documentScrollTop == 60)
+    }
+
     @Test func sheetNavigationFindHighlightsAndNavigatesMatches() async throws {
         let source = try sheetNavigationScriptSource().replacingOccurrences(
             of: "if (!event.isTrusted ||",
