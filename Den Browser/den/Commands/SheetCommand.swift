@@ -22,6 +22,7 @@ struct SheetCommand: ParsableCommand {
             SheetIsCommand.self,
             SheetClickCommand.self,
             SheetFillCommand.self,
+            SheetDragCommand.self,
             SheetInteractCommand.self,
             SheetScreenshotCommand.self,
         ]
@@ -205,6 +206,48 @@ struct SheetFillCommand: ParsableCommand {
     }
 }
 
+struct SheetDragCommand: ParsableCommand {
+    static let configuration = CommandConfiguration(
+        commandName: "drag",
+        abstract: "Drag an element by reference (@e1) or selector to another element or relative offset"
+    )
+
+    @OptionGroup var target: BoardTargetOptions
+    @Argument(help: "Source element reference (@e1) or CSS selector to drag")
+    var source: String
+    @Argument(help: "Target element reference (@e1) or CSS selector to drop onto (optional)")
+    var destination: String?
+    @Option(name: .customLong("dx"), help: "Horizontal delta to drag in pixels (positive = right, negative = left)")
+    var deltaX: Double?
+    @Option(name: .customLong("dy"), help: "Vertical delta to drag in pixels (positive = down, negative = up)")
+    var deltaY: Double?
+    @Option(name: .long, help: "Number of intermediate move events (default: 5)")
+    var steps: Int = 5
+
+    func validate() throws {
+        guard destination != nil || deltaX != nil || deltaY != nil else {
+            throw ValidationError("Provide a target element or at least one of --dx / --dy")
+        }
+    }
+
+    func run() throws {
+        var args = [source]
+        if let destination {
+            args.append(destination)
+        }
+        if let deltaX {
+            args.append(contentsOf: ["--dx", String(deltaX)])
+        }
+        if let deltaY {
+            args.append(contentsOf: ["--dy", String(deltaY)])
+        }
+        if steps != 5 {
+            args.append(contentsOf: ["--steps", String(steps)])
+        }
+        try DenIPCClient.execute(command: .sheet(.drag), args: args, options: target)
+    }
+}
+
 struct SheetInteractCommand: ParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "interact",
@@ -216,6 +259,7 @@ struct SheetInteractCommand: ParsableCommand {
             Available actions:
               click <ref|selector>              Click an element (e.g. click @e1)
               fill <ref|selector> <text>        Fill an input, textarea, or editable element with text
+              drag <src> [<tgt>] [--dx] [--dy]  Drag an element to a target or relative offset
               press <key>                       Press a key (Enter, Escape, Tab, ArrowDown, etc.)
               scroll [direction|ref|selector]   Scroll the page or scroll an element into view
               wait <ref|--load|--url|--text>    Wait for DOM state, load state, or URL

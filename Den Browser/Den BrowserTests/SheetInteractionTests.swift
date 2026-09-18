@@ -394,6 +394,86 @@ struct SheetInteractionTests {
         #expect(receivedValue == "dispatched")
     }
 
+    @Test func dragWithDxDyDispatchesPointerAndMouseEvents() async throws {
+        // Arrange
+        let webView = makeWebView()
+        let waiter = SheetInteractionWebViewLoadWaiter()
+        await waiter.load(
+            """
+            <!doctype html>
+            <div id="drag-source" style="position: absolute; left: 10px; top: 10px; width: 100px; height: 100px; background: red;"></div>
+            <script>
+                window.recordedEvents = [];
+                const record = (e) => window.recordedEvents.push({
+                    type: e.type,
+                    x: Math.round(e.clientX),
+                    y: Math.round(e.clientY),
+                    buttons: e.buttons
+                });
+                const el = document.getElementById('drag-source');
+                ['pointerdown', 'pointermove', 'pointerup', 'mousedown', 'mousemove', 'mouseup'].forEach(type => {
+                    window.addEventListener(type, record);
+                });
+            </script>
+            """,
+            baseURL: URL(string: "https://example.com/")!,
+            in: webView
+        )
+
+        // Act
+        try await SheetInteraction.drag(source: "#drag-source", deltaX: 100, deltaY: 50, steps: 2, in: webView)
+
+        // Assert
+        let count = try await webView.evaluateJavaScript("window.recordedEvents.length") as? Int ?? 0
+        #expect(count >= 6)  // down, 2 moves, up (each for pointer + mouse)
+
+        let firstType = try await webView.evaluateJavaScript("window.recordedEvents[0].type") as? String
+        #expect(firstType == "pointerdown")
+
+        let lastType =
+            try await webView.evaluateJavaScript("window.recordedEvents[window.recordedEvents.length - 1].type")
+            as? String
+        #expect(lastType == "mouseup")
+
+        let lastX =
+            try await webView.evaluateJavaScript("window.recordedEvents[window.recordedEvents.length - 1].x") as? Int
+            ?? 0
+        let lastY =
+            try await webView.evaluateJavaScript("window.recordedEvents[window.recordedEvents.length - 1].y") as? Int
+            ?? 0
+        // Source center is (60, 60), dx=100, dy=50 => end is (160, 110)
+        #expect(lastX == 160)
+        #expect(lastY == 110)
+    }
+
+    @Test func dragToTargetDispatchesEvents() async throws {
+        // Arrange
+        let webView = makeWebView()
+        let waiter = SheetInteractionWebViewLoadWaiter()
+        await waiter.load(
+            """
+            <!doctype html>
+            <div id="source" style="position: absolute; left: 0px; top: 0px; width: 50px; height: 50px;"></div>
+            <div id="target" style="position: absolute; left: 200px; top: 200px; width: 50px; height: 50px;"></div>
+            <script>
+                window.targetEvents = [];
+                const tgt = document.getElementById('target');
+                tgt.addEventListener('pointerup', () => window.targetEvents.push('pointerup'));
+                tgt.addEventListener('mouseup', () => window.targetEvents.push('mouseup'));
+            </script>
+            """,
+            baseURL: URL(string: "https://example.com/")!,
+            in: webView
+        )
+
+        // Act
+        try await SheetInteraction.drag(source: "#source", target: "#target", steps: 3, in: webView)
+
+        // Assert
+        let targetEventsCount = try await webView.evaluateJavaScript("window.targetEvents.length") as? Int ?? 0
+        #expect(targetEventsCount == 2)
+    }
+
     @Test func pressProvidesLegacyKeyCodes() async throws {
         // Arrange
         let webView = makeWebView()

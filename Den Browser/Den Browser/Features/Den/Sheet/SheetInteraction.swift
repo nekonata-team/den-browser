@@ -310,6 +310,115 @@ enum SheetInteraction {
         return try extractRect(from: result, scale: webView.pageZoom * webView.magnification)
     }
 
+    @discardableResult
+    static func drag(
+        source: String,
+        target: String? = nil,
+        deltaX: Double? = nil,
+        deltaY: Double? = nil,
+        steps: Int = 5,
+        in webView: WKWebView
+    ) async throws -> CGRect {
+        guard target != nil || deltaX != nil || deltaY != nil else {
+            throw SheetInteractionError.invalidArgument(
+                "Drag requires a target element or at least one of --dx / --dy."
+            )
+        }
+        let sourceLiteral = try javascriptLiteral(source)
+        let targetLiteral = try javascriptLiteral(target)
+        let dxLiteral = try javascriptLiteral(deltaX)
+        let dyLiteral = try javascriptLiteral(deltaY)
+        let stepsCount = max(1, steps)
+        let script = operationScript(
+            """
+            const sourceTarget = \(sourceLiteral);
+            const targetTarget = \(targetLiteral);
+            const dx = \(dxLiteral);
+            const dy = \(dyLiteral);
+            const steps = \(stepsCount);
+
+            let sourceEl;
+            try {
+                sourceEl = denResolveTarget(sourceTarget);
+            } catch (error) {
+                return { ok: false, error: 'Invalid selector: ' + sourceTarget };
+            }
+            if (!sourceEl) return { ok: false, error: 'Element not found: ' + sourceTarget };
+
+            let targetEl = null;
+            if (targetTarget !== null) {
+                try {
+                    targetEl = denResolveTarget(targetTarget);
+                } catch (error) {
+                    return { ok: false, error: 'Invalid selector: ' + targetTarget };
+                }
+                if (!targetEl) return { ok: false, error: 'Target element not found: ' + targetTarget };
+            }
+
+            sourceEl.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+            const srcRect = sourceEl.getBoundingClientRect();
+            const startX = srcRect.left + srcRect.width / 2;
+            const startY = srcRect.top + srcRect.height / 2;
+
+            let endX = startX;
+            let endY = startY;
+
+            if (targetEl) {
+                targetEl.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+                const tgtRect = targetEl.getBoundingClientRect();
+                endX = tgtRect.left + tgtRect.width / 2;
+                endY = tgtRect.top + tgtRect.height / 2;
+            }
+
+            if (dx !== null) endX += dx;
+            if (dy !== null) endY += dy;
+
+            const pointerBase = {
+                bubbles: true,
+                cancelable: true,
+                view: window,
+                button: 0,
+                buttons: 1,
+                clientX: startX,
+                clientY: startY,
+                pointerId: 1,
+                pointerType: 'mouse',
+                isPrimary: true,
+            };
+
+            sourceEl.dispatchEvent(new PointerEvent('pointerdown', pointerBase));
+            sourceEl.dispatchEvent(new MouseEvent('mousedown', pointerBase));
+
+            for (let i = 1; i <= steps; i++) {
+                const curX = startX + (endX - startX) * (i / steps);
+                const curY = startY + (endY - startY) * (i / steps);
+                const movePoint = {
+                    ...pointerBase,
+                    clientX: curX,
+                    clientY: curY,
+                };
+                const hitEl = document.elementFromPoint(curX, curY) || sourceEl;
+                hitEl.dispatchEvent(new PointerEvent('pointermove', movePoint));
+                hitEl.dispatchEvent(new MouseEvent('mousemove', movePoint));
+            }
+
+            const endHitEl = document.elementFromPoint(endX, endY) || sourceEl;
+            const upPoint = {
+                ...pointerBase,
+                clientX: endX,
+                clientY: endY,
+                buttons: 0,
+            };
+            endHitEl.dispatchEvent(new PointerEvent('pointerup', upPoint));
+            endHitEl.dispatchEvent(new MouseEvent('mouseup', upPoint));
+
+            return { ok: true, rect: { x: srcRect.left, y: srcRect.top, width: srcRect.width, height: srcRect.height } };
+            """
+        )
+        let result = try await evaluate(script, in: webView)
+        return try extractRect(from: result, scale: webView.pageZoom * webView.magnification)
+    }
+
     static func value(target: String, in webView: WKWebView) async throws -> String {
         let targetLiteral = try javascriptLiteral(target)
         let script = operationScript(

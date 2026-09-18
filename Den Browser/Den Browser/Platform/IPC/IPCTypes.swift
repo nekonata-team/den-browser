@@ -19,8 +19,8 @@ nonisolated enum DenIPCCommand: Codable, Equatable, Sendable {
         case isState = "is"
         case click
         case fill
+        case drag
         case interact
-
     }
 
     enum WebBoard: String, CaseIterable, Codable, Sendable {

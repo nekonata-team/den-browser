@@ -331,6 +331,54 @@ final class DenIPCService {
                 runtime.triggerActionHighlight(rect)
                 return .success(message: "Filled \(target)")
 
+            case .drag:
+                guard !request.args.isEmpty else {
+                    return .failure(
+                        "Usage: den sheet drag <source> [<target>] [--dx <dx>] [--dy <dy>] [--steps <steps>]")
+                }
+                var positionalArgs: [String] = []
+                var deltaX: Double?
+                var deltaY: Double?
+                var steps = 5
+
+                var iterator = request.args.makeIterator()
+                while let arg = iterator.next() {
+                    switch arg {
+                    case "--dx":
+                        if let val = iterator.next(), let parsedDeltaX = Double(val) { deltaX = parsedDeltaX }
+                    case "--dy":
+                        if let val = iterator.next(), let parsedDeltaY = Double(val) { deltaY = parsedDeltaY }
+                    case "--steps":
+                        if let val = iterator.next(), let parsedSteps = Int(val) { steps = parsedSteps }
+                    default:
+                        if !arg.hasPrefix("--") {
+                            positionalArgs.append(arg)
+                        }
+                    }
+                }
+
+                guard let source = positionalArgs.first else {
+                    return .failure(
+                        "Usage: den sheet drag <source> [<target>] [--dx <dx>] [--dy <dy>] [--steps <steps>]")
+                }
+                let target = positionalArgs.count > 1 ? positionalArgs[1] : nil
+
+                guard target != nil || deltaX != nil || deltaY != nil else {
+                    return .failure("Drag requires a target element or at least one of --dx / --dy")
+                }
+
+                let rect = try await SheetInteraction.drag(
+                    source: source,
+                    target: target,
+                    deltaX: deltaX,
+                    deltaY: deltaY,
+                    steps: steps,
+                    in: runtime.webView
+                )
+                runtime.triggerActionHighlight(rect)
+                let destination = target ?? "dx=\(deltaX ?? 0), dy=\(deltaY ?? 0)"
+                return .success(message: "Dragged \(source) to \(destination)")
+
             case .get:
                 guard let kind = request.args.first?.lowercased() else {
                     return .failure("Usage: den sheet get <text|value|attr|count> ...")
