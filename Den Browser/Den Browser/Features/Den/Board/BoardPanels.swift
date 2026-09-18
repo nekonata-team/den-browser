@@ -30,7 +30,7 @@ struct OpenBoardPanel: View {
             DenPanelHeader(systemSymbol: .plusRectangleOnRectangle) {
                 TextField(
                     text: urlTextBinding,
-                    prompt: Text("https://example.com, search, or :terminal / :zellij / :zmx")
+                    prompt: Text(verbatim: "https://example.com, search, or :terminal / :zellij / :zmx")
                 ) {
                     Text("Open URL, search, or command")
                 }
@@ -232,7 +232,7 @@ struct EditBoardLinkPanel: View {
             DenPanelHeader(systemSymbol: .link) {
                 TextField(
                     text: $text,
-                    prompt: Text("https://example.com or search")
+                    prompt: Text(verbatim: "https://example.com or search")
                 ) {
                     Text("Open URL or search")
                 }
