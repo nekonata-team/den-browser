@@ -371,6 +371,8 @@ struct DenView<Header: View>: View {
         return BoardStripIndicator(
             boards: boards,
             focusedBoardID: focusedBoardID,
+            anchorBoardID: store.focusedDesk?.anchorBoardID,
+            profileColor: profileColor,
             reduceMotion: shouldReduceMotion,
             onSelect: { store.focusBoard($0) }
         )
@@ -472,6 +474,8 @@ private struct BoardStripIndicator: View {
 
     let boards: [BoardState]
     let focusedBoardID: UUID?
+    let anchorBoardID: UUID?
+    let profileColor: Color
     let reduceMotion: Bool
     let onSelect: (UUID) -> Void
 
@@ -479,18 +483,27 @@ private struct BoardStripIndicator: View {
         HStack(spacing: 8) {
             ForEach(boards) { board in
                 let isFocused = board.id == focusedBoardID
+                let isAnchor = board.id == anchorBoardID
                 Button {
                     onSelect(board.id)
                 } label: {
                     Capsule()
-                        .fill(isFocused ? Color.primary : Color.primary.opacity(0.28))
+                        .fill(
+                            isAnchor
+                                ? profileColor.opacity(isFocused ? 1 : 0.72)
+                                : Color.primary.opacity(isFocused ? 1 : 0.28)
+                        )
                         .frame(width: isFocused ? 18 : Self.dotHeight, height: Self.dotHeight)
                         .padding(.horizontal, 2)
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
                 .help(board.displayName)
-                .accessibilityLabel("\(board.displayName) Board")
+                .accessibilityLabel(
+                    isAnchor
+                        ? "\(board.displayName) Board, Anchor Board"
+                        : "\(board.displayName) Board"
+                )
             }
         }
         .frame(height: Self.dotHeight)
