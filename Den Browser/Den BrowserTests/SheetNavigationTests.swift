@@ -374,6 +374,42 @@ struct SheetNavigationTests {
         #expect(documentScrollTop == 60)
     }
 
+    @Test func sheetNavigationHintsSemanticLinkTargets() async throws {
+        // Arrange
+        let source = try sheetNavigationScriptSource().replacingOccurrences(
+            of: "if (!event.isTrusted ||",
+            with: "if (")
+        let manager = SheetNavigationManager(scriptSource: source)
+        manager.setEnabled(true)
+        let webView = makeSheetNavigationWebView(manager: manager)
+        let waiter = WebViewLoadWaiter()
+        let html = """
+            <!doctype html>
+            <div id="account" role="link" tabindex="0">Account</div>
+            <div id="status">Not activated</div>
+            <script>
+              document.getElementById("account").addEventListener(
+                "click", () => document.getElementById("status").textContent = "Activated");
+            </script>
+            """
+
+        await waiter.load(html, baseURL: URL(string: "https://example.com/")!, in: webView)
+        manager.refreshConfiguration(for: webView)
+
+        // Act
+        try await dispatchSheetKey("f", in: webView)
+        let hintCount = try #require(
+            await webView.evaluateJavaScript(
+                "document.querySelectorAll('[data-den-sheet-hints] span').length") as? Int)
+        try await dispatchSheetKey("a", in: webView)
+        let status = try #require(
+            await webView.evaluateJavaScript("document.getElementById('status').textContent") as? String)
+
+        // Assert
+        #expect(hintCount == 1)
+        #expect(status == "Activated")
+    }
+
     @Test func sheetNavigationFindHighlightsAndNavigatesMatches() async throws {
         let source = try sheetNavigationScriptSource().replacingOccurrences(
             of: "if (!event.isTrusted ||",

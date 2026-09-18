@@ -27,8 +27,37 @@
   let selectedScrollTarget = null;
   const supportedSheetProtocols = new Set(["http:", "https:", "file:"]);
 
-  const actionableSelector =
-    'a[href],button,input:not([type="hidden"]),select,textarea,[role="button"]';
+  const interactiveRoleSelector = [
+    '[role="button"]',
+    '[role="checkbox"]',
+    '[role="combobox"]',
+    '[role="link"]',
+    '[role="menuitem"]',
+    '[role="menuitemcheckbox"]',
+    '[role="menuitemradio"]',
+    '[role="option"]',
+    '[role="radio"]',
+    '[role="searchbox"]',
+    '[role="switch"]',
+    '[role="tab"]',
+    '[role="textbox"]',
+    '[role="treeitem"]',
+  ].join(',');
+  const nativeActionableSelector = [
+    'a[href]',
+    'button',
+    'input:not([type="hidden"])',
+    'select',
+    'textarea',
+    'summary',
+    'label',
+  ].join(',');
+  const actionableSelector = [
+    nativeActionableSelector,
+    '[contenteditable]',
+    interactiveRoleSelector,
+    '[tabindex]',
+  ].join(',');
   const editableSelector =
     'input:not([type="hidden"]):not([type="file"]):not([type="checkbox"]):not([type="radio"]),textarea,[contenteditable="true"]';
 
@@ -118,6 +147,13 @@
       rect.top < innerHeight && rect.left < innerWidth;
   }
 
+  function isActivateTarget(element) {
+    const isNativeTarget = element.matches(nativeActionableSelector);
+    return !element.matches("iframe, frame") &&
+      (!element.hasAttribute("tabindex") || isNativeTarget || element.tabIndex >= 0) &&
+      (!element.hasAttribute("contenteditable") || element.isContentEditable);
+  }
+
   function isSupportedSheetLink(target) {
     try {
       return supportedSheetProtocols.has(new URL(target.href, location.href).protocol);
@@ -168,6 +204,7 @@
     if (!configuration) return;
     const targets = Array.from(document.querySelectorAll(configuration.selector)).filter((target) => {
       if (!isVisibleAndEnabled(target)) return false;
+      if (action === "activate" && !isActivateTarget(target)) return false;
       return configuration.accepts(target);
     });
     const scrollableTargets = action === "activate"
