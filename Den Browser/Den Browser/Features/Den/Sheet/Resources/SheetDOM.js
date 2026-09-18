@@ -128,8 +128,12 @@ function denAccessibleName(el) {
 }
 
 function denValue(el) {
-    if (el && typeof el.value === 'string') return el.value;
-    if (el && el.isContentEditable) return el.innerText || '';
+    if (!el) return null;
+    if (typeof el.value === 'string') return el.value;
+    if (el.isContentEditable || ['textbox', 'searchbox', 'combobox'].includes(denRole(el))) {
+        const text = el.innerText || el.textContent || '';
+        return text === '\n' ? '' : text;
+    }
     return null;
 }
 
@@ -220,17 +224,41 @@ function denSnapshotLevel(el) {
     return null;
 }
 
-function denSetValue(el, value) {
-    if (el && typeof el.value === 'string') {
-        el.value = value;
-    } else if (el && el.isContentEditable) {
-        el.textContent = value;
-    } else {
-        return false;
-    }
-    el.dispatchEvent(new Event('input', { bubbles: true }));
+function denDispatchInput(el, value, isDelete = false) {
+    el.dispatchEvent(new InputEvent('input', {
+        bubbles: true,
+        cancelable: true,
+        inputType: isDelete ? 'deleteContentBackward' : 'insertText',
+        data: isDelete ? null : value,
+    }));
     el.dispatchEvent(new Event('change', { bubbles: true }));
-    return true;
+}
+
+function denSetValue(el, value) {
+    if (!el) return false;
+
+    // 1. Native form controls
+    if (typeof el.value === 'string') {
+        const descriptor = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(el), 'value');
+        descriptor?.set?.call(el, value);
+        el.value = value;
+        denDispatchInput(el, value);
+        return true;
+    }
+
+    // 2. Editable elements (contenteditable or ARIA textbox/searchbox)
+    if (el.isContentEditable || ['textbox', 'searchbox'].includes(denRole(el))) {
+        el.focus();
+        try { window.getSelection()?.selectAllChildren(el); } catch (_) {}
+        const ok = value
+            ? document.execCommand('insertText', false, value)
+            : document.execCommand('delete', false, null);
+        if (!ok || !value) el.textContent = value;
+        denDispatchInput(el, value, !value);
+        return true;
+    }
+
+    return false;
 }
 
 function denInspect(el, fields) {

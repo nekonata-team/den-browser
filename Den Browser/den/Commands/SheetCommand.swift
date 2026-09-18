@@ -188,7 +188,7 @@ struct SheetClickCommand: ParsableCommand {
 struct SheetFillCommand: ParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "fill",
-        abstract: "Fill an input or textarea with text by reference or selector")
+        abstract: "Fill an input, textarea, or editable element with text by reference or selector")
 
     @OptionGroup var target: BoardTargetOptions
     @Argument(help: "Element reference (@e1) or CSS selector to fill")
@@ -215,7 +215,7 @@ struct SheetInteractCommand: ParsableCommand {
 
             Available actions:
               click <ref|selector>              Click an element (e.g. click @e1)
-              fill <ref|selector> <text>        Fill an input or textarea with text
+              fill <ref|selector> <text>        Fill an input, textarea, or editable element with text
               press <key>                       Press a key (Enter, Escape, Tab, ArrowDown, etc.)
               scroll [direction|ref|selector]   Scroll the page or scroll an element into view
               wait <ref|--load|--url|--text>    Wait for DOM state, load state, or URL

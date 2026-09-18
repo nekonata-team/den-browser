@@ -307,6 +307,93 @@ struct SheetInteractionTests {
         #expect(!finalChecked)
     }
 
+    @Test func fillAndValueWorkOnContentEditableAndAriaTextbox() async throws {
+        // Arrange
+        let webView = makeWebView()
+        let waiter = SheetInteractionWebViewLoadWaiter()
+        await waiter.load(
+            """
+            <!doctype html>
+            <div id="editable" contenteditable="true">initial content</div>
+            <div id="aria-box" role="textbox" tabindex="0">initial aria</div>
+            <script>
+                window.editableEvents = [];
+                window.ariaEvents = [];
+                const record = (arr, e) => arr.push(e.type + ':' + (e.inputType || '') + ':' + (e.data || ''));
+                document.getElementById('editable').addEventListener('input', e => record(window.editableEvents, e));
+                document.getElementById('editable').addEventListener('change', e => record(window.editableEvents, e));
+                document.getElementById('aria-box').addEventListener('input', e => record(window.ariaEvents, e));
+                document.getElementById('aria-box').addEventListener('change', e => record(window.ariaEvents, e));
+            </script>
+            """,
+            baseURL: URL(string: "https://example.com/")!,
+            in: webView
+        )
+
+        // Act & Assert contenteditable
+        let initialEditable = try await SheetInteraction.value(target: "#editable", in: webView)
+        #expect(initialEditable == "initial content")
+
+        try await SheetInteraction.fill(target: "#editable", value: "updated rich text", in: webView)
+        let updatedEditable = try await SheetInteraction.value(target: "#editable", in: webView)
+        #expect(updatedEditable == "updated rich text")
+
+        try await SheetInteraction.fill(target: "#editable", value: "", in: webView)
+        let clearedEditable = try await SheetInteraction.value(target: "#editable", in: webView)
+        #expect(clearedEditable == "")
+
+        // Act & Assert ARIA textbox
+        let initialAria = try await SheetInteraction.value(target: "#aria-box", in: webView)
+        #expect(initialAria == "initial aria")
+
+        try await SheetInteraction.fill(target: "#aria-box", value: "custom textbox value", in: webView)
+        let updatedAria = try await SheetInteraction.value(target: "#aria-box", in: webView)
+        #expect(updatedAria == "custom textbox value")
+
+        try await SheetInteraction.fill(target: "#aria-box", value: "", in: webView)
+        let clearedAria = try await SheetInteraction.value(target: "#aria-box", in: webView)
+        #expect(clearedAria == "")
+
+        // Verify events fired
+        let editableCount = try await webView.evaluateJavaScript("window.editableEvents.length") as? Int ?? 0
+        let ariaCount = try await webView.evaluateJavaScript("window.ariaEvents.length") as? Int ?? 0
+        #expect(editableCount >= 2)
+        #expect(ariaCount >= 2)
+    }
+
+    @Test func fillTriggersInputEventsInPageWorld() async throws {
+        // Arrange
+        let webView = makeWebView()
+        let waiter = SheetInteractionWebViewLoadWaiter()
+        await waiter.load(
+            """
+            <!doctype html>
+            <input id="test-input" value="initial">
+            <script>
+                window.receivedValue = null;
+                window.inputEventFired = false;
+                document.getElementById('test-input').addEventListener('input', (e) => {
+                    window.inputEventFired = true;
+                    window.receivedValue = e.target.value;
+                });
+            </script>
+            """,
+            baseURL: URL(string: "https://example.com/")!,
+            in: webView
+        )
+
+        // Act
+        try await SheetInteraction.fill(target: "#test-input", value: "dispatched", in: webView)
+        let value = try await SheetInteraction.value(target: "#test-input", in: webView)
+        let eventFired = try await webView.evaluateJavaScript("window.inputEventFired") as? Bool ?? false
+        let receivedValue = try await webView.evaluateJavaScript("window.receivedValue") as? String
+
+        // Assert
+        #expect(value == "dispatched")
+        #expect(eventFired == true)
+        #expect(receivedValue == "dispatched")
+    }
+
     @Test func pressProvidesLegacyKeyCodes() async throws {
         // Arrange
         let webView = makeWebView()
