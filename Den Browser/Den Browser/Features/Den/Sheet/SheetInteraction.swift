@@ -328,14 +328,13 @@ enum SheetInteraction {
         let targetLiteral = try javascriptLiteral(target)
         let dxLiteral = try javascriptLiteral(deltaX)
         let dyLiteral = try javascriptLiteral(deltaY)
-        let stepsCount = max(1, steps)
-        let script = operationScript(
+
+        let initScript = operationScript(
             """
             const sourceTarget = \(sourceLiteral);
             const targetTarget = \(targetLiteral);
             const dx = \(dxLiteral);
             const dy = \(dyLiteral);
-            const steps = \(stepsCount);
 
             let sourceEl;
             try {
@@ -384,39 +383,107 @@ enum SheetInteraction {
                 pointerId: 1,
                 pointerType: 'mouse',
                 isPrimary: true,
+                pressure: 0.5,
             };
 
             sourceEl.dispatchEvent(new PointerEvent('pointerdown', pointerBase));
+            window.dispatchEvent(new PointerEvent('pointerdown', pointerBase));
             sourceEl.dispatchEvent(new MouseEvent('mousedown', pointerBase));
+            window.dispatchEvent(new MouseEvent('mousedown', pointerBase));
 
-            for (let i = 1; i <= steps; i++) {
-                const curX = startX + (endX - startX) * (i / steps);
-                const curY = startY + (endY - startY) * (i / steps);
-                const movePoint = {
-                    ...pointerBase,
-                    clientX: curX,
-                    clientY: curY,
-                };
-                const hitEl = document.elementFromPoint(curX, curY) || sourceEl;
-                hitEl.dispatchEvent(new PointerEvent('pointermove', movePoint));
-                hitEl.dispatchEvent(new MouseEvent('mousemove', movePoint));
-            }
-
-            const endHitEl = document.elementFromPoint(endX, endY) || sourceEl;
-            const upPoint = {
-                ...pointerBase,
-                clientX: endX,
-                clientY: endY,
-                buttons: 0,
+            return {
+                ok: true,
+                startX: startX,
+                startY: startY,
+                endX: endX,
+                endY: endY,
+                rect: { x: srcRect.left, y: srcRect.top, width: srcRect.width, height: srcRect.height }
             };
-            endHitEl.dispatchEvent(new PointerEvent('pointerup', upPoint));
-            endHitEl.dispatchEvent(new MouseEvent('mouseup', upPoint));
-
-            return { ok: true, rect: { x: srcRect.left, y: srcRect.top, width: srcRect.width, height: srcRect.height } };
             """
         )
-        let result = try await evaluate(script, in: webView)
-        return try extractRect(from: result, scale: webView.pageZoom * webView.magnification)
+
+        let initResult = try await evaluate(initScript, in: webView)
+        guard let dict = initResult as? [String: Any],
+            let isSuccessful = dict["ok"] as? Bool, isSuccessful,
+            let startX = dict["startX"] as? Double,
+            let startY = dict["startY"] as? Double,
+            let endX = dict["endX"] as? Double,
+            let endY = dict["endY"] as? Double,
+            let rectDict = dict["rect"] as? [String: Any],
+            let rectX = rectDict["x"] as? Double,
+            let rectY = rectDict["y"] as? Double,
+            let rectWidth = rectDict["width"] as? Double,
+            let rectHeight = rectDict["height"] as? Double
+        else {
+            let error = (initResult as? [String: Any])?["error"] as? String ?? "Failed to initialize drag"
+            throw SheetInteractionError.executionFailed(error)
+        }
+
+        let stepsCount = max(1, steps)
+        for step in 1...stepsCount {
+            try await Task.sleep(for: .milliseconds(16))
+            let progress = Double(step) / Double(stepsCount)
+            let curX = startX + (endX - startX) * progress
+            let curY = startY + (endY - startY) * progress
+
+            let moveScript = """
+                (() => {
+                const curX = \(curX);
+                const curY = \(curY);
+                const pointerBase = {
+                    bubbles: true,
+                    cancelable: true,
+                    view: window,
+                    button: 0,
+                    buttons: 1,
+                    clientX: curX,
+                    clientY: curY,
+                    pointerId: 1,
+                    pointerType: 'mouse',
+                    isPrimary: true,
+                    pressure: 0.5,
+                };
+                const hitEl = document.elementFromPoint(curX, curY) || document;
+                hitEl.dispatchEvent(new PointerEvent('pointermove', pointerBase));
+                window.dispatchEvent(new PointerEvent('pointermove', pointerBase));
+                hitEl.dispatchEvent(new MouseEvent('mousemove', pointerBase));
+                window.dispatchEvent(new MouseEvent('mousemove', pointerBase));
+                return true;
+                })()
+                """
+            _ = try await evaluate(moveScript, in: webView)
+        }
+
+        try await Task.sleep(for: .milliseconds(16))
+        let endScript = """
+            (() => {
+            const endX = \(endX);
+            const endY = \(endY);
+            const pointerBase = {
+                bubbles: true,
+                cancelable: true,
+                view: window,
+                button: 0,
+                buttons: 0,
+                clientX: endX,
+                clientY: endY,
+                pointerId: 1,
+                pointerType: 'mouse',
+                isPrimary: true,
+                pressure: 0,
+            };
+            const endHitEl = document.elementFromPoint(endX, endY) || document;
+            endHitEl.dispatchEvent(new PointerEvent('pointerup', pointerBase));
+            window.dispatchEvent(new PointerEvent('pointerup', pointerBase));
+            endHitEl.dispatchEvent(new MouseEvent('mouseup', pointerBase));
+            window.dispatchEvent(new MouseEvent('mouseup', pointerBase));
+            return true;
+            })()
+            """
+        _ = try await evaluate(endScript, in: webView)
+
+        let scale = webView.pageZoom * webView.magnification
+        return CGRect(x: rectX * scale, y: rectY * scale, width: rectWidth * scale, height: rectHeight * scale)
     }
 
     static func value(target: String, in webView: WKWebView) async throws -> String {
