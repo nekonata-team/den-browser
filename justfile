@@ -5,6 +5,8 @@ project := "Den Browser/Den Browser.xcodeproj"
 scheme := "Den Browser"
 derived_data := ".derived-data"
 ui_test_derived_data := ".derived-data-ui"
+unit_test_result := derived_data + "/TestResults.xcresult"
+ui_test_result := ui_test_derived_data + "/TestResults.xcresult"
 export SPARKLE_TOOLS := derived_data + "/SourcePackages/artifacts/sparkle/Sparkle/bin"
 swift_format := "xcrun swift-format"
 swift_sources := "Den Browser"
@@ -82,14 +84,22 @@ prepush:
 # Run unit tests without code signing.
 [group("test")]
 test:
-    rtk test "xcodebuild test -project '{{project}}' -scheme '{{scheme}}' -destination 'platform=macOS,arch=arm64' -derivedDataPath '{{derived_data}}' -only-testing:'Den BrowserTests' -parallel-testing-enabled YES CODE_SIGNING_ALLOWED=NO" || { echo "✗ Unit tests failed."; echo '  Inspect: xcrun xcresulttool get test-results summary --path "$(ls -td .derived-data/Logs/Test/*.xcresult | head -n 1)"'; exit 1; }
+    rm -rf "{{unit_test_result}}"
+    rtk test "xcodebuild test -project '{{project}}' -scheme '{{scheme}}' -destination 'platform=macOS,arch=arm64' -derivedDataPath '{{derived_data}}' -resultBundlePath '{{unit_test_result}}' -only-testing:'Den BrowserTests' -parallel-testing-enabled YES CODE_SIGNING_ALLOWED=NO" || { echo "✗ Unit tests failed."; echo '  Inspect: just test-results'; exit 1; }
     echo "✓ Unit tests passed"
 
 # Run deterministic macOS UI interaction tests. Pass a target to run a specific class or case (e.g. just ui-test Den_BrowserUITests/testNewBoardIsCenteredAfterCreation).
 [group("test")]
 ui-test target="Den_BrowserUITests":
-    rtk test "xcodebuild test -project '{{project}}' -scheme '{{scheme}}' -destination 'platform=macOS,arch=arm64' -derivedDataPath '{{ui_test_derived_data}}' -only-testing:'Den BrowserUITests/{{target}}'" || { echo "✗ UI tests failed."; echo '  Inspect: xcrun xcresulttool get test-results summary --path "$(ls -td .derived-data-ui/Logs/Test/*.xcresult | head -n 1)"'; exit 1; }
+    rm -rf "{{ui_test_result}}"
+    rtk test "xcodebuild test -project '{{project}}' -scheme '{{scheme}}' -destination 'platform=macOS,arch=arm64' -derivedDataPath '{{ui_test_derived_data}}' -resultBundlePath '{{ui_test_result}}' -only-testing:'Den BrowserUITests/{{target}}'" || { echo "✗ UI tests failed."; echo '  Inspect: just test-results .derived-data-ui/TestResults.xcresult'; exit 1; }
     echo "✓ UI tests passed"
+
+# Show a test result summary. Pass another result bundle path as the first argument.
+[group("test")]
+test-results result_path=unit_test_result:
+    test -d "{{result_path}}"
+    rtk xcrun xcresulttool get test-results summary --path "{{result_path}}"
 
 # Run lint and unit tests.
 [group("test")]
