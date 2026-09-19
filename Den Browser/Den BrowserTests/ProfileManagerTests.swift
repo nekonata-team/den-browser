@@ -403,6 +403,31 @@ struct ProfileManagerTests {
                 ]))
     }
 
+    @Test func failedSaveRetainsLatestStateForSubsequentWrite() throws {
+        // Arrange
+        let directory = temporaryProfileDirectory()
+        defer {
+            try? FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: directory.path)
+            try? FileManager.default.removeItem(at: directory)
+        }
+        let manager = makeProfileManager(directory: directory)
+        let store = try #require(manager.store(for: manager.personalProfileID))
+        let targetURL = URL(string: "https://example.com/updated")
+
+        // Act
+        try FileManager.default.setAttributes([.posixPermissions: 0o500], ofItemAtPath: directory.path)
+        store.addBoard(urlString: "https://example.com/updated")
+        #expect(manager.errorMessage != nil)
+
+        try FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: directory.path)
+        #expect(store.saveDeskPresets())
+
+        // Assert
+        let restored = makeProfileManager(directory: directory)
+        let restoredStore = try #require(restored.store(for: manager.personalProfileID))
+        #expect(restoredStore.focusedDesk?.boards.contains { $0.currentSheetURL == targetURL } == true)
+    }
+
     private func temporaryProfileDirectory() -> URL {
         FileManager.default.temporaryDirectory
             .appending(path: "den-browser-profile-tests-\(UUID().uuidString)", directoryHint: .isDirectory)

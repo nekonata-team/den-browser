@@ -17,16 +17,16 @@ final class DenStorage {
     @ObservationIgnored var runtimes: [UUID: BoardRuntime] = [:]
     @ObservationIgnored var terminalRuntimes: [UUID: TerminalRuntime] = [:]
     @ObservationIgnored var runtimeOwners: [UUID: DenStore] = [:]
-    @ObservationIgnored let onSave: ((DenState) -> Void)?
-    @ObservationIgnored let onDeskPresetsSave: (([PersonalDeskPreset]) -> Void)?
+    @ObservationIgnored let onSave: ((DenState) -> Bool)?
+    @ObservationIgnored let onDeskPresetsSave: (([PersonalDeskPreset]) -> Bool)?
     @ObservationIgnored let onRecentItemsSave: (([RecentItem]) -> Bool)?
 
     init(
         state: DenState,
         deskPresets: [PersonalDeskPreset] = [],
         recentItems: [RecentItem] = [],
-        onSave: ((DenState) -> Void)? = nil,
-        onDeskPresetsSave: (([PersonalDeskPreset]) -> Void)? = nil,
+        onSave: ((DenState) -> Bool)? = nil,
+        onDeskPresetsSave: (([PersonalDeskPreset]) -> Bool)? = nil,
         onRecentItemsSave: (([RecentItem]) -> Bool)? = nil
     ) {
         self.state = state
@@ -339,6 +339,21 @@ final class DenStore {
             sheetNavigation: SheetNavigationManager(),
             preferences: AppPreferences(),
             deskPresets: [],
+            onSave: { state in
+                onSave(state)
+                return true
+            },
+            onRecentItemsSave: nil
+        )
+    }
+
+    convenience init(state: DenState, onSaveReturningBool onSave: @escaping (DenState) -> Bool) {
+        self.init(
+            state: state,
+            websiteDataStore: .default(),
+            sheetNavigation: SheetNavigationManager(),
+            preferences: AppPreferences(),
+            deskPresets: [],
             onSave: onSave,
             onRecentItemsSave: nil
         )
@@ -347,7 +362,7 @@ final class DenStore {
     convenience init(
         state: DenState,
         deskPresets: [PersonalDeskPreset],
-        onDeskPresetsSave: (([PersonalDeskPreset]) -> Void)? = nil
+        onDeskPresetsSave: (([PersonalDeskPreset]) -> Bool)? = nil
     ) {
         self.init(
             state: state,
@@ -371,8 +386,8 @@ final class DenStore {
         webExtensionWindow: MV3WebExtensionWindow? = nil,
         deskPresets: [PersonalDeskPreset] = [],
         recentItems: [RecentItem] = [],
-        onSave: ((DenState) -> Void)? = nil,
-        onDeskPresetsSave: (([PersonalDeskPreset]) -> Void)? = nil,
+        onSave: ((DenState) -> Bool)? = nil,
+        onDeskPresetsSave: (([PersonalDeskPreset]) -> Bool)? = nil,
         onRecentItemsSave: (([RecentItem]) -> Bool)? = nil
     ) {
         let normalizedState = Self.normalizedPersistedState(state)
@@ -402,7 +417,7 @@ final class DenStore {
             self.state.expandedDrawerItemID = nil
         }
         if self.state != state {
-            onSave?(self.state)
+            _ = onSave?(self.state)
         }
     }
 
@@ -694,13 +709,15 @@ final class DenStore {
         return board
     }
 
-    func save() {
-        guard activeDrag == nil else { return }
-        storage.onSave?(state)
+    @discardableResult
+    func save() -> Bool {
+        guard activeDrag == nil else { return false }
+        return storage.onSave?(state) ?? false
     }
 
-    func saveDeskPresets() {
-        storage.onDeskPresetsSave?(deskPresets)
+    @discardableResult
+    func saveDeskPresets() -> Bool {
+        storage.onDeskPresetsSave?(deskPresets) ?? false
     }
 
     func wrappedIndex(_ index: Int, count: Int) -> Int {

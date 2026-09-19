@@ -25,8 +25,11 @@ extension DenStore {
 
         deskPresets.insert(PersonalDeskPreset(label: label, desk: desk), at: 0)
         isDenMode = false
-        saveDeskPresets()
-        showToast("Saved Desk Preset.", style: .success)
+        if saveDeskPresets() {
+            showToast("Saved Desk Preset.", style: .success)
+        } else {
+            showToast("Could not save Desk Preset.", style: .error)
+        }
         return .created
     }
 
@@ -38,8 +41,11 @@ extension DenStore {
         deskPresets[index] = replacement
         pendingConfirmation = nil
         isDenMode = false
-        saveDeskPresets()
-        showToast("Saved Desk Preset.", style: .success)
+        if saveDeskPresets() {
+            showToast("Saved Desk Preset.", style: .success)
+        } else {
+            showToast("Could not save Desk Preset.", style: .error)
+        }
     }
 
     func cancelDeskPresetReplacement() {
@@ -57,7 +63,9 @@ extension DenStore {
         guard let id = deskPresetPendingDeletion?.id else { return }
         pendingConfirmation = nil
         deskPresets.removeAll { $0.id == id }
-        saveDeskPresets()
+        if !saveDeskPresets() {
+            showToast("Could not delete Desk Preset.", style: .error)
+        }
     }
 
     func cancelDeskPresetDeletion() {

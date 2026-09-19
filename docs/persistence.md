@@ -97,3 +97,11 @@ supports is not overwritten or downgraded.
 - Version 1 fixtures in `Den Browser/Den BrowserTests/Fixtures` are the executable format contract.
 
 Unreadable Profile documents and indexes are preserved with a `.corrupt-<timestamp>` suffix before recovery continues.
+
+## Persistence failure and recovery contract
+
+- Profile document saves use atomic file writes.
+- `ProfileManager` maintains the latest intended `PersistedProfile` document in memory (`persistedProfiles`).
+- If writing a document to disk fails, `ProfileManager` reports the error and returns `false` without rolling back its in-memory document cache. This guarantees that subsequent saves of another collection (such as Recent Items or Desk Presets) do not overwrite the file with an outdated `DenState`.
+- Operations with irreversible runtime side effects (such as closing a live Board) retain the latest intended state in UI and cache; they are not artificially rewound, allowing subsequent writes to persist the intended state.
+- UI operations report success (such as displaying a success Toast) only when disk persistence actually succeeds.

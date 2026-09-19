@@ -287,6 +287,52 @@ struct DenStoreDeskPresetTests {
         }
     }
 
+    @Test func saveDeskPresetShowsErrorToastWhenPersistenceFails() {
+        // Arrange
+        let deskState = desk("Desk", boards: [board("Board")])
+        var saveCallCount = 0
+        let store = DenStore(
+            state: DenState(desks: [deskState], focusedDeskID: deskState.id),
+            deskPresets: [],
+            onDeskPresetsSave: { _ in
+                saveCallCount += 1
+                return false
+            }
+        )
+
+        // Act
+        let result = store.saveFocusedDeskAsPreset(label: "Test Preset")
+
+        // Assert
+        #expect(result == .created)
+        #expect(saveCallCount == 1)
+        #expect(store.toastMessage?.message == "Could not save Desk Preset.")
+        #expect(store.toastMessage?.style == ToastMessage.ToastStyle.error)
+    }
+
+    @Test func saveDeskPresetShowsSuccessToastWhenPersistenceSucceeds() {
+        // Arrange
+        let deskState = desk("Desk", boards: [board("Board")])
+        var saveCallCount = 0
+        let store = DenStore(
+            state: DenState(desks: [deskState], focusedDeskID: deskState.id),
+            deskPresets: [],
+            onDeskPresetsSave: { _ in
+                saveCallCount += 1
+                return true
+            }
+        )
+
+        // Act
+        let result = store.saveFocusedDeskAsPreset(label: "Test Preset")
+
+        // Assert
+        #expect(result == .created)
+        #expect(saveCallCount == 1)
+        #expect(store.toastMessage?.message == "Saved Desk Preset.")
+        #expect(store.toastMessage?.style == ToastMessage.ToastStyle.success)
+    }
+
     private static func sampleChoices() -> [DeskPresetChoice] {
         [
             DeskPresetChoice(

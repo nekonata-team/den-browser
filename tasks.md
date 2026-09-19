@@ -77,14 +77,14 @@
 - **Verification:** `DenSocketServerTests` に切断（SIGPIPEクラッシュ防止）と不完全リクエスト（改行なし）無視のテストを追加。`just check` 実行（lint 0 violations、unit tests 全パス）。
 
 <a id="task-004"></a>
-### [ ] TASK-004：永続化の成功と失敗の契約を統一する
+### [x] TASK-004：永続化の成功と失敗の契約を統一する
 
 - **Priority / Purpose:** P1。保存失敗時の状態乖離と、未保存なのに成功を報告する挙動を解消します。
 - **Prerequisites:** なし。
 - **Entry Points:** `Profiles/ProfileManager.swift`、`Den/DenStore.swift`、`Den/Store/DenStore+DeskPresets.swift`、`Den/Store/DenStore+BoardLifecycle.swift`。
 - **Work:** Den、Preset、Recentの保存結果を統一して呼び出し元へ返します。保存失敗時に戻す状態と、未保存として保持・再試行する状態を定義します。別コレクションの後続保存が古いDenを再保存する経路をなくします。runtime終了など不可逆な副作用を伴う操作は、単純な状態巻き戻しで済ませません。
 - **Acceptance Criteria:** UI、保存用キャッシュ、ファイルの関係が明示され、失敗時に成功Toastを出しません。保存失敗→別項目保存→再起動でも、合意した復旧契約を満たします。
-- **Verification:** 書き込み失敗を注入するunit testで、失敗直後と後続保存後の復元を検証します。`just check`。`docs/persistence.md`を更新します。
+- **Verification:** 書き込み権限剥奪による失敗注入テスト（`ProfileManagerTests`）で未保存キャッシュ保持と後続保存時の最新状態復元を検証。Preset 保存失敗/成功 Toast 表示のテスト（`DenStoreDeskPresetTests`）を追加。`docs/persistence.md` を更新。`just check` 実行（lint 0 violations、全テストパス）。
 
 <a id="task-005"></a>
 ### [ ] TASK-005：Profile保存を集約しMainActorの負荷を減らす

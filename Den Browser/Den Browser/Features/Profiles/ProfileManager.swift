@@ -379,12 +379,12 @@ final class ProfileManager {
             state: normalizedState,
             deskPresets: persisted.deskPresets,
             recentItems: persisted.recentItems,
-            onSave: { [weak self] den in self?.saveDen(den, for: profileID) },
-            onDeskPresetsSave: { [weak self] presets in self?.saveDeskPresets(presets, for: profileID) },
+            onSave: { [weak self] den in self?.saveDen(den, for: profileID) ?? false },
+            onDeskPresetsSave: { [weak self] presets in self?.saveDeskPresets(presets, for: profileID) ?? false },
             onRecentItemsSave: { [weak self] items in self?.saveRecentItems(items, for: profileID) ?? false })
         storages[profileID] = storage
         if normalizedState != persisted.den {
-            saveDen(normalizedState, for: profileID)
+            _ = saveDen(normalizedState, for: profileID)
         }
         return storage
     }
@@ -679,42 +679,43 @@ final class ProfileManager {
         }
     }
 
-    private func saveDen(_ den: DenState, for profileID: UUID) {
-        guard var persisted = persistedProfiles[profileID] else { return }
-        let original = persisted
+    @discardableResult
+    private func saveDen(_ den: DenState, for profileID: UUID) -> Bool {
+        guard var persisted = persistedProfiles[profileID] else { return false }
         persisted.den = den
         persistedProfiles[profileID] = persisted
         do {
             try save(persisted)
+            return true
         } catch {
-            persistedProfiles[profileID] = original
             reportSaveError(error)
+            return false
         }
     }
 
-    private func saveDeskPresets(_ deskPresets: [PersonalDeskPreset], for profileID: UUID) {
-        guard var persisted = persistedProfiles[profileID] else { return }
-        let original = persisted
+    @discardableResult
+    private func saveDeskPresets(_ deskPresets: [PersonalDeskPreset], for profileID: UUID) -> Bool {
+        guard var persisted = persistedProfiles[profileID] else { return false }
         persisted.deskPresets = deskPresets
         persistedProfiles[profileID] = persisted
         do {
             try save(persisted)
+            return true
         } catch {
-            persistedProfiles[profileID] = original
             reportSaveError(error)
+            return false
         }
     }
 
+    @discardableResult
     private func saveRecentItems(_ recentItems: [RecentItem], for profileID: UUID) -> Bool {
         guard var persisted = persistedProfiles[profileID] else { return false }
-        let original = persisted
         persisted.recentItems = recentItems
         persistedProfiles[profileID] = persisted
         do {
             try save(persisted)
             return true
         } catch {
-            persistedProfiles[profileID] = original
             reportSaveError(error)
             return false
         }

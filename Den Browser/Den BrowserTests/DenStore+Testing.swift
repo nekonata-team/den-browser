@@ -10,7 +10,7 @@ func withTestStore<T>(
     boards: [BoardState] = [],
     recentItems: [RecentItem] = [],
     onRecentItemsSave: (([RecentItem]) -> Bool)? = nil,
-    onSave: ((DenState) -> Void)? = nil,
+    onSave: ((DenState) -> Bool)? = nil,
     terminalCommandRunner: any TerminalCommandRunning = ProcessTerminalCommandRunner(),
     body: (DenStore) throws -> T
 ) rethrows -> T {
@@ -41,7 +41,7 @@ func withTestStore<T>(
     boards: [BoardState] = [],
     recentItems: [RecentItem] = [],
     onRecentItemsSave: (([RecentItem]) -> Bool)? = nil,
-    onSave: ((DenState) -> Void)? = nil,
+    onSave: ((DenState) -> Bool)? = nil,
     terminalCommandRunner: any TerminalCommandRunning = ProcessTerminalCommandRunner(),
     body: (DenStore) async throws -> T
 ) async rethrows -> T {
