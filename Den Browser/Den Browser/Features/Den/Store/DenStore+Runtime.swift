@@ -310,7 +310,10 @@ extension DenStore {
 
     func releaseWindowResources() {
         deskFilterCenteringTask?.cancel()
+        deskFilterCenteringTask = nil
         toastTask?.cancel()
+        toastTask = nil
+        zmxSessions.stop()
         releaseDrawerPreview()
     }
 

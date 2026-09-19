@@ -165,12 +165,6 @@ final class ProfileManager {
         else { return false }
 
         closeWindows(for: profileID)
-        removeStores(for: profileID)
-        if let storage = storages.removeValue(forKey: profileID) {
-            releaseRuntimes(storage)
-        }
-        websiteDataStores.removeValue(forKey: profileID)
-        webExtensionHosts.removeValue(forKey: profileID)?.dispose()
         let profileURL = profileURL(for: profileID)
         let hadDocument = FileManager.default.fileExists(atPath: profileURL.path)
         do {
@@ -279,20 +273,10 @@ final class ProfileManager {
     }
 
     func unregister(window: NSWindow, for route: ProfileWindowRoute) {
-        guard windows[route.windowID]?.window === window else { return }
-        windows.removeValue(forKey: route.windowID)
-        stores.removeValue(forKey: route.windowID)?.releaseWindowResources()
-        if let profileID = storeProfileIDs[route.windowID] {
-            webExtensionHosts[profileID]?.closeWindow(id: route.windowID)
-        }
-        windowAssignmentRevision &+= 1
-        let profileID = storeProfileIDs.removeValue(forKey: route.windowID) ?? resolvedProfileID(route.profileID)
-        guard !storeProfileIDs.values.contains(profileID), let storage = storages.removeValue(forKey: profileID) else {
+        guard let profileID = cleanupWindow(windowID: route.windowID, matchingWindow: window) else {
             return
         }
-        releaseRuntimes(storage)
-        websiteDataStores.removeValue(forKey: profileID)
-        webExtensionHosts.removeValue(forKey: profileID)?.dispose()
+        releaseSharedResourcesIfUnused(for: profileID)
     }
 
     func store(for window: NSWindow?) -> DenStore? {
@@ -553,48 +537,59 @@ final class ProfileManager {
         }?.id
     }
 
-    private func closeWindows(for profileID: UUID) {
-        let matchingWindows = windows.filter { $0.value.profileID == profileID }
-        for (windowID, registration) in matchingWindows {
-            windows.removeValue(forKey: windowID)
-            stores.removeValue(forKey: windowID)?.releaseWindowResources()
-            webExtensionHosts[profileID]?.closeWindow(id: windowID)
-            storeProfileIDs.removeValue(forKey: windowID)
-            registration.window?.close()
+    @discardableResult
+    private func cleanupWindow(
+        windowID: UUID,
+        matchingWindow: NSWindow? = nil,
+        closeNativeWindow: Bool = false
+    ) -> UUID? {
+        if let matchingWindow, windows[windowID]?.window !== matchingWindow {
+            return nil
         }
+        let registration = windows.removeValue(forKey: windowID)
+        stores.removeValue(forKey: windowID)?.releaseWindowResources()
+        let profileID = storeProfileIDs.removeValue(forKey: windowID) ?? registration?.profileID
+        if let profileID {
+            webExtensionHosts[profileID]?.closeWindow(id: windowID)
+        }
+        if closeNativeWindow {
+            registration?.window?.close()
+        }
+        windowAssignmentRevision &+= 1
+        return profileID
+    }
+
+    private func releaseSharedResourcesIfUnused(for profileID: UUID) {
+        let profileID = resolvedProfileID(profileID)
+        guard !storeProfileIDs.values.contains(profileID),
+            !windows.values.contains(where: { $0.profileID == profileID })
+        else { return }
+        if let storage = storages.removeValue(forKey: profileID) {
+            releaseRuntimes(storage)
+        }
+        websiteDataStores.removeValue(forKey: profileID)
+        webExtensionHosts.removeValue(forKey: profileID)?.dispose()
+    }
+
+    private func closeWindows(for profileID: UUID, excludingWindowID: UUID? = nil) {
+        var targetWindowIDs = Set<UUID>()
+        for (windowID, reg) in windows where reg.profileID == profileID {
+            targetWindowIDs.insert(windowID)
+        }
+        for (windowID, pID) in storeProfileIDs where pID == profileID {
+            targetWindowIDs.insert(windowID)
+        }
+        if let excludingWindowID {
+            targetWindowIDs.remove(excludingWindowID)
+        }
+        for windowID in targetWindowIDs {
+            cleanupWindow(windowID: windowID, closeNativeWindow: true)
+        }
+        releaseSharedResourcesIfUnused(for: profileID)
     }
 
     private func closeOtherWindows(profileID: UUID, excludingWindowID: UUID) {
-        let matchingWindows = windows.filter {
-            $0.key != excludingWindowID && $0.value.profileID == profileID
-        }
-        for (windowID, registration) in matchingWindows {
-            windows.removeValue(forKey: windowID)
-            stores.removeValue(forKey: windowID)?.releaseWindowResources()
-            webExtensionHosts[profileID]?.closeWindow(id: windowID)
-            storeProfileIDs.removeValue(forKey: windowID)
-            registration.window?.close()
-        }
-        let remainingWindowIDs = storeProfileIDs.compactMap {
-            $0.key != excludingWindowID && $0.value == profileID ? $0.key : nil
-        }
-        for windowID in remainingWindowIDs {
-            stores.removeValue(forKey: windowID)?.releaseWindowResources()
-            webExtensionHosts[profileID]?.closeWindow(id: windowID)
-            storeProfileIDs.removeValue(forKey: windowID)
-        }
-    }
-
-    private func removeStores(for profileID: UUID) {
-        let windowIDs = storeProfileIDs.compactMap { $0.value == profileID ? $0.key : nil }
-        for windowID in windowIDs {
-            let profileID = storeProfileIDs[windowID]
-            stores.removeValue(forKey: windowID)?.releaseWindowResources()
-            if let profileID {
-                webExtensionHosts[profileID]?.closeWindow(id: windowID)
-            }
-            storeProfileIDs.removeValue(forKey: windowID)
-        }
+        closeWindows(for: profileID, excludingWindowID: excludingWindowID)
     }
 
     private func releaseRuntimes(_ storage: DenStorage) {

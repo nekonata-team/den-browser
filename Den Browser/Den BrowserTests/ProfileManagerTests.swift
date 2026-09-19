@@ -428,6 +428,117 @@ struct ProfileManagerTests {
         #expect(restoredStore.focusedDesk?.boards.contains { $0.currentSheetURL == targetURL } == true)
     }
 
+    @Test func multipleWindowsRetainSharedRuntimesWhenNonFinalWindowCloses() throws {
+        // Arrange
+        let directory = temporaryProfileDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let manager = makeProfileManager(directory: directory)
+        let profileID = manager.personalProfileID
+        let route1 = ProfileWindowRoute(windowID: UUID(), profileID: profileID)
+        let window1 = NSWindow()
+        let window2 = NSWindow()
+
+        let store1 = try #require(manager.store(for: route1))
+        manager.register(window: window1, for: route1)
+        store1.createDesk(label: "SecondDesk", preset: .empty)
+        let secondDeskID = store1.presentedDeskID
+
+        let route2 = try #require(
+            manager.routeForOpeningDesk(
+                secondDeskID,
+                profileID: profileID,
+                sourceWindowID: route1.windowID))
+        let store2 = try #require(manager.store(for: route2))
+        manager.register(window: window2, for: route2)
+
+        let targetBoard = board("SharedBoard")
+        store1.state = DenState(desks: [desk("Main", boards: [targetBoard])], focusedDeskID: UUID())
+        store1.focusDesk(store1.state.desks[0].id)
+        let runtime = store1.runtime(for: targetBoard)
+
+        // Act
+        manager.unregister(window: window1, for: route1)
+
+        // Assert
+        #expect(runtime.webView.navigationDelegate != nil)
+        #expect(store2.storage.runtimes[targetBoard.id] === runtime)
+    }
+
+    @Test func closingFinalWindowReleasesSharedRuntimes() throws {
+        // Arrange
+        let directory = temporaryProfileDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let manager = makeProfileManager(directory: directory)
+        let profileID = manager.personalProfileID
+        let route = ProfileWindowRoute(windowID: UUID(), profileID: profileID)
+        let window = NSWindow()
+
+        let store = try #require(manager.store(for: route))
+        manager.register(window: window, for: route)
+
+        let targetBoard = board("TargetBoard")
+        store.state = DenState(desks: [desk("Main", boards: [targetBoard])], focusedDeskID: UUID())
+        store.focusDesk(store.state.desks[0].id)
+        let runtime = store.runtime(for: targetBoard)
+
+        // Act
+        manager.unregister(window: window, for: route)
+
+        // Assert
+        #expect(runtime.webView.navigationDelegate == nil)
+    }
+
+    @Test func failedProfileDeletionPreservesProfileState() async throws {
+        // Arrange
+        let directory = temporaryProfileDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        struct RemovalError: Error {}
+        let manager = ProfileManager(
+            directoryURL: directory,
+            sheetNavigation: SheetNavigationManager(
+                defaults: UserDefaults(suiteName: UUID().uuidString) ?? .standard,
+                scriptSource: ""),
+            preferences: AppPreferences(defaults: UserDefaults(suiteName: UUID().uuidString) ?? .standard),
+            removeDataStore: { _ in throw RemovalError() })
+
+        let profile = try #require(manager.createProfile(name: "TestProfile", color: .green))
+        let store = try #require(manager.store(for: profile.id))
+        _ = store.createBoard(urlString: "https://example.com")
+
+        // Act
+        let deleted = await manager.deleteProfile(profile.id)
+
+        // Assert
+        #expect(!deleted)
+        #expect(manager.errorMessage != nil)
+        #expect(manager.profiles.contains { $0.id == profile.id })
+    }
+
+    @Test func failedProfileDeletionAllowsSubsequentStoreAccess() async throws {
+        // Arrange
+        let directory = temporaryProfileDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        struct RemovalError: Error {}
+        let manager = ProfileManager(
+            directoryURL: directory,
+            sheetNavigation: SheetNavigationManager(
+                defaults: UserDefaults(suiteName: UUID().uuidString) ?? .standard,
+                scriptSource: ""),
+            preferences: AppPreferences(defaults: UserDefaults(suiteName: UUID().uuidString) ?? .standard),
+            removeDataStore: { _ in throw RemovalError() })
+
+        let profile = try #require(manager.createProfile(name: "TestProfile", color: .green))
+        let store = try #require(manager.store(for: profile.id))
+        _ = store.createBoard(urlString: "https://example.com")
+        _ = await manager.deleteProfile(profile.id)
+
+        // Act
+        let recoveredStore = manager.store(for: profile.id)
+
+        // Assert
+        #expect(recoveredStore != nil)
+    }
+
     private func temporaryProfileDirectory() -> URL {
         FileManager.default.temporaryDirectory
             .appending(path: "den-browser-profile-tests-\(UUID().uuidString)", directoryHint: .isDirectory)

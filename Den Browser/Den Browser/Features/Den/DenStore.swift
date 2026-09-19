@@ -488,6 +488,7 @@ final class DenStore {
     func resetDen() {
         onWillResetDen?()
         releaseRuntimes()
+        releaseWindowResources()
         if isBoardDragging {
             boardDragCancellationRequest &+= 1
         }

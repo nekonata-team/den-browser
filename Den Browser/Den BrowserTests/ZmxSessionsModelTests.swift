@@ -144,6 +144,57 @@ struct ZmxSessionsModelTests {
         await model.waitForRefresh()
         #expect(model.selectedSessionName == "den")
     }
+
+    @Test func stoppingModelIgnoresDelayedRefreshCallbacks() async {
+        // Arrange
+        let client = ZmxClient(
+            executablePath: "/opt/homebrew/bin/zmx",
+            commandRunner: ModelTerminalCommandRunner(
+                responses: [
+                    ["list"]: TerminalCommandResult(
+                        terminationStatus: 0,
+                        standardOutput: "name=den\n"
+                            + "name=den-vi\tden.root=den\n")
+                ]))
+        let model = ZmxSessionsModel(client: client)
+
+        // Act
+        model.refresh()
+        model.stop()
+        await model.waitForRefresh()
+
+        // Assert
+        #expect(model.groups.isEmpty)
+        #expect(model.selectedSessionName == nil)
+        #expect(!model.isLoading)
+        #expect(model.message == nil)
+    }
+
+    @Test func stoppingModelIgnoresDelayedKillCallbacks() async {
+        // Arrange
+        let client = ZmxClient(
+            executablePath: "/opt/homebrew/bin/zmx",
+            commandRunner: ModelTerminalCommandRunner(
+                responses: [
+                    ["list"]: TerminalCommandResult(
+                        terminationStatus: 0,
+                        standardOutput: "name=den\n"),
+                    ["kill", "den", "--force"]: TerminalCommandResult(
+                        terminationStatus: 1,
+                        standardOutput: ""),
+                ]))
+        let model = ZmxSessionsModel(client: client)
+        model.start(client: client, selectedSessionName: "den")
+
+        // Act
+        model.kill(["den"])
+        model.stop()
+        await model.waitForRefresh()
+
+        // Assert
+        #expect(model.message == nil)
+        #expect(model.groups.isEmpty)
+    }
 }
 
 private struct ModelTerminalCommandRunner: TerminalCommandRunning, Sendable {

@@ -9,6 +9,7 @@ import Testing
 struct DenStorePresentationTests {
 
     @Test func resetDenClearsRuntimePresentationAndPersistsFreshState() {
+        // Arrange
         let board = board("Board")
         let populated = desk("Populated", boards: [board])
         let empty = desk("Empty")
@@ -26,14 +27,20 @@ struct DenStorePresentationTests {
         store.recentlyDiscardedDrawerItems = [
             DrawerItem(url: URL(string: "https://discarded.example/")!)
         ]
+        store.showZmxSessions()
+        store.deskFilterCenteringTask = Task {}
 
+        // Act
         store.resetDen()
 
+        // Assert
         #expect(store.state.desks.count == 1)
         #expect(store.deskPendingDeletion == nil)
         #expect(store.maximizedBoardID == nil)
         #expect(!store.isFocusModePresented)
         #expect(!store.isBoardDragging)
+        #expect(!store.isZmxSessionsPresented)
+        #expect(store.deskFilterCenteringTask == nil)
         #expect(savedState == store.state)
         #expect(store.toastMessage?.message == "Reset Den completed.")
         #expect(store.toastMessage?.style == .success)

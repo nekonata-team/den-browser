@@ -117,14 +117,14 @@
 - **Verification:** 複製の直接配列操作を `insertBoard` 経由へ統一（一時コンテキストリセットや状態クリーンアップの保証）。`openBoard(recentItem:)` の重複 switch 文や薄いラッパーを排除し `openBoard(input:)` へ集約。Focused unit test（`DenStoreBoardTests`）を追加し、`rtk just check` を通過。
 
 <a id="task-008"></a>
-### [ ] TASK-008：Windowとruntimeの終了処理を集約する
+### [x] TASK-008：Windowとruntimeの終了処理を集約する
 
 - **Priority / Purpose:** P2。通常終了、Profile削除、Denリセットでの解除漏れと二重解放を防ぎます。
 - **Prerequisites:** TASK-001。
 - **Entry Points:** `Profiles/ProfileManager.swift`、`Den/Store/DenStore+Runtime.swift`、`Den/Terminal/ZmxSessionsModel.swift`。
 - **Work:** unregister、closeWindows、closeOtherWindows、removeStoresの一件分の解除処理を共有します。Window固有Task／Preview、拡張Window、共有runtimeとruntimeOwnersの寿命を分けます。非表示Boardのcallback維持に必要な参照を、リークと決めつけて除去しません。
 - **Acceptance Criteria:** 一つのWindowを閉じても他Windowや非表示BoardのSessionが維持され、最後のWindow／Profile終了では必要な資源が解放されます。閉じたパネルへ遅いTask結果を適用しません。
-- **Verification:** 複数Window、最後のWindow、Profile削除失敗、reset、遅延callbackのfocused lifecycle test。`just check`。GhosttyのSurface寿命変更は別台帳へ委ねます。
+- **Verification:** `cleanupWindow` / `closeWindows` / `releaseSharedResourcesIfUnused` へ集約。`releaseWindowResources` で `zmxSessions.stop()` と各Taskをキャンセル・破棄。複数Window、最後のWindow、Profile削除失敗、reset、遅延callbackのfocused lifecycle testを追加し、`rtk just check` を通過。GhosttyのSurface寿命変更は別台帳へ委ねます。
 
 <a id="task-009"></a>
 ### [ ] TASK-009：IPC引数を型付きpayloadへ移行する
