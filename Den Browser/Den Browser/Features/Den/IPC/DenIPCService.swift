@@ -85,9 +85,10 @@ final class DenIPCService {
         do {
             switch command {
             case .open:
-                guard let urlString = request.args.first, !urlString.isEmpty else {
+                guard case .sheet(.open(let payload)) = request.payload, !payload.url.isEmpty else {
                     return .failure("Usage: den sheet open <url>")
                 }
+                let urlString = payload.url
                 guard let url = URL(string: urlString) ?? URL(string: "https://" + urlString) else {
                     return .failure("Invalid URL: \(urlString)")
                 }
@@ -103,10 +104,10 @@ final class DenIPCService {
                 return .success(url: currentURL)
 
             case .eval:
-                let script = request.args.joined(separator: " ")
-                guard !script.isEmpty else {
+                guard case .sheet(.eval(let payload)) = request.payload, !payload.script.isEmpty else {
                     return .failure("Usage: den sheet eval <javascript>")
                 }
+                let script = payload.script
                 let evalResult = try await runtime.webView.evaluateJavaScript(script)
                 if let evalResult {
                     return .success(value: "\(evalResult)")
@@ -135,38 +136,45 @@ final class DenIPCService {
                 return await handleSheetInteract(request: request, runtime: runtime)
 
             case .press:
-                guard let key = request.args.first, !key.isEmpty else {
+                guard case .sheet(.press(let payload)) = request.payload, !payload.key.isEmpty else {
                     return .failure("Usage: den sheet press <key>")
                 }
+                let key = payload.key
                 try await SheetInteraction.press(key: key, in: runtime.webView)
                 return .success(message: "Pressed \(key)")
 
             case .scroll:
-                let direction = request.args.first ?? "down"
+                guard case .sheet(.scroll(let payload)) = request.payload else {
+                    return .failure("Usage: den sheet scroll [<direction|amount|target>]")
+                }
+                let direction = payload.directionOrTarget ?? "down"
                 let message = try await SheetInteraction.scroll(direction: direction, in: runtime.webView)
                 return .success(message: message)
 
             case .wait:
-                let target = firstPositionalArgument(
-                    in: request.args,
-                    optionsWithValues: ["--url", "--state", "--timeout", "--text", "--load", "--fn"]
-                )
-                let urlPattern = optionValue("--url", in: request.args)
-                let textValue = optionValue("--text", in: request.args)
-                let loadValue = optionValue("--load", in: request.args)
-                let functionValue = optionValue("--fn", in: request.args)
+                guard case .sheet(.wait(let payload)) = request.payload else {
+                    return .failure("Usage: den sheet wait <selector|ref> [--state <state>]")
+                }
+                let target = payload.target
+                let urlPattern = payload.url
+                let textValue = payload.text
+                let loadValue = payload.loadState
+                let functionValue = payload.function
                 let modes = [target, urlPattern, textValue, loadValue, functionValue].compactMap { $0 }.count
                 guard modes == 1 else {
                     return .failure("Provide exactly one of a selector/ref, --url, --text, --load, or --fn")
                 }
-                if target == nil, optionValue("--state", in: request.args) != nil {
+                if target == nil, payload.state != nil {
                     return .failure("--state requires a selector or element reference")
                 }
                 if let target, Double(target) != nil {
                     return .failure(
                         "Duration waits are no longer supported; use --state, --url, --text, --load, or --fn")
                 }
-                let timeout = try timeoutValue(in: request.args)
+                guard payload.timeout.isFinite, payload.timeout >= 0 else {
+                    return .failure("Timeout must be a finite non-negative number")
+                }
+                let timeout = payload.timeout
 
                 if let urlPattern {
                     try await SheetInteraction.waitForURL(
@@ -216,7 +224,7 @@ final class DenIPCService {
                 guard let target else {
                     return .failure("Usage: den sheet wait <selector|ref> [--state <state>]")
                 }
-                let stateValue = optionValue("--state", in: request.args)?.lowercased() ?? "attached"
+                let stateValue = payload.state?.lowercased() ?? "attached"
                 guard let state = SheetWaitState(rawValue: stateValue) else {
                     return .failure("Invalid state: \(stateValue)")
                 }
@@ -229,10 +237,13 @@ final class DenIPCService {
                 return .success(message: "Waited for \(stateValue): \(target)")
 
             case .screenshot:
+                guard case .sheet(.screenshot(let payload)) = request.payload else {
+                    return .failure("Usage: den sheet screenshot [<output-path>]")
+                }
                 let image = try await ScreenshotCapture.visibleCurrentSheet(in: runtime.webView)
                 let data = try ScreenshotCapture.pngData(for: image)
                 let targetURL: URL = {
-                    if let path = request.args.first, !path.isEmpty {
+                    if let path = payload.outputPath, !path.isEmpty {
                         return URL(fileURLWithPath: path)
                     }
                     let filename = ScreenshotCapture.suggestedFilename(scope: board.label)
@@ -242,8 +253,11 @@ final class DenIPCService {
                 return .success(screenshotPath: targetURL.path)
 
             case .snapshot:
-                let interactiveOnly = !request.args.contains("--full")
-                let within = optionValue("--within", in: request.args)
+                guard case .sheet(.snapshot(let payload)) = request.payload else {
+                    return .failure("Usage: den sheet snapshot [--interactive|--full] [--within <selector|ref>]")
+                }
+                let interactiveOnly = !payload.full
+                let within = payload.within
                 let snapshot = try await SheetInteraction.snapshot(
                     in: runtime.webView,
                     interactiveOnly: interactiveOnly,
@@ -252,34 +266,31 @@ final class DenIPCService {
                 return .success(snapshot: snapshot)
 
             case .query:
-                guard
-                    let selector = firstPositionalArgument(in: request.args, optionsWithValues: ["--fields"]),
-                    !selector.isEmpty
-                else {
+                guard case .sheet(.query(let payload)) = request.payload, !payload.selector.isEmpty else {
                     return .failure("Usage: den sheet query <selector>")
                 }
                 let fields = try SheetInteraction.queryFields(
-                    from: optionValue("--fields", in: request.args)
+                    from: payload.fields
                 )
                 let elements = try await SheetInteraction.query(
-                    selector: selector,
-                    visibleOnly: request.args.contains("--visible"),
-                    all: request.args.contains("--all"),
+                    selector: payload.selector,
+                    visibleOnly: payload.visible,
+                    all: payload.all,
                     fields: fields,
                     in: runtime.webView
                 )
                 return .success(elements: elements)
 
             case .click:
-                let target = firstPositionalArgument(
-                    in: request.args,
-                    optionsWithValues: ["--role", "--name"]
-                )
-                let role = optionValue("--role", in: request.args)
-                let name = optionValue("--name", in: request.args)
-                let exact = request.args.contains("--exact")
-                let newBoard = request.args.contains("--new-board")
-                let shouldFocus = request.args.contains("--focus")
+                guard case .sheet(.click(let payload)) = request.payload else {
+                    return .failure("Usage: den sheet click <@ref|selector> or --role <role> --name <name>")
+                }
+                let target = payload.target
+                let role = payload.role
+                let name = payload.name
+                let exact = payload.exact
+                let newBoard = payload.newBoard
+                let shouldFocus = payload.focus
                 if target == nil && (role == nil || name == nil) {
                     return .failure("Usage: den sheet click <@ref|selector> or --role <role> --name <name>")
                 }
@@ -322,75 +333,56 @@ final class DenIPCService {
                 return .success(message: "Clicked \(description)")
 
             case .dblclick:
-                guard let target = request.args.first, !target.isEmpty else {
+                guard case .sheet(.dblclick(let payload)) = request.payload, !payload.target.isEmpty else {
                     return .failure("Usage: den sheet dblclick <@ref|selector>")
                 }
+                let target = payload.target
                 let rect = try await SheetInteraction.dblclick(target: target, in: runtime.webView)
                 runtime.triggerActionHighlight(rect)
                 return .success(message: "Double-clicked \(target)")
 
             case .focus:
-                guard let target = request.args.first, !target.isEmpty else {
+                guard case .sheet(.focus(let payload)) = request.payload, !payload.target.isEmpty else {
                     return .failure("Usage: den sheet focus <@ref|selector>")
                 }
+                let target = payload.target
                 let rect = try await SheetInteraction.focus(target: target, in: runtime.webView)
                 runtime.triggerActionHighlight(rect)
                 return .success(message: "Focused \(target)")
 
             case .fill:
-                guard request.args.count >= 2 else {
+                guard case .sheet(.fill(let payload)) = request.payload,
+                    !payload.target.isEmpty
+                else {
                     return .failure("Usage: den sheet fill <@ref|selector> <value>")
                 }
-                let target = request.args[0]
-                let value = request.args.dropFirst().joined(separator: " ")
+                let target = payload.target
+                let value = payload.value
                 let rect = try await SheetInteraction.fill(target: target, value: value, in: runtime.webView)
                 runtime.triggerActionHighlight(rect)
                 return .success(message: "Filled \(target)")
 
             case .type:
-                guard !request.args.isEmpty else {
+                guard case .sheet(.type(let payload)) = request.payload, !payload.text.isEmpty else {
                     return .failure("Usage: den sheet type [<@ref|selector>] <text>")
                 }
-                let (target, text): (String?, String) =
-                    request.args.count == 1
-                    ? (nil, request.args[0])
-                    : (request.args[0], request.args.dropFirst().joined(separator: " "))
+                let target = payload.target
+                let text = payload.text
                 let rect = try await SheetInteraction.type(target: target, text: text, in: runtime.webView)
                 runtime.triggerActionHighlight(rect)
                 let destination = target ?? "focused element"
                 return .success(message: "Typed into \(destination)")
 
             case .drag:
-                guard !request.args.isEmpty else {
+                guard case .sheet(.drag(let payload)) = request.payload, !payload.source.isEmpty else {
                     return .failure(
                         "Usage: den sheet drag <source> [<target>] [--dx <dx>] [--dy <dy>] [--steps <steps>]")
                 }
-                var positionalArgs: [String] = []
-                var deltaX: Double?
-                var deltaY: Double?
-                var steps = 5
-
-                var iterator = request.args.makeIterator()
-                while let arg = iterator.next() {
-                    switch arg {
-                    case "--dx":
-                        if let val = iterator.next(), let parsedDeltaX = Double(val) { deltaX = parsedDeltaX }
-                    case "--dy":
-                        if let val = iterator.next(), let parsedDeltaY = Double(val) { deltaY = parsedDeltaY }
-                    case "--steps":
-                        if let val = iterator.next(), let parsedSteps = Int(val) { steps = parsedSteps }
-                    default:
-                        if !arg.hasPrefix("--") {
-                            positionalArgs.append(arg)
-                        }
-                    }
-                }
-
-                guard let source = positionalArgs.first else {
-                    return .failure(
-                        "Usage: den sheet drag <source> [<target>] [--dx <dx>] [--dy <dy>] [--steps <steps>]")
-                }
-                let target = positionalArgs.count > 1 ? positionalArgs[1] : nil
+                let source = payload.source
+                let target = payload.destination
+                let deltaX = payload.deltaX
+                let deltaY = payload.deltaY
+                let steps = payload.steps
 
                 guard target != nil || deltaX != nil || deltaY != nil else {
                     return .failure("Drag requires a target element or at least one of --dx / --dy")
@@ -409,35 +401,47 @@ final class DenIPCService {
                 return .success(message: "Dragged \(source) to \(destination)")
 
             case .get:
-                let input: DenSheetGetInput
+                let input: DenSheetGetPayload
                 do {
-                    input = try DenSheetGetInput(args: request.args)
+                    guard case .sheet(.get(let payload)) = request.payload else {
+                        return .failure("Invalid payload for den sheet get")
+                    }
+                    try payload.validate()
+                    input = payload
                 } catch {
                     return .failure(error.localizedDescription)
                 }
-                switch input {
-                case .text(let target):
+                switch input.kind {
+                case .text:
+                    let target = input.target
                     let text = try await SheetInteraction.text(target: target, in: runtime.webView)
                     return .success(text: text)
 
-                case .value(let target):
+                case .value:
+                    let target = input.target
                     let value = try await SheetInteraction.value(target: target, in: runtime.webView)
                     return .success(value: value)
 
-                case .attribute(let target, let attribute):
+                case .attribute:
+                    guard let attribute = input.attribute else {
+                        return .failure("Invalid payload for den sheet get")
+                    }
                     let value = try await SheetInteraction.attribute(
-                        target: target,
+                        target: input.target,
                         name: attribute,
                         in: runtime.webView
                     )
                     return .success(attribute: value)
 
-                case .count(let selector):
-                    let count = try await SheetInteraction.count(selector: selector, in: runtime.webView)
+                case .count:
+                    let count = try await SheetInteraction.count(
+                        selector: input.target,
+                        in: runtime.webView
+                    )
                     return .success(count: count)
 
-                case .box(let target):
-                    let rect = try await SheetInteraction.box(target: target, in: runtime.webView)
+                case .box:
+                    let rect = try await SheetInteraction.box(target: input.target, in: runtime.webView)
                     let box = DenBoundingBox(
                         originX: rect.origin.x,
                         originY: rect.origin.y,
@@ -448,90 +452,60 @@ final class DenIPCService {
                 }
 
             case .isState:
-                let input: DenSheetStateInput
+                let input: DenSheetStatePayload
                 do {
-                    input = try DenSheetStateInput(args: request.args)
+                    guard case .sheet(.isState(let payload)) = request.payload else {
+                        return .failure("Invalid payload for den sheet is")
+                    }
+                    try payload.validate()
+                    input = payload
                 } catch {
                     return .failure(error.localizedDescription)
                 }
-                switch input {
-                case .visible(let target):
+                switch input.state {
+                case .visible:
+                    let target = input.target
                     let visible = try await SheetInteraction.isVisible(target: target, in: runtime.webView)
                     return .success(visible: visible)
-                case .enabled(let target):
+                case .enabled:
+                    let target = input.target
                     let enabled = try await SheetInteraction.isEnabled(target: target, in: runtime.webView)
                     return .success(enabled: enabled)
-                case .checked(let target):
+                case .checked:
+                    let target = input.target
                     let checked = try await SheetInteraction.isChecked(target: target, in: runtime.webView)
                     return .success(checked: checked)
                 }
 
             case .mouse:
-                guard let action = request.args.first?.lowercased() else {
+                guard case .sheet(.mouse(let payload)) = request.payload else {
                     return .failure("Usage: den sheet mouse <move|down|up|click|wheel> ...")
                 }
-                switch action {
-                case "move":
-                    guard request.args.count == 3,
-                        let coordX = Double(request.args[1]),
-                        let coordY = Double(request.args[2])
-                    else {
-                        return .failure("Usage: den sheet mouse move <x> <y>")
+                func buttonCode(_ rawButton: String?) -> Int {
+                    switch rawButton?.lowercased() {
+                    case "right", "2": return 2
+                    case "middle", "1": return 1
+                    default: return 0
                     }
+                }
+                switch payload {
+                case .move(let coordX, let coordY):
                     try await SheetInteraction.mouseMove(coordX: coordX, coordY: coordY, in: runtime.webView)
                     return .success(message: "Mouse moved to \(coordX), \(coordY)")
 
-                case "down":
-                    let button: Int = {
-                        guard request.args.count > 1 else { return 0 }
-                        switch request.args[1].lowercased() {
-                        case "right", "2": return 2
-                        case "middle", "1": return 1
-                        default: return 0
-                        }
-                    }()
+                case .down(let rawButton):
+                    let button = buttonCode(rawButton)
                     try await SheetInteraction.mouseDown(button: button, in: runtime.webView)
                     return .success(message: "Mouse button \(button) down")
 
-                case "up":
-                    let button: Int = {
-                        guard request.args.count > 1 else { return 0 }
-                        switch request.args[1].lowercased() {
-                        case "right", "2": return 2
-                        case "middle", "1": return 1
-                        default: return 0
-                        }
-                    }()
+                case .release(let rawButton):
+                    let button = buttonCode(rawButton)
                     try await SheetInteraction.mouseUp(button: button, in: runtime.webView)
                     return .success(message: "Mouse button \(button) up")
 
-                case "click":
-                    guard request.args.count >= 3,
-                        let coordX = Double(request.args[1]),
-                        let coordY = Double(request.args[2])
-                    else {
-                        return .failure(
-                            "Usage: den sheet mouse click <x> <y> [--button <left|right|middle>] [--count <n>]"
-                        )
-                    }
-                    var button = 0
-                    var count = 1
-                    var iterator = request.args.dropFirst(3).makeIterator()
-                    while let arg = iterator.next() {
-                        switch arg {
-                        case "--button":
-                            if let val = iterator.next() {
-                                switch val.lowercased() {
-                                case "right", "2": button = 2
-                                case "middle", "1": button = 1
-                                default: button = 0
-                                }
-                            }
-                        case "--count":
-                            if let val = iterator.next(), let parsed = Int(val) { count = parsed }
-                        default: break
-                        }
-                    }
+                case .click(let coordX, let coordY, let rawButton, let rawCount):
+                    let button = buttonCode(rawButton)
+                    let count = rawCount ?? 1
                     let rect = try await SheetInteraction.mouseClick(
                         coordX: coordX,
                         coordY: coordY,
@@ -542,22 +516,10 @@ final class DenIPCService {
                     runtime.triggerActionHighlight(rect)
                     return .success(message: "Mouse clicked at \(coordX), \(coordY)")
 
-                case "wheel":
-                    guard request.args.count >= 2, let deltaY = Double(request.args[1]) else {
-                        return .failure("Usage: den sheet mouse wheel <dy> [--dx <dx>]")
-                    }
-                    var deltaX = 0.0
-                    var iterator = request.args.dropFirst(2).makeIterator()
-                    while let arg = iterator.next() {
-                        if arg == "--dx", let val = iterator.next(), let parsed = Double(val) {
-                            deltaX = parsed
-                        }
-                    }
+                case .wheel(let deltaY, let rawDeltaX):
+                    let deltaX = rawDeltaX ?? 0
                     try await SheetInteraction.mouseWheel(deltaX: deltaX, deltaY: deltaY, in: runtime.webView)
                     return .success(message: "Mouse wheel scrolled dx: \(deltaX), dy: \(deltaY)")
-
-                default:
-                    return .failure("Unknown mouse action: \(action)")
                 }
 
             }
@@ -570,39 +532,29 @@ final class DenIPCService {
         request: DenIPCRequest,
         runtime: BoardRuntime
     ) async -> DenIPCResponse {
-        guard
-            let stepsJSON = request.args.first(where: { !$0.hasPrefix("-") }),
-            let data = stepsJSON.data(using: .utf8),
-            let steps = try? JSONDecoder().decode([DenSheetInteractStep].self, from: data),
-            !steps.isEmpty
-        else {
+        guard case .sheet(.interact(let payload)) = request.payload, !payload.steps.isEmpty else {
             return .failure("Usage: den sheet interact <script-or-file>")
         }
 
         var completedActions = 0
-        for (index, step) in steps.enumerated() {
-            guard let commandName = step.args.first,
-                let sheetCommand = DenIPCCommand.Sheet(rawValue: commandName),
-                sheetCommand != .interact
-            else {
+        for (index, step) in payload.steps.enumerated() {
+            guard step.command != .interact else {
                 let snapshot = try? await SheetInteraction.snapshot(
                     in: runtime.webView,
-                    interactiveOnly: !request.args.contains("--full")
+                    interactiveOnly: !payload.full
                 )
                 return .failure(
-                    "Line \(step.line): Unknown sheet command '\(step.args.first ?? "")'",
+                    "Line \(step.line): Nested interact is not supported",
                     snapshot: snapshot,
                     completedActions: completedActions,
                     failedActionIndex: index
                 )
             }
-
-            let actionArguments = Array(step.args.dropFirst())
             let actionResponse = await handleSheetCommand(
-                sheetCommand,
+                step.command,
                 request: DenIPCRequest(
-                    command: .sheet(sheetCommand),
-                    args: actionArguments,
+                    command: .sheet(step.command),
+                    payload: step.payload.map(DenIPCRequestPayload.sheet),
                     boardID: request.boardID,
                     deskID: request.deskID,
                     callerBoardID: request.callerBoardID,
@@ -612,7 +564,7 @@ final class DenIPCService {
             guard actionResponse.isOk else {
                 let snapshot = try? await SheetInteraction.snapshot(
                     in: runtime.webView,
-                    interactiveOnly: !request.args.contains("--full")
+                    interactiveOnly: !payload.full
                 )
                 let reason = actionResponse.error ?? "Interact action failed"
                 return .failure(
@@ -628,7 +580,7 @@ final class DenIPCService {
         do {
             let snapshot = try await SheetInteraction.snapshot(
                 in: runtime.webView,
-                interactiveOnly: !request.args.contains("--full")
+                interactiveOnly: !payload.full
             )
             return .success(snapshot: snapshot, completedActions: completedActions)
         } catch {
@@ -637,48 +589,6 @@ final class DenIPCService {
                 completedActions: completedActions
             )
         }
-    }
-
-    private func firstPositionalArgument(in args: [String], optionsWithValues: Set<String>) -> String? {
-        var index = args.startIndex
-        while index < args.endIndex {
-            let argument = args[index]
-            if argument.hasPrefix("--") {
-                if argument.contains("=") {
-                    index = args.index(after: index)
-                } else if optionsWithValues.contains(argument) {
-                    index = args.index(index, offsetBy: min(2, args.distance(from: index, to: args.endIndex)))
-                } else {
-                    index = args.index(after: index)
-                }
-            } else if argument.hasPrefix("-") {
-                index = args.index(after: index)
-            } else {
-                return argument
-            }
-        }
-        return nil
-    }
-
-    private func optionValue(_ option: String, in args: [String]) -> String? {
-        if let index = args.firstIndex(of: option), args.index(after: index) < args.endIndex {
-            let value = args[args.index(after: index)]
-            if !value.hasPrefix("-") {
-                return value
-            }
-        }
-        let prefix = option + "="
-        return args.first(where: { $0.hasPrefix(prefix) }).map { String($0.dropFirst(prefix.count)) }
-    }
-
-    private func timeoutValue(in args: [String]) throws -> TimeInterval {
-        guard let rawTimeout = optionValue("--timeout", in: args) else {
-            return 10
-        }
-        guard let timeout = Double(rawTimeout), timeout.isFinite, timeout >= 0 else {
-            throw SheetInteractionError.invalidArgument("Timeout must be a finite non-negative number")
-        }
-        return timeout
     }
 
     // MARK: - Board Commands
@@ -727,9 +637,14 @@ final class DenIPCService {
             return .success(boardId: info.id, board: info)
 
         case .web(.new):
-            guard let urlString = request.args.first(where: { !$0.hasPrefix("-") }), !urlString.isEmpty else {
+            guard
+                let requestPayload = request.payload,
+                case .board(.webNew(let payload)) = requestPayload,
+                !payload.url.isEmpty
+            else {
                 return .failure("Usage: den board web new <url> [--focus]")
             }
+            let urlString = payload.url
             let store: DenStore
             switch DenIPCTargetResolver.resolveStoreAndDesk(request: request, in: profileManager) {
             case .success(let target):
@@ -737,12 +652,11 @@ final class DenIPCService {
             case .failure(let error):
                 return .failure(error.localizedDescription)
             }
-            let shouldFocus = request.args.contains("--focus")
             let callerID = request.callerBoardID.flatMap(UUID.init)
             if let boardID = store.createBoard(
                 urlString: urlString,
                 afterBoardID: callerID ?? store.focusedBoard?.id,
-                focus: shouldFocus,
+                focus: payload.focus,
                 origin: .cli
             ), let board = store.board(for: boardID) {
                 _ = store.runtime(for: board)
@@ -751,12 +665,15 @@ final class DenIPCService {
             return .failure("Failed to open board with \(urlString)")
 
         case .terminal(.new):
-            return handleTerminalBoardNew(request: request)
+            guard
+                let requestPayload = request.payload,
+                case .board(.terminalNew(let payload)) = requestPayload
+            else {
+                return .failure("Usage: den board terminal new [<path>] [--run <cmd>] [--focus]")
+            }
+            return handleTerminalBoardNew(payload: payload, request: request)
 
         case .close:
-            guard request.args.isEmpty else {
-                return .failure("Usage: den board close [--board <id>]")
-            }
             let targetResult: Result<(DenStore, BoardState), DenIPCTargetResolver.TargetResolutionError>
             if request.boardID != nil {
                 targetResult = DenIPCTargetResolver.resolveTargetAnyBoardResult(request: request, in: profileManager)
@@ -777,7 +694,10 @@ final class DenIPCService {
         }
     }
 
-    private func handleTerminalBoardNew(request: DenIPCRequest) -> DenIPCResponse {
+    private func handleTerminalBoardNew(
+        payload: DenBoardTerminalNewPayload,
+        request: DenIPCRequest
+    ) -> DenIPCResponse {
         let store: DenStore
         switch DenIPCTargetResolver.resolveStoreAndDesk(request: request, in: profileManager) {
         case .success(let target):
@@ -786,28 +706,8 @@ final class DenIPCService {
             return .failure(error.localizedDescription)
         }
 
-        var workingDir: String?
-        var runCommand: String?
-        let shouldFocus = request.args.contains("--focus")
-
-        var argIndex = 0
-        while argIndex < request.args.count {
-            let arg = request.args[argIndex]
-            if arg == "--focus" {
-                argIndex += 1
-            } else if arg == "--run", argIndex + 1 < request.args.count {
-                runCommand = request.args[argIndex + 1]
-                argIndex += 2
-            } else if !arg.hasPrefix("-") && workingDir == nil {
-                workingDir = arg
-                argIndex += 1
-            } else {
-                argIndex += 1
-            }
-        }
-
         let resolvedDir: String
-        if let dir = workingDir {
+        if let dir = payload.path {
             switch BoardInputResolver.validateTerminalWorkingDirectory(dir) {
             case .success(let path):
                 resolvedDir = path
@@ -823,14 +723,14 @@ final class DenIPCService {
             let boardID = store.createTerminalBoard(
                 workingDirectory: resolvedDir,
                 afterBoardID: callerID ?? store.focusedBoard?.id,
-                focus: shouldFocus,
+                focus: payload.focus,
                 origin: .cli
             )
         else {
             return .failure("Failed to create terminal board")
         }
 
-        if let runCommand, let board = store.board(for: boardID) {
+        if let runCommand = payload.runCommand, let board = store.board(for: boardID) {
             let runtime = store.terminalRuntime(for: board)
             runtime.runCommand(runCommand)
         }
@@ -887,23 +787,28 @@ final class DenIPCService {
             return .success(drawerItems: items)
 
         case .keep:
-            guard let urlString = request.args.first(where: { !$0.hasPrefix("-") }), !urlString.isEmpty else {
+            guard
+                let requestPayload = request.payload,
+                case .drawer(.keep(let payload)) = requestPayload,
+                !payload.url.isEmpty
+            else {
                 return .failure("Usage: den drawer keep <url> [--title <title>]")
             }
+            let urlString = payload.url
             guard let url = URL(string: urlString), SheetURLPolicy.isSupported(url) else {
                 return .failure("Invalid or unsupported URL: \(urlString)")
             }
-            var title: String?
-            if let titleIndex = request.args.firstIndex(of: "--title"), titleIndex + 1 < request.args.count {
-                title = request.args[titleIndex + 1]
-            }
-            if let itemID = store.keepInDrawerInBackground(url, title: title) {
+            if let itemID = store.keepInDrawerInBackground(url, title: payload.title) {
                 return .success(message: "Kept in Drawer: \(urlString)", drawerItemId: itemID.uuidString)
             }
             return .failure("Failed to keep in Drawer: \(urlString)")
 
         case .place:
-            guard let idString = request.args.first(where: { !$0.hasPrefix("-") }), !idString.isEmpty else {
+            guard
+                let requestPayload = request.payload,
+                case .drawer(.place(let idString)) = requestPayload,
+                !idString.isEmpty
+            else {
                 return .failure("Usage: den drawer place <id>")
             }
             guard let item = findDrawerItem(in: store, matching: idString) else {
@@ -918,7 +823,11 @@ final class DenIPCService {
             return .failure("Failed to place Drawer Item as Board: \(idString)")
 
         case .discard:
-            guard let idString = request.args.first(where: { !$0.hasPrefix("-") }), !idString.isEmpty else {
+            guard
+                let requestPayload = request.payload,
+                case .drawer(.discard(let idString)) = requestPayload,
+                !idString.isEmpty
+            else {
                 return .failure("Usage: den drawer discard <id>")
             }
             guard let item = findDrawerItem(in: store, matching: idString) else {
@@ -963,7 +872,11 @@ final class DenIPCService {
             return .success(text: text)
 
         case .send:
-            guard let rawText = request.args.first, !rawText.isEmpty else {
+            guard
+                let requestPayload = request.payload,
+                case .terminal(.send(let rawText)) = requestPayload,
+                !rawText.isEmpty
+            else {
                 return .failure("Usage: den terminal send <text> [--board <id>]")
             }
             let text =
@@ -976,7 +889,11 @@ final class DenIPCService {
             return .success(message: "Sent text to Terminal Board \(board.id.uuidString)")
 
         case .run:
-            guard let command = request.args.first, !command.isEmpty else {
+            guard
+                let requestPayload = request.payload,
+                case .terminal(.run(let command)) = requestPayload,
+                !command.isEmpty
+            else {
                 return .failure("Usage: den terminal run <command> [--board <id>]")
             }
             let runtime = store.terminalRuntime(for: board)
@@ -984,8 +901,17 @@ final class DenIPCService {
             return .success(message: "Ran command in Terminal Board \(board.id.uuidString)")
 
         case .kill:
-            let rawSignal = request.args.first?.trimmingCharacters(in: .whitespacesAndNewlines)
-            let signalName = (rawSignal?.isEmpty == false) ? (rawSignal ?? "TERM") : "TERM"
+            guard
+                let requestPayload = request.payload,
+                case .terminal(.kill(let rawSignal)) = requestPayload
+            else {
+                return .failure("Usage: den terminal kill [-s <signal>] [--board <id>]")
+            }
+            let signal = rawSignal.trimmingCharacters(in: .whitespacesAndNewlines)
+            let signalName =
+                signal.isEmpty
+                ? "TERM"
+                : signal
             guard let parsed = Self.parseSignal(signalName) else {
                 return .failure("Unknown signal: \(signalName)")
             }
@@ -1019,7 +945,12 @@ final class DenIPCService {
             return .success(profiles: profiles)
 
         case .open:
-            guard let targetIDString = request.args.first ?? request.profileID, !targetIDString.isEmpty else {
+            guard
+                let requestPayload = request.payload,
+                case .profile(.open(let profileID)) = requestPayload,
+                let targetIDString = profileID ?? request.profileID,
+                !targetIDString.isEmpty
+            else {
                 return .failure("Usage: den profile open <uuid>")
             }
             guard let targetUUID = UUID(uuidString: targetIDString) else {

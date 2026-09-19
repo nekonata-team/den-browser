@@ -13,7 +13,12 @@ struct DenSheetCommandTests {
         try server.start { data in
             do {
                 let request = try JSONDecoder().decode(DenIPCRequest.self, from: data)
-                let isFull = request.args.contains("--full")
+                let isFull: Bool
+                if case .sheet(.snapshot(let payload)) = request.payload {
+                    isFull = payload.full
+                } else {
+                    isFull = false
+                }
                 return try JSONEncoder().encode(
                     DenIPCResponse.success(snapshot: isFull ? "full" : "interactive"))
             } catch {
@@ -57,18 +62,38 @@ struct DenSheetCommandTests {
         try server.start { data in
             do {
                 let request = try JSONDecoder().decode(DenIPCRequest.self, from: data)
-                let steps = try JSONDecoder().decode(
-                    [DenSheetInteractStep].self,
-                    from: Data((request.args.first ?? "").utf8)
-                )
                 let expectedSteps: [DenSheetInteractStep] = [
-                    DenSheetInteractStep(line: 2, text: "click @e1", args: ["click", "@e1"]),
-                    DenSheetInteractStep(line: 3, text: "fill @e2 \"penguin\"", args: ["fill", "@e2", "penguin"]),
+                    DenSheetInteractStep(
+                        line: 2,
+                        text: "click @e1",
+                        command: .click,
+                        payload: .click(
+                            DenSheetClickPayload(
+                                target: "@e1",
+                                role: nil,
+                                name: nil,
+                                exact: false,
+                                newBoard: false,
+                                focus: false
+                            )
+                        )
+                    ),
+                    DenSheetInteractStep(
+                        line: 3,
+                        text: "fill @e2 \"penguin\"",
+                        command: .fill,
+                        payload: .fill(DenSheetFillPayload(target: "@e2", value: "penguin"))
+                    ),
                 ]
-                let isExpected =
-                    request.command == .sheet(.interact)
-                    && request.args.contains("--full")
-                    && steps == expectedSteps
+                let isExpected: Bool
+                if case .sheet(.interact(let payload)) = request.payload {
+                    isExpected =
+                        request.command == .sheet(.interact)
+                        && payload.full
+                        && payload.steps == expectedSteps
+                } else {
+                    isExpected = false
+                }
                 return try JSONEncoder().encode(
                     DenIPCResponse.success(snapshot: isExpected ? "full" : "unexpected")
                 )
@@ -118,27 +143,57 @@ struct DenSheetCommandTests {
         try server.start { data in
             do {
                 let request = try JSONDecoder().decode(DenIPCRequest.self, from: data)
-                let steps = try JSONDecoder().decode(
-                    [DenSheetInteractStep].self,
-                    from: Data((request.args.first ?? "").utf8)
-                )
                 let expectedSteps: [DenSheetInteractStep] = [
                     DenSheetInteractStep(
                         line: 2,
                         text: "click --role button --name \"Search items\" --exact",
-                        args: ["click", "--role", "button", "--name", "Search items", "--exact"]
+                        command: .click,
+                        payload: .click(
+                            DenSheetClickPayload(
+                                target: nil,
+                                role: "button",
+                                name: "Search items",
+                                exact: true,
+                                newBoard: false,
+                                focus: false
+                            )
+                        )
                     ),
                     DenSheetInteractStep(
                         line: 2,
                         text: "wait #results --state visible",
-                        args: ["wait", "#results", "--state", "visible"]
+                        command: .wait,
+                        payload: .wait(
+                            DenSheetWaitPayload(
+                                target: "#results",
+                                state: "visible",
+                                url: nil,
+                                text: nil,
+                                loadState: nil,
+                                function: nil,
+                                timeout: 10
+                            )
+                        )
                     ),
-                    DenSheetInteractStep(line: 3, text: "fill @e2 'penguin'", args: ["fill", "@e2", "penguin"]),
-                    DenSheetInteractStep(line: 4, text: "press Enter", args: ["press", "Enter"]),
+                    DenSheetInteractStep(
+                        line: 3,
+                        text: "fill @e2 'penguin'",
+                        command: .fill,
+                        payload: .fill(DenSheetFillPayload(target: "@e2", value: "penguin"))
+                    ),
+                    DenSheetInteractStep(
+                        line: 4,
+                        text: "press Enter",
+                        command: .press,
+                        payload: .press(DenSheetPressPayload(key: "Enter"))
+                    ),
                 ]
-                let isExpected =
-                    request.command == .sheet(.interact)
-                    && steps == expectedSteps
+                let isExpected: Bool
+                if case .sheet(.interact(let payload)) = request.payload {
+                    isExpected = request.command == .sheet(.interact) && payload.steps == expectedSteps
+                } else {
+                    isExpected = false
+                }
                 return try JSONEncoder().encode(
                     DenIPCResponse.success(snapshot: isExpected ? "script-ok" : "unexpected")
                 )
@@ -181,14 +236,26 @@ struct DenSheetCommandTests {
         try server.start { data in
             do {
                 let request = try JSONDecoder().decode(DenIPCRequest.self, from: data)
-                let steps = try JSONDecoder().decode(
-                    [DenSheetInteractStep].self,
-                    from: Data((request.args.first ?? "").utf8)
-                )
-                let isExpected =
-                    request.command == .sheet(.interact)
-                    && steps.count == 1
-                    && steps[0].args == ["click", "@e1"]
+                let isExpected: Bool
+                if case .sheet(.interact(let payload)) = request.payload {
+                    isExpected =
+                        request.command == .sheet(.interact)
+                        && payload.steps.count == 1
+                        && payload.steps[0].command == .click
+                        && payload.steps[0].payload
+                            == .click(
+                                DenSheetClickPayload(
+                                    target: "@e1",
+                                    role: nil,
+                                    name: nil,
+                                    exact: false,
+                                    newBoard: false,
+                                    focus: false
+                                )
+                            )
+                } else {
+                    isExpected = false
+                }
                 return try JSONEncoder().encode(
                     DenIPCResponse.success(snapshot: isExpected ? "stdin-ok" : "unexpected")
                 )
@@ -237,7 +304,19 @@ struct DenSheetCommandTests {
                 let request = try JSONDecoder().decode(DenIPCRequest.self, from: data)
                 let isExpected =
                     request.command == .sheet(.click)
-                    && request.args == ["@e1", "--new-board", "--focus"]
+                    && request.payload
+                        == .sheet(
+                            .click(
+                                DenSheetClickPayload(
+                                    target: "@e1",
+                                    role: nil,
+                                    name: nil,
+                                    exact: false,
+                                    newBoard: true,
+                                    focus: true
+                                )
+                            )
+                        )
                 return try JSONEncoder().encode(
                     DenIPCResponse.success(boardId: isExpected ? "created-board-id" : "unexpected")
                 )

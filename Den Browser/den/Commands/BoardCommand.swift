@@ -25,7 +25,6 @@ struct BoardListCommand: ParsableCommand {
     func run() throws {
         try DenIPCClient.execute(
             command: .board(.list),
-            args: [],
             options: options.common,
             showBoardIDs: options.showBoardIDs)
     }
@@ -50,7 +49,6 @@ struct BoardFocusedCommand: ParsableCommand {
     func run() throws {
         try DenIPCClient.execute(
             command: .board(.focused),
-            args: [],
             options: options.common,
             showBoardIDs: options.showBoardIDs)
     }
@@ -86,11 +84,11 @@ struct BoardWebNewCommand: ParsableCommand {
     var focus: Bool = false
 
     func run() throws {
-        var args = [url]
-        if focus {
-            args.append("--focus")
-        }
-        try DenIPCClient.execute(command: .board(.web(.new)), args: args, options: options)
+        try DenIPCClient.execute(
+            command: .board(.web(.new)),
+            payload: .board(.webNew(DenBoardWebNewPayload(url: url, focus: focus))),
+            options: options
+        )
     }
 }
 
@@ -115,18 +113,16 @@ struct BoardTerminalNewCommand: ParsableCommand {
     @Flag(name: .long, help: "Focus the new terminal board") var focus = false
 
     func run() throws {
-        var args: [String] = []
-        if let path {
-            let resolved = URL(fileURLWithPath: path).standardizedFileURL.path
-            args.append(resolved)
-        }
-        if let runCommand {
-            args.append(contentsOf: ["--run", runCommand])
-        }
-        if focus {
-            args.append("--focus")
-        }
-        try DenIPCClient.execute(command: .board(.terminal(.new)), args: args, options: options)
+        let resolvedPath = path.map { URL(fileURLWithPath: $0).standardizedFileURL.path }
+        try DenIPCClient.execute(
+            command: .board(.terminal(.new)),
+            payload: .board(
+                .terminalNew(
+                    DenBoardTerminalNewPayload(path: resolvedPath, runCommand: runCommand, focus: focus)
+                )
+            ),
+            options: options
+        )
     }
 }
 
@@ -138,6 +134,6 @@ struct BoardCloseCommand: ParsableCommand {
     @OptionGroup var options: BoardTargetOptions
 
     func run() throws {
-        try DenIPCClient.execute(command: .board(.close), args: [], options: options)
+        try DenIPCClient.execute(command: .board(.close), options: options)
     }
 }

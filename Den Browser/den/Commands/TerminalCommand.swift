@@ -21,7 +21,7 @@ struct TerminalTextCommand: ParsableCommand {
     @OptionGroup var target: BoardTargetOptions
 
     func run() throws {
-        try DenIPCClient.execute(command: .terminal(.text), args: [], options: target)
+        try DenIPCClient.execute(command: .terminal(.text), options: target)
     }
 }
 
@@ -34,7 +34,11 @@ struct TerminalSendCommand: ParsableCommand {
     @Argument(help: "Text to send to the terminal") var text: String
 
     func run() throws {
-        try DenIPCClient.execute(command: .terminal(.send), args: [text], options: target)
+        try DenIPCClient.execute(
+            command: .terminal(.send),
+            payload: .terminal(.send(text: text)),
+            options: target
+        )
     }
 }
 
@@ -47,7 +51,11 @@ struct TerminalRunCommand: ParsableCommand {
     @Argument(help: "Shell command to run") var command: String
 
     func run() throws {
-        try DenIPCClient.execute(command: .terminal(.run), args: [command], options: target)
+        try DenIPCClient.execute(
+            command: .terminal(.run),
+            payload: .terminal(.run(command: command)),
+            options: target
+        )
     }
 }
 
@@ -61,6 +69,10 @@ struct TerminalKillCommand: ParsableCommand {
     var signal: String = "TERM"
 
     func run() throws {
-        try DenIPCClient.execute(command: .terminal(.kill), args: [signal], options: target)
+        try DenIPCClient.execute(
+            command: .terminal(.kill),
+            payload: .terminal(.kill(signal: signal)),
+            options: target
+        )
     }
 }

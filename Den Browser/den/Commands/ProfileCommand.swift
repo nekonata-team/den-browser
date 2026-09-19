@@ -21,7 +21,7 @@ struct ProfileListCommand: ParsableCommand {
     @OptionGroup var options: CLIOptions
 
     func run() throws {
-        try DenIPCClient.execute(command: .profile(.list), args: [], options: options)
+        try DenIPCClient.execute(command: .profile(.list), options: options)
     }
 }
 
@@ -37,7 +37,10 @@ struct ProfileOpenCommand: ParsableCommand {
     @OptionGroup var options: CLIOptions
 
     func run() throws {
-        let args = [profileID].compactMap { $0 }
-        try DenIPCClient.execute(command: .profile(.open), args: args, options: options)
+        try DenIPCClient.execute(
+            command: .profile(.open),
+            payload: .profile(.open(profileID: profileID)),
+            options: options
+        )
     }
 }

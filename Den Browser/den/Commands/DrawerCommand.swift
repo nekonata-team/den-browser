@@ -22,7 +22,7 @@ struct DrawerListCommand: ParsableCommand {
     @OptionGroup var options: CLIOptions
 
     func run() throws {
-        try DenIPCClient.execute(command: .drawer(.list), args: [], options: options)
+        try DenIPCClient.execute(command: .drawer(.list), options: options)
     }
 }
 
@@ -36,11 +36,11 @@ struct DrawerKeepCommand: ParsableCommand {
     @Option(name: .long, help: "Optional title for the Drawer Item") var title: String?
 
     func run() throws {
-        var args = [url]
-        if let title {
-            args.append(contentsOf: ["--title", title])
-        }
-        try DenIPCClient.execute(command: .drawer(.keep), args: args, options: options)
+        try DenIPCClient.execute(
+            command: .drawer(.keep),
+            payload: .drawer(.keep(DenDrawerKeepPayload(url: url, title: title))),
+            options: options
+        )
     }
 }
 
@@ -53,7 +53,11 @@ struct DrawerPlaceCommand: ParsableCommand {
     @Argument(help: "ID of the Drawer Item to place") var itemID: String
 
     func run() throws {
-        try DenIPCClient.execute(command: .drawer(.place), args: [itemID], options: options)
+        try DenIPCClient.execute(
+            command: .drawer(.place),
+            payload: .drawer(.place(id: itemID)),
+            options: options
+        )
     }
 }
 
@@ -66,6 +70,10 @@ struct DrawerDiscardCommand: ParsableCommand {
     @Argument(help: "ID of the Drawer Item to discard") var itemID: String
 
     func run() throws {
-        try DenIPCClient.execute(command: .drawer(.discard), args: [itemID], options: options)
+        try DenIPCClient.execute(
+            command: .drawer(.discard),
+            payload: .drawer(.discard(id: itemID)),
+            options: options
+        )
     }
 }

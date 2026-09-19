@@ -127,7 +127,7 @@
 - **Verification:** `cleanupWindow` / `closeWindows` / `releaseSharedResourcesIfUnused` へ集約。`releaseWindowResources` で `zmxSessions.stop()` と各Taskをキャンセル・破棄。複数Window、最後のWindow、Profile削除失敗、reset、遅延callbackのfocused lifecycle testを追加し、`rtk just check` を通過。GhosttyのSurface寿命変更は別台帳へ委ねます。
 
 <a id="task-009"></a>
-### [ ] TASK-009：IPC引数を型付きpayloadへ移行する
+### [/] TASK-009：IPC引数を型付きpayloadへ移行する
 
 - **Priority / Purpose:** P2。ArgumentParserで解析済みの値を、サーバーが独自に再解析する重複をなくします。
 - **Prerequisites:** なし。
@@ -135,6 +135,7 @@
 - **Work:** コマンドごとの最小のCodable payloadを定義し、値とフラグを分離します。通常CLIとinteractで同じ検証・実行経路を使います。直接ソケットを使うクライアントの互換性方針を確認し、移行方法を文書化します。
 - **Acceptance Criteria:** ハイフンで始まる名前、空文字、オプション名と同じ文字列を値として保持できます。未知・欠落・不正な入力は副作用前に拒否します。不要な独自コマンドフレームワークを追加しません。
 - **Verification:** payload round-trip、CLI解析、サーバー境界のfocused test。`just check`。`docs/cli.md`と必要なagent skill記載を更新します。
+- **Current Status:** 通常CLIと`interact`をtyped payloadへ移行し、旧`args`形式を拒否する直接IPC契約と`docs/cli.md`を追加済み。コミット前。
 
 <a id="task-010"></a>
 ### [ ] TASK-010：URL入力の解決と検証を統一する

@@ -9,6 +9,6 @@ struct HealthCommand: ParsableCommand {
     @OptionGroup var options: CLIOptions
 
     func run() throws {
-        try DenIPCClient.execute(command: .health, args: [], options: options)
+        try DenIPCClient.execute(command: .health, options: options)
     }
 }

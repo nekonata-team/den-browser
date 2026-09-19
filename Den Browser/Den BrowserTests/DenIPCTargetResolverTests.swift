@@ -170,24 +170,22 @@ struct DenIPCTargetResolverTests {
         #expect(store.board(for: boardID) != nil)
     }
 
-    @Test func boardCloseRejectsPositionalBoardID() async throws {
+    @Test func requestRejectsLegacyArguments() throws {
         // Arrange
-        let directory = temporaryProfileDirectory()
-        defer { try? FileManager.default.removeItem(at: directory) }
-        let manager = makeProfileManager(directory: directory)
-        let store = try #require(manager.store(for: manager.personalProfileID))
-        let boardID = try #require(store.createBoard(urlString: "https://example.com/"))
-        let service = DenIPCService(profileManager: manager)
-
-        let request = DenIPCRequest(command: .board(.close), args: [boardID.uuidString])
+        let requestData = try JSONEncoder().encode(DenIPCRequest(command: .board(.close)))
+        var requestObject = try #require(
+            JSONSerialization.jsonObject(with: requestData) as? [String: Any]
+        )
+        requestObject["args"] = [UUID().uuidString]
+        let legacyRequestData = try JSONSerialization.data(withJSONObject: requestObject)
 
         // Act
-        let response = await service.handleRequest(request)
+        let decode = {
+            try JSONDecoder().decode(DenIPCRequest.self, from: legacyRequestData)
+        }
 
-        // Assert: The deprecated positional form must not fall back to the ambient target.
-        #expect(response.isOk == false)
-        #expect(response.error?.contains("Usage: den board close [--board <id>]") == true)
-        #expect(store.board(for: boardID) != nil)
+        // Assert: Legacy positional arguments cannot be silently treated as an ambient request.
+        #expect(throws: DenIPCInputError.legacyArguments, performing: decode)
     }
 
     @Test func resolveTargetWebBoardWithExplicitProfileFindsBoardInThatProfile() throws {

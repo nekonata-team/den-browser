@@ -28,23 +28,51 @@ private struct CLIOutputOptions {
 enum DenIPCClient {
     static func execute(
         command: DenIPCCommand,
-        args: [String],
         options: CLIOptions,
         showBoardIDs: Bool = false
     ) throws {
         try execute(
             command: command,
-            args: args,
+            payload: nil,
             options: options,
             output: CLIOutputOptions(isJSON: options.isJSON, showBoardIDs: showBoardIDs),
             boardID: nil
         )
     }
 
-    static func execute(command: DenIPCCommand, args: [String], options: BoardTargetOptions) throws {
+    static func execute(command: DenIPCCommand, options: BoardTargetOptions) throws {
         try execute(
             command: command,
-            args: args,
+            payload: nil,
+            options: options.common,
+            output: CLIOutputOptions(isJSON: options.common.isJSON, showBoardIDs: false),
+            boardID: options.boardID
+        )
+    }
+
+    static func execute(
+        command: DenIPCCommand,
+        payload: DenIPCRequestPayload,
+        options: CLIOptions,
+        showBoardIDs: Bool = false
+    ) throws {
+        try execute(
+            command: command,
+            payload: payload,
+            options: options,
+            output: CLIOutputOptions(isJSON: options.isJSON, showBoardIDs: showBoardIDs),
+            boardID: nil
+        )
+    }
+
+    static func execute(
+        command: DenIPCCommand,
+        payload: DenIPCRequestPayload,
+        options: BoardTargetOptions
+    ) throws {
+        try execute(
+            command: command,
+            payload: payload,
             options: options.common,
             output: CLIOutputOptions(isJSON: options.common.isJSON, showBoardIDs: false),
             boardID: options.boardID
@@ -53,7 +81,7 @@ enum DenIPCClient {
 
     private static func execute(
         command: DenIPCCommand,
-        args: [String],
+        payload: DenIPCRequestPayload?,
         options: CLIOptions,
         output: CLIOutputOptions,
         boardID: String?
@@ -71,7 +99,7 @@ enum DenIPCClient {
 
         let request = DenIPCRequest(
             command: command,
-            args: args,
+            payload: payload,
             boardID: boardID,
             deskID: nil,
             callerBoardID: callerBoardID,
