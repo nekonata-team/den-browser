@@ -76,9 +76,10 @@ enum TerminalConfigurationSource {
             contents.append("command = /bin/zsh -f")
         }
 
-        // Cmd-Q belongs to Den, not the embedded Ghostty surface.
+        // Den owns app-level shortcuts, not the embedded Ghostty surface.
         if !contents.isEmpty { contents.append("\n") }
         contents.append("keybind = super+q=unbind")
+        contents.append("\nkeybind = super+shift+w=unbind")
 
         return Resolution(
             configSource: .generated(contents),

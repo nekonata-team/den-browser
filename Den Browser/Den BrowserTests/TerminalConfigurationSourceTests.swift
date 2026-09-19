@@ -299,7 +299,7 @@ struct TerminalConfigurationSourceTests {
         #expect(ghostty_config_key_is_binding(config, right))
     }
 
-    @Test func embeddedConfigurationUnbindsGhosttyQuitShortcut() throws {
+    @Test func embeddedConfigurationUnbindsDenAppShortcuts() throws {
         // Arrange
         let resolution = TerminalConfigurationSource.make(
             arguments: ["--ui-testing"])
@@ -308,6 +308,7 @@ struct TerminalConfigurationSourceTests {
             return
         }
         #expect(contents.contains("keybind = super+q=unbind"))
+        #expect(contents.contains("keybind = super+shift+w=unbind"))
 
         let generatedURL = FileManager.default.temporaryDirectory
             .appending(path: "den-browser-terminal-quit-" + UUID().uuidString + ".conf")
@@ -331,6 +332,13 @@ struct TerminalConfigurationSourceTests {
         quit.mods = GHOSTTY_MODS_SUPER
         quit.keycode = 12
         #expect(!ghostty_config_key_is_binding(config, quit))
+
+        var closeProfileWindow = ghostty_input_key_s()
+        closeProfileWindow.action = GHOSTTY_ACTION_PRESS
+        closeProfileWindow.mods = ghostty_input_mods_e(
+            rawValue: GHOSTTY_MODS_SUPER.rawValue | GHOSTTY_MODS_SHIFT.rawValue)
+        closeProfileWindow.keycode = 13
+        #expect(!ghostty_config_key_is_binding(config, closeProfileWindow))
     }
 }
 

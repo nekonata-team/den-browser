@@ -262,6 +262,24 @@ final class Den_BrowserUITests: XCTestCase, BDD {
     }
 
     @MainActor
+    func testCloseProfileWindowShortcutWorksFromTerminalBoard() throws {
+        let app = launchApp(boardCount: .one, terminalBoard: true)
+        let window = app.windows["UI Testing · TERMINAL INPUT"]
+
+        given("a Terminal Board is focused") {
+            XCTAssertTrue(window.waitForExistence(timeout: 5))
+        }
+
+        when("closing the Profile Window with Command-Shift-W") {
+            app.typeKey("w", modifierFlags: [.command, .shift])
+        }
+
+        then("the Profile Window closes") {
+            XCTAssertTrue(window.waitForNonExistence(timeout: 5))
+        }
+    }
+
+    @MainActor
     func testDirectDeskSwitchAndDenModeFocusCycle() throws {
         let app = launchApp(fixture: .focusedNonLeadingBoard)
         let alpha = board(.alpha, in: app)
