@@ -3,7 +3,6 @@ import Foundation
 
 nonisolated final class DenSocketServer: @unchecked Sendable {
     private var listeningSource: (any DispatchSourceRead)?
-    private var listeningFD: Int32 = -1
     private let socketPath: String
     private let queue = DispatchQueue(label: "dev.nekonata.den.ipc.server", qos: .userInitiated)
 
@@ -80,16 +79,13 @@ nonisolated final class DenSocketServer: @unchecked Sendable {
             throw POSIXError(POSIXErrorCode(rawValue: err) ?? .EIO)
         }
 
-        self.listeningFD = socketDescriptor
-
         let source = DispatchSource.makeReadSource(fileDescriptor: socketDescriptor, queue: queue)
         source.setEventHandler { [weak self, weak source] in
             guard let self, let source, !source.isCancelled else { return }
             self.acceptConnections(listeningFD: socketDescriptor, handler: handler)
         }
-        source.setCancelHandler { [socketDescriptor, socketPath = self.socketPath] in
+        source.setCancelHandler { [socketDescriptor] in
             close(socketDescriptor)
-            unlink(socketPath)
         }
         source.resume()
         self.listeningSource = source
@@ -99,10 +95,7 @@ nonisolated final class DenSocketServer: @unchecked Sendable {
         if let source = listeningSource {
             listeningSource = nil
             source.cancel()
-        } else if listeningFD >= 0 {
-            close(listeningFD)
             unlink(socketPath)
-            listeningFD = -1
         }
     }
 

@@ -57,14 +57,14 @@
 - **Verification:** `DenIPCTargetResolverTests` に新規focused unit test（Profile初期Desk ID一意性、重複Desk ID下でのBoard所有Store解決、Profile指定有無での同一Store解決、存在しないdeskIDでのフォールバック防止）を追加。`just check` 実行（lint 0 violations、unit tests 510件全パス）。実機での手動操作は未実施。
 
 <a id="task-002"></a>
-### [ ] TASK-002：ソケットの停止と再起動を安全にする
+### [x] TASK-002：ソケットの停止と再起動を安全にする
 
 - **Priority / Purpose:** P1。FDの二重解放と、古い終了処理による新しいソケットの削除を防ぎます。
 - **Prerequisites:** なし。
 - **Entry Points:** `IPC/DenSocketServer.swift`、`Den/IPC/DenIPCService.swift`。
 - **Work:** FD、DispatchSource、ソケットパスの解放責任を一つにします。start失敗、stop、deinit、再起動の所有権を明確にし、旧世代のcancel handlerが新世代のパスを削除しないようにします。
 - **Acceptance Criteria:** stopは繰り返しても安全です。FD番号の再利用後も他資源を閉じず、再起動後の接続が維持されます。
-- **Verification:** 一時ソケットを使う停止・FD再利用・再起動の回帰テスト。固定sleep依存を避け、終了の同期点を観測します。`just check`。
+- **Verification:** `DenSocketServerTests` に停止・FD再利用（ダミーpipeへの非干渉）・即座再起動後の接続維持・同期終了観測の回帰テストを追加。`just check` 実行（lint 0 violations、unit tests 512件全パス）。
 
 <a id="task-003"></a>
 ### [ ] TASK-003：IPC切断と通信資源の上限を処理する
