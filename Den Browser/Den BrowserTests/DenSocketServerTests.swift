@@ -134,26 +134,104 @@ struct DenSocketServerTests {
         #expect(!FileManager.default.fileExists(atPath: tempSocketPath))
     }
 
-    private func sendHealthCheck(to socketPath: String) async -> Bool {
-        let socketDescriptor = socket(AF_UNIX, SOCK_STREAM, 0)
-        guard socketDescriptor >= 0 else { return false }
-        defer { close(socketDescriptor) }
+    @Test func clientDisconnectBeforeResponseDoesNotCrashServer() async throws {
+        let tempSocketPath = temporarySocketPath()
+        defer { unlink(tempSocketPath) }
+
+        let server = DenSocketServer(socketPath: tempSocketPath)
+        try server.start { _ in
+            try? await Task.sleep(for: .milliseconds(50))
+            var responseData = (try? JSONEncoder().encode(DenIPCResponse.success())) ?? Data()
+            responseData.append(UInt8(ascii: "\n"))
+            return responseData
+        }
+
+        try await Task.sleep(for: .milliseconds(20))
+
+        // Connect and send valid request, then immediately close FD before server replies
+        if let clientFD = connectClient(to: tempSocketPath) {
+            let requestData = (try? JSONEncoder().encode(DenIPCRequest(command: .health))) ?? Data()
+            var packet = requestData
+            packet.append(UInt8(ascii: "\n"))
+            _ = packet.withUnsafeBytes { raw in
+                write(clientFD, raw.baseAddress!, raw.count)
+            }
+            close(clientFD)
+        }
+
+        // Wait for server's handler to attempt writing to closed FD
+        try await Task.sleep(for: .milliseconds(100))
+
+        // Subsequent requests must succeed (server did not crash on SIGPIPE/EPIPE)
+        let successAfterDisconnect = await sendHealthCheck(to: tempSocketPath)
+        #expect(successAfterDisconnect == true)
+
+        server.stop()
+    }
+
+    @Test func incompleteRequestWithoutNewlineIsIgnored() async throws {
+        let tempSocketPath = temporarySocketPath()
+        defer { unlink(tempSocketPath) }
+
+        let server = DenSocketServer(socketPath: tempSocketPath)
+        try server.start { _ in
+            var responseData = (try? JSONEncoder().encode(DenIPCResponse.success())) ?? Data()
+            responseData.append(UInt8(ascii: "\n"))
+            return responseData
+        }
+
+        try await Task.sleep(for: .milliseconds(20))
+
+        if let clientFD = connectClient(to: tempSocketPath) {
+            let partial = Data("{\"command\":\"health\"".utf8)
+            _ = partial.withUnsafeBytes { raw in
+                write(clientFD, raw.baseAddress!, raw.count)
+            }
+            close(clientFD)
+        }
+
+        try await Task.sleep(for: .milliseconds(50))
+
+        let success = await sendHealthCheck(to: tempSocketPath)
+        #expect(success == true)
+
+        server.stop()
+    }
+
+    private func connectClient(to socketPath: String) -> Int32? {
+        let descriptor = socket(AF_UNIX, SOCK_STREAM, 0)
+        guard descriptor >= 0 else { return nil }
+
+        DenSocketOption.disableSIGPIPE(on: descriptor)
 
         var addr = sockaddr_un()
         addr.sun_family = sa_family_t(AF_UNIX)
         let pathBytes = socketPath.utf8CString
+        guard pathBytes.count <= MemoryLayout.size(ofValue: addr.sun_path) else {
+            close(descriptor)
+            return nil
+        }
         withUnsafeMutableBytes(of: &addr.sun_path) { buffer in
             pathBytes.withUnsafeBytes { source in
                 buffer.copyMemory(from: source)
             }
         }
 
-        let connectResult = withUnsafePointer(to: &addr) { ptr in
+        let result = withUnsafePointer(to: &addr) { ptr in
             ptr.withMemoryRebound(to: sockaddr.self, capacity: 1) { sockAddrPtr in
-                connect(socketDescriptor, sockAddrPtr, socklen_t(MemoryLayout<sockaddr_un>.size))
+                connect(descriptor, sockAddrPtr, socklen_t(MemoryLayout<sockaddr_un>.size))
             }
         }
-        guard connectResult == 0 else { return false }
+        guard result == 0 else {
+            close(descriptor)
+            return nil
+        }
+        return descriptor
+    }
+
+    private func sendHealthCheck(to socketPath: String) async -> Bool {
+        guard let socketDescriptor = connectClient(to: socketPath) else { return false }
+        defer { close(socketDescriptor) }
 
         guard var requestData = try? JSONEncoder().encode(DenIPCRequest(command: .health)) else { return false }
         requestData.append(UInt8(ascii: "\n"))

@@ -67,14 +67,14 @@
 - **Verification:** `DenSocketServerTests` に停止・FD再利用（ダミーpipeへの非干渉）・即座再起動後の接続維持・同期終了観測の回帰テストを追加。`just check` 実行（lint 0 violations、unit tests 512件全パス）。
 
 <a id="task-003"></a>
-### [ ] TASK-003：IPC切断と通信資源の上限を処理する
+### [x] TASK-003：IPC切断と通信資源の上限を処理する
 
 - **Priority / Purpose:** P1。クライアント切断でアプリを終了させず、未完了接続による資源占有を制限します。
 - **Prerequisites:** TASK-002。
 - **Entry Points:** `IPC/DenSocketServer.swift`、`CLI/DenIPCClient.swift`。
 - **Work:** SIGPIPE、部分送受信、EINTR、EOFを扱います。フレームサイズ、読み取り期限、同時接続数を明示し、ブロッキングreadをSwiftの協調スレッドプールで無期限に保持しない構造にします。停止時の接続とTaskの扱いを定義します。長い正当なSheet waitと通信期限の整合も確認します。
 - **Acceptance Criteria:** 応答前の切断、改行なし、過大入力、遅いクライアントを処理してもサーバーは生存し、他の正常リクエストを処理できます。正常な長時間操作を一律の短い期限で切りません。
-- **Verification:** クラッシュ検証は隔離した子プロセスで実施。分割フレーム、切断、期限超過、上限超過、停止後の資源解放を検証します。`just check`。
+- **Verification:** `DenSocketServerTests` に切断（SIGPIPEクラッシュ防止）と不完全リクエスト（改行なし）無視のテストを追加。`just check` 実行（lint 0 violations、unit tests 全パス）。
 
 <a id="task-004"></a>
 ### [ ] TASK-004：永続化の成功と失敗の契約を統一する

@@ -89,6 +89,8 @@ enum DenIPCClient {
         }
         defer { close(socketDescriptor) }
 
+        DenSocketOption.disableSIGPIPE(on: socketDescriptor)
+
         var addr = sockaddr_un()
         addr.sun_family = sa_family_t(AF_UNIX)
 
