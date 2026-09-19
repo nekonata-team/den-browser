@@ -97,14 +97,14 @@
 - **Verification:** 保存順序、集約、終了、失敗後の再試行のfocused testと同条件の前後計測。`just check`。
 
 <a id="task-006"></a>
-### [ ] TASK-006：ダウンロード成功まで既存ファイルを保護する
+### [x] TASK-006：ダウンロード成功まで既存ファイルを保護する
 
 - **Priority / Purpose:** P1。通信失敗・キャンセルによる上書き先の元ファイル消失を防ぎます。
 - **Prerequisites:** なし。
 - **Entry Points:** `Den/BaseWebRuntime.swift`。
 - **Work:** 保存先決定時の既存ファイル削除をやめ、一時保存と成功後の置換に分けます。キャンセル、置換失敗、runtime破棄時の一時ファイルと通知の扱いを揃えます。
 - **Acceptance Criteria:** 完了前の失敗では元ファイルが保持されます。成功通知は置換完了後だけ出ます。一時ファイルを放置しません。
-- **Verification:** 保存先処理のunit testと、必要なWebKit download境界の検証。実機操作は別途明示的に依頼された場合に行います。`just check`。
+- **Verification:** 一時ファイルダウンロード・完了時のアトミック置換・失敗時の元ファイル保護と一時ファイル削除・runtime破棄時のクリーンアップのユニットテスト（`BoardRuntimeWebUITests`）を追加。`just check` 実行（lint 0 violations、全テストパス）。
 
 <a id="task-007"></a>
 ### [ ] TASK-007：Board作成と複製の共通処理を統合する

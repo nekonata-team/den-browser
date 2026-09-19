@@ -465,6 +465,131 @@ struct BoardRuntimeWebUITests {
             )
         )
     }
+
+    @Test func downloadPreservesExistingFileUntilFinishedAndReplacesAtomically() throws {
+        // Arrange
+        let directory = FileManager.default.temporaryDirectory
+            .appending(path: "download-test-\(UUID().uuidString)", directoryHint: .isDirectory)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+
+        let destinationURL = directory.appending(path: "target.pdf")
+        let originalData = Data("original content".utf8)
+        try originalData.write(to: destinationURL)
+
+        var finishedFilename: String?
+        let runtime = BoardRuntime(
+            board: BoardState(label: "Board", width: 320, currentSheetURL: nil),
+            websiteDataStore: .nonPersistent(),
+            sheetNavigation: SheetNavigationManager(scriptSource: ""),
+            sheetScale: 100,
+            sheetNavigationActions: noOpSheetNavigationActions(),
+            events: .init(
+                onChange: { _, _, _ in },
+                onFullscreenChange: nil,
+                onDownloadFinished: { filename in finishedFilename = filename },
+                onDownloadFailed: { _ in }
+            )
+        )
+        defer { runtime.dispose() }
+
+        let tempURL = BaseWebRuntime.temporaryDownloadURL(for: destinationURL)
+        let downloadID = ObjectIdentifier(NSObject())
+        runtime.registerPendingDownload(for: downloadID, destinationURL: destinationURL, temporaryURL: tempURL)
+
+        let newData = Data("new downloaded content".utf8)
+        try newData.write(to: tempURL)
+
+        #expect(try Data(contentsOf: destinationURL) == originalData)
+        #expect(FileManager.default.fileExists(atPath: tempURL.path))
+
+        // Act
+        let completed = runtime.completeDownload(for: downloadID)
+
+        // Assert
+        #expect(completed)
+        #expect(finishedFilename == "target.pdf")
+        #expect(try Data(contentsOf: destinationURL) == newData)
+        #expect(!FileManager.default.fileExists(atPath: tempURL.path))
+    }
+
+    @Test func downloadFailureKeepsOriginalFileAndDeletesTemporaryFile() throws {
+        // Arrange
+        let directory = FileManager.default.temporaryDirectory
+            .appending(path: "download-test-\(UUID().uuidString)", directoryHint: .isDirectory)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+
+        let destinationURL = directory.appending(path: "important.pdf")
+        let originalData = Data("do not delete me".utf8)
+        try originalData.write(to: destinationURL)
+
+        var failedFilename: String?
+        let runtime = BoardRuntime(
+            board: BoardState(label: "Board", width: 320, currentSheetURL: nil),
+            websiteDataStore: .nonPersistent(),
+            sheetNavigation: SheetNavigationManager(scriptSource: ""),
+            sheetScale: 100,
+            sheetNavigationActions: noOpSheetNavigationActions(),
+            events: .init(
+                onChange: { _, _, _ in },
+                onFullscreenChange: nil,
+                onDownloadFinished: { _ in },
+                onDownloadFailed: { filename in failedFilename = filename }
+            )
+        )
+        defer { runtime.dispose() }
+
+        let tempURL = BaseWebRuntime.temporaryDownloadURL(for: destinationURL)
+        let downloadID = ObjectIdentifier(NSObject())
+        runtime.registerPendingDownload(for: downloadID, destinationURL: destinationURL, temporaryURL: tempURL)
+
+        let partialData = Data("partial broken content".utf8)
+        try partialData.write(to: tempURL)
+
+        // Act
+        runtime.failDownload(for: downloadID)
+
+        // Assert
+        #expect(failedFilename == "important.pdf")
+        #expect(try Data(contentsOf: destinationURL) == originalData)
+        #expect(!FileManager.default.fileExists(atPath: tempURL.path))
+    }
+
+    @Test func runtimeDisposeCleansUpUnfinishedTemporaryDownloadFiles() throws {
+        // Arrange
+        let directory = FileManager.default.temporaryDirectory
+            .appending(path: "download-test-\(UUID().uuidString)", directoryHint: .isDirectory)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+
+        let destinationURL = directory.appending(path: "abandoned.pdf")
+        let runtime = BoardRuntime(
+            board: BoardState(label: "Board", width: 320, currentSheetURL: nil),
+            websiteDataStore: .nonPersistent(),
+            sheetNavigation: SheetNavigationManager(scriptSource: ""),
+            sheetScale: 100,
+            sheetNavigationActions: noOpSheetNavigationActions(),
+            events: .init(
+                onChange: { _, _, _ in },
+                onFullscreenChange: nil,
+                onDownloadFinished: { _ in },
+                onDownloadFailed: { _ in }
+            )
+        )
+
+        let tempURL = BaseWebRuntime.temporaryDownloadURL(for: destinationURL)
+        let downloadID = ObjectIdentifier(NSObject())
+        runtime.registerPendingDownload(for: downloadID, destinationURL: destinationURL, temporaryURL: tempURL)
+        try Data("in progress".utf8).write(to: tempURL)
+        #expect(FileManager.default.fileExists(atPath: tempURL.path))
+
+        // Act
+        runtime.dispose()
+
+        // Assert
+        #expect(!FileManager.default.fileExists(atPath: tempURL.path))
+    }
 }
 
 @MainActor

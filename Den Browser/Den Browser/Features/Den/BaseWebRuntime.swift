@@ -20,8 +20,13 @@ class BaseWebRuntime: NSObject, NSWindowDelegate, WKDownloadDelegate, WKNavigati
     let id: UUID
     let webView: WKWebView
 
+    struct PendingDownload: Equatable {
+        let destinationURL: URL
+        let temporaryURL: URL
+    }
+
     private var auxiliaryWindows: [ObjectIdentifier: NSWindow] = [:]
-    private var downloadFilenames: [ObjectIdentifier: String] = [:]
+    private(set) var pendingDownloads: [ObjectIdentifier: PendingDownload] = [:]
     private var urlObservation: NSKeyValueObservation?
     private var titleObservation: NSKeyValueObservation?
 
@@ -92,6 +97,7 @@ class BaseWebRuntime: NSObject, NSWindowDelegate, WKDownloadDelegate, WKNavigati
             window.close()
         }
         auxiliaryWindows.removeAll()
+        cleanupAllPendingDownloads()
         webView.closeAllMediaPresentations(completionHandler: nil)
         webView.setAllMediaPlaybackSuspended(true, completionHandler: nil)
         webView.stopLoading()
@@ -101,6 +107,13 @@ class BaseWebRuntime: NSObject, NSWindowDelegate, WKDownloadDelegate, WKNavigati
         titleObservation?.invalidate()
         urlObservation = nil
         titleObservation = nil
+    }
+
+    func cleanupAllPendingDownloads() {
+        for pending in pendingDownloads.values {
+            try? FileManager.default.removeItem(at: pending.temporaryURL)
+        }
+        pendingDownloads.removeAll()
     }
 
     // MARK: - Hooks for Subclasses
@@ -284,6 +297,27 @@ class BaseWebRuntime: NSObject, NSWindowDelegate, WKDownloadDelegate, WKNavigati
 
     // MARK: - WKDownloadDelegate
 
+    static func temporaryDownloadURL(for destinationURL: URL) -> URL {
+        let directory = destinationURL.deletingLastPathComponent()
+        let filename = destinationURL.lastPathComponent
+        let uniqueID = UUID().uuidString
+        return directory.appending(path: ".\(filename).\(uniqueID).download")
+    }
+
+    static func finalizeDownload(from temporaryURL: URL, to destinationURL: URL) throws {
+        let fileManager = FileManager.default
+        if fileManager.fileExists(atPath: destinationURL.path) {
+            _ = try fileManager.replaceItemAt(
+                destinationURL,
+                withItemAt: temporaryURL,
+                backupItemName: nil,
+                options: .withoutDeletingBackupItem
+            )
+        } else {
+            try fileManager.moveItem(at: temporaryURL, to: destinationURL)
+        }
+    }
+
     func download(
         _ download: WKDownload,
         decideDestinationUsing response: URLResponse,
@@ -301,15 +335,12 @@ class BaseWebRuntime: NSObject, NSWindowDelegate, WKDownloadDelegate, WKNavigati
                 return
             }
 
-            do {
-                if FileManager.default.fileExists(atPath: destination.path) {
-                    try FileManager.default.removeItem(at: destination)
-                }
-                self?.downloadFilenames[ObjectIdentifier(download)] = destination.lastPathComponent
-                completionHandler(destination)
-            } catch {
-                completionHandler(nil)
-            }
+            let temporaryURL = Self.temporaryDownloadURL(for: destination)
+            self?.pendingDownloads[ObjectIdentifier(download)] = PendingDownload(
+                destinationURL: destination,
+                temporaryURL: temporaryURL
+            )
+            completionHandler(temporaryURL)
         }
 
         if let window = webView.window ?? NSApp.keyWindow {
@@ -319,13 +350,38 @@ class BaseWebRuntime: NSObject, NSWindowDelegate, WKDownloadDelegate, WKNavigati
         }
     }
 
+    func registerPendingDownload(for key: ObjectIdentifier, destinationURL: URL, temporaryURL: URL) {
+        pendingDownloads[key] = PendingDownload(
+            destinationURL: destinationURL,
+            temporaryURL: temporaryURL
+        )
+    }
+
+    @discardableResult
+    func completeDownload(for key: ObjectIdentifier) -> Bool {
+        guard let pending = pendingDownloads.removeValue(forKey: key) else { return false }
+        do {
+            try Self.finalizeDownload(from: pending.temporaryURL, to: pending.destinationURL)
+            notifyDownloadFinished(filename: pending.destinationURL.lastPathComponent)
+            return true
+        } catch {
+            try? FileManager.default.removeItem(at: pending.temporaryURL)
+            notifyDownloadFailed(filename: pending.destinationURL.lastPathComponent)
+            return false
+        }
+    }
+
+    func failDownload(for key: ObjectIdentifier) {
+        guard let pending = pendingDownloads.removeValue(forKey: key) else { return }
+        try? FileManager.default.removeItem(at: pending.temporaryURL)
+        notifyDownloadFailed(filename: pending.destinationURL.lastPathComponent)
+    }
+
     func downloadDidFinish(_ download: WKDownload) {
-        let filename = downloadFilenames.removeValue(forKey: ObjectIdentifier(download)) ?? "file"
-        notifyDownloadFinished(filename: filename)
+        completeDownload(for: ObjectIdentifier(download))
     }
 
     func download(_ download: WKDownload, didFailWithError error: Error, resumeData: Data?) {
-        let filename = downloadFilenames.removeValue(forKey: ObjectIdentifier(download)) ?? "file"
-        notifyDownloadFailed(filename: filename)
+        failDownload(for: ObjectIdentifier(download))
     }
 }
