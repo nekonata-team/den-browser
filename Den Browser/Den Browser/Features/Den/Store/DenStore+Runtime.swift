@@ -71,14 +71,14 @@ extension DenStore {
     private func sheetNavigationActions(for board: BoardState) -> SheetNavigationManager.Actions {
         .init(
             onOpenBoard: { [weak self] url in
-                self?.addBoard(
+                _ = self?.createBoard(
                     urlString: url.absoluteString,
                     preferredWidth: board.width,
                     afterBoardID: board.id,
                     recentItem: .url(SheetURLPolicy.canonicalSheetURL(url)))
             },
             onOpenBoardInBackground: { [weak self] url in
-                self?.addBoard(
+                _ = self?.createBoard(
                     urlString: url.absoluteString,
                     preferredWidth: board.width,
                     afterBoardID: board.id,
@@ -95,7 +95,7 @@ extension DenStore {
                 self?.showOpenBoardPanel(initialURL: url)
             },
             onPasteURLInNewBoard: { [weak self] url in
-                self?.addBoard(
+                _ = self?.createBoard(
                     urlString: url.absoluteString,
                     preferredWidth: board.width,
                     afterBoardID: board.id,
@@ -241,7 +241,7 @@ extension DenStore {
         case .localFile(let fileURL):
             _ = NSWorkspace.shared.open(fileURL)
         case .web(let resolvedURL):
-            _ = addBoard(
+            _ = createBoard(
                 urlString: resolvedURL.absoluteString,
                 preferredWidth: board.width,
                 afterBoardID: board.id,

@@ -32,16 +32,20 @@ extension DenStore {
                 showZmxSessions(returnsToOpenBoard: temporaryContext == .openBoard)
                 return true
             }
+            let board = BoardState(
+                width: preferredWidth ?? inheritedBoardWidth,
+                zmxSessionName: sessionName)
             guard
-                addZmxBoard(
-                    sessionName: sessionName,
-                    preferredWidth: preferredWidth,
-                    afterBoardID: afterBoardID)
+                insertBoard(
+                    board,
+                    afterBoardID: afterBoardID,
+                    focus: true,
+                    origin: .interactive)
             else { return false }
-            openBoardPanelMessage = nil
             if input.count <= Self.maximumPersistedRecentInputLength {
                 saveRecentItem(.zmx(sessionName: sessionName))
             }
+            openBoardPanelMessage = nil
             return true
         }
 
@@ -58,32 +62,38 @@ extension DenStore {
             case .session(let name):
                 sessionName = name
             }
+            let board = BoardState(
+                width: preferredWidth ?? inheritedBoardWidth,
+                zellijSessionName: sessionName)
             guard
-                addZellijBoard(
-                    sessionName: sessionName,
-                    preferredWidth: preferredWidth,
-                    afterBoardID: afterBoardID)
+                insertBoard(
+                    board,
+                    afterBoardID: afterBoardID,
+                    focus: true,
+                    origin: .interactive)
             else { return false }
-            openBoardPanelMessage = nil
             if input.count <= Self.maximumPersistedRecentInputLength {
                 saveRecentItem(.zellij(sessionName: sessionName))
             }
+            openBoardPanelMessage = nil
             return true
         }
 
         if let terminal = Self.resolveTerminalInput(input) {
             switch terminal {
             case .success(let workingDirectory):
+                let recentItem =
+                    input.count <= Self.maximumPersistedRecentInputLength
+                    ? RecentItem.terminal(workingDirectory: workingDirectory)
+                    : nil
                 guard
-                    addTerminalBoard(
+                    createTerminalBoard(
                         workingDirectory: workingDirectory,
                         preferredWidth: preferredWidth,
-                        afterBoardID: afterBoardID)
+                        afterBoardID: afterBoardID,
+                        recentItem: recentItem) != nil
                 else { return false }
                 openBoardPanelMessage = nil
-                if input.count <= Self.maximumPersistedRecentInputLength {
-                    saveRecentItem(.terminal(workingDirectory: workingDirectory))
-                }
                 return true
             case .failure(let error):
                 openBoardPanelMessage = error.message
@@ -93,11 +103,11 @@ extension DenStore {
         guard let resolution = resolveOpenBoardInput(input) else { return false }
         let recentItem = input.count <= Self.maximumPersistedRecentInputLength ? resolution.item : nil
         guard
-            addBoard(
+            createBoard(
                 urlString: input,
                 preferredWidth: preferredWidth,
                 afterBoardID: afterBoardID,
-                recentItem: recentItem)
+                recentItem: recentItem) != nil
         else {
             return false
         }
@@ -121,57 +131,7 @@ extension DenStore {
     }
 
     func openBoard(recentItem: RecentItem, preferredWidth: Double? = nil, afterBoardID: UUID? = nil) {
-        switch recentItem {
-        case .url, .search:
-            openBoard(input: recentItem.displayText, preferredWidth: preferredWidth, afterBoardID: afterBoardID)
-        case .terminal(let workingDirectory):
-            switch Self.validateTerminalWorkingDirectory(workingDirectory) {
-            case .success(let resolvedWorkingDirectory):
-                guard
-                    addTerminalBoard(
-                        workingDirectory: resolvedWorkingDirectory,
-                        preferredWidth: preferredWidth,
-                        afterBoardID: afterBoardID)
-                else { return }
-                openBoardPanelMessage = nil
-                saveRecentItem(.terminal(workingDirectory: resolvedWorkingDirectory))
-            case .failure(let error):
-                openBoardPanelMessage = error.message
-            }
-        case .zellij(let sessionName):
-            guard zellijClient.isConfigured else {
-                openBoardPanelMessage =
-                    "Set an absolute Zellij executable path in Settings > Terminal."
-                return
-            }
-            guard
-                addZellijBoard(
-                    sessionName: sessionName,
-                    preferredWidth: preferredWidth,
-                    afterBoardID: afterBoardID)
-            else { return }
-            openBoardPanelMessage = nil
-            saveRecentItem(.zellij(sessionName: sessionName))
-        case .zmx(let sessionName):
-            let sessionName = sessionName.trimmingCharacters(in: .whitespacesAndNewlines)
-            if sessionName.isEmpty {
-                openBoard(input: ":zmx", preferredWidth: preferredWidth, afterBoardID: afterBoardID)
-                return
-            }
-            guard zmxClient.isConfigured else {
-                openBoardPanelMessage =
-                    "Set an absolute zmx executable path in Settings > Terminal."
-                return
-            }
-            guard
-                addZmxBoard(
-                    sessionName: sessionName,
-                    preferredWidth: preferredWidth,
-                    afterBoardID: afterBoardID)
-            else { return }
-            openBoardPanelMessage = nil
-            saveRecentItem(.zmx(sessionName: sessionName))
-        }
+        openBoard(input: recentItem.displayText, preferredWidth: preferredWidth, afterBoardID: afterBoardID)
     }
 
     static func validateTerminalWorkingDirectory(
@@ -211,29 +171,13 @@ extension DenStore {
     }
 
     @discardableResult
-    func addBoard(
-        urlString: String,
-        preferredWidth: Double? = nil,
-        afterBoardID: UUID? = nil,
-        focus: Bool = true,
-        recentItem: RecentItem? = nil
-    ) -> Bool {
-        createBoard(
-            urlString: urlString,
-            preferredWidth: preferredWidth,
-            afterBoardID: afterBoardID,
-            focus: focus,
-            recentItem: recentItem
-        ) != nil
-    }
-
-    @discardableResult
     func createTerminalBoard(
         workingDirectory: String? = nil,
         preferredWidth: Double? = nil,
         afterBoardID: UUID? = nil,
         focus: Bool = true,
-        origin: BoardOperationOrigin = .interactive
+        origin: BoardOperationOrigin = .interactive,
+        recentItem: RecentItem? = nil
     ) -> UUID? {
         let dir = workingDirectory ?? FileManager.default.homeDirectoryForCurrentUser.path
         let board = BoardState(
@@ -241,55 +185,10 @@ extension DenStore {
             workingDirectory: dir
         )
         guard insertBoard(board, afterBoardID: afterBoardID, focus: focus, origin: origin) else { return nil }
-        return board.id
-    }
-
-    @discardableResult
-    func addTerminalBoard(
-        workingDirectory: String,
-        preferredWidth: Double? = nil,
-        afterBoardID: UUID? = nil,
-        focus: Bool = true
-    ) -> Bool {
-        createTerminalBoard(
-            workingDirectory: workingDirectory,
-            preferredWidth: preferredWidth,
-            afterBoardID: afterBoardID,
-            focus: focus
-        ) != nil
-    }
-
-    @discardableResult
-    func addZellijBoard(
-        sessionName: String?,
-        preferredWidth: Double? = nil,
-        afterBoardID: UUID? = nil,
-        focus: Bool = true
-    ) -> Bool {
-        let board = BoardState(
-            width: preferredWidth ?? inheritedBoardWidth,
-            zellijSessionName: sessionName)
-        return insertBoard(board, afterBoardID: afterBoardID, focus: focus, origin: .interactive)
-    }
-
-    @discardableResult
-    func addZmxBoard(
-        sessionName: String,
-        preferredWidth: Double? = nil,
-        afterBoardID: UUID? = nil,
-        focus: Bool = true,
-        recentItem: RecentItem? = nil
-    ) -> Bool {
-        let normalizedSessionName = sessionName.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !normalizedSessionName.isEmpty else { return false }
-        let board = BoardState(
-            width: preferredWidth ?? inheritedBoardWidth,
-            zmxSessionName: normalizedSessionName)
-        guard insertBoard(board, afterBoardID: afterBoardID, focus: focus, origin: .interactive) else { return false }
         if let recentItem {
             saveRecentItem(recentItem)
         }
-        return true
+        return board.id
     }
 
     @discardableResult
@@ -469,12 +368,8 @@ extension DenStore {
     }
 
     func duplicateFocusedBoard() {
-        guard
-            let deskIndex = focusedDeskIndex,
-            let boardIndex = focusedBoardIndex(in: deskIndex)
-        else { return }
+        guard let source = focusedBoard else { return }
 
-        let source = state.desks[deskIndex].boards[boardIndex]
         if source.isZmx {
             showZmxDuplicationPanel()
             return
@@ -485,10 +380,7 @@ extension DenStore {
                 width: source.width,
                 workingDirectory: workingDirectory,
                 customLabel: source.customLabel)
-            state.desks[deskIndex].boards.insert(board, at: boardIndex + 1)
-            state.desks[deskIndex].focusedBoardID = board.id
-            isDenMode = false
-            save()
+            insertBoard(board, afterBoardID: source.id, focus: true, origin: .interactive)
             return
         }
         if source.isZellij {
@@ -497,16 +389,11 @@ extension DenStore {
                 width: source.width,
                 zellijSessionName: source.zellijSessionName,
                 customLabel: source.customLabel)
-            state.desks[deskIndex].boards.insert(board, at: boardIndex + 1)
-            state.desks[deskIndex].focusedBoardID = board.id
-            isDenMode = false
-            save()
+            insertBoard(board, afterBoardID: source.id, focus: true, origin: .interactive)
             return
         }
         duplicateBoard(
             source,
-            deskIndex: deskIndex,
-            boardIndex: boardIndex,
             currentSheetURL: source.currentSheetURL
         )
     }
@@ -522,11 +409,9 @@ extension DenStore {
     @discardableResult
     func duplicateFocusedZmxBoard(suffix: String) -> Bool {
         guard
-            let deskIndex = focusedDeskIndex,
-            let boardIndex = focusedBoardIndex(in: deskIndex),
-            let sessionName = state.desks[deskIndex].boards[boardIndex].zmxSessionName
+            let source = focusedBoard,
+            let sessionName = source.zmxSessionName
         else { return false }
-        let source = state.desks[deskIndex].boards[boardIndex]
 
         guard let activeSessionNames = zmxClient.activeSessionNames() else {
             showToast("Could not inspect active zmx sessions.", style: .warning)
@@ -551,22 +436,14 @@ extension DenStore {
             workingDirectory: workingDirectory,
             rootSessionName: rootSessionName,
             customLabel: source.customLabel)
-        state.desks[deskIndex].boards.insert(board, at: boardIndex + 1)
-        state.desks[deskIndex].focusedBoardID = board.id
-        setTemporaryContext(nil)
-        isDenMode = false
-        save()
+        guard insertBoard(board, afterBoardID: source.id, focus: true, origin: .interactive) else { return false }
         saveRecentItem(.zmx(sessionName: newSessionName))
         return true
     }
 
     func duplicateFocusedBoardFromFirstSheet() {
-        guard
-            let deskIndex = focusedDeskIndex,
-            let boardIndex = focusedBoardIndex(in: deskIndex)
-        else { return }
+        guard let source = focusedBoard else { return }
 
-        let source = state.desks[deskIndex].boards[boardIndex]
         if source.isZmx {
             duplicateFocusedZmxBoard(suffix: "")
             return
@@ -574,8 +451,6 @@ extension DenStore {
         guard let firstSheetURL = source.firstSheetURL else { return }
         duplicateBoard(
             source,
-            deskIndex: deskIndex,
-            boardIndex: boardIndex,
             currentSheetURL: firstSheetURL,
             firstSheetURL: firstSheetURL
         )
@@ -583,8 +458,6 @@ extension DenStore {
 
     private func duplicateBoard(
         _ source: BoardState,
-        deskIndex: Int,
-        boardIndex: Int,
         currentSheetURL: URL?,
         firstSheetURL: URL? = nil
     ) {
@@ -596,10 +469,7 @@ extension DenStore {
             customLabel: source.customLabel,
             sheetNavigationPaused: source.sheetNavigationPaused
         )
-        state.desks[deskIndex].boards.insert(board, at: boardIndex + 1)
-        state.desks[deskIndex].focusedBoardID = board.id
-        isDenMode = false
-        save()
+        insertBoard(board, afterBoardID: source.id, focus: true, origin: .interactive)
     }
 
     func renameFocusedBoard(to newLabel: String) {

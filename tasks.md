@@ -107,14 +107,14 @@
 - **Verification:** 一時ファイルダウンロード・完了時のアトミック置換・失敗時の元ファイル保護と一時ファイル削除・runtime破棄時のクリーンアップのユニットテスト（`BoardRuntimeWebUITests`）を追加。`just check` 実行（lint 0 violations、全テストパス）。
 
 <a id="task-007"></a>
-### [ ] TASK-007：Board作成と複製の共通処理を統合する
+### [x] TASK-007：Board作成と複製の共通処理を統合する
 
 - **Priority / Purpose:** P2。入口による検証、配置、focus、Recent、保存の違いを明示して重複を減らします。
 - **Prerequisites:** TASK-001、TASK-004。
 - **Entry Points:** `Den/Store/DenStore+BoardLifecycle.swift`、`Den/Board/BoardInputResolver.swift`、`Den/IPC/DenIPCService.swift`。
 - **Work:** 通常入力、Recent、Essential、CLI、Drawer Placement、複製の呼び出しを列挙します。入力解決、Board値の生成、挿入後処理を整理し、複製の直接配列操作も共通の挿入契約へ寄せます。Board種別固有の生成と意図的なforeground／background差は維持します。
 - **Acceptance Criteria:** 同じ意図の操作は入口にかかわらず同じ配置と保存結果になります。First Sheet、customLabel、Sheet Navigation pause、Terminal種別、Recent記録方針を回帰させません。
-- **Verification:** 既存テストを再利用し、不足する入口間の同等性と意図的な差だけをfocused testで保護します。`just check`。
+- **Verification:** 複製の直接配列操作を `insertBoard` 経由へ統一（一時コンテキストリセットや状態クリーンアップの保証）。`openBoard(recentItem:)` の重複 switch 文や薄いラッパーを排除し `openBoard(input:)` へ集約。Focused unit test（`DenStoreBoardTests`）を追加し、`rtk just check` を通過。
 
 <a id="task-008"></a>
 ### [ ] TASK-008：Windowとruntimeの終了処理を集約する

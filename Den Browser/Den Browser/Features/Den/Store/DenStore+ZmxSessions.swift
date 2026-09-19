@@ -40,12 +40,9 @@ extension DenStore {
             hideZmxSessions(returnToSource: false)
             return
         }
-        guard
-            addZmxBoard(
-                sessionName: sessionName,
-                recentItem: .zmx(
-                    sessionName: sessionName.trimmingCharacters(in: .whitespacesAndNewlines)))
-        else { return }
+        let trimmed = sessionName.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        openBoard(input: ":zmx \(trimmed)")
     }
 
     func openSelectedZmxSession() {

@@ -217,7 +217,7 @@ final class DenStore {
         case .drawerPreview:
             keepInDrawer(url)
         case .focusedBoard:
-            addBoard(
+            _ = createBoard(
                 urlString: url.absoluteString,
                 preferredWidth: focusedBoard?.width,
                 afterBoardID: focusedBoard?.id,

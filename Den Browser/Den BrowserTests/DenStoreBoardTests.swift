@@ -379,7 +379,7 @@ struct DenStoreBoardTests {
         let store = DenStore(state: DenState(desks: [desk], focusedDeskID: desk.id))
 
         store.prepareBoardLinkFocus(source.id)
-        #expect(store.addBoard(urlString: "https://focused.example", afterBoardID: source.id))
+        #expect(store.createBoard(urlString: "https://focused.example", afterBoardID: source.id) != nil)
 
         #expect(store.pendingBoardLinkFocus == nil)
         #expect(store.focusedBoard?.currentSheetURL?.host == "focused.example")
@@ -392,10 +392,10 @@ struct DenStoreBoardTests {
         let store = DenStore(state: DenState(desks: [desk], focusedDeskID: desk.id))
 
         #expect(
-            store.addBoard(
+            store.createBoard(
                 urlString: "https://background.example",
                 afterBoardID: source.id,
-                focus: false))
+                focus: false) != nil)
         let intent = try #require(store.pendingBoardLinkFocus)
         #expect(intent.origin == .interactive)
         #expect(store.focusedBoard?.id == source.id)
@@ -484,20 +484,20 @@ struct DenStoreBoardTests {
     @Test func openBoardAcceptsWebHostsAndSearchesInvalidURLs() throws {
         try withTestStore { store in
 
-            store.addBoard(urlString: "localhost:3000")
+            _ = store.createBoard(urlString: "localhost:3000")
             let localURL = try #require(store.focusedDesk?.boards.last?.currentSheetURL)
             #expect(localURL.scheme == "https")
             #expect(localURL.host == "localhost")
             #expect(localURL.port == 3000)
 
-            store.addBoard(urlString: "swift: concurrency")
+            _ = store.createBoard(urlString: "swift: concurrency")
             let searchURL = try #require(
                 store.focusedDesk?.boards.last?.currentSheetURL
                     .flatMap { URLComponents(url: $0, resolvingAgainstBaseURL: false) })
             #expect(searchURL.host == "www.google.com")
             #expect(searchURL.queryItems == [URLQueryItem(name: "q", value: "swift: concurrency")])
 
-            store.addBoard(urlString: "https://")
+            _ = store.createBoard(urlString: "https://")
             let invalidURLSearch = try #require(
                 store.focusedDesk?.boards.last?.currentSheetURL
                     .flatMap { URLComponents(url: $0, resolvingAgainstBaseURL: false) })
@@ -541,7 +541,7 @@ struct DenStoreBoardTests {
         let source = desk("Desk")
         let store = DenStore(state: DenState(desks: [source], focusedDeskID: source.id))
 
-        store.addBoard(urlString: "https://start.example/")
+        _ = store.createBoard(urlString: "https://start.example/")
         let firstSheetURL = try #require(store.focusedBoard?.firstSheetURL)
 
         #expect(store.navigateFocusedBoard(urlString: "https://later.example/"))
@@ -565,7 +565,7 @@ struct DenStoreBoardTests {
             let source = desk("Desk")
             let store = DenStore(state: DenState(desks: [source], focusedDeskID: source.id))
 
-            store.addBoard(urlString: "https://example.com", preferredWidth: width)
+            _ = store.createBoard(urlString: "https://example.com", preferredWidth: width)
 
             #expect(store.focusedBoard?.width == width)
         }
@@ -575,7 +575,7 @@ struct DenStoreBoardTests {
         let source = board("Source", width: 760)
         let focusedDesk = desk("Focused", boards: [source], focusedBoardID: source.id)
         let focusedStore = DenStore(state: DenState(desks: [focusedDesk], focusedDeskID: focusedDesk.id))
-        focusedStore.addBoard(urlString: "https://example.com")
+        _ = focusedStore.createBoard(urlString: "https://example.com")
         #expect(focusedStore.focusedBoard?.width == 760)
     }
 
@@ -588,7 +588,7 @@ struct DenStoreBoardTests {
         store.updateBoardLayout(availableWidth: 1376, spacing: 12)
         #expect(store.inheritedBoardWidth == 682)
 
-        store.addBoard(urlString: "https://example.com")
+        _ = store.createBoard(urlString: "https://example.com")
         #expect(store.focusedBoard?.width == 682)
     }
 
@@ -617,7 +617,7 @@ struct DenStoreBoardTests {
         let store = DenStore(state: DenState(desks: [firstDesk, emptyDesk], focusedDeskID: firstDesk.id))
 
         // Open board on emptyDesk without focus
-        _ = store.addBoard(
+        _ = store.createBoard(
             urlString: "https://example.com",
             focus: false)
         #expect(store.state.desks[0].boards.count == 2)
@@ -625,7 +625,7 @@ struct DenStoreBoardTests {
         // Focus empty desk and open in background
         store.focusDesk(emptyDesk.id)
         #expect(store.state.desks[1].focusedBoardID == nil)
-        _ = store.addBoard(
+        _ = store.createBoard(
             urlString: "https://example.com",
             focus: false)
 
@@ -948,7 +948,7 @@ struct DenStoreBoardTests {
         let store = DenStore(state: DenState(desks: [deskState], focusedDeskID: deskState.id))
         #expect(store.state.desks[0].scrollOffsetX == 200.0)
 
-        _ = store.addBoard(urlString: "https://example.com", focus: true)
+        _ = store.createBoard(urlString: "https://example.com", focus: true)
         #expect(store.state.desks[0].scrollOffsetX == nil)
     }
 
@@ -1368,6 +1368,42 @@ struct DenStoreBoardTests {
 
             store.removeBoard(firstBoard.id)
             #expect(store.focusedDesk?.anchorBoardID == nil)
+        }
+    }
+
+    @Test func duplicateTerminalBoardResetsTemporaryContextAndFollowsInsertionContract() {
+        let first = BoardState(width: 400, workingDirectory: "/tmp")
+        let second = board("Second")
+        let source = desk("Desk", boards: [first, second], focusedBoardID: first.id)
+        withTestStore(desks: [source]) { store in
+            store.setTemporaryContext(.openBoard)
+            store.duplicateFocusedBoard()
+
+            #expect(store.temporaryContext == nil)
+            #expect(store.isDenMode == false)
+            let boards = store.focusedDesk?.boards ?? []
+            #expect(boards.count == 3)
+            #expect(boards[0].id == first.id)
+            #expect(boards[1].id != first.id)
+            #expect(boards[1].terminalWorkingDirectory == "/tmp")
+            #expect(boards[2].id == second.id)
+            #expect(store.focusedBoard?.id == boards[1].id)
+        }
+    }
+
+    @Test func openBoardRecentItemDelegatesToOpenBoardInput() {
+        let source = desk("Desk")
+        withTestStore(desks: [source]) { store in
+            store.preferences.setZmxPath("/usr/bin/zmx")
+            store.preferences.setZellijPath("/usr/bin/zellij")
+
+            store.openBoard(recentItem: .zellij(sessionName: "my-session"))
+            #expect(store.focusedBoard?.zellijSessionName == "my-session")
+            #expect(store.recentItems.first == .zellij(sessionName: "my-session"))
+
+            store.openBoard(recentItem: .zmx(sessionName: "zmx-session"))
+            #expect(store.focusedBoard?.zmxSessionName == "zmx-session")
+            #expect(store.recentItems.first == .zmx(sessionName: "zmx-session"))
         }
     }
 }

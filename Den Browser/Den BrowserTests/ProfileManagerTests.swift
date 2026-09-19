@@ -156,7 +156,7 @@ struct ProfileManagerTests {
         let workStore = try #require(manager.store(for: work.id))
 
         // Act
-        personalStore.addBoard(urlString: "https://example.com/bookmark?one=1")
+        _ = personalStore.createBoard(urlString: "https://example.com/bookmark?one=1")
         let saveResult = personalStore.saveFocusedDeskAsPreset(label: "Reading")
         let restored = makeProfileManager(directory: directory)
 
@@ -288,7 +288,7 @@ struct ProfileManagerTests {
         let manager = makeProfileManager(directory: directory)
         let personalID = manager.personalProfileID
         let store = try #require(manager.store(for: personalID))
-        store.addBoard(urlString: "https://example.com")
+        _ = store.createBoard(urlString: "https://example.com")
         let boardID = try #require(store.focusedDesk?.focusedBoardID)
 
         // Act
@@ -416,7 +416,7 @@ struct ProfileManagerTests {
 
         // Act
         try FileManager.default.setAttributes([.posixPermissions: 0o500], ofItemAtPath: directory.path)
-        store.addBoard(urlString: "https://example.com/updated")
+        _ = store.createBoard(urlString: "https://example.com/updated")
         #expect(manager.errorMessage != nil)
 
         try FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: directory.path)
