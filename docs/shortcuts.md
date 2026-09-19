@@ -12,6 +12,8 @@ The eight primary navigation shortcuts (toggling Den Mode, desk switching, board
 
 Available globally or while focused in a Sheet.
 
+When the Profile panel is open, type to filter Profiles, use `Up` / `Down` to select one, press `Return` to open it, or press `Escape` to close the panel.
+
 | Shortcut | Action |
 | --- | --- |
 | `Control` + `Command` + `P` | Open Profile panel |

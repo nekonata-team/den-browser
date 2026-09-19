@@ -48,8 +48,9 @@ struct InputContext {
     let hasZmxSessionSelection: Bool
     let isNotificationListPresented: Bool
     let hasFocusedBoard: Bool
+    let isProfilePanelPresented: Bool
 
-    init(store: DenStore, event: NSEvent) {
+    init(store: DenStore, event: NSEvent, isProfilePanelPresented: Bool = false) {
         isFullscreenActive = store.isFullscreenActive
         hasPendingConfirmation = store.hasPendingConfirmation
         isDrawerOpen = store.isDrawerOpen
@@ -69,6 +70,7 @@ struct InputContext {
         hasZmxSessionSelection = store.zmxSessions.hasMarkedSessions
         isNotificationListPresented = store.isNotificationListPresented
         hasFocusedBoard = store.focusedBoard != nil
+        self.isProfilePanelPresented = isProfilePanelPresented
     }
 
     private static func isDrawerPreviewFirstResponder(_ event: NSEvent, store: DenStore) -> Bool {
@@ -301,6 +303,10 @@ enum KeyboardRouter {
         }
 
         if character == "w", modifiers == [.command, .shift] { return .forward(.nativeCommand) }
+
+        if context.isProfilePanelPresented {
+            return .forward(.temporaryTextInput)
+        }
 
         switch context.temporaryContext {
         case .keyboardShortcuts:

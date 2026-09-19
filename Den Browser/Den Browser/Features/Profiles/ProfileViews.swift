@@ -171,53 +171,102 @@ private struct OpenProfilePanel: View {
     @Environment(ProfileManager.self) private var profileManager
     @Environment(\.openWindow) private var openWindow
     @State private var query = ""
+    @State private var selectedProfileID: UUID?
     @FocusState private var isFocused: Bool
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            TextField(
-                text: $query,
-                prompt: Text("Search profiles")
-            ) {
-                Text("Open Profile")
+        VStack(alignment: .leading, spacing: DenPanelLayout.contentSpacing) {
+            DenPanelHeader(systemSymbol: .personCropCircle) {
+                TextField(
+                    text: $query,
+                    prompt: Text("Search profiles")
+                ) {
+                    Text("Open Profile")
+                }
+                .labelsHidden()
+                .textFieldStyle(.plain)
+                .font(.title3.weight(.medium))
+                .focused($isFocused)
+                .accessibilityIdentifier("open-profile-input")
+                .onKeyPress(.downArrow) {
+                    guard !TextInputComposition.isActive else { return .ignored }
+                    moveProfileSelection(by: 1)
+                    return filteredProfiles.isEmpty ? .ignored : .handled
+                }
+                .onKeyPress(.upArrow) {
+                    guard !TextInputComposition.isActive else { return .ignored }
+                    moveProfileSelection(by: -1)
+                    return filteredProfiles.isEmpty ? .ignored : .handled
+                }
+                .onSubmit {
+                    TextInputComposition.performUnlessActive(confirmSelection)
+                }
             }
-            .labelsHidden()
-            .textFieldStyle(.plain)
-            .font(.title3)
-            .focused($isFocused)
 
             ForEach(filteredProfiles) { profile in
                 Button {
-                    profileManager.openProfilePanelProfileID = nil
-                    profileManager.openProfilePanelWindowID = nil
-                    if !profileManager.activateWindow(for: profile.id) {
-                        openWindow(value: ProfileWindowRoute(profileID: profile.id))
-                    }
+                    openProfile(profile.id)
                 } label: {
-                    HStack {
-                        Circle().fill(profile.color.color).frame(width: 10, height: 10)
+                    HStack(spacing: DenPanelLayout.controlSpacing) {
+                        Circle()
+                            .fill(profile.color.color)
+                            .frame(width: 10, height: 10)
                         Text(profile.name)
-                        Spacer()
+                        Spacer(minLength: 0)
                     }
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
-                .padding(.vertical, 5)
+                .padding(.horizontal, 8)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .frame(height: 30)
+                .background(
+                    profile.id == selectedProfileID
+                        ? Color.primary.opacity(0.1)
+                        : Color.clear,
+                    in: RoundedRectangle(cornerRadius: DenRadius.small, style: .continuous)
+                )
             }
         }
-        .padding(16)
-        .frame(width: 380)
-        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: DenRadius.large, style: .continuous))
-        .onAppear { isFocused = true }
-        .onExitCommand {
-            profileManager.openProfilePanelProfileID = nil
-            profileManager.openProfilePanelWindowID = nil
-        }
+        .denPanel(width: 380)
+        .onAppear { DispatchQueue.main.async { isFocused = true } }
+        .onChange(of: query) { _, _ in selectedProfileID = nil }
+        .onExitCommand(perform: close)
     }
 
     private var filteredProfiles: [ProfileState] {
         guard !query.isEmpty else { return profileManager.profiles }
         return profileManager.profiles.filter { $0.name.localizedCaseInsensitiveContains(query) }
+    }
+
+    private func moveProfileSelection(by offset: Int) {
+        guard !filteredProfiles.isEmpty else { return }
+        let ids = filteredProfiles.map(\.id)
+        let currentIndex = selectedProfileID.flatMap(ids.firstIndex(of:))
+        let nextIndex: Int
+        if let currentIndex {
+            nextIndex = (currentIndex + offset + ids.count) % ids.count
+        } else {
+            nextIndex = offset > 0 ? 0 : ids.count - 1
+        }
+        selectedProfileID = ids[nextIndex]
+    }
+
+    private func confirmSelection() {
+        guard let profileID = selectedProfileID ?? filteredProfiles.first?.id else { return }
+        openProfile(profileID)
+    }
+
+    private func openProfile(_ profileID: UUID) {
+        close()
+        if !profileManager.activateWindow(for: profileID) {
+            openWindow(value: ProfileWindowRoute(profileID: profileID))
+        }
+    }
+
+    private func close() {
+        profileManager.openProfilePanelProfileID = nil
+        profileManager.openProfilePanelWindowID = nil
     }
 }
 
