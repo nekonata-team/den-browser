@@ -409,33 +409,22 @@ final class DenIPCService {
                 return .success(message: "Dragged \(source) to \(destination)")
 
             case .get:
-                guard let kind = request.args.first?.lowercased() else {
-                    return .failure("Usage: den sheet get <text|value|attr|count> ...")
+                let input: DenSheetGetInput
+                do {
+                    input = try DenSheetGetInput(args: request.args)
+                } catch {
+                    return .failure(error.localizedDescription)
                 }
-                switch kind {
-                case "text":
-                    guard request.args.count == 2, let target = request.args.last, !target.isEmpty else {
-                        return .failure("Usage: den sheet get text <@ref|selector>")
-                    }
+                switch input {
+                case .text(let target):
                     let text = try await SheetInteraction.text(target: target, in: runtime.webView)
                     return .success(text: text)
 
-                case "value":
-                    guard request.args.count == 2, let target = request.args.last, !target.isEmpty else {
-                        return .failure("Usage: den sheet get value <@ref|selector>")
-                    }
+                case .value(let target):
                     let value = try await SheetInteraction.value(target: target, in: runtime.webView)
                     return .success(value: value)
 
-                case "attr":
-                    guard request.args.count == 3 else {
-                        return .failure("Usage: den sheet get attr <@ref|selector> <attribute>")
-                    }
-                    let target = request.args[1]
-                    let attribute = request.args[2]
-                    guard !target.isEmpty, !attribute.isEmpty else {
-                        return .failure("Usage: den sheet get attr <@ref|selector> <attribute>")
-                    }
+                case .attribute(let target, let attribute):
                     let value = try await SheetInteraction.attribute(
                         target: target,
                         name: attribute,
@@ -443,17 +432,11 @@ final class DenIPCService {
                     )
                     return .success(attribute: value)
 
-                case "count":
-                    guard request.args.count == 2, let selector = request.args.last, !selector.isEmpty else {
-                        return .failure("Usage: den sheet get count <selector>")
-                    }
+                case .count(let selector):
                     let count = try await SheetInteraction.count(selector: selector, in: runtime.webView)
                     return .success(count: count)
 
-                case "box":
-                    guard request.args.count == 2, let target = request.args.last, !target.isEmpty else {
-                        return .failure("Usage: den sheet get box <@ref|selector>")
-                    }
+                case .box(let target):
                     let rect = try await SheetInteraction.box(target: target, in: runtime.webView)
                     let box = DenBoundingBox(
                         originX: rect.origin.x,
@@ -462,32 +445,25 @@ final class DenIPCService {
                         height: rect.size.height
                     )
                     return .success(box: box)
-
-                default:
-                    return .failure("Unknown get target: \(kind)")
                 }
 
             case .isState:
-                guard request.args.count == 2 else {
-                    return .failure("Usage: den sheet is <visible|enabled|checked> <@ref|selector>")
+                let input: DenSheetStateInput
+                do {
+                    input = try DenSheetStateInput(args: request.args)
+                } catch {
+                    return .failure(error.localizedDescription)
                 }
-                let state = request.args[0].lowercased()
-                let target = request.args[1]
-                guard !target.isEmpty else {
-                    return .failure("Usage: den sheet is <visible|enabled|checked> <@ref|selector>")
-                }
-                switch state {
-                case "visible":
+                switch input {
+                case .visible(let target):
                     let visible = try await SheetInteraction.isVisible(target: target, in: runtime.webView)
                     return .success(visible: visible)
-                case "enabled":
+                case .enabled(let target):
                     let enabled = try await SheetInteraction.isEnabled(target: target, in: runtime.webView)
                     return .success(enabled: enabled)
-                case "checked":
+                case .checked(let target):
                     let checked = try await SheetInteraction.isChecked(target: target, in: runtime.webView)
                     return .success(checked: checked)
-                default:
-                    return .failure("Unknown element state: \(state)")
                 }
 
             case .mouse:
