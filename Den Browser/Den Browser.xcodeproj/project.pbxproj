@@ -72,7 +72,11 @@
 		531CEFA0304D475F00C9C636 /* Exceptions for "Den Browser" folder in "den" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
-				Platform/IPC/IPCTypes.swift,
+				Platform/IPC/DenIPCCommand.swift,
+				Platform/IPC/DenIPCPayloads.swift,
+				Platform/IPC/DenIPCRequest.swift,
+				Platform/IPC/DenIPCResponse.swift,
+				Platform/IPC/DenIPCTransport.swift,
 			);
 			target = 531CEF97304D46A100C9C636 /* den */;
 		};
