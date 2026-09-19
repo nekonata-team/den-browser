@@ -396,21 +396,35 @@ final class BoardRuntime: BaseWebRuntime, ObservableObject {
     }
 
     func togglePictureInPicture() {
-        let pictureInPictureScript = Self.pictureInPictureJavaScript
+        evaluatePictureInPicture(mode: "toggle")
+    }
+
+    func enterPictureInPictureIfPlaying() {
+        evaluatePictureInPicture(mode: "enter")
+    }
+
+    private func evaluatePictureInPicture(mode: String) {
+        let pictureInPictureScript = Self.pictureInPictureJavaScript(mode: mode)
         guard !pictureInPictureScript.isEmpty else { return }
 
         webView.evaluateJavaScript(pictureInPictureScript) { result, error in
             #if DEBUG
                 if let error {
-                    print("[DenBrowser] PiP script error: \(error.localizedDescription)")
+                    print("[DenBrowser] PiP \(mode) script error: \(error.localizedDescription)")
                 } else if let result {
-                    print("[DenBrowser] PiP script success: \(result)")
+                    print("[DenBrowser] PiP \(mode) script success: \(result)")
                 }
             #endif
         }
     }
 
-    private static let pictureInPictureJavaScript: String = {
+    private static func pictureInPictureJavaScript(mode: String) -> String {
+        pictureInPictureSource.replacingOccurrences(
+            of: "__DEN_PICTURE_IN_PICTURE_MODE__",
+            with: mode)
+    }
+
+    private static let pictureInPictureSource: String = {
         guard
             let url = Bundle.main.url(forResource: "PictureInPicture", withExtension: "js"),
             let source = try? String(contentsOf: url, encoding: .utf8)

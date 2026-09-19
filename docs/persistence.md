@@ -61,6 +61,7 @@ Version 1 documents decode as Web Boards and are written back as version 2. An o
 | `sheet-navigation` | Enabled | `preferences.sheet-navigation.enabled` | `Bool` | `false` | Web > Vim-style Sheet Navigation |
 | `sheet-navigation` | Hint alphabet | `preferences.sheet-navigation.hint-alphabet` | `String` | `asdfghjkl` | Web > Vim-style Sheet Navigation |
 | `sheet-navigation` | Ignored hosts | `preferences.sheet-navigation.ignored-hosts` | `[String]` | `[]` | Web > Vim-style Sheet Navigation |
+| `picture-in-picture` | Automatic Desk switch | `preferences.picture-in-picture.auto-on-desk-switch` | `Bool` | `false` | Web > Picture in Picture |
 | `shortcuts` | Action override | `preferences.shortcuts.actions.<action-id>` | Property-list encoded `ShortcutOverride` | Absent; uses the action default | Shortcuts > Shortcuts |
 | `shortcuts` | Desk number binding | `preferences.shortcuts.desk-number.binding` | Property-list encoded `ShortcutBinding` | `Command` + `Option` + digit | Shortcuts > Focus Desk 1–10 |
 | `shortcuts` | Desk number disabled | `preferences.shortcuts.desk-number.disabled` | `Bool` | Absent / `false` | Shortcuts > Focus Desk 1–10 |

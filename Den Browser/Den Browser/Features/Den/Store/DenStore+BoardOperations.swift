@@ -319,7 +319,7 @@ extension DenStore {
 
         state.desks[targetDeskIndex].boards.insert(board, at: insertIndex)
         state.desks[targetDeskIndex].focusedBoardID = board.id
-        setFocusedDesk(state.desks[targetDeskIndex].id)
+        setFocusedDesk(state.desks[targetDeskIndex].id, autoPIP: false)
         isDenMode = false
         save()
     }

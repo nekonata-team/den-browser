@@ -118,7 +118,7 @@ Owns optional Vim-style interaction within the Current Sheet: preferences, valid
 
 ### Settings
 
-Settings > Web provides an app-wide Search Engine choice: Google (default), DuckDuckGo, Bing, Brave Search, or Yahoo! JAPAN. The choice persists across relaunches and applies when search terms are opened, including saved Recent Items and Essentials. Explicit URLs and existing Sheets remain unchanged.
+Settings > Web provides app-wide Search Engine and automatic Picture in Picture choices. The search choice persists across relaunches and applies when search terms are opened, including saved Recent Items and Essentials. Automatic Picture in Picture moves a playing video from the Focused Board into native Picture in Picture when the user switches Desks; it is disabled by default. Explicit URLs and existing Sheets remain unchanged.
 
 Settings is not a Feature. `App/Settings` owns the Settings scene and its navigation. Feature-owned settings state and UI stay with the Feature that controls the behavior: Profile management belongs to `Features/Profiles`, Sheet Navigation settings belong to `Features/SheetNavigation`, and appearance, shortcuts, and Board layout preferences belong to `Features/Den`. The Settings scene assembles those screens without taking ownership of their behavior.
 

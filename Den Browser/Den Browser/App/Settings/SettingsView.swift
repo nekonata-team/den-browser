@@ -110,6 +110,17 @@ private struct WebSettingsView: View {
 
             SheetNavigationSettingsSection()
 
+            Section("Picture in Picture") {
+                Toggle(
+                    "Automatic Picture in Picture",
+                    isOn: automaticPIPOnDeskSwitchBinding)
+                SettingsHelpText {
+                    Text(
+                        "When switching Desks, move a playing video from the Focused Board into Picture in Picture."
+                    )
+                }
+            }
+
             Section("Content Blocking") {
                 if profileManager.uboliteInstaller.isInstalled {
                     LabeledContent {
@@ -226,6 +237,14 @@ private struct WebSettingsView: View {
             preferences.uBOLiteEnabled
         } set: { enabled in
             profileManager.setUBOLiteEnabled(enabled)
+        }
+    }
+
+    private var automaticPIPOnDeskSwitchBinding: Binding<Bool> {
+        Binding {
+            preferences.automaticPIPOnDeskSwitch
+        } set: { enabled in
+            preferences.setAutomaticPIPOnDeskSwitch(enabled)
         }
     }
 }

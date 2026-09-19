@@ -7,6 +7,19 @@ import Testing
 @Suite(.serialized)
 struct AppPreferencesTests {
 
+    @Test func automaticPictureInPictureDefaultsToDisabled() throws {
+        // Arrange
+        let suiteName = "AutomaticPictureInPictureDefaultsTests-\(UUID().uuidString)"
+        let defaults = try #require(UserDefaults(suiteName: suiteName))
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+
+        // Act
+        let preferences = AppPreferences(defaults: defaults)
+
+        // Assert
+        #expect(!preferences.automaticPIPOnDeskSwitch)
+    }
+
     @Test func searchEngineDefaultsToGoogle() throws {
         // Arrange
         let suiteName = "SearchEngineDefaultsTests-\(UUID().uuidString)"
@@ -76,6 +89,7 @@ struct AppPreferencesTests {
         preferences.setMotionPreference(.standard)
         preferences.setUBOLiteEnabled(true)
         preferences.setExternalLinkDestination(.focusedBoard)
+        preferences.setAutomaticPIPOnDeskSwitch(true)
         preferences.setSheetScale(80)
         preferences.setZellijPath(" /opt/homebrew/bin/zellij ")
         preferences.setZmxPath(" /opt/homebrew/bin/zmx ")
@@ -89,6 +103,7 @@ struct AppPreferencesTests {
                 "preferences.appearance.motion.mode",
                 "preferences.content-blocking.ubolite.enabled",
                 "preferences.external-links.destination",
+                "preferences.picture-in-picture.auto-on-desk-switch",
                 "preferences.appearance.sheet-scale.percent",
                 "preferences.terminal.zellij.executable-path",
                 "preferences.terminal.zmx.executable-path",
@@ -97,6 +112,7 @@ struct AppPreferencesTests {
         #expect(restored.motionPreference == .standard)
         #expect(restored.uBOLiteEnabled)
         #expect(restored.externalLinkDestination == .focusedBoard)
+        #expect(restored.automaticPIPOnDeskSwitch)
         #expect(restored.sheetScale == 80)
         #expect(restored.zellijPath == "/opt/homebrew/bin/zellij")
         #expect(restored.zmxPath == "/opt/homebrew/bin/zmx")

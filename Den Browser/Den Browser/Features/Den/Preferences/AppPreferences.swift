@@ -122,6 +122,7 @@ final class AppPreferences {
     static let defaultSheetScale = 100
     static let defaultExternalLinkDestination: ExternalLinkDestination = .drawerPreview
     static let defaultDrawerStyle: DrawerStyle = .floating
+    static let defaultAutomaticPIPOnDeskSwitch = false
     static let sheetScaleRange = 50...200
 
     private(set) var shortcutOverrides: [ConfigurableShortcut: ShortcutOverride]
@@ -131,6 +132,7 @@ final class AppPreferences {
     private(set) var boardCentering: FocusedBoardCentering
     private(set) var externalLinkDestination: ExternalLinkDestination
     private(set) var drawerStyle: DrawerStyle
+    private(set) var automaticPIPOnDeskSwitch: Bool
     private(set) var sheetScale: Int
     private(set) var zellijPath: String
     private(set) var zmxPath: String
@@ -149,6 +151,8 @@ final class AppPreferences {
     private static let boardCenteringKey = "preferences.appearance.board-centering.mode"
     private static let externalLinkDestinationKey = "preferences.external-links.destination"
     private static let drawerStyleKey = "preferences.drawer.style"
+    private static let automaticPictureInPictureOnDeskSwitchKey =
+        "preferences.picture-in-picture.auto-on-desk-switch"
     private static let sheetScaleKey = "preferences.appearance.sheet-scale.percent"
     private static let zellijPathKey = "preferences.terminal.zellij.executable-path"
     private static let zmxPathKey = "preferences.terminal.zmx.executable-path"
@@ -173,6 +177,9 @@ final class AppPreferences {
         drawerStyle =
             defaults.string(forKey: Self.drawerStyleKey).flatMap(DrawerStyle.init(rawValue:))
             ?? Self.defaultDrawerStyle
+        automaticPIPOnDeskSwitch =
+            defaults.object(forKey: Self.automaticPictureInPictureOnDeskSwitchKey) as? Bool
+            ?? Self.defaultAutomaticPIPOnDeskSwitch
         sheetScale =
             Self.normalizedSheetScale(defaults.object(forKey: Self.sheetScaleKey) as? Int)
             ?? Self.defaultSheetScale
@@ -228,6 +235,11 @@ final class AppPreferences {
     func setDrawerStyle(_ style: DrawerStyle) {
         drawerStyle = style
         defaults.set(style.rawValue, forKey: Self.drawerStyleKey)
+    }
+
+    func setAutomaticPIPOnDeskSwitch(_ enabled: Bool) {
+        automaticPIPOnDeskSwitch = enabled
+        defaults.set(enabled, forKey: Self.automaticPictureInPictureOnDeskSwitchKey)
     }
 
     func toggleDrawerStyle() {

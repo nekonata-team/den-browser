@@ -653,16 +653,30 @@ final class DenStore {
     }
 
     @discardableResult
-    func setFocusedDesk(_ deskID: UUID) -> Bool {
+    func setFocusedDesk(_ deskID: UUID, autoPIP: Bool = true) -> Bool {
         guard presentedDeskID != deskID else { return false }
         guard state.desks.contains(where: { $0.id == deskID }) else { return false }
         guard onDeskPresentationRequest?(deskID) ?? true else { return false }
+        if autoPIP {
+            enterPictureInPictureForDeskSwitch()
+        }
         previousFocusedDeskID = presentedDeskID
         presentedDeskID = deskID
         state.focusedDeskID = deskID
         pendingBoardLinkFocus = nil
         pendingBoardRemoval = nil
         return true
+    }
+
+    private func enterPictureInPictureForDeskSwitch() {
+        guard
+            preferences.automaticPIPOnDeskSwitch,
+            let focusedDesk,
+            let focusedBoardID = focusedDesk.focusedBoardID,
+            let runtime = runtimes[focusedBoardID]
+        else { return }
+
+        runtime.enterPictureInPictureIfPlaying()
     }
 
     func canSelectDesk(_ deskID: UUID) -> Bool {
