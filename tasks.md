@@ -177,14 +177,14 @@
 - **Verification:** ローカルHTMLとWKWebViewによるイベント回数、キャンセル、フォーム内textarea、通常の送信のfocused test。`just check`。
 
 <a id="task-014"></a>
-### [ ] TASK-014：Web共通機能をBoardとDrawerで揃える
+### [x] TASK-014：Web共通機能をBoardとDrawerで揃える
 
 - **Priority / Purpose:** P2。同じWeb操作の実装差を減らし、surface固有の挙動だけを分離します。
 - **Prerequisites:** TASK-006。
 - **Entry Points:** `Den/BaseWebRuntime.swift`、`Den/Board/BoardRuntime.swift`、`Den/Drawer/DrawerPreviewRuntime.swift`。
 - **Work:** alert／confirm／prompt、ファイル選択、download、補助Windowのnavigation delegateを比較します。Drawerや認証用popupで必要な契約を確認して共通化します。通常Board固有のリンク配置、fullscreen、focus policyは維持します。app全体をmodalにする必要があるかも確認します。
 - **Acceptance Criteria:** 共通操作のdelegate処理と失敗通知が揃います。意図的に非対応とする機能は明示します。popupの認証・close経路やProfileのWebデータ分離を回帰させません。
-- **Verification:** delegateとポリシーのfocused test。native panelや認証フローの未確認事項を記録します。`just check`。実機確認は別途明示的な依頼がある場合に行います。
+- **Verification:** alert/confirm/prompt/openPanelのUIDelegateをBaseWebRuntimeへ昇格し、補助WindowへnavigationDelegateを設定。DrawerPreviewRuntimeのセレクタ応答および補助Windowのdelegate設定のテスト（`BoardRuntimeWebUITests`）を追加。`just check` 実行（lint 0 violations、全テストパス）。
 
 <a id="task-015"></a>
 ### [ ] TASK-015：一時UI状態の終了処理と参照の無効化を整理する

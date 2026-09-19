@@ -266,6 +266,7 @@ class BaseWebRuntime: NSObject, NSWindowDelegate, WKDownloadDelegate, WKNavigati
         auxiliaryWebView.customUserAgent = Self.defaultUserAgent
         auxiliaryWebView.pageZoom = sourceWebView.pageZoom
         auxiliaryWebView.uiDelegate = self
+        auxiliaryWebView.navigationDelegate = self
 
         let window = NSWindow(
             contentRect: .init(x: 0, y: 0, width: 720, height: 640),
@@ -280,6 +281,78 @@ class BaseWebRuntime: NSObject, NSWindowDelegate, WKDownloadDelegate, WKNavigati
         window.makeKeyAndOrderFront(nil)
         auxiliaryWindows[ObjectIdentifier(auxiliaryWebView)] = window
         return auxiliaryWebView
+    }
+
+    func webView(
+        _ webView: WKWebView,
+        runJavaScriptAlertPanelWithMessage message: String,
+        initiatedByFrame frame: WKFrameInfo,
+        completionHandler: @escaping @MainActor @Sendable () -> Void
+    ) {
+        let alert = NSAlert()
+        alert.messageText = frame.request.url?.host ?? "Alert"
+        alert.informativeText = message
+        alert.addButton(withTitle: "OK")
+        alert.runModal()
+        completionHandler()
+    }
+
+    func webView(
+        _ webView: WKWebView,
+        runJavaScriptConfirmPanelWithMessage message: String,
+        initiatedByFrame frame: WKFrameInfo,
+        completionHandler: @escaping @MainActor @Sendable (Bool) -> Void
+    ) {
+        let alert = NSAlert()
+        alert.messageText = frame.request.url?.host ?? "Confirmation"
+        alert.informativeText = message
+        alert.addButton(withTitle: "OK")
+        alert.addButton(withTitle: "Cancel")
+        completionHandler(alert.runModal() == .alertFirstButtonReturn)
+    }
+
+    func webView(
+        _ webView: WKWebView,
+        runJavaScriptTextInputPanelWithPrompt prompt: String,
+        defaultText: String?,
+        initiatedByFrame frame: WKFrameInfo,
+        completionHandler: @escaping @MainActor @Sendable (String?) -> Void
+    ) {
+        let input = NSTextField(string: defaultText ?? "")
+        input.frame.size.width = 320
+
+        let alert = NSAlert()
+        alert.messageText = frame.request.url?.host ?? "Prompt"
+        alert.informativeText = prompt
+        alert.accessoryView = input
+        alert.addButton(withTitle: "OK")
+        alert.addButton(withTitle: "Cancel")
+        alert.window.initialFirstResponder = input
+        completionHandler(
+            alert.runModal() == .alertFirstButtonReturn
+                ? input.stringValue
+                : nil
+        )
+    }
+
+    func webView(
+        _ webView: WKWebView,
+        runOpenPanelWith parameters: WKOpenPanelParameters,
+        initiatedByFrame frame: WKFrameInfo,
+        completionHandler: @escaping @MainActor @Sendable ([URL]?) -> Void
+    ) {
+        guard let window = webView.window ?? NSApp.keyWindow else {
+            completionHandler(nil)
+            return
+        }
+
+        let panel = NSOpenPanel()
+        panel.canChooseDirectories = parameters.allowsDirectories
+        panel.canChooseFiles = !parameters.allowsDirectories
+        panel.allowsMultipleSelection = parameters.allowsMultipleSelection
+        panel.beginSheetModal(for: window) { response in
+            completionHandler(response == .OK ? panel.urls : nil)
+        }
     }
 
     func webViewDidClose(_ webView: WKWebView) {

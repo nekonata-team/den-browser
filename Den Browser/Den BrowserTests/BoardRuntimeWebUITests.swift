@@ -590,6 +590,66 @@ struct BoardRuntimeWebUITests {
         // Assert
         #expect(!FileManager.default.fileExists(atPath: tempURL.path))
     }
+
+    @Test func drawerPreviewRuntimeImplementsCommonWebDelegateSelectors() {
+        // Arrange
+        let manager = SheetNavigationManager(scriptSource: "")
+        let item = DrawerItem(url: URL(string: "https://example.com")!)
+        let runtime = DrawerPreviewRuntime(
+            item: item,
+            websiteDataStore: .nonPersistent(),
+            sheetNavigation: manager,
+            sheetScale: 100,
+            onKeepInDrawer: { _ in },
+            onKeepInDrawerInBackground: { _ in },
+            onDiscard: {},
+            onChange: { _, _, _ in },
+            onDownloadFinished: { _ in },
+            onDownloadFailed: { _ in }
+        )
+        defer { runtime.dispose() }
+
+        let selectors = [
+            "webView:runJavaScriptAlertPanelWithMessage:initiatedByFrame:completionHandler:",
+            "webView:runJavaScriptConfirmPanelWithMessage:initiatedByFrame:completionHandler:",
+            "webView:runJavaScriptTextInputPanelWithPrompt:defaultText:initiatedByFrame:completionHandler:",
+            "webView:runOpenPanelWithParameters:initiatedByFrame:completionHandler:",
+            "download:decideDestinationUsingResponse:suggestedFilename:completionHandler:",
+            "downloadDidFinish:",
+            "download:didFailWithError:resumeData:",
+        ]
+
+        // Assert
+        #expect(selectors.allSatisfy { runtime.responds(to: NSSelectorFromString($0)) })
+    }
+
+    @Test func auxiliaryWebViewConfiguresBothUIDelegateAndNavigationDelegate() {
+        // Arrange
+        let runtime = BoardRuntime(
+            board: BoardState(label: "Board", width: 320, currentSheetURL: nil),
+            websiteDataStore: .nonPersistent(),
+            sheetNavigation: SheetNavigationManager(scriptSource: ""),
+            sheetScale: 100,
+            sheetNavigationActions: noOpSheetNavigationActions(),
+            events: .init(
+                onChange: { _, _, _ in },
+                onFullscreenChange: nil,
+                onDownloadFinished: { _ in },
+                onDownloadFailed: { _ in }
+            )
+        )
+        defer { runtime.dispose() }
+
+        // Act
+        let auxiliary = runtime.makeAuxiliaryWebView(
+            configuration: WKWebViewConfiguration(),
+            sourceWebView: runtime.webView
+        )
+
+        // Assert
+        #expect(auxiliary.uiDelegate === runtime)
+        #expect(auxiliary.navigationDelegate === runtime)
+    }
 }
 
 @MainActor
