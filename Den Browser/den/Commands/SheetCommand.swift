@@ -21,8 +21,12 @@ struct SheetCommand: ParsableCommand {
             SheetGetCommand.self,
             SheetIsCommand.self,
             SheetClickCommand.self,
+            SheetDblclickCommand.self,
+            SheetFocusCommand.self,
             SheetFillCommand.self,
+            SheetTypeCommand.self,
             SheetDragCommand.self,
+            SheetMouseCommand.self,
             SheetInteractCommand.self,
             SheetScreenshotCommand.self,
         ]
@@ -186,6 +190,36 @@ struct SheetClickCommand: ParsableCommand {
     }
 }
 
+struct SheetDblclickCommand: ParsableCommand {
+    static let configuration = CommandConfiguration(
+        commandName: "dblclick",
+        abstract: "Double-click an element by reference (@e1) or CSS selector"
+    )
+
+    @OptionGroup var target: BoardTargetOptions
+    @Argument(help: "Element reference (@e1) or CSS selector to double-click")
+    var targetElement: String
+
+    func run() throws {
+        try DenIPCClient.execute(command: .sheet(.dblclick), args: [targetElement], options: target)
+    }
+}
+
+struct SheetFocusCommand: ParsableCommand {
+    static let configuration = CommandConfiguration(
+        commandName: "focus",
+        abstract: "Focus an element by reference (@e1) or CSS selector"
+    )
+
+    @OptionGroup var target: BoardTargetOptions
+    @Argument(help: "Element reference (@e1) or CSS selector to focus")
+    var targetElement: String
+
+    func run() throws {
+        try DenIPCClient.execute(command: .sheet(.focus), args: [targetElement], options: target)
+    }
+}
+
 struct SheetFillCommand: ParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "fill",
@@ -203,6 +237,29 @@ struct SheetFillCommand: ParsableCommand {
         }
         let value = valueParts.joined(separator: " ")
         try DenIPCClient.execute(command: .sheet(.fill), args: [targetElement, value], options: target)
+    }
+}
+
+struct SheetTypeCommand: ParsableCommand {
+    static let configuration = CommandConfiguration(
+        commandName: "type",
+        abstract: "Type text into an element by reference/selector or into the currently focused element"
+    )
+
+    @OptionGroup var target: BoardTargetOptions
+    @Argument(help: "Target element reference/selector, or text if typing into focused element")
+    var firstArg: String
+    @Argument(parsing: .remaining, help: "Text to type if target element was specified")
+    var remainingParts: [String] = []
+
+    func run() throws {
+        let args: [String]
+        if remainingParts.isEmpty {
+            args = [firstArg]
+        } else {
+            args = [firstArg, remainingParts.joined(separator: " ")]
+        }
+        try DenIPCClient.execute(command: .sheet(.type), args: args, options: target)
     }
 }
 
@@ -248,6 +305,119 @@ struct SheetDragCommand: ParsableCommand {
     }
 }
 
+struct SheetMouseCommand: ParsableCommand {
+    static let configuration = CommandConfiguration(
+        commandName: "mouse",
+        abstract: "Dispatch mouse events (move, down, up, click, wheel)",
+        subcommands: [
+            SheetMouseMoveCommand.self,
+            SheetMouseDownCommand.self,
+            SheetMouseUpCommand.self,
+            SheetMouseClickCommand.self,
+            SheetMouseWheelCommand.self,
+        ]
+    )
+}
+
+struct SheetMouseMoveCommand: ParsableCommand {
+    static let configuration = CommandConfiguration(
+        commandName: "move",
+        abstract: "Move mouse pointer to viewport coordinates"
+    )
+
+    @OptionGroup var target: BoardTargetOptions
+    @Argument(help: "X coordinate in viewport pixels") var coordX: Double
+    @Argument(help: "Y coordinate in viewport pixels") var coordY: Double
+
+    func run() throws {
+        try DenIPCClient.execute(
+            command: .sheet(.mouse),
+            args: ["move", String(coordX), String(coordY)],
+            options: target
+        )
+    }
+}
+
+struct SheetMouseDownCommand: ParsableCommand {
+    static let configuration = CommandConfiguration(
+        commandName: "down",
+        abstract: "Press mouse button down"
+    )
+
+    @OptionGroup var target: BoardTargetOptions
+    @Argument(help: "Button to press (left, right, middle; default: left)")
+    var button: String?
+
+    func run() throws {
+        var args = ["down"]
+        if let button { args.append(button) }
+        try DenIPCClient.execute(command: .sheet(.mouse), args: args, options: target)
+    }
+}
+
+struct SheetMouseUpCommand: ParsableCommand {
+    static let configuration = CommandConfiguration(
+        commandName: "up",
+        abstract: "Release mouse button"
+    )
+
+    @OptionGroup var target: BoardTargetOptions
+    @Argument(help: "Button to release (left, right, middle; default: left)")
+    var button: String?
+
+    func run() throws {
+        var args = ["up"]
+        if let button { args.append(button) }
+        try DenIPCClient.execute(command: .sheet(.mouse), args: args, options: target)
+    }
+}
+
+struct SheetMouseClickCommand: ParsableCommand {
+    static let configuration = CommandConfiguration(
+        commandName: "click",
+        abstract: "Click at viewport coordinates"
+    )
+
+    @OptionGroup var target: BoardTargetOptions
+    @Argument(help: "X coordinate in viewport pixels") var coordX: Double
+    @Argument(help: "Y coordinate in viewport pixels") var coordY: Double
+    @Option(name: .long, help: "Mouse button (left, right, middle; default: left)")
+    var button: String?
+    @Option(name: .long, help: "Click count (1 for click, 2 for double-click; default: 1)")
+    var count: Int?
+
+    func run() throws {
+        var args = ["click", String(coordX), String(coordY)]
+        if let button {
+            args.append(contentsOf: ["--button", button])
+        }
+        if let count {
+            args.append(contentsOf: ["--count", String(count)])
+        }
+        try DenIPCClient.execute(command: .sheet(.mouse), args: args, options: target)
+    }
+}
+
+struct SheetMouseWheelCommand: ParsableCommand {
+    static let configuration = CommandConfiguration(
+        commandName: "wheel",
+        abstract: "Scroll mouse wheel"
+    )
+
+    @OptionGroup var target: BoardTargetOptions
+    @Argument(help: "Vertical scroll delta in pixels") var deltaY: Double
+    @Option(name: .customLong("dx"), help: "Horizontal scroll delta in pixels (default: 0)")
+    var deltaX: Double?
+
+    func run() throws {
+        var args = ["wheel", String(deltaY)]
+        if let deltaX {
+            args.append(contentsOf: ["--dx", String(deltaX)])
+        }
+        try DenIPCClient.execute(command: .sheet(.mouse), args: args, options: target)
+    }
+}
+
 struct SheetInteractCommand: ParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "interact",
@@ -258,8 +428,12 @@ struct SheetInteractCommand: ParsableCommand {
 
             Available actions:
               click <ref|selector>              Click an element (e.g. click @e1)
+              dblclick <ref|selector>           Double-click an element
+              focus <ref|selector>              Focus an element
               fill <ref|selector> <text>        Fill an input, textarea, or editable element with text
+              type [<ref|selector>] <text>      Type text into an element or the focused element
               drag <src> [<tgt>] [--dx] [--dy]  Drag an element to a target or relative offset
+              mouse <action> ...                Dispatch mouse events (move, click, down, up, wheel)
               press <key>                       Press a key (Enter, Escape, Tab, ArrowDown, etc.)
               scroll [direction|ref|selector]   Scroll the page or scroll an element into view
               wait <ref|--load|--url|--text>    Wait for DOM state, load state, or URL
@@ -474,8 +648,23 @@ struct SheetGetCommand: ParsableCommand {
             SheetGetValueCommand.self,
             SheetGetAttributeCommand.self,
             SheetGetCountCommand.self,
+            SheetGetBoxCommand.self,
         ]
     )
+}
+
+struct SheetGetBoxCommand: ParsableCommand {
+    static let configuration = CommandConfiguration(
+        commandName: "box",
+        abstract: "Get bounding box of an element")
+
+    @OptionGroup var target: BoardTargetOptions
+    @Argument(help: "Element reference (@e1) or CSS selector")
+    var targetElement: String
+
+    func run() throws {
+        try DenIPCClient.execute(command: .sheet(.get), args: ["box", targetElement], options: target)
+    }
 }
 
 struct SheetGetTextCommand: ParsableCommand {

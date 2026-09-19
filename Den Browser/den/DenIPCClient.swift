@@ -239,6 +239,8 @@ enum DenIPCClient {
                     print(visible ? "true" : "false")
                 } else if let enabled = response.enabled {
                     print(enabled ? "true" : "false")
+                } else if let box = response.box {
+                    print("x: \(box.originX), y: \(box.originY), width: \(box.width), height: \(box.height)")
                 } else if let screenshotPath = response.screenshotPath {
                     print(screenshotPath)
                 } else if let message = response.message {

@@ -91,4 +91,22 @@ struct DenIPCResponseTests {
         #expect(encodedBoard["is_focused"] as? Bool == true)
         #expect(encodedBoards.first?["is_focused"] as? Bool == true)
     }
+
+    @Test func boxPayloadKeepsBoundingBoxInJSON() throws {
+        // Arrange
+        let box = DenBoundingBox(originX: 10, originY: 20, width: 300, height: 150)
+        let response = DenIPCResponse.success(box: box)
+
+        // Act
+        let data = try JSONEncoder().encode(response)
+        let object = try #require(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        let encodedBox = try #require(object["box"] as? [String: Any])
+
+        // Assert
+        #expect(object["ok"] as? Bool == true)
+        #expect(encodedBox["x"] as? Double == 10)
+        #expect(encodedBox["y"] as? Double == 20)
+        #expect(encodedBox["width"] as? Double == 300)
+        #expect(encodedBox["height"] as? Double == 150)
+    }
 }

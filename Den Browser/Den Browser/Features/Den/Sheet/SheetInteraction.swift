@@ -311,6 +311,170 @@ enum SheetInteraction {
     }
 
     @discardableResult
+    static func dblclick(target: String, in webView: WKWebView) async throws -> CGRect {
+        let targetLiteral = try javascriptLiteral(target)
+        let script = operationScript(
+            """
+            const target = \(targetLiteral);
+            let el;
+            try {
+                el = denResolveTarget(target);
+            } catch (error) {
+                return { ok: false, error: 'Invalid selector: ' + target };
+            }
+            if (!el) return { ok: false, error: 'Element not found: ' + target };
+            el.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+            el.focus();
+            const rect = el.getBoundingClientRect();
+            const clientX = rect.left + rect.width / 2;
+            const clientY = rect.top + rect.height / 2;
+            const pointerBase = {
+                bubbles: true,
+                cancelable: true,
+                view: window,
+                button: 0,
+                buttons: 1,
+                clientX: clientX,
+                clientY: clientY,
+                pointerId: 1,
+                pointerType: 'mouse',
+                isPrimary: true
+            };
+            el.dispatchEvent(new PointerEvent('pointerdown', { ...pointerBase, detail: 1 }));
+            el.dispatchEvent(new MouseEvent('mousedown', { ...pointerBase, detail: 1 }));
+            el.dispatchEvent(new PointerEvent('pointerup', { ...pointerBase, detail: 1, buttons: 0 }));
+            el.dispatchEvent(new MouseEvent('mouseup', { ...pointerBase, detail: 1, buttons: 0 }));
+            el.dispatchEvent(new MouseEvent('click', { ...pointerBase, detail: 1, buttons: 0 }));
+
+            el.dispatchEvent(new PointerEvent('pointerdown', { ...pointerBase, detail: 2 }));
+            el.dispatchEvent(new MouseEvent('mousedown', { ...pointerBase, detail: 2 }));
+            el.dispatchEvent(new PointerEvent('pointerup', { ...pointerBase, detail: 2, buttons: 0 }));
+            el.dispatchEvent(new MouseEvent('mouseup', { ...pointerBase, detail: 2, buttons: 0 }));
+            el.dispatchEvent(new MouseEvent('click', { ...pointerBase, detail: 2, buttons: 0 }));
+            el.dispatchEvent(new MouseEvent('dblclick', { ...pointerBase, detail: 2, buttons: 0 }));
+            return { ok: true, rect: { x: rect.left, y: rect.top, width: rect.width, height: rect.height } };
+            """
+        )
+        let result = try await evaluate(script, in: webView)
+        return try extractRect(from: result, scale: webView.pageZoom * webView.magnification)
+    }
+
+    @discardableResult
+    static func focus(target: String, in webView: WKWebView) async throws -> CGRect {
+        let targetLiteral = try javascriptLiteral(target)
+        let script = operationScript(
+            """
+            const target = \(targetLiteral);
+            let el;
+            try {
+                el = denResolveTarget(target);
+            } catch (error) {
+                return { ok: false, error: 'Invalid selector: ' + target };
+            }
+            if (!el) return { ok: false, error: 'Element not found: ' + target };
+            el.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+            el.focus();
+            const rect = el.getBoundingClientRect();
+            return { ok: true, rect: { x: rect.left, y: rect.top, width: rect.width, height: rect.height } };
+            """
+        )
+        let result = try await evaluate(script, in: webView)
+        return try extractRect(from: result, scale: webView.pageZoom * webView.magnification)
+    }
+
+    @discardableResult
+    static func type(
+        target: String? = nil,
+        text: String,
+        in webView: WKWebView
+    ) async throws -> CGRect {
+        let targetLiteral = try javascriptLiteral(target)
+        let textLiteral = try javascriptLiteral(text)
+        let script = operationScript(
+            """
+            const target = \(targetLiteral);
+            const text = \(textLiteral);
+            let el = null;
+            if (target !== null && target.trim() !== '') {
+                try {
+                    el = denResolveTarget(target);
+                } catch (error) {
+                    return { ok: false, error: 'Invalid selector: ' + target };
+                }
+                if (!el) return { ok: false, error: 'Element not found: ' + target };
+                el.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+                el.focus();
+                if (typeof el.value === 'string' && typeof el.setSelectionRange === 'function') {
+                    const len = el.value.length;
+                    el.setSelectionRange(len, len);
+                }
+            } else {
+                el = document.activeElement || document.body;
+            }
+
+            let targetDoc = document;
+            let targetEl = el;
+            if (el.tagName === 'IFRAME') {
+                try {
+                    const doc = el.contentDocument || el.contentWindow.document;
+                    if (doc) {
+                        targetDoc = doc;
+                        targetEl = doc.activeElement || doc.body;
+                        targetEl.focus();
+                    }
+                } catch (_) {}
+            }
+
+            let inserted = false;
+            try {
+                inserted = targetDoc.execCommand('insertText', false, text);
+            } catch (_) {}
+
+            if (!inserted) {
+                if (typeof targetEl.value === 'string') {
+                    const start = targetEl.selectionStart ?? targetEl.value.length;
+                    const end = targetEl.selectionEnd ?? targetEl.value.length;
+                    const val = targetEl.value;
+                    targetEl.value = val.slice(0, start) + text + val.slice(end);
+                    targetEl.selectionStart = targetEl.selectionEnd = start + text.length;
+                    denDispatchInput(targetEl, text);
+                    inserted = true;
+                } else if (targetEl.isContentEditable) {
+                    targetDoc.execCommand('insertText', false, text);
+                    denDispatchInput(targetEl, text);
+                    inserted = true;
+                }
+            }
+
+            const rect = el.getBoundingClientRect();
+            return { ok: true, rect: { x: rect.left, y: rect.top, width: rect.width, height: rect.height } };
+            """
+        )
+        let result = try await evaluate(script, in: webView)
+        return try extractRect(from: result, scale: webView.pageZoom * webView.magnification)
+    }
+
+    static func box(target: String, in webView: WKWebView) async throws -> CGRect {
+        let targetLiteral = try javascriptLiteral(target)
+        let script = operationScript(
+            """
+            const target = \(targetLiteral);
+            let el;
+            try {
+                el = denResolveTarget(target);
+            } catch (error) {
+                return { ok: false, error: 'Invalid selector: ' + target };
+            }
+            if (!el) return { ok: false, error: 'Element not found: ' + target };
+            const rect = el.getBoundingClientRect();
+            return { ok: true, rect: { x: rect.left, y: rect.top, width: rect.width, height: rect.height } };
+            """
+        )
+        let result = try await evaluate(script, in: webView)
+        return try extractRect(from: result, scale: webView.pageZoom * webView.magnification)
+    }
+
+    @discardableResult
     static func drag(
         source: String,
         target: String? = nil,
@@ -484,6 +648,107 @@ enum SheetInteraction {
 
         let scale = webView.pageZoom * webView.magnification
         return CGRect(x: rectX * scale, y: rectY * scale, width: rectWidth * scale, height: rectHeight * scale)
+    }
+
+    static func mouseMove(coordX: Double, coordY: Double, in webView: WKWebView) async throws {
+        let script = """
+            (() => {
+                const x = \(coordX), y = \(coordY);
+                window.__denMouseX = x; window.__denMouseY = y;
+                const el = document.elementFromPoint(x, y) || document;
+                const opts = { bubbles: true, cancelable: true, view: window, clientX: x, clientY: y };
+                el.dispatchEvent(new PointerEvent('pointermove', opts));
+                el.dispatchEvent(new MouseEvent('mousemove', opts));
+                return { ok: true };
+            })()
+            """
+        _ = try await evaluate(script, in: webView)
+    }
+
+    static func mouseDown(button: Int = 0, in webView: WKWebView) async throws {
+        let buttons = button == 2 ? 2 : (button == 1 ? 4 : 1)
+        let script = """
+            (() => {
+                const x = window.__denMouseX || 0;
+                const y = window.__denMouseY || 0;
+                const el = document.elementFromPoint(x, y) || document;
+                const btn = \(button);
+                const opts = { bubbles: true, cancelable: true, view: window, clientX: x, clientY: y, button: btn, buttons: \(buttons) };
+                el.dispatchEvent(new PointerEvent('pointerdown', opts));
+                el.dispatchEvent(new MouseEvent('mousedown', opts));
+                return { ok: true };
+            })()
+            """
+        _ = try await evaluate(script, in: webView)
+    }
+
+    static func mouseUp(button: Int = 0, in webView: WKWebView) async throws {
+        let script = """
+            (() => {
+                const x = window.__denMouseX || 0;
+                const y = window.__denMouseY || 0;
+                const el = document.elementFromPoint(x, y) || document;
+                const btn = \(button);
+                const opts = { bubbles: true, cancelable: true, view: window, clientX: x, clientY: y, button: btn, buttons: 0 };
+                el.dispatchEvent(new PointerEvent('pointerup', opts));
+                el.dispatchEvent(new MouseEvent('mouseup', opts));
+                return { ok: true };
+            })()
+            """
+        _ = try await evaluate(script, in: webView)
+    }
+
+    @discardableResult
+    static func mouseClick(
+        coordX: Double,
+        coordY: Double,
+        button: Int = 0,
+        count: Int = 1,
+        in webView: WKWebView
+    ) async throws -> CGRect {
+        let buttons = button == 2 ? 2 : (button == 1 ? 4 : 1)
+        let script = """
+            (() => {
+                const x = \(coordX), y = \(coordY);
+                const count = \(count);
+                const btn = \(button);
+                window.__denMouseX = x; window.__denMouseY = y;
+                const el = document.elementFromPoint(x, y) || document;
+                for (let i = 1; i <= count; i++) {
+                    const downOpts = { bubbles: true, cancelable: true, view: window, clientX: x, clientY: y, button: btn, buttons: \(buttons), detail: i };
+                    const upOpts = { bubbles: true, cancelable: true, view: window, clientX: x, clientY: y, button: btn, buttons: 0, detail: i };
+                    el.dispatchEvent(new PointerEvent('pointerdown', downOpts));
+                    el.dispatchEvent(new MouseEvent('mousedown', downOpts));
+                    el.dispatchEvent(new PointerEvent('pointerup', upOpts));
+                    el.dispatchEvent(new MouseEvent('mouseup', upOpts));
+                    el.dispatchEvent(new MouseEvent('click', upOpts));
+                    if (i === 2) el.dispatchEvent(new MouseEvent('dblclick', upOpts));
+                }
+                return { ok: true, rect: { x: x - 4, y: y - 4, width: 8, height: 8 } };
+            })()
+            """
+        let result = try await evaluate(script, in: webView)
+        return try extractRect(from: result, scale: webView.pageZoom * webView.magnification)
+    }
+
+    static func mouseWheel(
+        deltaX: Double = 0,
+        deltaY: Double,
+        in webView: WKWebView
+    ) async throws {
+        let script = """
+            (() => {
+                const dx = \(deltaX), dy = \(deltaY);
+                const x = window.__denMouseX || 0;
+                const y = window.__denMouseY || 0;
+                const el = document.elementFromPoint(x, y) || document;
+                const opts = { bubbles: true, cancelable: true, view: window, clientX: x, clientY: y, deltaX: dx, deltaY: dy };
+                el.dispatchEvent(new WheelEvent('wheel', opts));
+                window.scrollBy({ left: dx, top: dy, behavior: 'instant' });
+                return { ok: true };
+            })()
+            """
+        _ = try await evaluate(script, in: webView)
     }
 
     static func value(target: String, in webView: WKWebView) async throws -> String {
@@ -971,6 +1236,7 @@ enum SheetInteraction {
             denSnapshotEligible,
             denSnapshotName,
             denSnapshotLevel,
+            denDispatchInput,
             denSetValue,
             denInspect,
         } = dom;

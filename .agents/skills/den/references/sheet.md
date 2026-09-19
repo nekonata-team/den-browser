@@ -112,6 +112,7 @@ Read the corresponding JSON fields:
 | `get text` | `.text` |
 | `get attr` | `.attribute` |
 | `get count` | `.count` |
+| `get box` | `.box` (with `.x`, `.y`, `.width`, `.height`) |
 | `get value` | `.value` (may be an empty string) |
 | `is enabled` | `.enabled` (boolean) |
 

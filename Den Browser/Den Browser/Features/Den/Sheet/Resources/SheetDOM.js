@@ -323,6 +323,7 @@ function denInspect(el, fields) {
         denSnapshotEligible,
         denSnapshotName,
         denSnapshotLevel,
+        denDispatchInput,
         denSetValue,
         denInspect,
     };

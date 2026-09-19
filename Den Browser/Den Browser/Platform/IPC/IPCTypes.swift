@@ -19,8 +19,12 @@ nonisolated enum DenIPCCommand: Codable, Equatable, Sendable {
         case get
         case isState = "is"
         case click
+        case dblclick
         case fill
+        case type
+        case focus
         case drag
+        case mouse
         case interact
     }
 
@@ -204,6 +208,20 @@ nonisolated struct DenProfileInfo: Codable, Sendable {
     }
 }
 
+nonisolated struct DenBoundingBox: Codable, Equatable, Sendable {
+    var originX: Double
+    var originY: Double
+    var width: Double
+    var height: Double
+
+    enum CodingKeys: String, CodingKey {
+        case originX = "x"
+        case originY = "y"
+        case width
+        case height
+    }
+}
+
 nonisolated struct DenIPCResponse: Codable, Sendable {
     var isOk: Bool
     var error: String?
@@ -226,6 +244,7 @@ nonisolated struct DenIPCResponse: Codable, Sendable {
     var count: Int?
     var visible: Bool?
     var enabled: Bool?
+    var box: DenBoundingBox?
     var screenshotPath: String?
     var completedActions: Int?
     var failedActionIndex: Int?
@@ -252,6 +271,7 @@ nonisolated struct DenIPCResponse: Codable, Sendable {
         case count
         case visible
         case enabled
+        case box
         case screenshotPath = "screenshot_path"
         case completedActions = "completed_actions"
         case failedActionIndex = "failed_action_index"
@@ -277,6 +297,7 @@ nonisolated struct DenIPCResponse: Codable, Sendable {
         count: Int? = nil,
         visible: Bool? = nil,
         enabled: Bool? = nil,
+        box: DenBoundingBox? = nil,
         screenshotPath: String? = nil,
         completedActions: Int? = nil,
         failedActionIndex: Int? = nil
@@ -303,6 +324,7 @@ nonisolated struct DenIPCResponse: Codable, Sendable {
             count: count,
             visible: visible,
             enabled: enabled,
+            box: box,
             screenshotPath: screenshotPath,
             completedActions: completedActions,
             failedActionIndex: failedActionIndex

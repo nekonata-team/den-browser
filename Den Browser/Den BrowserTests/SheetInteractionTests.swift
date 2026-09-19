@@ -634,4 +634,146 @@ struct SheetInteractionTests {
         #expect(linkResult.href == "https://example.com/target")
         #expect(btnResult.href == nil)
     }
+
+    @Test func dblclickDispatchesDoubleClickEvents() async throws {
+        // Arrange
+        let webView = makeWebView()
+        let waiter = SheetInteractionWebViewLoadWaiter()
+        let html = """
+            <!DOCTYPE html>
+            <button id="target" ondblclick="this.dataset.dbl = 'yes'">Double me</button>
+            <script>
+                window.clickDetails = [];
+                document.getElementById('target').addEventListener('click', e => window.clickDetails.push(e.detail));
+                document.getElementById('target').addEventListener('dblclick', e => window.clickDetails.push('dbl:' + e.detail));
+            </script>
+            """
+        await waiter.load(html, baseURL: URL(string: "https://example.com")!, in: webView)
+
+        // Act
+        try await SheetInteraction.dblclick(target: "#target", in: webView)
+
+        // Assert
+        let dblAttr = try await SheetInteraction.attribute(target: "#target", name: "data-dbl", in: webView)
+        #expect(dblAttr == "yes")
+        let details = try await webView.evaluateJavaScript("window.clickDetails") as? [Any]
+        #expect(details?.count == 3)
+    }
+
+    @Test func focusSetsActiveElement() async throws {
+        // Arrange
+        let webView = makeWebView()
+        let waiter = SheetInteractionWebViewLoadWaiter()
+        let html = """
+            <!DOCTYPE html>
+            <input id="first" type="text">
+            <input id="second" type="text">
+            """
+        await waiter.load(html, baseURL: URL(string: "https://example.com")!, in: webView)
+
+        // Act
+        try await SheetInteraction.focus(target: "#second", in: webView)
+
+        // Assert
+        let activeID = try await webView.evaluateJavaScript("document.activeElement.id") as? String
+        #expect(activeID == "second")
+    }
+
+    @Test func typeInsertsTextAndDispatchesInput() async throws {
+        // Arrange
+        let webView = makeWebView()
+        let waiter = SheetInteractionWebViewLoadWaiter()
+        let html = """
+            <!DOCTYPE html>
+            <input id="inp" type="text" value="hello ">
+            <script>
+                window.inputEvents = [];
+                document.getElementById('inp').addEventListener('input', e => window.inputEvents.push(e.data));
+            </script>
+            """
+        await waiter.load(html, baseURL: URL(string: "https://example.com")!, in: webView)
+
+        // Act
+        try await SheetInteraction.type(target: "#inp", text: "world", in: webView)
+
+        // Assert
+        let val = try await SheetInteraction.value(target: "#inp", in: webView)
+        #expect(val == "hello world")
+        let eventsCount = try await webView.evaluateJavaScript("window.inputEvents.length") as? Int ?? 0
+        #expect(eventsCount > 0)
+    }
+
+    @Test func typeIntoFocusedElementWhenTargetIsNil() async throws {
+        // Arrange
+        let webView = makeWebView()
+        let waiter = SheetInteractionWebViewLoadWaiter()
+        let html = """
+            <!DOCTYPE html>
+            <textarea id="txt"></textarea>
+            <script>
+                document.getElementById('txt').focus();
+            </script>
+            """
+        await waiter.load(html, baseURL: URL(string: "https://example.com")!, in: webView)
+
+        // Act
+        try await SheetInteraction.type(target: nil, text: "typed text", in: webView)
+
+        // Assert
+        let val = try await SheetInteraction.value(target: "#txt", in: webView)
+        #expect(val == "typed text")
+    }
+
+    @Test func boxReturnsElementBoundingBox() async throws {
+        // Arrange
+        let webView = makeWebView()
+        let waiter = SheetInteractionWebViewLoadWaiter()
+        let html = """
+            <!DOCTYPE html>
+            <div id="box" style="position: absolute; left: 50px; top: 100px; width: 200px; height: 80px;"></div>
+            """
+        await waiter.load(html, baseURL: URL(string: "https://example.com")!, in: webView)
+
+        // Act
+        let rect = try await SheetInteraction.box(target: "#box", in: webView)
+
+        // Assert
+        #expect(rect.origin.x == 50)
+        #expect(rect.origin.y == 100)
+        #expect(rect.size.width == 200)
+        #expect(rect.size.height == 80)
+    }
+
+    @Test func mouseEventsDispatchCorrectly() async throws {
+        // Arrange
+        let webView = makeWebView()
+        let waiter = SheetInteractionWebViewLoadWaiter()
+        let html = """
+            <!DOCTYPE html>
+            <div id="target" style="position: absolute; left: 0px; top: 0px; width: 200px; height: 200px;"></div>
+            <script>
+                window.mouseLog = [];
+                const el = document.getElementById('target');
+                ['mousedown', 'mouseup', 'click', 'mousemove', 'wheel'].forEach(type => {
+                    el.addEventListener(type, e => window.mouseLog.push(type));
+                });
+            </script>
+            """
+        await waiter.load(html, baseURL: URL(string: "https://example.com")!, in: webView)
+
+        // Act
+        try await SheetInteraction.mouseMove(coordX: 100, coordY: 100, in: webView)
+        try await SheetInteraction.mouseDown(button: 0, in: webView)
+        try await SheetInteraction.mouseUp(button: 0, in: webView)
+        try await SheetInteraction.mouseClick(coordX: 100, coordY: 100, button: 0, count: 1, in: webView)
+        try await SheetInteraction.mouseWheel(deltaX: 0, deltaY: 50, in: webView)
+
+        // Assert
+        let log = try await webView.evaluateJavaScript("window.mouseLog") as? [String] ?? []
+        #expect(log.contains("mousemove"))
+        #expect(log.contains("mousedown"))
+        #expect(log.contains("mouseup"))
+        #expect(log.contains("click"))
+        #expect(log.contains("wheel"))
+    }
 }

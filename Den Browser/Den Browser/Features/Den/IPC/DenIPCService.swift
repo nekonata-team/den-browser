@@ -321,6 +321,22 @@ final class DenIPCService {
 
                 return .success(message: "Clicked \(description)")
 
+            case .dblclick:
+                guard let target = request.args.first, !target.isEmpty else {
+                    return .failure("Usage: den sheet dblclick <@ref|selector>")
+                }
+                let rect = try await SheetInteraction.dblclick(target: target, in: runtime.webView)
+                runtime.triggerActionHighlight(rect)
+                return .success(message: "Double-clicked \(target)")
+
+            case .focus:
+                guard let target = request.args.first, !target.isEmpty else {
+                    return .failure("Usage: den sheet focus <@ref|selector>")
+                }
+                let rect = try await SheetInteraction.focus(target: target, in: runtime.webView)
+                runtime.triggerActionHighlight(rect)
+                return .success(message: "Focused \(target)")
+
             case .fill:
                 guard request.args.count >= 2 else {
                     return .failure("Usage: den sheet fill <@ref|selector> <value>")
@@ -330,6 +346,19 @@ final class DenIPCService {
                 let rect = try await SheetInteraction.fill(target: target, value: value, in: runtime.webView)
                 runtime.triggerActionHighlight(rect)
                 return .success(message: "Filled \(target)")
+
+            case .type:
+                guard !request.args.isEmpty else {
+                    return .failure("Usage: den sheet type [<@ref|selector>] <text>")
+                }
+                let (target, text): (String?, String) =
+                    request.args.count == 1
+                    ? (nil, request.args[0])
+                    : (request.args[0], request.args.dropFirst().joined(separator: " "))
+                let rect = try await SheetInteraction.type(target: target, text: text, in: runtime.webView)
+                runtime.triggerActionHighlight(rect)
+                let destination = target ?? "focused element"
+                return .success(message: "Typed into \(destination)")
 
             case .drag:
                 guard !request.args.isEmpty else {
@@ -421,6 +450,19 @@ final class DenIPCService {
                     let count = try await SheetInteraction.count(selector: selector, in: runtime.webView)
                     return .success(count: count)
 
+                case "box":
+                    guard request.args.count == 2, let target = request.args.last, !target.isEmpty else {
+                        return .failure("Usage: den sheet get box <@ref|selector>")
+                    }
+                    let rect = try await SheetInteraction.box(target: target, in: runtime.webView)
+                    let box = DenBoundingBox(
+                        originX: rect.origin.x,
+                        originY: rect.origin.y,
+                        width: rect.size.width,
+                        height: rect.size.height
+                    )
+                    return .success(box: box)
+
                 default:
                     return .failure("Unknown get target: \(kind)")
                 }
@@ -446,6 +488,100 @@ final class DenIPCService {
                     return .success(checked: checked)
                 default:
                     return .failure("Unknown element state: \(state)")
+                }
+
+            case .mouse:
+                guard let action = request.args.first?.lowercased() else {
+                    return .failure("Usage: den sheet mouse <move|down|up|click|wheel> ...")
+                }
+                switch action {
+                case "move":
+                    guard request.args.count == 3,
+                        let coordX = Double(request.args[1]),
+                        let coordY = Double(request.args[2])
+                    else {
+                        return .failure("Usage: den sheet mouse move <x> <y>")
+                    }
+                    try await SheetInteraction.mouseMove(coordX: coordX, coordY: coordY, in: runtime.webView)
+                    return .success(message: "Mouse moved to \(coordX), \(coordY)")
+
+                case "down":
+                    let button: Int = {
+                        guard request.args.count > 1 else { return 0 }
+                        switch request.args[1].lowercased() {
+                        case "right", "2": return 2
+                        case "middle", "1": return 1
+                        default: return 0
+                        }
+                    }()
+                    try await SheetInteraction.mouseDown(button: button, in: runtime.webView)
+                    return .success(message: "Mouse button \(button) down")
+
+                case "up":
+                    let button: Int = {
+                        guard request.args.count > 1 else { return 0 }
+                        switch request.args[1].lowercased() {
+                        case "right", "2": return 2
+                        case "middle", "1": return 1
+                        default: return 0
+                        }
+                    }()
+                    try await SheetInteraction.mouseUp(button: button, in: runtime.webView)
+                    return .success(message: "Mouse button \(button) up")
+
+                case "click":
+                    guard request.args.count >= 3,
+                        let coordX = Double(request.args[1]),
+                        let coordY = Double(request.args[2])
+                    else {
+                        return .failure(
+                            "Usage: den sheet mouse click <x> <y> [--button <left|right|middle>] [--count <n>]"
+                        )
+                    }
+                    var button = 0
+                    var count = 1
+                    var iterator = request.args.dropFirst(3).makeIterator()
+                    while let arg = iterator.next() {
+                        switch arg {
+                        case "--button":
+                            if let val = iterator.next() {
+                                switch val.lowercased() {
+                                case "right", "2": button = 2
+                                case "middle", "1": button = 1
+                                default: button = 0
+                                }
+                            }
+                        case "--count":
+                            if let val = iterator.next(), let parsed = Int(val) { count = parsed }
+                        default: break
+                        }
+                    }
+                    let rect = try await SheetInteraction.mouseClick(
+                        coordX: coordX,
+                        coordY: coordY,
+                        button: button,
+                        count: count,
+                        in: runtime.webView
+                    )
+                    runtime.triggerActionHighlight(rect)
+                    return .success(message: "Mouse clicked at \(coordX), \(coordY)")
+
+                case "wheel":
+                    guard request.args.count >= 2, let deltaY = Double(request.args[1]) else {
+                        return .failure("Usage: den sheet mouse wheel <dy> [--dx <dx>]")
+                    }
+                    var deltaX = 0.0
+                    var iterator = request.args.dropFirst(2).makeIterator()
+                    while let arg = iterator.next() {
+                        if arg == "--dx", let val = iterator.next(), let parsed = Double(val) {
+                            deltaX = parsed
+                        }
+                    }
+                    try await SheetInteraction.mouseWheel(deltaX: deltaX, deltaY: deltaY, in: runtime.webView)
+                    return .success(message: "Mouse wheel scrolled dx: \(deltaX), dy: \(deltaY)")
+
+                default:
+                    return .failure("Unknown mouse action: \(action)")
                 }
 
             }
