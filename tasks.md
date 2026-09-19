@@ -4,236 +4,321 @@
 
 ## Contents
 
-- [ ] [GHOSTTY-001：upstream mainをForkし配布経路を確立する](#ghostty-001upstream-mainをforkし配布経路を確立する)
-- [ ] [GHOSTTY-002：hidden・detached Surfaceのtick寿命をForkで分離する](#ghostty-002hiddendetached-surfaceのtick寿命をforkで分離する)
-- [ ] [GHOSTTY-003：Window非attachのexec SurfaceをForkで開始する](#ghostty-003window非attachのexec-surfaceをforkで開始する)
-- [/] [GHOSTTY-004：Terminal Cmd-clickのURL actionをForkで完結する](#ghostty-004terminal-cmd-clickのurl-actionをforkで完結する)
-- [/] [GHOSTTY-005：DenをFork版へ移行しCLI Terminal Boardを起動する](#ghostty-005denをfork版へ移行しcli-terminal-boardを起動する)
-- [/] [GHOSTTY-006：Denの暫定workaroundを削除して統合検証する](#ghostty-006denの暫定workaroundを削除して統合検証する)
+- [TASK-001：Profileを越えないCLI対象解決へ統一する](#task-001)
+- [TASK-002：ソケットの停止と再起動を安全にする](#task-002)
+- [TASK-003：IPC切断と通信資源の上限を処理する](#task-003)
+- [TASK-004：永続化の成功と失敗の契約を統一する](#task-004)
+- [TASK-005：Profile保存を集約しMainActorの負荷を減らす](#task-005)
+- [TASK-006：ダウンロード成功まで既存ファイルを保護する](#task-006)
+- [TASK-007：Board作成と複製の共通処理を統合する](#task-007)
+- [TASK-008：Windowとruntimeの終了処理を集約する](#task-008)
+- [TASK-009：IPC引数を型付きpayloadへ移行する](#task-009)
+- [TASK-010：URL入力の解決と検証を統一する](#task-010)
+- [TASK-011：CLI接続先とTerminalの環境変数を一致させる](#task-011)
+- [TASK-012：interactの対象Boardを固定する](#task-012)
+- [TASK-013：DOM操作のイベント配送を修正する](#task-013)
+- [TASK-014：Web共通機能をBoardとDrawerで揃える](#task-014)
+- [TASK-015：一時UI状態の終了処理と参照の無効化を整理する](#task-015)
+- [TASK-016：Drawerの共有状態とWindow固有状態を整合させる](#task-016)
+- [TASK-017：外部プロセス実行を非同期化し終了を管理する](#task-017)
+- [TASK-018：Terminalへのシグナル送信を一本化する](#task-018)
+- [TASK-019：Screenshotの画像取得と出力処理を分離する](#task-019)
+- [TASK-020：DOM参照の寿命とsnapshotの負荷を改善する](#task-020)
+- [TASK-021：Board Activityの集計とCPU計測を改善する](#task-021)
+- [TASK-022：Profile読み込み失敗を原因別に扱う](#task-022)
+- [TASK-023：uBO Lite更新時の意図しないダウングレードを防ぐ](#task-023)
+- [TASK-024：公開Webの日英ページの構造を共通化する](#task-024)
+- [TASK-025：保守コストの高い機能の縮小を判断する](#task-025)
 
 ## Current Status
 
-2026-09-12時点でForkは未作成。まず`Lakr233/libghostty-spm`の公開最新版を適用し、URL actionとTerminal入力の挙動を確認した。
-Denは`libghostty-spm` `1.6.20260909`（`7e45d27160f9b34aca9ca5c9820e9207482f9f04`）と`MSDisplayLink` `2.2.0`を固定している。
-最新版の`TerminalController`は、`TerminalSurfaceOpenURLDelegate`を持つhostの`OPEN_URL` actionを処理済みとして返す。これにより、Den側の`TerminalURLSuppressionTracker`、`registerTerminalURL`、`cancelTerminalURLRegistration`ワークアラウンドを削除した。
-`den terminal send`、`den terminal run`、`den board terminal new /tmp --run ... --focus`でTerminal入力とcommand実行を実機確認し、テスト用Boardは削除済み。`just check`も成功している。
-Den側は既存の`TerminalSurfaceLifecycleDelegate`を利用し、Surface ready前の`--run`を保留してready後に実行するようにした。150ms固定待機は削除済みである。未activate・Detach時にready通知が来ない問題は未解決のまま、別タスクとして扱う。
+2026-09-19の俯瞰レビューを実行可能な作業単位に整理した台帳です。各タスクは未着手であり、この台帳の作成はアプリ実装や機能削除の完了を意味しません。
 
-Fork元は`Lakr233/libghostty-spm`の`main`（`1.6.20260909`、`7e45d27160f9b34aca9ca5c9820e9207482f9f04`）とする。
+- レビュー時点の `just check` は成功し、xcresultの集計は506テスト成功でした。これは以下の問題が存在しないことの保証ではありません。
+- 現行 `DenSocketServer` を単独実行し、二度目の停止による別FDの誤クローズと、クライアント切断後のSIGPIPE終了を再現しました。実アプリ全体のシグナル設定は別途確認が必要です。
+- 現行 `DenState` と `DenIPCTargetResolver` に周辺スタブを組み合わせ、初期Desk IDの重複と、返したBoardを所有しないStoreの選択を確認しました。Profileの実ライフサイクルを通す回帰テストは未追加です。
+- その他は主にコード経路からの指摘です。実サイト・複数Windowの操作確認、性能計測は未実施です。実装前に現行コードで原因と契約を再確認します。
+- GhosttyのFork、未attach Surface、hidden tickに関する既存作業は [tasks-ghostty.md](tasks-ghostty.md) が所有します。進捗や完了条件をこの台帳へ複製しません。
 
-upstreamはhidden Surfaceのgrid・scrollback・Session維持とoccluded時のwake-up drainを実装済みである。
-一方でSurface作成は`AppTerminalView.window != nil`を必要とするため、Boardが未表示でView未生成のCLI経路は解決しない。
-透明・画面外`NSWindow`を維持するDen側workaroundは採用しない。
+優先度は P1（Profile境界・プロセス終了・データ保護）、P2（挙動統一・保守性）、P3（計測に基づく最適化・整理）です。着手順は各タスクのPrerequisitesから決めます。Verificationは実施予定であり、実行後にコマンド、結果、未確認事項を追記します。
 
-実装開始時に、Fork元revision、Denの未コミット変更、`Package.resolved`、Forkのrelease asset配布先を再確認する。
-
-## Goal
-
-Terminal Sessionの実行寿命を描画Viewのattach状態から分離する。
-
-- CLIで作成したTerminal Boardは、表示・Focus・`NSWindow` attach前に`.exec` Surface、PTY、shellを開始する。
-- detachまたは非表示は描画を停止しても、exec Surface、grid、scrollback、PTY、shell、必要な`app_tick`を停止しない。
-- 後からBoard Viewをattachしても、Surfaceをrebuildせず、既存のSessionとscrollbackを表示する。
-- Surface ready通知をcommand dispatchの同期点とし、固定sleepを置かない。
-- `DenState`にはlive Surface、PTY、View、Windowを保存しない。
+ソース位置の略記：`App` = `Den Browser/Den Browser/App`、`Den` = `Den Browser/Den Browser/Features/Den`、`Profiles` = `Den Browser/Den Browser/Features/Profiles`、`Extensions` = `Den Browser/Den Browser/Features/Extensions`、`IPC` = `Den Browser/Den Browser/Platform/IPC`、`CLI` = `Den Browser/den`。
 
 ## Tasks
 
-### [ ] GHOSTTY-001：upstream mainをForkし配布経路を確立する
-
-#### Purpose
-
-最新upstreamのhidden Surface改善を取り込み、Denが再現可能に参照できるForkとbinary XCFramework配布経路を確立する。
-
-#### Work
-
-- [ ] `Lakr233/libghostty-spm`の`main`をForkし、Fork作成時点のupstream revisionを記録する。
-- [ ] Fork remoteを追加し、upstream remoteをread-onlyで保持する。Den本体とForkの作業treeを分ける。
-- [ ] Forkの`Package.swift`がFork所有のXCFramework release assetとchecksumを参照するようにする。upstream release URLへの暗黙依存を残さない。
-- [ ] Forkで`Ghostty.ref`、patch stack、`build.sh`、package testを実行できることを確認する。
-- [ ] upstream `main`取り込みとFork固有差分を分離したcommit構成を定める。
-
-#### Acceptance Criteria
-
-- [ ] Forkを新規cloneして依存解決・build・testを再現できる。
-- [ ] Fork固有のrelease assetとchecksumがupstream assetに依存しない。
-- [ ] Fork差分がSurface lifecycleと必要な配布設定に限定される。
-
-#### Verification
-
-- [ ] Forkから新規cloneし、`swift package resolve`とpackage testを実行する。
-- [ ] package release assetを別cloneから取得し、checksumを検証する。
-
----
-
-### [ ] GHOSTTY-002：hidden・detached Surfaceのtick寿命をForkで分離する
-
-#### Purpose
-
-描画visibility、View attach、`app_tick`を別の寿命として扱い、Denの1秒ごとの`controller.tick()`応急処置を不要にする。
-
-#### Evidence and Entry Points
-
-- current upstreamはoccluded Surfaceのwake-upをdrainするが、detached Surfaceのtickを止める。
-- `TerminalSurfaceCoordinator`はSurface lifecycle、metrics、wake-up処理を集約している。
-- Denの`TerminalRuntime`はhidden Terminalに対する定期`controller.tick()`応急処置を持つ。
-
-#### Work
-
-- [ ] Surface作成可能条件、描画可能条件、wake-up / `app_tick`実行可能条件を別々に定義する。
-- [ ] hidden Surfaceでは描画を止めてもPTY callback、title、PWD、bell、child exitをdrainするFork側経路を実装する。
-- [ ] detached exec Surfaceで必要なtickを維持し、attach / visibilityによるrendering停止と混同しない。
-- [ ] idle時に不要なdisplay linkやtimerを保持せず、必要なwake-upだけでtickする。
-- [ ] Den側の1秒ごとの`controller.tick()`応急処置を削除できるFork API・契約を提供する。
-
-#### Acceptance Criteria
-
-- [ ] hidden / detached状態でも必要なcallbackとchild exitが届く。
-- [ ] 描画停止中にper-frame pollingや固定interval timerを常駐させない。
-- [ ] Denは独自tick loopなしでTerminal Sessionを維持できる。
-
-#### Verification
-
-- [ ] Fork package testでhidden、detached、idle、child exitの各状態遷移を検証する。
-- [ ] AppKit実機でhidden Terminalのresource usageとcallback deliveryを確認する。
-
----
-
-### [ ] GHOSTTY-003：Window非attachのexec SurfaceをForkで開始する
-
-#### Purpose
-
-透明・画面外Windowを作らず、有効なframeを持つ未attach `AppTerminalView`で`.exec` Surface、PTY、shellを開始する。
-
-#### Prerequisites
-
-- GHOSTTY-002完了。
-
-#### Work
-
-- [ ] `TerminalSurfaceCoordinator.rebuildIfReady()`の`isAttached()`依存を、Surface作成と描画attachの別契約へ置き換える。
-- [ ] `NSView`未attach時のmacOS backend resource要件を検証し、wrapperだけで成立するか、raw Ghostty patchが必要かを確定する。
-- [ ] `.exec` Surfaceの作成、ready callback、input、output、viewport readをWindow未所属で動作させる。
-- [ ] 後からViewをWindowへattachしても同じSurface、child process、grid、scrollbackを維持する。attachでrebuildしない。
-- [ ] Surface freeまたはRuntime disposeだけがPTY停止の境界であることを保証する。
-
-#### Acceptance Criteria
-
-- [ ] `NSWindow`未所属のViewで`/bin/zsh -f`を起動し、command outputを読める。
-- [ ] attach前後で同一Surface、同一child process、scrollbackが維持される。
-- [ ] 固定delay、ポーリング、画面外Window、Window orderingを追加しない。
-
-#### Verification
-
-- [ ] Fork package testで未attach exec、attach後の継続、dispose時の終了を個別に検証する。
-- [ ] AppKit実機で未attach開始→attach→disposeを実施し、Crash ReporterとMetal resource警告を確認する。
-
----
-
-### [ ] GHOSTTY-004：Terminal Cmd-clickのURL actionをForkで完結する
-
-#### Purpose
-
-TerminalのCmd-clickでDenのBoardを作成した後、デフォルトブラウザも開く二重処理をFork側で止める。
-
-#### Work
-
-- [ ] `GHOSTTY_ACTION_OPEN_URL`の`action_cb`で、hostがURLを処理した場合は処理済みを返す契約を実装する。
-- [ ] URL action callbackの未処理・拒否・処理済みの戻り値を明確にし、既存プラットフォームのURL挙動を回帰させない。
-- [ ] Fork package testでCmd-click URL actionがhostへ一度だけ届き、デフォルトブラウザ起動へfall throughしないことを確認する。
-
-#### Acceptance Criteria
-
-- [x] Denが処理したTerminal URLは、公開最新版からmacOSのデフォルトブラウザへ渡らないことをAppKit実機で確認した。
-- [ ] hostが処理しないURLは、既存のfallback方針を維持する。
-
-#### Verification
-
-- [ ] Fork package testでhandled / unhandled / rejected URL actionを検証する。
-- [x] AppKit実機でTerminal Cmd-clickを確認する。
-
----
-
-### [ ] GHOSTTY-005：DenをFork版へ移行しCLI Terminal Boardを起動する
-
-#### Purpose
-
-Fork APIを使い、CLIで作成したTerminal BoardのTerminal SessionをBoard表示前に開始する。
-
-#### Prerequisites
-
-- GHOSTTY-001、GHOSTTY-002、GHOSTTY-003、GHOSTTY-004完了。
-
-#### Work
-
-- [ ] Denのpackage URL、revision、checksumをFork版へ更新し、既存Ghostty API利用箇所を最新APIへ移行する。
-- [ ] `DenStore.terminalRuntime(for:)`を唯一のlive Terminal Runtime生成経路として維持する。
-- [x] Surface ready前の`--run`を保留し、既存の`TerminalSurfaceLifecycleDelegate`通知後に一度だけ送る。150ms固定待機を削除する。
-- [ ] `den board terminal new`でRuntimeとdetached exec Sessionを表示・Focus前に開始する。
-- [ ] `den terminal`のinput・signal・viewport・close経路がattach前後で同じTerminal Sessionを対象とすることを確認する。
-- [ ] Fork URL action対応後、`TerminalURLSuppressionTracker`、`registerTerminalURL`、`cancelTerminalURLRegistration`を削除する。
-- [ ] CLI仕様と所有文書を更新する。`den sheet wait`と異なり、Terminal Board creationはSession開始まで保証することを明記する。
-
-#### Acceptance Criteria
-
-- [ ] `den board terminal new <path> --run <command>`はBoardを表示またはFocusせずにshellを開始し、commandを実行する。
-- [ ] 直後にBoardを表示しても新しいPTY、再実行、scrollback消失が起きない。
-- [ ] Terminal Cmd-clickでDenのBoardだけが作成され、デフォルトブラウザを開かない。
-- [ ] Web Boardの即時runtime起動と既存Terminal Board操作を回帰させない。
-
-#### Verification
-
-- [ ] isolated profileでDenを起動し、CLIからTerminal Boardを作成してmarker commandの実行を確認する。
-- [ ] Terminal Runtimeの安定したStore契約をunit testで確認する。native Surface lifecycleはFork package testと実機確認で検証する。
-- [x] Swift変更後に`just check`を実行する。
-
----
-
-### [ ] GHOSTTY-006：Denの暫定workaroundを削除して統合検証する
-
-#### Purpose
-
-Fork経路へ完全に切り替え、Den側にSurface lifecycleを偽装・再実装するworkaroundを残さない。
-
-#### Prerequisites
-
-- GHOSTTY-005完了。
-
-#### Work
-
-- [ ] 未コミットの透明・画面外`NSWindow` bootstrap host、input queue、関連lifecycle補助を削除する。
-- [ ] Fork APIが置き換えるhidden tick応急処置を削除する。
-- [x] 公開最新版のURL action対応を確認し、Den側のURL suppression workaroundを削除する。
-- [ ] CLI Terminal Board作成がForkのdetached exec APIだけで起動するよう呼び出しを整理する。
-- [ ] obsolete documentation、backlog項目、テスト用artifactを削除またはFork実装後の事実へ更新する。
-- [ ] 変更差分を自己レビューし、Window resource、Surface二重生成、child process leak、固定delayがないことを確認する。
-
-#### Acceptance Criteria
-
-- [ ] Denのproduction codeに透明Window、画面外Window、Window ordering、固定sleep、polling retry、独自tick loop、URL suppression workaroundが残らない。
-- [ ] Fork packageとDenの責務境界が明確で、DenはTerminal Sessionのnative lifecycleを再実装しない。
-- [ ] Fork不在では不可能だったCLI作成Terminal Board起動が、通常のDen Runtime lifecycle内で動く。
-
-#### Verification
-
-- [ ] `just check`を実行する。
-- [ ] CLI作成→未表示でcommand実行→Board表示→output確認→Board削除の実機シナリオを実施する。
-- [ ] Terminal Cmd-click、hidden / detach、child exitを実機確認する。
-- [ ] 最新のFork revision、実行コマンド、結果、未確認事項を各タスクへ記録する。
-
-## Common Constraints
-
-- macOS 26.0を最低対応とし、到達不能な旧OS fallbackを追加しない。
-- Surface、PTY、shell、`NSView`、`NSWindow`、`BoardRuntime`はlive stateであり、`DenState`へ永続化しない。
-- CLI commandの成功応答とTerminal Session readyを混同しない。`--run`はSurface ready callbackを待つ。
-- `.exec` backendを維持する。host-managed I/Oで既存PTYを再実装しない。
-- Forkはupstream `main`からの変更を最小に保ち、upstream追従可能なcommit構成にする。
-- Fork・Den双方で、実行した検証、実機条件、既知の制約を記録する。
+<a id="task-001"></a>
+### [ ] TASK-001：Profileを越えないCLI対象解決へ統一する
+
+- **Priority / Purpose:** P1。対象BoardとそのProfile、表示先Store、Webデータ環境の所属を一致させます。
+- **Prerequisites:** なし。
+- **Entry Points:** `Den/DenState.swift`、`Den/IPC/DenIPCTargetResolver.swift`、`Profiles/ProfileManager.swift`、`Den/Store/DenStore+Runtime.swift`。
+- **Work:** 初期状態を生成するたびに新しいDesk IDを割り当てます。明示Profile、明示Board、caller、ambientの優先順位と失敗条件を維持しつつ、対象解決を共通化します。Store検索はDesk ID単独ではなくProfile／Storageの所属も検証します。既存の重複Desk IDでも誤配送しないようにし、不要なID書き換えは避けます。
+- **Acceptance Criteria:** 同一プロセスで作成した複数Profile、および同じDesk IDを持つ保存データで、返すStoreが必ず対象Boardを所有します。Profile指定の有無で同じBoardのruntime所有者が変わりません。存在しない明示対象は別対象へフォールバックしません。
+- **Verification:** Profile生成と対象解決のfocused unit test。複数Profile×複数Window、重複Desk ID、未表示Deskを検証し、Board IDだけでなくStoreの所属もassertします。`just check`。
+
+<a id="task-002"></a>
+### [ ] TASK-002：ソケットの停止と再起動を安全にする
+
+- **Priority / Purpose:** P1。FDの二重解放と、古い終了処理による新しいソケットの削除を防ぎます。
+- **Prerequisites:** なし。
+- **Entry Points:** `IPC/DenSocketServer.swift`、`Den/IPC/DenIPCService.swift`。
+- **Work:** FD、DispatchSource、ソケットパスの解放責任を一つにします。start失敗、stop、deinit、再起動の所有権を明確にし、旧世代のcancel handlerが新世代のパスを削除しないようにします。
+- **Acceptance Criteria:** stopは繰り返しても安全です。FD番号の再利用後も他資源を閉じず、再起動後の接続が維持されます。
+- **Verification:** 一時ソケットを使う停止・FD再利用・再起動の回帰テスト。固定sleep依存を避け、終了の同期点を観測します。`just check`。
+
+<a id="task-003"></a>
+### [ ] TASK-003：IPC切断と通信資源の上限を処理する
+
+- **Priority / Purpose:** P1。クライアント切断でアプリを終了させず、未完了接続による資源占有を制限します。
+- **Prerequisites:** TASK-002。
+- **Entry Points:** `IPC/DenSocketServer.swift`、`CLI/DenIPCClient.swift`。
+- **Work:** SIGPIPE、部分送受信、EINTR、EOFを扱います。フレームサイズ、読み取り期限、同時接続数を明示し、ブロッキングreadをSwiftの協調スレッドプールで無期限に保持しない構造にします。停止時の接続とTaskの扱いを定義します。長い正当なSheet waitと通信期限の整合も確認します。
+- **Acceptance Criteria:** 応答前の切断、改行なし、過大入力、遅いクライアントを処理してもサーバーは生存し、他の正常リクエストを処理できます。正常な長時間操作を一律の短い期限で切りません。
+- **Verification:** クラッシュ検証は隔離した子プロセスで実施。分割フレーム、切断、期限超過、上限超過、停止後の資源解放を検証します。`just check`。
+
+<a id="task-004"></a>
+### [ ] TASK-004：永続化の成功と失敗の契約を統一する
+
+- **Priority / Purpose:** P1。保存失敗時の状態乖離と、未保存なのに成功を報告する挙動を解消します。
+- **Prerequisites:** なし。
+- **Entry Points:** `Profiles/ProfileManager.swift`、`Den/DenStore.swift`、`Den/Store/DenStore+DeskPresets.swift`、`Den/Store/DenStore+BoardLifecycle.swift`。
+- **Work:** Den、Preset、Recentの保存結果を統一して呼び出し元へ返します。保存失敗時に戻す状態と、未保存として保持・再試行する状態を定義します。別コレクションの後続保存が古いDenを再保存する経路をなくします。runtime終了など不可逆な副作用を伴う操作は、単純な状態巻き戻しで済ませません。
+- **Acceptance Criteria:** UI、保存用キャッシュ、ファイルの関係が明示され、失敗時に成功Toastを出しません。保存失敗→別項目保存→再起動でも、合意した復旧契約を満たします。
+- **Verification:** 書き込み失敗を注入するunit testで、失敗直後と後続保存後の復元を検証します。`just check`。`docs/persistence.md`を更新します。
+
+<a id="task-005"></a>
+### [ ] TASK-005：Profile保存を集約しMainActorの負荷を減らす
+
+- **Priority / Purpose:** P3。focus、URL／title、Terminal title変更による全Profileの連続保存を減らします。
+- **Prerequisites:** TASK-004。
+- **Entry Points:** `Profiles/ProfileManager.swift`、`Den/Store/DenStore+Runtime.swift`、`Den/Store/DenStore+BoardLifecycle.swift`。
+- **Work:** 代表操作の保存回数、encode時間、書き込み時間を測定します。一操作内のDenとRecentの保存を集約し、必要な場合はimmutable snapshotのencode／I/OをMainActor外で直列化します。新旧の書き込み順序と終了時のflush契約を定義します。
+- **Acceptance Criteria:** 古いsnapshotが新しい保存を上書きしません。変更前後の保存回数とUI停止時間を記録し、TASK-004の失敗契約を維持します。不要と判断した最適化は根拠を記録します。
+- **Verification:** 保存順序、集約、終了、失敗後の再試行のfocused testと同条件の前後計測。`just check`。
+
+<a id="task-006"></a>
+### [ ] TASK-006：ダウンロード成功まで既存ファイルを保護する
+
+- **Priority / Purpose:** P1。通信失敗・キャンセルによる上書き先の元ファイル消失を防ぎます。
+- **Prerequisites:** なし。
+- **Entry Points:** `Den/BaseWebRuntime.swift`。
+- **Work:** 保存先決定時の既存ファイル削除をやめ、一時保存と成功後の置換に分けます。キャンセル、置換失敗、runtime破棄時の一時ファイルと通知の扱いを揃えます。
+- **Acceptance Criteria:** 完了前の失敗では元ファイルが保持されます。成功通知は置換完了後だけ出ます。一時ファイルを放置しません。
+- **Verification:** 保存先処理のunit testと、必要なWebKit download境界の検証。実機操作は別途明示的に依頼された場合に行います。`just check`。
+
+<a id="task-007"></a>
+### [ ] TASK-007：Board作成と複製の共通処理を統合する
+
+- **Priority / Purpose:** P2。入口による検証、配置、focus、Recent、保存の違いを明示して重複を減らします。
+- **Prerequisites:** TASK-001、TASK-004。
+- **Entry Points:** `Den/Store/DenStore+BoardLifecycle.swift`、`Den/Board/BoardInputResolver.swift`、`Den/IPC/DenIPCService.swift`。
+- **Work:** 通常入力、Recent、Essential、CLI、Drawer Placement、複製の呼び出しを列挙します。入力解決、Board値の生成、挿入後処理を整理し、複製の直接配列操作も共通の挿入契約へ寄せます。Board種別固有の生成と意図的なforeground／background差は維持します。
+- **Acceptance Criteria:** 同じ意図の操作は入口にかかわらず同じ配置と保存結果になります。First Sheet、customLabel、Sheet Navigation pause、Terminal種別、Recent記録方針を回帰させません。
+- **Verification:** 既存テストを再利用し、不足する入口間の同等性と意図的な差だけをfocused testで保護します。`just check`。
+
+<a id="task-008"></a>
+### [ ] TASK-008：Windowとruntimeの終了処理を集約する
+
+- **Priority / Purpose:** P2。通常終了、Profile削除、Denリセットでの解除漏れと二重解放を防ぎます。
+- **Prerequisites:** TASK-001。
+- **Entry Points:** `Profiles/ProfileManager.swift`、`Den/Store/DenStore+Runtime.swift`、`Den/Terminal/ZmxSessionsModel.swift`。
+- **Work:** unregister、closeWindows、closeOtherWindows、removeStoresの一件分の解除処理を共有します。Window固有Task／Preview、拡張Window、共有runtimeとruntimeOwnersの寿命を分けます。非表示Boardのcallback維持に必要な参照を、リークと決めつけて除去しません。
+- **Acceptance Criteria:** 一つのWindowを閉じても他Windowや非表示BoardのSessionが維持され、最後のWindow／Profile終了では必要な資源が解放されます。閉じたパネルへ遅いTask結果を適用しません。
+- **Verification:** 複数Window、最後のWindow、Profile削除失敗、reset、遅延callbackのfocused lifecycle test。`just check`。GhosttyのSurface寿命変更は別台帳へ委ねます。
+
+<a id="task-009"></a>
+### [ ] TASK-009：IPC引数を型付きpayloadへ移行する
+
+- **Priority / Purpose:** P2。ArgumentParserで解析済みの値を、サーバーが独自に再解析する重複をなくします。
+- **Prerequisites:** なし。
+- **Entry Points:** `IPC/IPCTypes.swift`、`CLI/Commands/`、`Den/IPC/DenIPCService.swift`。
+- **Work:** コマンドごとの最小のCodable payloadを定義し、値とフラグを分離します。通常CLIとinteractで同じ検証・実行経路を使います。直接ソケットを使うクライアントの互換性方針を確認し、移行方法を文書化します。
+- **Acceptance Criteria:** ハイフンで始まる名前、空文字、オプション名と同じ文字列を値として保持できます。未知・欠落・不正な入力は副作用前に拒否します。不要な独自コマンドフレームワークを追加しません。
+- **Verification:** payload round-trip、CLI解析、サーバー境界のfocused test。`just check`。`docs/cli.md`と必要なagent skill記載を更新します。
+
+<a id="task-010"></a>
+### [ ] TASK-010：URL入力の解決と検証を統一する
+
+- **Priority / Purpose:** P2。相対URLとして成功する入力を、HTTPS補完済みと誤認しないようにします。
+- **Prerequisites:** なし。TASK-007／TASK-009と同じファイルを変更する場合は調整します。
+- **Entry Points:** `Den/IPC/DenIPCService.swift`、`Den/Board/BoardInputResolver.swift`、`Den/Sheet/SheetURLPolicy.swift`。
+- **Work:** sheet open、Board作成、Drawer保持のURL処理を既存ポリシーへ寄せます。検索語、裸のhostname、local file、非対応schemeの許可範囲は操作別に明示します。
+- **Acceptance Criteria:** 補完が必要なhostnameを正しく解決し、未対応入力に成功応答を返しません。URL正規化と入力許可を混同しません。
+- **Verification:** hostname、明示URL、local file、検索語、非対応schemeの契約をfocused testで検証します。`just check`。`docs/cli.md`。
+
+<a id="task-011"></a>
+### [ ] TASK-011：CLI接続先とTerminalの環境変数を一致させる
+
+- **Priority / Purpose:** P2。カスタムDEN_SOCKET利用時にも、内蔵Terminalから同じアプリへ接続できるようにします。
+- **Prerequisites:** なし。
+- **Entry Points:** `IPC/DenSocketServer.swift`、`CLI/DenIPCClient.swift`、`Den/Terminal/TerminalRuntime.swift`、`docs/cli.md`。
+- **Work:** 接続先決定の重複を取り除き、実際のsocket pathをTerminalへ渡します。DEN_PROFILEの自動注入に関する文書と実装の差を解消し、Board移動や既存zmx Sessionの環境変数の寿命も確認します。
+- **Acceptance Criteria:** default／custom pathで接続先が一致します。明示オプションと環境変数の優先順位、Profile scopingの保証が文書と一致します。
+- **Verification:** 環境変数とオプションの解決、Terminalへ渡す値をisolated unit testで検証します。`just check`。
+
+<a id="task-012"></a>
+### [ ] TASK-012：interactの対象Boardを固定する
+
+- **Priority / Purpose:** P2。バッチ途中のambient対象変更による誤操作と、snapshot対象の不一致を防ぎます。
+- **Prerequisites:** TASK-001。TASK-009と並行する場合はpayload変更を共有します。
+- **Entry Points:** `Den/IPC/DenIPCService.swift`、`CLI/Commands/SheetCommand.swift`。
+- **Work:** バッチ開始時に解決したBoardのidentityを各ステップへ引き継ぎます。実行中のfocus／Desk変更、対象削除、Profile終了を扱い、暗黙に別Boardへ切り替えません。
+- **Acceptance Criteria:** wait中にambient対象が変わっても後続操作は元Boardを対象にします。対象消失時は明確に失敗し、completedActionsとsnapshotが実際の実行対象に対応します。
+- **Verification:** await境界で対象変更・削除を挟むfocused service test。`just check`。バッチの対象固定契約を`docs/cli.md`に記載します。
+
+<a id="task-013"></a>
+### [ ] TASK-013：DOM操作のイベント配送を修正する
+
+- **Priority / Purpose:** P2。dragの二重伝播と、Enterによる意図しないフォーム送信を解消します。
+- **Prerequisites:** なし。
+- **Entry Points:** `Den/Sheet/SheetInteraction.swift`、`Den Browser/Den BrowserTests/SheetInteractionTests.swift`。
+- **Work:** bubblesするイベントとwindowへの直接dispatchの重複を除去します。pressはイベントのキャンセルと要素種別を尊重し、textareaなどへのEnterで送信しません。click／drag／pressの共通イベント生成は、意味が一致する部分だけ共有します。
+- **Acceptance Criteria:** 一動作はwindowのlistenerへ一度だけ届きます。preventDefaultが尊重され、明示的に保証する既定動作だけを補います。合成イベントのisTrusted制約は維持します。
+- **Verification:** ローカルHTMLとWKWebViewによるイベント回数、キャンセル、フォーム内textarea、通常の送信のfocused test。`just check`。
+
+<a id="task-014"></a>
+### [ ] TASK-014：Web共通機能をBoardとDrawerで揃える
+
+- **Priority / Purpose:** P2。同じWeb操作の実装差を減らし、surface固有の挙動だけを分離します。
+- **Prerequisites:** TASK-006。
+- **Entry Points:** `Den/BaseWebRuntime.swift`、`Den/Board/BoardRuntime.swift`、`Den/Drawer/DrawerPreviewRuntime.swift`。
+- **Work:** alert／confirm／prompt、ファイル選択、download、補助Windowのnavigation delegateを比較します。Drawerや認証用popupで必要な契約を確認して共通化します。通常Board固有のリンク配置、fullscreen、focus policyは維持します。app全体をmodalにする必要があるかも確認します。
+- **Acceptance Criteria:** 共通操作のdelegate処理と失敗通知が揃います。意図的に非対応とする機能は明示します。popupの認証・close経路やProfileのWebデータ分離を回帰させません。
+- **Verification:** delegateとポリシーのfocused test。native panelや認証フローの未確認事項を記録します。`just check`。実機確認は別途明示的な依頼がある場合に行います。
+
+<a id="task-015"></a>
+### [ ] TASK-015：一時UI状態の終了処理と参照の無効化を整理する
+
+- **Priority / Purpose:** P2。パネル切り替えとDesk／Board置換時の後始末を一貫させます。
+- **Prerequisites:** TASK-008。
+- **Entry Points:** `Den/DenStore.swift`、`Den/Store/DenStore+Presentation.swift`、`Den/Store/DenStore+Overview.swift`、`Den/Store/DenStore+DeskOperations.swift`。
+- **Work:** setTemporaryContext、各hide、resetの重複した終了処理を集約します。選択、filter、draft、Taskの寿命と、保持すべきdraftを区別します。Desk置換で残る古いanchorBoardIDやjump originなど、identity参照の無効化を共通の不変条件にします。
+- **Acceptance Criteria:** 開く→切り替える→閉じる→再度開く経路で古い選択やTaskが残りません。削除・置換後に消失したBoardへの有効な参照を保持しません。
+- **Verification:** 状態遷移と参照整合性のfocused Store test。キーボード経路変更時は`docs/keyboard-input.md`を読み、既存routing testを実施します。`just check`。
+
+<a id="task-016"></a>
+### [ ] TASK-016：Drawerの共有状態とWindow固有状態を整合させる
+
+- **Priority / Purpose:** P2。別Windowの操作による選択、Preview、保存Itemの不整合を解消します。
+- **Prerequisites:** TASK-001、TASK-008。
+- **Entry Points:** `Den/DenStore.swift`、`Den/Store/DenStore+Drawer.swift`、`Den/Drawer/DrawerView.swift`、`docs/adr/0037-present-distinct-desks-in-profile-windows.md`。
+- **Work:** expandedDrawerItemIDがProfile共有で、選択とPreview runtimeがWindow固有である現状を再現します。展開をWindowごとにするかProfile内で一つにするか、既存仕様と利用意図を確認して決定します。決定に沿って全Windowの選択修復、Preview解放、URL／title更新の所有者を揃えます。
+- **Acceptance Criteria:** 別Windowで展開・破棄・全消去しても、無効な選択や不要なPreviewを保持しません。同一Itemへの複数runtimeの更新方針が定義されています。
+- **Verification:** 同一DenStorageを使う複数Storeのunit test。ユーザー向け契約が未確定なら依存する挙動変更を保留し、判断点を記録します。決定時はdomain-modelingを使いADR等を更新します。`just check`。
+
+<a id="task-017"></a>
+### [ ] TASK-017：外部プロセス実行を非同期化し終了を管理する
+
+- **Priority / Purpose:** P2。外部コマンド待ちによるUI停止と、キャンセル後も残る子プロセスを防ぎます。
+- **Prerequisites:** なし。
+- **Entry Points:** `Den/Terminal/TerminalClients.swift`、`Den/Terminal/ZmxSessionsModel.swift`、`Den/Store/DenStore+BoardLifecycle.swift`、`Extensions/UBOLiteInstaller.swift`。
+- **Work:** zmxの一覧、複製、root検索、signal対象検索とuBO Lite解凍の全呼び出し元を追跡します。非同期完了、期限、キャンセル時の子プロセス終了・回収を管理します。Task.detachedの結果を捨てるだけのキャンセルにしません。
+- **Acceptance Criteria:** 応答しない外部コマンドがMainActorを停止しません。閉じたパネルへ結果を反映せず、子プロセスを放置しません。通常終了と失敗の診断情報を保持します。
+- **Verification:** isolated helper processで成功、失敗、出力、期限超過、キャンセルを検証し、呼び出し元のStore／model testも実施します。`just check`。
+
+<a id="task-018"></a>
+### [ ] TASK-018：Terminalへのシグナル送信を一本化する
+
+- **Priority / Purpose:** P2。実際のCLI経路とテスト対象が異なる重複実装を解消します。
+- **Prerequisites:** TASK-017。
+- **Entry Points:** `Den/Terminal/TerminalRuntime.swift`、`Den/Store/DenStore+Runtime.swift`、`Den/IPC/DenIPCService.swift`。
+- **Work:** Shell／zmxの対象PID・PGID解決と送信処理を分けます。検証、killpg／killのフォールバック条件、エラー生成を一箇所にまとめます。どのエラーでも別PIDへ送ってよいという契約にはしません。
+- **Acceptance Criteria:** CLIと内部呼び出しが同じ送信処理を通ります。自身や無効な対象へ送らず、対象不在・権限エラーを区別できます。
+- **Verification:** 送信境界のfocused testとCLIからの経路の検証。実プロセスを使う場合は専用の子プロセスだけを対象にします。`just check`。
+
+<a id="task-019"></a>
+### [ ] TASK-019：Screenshotの画像取得と出力処理を分離する
+
+- **Priority / Purpose:** P2。Sheet／Desk×保存／コピーの重複を減らします。
+- **Prerequisites:** なし。TASK-025でDesk合成の採否を決める場合はその結果に合わせます。
+- **Entry Points:** `Den/Store/DenStore+Screenshots.swift`、`Den/Board/ScreenshotCapture.swift`。
+- **Work:** 対象検証・画像取得と、保存／clipboard出力を分離します。通知とキャンセル処理を揃えます。未activate Boardの取得、全画像保持、合成時のメモリ量を確認します。
+- **Acceptance Criteria:** 出力先の違いで対象検証や画像取得の挙動が変わりません。画像取得不能、保存キャンセル、clipboard失敗の扱いが明確です。
+- **Verification:** 既存Screenshot testと不足する共通契約だけを検証します。Desk合成を残す場合は代表的Board数でメモリを計測します。`just check`。
+
+<a id="task-020"></a>
+### [ ] TASK-020：DOM参照の寿命とsnapshotの負荷を改善する
+
+- **Priority / Purpose:** P2。長時間動作するSPAでの削除済みDOM保持を防ぎ、不要な全DOM走査を減らします。
+- **Prerequisites:** なし。
+- **Entry Points:** `Den/Sheet/Resources/SheetDOM.js`、`Den/Sheet/SheetInteraction.swift`。
+- **Work:** document内で接続中の参照は安定させ、切断要素の強参照を解放します。data-den-ref属性の複製による別要素への参照再割り当ても検証します。interactive限定snapshotは対象を先に絞れるか計測し、--withinと--fullの契約を維持します。
+- **Acceptance Criteria:** DOM差し替えを繰り返しても削除済み要素が無制限に保持されません。接続中のrefは安定し、古いrefが別要素を誤操作しません。最適化後もsnapshotの意味を維持します。
+- **Verification:** ローカルHTMLによる参照寿命・DOM置換のfocused test、大きさと階層を変えたDOMでの前後計測。`just check`。
+
+<a id="task-021"></a>
+### [ ] TASK-021：Board Activityの集計とCPU計測を改善する
+
+- **Priority / Purpose:** P3。繰り返しの全runtime走査と、構成プロセス変更時の不正確なCPU差分を減らします。
+- **Prerequisites:** なし。TASK-025で診断機能への限定を決める場合は、その結果に合わせます。
+- **Entry Points:** `Den/Overview/BoardActivityView.swift`、`Den/Overview/ProcessResourceSampler.swift`。
+- **Work:** PID別のBoard数を更新単位で一度集計します。Terminalのプロセス集合変更時にCPU累積値の比較基準を再設定し、不要な過去sampleを除去します。表示中のmain-thread計測コストも確認します。
+- **Acceptance Criteria:** 行ごとの二乗走査がなく、異なるプロセス集合の累積CPUを差分計算しません。未計測・計測不能をゼロ負荷と誤表示しません。
+- **Verification:** process identity変更と集計のfocused test、代表的Board数での更新コスト計測。`just check`。
+
+<a id="task-022"></a>
+### [ ] TASK-022：Profile読み込み失敗を原因別に扱う
+
+- **Priority / Purpose:** P2。I/O失敗や未対応schemaを、すべて破損ファイルとして扱う挙動を改善します。
+- **Prerequisites:** なし。
+- **Entry Points:** `Profiles/ProfileManager.swift`、`Profiles/ProfileModels.swift`、`docs/persistence.md`。
+- **Work:** 読み取り、decode、schema非対応、identity不整合を区別します。隔離処理自体の失敗も通知し、読み取り失敗後の初期状態保存で既存データを損なわない復旧方針を定めます。読み込み時の重複identityとDictionary生成順も確認します。
+- **Acceptance Criteria:** 原因に応じた復旧可能なエラーを返し、読めなかった既存Profileを暗黙に正常な初期Profileへ置き換えません。未対応schemaと破損を区別できます。
+- **Verification:** 一時ディレクトリと失敗注入による読み込み・隔離失敗、未対応schema、不正identityのfocused test。`just check`。
+
+<a id="task-023"></a>
+### [ ] TASK-023：uBO Lite更新時の意図しないダウングレードを防ぐ
+
+- **Priority / Purpose:** P2。リリースAPI障害時に、更新が古い固定版への置換にならないようにします。
+- **Prerequisites:** TASK-017。
+- **Entry Points:** `Extensions/UBOLiteInstaller.swift`、`Profiles/ProfileManager.swift`。
+- **Work:** 新規installとupdateのフォールバック方針を分けます。manifestの存在だけで成功にせず、置換前に必要な内容を検証します。候補の検証、配置、host更新、失敗時の復旧責任を整理します。
+- **Acceptance Criteria:** 更新候補を確認できない場合は既存版を保持します。不正archiveや配置失敗で既存の利用可能な拡張を失いません。成功表示が実際の導入結果と一致します。
+- **Verification:** stub URLSessionと一時ディレクトリでAPI障害、古い候補、不正manifest、置換失敗を検証します。実際のユーザー環境の拡張を更新しません。`just check`。
+
+<a id="task-024"></a>
+### [ ] TASK-024：公開Webの日英ページの構造を共通化する
+
+- **Priority / Purpose:** P3。日英ページとページ内で重複する構造・振る舞いの修正漏れを減らします。
+- **Prerequisites:** なし。
+- **Entry Points:** [英語トップ](web/src/pages/index.astro)、[日本語トップ](web/src/pages/ja/index.astro)、[翻訳データ](web/src/i18n/ui.ts)、[Webガイド](web/README.md)。
+- **Work:** ページ構造、インストールUI、SVG、copy／video scriptを必要な単位で共通化します。文言は言語別に保持し、汎用CMSや新しいi18n依存を追加しません。
+- **Acceptance Criteria:** 構造と操作の修正箇所が共通化され、両言語の製品事実、リンク、アクセシビリティが維持されます。
+- **Verification:** `just --list`で適切なWeb recipeを確認しbuildします。生成HTMLの日英リンク・重複ID・操作用属性を確認し、差分を自己レビューします。公開・deployはしません。
+
+<a id="task-025"></a>
+### [ ] TASK-025：保守コストの高い機能の縮小を判断する
+
+- **Priority / Purpose:** P3。機能の利用価値に見合う保守範囲へ絞るための判断材料を揃えます。機能削除自体はこのタスクの完了条件ではありません。
+- **Prerequisites:** なし。
+- **Entry Points:** `Den/Sheet/SheetInteraction.swift`、`Den/Terminal/ZmxSessionsModel.swift`、`Den/Overview/BoardActivityView.swift`、`Den/Store/DenStore+Screenshots.swift`、`Den/Drawer/DrawerView.swift`。
+- **Work:** networkidleの簡易判定、zmxの一覧／階層／一括終了／複製、Board Activityの詳細監視、Desk合成Screenshot、Drawerの二つの表示形式を対象に、利用目的、代替操作、保守対象、削除時の互換性を比較します。利用頻度は推測で決めません。維持・限定・削除案を利用者が判断できる形で提示します。
+- **Acceptance Criteria:** 候補ごとに採否と理由、未決事項、文書・設定・CLI・保存データへの影響が記録されています。採用された変更だけを次の未使用IDで実装タスク化し、TASK-019／TASK-021等の範囲を整合させます。
+- **Verification:** 代替操作の成立と参照箇所を確認し、既存ADRとの矛盾をレビューします。製品判断が未確定なら実装を進めず、Deferred Itemsへ記録します。
+
+## Common Acceptance Criteria
+
+- [ ] 実装開始前に作業treeと対象コードを確認し、明確な原因または解消する重複・契約を記録します。既に解消済みの指摘は検証結果を残して完了または取り下げます。
+- [ ] 開発にはponytailとast-grepを使い、既存処理を再利用します。ファイルの大きさだけを理由に汎用Repository、Service、Factory、DI層を増やしません。
+- [ ] 挙動変更では[CONTEXT.md](CONTEXT.md)と所有文書を読みます。設計判断では[architecture](docs/architecture.md)と関連ADRを確認し、用語・ADR変更にはdomain-modelingを使います。
+- [ ] macOS 26.0を最低対応とし、到達不能な旧OS fallbackを追加しません。DenStateとlive Web／Terminal runtimeの境界、Profile単位のWebデータ分離を維持します。
+- [ ] 回帰テスト追加前に違反した不変条件へ一般化し、[testing](docs/testing.md)に従う最小の意味あるテストを選びます。実装をなぞるテストや不要なXCUITestを増やしません。
+- [ ] Swift、Xcode設定、テスト・検証設定の変更では`just check`を実行します。それ以外は変更対象に適した検証を実行し、コマンド・結果・未確認事項を各タスクへ記録します。
+- [ ] 少なくとも一回自己レビューし、明確な問題があれば修正して関連チェックを再実行します。最新のレビューに対応事項がなく、検証成功で止めます。
+- [ ] 変更した文書のリンクと製品事実の重複・陳腐化を確認します。README更新が必要なら日英の構造と事実を揃えます。
+- [ ] ユーザーの明示的な指示なしにComputer Useを使いません。実機未確認事項と自動テストの保証を分け、未実施検証を完了扱いしません。
+- [ ] コミットは依頼された場合だけ行い、レビュー済みの変更を整理します。この台帳の状態更新も対応する実装と整合させ、他の変更を混ぜません。
+
+## Deferred Items
+
+- Ghosttyの未attach Surface、hidden tick除去、Fork配布と移行は[tasks-ghostty.md](tasks-ghostty.md)を参照します。この台帳から重複着手しません。
+- `TerminalRuntime`のMirrorによる`core`／`surface`探索の除去は、依存側の公開APIを確認してから具体化します。既存Ghostty計画との責任分担を決め、公開APIの追加やFork範囲の拡大が必要ならその判断を記録します。現時点で内部名変更を実証した不具合ではありません。
+- TASK-016のDrawer所有権とTASK-025の機能削減で未決の製品判断が生じた場合は、選択肢・影響・待ち条件をここへ追記します。時間経過を承認とみなしません。
+- 非表示Terminalの定期tickとnetworkidleの簡易判定は既存ADR上の意図的な仕様です。定期tickを根拠なく除去せず、networkidleはTASK-025で保証と名称・機能範囲を評価します。
 
 ## Out of Scope
 
-- この台帳更新でのFork作成、GitHub release作成、依存更新、アプリコード変更、コミット。
-- raw Ghostty本体へのForkまたはpatch。`libghostty-spm`側だけで成立しないと実証された場合に限り再検討する。
-- transparent / offscreen `NSWindow`を恒久対策として採用すること。
-- PTY transportをDenで再実装するための`InMemoryTerminalSession`移行。
-- 無関係なTerminal UI、Desk、Web Board、永続化形式の変更。
+- この台帳作成に伴うアプリ実装、機能削除、外部サービス変更、依存更新、コミット、公開・deploy。
+- Profileやブラウジングデータ、既存Terminal Sessionを使う破壊的な再現実験。
+- 見た目だけのAppKit bridge置換、全DispatchQueue.main.asyncの一括置換、根拠のないmodule分割・全面rewrite。
+- CLIをフルブラウザ自動化基盤へ拡張すること。trusted input、iframe／Shadow DOM対応など、今回の指摘を越える機能追加。
