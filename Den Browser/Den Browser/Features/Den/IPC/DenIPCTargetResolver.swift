@@ -68,59 +68,77 @@ enum DenIPCTargetResolver {
         request: DenIPCRequest,
         in profileManager: ProfileManager?
     ) -> Result<(DenStore, DeskState), TargetResolutionError> {
-        // 1. Explicit profile ID
+        guard let profileManager else {
+            return .failure(.noActiveDesk)
+        }
+
+        let scopedProfileID: UUID?
         if let profileIDString = request.profileID {
             guard let profileUUID = UUID(uuidString: profileIDString) else {
                 return .failure(.invalidProfileID(profileIDString))
             }
-            guard profileManager?.profile(id: profileUUID) != nil else {
+            guard profileManager.profile(id: profileUUID) != nil else {
                 return .failure(.profileNotFound(profileIDString))
             }
-            guard let store = profileManager?.store(forProfileID: profileUUID) else {
+            guard profileManager.hasWindow(for: profileUUID) else {
                 return .failure(.profileHasNoActiveWindow(profileIDString))
             }
-            let targetDesk: DeskState?
-            if let deskIDString = request.deskID, let deskUUID = UUID(uuidString: deskIDString) {
-                targetDesk = store.state.desks.first(where: { $0.id == deskUUID })
-            } else if let callerBoardID = request.callerBoardID,
-                let callerID = UUID(uuidString: callerBoardID),
-                let indices = store.boardIndices(for: callerID)
-            {
-                targetDesk = store.state.desks[indices.desk]
-            } else {
-                targetDesk =
-                    store.state.desks.first(where: { $0.id == store.presentedDeskID })
-                    ?? store.state.desks.first
-            }
-            guard let desk = targetDesk else {
-                return .failure(.noActiveDesk)
-            }
-            return .success((store, desk))
+            scopedProfileID = profileUUID
+        } else {
+            scopedProfileID = nil
         }
 
-        // 2. Caller board ID across all stores
-        let allStores = profileManager?.allStores ?? []
+        let candidateStores: [DenStore] =
+            if let scopedProfileID {
+                profileManager.stores(for: scopedProfileID)
+            } else {
+                profileManager.allStores
+            }
+
+        // 1. Explicit desk ID (must not fall back if specified)
+        if let deskIDString = request.deskID {
+            guard let deskUUID = UUID(uuidString: deskIDString) else {
+                return .failure(.noActiveDesk)
+            }
+            for store in candidateStores {
+                guard let desk = store.state.desks.first(where: { $0.id == deskUUID }) else { continue }
+                let profileID = profileManager.profileID(for: store)
+                let targetStore =
+                    profileID.flatMap { profileManager.store(for: $0, presentingDeskID: desk.id) } ?? store
+                return .success((targetStore, desk))
+            }
+            return .failure(.noActiveDesk)
+        }
+
+        // 2. Caller board ID
         if let callerBoardID = request.callerBoardID, let callerID = UUID(uuidString: callerBoardID) {
-            let matches = allStores.compactMap { store -> (DenStore, DeskState)? in
-                guard let indices = store.boardIndices(for: callerID) else { return nil }
-                return (store, store.state.desks[indices.desk])
-            }
-            if let presented = matches.first(where: { $0.0.presentedDeskID == $0.1.id }) {
-                return .success(presented)
-            }
-            if let first = matches.first {
-                return .success(first)
+            for store in candidateStores {
+                guard let indices = store.boardIndices(for: callerID) else { continue }
+                let desk = store.state.desks[indices.desk]
+                let profileID = profileManager.profileID(for: store)
+                let targetStore =
+                    profileID.flatMap { profileManager.store(for: $0, presentingDeskID: desk.id) } ?? store
+                return .success((targetStore, desk))
             }
         }
 
         // 3. Fallback to activeStore
-        guard let store = profileManager?.activeStore(),
+        let baseStore: DenStore?
+        if let scopedProfileID {
+            baseStore = profileManager.store(forProfileID: scopedProfileID)
+        } else {
+            baseStore = profileManager.activeStore()
+        }
+
+        guard let store = baseStore,
             let desk = store.state.desks.first(where: { $0.id == store.presentedDeskID })
                 ?? store.state.desks.first
         else {
             return .failure(.noActiveDesk)
         }
-        return .success((store, desk))
+        let profileID = profileManager.profileID(for: store)
+        let targetStore = profileID.flatMap { profileManager.store(for: $0, presentingDeskID: desk.id) } ?? store
+        return .success((targetStore, desk))
     }
 
     static func resolveTargetWebBoard(
@@ -164,108 +182,93 @@ enum DenIPCTargetResolver {
         kind: TargetKind
     ) -> Result<(DenStore, BoardState), TargetResolutionError> {
         let kindLabel = kind.label
+        guard let profileManager else {
+            return .failure(.noTargetBoard(kindLabel))
+        }
 
-        // Explicit profile ID scoping
+        // Profile scoping check if specified
+        let scopedProfileID: UUID?
         if let profileIDString = request.profileID {
             guard let profileUUID = UUID(uuidString: profileIDString) else {
                 return .failure(.invalidProfileID(profileIDString))
             }
-            guard profileManager?.profile(id: profileUUID) != nil else {
+            guard profileManager.profile(id: profileUUID) != nil else {
                 return .failure(.profileNotFound(profileIDString))
             }
-            guard let store = profileManager?.store(forProfileID: profileUUID) else {
+            guard profileManager.hasWindow(for: profileUUID) else {
                 return .failure(.profileHasNoActiveWindow(profileIDString))
             }
-
-            if let idString = request.boardID {
-                guard let id = UUID(uuidString: idString) else {
-                    return .failure(.invalidBoardID(idString))
-                }
-                guard let indices = store.boardIndices(for: id) else {
-                    return .failure(.boardNotFound(idString))
-                }
-                let board = store.state.desks[indices.desk].boards[indices.board]
-                guard kind.matches(board) else {
-                    return .failure(.boardNotMatchingKind(idString, kindLabel))
-                }
-                return .success((store, board))
-            }
-
-            if let callerBoardID = request.callerBoardID,
-                let callerID = UUID(uuidString: callerBoardID),
-                let indices = store.boardIndices(for: callerID)
-            {
-                let callerDesk = store.state.desks[indices.desk]
-                let callerIndex = indices.board
-                let callerBoard = callerDesk.boards[callerIndex]
-                if kind.matches(callerBoard) {
-                    return .success((store, callerBoard))
-                }
-                let right = callerDesk.boards.dropFirst(callerIndex + 1).first(where: kind.matches)
-                let left = callerDesk.boards.prefix(callerIndex).reversed().first(where: kind.matches)
-                if let target = right ?? left {
-                    return .success((store, target))
-                }
-            }
-
-            guard
-                let desk = store.state.desks.first(where: { $0.id == store.presentedDeskID })
-                    ?? store.state.desks.first
-            else {
-                return .failure(.noTargetBoard(kindLabel))
-            }
-
-            let focused = desk.focusedBoardID.flatMap { id in
-                desk.boards.first(where: { $0.id == id && kind.matches($0) })
-            }
-            guard let target = focused ?? desk.boards.first(where: kind.matches) else {
-                return .failure(.noTargetBoard(kindLabel))
-            }
-            return .success((store, target))
+            scopedProfileID = profileUUID
+        } else {
+            scopedProfileID = nil
         }
 
-        let allStores = profileManager?.allStores ?? []
+        let candidateStores: [DenStore] =
+            if let scopedProfileID {
+                profileManager.stores(for: scopedProfileID)
+            } else {
+                profileManager.allStores
+            }
 
-        // 1. Explicit board ID across all stores (must not fall back if specified)
+        // 1. Explicit board ID across stores (must not fall back if specified)
         if let idString = request.boardID {
             guard let id = UUID(uuidString: idString) else {
                 return .failure(.invalidBoardID(idString))
             }
-            for store in allStores {
+            for store in candidateStores {
                 guard let indices = store.boardIndices(for: id) else { continue }
                 let desk = store.state.desks[indices.desk]
                 let board = desk.boards[indices.board]
                 guard kind.matches(board) else {
                     return .failure(.boardNotMatchingKind(idString, kindLabel))
                 }
-                let presenting = allStores.first(where: { $0.presentedDeskID == desk.id }) ?? store
-                return .success((presenting, board))
+                let profileID = profileManager.profileID(for: store)
+                let targetStore =
+                    profileID.flatMap { profileManager.store(for: $0, presentingDeskID: desk.id) } ?? store
+                return .success((targetStore, board))
             }
             return .failure(.boardNotFound(idString))
         }
 
-        // 2. Ambient resolution relative to callerBoardID (scans the Desk that currently contains callerBoardID)
+        // 2. Caller board ID
         if let callerString = request.callerBoardID {
-            guard let callerID = UUID(uuidString: callerString),
-                let (store, callerDesk) = resolveStoreAndDesk(callerBoardID: callerString, in: profileManager),
-                let callerIndex = callerDesk.boards.firstIndex(where: { $0.id == callerID })
+            guard let callerID = UUID(uuidString: callerString) else {
+                return .failure(.noTargetBoard(kindLabel))
+            }
+            guard let owningStore = candidateStores.first(where: { $0.boardIndices(for: callerID) != nil }),
+                let indices = owningStore.boardIndices(for: callerID)
             else {
                 return .failure(.noTargetBoard(kindLabel))
             }
+
+            let callerDesk = owningStore.state.desks[indices.desk]
+            let callerIndex = indices.board
             let callerBoard = callerDesk.boards[callerIndex]
+
+            let profileID = profileManager.profileID(for: owningStore)
+            let targetStore =
+                profileID.flatMap { profileManager.store(for: $0, presentingDeskID: callerDesk.id) } ?? owningStore
+
             if kind.matches(callerBoard) {
-                return .success((store, callerBoard))
+                return .success((targetStore, callerBoard))
             }
             let right = callerDesk.boards.dropFirst(callerIndex + 1).first(where: kind.matches)
             let left = callerDesk.boards.prefix(callerIndex).reversed().first(where: kind.matches)
             guard let target = right ?? left else {
                 return .failure(.noTargetBoard(kindLabel))
             }
-            return .success((store, target))
+            return .success((targetStore, target))
         }
 
-        // 3. Fallback to active/presented Desk (only when executed from external shell without callerBoardID)
-        guard let store = profileManager?.activeStore(),
+        // 3. Fallback to active/presented Desk
+        let baseStore: DenStore?
+        if let scopedProfileID {
+            baseStore = profileManager.store(forProfileID: scopedProfileID)
+        } else {
+            baseStore = profileManager.activeStore()
+        }
+
+        guard let store = baseStore,
             let desk = store.state.desks.first(where: { $0.id == store.presentedDeskID })
                 ?? store.state.desks.first
         else {
@@ -278,6 +281,8 @@ enum DenIPCTargetResolver {
         guard let target = focused ?? desk.boards.first(where: kind.matches) else {
             return .failure(.noTargetBoard(kindLabel))
         }
-        return .success((store, target))
+        let profileID = profileManager.profileID(for: store)
+        let targetStore = profileID.flatMap { profileManager.store(for: $0, presentingDeskID: desk.id) } ?? store
+        return .success((targetStore, target))
     }
 }

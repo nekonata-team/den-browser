@@ -279,7 +279,10 @@ struct DenStorePresentationTests {
         store.confirmResetDen()
 
         #expect(!store.isResetDenPending)
-        #expect(store.state == .sample)
+        #expect(store.state.desks.count == 1)
+        #expect(store.state.desks.first?.label == "Main")
+        #expect(store.state.desks.first?.boards.isEmpty == true)
+        #expect(store.state.focusedDeskID == store.state.desks.first?.id)
         #expect(savedState == store.state)
     }
 

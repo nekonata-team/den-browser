@@ -42,22 +42,19 @@ struct DenState: Codable, Equatable {
         try container.encodeIfPresent(expandedDrawerItemID, forKey: .expandedDrawerItemID)
     }
 
-    static let sample = DenState(
-        desks: [
-            DeskState(
-                label: "Main",
-                boards: []
-            )
-        ],
-        focusedDeskID: UUID()
-    ).withFirstDeskFocused()
+    static var sample: DenState {
+        makeInitial()
+    }
 
-    private func withFirstDeskFocused() -> DenState {
-        var copy = self
-        if let firstDeskID = copy.desks.first?.id {
-            copy.focusedDeskID = firstDeskID
-        }
-        return copy
+    static func makeInitial() -> DenState {
+        let desk = DeskState(
+            label: "Main",
+            boards: []
+        )
+        return DenState(
+            desks: [desk],
+            focusedDeskID: desk.id
+        )
     }
 }
 

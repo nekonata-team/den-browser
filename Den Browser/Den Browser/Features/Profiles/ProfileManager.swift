@@ -442,11 +442,34 @@ final class ProfileManager {
         return nil
     }
 
+    func profileID(for storage: DenStorage) -> UUID? {
+        for (profileID, candidateStorage) in storages where candidateStorage === storage {
+            return profileID
+        }
+        return nil
+    }
+
     func profileID(for store: DenStore) -> UUID? {
         for (windowID, storeInstance) in stores where storeInstance === store {
             return storeProfileIDs[windowID]
         }
-        return nil
+        return profileID(for: store.storage)
+    }
+
+    func stores(for profileID: UUID) -> [DenStore] {
+        storeProfileIDs.compactMap { windowID, pID in
+            pID == profileID ? stores[windowID] : nil
+        }
+    }
+
+    func store(for profileID: UUID, presentingDeskID: UUID?) -> DenStore? {
+        let profileStores = stores(for: profileID)
+        if let presentingDeskID,
+            let presentingStore = profileStores.first(where: { $0.presentedDeskID == presentingDeskID })
+        {
+            return presentingStore
+        }
+        return store(forProfileID: profileID)
     }
 
     func hasWindow(for profileID: UUID) -> Bool {

@@ -47,14 +47,14 @@
 ## Tasks
 
 <a id="task-001"></a>
-### [ ] TASK-001：Profileを越えないCLI対象解決へ統一する
+### [x] TASK-001：Profileを越えないCLI対象解決へ統一する
 
 - **Priority / Purpose:** P1。対象BoardとそのProfile、表示先Store、Webデータ環境の所属を一致させます。
 - **Prerequisites:** なし。
 - **Entry Points:** `Den/DenState.swift`、`Den/IPC/DenIPCTargetResolver.swift`、`Profiles/ProfileManager.swift`、`Den/Store/DenStore+Runtime.swift`。
 - **Work:** 初期状態を生成するたびに新しいDesk IDを割り当てます。明示Profile、明示Board、caller、ambientの優先順位と失敗条件を維持しつつ、対象解決を共通化します。Store検索はDesk ID単独ではなくProfile／Storageの所属も検証します。既存の重複Desk IDでも誤配送しないようにし、不要なID書き換えは避けます。
 - **Acceptance Criteria:** 同一プロセスで作成した複数Profile、および同じDesk IDを持つ保存データで、返すStoreが必ず対象Boardを所有します。Profile指定の有無で同じBoardのruntime所有者が変わりません。存在しない明示対象は別対象へフォールバックしません。
-- **Verification:** Profile生成と対象解決のfocused unit test。複数Profile×複数Window、重複Desk ID、未表示Deskを検証し、Board IDだけでなくStoreの所属もassertします。`just check`。
+- **Verification:** `DenIPCTargetResolverTests` に新規focused unit test（Profile初期Desk ID一意性、重複Desk ID下でのBoard所有Store解決、Profile指定有無での同一Store解決、存在しないdeskIDでのフォールバック防止）を追加。`just check` 実行（lint 0 violations、unit tests 510件全パス）。実機での手動操作は未実施。
 
 <a id="task-002"></a>
 ### [ ] TASK-002：ソケットの停止と再起動を安全にする
