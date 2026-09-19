@@ -135,7 +135,7 @@
 - **Work:** コマンドごとの最小のCodable payloadを定義し、値とフラグを分離します。通常CLIとinteractで同じ検証・実行経路を使います。直接ソケットを使うクライアントの互換性方針を確認し、移行方法を文書化します。
 - **Acceptance Criteria:** ハイフンで始まる名前、空文字、オプション名と同じ文字列を値として保持できます。未知・欠落・不正な入力は副作用前に拒否します。不要な独自コマンドフレームワークを追加しません。
 - **Verification:** payload round-trip、CLI解析、サーバー境界のfocused test。`just check`。`docs/cli.md`と必要なagent skill記載を更新します。
-- **Current Status:** 通常CLIと`interact`をtyped payloadへ移行し、旧`args`形式を拒否する直接IPC契約と`docs/cli.md`を追加済み。payload移行は`bde7806`でコミット済み。IPC型のファイル分割は未コミット。
+- **Current Status:** 通常CLIと`interact`をtyped payloadへ移行し、旧`args`形式を拒否する直接IPC契約と`docs/cli.md`を追加済み。payload移行は`bde7806`、IPC型のファイル分割は`b69254d`でコミット済み。`get`／`is`／`mouse`の操作種別をCommand側へ移す作業中。
 
 <a id="task-010"></a>
 ### [ ] TASK-010：URL入力の解決と検証を統一する

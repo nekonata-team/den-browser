@@ -1,7 +1,7 @@
 import Foundation
 
 nonisolated enum DenIPCCommand: Codable, Equatable, Sendable {
-    enum Sheet: String, CaseIterable, Codable, Sendable {
+    enum Sheet: Codable, Equatable, Sendable {
         case open
         case url
         case reload
@@ -15,16 +15,38 @@ nonisolated enum DenIPCCommand: Codable, Equatable, Sendable {
         case screenshot
         case snapshot
         case query
-        case get
-        case isState = "is"
+        case get(Get)
+        case isState(IsState)
         case click
         case dblclick
         case fill
         case type
         case focus
         case drag
-        case mouse
+        case mouse(Mouse)
         case interact
+    }
+
+    enum Get: String, Codable, Equatable, Sendable {
+        case text
+        case value
+        case attribute
+        case count
+        case box
+    }
+
+    enum IsState: String, Codable, Equatable, Sendable {
+        case visible
+        case enabled
+        case checked
+    }
+
+    enum Mouse: String, Codable, Equatable, Sendable {
+        case move
+        case down
+        case release = "up"
+        case click
+        case wheel
     }
 
     enum WebBoard: String, CaseIterable, Codable, Sendable {

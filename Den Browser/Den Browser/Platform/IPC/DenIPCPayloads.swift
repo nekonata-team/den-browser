@@ -7,31 +7,21 @@ nonisolated struct DenSheetInteractStep: Codable, Equatable, Sendable {
     var payload: DenSheetPayload?
 }
 
-nonisolated enum DenSheetGetKind: String, Codable, Equatable, Sendable {
-    case text
-    case value
-    case attribute
-    case count
-    case box
-}
-
 nonisolated struct DenSheetGetPayload: Codable, Equatable, Sendable {
-    var kind: DenSheetGetKind
     var target: String
     var attribute: String?
 
-    init(kind: DenSheetGetKind, target: String, attribute: String? = nil) throws {
-        self.kind = kind
+    init(target: String, attribute: String? = nil) throws {
         self.target = target
         self.attribute = attribute
         try validate()
     }
 
-    func validate() throws {
+    func validate(attributeRequired: Bool = false) throws {
         guard !target.isEmpty else {
             throw DenIPCInputError.usage("The Sheet get target must not be empty")
         }
-        if kind == .attribute {
+        if attributeRequired {
             guard let attribute, !attribute.isEmpty else {
                 throw DenIPCInputError.usage("The Sheet get attribute name must not be empty")
             }
@@ -39,18 +29,10 @@ nonisolated struct DenSheetGetPayload: Codable, Equatable, Sendable {
     }
 }
 
-nonisolated enum DenSheetState: String, Codable, Equatable, Sendable {
-    case visible
-    case enabled
-    case checked
-}
-
 nonisolated struct DenSheetStatePayload: Codable, Equatable, Sendable {
-    var state: DenSheetState
     var target: String
 
-    init(state: DenSheetState, target: String) throws {
-        self.state = state
+    init(target: String) throws {
         self.target = target
         try validate()
     }
@@ -161,12 +143,13 @@ nonisolated struct DenSheetDragPayload: Codable, Equatable, Sendable {
     var steps: Int
 }
 
-nonisolated enum DenSheetMousePayload: Codable, Equatable, Sendable {
-    case move(coordX: Double, coordY: Double)
-    case down(button: String?)
-    case release(button: String?)
-    case click(coordX: Double, coordY: Double, button: String?, count: Int?)
-    case wheel(deltaY: Double, deltaX: Double?)
+nonisolated struct DenSheetMousePayload: Codable, Equatable, Sendable {
+    var coordX: Double?
+    var coordY: Double?
+    var button: String?
+    var count: Int?
+    var deltaX: Double?
+    var deltaY: Double?
 }
 
 nonisolated struct DenBoardWebNewPayload: Codable, Equatable, Sendable {

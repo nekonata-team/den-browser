@@ -400,18 +400,18 @@ final class DenIPCService {
                 let destination = target ?? "dx=\(deltaX ?? 0), dy=\(deltaY ?? 0)"
                 return .success(message: "Dragged \(source) to \(destination)")
 
-            case .get:
+            case .get(let kind):
                 let input: DenSheetGetPayload
                 do {
                     guard case .sheet(.get(let payload)) = request.payload else {
                         return .failure("Invalid payload for den sheet get")
                     }
-                    try payload.validate()
+                    try payload.validate(attributeRequired: kind == .attribute)
                     input = payload
                 } catch {
                     return .failure(error.localizedDescription)
                 }
-                switch input.kind {
+                switch kind {
                 case .text:
                     let target = input.target
                     let text = try await SheetInteraction.text(target: target, in: runtime.webView)
@@ -451,7 +451,7 @@ final class DenIPCService {
                     return .success(box: box)
                 }
 
-            case .isState:
+            case .isState(let state):
                 let input: DenSheetStatePayload
                 do {
                     guard case .sheet(.isState(let payload)) = request.payload else {
@@ -462,7 +462,7 @@ final class DenIPCService {
                 } catch {
                     return .failure(error.localizedDescription)
                 }
-                switch input.state {
+                switch state {
                 case .visible:
                     let target = input.target
                     let visible = try await SheetInteraction.isVisible(target: target, in: runtime.webView)
@@ -477,7 +477,7 @@ final class DenIPCService {
                     return .success(checked: checked)
                 }
 
-            case .mouse:
+            case .mouse(let action):
                 guard case .sheet(.mouse(let payload)) = request.payload else {
                     return .failure("Usage: den sheet mouse <move|down|up|click|wheel> ...")
                 }
@@ -488,24 +488,31 @@ final class DenIPCService {
                     default: return 0
                     }
                 }
-                switch payload {
-                case .move(let coordX, let coordY):
+                switch action {
+                case .move:
+                    guard let coordX = payload.coordX, let coordY = payload.coordY else {
+                        return .failure("Usage: den sheet mouse move <x> <y>")
+                    }
                     try await SheetInteraction.mouseMove(coordX: coordX, coordY: coordY, in: runtime.webView)
                     return .success(message: "Mouse moved to \(coordX), \(coordY)")
 
-                case .down(let rawButton):
-                    let button = buttonCode(rawButton)
+                case .down:
+                    let button = buttonCode(payload.button)
                     try await SheetInteraction.mouseDown(button: button, in: runtime.webView)
                     return .success(message: "Mouse button \(button) down")
 
-                case .release(let rawButton):
-                    let button = buttonCode(rawButton)
+                case .release:
+                    let button = buttonCode(payload.button)
                     try await SheetInteraction.mouseUp(button: button, in: runtime.webView)
                     return .success(message: "Mouse button \(button) up")
 
-                case .click(let coordX, let coordY, let rawButton, let rawCount):
-                    let button = buttonCode(rawButton)
-                    let count = rawCount ?? 1
+                case .click:
+                    guard let coordX = payload.coordX, let coordY = payload.coordY else {
+                        return .failure(
+                            "Usage: den sheet mouse click <x> <y> [--button <left|right|middle>] [--count <n>]")
+                    }
+                    let button = buttonCode(payload.button)
+                    let count = payload.count ?? 1
                     let rect = try await SheetInteraction.mouseClick(
                         coordX: coordX,
                         coordY: coordY,
@@ -516,8 +523,11 @@ final class DenIPCService {
                     runtime.triggerActionHighlight(rect)
                     return .success(message: "Mouse clicked at \(coordX), \(coordY)")
 
-                case .wheel(let deltaY, let rawDeltaX):
-                    let deltaX = rawDeltaX ?? 0
+                case .wheel:
+                    guard let deltaY = payload.deltaY else {
+                        return .failure("Usage: den sheet mouse wheel <dy> [--dx <dx>]")
+                    }
+                    let deltaX = payload.deltaX ?? 0
                     try await SheetInteraction.mouseWheel(deltaX: deltaX, deltaY: deltaY, in: runtime.webView)
                     return .success(message: "Mouse wheel scrolled dx: \(deltaX), dy: \(deltaY)")
                 }
