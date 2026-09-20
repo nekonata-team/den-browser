@@ -172,7 +172,7 @@
 - **Current Status:** `sheet interact` の開始時にProfile、Store、Board、runtimeを固定し、各stepと最終snapshotの前後でtargetの存続を確認。focus／Desk変更でambient targetへ切り替わらず、ProfileまたはBoardの終了時は固定targetの消失として失敗します。
 
 <a id="task-013"></a>
-### [ ] TASK-013：DOM操作のイベント配送を修正する
+### [x] TASK-013：DOM操作のイベント配送を修正する
 
 - **Priority / Purpose:** P2。dragの二重伝播と、Enterによる意図しないフォーム送信を解消します。
 - **Prerequisites:** なし。
@@ -180,6 +180,7 @@
 - **Work:** bubblesするイベントとwindowへの直接dispatchの重複を除去します。pressはイベントのキャンセルと要素種別を尊重し、textareaなどへのEnterで送信しません。click／drag／pressの共通イベント生成は、意味が一致する部分だけ共有します。
 - **Acceptance Criteria:** 一動作はwindowのlistenerへ一度だけ届きます。preventDefaultが尊重され、明示的に保証する既定動作だけを補います。合成イベントのisTrusted制約は維持します。
 - **Verification:** ローカルHTMLとWKWebViewによるイベント回数、キャンセル、フォーム内textarea、通常の送信のfocused test。`just check`。
+- **Current Status:** dragのbubblesするPointer／Mouseイベントを要素からだけ配送し、window listenerへの二重伝播を解消しました。Enterの既定動作はキャンセルされていない単一行input、submit control、linkに限定し、textareaからは送信しません。focused testおよび`mise exec -- just check`を通過（SwiftLint 0 violations、unit tests全件成功）。
 
 <a id="task-014"></a>
 ### [x] TASK-014：Web共通機能をBoardとDrawerで揃える

@@ -424,16 +424,10 @@ struct SheetInteractionTests {
         try await SheetInteraction.drag(source: "#drag-source", deltaX: 100, deltaY: 50, steps: 2, in: webView)
 
         // Assert
-        let count = try await webView.evaluateJavaScript("window.recordedEvents.length") as? Int ?? 0
-        #expect(count >= 6)  // down, 2 moves, up (each for pointer + mouse)
-
-        let firstType = try await webView.evaluateJavaScript("window.recordedEvents[0].type") as? String
-        #expect(firstType == "pointerdown")
-
-        let lastType =
-            try await webView.evaluateJavaScript("window.recordedEvents[window.recordedEvents.length - 1].type")
-            as? String
-        #expect(lastType == "mouseup")
+        let eventTypes = try #require(
+            await webView.evaluateJavaScript("window.recordedEvents.map(event => event.type).join(',')") as? String
+        )
+        #expect(eventTypes == "pointerdown,mousedown,pointermove,mousemove,pointermove,mousemove,pointerup,mouseup")
 
         let lastX =
             try await webView.evaluateJavaScript("window.recordedEvents[window.recordedEvents.length - 1].x") as? Int
@@ -499,6 +493,47 @@ struct SheetInteractionTests {
         #expect(key == "Enter")
         #expect(keyCode == "13")
         #expect(which == "13")
+    }
+
+    @Test(arguments: [
+        ("<input id='field'>", false, true),
+        ("<textarea id='field'></textarea>", false, false),
+        ("<input id='field'>", true, false),
+    ])
+    func pressSubmitsOnlyFromUncancelledSingleLineFormControls(
+        control: String,
+        preventsDefault: Bool,
+        submits: Bool
+    ) async throws {
+        // Arrange
+        let webView = makeWebView()
+        let waiter = SheetInteractionWebViewLoadWaiter()
+        await waiter.load(
+            """
+            <!doctype html>
+            <form id="form">\(control)</form>
+            <script>
+                window.submitCount = 0;
+                document.getElementById('form').addEventListener('submit', event => {
+                    event.preventDefault();
+                    window.submitCount += 1;
+                });
+                if (\(preventsDefault)) {
+                    document.getElementById('field').addEventListener('keydown', event => event.preventDefault());
+                }
+            </script>
+            """,
+            baseURL: URL(string: "https://example.com/")!,
+            in: webView
+        )
+        try await SheetInteraction.focus(target: "#field", in: webView)
+
+        // Act
+        try await SheetInteraction.press(key: "Enter", in: webView)
+
+        // Assert
+        let submitCount = try await webView.evaluateJavaScript("window.submitCount") as? Int ?? 0
+        #expect(submitCount == (submits ? 1 : 0))
     }
 
     @Test func scrollAcceptsAnElementTarget() async throws {

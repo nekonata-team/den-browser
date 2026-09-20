@@ -551,9 +551,7 @@ enum SheetInteraction {
             };
 
             sourceEl.dispatchEvent(new PointerEvent('pointerdown', pointerBase));
-            window.dispatchEvent(new PointerEvent('pointerdown', pointerBase));
             sourceEl.dispatchEvent(new MouseEvent('mousedown', pointerBase));
-            window.dispatchEvent(new MouseEvent('mousedown', pointerBase));
 
             return {
                 ok: true,
@@ -609,9 +607,7 @@ enum SheetInteraction {
                 };
                 const hitEl = document.elementFromPoint(curX, curY) || document;
                 hitEl.dispatchEvent(new PointerEvent('pointermove', pointerBase));
-                window.dispatchEvent(new PointerEvent('pointermove', pointerBase));
                 hitEl.dispatchEvent(new MouseEvent('mousemove', pointerBase));
-                window.dispatchEvent(new MouseEvent('mousemove', pointerBase));
                 return true;
                 })()
                 """
@@ -638,9 +634,7 @@ enum SheetInteraction {
             };
             const endHitEl = document.elementFromPoint(endX, endY) || document;
             endHitEl.dispatchEvent(new PointerEvent('pointerup', pointerBase));
-            window.dispatchEvent(new PointerEvent('pointerup', pointerBase));
             endHitEl.dispatchEvent(new MouseEvent('mouseup', pointerBase));
-            window.dispatchEvent(new MouseEvent('mouseup', pointerBase));
             return true;
             })()
             """
@@ -914,16 +908,28 @@ enum SheetInteraction {
                     }
                     return event;
                 };
-                el.dispatchEvent(makeKeyboardEvent('keydown'));
-                el.dispatchEvent(makeKeyboardEvent('keypress'));
-                el.dispatchEvent(makeKeyboardEvent('keyup'));
-                if (key === 'Enter') {
-                    if (el.form && typeof el.form.requestSubmit === 'function') {
+                const keydownAllowed = el.dispatchEvent(makeKeyboardEvent('keydown'));
+                const keypressAllowed = el.dispatchEvent(makeKeyboardEvent('keypress'));
+                if (key === 'Enter' && keydownAllowed && keypressAllowed) {
+                    const singleLineInputTypes = new Set([
+                        'date', 'datetime-local', 'email', 'month', 'number', 'password',
+                        'search', 'tel', 'text', 'time', 'url', 'week'
+                    ]);
+                    const isSubmitControl =
+                        (el.tagName === 'BUTTON' && el.type === 'submit') ||
+                        (el.tagName === 'INPUT' && (el.type === 'submit' || el.type === 'image'));
+                    if (isSubmitControl && typeof el.click === 'function') {
+                        el.click();
+                    } else if (
+                        el.tagName === 'INPUT' && singleLineInputTypes.has(el.type) &&
+                        el.form && typeof el.form.requestSubmit === 'function'
+                    ) {
                         el.form.requestSubmit();
                     } else if (el.tagName === 'A' && typeof el.click === 'function') {
                         el.click();
                     }
                 }
+                el.dispatchEvent(makeKeyboardEvent('keyup'));
                 return { ok: true };
             })()
             """
