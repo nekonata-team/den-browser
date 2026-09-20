@@ -35,8 +35,7 @@ struct TerminalSendCommand: ParsableCommand {
 
     func run() throws {
         try DenIPCClient.execute(
-            command: .terminal(.send),
-            payload: .terminal(.send(text: text)),
+            command: .terminal(.send(text: text)),
             options: target
         )
     }
@@ -52,8 +51,7 @@ struct TerminalRunCommand: ParsableCommand {
 
     func run() throws {
         try DenIPCClient.execute(
-            command: .terminal(.run),
-            payload: .terminal(.run(command: command)),
+            command: .terminal(.run(command: command)),
             options: target
         )
     }
@@ -70,8 +68,7 @@ struct TerminalKillCommand: ParsableCommand {
 
     func run() throws {
         try DenIPCClient.execute(
-            command: .terminal(.kill),
-            payload: .terminal(.kill(signal: signal)),
+            command: .terminal(.kill(signal: signal)),
             options: target
         )
     }

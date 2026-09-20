@@ -37,8 +37,7 @@ struct DrawerKeepCommand: ParsableCommand {
 
     func run() throws {
         try DenIPCClient.execute(
-            command: .drawer(.keep),
-            payload: .drawer(.keep(DenDrawerKeepPayload(url: url, title: title))),
+            command: .drawer(.keep(DenDrawerKeepPayload(url: url, title: title))),
             options: options
         )
     }
@@ -54,8 +53,7 @@ struct DrawerPlaceCommand: ParsableCommand {
 
     func run() throws {
         try DenIPCClient.execute(
-            command: .drawer(.place),
-            payload: .drawer(.place(id: itemID)),
+            command: .drawer(.place(id: itemID)),
             options: options
         )
     }
@@ -71,8 +69,7 @@ struct DrawerDiscardCommand: ParsableCommand {
 
     func run() throws {
         try DenIPCClient.execute(
-            command: .drawer(.discard),
-            payload: .drawer(.discard(id: itemID)),
+            command: .drawer(.discard(id: itemID)),
             options: options
         )
     }

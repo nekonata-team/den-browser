@@ -74,7 +74,7 @@ struct DenIPCTargetResolverTests {
         _ = try #require(store.createTerminalBoard(workingDirectory: "/tmp", focus: true))
 
         let nonExistentID = UUID().uuidString
-        let request = DenIPCRequest(command: .terminal(.kill), boardID: nonExistentID)
+        let request = DenIPCRequest(command: .terminal(.kill(signal: "TERM")), boardID: nonExistentID)
 
         // Act
         let resolved = DenIPCTargetResolver.resolveTargetTerminalBoard(request: request, in: manager)
@@ -92,7 +92,10 @@ struct DenIPCTargetResolverTests {
         _ = try #require(store.createBoard(urlString: "https://example.com/"))
 
         let nonExistentID = UUID().uuidString
-        let request = DenIPCRequest(command: .sheet(.eval), boardID: nonExistentID)
+        let request = DenIPCRequest(
+            command: .sheet(.eval(DenSheetEvalPayload(script: "document.title"))),
+            boardID: nonExistentID
+        )
 
         // Act
         let resolved = DenIPCTargetResolver.resolveTargetWebBoard(request: request, in: manager)
@@ -168,24 +171,6 @@ struct DenIPCTargetResolverTests {
         #expect(response.isOk == false)
         #expect(response.error?.contains("Board not found") == true)
         #expect(store.board(for: boardID) != nil)
-    }
-
-    @Test func requestRejectsLegacyArguments() throws {
-        // Arrange
-        let requestData = try JSONEncoder().encode(DenIPCRequest(command: .board(.close)))
-        var requestObject = try #require(
-            JSONSerialization.jsonObject(with: requestData) as? [String: Any]
-        )
-        requestObject["args"] = [UUID().uuidString]
-        let legacyRequestData = try JSONSerialization.data(withJSONObject: requestObject)
-
-        // Act
-        let decode = {
-            try JSONDecoder().decode(DenIPCRequest.self, from: legacyRequestData)
-        }
-
-        // Assert: Legacy positional arguments cannot be silently treated as an ambient request.
-        #expect(throws: DenIPCInputError.legacyArguments, performing: decode)
     }
 
     @Test func resolveTargetWebBoardWithExplicitProfileFindsBoardInThatProfile() throws {

@@ -4,28 +4,62 @@ nonisolated struct DenSheetInteractStep: Codable, Equatable, Sendable {
     var line: Int
     var text: String
     var command: DenIPCCommand.Sheet
-    var payload: DenSheetPayload?
 }
 
-nonisolated struct DenSheetGetPayload: Codable, Equatable, Sendable {
-    var target: String
-    var attribute: String?
+nonisolated struct DenSheetGetTargetPayload: Codable, Equatable, Sendable {
+    let target: String
 
-    init(target: String, attribute: String? = nil) throws {
+    init(target: String) throws {
+        self.target = target
+        try validate()
+    }
+
+    private func validate() throws {
+        guard !target.isEmpty else {
+            throw DenIPCInputError.usage("The Sheet get target must not be empty")
+        }
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        try self.init(target: container.decode(String.self, forKey: .target))
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case target
+    }
+}
+
+nonisolated struct DenSheetGetAttributePayload: Codable, Equatable, Sendable {
+    let target: String
+    let attribute: String
+
+    init(target: String, attribute: String) throws {
         self.target = target
         self.attribute = attribute
         try validate()
     }
 
-    func validate(attributeRequired: Bool = false) throws {
+    private func validate() throws {
         guard !target.isEmpty else {
             throw DenIPCInputError.usage("The Sheet get target must not be empty")
         }
-        if attributeRequired {
-            guard let attribute, !attribute.isEmpty else {
-                throw DenIPCInputError.usage("The Sheet get attribute name must not be empty")
-            }
+        guard !attribute.isEmpty else {
+            throw DenIPCInputError.usage("The Sheet get attribute name must not be empty")
         }
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        try self.init(
+            target: container.decode(String.self, forKey: .target),
+            attribute: container.decode(String.self, forKey: .attribute)
+        )
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case target
+        case attribute
     }
 }
 
@@ -42,27 +76,15 @@ nonisolated struct DenSheetStatePayload: Codable, Equatable, Sendable {
             throw DenIPCInputError.usage("The Sheet state target must not be empty")
         }
     }
-}
 
-nonisolated indirect enum DenSheetPayload: Codable, Equatable, Sendable {
-    case open(DenSheetOpenPayload)
-    case eval(DenSheetEvalPayload)
-    case press(DenSheetPressPayload)
-    case scroll(DenSheetScrollPayload)
-    case wait(DenSheetWaitPayload)
-    case screenshot(DenSheetScreenshotPayload)
-    case snapshot(DenSheetSnapshotPayload)
-    case query(DenSheetQueryPayload)
-    case click(DenSheetClickPayload)
-    case dblclick(DenSheetElementTargetPayload)
-    case focus(DenSheetElementTargetPayload)
-    case fill(DenSheetFillPayload)
-    case type(DenSheetTypePayload)
-    case drag(DenSheetDragPayload)
-    case mouse(DenSheetMousePayload)
-    case interact(DenSheetInteractPayload)
-    case get(DenSheetGetPayload)
-    case isState(DenSheetStatePayload)
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        try self.init(target: container.decode(String.self, forKey: .target))
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case target
+    }
 }
 
 nonisolated struct DenSheetInteractPayload: Codable, Equatable, Sendable {
@@ -163,36 +185,7 @@ nonisolated struct DenBoardTerminalNewPayload: Codable, Equatable, Sendable {
     var focus: Bool
 }
 
-nonisolated enum DenBoardPayload: Codable, Equatable, Sendable {
-    case webNew(DenBoardWebNewPayload)
-    case terminalNew(DenBoardTerminalNewPayload)
-}
-
 nonisolated struct DenDrawerKeepPayload: Codable, Equatable, Sendable {
     var url: String
     var title: String?
-}
-
-nonisolated enum DenDrawerPayload: Codable, Equatable, Sendable {
-    case keep(DenDrawerKeepPayload)
-    case place(id: String)
-    case discard(id: String)
-}
-
-nonisolated enum DenTerminalPayload: Codable, Equatable, Sendable {
-    case send(text: String)
-    case run(command: String)
-    case kill(signal: String)
-}
-
-nonisolated enum DenProfilePayload: Codable, Equatable, Sendable {
-    case open(profileID: String?)
-}
-
-nonisolated enum DenIPCRequestPayload: Codable, Equatable, Sendable {
-    case sheet(DenSheetPayload)
-    case board(DenBoardPayload)
-    case drawer(DenDrawerPayload)
-    case terminal(DenTerminalPayload)
-    case profile(DenProfilePayload)
 }

@@ -38,8 +38,7 @@ struct ProfileOpenCommand: ParsableCommand {
 
     func run() throws {
         try DenIPCClient.execute(
-            command: .profile(.open),
-            payload: .profile(.open(profileID: profileID)),
+            command: .profile(.open(profileID: profileID)),
             options: options
         )
     }

@@ -14,7 +14,7 @@ struct DenSheetCommandTests {
             do {
                 let request = try JSONDecoder().decode(DenIPCRequest.self, from: data)
                 let isFull: Bool
-                if case .sheet(.snapshot(let payload)) = request.payload {
+                if case .sheet(.snapshot(let payload)) = request.command {
                     isFull = payload.full
                 } else {
                     isFull = false
@@ -66,8 +66,7 @@ struct DenSheetCommandTests {
                     DenSheetInteractStep(
                         line: 2,
                         text: "click @e1",
-                        command: .click,
-                        payload: .click(
+                        command: .click(
                             DenSheetClickPayload(
                                 target: "@e1",
                                 role: nil,
@@ -81,16 +80,12 @@ struct DenSheetCommandTests {
                     DenSheetInteractStep(
                         line: 3,
                         text: "fill @e2 \"penguin\"",
-                        command: .fill,
-                        payload: .fill(DenSheetFillPayload(target: "@e2", value: "penguin"))
+                        command: .fill(DenSheetFillPayload(target: "@e2", value: "penguin"))
                     ),
                 ]
                 let isExpected: Bool
-                if case .sheet(.interact(let payload)) = request.payload {
-                    isExpected =
-                        request.command == .sheet(.interact)
-                        && payload.full
-                        && payload.steps == expectedSteps
+                if case .sheet(.interact(let payload)) = request.command {
+                    isExpected = payload.full && payload.steps == expectedSteps
                 } else {
                     isExpected = false
                 }
@@ -147,8 +142,7 @@ struct DenSheetCommandTests {
                     DenSheetInteractStep(
                         line: 2,
                         text: "click --role button --name \"Search items\" --exact",
-                        command: .click,
-                        payload: .click(
+                        command: .click(
                             DenSheetClickPayload(
                                 target: nil,
                                 role: "button",
@@ -162,8 +156,7 @@ struct DenSheetCommandTests {
                     DenSheetInteractStep(
                         line: 2,
                         text: "wait #results --state visible",
-                        command: .wait,
-                        payload: .wait(
+                        command: .wait(
                             DenSheetWaitPayload(
                                 target: "#results",
                                 state: "visible",
@@ -178,19 +171,17 @@ struct DenSheetCommandTests {
                     DenSheetInteractStep(
                         line: 3,
                         text: "fill @e2 'penguin'",
-                        command: .fill,
-                        payload: .fill(DenSheetFillPayload(target: "@e2", value: "penguin"))
+                        command: .fill(DenSheetFillPayload(target: "@e2", value: "penguin"))
                     ),
                     DenSheetInteractStep(
                         line: 4,
                         text: "press Enter",
-                        command: .press,
-                        payload: .press(DenSheetPressPayload(key: "Enter"))
+                        command: .press(DenSheetPressPayload(key: "Enter"))
                     ),
                 ]
                 let isExpected: Bool
-                if case .sheet(.interact(let payload)) = request.payload {
-                    isExpected = request.command == .sheet(.interact) && payload.steps == expectedSteps
+                if case .sheet(.interact(let payload)) = request.command {
+                    isExpected = payload.steps == expectedSteps
                 } else {
                     isExpected = false
                 }
@@ -237,12 +228,10 @@ struct DenSheetCommandTests {
             do {
                 let request = try JSONDecoder().decode(DenIPCRequest.self, from: data)
                 let isExpected: Bool
-                if case .sheet(.interact(let payload)) = request.payload {
+                if case .sheet(.interact(let payload)) = request.command {
                     isExpected =
-                        request.command == .sheet(.interact)
-                        && payload.steps.count == 1
-                        && payload.steps[0].command == .click
-                        && payload.steps[0].payload
+                        payload.steps.count == 1
+                        && payload.steps[0].command
                             == .click(
                                 DenSheetClickPayload(
                                     target: "@e1",
@@ -303,20 +292,19 @@ struct DenSheetCommandTests {
             do {
                 let request = try JSONDecoder().decode(DenIPCRequest.self, from: data)
                 let isExpected =
-                    request.command == .sheet(.click)
-                    && request.payload
-                        == .sheet(
-                            .click(
-                                DenSheetClickPayload(
-                                    target: "@e1",
-                                    role: nil,
-                                    name: nil,
-                                    exact: false,
-                                    newBoard: true,
-                                    focus: true
-                                )
+                    request.command
+                    == .sheet(
+                        .click(
+                            DenSheetClickPayload(
+                                target: "@e1",
+                                role: nil,
+                                name: nil,
+                                exact: false,
+                                newBoard: true,
+                                focus: true
                             )
                         )
+                    )
                 return try JSONEncoder().encode(
                     DenIPCResponse.success(boardId: isExpected ? "created-board-id" : "unexpected")
                 )

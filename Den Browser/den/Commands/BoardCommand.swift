@@ -85,8 +85,7 @@ struct BoardWebNewCommand: ParsableCommand {
 
     func run() throws {
         try DenIPCClient.execute(
-            command: .board(.web(.new)),
-            payload: .board(.webNew(DenBoardWebNewPayload(url: url, focus: focus))),
+            command: .board(.web(.new(DenBoardWebNewPayload(url: url, focus: focus)))),
             options: options
         )
     }
@@ -115,10 +114,9 @@ struct BoardTerminalNewCommand: ParsableCommand {
     func run() throws {
         let resolvedPath = path.map { URL(fileURLWithPath: $0).standardizedFileURL.path }
         try DenIPCClient.execute(
-            command: .board(.terminal(.new)),
-            payload: .board(
-                .terminalNew(
-                    DenBoardTerminalNewPayload(path: resolvedPath, runCommand: runCommand, focus: focus)
+            command: .board(
+                .terminal(
+                    .new(DenBoardTerminalNewPayload(path: resolvedPath, runCommand: runCommand, focus: focus))
                 )
             ),
             options: options

@@ -32,8 +32,7 @@ struct DenIPCServiceTests {
         // Act
         let response = await service.handleRequest(
             DenIPCRequest(
-                command: .board(.web(.new)),
-                payload: .board(.webNew(DenBoardWebNewPayload(url: "https://example.com/", focus: false)))
+                command: .board(.web(.new(DenBoardWebNewPayload(url: "https://example.com/", focus: false))))
             )
         )
 
@@ -63,8 +62,7 @@ struct DenIPCServiceTests {
         // Act
         let response = await service.handleRequest(
             DenIPCRequest(
-                command: .drawer(.place),
-                payload: .drawer(.place(id: itemID.uuidString))
+                command: .drawer(.place(id: itemID.uuidString))
             )
         )
 
@@ -157,8 +155,7 @@ struct DenIPCServiceTests {
         // Act
         let response = await service.handleRequest(
             DenIPCRequest(
-                command: .profile(.open),
-                payload: .profile(.open(profileID: profile2.id.uuidString))
+                command: .profile(.open(profileID: profile2.id.uuidString))
             )
         )
 
@@ -190,8 +187,7 @@ struct DenIPCServiceTests {
         // Act
         let response = await service.handleRequest(
             DenIPCRequest(
-                command: .profile(.open),
-                payload: .profile(.open(profileID: manager.personalProfileID.uuidString))
+                command: .profile(.open(profileID: manager.personalProfileID.uuidString))
             )
         )
 
@@ -218,8 +214,7 @@ struct DenIPCServiceTests {
         // Act
         let response = await service.handleRequest(
             DenIPCRequest(
-                command: .profile(.open),
-                payload: .profile(.open(profileID: "not-a-valid-uuid"))
+                command: .profile(.open(profileID: "not-a-valid-uuid"))
             )
         )
 
@@ -247,8 +242,7 @@ struct DenIPCServiceTests {
         // Act
         let response = await service.handleRequest(
             DenIPCRequest(
-                command: .profile(.open),
-                payload: .profile(.open(profileID: unknownUUID))
+                command: .profile(.open(profileID: unknownUUID))
             )
         )
 
@@ -377,8 +371,7 @@ struct DenIPCServiceTests {
         // Act
         let response = await service.handleRequest(
             DenIPCRequest(
-                command: .sheet(.click),
-                payload: .sheet(
+                command: .sheet(
                     .click(
                         DenSheetClickPayload(
                             target: "#test-link",

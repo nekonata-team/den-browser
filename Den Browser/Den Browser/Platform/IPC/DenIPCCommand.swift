@@ -1,91 +1,91 @@
 import Foundation
 
+nonisolated enum DenSheetGetCommand: Codable, Equatable, Sendable {
+    case text(DenSheetGetTargetPayload)
+    case value(DenSheetGetTargetPayload)
+    case attribute(DenSheetGetAttributePayload)
+    case count(DenSheetGetTargetPayload)
+    case box(DenSheetGetTargetPayload)
+}
+
+nonisolated enum DenSheetIsCommand: Codable, Equatable, Sendable {
+    case visible(DenSheetStatePayload)
+    case enabled(DenSheetStatePayload)
+    case checked(DenSheetStatePayload)
+}
+
+nonisolated enum DenSheetMouseCommand: Codable, Equatable, Sendable {
+    case move(DenSheetMousePayload)
+    case down(DenSheetMousePayload)
+    case release(DenSheetMousePayload)
+    case click(DenSheetMousePayload)
+    case wheel(DenSheetMousePayload)
+}
+
+nonisolated enum DenBoardWebCommand: Codable, Equatable, Sendable {
+    case new(DenBoardWebNewPayload)
+}
+
+nonisolated enum DenBoardTerminalCommand: Codable, Equatable, Sendable {
+    case new(DenBoardTerminalNewPayload)
+}
+
 nonisolated enum DenIPCCommand: Codable, Equatable, Sendable {
-    enum Sheet: Codable, Equatable, Sendable {
-        case open
+    indirect enum Sheet: Codable, Equatable, Sendable {
+        case open(DenSheetOpenPayload)
         case url
         case reload
-        case eval
+        case eval(DenSheetEvalPayload)
         case text
         case back
         case forward
-        case press
-        case scroll
-        case wait
-        case screenshot
-        case snapshot
-        case query
-        case get(Get)
-        case isState(IsState)
-        case click
-        case dblclick
-        case fill
-        case type
-        case focus
-        case drag
-        case mouse(Mouse)
-        case interact
-    }
-
-    enum Get: String, Codable, Equatable, Sendable {
-        case text
-        case value
-        case attribute
-        case count
-        case box
-    }
-
-    enum IsState: String, Codable, Equatable, Sendable {
-        case visible
-        case enabled
-        case checked
-    }
-
-    enum Mouse: String, Codable, Equatable, Sendable {
-        case move
-        case down
-        case release = "up"
-        case click
-        case wheel
-    }
-
-    enum WebBoard: String, CaseIterable, Codable, Sendable {
-        case new
-    }
-
-    enum TerminalBoard: String, CaseIterable, Codable, Sendable {
-        case new
+        case press(DenSheetPressPayload)
+        case scroll(DenSheetScrollPayload)
+        case wait(DenSheetWaitPayload)
+        case screenshot(DenSheetScreenshotPayload)
+        case snapshot(DenSheetSnapshotPayload)
+        case query(DenSheetQueryPayload)
+        case get(DenSheetGetCommand)
+        case isState(DenSheetIsCommand)
+        case click(DenSheetClickPayload)
+        case dblclick(DenSheetElementTargetPayload)
+        case fill(DenSheetFillPayload)
+        case type(DenSheetTypePayload)
+        case focus(DenSheetElementTargetPayload)
+        case drag(DenSheetDragPayload)
+        case mouse(DenSheetMouseCommand)
+        case interact(DenSheetInteractPayload)
     }
 
     enum Board: Codable, Equatable, Sendable {
         case list
         case focused
         case close
-        case web(WebBoard)
-        case terminal(TerminalBoard)
+        case web(DenBoardWebCommand)
+        case terminal(DenBoardTerminalCommand)
     }
 
-    enum Desk: String, CaseIterable, Codable, Sendable {
+    enum Desk: Codable, Equatable, Sendable {
         case list
     }
 
-    enum Drawer: String, CaseIterable, Codable, Sendable {
+    enum Drawer: Codable, Equatable, Sendable {
         case list
-        case keep
-        case place
-        case discard
+        case keep(DenDrawerKeepPayload)
+        case place(id: String)
+        case discard(id: String)
     }
 
-    enum Terminal: String, CaseIterable, Codable, Sendable {
+    enum Terminal: Codable, Equatable, Sendable {
         case text
-        case send
-        case run
-        case kill
+        case send(text: String)
+        case run(command: String)
+        case kill(signal: String)
     }
 
-    enum Profile: String, CaseIterable, Codable, Sendable {
+    enum Profile: Codable, Equatable, Sendable {
         case list
-        case open
+        case open(profileID: String?)
     }
 
     case sheet(Sheet)
@@ -95,5 +95,4 @@ nonisolated enum DenIPCCommand: Codable, Equatable, Sendable {
     case terminal(Terminal)
     case profile(Profile)
     case health
-
 }

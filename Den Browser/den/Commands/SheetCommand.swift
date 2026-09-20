@@ -43,8 +43,7 @@ struct SheetOpenCommand: ParsableCommand {
 
     func run() throws {
         try DenIPCClient.execute(
-            command: .sheet(.open),
-            payload: .sheet(.open(DenSheetOpenPayload(url: url))),
+            command: .sheet(.open(DenSheetOpenPayload(url: url))),
             options: target
         )
     }
@@ -88,8 +87,7 @@ struct SheetEvalCommand: ParsableCommand {
             throw ValidationError("Please provide JavaScript code to evaluate")
         }
         try DenIPCClient.execute(
-            command: .sheet(.eval),
-            payload: .sheet(.eval(DenSheetEvalPayload(script: script))),
+            command: .sheet(.eval(DenSheetEvalPayload(script: script))),
             options: target
         )
     }
@@ -125,8 +123,7 @@ struct SheetSnapshotCommand: ParsableCommand {
             throw ValidationError("Please choose either --interactive or --full")
         }
         try DenIPCClient.execute(
-            command: .sheet(.snapshot),
-            payload: .sheet(.snapshot(DenSheetSnapshotPayload(full: full, within: within))),
+            command: .sheet(.snapshot(DenSheetSnapshotPayload(full: full, within: within))),
             options: target
         )
     }
@@ -149,8 +146,7 @@ struct SheetQueryCommand: ParsableCommand {
 
     func run() throws {
         try DenIPCClient.execute(
-            command: .sheet(.query),
-            payload: .sheet(
+            command: .sheet(
                 .query(
                     DenSheetQueryPayload(
                         selector: selector,
@@ -186,8 +182,7 @@ struct SheetClickCommand: ParsableCommand {
 
     func run() throws {
         try DenIPCClient.execute(
-            command: .sheet(.click),
-            payload: .sheet(
+            command: .sheet(
                 .click(
                     DenSheetClickPayload(
                         target: targetElement,
@@ -216,8 +211,7 @@ struct SheetDblclickCommand: ParsableCommand {
 
     func run() throws {
         try DenIPCClient.execute(
-            command: .sheet(.dblclick),
-            payload: .sheet(.dblclick(DenSheetElementTargetPayload(target: targetElement))),
+            command: .sheet(.dblclick(DenSheetElementTargetPayload(target: targetElement))),
             options: target
         )
     }
@@ -235,8 +229,7 @@ struct SheetFocusCommand: ParsableCommand {
 
     func run() throws {
         try DenIPCClient.execute(
-            command: .sheet(.focus),
-            payload: .sheet(.focus(DenSheetElementTargetPayload(target: targetElement))),
+            command: .sheet(.focus(DenSheetElementTargetPayload(target: targetElement))),
             options: target
         )
     }
@@ -259,8 +252,7 @@ struct SheetFillCommand: ParsableCommand {
         }
         let value = valueParts.joined(separator: " ")
         try DenIPCClient.execute(
-            command: .sheet(.fill),
-            payload: .sheet(.fill(DenSheetFillPayload(target: targetElement, value: value))),
+            command: .sheet(.fill(DenSheetFillPayload(target: targetElement, value: value))),
             options: target
         )
     }
@@ -286,8 +278,7 @@ struct SheetTypeCommand: ParsableCommand {
             payload = DenSheetTypePayload(target: firstArg, text: remainingParts.joined(separator: " "))
         }
         try DenIPCClient.execute(
-            command: .sheet(.type),
-            payload: .sheet(.type(payload)),
+            command: .sheet(.type(payload)),
             options: target
         )
     }
@@ -319,8 +310,7 @@ struct SheetDragCommand: ParsableCommand {
 
     func run() throws {
         try DenIPCClient.execute(
-            command: .sheet(.drag),
-            payload: .sheet(
+            command: .sheet(
                 .drag(
                     DenSheetDragPayload(
                         source: source,
@@ -362,8 +352,7 @@ struct SheetMouseMoveCommand: ParsableCommand {
 
     func run() throws {
         try DenIPCClient.execute(
-            command: .sheet(.mouse(.move)),
-            payload: .sheet(.mouse(DenSheetMousePayload(coordX: coordX, coordY: coordY))),
+            command: .sheet(.mouse(.move(DenSheetMousePayload(coordX: coordX, coordY: coordY)))),
             options: target
         )
     }
@@ -381,8 +370,7 @@ struct SheetMouseDownCommand: ParsableCommand {
 
     func run() throws {
         try DenIPCClient.execute(
-            command: .sheet(.mouse(.down)),
-            payload: .sheet(.mouse(DenSheetMousePayload(button: button))),
+            command: .sheet(.mouse(.down(DenSheetMousePayload(button: button)))),
             options: target
         )
     }
@@ -400,8 +388,7 @@ struct SheetMouseUpCommand: ParsableCommand {
 
     func run() throws {
         try DenIPCClient.execute(
-            command: .sheet(.mouse(.release)),
-            payload: .sheet(.mouse(DenSheetMousePayload(button: button))),
+            command: .sheet(.mouse(.release(DenSheetMousePayload(button: button)))),
             options: target
         )
     }
@@ -423,15 +410,15 @@ struct SheetMouseClickCommand: ParsableCommand {
 
     func run() throws {
         try DenIPCClient.execute(
-            command: .sheet(.mouse(.click)),
-            payload: .sheet(
+            command: .sheet(
                 .mouse(
-                    DenSheetMousePayload(
-                        coordX: coordX,
-                        coordY: coordY,
-                        button: button,
-                        count: count
-                    )
+                    .click(
+                        DenSheetMousePayload(
+                            coordX: coordX,
+                            coordY: coordY,
+                            button: button,
+                            count: count
+                        ))
                 )
             ),
             options: target
@@ -452,8 +439,7 @@ struct SheetMouseWheelCommand: ParsableCommand {
 
     func run() throws {
         try DenIPCClient.execute(
-            command: .sheet(.mouse(.wheel)),
-            payload: .sheet(.mouse(DenSheetMousePayload(deltaX: deltaX, deltaY: deltaY))),
+            command: .sheet(.mouse(.wheel(DenSheetMousePayload(deltaX: deltaX, deltaY: deltaY)))),
             options: target
         )
     }
@@ -510,8 +496,7 @@ struct SheetInteractCommand: ParsableCommand {
         }
         let payload = DenSheetInteractPayload(steps: steps, full: full)
         try DenIPCClient.execute(
-            command: .sheet(.interact),
-            payload: .sheet(.interact(payload)),
+            command: .sheet(.interact(payload)),
             options: target
         )
     }
@@ -564,7 +549,7 @@ private enum DenSheetScriptParser {
             for commandString in commandStrings {
                 let tokens = try splitTokens(commandString, line: lineNumber)
                 guard let commandName = tokens.first else { continue }
-                let action = try payload(
+                let command = try command(
                     for: commandName,
                     arguments: Array(tokens.dropFirst()),
                     line: lineNumber
@@ -573,8 +558,7 @@ private enum DenSheetScriptParser {
                     DenSheetInteractStep(
                         line: lineNumber,
                         text: commandString,
-                        command: action.command,
-                        payload: action.payload
+                        command: command
                     )
                 )
             }
@@ -582,11 +566,11 @@ private enum DenSheetScriptParser {
         return steps
     }
 
-    private static func payload(
+    private static func command(
         for commandName: String,
         arguments: [String],
         line: Int
-    ) throws -> (command: DenIPCCommand.Sheet, payload: DenSheetPayload?) {
+    ) throws -> DenIPCCommand.Sheet {
         func usage(_ message: String) -> ValidationError {
             ValidationError("Line \(line): \(message)")
         }
@@ -648,39 +632,39 @@ private enum DenSheetScriptParser {
         switch commandName {
         case "url":
             try requireArguments(0...0, "url does not accept arguments")
-            return (.url, nil)
+            return .url
 
         case "reload":
             try requireArguments(0...0, "reload does not accept arguments")
-            return (.reload, nil)
+            return .reload
 
         case "text":
             try requireArguments(0...0, "text does not accept arguments")
-            return (.text, nil)
+            return .text
 
         case "back":
             try requireArguments(0...0, "back does not accept arguments")
-            return (.back, nil)
+            return .back
 
         case "forward":
             try requireArguments(0...0, "forward does not accept arguments")
-            return (.forward, nil)
+            return .forward
 
         case "open":
             try requireArguments(1...1, "Usage: den sheet open <url>")
-            return (.open, .open(DenSheetOpenPayload(url: arguments[0])))
+            return .open(DenSheetOpenPayload(url: arguments[0]))
 
         case "eval":
             guard !arguments.isEmpty else { throw usage("Usage: den sheet eval <javascript>") }
-            return (.eval, .eval(DenSheetEvalPayload(script: arguments.joined(separator: " "))))
+            return .eval(DenSheetEvalPayload(script: arguments.joined(separator: " ")))
 
         case "press":
             try requireArguments(1...1, "Usage: den sheet press <key>")
-            return (.press, .press(DenSheetPressPayload(key: arguments[0])))
+            return .press(DenSheetPressPayload(key: arguments[0]))
 
         case "scroll":
             try requireArguments(0...1, "Usage: den sheet scroll [<direction|amount|target>]")
-            return (.scroll, .scroll(DenSheetScrollPayload(directionOrTarget: arguments.first)))
+            return .scroll(DenSheetScrollPayload(directionOrTarget: arguments.first))
 
         case "wait":
             let parsed = try parseOptions(
@@ -718,24 +702,21 @@ private enum DenSheetScriptParser {
                 throw usage("JavaScript condition must not be empty")
             }
             let timeout = try doubleValue("--timeout", from: parsed.values) ?? 10
-            return (
-                .wait,
-                .wait(
-                    DenSheetWaitPayload(
-                        target: parsed.positionals.first,
-                        state: state,
-                        url: parsed.values["--url"],
-                        text: parsed.values["--text"],
-                        loadState: loadState,
-                        function: parsed.values["--fn"],
-                        timeout: timeout
-                    )
+            return .wait(
+                DenSheetWaitPayload(
+                    target: parsed.positionals.first,
+                    state: state,
+                    url: parsed.values["--url"],
+                    text: parsed.values["--text"],
+                    loadState: loadState,
+                    function: parsed.values["--fn"],
+                    timeout: timeout
                 )
             )
 
         case "screenshot":
             try requireArguments(0...1, "Usage: den sheet screenshot [<output-path>]")
-            return (.screenshot, .screenshot(DenSheetScreenshotPayload(outputPath: arguments.first)))
+            return .screenshot(DenSheetScreenshotPayload(outputPath: arguments.first))
 
         case "snapshot":
             let parsed = try parseOptions(arguments, valued: ["--within"], flags: ["--full", "--interactive", "-i"])
@@ -746,13 +727,10 @@ private enum DenSheetScriptParser {
             guard !(parsed.flags.contains("--full") && interactive) else {
                 throw usage("Please choose either --interactive or --full")
             }
-            return (
-                .snapshot,
-                .snapshot(
-                    DenSheetSnapshotPayload(
-                        full: parsed.flags.contains("--full"),
-                        within: parsed.values["--within"]
-                    )
+            return .snapshot(
+                DenSheetSnapshotPayload(
+                    full: parsed.flags.contains("--full"),
+                    within: parsed.values["--within"]
                 )
             )
 
@@ -761,15 +739,12 @@ private enum DenSheetScriptParser {
             guard parsed.positionals.count == 1, !parsed.positionals[0].isEmpty else {
                 throw usage("Usage: den sheet query <selector>")
             }
-            return (
-                .query,
-                .query(
-                    DenSheetQueryPayload(
-                        selector: parsed.positionals[0],
-                        visible: parsed.flags.contains("--visible"),
-                        all: parsed.flags.contains("--all"),
-                        fields: parsed.values["--fields"]
-                    )
+            return .query(
+                DenSheetQueryPayload(
+                    selector: parsed.positionals[0],
+                    visible: parsed.flags.contains("--visible"),
+                    all: parsed.flags.contains("--all"),
+                    fields: parsed.values["--fields"]
                 )
             )
 
@@ -791,17 +766,14 @@ private enum DenSheetScriptParser {
             guard target == nil || (role == nil && name == nil) else {
                 throw usage("Provide either a selector/ref or --role and --name, not both")
             }
-            return (
-                .click,
-                .click(
-                    DenSheetClickPayload(
-                        target: target,
-                        role: role,
-                        name: name,
-                        exact: parsed.flags.contains("--exact"),
-                        newBoard: parsed.flags.contains("--new-board"),
-                        focus: parsed.flags.contains("--focus")
-                    )
+            return .click(
+                DenSheetClickPayload(
+                    target: target,
+                    role: role,
+                    name: name,
+                    exact: parsed.flags.contains("--exact"),
+                    newBoard: parsed.flags.contains("--new-board"),
+                    focus: parsed.flags.contains("--focus")
                 )
             )
 
@@ -809,17 +781,14 @@ private enum DenSheetScriptParser {
             try requireArguments(1...1, "Usage: den sheet \(commandName) <@ref|selector>")
             let payload = DenSheetElementTargetPayload(target: arguments[0])
             if commandName == "dblclick" {
-                return (.dblclick, .dblclick(payload))
+                return .dblclick(payload)
             }
-            return (.focus, .focus(payload))
+            return .focus(payload)
 
         case "fill":
             guard arguments.count >= 2 else { throw usage("Usage: den sheet fill <@ref|selector> <value>") }
-            return (
-                .fill,
-                .fill(
-                    DenSheetFillPayload(target: arguments[0], value: arguments.dropFirst().joined(separator: " "))
-                )
+            return .fill(
+                DenSheetFillPayload(target: arguments[0], value: arguments.dropFirst().joined(separator: " "))
             )
 
         case "type":
@@ -828,7 +797,7 @@ private enum DenSheetScriptParser {
                 arguments.count == 1
                 ? DenSheetTypePayload(target: nil, text: arguments[0])
                 : DenSheetTypePayload(target: arguments[0], text: arguments.dropFirst().joined(separator: " "))
-            return (.type, .type(payload))
+            return .type(payload)
 
         case "drag":
             let parsed = try parseOptions(arguments, valued: ["--dx", "--dy", "--steps"], flags: [])
@@ -847,16 +816,13 @@ private enum DenSheetScriptParser {
             guard parsed.positionals.count == 2 || deltaX != nil || deltaY != nil else {
                 throw usage("Drag requires a target element or at least one of --dx / --dy")
             }
-            return (
-                .drag,
-                .drag(
-                    DenSheetDragPayload(
-                        source: parsed.positionals[0],
-                        destination: parsed.positionals.count == 2 ? parsed.positionals[1] : nil,
-                        deltaX: deltaX,
-                        deltaY: deltaY,
-                        steps: steps
-                    )
+            return .drag(
+                DenSheetDragPayload(
+                    source: parsed.positionals[0],
+                    destination: parsed.positionals.count == 2 ? parsed.positionals[1] : nil,
+                    deltaX: deltaX,
+                    deltaY: deltaY,
+                    steps: steps
                 )
             )
 
@@ -871,20 +837,17 @@ private enum DenSheetScriptParser {
                     let coordinateX = Double(actionArguments[0]),
                     let coordinateY = Double(actionArguments[1])
                 else { throw usage("Usage: den sheet mouse move <x> <y>") }
-                return (
-                    .mouse(.move),
-                    .mouse(DenSheetMousePayload(coordX: coordinateX, coordY: coordinateY))
-                )
+                return .mouse(.move(DenSheetMousePayload(coordX: coordinateX, coordY: coordinateY)))
             case "down":
                 guard actionArguments.count <= 1 else {
                     throw usage("Usage: den sheet mouse down [<button>]")
                 }
-                return (.mouse(.down), .mouse(DenSheetMousePayload(button: actionArguments.first)))
+                return .mouse(.down(DenSheetMousePayload(button: actionArguments.first)))
             case "up":
                 guard actionArguments.count <= 1 else {
                     throw usage("Usage: den sheet mouse up [<button>]")
                 }
-                return (.mouse(.release), .mouse(DenSheetMousePayload(button: actionArguments.first)))
+                return .mouse(.release(DenSheetMousePayload(button: actionArguments.first)))
             case "click":
                 guard actionArguments.count >= 2 else {
                     throw usage("Usage: den sheet mouse click <x> <y> [--button <left|right|middle>] [--count <n>]")
@@ -906,16 +869,14 @@ private enum DenSheetScriptParser {
                     guard let value = Int($0) else { throw usage("Invalid value for --count: \($0)") }
                     return value
                 }
-                return (
-                    .mouse(.click),
-                    .mouse(
+                return .mouse(
+                    .click(
                         DenSheetMousePayload(
                             coordX: coordinateX,
                             coordY: coordinateY,
                             button: button,
                             count: count
-                        )
-                    )
+                        ))
                 )
             case "wheel":
                 guard actionArguments.count >= 1 else {
@@ -929,14 +890,12 @@ private enum DenSheetScriptParser {
                 guard let deltaY = Double(actionArguments[0]) else {
                     throw usage("Usage: den sheet mouse wheel <dy> [--dx <dx>]")
                 }
-                return (
-                    .mouse(.wheel),
-                    .mouse(
+                return .mouse(
+                    .wheel(
                         DenSheetMousePayload(
                             deltaX: try doubleValue("--dx", from: parsed.values),
                             deltaY: deltaY
-                        )
-                    )
+                        ))
                 )
             default:
                 throw usage("Unknown mouse action: \(action)")
@@ -951,22 +910,21 @@ private enum DenSheetScriptParser {
                 switch kind {
                 case "text":
                     try requireArguments(2...2, "Usage: den sheet get text <target>")
-                    return (.get(.text), .get(try DenSheetGetPayload(target: values[0])))
+                    return .get(.text(try DenSheetGetTargetPayload(target: values[0])))
                 case "value":
                     try requireArguments(2...2, "Usage: den sheet get value <target>")
-                    return (.get(.value), .get(try DenSheetGetPayload(target: values[0])))
+                    return .get(.value(try DenSheetGetTargetPayload(target: values[0])))
                 case "attr":
                     try requireArguments(3...3, "Usage: den sheet get attr <target> <attribute>")
-                    return (
-                        .get(.attribute),
-                        .get(try DenSheetGetPayload(target: values[0], attribute: values[1]))
+                    return .get(
+                        .attribute(try DenSheetGetAttributePayload(target: values[0], attribute: values[1]))
                     )
                 case "count":
                     try requireArguments(2...2, "Usage: den sheet get count <selector>")
-                    return (.get(.count), .get(try DenSheetGetPayload(target: values[0])))
+                    return .get(.count(try DenSheetGetTargetPayload(target: values[0])))
                 case "box":
                     try requireArguments(2...2, "Usage: den sheet get box <target>")
-                    return (.get(.box), .get(try DenSheetGetPayload(target: values[0])))
+                    return .get(.box(try DenSheetGetTargetPayload(target: values[0])))
                 default:
                     throw usage("Unknown get kind: \(kind)")
                 }
@@ -980,11 +938,14 @@ private enum DenSheetScriptParser {
             guard arguments.count == 2 else {
                 throw usage("Usage: den sheet is <visible|enabled|checked> <target>")
             }
-            guard let state = DenIPCCommand.IsState(rawValue: arguments[0]) else {
-                throw usage("Unknown state: \(arguments[0])")
-            }
             do {
-                return (.isState(state), .isState(try DenSheetStatePayload(target: arguments[1])))
+                let payload = try DenSheetStatePayload(target: arguments[1])
+                switch arguments[0] {
+                case "visible": return .isState(.visible(payload))
+                case "enabled": return .isState(.enabled(payload))
+                case "checked": return .isState(.checked(payload))
+                default: throw usage("Unknown state: \(arguments[0])")
+                }
             } catch {
                 throw usage(error.localizedDescription)
             }
@@ -1124,8 +1085,7 @@ struct SheetGetBoxCommand: ParsableCommand {
 
     func run() throws {
         try DenIPCClient.execute(
-            command: .sheet(.get(.box)),
-            payload: .sheet(.get(try DenSheetGetPayload(target: targetElement))),
+            command: .sheet(.get(.box(try DenSheetGetTargetPayload(target: targetElement)))),
             options: target
         )
     }
@@ -1142,8 +1102,7 @@ struct SheetGetTextCommand: ParsableCommand {
 
     func run() throws {
         try DenIPCClient.execute(
-            command: .sheet(.get(.text)),
-            payload: .sheet(.get(try DenSheetGetPayload(target: targetElement))),
+            command: .sheet(.get(.text(try DenSheetGetTargetPayload(target: targetElement)))),
             options: target
         )
     }
@@ -1159,8 +1118,7 @@ struct SheetGetValueCommand: ParsableCommand {
     var targetElement: String
     func run() throws {
         try DenIPCClient.execute(
-            command: .sheet(.get(.value)),
-            payload: .sheet(.get(try DenSheetGetPayload(target: targetElement))),
+            command: .sheet(.get(.value(try DenSheetGetTargetPayload(target: targetElement)))),
             options: target
         )
     }
@@ -1179,11 +1137,11 @@ struct SheetGetAttributeCommand: ParsableCommand {
 
     func run() throws {
         try DenIPCClient.execute(
-            command: .sheet(.get(.attribute)),
-            payload: .sheet(
+            command: .sheet(
                 .get(
-                    try DenSheetGetPayload(target: targetElement, attribute: attribute)
-                )),
+                    .attribute(try DenSheetGetAttributePayload(target: targetElement, attribute: attribute))
+                )
+            ),
             options: target
         )
     }
@@ -1200,8 +1158,7 @@ struct SheetGetCountCommand: ParsableCommand {
 
     func run() throws {
         try DenIPCClient.execute(
-            command: .sheet(.get(.count)),
-            payload: .sheet(.get(try DenSheetGetPayload(target: selector))),
+            command: .sheet(.get(.count(try DenSheetGetTargetPayload(target: selector)))),
             options: target
         )
     }
@@ -1230,8 +1187,7 @@ struct SheetIsVisibleCommand: ParsableCommand {
 
     func run() throws {
         try DenIPCClient.execute(
-            command: .sheet(.isState(.visible)),
-            payload: .sheet(.isState(try DenSheetStatePayload(target: targetElement))),
+            command: .sheet(.isState(.visible(try DenSheetStatePayload(target: targetElement)))),
             options: target
         )
     }
@@ -1248,8 +1204,7 @@ struct SheetIsEnabledCommand: ParsableCommand {
 
     func run() throws {
         try DenIPCClient.execute(
-            command: .sheet(.isState(.enabled)),
-            payload: .sheet(.isState(try DenSheetStatePayload(target: targetElement))),
+            command: .sheet(.isState(.enabled(try DenSheetStatePayload(target: targetElement)))),
             options: target
         )
     }
@@ -1266,8 +1221,7 @@ struct SheetIsCheckedCommand: ParsableCommand {
 
     func run() throws {
         try DenIPCClient.execute(
-            command: .sheet(.isState(.checked)),
-            payload: .sheet(.isState(try DenSheetStatePayload(target: targetElement))),
+            command: .sheet(.isState(.checked(try DenSheetStatePayload(target: targetElement)))),
             options: target
         )
     }
@@ -1284,8 +1238,7 @@ struct SheetScreenshotCommand: ParsableCommand {
 
     func run() throws {
         try DenIPCClient.execute(
-            command: .sheet(.screenshot),
-            payload: .sheet(.screenshot(DenSheetScreenshotPayload(outputPath: outputPath))),
+            command: .sheet(.screenshot(DenSheetScreenshotPayload(outputPath: outputPath))),
             options: target
         )
     }
@@ -1326,8 +1279,7 @@ struct SheetPressCommand: ParsableCommand {
 
     func run() throws {
         try DenIPCClient.execute(
-            command: .sheet(.press),
-            payload: .sheet(.press(DenSheetPressPayload(key: key))),
+            command: .sheet(.press(DenSheetPressPayload(key: key))),
             options: target
         )
     }
@@ -1344,8 +1296,7 @@ struct SheetScrollCommand: ParsableCommand {
 
     func run() throws {
         try DenIPCClient.execute(
-            command: .sheet(.scroll),
-            payload: .sheet(.scroll(DenSheetScrollPayload(directionOrTarget: directionOrTarget))),
+            command: .sheet(.scroll(DenSheetScrollPayload(directionOrTarget: directionOrTarget))),
             options: target
         )
     }
@@ -1402,8 +1353,7 @@ struct SheetWaitCommand: ParsableCommand {
         }
 
         try DenIPCClient.execute(
-            command: .sheet(.wait),
-            payload: .sheet(
+            command: .sheet(
                 .wait(
                     DenSheetWaitPayload(
                         target: targetValue,

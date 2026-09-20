@@ -127,15 +127,15 @@
 - **Verification:** `cleanupWindow` / `closeWindows` / `releaseSharedResourcesIfUnused` へ集約。`releaseWindowResources` で `zmxSessions.stop()` と各Taskをキャンセル・破棄。複数Window、最後のWindow、Profile削除失敗、reset、遅延callbackのfocused lifecycle testを追加し、`rtk just check` を通過。GhosttyのSurface寿命変更は別台帳へ委ねます。
 
 <a id="task-009"></a>
-### [/] TASK-009：IPC引数を型付きpayloadへ移行する
+### [x] TASK-009：IPC引数を型付きpayloadへ移行する
 
 - **Priority / Purpose:** P2。ArgumentParserで解析済みの値を、サーバーが独自に再解析する重複をなくします。
 - **Prerequisites:** なし。
 - **Entry Points:** `IPC/IPCTypes.swift`、`CLI/Commands/`、`Den/IPC/DenIPCService.swift`。
 - **Work:** コマンドごとの最小のCodable payloadを定義し、値とフラグを分離します。通常CLIとinteractで同じ検証・実行経路を使います。直接ソケットを使うクライアントの互換性方針を確認し、移行方法を文書化します。
 - **Acceptance Criteria:** ハイフンで始まる名前、空文字、オプション名と同じ文字列を値として保持できます。未知・欠落・不正な入力は副作用前に拒否します。不要な独自コマンドフレームワークを追加しません。
-- **Verification:** payload round-trip、CLI解析、サーバー境界のfocused test。`just check`。`docs/cli.md`と必要なagent skill記載を更新します。
-- **Current Status:** 通常CLIと`interact`をtyped payloadへ移行し、旧`args`形式を拒否する直接IPC契約と`docs/cli.md`を追加済み。payload移行は`bde7806`、IPC型のファイル分割は`b69254d`でコミット済み。`get`／`is`／`mouse`の操作種別をCommand側へ移す作業中。
+- **Verification:** `DenIPCRequestParsingTests`でtyped commandのround-trip、`interact` stepのround-trip、空targetと属性名必須の型境界を検証。`DenSheetCommandTests`で通常CLIと`interact`の解析結果を検証。`docs/cli.md`を更新。`just check`実行（lint 0 violations、unit tests全件パス）。
+- **Current Status:** 通常CLIと`interact`をtyped payloadへ移行し、payloadをassociated valueとして`DenIPCCommand`へ統合。`board.web.new`、`sheet.get`、`sheet.is`、`sheet.mouse`のサブコマンド階層もenumで表現しました。`sheet get attr`の属性名必須も`DenSheetGetAttributePayload`で型表現し、`DenIPCCommand`を直接Codable化して重複したwire型と変換層を削除しました。command値とpayload値はdecode時に検証し、cross-version JSON非互換方針を`docs/cli.md`へ記載済み。
 
 <a id="task-010"></a>
 ### [ ] TASK-010：URL入力の解決と検証を統一する

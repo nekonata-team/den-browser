@@ -68,13 +68,12 @@ For `terminal` commands, the caller's Terminal Board is preferred; otherwise the
 - `--board <id>`: Explicitly target a specific Board by its UUID. Available on `den sheet`, `den terminal`, and `den board close`; fails immediately if not found or invalid.
 
 ### Direct IPC Requests
-The CLI communicates with Den Browser through a newline-delimited JSON request on the Unix domain socket. A request contains the `command`, optional target IDs, and an optional typed `payload` whose shape is determined by the command.
+The CLI communicates with Den Browser through a newline-delimited JSON request on the Unix domain socket. A request contains the typed `command` and optional target IDs; command values and their associated payloads are encoded together.
 
-- Value-bearing commands such as `sheet click`, `sheet wait`, `sheet get`, and `terminal send` put positional values and flags in `payload`; the server does not re-parse command-line strings.
-- Commands without values omit `payload`.
-- The payload command must match the top-level `command`. Missing, unknown, or invalid payload values fail before a side effect.
-- The legacy `args` request field is rejected. Direct socket clients must migrate to the typed payload schema; there is no positional-argument fallback.
-- `sheet interact` sends one `sheet.interact` payload containing typed steps. Each step retains its source line and text for failure reporting, plus the typed command payload used for execution.
+- Value-bearing commands such as `sheet click`, `sheet wait`, `sheet get`, and `terminal send` carry positional values and flags in the typed command; the server does not re-parse command-line strings.
+- Missing, unknown, or invalid command values fail before a side effect.
+- Direct socket clients must follow the current typed command schema; cross-version JSON compatibility is not guaranteed.
+- `sheet interact` sends one `sheet.interact` command containing typed steps. Each step retains its source line and text for failure reporting, plus the typed command used for execution.
 
 ---
 
