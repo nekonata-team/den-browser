@@ -1,3 +1,4 @@
+import AppKit
 import SFSafeSymbols
 import SwiftUI
 
@@ -84,7 +85,13 @@ struct BoardStrip: View {
     }
 
     private func isPointerFocusEnabled(for boardID: UUID) -> Bool {
-        (boardDrag == nil || boardDrag?.boardID == boardID) && store.temporaryContext == nil
+        (boardDrag == nil || boardDrag?.boardID == boardID)
+            && resizingBoardID == nil
+            && store.temporaryContext == nil
+    }
+
+    private func isBoardHitTestingEnabled(for boardID: UUID) -> Bool {
+        resizingBoardID == boardID || isPointerFocusEnabled(for: boardID)
     }
 
     private var focusedBoardFocusRequest: BoardFocusRequest? {
@@ -192,14 +199,26 @@ struct BoardStrip: View {
                     }
                     .overlay(alignment: .trailing) {
                         if !store.isDeskFilterPresented && store.maximizedBoardID != board.id {
+                            let canResizeWithNextBoard =
+                                boards.firstIndex(where: { $0.id == board.id }).map {
+                                    $0 + 1 < boards.count
+                                } ?? false
                             BoardResizeHandle(
                                 board: board,
                                 height: boardHeight,
                                 width: boardSpacing,
+                                canResizeWithNextBoard: canResizeWithNextBoard,
                                 onResizeStart: {
+                                    cancelPendingBoardAlignment()
                                     resizingBoardID = board.id
                                 },
-                                onResize: { store.resizeBoard(board.id, to: $0) },
+                                onResize: { width, resizeWithNextBoard in
+                                    if resizeWithNextBoard {
+                                        store.resizeBoardPair(board.id, to: width)
+                                    } else {
+                                        store.resizeBoard(board.id, to: width)
+                                    }
+                                },
                                 onResizeEnd: {
                                     store.saveBoardWidths()
                                     resizingBoardID = nil
@@ -208,7 +227,7 @@ struct BoardStrip: View {
                             .offset(x: boardSpacing)
                         }
                     }
-                    .allowsHitTesting(isPointerFocusEnabled(for: board.id))
+                    .allowsHitTesting(isBoardHitTestingEnabled(for: board.id))
                     .accessibilityHidden(!isPointerFocusEnabled(for: board.id))
                     .zIndex(boardDrag?.boardID == board.id ? 2 : 1)
                 }
@@ -402,16 +421,22 @@ struct BoardStrip: View {
                 }
             }
 
+            let isBoardResizing = resizingBoardID != nil
             let isResizing =
                 previous.layoutKey.windowWidth != current.layoutKey.windowWidth
                 || (previous.layoutKey.ids == current.layoutKey.ids
                     && previous.layoutKey.widths != current.layoutKey.widths)
-                || resizingBoardID != nil
+                || isBoardResizing
             let animated =
                 previous.deskID == current.deskID
                 && !previous.layoutKey.ids.isEmpty
                 && !isResizing
             let centeringChanged = previous.centering != current.centering
+
+            if isBoardResizing {
+                cancelPendingBoardAlignment()
+                return
+            }
 
             if current.isDeskFilterPresented {
                 guard filterStateChanged || focusChanged || layoutChanged else { return }
@@ -1125,12 +1150,14 @@ struct BoardFramePreferenceKey: PreferenceKey {
 struct BoardResizeHandle: View {
     @State private var isHovering = false
     @State private var widthAtDragStart: Double?
+    @State private var resizeWithNextBoardAtDragStart = false
 
     let board: BoardState
     let height: Double
     let width: Double
+    let canResizeWithNextBoard: Bool
     let onResizeStart: () -> Void
-    let onResize: (Double) -> Void
+    let onResize: (Double, Bool) -> Void
     let onResizeEnd: () -> Void
 
     var body: some View {
@@ -1151,28 +1178,38 @@ struct BoardResizeHandle: View {
                     .onChanged { value in
                         if widthAtDragStart == nil {
                             widthAtDragStart = board.width
+                            resizeWithNextBoardAtDragStart =
+                                canResizeWithNextBoard && NSEvent.modifierFlags.contains(.shift)
                             onResizeStart()
                         }
-                        onResize((widthAtDragStart ?? board.width) + value.translation.width)
+                        onResize(
+                            (widthAtDragStart ?? board.width) + value.translation.width,
+                            resizeWithNextBoardAtDragStart)
                     }
                     .onEnded { _ in
                         widthAtDragStart = nil
+                        resizeWithNextBoardAtDragStart = false
                         onResizeEnd()
                     }
             )
-            .help("Drag to resize board")
+            .help(
+                canResizeWithNextBoard
+                    ? "Drag to resize Board; hold Shift to resize with next Board"
+                    : "Drag to resize Board"
+            )
             .accessibilityLabel("Resize \(board.displayName) Board")
             .accessibilityValue("\(Int(board.width.rounded())) points")
-            .accessibilityAdjustableAction { direction in
-                guard (BoardState.minimumWidth...BoardState.maximumWidth).contains(board.width)
-                else { return }
-                let delta = direction == .increment ? 80.0 : -80.0
-                let adjustedWidth = BoardState.constrainedWidth(board.width + delta)
-                guard adjustedWidth != board.width else { return }
-                onResizeStart()
-                onResize(adjustedWidth)
-                onResizeEnd()
-            }
+            .accessibilityAdjustableAction { adjustWidth(for: $0) }
+    }
+
+    private func adjustWidth(for direction: AccessibilityAdjustmentDirection) {
+        guard (BoardState.minimumWidth...BoardState.maximumWidth).contains(board.width) else { return }
+        let delta = direction == .increment ? 80.0 : -80.0
+        let adjustedWidth = BoardState.constrainedWidth(board.width + delta)
+        guard adjustedWidth != board.width else { return }
+        onResizeStart()
+        onResize(adjustedWidth, false)
+        onResizeEnd()
     }
 }
 

@@ -165,6 +165,8 @@ Open with `o` in Den Mode.
 - **Board Headers**:
   - Drag label or empty area to reorder within the Desk.
   - Right-click or Control-click for context menu (copy ID, keep in Drawer, duplicate, reload, adjust or reset content size, center, maximize, move to Desk, remove).
+- **Board Resize**:
+  - Drag the gap after a Board to resize it. Hold `Shift` to resize it with the next Board while keeping the pair's outer edges fixed.
 - **Desk Switcher**:
   - Click `+` after the last Desk to create a new Desk.
   - Drag Desk button to reorder Desks.

@@ -1080,6 +1080,35 @@ struct DenStoreBoardTests {
         }
     }
 
+    @Test func pairedMouseResizeKeepsOuterEdgesFixed() {
+        let boards = [board("First", width: 520), board("Second", width: 760)]
+        withStore(desks: [desk("Desk", boards: boards)]) { store in
+            // Arrange
+            let totalWidth = boards.map(\.width).reduce(0, +)
+
+            // Act
+            store.resizeBoardPair(boards[0].id, to: 700)
+
+            // Assert
+            #expect(store.focusedDesk?.boards.map(\.width) == [700, 580])
+            #expect(store.focusedDesk?.boards.map(\.width).reduce(0, +) == totalWidth)
+        }
+    }
+
+    @Test func pairedMouseResizeRespectsBothBoardMinimumWidths() {
+        let boards = [board("First", width: 520), board("Second", width: 760)]
+        withStore(desks: [desk("Desk", boards: boards)]) { store in
+            // Arrange
+            let expectedMinimumPairWidth = BoardState.minimumWidth
+
+            // Act
+            store.resizeBoardPair(boards[0].id, to: 2_000)
+
+            // Assert
+            #expect(store.focusedDesk?.boards.map(\.width) == [1_000, expectedMinimumPairWidth])
+        }
+    }
+
     @Test func adjustsEveryBoardInFocusedDeskWithinBounds() {
         let boards = [board("Narrow", width: 280), board("Wide", width: 1_400)]
         let otherBoard = board("Other", width: 760)
