@@ -324,6 +324,9 @@ extension DenStore {
             onPasteURLFailed: { [weak self] in
                 self?.showToast("Clipboard does not contain a supported URL.", style: .warning)
             },
+            onDownloadActivity: { [weak self] event in
+                self?.handleDownloadActivity(event)
+            },
             onDownloadFinished: { [weak self] filename in
                 self?.showToast("Downloaded '\(filename)'", style: .success)
             },

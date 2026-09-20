@@ -38,6 +38,8 @@ final class BoardRuntime: BaseWebRuntime, ObservableObject {
         var onChange: (UUID, URL?, String?) -> Void
         var onFullscreenChange: ((UUID, Bool) -> Void)?
         var onLinkActivated: () -> Void = {}
+        var downloadActivityOwnerID: ObjectIdentifier?
+        var onDownloadActivity: (DownloadActivityEvent) -> Void = { _ in }
         var onDownloadFinished: (String) -> Void = { _ in }
         var onDownloadFailed: (String) -> Void = { _ in }
         var onFocus: () -> Void = {}
@@ -176,8 +178,20 @@ final class BoardRuntime: BaseWebRuntime, ObservableObject {
         sheetNavigationActions: SheetNavigationManager.Actions,
         events: Events
     ) {
+        let didChangeDownloadActivityOwner =
+            self.events.downloadActivityOwnerID != events.downloadActivityOwnerID
+        if didChangeDownloadActivityOwner {
+            for activity in activeDownloadActivities {
+                self.events.onDownloadActivity(.ended(id: activity.id))
+            }
+        }
         self.sheetNavigationActions = sheetNavigationActions
         self.events = events
+        if didChangeDownloadActivityOwner {
+            for activity in activeDownloadActivities {
+                self.events.onDownloadActivity(.started(activity))
+            }
+        }
         sheetNavigation.updateActions(sheetNavigationActions, for: webView)
         if let boardWebView = webView as? BoardWKWebView {
             boardWebView.isFocusAllowed = { [weak self] in
@@ -296,6 +310,10 @@ final class BoardRuntime: BaseWebRuntime, ObservableObject {
 
     override func notifyDownloadFailed(filename: String) {
         events.onDownloadFailed(filename)
+    }
+
+    override func notifyDownloadActivity(_ event: DownloadActivityEvent) {
+        events.onDownloadActivity(event)
     }
 
     override func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {

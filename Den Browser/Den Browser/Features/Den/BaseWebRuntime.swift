@@ -7,6 +7,24 @@ enum MouseButton: Int {
     case middle = 4
 }
 
+struct DownloadActivity: Equatable, Identifiable {
+    let id: UUID
+    let filename: String
+    var fractionCompleted: Double?
+
+    init(id: UUID = UUID(), filename: String, fractionCompleted: Double? = nil) {
+        self.id = id
+        self.filename = filename
+        self.fractionCompleted = fractionCompleted
+    }
+}
+
+enum DownloadActivityEvent: Equatable {
+    case started(DownloadActivity)
+    case progressed(id: UUID, fractionCompleted: Double?)
+    case ended(id: UUID)
+}
+
 @MainActor
 class BaseWebRuntime: NSObject, NSWindowDelegate, WKDownloadDelegate, WKNavigationDelegate, WKUIDelegate {
     static var defaultUserAgent: String {
@@ -21,14 +39,28 @@ class BaseWebRuntime: NSObject, NSWindowDelegate, WKDownloadDelegate, WKNavigati
     let webView: WKWebView
 
     struct PendingDownload: Equatable {
+        let activityID: UUID
         let destinationURL: URL
         let temporaryURL: URL
+        var fractionCompleted: Double?
+
+        var activity: DownloadActivity {
+            DownloadActivity(
+                id: activityID,
+                filename: destinationURL.lastPathComponent,
+                fractionCompleted: fractionCompleted)
+        }
     }
 
     private var auxiliaryWindows: [ObjectIdentifier: NSWindow] = [:]
     private(set) var pendingDownloads: [ObjectIdentifier: PendingDownload] = [:]
+    private var downloadProgressObservations: [ObjectIdentifier: NSKeyValueObservation] = [:]
     private var urlObservation: NSKeyValueObservation?
     private var titleObservation: NSKeyValueObservation?
+
+    var activeDownloadActivities: [DownloadActivity] {
+        pendingDownloads.values.map(\.activity)
+    }
 
     init(
         id: UUID,
@@ -110,10 +142,10 @@ class BaseWebRuntime: NSObject, NSWindowDelegate, WKDownloadDelegate, WKNavigati
     }
 
     func cleanupAllPendingDownloads() {
-        for pending in pendingDownloads.values {
+        for key in Array(pendingDownloads.keys) {
+            guard let pending = removePendingDownload(for: key) else { continue }
             try? FileManager.default.removeItem(at: pending.temporaryURL)
         }
-        pendingDownloads.removeAll()
     }
 
     // MARK: - Hooks for Subclasses
@@ -142,6 +174,10 @@ class BaseWebRuntime: NSObject, NSWindowDelegate, WKDownloadDelegate, WKNavigati
     }
 
     func notifyDownloadFailed(filename: String) {
+        // Overridden by subclasses
+    }
+
+    func notifyDownloadActivity(_ event: DownloadActivityEvent) {
         // Overridden by subclasses
     }
 
@@ -409,10 +445,13 @@ class BaseWebRuntime: NSObject, NSWindowDelegate, WKDownloadDelegate, WKNavigati
             }
 
             let temporaryURL = Self.temporaryDownloadURL(for: destination)
-            self?.pendingDownloads[ObjectIdentifier(download)] = PendingDownload(
+            let key = ObjectIdentifier(download)
+            self?.registerPendingDownload(
+                for: key,
                 destinationURL: destination,
                 temporaryURL: temporaryURL
             )
+            self?.observeDownloadProgress(download.progress, for: key)
             completionHandler(temporaryURL)
         }
 
@@ -423,16 +462,26 @@ class BaseWebRuntime: NSObject, NSWindowDelegate, WKDownloadDelegate, WKNavigati
         }
     }
 
-    func registerPendingDownload(for key: ObjectIdentifier, destinationURL: URL, temporaryURL: URL) {
+    @discardableResult
+    func registerPendingDownload(
+        for key: ObjectIdentifier,
+        destinationURL: URL,
+        temporaryURL: URL
+    ) -> UUID {
+        let activity = DownloadActivity(filename: destinationURL.lastPathComponent)
         pendingDownloads[key] = PendingDownload(
+            activityID: activity.id,
             destinationURL: destinationURL,
-            temporaryURL: temporaryURL
+            temporaryURL: temporaryURL,
+            fractionCompleted: nil
         )
+        notifyDownloadActivity(.started(activity))
+        return activity.id
     }
 
     @discardableResult
     func completeDownload(for key: ObjectIdentifier) -> Bool {
-        guard let pending = pendingDownloads.removeValue(forKey: key) else { return false }
+        guard let pending = removePendingDownload(for: key) else { return false }
         do {
             try Self.finalizeDownload(from: pending.temporaryURL, to: pending.destinationURL)
             notifyDownloadFinished(filename: pending.destinationURL.lastPathComponent)
@@ -445,9 +494,42 @@ class BaseWebRuntime: NSObject, NSWindowDelegate, WKDownloadDelegate, WKNavigati
     }
 
     func failDownload(for key: ObjectIdentifier) {
-        guard let pending = pendingDownloads.removeValue(forKey: key) else { return }
+        guard let pending = removePendingDownload(for: key) else { return }
         try? FileManager.default.removeItem(at: pending.temporaryURL)
         notifyDownloadFailed(filename: pending.destinationURL.lastPathComponent)
+    }
+
+    nonisolated static func downloadProgressFraction(_ progress: Progress) -> Double? {
+        let fraction = progress.fractionCompleted
+        guard !progress.isIndeterminate, fraction.isFinite else { return nil }
+        return min(max(fraction, 0), 1)
+    }
+
+    private func observeDownloadProgress(_ progress: Progress, for key: ObjectIdentifier) {
+        downloadProgressObservations[key] = progress.observe(
+            \.fractionCompleted,
+            options: [.initial, .new]
+        ) { [weak self] progress, _ in
+            let fractionCompleted = Self.downloadProgressFraction(progress)
+            Task { @MainActor [weak self] in
+                self?.updateDownloadProgress(for: key, fractionCompleted: fractionCompleted)
+            }
+        }
+    }
+
+    private func updateDownloadProgress(for key: ObjectIdentifier, fractionCompleted: Double?) {
+        guard var pending = pendingDownloads[key] else { return }
+        pending.fractionCompleted = fractionCompleted
+        pendingDownloads[key] = pending
+        notifyDownloadActivity(
+            .progressed(id: pending.activityID, fractionCompleted: fractionCompleted))
+    }
+
+    private func removePendingDownload(for key: ObjectIdentifier) -> PendingDownload? {
+        downloadProgressObservations.removeValue(forKey: key)?.invalidate()
+        guard let pending = pendingDownloads.removeValue(forKey: key) else { return nil }
+        notifyDownloadActivity(.ended(id: pending.activityID))
+        return pending
     }
 
     func downloadDidFinish(_ download: WKDownload) {

@@ -478,6 +478,7 @@ struct BoardRuntimeWebUITests {
         try originalData.write(to: destinationURL)
 
         var finishedFilename: String?
+        var activityEvents: [DownloadActivityEvent] = []
         let runtime = BoardRuntime(
             board: BoardState(label: "Board", width: 320, currentSheetURL: nil),
             websiteDataStore: .nonPersistent(),
@@ -487,6 +488,7 @@ struct BoardRuntimeWebUITests {
             events: .init(
                 onChange: { _, _, _ in },
                 onFullscreenChange: nil,
+                onDownloadActivity: { activityEvents.append($0) },
                 onDownloadFinished: { filename in finishedFilename = filename },
                 onDownloadFailed: { _ in }
             )
@@ -495,7 +497,10 @@ struct BoardRuntimeWebUITests {
 
         let tempURL = BaseWebRuntime.temporaryDownloadURL(for: destinationURL)
         let downloadID = ObjectIdentifier(NSObject())
-        runtime.registerPendingDownload(for: downloadID, destinationURL: destinationURL, temporaryURL: tempURL)
+        let activityID = runtime.registerPendingDownload(
+            for: downloadID,
+            destinationURL: destinationURL,
+            temporaryURL: tempURL)
 
         let newData = Data("new downloaded content".utf8)
         try newData.write(to: tempURL)
@@ -509,8 +514,28 @@ struct BoardRuntimeWebUITests {
         // Assert
         #expect(completed)
         #expect(finishedFilename == "target.pdf")
+        #expect(
+            activityEvents == [
+                .started(DownloadActivity(id: activityID, filename: "target.pdf")),
+                .ended(id: activityID),
+            ])
         #expect(try Data(contentsOf: destinationURL) == newData)
         #expect(!FileManager.default.fileExists(atPath: tempURL.path))
+    }
+
+    @Test func downloadProgressUsesIndeterminateStateUntilTotalSizeIsKnown() {
+        // Arrange
+        let indeterminate = Progress(totalUnitCount: -1)
+        let determinate = Progress(totalUnitCount: 4)
+        determinate.completedUnitCount = 1
+
+        // Act
+        let unknownFraction = BaseWebRuntime.downloadProgressFraction(indeterminate)
+        let knownFraction = BaseWebRuntime.downloadProgressFraction(determinate)
+
+        // Assert
+        #expect(unknownFraction == nil)
+        #expect(knownFraction == 0.25)
     }
 
     @Test func downloadFailureKeepsOriginalFileAndDeletesTemporaryFile() throws {

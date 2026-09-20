@@ -164,6 +164,10 @@ extension DenStore {
             onLinkActivated: { [weak self] in
                 self?.prepareBoardLinkFocus(board.id)
             },
+            downloadActivityOwnerID: ObjectIdentifier(self),
+            onDownloadActivity: { [weak self] event in
+                self?.handleDownloadActivity(event)
+            },
             onDownloadFinished: { [weak self] filename in
                 self?.showToast("Downloaded \(filename).", style: .success)
             },

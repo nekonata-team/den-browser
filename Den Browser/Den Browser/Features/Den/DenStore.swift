@@ -177,6 +177,7 @@ final class DenStore {
     var drawerFilterPhase: DenFilterPhase = .inactive
     var selectedDrawerItemID: UUID?
     var expandedDrawerItemID: UUID? { state.expandedDrawerItemID }
+    private(set) var activeDownloads: [DownloadActivity] = []
     private(set) var toastMessage: ToastMessage?
     let sheetNavigation: SheetNavigationManager
     let preferences: AppPreferences
@@ -556,6 +557,22 @@ final class DenStore {
 
     func showToast(_ message: String, style: ToastMessage.ToastStyle = .info) {
         showToast(title: nil, body: message, style: style)
+    }
+
+    func handleDownloadActivity(_ event: DownloadActivityEvent) {
+        switch event {
+        case .started(let activity):
+            if let index = activeDownloads.firstIndex(where: { $0.id == activity.id }) {
+                activeDownloads[index] = activity
+            } else {
+                activeDownloads.append(activity)
+            }
+        case .progressed(let id, let fractionCompleted):
+            guard let index = activeDownloads.firstIndex(where: { $0.id == id }) else { return }
+            activeDownloads[index].fractionCompleted = fractionCompleted
+        case .ended(let id):
+            activeDownloads.removeAll { $0.id == id }
+        }
     }
 
     func showToast(

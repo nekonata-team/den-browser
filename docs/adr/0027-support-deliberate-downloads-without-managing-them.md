@@ -6,7 +6,7 @@ status: accepted
 
 Den Browser supports deliberate file downloads from a Current Sheet. File downloads are intermittent but ordinary parts of long-running web work. Requiring another browser whenever a site provides a file would interrupt that work and conflict with Den Browser's purpose as a companion for sustained web tasks.
 
-Supporting downloads does not make Download management part of the Den work model. Each download uses the macOS save panel with the filename suggested by the site. Den Browser reports completion or failure, but does not provide an automatic destination, history, progress UI, or resume support. A Download is not a Den, Desk, Board, or Sheet concept and is not persisted in `DenState`.
+Supporting downloads does not make Download management part of the Den work model. Each download uses the macOS save panel with the filename suggested by the site. While a download is active, Den Browser shows its filename and WebKit-reported progress in the window's bottom-right feedback stack; progress is indeterminate when the total size is unknown. Completion or failure is reported with a Toast. Den Browser does not provide an automatic destination, history, or resume support. A Download is not a Den, Desk, Board, or Sheet concept and is not persisted in `DenState`.
 
 The app is unsandboxed per [ADR 0032](./0032-embed-terminal-boards-with-libghostty.md). Downloads still use a destination the user explicitly selects through the save panel, and replacing an existing file requires the panel's normal confirmation.
 

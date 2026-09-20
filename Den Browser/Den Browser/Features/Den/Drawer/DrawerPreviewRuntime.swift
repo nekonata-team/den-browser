@@ -13,6 +13,7 @@ final class DrawerPreviewRuntime: BaseWebRuntime {
     private let onCopyMarkdownLinkSucceeded: () -> Void
     private let onCopyMarkdownLinkFailed: () -> Void
     private let onPasteURLFailed: () -> Void
+    private let onDownloadActivity: (DownloadActivityEvent) -> Void
     private let onDownloadFinished: (String) -> Void
     private let onDownloadFailed: (String) -> Void
     private unowned let sheetNavigation: SheetNavigationManager
@@ -35,6 +36,7 @@ final class DrawerPreviewRuntime: BaseWebRuntime {
         onCopyMarkdownLinkSucceeded: @escaping () -> Void = {},
         onCopyMarkdownLinkFailed: @escaping () -> Void = {},
         onPasteURLFailed: @escaping () -> Void = {},
+        onDownloadActivity: @escaping (DownloadActivityEvent) -> Void = { _ in },
         onDownloadFinished: @escaping (String) -> Void,
         onDownloadFailed: @escaping (String) -> Void
     ) {
@@ -47,6 +49,7 @@ final class DrawerPreviewRuntime: BaseWebRuntime {
         self.onCopyMarkdownLinkSucceeded = onCopyMarkdownLinkSucceeded
         self.onCopyMarkdownLinkFailed = onCopyMarkdownLinkFailed
         self.onPasteURLFailed = onPasteURLFailed
+        self.onDownloadActivity = onDownloadActivity
         self.onDownloadFinished = onDownloadFinished
         self.onDownloadFailed = onDownloadFailed
         self.sheetNavigation = sheetNavigation
@@ -143,5 +146,9 @@ final class DrawerPreviewRuntime: BaseWebRuntime {
 
     override func notifyDownloadFailed(filename: String) {
         onDownloadFailed(filename)
+    }
+
+    override func notifyDownloadActivity(_ event: DownloadActivityEvent) {
+        onDownloadActivity(event)
     }
 }

@@ -83,7 +83,7 @@ struct DenView<Header: View>: View {
 
                 notificationsOverlay
                 drawerOverlay(in: geometry.size)
-                toastOverlay
+                feedbackOverlay
                 indicatorOverlay
             }
             .onChange(of: preferences.sheetScale) { _, scale in
@@ -325,19 +325,32 @@ struct DenView<Header: View>: View {
     }
 
     @ViewBuilder
-    private var toastOverlay: some View {
-        if let toast = store.toastMessage {
-            ToastView(toast: toast, onTap: store.handleToastTap)
-                .padding(.trailing, 20)
-                .padding(.bottom, 20)
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
-                .transition(
-                    systemReduceMotion
-                        ? .opacity
-                        : .move(edge: .bottom).combined(with: .opacity)
-                )
-                .zIndex(DenOverlayLayer.toast)
+    private var feedbackOverlay: some View {
+        VStack(alignment: .trailing, spacing: 8) {
+            ForEach(store.activeDownloads) { activity in
+                DownloadActivityView(activity: activity, tint: profileColor)
+                    .transition(feedbackTransition)
+            }
+
+            if let toast = store.toastMessage {
+                ToastView(toast: toast, onTap: store.handleToastTap)
+                    .transition(feedbackTransition)
+            }
         }
+        .padding(.trailing, 20)
+        .padding(.bottom, 20)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
+        .animation(
+            DenMotion.feedback(reduceMotion: shouldReduceMotion),
+            value: store.activeDownloads.map(\.id)
+        )
+        .zIndex(DenOverlayLayer.toast)
+    }
+
+    private var feedbackTransition: AnyTransition {
+        systemReduceMotion
+            ? .opacity
+            : .move(edge: .bottom).combined(with: .opacity)
     }
 
     @ViewBuilder

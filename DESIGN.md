@@ -65,6 +65,7 @@ Error and feedback presentation is strictly unified into three channels:
 
 - **Action feedback (Toast)**:
   - Use a Toast (`store.showToast`) when an app-owned operation has no otherwise visible result, or when an action, navigation, or clipboard command fails or is blocked without form context.
+  - While a file download is active, show a persistent progress card above Toasts in the bottom-right feedback stack. Remove it when the download ends, then report completion or failure with a Toast.
   - Do not use a Toast when the result is already communicated by visible UI state, such as changed content, focus, navigation, selection, or layout.
   - Keep Toasts concise and non-blocking. Never block the user with a modal dialog for actionable or transient operations.
 - **Form and input validation (Inline)**:
