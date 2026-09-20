@@ -159,8 +159,7 @@ struct AppConfiguration {
             den: DenState(
                 desks: [desk, secondDesk, thirdDesk],
                 focusedDeskID: focusedDeskID,
-                drawerItems: drawerItems,
-                expandedDrawerItemID: multipleDrawerItems ? secondDrawerItem.id : drawerItem.id))
+                drawerItems: drawerItems))
     }
 
     private static let fixtureSheetURL: String = {

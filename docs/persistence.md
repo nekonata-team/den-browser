@@ -29,7 +29,7 @@ Nested objects use these keys:
 
 - `ProfileState`: `id`, `name`, `color` (a preset name or custom sRGB components), `webProfileStore`
 - `WebProfileStore`: `kind`, optional `identifier`
-- `DenState`: `desks`, `focusedDeskID`, optional `drawerItems`, optional `expandedDrawerItemID`
+- `DenState`: `desks`, `focusedDeskID`, optional `drawerItems`
 - `DrawerItem`: `id`, `url`, optional `title`
 - `DeskState`: `id`, `label`, `boards`, optional `focusedBoardID`
 - `BoardState`: `id`, `label`, `width`, optional `customLabel`, optional `sheetNavigationPaused`, `content`

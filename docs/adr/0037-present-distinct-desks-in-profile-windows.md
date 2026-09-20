@@ -8,6 +8,8 @@ A Profile may present its Den in multiple windows, with each window assigned one
 
 Persisted `DenState`, Desk presets, recent items, `BoardRuntime` objects, and `TerminalRuntime` objects remain shared per Profile. Each window has its own `DenStore` presentation state, including its presented Desk, modes, filters, panels, layout metrics, Drawer Preview runtime, and toast. Runtime callbacks are rebound to the window currently presenting their Board. This preserves one source of truth and one live runtime per Board without making transient window state global.
 
+Drawer Items remain shared per Profile, while Drawer selection, expanded identity, and Preview runtime belong to each window. Removing an Item or clearing the Drawer repairs every window's selection and releases every Preview of the removed material. Multiple windows may preview the same Item independently; the latest valid URL or non-empty title reported by either Preview updates the shared Item.
+
 The same Desk cannot be assigned to two windows. Selecting a Desk assigned elsewhere brings its window forward. Opening the current Desk in a new window first moves the source window to another unassigned Desk; the action is unavailable when no replacement exists. Closing a window quietly releases its Desk assignment. Window-to-Desk assignments are not part of Profile persistence.
 
 Resetting the Profile-wide Den closes its additional windows before rebuilding the single initial Desk. This avoids leaving windows without a valid Desk assignment.

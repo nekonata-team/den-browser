@@ -50,7 +50,7 @@ Future media support must not turn the initial design into a speculative generic
 - The Drawer appears from the bottom of the Den without changing Desk layout. It has no edge-hover target, handle, or drag interaction, and keeps an outer inset on both sides.
 - Drawer Items form a vertical accordion. One item at a time expands into a live `WKWebView` Drawer Preview.
 - When External Links is set to Drawer Preview, opening an external URL captures, selects, and expands a new Drawer Item.
-- Closing the Drawer keeps its expanded Preview identity and live runtime for the next open during the current app run. Collapsing a Preview clears that identity and releases the runtime. Both operations keep the Drawer Item.
+- Closing the Drawer keeps that Profile window's expanded Preview identity and live runtime for the next open during the current app run. Collapsing a Preview clears that window's identity and releases its runtime. Both operations keep the Drawer Item.
 - `Command` + `W` discards the selected Drawer Item from any Drawer context, including a focused Preview.
 - `Control` + `Escape` closes the Drawer from any Drawer context, including a focused Preview, without discarding Items; reopening preserves the expanded Preview.
 - Discarding an expanded Preview advances to the next visible Drawer Item's Preview, or the previous visible Item when the discarded Item was last; discarding a non-expanded Item does not change the current Preview.
@@ -59,8 +59,8 @@ Future media support must not turn the initial design into a speculative generic
 - Keeping a Current Sheet in the Drawer copies its URL and label with independent identity without opening the Drawer. The source Board remains unchanged.
 - Option-clicking a supported HTTP, HTTPS, or local file link in a Current Sheet captures it as a new Drawer Item without opening the Drawer or changing the Current Sheet, Focused Board, or Desk layout. Local file URL support follows [ADR 0033](./0033-support-local-file-sheet-urls.md).
 - A Drawer Preview keeps targetless links, Command-clicks, and middle-clicks as new Drawer Items instead of creating Boards. Plain Command-clicks and middle-clicks retain the current Preview; adding Shift opens the new Item.
-- URL, title, and the expanded Drawer Item identity persist. Live WebKit state does not; opening a Drawer after relaunch creates a new runtime from the persisted URL.
+- URL and title persist. Expanded identity and live WebKit state are Profile-window presentation state and do not persist; opening a Drawer after relaunch starts collapsed.
 - New items appear first. Duplicate URLs remain separate items.
-- The expanded Preview remains selected across Desk changes.
+- The expanded Preview remains selected across Desk changes in the same Profile window.
 - An open Drawer uses most of the Den height and gives its Preview the remaining panel width and height.
 - Profile fallback when no Profile window is active remains an application-level routing decision.

@@ -96,6 +96,7 @@ final class Den_BrowserUITests: XCTestCase, BDD {
             enterDenMode(in: app)
             app.typeKey(.tab, modifierFlags: [])
             XCTAssertTrue(drawer.waitForExistence(timeout: 5))
+            app.typeKey(.return, modifierFlags: [])
             XCTAssertTrue(previewContent.waitForExistence(timeout: 10))
             XCTAssertTrue(nextDrawerItem.waitForExistence(timeout: 10))
             XCTAssertTrue(drawerItem.exists)

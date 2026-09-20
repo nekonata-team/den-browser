@@ -203,14 +203,14 @@
 - **Verification:** reset、Open Board遷移、Desk filterの遅延Task取消、Desk／Board削除・置換時の対象参照失効を確認するfocused Store testを追加。キーボード経路は変更なし。`just check` 実行（lint 0 violations、全テストパス）。再実行中に既存の並列テストが一度アサーション失敗、別の一度はテストプロセスがSIGPIPE終了しましたが、単独再実行および最終の全体再実行では再現しませんでした。
 
 <a id="task-016"></a>
-### [ ] TASK-016：Drawerの共有状態とWindow固有状態を整合させる
+### [x] TASK-016：Drawerの共有状態とWindow固有状態を整合させる
 
 - **Priority / Purpose:** P2。別Windowの操作による選択、Preview、保存Itemの不整合を解消します。
 - **Prerequisites:** TASK-001、TASK-008。
 - **Entry Points:** `Den/DenStore.swift`、`Den/Store/DenStore+Drawer.swift`、`Den/Drawer/DrawerView.swift`、`docs/adr/0037-present-distinct-desks-in-profile-windows.md`。
 - **Work:** expandedDrawerItemIDがProfile共有で、選択とPreview runtimeがWindow固有である現状を再現します。展開をWindowごとにするかProfile内で一つにするか、既存仕様と利用意図を確認して決定します。決定に沿って全Windowの選択修復、Preview解放、URL／title更新の所有者を揃えます。
 - **Acceptance Criteria:** 別Windowで展開・破棄・全消去しても、無効な選択や不要なPreviewを保持しません。同一Itemへの複数runtimeの更新方針が定義されています。
-- **Verification:** 同一DenStorageを使う複数Storeのunit test。ユーザー向け契約が未確定なら依存する挙動変更を保留し、判断点を記録します。決定時はdomain-modelingを使いADR等を更新します。`just check`。
+- **Verification:** Drawer ItemはProfile共有、選択・展開・Preview runtimeはWindow固有とし、同一Itemの複数Previewからの有効なURL／title更新は最終更新を共有Itemへ反映する契約を`CONTEXT.md`とADR 0025／0037へ記録。同一DenStorageを使う複数Storeのfocused test（独立した展開、削除時の全Window修復、全消去時の全Window解放、複数runtimeの更新）を追加。`just check` 実行（lint 0 violations、全テストパス）。
 
 <a id="task-017"></a>
 ### [ ] TASK-017：外部プロセス実行を非同期化し終了を管理する

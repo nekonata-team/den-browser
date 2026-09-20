@@ -17,6 +17,7 @@ final class DenStorage {
     @ObservationIgnored var runtimes: [UUID: BoardRuntime] = [:]
     @ObservationIgnored var terminalRuntimes: [UUID: TerminalRuntime] = [:]
     @ObservationIgnored var runtimeOwners: [UUID: DenStore] = [:]
+    @ObservationIgnored let drawerPresentations = NSHashTable<DenStore>.weakObjects()
     @ObservationIgnored let onSave: ((DenState) -> Bool)?
     @ObservationIgnored let onDeskPresetsSave: (([PersonalDeskPreset]) -> Bool)?
     @ObservationIgnored let onRecentItemsSave: (([RecentItem]) -> Bool)?
@@ -176,7 +177,7 @@ final class DenStore {
     var drawerQuery = ""
     var drawerFilterPhase: DenFilterPhase = .inactive
     var selectedDrawerItemID: UUID?
-    var expandedDrawerItemID: UUID? { state.expandedDrawerItemID }
+    var expandedDrawerItemID: UUID?
     private(set) var activeDownloads: [DownloadActivity] = []
     private(set) var toastMessage: ToastMessage?
     let sheetNavigation: SheetNavigationManager
@@ -416,13 +417,7 @@ final class DenStore {
         self.canPresentDesk = nil
         onDeskPresentationRequest = nil
         onWillResetDen = nil
-        if let restoredDrawerItemID = self.state.expandedDrawerItemID,
-            self.state.drawerItems.contains(where: { $0.id == restoredDrawerItemID })
-        {
-            selectedDrawerItemID = restoredDrawerItemID
-        } else {
-            self.state.expandedDrawerItemID = nil
-        }
+        storage.drawerPresentations.add(self)
         if self.state != state {
             _ = onSave?(self.state)
         }
@@ -459,11 +454,7 @@ final class DenStore {
         self.canPresentDesk = canPresentDesk
         self.onDeskPresentationRequest = onDeskPresentationRequest
         self.onWillResetDen = onWillResetDen
-        if let restoredDrawerItemID = state.expandedDrawerItemID,
-            state.drawerItems.contains(where: { $0.id == restoredDrawerItemID })
-        {
-            selectedDrawerItemID = restoredDrawerItemID
-        }
+        storage.drawerPresentations.add(self)
     }
 
     static func normalizedPersistedState(_ state: DenState) -> DenState {
@@ -523,6 +514,7 @@ final class DenStore {
         isNotificationListPresented = false
         selectedNotificationID = nil
         selectedDrawerItemID = nil
+        expandedDrawerItemID = nil
         previousFocusedDeskID = nil
         anchorJumpOriginBoardIDByDesk.removeAll()
         toastTask?.cancel()

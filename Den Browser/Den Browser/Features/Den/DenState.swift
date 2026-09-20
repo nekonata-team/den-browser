@@ -4,22 +4,19 @@ struct DenState: Codable, Equatable {
     var desks: [DeskState]
     var focusedDeskID: UUID
     var drawerItems: [DrawerItem]
-    var expandedDrawerItemID: UUID?
 
     init(
         desks: [DeskState],
         focusedDeskID: UUID,
-        drawerItems: [DrawerItem] = [],
-        expandedDrawerItemID: UUID? = nil
+        drawerItems: [DrawerItem] = []
     ) {
         self.desks = desks
         self.focusedDeskID = focusedDeskID
         self.drawerItems = drawerItems
-        self.expandedDrawerItemID = expandedDrawerItemID
     }
 
     private enum CodingKeys: String, CodingKey {
-        case desks, focusedDeskID, drawerItems, expandedDrawerItemID
+        case desks, focusedDeskID, drawerItems
     }
 
     init(from decoder: Decoder) throws {
@@ -27,9 +24,6 @@ struct DenState: Codable, Equatable {
         desks = try container.decode([DeskState].self, forKey: .desks)
         focusedDeskID = try container.decode(UUID.self, forKey: .focusedDeskID)
         drawerItems = try container.decodeIfPresent([DrawerItem].self, forKey: .drawerItems) ?? []
-        expandedDrawerItemID = try container.decodeIfPresent(
-            UUID.self,
-            forKey: .expandedDrawerItemID)
     }
 
     func encode(to encoder: Encoder) throws {
@@ -39,7 +33,6 @@ struct DenState: Codable, Equatable {
         if !drawerItems.isEmpty {
             try container.encode(drawerItems, forKey: .drawerItems)
         }
-        try container.encodeIfPresent(expandedDrawerItemID, forKey: .expandedDrawerItemID)
     }
 
     static var sample: DenState {

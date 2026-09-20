@@ -1,6 +1,7 @@
 import AppKit
 import Foundation
 import Testing
+import WebKit
 
 @testable import Den_Browser
 
@@ -73,7 +74,7 @@ struct DenStoreDrawerTests {
                 focusedDeskID: source.id,
                 drawerItems: [currentItem]))
         store.selectedDrawerItemID = currentItem.id
-        store.state.expandedDrawerItemID = currentItem.id
+        store.expandedDrawerItemID = currentItem.id
         let runtime = store.drawerRuntime(for: currentItem)
 
         let backgroundURL = try #require(URL(string: "https://background.example/"))
@@ -83,6 +84,77 @@ struct DenStoreDrawerTests {
         #expect(store.selectedDrawerItemID == currentItem.id)
         #expect(store.expandedDrawerItemID == currentItem.id)
         #expect(store.drawerPreviewRuntime === runtime)
+    }
+
+    @Test func drawerPreviewPresentationIsWindowLocalAndSharedMetadataUsesLatestUpdate() throws {
+        let item = DrawerItem(url: try #require(URL(string: "https://initial.example/")))
+        try withSharedDrawerStores(items: [item]) { first, second in
+            first.focusDrawerItem(item.id)
+            let firstRuntime = first.drawerRuntime(for: item)
+
+            #expect(first.expandedDrawerItemID == item.id)
+            #expect(second.expandedDrawerItemID == nil)
+
+            second.focusDrawerItem(item.id)
+            let secondRuntime = second.drawerRuntime(for: item)
+            #expect(second.expandedDrawerItemID == item.id)
+            #expect(firstRuntime !== secondRuntime)
+
+            let firstURL = try #require(URL(string: "https://first.example/"))
+            let secondURL = try #require(URL(string: "https://second.example/"))
+            firstRuntime.handleURLOrTitleChange(url: firstURL, title: "First")
+            secondRuntime.handleURLOrTitleChange(url: secondURL, title: "Second")
+
+            #expect(first.state.drawerItems[0].url == secondURL)
+            #expect(first.state.drawerItems[0].title == "Second")
+        }
+    }
+
+    @Test func discardingSharedItemRepairsEveryWindowPresentation() throws {
+        let firstItem = DrawerItem(url: try #require(URL(string: "https://first.example/")))
+        let secondItem = DrawerItem(url: try #require(URL(string: "https://second.example/")))
+        withSharedDrawerStores(items: [firstItem, secondItem]) { first, second in
+            first.focusDrawerItem(firstItem.id)
+            second.focusDrawerItem(firstItem.id)
+            let firstRuntime = first.drawerRuntime(for: firstItem)
+            let secondRuntime = second.drawerRuntime(for: firstItem)
+
+            first.discardDrawerItem(firstItem.id)
+
+            #expect(first.state.drawerItems.map(\.id) == [secondItem.id])
+            #expect(first.selectedDrawerItemID == secondItem.id)
+            #expect(second.selectedDrawerItemID == secondItem.id)
+            #expect(first.expandedDrawerItemID == secondItem.id)
+            #expect(second.expandedDrawerItemID == secondItem.id)
+            #expect(first.drawerPreviewRuntime == nil)
+            #expect(second.drawerPreviewRuntime == nil)
+            #expect(firstRuntime.webView.navigationDelegate == nil)
+            #expect(secondRuntime.webView.navigationDelegate == nil)
+        }
+    }
+
+    @Test func clearingSharedDrawerClearsEveryWindowPresentation() throws {
+        let firstItem = DrawerItem(url: try #require(URL(string: "https://first.example/")))
+        let secondItem = DrawerItem(url: try #require(URL(string: "https://second.example/")))
+        withSharedDrawerStores(items: [firstItem, secondItem]) { first, second in
+            first.focusDrawerItem(firstItem.id)
+            second.focusDrawerItem(secondItem.id)
+            _ = first.drawerRuntime(for: firstItem)
+            _ = second.drawerRuntime(for: secondItem)
+            first.requestDrawerClearConfirmation()
+
+            first.confirmDrawerClear()
+
+            #expect(first.state.drawerItems.isEmpty)
+            #expect(first.selectedDrawerItemID == nil)
+            #expect(second.selectedDrawerItemID == nil)
+            #expect(first.expandedDrawerItemID == nil)
+            #expect(second.expandedDrawerItemID == nil)
+            #expect(first.drawerPreviewRuntime == nil)
+            #expect(second.drawerPreviewRuntime == nil)
+            #expect(!first.isDrawerOpen)
+            #expect(!second.isDrawerOpen)
+        }
     }
 
     @Test func filteringMatchesTitleHostAndURLAndKeepsSelectionInResults() throws {
@@ -338,7 +410,7 @@ struct DenStoreDrawerTests {
         #expect(!store.isDrawerOpen)
     }
 
-    @Test func legacyDenStateLoadsWithEmptyDrawerAndEmptyDrawerStaysOmitted() throws {
+    @Test func emptyDrawerStaysOmittedFromPersistence() throws {
         let source = desk("Desk")
         let state = DenState(desks: [source], focusedDeskID: source.id)
         let encoded = try JSONEncoder().encode(state)
@@ -348,49 +420,6 @@ struct DenStoreDrawerTests {
         #expect(object["expandedDrawerItemID"] == nil)
         let decoded = try JSONDecoder().decode(DenState.self, from: encoded)
         #expect(decoded.drawerItems.isEmpty)
-        #expect(decoded.expandedDrawerItemID == nil)
-    }
-
-    @Test func expandedPreviewRestoresWhenDrawerNextOpensWithoutPersistingItsRuntime() throws {
-        let source = desk("Desk")
-        let item = DrawerItem(url: try #require(URL(string: "https://preview.example/")))
-        let state = DenState(
-            desks: [source],
-            focusedDeskID: source.id,
-            drawerItems: [item],
-            expandedDrawerItemID: item.id)
-
-        let restoredState = try JSONDecoder().decode(
-            DenState.self,
-            from: JSONEncoder().encode(state))
-        let store = DenStore(state: restoredState)
-
-        #expect(store.state.expandedDrawerItemID == item.id)
-        #expect(store.selectedDrawerItemID == item.id)
-        #expect(store.expandedDrawerItemID == item.id)
-        #expect(!store.isDrawerOpen)
-        #expect(store.drawerPreviewRuntime == nil)
-
-        store.toggleDrawer()
-
-        #expect(store.isDrawerOpen)
-        #expect(store.expandedDrawerItemID == item.id)
-    }
-
-    @Test func missingExpandedDrawerItemIsClearedOnRestore() throws {
-        let source = desk("Desk")
-        var savedState: DenState?
-        let store = DenStore(
-            state: DenState(
-                desks: [source],
-                focusedDeskID: source.id,
-                expandedDrawerItemID: UUID()),
-            onSave: { savedState = $0 })
-
-        #expect(store.state.expandedDrawerItemID == nil)
-        #expect(store.expandedDrawerItemID == nil)
-        #expect(!store.isDrawerOpen)
-        #expect(savedState == store.state)
     }
 
     @Test func closingDrawerKeepsExpandedPreviewForNextOpen() throws {
@@ -404,12 +433,10 @@ struct DenStoreDrawerTests {
 
         store.toggleDrawerItem(itemID)
 
-        #expect(store.state.expandedDrawerItemID == nil)
         #expect(savedState == store.state)
 
         store.toggleDrawerItem(itemID)
 
-        #expect(store.state.expandedDrawerItemID == itemID)
         #expect(savedState == store.state)
         let item = try #require(store.selectedDrawerItem)
         let runtime = store.drawerRuntime(for: item)
@@ -418,7 +445,6 @@ struct DenStoreDrawerTests {
 
         #expect(!store.isDrawerOpen)
         #expect(store.expandedDrawerItemID == itemID)
-        #expect(store.state.expandedDrawerItemID == itemID)
         #expect(store.drawerPreviewRuntime === runtime)
         #expect(savedState == store.state)
 
@@ -442,10 +468,9 @@ struct DenStoreDrawerTests {
 
         #expect(KeyboardController.handle(try keyEvent(.downArrow, keyCode: 125), store: store))
         #expect(store.selectedDrawerItemID == store.state.drawerItems[1].id)
-        #expect(store.state.expandedDrawerItemID == store.state.drawerItems[1].id)
+        #expect(store.expandedDrawerItemID == store.state.drawerItems[1].id)
         #expect(KeyboardController.handle(try keyEvent(.carriageReturn, keyCode: 36), store: store))
         #expect(store.expandedDrawerItemID == nil)
-        #expect(store.state.expandedDrawerItemID == nil)
         #expect(KeyboardController.handle(try keyEvent(.tab, keyCode: 48), store: store))
         #expect(!store.isDrawerOpen)
 
@@ -650,5 +675,37 @@ struct DenStoreDrawerTests {
         focusedBoardID: UUID? = nil
     ) -> DeskState {
         DeskState(label: label, boards: boards, focusedBoardID: focusedBoardID)
+    }
+
+    private func withSharedDrawerStores<T>(
+        items: [DrawerItem],
+        body: (DenStore, DenStore) throws -> T
+    ) rethrows -> T {
+        let suiteName = "SharedDrawerStoreTests-\(UUID())"
+        guard let defaults = UserDefaults(suiteName: suiteName) else {
+            preconditionFailure("Failed to create isolated test UserDefaults")
+        }
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let desks = [desk("First"), desk("Second")]
+        let storage = DenStorage(
+            state: DenState(
+                desks: desks,
+                focusedDeskID: desks[0].id,
+                drawerItems: items))
+        let websiteDataStore = WKWebsiteDataStore.nonPersistent()
+        let sheetNavigation = SheetNavigationManager(defaults: defaults, scriptSource: "")
+        let preferences = AppPreferences(defaults: defaults)
+        let makeStore = { (deskID: UUID) -> DenStore in
+            DenStore(
+                storage: storage,
+                presentedDeskID: deskID,
+                websiteDataStore: websiteDataStore,
+                sheetNavigation: sheetNavigation,
+                preferences: preferences,
+                canPresentDesk: { _ in true },
+                onDeskPresentationRequest: { _ in true },
+                onWillResetDen: {})
+        }
+        return try body(makeStore(desks[0].id), makeStore(desks[1].id))
     }
 }

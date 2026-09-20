@@ -110,7 +110,7 @@ Web material enters the Drawer when it is kept there. Keeping it does not change
 _Avoid_: Inbox item, task, bookmark, history entry
 
 **Drawer Preview**:
-The temporary live web presentation expanded beneath a Drawer Item. It does not place the item into a Desk or Board and is not persisted as a live runtime.
+The temporary live web presentation expanded beneath a Drawer Item in one Profile window. Its selection and live state belong to that window; the underlying Drawer Item remains Den-wide.
 _Avoid_: Board, floating Board, temporary Desk
 
 **Drawer Placement**:
