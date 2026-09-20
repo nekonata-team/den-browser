@@ -53,6 +53,24 @@ struct BoardSurfaceModifier: ViewModifier {
     }
 }
 
+struct BoardHeaderCenteringModifier: ViewModifier {
+    @Environment(DenStore.self) private var store
+
+    let boardID: UUID
+    let isEnabled: Bool
+
+    func body(content: Content) -> some View {
+        content.simultaneousGesture(
+            TapGesture(count: 2)
+                .onEnded {
+                    guard isEnabled else { return }
+                    store.focusBoard(boardID, exitsDenMode: true)
+                    store.centerFocusedBoard()
+                }
+        )
+    }
+}
+
 struct BoardDragHeader<LeadingContent: View>: View {
     @Environment(DenStore.self) private var store
     let board: BoardState

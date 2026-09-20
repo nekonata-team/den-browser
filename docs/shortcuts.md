@@ -163,6 +163,7 @@ Open with `o` in Den Mode.
   - Pinch in or out over a Web Board to adjust the Current Sheet's scale for that Board.
   - Pinch in or out over a Terminal Board to adjust its font size for that Board.
 - **Board Headers**:
+  - Double-click to focus and center the Board.
   - Drag label or empty area to reorder within the Desk.
   - Right-click or Control-click for context menu (copy ID, keep in Drawer, duplicate, reload, adjust or reset content size, center, maximize, move to Desk, remove).
 - **Board Resize**:

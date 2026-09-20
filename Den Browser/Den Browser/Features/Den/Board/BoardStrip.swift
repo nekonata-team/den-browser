@@ -1259,6 +1259,12 @@ private struct UnactivatedBoardView: View {
         .frame(height: DenLayout.boardHeaderHeight)
         .background(store.isDenMode && isFocused ? profileColor.opacity(0.12) : Color.clear)
         .background(.regularMaterial)
+        .modifier(
+            BoardHeaderCenteringModifier(
+                boardID: board.id,
+                isEnabled: isPointerFocusEnabled
+            )
+        )
     }
 
     private var dragHandle: some View {
