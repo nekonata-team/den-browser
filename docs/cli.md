@@ -98,7 +98,7 @@ Commands operating on the Current Sheet of the resolved Web Board.
 
 | Command | Arguments | Description | Example |
 |---|---|---|---|
-| `den sheet open` | `<url>` | Navigate Current Sheet in the target Web Board to `<url>` or a search query. | `den sheet open https://example.com` |
+| `den sheet open` | `<url>` | Navigate Current Sheet in the target Web Board to a supported URL, bare hostname, or search query. Invalid or unsupported URL schemes fail. | `den sheet open https://example.com` |
 | `den sheet url` | None | Print Current Sheet URL of the target Web Board. | `den sheet url` |
 | `den sheet reload` | None | Reload Current Sheet in the target Web Board. | `den sheet reload` |
 | `den sheet eval` | `<script>` | Evaluate JavaScript and return the result. | `den sheet eval document.title` |
@@ -135,7 +135,7 @@ Commands operating on Boards within the active Desk.
 
 | Command | Arguments | Description | Example |
 |---|---|---|---|
-| `den board web new` | `<url> [--focus]` | Open a **new** Web Board with `<url>` on the active Desk, start its Web runtime immediately, and return its UUID. Use `den sheet wait` to wait for loaded content. | `den board web new https://example.com` |
+| `den board web new` | `<url> [--focus]` | Open a **new** Web Board with a supported URL, bare hostname, or search query on the active Desk, start its Web runtime immediately, and return its UUID. Invalid or unsupported URL schemes fail. Use `den sheet wait` to wait for loaded content. | `den board web new https://example.com` |
 
 ### 3.5 `den board terminal` (Terminal Boards)
 
@@ -156,9 +156,11 @@ Commands operating on the Den-wide Drawer for web material whose Desk context is
 | Command | Arguments | Description | Example |
 |---|---|---|---|
 | `den drawer list` | None | List all Drawer Items in the Drawer with ID, title, and URL. | `den drawer list` |
-| `den drawer keep` | `<url> [--title <text>]` | Keep a URL in the Drawer as a Drawer Item without changing Desk layout. | `den drawer keep https://example.com` |
+| `den drawer keep` | `<url> [--title <text>]` | Keep a supported URL or bare hostname in the Drawer as a Drawer Item without changing Desk layout. Search queries and invalid or unsupported URL schemes fail. | `den drawer keep https://example.com` |
 | `den drawer place` | `<id>` | Place a Drawer Item onto the active Desk as a Web Board, start its Web runtime immediately, and remove the item from the Drawer. | `den drawer place 4F72344C-...` |
 | `den drawer discard` | `<id>` | Discard a Drawer Item without placing it onto a Desk. | `den drawer discard 4F72344C-...` |
+
+Web URL inputs use the same resolution policy across these commands. Explicit `http://`, `https://`, and absolute local `file://` URLs are accepted; a bare hostname such as `example.com` or `localhost:3000` is completed with `https://`. `sheet open` and `board web new` also accept search queries, using the configured Search Engine. `drawer keep` accepts only URL input, so search queries and unsupported schemes such as `ftp://` or `mailto:` fail before any state change. Accepted URLs are canonicalized after validation.
 
 ### 3.8 `den terminal` (Terminal Sessions)
 Commands operating on Terminal Sessions in the target Terminal Board.

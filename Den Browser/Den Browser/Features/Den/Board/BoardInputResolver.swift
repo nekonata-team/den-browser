@@ -95,13 +95,22 @@ enum BoardInputResolver {
             return (url, .url(url))
         }
 
+        let scheme = URL(string: urlText)?.scheme?.lowercased()
         if !urlText.contains("://"),
             !urlText.contains(where: \.isWhitespace),
+            scheme == nil || scheme == "localhost" || scheme?.contains(".") == true,
             let url = URL(string: "https://\(urlText)"),
             let host = url.host,
             host == "localhost" || host.contains(".")
         {
             return (url, .url(url))
+        }
+
+        // A non-supported scheme is an invalid URL, not a search term. Keep
+        // search terms such as "swift: concurrency" valid by only treating
+        // scheme-looking input without whitespace as an explicit URL.
+        if !urlText.contains(where: \.isWhitespace), URL(string: urlText)?.scheme != nil {
+            return nil
         }
 
         var components = URLComponents(string: searchEngine.searchURL)

@@ -138,7 +138,7 @@
 - **Current Status:** 通常CLIと`interact`をtyped payloadへ移行し、payloadをassociated valueとして`DenIPCCommand`へ統合。`board.web.new`、`sheet.get`、`sheet.is`、`sheet.mouse`のサブコマンド階層もenumで表現しました。`sheet get attr`の属性名必須も`DenSheetGetAttributePayload`で型表現し、`DenIPCCommand`を直接Codable化して重複したwire型と変換層を削除しました。command値とpayload値はdecode時に検証し、cross-version JSON非互換方針を`docs/cli.md`へ記載済み。
 
 <a id="task-010"></a>
-### [ ] TASK-010：URL入力の解決と検証を統一する
+### [x] TASK-010：URL入力の解決と検証を統一する
 
 - **Priority / Purpose:** P2。相対URLとして成功する入力を、HTTPS補完済みと誤認しないようにします。
 - **Prerequisites:** なし。TASK-007／TASK-009と同じファイルを変更する場合は調整します。
@@ -146,6 +146,7 @@
 - **Work:** sheet open、Board作成、Drawer保持のURL処理を既存ポリシーへ寄せます。検索語、裸のhostname、local file、非対応schemeの許可範囲は操作別に明示します。
 - **Acceptance Criteria:** 補完が必要なhostnameを正しく解決し、未対応入力に成功応答を返しません。URL正規化と入力許可を混同しません。
 - **Verification:** hostname、明示URL、local file、検索語、非対応schemeの契約をfocused testで検証します。`just check`。`docs/cli.md`。
+- **Current Status:** `sheet open`、Board作成、Drawer保持を`BoardInputResolver`と`SheetURLPolicy`へ統一し、明示URL・裸のhostname・local file・検索語の許可範囲を操作ごとに整理しました。非対応schemeとDrawerへの検索語は副作用前に拒否し、検証後にcanonical URLへ正規化します。focused unit testと`just check`を通過。
 
 <a id="task-011"></a>
 ### [ ] TASK-011：CLI接続先とTerminalの環境変数を一致させる

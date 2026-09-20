@@ -41,6 +41,64 @@ struct DenIPCServiceTests {
         #expect(store.runtimes[boardID] != nil)
     }
 
+    @Test func sheetOpenUsesSharedInputResolution() async throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appending(path: "den-browser-ipc-sheet-open-\(UUID().uuidString)", directoryHint: .isDirectory)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let suiteName = "IPCServiceSheetOpenPreferences-\(UUID().uuidString)"
+        let manager = ProfileManager(
+            directoryURL: directory,
+            sheetNavigation: SheetNavigationManager(
+                defaults: UserDefaults(suiteName: suiteName) ?? .standard,
+                scriptSource: ""),
+            preferences: AppPreferences(defaults: UserDefaults(suiteName: suiteName) ?? .standard),
+            removeDataStore: { _ in })
+        let store = try #require(manager.store(for: manager.personalProfileID))
+        let boardID = try #require(store.createBoard(urlString: "https://example.com/"))
+        let service = DenIPCService(profileManager: manager)
+
+        let hostnameResponse = await service.handleRequest(
+            DenIPCRequest(
+                command: .sheet(.open(DenSheetOpenPayload(url: "localhost:3000"))),
+                boardID: boardID.uuidString))
+        #expect(hostnameResponse.isOk)
+        #expect(hostnameResponse.url == "https://localhost:3000/")
+
+        let unsupportedResponse = await service.handleRequest(
+            DenIPCRequest(
+                command: .sheet(.open(DenSheetOpenPayload(url: "mailto:user@example.com"))),
+                boardID: boardID.uuidString))
+        #expect(unsupportedResponse.isOk == false)
+    }
+
+    @Test func drawerKeepAcceptsURLsButRejectsSearchTerms() async throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appending(path: "den-browser-ipc-drawer-keep-\(UUID().uuidString)", directoryHint: .isDirectory)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let suiteName = "IPCServiceDrawerKeepPreferences-\(UUID().uuidString)"
+        let manager = ProfileManager(
+            directoryURL: directory,
+            sheetNavigation: SheetNavigationManager(
+                defaults: UserDefaults(suiteName: suiteName) ?? .standard,
+                scriptSource: ""),
+            preferences: AppPreferences(defaults: UserDefaults(suiteName: suiteName) ?? .standard),
+            removeDataStore: { _ in })
+        let store = try #require(manager.store(for: manager.personalProfileID))
+        let service = DenIPCService(profileManager: manager)
+
+        let response = await service.handleRequest(
+            DenIPCRequest(
+                command: .drawer(.keep(DenDrawerKeepPayload(url: "example.com", title: nil)))))
+        #expect(response.isOk)
+        #expect(store.state.drawerItems.first?.url == URL(string: "https://example.com/"))
+
+        let searchResponse = await service.handleRequest(
+            DenIPCRequest(
+                command: .drawer(.keep(DenDrawerKeepPayload(url: "search phrase", title: nil)))))
+        #expect(searchResponse.isOk == false)
+        #expect(store.state.drawerItems.count == 1)
+    }
+
     @Test func drawerPlacementStartsWebRuntime() async throws {
         // Arrange
         let directory = FileManager.default.temporaryDirectory

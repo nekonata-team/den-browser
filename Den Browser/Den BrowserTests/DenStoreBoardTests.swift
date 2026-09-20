@@ -481,7 +481,7 @@ struct DenStoreBoardTests {
         }
     }
 
-    @Test func openBoardAcceptsWebHostsAndSearchesInvalidURLs() throws {
+    @Test func openBoardAcceptsWebHostsAndRejectsInvalidURLs() throws {
         try withTestStore { store in
 
             _ = store.createBoard(urlString: "localhost:3000")
@@ -497,11 +497,10 @@ struct DenStoreBoardTests {
             #expect(searchURL.host == "www.google.com")
             #expect(searchURL.queryItems == [URLQueryItem(name: "q", value: "swift: concurrency")])
 
-            _ = store.createBoard(urlString: "https://")
-            let invalidURLSearch = try #require(
-                store.focusedDesk?.boards.last?.currentSheetURL
-                    .flatMap { URLComponents(url: $0, resolvingAgainstBaseURL: false) })
-            #expect(invalidURLSearch.queryItems == [URLQueryItem(name: "q", value: "https://")])
+            let boardCount = try #require(store.focusedDesk?.boards.count)
+            #expect(store.createBoard(urlString: "https://") == nil)
+            #expect(store.createBoard(urlString: "ftp://example.com") == nil)
+            #expect(store.focusedDesk?.boards.count == boardCount)
         }
     }
 

@@ -46,6 +46,16 @@ struct BoardInputResolverTests {
         #expect(search?.url.absoluteString == "https://www.google.com/search?q=hello%20world")
     }
 
+    @Test func resolvesLocalFilesAndRejectsExplicitUnsupportedSchemes() {
+        let fileInput = "file://localhost/tmp/Den%20Browser/index.html"
+        #expect(
+            BoardInputResolver.normalizedURL(from: fileInput, searchEngine: .google)
+                == URL(string: "file:///tmp/Den%20Browser/index.html"))
+        #expect(BoardInputResolver.resolveOpenBoardInput("ftp://example.com", searchEngine: .google) == nil)
+        #expect(BoardInputResolver.resolveOpenBoardInput("mailto:user@example.com", searchEngine: .google) == nil)
+        #expect(BoardInputResolver.resolveOpenBoardInput("https://", searchEngine: .google) == nil)
+    }
+
     @Test func stripsNewlinesWithoutChangingOtherCharacters() {
         #expect(
             SheetURLPolicy.stripNewlines("https://example.com/long-\npath/to/\r\npage")

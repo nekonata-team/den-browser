@@ -88,10 +88,15 @@ final class DenIPCService {
                 guard !payload.url.isEmpty else {
                     return .failure("Usage: den sheet open <url>")
                 }
-                let urlString = payload.url
-                guard let url = URL(string: urlString) ?? URL(string: "https://" + urlString) else {
-                    return .failure("Invalid URL: \(urlString)")
+                guard
+                    let resolved = BoardInputResolver.resolveOpenBoardInput(
+                        payload.url,
+                        searchEngine: store.preferences.searchEngine),
+                    SheetURLPolicy.isSupported(resolved.url)
+                else {
+                    return .failure("Invalid or unsupported URL: \(payload.url)")
                 }
+                let url = SheetURLPolicy.canonicalSheetURL(resolved.url)
                 runtime.load(url)
                 return .success(message: "Navigated to \(url.absoluteString)", url: url.absoluteString)
 
@@ -756,14 +761,22 @@ final class DenIPCService {
             guard !payload.url.isEmpty else {
                 return .failure("Usage: den drawer keep <url> [--title <title>]")
             }
-            let urlString = payload.url
-            guard let url = URL(string: urlString), SheetURLPolicy.isSupported(url) else {
-                return .failure("Invalid or unsupported URL: \(urlString)")
+            guard
+                let resolved = BoardInputResolver.resolveOpenBoardInput(
+                    payload.url,
+                    searchEngine: store.preferences.searchEngine),
+                case let .url(url) = resolved.item,
+                SheetURLPolicy.isSupported(url)
+            else {
+                return .failure("Invalid or unsupported URL: \(payload.url)")
             }
-            if let itemID = store.keepInDrawerInBackground(url, title: payload.title) {
-                return .success(message: "Kept in Drawer: \(urlString)", drawerItemId: itemID.uuidString)
+            let canonicalURL = SheetURLPolicy.canonicalSheetURL(url)
+            if let itemID = store.keepInDrawerInBackground(canonicalURL, title: payload.title) {
+                return .success(
+                    message: "Kept in Drawer: \(canonicalURL.absoluteString)",
+                    drawerItemId: itemID.uuidString)
             }
-            return .failure("Failed to keep in Drawer: \(urlString)")
+            return .failure("Failed to keep in Drawer: \(canonicalURL.absoluteString)")
 
         case .place(let idString):
             guard !idString.isEmpty else {
