@@ -38,7 +38,9 @@ Den (Application Workspace) ─── den
 When `den` is executed from a shell inside a Terminal Board, Den Browser automatically injects:
 - `DEN_BOARD_ID`: The immutable UUID of the calling Terminal Board.
 - `DEN_PROFILE`: The UUID of the Profile owning the calling Terminal Board.
-- `DEN_SOCKET`: The path to the IPC domain socket (defaults to `~/.den/den.sock`).
+- `DEN_SOCKET`: The actual IPC domain socket path selected by Den Browser. It is `~/.den/den.sock` unless the app was started with a custom `DEN_SOCKET`.
+
+These variables are attached when the Terminal Session is created and remain with that Session when its Board moves between Desks or reconnects to an existing zmx Session. A Session is never given another Profile's context.
 
 #### Profile Resolution
 Target Profile resolution follows this strict priority:
@@ -61,7 +63,7 @@ For `terminal` commands, the caller's Terminal Board is preferred; otherwise the
 
 ### Global Options
 - `--json`: Force output as structured JSON. When standard output is redirected or piped (non-TTY), JSON output is enabled automatically.
-- `--socket <path>`: Override the Unix domain socket path (defaults to `~/.den/den.sock` or `$DEN_SOCKET`).
+- `--socket <path>`: Override the Unix domain socket path. Resolution order is explicit `--socket`, `$DEN_SOCKET`, then `~/.den/den.sock`.
 - `--profile <uuid>`: Target specific Profile UUID (defaults to `$DEN_PROFILE` or ambient Profile). Fails immediately (`exit 1`) if invalid, not found, or has no active window.
 
 ### Board Targeting

@@ -30,6 +30,7 @@ final class ProfileManager {
     @ObservationIgnored private let removeWebsiteDataTypes: (WKWebsiteDataStore, Set<String>) async throws -> Void
     @ObservationIgnored private let initialProfile: PersistedProfile?
     @ObservationIgnored private let websiteDataStore: (WebProfileStore) -> WKWebsiteDataStore
+    let ipcSocketPath: String
 
     var personalProfileID: UUID {
         profiles.first(where: { $0.webProfileStore == .default })?.id
@@ -47,7 +48,8 @@ final class ProfileManager {
             .removeWebsiteDataTypes,
         initialProfile: PersistedProfile? = nil,
         websiteDataStore: ((WebProfileStore) -> WKWebsiteDataStore)? = nil,
-        webExtensionDescriptors: [WebExtensionDescriptor] = []
+        webExtensionDescriptors: [WebExtensionDescriptor] = [],
+        ipcSocketPath: String = DenSocketPath.resolve()
     ) {
         self.directoryURL = directoryURL
         self.sheetNavigation = sheetNavigation
@@ -58,6 +60,7 @@ final class ProfileManager {
         self.initialProfile = initialProfile
         self.websiteDataStore = websiteDataStore ?? { $0.websiteDataStore }
         self.webExtensionDescriptors = webExtensionDescriptors
+        self.ipcSocketPath = ipcSocketPath
         load()
     }
 
@@ -107,7 +110,9 @@ final class ProfileManager {
             },
             onWillResetDen: { [weak self] in
                 self?.closeOtherWindows(profileID: profileID, excludingWindowID: route.windowID)
-            })
+            },
+            profileID: profileID,
+            ipcSocketPath: ipcSocketPath)
         stores[route.windowID] = store
         storeProfileIDs[route.windowID] = profileID
         return store

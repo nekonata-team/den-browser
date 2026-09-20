@@ -58,12 +58,7 @@ enum DenIPCClient {
         let callerBoardID = env["DEN_BOARD_ID"]
         let effectiveProfileID = options.profileID ?? env["DEN_PROFILE"]
 
-        let socketPath: String = {
-            if let custom = options.socketPath { return custom }
-            if let envSocket = env["DEN_SOCKET"], !envSocket.isEmpty { return envSocket }
-            let home = FileManager.default.homeDirectoryForCurrentUser.path
-            return "\(home)/.den/den.sock"
-        }()
+        let socketPath = DenSocketPath.resolve(explicit: options.socketPath, environment: env)
 
         let request = DenIPCRequest(
             command: command,

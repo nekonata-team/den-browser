@@ -6,13 +6,7 @@ nonisolated final class DenSocketServer: @unchecked Sendable {
     private let socketPath: String
     private let queue = DispatchQueue(label: "dev.nekonata.den.ipc.server", qos: .userInitiated)
 
-    static var defaultSocketPath: String {
-        if let custom = ProcessInfo.processInfo.environment["DEN_SOCKET"], !custom.isEmpty {
-            return custom
-        }
-        let home = FileManager.default.homeDirectoryForCurrentUser.path
-        return "\(home)/.den/den.sock"
-    }
+    static var defaultSocketPath: String { DenSocketPath.resolve() }
 
     init(socketPath: String = DenSocketServer.defaultSocketPath) {
         self.socketPath = socketPath

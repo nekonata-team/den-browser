@@ -182,6 +182,8 @@ final class DenStore {
     let sheetNavigation: SheetNavigationManager
     let preferences: AppPreferences
     let websiteDataStore: WKWebsiteDataStore
+    let profileID: UUID?
+    let ipcSocketPath: String
     var zellijClient: ZellijClient {
         ZellijClient(executablePath: preferences.zellijPath)
     }
@@ -389,7 +391,9 @@ final class DenStore {
         recentItems: [RecentItem] = [],
         onSave: ((DenState) -> Bool)? = nil,
         onDeskPresetsSave: (([PersonalDeskPreset]) -> Bool)? = nil,
-        onRecentItemsSave: (([RecentItem]) -> Bool)? = nil
+        onRecentItemsSave: (([RecentItem]) -> Bool)? = nil,
+        profileID: UUID? = nil,
+        ipcSocketPath: String = DenSocketPath.resolve()
     ) {
         let normalizedState = Self.normalizedPersistedState(state)
         let storage = DenStorage(
@@ -402,6 +406,8 @@ final class DenStore {
         self.storage = storage
         presentedDeskID = normalizedState.focusedDeskID
         self.websiteDataStore = websiteDataStore
+        self.profileID = profileID
+        self.ipcSocketPath = ipcSocketPath
         self.sheetNavigation = sheetNavigation
         self.preferences = preferences
         self.terminalCommandRunner = terminalCommandRunner
@@ -433,7 +439,9 @@ final class DenStore {
         canPresentDesk: @escaping (UUID) -> Bool,
         onDeskPresentationRequest: @escaping (UUID) -> Bool,
         onWillResetDen: @escaping () -> Void,
-        terminalCommandRunner: any TerminalCommandRunning = ProcessTerminalCommandRunner()
+        terminalCommandRunner: any TerminalCommandRunning = ProcessTerminalCommandRunner(),
+        profileID: UUID? = nil,
+        ipcSocketPath: String = DenSocketPath.resolve()
     ) {
         self.storage = storage
         self.presentedDeskID =
@@ -441,6 +449,8 @@ final class DenStore {
             .flatMap { requested in storage.state.desks.contains { $0.id == requested } ? requested : nil }
             ?? storage.state.focusedDeskID
         self.websiteDataStore = websiteDataStore
+        self.profileID = profileID
+        self.ipcSocketPath = ipcSocketPath
         self.sheetNavigation = sheetNavigation
         self.preferences = preferences
         self.terminalCommandRunner = terminalCommandRunner

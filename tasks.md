@@ -149,7 +149,7 @@
 - **Current Status:** `sheet open`、Board作成、Drawer保持を`BoardInputResolver`と`SheetURLPolicy`へ統一し、明示URL・裸のhostname・local file・検索語の許可範囲を操作ごとに整理しました。非対応schemeとDrawerへの検索語は副作用前に拒否し、検証後にcanonical URLへ正規化します。focused unit testと`just check`を通過。
 
 <a id="task-011"></a>
-### [ ] TASK-011：CLI接続先とTerminalの環境変数を一致させる
+### [x] TASK-011：CLI接続先とTerminalの環境変数を一致させる
 
 - **Priority / Purpose:** P2。カスタムDEN_SOCKET利用時にも、内蔵Terminalから同じアプリへ接続できるようにします。
 - **Prerequisites:** なし。
@@ -157,6 +157,7 @@
 - **Work:** 接続先決定の重複を取り除き、実際のsocket pathをTerminalへ渡します。DEN_PROFILEの自動注入に関する文書と実装の差を解消し、Board移動や既存zmx Sessionの環境変数の寿命も確認します。
 - **Acceptance Criteria:** default／custom pathで接続先が一致します。明示オプションと環境変数の優先順位、Profile scopingの保証が文書と一致します。
 - **Verification:** 環境変数とオプションの解決、Terminalへ渡す値をisolated unit testで検証します。`just check`。
+- **Current Status:** `DEN_SOCKET`の明示オプション・環境変数・既定値の解決を共有化し、サーバー、CLI、Terminalが同じsocket pathを使うようにしました。ProfileManagerからProfile IDと実socket pathをDenStore／TerminalRuntimeへ渡し、Terminalへ`DEN_PROFILE`も注入します。Board移動や既存zmx Sessionのruntime再利用では同じProfile／Sessionの環境変数を保持します。`DenIPCTransportTests`と`TerminalRuntimeTests`を追加し、`just check`を通過。
 
 <a id="task-012"></a>
 ### [ ] TASK-012：interactの対象Boardを固定する

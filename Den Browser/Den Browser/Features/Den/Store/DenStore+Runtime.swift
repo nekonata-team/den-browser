@@ -63,6 +63,8 @@ extension DenStore {
             workingDirectory: board.terminalWorkingDirectory ?? FileManager.default.homeDirectoryForCurrentUser.path,
             command: command,
             boardID: board.id,
+            profileID: profileID,
+            socketPath: ipcSocketPath,
             events: events)
         terminalRuntimes[board.id] = runtime
         return runtime

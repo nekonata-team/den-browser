@@ -15,7 +15,7 @@ final class DenIPCService {
 
     func start(profileManager: ProfileManager) {
         self.profileManager = profileManager
-        let server = DenSocketServer()
+        let server = DenSocketServer(socketPath: profileManager.ipcSocketPath)
         self.server = server
 
         do {
