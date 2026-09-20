@@ -6,6 +6,13 @@ import WebKit
 final class DenIPCService {
     static let shared = DenIPCService()
 
+    private struct SheetInteractTarget {
+        let profileID: UUID
+        let store: DenStore
+        let board: BoardState
+        let runtime: BoardRuntime
+    }
+
     private var server: DenSocketServer?
     private weak var profileManager: ProfileManager?
 
@@ -67,20 +74,40 @@ final class DenIPCService {
 
     // MARK: - Sheet Commands
 
-    private func handleSheetCommand(_ command: DenIPCCommand.Sheet, request: DenIPCRequest) async -> DenIPCResponse {
-        let store: DenStore
-        let board: BoardState
-        switch DenIPCTargetResolver.resolveTargetWebBoardResult(request: request, in: profileManager) {
-        case .success(let target):
-            store = target.0
-            board = target.1
-        case .failure(let error):
-            if case .open = command, error == .noTargetBoard("Web") {
-                return .failure("No Web Board found. Use 'den board web new <url>' to create a new board.")
+    private func handleSheetCommand(
+        _ command: DenIPCCommand.Sheet,
+        request: DenIPCRequest,
+        interactTarget: SheetInteractTarget? = nil
+    ) async -> DenIPCResponse {
+        let target: SheetInteractTarget
+        if let interactTarget {
+            target = interactTarget
+        } else {
+            let store: DenStore
+            let board: BoardState
+            switch DenIPCTargetResolver.resolveTargetWebBoardResult(request: request, in: profileManager) {
+            case .success(let resolvedTarget):
+                store = resolvedTarget.0
+                board = resolvedTarget.1
+            case .failure(let error):
+                if case .open = command, error == .noTargetBoard("Web") {
+                    return .failure("No Web Board found. Use 'den board web new <url>' to create a new board.")
+                }
+                return .failure(error.localizedDescription)
             }
-            return .failure(error.localizedDescription)
+            guard let profileID = profileManager?.profileID(for: store) else {
+                return .failure("Target Profile no longer exists")
+            }
+            target = SheetInteractTarget(
+                profileID: profileID,
+                store: store,
+                board: board,
+                runtime: store.runtime(for: board)
+            )
         }
-        let runtime = store.runtime(for: board)
+        let store = target.store
+        let board = target.board
+        let runtime = target.runtime
 
         do {
             switch command {
@@ -138,7 +165,7 @@ final class DenIPCService {
                 return .success(message: "Navigated forward")
 
             case .interact(let payload):
-                return await handleSheetInteract(payload: payload, request: request, runtime: runtime)
+                return await handleSheetInteract(payload: payload, target: target)
 
             case .press(let payload):
                 guard !payload.key.isEmpty else {
@@ -511,20 +538,33 @@ final class DenIPCService {
 
     private func handleSheetInteract(
         payload: DenSheetInteractPayload,
-        request: DenIPCRequest,
-        runtime: BoardRuntime
+        target: SheetInteractTarget
     ) async -> DenIPCResponse {
         guard !payload.steps.isEmpty else {
             return .failure("Usage: den sheet interact <script-or-file>")
         }
 
         var completedActions = 0
+        func targetUnavailable(at index: Int) -> DenIPCResponse {
+            .failure(
+                "Target Web Board no longer exists: \(target.board.id.uuidString)",
+                completedActions: completedActions,
+                failedActionIndex: index
+            )
+        }
+
         for (index, step) in payload.steps.enumerated() {
+            guard isSheetInteractTargetAvailable(target) else {
+                return targetUnavailable(at: index)
+            }
             if case .interact = step.command {
                 let snapshot = try? await SheetInteraction.snapshot(
-                    in: runtime.webView,
+                    in: target.runtime.webView,
                     interactiveOnly: !payload.full
                 )
+                guard isSheetInteractTargetAvailable(target) else {
+                    return targetUnavailable(at: index)
+                }
                 return .failure(
                     "Line \(step.line): Nested interact is not supported",
                     snapshot: snapshot,
@@ -536,17 +576,19 @@ final class DenIPCService {
                 step.command,
                 request: DenIPCRequest(
                     command: .sheet(step.command),
-                    boardID: request.boardID,
-                    deskID: request.deskID,
-                    callerBoardID: request.callerBoardID,
-                    profileID: request.profileID
-                )
+                ),
+                interactTarget: target
             )
             guard actionResponse.isOk else {
-                let snapshot = try? await SheetInteraction.snapshot(
-                    in: runtime.webView,
-                    interactiveOnly: !payload.full
-                )
+                let snapshot: String?
+                if !isSheetInteractTargetAvailable(target) {
+                    snapshot = nil
+                } else {
+                    snapshot = try? await SheetInteraction.snapshot(
+                        in: target.runtime.webView,
+                        interactiveOnly: !payload.full
+                    )
+                }
                 let reason = actionResponse.error ?? "Interact action failed"
                 return .failure(
                     "Line \(step.line) (\(step.text)): \(reason)",
@@ -555,21 +597,40 @@ final class DenIPCService {
                     failedActionIndex: index
                 )
             }
+            guard isSheetInteractTargetAvailable(target) else {
+                return targetUnavailable(at: index)
+            }
             completedActions += 1
         }
 
         do {
             let snapshot = try await SheetInteraction.snapshot(
-                in: runtime.webView,
+                in: target.runtime.webView,
                 interactiveOnly: !payload.full
             )
+            guard isSheetInteractTargetAvailable(target) else {
+                return targetUnavailable(at: payload.steps.count - 1)
+            }
             return .success(snapshot: snapshot, completedActions: completedActions)
         } catch {
+            if !isSheetInteractTargetAvailable(target) {
+                return targetUnavailable(at: payload.steps.count - 1)
+            }
             return .failure(
                 error.localizedDescription,
                 completedActions: completedActions
             )
         }
+    }
+
+    private func isSheetInteractTargetAvailable(_ target: SheetInteractTarget) -> Bool {
+        guard let profileManager,
+            profileManager.profile(id: target.profileID) != nil,
+            profileManager.hasWindow(for: target.profileID)
+        else {
+            return false
+        }
+        return target.store.board(for: target.board.id) != nil
     }
 
     // MARK: - Board Commands

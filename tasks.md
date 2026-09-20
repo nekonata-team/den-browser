@@ -160,14 +160,16 @@
 - **Current Status:** `DEN_SOCKET`の明示オプション・環境変数・既定値の解決を共有化し、サーバー、CLI、Terminalが同じsocket pathを使うようにしました。ProfileManagerからProfile IDと実socket pathをDenStore／TerminalRuntimeへ渡し、Terminalへ`DEN_PROFILE`も注入します。Board移動や既存zmx Sessionのruntime再利用では同じProfile／Sessionの環境変数を保持します。`DenIPCTransportTests`と`TerminalRuntimeTests`を追加し、`just check`を通過。
 
 <a id="task-012"></a>
-### [ ] TASK-012：interactの対象Boardを固定する
+### [x] TASK-012：interactの対象Boardを固定する
 
 - **Priority / Purpose:** P2。バッチ途中のambient対象変更による誤操作と、snapshot対象の不一致を防ぎます。
 - **Prerequisites:** TASK-001。TASK-009と並行する場合はpayload変更を共有します。
 - **Entry Points:** `Den/IPC/DenIPCService.swift`、`CLI/Commands/SheetCommand.swift`。
 - **Work:** バッチ開始時に解決したBoardのidentityを各ステップへ引き継ぎます。実行中のfocus／Desk変更、対象削除、Profile終了を扱い、暗黙に別Boardへ切り替えません。
 - **Acceptance Criteria:** wait中にambient対象が変わっても後続操作は元Boardを対象にします。対象消失時は明確に失敗し、completedActionsとsnapshotが実際の実行対象に対応します。
-- **Verification:** await境界で対象変更・削除を挟むfocused service test。`just check`。バッチの対象固定契約を`docs/cli.md`に記載します。
+- **Verification:** `DenIPCServiceTests` に await 境界でのfocus変更と対象Board削除を検証するfocused service testを追加。`docs/cli.md`へバッチ開始時のBoard固定、Profile／Board消失時の失敗、`completed_actions`／`snapshot`の対象契約を記載。`just check` 成功（lint 0 violations、unit tests 553件全パス）。
+
+- **Current Status:** `sheet interact` の開始時にProfile、Store、Board、runtimeを固定し、各stepと最終snapshotの前後でtargetの存続を確認。focus／Desk変更でambient targetへ切り替わらず、ProfileまたはBoardの終了時は固定targetの消失として失敗します。
 
 <a id="task-013"></a>
 ### [ ] TASK-013：DOM操作のイベント配送を修正する

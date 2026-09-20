@@ -452,4 +452,189 @@ struct DenIPCServiceTests {
         #expect(store.board(for: newBoardUUID) != nil)
         #expect(response.url == "https://example.com/subpage")
     }
+
+    @Test func sheetInteractKeepsInitialBoardWhenFocusChangesDuringWait() async throws {
+        // Arrange
+        let directory = FileManager.default.temporaryDirectory
+            .appending(path: "den-browser-ipc-interact-focus-\(UUID().uuidString)", directoryHint: .isDirectory)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let suiteName = "IPCServiceInteractFocusPreferences-\(UUID().uuidString)"
+        let manager = ProfileManager(
+            directoryURL: directory,
+            sheetNavigation: SheetNavigationManager(
+                defaults: UserDefaults(suiteName: suiteName) ?? .standard,
+                scriptSource: ""),
+            preferences: AppPreferences(defaults: UserDefaults(suiteName: suiteName) ?? .standard),
+            removeDataStore: { _ in })
+        let store = try #require(manager.store(for: manager.personalProfileID))
+        let firstBoardID = try #require(store.createBoard(urlString: "https://first.example/"))
+        let secondBoardID = try #require(store.createBoard(urlString: "https://second.example/"))
+        store.focusBoard(firstBoardID)
+        let firstBoard = try #require(store.board(for: firstBoardID))
+        let secondBoard = try #require(store.board(for: secondBoardID))
+        let firstRuntime = store.runtime(for: firstBoard)
+        let secondRuntime = store.runtime(for: secondBoard)
+        let firstWaiter = SheetInteractionWebViewLoadWaiter()
+        let secondWaiter = SheetInteractionWebViewLoadWaiter()
+        await firstWaiter.load(
+            """
+            <!doctype html>
+            <body>
+              <button id="continue" onclick="this.textContent = 'Clicked'">Continue</button>
+              <script>window.waitStarted = false; window.targetReady = false;</script>
+            </body>
+            """,
+            baseURL: URL(string: "https://first.example/")!,
+            in: firstRuntime.webView)
+        await secondWaiter.load(
+            """
+            <!doctype html>
+            <body><p>Second Board</p></body>
+            """,
+            baseURL: URL(string: "https://second.example/")!,
+            in: secondRuntime.webView)
+        let service = DenIPCService(profileManager: manager)
+        let payload = DenSheetInteractPayload(
+            steps: [
+                DenSheetInteractStep(
+                    line: 1,
+                    text: "wait",
+                    command: .wait(
+                        DenSheetWaitPayload(
+                            target: nil,
+                            state: nil,
+                            url: nil,
+                            text: nil,
+                            loadState: nil,
+                            function: "window.waitStarted = true, window.targetReady",
+                            timeout: 2))),
+                DenSheetInteractStep(
+                    line: 2,
+                    text: "click #continue",
+                    command: .click(
+                        DenSheetClickPayload(
+                            target: "#continue",
+                            role: nil,
+                            name: nil,
+                            exact: false,
+                            newBoard: false,
+                            focus: false,
+                        ))),
+            ],
+            full: false)
+
+        // Act
+        let interactTask = Task {
+            await service.handleRequest(DenIPCRequest(command: .sheet(.interact(payload))))
+        }
+        var waitStarted = false
+        for _ in 0..<100 {
+            let value = try? await firstRuntime.webView.evaluateJavaScript("window.waitStarted === true")
+            waitStarted = (value as? Bool) == true
+            if waitStarted { break }
+            await Task.yield()
+        }
+        #expect(waitStarted)
+        store.focusBoard(secondBoardID)
+        _ = try await firstRuntime.webView.evaluateJavaScript("window.targetReady = true")
+        let response = await interactTask.value
+
+        // Assert
+        #expect(response.isOk)
+        #expect(response.completedActions == 2)
+    }
+
+    @Test func sheetInteractFailsWhenInitialBoardDisappearsDuringWait() async throws {
+        // Arrange
+        let directory = FileManager.default.temporaryDirectory
+            .appending(path: "den-browser-ipc-interact-removal-\(UUID().uuidString)", directoryHint: .isDirectory)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let suiteName = "IPCServiceInteractRemovalPreferences-\(UUID().uuidString)"
+        let manager = ProfileManager(
+            directoryURL: directory,
+            sheetNavigation: SheetNavigationManager(
+                defaults: UserDefaults(suiteName: suiteName) ?? .standard,
+                scriptSource: ""),
+            preferences: AppPreferences(defaults: UserDefaults(suiteName: suiteName) ?? .standard),
+            removeDataStore: { _ in })
+        let store = try #require(manager.store(for: manager.personalProfileID))
+        let firstBoardID = try #require(store.createBoard(urlString: "https://first.example/"))
+        let secondBoardID = try #require(store.createBoard(urlString: "https://second.example/"))
+        store.focusBoard(firstBoardID)
+        let firstBoard = try #require(store.board(for: firstBoardID))
+        let secondBoard = try #require(store.board(for: secondBoardID))
+        let firstRuntime = store.runtime(for: firstBoard)
+        let secondRuntime = store.runtime(for: secondBoard)
+        let firstWaiter = SheetInteractionWebViewLoadWaiter()
+        let secondWaiter = SheetInteractionWebViewLoadWaiter()
+        await firstWaiter.load(
+            """
+            <!doctype html>
+            <body>
+              <button id="continue">Continue</button>
+              <script>window.waitStarted = false; window.targetReady = false;</script>
+            </body>
+            """,
+            baseURL: URL(string: "https://first.example/")!,
+            in: firstRuntime.webView)
+        await secondWaiter.load(
+            """
+            <!doctype html>
+            <body><button id="continue">Second Board</button></body>
+            """,
+            baseURL: URL(string: "https://second.example/")!,
+            in: secondRuntime.webView)
+        let service = DenIPCService(profileManager: manager)
+        let payload = DenSheetInteractPayload(
+            steps: [
+                DenSheetInteractStep(
+                    line: 1,
+                    text: "wait",
+                    command: .wait(
+                        DenSheetWaitPayload(
+                            target: nil,
+                            state: nil,
+                            url: nil,
+                            text: nil,
+                            loadState: nil,
+                            function: "window.waitStarted = true, window.targetReady",
+                            timeout: 2))),
+                DenSheetInteractStep(
+                    line: 2,
+                    text: "click #continue",
+                    command: .click(
+                        DenSheetClickPayload(
+                            target: "#continue",
+                            role: nil,
+                            name: nil,
+                            exact: false,
+                            newBoard: false,
+                            focus: false,
+                        ))),
+            ],
+            full: false)
+
+        // Act
+        let interactTask = Task {
+            await service.handleRequest(DenIPCRequest(command: .sheet(.interact(payload))))
+        }
+        var waitStarted = false
+        for _ in 0..<100 {
+            let value = try? await firstRuntime.webView.evaluateJavaScript("window.waitStarted === true")
+            waitStarted = (value as? Bool) == true
+            if waitStarted { break }
+            await Task.yield()
+        }
+        #expect(waitStarted)
+        store.removeBoard(firstBoardID)
+        store.focusBoard(secondBoardID)
+        _ = try await firstRuntime.webView.evaluateJavaScript("window.targetReady = true")
+        let response = await interactTask.value
+
+        // Assert
+        #expect(response.isOk == false)
+        #expect(response.error == "Target Web Board no longer exists: \(firstBoardID.uuidString)")
+        #expect(response.completedActions == 1)
+        #expect(response.failedActionIndex == 1)
+    }
 }

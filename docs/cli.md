@@ -75,7 +75,7 @@ The CLI communicates with Den Browser through a newline-delimited JSON request o
 - Value-bearing commands such as `sheet click`, `sheet wait`, `sheet get`, and `terminal send` carry positional values and flags in the typed command; the server does not re-parse command-line strings.
 - Missing, unknown, or invalid command values fail before a side effect.
 - Direct socket clients must follow the current typed command schema; cross-version JSON compatibility is not guaranteed.
-- `sheet interact` sends one `sheet.interact` command containing typed steps. Each step retains its source line and text for failure reporting, plus the typed command used for execution.
+- `sheet interact` sends one `sheet.interact` command containing typed steps. The Web Board is resolved once when the batch starts, so focus, Desk, or ambient-target changes while a step awaits do not retarget later steps. If that Board or its Profile disappears, the command fails; `completed_actions` and `snapshot` refer to the fixed Board. Each step retains its source line and text for failure reporting, plus the typed command used for execution.
 
 ---
 
