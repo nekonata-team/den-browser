@@ -23,9 +23,15 @@ extension DenStore {
     }
 
     func dismissDeskFilter() {
+        cancelDeskFilterCentering()
         deskFilterPhase = .inactive
         deskFilterQuery = ""
         deskFilterSelectionBoardID = nil
+    }
+
+    func cancelDeskFilterCentering() {
+        deskFilterCenteringTask?.cancel()
+        deskFilterCenteringTask = nil
     }
 
     func selectDeskFilterBoard(by offset: Int) {
@@ -44,7 +50,6 @@ extension DenStore {
         else { return }
         dismissDeskFilter()
         focusBoard(boardID, exitsDenMode: true)
-        deskFilterCenteringTask?.cancel()
         deskFilterCenteringTask = Task { @MainActor [weak self] in
             try? await Task.sleep(for: .milliseconds(50))
             guard !Task.isCancelled,

@@ -313,9 +313,6 @@ extension DenStore {
             if recentlyRemovedBoards.count > Self.maximumRecentlyRemovedBoardCount {
                 recentlyRemovedBoards.removeLast()
             }
-            if maximizedBoardID == board.id {
-                maximizedBoardID = nil
-            }
             disposeRuntime(for: board.id)
 
             if isOverviewPresented, overviewSelection?.boardID == board.id {
@@ -327,6 +324,7 @@ extension DenStore {
                 overviewSelection = OverviewSelection(deskID: state.desks[indices.desk].id, boardID: nextBoardID)
             }
 
+            invalidateReferences(toRemovedBoardIDs: Set([board.id]))
             save()
         }
         if isCLIBackgroundRemoval {

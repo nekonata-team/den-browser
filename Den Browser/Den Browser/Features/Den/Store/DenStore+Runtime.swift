@@ -315,8 +315,7 @@ extension DenStore {
     }
 
     func releaseWindowResources() {
-        deskFilterCenteringTask?.cancel()
-        deskFilterCenteringTask = nil
+        cancelDeskFilterCentering()
         toastTask?.cancel()
         toastTask = nil
         zmxSessions.stop()

@@ -61,9 +61,6 @@ extension DenStore {
 
     func hideOpenBoardPanel() {
         if temporaryContext == .openBoard {
-            openBoardPanelInitialURL = nil
-            openBoardAfterBoardID = nil
-            openBoardPanelMessage = nil
             setTemporaryContext(nil)
         }
     }
@@ -86,7 +83,6 @@ extension DenStore {
     func hideZmxSessions(returnToSource: Bool = true) {
         if temporaryContext == .zmxSessions {
             let returnsToOpenBoard = returnToSource && zmxSessionsReturnToOpenBoard
-            zmxSessionsReturnToOpenBoard = false
             setTemporaryContext(returnsToOpenBoard ? .openBoard : nil)
         }
     }

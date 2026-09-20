@@ -193,14 +193,14 @@
 - **Verification:** alert/confirm/prompt/openPanelのUIDelegateをBaseWebRuntimeへ昇格し、補助WindowへnavigationDelegateを設定。DrawerPreviewRuntimeのセレクタ応答および補助Windowのdelegate設定のテスト（`BoardRuntimeWebUITests`）を追加。`just check` 実行（lint 0 violations、全テストパス）。
 
 <a id="task-015"></a>
-### [ ] TASK-015：一時UI状態の終了処理と参照の無効化を整理する
+### [x] TASK-015：一時UI状態の終了処理と参照の無効化を整理する
 
 - **Priority / Purpose:** P2。パネル切り替えとDesk／Board置換時の後始末を一貫させます。
 - **Prerequisites:** TASK-008。
 - **Entry Points:** `Den/DenStore.swift`、`Den/Store/DenStore+Presentation.swift`、`Den/Store/DenStore+Overview.swift`、`Den/Store/DenStore+DeskOperations.swift`。
 - **Work:** setTemporaryContext、各hide、resetの重複した終了処理を集約します。選択、filter、draft、Taskの寿命と、保持すべきdraftを区別します。Desk置換で残る古いanchorBoardIDやjump originなど、identity参照の無効化を共通の不変条件にします。
 - **Acceptance Criteria:** 開く→切り替える→閉じる→再度開く経路で古い選択やTaskが残りません。削除・置換後に消失したBoardへの有効な参照を保持しません。
-- **Verification:** 状態遷移と参照整合性のfocused Store test。キーボード経路変更時は`docs/keyboard-input.md`を読み、既存routing testを実施します。`just check`。
+- **Verification:** reset、Open Board遷移、Desk filterの遅延Task取消、Desk／Board削除・置換時の対象参照失効を確認するfocused Store testを追加。キーボード経路は変更なし。`just check` 実行（lint 0 violations、全テストパス）。再実行中に既存の並列テストが一度アサーション失敗、別の一度はテストプロセスがSIGPIPE終了しましたが、単独再実行および最終の全体再実行では再現しませんでした。
 
 <a id="task-016"></a>
 ### [ ] TASK-016：Drawerの共有状態とWindow固有状態を整合させる

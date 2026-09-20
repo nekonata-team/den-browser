@@ -118,6 +118,30 @@ struct DenStoreDeskTests {
         #expect(!store.state.desks.flatMap(\.boards).contains { $0.id == oldBoard.id })
     }
 
+    @Test func replacingDeskInvalidatesReferencesToRemovedBoards() {
+        // Arrange
+        let oldBoards = [board("First"), board("Second")]
+        var replacing = desk("Research", boards: oldBoards, focusedBoardID: oldBoards[1].id)
+        replacing.anchorBoardID = oldBoards[0].id
+        let store = DenStore(state: DenState(desks: [replacing], focusedDeskID: replacing.id))
+        store.anchorJumpOriginBoardIDByDesk[replacing.id] = oldBoards[1].id
+        _ = store.prepareBoardLinkFocus(oldBoards[1].id)
+        store.overviewSelection = OverviewSelection(deskID: replacing.id, boardID: oldBoards[1].id)
+        store.showReplaceDeskPanel()
+        store.openBoardAfterBoardID = oldBoards[0].id
+        _ = store.replaceFocusedDesk(label: "Morning", preset: .chatGPT)
+
+        // Act
+        store.confirmDeskReplacement()
+
+        // Assert
+        #expect(store.focusedDesk?.anchorBoardID == nil)
+        #expect(store.anchorJumpOriginBoardIDByDesk[replacing.id] == nil)
+        #expect(store.openBoardAfterBoardID == nil)
+        #expect(store.pendingBoardLinkFocus == nil)
+        #expect(store.overviewSelection == nil)
+    }
+
     @Test func cancellingDeskReplacementKeepsDeskAndPanel() {
         let existing = board("Existing")
         let original = desk("Original", boards: [existing])

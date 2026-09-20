@@ -63,6 +63,25 @@ struct DenStoreDeskFilterTests {
         #expect(!store.isDenMode)
     }
 
+    @Test func presentingTemporaryContextCancelsPendingCentering() async throws {
+        // Arrange
+        let alpha = board("Alpha")
+        let bravo = board("Bravo")
+        let source = desk("Desk", boards: [alpha, bravo], focusedBoardID: alpha.id)
+        let store = DenStore(state: DenState(desks: [source], focusedDeskID: source.id))
+        store.enterDeskFilter()
+        store.confirmDeskFilterSelection(bravo.id)
+        let centeringTask = try #require(store.deskFilterCenteringTask)
+
+        // Act
+        store.showOverview()
+        await centeringTask.value
+
+        // Assert
+        #expect(store.deskFilterCenteringTask == nil)
+        #expect(store.centerFocusedBoardRequest == 0)
+    }
+
     @Test func deskFilterPassesShiftedCharactersToTextInput() throws {
         let alpha = board("Alpha")
         let source = desk("Desk", boards: [alpha], focusedBoardID: alpha.id)

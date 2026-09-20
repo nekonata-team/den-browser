@@ -20,10 +20,7 @@ extension DenStore {
 
     func hideOverview() {
         if temporaryContext == .overview {
-            cancelOverviewBoardDrag()
             setTemporaryContext(nil)
-            overviewQuery = ""
-            overviewFilterPhase = .inactive
         }
     }
 

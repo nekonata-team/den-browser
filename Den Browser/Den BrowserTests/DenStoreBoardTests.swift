@@ -1393,9 +1393,13 @@ struct DenStoreBoardTests {
             store.focusBoard(firstBoard.id)
             store.toggleAnchorBoard()
             #expect(store.focusedDesk?.anchorBoardID == firstBoard.id)
+            store.focusBoard(secondBoard.id)
+            store.jumpToAnchorBoard()
+            #expect(store.anchorJumpOriginBoardIDByDesk[source.id] == secondBoard.id)
 
             store.removeBoard(firstBoard.id)
             #expect(store.focusedDesk?.anchorBoardID == nil)
+            #expect(store.anchorJumpOriginBoardIDByDesk[source.id] == nil)
         }
     }
 

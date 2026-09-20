@@ -92,6 +92,7 @@ extension DenStore {
     private func applyDeskReplacement(_ replacement: PendingDeskReplacement) {
         guard let deskIndex = state.desks.firstIndex(where: { $0.id == replacement.deskID }) else { return }
 
+        let removedBoardIDs = Set(state.desks[deskIndex].boards.map(\.id))
         for board in state.desks[deskIndex].boards {
             disposeRuntime(for: board.id)
         }
@@ -101,7 +102,9 @@ extension DenStore {
         state.desks[deskIndex].focusedBoardID =
             replacement.focusedBoardIndex.flatMap { boards.indices.contains($0) ? boards[$0].id : nil }
             ?? boards.first?.id
-        maximizedBoardID = nil
+        state.desks[deskIndex].anchorBoardID = nil
+        anchorJumpOriginBoardIDByDesk.removeValue(forKey: replacement.deskID)
+        invalidateReferences(toRemovedBoardIDs: removedBoardIDs)
         setTemporaryContext(nil)
         isDenMode = false
         save()
@@ -148,16 +151,10 @@ extension DenStore {
 
         let desk = state.desks[deskIndex]
         for board in desk.boards {
-            if maximizedBoardID == board.id {
-                maximizedBoardID = nil
-            }
             disposeRuntime(for: board.id)
         }
 
         state.desks.remove(at: deskIndex)
-        if previousFocusedDeskID == deskID {
-            previousFocusedDeskID = nil
-        }
         if presentedDeskID == deskID {
             setFocusedDesk(replacementDeskID)
         }
@@ -166,6 +163,8 @@ extension DenStore {
                 deskID: presentedDeskID,
                 boardID: focusedDesk?.focusedBoardID)
         }
+        invalidateReferences(toRemovedBoardIDs: Set(desk.boards.map(\.id)))
+        invalidateReferences(toRemovedDeskID: deskID)
         isDenMode = false
         save()
     }

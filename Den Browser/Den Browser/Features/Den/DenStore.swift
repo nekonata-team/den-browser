@@ -508,9 +508,7 @@ final class DenStore {
         }
         state = .sample
         presentedDeskID = state.focusedDeskID
-        openBoardPanelInitialURL = nil
-        openBoardPanelMessage = nil
-        setTemporaryContext(nil)
+        resetTemporaryPresentationState()
         isZenViewPresented = false
         isFocusModePresented = false
         activeDrag = nil
@@ -519,18 +517,14 @@ final class DenStore {
         maximizedBoardID = nil
         pendingBoardLinkFocus = nil
         pendingBoardRemoval = nil
-        dismissDeskFilter()
-        overviewSelection = nil
-        overviewQuery = ""
-        overviewFilterPhase = .inactive
         recentlyRemovedBoards.removeAll()
         recentlyDiscardedDrawerItems.removeAll()
         notifications.removeAll()
         isNotificationListPresented = false
         selectedNotificationID = nil
-        drawerQuery = ""
-        drawerFilterPhase = .inactive
         selectedDrawerItemID = nil
+        previousFocusedDeskID = nil
+        anchorJumpOriginBoardIDByDesk.removeAll()
         toastTask?.cancel()
         toastMessage = nil
         isDenMode = false
@@ -727,11 +721,12 @@ final class DenStore {
         if pendingBoardLinkFocus?.boardID == board.id {
             pendingBoardLinkFocus = nil
         }
+        let deskID = state.desks[indices.desk].id
         if state.desks[indices.desk].anchorBoardID == board.id {
             state.desks[indices.desk].anchorBoardID = nil
-        }
-        if anchorJumpOriginBoardIDByDesk[state.desks[indices.desk].id] == board.id {
-            anchorJumpOriginBoardIDByDesk.removeValue(forKey: state.desks[indices.desk].id)
+            anchorJumpOriginBoardIDByDesk.removeValue(forKey: deskID)
+        } else if anchorJumpOriginBoardIDByDesk[deskID] == board.id {
+            anchorJumpOriginBoardIDByDesk.removeValue(forKey: deskID)
         }
         let boards = state.desks[indices.desk].boards
         if boards.isEmpty {
@@ -786,32 +781,91 @@ final class DenStore {
             isNotificationListPresented = false
             selectedNotificationID = nil
         }
-        if temporaryContext == .openBoard, context != .openBoard {
-            openBoardPanelInitialURL = nil
+        if let previousContext = temporaryContext, previousContext != context {
+            endTemporaryContext(previousContext, transitioningTo: context)
         }
-        if temporaryContext == .overview, context != .overview {
+        temporaryContext = context
+    }
+
+    func invalidateReferences(toRemovedBoardIDs removedBoardIDs: Set<UUID>) {
+        if let openBoardAfterBoardID, removedBoardIDs.contains(openBoardAfterBoardID) {
+            self.openBoardAfterBoardID = nil
+        }
+        if let maximizedBoardID, removedBoardIDs.contains(maximizedBoardID) {
+            self.maximizedBoardID = nil
+        }
+        if let pendingBoardLinkFocus, removedBoardIDs.contains(pendingBoardLinkFocus.boardID) {
+            self.pendingBoardLinkFocus = nil
+        }
+        if let boardID = overviewSelection?.boardID, removedBoardIDs.contains(boardID) {
+            overviewSelection = nil
+        }
+        if case .board(let boardID) = activeDrag, removedBoardIDs.contains(boardID) {
+            activeDrag = nil
+        }
+    }
+
+    func invalidateReferences(toRemovedDeskID removedDeskID: UUID) {
+        if previousFocusedDeskID == removedDeskID {
+            previousFocusedDeskID = nil
+        }
+        anchorJumpOriginBoardIDByDesk.removeValue(forKey: removedDeskID)
+        if overviewSelection?.deskID == removedDeskID {
+            overviewSelection = nil
+        }
+        if case .desk(let deskID) = activeDrag, deskID == removedDeskID {
+            activeDrag = nil
+        }
+    }
+
+    private func endTemporaryContext(_ context: TemporaryContext, transitioningTo nextContext: TemporaryContext?) {
+        switch context {
+        case .openBoard:
+            openBoardPanelInitialURL = nil
+            if nextContext != .zmxSessions || !zmxSessionsReturnToOpenBoard {
+                openBoardAfterBoardID = nil
+                openBoardPanelMessage = nil
+            }
+        case .overview:
             cancelOverviewBoardDrag()
             overviewSelection = nil
             overviewQuery = ""
             overviewFilterPhase = .inactive
-        }
-        if temporaryContext == .boardWidth, context != .boardWidth {
+        case .boardWidth:
             boardWidthPanelMessage = nil
-        }
-        if temporaryContext == .drawer, context != .drawer {
+        case .drawer:
             drawerQuery = ""
             drawerFilterPhase = .inactive
-        }
-        if temporaryContext == .zmxDuplication, context != .zmxDuplication {
+        case .zmxDuplication:
             zmxDuplicationRootSessionName = nil
-        }
-        if temporaryContext == .zmxSessions, context != .zmxSessions {
+        case .zmxSessions:
+            let wasReturningToOpenBoard = zmxSessionsReturnToOpenBoard
+            zmxSessionsReturnToOpenBoard = false
             zmxSessions.stop()
-        }
-        if temporaryContext == .saveEssential, context != .saveEssential {
+            if wasReturningToOpenBoard, nextContext != .openBoard {
+                openBoardAfterBoardID = nil
+                openBoardPanelMessage = nil
+            }
+        case .saveEssential:
             saveEssentialDraft = nil
+        default:
+            break
         }
-        temporaryContext = context
+    }
+
+    private func resetTemporaryPresentationState() {
+        setTemporaryContext(nil)
+        dismissDeskFilter()
+        openBoardPanelInitialURL = nil
+        openBoardPanelInput = ""
+        openBoardAfterBoardID = nil
+        openBoardPanelMessage = nil
+        overviewSelection = nil
+        overviewQuery = ""
+        overviewFilterPhase = .inactive
+        drawerQuery = ""
+        drawerFilterPhase = .inactive
+        saveEssentialDraft = nil
     }
 }
 

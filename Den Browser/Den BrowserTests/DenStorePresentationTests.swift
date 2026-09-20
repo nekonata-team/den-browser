@@ -29,6 +29,10 @@ struct DenStorePresentationTests {
         ]
         store.showZmxSessions()
         store.deskFilterCenteringTask = Task {}
+        store.openBoardPanelInput = "unfinished search"
+        store.openBoardAfterBoardID = board.id
+        store.previousFocusedDeskID = empty.id
+        store.anchorJumpOriginBoardIDByDesk[populated.id] = board.id
 
         // Act
         store.resetDen()
@@ -48,6 +52,10 @@ struct DenStorePresentationTests {
         #expect(store.recentlyRemovedBoards.isEmpty)
         #expect(store.recentlyDiscardedDrawerItems.isEmpty)
         #expect(store.notifications.isEmpty)
+        #expect(store.openBoardPanelInput.isEmpty)
+        #expect(store.openBoardAfterBoardID == nil)
+        #expect(store.previousFocusedDeskID == nil)
+        #expect(store.anchorJumpOriginBoardIDByDesk.isEmpty)
         #expect(runtime.webView.navigationDelegate == nil)
         #expect(runtime.webView.uiDelegate == nil)
     }
@@ -86,7 +94,7 @@ struct DenStorePresentationTests {
         #expect(store.toastMessage?.message == "Build: Finished")
     }
 
-    @Test func openBoardPanelRetainsDraftAndReplacesItForExplicitURL() throws {
+    @Test func openBoardPanelRetainsDraftAndClearsOneShotStateAcrossTransitions() throws {
         let board = board("Insert After")
         let focusedDesk = desk("Desk", boards: [board], focusedBoardID: board.id)
         let store = DenStore(
@@ -103,11 +111,20 @@ struct DenStorePresentationTests {
         #expect(store.openBoardAfterBoardID == nil)
 
         store.showOpenBoardPanel(initialURL: url, afterBoardID: board.id)
+        store.openBoardPanelMessage = "Try another input."
 
         #expect(store.openBoardPanelInput == url.absoluteString)
         #expect(store.openBoardAfterBoardID == board.id)
 
-        store.hideOpenBoardPanel()
+        store.showKeyboardShortcuts()
+
+        #expect(store.openBoardPanelInput == url.absoluteString)
+        #expect(store.openBoardPanelInitialURL == nil)
+        #expect(store.openBoardAfterBoardID == nil)
+        #expect(store.openBoardPanelMessage == nil)
+
+        store.hideKeyboardShortcuts()
+        store.showOpenBoardPanel()
 
         #expect(store.openBoardPanelInput == url.absoluteString)
         #expect(store.openBoardAfterBoardID == nil)
