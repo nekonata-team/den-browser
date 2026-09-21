@@ -5,15 +5,20 @@ struct AppConfiguration {
     let profileDirectoryURL: URL
     let defaults: UserDefaults
     let initialProfile: PersistedProfile?
+    let isEphemeral: Bool
+    let ipcSocketPath: String
     let websiteDataStore: (WebProfileStore) -> WKWebsiteDataStore
 
     static func current(processInfo: ProcessInfo = .processInfo) -> AppConfiguration {
         guard processInfo.arguments.contains("--ui-testing") else {
+            let isPrivateDen = processInfo.arguments.contains("--private-den")
             return AppConfiguration(
                 profileDirectoryURL: ProfileManager.defaultDirectoryURL(),
                 defaults: .standard,
-                initialProfile: nil,
-                websiteDataStore: { $0.websiteDataStore })
+                initialProfile: isPrivateDen ? privateDenProfile() : nil,
+                isEphemeral: isPrivateDen,
+                ipcSocketPath: isPrivateDen ? privateDenSocketPath() : DenSocketPath.resolve(),
+                websiteDataStore: isPrivateDen ? { _ in .nonPersistent() } : { $0.websiteDataStore })
         }
 
         guard
@@ -54,7 +59,25 @@ struct AppConfiguration {
                 boardCount: boardCount,
                 terminalBoard: processInfo.arguments.contains("--terminal-board"),
                 multipleDrawerItems: processInfo.arguments.contains("--multiple-drawer-items")),
+            isEphemeral: false,
+            ipcSocketPath: DenSocketPath.resolve(),
             websiteDataStore: { _ in .nonPersistent() })
+    }
+
+    private static func privateDenProfile() -> PersistedProfile {
+        PersistedProfile(
+            profile: ProfileState(
+                id: UUID(),
+                name: "Private Den",
+                color: .gray,
+                webProfileStore: .default),
+            den: .sample)
+    }
+
+    private static func privateDenSocketPath() -> String {
+        FileManager.default.temporaryDirectory
+            .appending(path: "den-private-\(UUID().uuidString).sock")
+            .path
     }
 
     private static func argumentValue(after name: String, in arguments: [String]) -> String? {

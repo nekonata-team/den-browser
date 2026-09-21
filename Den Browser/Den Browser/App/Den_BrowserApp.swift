@@ -1,8 +1,10 @@
+import AppKit
 import Sparkle
 import SwiftUI
 
 @main
 struct Den_BrowserApp: App {
+    @NSApplicationDelegateAdaptor(DenApplicationDelegate.self) private var appDelegate
     private let updaterController: SPUStandardUpdaterController
     @State private var preferences: AppPreferences
     @State private var sheetNavigation: SheetNavigationManager
@@ -28,7 +30,9 @@ struct Den_BrowserApp: App {
             sheetNavigation: sheetNavigation,
             preferences: preferences,
             initialProfile: configuration.initialProfile,
-            websiteDataStore: configuration.websiteDataStore)
+            isEphemeral: configuration.isEphemeral,
+            websiteDataStore: configuration.websiteDataStore,
+            ipcSocketPath: configuration.ipcSocketPath)
         _profileManager = State(initialValue: manager)
         PerformanceTrace.mark("ProfileManager initialized", category: "Launch")
         DenIPCService.shared.start(profileManager: manager)
@@ -151,6 +155,11 @@ private struct DenCommands: Commands {
             }
 
             Divider()
+
+            Button("Open Private Den") {
+                PrivateDenLauncher.open()
+            }
+            .keyboardShortcut("n", modifiers: [.command, .shift])
 
             Menu("Manage Profiles") {
                 Button("Open Profile…") {
@@ -329,5 +338,36 @@ private struct DenCommands: Commands {
             Button("Reset Den") { store?.requestResetDenConfirmation() }
                 .disabled(store == nil || store?.hasPendingConfirmation == true)
         }
+    }
+
+}
+
+@MainActor
+private final class DenApplicationDelegate: NSObject, NSApplicationDelegate {
+    func applicationDockMenu(_ sender: NSApplication) -> NSMenu? {
+        let menu = NSMenu()
+        let item = NSMenuItem(
+            title: "Open Private Den",
+            action: #selector(openPrivateDen),
+            keyEquivalent: "")
+        item.target = self
+        menu.addItem(item)
+        return menu
+    }
+
+    @objc private func openPrivateDen() {
+        PrivateDenLauncher.open()
+    }
+}
+
+@MainActor
+private enum PrivateDenLauncher {
+    static func open() {
+        let configuration = NSWorkspace.OpenConfiguration()
+        configuration.arguments = ["--private-den"]
+        configuration.createsNewApplicationInstance = true
+        NSWorkspace.shared.openApplication(
+            at: Bundle.main.bundleURL,
+            configuration: configuration)
     }
 }

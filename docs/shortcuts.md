@@ -17,6 +17,7 @@ When the Profile panel is open, type to filter Profiles, use `Up` / `Down` to se
 | Shortcut | Action |
 | --- | --- |
 | `Control` + `Command` + `P` | Open Profile panel |
+| `Shift` + `Command` + `N` | Open Private Den |
 | `Command` + `T` | Open Board panel (URL, search, `:terminal`, `:zellij`, `:zmx`) |
 | `Command` + `L` | Edit Focused Board Link |
 | `Command` + `W` | Remove Focused Board (or discard selected Drawer item) |

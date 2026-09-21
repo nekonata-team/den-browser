@@ -12,6 +12,10 @@ _Avoid_: Account, login
 The full personal work environment for one Profile that contains all desks.
 _Avoid_: Workspace, studio, office, space
 
+**Private Den**:
+A temporary Den for a single private browsing session. It is separate from persistent Profile-owned Dens and does not carry its web identity or Den state into a later session. It is private on the device, not an anonymity or network privacy boundary.
+_Avoid_: Incognito window, private profile, anonymous browser
+
 **Desk**:
 A broad work context that holds boards in a horizontal work area. A desk may exist before any boards are added.
 _Avoid_: Workspace, window, tab bar, deck

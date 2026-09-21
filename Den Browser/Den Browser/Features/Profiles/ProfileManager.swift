@@ -30,6 +30,7 @@ final class ProfileManager {
     @ObservationIgnored private let removeDataStore: (UUID) async throws -> Void
     @ObservationIgnored private let removeWebsiteDataTypes: (WKWebsiteDataStore, Set<String>) async throws -> Void
     @ObservationIgnored private let initialProfile: PersistedProfile?
+    @ObservationIgnored private let isEphemeral: Bool
     @ObservationIgnored private let websiteDataStore: (WebProfileStore) -> WKWebsiteDataStore
     let ipcSocketPath: String
 
@@ -48,6 +49,7 @@ final class ProfileManager {
         removeWebsiteDataTypes: @escaping (WKWebsiteDataStore, Set<String>) async throws -> Void = ProfileManager
             .removeWebsiteDataTypes,
         initialProfile: PersistedProfile? = nil,
+        isEphemeral: Bool = false,
         websiteDataStore: ((WebProfileStore) -> WKWebsiteDataStore)? = nil,
         webExtensionDescriptors: [WebExtensionDescriptor] = [],
         ipcSocketPath: String = DenSocketPath.resolve()
@@ -59,6 +61,7 @@ final class ProfileManager {
         self.removeDataStore = removeDataStore
         self.removeWebsiteDataTypes = removeWebsiteDataTypes
         self.initialProfile = initialProfile
+        self.isEphemeral = isEphemeral
         self.websiteDataStore = websiteDataStore ?? { $0.websiteDataStore }
         self.webExtensionDescriptors = webExtensionDescriptors
         self.ipcSocketPath = ipcSocketPath
@@ -617,6 +620,12 @@ final class ProfileManager {
         PerformanceTrace.mark("ProfileManager.load start", category: "Launch")
         let signpost = PerformanceTrace.beginInterval("ProfileManager.load")
         defer { PerformanceTrace.endInterval("ProfileManager.load", signpost) }
+        if isEphemeral {
+            let profile = initialProfile ?? Self.personalProfile()
+            persistedProfiles = [profile.profile.id: profile]
+            profiles = [profile.profile]
+            return
+        }
         try? FileManager.default.createDirectory(at: directoryURL, withIntermediateDirectories: true)
         var loaded = scanProfiles()
         PerformanceTrace.mark("ProfileManager.scanProfiles finished (\(loaded.count) found)", category: "Launch")
@@ -734,6 +743,7 @@ final class ProfileManager {
     }
 
     private func save(_ persisted: PersistedProfile) throws {
+        guard !isEphemeral else { return }
         profileSaveCount += 1
         PerformanceTrace.mark(
             "ProfileManager.save #\(profileSaveCount)",
@@ -742,6 +752,7 @@ final class ProfileManager {
     }
 
     private func saveIndex() throws {
+        guard !isEphemeral else { return }
         try write(ProfileIndex(profileIDs: profiles.map(\.id)), to: directoryURL.appending(path: "profile-index.json"))
     }
 

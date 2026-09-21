@@ -28,6 +28,36 @@ struct ProfileManagerTests {
         #expect(ProfileColor.presets.allSatisfy { $0.rgb.red > 0 || $0.rgb.green > 0 || $0.rgb.blue > 0 })
     }
 
+    @Test func ephemeralProfileManagerKeepsProfileAndDenStateInMemory() throws {
+        let directory = temporaryProfileDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let manager = ProfileManager(
+            directoryURL: directory,
+            sheetNavigation: SheetNavigationManager(
+                defaults: UserDefaults(suiteName: UUID().uuidString) ?? .standard,
+                scriptSource: ""),
+            preferences: AppPreferences(defaults: UserDefaults(suiteName: UUID().uuidString) ?? .standard),
+            initialProfile: PersistedProfile(
+                profile: ProfileState(
+                    id: UUID(),
+                    name: "Private Den",
+                    color: .gray,
+                    webProfileStore: .default),
+                den: .sample),
+            isEphemeral: true,
+            websiteDataStore: { _ in .nonPersistent() })
+        let profile = try #require(manager.profiles.first)
+        let store = try #require(manager.store(for: profile.id))
+
+        _ = store.createBoard(urlString: "https://example.com/private")
+
+        #expect(profile.name == "Private Den")
+        #expect(store.focusedDesk?.boards.count == 1)
+        #expect(store.save())
+        #expect(manager.profileSaveCount == 0)
+        #expect(!FileManager.default.fileExists(atPath: directory.path))
+    }
+
     @Test func profileManagerPersistsProfileOrderAndUpdates() throws {
         // Arrange
         let directory = temporaryProfileDirectory()
