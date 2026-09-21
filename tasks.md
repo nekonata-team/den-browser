@@ -234,14 +234,14 @@
 - **Verification:** 内部操作からの呼び出し元がなく、CLI経路のみのためYAGNIとして見送り。未使用のTerminalRuntime送信経路や共有抽象化は追加せず、既存CLI経路を維持します。内部送信の要件が発生した時点で再評価します。
 
 <a id="task-019"></a>
-### [ ] TASK-019：Screenshotの画像取得と出力処理を分離する
+### [x] TASK-019：Screenshotの画像取得と出力処理を分離する
 
 - **Priority / Purpose:** P2。Sheet／Desk×保存／コピーの重複を減らします。
 - **Prerequisites:** なし。TASK-025でDesk合成の採否を決める場合はその結果に合わせます。
 - **Entry Points:** `Den/Store/DenStore+Screenshots.swift`、`Den/Board/ScreenshotCapture.swift`。
 - **Work:** 対象検証・画像取得と、保存／clipboard出力を分離します。通知とキャンセル処理を揃えます。未activate Boardの取得、全画像保持、合成時のメモリ量を確認します。
 - **Acceptance Criteria:** 出力先の違いで対象検証や画像取得の挙動が変わりません。画像取得不能、保存キャンセル、clipboard失敗の扱いが明確です。
-- **Verification:** 既存Screenshot testと不足する共通契約だけを検証します。Desk合成を残す場合は代表的Board数でメモリを計測します。`just check`。
+- **Verification:** `ScreenshotCapture`を画像取得・Desk合成に限定し、PNG変換・保存・clipboard出力・ファイル名生成を`ScreenshotOutput`へ分離しました。Sheet／Deskの保存・コピーは共通Taskで対象検証、取得、通知、キャンセルを揃え、Window破棄時にも進行中のTaskをキャンセルします。Deskは従来どおり全画像を保持してから合成するため、合成方式やメモリ特性は変更していません。PNG出力契約のfocused testを追加し、`mise exec -- just check`を通過しました。
 
 <a id="task-020"></a>
 ### [ ] TASK-020：DOM参照の寿命とsnapshotの負荷を改善する

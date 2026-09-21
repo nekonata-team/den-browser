@@ -1,107 +1,125 @@
 import AppKit
 
+private enum ScreenshotDestination {
+    case save(scope: String, window: NSWindow?)
+    case clipboard
+}
+
+private enum ScreenshotResult {
+    case saved(URL)
+    case copied
+}
+
 extension DenStore {
     func captureFocusedSheetScreenshot() {
-        guard let board = focusedBoard, !board.isTerminal else {
-            showToast("No focused Board.", style: .warning)
-            return
-        }
-
-        let runtime = runtime(for: board)
-        Task { @MainActor [weak self] in
-            guard let self else { return }
-            do {
-                let image = try await ScreenshotCapture.visibleCurrentSheet(in: runtime.webView)
-                let filename = ScreenshotCapture.suggestedFilename(scope: "Current Sheet Screenshot")
-                if let destination = try await ScreenshotCapture.savePNG(
-                    image,
-                    suggestedFilename: filename,
-                    attachedTo: runtime.webView.window)
-                {
-                    showToast("Saved \(destination.lastPathComponent).", style: .success)
-                }
-            } catch {
-                showToast("Screenshot failed: \(error.localizedDescription)", style: .error)
-            }
-        }
+        guard let runtime = focusedSheetRuntime() else { return }
+        startScreenshotTask(
+            capture: { try await ScreenshotCapture.visibleCurrentSheet(in: runtime.webView) },
+            destination: .save(
+                scope: "Current Sheet Screenshot",
+                window: runtime.webView.window),
+            successMessage: { result in
+                guard case let .saved(destination) = result else { return "" }
+                return "Saved \(destination.lastPathComponent)."
+            })
     }
 
     func captureFocusedDeskScreenshot() {
-        guard let desk = focusedDesk, !desk.boards.isEmpty else {
-            showToast("Focused Desk has no Boards.", style: .warning)
-            return
-        }
-
-        guard !desk.boards.contains(where: \.isTerminal) else {
-            showToast("Desk screenshots do not support Terminal Boards.", style: .warning)
-            return
-        }
-
-        let boards = desk.boards.map { ($0, runtime(for: $0)) }
-        Task { @MainActor [weak self] in
-            guard let self else { return }
-            do {
-                let items = try await captureDeskItems(for: boards)
-                let image = try ScreenshotCapture.composeDesk(items)
-                let filename = ScreenshotCapture.suggestedFilename(scope: "Desk Screenshot")
-                if let destination = try await ScreenshotCapture.savePNG(
-                    image,
-                    suggestedFilename: filename,
-                    attachedTo: boards.first?.1.webView.window)
-                {
-                    showToast("Saved \(destination.lastPathComponent).", style: .success)
-                }
-            } catch {
-                showToast("Screenshot failed: \(error.localizedDescription)", style: .error)
-            }
-        }
+        guard let boards = focusedDeskRuntimes() else { return }
+        startScreenshotTask(
+            capture: {
+                let items = try await Self.captureDeskItems(for: boards)
+                return try ScreenshotCapture.composeDesk(items)
+            },
+            destination: .save(
+                scope: "Desk Screenshot",
+                window: boards.first?.1.webView.window),
+            successMessage: { result in
+                guard case let .saved(destination) = result else { return "" }
+                return "Saved \(destination.lastPathComponent)."
+            })
     }
 
     func copyFocusedSheetScreenshot() {
-        guard let board = focusedBoard, !board.isTerminal else {
-            showToast("No focused Board.", style: .warning)
-            return
-        }
-
-        let runtime = runtime(for: board)
-        Task { @MainActor [weak self] in
-            guard let self else { return }
-            do {
-                let image = try await ScreenshotCapture.visibleCurrentSheet(in: runtime.webView)
-                try ScreenshotCapture.copyPNG(image)
-                showToast("Copied Current Sheet screenshot to clipboard.", style: .success)
-            } catch {
-                showToast("Screenshot failed: \(error.localizedDescription)", style: .error)
-            }
-        }
+        guard let runtime = focusedSheetRuntime() else { return }
+        startScreenshotTask(
+            capture: { try await ScreenshotCapture.visibleCurrentSheet(in: runtime.webView) },
+            destination: .clipboard,
+            successMessage: { _ in "Copied Current Sheet screenshot to clipboard." })
     }
 
     func copyFocusedDeskScreenshot() {
+        guard let boards = focusedDeskRuntimes() else { return }
+        startScreenshotTask(
+            capture: {
+                let items = try await Self.captureDeskItems(for: boards)
+                return try ScreenshotCapture.composeDesk(items)
+            },
+            destination: .clipboard,
+            successMessage: { _ in "Copied Focused Desk screenshot to clipboard." })
+    }
+
+    private func focusedSheetRuntime() -> BoardRuntime? {
+        guard let board = focusedBoard, !board.isTerminal else {
+            showToast("No focused Board.", style: .warning)
+            return nil
+        }
+        return runtime(for: board)
+    }
+
+    private func focusedDeskRuntimes() -> [(BoardState, BoardRuntime)]? {
         guard let desk = focusedDesk, !desk.boards.isEmpty else {
             showToast("Focused Desk has no Boards.", style: .warning)
-            return
+            return nil
         }
-
         guard !desk.boards.contains(where: \.isTerminal) else {
             showToast("Desk screenshots do not support Terminal Boards.", style: .warning)
-            return
+            return nil
         }
+        return desk.boards.map { ($0, runtime(for: $0)) }
+    }
 
-        let boards = desk.boards.map { ($0, runtime(for: $0)) }
-        Task { @MainActor [weak self] in
+    private func startScreenshotTask(
+        capture: @escaping @MainActor () async throws -> NSImage,
+        destination: ScreenshotDestination,
+        successMessage: @escaping @MainActor (ScreenshotResult) -> String
+    ) {
+        screenshotTask?.cancel()
+        screenshotTask = Task { @MainActor [weak self] in
             guard let self else { return }
+            defer { self.screenshotTask = nil }
+
             do {
-                let items = try await captureDeskItems(for: boards)
-                let image = try ScreenshotCapture.composeDesk(items)
-                try ScreenshotCapture.copyPNG(image)
-                showToast("Copied Focused Desk screenshot to clipboard.", style: .success)
+                let image = try await capture()
+                guard !Task.isCancelled else { return }
+
+                let result: ScreenshotResult
+                switch destination {
+                case let .save(scope, window):
+                    let filename = ScreenshotOutput.suggestedFilename(scope: scope)
+                    guard
+                        let destination = try await ScreenshotOutput.savePNG(
+                            image,
+                            suggestedFilename: filename,
+                            attachedTo: window)
+                    else { return }
+                    result = .saved(destination)
+                case .clipboard:
+                    try ScreenshotOutput.copyPNG(image)
+                    result = .copied
+                }
+
+                guard !Task.isCancelled else { return }
+                showToast(successMessage(result), style: .success)
+            } catch is CancellationError {
+                return
             } catch {
                 showToast("Screenshot failed: \(error.localizedDescription)", style: .error)
             }
         }
     }
 
-    private func captureDeskItems(
+    private static func captureDeskItems(
         for boards: [(BoardState, BoardRuntime)]
     ) async throws -> [ScreenshotCapture.DeskItem] {
         var items: [ScreenshotCapture.DeskItem] = []

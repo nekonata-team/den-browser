@@ -11,17 +11,11 @@ enum ScreenshotCapture {
 
     enum CaptureError: LocalizedError {
         case imageUnavailable
-        case pngEncodingFailed
-        case clipboardWriteFailed
 
         var errorDescription: String? {
             switch self {
             case .imageUnavailable:
                 "The Current Sheet could not be captured."
-            case .pngEncodingFailed:
-                "The screenshot could not be encoded as PNG."
-            case .clipboardWriteFailed:
-                "The screenshot could not be copied to the clipboard."
             }
         }
     }
@@ -93,6 +87,24 @@ enum ScreenshotCapture {
         }
     }
 
+}
+
+@MainActor
+enum ScreenshotOutput {
+    enum OutputError: LocalizedError {
+        case pngEncodingFailed
+        case clipboardWriteFailed
+
+        var errorDescription: String? {
+            switch self {
+            case .pngEncodingFailed:
+                "The screenshot could not be encoded as PNG."
+            case .clipboardWriteFailed:
+                "The screenshot could not be copied to the clipboard."
+            }
+        }
+    }
+
     static func savePNG(
         _ image: NSImage,
         suggestedFilename: String,
@@ -126,7 +138,7 @@ enum ScreenshotCapture {
         let pasteboard = NSPasteboard.general
         pasteboard.clearContents()
         guard pasteboard.setData(data, forType: .png) else {
-            throw CaptureError.clipboardWriteFailed
+            throw OutputError.clipboardWriteFailed
         }
     }
 
@@ -136,7 +148,7 @@ enum ScreenshotCapture {
             let bitmap = NSBitmapImageRep(data: tiff),
             let data = bitmap.representation(using: .png, properties: [:])
         else {
-            throw CaptureError.pngEncodingFailed
+            throw OutputError.pngEncodingFailed
         }
         return data
     }

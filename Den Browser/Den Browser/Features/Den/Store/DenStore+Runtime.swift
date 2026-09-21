@@ -325,6 +325,8 @@ extension DenStore {
         toastTask = nil
         zmxCommandTask?.cancel()
         zmxCommandTask = nil
+        screenshotTask?.cancel()
+        screenshotTask = nil
         zmxSessions.stop()
         releaseDrawerPreview()
     }

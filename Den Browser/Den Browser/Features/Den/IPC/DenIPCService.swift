@@ -264,12 +264,12 @@ final class DenIPCService {
 
             case .screenshot(let payload):
                 let image = try await ScreenshotCapture.visibleCurrentSheet(in: runtime.webView)
-                let data = try ScreenshotCapture.pngData(for: image)
+                let data = try ScreenshotOutput.pngData(for: image)
                 let targetURL: URL = {
                     if let path = payload.outputPath, !path.isEmpty {
                         return URL(fileURLWithPath: path)
                     }
-                    let filename = ScreenshotCapture.suggestedFilename(scope: board.label)
+                    let filename = ScreenshotOutput.suggestedFilename(scope: board.label)
                     return FileManager.default.temporaryDirectory.appendingPathComponent(filename)
                 }()
                 try data.write(to: targetURL)
