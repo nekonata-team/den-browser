@@ -1,10 +1,6 @@
 import Carbon.HIToolbox
 import XCTest
 
-private let uiTestSocketPath = FileManager.default.temporaryDirectory
-    .appending(path: "den-test-\(UUID().uuidString).sock")
-    .path
-
 final class Den_BrowserUITests: XCTestCase, BDD {
     private var previousInputSource: TISInputSource?
 
@@ -347,7 +343,6 @@ final class Den_BrowserUITests: XCTestCase, BDD {
         }
         app.launchArguments = args
         app.launchEnvironment["DEN_UI_TEST_RUN_ID"] = UUID().uuidString
-        app.launchEnvironment["DEN_SOCKET"] = uiTestSocketPath
         app.launch()
 
         if !app.windows.firstMatch.waitForExistence(timeout: 2) {
@@ -445,7 +440,6 @@ final class Den_BrowserUIPerformanceTests: XCTestCase {
             "--board-count", UITestBoardCount.one.rawValue,
         ]
         app.launchEnvironment["DEN_UI_TEST_RUN_ID"] = UUID().uuidString
-        app.launchEnvironment["DEN_SOCKET"] = uiTestSocketPath
 
         let options = XCTMeasureOptions()
         options.iterationCount = 1

@@ -12,12 +12,23 @@ struct AppConfiguration {
     static func current(processInfo: ProcessInfo = .processInfo) -> AppConfiguration {
         guard processInfo.arguments.contains("--ui-testing") else {
             let isPrivateDen = processInfo.arguments.contains("--private-den")
+            let isUnitTestHost = processInfo.environment["XCTestConfigurationFilePath"] != nil
+            let ipcSocketPath =
+                if isPrivateDen {
+                    DenSocketPath.temporary(prefix: "den-private")
+                } else if isUnitTestHost {
+                    DenSocketPath.temporary(
+                        prefix: "den-test",
+                        identifier: "\(processInfo.processIdentifier)")
+                } else {
+                    DenSocketPath.resolve()
+                }
             return AppConfiguration(
                 profileDirectoryURL: ProfileManager.defaultDirectoryURL(),
                 defaults: .standard,
                 initialProfile: isPrivateDen ? privateDenProfile() : nil,
                 isEphemeral: isPrivateDen,
-                ipcSocketPath: isPrivateDen ? privateDenSocketPath() : DenSocketPath.resolve(),
+                ipcSocketPath: ipcSocketPath,
                 websiteDataStore: isPrivateDen ? { _ in .nonPersistent() } : { $0.websiteDataStore })
         }
 
@@ -60,7 +71,7 @@ struct AppConfiguration {
                 terminalBoard: processInfo.arguments.contains("--terminal-board"),
                 multipleDrawerItems: processInfo.arguments.contains("--multiple-drawer-items")),
             isEphemeral: false,
-            ipcSocketPath: DenSocketPath.resolve(),
+            ipcSocketPath: DenSocketPath.temporary(prefix: "den-test", identifier: runID),
             websiteDataStore: { _ in .nonPersistent() })
     }
 
@@ -72,12 +83,6 @@ struct AppConfiguration {
                 color: .gray,
                 webProfileStore: .default),
             den: .sample)
-    }
-
-    private static func privateDenSocketPath() -> String {
-        FileManager.default.temporaryDirectory
-            .appending(path: "den-private-\(UUID().uuidString).sock")
-            .path
     }
 
     private static func argumentValue(after name: String, in arguments: [String]) -> String? {

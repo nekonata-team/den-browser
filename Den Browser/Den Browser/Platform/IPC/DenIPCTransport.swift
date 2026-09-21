@@ -2,6 +2,14 @@ import Darwin
 import Foundation
 
 nonisolated enum DenSocketPath {
+    static func temporary(
+        prefix: String,
+        identifier: String = UUID().uuidString,
+        temporaryDirectory: URL = FileManager.default.temporaryDirectory
+    ) -> String {
+        temporaryDirectory.appending(path: "\(prefix)-\(identifier).sock").path
+    }
+
     static func resolve(
         explicit: String? = nil,
         environment: [String: String] = ProcessInfo.processInfo.environment,

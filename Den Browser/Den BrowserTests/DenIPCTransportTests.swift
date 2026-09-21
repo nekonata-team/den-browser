@@ -4,6 +4,16 @@ import Testing
 @testable import Den_Browser
 
 struct DenIPCTransportTests {
+    @Test func temporarySocketPathUsesPrefixAndIdentifier() {
+        let temporaryDirectory = URL(fileURLWithPath: "/tmp/den-test")
+
+        #expect(
+            DenSocketPath.temporary(
+                prefix: "den-test",
+                identifier: "unit",
+                temporaryDirectory: temporaryDirectory) == "/tmp/den-test/den-test-unit.sock")
+    }
+
     @Test func socketPathResolutionUsesExplicitEnvironmentThenDefault() {
         let home = URL(fileURLWithPath: "/tmp/den-home")
 
