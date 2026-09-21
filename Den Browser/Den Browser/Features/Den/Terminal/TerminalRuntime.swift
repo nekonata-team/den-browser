@@ -135,26 +135,6 @@ final class TerminalRuntime: NSObject, ObservableObject {
         }
     }
 
-    struct SignalError: LocalizedError, Equatable {
-        let message: String
-        var errorDescription: String? { message }
-        init(_ message: String) { self.message = message }
-    }
-
-    func sendSignal(_ signal: Int32) throws -> pid_t {
-        guard let pid = foregroundProcessGroupID, pid > 1, pid != getpid() else {
-            throw SignalError("No foreground process found to signal")
-        }
-        if killpg(pid, signal) == 0 {
-            return pid
-        }
-        if kill(pid, signal) == 0 {
-            return pid
-        }
-        let err = String(cString: strerror(errno))
-        throw SignalError("Failed to send signal \(signal) to process \(pid): \(err)")
-    }
-
     func readViewportText() -> String? {
         guard let surface = rawGhosttySurface else { return nil }
         let topLeft = ghostty_point_s(

@@ -224,14 +224,14 @@
 - **Verification:** `ProcessTerminalCommandRunner`をasync化し、標準出力／標準エラー、終了status、5秒の既定期限（uBO Lite解凍は60秒）、キャンセル時のTERM→KILLと終了待ちを一箇所で管理。zmxの一覧・複製・root検索・signal対象検索とuBO Lite解凍を同じ境界へ移行し、パネル／Window終了時は進行中Taskをキャンセル。isolated helper processによる成功・大量出力・失敗診断・期限超過・実行中キャンセル、およびzmx model／Store／Keyboard／IPC／uBO関連のfocused testを実行。`just check`成功（lint 0 violations、全unit testパス）。
 
 <a id="task-018"></a>
-### [ ] TASK-018：Terminalへのシグナル送信を一本化する
+### [x] TASK-018：Terminalへのシグナル送信を一本化する（見送り）
 
 - **Priority / Purpose:** P2。実際のCLI経路とテスト対象が異なる重複実装を解消します。
 - **Prerequisites:** TASK-017。
 - **Entry Points:** `Den/Terminal/TerminalRuntime.swift`、`Den/Store/DenStore+Runtime.swift`、`Den/IPC/DenIPCService.swift`。
 - **Work:** Shell／zmxの対象PID・PGID解決と送信処理を分けます。検証、killpg／killのフォールバック条件、エラー生成を一箇所にまとめます。どのエラーでも別PIDへ送ってよいという契約にはしません。
 - **Acceptance Criteria:** CLIと内部呼び出しが同じ送信処理を通ります。自身や無効な対象へ送らず、対象不在・権限エラーを区別できます。
-- **Verification:** 送信境界のfocused testとCLIからの経路の検証。実プロセスを使う場合は専用の子プロセスだけを対象にします。`just check`。
+- **Verification:** 内部操作からの呼び出し元がなく、CLI経路のみのためYAGNIとして見送り。未使用のTerminalRuntime送信経路や共有抽象化は追加せず、既存CLI経路を維持します。内部送信の要件が発生した時点で再評価します。
 
 <a id="task-019"></a>
 ### [ ] TASK-019：Screenshotの画像取得と出力処理を分離する

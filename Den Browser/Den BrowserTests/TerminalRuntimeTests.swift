@@ -266,25 +266,6 @@ struct TerminalRuntimeTests {
         #expect(runtime.readViewportText()?.contains(marker) == true)
     }
 
-    @Test func terminalRuntimeSendSignalFailsWhenNoProcessRunning() {
-        let runtime = TerminalRuntime(
-            workingDirectory: FileManager.default.homeDirectoryForCurrentUser.path,
-            events: .init(
-                onClose: {},
-                onFocus: {},
-                onWorkingDirectoryChange: { _ in },
-                onTitleChange: { _ in },
-                onOpenURL: { _ in },
-                onNotification: { _, _ in }
-            )
-        )
-
-        #expect(throws: TerminalRuntime.SignalError.self) {
-            try runtime.sendSignal(SIGTERM)
-        }
-        runtime.dispose()
-    }
-
     @Test func denIPCServiceParseSignalSupportsNamesAndNumbers() {
         #expect(DenIPCService.parseSignal("TERM") == .init(number: SIGTERM, name: "SIGTERM"))
         #expect(DenIPCService.parseSignal("sigterm") == .init(number: SIGTERM, name: "SIGTERM"))

@@ -3,6 +3,11 @@ import Darwin
 import Foundation
 import WebKit
 
+private struct TerminalSignalError: LocalizedError {
+    let message: String
+    var errorDescription: String? { message }
+}
+
 extension DenStore {
     func runtime(for board: BoardState) -> BoardRuntime {
         precondition(!board.isTerminal, "Terminal Board cannot create a web runtime")
@@ -398,12 +403,12 @@ extension DenStore {
 
     func sendSignal(_ signal: Int32, to board: BoardState) async throws -> pid_t {
         guard let pid = try await foregroundProcessGroupID(for: board), pid > 1, pid != getpid() else {
-            throw TerminalRuntime.SignalError("No foreground process found to signal")
+            throw TerminalSignalError(message: "No foreground process found to signal")
         }
         if killpg(pid, signal) == 0 || kill(pid, signal) == 0 {
             return pid
         }
         let err = String(cString: strerror(errno))
-        throw TerminalRuntime.SignalError("Failed to send signal \(signal) to process \(pid): \(err)")
+        throw TerminalSignalError(message: "Failed to send signal \(signal) to process \(pid): \(err)")
     }
 }
