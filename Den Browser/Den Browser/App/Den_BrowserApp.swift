@@ -34,6 +34,7 @@ struct Den_BrowserApp: App {
             websiteDataStore: configuration.websiteDataStore,
             ipcSocketPath: configuration.ipcSocketPath)
         _profileManager = State(initialValue: manager)
+        appDelegate.profileManager = manager
         PerformanceTrace.mark("ProfileManager initialized", category: "Launch")
         DenIPCService.shared.start(profileManager: manager)
     }
@@ -344,15 +345,38 @@ private struct DenCommands: Commands {
 
 @MainActor
 private final class DenApplicationDelegate: NSObject, NSApplicationDelegate {
+    var profileManager: ProfileManager?
+
     func applicationDockMenu(_ sender: NSApplication) -> NSMenu? {
         let menu = NSMenu()
-        let item = NSMenuItem(
+        let privateDenItem = NSMenuItem(
             title: "Open Private Den",
             action: #selector(openPrivateDen),
             keyEquivalent: "")
-        item.target = self
-        menu.addItem(item)
+        privateDenItem.target = self
+        menu.addItem(privateDenItem)
+
+        guard let profileManager else { return menu }
+
+        menu.addItem(.separator())
+        for profile in profileManager.profiles {
+            let item = NSMenuItem(
+                title: profile.name,
+                action: #selector(openProfile(_:)),
+                keyEquivalent: "")
+            item.target = self
+            item.representedObject = profile.id.uuidString
+            menu.addItem(item)
+        }
         return menu
+    }
+
+    @objc private func openProfile(_ sender: NSMenuItem) {
+        guard
+            let rawProfileID = sender.representedObject as? String,
+            let profileID = UUID(uuidString: rawProfileID)
+        else { return }
+        _ = profileManager?.openWindow(for: profileID)
     }
 
     @objc private func openPrivateDen() {
