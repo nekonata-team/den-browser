@@ -213,14 +213,14 @@
 - **Verification:** Drawer ItemはProfile共有、選択・展開・Preview runtimeはWindow固有とし、同一Itemの複数Previewからの有効なURL／title更新は最終更新を共有Itemへ反映する契約を`CONTEXT.md`とADR 0025／0037へ記録。同一DenStorageを使う複数Storeのfocused test（独立した展開、削除時の全Window修復、全消去時の全Window解放、複数runtimeの更新）を追加。`just check` 実行（lint 0 violations、全テストパス）。
 
 <a id="task-017"></a>
-### [ ] TASK-017：外部プロセス実行を非同期化し終了を管理する
+### [x] TASK-017：外部プロセス実行を非同期化し終了を管理する
 
 - **Priority / Purpose:** P2。外部コマンド待ちによるUI停止と、キャンセル後も残る子プロセスを防ぎます。
 - **Prerequisites:** なし。
 - **Entry Points:** `Den/Terminal/TerminalClients.swift`、`Den/Terminal/ZmxSessionsModel.swift`、`Den/Store/DenStore+BoardLifecycle.swift`、`Extensions/UBOLiteInstaller.swift`。
 - **Work:** zmxの一覧、複製、root検索、signal対象検索とuBO Lite解凍の全呼び出し元を追跡します。非同期完了、期限、キャンセル時の子プロセス終了・回収を管理します。Task.detachedの結果を捨てるだけのキャンセルにしません。
 - **Acceptance Criteria:** 応答しない外部コマンドがMainActorを停止しません。閉じたパネルへ結果を反映せず、子プロセスを放置しません。通常終了と失敗の診断情報を保持します。
-- **Verification:** isolated helper processで成功、失敗、出力、期限超過、キャンセルを検証し、呼び出し元のStore／model testも実施します。`just check`。
+- **Verification:** `ProcessTerminalCommandRunner`をasync化し、標準出力／標準エラー、終了status、5秒の既定期限（uBO Lite解凍は60秒）、キャンセル時のTERM→KILLと終了待ちを一箇所で管理。zmxの一覧・複製・root検索・signal対象検索とuBO Lite解凍を同じ境界へ移行し、パネル／Window終了時は進行中Taskをキャンセル。isolated helper processによる成功・大量出力・失敗診断・期限超過・実行中キャンセル、およびzmx model／Store／Keyboard／IPC／uBO関連のfocused testを実行。`just check`成功（lint 0 violations、全unit testパス）。
 
 <a id="task-018"></a>
 ### [ ] TASK-018：Terminalへのシグナル送信を一本化する

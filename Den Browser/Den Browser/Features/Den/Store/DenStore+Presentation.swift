@@ -94,11 +94,20 @@ extension DenStore {
     func showZmxDuplicationPanel() {
         guard
             let board = focusedBoard,
-            board.isZmx,
-            let rootSessionName = zmxRootSessionName(for: board)
+            board.isZmx
         else { return }
-        updateZmxDuplicationRootSessionName(rootSessionName)
-        setTemporaryContext(.zmxDuplication)
+        let client = zmxClient
+        zmxCommandTask?.cancel()
+        zmxCommandTask = Task { [weak self, client] in
+            do {
+                guard let rootSessionName = try await Self.zmxRootSessionName(for: board, using: client) else { return }
+                guard !Task.isCancelled, let self, self.focusedBoard?.id == board.id else { return }
+                self.updateZmxDuplicationRootSessionName(rootSessionName)
+                self.setTemporaryContext(.zmxDuplication)
+            } catch {
+                return
+            }
+        }
     }
 
     func hideZmxDuplicationPanel() {

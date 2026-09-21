@@ -65,7 +65,7 @@ struct ZmxSessionsModelTests {
 
         #expect(model.groups.isEmpty)
         #expect(model.selectedSessionName == nil)
-        #expect(model.message == "Could not list zmx Sessions.")
+        #expect(model.message == "Could not list zmx Sessions: Command exited with status 1")
         #expect(!model.isLoading)
     }
 
@@ -90,7 +90,8 @@ struct ZmxSessionsModelTests {
         model.kill(model.pendingDeletion)
         await model.waitForRefresh()
 
-        #expect(model.message == "Could not end den-vi.")
+        #expect(model.message?.contains("Could not end den-vi") == true)
+        #expect(model.message?.contains("Missing stub response") == true)
     }
 
     @Test func endingFocusedSessionMovesToTheNearestSurvivingSession() async {
@@ -200,7 +201,14 @@ struct ZmxSessionsModelTests {
 private struct ModelTerminalCommandRunner: TerminalCommandRunning, Sendable {
     let responses: [[String]: TerminalCommandResult]
 
-    func run(executablePath: String, arguments: [String]) -> TerminalCommandResult? {
-        responses[arguments]
+    func run(
+        executablePath: String,
+        arguments: [String],
+        timeout: Duration
+    ) async throws -> TerminalCommandResult {
+        guard let response = responses[arguments] else {
+            throw TerminalCommandError(message: "Missing stub response for \(arguments)")
+        }
+        return response
     }
 }

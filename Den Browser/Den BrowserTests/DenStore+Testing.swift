@@ -11,7 +11,7 @@ func withTestStore<T>(
     recentItems: [RecentItem] = [],
     onRecentItemsSave: (([RecentItem]) -> Bool)? = nil,
     onSave: ((DenState) -> Bool)? = nil,
-    terminalCommandRunner: any TerminalCommandRunning = ProcessTerminalCommandRunner(),
+    terminalCommandRunner: any TerminalCommandRunning = SubprocessCommandRunner(),
     body: (DenStore) throws -> T
 ) rethrows -> T {
     let suiteName = "DenStoreTest-\(UUID().uuidString)"
@@ -42,7 +42,7 @@ func withTestStore<T>(
     recentItems: [RecentItem] = [],
     onRecentItemsSave: (([RecentItem]) -> Bool)? = nil,
     onSave: ((DenState) -> Bool)? = nil,
-    terminalCommandRunner: any TerminalCommandRunning = ProcessTerminalCommandRunner(),
+    terminalCommandRunner: any TerminalCommandRunning = SubprocessCommandRunner(),
     body: (DenStore) async throws -> T
 ) async rethrows -> T {
     let suiteName = "DenStoreTest-\(UUID().uuidString)"

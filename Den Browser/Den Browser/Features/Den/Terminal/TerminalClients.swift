@@ -1,8 +1,26 @@
 import Foundation
+import Subprocess
+import System
 
 nonisolated struct TerminalCommandResult: Sendable {
     let terminationStatus: Int32
     let standardOutput: String
+    let standardError: String
+
+    init(
+        terminationStatus: Int32,
+        standardOutput: String,
+        standardError: String = ""
+    ) {
+        self.terminationStatus = terminationStatus
+        self.standardOutput = standardOutput
+        self.standardError = standardError
+    }
+}
+
+nonisolated struct TerminalCommandError: LocalizedError, Equatable, Sendable {
+    let message: String
+    var errorDescription: String? { message }
 }
 
 nonisolated struct ZmxSessionSnapshot: Sendable {
@@ -11,33 +29,79 @@ nonisolated struct ZmxSessionSnapshot: Sendable {
 }
 
 nonisolated protocol TerminalCommandRunning: Sendable {
-    func run(executablePath: String, arguments: [String]) -> TerminalCommandResult?
+    func run(
+        executablePath: String,
+        arguments: [String],
+        timeout: Duration
+    ) async throws -> TerminalCommandResult
 }
 
-nonisolated struct ProcessTerminalCommandRunner: TerminalCommandRunning {
-    func run(executablePath: String, arguments: [String]) -> TerminalCommandResult? {
+nonisolated extension TerminalCommandRunning {
+    func run(
+        executablePath: String,
+        arguments: [String]
+    ) async throws -> TerminalCommandResult {
+        try await run(
+            executablePath: executablePath,
+            arguments: arguments,
+            timeout: .seconds(5))
+    }
+}
+
+nonisolated struct SubprocessCommandRunner: TerminalCommandRunning {
+    private static let outputLimit = 1024 * 1024
+
+    func run(
+        executablePath: String,
+        arguments: [String],
+        timeout: Duration
+    ) async throws -> TerminalCommandResult {
         let executablePath = executablePath.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard TerminalExecutablePath.isValid(executablePath) else { return nil }
-
-        let process = Process()
-        let output = Pipe()
-        process.executableURL = URL(fileURLWithPath: executablePath)
-        process.arguments = arguments
-        process.standardOutput = output
-        process.standardError = FileHandle.nullDevice
-
-        do {
-            try process.run()
-        } catch {
-            return nil
+        guard TerminalExecutablePath.isValid(executablePath) else {
+            throw TerminalCommandError(message: "Invalid executable path: \(executablePath)")
         }
 
-        let data = output.fileHandleForReading.readDataToEndOfFile()
-        process.waitUntilExit()
-        guard let standardOutput = String(data: data, encoding: .utf8) else { return nil }
+        return try await withThrowingTaskGroup(of: TerminalCommandResult.self) { group in
+            group.addTask {
+                try await runSubprocess(executablePath: executablePath, arguments: arguments)
+            }
+            group.addTask {
+                try await Task.sleep(for: timeout)
+                throw TerminalCommandError(message: "Command timed out: \(executablePath)")
+            }
+            defer { group.cancelAll() }
+            guard let result = try await group.next() else {
+                throw CancellationError()
+            }
+            return result
+        }
+    }
+
+    private func runSubprocess(
+        executablePath: String,
+        arguments: [String]
+    ) async throws -> TerminalCommandResult {
+        var platformOptions = PlatformOptions()
+        platformOptions.teardownSequence = [
+            .gracefulShutDown(allowedDurationToNextStep: .milliseconds(200))
+        ]
+        let result = try await Subprocess.run(
+            .path(.init(executablePath)),
+            arguments: Arguments(arguments),
+            platformOptions: platformOptions,
+            output: .string(limit: Self.outputLimit),
+            error: .string(limit: Self.outputLimit))
         return TerminalCommandResult(
-            terminationStatus: process.terminationStatus,
-            standardOutput: standardOutput)
+            terminationStatus: Self.terminationStatus(from: result.terminationStatus),
+            standardOutput: result.standardOutput,
+            standardError: result.standardError)
+    }
+
+    private static func terminationStatus(from status: TerminationStatus) -> Int32 {
+        switch status {
+        case .exited(let code), .signaled(let code):
+            code
+        }
     }
 }
 
@@ -66,7 +130,7 @@ nonisolated struct ZmxClient: Sendable {
 
     init(
         executablePath: String,
-        commandRunner: any TerminalCommandRunning = ProcessTerminalCommandRunner()
+        commandRunner: any TerminalCommandRunning = SubprocessCommandRunner()
     ) {
         self.executablePath = executablePath
         self.commandRunner = commandRunner
@@ -96,13 +160,8 @@ nonisolated struct ZmxClient: Sendable {
             + TerminalExecutablePath.shellQuote(initializeRootLabel)
     }
 
-    func activeSessionNames() -> Set<String>? {
-        guard isConfigured,
-            let result = commandRunner.run(
-                executablePath: executablePath,
-                arguments: ["list", "--short"]),
-            result.terminationStatus == 0
-        else { return nil }
+    func activeSessionNames() async throws -> Set<String> {
+        let result = try await run(arguments: ["list", "--short"])
 
         return Set(
             result.standardOutput.split(whereSeparator: \.isNewline).compactMap { rawLine in
@@ -117,38 +176,30 @@ nonisolated struct ZmxClient: Sendable {
             })
     }
 
-    func rootSessionName(for sessionName: String) -> String? {
+    func rootSessionName(for sessionName: String) async throws -> String? {
         let sessionName = sessionName.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard isConfigured, !sessionName.isEmpty,
-            let result = commandRunner.run(
-                executablePath: executablePath,
-                arguments: ["get", sessionName, "den.root"]),
-            result.terminationStatus == 0
-        else { return nil }
+        guard !sessionName.isEmpty else { return nil }
+        let result = try await run(arguments: ["get", sessionName, "den.root"])
 
         let rootSessionName = result.standardOutput.trimmingCharacters(in: .whitespacesAndNewlines)
         return rootSessionName.isEmpty ? nil : rootSessionName
     }
 
-    func sessionSnapshot() -> ZmxSessionSnapshot? {
-        guard let sessions = sessionsWithRootLabels() else { return nil }
+    func sessionSnapshot() async throws -> ZmxSessionSnapshot {
+        let sessions = try await sessionsWithRootLabels()
         return ZmxSessionSnapshot(
             groups: makeSessionGroups(from: sessions),
-            processNames: processNames(for: sessions))
+            processNames: try await processNames(for: sessions))
     }
 
-    func sessionGroups() -> [ZmxSessionGroup]? {
-        sessionSnapshot()?.groups
-    }
-
-    func foregroundProcessGroupID(for sessionName: String) -> pid_t? {
-        guard isConfigured,
-            let sessions = sessionsWithRootLabels(),
+    func foregroundProcessGroupID(for sessionName: String) async throws -> pid_t? {
+        let sessions = try await sessionsWithRootLabels()
+        guard
             let session = sessions.first(where: { $0.name == sessionName }),
-            let sessionPID = session.pid,
-            let processes = processSnapshot(),
-            let sessionProcess = processes[sessionPID]
+            let sessionPID = session.pid
         else { return nil }
+        let processes = try await processSnapshot()
+        guard let sessionProcess = processes[sessionPID] else { return nil }
 
         let foregroundProcessGroupID = sessionProcess.terminalProcessGroupID
         if foregroundProcessGroupID > 0 {
@@ -178,10 +229,18 @@ nonisolated struct ZmxClient: Sendable {
         }
     }
 
-    private func processNames(for sessions: [ZmxSessionInfo]) -> [String: String] {
+    private func processNames(for sessions: [ZmxSessionInfo]) async throws -> [String: String] {
         var processNames = Dictionary(
             uniqueKeysWithValues: sessions.map { ($0.name, "Unknown") })
-        guard let processes = processSnapshot() else { return processNames }
+        let processes: [Int32: ProcessInfo]
+        do {
+            processes = try await processSnapshot()
+        } catch is CancellationError {
+            throw CancellationError()
+        } catch {
+            try Task.checkCancellation()
+            return processNames
+        }
 
         for session in sessions {
             guard let pid = session.pid, let sessionProcess = processes[pid] else { continue }
@@ -196,13 +255,10 @@ nonisolated struct ZmxClient: Sendable {
         return processNames
     }
 
-    private func processSnapshot() -> [Int32: ProcessInfo]? {
-        guard
-            let result = commandRunner.run(
-                executablePath: "/bin/ps",
-                arguments: ["-axo", "pid=,ppid=,pgid=,tpgid=,command="]),
-            result.terminationStatus == 0
-        else { return nil }
+    private func processSnapshot() async throws -> [Int32: ProcessInfo] {
+        let result = try await run(
+            executablePath: "/bin/ps",
+            arguments: ["-axo", "pid=,ppid=,pgid=,tpgid=,command="])
 
         var processes: [Int32: ProcessInfo] = [:]
         for rawLine in result.standardOutput.split(whereSeparator: \.isNewline) {
@@ -263,11 +319,8 @@ nonisolated struct ZmxClient: Sendable {
         return normalizedName.isEmpty ? nil : normalizedName
     }
 
-    private func sessionsWithRootLabels() -> [ZmxSessionInfo]? {
-        guard isConfigured,
-            let result = commandRunner.run(executablePath: executablePath, arguments: ["list"]),
-            result.terminationStatus == 0
-        else { return nil }
+    private func sessionsWithRootLabels() async throws -> [ZmxSessionInfo] {
+        let result = try await run(arguments: ["list"])
 
         return result.standardOutput.split(whereSeparator: \.isNewline).compactMap { rawLine in
             let fields = rawLine.split(separator: "\t")
@@ -290,14 +343,32 @@ nonisolated struct ZmxClient: Sendable {
         }
     }
 
-    func killSession(_ sessionName: String) -> Bool {
+    func killSession(_ sessionName: String) async throws {
         let sessionName = sessionName.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard isConfigured, !sessionName.isEmpty,
-            let result = commandRunner.run(
-                executablePath: executablePath,
-                arguments: ["kill", sessionName, "--force"])
-        else { return false }
-        return result.terminationStatus == 0
+        guard !sessionName.isEmpty else {
+            throw TerminalCommandError(message: "A zmx Session name is required.")
+        }
+        _ = try await run(arguments: ["kill", sessionName, "--force"])
+    }
+
+    private func run(
+        executablePath: String? = nil,
+        arguments: [String]
+    ) async throws -> TerminalCommandResult {
+        let executablePath = executablePath ?? self.executablePath
+        guard TerminalExecutablePath.isValid(executablePath) else {
+            throw TerminalCommandError(message: "Invalid executable path: \(executablePath)")
+        }
+        let result = try await commandRunner.run(
+            executablePath: executablePath,
+            arguments: arguments)
+        guard result.terminationStatus == 0 else {
+            let diagnostic = result.standardError.trimmingCharacters(in: .whitespacesAndNewlines)
+            let suffix = diagnostic.isEmpty ? "" : ": \(diagnostic)"
+            throw TerminalCommandError(
+                message: "Command exited with status \(result.terminationStatus)\(suffix)")
+        }
+        return result
     }
 }
 

@@ -1497,7 +1497,7 @@ struct KeyboardShortcutTests {
     private func makeStore(
         desks: [DeskState]? = nil,
         boards: [BoardState] = [],
-        terminalCommandRunner: any TerminalCommandRunning = ProcessTerminalCommandRunner()
+        terminalCommandRunner: any TerminalCommandRunning = SubprocessCommandRunner()
     ) throws -> DenStore {
         let storeDesks = desks ?? [DeskState(label: "Desk", boards: boards, focusedBoardID: boards.first?.id)]
         let defaults = try #require(TestUserDefaults(suiteName: "KeyboardShortcutStore-\(UUID())"))
@@ -1561,7 +1561,14 @@ struct KeyboardShortcutTests {
 private struct ZmxKeyboardCommandRunner: TerminalCommandRunning, Sendable {
     let responses: [[String]: TerminalCommandResult]
 
-    func run(executablePath: String, arguments: [String]) -> TerminalCommandResult? {
-        responses[arguments]
+    func run(
+        executablePath: String,
+        arguments: [String],
+        timeout: Duration
+    ) async throws -> TerminalCommandResult {
+        guard let response = responses[arguments] else {
+            throw TerminalCommandError(message: "Missing stub response for \(arguments)")
+        }
+        return response
     }
 }

@@ -7,15 +7,45 @@ import Testing
 
 @MainActor
 struct TerminalConfigurationSourceTests {
-    @Test func terminalCommandRunnerDrainsLargeOutputBeforeWaiting() throws {
+    @Test func terminalCommandRunnerDrainsLargeOutputBeforeWaiting() async throws {
         let output = String(repeating: "x", count: 100_000)
-        let result = try #require(
-            ProcessTerminalCommandRunner().run(
-                executablePath: "/usr/bin/printf",
-                arguments: [output]))
+        let result = try await SubprocessCommandRunner().run(
+            executablePath: "/usr/bin/printf",
+            arguments: [output])
 
         #expect(result.terminationStatus == 0)
         #expect(result.standardOutput == output)
+    }
+
+    @Test func terminalCommandRunnerPreservesFailureDiagnostics() async throws {
+        let result = try await SubprocessCommandRunner().run(
+            executablePath: "/bin/sh",
+            arguments: ["-c", "echo failed >&2; exit 7"])
+
+        #expect(result.terminationStatus == 7)
+        #expect(result.standardError == "failed\n")
+    }
+
+    @Test func terminalCommandRunnerStopsTimedOutAndCancelledProcesses() async {
+        let runner = SubprocessCommandRunner()
+
+        await #expect(throws: TerminalCommandError.self) {
+            try await runner.run(
+                executablePath: "/bin/sleep",
+                arguments: ["10"],
+                timeout: .milliseconds(10))
+        }
+
+        let task = Task {
+            try await runner.run(
+                executablePath: "/bin/sleep",
+                arguments: ["10"])
+        }
+        try? await Task.sleep(for: .milliseconds(50))
+        task.cancel()
+        await #expect(throws: CancellationError.self) {
+            try await task.value
+        }
     }
 
     @Test func zellijLaunchCommandsUseWelcomeOrNamedSession() {
@@ -52,7 +82,7 @@ struct TerminalConfigurationSourceTests {
         #expect(command.contains("den.root=den"))
     }
 
-    @Test func zmxClientReadsActiveSessionsAndRootLabel() throws {
+    @Test func zmxClientReadsActiveSessionsAndRootLabel() async throws {
         let client = ZmxClient(
             executablePath: "/opt/homebrew/bin/zmx",
             commandRunner: StubTerminalCommandRunner(
@@ -65,11 +95,11 @@ struct TerminalConfigurationSourceTests {
                         standardOutput: " den \n"),
                 ]))
 
-        #expect(client.activeSessionNames() == ["den-vi", "plain-session"])
-        #expect(client.rootSessionName(for: "den-vi") == "den")
+        #expect(try await client.activeSessionNames() == ["den-vi", "plain-session"])
+        #expect(try await client.rootSessionName(for: "den-vi") == "den")
     }
 
-    @Test func zmxClientReportsForegroundAndIdleProcesses() throws {
+    @Test func zmxClientReportsForegroundAndIdleProcesses() async throws {
         let client = ZmxClient(
             executablePath: "/opt/homebrew/bin/zmx",
             commandRunner: StubTerminalCommandRunner(
@@ -92,7 +122,7 @@ struct TerminalConfigurationSourceTests {
                             + "602 601 600 600 node astro dev\n"),
                 ]))
 
-        let snapshot = try #require(client.sessionSnapshot())
+        let snapshot = try await client.sessionSnapshot()
         #expect(
             snapshot.processNames == [
                 "den": "codex",
@@ -102,7 +132,7 @@ struct TerminalConfigurationSourceTests {
             ])
     }
 
-    @Test func zmxClientResolvesForegroundProcessGroupID() {
+    @Test func zmxClientResolvesForegroundProcessGroupID() async throws {
         let client = ZmxClient(
             executablePath: "/opt/homebrew/bin/zmx",
             commandRunner: StubTerminalCommandRunner(
@@ -118,12 +148,12 @@ struct TerminalConfigurationSourceTests {
                             + "200 1 200 0 /bin/zsh\n"),
                 ]))
 
-        #expect(client.foregroundProcessGroupID(for: "den-web") == 600)
-        #expect(client.foregroundProcessGroupID(for: "den-idle") == 200)
-        #expect(client.foregroundProcessGroupID(for: "non-existent") == nil)
+        #expect(try await client.foregroundProcessGroupID(for: "den-web") == 600)
+        #expect(try await client.foregroundProcessGroupID(for: "den-idle") == 200)
+        #expect(try await client.foregroundProcessGroupID(for: "non-existent") == nil)
     }
 
-    @Test func zmxClientUsesUnknownWhenProcessSnapshotFails() throws {
+    @Test func zmxClientUsesUnknownWhenProcessSnapshotFails() async throws {
         let client = ZmxClient(
             executablePath: "/opt/homebrew/bin/zmx",
             commandRunner: StubTerminalCommandRunner(
@@ -136,11 +166,21 @@ struct TerminalConfigurationSourceTests {
                         standardOutput: ""),
                 ]))
 
-        let snapshot = try #require(client.sessionSnapshot())
+        let snapshot = try await client.sessionSnapshot()
         #expect(snapshot.processNames == ["den": "Unknown"])
     }
 
-    @Test func zmxClientKillsSessionsWithForce() {
+    @Test func zmxClientPropagatesCancellationWhileReadingProcessSnapshot() async {
+        let client = ZmxClient(
+            executablePath: "/opt/homebrew/bin/zmx",
+            commandRunner: CancellationDuringProcessSnapshotRunner())
+
+        await #expect(throws: CancellationError.self) {
+            try await client.sessionSnapshot()
+        }
+    }
+
+    @Test func zmxClientKillsSessionsWithForce() async throws {
         let client = ZmxClient(
             executablePath: "/opt/homebrew/bin/zmx",
             commandRunner: StubTerminalCommandRunner(
@@ -150,8 +190,10 @@ struct TerminalConfigurationSourceTests {
                         standardOutput: "")
                 ]))
 
-        #expect(client.killSession(" den-vi "))
-        #expect(!client.killSession(""))
+        try await client.killSession(" den-vi ")
+        await #expect(throws: TerminalCommandError.self) {
+            try await client.killSession("")
+        }
     }
 
     @Test func zmxSessionNameGeneratorUsesRootAndSkipsCollisions() {
@@ -345,7 +387,29 @@ struct TerminalConfigurationSourceTests {
 private struct StubTerminalCommandRunner: TerminalCommandRunning, Sendable {
     let responses: [[String]: TerminalCommandResult]
 
-    func run(executablePath: String, arguments: [String]) -> TerminalCommandResult? {
-        responses[arguments]
+    func run(
+        executablePath: String,
+        arguments: [String],
+        timeout: Duration
+    ) async throws -> TerminalCommandResult {
+        guard let response = responses[arguments] else {
+            throw TerminalCommandError(message: "Missing stub response for \(arguments)")
+        }
+        return response
+    }
+}
+
+private struct CancellationDuringProcessSnapshotRunner: TerminalCommandRunning, Sendable {
+    func run(
+        executablePath: String,
+        arguments: [String],
+        timeout: Duration
+    ) async throws -> TerminalCommandResult {
+        if arguments == ["-axo", "pid=,ppid=,pgid=,tpgid=,command="] {
+            throw CancellationError()
+        }
+        return TerminalCommandResult(
+            terminationStatus: 0,
+            standardOutput: "name=den\tpid=100\n")
     }
 }

@@ -218,7 +218,7 @@ struct DenStoreBoardTests {
         #expect(store.terminalRuntimes[terminal.id] === runtime)
     }
 
-    @Test func zmxBoardDuplicationCreatesRootedIndependentSessions() throws {
+    @Test func zmxBoardDuplicationCreatesRootedIndependentSessions() async throws {
         let sourceBoard = BoardState(
             width: 640,
             zmxSessionName: "den",
@@ -230,11 +230,12 @@ struct DenStoreBoardTests {
                     terminationStatus: 0,
                     standardOutput: "")
             ])
-        try withTestStore(desks: [source], terminalCommandRunner: runner) {
+        try await withTestStore(desks: [source], terminalCommandRunner: runner) {
             store in
             store.preferences.setZmxPath("/usr/bin/zmx")
 
             store.duplicateFocusedBoardFromFirstSheet()
+            await store.waitForZmxCommand()
             let automaticChild = try #require(store.focusedBoard)
             #expect(store.focusedDesk?.boards.count == 2)
             #expect(automaticChild.zmxSessionName == "den-2")
@@ -244,10 +245,12 @@ struct DenStoreBoardTests {
 
             store.focusBoard(sourceBoard.id)
             store.duplicateFocusedBoard()
+            await store.waitForZmxCommand()
             #expect(store.temporaryContext == .zmxDuplication)
             #expect(store.focusedDesk?.boards.count == 2)
 
-            #expect(store.duplicateFocusedZmxBoard(suffix: "vi"))
+            store.duplicateFocusedZmxBoard(suffix: "vi")
+            await store.waitForZmxCommand()
             let firstChild = try #require(store.focusedBoard)
             #expect(firstChild.zmxSessionName == "den-vi")
             #expect(firstChild.zmxRootSessionName == "den")
@@ -265,20 +268,24 @@ struct DenStoreBoardTests {
                             rootSessionName: "den")))
 
             store.duplicateFocusedBoard()
-            #expect(store.duplicateFocusedZmxBoard(suffix: "nvim"))
+            await store.waitForZmxCommand()
+            store.duplicateFocusedZmxBoard(suffix: "nvim")
+            await store.waitForZmxCommand()
             #expect(store.focusedBoard?.zmxSessionName == "den-nvim")
             #expect(store.focusedBoard?.zmxRootSessionName == "den")
             #expect(store.recentItems.first == .zmx(sessionName: "den-nvim"))
 
             store.focusBoard(firstChild.id)
             store.duplicateFocusedBoard()
-            #expect(store.duplicateFocusedZmxBoard(suffix: "vi"))
+            await store.waitForZmxCommand()
+            store.duplicateFocusedZmxBoard(suffix: "vi")
+            await store.waitForZmxCommand()
             #expect(store.focusedBoard?.zmxSessionName == "den-vi-2")
             #expect(store.recentItems.first == .zmx(sessionName: "den-vi-2"))
         }
     }
 
-    @Test func zmxBoardDuplicationUsesTheSourceRootLabel() {
+    @Test func zmxBoardDuplicationUsesTheSourceRootLabel() async {
         let sourceBoard = BoardState(
             width: 640,
             zmxSessionName: "den-vi",
@@ -293,14 +300,16 @@ struct DenStoreBoardTests {
                     terminationStatus: 0,
                     standardOutput: "den\n"),
             ])
-        withTestStore(
+        await withTestStore(
             desks: [source], terminalCommandRunner: commandRunner
         ) { store in
             store.preferences.setZmxPath("/usr/bin/zmx")
 
             store.duplicateFocusedBoard()
+            await store.waitForZmxCommand()
             #expect(store.zmxDuplicationRootSessionName == "den")
-            #expect(store.duplicateFocusedZmxBoard(suffix: "nvim"))
+            store.duplicateFocusedZmxBoard(suffix: "nvim")
+            await store.waitForZmxCommand()
             #expect(store.focusedBoard?.zmxSessionName == "den-nvim")
             #expect(store.focusedBoard?.zmxRootSessionName == "den")
         }
@@ -1443,7 +1452,14 @@ struct DenStoreBoardTests {
 private struct StubTerminalCommandRunner: TerminalCommandRunning, Sendable {
     let responses: [[String]: TerminalCommandResult]
 
-    func run(executablePath: String, arguments: [String]) -> TerminalCommandResult? {
-        responses[arguments]
+    func run(
+        executablePath: String,
+        arguments: [String],
+        timeout: Duration
+    ) async throws -> TerminalCommandResult {
+        guard let response = responses[arguments] else {
+            throw TerminalCommandError(message: "Missing stub response for \(arguments)")
+        }
+        return response
     }
 }

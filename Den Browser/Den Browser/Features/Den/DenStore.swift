@@ -207,6 +207,7 @@ final class DenStore {
     }
     @ObservationIgnored var drawerPreviewRuntime: DrawerPreviewRuntime?
     @ObservationIgnored var toastTask: Task<Void, Never>?
+    @ObservationIgnored var zmxCommandTask: Task<Void, Never>?
     @ObservationIgnored var previousFocusedDeskID: UUID?
     @ObservationIgnored var anchorJumpOriginBoardIDByDesk: [UUID: UUID] = [:]
     @ObservationIgnored private let terminalCommandRunner: any TerminalCommandRunning
@@ -322,7 +323,7 @@ final class DenStore {
         state: DenState,
         sheetNavigation: SheetNavigationManager,
         preferences: AppPreferences = AppPreferences(),
-        terminalCommandRunner: any TerminalCommandRunning = ProcessTerminalCommandRunner()
+        terminalCommandRunner: any TerminalCommandRunning = SubprocessCommandRunner()
     ) {
         self.init(
             state: state,
@@ -385,7 +386,7 @@ final class DenStore {
         websiteDataStore: WKWebsiteDataStore,
         sheetNavigation: SheetNavigationManager,
         preferences: AppPreferences = AppPreferences(),
-        terminalCommandRunner: any TerminalCommandRunning = ProcessTerminalCommandRunner(),
+        terminalCommandRunner: any TerminalCommandRunning = SubprocessCommandRunner(),
         webExtensionHost: WebExtensionHost? = nil,
         webExtensionWindow: MV3WebExtensionWindow? = nil,
         deskPresets: [PersonalDeskPreset] = [],
@@ -434,7 +435,7 @@ final class DenStore {
         canPresentDesk: @escaping (UUID) -> Bool,
         onDeskPresentationRequest: @escaping (UUID) -> Bool,
         onWillResetDen: @escaping () -> Void,
-        terminalCommandRunner: any TerminalCommandRunning = ProcessTerminalCommandRunner(),
+        terminalCommandRunner: any TerminalCommandRunning = SubprocessCommandRunner(),
         profileID: UUID? = nil,
         ipcSocketPath: String = DenSocketPath.resolve()
     ) {
@@ -829,6 +830,8 @@ final class DenStore {
             drawerQuery = ""
             drawerFilterPhase = .inactive
         case .zmxDuplication:
+            zmxCommandTask?.cancel()
+            zmxCommandTask = nil
             zmxDuplicationRootSessionName = nil
         case .zmxSessions:
             let wasReturningToOpenBoard = zmxSessionsReturnToOpenBoard

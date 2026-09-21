@@ -339,7 +339,7 @@ struct ZmxDuplicationPanel: View {
     }
 
     private func submit() {
-        guard store.duplicateFocusedZmxBoard(suffix: text) else { return }
+        store.duplicateFocusedZmxBoard(suffix: text)
         text = ""
         store.restoreFocusedFirstResponder()
     }

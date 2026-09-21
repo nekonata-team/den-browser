@@ -318,6 +318,8 @@ extension DenStore {
         cancelDeskFilterCentering()
         toastTask?.cancel()
         toastTask = nil
+        zmxCommandTask?.cancel()
+        zmxCommandTask = nil
         zmxSessions.stop()
         releaseDrawerPreview()
     }
@@ -386,16 +388,16 @@ extension DenStore {
         if changed { save() }
     }
 
-    func foregroundProcessGroupID(for board: BoardState) -> pid_t? {
+    func foregroundProcessGroupID(for board: BoardState) async throws -> pid_t? {
         guard board.isTerminal else { return nil }
         if board.isZmx, let sessionName = board.zmxSessionName {
-            return zmxClient.foregroundProcessGroupID(for: sessionName)
+            return try await zmxClient.foregroundProcessGroupID(for: sessionName)
         }
         return terminalRuntimes[board.id]?.foregroundProcessGroupID
     }
 
-    func sendSignal(_ signal: Int32, to board: BoardState) throws -> pid_t {
-        guard let pid = foregroundProcessGroupID(for: board), pid > 1, pid != getpid() else {
+    func sendSignal(_ signal: Int32, to board: BoardState) async throws -> pid_t {
+        guard let pid = try await foregroundProcessGroupID(for: board), pid > 1, pid != getpid() else {
             throw TerminalRuntime.SignalError("No foreground process found to signal")
         }
         if killpg(pid, signal) == 0 || kill(pid, signal) == 0 {

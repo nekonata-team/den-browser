@@ -122,26 +122,31 @@ final class ZmxSessionsModel {
         isLoading = true
         message = nil
         refreshTask = Task { [weak self, client] in
-            let snapshot = await Task.detached(priority: .userInitiated) {
-                client.sessionSnapshot()
-            }.value
-            guard !Task.isCancelled, let self else { return }
-            guard self.refreshGeneration == refreshGeneration,
-                self.lifecycleGeneration == lifecycleGeneration
-            else { return }
-            self.isLoading = false
-            guard let snapshot else {
+            do {
+                let snapshot = try await client.sessionSnapshot()
+                guard !Task.isCancelled, let self else { return }
+                guard self.refreshGeneration == refreshGeneration,
+                    self.lifecycleGeneration == lifecycleGeneration
+                else { return }
+                self.isLoading = false
+                self.groups = snapshot.groups
+                self.processNames = snapshot.processNames
+                self.updateSelection()
+            } catch is CancellationError {
+                return
+            } catch {
+                guard !Task.isCancelled, let self else { return }
+                guard self.refreshGeneration == refreshGeneration,
+                    self.lifecycleGeneration == lifecycleGeneration
+                else { return }
+                self.isLoading = false
                 self.groups = []
                 self.processNames = [:]
-                self.message = "Could not list zmx Sessions."
+                self.message = "Could not list zmx Sessions: \(error.localizedDescription)"
                 self.selectedSessionName = nil
                 self.markedSessionNames = []
                 self.selectionFallbackAfterDeletion = nil
-                return
             }
-            self.groups = snapshot.groups
-            self.processNames = snapshot.processNames
-            self.updateSelection()
         }
     }
 
@@ -234,14 +239,21 @@ final class ZmxSessionsModel {
         markedSessionNames.subtract(sessionNames)
         killTask?.cancel()
         killTask = Task { [weak self, client] in
-            let failedSessionNames = await Task.detached(priority: .userInitiated) {
-                sessionNames.filter { !client.killSession($0) }
-            }.value
+            var failures: [String] = []
+            for sessionName in sessionNames {
+                do {
+                    try await client.killSession(sessionName)
+                } catch is CancellationError {
+                    return
+                } catch {
+                    failures.append("\(sessionName): \(error.localizedDescription)")
+                }
+            }
             guard !Task.isCancelled, let self else { return }
             guard self.lifecycleGeneration == lifecycleGeneration else { return }
             self.refresh(using: client)
-            if !failedSessionNames.isEmpty {
-                self.message = "Could not end \(failedSessionNames.joined(separator: ", "))."
+            if !failures.isEmpty {
+                self.message = "Could not end \(failures.joined(separator: ", "))."
             }
         }
     }

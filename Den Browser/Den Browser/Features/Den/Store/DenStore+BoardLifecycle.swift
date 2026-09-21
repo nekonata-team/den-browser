@@ -396,47 +396,80 @@ extension DenStore {
         )
     }
 
-    func zmxRootSessionName(for board: BoardState) -> String? {
+    static func zmxRootSessionName(
+        for board: BoardState,
+        using client: ZmxClient
+    ) async throws -> String? {
         guard let sessionName = board.zmxSessionName else { return nil }
-        return
-            zmxClient.rootSessionName(for: sessionName)
-            ?? board.zmxRootSessionName
-            ?? sessionName
+        do {
+            return
+                try await client.rootSessionName(for: sessionName)
+                ?? board.zmxRootSessionName
+                ?? sessionName
+        } catch is CancellationError {
+            throw CancellationError()
+        } catch {
+            return board.zmxRootSessionName ?? sessionName
+        }
     }
 
-    @discardableResult
-    func duplicateFocusedZmxBoard(suffix: String) -> Bool {
+    func duplicateFocusedZmxBoard(suffix: String) {
         guard
             let source = focusedBoard,
             let sessionName = source.zmxSessionName
-        else { return false }
+        else { return }
 
-        guard let activeSessionNames = zmxClient.activeSessionNames() else {
-            showToast("Could not inspect active zmx sessions.", style: .warning)
-            return false
-        }
+        let requiresOpenPanel = temporaryContext == .zmxDuplication
+        let client = zmxClient
+        zmxCommandTask?.cancel()
+        zmxCommandTask = Task { [weak self, client] in
+            do {
+                let activeSessionNames = try await client.activeSessionNames()
+                let rootSessionName =
+                    try await Self.zmxRootSessionName(for: source, using: client)
+                    ?? source.zmxRootSessionName
+                    ?? sessionName
+                guard !Task.isCancelled, let self, self.focusedBoard?.id == source.id else { return }
+                guard !requiresOpenPanel || self.temporaryContext == .zmxDuplication else { return }
 
-        let denSessionNames = state.desks.flatMap { desk in
-            desk.boards.compactMap(\.zmxSessionName)
+                let denSessionNames = self.state.desks.flatMap { desk in
+                    desk.boards.compactMap(\.zmxSessionName)
+                }
+                let newSessionName = ZmxSessionNameGenerator.nextName(
+                    rootSessionName: rootSessionName,
+                    suffix: suffix,
+                    occupiedNames: activeSessionNames.union(denSessionNames))
+                let workingDirectory =
+                    source.terminalWorkingDirectory
+                    ?? FileManager.default.homeDirectoryForCurrentUser.path
+                let board = BoardState(
+                    label: source.label,
+                    width: source.width,
+                    zmxSessionName: newSessionName,
+                    workingDirectory: workingDirectory,
+                    rootSessionName: rootSessionName,
+                    customLabel: source.customLabel)
+                guard
+                    self.insertBoard(
+                        board,
+                        afterBoardID: source.id,
+                        focus: true,
+                        origin: .interactive)
+                else { return }
+                self.saveRecentItem(.zmx(sessionName: newSessionName))
+            } catch is CancellationError {
+                return
+            } catch {
+                guard !Task.isCancelled, let self, self.focusedBoard?.id == source.id else { return }
+                self.showToast(
+                    "Could not inspect active zmx sessions: \(error.localizedDescription)",
+                    style: .warning)
+            }
         }
-        let rootSessionName = zmxRootSessionName(for: source) ?? sessionName
-        let newSessionName = ZmxSessionNameGenerator.nextName(
-            rootSessionName: rootSessionName,
-            suffix: suffix,
-            occupiedNames: activeSessionNames.union(denSessionNames))
-        let workingDirectory =
-            source.terminalWorkingDirectory
-            ?? FileManager.default.homeDirectoryForCurrentUser.path
-        let board = BoardState(
-            label: source.label,
-            width: source.width,
-            zmxSessionName: newSessionName,
-            workingDirectory: workingDirectory,
-            rootSessionName: rootSessionName,
-            customLabel: source.customLabel)
-        guard insertBoard(board, afterBoardID: source.id, focus: true, origin: .interactive) else { return false }
-        saveRecentItem(.zmx(sessionName: newSessionName))
-        return true
+    }
+
+    func waitForZmxCommand() async {
+        await zmxCommandTask?.value
     }
 
     func duplicateFocusedBoardFromFirstSheet() {

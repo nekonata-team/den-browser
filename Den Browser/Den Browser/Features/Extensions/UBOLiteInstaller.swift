@@ -40,6 +40,7 @@ final class UBOLiteInstaller {
     private(set) var isInstalled: Bool = false
     private(set) var installedVersion: String?
     private let session: URLSession
+    private let commandRunner: any TerminalCommandRunning
 
     var isBusy: Bool {
         switch state {
@@ -53,13 +54,15 @@ final class UBOLiteInstaller {
         directoryURL: URL = UBOLiteInstaller.defaultDirectoryURL(),
         releaseAPIURL: URL = UBOLiteInstaller.defaultReleaseAPIURL,
         fallbackDownloadURL: URL = UBOLiteInstaller.defaultFallbackDownloadURL,
-        session: URLSession = .shared
+        session: URLSession = .shared,
+        commandRunner: any TerminalCommandRunning = SubprocessCommandRunner()
     ) {
         self.identifier = identifier
         self.directoryURL = directoryURL
         self.releaseAPIURL = releaseAPIURL
         self.fallbackDownloadURL = fallbackDownloadURL
         self.session = session
+        self.commandRunner = commandRunner
         refreshInstalledStatus()
     }
 
@@ -88,7 +91,7 @@ final class UBOLiteInstaller {
         }
     }
 
-    private func resolveDownloadURL() async -> URL {
+    private func resolveDownloadURL() async throws -> URL {
         var request = URLRequest(url: releaseAPIURL)
         request.setValue("DenBrowser", forHTTPHeaderField: "User-Agent")
         request.setValue("application/vnd.github.v3+json", forHTTPHeaderField: "Accept")
@@ -109,7 +112,11 @@ final class UBOLiteInstaller {
                     }
                 }
             }
-        } catch {}
+        } catch is CancellationError {
+            throw CancellationError()
+        } catch {
+            try Task.checkCancellation()
+        }
         return fallbackDownloadURL
     }
 
@@ -119,7 +126,7 @@ final class UBOLiteInstaller {
         state = .downloading(progress: nil)
 
         do {
-            let targetURL = await resolveDownloadURL()
+            let targetURL = try await resolveDownloadURL()
             var request = URLRequest(url: targetURL)
             request.setValue("DenBrowser", forHTTPHeaderField: "User-Agent")
 
@@ -141,17 +148,20 @@ final class UBOLiteInstaller {
 
             try FileManager.default.createDirectory(at: unpackDir, withIntermediateDirectories: true)
 
-            let process = Process()
-            process.executableURL = URL(fileURLWithPath: "/usr/bin/ditto")
-            process.arguments = ["-x", "-k", tempZipURL.path, unpackDir.path]
-            try process.run()
-            process.waitUntilExit()
-
-            guard process.terminationStatus == 0 else {
+            let result = try await commandRunner.run(
+                executablePath: "/usr/bin/ditto",
+                arguments: ["-x", "-k", tempZipURL.path, unpackDir.path],
+                timeout: .seconds(60))
+            guard result.terminationStatus == 0 else {
+                let diagnostic = result.standardError.trimmingCharacters(in: .whitespacesAndNewlines)
+                let suffix = diagnostic.isEmpty ? "" : ": \(diagnostic)"
                 throw NSError(
                     domain: "UBOLiteInstaller",
-                    code: Int(process.terminationStatus),
-                    userInfo: [NSLocalizedDescriptionKey: "Failed to decompress uBlock Origin Lite archive."]
+                    code: Int(result.terminationStatus),
+                    userInfo: [
+                        NSLocalizedDescriptionKey:
+                            "Failed to decompress uBlock Origin Lite archive\(suffix)."
+                    ]
                 )
             }
 
@@ -189,6 +199,9 @@ final class UBOLiteInstaller {
             refreshInstalledStatus()
             state = .idle
             return isInstalled
+        } catch is CancellationError {
+            state = .idle
+            return false
         } catch {
             state = .error(error.localizedDescription)
             return false

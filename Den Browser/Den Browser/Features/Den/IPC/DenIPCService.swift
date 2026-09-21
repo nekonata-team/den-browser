@@ -66,7 +66,7 @@ final class DenIPCService {
         case .drawer(let command):
             return handleDrawerCommand(command, request: request)
         case .terminal(let command):
-            return handleTerminalCommand(command, request: request)
+            return await handleTerminalCommand(command, request: request)
         case .profile(let command):
             return handleProfileCommand(command, request: request)
         }
@@ -880,7 +880,10 @@ final class DenIPCService {
 
     // MARK: - Terminal Commands
 
-    private func handleTerminalCommand(_ command: DenIPCCommand.Terminal, request: DenIPCRequest) -> DenIPCResponse {
+    private func handleTerminalCommand(
+        _ command: DenIPCCommand.Terminal,
+        request: DenIPCRequest
+    ) async -> DenIPCResponse {
         let store: DenStore
         let board: BoardState
         switch DenIPCTargetResolver.resolveTargetTerminalBoardResult(request: request, in: profileManager) {
@@ -930,7 +933,7 @@ final class DenIPCService {
                 return .failure("Unknown signal: \(signalName)")
             }
             do {
-                let pid = try store.sendSignal(parsed.number, to: board)
+                let pid = try await store.sendSignal(parsed.number, to: board)
                 return .success(message: "Sent \(parsed.name) to process group \(pid) (Board \(board.id.uuidString))")
             } catch {
                 return .failure(error.localizedDescription)
