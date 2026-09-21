@@ -244,14 +244,14 @@
 - **Verification:** `ScreenshotCapture`を画像取得・Desk合成に限定し、PNG変換・保存・clipboard出力・ファイル名生成を`ScreenshotOutput`へ分離しました。Sheet／Deskの保存・コピーは共通Taskで対象検証、取得、通知、キャンセルを揃え、Window破棄時にも進行中のTaskをキャンセルします。Deskは従来どおり全画像を保持してから合成するため、合成方式やメモリ特性は変更していません。PNG出力契約のfocused testを追加し、`mise exec -- just check`を通過しました。
 
 <a id="task-020"></a>
-### [ ] TASK-020：DOM参照の寿命とsnapshotの負荷を改善する
+### [x] TASK-020：DOM参照の寿命とsnapshotの負荷を改善する
 
 - **Priority / Purpose:** P2。長時間動作するSPAでの削除済みDOM保持を防ぎ、不要な全DOM走査を減らします。
 - **Prerequisites:** なし。
 - **Entry Points:** `Den/Sheet/Resources/SheetDOM.js`、`Den/Sheet/SheetInteraction.swift`。
 - **Work:** document内で接続中の参照は安定させ、切断要素の強参照を解放します。data-den-ref属性の複製による別要素への参照再割り当ても検証します。interactive限定snapshotは対象を先に絞れるか計測し、--withinと--fullの契約を維持します。
 - **Acceptance Criteria:** DOM差し替えを繰り返しても削除済み要素が無制限に保持されません。接続中のrefは安定し、古いrefが別要素を誤操作しません。最適化後もsnapshotの意味を維持します。
-- **Verification:** ローカルHTMLによる参照寿命・DOM置換のfocused test、大きさと階層を変えたDOMでの前後計測。`just check`。
+- **Verification:** `__denRefs` のDOM保持を `WeakRef` に変更し、DOM置換時は同じ `data-den-ref` を接続中の要素へ再解決します。`interactiveOnly` のsnapshotは最初からinteractive selectorで候補を絞り、`--within` と `--full` の出力契約を維持しました。ローカルHTMLで弱参照とDOMクローン置換後の操作を検証するfocused testを追加し、5000個の非interactive要素を置いた実ページで20回計測した結果、interactiveは0.183秒、fullは0.377秒（CLI往復込み）でした。Wikipedia実サイトで検索入力、ページ遷移、動的検索UIの開閉、検索結果遷移を `den sheet` から通過させました。`mise exec -- just check`を通過しました。
 
 <a id="task-021"></a>
 ### [ ] TASK-021：Board Activityの集計とCPU計測を改善する

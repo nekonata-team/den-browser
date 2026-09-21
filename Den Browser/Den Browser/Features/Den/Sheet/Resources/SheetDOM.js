@@ -18,30 +18,43 @@ function denIsVisible(el) {
     return true;
 }
 
+function denElementForRef(ref) {
+    const entry = window.__denRefs.get(ref);
+    return entry?.deref ? entry.deref() : entry;
+}
+
 function denRefFor(el) {
     if (!el || !el.isConnected) return null;
     const existing = el.getAttribute('data-den-ref');
-    if (existing && window.__denRefs.get(existing) === el) return existing;
+    if (existing && /^@e\d+$/.test(existing)) {
+        const mapped = denElementForRef(existing);
+        if (mapped === el) return existing;
+        if (!mapped || !mapped.isConnected) {
+            window.__denRefs.set(existing, new WeakRef(el));
+            return existing;
+        }
+    }
 
     let ref;
     do {
         ref = '@e' + window.__denNextRef++;
     } while (window.__denRefs.has(ref));
-    window.__denRefs.set(ref, el);
+    window.__denRefs.set(ref, new WeakRef(el));
     el.setAttribute('data-den-ref', ref);
     return ref;
 }
 
 function denResolveRef(target) {
     if (!/^@e\d+$/.test(target)) return null;
-    const mapped = window.__denRefs.get(target);
-    if (mapped && mapped.isConnected) return mapped;
+    const mapped = denElementForRef(target);
+    if (mapped?.isConnected) return mapped;
     const fallback = Array.from(document.querySelectorAll('[data-den-ref]'))
         .find(el => el.getAttribute('data-den-ref') === target);
     if (fallback) {
-        window.__denRefs.set(target, fallback);
+        window.__denRefs.set(target, new WeakRef(fallback));
         return fallback;
     }
+    window.__denRefs.delete(target);
     return null;
 }
 

@@ -104,12 +104,15 @@ enum SheetInteraction {
                 }
             }
 
+            const interactiveSelector = selectors.join(',');
+            const candidateSelector = \(interactiveOnly) ? interactiveSelector : '*';
             let elements = scope instanceof Element
-                ? [scope, ...Array.from(scope.querySelectorAll('*'))]
-                : Array.from(scope.querySelectorAll('*'));
-            elements = elements
-                .filter(el => denIsVisible(el) && denSnapshotEligible(el, selectors));
-            if (\(interactiveOnly)) elements = elements.filter(el => el.matches(selectors.join(',')));
+                ? [scope, ...Array.from(scope.querySelectorAll(candidateSelector))]
+                : Array.from(scope.querySelectorAll(candidateSelector));
+            elements = elements.filter(el =>
+                denIsVisible(el) &&
+                denSnapshotEligible(el, selectors) &&
+                (!\(interactiveOnly) || el.matches(interactiveSelector)));
             const elementSet = new Set(elements);
             const lines = elements.map(el => {
                 const ref = denRefFor(el);

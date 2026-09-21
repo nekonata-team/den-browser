@@ -188,6 +188,47 @@ struct SheetInteractionTests {
         #expect(!snapshot.contains("Hidden"))
     }
 
+    @Test func refTargetsUseWeakReferencesAndFollowClonedElements() async throws {
+        // Arrange
+        let webView = makeWebView()
+        let waiter = SheetInteractionWebViewLoadWaiter()
+        await waiter.load(
+            """
+            <!doctype html>
+            <button id="target" onclick="this.dataset.clicked = 'yes'">Target</button>
+            """,
+            baseURL: URL(string: "https://example.com/")!,
+            in: webView
+        )
+        let element = try #require(
+            await SheetInteraction.query(
+                selector: "#target", visibleOnly: true, all: false, fields: ["text"], in: webView
+            ).first)
+        let usesWeakReference =
+            try await webView.callAsyncJavaScript(
+                "return typeof window.__denRefs.get(ref)?.deref === 'function';",
+                arguments: ["ref": element.ref],
+                in: nil,
+                contentWorld: SheetDOMRuntime.contentWorld
+            ) as? Bool
+
+        // Act
+        _ = try await webView.evaluateJavaScript(
+            """
+            const target = document.getElementById('target');
+            target.replaceWith(target.cloneNode(true));
+            """
+        )
+        try await SheetInteraction.click(target: element.ref, in: webView)
+        let clicked =
+            try await webView.evaluateJavaScript(
+                "document.getElementById('target').dataset.clicked") as? String
+
+        // Assert
+        #expect(usesWeakReference == true)
+        #expect(clicked == "yes")
+    }
+
     @Test func semanticClickDispatchesOnePointerAndMouseSequence() async throws {
         // Arrange
         let webView = makeWebView()
