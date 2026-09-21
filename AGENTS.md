@@ -44,6 +44,7 @@ manual candidate verification, `just release publish X.Y.Z`.
 - `docs/vim.md`: Vim-style sheet navigation
 - `docs/persistence.md`: local persistence and preference schema
 - `docs/architecture.md` and `docs/adr/`: architecture and product decisions
+- `scripts/embedded-js/README.md`: TypeScript sources and generated JavaScript resource workflow
 - `docs/cli.md`: command-line interface specification and agent integration
 - `docs/testing.md`: automated and exploratory validation
 - `docs/releasing.md`: signed release and publishing workflow

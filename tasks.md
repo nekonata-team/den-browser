@@ -248,7 +248,7 @@
 
 - **Priority / Purpose:** P2。長時間動作するSPAでの削除済みDOM保持を防ぎ、不要な全DOM走査を減らします。
 - **Prerequisites:** なし。
-- **Entry Points:** `Den/Sheet/Resources/SheetDOM.js`、`Den/Sheet/SheetInteraction.swift`。
+- **Entry Points:** `scripts/embedded-js/src/sheet-dom/entry.ts`、`Den/Sheet/SheetInteraction.swift`。
 - **Work:** document内で接続中の参照は安定させ、切断要素の強参照を解放します。data-den-ref属性の複製による別要素への参照再割り当ても検証します。interactive限定snapshotは対象を先に絞れるか計測し、--withinと--fullの契約を維持します。
 - **Acceptance Criteria:** DOM差し替えを繰り返しても削除済み要素が無制限に保持されません。接続中のrefは安定し、古いrefが別要素を誤操作しません。最適化後もsnapshotの意味を維持します。
 - **Verification:** `__denRefs` のDOM保持を `WeakRef` に変更し、DOM置換時は同じ `data-den-ref` を接続中の要素へ再解決します。`interactiveOnly` のsnapshotは最初からinteractive selectorで候補を絞り、`--within` と `--full` の出力契約を維持しました。ローカルHTMLで弱参照とDOMクローン置換後の操作を検証するfocused testを追加し、5000個の非interactive要素を置いた実ページで20回計測した結果、interactiveは0.183秒、fullは0.377秒（CLI往復込み）でした。Wikipedia実サイトで検索入力、ページ遷移、動的検索UIの開閉、検索結果遷移を `den sheet` から通過させました。`mise exec -- just check`を通過しました。

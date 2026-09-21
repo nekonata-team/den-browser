@@ -1,6 +1,10 @@
 window.__denSheetDOM = window.__denSheetDOM || (() => {
-window.__denRefs = window.__denRefs || new Map();
-window.__denNextRef = window.__denNextRef || 1;
+const denRefStore = {
+    elements: window.__denRefs || new Map(),
+    nextRef: window.__denNextRef || 1,
+};
+window.__denRefs = denRefStore.elements;
+window.__denNextRef = denRefStore.nextRef;
 
 function denNormalize(value) {
     return String(value || '').trim().replace(/\s+/g, ' ');
@@ -19,8 +23,10 @@ function denIsVisible(el) {
 }
 
 function denElementForRef(ref) {
-    const entry = window.__denRefs.get(ref);
-    return entry?.deref ? entry.deref() : entry;
+    const entry = denRefStore.elements.get(ref);
+    if (!entry) return null;
+    if ('deref' in entry) return entry.deref() ?? null;
+    return entry;
 }
 
 function denRefFor(el) {
@@ -30,16 +36,17 @@ function denRefFor(el) {
         const mapped = denElementForRef(existing);
         if (mapped === el) return existing;
         if (!mapped || !mapped.isConnected) {
-            window.__denRefs.set(existing, new WeakRef(el));
+            denRefStore.elements.set(existing, new WeakRef(el));
             return existing;
         }
     }
 
     let ref;
     do {
-        ref = '@e' + window.__denNextRef++;
-    } while (window.__denRefs.has(ref));
-    window.__denRefs.set(ref, new WeakRef(el));
+        ref = '@e' + denRefStore.nextRef++;
+    } while (denRefStore.elements.has(ref));
+    window.__denNextRef = denRefStore.nextRef;
+    denRefStore.elements.set(ref, new WeakRef(el));
     el.setAttribute('data-den-ref', ref);
     return ref;
 }
@@ -51,10 +58,10 @@ function denResolveRef(target) {
     const fallback = Array.from(document.querySelectorAll('[data-den-ref]'))
         .find(el => el.getAttribute('data-den-ref') === target);
     if (fallback) {
-        window.__denRefs.set(target, new WeakRef(fallback));
+        denRefStore.elements.set(target, new WeakRef(fallback));
         return fallback;
     }
-    window.__denRefs.delete(target);
+    denRefStore.elements.delete(target);
     return null;
 }
 
@@ -274,8 +281,8 @@ function denSetValue(el, value) {
     return false;
 }
 
-function denInspect(el, fields) {
-    const info = {
+function denInspect(el: Element, fields: string[]) {
+    const info: Record<string, unknown> = {
         ref: denRefFor(el),
         visible: denIsVisible(el),
     };
@@ -304,7 +311,7 @@ function denInspect(el, fields) {
         if (expanded !== null) info.expanded = expanded;
     }
 
-    const attributes = {};
+    const attributes: Record<string, string> = {};
     fields.forEach(field => {
         let attribute = null;
         if (field === 'class') attribute = 'class';

@@ -201,6 +201,7 @@
 				530E9DD72FFFFED90033427C /* Sources */,
 				530E9DD82FFFFED90033427C /* Frameworks */,
 				530E9DD92FFFFED90033427C /* Resources */,
+				53E0B7C926C14E4C9A8C4F10 /* Generate embedded JavaScript */,
 				531CEFA3304D489500C9C636 /* CopyFiles */,
 			);
 			buildRules = (
@@ -366,6 +367,36 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		53E0B7C926C14E4C9A8C4F10 /* Generate embedded JavaScript */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+				"$(SRCROOT)/../mise.toml",
+				"$(SRCROOT)/../scripts/embedded-js/build.mjs",
+				"$(SRCROOT)/../scripts/embedded-js/globals.d.ts",
+				"$(SRCROOT)/../scripts/embedded-js/package.json",
+				"$(SRCROOT)/../scripts/embedded-js/pnpm-lock.yaml",
+				"$(SRCROOT)/../scripts/embedded-js/src/picture-in-picture/entry.ts",
+				"$(SRCROOT)/../scripts/embedded-js/src/sheet-dom/entry.ts",
+				"$(SRCROOT)/../scripts/embedded-js/src/sheet-navigation/entry.ts",
+				"$(SRCROOT)/../scripts/embedded-js/tsconfig.json",
+				"$(SRCROOT)/../scripts/embedded-js/node_modules",
+			);
+			name = "Generate embedded JavaScript";
+			outputPaths = (
+				"$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/SheetDOM.js",
+				"$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/SheetNavigation.js",
+				"$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/PictureInPicture.js",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "set -e\ncd \"$SRCROOT/..\"\noutput_dir=\"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH\"\nif command -v mise >/dev/null 2>&1; then\n    mise exec -- pnpm --dir scripts/embedded-js build -- --output-dir \"$output_dir\"\nelif command -v pnpm >/dev/null 2>&1; then\n    pnpm --dir scripts/embedded-js build -- --output-dir \"$output_dir\"\nelse\n    echo \"error: pnpm is required to build embedded JavaScript; run mise install and pnpm install first\" >&2\n    exit 1\nfi\n";
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		530E9DD72FFFFED90033427C /* Sources */ = {

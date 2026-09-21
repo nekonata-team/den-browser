@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    "allowJs": true,
+    "checkJs": true,
+    "lib": ["DOM", "ES2022"],
+    "module": "ESNext",
+    "noEmit": true,
+    "noImplicitAny": false,
+    "skipLibCheck": true,
+    "strict": false,
+    "target": "ES2022",
+    "types": []
+  },
+  "files": [
+    "globals.d.ts",
+    "src/sheet-dom/entry.ts",
+    "src/sheet-navigation/entry.ts",
+    "src/picture-in-picture/entry.ts",
+    "../../Den Browser/Den BrowserTests/Fixtures/MV3Extension/content.js"
+  ]
+}

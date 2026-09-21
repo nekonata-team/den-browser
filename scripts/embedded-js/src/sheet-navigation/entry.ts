@@ -6,6 +6,7 @@
   let paused = false;
   let alphabet = "asdfghjkl";
   let hints = [];
+  /** @type {"activate" | "openBoard" | "keepInDrawer"} */
   let hintAction = "activate";
   let prefix = "";
   let countPrefix = "";
@@ -252,6 +253,7 @@
     overlay = container;
   }
 
+  /** @param {SheetNavigationMessage} message */
   function postMessage(message) {
     window.webkit?.messageHandlers?.denSheetNavigation?.postMessage(message);
   }
@@ -414,7 +416,7 @@
     Object.assign(subtitle.style, { margin: "0 0 18px", color: "#b8bcc2", font: "13px system-ui" });
     container.append(title, subtitle);
 
-    const sections = [
+    const sections: Array<[string, Array<[string, string]>]> = [
       ["Scrolling", [["j / k", "scroll down / up"], ["d / u", "scroll half page down / up"], ["h / l", "scroll left / right"], ["gg / G", "top / bottom"], ["zH / zL", "left / right edge"]]],
       ["Hints", [["f / Space", "activate a target or select a scrollable area"], ["Escape", "cancel hints or return to document scrolling"], ["F", "open link as a new Board"], ["a", "keep link in Drawer"]]],
       ["Boards and Sheets", [["gt / gT", "next / previous Board in the Desk"], ["g0 / g$", "first / last Board in the Desk"], ["g[ / g]", "First / latest Sheet"], ["H / L", "back / forward in Sheet Stack"], ["r", "reload Current Sheet"], ["gu / gU", "URL parent / root"], ["ge / gE", "edit URL / open URL in new Board"], ["o", "open Essentials; press an Essential key"], ["t / T", "Open Board / Overview"], ["x / gx", "remove Board / remove and focus next Board"], ["yy / ym / yb", "copy Current Sheet URL / Markdown link / Board ID"]]],
@@ -746,10 +748,11 @@
   function focusEditable(index) {
     const targets = Array.from(document.querySelectorAll(editableSelector)).filter((target) => {
       if (!isRenderedAndEnabled(target)) return false;
-      return !target.readOnly && !target.disabled;
+      return !(("readOnly" in target && target.readOnly) ||
+        ("disabled" in target && target.disabled));
     });
     const target = targets[index - 1];
-    if (!target) return;
+    if (!(target instanceof HTMLElement)) return;
     target.focus();
     target.scrollIntoView({ block: "nearest", inline: "nearest" });
   }
@@ -837,7 +840,7 @@
     if (event.key === "Escape" && isEditable(document.activeElement)) {
       if (event.isComposing) return;
       consume(event);
-      document.activeElement.blur();
+      if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
       return;
     }
 
@@ -888,6 +891,7 @@
   window.addEventListener("click", onClick, true);
   document.addEventListener("keydown", onKeyDown, true);
   window.__denSheetNavigation = {
+    /** @param {SheetNavigationConfiguration} configuration */
     configure(configuration) {
       enabled = configuration.enabled;
       alphabet = configuration.alphabet;
