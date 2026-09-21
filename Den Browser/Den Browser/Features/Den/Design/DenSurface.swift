@@ -3,26 +3,37 @@ import SwiftUI
 
 struct DenBackground: View {
     let isDenMode: Bool
+    let isPrivateDen: Bool
     let profileColor: Color
 
     var body: some View {
+        let backgroundColors =
+            if isPrivateDen {
+                isDenMode
+                    ? DenSurfaceColors.privateDenModeBackground
+                    : DenSurfaceColors.privateDenBackground
+            } else {
+                isDenMode
+                    ? DenSurfaceColors.denModeBackground
+                    : DenSurfaceColors.standardBackground
+            }
+        let accentColor = profileColor
+
         LinearGradient(
-            colors: (isDenMode
-                ? DenSurfaceColors.denModeBackground
-                : DenSurfaceColors.standardBackground).map(\.color),
+            colors: backgroundColors.map(\.color),
             startPoint: .topLeading,
             endPoint: .bottomTrailing
         )
         .overlay(alignment: .topLeading) {
             Rectangle()
-                .fill(profileColor.opacity(isDenMode ? 0.22 : 0.12))
+                .fill(accentColor.opacity(isDenMode ? 0.22 : 0.12))
                 .blur(radius: 120)
                 .frame(width: 420, height: 280)
                 .offset(x: -120, y: -80)
         }
         .overlay(alignment: .topTrailing) {
             Rectangle()
-                .fill(profileColor.opacity(isDenMode ? 0.05 : 0.10))
+                .fill(accentColor.opacity(isDenMode ? 0.05 : 0.10))
                 .blur(radius: 140)
                 .frame(width: 420, height: 280)
                 .offset(x: 140, y: -90)

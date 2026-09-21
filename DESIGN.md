@@ -12,7 +12,7 @@ Den controls feel like a calm desk laid over live web sheets. Web content remain
 - Terminal Boards keep the same Board chrome and focus treatment while their Ghostty-rendered surface owns terminal colors, text, cursor, selection, and IME presentation.
 - Use only continuous 8pt, 12pt, and 18pt corner radii: small controls use 8pt, inner cards and inputs use 12pt, and Boards, panels, and Overview use 18pt.
 - Keep hierarchy visible: Desk switcher above board strip, board header above sheet, sheet stack indicator secondary.
-- Show the current Profile name in the titlebar and a simple Profile icon at the top right. Place the Desk Preset bookmark action immediately to its left when the Focused Desk has Boards. Present both as compact borderless controls with matching secondary tint. Give both icons accessibility labels and help text; Profile identity must not depend on color.
+- Show the current Profile name in the titlebar and a distinct background gradient for Private Den while preserving its Profile color in the Den glow and controls. Add a lock-and-`Private` badge beside the top-right controls so the non-persistent session is obvious at a glance. Place the Desk Preset bookmark action immediately to its left when the Focused Desk has Boards. Present these controls as compact borderless controls with matching secondary tint. Give icons and badges accessibility labels and help text; Profile identity must not depend on color alone.
 - Prefer SF Symbols and system typography. Preserve macOS accessibility defaults where possible.
 - Use SwiftUI semantic text styles such as `title`, `headline`, `body`, `caption`, and `caption2` for app-owned
   text. Apply weight, design, and monospaced variants to a semantic style instead of specifying a point size.

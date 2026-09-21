@@ -22,6 +22,7 @@ struct ProfileManagerTests {
         #expect(personal.name == "Personal")
         #expect(personal.color == .blue)
         #expect(personal.webProfileStore == .default)
+        #expect(!manager.isPrivateDen)
 
         let personalStore = try #require(manager.store(for: personal.id))
         #expect(manager.profileID(for: personalStore) == personal.id)
@@ -52,6 +53,7 @@ struct ProfileManagerTests {
         _ = store.createBoard(urlString: "https://example.com/private")
 
         #expect(profile.name == "Private Den")
+        #expect(manager.isPrivateDen)
         #expect(store.focusedDesk?.boards.count == 1)
         #expect(store.save())
         #expect(manager.profileSaveCount == 0)

@@ -21,5 +21,15 @@ enum DenSurfaceColors {
         DenColorToken(red: 0.15, green: 0.16, blue: 0.19),
     ]
 
+    static let privateDenBackground = [
+        DenColorToken(red: 0.11, green: 0.08, blue: 0.16),
+        DenColorToken(red: 0.20, green: 0.15, blue: 0.26),
+    ]
+
+    static let privateDenModeBackground = [
+        DenColorToken(red: 0.14, green: 0.04, blue: 0.22),
+        DenColorToken(red: 0.06, green: 0.04, blue: 0.12),
+    ]
+
     static let webViewFallbackBackground = standardBackground[0]
 }

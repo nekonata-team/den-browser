@@ -13,6 +13,7 @@ private enum DenOverlayLayer {
 struct DenView<Header: View>: View {
     private let profileName: String?
     private let profileColor: Color
+    private let isPrivateDen: Bool
     private let shouldShowHeader: Bool
     private let header: Header
 
@@ -23,11 +24,13 @@ struct DenView<Header: View>: View {
     init(
         profileName: String? = nil,
         profileColor: Color = .blue,
+        isPrivateDen: Bool = false,
         shouldShowHeader: Bool,
         @ViewBuilder header: () -> Header
     ) {
         self.profileName = profileName
         self.profileColor = profileColor
+        self.isPrivateDen = isPrivateDen
         self.shouldShowHeader = shouldShowHeader
         self.header = header()
     }
@@ -111,7 +114,12 @@ struct DenView<Header: View>: View {
             .animation(DenMotion.spatial(reduceMotion: shouldReduceMotion), value: store.isDrawerOpen)
             .animation(DenMotion.spatial(reduceMotion: shouldReduceMotion), value: preferences.drawerStyle)
         }
-        .background(DenBackground(isDenMode: store.isDenMode, profileColor: profileColor))
+        .background(
+            DenBackground(
+                isDenMode: store.isDenMode,
+                isPrivateDen: isPrivateDen,
+                profileColor: profileColor)
+        )
         .frame(minWidth: 800, minHeight: 720)
         .navigationTitle(titlebarTitle)
         .accessibilityElement(children: .contain)

@@ -36,6 +36,7 @@ struct ProfileWindowView: View {
                 DenView(
                     profileName: profile.name,
                     profileColor: profile.color.color,
+                    isPrivateDen: profileManager.isPrivateDen,
                     shouldShowHeader: !store.isZenViewPresented
                 ) {
                     DenHeader(profile: profile, windowID: route.windowID)

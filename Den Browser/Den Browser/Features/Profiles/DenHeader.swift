@@ -52,9 +52,14 @@ struct DenHeaderControls: View {
     let windowID: UUID
 
     @Environment(DenStore.self) private var store
+    @Environment(ProfileManager.self) private var profileManager
 
     var body: some View {
         HStack(spacing: 8) {
+            if profileManager.isPrivateDen {
+                PrivateDenBadge(color: profile.color.color)
+            }
+
             NotificationButton()
 
             if store.focusedDesk?.boards.isEmpty == false {
@@ -64,6 +69,21 @@ struct DenHeaderControls: View {
             ProfileChip(profile: profile, windowID: windowID)
         }
         .padding(.trailing, DenLayout.chromeHorizontalPadding)
+    }
+}
+
+private struct PrivateDenBadge: View {
+    let color: Color
+
+    var body: some View {
+        Label("Private", systemSymbol: .lock)
+            .font(.caption.weight(.semibold))
+            .foregroundStyle(color)
+            .padding(.horizontal, 9)
+            .frame(height: 30)
+            .background(color.opacity(0.14), in: Capsule())
+            .accessibilityLabel("Private Den")
+            .help("Private Den")
     }
 }
 

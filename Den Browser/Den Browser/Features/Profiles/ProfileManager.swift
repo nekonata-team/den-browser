@@ -40,6 +40,8 @@ final class ProfileManager {
             ?? UUID()
     }
 
+    var isPrivateDen: Bool { isEphemeral }
+
     init(
         directoryURL: URL = ProfileManager.defaultDirectoryURL(),
         sheetNavigation: SheetNavigationManager,
