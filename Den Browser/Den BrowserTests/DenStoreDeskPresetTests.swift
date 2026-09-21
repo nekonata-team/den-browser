@@ -50,7 +50,7 @@ struct DenStoreDeskPresetTests {
         #expect(matched == choices)
     }
 
-    @Test func matchingChoicesFiltersToMatchingPreset() {
+    @Test func matchingChoicesIncludesCreateOptionAfterMatchingPresets() {
         // Arrange
         let choices = sampleChoices()
 
@@ -61,7 +61,16 @@ struct DenStoreDeskPresetTests {
             allowsEmptyPreset: true)
 
         // Assert
-        #expect(matched == [choices[1]])
+        #expect(
+            matched == [
+                choices[1],
+                DeskPresetChoice(
+                    selection: .newDesk(label: "chat"),
+                    label: "Create \"chat\"",
+                    boards: [],
+                    sourceLabel: "Empty Desk"
+                ),
+            ])
     }
 
     @Test func matchingChoicesProvidesCustomEmptyFallbackWhenAllowed() {

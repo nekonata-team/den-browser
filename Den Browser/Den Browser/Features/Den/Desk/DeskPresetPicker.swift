@@ -332,17 +332,16 @@ enum DeskPresetSearch {
         ranked.sort { lhs, rhs in
             lhs.score == rhs.score ? lhs.index < rhs.index : lhs.score < rhs.score
         }
-        if ranked.isEmpty, allowsEmptyPreset {
-            return [
-                DeskPresetChoice(
-                    selection: .newDesk(label: trimmedQuery),
-                    label: "Create \"\(trimmedQuery)\"",
-                    boards: [],
-                    sourceLabel: "Empty Desk"
-                )
-            ]
-        }
-        return ranked.map(\.choice)
+        let matchingChoices = ranked.map(\.choice)
+        guard allowsEmptyPreset else { return matchingChoices }
+        return matchingChoices + [
+            DeskPresetChoice(
+                selection: .newDesk(label: trimmedQuery),
+                label: "Create \"\(trimmedQuery)\"",
+                boards: [],
+                sourceLabel: "Empty Desk"
+            )
+        ]
     }
 
     static func score(query: String, label: String, boards: [DeskPresetBoard]) -> Int? {
