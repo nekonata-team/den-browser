@@ -35,15 +35,20 @@ extension DenStore {
             let board = BoardState(
                 width: preferredWidth ?? inheritedBoardWidth,
                 zmxSessionName: sessionName)
+            let recentItem =
+                input.count <= Self.maximumPersistedRecentInputLength
+                ? RecentItem.zmx(sessionName: sessionName)
+                : nil
             guard
                 insertBoard(
                     board,
                     afterBoardID: afterBoardID,
                     focus: true,
-                    origin: .interactive)
+                    origin: .interactive,
+                    save: recentItem == nil)
             else { return false }
-            if input.count <= Self.maximumPersistedRecentInputLength {
-                saveRecentItem(.zmx(sessionName: sessionName))
+            if let recentItem {
+                saveRecentItem(recentItem)
             }
             openBoardPanelMessage = nil
             return true
@@ -65,15 +70,20 @@ extension DenStore {
             let board = BoardState(
                 width: preferredWidth ?? inheritedBoardWidth,
                 zellijSessionName: sessionName)
+            let recentItem =
+                input.count <= Self.maximumPersistedRecentInputLength
+                ? RecentItem.zellij(sessionName: sessionName)
+                : nil
             guard
                 insertBoard(
                     board,
                     afterBoardID: afterBoardID,
                     focus: true,
-                    origin: .interactive)
+                    origin: .interactive,
+                    save: recentItem == nil)
             else { return false }
-            if input.count <= Self.maximumPersistedRecentInputLength {
-                saveRecentItem(.zellij(sessionName: sessionName))
+            if let recentItem {
+                saveRecentItem(recentItem)
             }
             openBoardPanelMessage = nil
             return true
@@ -145,7 +155,7 @@ extension DenStore {
         guard !recentItems.isEmpty else { return }
         let original = recentItems
         recentItems = []
-        if onRecentItemsSave?([]) == false {
+        if saveStateAndRecentItems() == false {
             recentItems = original
         }
     }
@@ -163,7 +173,14 @@ extension DenStore {
         let label = url.host(percentEncoded: false) ?? url.absoluteString
         let width = preferredWidth ?? inheritedBoardWidth
         let board = BoardState(label: label, width: width, currentSheetURL: url)
-        guard insertBoard(board, afterBoardID: afterBoardID, focus: focus, origin: origin) else { return nil }
+        guard
+            insertBoard(
+                board,
+                afterBoardID: afterBoardID,
+                focus: focus,
+                origin: origin,
+                save: recentItem == nil)
+        else { return nil }
         if let recentItem {
             saveRecentItem(recentItem)
         }
@@ -184,7 +201,14 @@ extension DenStore {
             width: preferredWidth ?? inheritedBoardWidth,
             workingDirectory: dir
         )
-        guard insertBoard(board, afterBoardID: afterBoardID, focus: focus, origin: origin) else { return nil }
+        guard
+            insertBoard(
+                board,
+                afterBoardID: afterBoardID,
+                focus: focus,
+                origin: origin,
+                save: recentItem == nil)
+        else { return nil }
         if let recentItem {
             saveRecentItem(recentItem)
         }
@@ -196,7 +220,8 @@ extension DenStore {
         _ board: BoardState,
         afterBoardID: UUID?,
         focus: Bool,
-        origin: BoardOperationOrigin
+        origin: BoardOperationOrigin,
+        save: Bool = true
     ) -> Bool {
         let deskIndex: Int
         let insertIndex: Int
@@ -233,7 +258,7 @@ extension DenStore {
             } else if state.desks[deskIndex].focusedBoardID == nil {
                 state.desks[deskIndex].focusedBoardID = board.id
             }
-            save()
+            if save { self.save() }
         }
         if state.desks[deskIndex].boards.isEmpty || isCLIBackgroundInsertion {
             var transaction = Transaction(animation: nil)
@@ -454,7 +479,8 @@ extension DenStore {
                         board,
                         afterBoardID: source.id,
                         focus: true,
-                        origin: .interactive)
+                        origin: .interactive,
+                        save: false)
                 else { return }
                 self.saveRecentItem(.zmx(sessionName: newSessionName))
             } catch is CancellationError {
@@ -600,7 +626,7 @@ extension DenStore {
         if recentItems.count > Self.maximumRecentItemCount {
             recentItems.removeLast(recentItems.count - Self.maximumRecentItemCount)
         }
-        if onRecentItemsSave?(recentItems) == false {
+        if saveStateAndRecentItems() == false {
             recentItems = original
         }
     }

@@ -29,6 +29,7 @@
 - [TASK-023：uBO Lite更新時の意図しないダウングレードを防ぐ](#task-023)
 - [TASK-024：公開Webの日英ページの構造を共通化する](#task-024)
 - [TASK-025：保守コストの高い機能の縮小を判断する](#task-025)
+- [TASK-026：RecentとBoard挿入の責務を整理する](#task-026)
 
 ## Current Status
 
@@ -87,14 +88,14 @@
 - **Verification:** 書き込み権限剥奪による失敗注入テスト（`ProfileManagerTests`）で未保存キャッシュ保持と後続保存時の最新状態復元を検証。Preset 保存失敗/成功 Toast 表示のテスト（`DenStoreDeskPresetTests`）を追加。`docs/persistence.md` を更新。`just check` 実行（lint 0 violations、全テストパス）。
 
 <a id="task-005"></a>
-### [ ] TASK-005：Profile保存を集約しMainActorの負荷を減らす
+### [x] TASK-005：Profile保存を集約しMainActorの負荷を減らす
 
 - **Priority / Purpose:** P3。focus、URL／title、Terminal title変更による全Profileの連続保存を減らします。
 - **Prerequisites:** TASK-004。
 - **Entry Points:** `Profiles/ProfileManager.swift`、`Den/Store/DenStore+Runtime.swift`、`Den/Store/DenStore+BoardLifecycle.swift`。
 - **Work:** 代表操作の保存回数、encode時間、書き込み時間を測定します。一操作内のDenとRecentの保存を集約し、必要な場合はimmutable snapshotのencode／I/OをMainActor外で直列化します。新旧の書き込み順序と終了時のflush契約を定義します。
 - **Acceptance Criteria:** 古いsnapshotが新しい保存を上書きしません。変更前後の保存回数とUI停止時間を記録し、TASK-004の失敗契約を維持します。不要と判断した最適化は根拠を記録します。
-- **Verification:** 保存順序、集約、終了、失敗後の再試行のfocused testと同条件の前後計測。`just check`。
+- **Verification:** `ProfileManagerTests`でBoardとRecentの同一操作をProfile write 2回→1回へ集約し、再起動後の両状態を検証。既存の保存失敗→後続保存→復元テストでTASK-004の契約を再確認。`PerformanceTrace`に保存回数、encode、file write、MainActor上の`DenStore.save`の計測点を追加（`DEN_BENCHMARK`／`--benchmark`時）。保存は同期完了するため終了時flushは不要。`just check`成功（lint 0 violations、unit test 563件全パス）。encode／I/Oの非同期化は、今回の重複write除去で契約を変えずに負荷原因を解消できるため見送った。
 
 <a id="task-006"></a>
 ### [x] TASK-006：ダウンロード成功まで既存ファイルを保護する
@@ -301,6 +302,16 @@
 - **Work:** networkidleの簡易判定、zmxの一覧／階層／一括終了／複製、Board Activityの詳細監視、Desk合成Screenshot、Drawerの二つの表示形式を対象に、利用目的、代替操作、保守対象、削除時の互換性を比較します。利用頻度は推測で決めません。維持・限定・削除案を利用者が判断できる形で提示します。
 - **Acceptance Criteria:** 候補ごとに採否と理由、未決事項、文書・設定・CLI・保存データへの影響が記録されています。採用された変更だけを次の未使用IDで実装タスク化し、TASK-019／TASK-021等の範囲を整合させます。
 - **Verification:** 代替操作の成立と参照箇所を確認し、既存ADRとの矛盾をレビューします。製品判断が未確定なら実装を進めず、Deferred Itemsへ記録します。
+
+<a id="task-026"></a>
+### [ ] TASK-026：RecentとBoard挿入の責務を整理する
+
+- **Priority / Purpose:** P2。Recentの意味とBoard生成・複製時の保存境界を揃え、入口ごとの暗黙な保存とRecent更新の不一致をなくします。
+- **Prerequisites:** TASK-005。
+- **Entry Points:** `Den/Store/DenStore+BoardLifecycle.swift`、`Den/DenStore.swift`、`Profiles/ProfileManager.swift`、`CONTEXT.md`。
+- **Work:** Recentを「新しいBoardを開くために最近使った入力」とする方針を確定します。Web／Terminal／Zellij／zmxの複製がRecentへ追加されるかを統一し、既存のzmx複製だけの例外を扱います。`insertBoard`の状態変更とProfile保存を分離し、create／duplicate／zmx生成の各操作が必要な変更をまとめて1回保存する経路へ整理します。
+- **Acceptance Criteria:** 複製がRecentへ追加される条件が全Board種別で一貫し、`CONTEXT.md`とテストが同じ意味を示します。Recent付きBoard生成、Recentなしの複製、zmx生成の各経路で保存回数が過剰になりません。TASK-004の保存失敗・後続再試行契約を維持します。
+- **Verification:** Recent更新方針、各複製経路のRecent不変条件、Insert後の単一snapshot保存、保存失敗後の復元をfocused testで検証。`just check`。
 
 ## Common Acceptance Criteria
 

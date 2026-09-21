@@ -16,6 +16,7 @@ final class ProfileManager {
 
     @ObservationIgnored private let directoryURL: URL
     @ObservationIgnored private var persistedProfiles: [UUID: PersistedProfile] = [:]
+    @ObservationIgnored private(set) var profileSaveCount = 0
     @ObservationIgnored private var storages: [UUID: DenStorage] = [:]
     @ObservationIgnored private var stores: [UUID: DenStore] = [:]
     @ObservationIgnored private var storeProfileIDs: [UUID: UUID] = [:]
@@ -690,6 +691,10 @@ final class ProfileManager {
     private func saveDen(_ den: DenState, for profileID: UUID) -> Bool {
         guard var persisted = persistedProfiles[profileID] else { return false }
         persisted.den = den
+        if let storage = storages[profileID] {
+            persisted.deskPresets = storage.deskPresets
+            persisted.recentItems = storage.recentItems
+        }
         persistedProfiles[profileID] = persisted
         do {
             try save(persisted)
@@ -729,6 +734,10 @@ final class ProfileManager {
     }
 
     private func save(_ persisted: PersistedProfile) throws {
+        profileSaveCount += 1
+        PerformanceTrace.mark(
+            "ProfileManager.save #\(profileSaveCount)",
+            category: "Persistence")
         try write(persisted, to: profileURL(for: persisted.profile.id))
     }
 
@@ -741,7 +750,12 @@ final class ProfileManager {
     }
 
     private func write<T: Encodable>(_ value: T, to url: URL) throws {
+        let encodeSignpost = PerformanceTrace.beginInterval("ProfileManager.encode")
+        defer { PerformanceTrace.endInterval("ProfileManager.encode", encodeSignpost) }
         let data = try JSONEncoder.denEncoder.encode(value)
+
+        let writeSignpost = PerformanceTrace.beginInterval("ProfileManager.fileWrite")
+        defer { PerformanceTrace.endInterval("ProfileManager.fileWrite", writeSignpost) }
         try data.write(to: url, options: Data.WritingOptions.atomic)
     }
 

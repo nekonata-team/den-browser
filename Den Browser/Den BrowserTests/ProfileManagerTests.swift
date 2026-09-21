@@ -428,6 +428,24 @@ struct ProfileManagerTests {
         #expect(restoredStore.focusedDesk?.boards.contains { $0.currentSheetURL == targetURL } == true)
     }
 
+    @Test func boardAndRecentArePersistedInOneProfileWrite() throws {
+        let directory = temporaryProfileDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let manager = makeProfileManager(directory: directory)
+        let store = try #require(manager.store(for: manager.personalProfileID))
+        let url = try #require(URL(string: "https://example.com/aggregated"))
+
+        let writesBefore = manager.profileSaveCount
+        _ = store.createBoard(urlString: url.absoluteString, recentItem: .url(url))
+
+        #expect(manager.profileSaveCount == writesBefore + 1)
+
+        let restored = makeProfileManager(directory: directory)
+        let restoredStore = try #require(restored.store(for: manager.personalProfileID))
+        #expect(restoredStore.focusedDesk?.boards.contains { $0.currentSheetURL == url } == true)
+        #expect(restoredStore.recentItems == [.url(url)])
+    }
+
     @Test func multipleWindowsRetainSharedRuntimesWhenNonFinalWindowCloses() throws {
         // Arrange
         let directory = temporaryProfileDirectory()

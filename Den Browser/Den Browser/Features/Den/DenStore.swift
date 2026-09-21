@@ -741,8 +741,18 @@ final class DenStore {
 
     @discardableResult
     func save() -> Bool {
+        let signpost = PerformanceTrace.beginInterval("DenStore.save")
+        defer { PerformanceTrace.endInterval("DenStore.save", signpost) }
         guard activeDrag == nil else { return false }
         return storage.onSave?(state) ?? false
+    }
+
+    @discardableResult
+    func saveStateAndRecentItems() -> Bool {
+        if storage.onSave != nil {
+            return save()
+        }
+        return storage.onRecentItemsSave?(recentItems) ?? true
     }
 
     @discardableResult
