@@ -404,6 +404,98 @@ struct ProfileManagerTests {
         #expect(rebuiltIndex.profileIDs.count == 2)
     }
 
+    @Test func unsupportedProfileSchemaIsKeptAndReported() throws {
+        // Arrange
+        let directory = temporaryProfileDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let manager = makeProfileManager(directory: directory)
+        let work = try #require(manager.createProfile(name: "Work", color: .purple))
+        let profileURL = profileURL(work.id, in: directory)
+        var object = try #require(
+            JSONSerialization.jsonObject(with: Data(contentsOf: profileURL)) as? [String: Any])
+        object["schemaVersion"] = PersistedProfile.currentSchemaVersion + 1
+        let unsupportedData = try JSONSerialization.data(withJSONObject: object, options: [.sortedKeys])
+        try unsupportedData.write(to: profileURL)
+
+        // Act
+        let restored = makeProfileManager(directory: directory)
+        let names = try FileManager.default.contentsOfDirectory(atPath: directory.path)
+
+        // Assert
+        #expect(try Data(contentsOf: profileURL) == unsupportedData)
+        #expect(!names.contains { $0.hasPrefix("\(profileURL.lastPathComponent).corrupt-") })
+        #expect(restored.profile(id: work.id) == nil)
+        #expect(restored.errorMessage?.contains("unsupported schema version") == true)
+    }
+
+    @Test func unreadableProfileIsKeptAndReported() throws {
+        // Arrange
+        let directory = temporaryProfileDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let manager = makeProfileManager(directory: directory)
+        let work = try #require(manager.createProfile(name: "Work", color: .purple))
+        let profileURL = profileURL(work.id, in: directory)
+        try FileManager.default.removeItem(at: profileURL)
+        try FileManager.default.createDirectory(at: profileURL, withIntermediateDirectories: false)
+
+        // Act
+        let restored = makeProfileManager(directory: directory)
+        let names = try FileManager.default.contentsOfDirectory(atPath: directory.path)
+
+        // Assert
+        #expect(FileManager.default.fileExists(atPath: profileURL.path))
+        #expect(!names.contains { $0.hasPrefix("\(profileURL.lastPathComponent).corrupt-") })
+        #expect(restored.profile(id: work.id) == nil)
+        #expect(restored.errorMessage?.contains("Could not read Profile") == true)
+    }
+
+    @Test func failedProfileQuarantineIsReportedWithoutRewritingIndex() throws {
+        // Arrange
+        struct ExpectedError: Error {}
+        let directory = temporaryProfileDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let manager = makeProfileManager(directory: directory)
+        let work = try #require(manager.createProfile(name: "Work", color: .purple))
+        let profileURL = profileURL(work.id, in: directory)
+        let indexURL = directory.appending(path: "profile-index.json")
+        let indexData = try Data(contentsOf: indexURL)
+        try Data("broken".utf8).write(to: profileURL)
+
+        // Act
+        let restored = makeProfileManager(
+            directory: directory,
+            quarantineFile: { _, _ in throw ExpectedError() })
+
+        // Assert
+        #expect(restored.profile(id: work.id) == nil)
+        #expect(try Data(contentsOf: profileURL) == Data("broken".utf8))
+        #expect(try Data(contentsOf: indexURL) == indexData)
+        #expect(restored.errorMessage?.contains("Could not quarantine") == true)
+    }
+
+    @Test func duplicateProfileIDsInIndexAreQuarantinedAndRebuilt() throws {
+        // Arrange
+        let directory = temporaryProfileDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let manager = makeProfileManager(directory: directory)
+        let work = try #require(manager.createProfile(name: "Work", color: .purple))
+        let indexURL = directory.appending(path: "profile-index.json")
+        var object = try #require(
+            JSONSerialization.jsonObject(with: Data(contentsOf: indexURL)) as? [String: Any])
+        object["profileIDs"] = [manager.personalProfileID.uuidString, manager.personalProfileID.uuidString]
+        try JSONSerialization.data(withJSONObject: object).write(to: indexURL)
+
+        // Act
+        let restored = makeProfileManager(directory: directory)
+        let names = try FileManager.default.contentsOfDirectory(atPath: directory.path)
+        let rebuiltIndex = try JSONDecoder().decode(ProfileIndex.self, from: Data(contentsOf: indexURL))
+
+        // Assert
+        #expect(restored.profile(id: work.id) != nil)
+        #expect(Set(rebuiltIndex.profileIDs).count == rebuiltIndex.profileIDs.count)
+        #expect(names.contains { $0.hasPrefix("profile-index.json.corrupt-") })
+    }
+
     @Test func clearBrowsingDataRequestsSelectedWebsiteDataTypes() async throws {
         // Arrange
         let directory = temporaryProfileDirectory()
@@ -598,7 +690,10 @@ struct ProfileManagerTests {
         directory.appending(path: "\(id.uuidString.lowercased()).json")
     }
 
-    private func makeProfileManager(directory: URL) -> ProfileManager {
+    private func makeProfileManager(
+        directory: URL,
+        quarantineFile: ((URL, URL) throws -> Void)? = nil
+    ) -> ProfileManager {
         let suiteName = "ProfileManagerPreferences-\(UUID().uuidString)"
         let preferences = AppPreferences(defaults: UserDefaults(suiteName: suiteName) ?? .standard)
         let navigation = SheetNavigationManager(
@@ -608,7 +703,10 @@ struct ProfileManagerTests {
             directoryURL: directory,
             sheetNavigation: navigation,
             preferences: preferences,
-            removeDataStore: { _ in })
+            removeDataStore: { _ in },
+            quarantineFile: quarantineFile ?? { source, destination in
+                try FileManager.default.moveItem(at: source, to: destination)
+            })
     }
 
     private func desk(_ label: String, boards: [BoardState] = [], focusedBoardID: UUID? = nil) -> DeskState {

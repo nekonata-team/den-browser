@@ -3,6 +3,11 @@ import Foundation
 import Observation
 import WebKit
 
+private enum ProfileFileLoadError: Error {
+    case read(Error)
+    case decode(Error)
+}
+
 @MainActor
 @Observable
 final class ProfileManager {
@@ -32,6 +37,7 @@ final class ProfileManager {
     @ObservationIgnored private let initialProfile: PersistedProfile?
     @ObservationIgnored private let isEphemeral: Bool
     @ObservationIgnored private let websiteDataStore: (WebProfileStore) -> WKWebsiteDataStore
+    @ObservationIgnored private let quarantineFile: (URL, URL) throws -> Void
     let ipcSocketPath: String
 
     var personalProfileID: UUID {
@@ -54,7 +60,10 @@ final class ProfileManager {
         isEphemeral: Bool = false,
         websiteDataStore: ((WebProfileStore) -> WKWebsiteDataStore)? = nil,
         webExtensionDescriptors: [WebExtensionDescriptor] = [],
-        ipcSocketPath: String = DenSocketPath.resolve()
+        ipcSocketPath: String = DenSocketPath.resolve(),
+        quarantineFile: @escaping (URL, URL) throws -> Void = { source, destination in
+            try FileManager.default.moveItem(at: source, to: destination)
+        }
     ) {
         self.directoryURL = directoryURL
         self.sheetNavigation = sheetNavigation
@@ -67,6 +76,7 @@ final class ProfileManager {
         self.websiteDataStore = websiteDataStore ?? { $0.websiteDataStore }
         self.webExtensionDescriptors = webExtensionDescriptors
         self.ipcSocketPath = ipcSocketPath
+        self.quarantineFile = quarantineFile
         load()
     }
 
@@ -628,17 +638,56 @@ final class ProfileManager {
             profiles = [profile.profile]
             return
         }
-        try? FileManager.default.createDirectory(at: directoryURL, withIntermediateDirectories: true)
-        var loaded = scanProfiles()
+        var loadIssues: [String] = []
+        var canRewriteIndex = true
+        do {
+            try FileManager.default.createDirectory(at: directoryURL, withIntermediateDirectories: true)
+        } catch {
+            errorMessage = "Could not read Profiles: \(error.localizedDescription)"
+            return
+        }
+        var canReadDirectory = true
+        var loaded = scanProfiles(
+            loadIssues: &loadIssues,
+            canRewriteIndex: &canRewriteIndex,
+            canReadDirectory: &canReadDirectory)
+        guard canReadDirectory else {
+            errorMessage = loadIssues.joined(separator: "\n\n")
+            return
+        }
         PerformanceTrace.mark("ProfileManager.scanProfiles finished (\(loaded.count) found)", category: "Launch")
         let indexURL = directoryURL.appending(path: "profile-index.json")
-        if let index = decode(ProfileIndex.self, from: indexURL) {
-            let byID = Dictionary(uniqueKeysWithValues: loaded.map { ($0.profile.id, $0) })
-            loaded =
-                index.profileIDs.compactMap { byID[$0] }
-                + loaded.filter { !index.profileIDs.contains($0.profile.id) }
-        } else if FileManager.default.fileExists(atPath: indexURL.path) {
-            quarantine(indexURL)
+        if FileManager.default.fileExists(atPath: indexURL.path) {
+            switch decode(ProfileIndex.self, from: indexURL) {
+            case .success(let index):
+                let byID = Dictionary(grouping: loaded, by: { $0.profile.id })
+                if byID.contains(where: { $0.value.count > 1 }) {
+                    canRewriteIndex = false
+                    loadIssues.append(
+                        "Multiple Profile documents use the same Profile ID; the first document was kept.")
+                }
+                var orderedIDs = Set<UUID>()
+                loaded =
+                    index.profileIDs.compactMap { profileID in
+                        guard orderedIDs.insert(profileID).inserted else { return nil }
+                        return byID[profileID]?.first
+                    }
+                    + loaded.filter { orderedIDs.insert($0.profile.id).inserted }
+            case .failure(let failure):
+                switch failure {
+                case .read(let error):
+                    canRewriteIndex = false
+                    loadIssues.append(
+                        "Could not read the Profile index \(indexURL.lastPathComponent): \(error.localizedDescription)")
+                case .decode(let error):
+                    if let message = unsupportedSchemaMessage(for: indexURL, error: error) {
+                        canRewriteIndex = false
+                        loadIssues.append(message)
+                    } else if !quarantine(indexURL, reason: "invalid Profile index", issues: &loadIssues) {
+                        canRewriteIndex = false
+                    }
+                }
+            }
         }
 
         var newPersonalProfile: PersistedProfile?
@@ -654,35 +703,66 @@ final class ProfileManager {
             do {
                 try save(newPersonalProfile)
             } catch {
-                reportSaveError(error)
+                loadIssues.append("Could not save the new Personal Profile: \(error.localizedDescription)")
             }
         }
-        do {
-            try saveIndex()
-        } catch {
-            reportSaveError(error)
+        if canRewriteIndex {
+            do {
+                try saveIndex()
+            } catch {
+                loadIssues.append("Could not save the Profile index: \(error.localizedDescription)")
+            }
+        }
+        if !loadIssues.isEmpty {
+            errorMessage = loadIssues.joined(separator: "\n\n")
         }
         PerformanceTrace.mark("ProfileManager.load completed (\(profiles.count) profiles loaded)", category: "Launch")
     }
 
-    private func scanProfiles() -> [PersistedProfile] {
-        let urls =
-            (try? FileManager.default.contentsOfDirectory(
-                at: directoryURL, includingPropertiesForKeys: nil)) ?? []
-        return urls.filter { $0.pathExtension == "json" && $0.lastPathComponent != "profile-index.json" }
-            .compactMap { url in
-                guard let profile = decode(PersistedProfile.self, from: url) else {
-                    quarantine(url)
-                    return nil
-                }
+    private func scanProfiles(
+        loadIssues: inout [String],
+        canRewriteIndex: inout Bool,
+        canReadDirectory: inout Bool
+    ) -> [PersistedProfile] {
+        let urls: [URL]
+        do {
+            urls = try FileManager.default.contentsOfDirectory(
+                at: directoryURL, includingPropertiesForKeys: nil)
+        } catch {
+            canReadDirectory = false
+            loadIssues.append("Could not read the Profile directory: \(error.localizedDescription)")
+            return []
+        }
+
+        var profiles: [PersistedProfile] = []
+        for url in urls where url.pathExtension == "json" && url.lastPathComponent != "profile-index.json" {
+            switch decode(PersistedProfile.self, from: url) {
+            case .success(let profile):
                 let filename = url.deletingPathExtension().lastPathComponent
                 guard profile.profile.id.uuidString.caseInsensitiveCompare(filename) == .orderedSame else {
-                    quarantine(url)
-                    return nil
+                    if !quarantine(url, reason: "Profile filename and identity do not match", issues: &loadIssues) {
+                        canRewriteIndex = false
+                    }
+                    continue
                 }
-                return profile
+                profiles.append(profile)
+            case .failure(let failure):
+                switch failure {
+                case .read(let error):
+                    canRewriteIndex = false
+                    loadIssues.append(
+                        "Could not read Profile \(url.lastPathComponent): \(error.localizedDescription)")
+                case .decode(let error):
+                    if let message = unsupportedSchemaMessage(for: url, error: error) {
+                        canRewriteIndex = false
+                        loadIssues.append(message)
+                    } else if !quarantine(url, reason: "invalid Profile document", issues: &loadIssues) {
+                        canRewriteIndex = false
+                    }
+                }
             }
-            .sorted { $0.profile.id.uuidString < $1.profile.id.uuidString }
+        }
+        return profiles.sorted { $0.profile.id.uuidString < $1.profile.id.uuidString }
     }
 
     private func deduplicated(_ profiles: [PersistedProfile]) -> [PersistedProfile] {
@@ -776,16 +856,45 @@ final class ProfileManager {
         errorMessage = "Could not save Profiles: \(error.localizedDescription)"
     }
 
-    private func decode<T: Decodable>(_ type: T.Type, from url: URL) -> T? {
-        guard let data = try? Data(contentsOf: url) else { return nil }
-        return try? JSONDecoder().decode(type, from: data)
+    private func decode<T: Decodable>(_ type: T.Type, from url: URL) -> Result<T, ProfileFileLoadError> {
+        let data: Data
+        do {
+            data = try Data(contentsOf: url)
+        } catch {
+            return .failure(.read(error))
+        }
+        do {
+            return .success(try JSONDecoder().decode(type, from: data))
+        } catch {
+            return .failure(.decode(error))
+        }
     }
 
-    private func quarantine(_ url: URL) {
+    @discardableResult
+    private func quarantine(_ url: URL, reason: String, issues: inout [String]) -> Bool {
         let formatter = ISO8601DateFormatter()
         let stamp = formatter.string(from: Date()).replacingOccurrences(of: ":", with: "-")
         let backup = url.appendingPathExtension("corrupt-\(stamp)")
-        try? FileManager.default.moveItem(at: url, to: backup)
+        do {
+            try quarantineFile(url, backup)
+            issues.append("\(reason): \(url.lastPathComponent) was preserved as \(backup.lastPathComponent).")
+            return true
+        } catch {
+            issues.append("Could not quarantine \(url.lastPathComponent): \(error.localizedDescription)")
+            return false
+        }
+    }
+
+    private func unsupportedSchemaMessage(for url: URL, error: Error) -> String? {
+        guard let error = error as? ProfilePersistenceError else { return nil }
+        switch error {
+        case .unsupportedProfileIndexSchema(let version):
+            return "Profile index \(url.lastPathComponent) uses unsupported schema version \(version); it was kept."
+        case .unsupportedPersistedProfileSchema(let version):
+            return "Profile \(url.lastPathComponent) uses unsupported schema version \(version); it was kept."
+        case .duplicateProfileIDs:
+            return nil
+        }
     }
 
     nonisolated static func defaultDirectoryURL() -> URL {

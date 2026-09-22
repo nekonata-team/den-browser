@@ -54,7 +54,7 @@ struct ProfilePersistenceTests {
         }
 
         // Assert
-        #expect(throws: DecodingError.self, performing: performDecode)
+        #expect(throws: ProfilePersistenceError.self, performing: performDecode)
     }
 
     @Test func profileIndexRejectsUnknownSchemaVersion() {
@@ -67,7 +67,7 @@ struct ProfilePersistenceTests {
         }
 
         // Assert
-        #expect(throws: DecodingError.self, performing: performDecode)
+        #expect(throws: ProfilePersistenceError.self, performing: performDecode)
     }
 
     @Test func profilePersistsBoardSheetNavigationPause() throws {

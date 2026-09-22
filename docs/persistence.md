@@ -97,7 +97,9 @@ supports is not overwritten or downgraded.
 - Breaking changes require a new schema version and an explicit migration before writing the new format.
 - Version 1 fixtures in `Den Browser/Den BrowserTests/Fixtures` are the executable format contract.
 
-Unreadable Profile documents and indexes are preserved with a `.corrupt-<timestamp>` suffix before recovery continues.
+Confirmed-invalid Profile documents and indexes are preserved with a `.corrupt-<timestamp>` suffix before recovery continues.
+Read failures and unsupported schema versions are reported and kept in place; they are not treated as corruption or
+silently replaced. If a confirmed-invalid file cannot be quarantined, recovery does not rewrite the Profile index.
 
 ## Persistence failure and recovery contract
 

@@ -360,6 +360,12 @@ enum RecentItem: Codable, Equatable, Hashable, Identifiable {
     }
 }
 
+enum ProfilePersistenceError: Error {
+    case unsupportedProfileIndexSchema(Int)
+    case unsupportedPersistedProfileSchema(Int)
+    case duplicateProfileIDs
+}
+
 struct ProfileIndex: Codable, Equatable {
     static let currentSchemaVersion = 1
 
@@ -374,10 +380,12 @@ struct ProfileIndex: Codable, Equatable {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         schemaVersion = try container.decode(Int.self, forKey: .schemaVersion)
         guard schemaVersion == Self.currentSchemaVersion else {
-            throw DecodingError.dataCorruptedError(
-                forKey: .schemaVersion, in: container, debugDescription: "Unsupported ProfileIndex schema")
+            throw ProfilePersistenceError.unsupportedProfileIndexSchema(schemaVersion)
         }
         profileIDs = try container.decode([UUID].self, forKey: .profileIDs)
+        guard Set(profileIDs).count == profileIDs.count else {
+            throw ProfilePersistenceError.duplicateProfileIDs
+        }
     }
 }
 
@@ -409,8 +417,7 @@ struct PersistedProfile: Codable, Equatable {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         let decodedSchemaVersion = try container.decode(Int.self, forKey: .schemaVersion)
         guard (1...Self.currentSchemaVersion).contains(decodedSchemaVersion) else {
-            throw DecodingError.dataCorruptedError(
-                forKey: .schemaVersion, in: container, debugDescription: "Unsupported PersistedProfile schema")
+            throw ProfilePersistenceError.unsupportedPersistedProfileSchema(decodedSchemaVersion)
         }
         schemaVersion = Self.currentSchemaVersion
         profile = try container.decode(ProfileState.self, forKey: .profile)

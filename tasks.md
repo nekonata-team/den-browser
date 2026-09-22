@@ -264,7 +264,7 @@
 - **Verification:** process identity変更と集計のfocused test、代表的Board数での更新コスト計測。`just check`。
 
 <a id="task-022"></a>
-### [ ] TASK-022：Profile読み込み失敗を原因別に扱う
+### [x] TASK-022：Profile読み込み失敗を原因別に扱う
 
 - **Priority / Purpose:** P2。I/O失敗や未対応schemaを、すべて破損ファイルとして扱う挙動を改善します。
 - **Prerequisites:** なし。
@@ -272,6 +272,7 @@
 - **Work:** 読み取り、decode、schema非対応、identity不整合を区別します。隔離処理自体の失敗も通知し、読み取り失敗後の初期状態保存で既存データを損なわない復旧方針を定めます。読み込み時の重複identityとDictionary生成順も確認します。
 - **Acceptance Criteria:** 原因に応じた復旧可能なエラーを返し、読めなかった既存Profileを暗黙に正常な初期Profileへ置き換えません。未対応schemaと破損を区別できます。
 - **Verification:** 一時ディレクトリと失敗注入による読み込み・隔離失敗、未対応schema、不正identityのfocused test。`just check`。
+- **Current Status:** `ProfileManager` の読み取り失敗、decode失敗、未対応schemaを分離し、確認済みの破損だけを `.corrupt-<timestamp>` へ隔離するようにしました。隔離失敗と重複Profile IDを通知し、読み込みを信頼できない場合はProfile indexを上書きしません。`ProfileManagerTests` と `ProfilePersistenceTests` のfocused test、および `mise exec -- just check` を通過（SwiftLint 0 violations、unit tests 570件全パス）。
 
 <a id="task-023"></a>
 ### [ ] TASK-023：uBO Lite更新時の意図しないダウングレードを防ぐ
