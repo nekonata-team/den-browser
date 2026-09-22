@@ -53,6 +53,7 @@ final class SheetNavigationManager {
     private(set) var ignoredHosts: [String]
 
     @ObservationIgnored private let defaults: UserDefaults
+    @ObservationIgnored let pasteboard: NSPasteboard
     @ObservationIgnored private let scriptSource: String
     @ObservationIgnored private var reduceMotion = false
     @ObservationIgnored private let webViews = NSHashTable<WKWebView>.weakObjects()
@@ -62,10 +63,12 @@ final class SheetNavigationManager {
     @ObservationIgnored private var pausedByWebView: [ObjectIdentifier: Bool] = [:]
 
     init(
-        defaults: UserDefaults = .standard,
+        defaults: UserDefaults,
+        pasteboard: NSPasteboard = .general,
         scriptSource: String? = nil
     ) {
         self.defaults = defaults
+        self.pasteboard = pasteboard
         self.scriptSource = scriptSource ?? Self.bundledScript
         isEnabled = defaults.bool(forKey: Self.enabledKey)
         hintAlphabet =
@@ -222,8 +225,8 @@ final class SheetNavigationManager {
                 actions.onCopyURLFailed()
                 return false
             }
-            NSPasteboard.general.clearContents()
-            let copied = NSPasteboard.general.setString(url.absoluteString, forType: .string)
+            pasteboard.clearContents()
+            let copied = pasteboard.setString(url.absoluteString, forType: .string)
             if copied {
                 actions.onCopyURLSucceeded()
             } else {
@@ -238,8 +241,8 @@ final class SheetNavigationManager {
             }
             let rawTitle = (message["title"] as? String) ?? webView.title ?? ""
             let markdown = Self.markdownLink(title: rawTitle, url: url)
-            NSPasteboard.general.clearContents()
-            let copied = NSPasteboard.general.setString(markdown, forType: .string)
+            pasteboard.clearContents()
+            let copied = pasteboard.setString(markdown, forType: .string)
             if copied {
                 actions.onCopyMarkdownLinkSucceeded()
             } else {
@@ -310,7 +313,7 @@ final class SheetNavigationManager {
             return true
         case "pasteURL", "pasteURLInNewBoard":
             guard let actions = actionsByWebView[ObjectIdentifier(webView)] else { return false }
-            let value = NSPasteboard.general.string(forType: .string)
+            let value = pasteboard.string(forType: .string)
                 .map { SheetURLPolicy.normalizePastedText($0, joiningLineBreaksWith: "") }
             guard
                 let value,

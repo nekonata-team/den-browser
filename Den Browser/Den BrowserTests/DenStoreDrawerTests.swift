@@ -38,7 +38,7 @@ struct DenStoreDrawerTests {
         preferences.setExternalLinkDestination(.focusedBoard)
         let store = DenStore(
             state: DenState(desks: [source], focusedDeskID: source.id),
-            sheetNavigation: SheetNavigationManager(),
+            sheetNavigation: makeTestSheetNavigationManager(),
             preferences: preferences)
         let url = try #require(URL(string: "https://external.example/path"))
 

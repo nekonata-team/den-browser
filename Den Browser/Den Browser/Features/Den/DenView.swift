@@ -485,9 +485,17 @@ private struct DeskFilterOverlay: View {
 }
 
 #Preview {
+    let defaults = UserDefaults(suiteName: "dev.nekonata.denbrowser.preview") ?? .standard
+    let preferences = AppPreferences(defaults: defaults)
+    let sheetNavigation = SheetNavigationManager(defaults: defaults)
+    let store = DenStore(
+        state: .sample,
+        websiteDataStore: .nonPersistent(),
+        sheetNavigation: sheetNavigation,
+        preferences: preferences)
     DenView()
-        .environment(DenStore())
-        .environment(AppPreferences())
+        .environment(store)
+        .environment(preferences)
 }
 
 private struct BoardStripIndicator: View {

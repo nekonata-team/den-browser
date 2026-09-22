@@ -159,7 +159,7 @@ final class AppPreferences {
     private static let essentialsKey = "preferences.essentials.items"
     private static let searchEngineKey = "preferences.search.engine"
 
-    init(defaults: UserDefaults = .standard) {
+    init(defaults: UserDefaults) {
         self.defaults = defaults
         Self.migrateIfNeeded(defaults)
         shortcutOverrides = [:]

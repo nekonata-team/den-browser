@@ -1,10 +1,37 @@
 import Carbon.HIToolbox
+import Darwin
 import XCTest
+
+private final class UITestProcessLock {
+    private let handle: FileHandle
+
+    init() throws {
+        let url = FileManager.default.temporaryDirectory
+            .appending(path: "dev.nekonata.denbrowser.ui-tests.lock")
+        _ = FileManager.default.createFile(atPath: url.path, contents: nil)
+        handle = try FileHandle(forUpdating: url)
+        guard flock(handle.fileDescriptor, LOCK_EX) == 0 else {
+            throw POSIXError(POSIXErrorCode(rawValue: errno) ?? .EIO)
+        }
+    }
+
+    deinit {
+        flock(handle.fileDescriptor, LOCK_UN)
+        try? handle.close()
+    }
+}
+
+private func uiTestDefaultsSuiteName(runID: String) -> String {
+    "dev.nekonata.denbrowser.ui-testing.\(runID)"
+}
 
 final class Den_BrowserUITests: XCTestCase, BDD {
     private var previousInputSource: TISInputSource?
+    private var processLock: UITestProcessLock?
+    private var defaultsSuiteNames: [String] = []
 
     override func setUpWithError() throws {
+        processLock = try UITestProcessLock()
         continueAfterFailure = false
         // Keep synthetic text input on Apple's ABC layout; restore user's IME in tearDown.
         previousInputSource = TISCopyCurrentKeyboardInputSource().takeRetainedValue()
@@ -18,6 +45,10 @@ final class Den_BrowserUITests: XCTestCase, BDD {
         if let previousInputSource {
             XCTAssertEqual(TISSelectInputSource(previousInputSource), noErr)
         }
+        for suiteName in defaultsSuiteNames {
+            UserDefaults().removePersistentDomain(forName: suiteName)
+        }
+        processLock = nil
     }
 
     private func selectInputSource(id: String) throws {
@@ -342,7 +373,9 @@ final class Den_BrowserUITests: XCTestCase, BDD {
             args.append("--multiple-drawer-items")
         }
         app.launchArguments = args
-        app.launchEnvironment["DEN_UI_TEST_RUN_ID"] = UUID().uuidString
+        let runID = UUID().uuidString
+        defaultsSuiteNames.append(uiTestDefaultsSuiteName(runID: runID))
+        app.launchEnvironment["DEN_UI_TEST_RUN_ID"] = runID
         app.launch()
 
         if !app.windows.firstMatch.waitForExistence(timeout: 2) {
@@ -425,10 +458,22 @@ final class Den_BrowserUITests: XCTestCase, BDD {
 
 @MainActor
 final class Den_BrowserUIPerformanceTests: XCTestCase {
+    private var processLock: UITestProcessLock?
+    private var defaultsSuiteName: String?
+
+    override func setUpWithError() throws {
+        processLock = try UITestProcessLock()
+        try super.setUpWithError()
+    }
+
     override func tearDownWithError() throws {
         MainActor.assumeIsolated {
             XCUIApplication().terminate()
         }
+        if let defaultsSuiteName {
+            UserDefaults().removePersistentDomain(forName: defaultsSuiteName)
+        }
+        processLock = nil
         try super.tearDownWithError()
     }
 
@@ -439,7 +484,9 @@ final class Den_BrowserUIPerformanceTests: XCTestCase {
             "--ui-testing", "--fixture", UITestFixture.interactionBasics.rawValue,
             "--board-count", UITestBoardCount.one.rawValue,
         ]
-        app.launchEnvironment["DEN_UI_TEST_RUN_ID"] = UUID().uuidString
+        let runID = UUID().uuidString
+        defaultsSuiteName = uiTestDefaultsSuiteName(runID: runID)
+        app.launchEnvironment["DEN_UI_TEST_RUN_ID"] = runID
 
         let options = XCTMeasureOptions()
         options.iterationCount = 1

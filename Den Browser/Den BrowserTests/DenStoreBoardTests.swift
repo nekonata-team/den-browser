@@ -200,7 +200,8 @@ struct DenStoreBoardTests {
         let store = DenStore(
             state: DenState(desks: [source], focusedDeskID: source.id),
             websiteDataStore: .nonPersistent(),
-            sheetNavigation: SheetNavigationManager(),
+            sheetNavigation: makeTestSheetNavigationManager(),
+            preferences: AppPreferences(defaults: makeTestDefaults()),
             onSave: nil)
         let runtime = store.terminalRuntime(for: terminal)
         let host = MV3WebExtensionHost(

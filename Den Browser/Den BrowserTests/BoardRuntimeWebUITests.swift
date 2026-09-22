@@ -10,7 +10,7 @@ struct BoardRuntimeWebUITests {
         let runtime = BoardRuntime(
             board: BoardState(label: "Board", width: 320, currentSheetURL: nil),
             websiteDataStore: .nonPersistent(),
-            sheetNavigation: SheetNavigationManager(scriptSource: ""),
+            sheetNavigation: makeTestSheetNavigationManager(scriptSource: ""),
             sheetScale: 100,
             sheetNavigationActions: noOpSheetNavigationActions(),
             events: .init(
@@ -29,7 +29,7 @@ struct BoardRuntimeWebUITests {
         let runtime = BoardRuntime(
             board: BoardState(label: "Board", width: 320, currentSheetURL: nil),
             websiteDataStore: .nonPersistent(),
-            sheetNavigation: SheetNavigationManager(scriptSource: ""),
+            sheetNavigation: makeTestSheetNavigationManager(scriptSource: ""),
             sheetScale: 100,
             sheetNavigationActions: noOpSheetNavigationActions(),
             events: .init(
@@ -49,7 +49,7 @@ struct BoardRuntimeWebUITests {
         let runtime = BoardRuntime(
             board: BoardState(label: "Board", width: 320, currentSheetURL: nil),
             websiteDataStore: .nonPersistent(),
-            sheetNavigation: SheetNavigationManager(scriptSource: ""),
+            sheetNavigation: makeTestSheetNavigationManager(scriptSource: ""),
             sheetScale: 100,
             sheetNavigationActions: noOpSheetNavigationActions(),
             events: .init(
@@ -72,7 +72,7 @@ struct BoardRuntimeWebUITests {
         let runtime = BoardRuntime(
             board: BoardState(label: "Board", width: 320, currentSheetURL: nil),
             websiteDataStore: .nonPersistent(),
-            sheetNavigation: SheetNavigationManager(scriptSource: ""),
+            sheetNavigation: makeTestSheetNavigationManager(scriptSource: ""),
             sheetScale: 100,
             sheetNavigationActions: noOpSheetNavigationActions(),
             events: .init(
@@ -199,7 +199,7 @@ struct BoardRuntimeWebUITests {
         let runtime = BoardRuntime(
             board: BoardState(label: "Board", width: 320, currentSheetURL: nil),
             websiteDataStore: .nonPersistent(),
-            sheetNavigation: SheetNavigationManager(scriptSource: ""),
+            sheetNavigation: makeTestSheetNavigationManager(scriptSource: ""),
             sheetScale: 100,
             sheetNavigationActions: actions,
             events: .init(
@@ -269,7 +269,7 @@ struct BoardRuntimeWebUITests {
     }
 
     @Test func drawerPreviewDistinguishesNewContextLinks() throws {
-        let manager = SheetNavigationManager(scriptSource: "")
+        let manager = makeTestSheetNavigationManager(scriptSource: "")
         let item = DrawerItem(url: try #require(URL(string: "file:///tmp/drawer-preview.html")))
         var keptURL: URL?
         var backgroundURL: URL?
@@ -385,7 +385,7 @@ struct BoardRuntimeWebUITests {
     }
 
     @Test func drawerPreviewDisposesAuxiliaryPopupWindow() throws {
-        let manager = SheetNavigationManager(scriptSource: "")
+        let manager = makeTestSheetNavigationManager(scriptSource: "")
         let runtime = DrawerPreviewRuntime(
             item: DrawerItem(url: try #require(URL(string: "file:///tmp/drawer-preview.html"))),
             websiteDataStore: .nonPersistent(),
@@ -482,7 +482,7 @@ struct BoardRuntimeWebUITests {
         let runtime = BoardRuntime(
             board: BoardState(label: "Board", width: 320, currentSheetURL: nil),
             websiteDataStore: .nonPersistent(),
-            sheetNavigation: SheetNavigationManager(scriptSource: ""),
+            sheetNavigation: makeTestSheetNavigationManager(scriptSource: ""),
             sheetScale: 100,
             sheetNavigationActions: noOpSheetNavigationActions(),
             events: .init(
@@ -553,7 +553,7 @@ struct BoardRuntimeWebUITests {
         let runtime = BoardRuntime(
             board: BoardState(label: "Board", width: 320, currentSheetURL: nil),
             websiteDataStore: .nonPersistent(),
-            sheetNavigation: SheetNavigationManager(scriptSource: ""),
+            sheetNavigation: makeTestSheetNavigationManager(scriptSource: ""),
             sheetScale: 100,
             sheetNavigationActions: noOpSheetNavigationActions(),
             events: .init(
@@ -592,7 +592,7 @@ struct BoardRuntimeWebUITests {
         let runtime = BoardRuntime(
             board: BoardState(label: "Board", width: 320, currentSheetURL: nil),
             websiteDataStore: .nonPersistent(),
-            sheetNavigation: SheetNavigationManager(scriptSource: ""),
+            sheetNavigation: makeTestSheetNavigationManager(scriptSource: ""),
             sheetScale: 100,
             sheetNavigationActions: noOpSheetNavigationActions(),
             events: .init(
@@ -618,7 +618,7 @@ struct BoardRuntimeWebUITests {
 
     @Test func drawerPreviewRuntimeImplementsCommonWebDelegateSelectors() {
         // Arrange
-        let manager = SheetNavigationManager(scriptSource: "")
+        let manager = makeTestSheetNavigationManager(scriptSource: "")
         let item = DrawerItem(url: URL(string: "https://example.com")!)
         let runtime = DrawerPreviewRuntime(
             item: item,
@@ -653,7 +653,7 @@ struct BoardRuntimeWebUITests {
         let runtime = BoardRuntime(
             board: BoardState(label: "Board", width: 320, currentSheetURL: nil),
             websiteDataStore: .nonPersistent(),
-            sheetNavigation: SheetNavigationManager(scriptSource: ""),
+            sheetNavigation: makeTestSheetNavigationManager(scriptSource: ""),
             sheetScale: 100,
             sheetNavigationActions: noOpSheetNavigationActions(),
             events: .init(

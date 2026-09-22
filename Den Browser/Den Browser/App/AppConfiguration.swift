@@ -13,13 +13,13 @@ struct AppConfiguration {
         guard processInfo.arguments.contains("--ui-testing") else {
             let isPrivateDen = processInfo.arguments.contains("--private-den")
             let isUnitTestHost = processInfo.environment["XCTestConfigurationFilePath"] != nil
+            if isUnitTestHost {
+                let runID = "\(processInfo.processIdentifier)"
+                return unitTest(runID: runID)
+            }
             let ipcSocketPath =
                 if isPrivateDen {
                     DenSocketPath.temporary(prefix: "den-private")
-                } else if isUnitTestHost {
-                    DenSocketPath.temporary(
-                        prefix: "den-test",
-                        identifier: "\(processInfo.processIdentifier)")
                 } else {
                     DenSocketPath.resolve()
                 }
@@ -53,7 +53,7 @@ struct AppConfiguration {
             try? FileManager.default.removeItem(at: directoryURL)
         }
 
-        let suiteName = "dev.nekonata.denbrowser.ui-testing"
+        let suiteName = "dev.nekonata.denbrowser.ui-testing.\(runID)"
         guard let defaults = UserDefaults(suiteName: suiteName) else {
             preconditionFailure("Could not create UI test preferences")
         }
@@ -71,6 +71,22 @@ struct AppConfiguration {
                 terminalBoard: processInfo.arguments.contains("--terminal-board"),
                 multipleDrawerItems: processInfo.arguments.contains("--multiple-drawer-items")),
             isEphemeral: false,
+            ipcSocketPath: DenSocketPath.temporary(prefix: "den-test", identifier: runID),
+            websiteDataStore: { _ in .nonPersistent() })
+    }
+
+    static func unitTest(runID: String) -> AppConfiguration {
+        let suiteName = "dev.nekonata.denbrowser.unit-testing.\(runID)"
+        guard let defaults = UserDefaults(suiteName: suiteName) else {
+            preconditionFailure("Could not create unit test preferences")
+        }
+        defaults.removePersistentDomain(forName: suiteName)
+        return AppConfiguration(
+            profileDirectoryURL: FileManager.default.temporaryDirectory
+                .appending(path: "DenBrowserUnitTests/\(runID)", directoryHint: .isDirectory),
+            defaults: defaults,
+            initialProfile: nil,
+            isEphemeral: true,
             ipcSocketPath: DenSocketPath.temporary(prefix: "den-test", identifier: runID),
             websiteDataStore: { _ in .nonPersistent() })
     }

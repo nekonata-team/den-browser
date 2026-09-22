@@ -194,7 +194,8 @@ extension DenStore {
         save()
     }
 
-    func copyDeskID(_ deskID: UUID, pasteboard: NSPasteboard = .general) {
+    func copyDeskID(_ deskID: UUID, pasteboard: NSPasteboard? = nil) {
+        let pasteboard = pasteboard ?? self.pasteboard
         guard state.desks.contains(where: { $0.id == deskID }) else { return }
         pasteboard.clearContents()
         pasteboard.setString(deskID.uuidString.lowercased(), forType: .string)

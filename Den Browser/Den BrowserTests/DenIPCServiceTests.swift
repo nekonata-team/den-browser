@@ -22,10 +22,11 @@ struct DenIPCServiceTests {
         let manager = ProfileManager(
             directoryURL: directory,
             sheetNavigation: SheetNavigationManager(
-                defaults: UserDefaults(suiteName: suiteName) ?? .standard,
+                defaults: makeTestDefaults(suiteName: suiteName),
                 scriptSource: ""),
-            preferences: AppPreferences(defaults: UserDefaults(suiteName: suiteName) ?? .standard),
-            removeDataStore: { _ in })
+            preferences: AppPreferences(defaults: makeTestDefaults(suiteName: suiteName)),
+            removeDataStore: { _ in },
+            websiteDataStore: { _ in .nonPersistent() })
         let store = try #require(manager.store(for: manager.personalProfileID))
         let service = DenIPCService(profileManager: manager)
 
@@ -49,10 +50,11 @@ struct DenIPCServiceTests {
         let manager = ProfileManager(
             directoryURL: directory,
             sheetNavigation: SheetNavigationManager(
-                defaults: UserDefaults(suiteName: suiteName) ?? .standard,
+                defaults: makeTestDefaults(suiteName: suiteName),
                 scriptSource: ""),
-            preferences: AppPreferences(defaults: UserDefaults(suiteName: suiteName) ?? .standard),
-            removeDataStore: { _ in })
+            preferences: AppPreferences(defaults: makeTestDefaults(suiteName: suiteName)),
+            removeDataStore: { _ in },
+            websiteDataStore: { _ in .nonPersistent() })
         let store = try #require(manager.store(for: manager.personalProfileID))
         let boardID = try #require(store.createBoard(urlString: "https://example.com/"))
         let service = DenIPCService(profileManager: manager)
@@ -79,10 +81,11 @@ struct DenIPCServiceTests {
         let manager = ProfileManager(
             directoryURL: directory,
             sheetNavigation: SheetNavigationManager(
-                defaults: UserDefaults(suiteName: suiteName) ?? .standard,
+                defaults: makeTestDefaults(suiteName: suiteName),
                 scriptSource: ""),
-            preferences: AppPreferences(defaults: UserDefaults(suiteName: suiteName) ?? .standard),
-            removeDataStore: { _ in })
+            preferences: AppPreferences(defaults: makeTestDefaults(suiteName: suiteName)),
+            removeDataStore: { _ in },
+            websiteDataStore: { _ in .nonPersistent() })
         let store = try #require(manager.store(for: manager.personalProfileID))
         let service = DenIPCService(profileManager: manager)
 
@@ -108,10 +111,11 @@ struct DenIPCServiceTests {
         let manager = ProfileManager(
             directoryURL: directory,
             sheetNavigation: SheetNavigationManager(
-                defaults: UserDefaults(suiteName: suiteName) ?? .standard,
+                defaults: makeTestDefaults(suiteName: suiteName),
                 scriptSource: ""),
-            preferences: AppPreferences(defaults: UserDefaults(suiteName: suiteName) ?? .standard),
-            removeDataStore: { _ in })
+            preferences: AppPreferences(defaults: makeTestDefaults(suiteName: suiteName)),
+            removeDataStore: { _ in },
+            websiteDataStore: { _ in .nonPersistent() })
         let store = try #require(manager.store(for: manager.personalProfileID))
         let itemID = try #require(
             store.keepInDrawerInBackground(URL(string: "https://example.com/drawer")!))
@@ -138,10 +142,11 @@ struct DenIPCServiceTests {
         let manager = ProfileManager(
             directoryURL: directory,
             sheetNavigation: SheetNavigationManager(
-                defaults: UserDefaults(suiteName: suiteName) ?? .standard,
+                defaults: makeTestDefaults(suiteName: suiteName),
                 scriptSource: ""),
-            preferences: AppPreferences(defaults: UserDefaults(suiteName: suiteName) ?? .standard),
-            removeDataStore: { _ in })
+            preferences: AppPreferences(defaults: makeTestDefaults(suiteName: suiteName)),
+            removeDataStore: { _ in },
+            websiteDataStore: { _ in .nonPersistent() })
         _ = try #require(manager.store(for: manager.personalProfileID))
         let profile2 = try #require(manager.createProfile(name: "Work", color: .blue))
         let service = DenIPCService(profileManager: manager)
@@ -170,10 +175,11 @@ struct DenIPCServiceTests {
         let manager = ProfileManager(
             directoryURL: directory,
             sheetNavigation: SheetNavigationManager(
-                defaults: UserDefaults(suiteName: suiteName) ?? .standard,
+                defaults: makeTestDefaults(suiteName: suiteName),
                 scriptSource: ""),
-            preferences: AppPreferences(defaults: UserDefaults(suiteName: suiteName) ?? .standard),
-            removeDataStore: { _ in })
+            preferences: AppPreferences(defaults: makeTestDefaults(suiteName: suiteName)),
+            removeDataStore: { _ in },
+            websiteDataStore: { _ in .nonPersistent() })
         _ = try #require(manager.store(for: manager.personalProfileID))
         let profile2 = try #require(manager.createProfile(name: "Work", color: .blue))
         let store2 = try #require(manager.store(for: profile2.id))
@@ -199,10 +205,11 @@ struct DenIPCServiceTests {
         let manager = ProfileManager(
             directoryURL: directory,
             sheetNavigation: SheetNavigationManager(
-                defaults: UserDefaults(suiteName: suiteName) ?? .standard,
+                defaults: makeTestDefaults(suiteName: suiteName),
                 scriptSource: ""),
-            preferences: AppPreferences(defaults: UserDefaults(suiteName: suiteName) ?? .standard),
-            removeDataStore: { _ in })
+            preferences: AppPreferences(defaults: makeTestDefaults(suiteName: suiteName)),
+            removeDataStore: { _ in },
+            websiteDataStore: { _ in .nonPersistent() })
         let profile2 = try #require(manager.createProfile(name: "Work", color: .blue))
         var openedProfileID: UUID?
         manager.openWindowAction = { route in
@@ -232,10 +239,11 @@ struct DenIPCServiceTests {
         let manager = ProfileManager(
             directoryURL: directory,
             sheetNavigation: SheetNavigationManager(
-                defaults: UserDefaults(suiteName: suiteName) ?? .standard,
+                defaults: makeTestDefaults(suiteName: suiteName),
                 scriptSource: ""),
-            preferences: AppPreferences(defaults: UserDefaults(suiteName: suiteName) ?? .standard),
-            removeDataStore: { _ in })
+            preferences: AppPreferences(defaults: makeTestDefaults(suiteName: suiteName)),
+            removeDataStore: { _ in },
+            websiteDataStore: { _ in .nonPersistent() })
         let route = ProfileWindowRoute(profileID: manager.personalProfileID)
         _ = try #require(manager.store(for: route))
         let window = NSWindow()
@@ -263,10 +271,11 @@ struct DenIPCServiceTests {
         let manager = ProfileManager(
             directoryURL: directory,
             sheetNavigation: SheetNavigationManager(
-                defaults: UserDefaults(suiteName: suiteName) ?? .standard,
+                defaults: makeTestDefaults(suiteName: suiteName),
                 scriptSource: ""),
-            preferences: AppPreferences(defaults: UserDefaults(suiteName: suiteName) ?? .standard),
-            removeDataStore: { _ in })
+            preferences: AppPreferences(defaults: makeTestDefaults(suiteName: suiteName)),
+            removeDataStore: { _ in },
+            websiteDataStore: { _ in .nonPersistent() })
         let service = DenIPCService(profileManager: manager)
 
         // Act
@@ -290,10 +299,11 @@ struct DenIPCServiceTests {
         let manager = ProfileManager(
             directoryURL: directory,
             sheetNavigation: SheetNavigationManager(
-                defaults: UserDefaults(suiteName: suiteName) ?? .standard,
+                defaults: makeTestDefaults(suiteName: suiteName),
                 scriptSource: ""),
-            preferences: AppPreferences(defaults: UserDefaults(suiteName: suiteName) ?? .standard),
-            removeDataStore: { _ in })
+            preferences: AppPreferences(defaults: makeTestDefaults(suiteName: suiteName)),
+            removeDataStore: { _ in },
+            websiteDataStore: { _ in .nonPersistent() })
         let service = DenIPCService(profileManager: manager)
         let unknownUUID = UUID().uuidString
 
@@ -318,10 +328,11 @@ struct DenIPCServiceTests {
         let manager = ProfileManager(
             directoryURL: directory,
             sheetNavigation: SheetNavigationManager(
-                defaults: UserDefaults(suiteName: suiteName) ?? .standard,
+                defaults: makeTestDefaults(suiteName: suiteName),
                 scriptSource: ""),
-            preferences: AppPreferences(defaults: UserDefaults(suiteName: suiteName) ?? .standard),
-            removeDataStore: { _ in })
+            preferences: AppPreferences(defaults: makeTestDefaults(suiteName: suiteName)),
+            removeDataStore: { _ in },
+            websiteDataStore: { _ in .nonPersistent() })
         let store = try #require(manager.store(for: manager.personalProfileID))
         let boardID = try #require(store.createBoard(urlString: "https://example.com/"))
         store.focusBoard(boardID)
@@ -346,10 +357,11 @@ struct DenIPCServiceTests {
         let manager = ProfileManager(
             directoryURL: directory,
             sheetNavigation: SheetNavigationManager(
-                defaults: UserDefaults(suiteName: suiteName) ?? .standard,
+                defaults: makeTestDefaults(suiteName: suiteName),
                 scriptSource: ""),
-            preferences: AppPreferences(defaults: UserDefaults(suiteName: suiteName) ?? .standard),
-            removeDataStore: { _ in })
+            preferences: AppPreferences(defaults: makeTestDefaults(suiteName: suiteName)),
+            removeDataStore: { _ in },
+            websiteDataStore: { _ in .nonPersistent() })
         let store = try #require(manager.store(for: manager.personalProfileID))
         let boardID = try #require(store.createBoard(urlString: "https://example.com/"))
         store.focusBoard(boardID)
@@ -376,10 +388,11 @@ struct DenIPCServiceTests {
         let manager = ProfileManager(
             directoryURL: directory,
             sheetNavigation: SheetNavigationManager(
-                defaults: UserDefaults(suiteName: suiteName) ?? .standard,
+                defaults: makeTestDefaults(suiteName: suiteName),
                 scriptSource: ""),
-            preferences: AppPreferences(defaults: UserDefaults(suiteName: suiteName) ?? .standard),
-            removeDataStore: { _ in })
+            preferences: AppPreferences(defaults: makeTestDefaults(suiteName: suiteName)),
+            removeDataStore: { _ in },
+            websiteDataStore: { _ in .nonPersistent() })
         let store = try #require(manager.store(for: manager.personalProfileID))
         // Remove existing default boards if any
         if let focused = store.focusedBoard {
@@ -404,10 +417,11 @@ struct DenIPCServiceTests {
         let manager = ProfileManager(
             directoryURL: directory,
             sheetNavigation: SheetNavigationManager(
-                defaults: UserDefaults(suiteName: suiteName) ?? .standard,
+                defaults: makeTestDefaults(suiteName: suiteName),
                 scriptSource: ""),
-            preferences: AppPreferences(defaults: UserDefaults(suiteName: suiteName) ?? .standard),
-            removeDataStore: { _ in })
+            preferences: AppPreferences(defaults: makeTestDefaults(suiteName: suiteName)),
+            removeDataStore: { _ in },
+            websiteDataStore: { _ in .nonPersistent() })
         let store = try #require(manager.store(for: manager.personalProfileID))
         let boardID = try #require(store.createBoard(urlString: "https://example.com/"))
         let board = try #require(store.board(for: boardID))
@@ -462,10 +476,11 @@ struct DenIPCServiceTests {
         let manager = ProfileManager(
             directoryURL: directory,
             sheetNavigation: SheetNavigationManager(
-                defaults: UserDefaults(suiteName: suiteName) ?? .standard,
+                defaults: makeTestDefaults(suiteName: suiteName),
                 scriptSource: ""),
-            preferences: AppPreferences(defaults: UserDefaults(suiteName: suiteName) ?? .standard),
-            removeDataStore: { _ in })
+            preferences: AppPreferences(defaults: makeTestDefaults(suiteName: suiteName)),
+            removeDataStore: { _ in },
+            websiteDataStore: { _ in .nonPersistent() })
         let store = try #require(manager.store(for: manager.personalProfileID))
         let firstBoardID = try #require(store.createBoard(urlString: "https://first.example/"))
         let secondBoardID = try #require(store.createBoard(urlString: "https://second.example/"))
@@ -553,10 +568,11 @@ struct DenIPCServiceTests {
         let manager = ProfileManager(
             directoryURL: directory,
             sheetNavigation: SheetNavigationManager(
-                defaults: UserDefaults(suiteName: suiteName) ?? .standard,
+                defaults: makeTestDefaults(suiteName: suiteName),
                 scriptSource: ""),
-            preferences: AppPreferences(defaults: UserDefaults(suiteName: suiteName) ?? .standard),
-            removeDataStore: { _ in })
+            preferences: AppPreferences(defaults: makeTestDefaults(suiteName: suiteName)),
+            removeDataStore: { _ in },
+            websiteDataStore: { _ in .nonPersistent() })
         let store = try #require(manager.store(for: manager.personalProfileID))
         let firstBoardID = try #require(store.createBoard(urlString: "https://first.example/"))
         let secondBoardID = try #require(store.createBoard(urlString: "https://second.example/"))

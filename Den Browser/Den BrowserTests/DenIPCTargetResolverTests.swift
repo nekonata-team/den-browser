@@ -595,15 +595,16 @@ struct DenIPCTargetResolverTests {
         initialProfile: PersistedProfile? = nil
     ) -> ProfileManager {
         let suiteName = "IPCTargetResolverPreferences-\(UUID().uuidString)"
-        let preferences = AppPreferences(defaults: UserDefaults(suiteName: suiteName) ?? .standard)
+        let preferences = AppPreferences(defaults: makeTestDefaults(suiteName: suiteName))
         let navigation = SheetNavigationManager(
-            defaults: UserDefaults(suiteName: suiteName) ?? .standard,
+            defaults: makeTestDefaults(suiteName: suiteName),
             scriptSource: "")
         return ProfileManager(
             directoryURL: directory,
             sheetNavigation: navigation,
             preferences: preferences,
             removeDataStore: { _ in },
-            initialProfile: initialProfile)
+            initialProfile: initialProfile,
+            websiteDataStore: { _ in .nonPersistent() })
     }
 }

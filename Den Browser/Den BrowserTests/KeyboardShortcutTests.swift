@@ -389,9 +389,8 @@ struct KeyboardShortcutTests {
     @Test func denModeVOpensBoardFromClipboard() throws {
         let store = try makeStore(boards: [board("First")])
         store.isDenMode = true
-        NSPasteboard.general.clearContents()
-        NSPasteboard.general.setString("https://example.com/test", forType: .string)
-        defer { NSPasteboard.general.clearContents() }
+        store.pasteboard.clearContents()
+        store.pasteboard.setString("https://example.com/test", forType: .string)
 
         let vKey = try keyEvent(
             characters: "v",

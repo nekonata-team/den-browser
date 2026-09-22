@@ -1,3 +1,4 @@
+import AppKit
 import Foundation
 import Observation
 import SwiftUI
@@ -182,6 +183,7 @@ final class DenStore {
     private(set) var toastMessage: ToastMessage?
     let sheetNavigation: SheetNavigationManager
     let preferences: AppPreferences
+    let pasteboard: NSPasteboard
     let websiteDataStore: WKWebsiteDataStore
     let profileID: UUID?
     let ipcSocketPath: String
@@ -312,81 +314,12 @@ final class DenStore {
         pendingConfirmation != nil || !zmxSessions.pendingDeletion.isEmpty
     }
 
-    convenience init() {
-        self.init(state: .sample)
-    }
-
-    convenience init(state: DenState) {
-        self.init(state: state, sheetNavigation: SheetNavigationManager())
-    }
-
-    convenience init(
-        state: DenState,
-        sheetNavigation: SheetNavigationManager,
-        preferences: AppPreferences = AppPreferences(),
-        terminalCommandRunner: any TerminalCommandRunning = SubprocessCommandRunner()
-    ) {
-        self.init(
-            state: state,
-            websiteDataStore: .default(),
-            sheetNavigation: sheetNavigation,
-            preferences: preferences,
-            terminalCommandRunner: terminalCommandRunner,
-            deskPresets: [],
-            onSave: nil,
-            onRecentItemsSave: nil
-        )
-    }
-
-    convenience init(state: DenState, onSave: @escaping (DenState) -> Void) {
-        self.init(
-            state: state,
-            websiteDataStore: .default(),
-            sheetNavigation: SheetNavigationManager(),
-            preferences: AppPreferences(),
-            deskPresets: [],
-            onSave: { state in
-                onSave(state)
-                return true
-            },
-            onRecentItemsSave: nil
-        )
-    }
-
-    convenience init(state: DenState, onSaveReturningBool onSave: @escaping (DenState) -> Bool) {
-        self.init(
-            state: state,
-            websiteDataStore: .default(),
-            sheetNavigation: SheetNavigationManager(),
-            preferences: AppPreferences(),
-            deskPresets: [],
-            onSave: onSave,
-            onRecentItemsSave: nil
-        )
-    }
-
-    convenience init(
-        state: DenState,
-        deskPresets: [PersonalDeskPreset],
-        onDeskPresetsSave: (([PersonalDeskPreset]) -> Bool)? = nil
-    ) {
-        self.init(
-            state: state,
-            websiteDataStore: .default(),
-            sheetNavigation: SheetNavigationManager(),
-            preferences: AppPreferences(),
-            deskPresets: deskPresets,
-            onSave: nil,
-            onDeskPresetsSave: onDeskPresetsSave,
-            onRecentItemsSave: nil
-        )
-    }
-
     init(
         state: DenState,
         websiteDataStore: WKWebsiteDataStore,
         sheetNavigation: SheetNavigationManager,
-        preferences: AppPreferences = AppPreferences(),
+        preferences: AppPreferences,
+        pasteboard: NSPasteboard = .general,
         terminalCommandRunner: any TerminalCommandRunning = SubprocessCommandRunner(),
         webExtensionHost: WebExtensionHost? = nil,
         webExtensionWindow: MV3WebExtensionWindow? = nil,
@@ -413,6 +346,7 @@ final class DenStore {
         self.ipcSocketPath = ipcSocketPath
         self.sheetNavigation = sheetNavigation
         self.preferences = preferences
+        self.pasteboard = pasteboard
         self.terminalCommandRunner = terminalCommandRunner
         self.webExtensionHost = webExtensionHost
         self.webExtensionWindow = webExtensionWindow
@@ -431,6 +365,7 @@ final class DenStore {
         websiteDataStore: WKWebsiteDataStore,
         sheetNavigation: SheetNavigationManager,
         preferences: AppPreferences,
+        pasteboard: NSPasteboard = .general,
         webExtensionHost: WebExtensionHost? = nil,
         webExtensionWindow: MV3WebExtensionWindow? = nil,
         canPresentDesk: @escaping (UUID) -> Bool,
@@ -450,6 +385,7 @@ final class DenStore {
         self.ipcSocketPath = ipcSocketPath
         self.sheetNavigation = sheetNavigation
         self.preferences = preferences
+        self.pasteboard = pasteboard
         self.terminalCommandRunner = terminalCommandRunner
         self.webExtensionHost = webExtensionHost
         self.webExtensionWindow = webExtensionWindow

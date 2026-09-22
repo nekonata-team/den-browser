@@ -324,14 +324,16 @@ extension DenStore {
         save()
     }
 
-    func copyBoardID(_ boardID: UUID, pasteboard: NSPasteboard = .general) {
+    func copyBoardID(_ boardID: UUID, pasteboard: NSPasteboard? = nil) {
+        let pasteboard = pasteboard ?? self.pasteboard
         guard state.desks.contains(where: { $0.boards.contains { $0.id == boardID } }) else { return }
         pasteboard.clearContents()
         pasteboard.setString(boardID.uuidString.lowercased(), forType: .string)
         showToast("Copied Board ID.", style: .success)
     }
 
-    func copyFocusedBoardLocation(pasteboard: NSPasteboard = .general) {
+    func copyFocusedBoardLocation(pasteboard: NSPasteboard? = nil) {
+        let pasteboard = pasteboard ?? self.pasteboard
         guard let board = focusedBoard else { return }
 
         let value: String

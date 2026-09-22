@@ -3,7 +3,8 @@ import Foundation
 import SwiftUI
 
 extension DenStore {
-    func openBoardFromClipboard(pasteboard: NSPasteboard = .general) {
+    func openBoardFromClipboard(pasteboard: NSPasteboard? = nil) {
+        let pasteboard = pasteboard ?? self.pasteboard
         guard
             let text = pasteboard.string(forType: .string)?.trimmingCharacters(in: .whitespacesAndNewlines),
             !text.isEmpty

@@ -51,14 +51,14 @@ final class ProfileManager {
     init(
         directoryURL: URL = ProfileManager.defaultDirectoryURL(),
         sheetNavigation: SheetNavigationManager,
-        preferences: AppPreferences = AppPreferences(),
+        preferences: AppPreferences,
         uboliteInstaller: UBOLiteInstaller = UBOLiteInstaller(),
         removeDataStore: @escaping (UUID) async throws -> Void = ProfileManager.removeWebsiteDataStore,
         removeWebsiteDataTypes: @escaping (WKWebsiteDataStore, Set<String>) async throws -> Void = ProfileManager
             .removeWebsiteDataTypes,
         initialProfile: PersistedProfile? = nil,
         isEphemeral: Bool = false,
-        websiteDataStore: ((WebProfileStore) -> WKWebsiteDataStore)? = nil,
+        websiteDataStore: @escaping (WebProfileStore) -> WKWebsiteDataStore,
         webExtensionDescriptors: [WebExtensionDescriptor] = [],
         ipcSocketPath: String = DenSocketPath.resolve(),
         quarantineFile: @escaping (URL, URL) throws -> Void = { source, destination in
@@ -73,7 +73,7 @@ final class ProfileManager {
         self.removeWebsiteDataTypes = removeWebsiteDataTypes
         self.initialProfile = initialProfile
         self.isEphemeral = isEphemeral
-        self.websiteDataStore = websiteDataStore ?? { $0.websiteDataStore }
+        self.websiteDataStore = websiteDataStore
         self.webExtensionDescriptors = webExtensionDescriptors
         self.ipcSocketPath = ipcSocketPath
         self.quarantineFile = quarantineFile

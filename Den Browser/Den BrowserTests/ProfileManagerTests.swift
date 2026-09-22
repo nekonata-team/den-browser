@@ -35,9 +35,9 @@ struct ProfileManagerTests {
         let manager = ProfileManager(
             directoryURL: directory,
             sheetNavigation: SheetNavigationManager(
-                defaults: UserDefaults(suiteName: UUID().uuidString) ?? .standard,
+                defaults: makeTestDefaults(),
                 scriptSource: ""),
-            preferences: AppPreferences(defaults: UserDefaults(suiteName: UUID().uuidString) ?? .standard),
+            preferences: AppPreferences(defaults: makeTestDefaults()),
             initialProfile: PersistedProfile(
                 profile: ProfileState(
                     id: UUID(),
@@ -223,12 +223,14 @@ struct ProfileManagerTests {
         let directory = temporaryProfileDirectory()
         defer { try? FileManager.default.removeItem(at: directory) }
         let navigation = SheetNavigationManager(
-            defaults: UserDefaults(suiteName: UUID().uuidString) ?? .standard,
+            defaults: makeTestDefaults(),
             scriptSource: "")
         let manager = ProfileManager(
             directoryURL: directory,
             sheetNavigation: navigation,
-            removeDataStore: { _ in throw ExpectedError() })
+            preferences: AppPreferences(defaults: makeTestDefaults()),
+            removeDataStore: { _ in throw ExpectedError() },
+            websiteDataStore: { _ in .nonPersistent() })
         let work = try #require(manager.createProfile(name: "Work", color: .gray))
 
         // Act
@@ -347,7 +349,8 @@ struct ProfileManagerTests {
             directoryURL: directory,
             sheetNavigation: navigation,
             preferences: preferences,
-            removeDataStore: { _ in })
+            removeDataStore: { _ in },
+            websiteDataStore: { _ in .nonPersistent() })
         let second = try #require(manager.createProfile(name: "Second", color: .pink))
         let firstStore = try #require(manager.store(for: manager.personalProfileID))
         let secondStore = try #require(manager.store(for: second.id))
@@ -501,15 +504,17 @@ struct ProfileManagerTests {
         let directory = temporaryProfileDirectory()
         defer { try? FileManager.default.removeItem(at: directory) }
         let navigation = SheetNavigationManager(
-            defaults: UserDefaults(suiteName: UUID().uuidString) ?? .standard,
+            defaults: makeTestDefaults(),
             scriptSource: "")
         var removedTypes: Set<String>?
         let manager = ProfileManager(
             directoryURL: directory,
             sheetNavigation: navigation,
+            preferences: AppPreferences(defaults: makeTestDefaults()),
             removeWebsiteDataTypes: { _, types in
                 removedTypes = types
-            })
+            },
+            websiteDataStore: { _ in .nonPersistent() })
         let personalID = manager.personalProfileID
 
         // Act
@@ -638,10 +643,11 @@ struct ProfileManagerTests {
         let manager = ProfileManager(
             directoryURL: directory,
             sheetNavigation: SheetNavigationManager(
-                defaults: UserDefaults(suiteName: UUID().uuidString) ?? .standard,
+                defaults: makeTestDefaults(),
                 scriptSource: ""),
-            preferences: AppPreferences(defaults: UserDefaults(suiteName: UUID().uuidString) ?? .standard),
-            removeDataStore: { _ in throw RemovalError() })
+            preferences: AppPreferences(defaults: makeTestDefaults()),
+            removeDataStore: { _ in throw RemovalError() },
+            websiteDataStore: { _ in .nonPersistent() })
 
         let profile = try #require(manager.createProfile(name: "TestProfile", color: .green))
         let store = try #require(manager.store(for: profile.id))
@@ -664,10 +670,11 @@ struct ProfileManagerTests {
         let manager = ProfileManager(
             directoryURL: directory,
             sheetNavigation: SheetNavigationManager(
-                defaults: UserDefaults(suiteName: UUID().uuidString) ?? .standard,
+                defaults: makeTestDefaults(),
                 scriptSource: ""),
-            preferences: AppPreferences(defaults: UserDefaults(suiteName: UUID().uuidString) ?? .standard),
-            removeDataStore: { _ in throw RemovalError() })
+            preferences: AppPreferences(defaults: makeTestDefaults()),
+            removeDataStore: { _ in throw RemovalError() },
+            websiteDataStore: { _ in .nonPersistent() })
 
         let profile = try #require(manager.createProfile(name: "TestProfile", color: .green))
         let store = try #require(manager.store(for: profile.id))
@@ -695,15 +702,16 @@ struct ProfileManagerTests {
         quarantineFile: ((URL, URL) throws -> Void)? = nil
     ) -> ProfileManager {
         let suiteName = "ProfileManagerPreferences-\(UUID().uuidString)"
-        let preferences = AppPreferences(defaults: UserDefaults(suiteName: suiteName) ?? .standard)
+        let preferences = AppPreferences(defaults: makeTestDefaults(suiteName: suiteName))
         let navigation = SheetNavigationManager(
-            defaults: UserDefaults(suiteName: suiteName) ?? .standard,
+            defaults: makeTestDefaults(suiteName: suiteName),
             scriptSource: "")
         return ProfileManager(
             directoryURL: directory,
             sheetNavigation: navigation,
             preferences: preferences,
             removeDataStore: { _ in },
+            websiteDataStore: { _ in .nonPersistent() },
             quarantineFile: quarantineFile ?? { source, destination in
                 try FileManager.default.moveItem(at: source, to: destination)
             })

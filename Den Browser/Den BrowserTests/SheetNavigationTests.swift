@@ -98,7 +98,7 @@ struct SheetNavigationTests {
         let runtime = BoardRuntime(
             board: BoardState(label: "Local", width: 520, currentSheetURL: htmlURL),
             websiteDataStore: .nonPersistent(),
-            sheetNavigation: SheetNavigationManager(scriptSource: ""),
+            sheetNavigation: makeTestSheetNavigationManager(scriptSource: ""),
             sheetScale: AppPreferences.defaultSheetScale,
             sheetNavigationActions: noOpSheetNavigationActions(),
             events: boardRuntimeEvents { _, url, title in
@@ -130,7 +130,7 @@ struct SheetNavigationTests {
 
     @Test func boardRuntimeAppliesSafariUserAgent() {
         let navigation = SheetNavigationManager(
-            defaults: UserDefaults(suiteName: "UserAgentTest-\(UUID().uuidString)") ?? .standard,
+            defaults: makeTestDefaults(),
             scriptSource: "")
         let board = BoardState(label: "Test", width: 520, currentSheetURL: nil)
         let runtime = BoardRuntime(
@@ -225,7 +225,7 @@ struct SheetNavigationTests {
     }
 
     @Test func sheetNavigationScriptIsIsolatedFromPageScripts() async throws {
-        let manager = SheetNavigationManager(scriptSource: try sheetNavigationScriptSource())
+        let manager = makeTestSheetNavigationManager(scriptSource: try sheetNavigationScriptSource())
         manager.setEnabled(true)
         let webView = makeSheetNavigationWebView(manager: manager)
         let waiter = WebViewLoadWaiter()
@@ -252,7 +252,7 @@ struct SheetNavigationTests {
             of: "if (!event.isTrusted || event.button",
             with: "if (event.button"
         )
-        let manager = SheetNavigationManager(scriptSource: source)
+        let manager = makeTestSheetNavigationManager(scriptSource: source)
         let webView = makeSheetNavigationWebView(manager: manager)
         let waiter = WebViewLoadWaiter()
 
@@ -323,7 +323,7 @@ struct SheetNavigationTests {
         let source = try sheetNavigationScriptSource().replacingOccurrences(
             of: "if (!event.isTrusted ||",
             with: "if (")
-        let manager = SheetNavigationManager(scriptSource: source)
+        let manager = makeTestSheetNavigationManager(scriptSource: source)
         manager.setEnabled(true)
         let webView = makeSheetNavigationWebView(manager: manager)
         let waiter = WebViewLoadWaiter()
@@ -365,7 +365,7 @@ struct SheetNavigationTests {
         let source = try sheetNavigationScriptSource().replacingOccurrences(
             of: "if (!event.isTrusted ||",
             with: "if (")
-        let manager = SheetNavigationManager(scriptSource: source)
+        let manager = makeTestSheetNavigationManager(scriptSource: source)
         manager.setEnabled(true)
         manager.setReduceMotion(true)
         let webView = makeSheetNavigationWebView(manager: manager)
@@ -409,7 +409,7 @@ struct SheetNavigationTests {
             of: "if (!event.isTrusted ||",
             with: "if ("
         )
-        let manager = SheetNavigationManager(scriptSource: source)
+        let manager = makeTestSheetNavigationManager(scriptSource: source)
         manager.setEnabled(true)
         manager.setReduceMotion(true)
         let webView = makeSheetNavigationWebView(manager: manager)
@@ -453,7 +453,7 @@ struct SheetNavigationTests {
             of: "if (!event.isTrusted ||",
             with: "if ("
         )
-        let manager = SheetNavigationManager(scriptSource: source)
+        let manager = makeTestSheetNavigationManager(scriptSource: source)
         manager.setEnabled(true)
         let webView = makeSheetNavigationWebView(manager: manager)
         let waiter = WebViewLoadWaiter()
@@ -491,7 +491,7 @@ struct SheetNavigationTests {
         let source = try sheetNavigationScriptSource().replacingOccurrences(
             of: "if (!event.isTrusted ||",
             with: "if (")
-        let manager = SheetNavigationManager(scriptSource: source)
+        let manager = makeTestSheetNavigationManager(scriptSource: source)
         manager.setEnabled(true)
         let webView = makeSheetNavigationWebView(manager: manager)
         let waiter = WebViewLoadWaiter()
@@ -527,7 +527,7 @@ struct SheetNavigationTests {
             of: "if (!event.isTrusted ||",
             with: "if ("
         )
-        let manager = SheetNavigationManager(scriptSource: source)
+        let manager = makeTestSheetNavigationManager(scriptSource: source)
         manager.setEnabled(true)
         let webView = makeSheetNavigationWebView(manager: manager)
         let waiter = WebViewLoadWaiter()
@@ -661,7 +661,7 @@ struct SheetNavigationTests {
         let source = try sheetNavigationScriptSource().replacingOccurrences(
             of: "if (!event.isTrusted ||",
             with: "if (")
-        let manager = SheetNavigationManager(scriptSource: source)
+        let manager = makeTestSheetNavigationManager(scriptSource: source)
         manager.setEnabled(true)
         let webView = makeSheetNavigationWebView(manager: manager)
         let waiter = WebViewLoadWaiter()
@@ -718,10 +718,10 @@ struct SheetNavigationTests {
     }
 
     @Test func boardWebViewUsesSharedSheetNavigationController() {
-        let manager = SheetNavigationManager(scriptSource: "")
+        let manager = makeTestSheetNavigationManager(scriptSource: "")
         let runtime = BoardRuntime(
             board: board("Navigation", url: "about:blank"),
-            websiteDataStore: .default(),
+            websiteDataStore: .nonPersistent(),
             sheetNavigation: manager,
             sheetScale: AppPreferences.defaultSheetScale,
             sheetNavigationActions: noOpSheetNavigationActions(),
@@ -732,7 +732,7 @@ struct SheetNavigationTests {
     }
 
     @Test func sheetNavigationCanOpenLinkAsAdjacentBoard() {
-        let manager = SheetNavigationManager(scriptSource: "")
+        let manager = makeTestSheetNavigationManager(scriptSource: "")
         let source = board("Source", url: "https://source.example/")
         let focused = board("Focused", url: "https://focused.example/")
         let currentDesk = desk("Desk", boards: [source, focused], focusedBoardID: focused.id)
@@ -759,7 +759,7 @@ struct SheetNavigationTests {
     }
 
     @Test func sheetNavigationCanOpenAndKeepLocalFileLinks() throws {
-        let manager = SheetNavigationManager(scriptSource: "")
+        let manager = makeTestSheetNavigationManager(scriptSource: "")
         let source = board("Source", url: "https://source.example/")
         let currentDesk = desk("Desk", boards: [source], focusedBoardID: source.id)
         let store = DenStore(
@@ -783,7 +783,7 @@ struct SheetNavigationTests {
     }
 
     @Test func sheetNavigationShowsToastForCopyAndInvalidPaste() async throws {
-        let manager = SheetNavigationManager(scriptSource: "")
+        let manager = makeTestSheetNavigationManager(scriptSource: "")
         let source = board("Source", url: "https://source.example/")
         let currentDesk = desk("Desk", boards: [source], focusedBoardID: source.id)
         let store = DenStore(
@@ -795,7 +795,7 @@ struct SheetNavigationTests {
 
         manager.setEnabled(true)
         await waiter.load("<html>Current Sheet</html>", baseURL: URL(string: "https://source.example/")!, in: webView)
-        defer { NSPasteboard.general.clearContents() }
+        defer { manager.pasteboard.clearContents() }
 
         #expect(manager.handleScriptMessage(["action": "copyURL"], from: webView))
         #expect(store.toastMessage?.message == "Copied Current Sheet URL.")
@@ -806,27 +806,27 @@ struct SheetNavigationTests {
                 from: webView))
         #expect(store.toastMessage?.message == "Copied Current Sheet Markdown link.")
         #expect(
-            NSPasteboard.general.string(forType: .string)
+            manager.pasteboard.string(forType: .string)
                 == "[Example \\[Page\\] Title](https://source.example/)")
 
-        NSPasteboard.general.clearContents()
+        manager.pasteboard.clearContents()
         #expect(
-            NSPasteboard.general.setString(
+            manager.pasteboard.setString(
                 "https://pasted.example/long-\npath",
                 forType: .string))
         #expect(manager.handleScriptMessage(["action": "pasteURL"], from: webView))
         #expect(store.focusedBoard?.currentSheetURL == URL(string: "https://pasted.example/long-path"))
 
-        NSPasteboard.general.clearContents()
+        manager.pasteboard.clearContents()
         #expect(
-            NSPasteboard.general.setString(
+            manager.pasteboard.setString(
                 "https://pasted.example/new-\nboard",
                 forType: .string))
         #expect(manager.handleScriptMessage(["action": "pasteURLInNewBoard"], from: webView))
         #expect(store.focusedDesk?.boards.count == 2)
         #expect(store.focusedBoard?.currentSheetURL == URL(string: "https://pasted.example/new-board"))
 
-        NSPasteboard.general.clearContents()
+        manager.pasteboard.clearContents()
         for action in ["pasteURL", "pasteURLInNewBoard"] {
             #expect(!manager.handleScriptMessage(["action": action], from: webView))
             #expect(store.toastMessage?.message == "Clipboard does not contain a supported URL.")
@@ -834,7 +834,7 @@ struct SheetNavigationTests {
     }
 
     @Test func drawerPreviewShowsToastForCopyAndInvalidPaste() async throws {
-        let manager = SheetNavigationManager(scriptSource: "")
+        let manager = makeTestSheetNavigationManager(scriptSource: "")
         let item = DrawerItem(url: try #require(URL(string: "https://drawer.example/")))
         let desk = DeskState(label: "Desk", boards: [])
         let store = DenStore(
@@ -850,7 +850,7 @@ struct SheetNavigationTests {
         await waiter.load("<html>Drawer Preview</html>", baseURL: item.url, in: runtime.webView)
         defer {
             store.releaseDrawerPreview()
-            NSPasteboard.general.clearContents()
+            manager.pasteboard.clearContents()
         }
 
         #expect(manager.handleScriptMessage(["action": "copyURL"], from: runtime.webView))
@@ -862,10 +862,10 @@ struct SheetNavigationTests {
                 from: runtime.webView))
         #expect(store.toastMessage?.message == "Copied Current Sheet Markdown link.")
         #expect(
-            NSPasteboard.general.string(forType: .string)
+            manager.pasteboard.string(forType: .string)
                 == "[Drawer Preview](https://drawer.example/)")
 
-        NSPasteboard.general.clearContents()
+        manager.pasteboard.clearContents()
         for action in ["pasteURL", "pasteURLInNewBoard"] {
             #expect(!manager.handleScriptMessage(["action": action], from: runtime.webView))
             #expect(store.toastMessage?.message == "Clipboard does not contain a supported URL.")
@@ -873,7 +873,7 @@ struct SheetNavigationTests {
     }
 
     @Test func sheetNavigationReportsCopyFailureWithoutCurrentURL() {
-        let manager = SheetNavigationManager(scriptSource: "")
+        let manager = makeTestSheetNavigationManager(scriptSource: "")
         let webView = WKWebView()
         var didReportFailure = false
         manager.didOpen(
@@ -887,7 +887,7 @@ struct SheetNavigationTests {
     }
 
     @Test func sheetNavigationReportsCopyMarkdownLinkFailureWithoutCurrentURL() {
-        let manager = SheetNavigationManager(scriptSource: "")
+        let manager = makeTestSheetNavigationManager(scriptSource: "")
         let webView = WKWebView()
         var didReportFailure = false
         manager.didOpen(
@@ -921,7 +921,7 @@ struct SheetNavigationTests {
     }
 
     @Test func commandClickCanOpenLinkWhenSheetNavigationIsDisabled() {
-        let manager = SheetNavigationManager(scriptSource: "")
+        let manager = makeTestSheetNavigationManager(scriptSource: "")
         let source = board("Source", url: "https://source.example/")
         let currentDesk = desk("Desk", boards: [source], focusedBoardID: source.id)
         let store = DenStore(
@@ -960,7 +960,7 @@ struct SheetNavigationTests {
     }
 
     @Test func optionClickKeepsLinkInDrawerWithoutOpeningIt() {
-        let manager = SheetNavigationManager(scriptSource: "")
+        let manager = makeTestSheetNavigationManager(scriptSource: "")
         let source = board("Source", url: "https://source.example/")
         let currentDesk = desk("Desk", boards: [source], focusedBoardID: source.id)
         let store = DenStore(
@@ -983,7 +983,7 @@ struct SheetNavigationTests {
     }
 
     @Test func sheetNavigationRoutesRemoveAndRestoreBoardActions() {
-        let manager = SheetNavigationManager(scriptSource: "")
+        let manager = makeTestSheetNavigationManager(scriptSource: "")
         let source = board("First", url: "https://first.example/")
         let second = board("Second", url: "https://second.example/")
         let currentDesk = desk("Desk", boards: [source, second], focusedBoardID: source.id)
@@ -1004,7 +1004,7 @@ struct SheetNavigationTests {
     }
 
     @Test func sheetNavigationRejectsUnsupportedMessages() {
-        let manager = SheetNavigationManager(scriptSource: "")
+        let manager = makeTestSheetNavigationManager(scriptSource: "")
         let webView = WKWebView()
 
         #expect(
@@ -1024,7 +1024,7 @@ struct SheetNavigationTests {
         let source = try sheetNavigationScriptSource().replacingOccurrences(
             of: "if (!event.isTrusted ||",
             with: "if (")
-        let manager = SheetNavigationManager(scriptSource: source)
+        let manager = makeTestSheetNavigationManager(scriptSource: source)
         let board = board("Source", url: "https://source.example/")
         let desk = desk("Desk", boards: [board], focusedBoardID: board.id)
         let store = DenStore(
@@ -1066,7 +1066,7 @@ struct SheetNavigationTests {
             of: "if (!event.isTrusted ||",
             with: "if ("
         )
-        let manager = SheetNavigationManager(scriptSource: source)
+        let manager = makeTestSheetNavigationManager(scriptSource: source)
         let board = board("Source", url: "https://source.example/")
         let desk = desk("Desk", boards: [board], focusedBoardID: board.id)
         let store = DenStore(
@@ -1082,13 +1082,13 @@ struct SheetNavigationTests {
             baseURL: URL(string: "https://source.example/sheet")!,
             in: webView
         )
-        defer { NSPasteboard.general.clearContents() }
+        defer { manager.pasteboard.clearContents() }
 
         try await dispatchSheetKey("y", in: webView)
         try await dispatchSheetKey("m", in: webView)
 
         #expect(store.toastMessage?.message == "Copied Current Sheet Markdown link.")
-        #expect(NSPasteboard.general.string(forType: .string) == "[My Sheet](https://source.example/sheet)")
+        #expect(manager.pasteboard.string(forType: .string) == "[My Sheet](https://source.example/sheet)")
     }
 
     @Test func sheetNavigationDispatchesYbToCopyBoardID() async throws {
@@ -1096,7 +1096,7 @@ struct SheetNavigationTests {
         let source = try sheetNavigationScriptSource().replacingOccurrences(
             of: "if (!event.isTrusted ||",
             with: "if (")
-        let manager = SheetNavigationManager(scriptSource: source)
+        let manager = makeTestSheetNavigationManager(scriptSource: source)
         let board = board("Source", url: "https://source.example/")
         let desk = desk("Desk", boards: [board], focusedBoardID: board.id)
         let store = DenStore(
@@ -1112,7 +1112,7 @@ struct SheetNavigationTests {
             baseURL: URL(string: "https://source.example/sheet")!,
             in: webView
         )
-        defer { NSPasteboard.general.clearContents() }
+        defer { manager.pasteboard.clearContents() }
 
         // Act
         try await dispatchSheetKey("y", in: webView)
@@ -1120,7 +1120,7 @@ struct SheetNavigationTests {
 
         // Assert
         #expect(store.toastMessage?.message == "Copied Board ID.")
-        #expect(NSPasteboard.general.string(forType: .string) == board.id.uuidString.lowercased())
+        #expect(manager.pasteboard.string(forType: .string) == board.id.uuidString.lowercased())
     }
 
     @Test func sheetNavigationRoutesBoardBoundaryCommands() async throws {
@@ -1128,7 +1128,7 @@ struct SheetNavigationTests {
             of: "if (!event.isTrusted ||",
             with: "if ("
         )
-        let manager = SheetNavigationManager(scriptSource: source)
+        let manager = makeTestSheetNavigationManager(scriptSource: source)
         let boards = [board("First"), board("Middle"), board("Last")]
         let currentDesk = desk("Desk", boards: boards, focusedBoardID: boards[1].id)
         let store = DenStore(
@@ -1166,7 +1166,7 @@ struct SheetNavigationTests {
             of: "if (!event.isTrusted ||",
             with: "if ("
         )
-        let manager = SheetNavigationManager(scriptSource: source)
+        let manager = makeTestSheetNavigationManager(scriptSource: source)
         let boards = [board("First"), board("Middle"), board("Last")]
         let currentDesk = desk("Desk", boards: boards, focusedBoardID: boards[1].id)
         let store = DenStore(
@@ -1187,7 +1187,7 @@ struct SheetNavigationTests {
     }
 
     @Test func boardRuntimeObservesUrlAndTitleChanges() async throws {
-        let manager = SheetNavigationManager(scriptSource: "")
+        let manager = makeTestSheetNavigationManager(scriptSource: "")
         var changeContinuation: AsyncStream<(URL?, String?)>.Continuation?
         let changes = AsyncStream<(URL?, String?)> { continuation in
             changeContinuation = continuation
@@ -1195,7 +1195,7 @@ struct SheetNavigationTests {
 
         let runtime = BoardRuntime(
             board: board("Initial", url: "about:blank"),
-            websiteDataStore: .default(),
+            websiteDataStore: .nonPersistent(),
             sheetNavigation: manager,
             sheetScale: AppPreferences.defaultSheetScale,
             sheetNavigationActions: noOpSheetNavigationActions(),
@@ -1241,7 +1241,7 @@ struct SheetNavigationTests {
         let runtime = BoardRuntime(
             board: BoardState(label: "Initial", width: 520, currentSheetURL: nil),
             websiteDataStore: .nonPersistent(),
-            sheetNavigation: SheetNavigationManager(scriptSource: ""),
+            sheetNavigation: makeTestSheetNavigationManager(scriptSource: ""),
             sheetScale: AppPreferences.defaultSheetScale,
             sheetNavigationActions: noOpSheetNavigationActions(),
             events: boardRuntimeEvents())
@@ -1322,7 +1322,7 @@ struct SheetNavigationTests {
     }
 
     @Test func boardRuntimeTriggerActionHighlightSetsAndClearsHighlight() async throws {
-        let navigation = SheetNavigationManager(scriptSource: "")
+        let navigation = makeTestSheetNavigationManager(scriptSource: "")
         let board = BoardState(label: "Test", width: 520, currentSheetURL: nil)
         let runtime = BoardRuntime(
             board: board,
