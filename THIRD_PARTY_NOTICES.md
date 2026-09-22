@@ -29,8 +29,9 @@ For each work, the following license applies:
 > OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 > SOFTWARE.
 
-Den Browser also includes the following GPL-3.0-licensed software:
+Den Browser can download and install the following GPL-3.0-licensed software on demand:
 
-- [uBlock Origin Lite](https://github.com/gorhill/uBlock). The bundled Safari
-  MV3 archive includes the full GNU General Public License, version 3, in
+- [uBlock Origin Lite](https://github.com/gorhill/uBlock). Its Safari MV3
+  archive is obtained from the project's GitHub Releases when the user installs
+  it. The archive includes the full GNU General Public License, version 3, in
   `LICENSE.txt`, together with upstream build information in `README.md`.

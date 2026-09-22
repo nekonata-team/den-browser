@@ -295,7 +295,7 @@
 - **Work:** ページ構造、インストールUI、SVG、copy／video scriptを必要な単位で共通化します。文言は言語別に保持し、汎用CMSや新しいi18n依存を追加しません。
 - **Acceptance Criteria:** 構造と操作の修正箇所が共通化され、両言語の製品事実、リンク、アクセシビリティが維持されます。
 - **Verification:** `just --list`で適切なWeb recipeを確認しbuildします。生成HTMLの日英リンク・重複ID・操作用属性を確認し、差分を自己レビューします。公開・deployはしません。
-- **Current Status:** `HomePage`、`InstallBox`、日英コピーを共通化し、英日ルートの重複を解消しました。`mise exec -- just web::build`、生成HTMLのリンク・重複ID・動画／コピー操作属性検査、`git diff --check`を通過。公開・deployは未実施です。
+- **Current Status:** `HomePage`、`InstallBox`、日英コピーを共通化し、英日ルートの重複を解消しました。uBlock Origin Liteの表現を「任意インストール／オンデマンド」に修正し、Privacyと第三者ライセンス記載も整合させました。`mise exec -- just web::build`、生成HTMLのリンク・重複ID・動画／コピー操作属性検査、`git diff --check`を通過。公開・deployは未実施です。
 
 <a id="task-025"></a>
 ### [ ] TASK-025：保守コストの高い機能の縮小を判断する

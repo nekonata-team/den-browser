@@ -23,10 +23,10 @@ Den Browser utilizes Apple's native **`WKWebView` (WebKit)** rendering engine to
 * Profile separation in Den Browser uses isolated `WKWebsiteDataStore` instances. Data from one Profile cannot leak into or be accessed by another Profile.
 * We do not have access to, nor do we store, any passwords or credentials used within the browser.
 
-## 3. Built-in Content Blocking (uBlock Origin Lite)
+## 3. Optional Content Blocking (uBlock Origin Lite)
 
-Den Browser includes **uBlock Origin Lite (uBOL)** as an optional, built-in content blocker.
-* **Opt-in only**: Content blocking is disabled by default and must be explicitly enabled by the user in Settings.
+Den Browser supports optional installation of **uBlock Origin Lite (uBOL)** as a content blocker.
+* **Install and opt in**: uBOL is downloaded on demand and content blocking is disabled by default. The user must install and explicitly enable it in Settings.
 * When enabled, content blocking runs entirely on your device according to local declarative rule lists.
 * It does not transmit your browsing history, visited URLs, or page content to any external servers.
 
@@ -48,5 +48,6 @@ If you have any questions or suggestions about our Privacy Policy, do not hesita
 
 ## 8. Revision History
 
+* **September 22, 2026**: Clarified that uBlock Origin Lite is installed on demand and is not bundled with the app.
 * **August 22, 2026**: Clarified that uBlock Origin Lite integration is opt-in, and added details regarding Terminal sessions and local storage scope.
 * **July 20, 2026**: Initial release of the Privacy Policy.
