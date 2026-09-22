@@ -8,20 +8,23 @@ import WebKit
 @MainActor
 final class SheetInteractionWebViewLoadWaiter: NSObject, WKNavigationDelegate {
     private var continuation: CheckedContinuation<Void, Never>?
+    private var pendingNavigation: WKNavigation?
 
     func load(_ html: String, baseURL: URL, in webView: WKWebView) async {
         await withCheckedContinuation { continuation in
             self.continuation = continuation
             webView.navigationDelegate = self
-            webView.loadHTMLString(html, baseURL: baseURL)
+            pendingNavigation = webView.loadHTMLString(html, baseURL: baseURL)
         }
     }
 
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+        guard navigation === pendingNavigation else { return }
         resume()
     }
 
     func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
+        guard navigation === pendingNavigation else { return }
         resume()
     }
 
@@ -30,6 +33,7 @@ final class SheetInteractionWebViewLoadWaiter: NSObject, WKNavigationDelegate {
         didFailProvisionalNavigation navigation: WKNavigation!,
         withError error: Error
     ) {
+        guard navigation === pendingNavigation else { return }
         resume()
     }
 
@@ -38,6 +42,7 @@ final class SheetInteractionWebViewLoadWaiter: NSObject, WKNavigationDelegate {
     }
 
     private func resume() {
+        pendingNavigation = nil
         continuation?.resume()
         continuation = nil
     }

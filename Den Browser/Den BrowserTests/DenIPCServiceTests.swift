@@ -496,7 +496,7 @@ struct DenIPCServiceTests {
             <!doctype html>
             <body>
               <button id="continue" onclick="this.textContent = 'Clicked'">Continue</button>
-              <script>window.waitStarted = false; window.targetReady = false;</script>
+              <script>window.waitStarted = null; window.targetReady = null;</script>
             </body>
             """,
             baseURL: URL(string: "https://first.example/")!,
@@ -509,6 +509,7 @@ struct DenIPCServiceTests {
             baseURL: URL(string: "https://second.example/")!,
             in: secondRuntime.webView)
         let service = DenIPCService(profileManager: manager)
+        let readyToken = UUID().uuidString
         let payload = DenSheetInteractPayload(
             steps: [
                 DenSheetInteractStep(
@@ -521,7 +522,7 @@ struct DenIPCServiceTests {
                             url: nil,
                             text: nil,
                             loadState: nil,
-                            function: "window.waitStarted = true, window.targetReady",
+                            function: "window.waitStarted = '\(readyToken)', window.targetReady === '\(readyToken)'",
                             timeout: 2))),
                 DenSheetInteractStep(
                     line: 2,
@@ -544,14 +545,16 @@ struct DenIPCServiceTests {
         }
         var waitStarted = false
         for _ in 0..<100 {
-            let value = try? await firstRuntime.webView.evaluateJavaScript("window.waitStarted === true")
+            let value = try? await firstRuntime.webView.evaluateJavaScript(
+                "window.waitStarted === '\(readyToken)'")
             waitStarted = (value as? Bool) == true
             if waitStarted { break }
             await Task.yield()
         }
         #expect(waitStarted)
         store.focusBoard(secondBoardID)
-        _ = try await firstRuntime.webView.evaluateJavaScript("window.targetReady = true")
+        _ = try await firstRuntime.webView.evaluateJavaScript(
+            "window.targetReady = '\(readyToken)'")
         let response = await interactTask.value
 
         // Assert
@@ -588,7 +591,7 @@ struct DenIPCServiceTests {
             <!doctype html>
             <body>
               <button id="continue">Continue</button>
-              <script>window.waitStarted = false; window.targetReady = false;</script>
+              <script>window.waitStarted = null; window.targetReady = null;</script>
             </body>
             """,
             baseURL: URL(string: "https://first.example/")!,
@@ -601,6 +604,7 @@ struct DenIPCServiceTests {
             baseURL: URL(string: "https://second.example/")!,
             in: secondRuntime.webView)
         let service = DenIPCService(profileManager: manager)
+        let readyToken = UUID().uuidString
         let payload = DenSheetInteractPayload(
             steps: [
                 DenSheetInteractStep(
@@ -613,7 +617,7 @@ struct DenIPCServiceTests {
                             url: nil,
                             text: nil,
                             loadState: nil,
-                            function: "window.waitStarted = true, window.targetReady",
+                            function: "window.waitStarted = '\(readyToken)', window.targetReady === '\(readyToken)'",
                             timeout: 2))),
                 DenSheetInteractStep(
                     line: 2,
@@ -632,11 +636,15 @@ struct DenIPCServiceTests {
 
         // Act
         let interactTask = Task {
-            await service.handleRequest(DenIPCRequest(command: .sheet(.interact(payload))))
+            await service.handleRequest(
+                DenIPCRequest(
+                    command: .sheet(.interact(payload)),
+                    boardID: firstBoardID.uuidString))
         }
         var waitStarted = false
         for _ in 0..<100 {
-            let value = try? await firstRuntime.webView.evaluateJavaScript("window.waitStarted === true")
+            let value = try? await firstRuntime.webView.evaluateJavaScript(
+                "window.waitStarted === '\(readyToken)'")
             waitStarted = (value as? Bool) == true
             if waitStarted { break }
             await Task.yield()
@@ -644,7 +652,8 @@ struct DenIPCServiceTests {
         #expect(waitStarted)
         store.removeBoard(firstBoardID)
         store.focusBoard(secondBoardID)
-        _ = try await firstRuntime.webView.evaluateJavaScript("window.targetReady = true")
+        _ = try await firstRuntime.webView.evaluateJavaScript(
+            "window.targetReady = '\(readyToken)'")
         let response = await interactTask.value
 
         // Assert
