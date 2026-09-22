@@ -156,6 +156,17 @@ final class UBOLiteInstaller {
                     userInfo: [NSLocalizedDescriptionKey: "Invalid extension archive: manifest.json not found."]
                 )
             }
+            let candidateVersion = try readCandidateVersion(at: manifestURL)
+            if let installedVersion, !isNewer(candidateVersion, than: installedVersion) {
+                throw NSError(
+                    domain: "UBOLiteInstaller",
+                    code: 2,
+                    userInfo: [
+                        NSLocalizedDescriptionKey:
+                            "Downloaded extension version \(candidateVersion) is not newer than the installed version \(installedVersion)."
+                    ]
+                )
+            }
 
             let parentDir = directoryURL.deletingLastPathComponent()
             try FileManager.default.createDirectory(at: parentDir, withIntermediateDirectories: true)
@@ -214,5 +225,61 @@ final class UBOLiteInstaller {
             directoryURL: directoryURL,
             preapproveRequestedAccess: true
         )
+    }
+
+    private func readCandidateVersion(at manifestURL: URL) throws -> String {
+        guard
+            let json = try? JSONSerialization.jsonObject(with: Data(contentsOf: manifestURL)) as? [String: Any],
+            json["manifest_version"] as? Int == 3,
+            let name = json["name"] as? String,
+            !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+            let version = json["version"] as? String,
+            Self.versionComponents(version) != nil,
+            let background = json["background"] as? [String: Any],
+            let scripts = background["scripts"] as? [String],
+            !scripts.isEmpty,
+            scripts.allSatisfy({ !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty })
+        else {
+            throw NSError(
+                domain: "UBOLiteInstaller",
+                code: 3,
+                userInfo: [NSLocalizedDescriptionKey: "Invalid extension archive manifest."])
+        }
+        return version
+    }
+
+    private func isNewer(_ candidate: String, than installed: String) -> Bool {
+        guard let candidate = Self.versionComponents(candidate),
+            let installed = Self.versionComponents(installed)
+        else {
+            return true
+        }
+
+        for index in 0..<max(candidate.count, installed.count) {
+            let candidateComponent = index < candidate.count ? candidate[index] : 0
+            let installedComponent = index < installed.count ? installed[index] : 0
+            if candidateComponent != installedComponent {
+                return candidateComponent > installedComponent
+            }
+        }
+        return false
+    }
+
+    private static func versionComponents(_ version: String) -> [Int]? {
+        let parts = version.split(separator: ".", omittingEmptySubsequences: false)
+        guard (1...4).contains(parts.count) else { return nil }
+
+        let components = parts.compactMap { part -> Int? in
+            guard part.count <= 5,
+                !part.isEmpty,
+                part.utf8.allSatisfy({ $0 >= 48 && $0 <= 57 }),
+                let value = Int(part),
+                value <= 65_535
+            else {
+                return nil
+            }
+            return value
+        }
+        return components.count == parts.count ? components : nil
     }
 }

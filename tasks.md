@@ -319,13 +319,14 @@
 - **Verification:** Recent更新方針、各複製経路のRecent不変条件、Insert後の単一snapshot保存、保存失敗後の復元をfocused testで検証。`just check`。
 
 <a id="task-027"></a>
-### [ ] TASK-027：uBO Lite候補archiveの検証と復旧を整理する
+### [/] TASK-027：uBO Lite候補archiveの検証と復旧を整理する
 
 - **Priority / Purpose:** P2。APIが返す候補の不正内容や古いversionで、利用可能な既存拡張を失わないようにします。
 - **Prerequisites:** TASK-023。
 - **Entry Points:** `Extensions/UBOLiteInstaller.swift`、`Profiles/ProfileManager.swift`。
 - **Work:** 候補manifestの内容・version検証、配置失敗時の退避復元、install成功結果とhost更新の契約を必要な範囲で定めます。固定URL fallbackは追加しません。
 - **Acceptance Criteria:** 古い候補、不正archive、配置失敗では既存の利用可能な拡張を保持します。成功表示が実際の導入結果と一致します。
+- **Current Status:** 第一切片として、候補manifestのMV3／必須内容／version形式を検証し、既存version以下の候補を配置前に拒否する処理とfocused testを追加。配置失敗時の退避復元とhost更新契約は未着手。
 - **Verification:** stub URLSessionと一時ディレクトリで候補検証・配置失敗・既存版保持を検証します。実際のユーザー環境の拡張を更新しません。`just check`。
 
 ## Common Acceptance Criteria
