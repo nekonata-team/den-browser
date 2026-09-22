@@ -272,7 +272,13 @@ enum SheetInteraction {
             el.dispatchEvent(new PointerEvent('pointerup', { ...pointerBase, buttons: 0 }));
             el.dispatchEvent(new MouseEvent('mouseup', { ...pointerBase, buttons: 0 }));
             const linkEl = el.closest('a[href]');
-            const href = linkEl ? linkEl.href : null;
+            const rawHref = linkEl ? linkEl.getAttribute('href') : null;
+            let href = null;
+            if (rawHref !== null) {
+                try {
+                    href = new URL(rawHref, document.baseURI).href;
+                } catch {}
+            }
             if (\(newBoard)) {
                 return { ok: true, rect: { x: rect.left, y: rect.top, width: rect.width, height: rect.height }, href: href };
             }

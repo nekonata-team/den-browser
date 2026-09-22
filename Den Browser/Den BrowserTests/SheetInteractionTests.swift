@@ -703,7 +703,7 @@ struct SheetInteractionTests {
         #expect(visibleElements.isEmpty)
     }
 
-    @Test func clickResultExtractsHrefForLinkElement() async throws {
+    @Test func clickResultExtractsHrefForHTMLAndSVGLinks() async throws {
         // Arrange
         let webView = makeWebView()
         let waiter = SheetInteractionWebViewLoadWaiter()
@@ -712,6 +712,7 @@ struct SheetInteractionTests {
             <html>
             <body>
                 <a id="nav-link" href="https://example.com/target"><span>Click me</span></a>
+                <svg><a id="svg-nav-link" href="/svg-target"><text>SVG link</text></a></svg>
                 <button id="regular-btn">Button</button>
             </body>
             </html>
@@ -724,6 +725,11 @@ struct SheetInteractionTests {
             newBoard: true,
             in: webView
         )
+        let svgLinkResult = try await SheetInteraction.clickResult(
+            target: "#svg-nav-link text",
+            newBoard: true,
+            in: webView
+        )
         let btnResult = try await SheetInteraction.clickResult(
             target: "#regular-btn",
             newBoard: true,
@@ -732,6 +738,7 @@ struct SheetInteractionTests {
 
         // Assert
         #expect(linkResult.href == "https://example.com/target")
+        #expect(svgLinkResult.href == "https://example.com/svg-target")
         #expect(btnResult.href == nil)
     }
 
