@@ -14,4 +14,6 @@ The build phase requires the locked Node and pnpm toolchain from `mise.toml` and
 
 Build the app with `just build` or Xcode. Do not edit generated JavaScript directly.
 
+Run `pnpm --dir scripts/embedded-js typecheck` for a standalone TypeScript check.
+
 The decision is recorded in [ADR 0054](../../docs/adr/0054-keep-typescript-as-source-for-embedded-javascript.md).

@@ -5,9 +5,8 @@
     "lib": ["DOM", "ES2022"],
     "module": "ESNext",
     "noEmit": true,
-    "noImplicitAny": false,
     "skipLibCheck": true,
-    "strict": false,
+    "strict": true,
     "target": "ES2022",
     "types": []
   },

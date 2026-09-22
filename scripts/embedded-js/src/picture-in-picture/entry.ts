@@ -1,6 +1,6 @@
 (async () => {
-    /** @type {string} */
-    const mode = "__DEN_PICTURE_IN_PICTURE_MODE__" as string;
+    type PictureInPictureMode = "enter" | "exit" | "toggle";
+    const mode = "__DEN_PICTURE_IN_PICTURE_MODE__" as PictureInPictureMode;
     const videos = Array.from(document.querySelectorAll("video"));
     const activeVideo = videos.find(video =>
         !video.paused &&

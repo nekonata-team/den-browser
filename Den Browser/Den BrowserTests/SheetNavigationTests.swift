@@ -247,7 +247,7 @@ struct SheetNavigationTests {
         #expect(hintCount == 0)
     }
 
-    @Test func modifiedLinkClicksAreKeptWhenSheetNavigationIsDisabled() async throws {
+    @Test func modifiedHTMLAndSVGLinkClicksAreKeptWhenSheetNavigationIsDisabled() async throws {
         let source = try sheetNavigationScriptSource().replacingOccurrences(
             of: "if (!event.isTrusted || event.button",
             with: "if (event.button"
@@ -258,7 +258,12 @@ struct SheetNavigationTests {
 
         await waiter.load(
             """
-            <a href="https://destination.example/">Destination</a>
+            <a id="html-link" href="https://destination.example/html">HTML destination</a>
+            <svg width="200" height="40">
+              <a id="svg-link" href="https://destination.example/svg">
+                <text x="0" y="20">SVG destination</text>
+              </a>
+            </svg>
             """,
             baseURL: URL(string: "https://example.com/")!,
             in: webView
@@ -266,7 +271,7 @@ struct SheetNavigationTests {
         let commandClickWasAllowed =
             try await webView.evaluateJavaScript(
                 """
-                document.querySelector("a").dispatchEvent(new MouseEvent("click", {
+                document.querySelector("#html-link").dispatchEvent(new MouseEvent("click", {
                   metaKey: true,
                   button: 0,
                   bubbles: true,
@@ -277,7 +282,29 @@ struct SheetNavigationTests {
         let optionClickWasAllowed =
             try await webView.evaluateJavaScript(
                 """
-                document.querySelector("a").dispatchEvent(new MouseEvent("click", {
+                document.querySelector("#html-link").dispatchEvent(new MouseEvent("click", {
+                  altKey: true,
+                  button: 0,
+                  bubbles: true,
+                  cancelable: true,
+                  composed: true
+                }))
+                """) as? Bool
+        let svgCommandClickWasAllowed =
+            try await webView.evaluateJavaScript(
+                """
+                document.querySelector("#svg-link").dispatchEvent(new MouseEvent("click", {
+                  metaKey: true,
+                  button: 0,
+                  bubbles: true,
+                  cancelable: true,
+                  composed: true
+                }))
+                """) as? Bool
+        let svgOptionClickWasAllowed =
+            try await webView.evaluateJavaScript(
+                """
+                document.querySelector("#svg-link").dispatchEvent(new MouseEvent("click", {
                   altKey: true,
                   button: 0,
                   bubbles: true,
@@ -288,6 +315,8 @@ struct SheetNavigationTests {
 
         #expect(commandClickWasAllowed == false)
         #expect(optionClickWasAllowed == false)
+        #expect(svgCommandClickWasAllowed == false)
+        #expect(svgOptionClickWasAllowed == false)
     }
 
     @Test func sheetNavigationScriptHandlesCoreMotionsAndModes() async throws {
@@ -372,6 +401,89 @@ struct SheetNavigationTests {
         #expect(hintCount == 1)
         #expect(panelScrollTop == 60)
         #expect(documentScrollTop == 60)
+    }
+
+    @Test func sheetNavigationFindsScrollableAncestorThroughSVGHitTarget() async throws {
+        // Arrange
+        let source = try sheetNavigationScriptSource().replacingOccurrences(
+            of: "if (!event.isTrusted ||",
+            with: "if ("
+        )
+        let manager = SheetNavigationManager(scriptSource: source)
+        manager.setEnabled(true)
+        manager.setReduceMotion(true)
+        let webView = makeSheetNavigationWebView(manager: manager)
+        let waiter = WebViewLoadWaiter()
+        let html = """
+            <!doctype html>
+            <style>
+              html, body { margin: 0; height: 4000px; }
+              #panel { position: absolute; top: 350px; width: 800px; height: 200px; overflow: auto; }
+              svg { display: block; width: 800px; height: 200px; }
+              #content { height: 1000px; }
+            </style>
+            <div id="panel">
+              <svg><rect width="800" height="200"></rect></svg>
+              <div id="content"></div>
+            </div>
+            """
+
+        await waiter.load(html, baseURL: URL(string: "https://example.com/")!, in: webView)
+        manager.refreshConfiguration(for: webView)
+
+        // Act
+        let hitNamespace = try #require(
+            await webView.evaluateJavaScript(
+                "document.elementFromPoint(innerWidth / 2, innerHeight * 0.75).namespaceURI") as? String)
+        try await dispatchSheetKey("j", in: webView)
+        let panelScrollTop = try #require(
+            await webView.evaluateJavaScript("document.getElementById('panel').scrollTop") as? Int)
+        let documentScrollTop = try #require(
+            await webView.evaluateJavaScript("document.scrollingElement.scrollTop") as? Int)
+
+        // Assert
+        #expect(hitNamespace == "http://www.w3.org/2000/svg")
+        #expect(panelScrollTop == 60)
+        #expect(documentScrollTop == 0)
+    }
+
+    @Test func sheetNavigationHintsSVGTargets() async throws {
+        // Arrange
+        let source = try sheetNavigationScriptSource().replacingOccurrences(
+            of: "if (!event.isTrusted ||",
+            with: "if ("
+        )
+        let manager = SheetNavigationManager(scriptSource: source)
+        manager.setEnabled(true)
+        let webView = makeSheetNavigationWebView(manager: manager)
+        let waiter = WebViewLoadWaiter()
+        let html = """
+            <!doctype html>
+            <svg width="200" height="40">
+              <a href="https://destination.example/svg">
+                <text x="0" y="20">SVG destination</text>
+              </a>
+              <rect tabindex="0" x="0" y="20" width="200" height="20"></rect>
+            </svg>
+            """
+
+        await waiter.load(html, baseURL: URL(string: "https://example.com/")!, in: webView)
+        manager.refreshConfiguration(for: webView)
+
+        // Act
+        try await dispatchSheetKey("F", shift: true, in: webView)
+        let linkHintCount = try #require(
+            await webView.evaluateJavaScript(
+                "document.querySelectorAll('[data-den-sheet-hints] span').length") as? Int)
+        try await dispatchSheetKey("Escape", in: webView)
+        try await dispatchSheetKey("f", in: webView)
+        let activateHintCount = try #require(
+            await webView.evaluateJavaScript(
+                "document.querySelectorAll('[data-den-sheet-hints] span').length") as? Int)
+
+        // Assert
+        #expect(linkHintCount == 1)
+        #expect(activateHintCount == 2)
     }
 
     @Test func sheetNavigationHintsSemanticLinkTargets() async throws {

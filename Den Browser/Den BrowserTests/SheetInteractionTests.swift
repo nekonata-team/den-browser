@@ -188,6 +188,30 @@ struct SheetInteractionTests {
         #expect(!snapshot.contains("Hidden"))
     }
 
+    @Test func snapshotUsesExternalLabelAsButtonAccessibleName() async throws {
+        // Arrange
+        let webView = makeWebView()
+        let waiter = SheetInteractionWebViewLoadWaiter()
+        await waiter.load(
+            """
+            <!doctype html>
+            <button id="save"></button>
+            <label for="save">Save changes</label>
+            """,
+            baseURL: URL(string: "https://example.com/")!,
+            in: webView
+        )
+
+        // Act
+        let snapshot = try await SheetInteraction.snapshot(
+            in: webView,
+            interactiveOnly: true
+        )
+
+        // Assert
+        #expect(snapshot.contains("Save changes"))
+    }
+
     @Test func refTargetsUseWeakReferencesAndFollowClonedElements() async throws {
         // Arrange
         let webView = makeWebView()

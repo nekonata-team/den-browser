@@ -15,8 +15,8 @@ interface SheetNavigationMessage {
 }
 
 interface Window {
-  __denRefs: Map<string, DenRefEntry>;
-  __denNextRef: number;
+  __denRefs?: Map<string, DenRefEntry>;
+  __denNextRef?: number;
   __denSheetDOM?: DenSheetDOMApi;
   __denSheetNavigation?: {
     configure(configuration: SheetNavigationConfiguration): void;

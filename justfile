@@ -39,6 +39,11 @@ lint:
 build:
     rtk xcodebuild build -project "{{project}}" -scheme "{{scheme}}" -destination 'platform=macOS,arch=arm64' -derivedDataPath "{{derived_data}}"
 
+# Type-check embedded JavaScript sources.
+[group("quality")]
+embedded-js-typecheck:
+    pnpm --dir scripts/embedded-js typecheck
+
 # Bind SourceKit-LSP to this Xcode project.
 [group("development")]
 lsp-config:
@@ -101,6 +106,6 @@ test-results result_path=unit_test_result:
     test -d "{{result_path}}"
     rtk xcrun xcresulttool get test-results summary --path "{{result_path}}"
 
-# Run lint and unit tests.
+# Run lint, TypeScript checks, and unit tests.
 [group("test")]
-check: lint test
+check: lint embedded-js-typecheck test

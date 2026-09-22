@@ -1,31 +1,53 @@
 (() => {
   if (window.__denSheetNavigation) return;
 
+  type HintAction = "activate" | "openBoard" | "keepInDrawer";
+  type Axis = "x" | "y";
+  type ScrollAmount = number | "half";
+  type FindState = "inactive" | "input" | "confirmed";
+
+  interface Hint {
+    target: Element;
+    label: string;
+    marker: HTMLSpanElement;
+    scrollable: boolean;
+  }
+
+  interface HintActionDefinition {
+    selector: string;
+    accepts(target: Element): boolean;
+    activate(target: Element, hint?: Hint): void;
+  }
+
+  interface ScrollPosition {
+    x: number;
+    y: number;
+  }
+
   let enabled = false;
   let ignored = false;
   let paused = false;
   let alphabet = "asdfghjkl";
-  let hints = [];
-  /** @type {"activate" | "openBoard" | "keepInDrawer"} */
-  let hintAction = "activate";
+  let hints: Hint[] = [];
+  let hintAction: HintAction = "activate";
   let prefix = "";
   let countPrefix = "";
   let pendingKey = "";
-  let pendingTimer = null;
+  let pendingTimer: ReturnType<typeof setTimeout> | null = null;
   let lastFindQuery = "";
-  let findMatches = [];
+  let findMatches: Range[] = [];
   let findActiveIndex = -1;
-  let findInitialScroll = null;
-  let findState = "inactive";
-  let findHighlight = null;
-  let findActiveHighlight = null;
-  let findBar = null;
-  let findInput = null;
-  let findCountLabel = null;
-  let overlay = null;
-  let helpOverlay = null;
+  let findInitialScroll: ScrollPosition | null = null;
+  let findState: FindState = "inactive";
+  let findHighlight: Highlight | null = null;
+  let findActiveHighlight: Highlight | null = null;
+  let findBar: HTMLDivElement | null = null;
+  let findInput: HTMLInputElement | null = null;
+  let findCountLabel: HTMLSpanElement | null = null;
+  let overlay: HTMLDivElement | null = null;
+  let helpOverlay: HTMLDivElement | null = null;
   let reduceMotion = false;
-  let selectedScrollTarget = null;
+  let selectedScrollTarget: Element | null = null;
   const supportedSheetProtocols = new Set(["http:", "https:", "file:"]);
 
   const interactiveRoleSelector = [
@@ -62,108 +84,122 @@
   const editableSelector =
     'input:not([type="hidden"]):not([type="file"]):not([type="checkbox"]):not([type="radio"]),textarea,[contenteditable="true"]';
 
-  const hintActions = {
+  const hintActions: Record<HintAction, HintActionDefinition> = {
     activate: {
       selector: actionableSelector,
       accepts: () => true,
-      activate(target, hint) {
+      activate(target: Element, hint?: Hint) {
         if (hint?.scrollable) {
           selectedScrollTarget = target;
           return;
         }
         selectedScrollTarget = null;
-        target.click();
+        if ("click" in target && typeof target.click === "function") target.click();
       },
     },
     openBoard: {
       selector: "a[href]",
       accepts: isSupportedSheetLink,
-      activate(target) {
-        postMessage({ action: "openBoard", url: target.href });
+      activate(target: Element) {
+        const url = supportedSheetUrl(target);
+        if (url) postMessage({ action: "openBoard", url });
       },
     },
     keepInDrawer: {
       selector: "a[href]",
       accepts: isSupportedSheetLink,
-      activate(target) {
-        postMessage({ action: "keepInDrawer", url: target.href });
+      activate(target: Element) {
+        const url = supportedSheetUrl(target);
+        if (url) postMessage({ action: "keepInDrawer", url });
       },
     },
   };
 
-  function isEditable(element) {
+  function isEditable(element: Element | null): boolean {
     return element instanceof HTMLInputElement ||
       element instanceof HTMLTextAreaElement ||
       element instanceof HTMLSelectElement ||
-      element?.isContentEditable;
+      (element instanceof HTMLElement && element.isContentEditable);
   }
 
-  function hasDisallowedModifier(event) {
+  function hasDisallowedModifier(event: KeyboardEvent): boolean {
     return event.metaKey || event.altKey || event.ctrlKey;
   }
 
-  function bodyHasFocus() {
+  function bodyHasFocus(): boolean {
     const active = document.activeElement;
     return !active || active === document.body || active === document.documentElement;
   }
 
-  function consume(event) {
+  function consume(event: Event): void {
     event.preventDefault();
     event.stopImmediatePropagation();
   }
 
-  function resetCommand() {
+  function resetCommand(): void {
     countPrefix = "";
     pendingKey = "";
-    clearTimeout(pendingTimer);
+    clearTimeout(pendingTimer ?? undefined);
     pendingTimer = null;
   }
 
-  function beginSequence(key) {
+  function beginSequence(key: string): void {
     pendingKey = key;
-    clearTimeout(pendingTimer);
+    clearTimeout(pendingTimer ?? undefined);
     pendingTimer = setTimeout(resetCommand, 1000);
   }
 
-  function takeCount() {
+  function takeCount(): number {
     const count = Number.parseInt(countPrefix, 10) || 1;
     resetCommand();
     return count;
   }
 
-  function isRenderedAndEnabled(element) {
+  function isRenderedAndEnabled(element: Element): boolean {
     if (element.matches(":disabled") || element.getAttribute("aria-disabled") === "true") return false;
-    for (let ancestor = element; ancestor; ancestor = ancestor.parentElement) {
+    let ancestor: Element | null = element;
+    while (ancestor) {
       const style = getComputedStyle(ancestor);
       if (style.display === "none" || style.visibility === "hidden" || style.opacity === "0") return false;
+      ancestor = ancestor.parentElement;
     }
     const rect = element.getBoundingClientRect();
     return rect.width > 0 && rect.height > 0;
   }
 
-  function isVisibleAndEnabled(element) {
+  function isVisibleAndEnabled(element: Element): boolean {
     if (!isRenderedAndEnabled(element)) return false;
     const rect = element.getBoundingClientRect();
     return rect.bottom > 0 && rect.right > 0 &&
       rect.top < innerHeight && rect.left < innerWidth;
   }
 
-  function isActivateTarget(element) {
+  function isActivateTarget(element: Element): boolean {
     const isNativeTarget = element.matches(nativeActionableSelector);
+    const isFocusableElement = element instanceof HTMLElement || element instanceof SVGElement;
     return !element.matches("iframe, frame") &&
-      (!element.hasAttribute("tabindex") || isNativeTarget || element.tabIndex >= 0) &&
-      (!element.hasAttribute("contenteditable") || element.isContentEditable);
+      (!element.hasAttribute("tabindex") || isNativeTarget ||
+        (isFocusableElement && element.tabIndex >= 0)) &&
+      (!element.hasAttribute("contenteditable") ||
+        (element instanceof HTMLElement && element.isContentEditable));
   }
 
-  function isSupportedSheetLink(target) {
+  function supportedSheetUrl(target: Element): string | null {
+    const href = target.getAttribute("href");
+    if (!target.matches("a[href]") || !href) return null;
     try {
-      return supportedSheetProtocols.has(new URL(target.href, location.href).protocol);
+      const url = new URL(href, document.baseURI);
+      return supportedSheetProtocols.has(url.protocol) ? url.href : null;
     } catch {
-      return false;
+      return null;
     }
   }
 
-  function labels(count) {
+  function isSupportedSheetLink(target: Element): boolean {
+    return supportedSheetUrl(target) !== null;
+  }
+
+  function labels(count: number): string[] {
     let width = 1;
     while (alphabet.length ** width < count) width += 1;
     return Array.from({ length: count }, (_, index) => {
@@ -176,21 +212,20 @@
     });
   }
 
-  function closeHints() {
+  function closeHints(): void {
     overlay?.remove();
     overlay = null;
     hints.length = 0;
     prefix = "";
   }
 
-  function closeTransientUI() {
+  function closeTransientUI(): void {
     closeHints();
     clearFind();
     closeHelp();
   }
 
-  function isScrollableElement(element, axis) {
-    if (!(element instanceof Element)) return false;
+  function isScrollableElement(element: Element, axis: Axis): boolean {
     const style = getComputedStyle(element);
     const overflow = axis === "x" ? style.overflowX : style.overflowY;
     const scrollSize = axis === "x" ? element.scrollWidth : element.scrollHeight;
@@ -198,7 +233,7 @@
     return /(auto|scroll)/.test(overflow) && scrollSize > clientSize;
   }
 
-  function openHints(action) {
+  function openHints(action: HintAction): void {
     closeHints();
     hintAction = action;
     const configuration = hintActions[action];
@@ -253,12 +288,11 @@
     overlay = container;
   }
 
-  /** @param {SheetNavigationMessage} message */
-  function postMessage(message) {
+  function postMessage(message: SheetNavigationMessage): void {
     window.webkit?.messageHandlers?.denSheetNavigation?.postMessage(message);
   }
 
-  function activateHint(character) {
+  function activateHint(character: string): void {
     prefix += character;
     const matching = hints.filter(({ label }) => label.startsWith(prefix));
     for (const hint of hints) {
@@ -273,7 +307,7 @@
     }
   }
 
-  function onClick(event) {
+  function onClick(event: MouseEvent): void {
     if (!event.isTrusted || event.button !== 0 || event.ctrlKey) return;
 
     const opensBoard = event.metaKey && !event.altKey;
@@ -281,33 +315,29 @@
     if (!opensBoard && !keepsInDrawer) return;
 
     const link = event.composedPath().find(
-      (target) => target instanceof Element && target.matches("a[href]"),
+      (target): target is Element => target instanceof Element && target.matches("a[href]"),
     );
     if (!link) return;
 
-    let url;
-    try {
-      url = new URL(link.getAttribute("href"), document.baseURI);
-    } catch {
-      return;
-    }
-    if (!supportedSheetProtocols.has(url.protocol)) return;
+    const url = supportedSheetUrl(link);
+    if (!url) return;
 
     consume(event);
     if (keepsInDrawer) {
-      postMessage({ action: "keepInDrawer", url: url.href });
+      postMessage({ action: "keepInDrawer", url });
       return;
     }
     postMessage({
       action: "commandOpenBoard",
-      url: url.href,
+      url,
       focused: event.shiftKey,
     });
   }
 
-  function scrollTarget(axis) {
-    if (selectedScrollTarget?.isConnected && isScrollableElement(selectedScrollTarget, axis)) {
-      return selectedScrollTarget;
+  function scrollTarget(axis: Axis): Element | null {
+    const selectedTarget = selectedScrollTarget;
+    if (selectedTarget?.isConnected && isScrollableElement(selectedTarget, axis)) {
+      return selectedTarget;
     }
     if (selectedScrollTarget && !selectedScrollTarget.isConnected) {
       selectedScrollTarget = null;
@@ -317,10 +347,14 @@
       if (isScrollableElement(element, axis)) return element;
       element = element.parentElement;
     }
+    return documentScrollTarget();
+  }
+
+  function documentScrollTarget(): Element | null {
     return document.scrollingElement;
   }
 
-  function scrollRelative(axis, direction, amount, count = 1) {
+  function scrollRelative(axis: Axis, direction: number, amount: ScrollAmount, count = 1): void {
     const target = scrollTarget(axis);
     if (!target) return;
     const distance = amount === "half"
@@ -333,14 +367,14 @@
     });
   }
 
-  function scrollToEdge(axis, end) {
+  function scrollToEdge(axis: Axis, end: boolean): void {
     const target = scrollTarget(axis);
     if (!target) return;
     const position = end ? (axis === "x" ? target.scrollWidth : target.scrollHeight) : 0;
     const isDocument = target === document.scrollingElement;
     const currentLeft = isDocument ? window.scrollX : target.scrollLeft;
     const currentTop = isDocument ? window.scrollY : target.scrollTop;
-    const options = {
+    const options: ScrollToOptions = {
       behavior: reduceMotion ? "auto" : "smooth",
       left: axis === "x" ? position : currentLeft,
       top: axis === "y" ? position : currentTop,
@@ -348,7 +382,7 @@
     target.scrollTo(options);
   }
 
-  function clearHighlights() {
+  function clearHighlights(): void {
     try {
       findHighlight?.clear();
     } catch (_) {}
@@ -365,14 +399,14 @@
     findActiveHighlight = null;
   }
 
-  function closeFind() {
+  function closeFind(): void {
     findBar?.remove();
     findBar = null;
     findInput = null;
     findCountLabel = null;
   }
 
-  function clearFind() {
+  function clearFind(): void {
     findMatches = [];
     findActiveIndex = -1;
     findInitialScroll = null;
@@ -382,12 +416,12 @@
     closeFind();
   }
 
-  function closeHelp() {
+  function closeHelp(): void {
     helpOverlay?.remove();
     helpOverlay = null;
   }
 
-  function openHelp() {
+  function openHelp(): void {
     closeTransientUI();
 
     const container = document.createElement("div");
@@ -447,7 +481,7 @@
     helpOverlay = container;
   }
 
-  function ensureFindStyles() {
+  function ensureFindStyles(): void {
     if (document.getElementById("den-find-styles")) return;
     const style = document.createElement("style");
     style.id = "den-find-styles";
@@ -464,7 +498,7 @@
     (document.head || document.documentElement).append(style);
   }
 
-  function collectMatches(query) {
+  function collectMatches(query: string): void {
     findMatches = [];
     if (!query) return;
     const root = document.body || document.documentElement;
@@ -481,8 +515,9 @@
 
     const sensitive = query.toLowerCase() !== query;
     const targetQuery = sensitive ? query : query.toLowerCase();
-    let node;
+    let node: Node | null;
     while ((node = walker.nextNode()) && findMatches.length < 1000) {
+      if (!(node instanceof Text)) continue;
       const text = sensitive ? node.data : node.data.toLowerCase();
       let index = 0;
       while ((index = text.indexOf(targetQuery, index)) !== -1 && findMatches.length < 1000) {
@@ -495,13 +530,13 @@
     }
   }
 
-  function findInitialMatchIndex() {
+  function findInitialMatchIndex(): number {
     if (findMatches.length === 0) return -1;
     const index = findMatches.findIndex((r) => r.getBoundingClientRect().top >= 0);
     return index === -1 ? 0 : index;
   }
 
-  function scrollMatchIntoView(range) {
+  function scrollMatchIntoView(range: Range): void {
     const element = range.startContainer.parentElement;
     if (!element) return;
     const rect = range.getBoundingClientRect();
@@ -510,7 +545,7 @@
     }
   }
 
-  function updateFindStatus() {
+  function updateFindStatus(): void {
     if (!findCountLabel) return;
     if (!lastFindQuery) {
       findCountLabel.textContent = "";
@@ -525,7 +560,7 @@
     }
   }
 
-  function updateHighlights(targetIndex = 0) {
+  function updateHighlights(targetIndex = 0): void {
     if (findMatches.length === 0) {
       findActiveIndex = -1;
       clearHighlights();
@@ -573,7 +608,7 @@
     updateFindStatus();
   }
 
-  function stepFind(delta = 1) {
+  function stepFind(delta = 1): void {
     if (findMatches.length === 0) {
       if (lastFindQuery) {
         collectMatches(lastFindQuery);
@@ -589,7 +624,7 @@
     updateHighlights(findActiveIndex + delta);
   }
 
-  function openFind() {
+  function openFind(): void {
     closeHints();
     closeHelp();
 
@@ -684,6 +719,7 @@
       findCountLabel = countLabel;
     }
 
+    if (!findInput) return;
     findInput.value = lastFindQuery;
     findInput.focus();
     findInput.select();
@@ -696,7 +732,7 @@
     }
   }
 
-  function goUp(root) {
+  function goUp(root: boolean): void {
     const url = new URL(location.href);
     const parts = url.pathname.split("/").filter(Boolean);
     if (!root) parts.pop();
@@ -706,7 +742,7 @@
     location.assign(url.href);
   }
 
-  function runSequence(sequence, event) {
+  function runSequence(sequence: string, event: KeyboardEvent): boolean {
     const count = takeCount();
     switch (sequence) {
       case "gg": scrollToEdge("y", false); break;
@@ -745,8 +781,8 @@
     return true;
   }
 
-  function focusEditable(index) {
-    const targets = Array.from(document.querySelectorAll(editableSelector)).filter((target) => {
+  function focusEditable(index: number): void {
+    const targets = Array.from(document.querySelectorAll<HTMLElement>(editableSelector)).filter((target) => {
       if (!isRenderedAndEnabled(target)) return false;
       return !(("readOnly" in target && target.readOnly) ||
         ("disabled" in target && target.disabled));
@@ -757,7 +793,7 @@
     target.scrollIntoView({ block: "nearest", inline: "nearest" });
   }
 
-  function runCommand(key, event) {
+  function runCommand(key: string, event: KeyboardEvent): boolean {
     const count = takeCount();
     switch (key) {
       case "j": scrollRelative("y", 1, 60 * count); break;
@@ -791,7 +827,7 @@
     return true;
   }
 
-  function onKeyDown(event) {
+  function onKeyDown(event: KeyboardEvent): void {
     if (!event.isTrusted || !enabled || ignored || paused || hasDisallowedModifier(event)) return;
     if (["Shift", "Control", "Alt", "Meta"].includes(event.key)) return;
 
@@ -867,7 +903,7 @@
     if (pendingKey) {
       const sequence = pendingKey + event.key;
       pendingKey = "";
-      clearTimeout(pendingTimer);
+      clearTimeout(pendingTimer ?? undefined);
       pendingTimer = null;
       if (runSequence(sequence, event)) return;
     }
@@ -891,8 +927,7 @@
   window.addEventListener("click", onClick, true);
   document.addEventListener("keydown", onKeyDown, true);
   window.__denSheetNavigation = {
-    /** @param {SheetNavigationConfiguration} configuration */
-    configure(configuration) {
+    configure(configuration: SheetNavigationConfiguration): void {
       enabled = configuration.enabled;
       alphabet = configuration.alphabet;
       reduceMotion = configuration.reduceMotion;

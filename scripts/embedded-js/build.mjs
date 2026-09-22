@@ -45,8 +45,6 @@ try {
         'DOM,ES2022',
         '--skipLibCheck',
         '--strict',
-        'false',
-        '--noEmitOnError',
         '--removeComments',
         'false',
         '--outDir',

@@ -394,7 +394,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "set -e\ncd \"$SRCROOT/..\"\noutput_dir=\"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH\"\nif command -v mise >/dev/null 2>&1; then\n    mise exec -- pnpm --dir scripts/embedded-js build -- --output-dir \"$output_dir\"\nelif command -v pnpm >/dev/null 2>&1; then\n    pnpm --dir scripts/embedded-js build -- --output-dir \"$output_dir\"\nelse\n    echo \"error: pnpm is required to build embedded JavaScript; run mise install and pnpm install first\" >&2\n    exit 1\nfi\n";
+			shellScript = "set -e\ncd \"$SRCROOT/..\"\noutput_dir=\"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH\"\nexport PATH=\"$HOME/.local/bin:/opt/homebrew/bin:/etc/profiles/per-user/$(id -un)/bin:$PATH\"\nif command -v mise >/dev/null 2>&1; then\n    mise exec -- pnpm --dir scripts/embedded-js build -- --output-dir \"$output_dir\"\nelif command -v pnpm >/dev/null 2>&1; then\n    pnpm --dir scripts/embedded-js build -- --output-dir \"$output_dir\"\nelse\n    echo \"error: mise or pnpm was not found; install mise or make pnpm available to Xcode\" >&2\n    exit 1\nfi\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 

@@ -1,16 +1,18 @@
 window.__denSheetDOM = window.__denSheetDOM || (() => {
-const denRefStore = {
+const denRefStore: { elements: Map<string, DenRefEntry>; nextRef: number } = {
     elements: window.__denRefs || new Map(),
     nextRef: window.__denNextRef || 1,
 };
 window.__denRefs = denRefStore.elements;
 window.__denNextRef = denRefStore.nextRef;
 
-function denNormalize(value) {
+type DenElement = Element;
+
+function denNormalize(value: unknown): string {
     return String(value || '').trim().replace(/\s+/g, ' ');
 }
 
-function denIsVisible(el) {
+function denIsVisible(el: DenElement | null): boolean {
     if (!el || el.nodeType !== 1 || !el.isConnected) return false;
     const rect = el.getBoundingClientRect();
     if (rect.width === 0 && rect.height === 0) return false;
@@ -22,14 +24,14 @@ function denIsVisible(el) {
     return true;
 }
 
-function denElementForRef(ref) {
+function denElementForRef(ref: string): DenElement | null {
     const entry = denRefStore.elements.get(ref);
     if (!entry) return null;
     if ('deref' in entry) return entry.deref() ?? null;
     return entry;
 }
 
-function denRefFor(el) {
+function denRefFor(el: DenElement | null): string | null {
     if (!el || !el.isConnected) return null;
     const existing = el.getAttribute('data-den-ref');
     if (existing && /^@e\d+$/.test(existing)) {
@@ -51,33 +53,33 @@ function denRefFor(el) {
     return ref;
 }
 
-function denResolveRef(target) {
+function denResolveRef(target: string): DenElement | null {
     if (!/^@e\d+$/.test(target)) return null;
     const mapped = denElementForRef(target);
     if (mapped?.isConnected) return mapped;
-    const fallback = Array.from(document.querySelectorAll('[data-den-ref]'))
-        .find(el => el.getAttribute('data-den-ref') === target);
+    const fallback = Array.from(document.querySelectorAll<DenElement>('[data-den-ref]'))
+        .find(el => el.getAttribute('data-den-ref') === target) ?? null;
     if (fallback) {
-        denRefStore.elements.set(target, new WeakRef(fallback));
+        denRefStore.elements.set(target, new WeakRef<DenElement>(fallback));
         return fallback;
     }
     denRefStore.elements.delete(target);
     return null;
 }
 
-function denResolveTarget(target) {
+function denResolveTarget(target: string): DenElement | null {
     if (target.startsWith('@')) return denResolveRef(target);
-    return document.querySelector(target);
+    return document.querySelector<DenElement>(target);
 }
 
-function denRole(el) {
+function denRole(el: DenElement): string {
     const explicit = denNormalize(el.getAttribute('role')).toLowerCase();
     if (explicit) return explicit.split(/\s+/)[0];
 
     const tag = el.tagName.toLowerCase();
     if (tag === 'a' && el.hasAttribute('href')) return 'link';
     if (tag === 'button' || tag === 'summary') return 'button';
-    if (tag === 'textarea' || el.isContentEditable) return 'textbox';
+    if (tag === 'textarea' || (el instanceof HTMLElement && el.isContentEditable)) return 'textbox';
     if (tag === 'select') return 'combobox';
     if (tag === 'option') return 'option';
     if (/^h[1-6]$/.test(tag)) return 'heading';
@@ -105,16 +107,17 @@ function denRole(el) {
     return tag;
 }
 
-function denText(el) {
-    return denNormalize(el.innerText || el.textContent || '');
+function denText(el: DenElement): string {
+    const innerText = el instanceof HTMLElement ? el.innerText : '';
+    return denNormalize(innerText || el.textContent || '');
 }
 
-function denAccessibleName(el) {
+function denAccessibleName(el: DenElement): string {
     const labelledBy = el.getAttribute('aria-labelledby');
     if (labelledBy) {
         const labelledText = labelledBy.split(/\s+/)
             .map(id => document.getElementById(id))
-            .filter(Boolean)
+            .filter((node): node is HTMLElement => node !== null)
             .map(node => denText(node))
             .filter(Boolean)
             .join(' ');
@@ -124,8 +127,9 @@ function denAccessibleName(el) {
     const ariaLabel = denNormalize(el.getAttribute('aria-label'));
     if (ariaLabel) return ariaLabel;
 
-    if (el.labels && el.labels.length) {
-        const labelText = Array.from(el.labels).map(label => denText(label)).filter(Boolean).join(' ');
+    const labels = (el as DenElement & { labels?: NodeListOf<HTMLLabelElement> }).labels;
+    if (labels?.length) {
+        const labelText = Array.from(labels).map(label => denText(label)).filter(Boolean).join(' ');
         if (labelText) return labelText;
     }
 
@@ -136,7 +140,8 @@ function denAccessibleName(el) {
     if (placeholder) return placeholder;
 
     const type = (el.getAttribute('type') || '').toLowerCase();
-    if (el.tagName.toLowerCase() === 'input' && ['button', 'submit', 'reset'].includes(type)) {
+    if (el.tagName.toLowerCase() === 'input' && 'value' in el &&
+        typeof el.value === 'string' && ['button', 'submit', 'reset'].includes(type)) {
         const value = denNormalize(el.value);
         if (value) return value;
     }
@@ -147,20 +152,22 @@ function denAccessibleName(el) {
     return denText(el);
 }
 
-function denValue(el) {
+function denValue(el: DenElement | null): string | null {
     if (!el) return null;
-    if (typeof el.value === 'string') return el.value;
-    if (el.isContentEditable || ['textbox', 'searchbox', 'combobox'].includes(denRole(el))) {
-        const text = el.innerText || el.textContent || '';
+    if ('value' in el && typeof el.value === 'string') return el.value;
+    if ((el instanceof HTMLElement && el.isContentEditable) ||
+        ['textbox', 'searchbox', 'combobox'].includes(denRole(el))) {
+        const innerText = el instanceof HTMLElement ? el.innerText : '';
+        const text = innerText || el.textContent || '';
         return text === '\n' ? '' : text;
     }
     return null;
 }
 
-function denChecked(el) {
+function denChecked(el: DenElement | null): boolean | null {
     if (!el) return null;
     const type = (el.getAttribute('type') || '').toLowerCase();
-    if (typeof el.checked === 'boolean' && ['checkbox', 'radio'].includes(type)) {
+    if ('checked' in el && typeof el.checked === 'boolean' && ['checkbox', 'radio'].includes(type)) {
         return !!el.checked;
     }
     const ariaChecked = el.getAttribute('aria-checked');
@@ -169,7 +176,7 @@ function denChecked(el) {
     return null;
 }
 
-function denDisabled(el) {
+function denDisabled(el: DenElement | null): boolean | null {
     if (!el) return null;
     if (el.matches(':disabled')) return true;
     const ariaDisabled = el.getAttribute('aria-disabled');
@@ -177,29 +184,29 @@ function denDisabled(el) {
     if (ariaDisabled === 'false') return false;
     const nativeControl = ['button', 'fieldset', 'input', 'optgroup', 'option', 'select', 'textarea']
         .includes(el.tagName.toLowerCase());
-    return nativeControl ? !!el.disabled : null;
+    return nativeControl ? !!('disabled' in el && el.disabled) : null;
 }
 
-function denSelected(el) {
+function denSelected(el: DenElement | null): boolean | null {
     if (!el) return null;
-    if (el.tagName.toLowerCase() === 'option') return !!el.selected;
+    if (el.tagName.toLowerCase() === 'option' && 'selected' in el) return !!el.selected;
     const ariaSelected = el.getAttribute('aria-selected');
     if (ariaSelected === 'true') return true;
     if (ariaSelected === 'false') return false;
     return null;
 }
 
-function denExpanded(el) {
+function denExpanded(el: DenElement | null): boolean | null {
     if (!el) return null;
-    if (el.tagName.toLowerCase() === 'details') return !!el.open;
+    if (el.tagName.toLowerCase() === 'details' && 'open' in el) return !!el.open;
     const ariaExpanded = el.getAttribute('aria-expanded');
     if (ariaExpanded === 'true') return true;
     if (ariaExpanded === 'false') return false;
     return null;
 }
 
-function denSnapshotStates(el) {
-    const states = [];
+function denSnapshotStates(el: DenElement): string[] {
+    const states: string[] = [];
     const checked = denChecked(el);
     if (checked !== null) states.push(checked ? 'checked' : 'unchecked');
     const disabled = denDisabled(el);
@@ -211,7 +218,7 @@ function denSnapshotStates(el) {
     return states;
 }
 
-function denSnapshotEligible(el, selectors) {
+function denSnapshotEligible(el: DenElement, selectors: string[]): boolean {
     const tag = el.tagName.toLowerCase();
     const explicitRole = denNormalize(el.getAttribute('role')).toLowerCase();
     if (el.closest('[aria-hidden="true"]') || ['none', 'presentation'].includes(explicitRole)) {
@@ -228,7 +235,7 @@ function denSnapshotEligible(el, selectors) {
     ].includes(tag);
 }
 
-function denSnapshotName(el, role) {
+function denSnapshotName(el: DenElement, role: string): string {
     const hasExplicitName = el.hasAttribute('aria-label') || el.hasAttribute('aria-labelledby');
     const namedRoles = [
         'button', 'cell', 'checkbox', 'columnheader', 'combobox', 'dialog', 'heading', 'img',
@@ -238,13 +245,13 @@ function denSnapshotName(el, role) {
     return denAccessibleName(el);
 }
 
-function denSnapshotLevel(el) {
+function denSnapshotLevel(el: DenElement): number | null {
     const tag = el.tagName.toLowerCase();
     if (/^h[1-6]$/.test(tag)) return Number(tag.slice(1));
     return null;
 }
 
-function denDispatchInput(el, value, isDelete = false) {
+function denDispatchInput(el: DenElement, value: string, isDelete = false): void {
     el.dispatchEvent(new InputEvent('input', {
         bubbles: true,
         cancelable: true,
@@ -254,11 +261,11 @@ function denDispatchInput(el, value, isDelete = false) {
     el.dispatchEvent(new Event('change', { bubbles: true }));
 }
 
-function denSetValue(el, value) {
+function denSetValue(el: DenElement | null, value: string): boolean {
     if (!el) return false;
 
     // 1. Native form controls
-    if (typeof el.value === 'string') {
+    if ('value' in el && typeof el.value === 'string') {
         const descriptor = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(el), 'value');
         descriptor?.set?.call(el, value);
         el.value = value;
@@ -267,12 +274,13 @@ function denSetValue(el, value) {
     }
 
     // 2. Editable elements (contenteditable or ARIA textbox/searchbox)
-    if (el.isContentEditable || ['textbox', 'searchbox'].includes(denRole(el))) {
-        el.focus();
+    if ((el instanceof HTMLElement && el.isContentEditable) ||
+        ['textbox', 'searchbox'].includes(denRole(el))) {
+        if ('focus' in el && typeof el.focus === 'function') el.focus();
         try { window.getSelection()?.selectAllChildren(el); } catch (_) {}
         const ok = value
             ? document.execCommand('insertText', false, value)
-            : document.execCommand('delete', false, null);
+            : document.execCommand('delete', false);
         if (!ok || !value) el.textContent = value;
         denDispatchInput(el, value, !value);
         return true;
@@ -281,7 +289,7 @@ function denSetValue(el, value) {
     return false;
 }
 
-function denInspect(el: Element, fields: string[]) {
+function denInspect(el: DenElement, fields: string[]): Record<string, unknown> {
     const info: Record<string, unknown> = {
         ref: denRefFor(el),
         visible: denIsVisible(el),
@@ -313,7 +321,7 @@ function denInspect(el: Element, fields: string[]) {
 
     const attributes: Record<string, string> = {};
     fields.forEach(field => {
-        let attribute = null;
+        let attribute: string | null = null;
         if (field === 'class') attribute = 'class';
         if (field.startsWith('attr:')) attribute = field.slice(5);
         if (attribute) {
