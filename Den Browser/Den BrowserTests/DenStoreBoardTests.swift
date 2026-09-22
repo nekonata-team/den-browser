@@ -243,6 +243,7 @@ struct DenStoreBoardTests {
             #expect(automaticChild.zmxRootSessionName == "den")
             #expect(automaticChild.terminalWorkingDirectory == "/tmp/project")
             #expect(store.temporaryContext == nil)
+            #expect(store.recentItems.isEmpty)
 
             store.focusBoard(sourceBoard.id)
             store.duplicateFocusedBoard()
@@ -256,7 +257,6 @@ struct DenStoreBoardTests {
             #expect(firstChild.zmxSessionName == "den-vi")
             #expect(firstChild.zmxRootSessionName == "den")
             #expect(firstChild.terminalWorkingDirectory == "/tmp/project")
-            #expect(store.recentItems.first == .zmx(sessionName: "den-vi"))
             let restoredChild = try JSONDecoder().decode(
                 BoardState.self,
                 from: JSONEncoder().encode(firstChild))
@@ -274,7 +274,6 @@ struct DenStoreBoardTests {
             await store.waitForZmxCommand()
             #expect(store.focusedBoard?.zmxSessionName == "den-nvim")
             #expect(store.focusedBoard?.zmxRootSessionName == "den")
-            #expect(store.recentItems.first == .zmx(sessionName: "den-nvim"))
 
             store.focusBoard(firstChild.id)
             store.duplicateFocusedBoard()
@@ -282,7 +281,6 @@ struct DenStoreBoardTests {
             store.duplicateFocusedZmxBoard(suffix: "vi")
             await store.waitForZmxCommand()
             #expect(store.focusedBoard?.zmxSessionName == "den-vi-2")
-            #expect(store.recentItems.first == .zmx(sessionName: "den-vi-2"))
         }
     }
 

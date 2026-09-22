@@ -308,10 +308,11 @@
 - **Verification:** 代替操作の成立と参照箇所を確認し、既存ADRとの矛盾をレビューします。製品判断が未確定なら実装を進めず、Deferred Itemsへ記録します。
 
 <a id="task-026"></a>
-### [ ] TASK-026：RecentとBoard挿入の責務を整理する
+### [/] TASK-026：RecentとBoard挿入の責務を整理する
 
 - **Priority / Purpose:** P2。Recentの意味とBoard生成・複製時の保存境界を揃え、入口ごとの暗黙な保存とRecent更新の不一致をなくします。
 - **Prerequisites:** TASK-005。
+- **Current Status:** TASK-005で実装済みの保存集約を再確認。複製はRecentへ追加しない方針に統一し、zmx複製だけがRecentへ追加していた例外を除去。Board生成時のRecent追加は維持し、DenStoreBoardTestsで不変条件を検証済み。
 - **Entry Points:** `Den/Store/DenStore+BoardLifecycle.swift`、`Den/DenStore.swift`、`Profiles/ProfileManager.swift`、`CONTEXT.md`。
 - **Work:** Recentを「新しいBoardを開くために最近使った入力」とする方針を確定します。Web／Terminal／Zellij／zmxの複製がRecentへ追加されるかを統一し、既存のzmx複製だけの例外を扱います。`insertBoard`の状態変更とProfile保存を分離し、create／duplicate／zmx生成の各操作が必要な変更をまとめて1回保存する経路へ整理します。
 - **Acceptance Criteria:** 複製がRecentへ追加される条件が全Board種別で一貫し、`CONTEXT.md`とテストが同じ意味を示します。Recent付きBoard生成、Recentなしの複製、zmx生成の各経路で保存回数が過剰になりません。TASK-004の保存失敗・後続再試行契約を維持します。

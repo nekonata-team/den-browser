@@ -480,10 +480,8 @@ extension DenStore {
                         board,
                         afterBoardID: source.id,
                         focus: true,
-                        origin: .interactive,
-                        save: false)
+                        origin: .interactive)
                 else { return }
-                self.saveRecentItem(.zmx(sessionName: newSessionName))
             } catch is CancellationError {
                 return
             } catch {
