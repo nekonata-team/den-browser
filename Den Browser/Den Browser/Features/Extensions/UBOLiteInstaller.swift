@@ -19,22 +19,9 @@ final class UBOLiteInstaller {
         }
         return url
     }()
-    static let defaultFallbackDownloadURL: URL = {
-        guard
-            let url = URL(
-                string:
-                    "https://github.com/uBlockOrigin/uBOL-home/releases/download/2026.901.1442/uBOLite_2026.901.1442.safari.zip"
-            )
-        else {
-            preconditionFailure("Invalid default uBlock Origin Lite download URL")
-        }
-        return url
-    }()
-
     let identifier: String
     let directoryURL: URL
     let releaseAPIURL: URL
-    let fallbackDownloadURL: URL
 
     private(set) var state: State = .idle
     private(set) var isInstalled: Bool = false
@@ -53,14 +40,12 @@ final class UBOLiteInstaller {
         identifier: String = UBOLiteInstaller.defaultIdentifier,
         directoryURL: URL = UBOLiteInstaller.defaultDirectoryURL(),
         releaseAPIURL: URL = UBOLiteInstaller.defaultReleaseAPIURL,
-        fallbackDownloadURL: URL = UBOLiteInstaller.defaultFallbackDownloadURL,
         session: URLSession = .shared,
         commandRunner: any TerminalCommandRunning = SubprocessCommandRunner()
     ) {
         self.identifier = identifier
         self.directoryURL = directoryURL
         self.releaseAPIURL = releaseAPIURL
-        self.fallbackDownloadURL = fallbackDownloadURL
         self.session = session
         self.commandRunner = commandRunner
         refreshInstalledStatus()
@@ -96,28 +81,26 @@ final class UBOLiteInstaller {
         request.setValue("DenBrowser", forHTTPHeaderField: "User-Agent")
         request.setValue("application/vnd.github.v3+json", forHTTPHeaderField: "Accept")
 
-        do {
-            let (data, response) = try await session.data(for: request)
-            if let http = response as? HTTPURLResponse, http.statusCode == 200,
-                let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-                let assets = json["assets"] as? [[String: Any]]
-            {
-                for asset in assets {
-                    if let name = asset["name"] as? String,
-                        name.hasPrefix("uBOLite_") && name.hasSuffix(".safari.zip"),
-                        let downloadURLString = asset["browser_download_url"] as? String,
-                        let url = URL(string: downloadURLString)
-                    {
-                        return url
-                    }
-                }
-            }
-        } catch is CancellationError {
-            throw CancellationError()
-        } catch {
-            try Task.checkCancellation()
+        let (data, response) = try await session.data(for: request)
+        guard let http = response as? HTTPURLResponse, http.statusCode == 200 else {
+            throw URLError(.badServerResponse)
         }
-        return fallbackDownloadURL
+        guard
+            let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+            let assets = json["assets"] as? [[String: Any]]
+        else {
+            throw URLError(.cannotParseResponse)
+        }
+        for asset in assets {
+            if let name = asset["name"] as? String,
+                name.hasPrefix("uBOLite_") && name.hasSuffix(".safari.zip"),
+                let downloadURLString = asset["browser_download_url"] as? String,
+                let url = URL(string: downloadURLString)
+            {
+                return url
+            }
+        }
+        throw URLError(.resourceUnavailable)
     }
 
     @discardableResult

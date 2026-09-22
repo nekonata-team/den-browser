@@ -30,6 +30,7 @@
 - [TASK-024：公開Webの日英ページの構造を共通化する](#task-024)
 - [TASK-025：保守コストの高い機能の縮小を判断する](#task-025)
 - [TASK-026：RecentとBoard挿入の責務を整理する](#task-026)
+- [TASK-027：uBO Lite候補archiveの検証と復旧を整理する](#task-027)
 
 ## Current Status
 
@@ -275,14 +276,15 @@
 - **Current Status:** `ProfileManager` の読み取り失敗、decode失敗、未対応schemaを分離し、確認済みの破損だけを `.corrupt-<timestamp>` へ隔離するようにしました。隔離失敗と重複Profile IDを通知し、読み込みを信頼できない場合はProfile indexを上書きしません。`ProfileManagerTests` と `ProfilePersistenceTests` のfocused test、および `mise exec -- just check` を通過（SwiftLint 0 violations、unit tests 570件全パス）。
 
 <a id="task-023"></a>
-### [ ] TASK-023：uBO Lite更新時の意図しないダウングレードを防ぐ
+### [x] TASK-023：uBO Lite固定フォールバックを削除する
 
-- **Priority / Purpose:** P2。リリースAPI障害時に、更新が古い固定版への置換にならないようにします。
+- **Priority / Purpose:** P2。リリースAPI障害時に、固定URLの古い版を導入しないようにします。
 - **Prerequisites:** TASK-017。
 - **Entry Points:** `Extensions/UBOLiteInstaller.swift`、`Profiles/ProfileManager.swift`。
-- **Work:** 新規installとupdateのフォールバック方針を分けます。manifestの存在だけで成功にせず、置換前に必要な内容を検証します。候補の検証、配置、host更新、失敗時の復旧責任を整理します。
-- **Acceptance Criteria:** 更新候補を確認できない場合は既存版を保持します。不正archiveや配置失敗で既存の利用可能な拡張を失いません。成功表示が実際の導入結果と一致します。
-- **Verification:** stub URLSessionと一時ディレクトリでAPI障害、古い候補、不正manifest、置換失敗を検証します。実際のユーザー環境の拡張を更新しません。`just check`。
+- **Work:** リリースAPIから候補URLを取得できない場合の固定URL fallbackを削除します。API失敗はエラーとして終了し、既存の拡張ディレクトリには触れません。
+- **Acceptance Criteria:** API障害・不正レスポンス・候補なしではdownloadと置換を実行せず、既存版を保持します。新規installも成功扱いにしません。
+- **Verification:** stub URLSessionでAPI障害時の既存版保持と新規install失敗を検証します。実際のユーザー環境の拡張を更新しません。`just check`。
+- **Current Status:** 固定のuBOLite archive URLとfallback経路を削除し、release APIの失敗をそのままinstall失敗として扱うようにしました。候補archiveのmanifest検証・version比較・配置復旧はTASK-027へ分離しました。
 
 <a id="task-024"></a>
 ### [ ] TASK-024：公開Webの日英ページの構造を共通化する
@@ -313,6 +315,16 @@
 - **Work:** Recentを「新しいBoardを開くために最近使った入力」とする方針を確定します。Web／Terminal／Zellij／zmxの複製がRecentへ追加されるかを統一し、既存のzmx複製だけの例外を扱います。`insertBoard`の状態変更とProfile保存を分離し、create／duplicate／zmx生成の各操作が必要な変更をまとめて1回保存する経路へ整理します。
 - **Acceptance Criteria:** 複製がRecentへ追加される条件が全Board種別で一貫し、`CONTEXT.md`とテストが同じ意味を示します。Recent付きBoard生成、Recentなしの複製、zmx生成の各経路で保存回数が過剰になりません。TASK-004の保存失敗・後続再試行契約を維持します。
 - **Verification:** Recent更新方針、各複製経路のRecent不変条件、Insert後の単一snapshot保存、保存失敗後の復元をfocused testで検証。`just check`。
+
+<a id="task-027"></a>
+### [ ] TASK-027：uBO Lite候補archiveの検証と復旧を整理する
+
+- **Priority / Purpose:** P2。APIが返す候補の不正内容や古いversionで、利用可能な既存拡張を失わないようにします。
+- **Prerequisites:** TASK-023。
+- **Entry Points:** `Extensions/UBOLiteInstaller.swift`、`Profiles/ProfileManager.swift`。
+- **Work:** 候補manifestの内容・version検証、配置失敗時の退避復元、install成功結果とhost更新の契約を必要な範囲で定めます。固定URL fallbackは追加しません。
+- **Acceptance Criteria:** 古い候補、不正archive、配置失敗では既存の利用可能な拡張を保持します。成功表示が実際の導入結果と一致します。
+- **Verification:** stub URLSessionと一時ディレクトリで候補検証・配置失敗・既存版保持を検証します。実際のユーザー環境の拡張を更新しません。`just check`。
 
 ## Common Acceptance Criteria
 
