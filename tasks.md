@@ -255,7 +255,7 @@
 - **Verification:** `__denRefs` のDOM保持を `WeakRef` に変更し、DOM置換時は同じ `data-den-ref` を接続中の要素へ再解決します。`interactiveOnly` のsnapshotは最初からinteractive selectorで候補を絞り、`--within` と `--full` の出力契約を維持しました。ローカルHTMLで弱参照とDOMクローン置換後の操作を検証するfocused testを追加し、5000個の非interactive要素を置いた実ページで20回計測した結果、interactiveは0.183秒、fullは0.377秒（CLI往復込み）でした。Wikipedia実サイトで検索入力、ページ遷移、動的検索UIの開閉、検索結果遷移を `den sheet` から通過させました。`mise exec -- just check`を通過しました。
 
 <a id="task-021"></a>
-### [ ] TASK-021：Board Activityの集計とCPU計測を改善する
+### [/] TASK-021：Board Activityの集計とCPU計測を改善する
 
 - **Priority / Purpose:** P3。繰り返しの全runtime走査と、構成プロセス変更時の不正確なCPU差分を減らします。
 - **Prerequisites:** なし。TASK-025で診断機能への限定を決める場合は、その結果に合わせます。
@@ -263,6 +263,7 @@
 - **Work:** PID別のBoard数を更新単位で一度集計します。Terminalのプロセス集合変更時にCPU累積値の比較基準を再設定し、不要な過去sampleを除去します。表示中のmain-thread計測コストも確認します。
 - **Acceptance Criteria:** 行ごとの二乗走査がなく、異なるプロセス集合の累積CPUを差分計算しません。未計測・計測不能をゼロ負荷と誤表示しません。
 - **Verification:** process identity変更と集計のfocused test、代表的Board数での更新コスト計測。`just check`。
+- **Current Status:** Web PID別Board数の最適化は実測根拠がないため見送り、CPU差分を同一PID集合のサンプル間だけで計算し、不要なsample履歴を表示中のkeyだけに剪定する変更に絞っています。PID変更のfocused testを追加し、`mise exec -- just check`を通過しました（SwiftLint 0 violations、unit tests全パス）。
 
 <a id="task-022"></a>
 ### [x] TASK-022：Profile読み込み失敗を原因別に扱う

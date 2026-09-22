@@ -133,18 +133,24 @@ struct BoardActivityView: View {
     }
 
     private func refreshResourceUsage() {
+        var activeSamplerKeys = Set<String>()
         let webProcessIDs = Set(store.runtimes.values.compactMap(\.webProcessIdentifier))
         webUsage = Dictionary(
             uniqueKeysWithValues: webProcessIDs.compactMap { processID in
-                sampler.usage(key: "web:\(processID)", pids: [processID]).map { (processID, $0) }
+                let key = "web:\(processID)"
+                activeSamplerKeys.insert(key)
+                return sampler.usage(key: key, pids: [processID]).map { (processID, $0) }
             })
 
         terminalUsage = Dictionary(
             uniqueKeysWithValues: store.terminalRuntimes.compactMap { boardID, runtime in
                 guard let processGroupID = runtime.foregroundProcessGroupID else { return nil }
                 let pids = ProcessResourceSampler.processGroupPIDs(processGroupID)
-                return sampler.usage(key: "terminal:\(boardID)", pids: pids).map { (boardID, $0) }
+                let key = "terminal:\(boardID)"
+                activeSamplerKeys.insert(key)
+                return sampler.usage(key: key, pids: pids).map { (boardID, $0) }
             })
+        sampler.removeSamples(keeping: activeSamplerKeys)
     }
 }
 

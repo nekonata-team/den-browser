@@ -16,23 +16,34 @@ struct ProcessResourceSample: Equatable, Sendable {
 struct ProcessResourceSampler {
     private struct PreviousSample {
         let time: ContinuousClock.Instant
+        let pids: Set<pid_t>
         let value: ProcessResourceSample
     }
 
+    private let sampleProvider: @MainActor ([pid_t]) -> ProcessResourceSample?
     private var previous: [String: PreviousSample] = [:]
+
+    init(
+        sampleProvider: @escaping @MainActor ([pid_t]) -> ProcessResourceSample? = ProcessResourceSampler.sample
+    ) {
+        self.sampleProvider = sampleProvider
+    }
 
     mutating func usage(
         key: String,
         pids: [pid_t],
         now: ContinuousClock.Instant = .now
     ) -> ProcessResourceUsage? {
-        guard let sample = Self.sample(pids: pids) else {
+        let pidSet = Set(pids)
+        guard let sample = sampleProvider(Array(pidSet)) else {
             previous[key] = nil
             return nil
         }
 
         let cpuPercent: Double?
-        if let old = previous[key], sample.cpuTimeNanos >= old.value.cpuTimeNanos {
+        if let old = previous[key], old.pids == pidSet,
+            sample.cpuTimeNanos >= old.value.cpuTimeNanos
+        {
             let elapsed = old.time.duration(to: now)
             let elapsedNanos =
                 Double(elapsed.components.seconds) * 1_000_000_000
@@ -44,11 +55,15 @@ struct ProcessResourceSampler {
         } else {
             cpuPercent = nil
         }
-        previous[key] = PreviousSample(time: now, value: sample)
+        previous[key] = PreviousSample(time: now, pids: pidSet, value: sample)
         return ProcessResourceUsage(
             cpuPercent: cpuPercent,
             memoryBytes: sample.memoryBytes,
             processCount: sample.processCount)
+    }
+
+    mutating func removeSamples(keeping keys: Set<String>) {
+        previous = previous.filter { keys.contains($0.key) }
     }
 
     static func processGroupPIDs(_ processGroupID: pid_t) -> [pid_t] {
