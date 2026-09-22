@@ -59,7 +59,8 @@ struct BoardStrip: View {
     @State private var boardFrames: [UUID: CGRect] = [:]
     @State private var scrollPosition = ScrollPosition(idType: UUID.self)
     @State private var scrollGeometry = BoardStripScrollGeometry.zero
-    @State private var didScrollToRestoredFocusedBoard = false
+    @State private var alignedBoardDeskID: UUID?
+    @State private var pendingBoardActivationAlignment: PendingBoardActivationAlignment?
     @State private var pendingBoardAlignment: PendingBoardAlignment?
     @State private var boardCenteringTask: Task<Void, Never>?
     @State private var lastAutoScrollTime = 0.0
@@ -164,6 +165,7 @@ struct BoardStrip: View {
                     )
                     .onScrollVisibilityChange(threshold: 0.05) { visible in
                         if visible {
+                            guard alignedBoardDeskID == store.presentedDeskID else { return }
                             visibleBoardIDs.insert(board.id)
                             activatedBoardIDs.insert(board.id)
                         } else {
@@ -289,6 +291,7 @@ struct BoardStrip: View {
             )
         } action: { _, geometry in
             scrollGeometry = geometry
+            completePendingBoardActivationAlignment(using: geometry)
             settlePendingBoardAlignment(in: boardFrames)
         }
         .onScrollPhaseChange { oldPhase, newPhase in
@@ -309,6 +312,8 @@ struct BoardStrip: View {
         .scrollIndicators(.never)
         .accessibilityIdentifier("board-strip")
         .onChange(of: store.presentedDeskID) { _, deskID in
+            alignedBoardDeskID = nil
+            pendingBoardActivationAlignment = nil
             activatedBoardIDs.removeAll()
             visibleBoardIDs.removeAll()
             if pendingBoardAlignment?.deskID != deskID {
@@ -322,9 +327,13 @@ struct BoardStrip: View {
         }
         .onAppear {
             updateBoardLayout(for: size)
-            guard !didScrollToRestoredFocusedBoard else { return }
-            didScrollToRestoredFocusedBoard = true
+            guard alignedBoardDeskID != store.presentedDeskID else { return }
+            pendingBoardActivationAlignment = nil
             let boardID = store.focusedDesk?.focusedBoardID ?? alignmentBoards.first?.id
+            guard let boardID else {
+                alignedBoardDeskID = store.presentedDeskID
+                return
+            }
             if let savedOffset = store.deskScrollOffset(for: store.presentedDeskID) {
                 deferBoardAlignment(
                     .resting(savedOffset),
@@ -353,12 +362,17 @@ struct BoardStrip: View {
         }
         .onDisappear {
             cancelPendingBoardAlignment()
+            pendingBoardActivationAlignment = nil
         }
         .onChange(of: alignmentTarget) { previous, current in
             let focusChanged = previous.boardID != current.boardID
             let deskChanged = previous.deskID != current.deskID
             let layoutChanged = previous.layoutKey != current.layoutKey
             let filterStateChanged = previous.isDeskFilterPresented != current.isDeskFilterPresented
+            if deskChanged || (previous.boardID == nil && current.boardID != nil) {
+                alignedBoardDeskID = nil
+                pendingBoardActivationAlignment = nil
+            }
             if focusChanged || deskChanged || layoutChanged || filterStateChanged {
                 revealBoardID = nil
             }
@@ -369,6 +383,9 @@ struct BoardStrip: View {
             if current.boardID == nil {
                 if deskChanged {
                     resetBoardStripPosition(to: 0, animated: false)
+                    if alignmentBoards.isEmpty {
+                        alignedBoardDeskID = current.deskID
+                    }
                 } else {
                     cancelPendingBoardAlignment()
                 }
@@ -877,15 +894,23 @@ struct BoardStrip: View {
             let pending = pendingBoardAlignment,
             canApplyPendingBoardAlignment(pending, frames: frames)
         else { return }
+        if alignedBoardDeskID != pending.deskID {
+            pendingBoardActivationAlignment = PendingBoardActivationAlignment(
+                deskID: pending.deskID,
+                layoutKey: pending.layoutKey,
+                offsetX: activationAlignmentOffset(for: pending)
+            )
+        }
         cancelPendingBoardAlignment()
         switch pending.kind {
         case .center:
             store.saveDeskScrollOffset(nil, for: pending.deskID)
             performBoardCentering(pending.boardID, animated: pending.animated)
         case .visible:
-            guard let targetOffsetX = revealScrollX(for: pending.boardID) else { return }
-            store.saveDeskScrollOffset(nil, for: pending.deskID)
-            performBoardVisibility(targetOffsetX, animated: pending.animated)
+            if let targetOffsetX = revealScrollX(for: pending.boardID) {
+                store.saveDeskScrollOffset(nil, for: pending.deskID)
+                performBoardVisibility(targetOffsetX, animated: pending.animated)
+            }
         case .resting(let targetOffsetX):
             resetBoardStripPosition(to: targetOffsetX, animated: pending.animated)
         case .preserveFocusedBoard(let targetOffsetX):
@@ -893,6 +918,51 @@ struct BoardStrip: View {
             store.saveDeskScrollOffset(targetOffsetX, for: pending.deskID)
             resetBoardStripPosition(to: targetOffsetX, animated: false)
         }
+        completePendingBoardActivationAlignment(using: scrollGeometry)
+    }
+
+    private func activationAlignmentOffset(for pending: PendingBoardAlignment) -> CGFloat {
+        switch pending.kind {
+        case .center:
+            centeredBoardScrollX(for: pending.boardID) ?? scrollGeometry.offsetX
+        case .resting(let offsetX), .preserveFocusedBoard(let offsetX):
+            clampedScrollX(offsetX)
+        case .visible:
+            revealScrollX(for: pending.boardID) ?? scrollGeometry.offsetX
+        }
+    }
+
+    private func completePendingBoardActivationAlignment(using geometry: BoardStripScrollGeometry) {
+        guard
+            let pending = pendingBoardActivationAlignment,
+            pending.deskID == store.presentedDeskID,
+            pending.layoutKey == nil || pending.layoutKey == layoutKey,
+            abs(geometry.offsetX - pending.offsetX) <= 1
+        else { return }
+
+        alignedBoardDeskID = pending.deskID
+        pendingBoardActivationAlignment = nil
+        let visibleIDs = visibleBoardIDs(in: geometry)
+        visibleBoardIDs = visibleIDs
+        activatedBoardIDs.formUnion(visibleIDs)
+    }
+
+    private func visibleBoardIDs(in geometry: BoardStripScrollGeometry) -> Set<UUID> {
+        guard geometry.containerWidth > 0 else { return [] }
+
+        let boards = alignmentBoards
+        let params = boardLayoutParameters(for: boards)
+        var visibleIDs = Set<UUID>()
+        for (index, board) in boards.enumerated() {
+            guard let range = BoardLayout.boardContentRange(for: index, in: params) else { continue }
+            let visibleWidth = max(
+                0,
+                min(range.maxX, geometry.offsetX + geometry.containerWidth)
+                    - max(range.minX, geometry.offsetX))
+            guard visibleWidth / (range.maxX - range.minX) >= 0.05 else { continue }
+            visibleIDs.insert(board.id)
+        }
+        return visibleIDs
     }
 
     private func setPendingBoardAlignment(_ pending: PendingBoardAlignment) {
@@ -1082,6 +1152,12 @@ enum BoardAlignmentKind {
     case resting(CGFloat)
     case visible
     case preserveFocusedBoard(CGFloat)
+}
+
+struct PendingBoardActivationAlignment {
+    let deskID: UUID
+    let layoutKey: BoardStripLayoutKey?
+    let offsetX: CGFloat
 }
 
 struct PendingBoardAlignment {

@@ -170,6 +170,23 @@ struct AppConfiguration {
             secondFocusedBoardID = charlie.id
             mainFocusedBoardID = alpha.id
             focusedDeskID = secondDeskID
+        case .focusedTerminalBeforeAlignment:
+            var leadingBoard = alpha
+            var middleBoard = bravo
+            var focusedBoard = charlie
+            leadingBoard.width = BoardState.maximumWidth
+            middleBoard.width = BoardState.maximumWidth
+            focusedBoard.width = BoardState.maximumWidth
+            let mainBoard = BoardState(
+                id: fixtureID("00000000-0000-0000-0000-000000000304"),
+                label: "Main",
+                width: 320,
+                currentSheetURL: URL(string: fixtureSheetURL))
+            mainBoards = [mainBoard]
+            secondBoards = [leadingBoard, middleBoard, focusedBoard]
+            secondFocusedBoardID = charlie.id
+            mainFocusedBoardID = mainBoard.id
+            focusedDeskID = secondDeskID
         }
         let desk = DeskState(
             id: mainDeskID,
@@ -239,6 +256,7 @@ private enum UITestFixture: String {
     case interactionBasics = "interaction-basics"
     case overviewBoardPair = "overview-board-pair"
     case focusedNonLeadingBoard = "focused-non-leading-board"
+    case focusedTerminalBeforeAlignment = "focused-terminal-before-alignment"
 }
 
 private enum UITestBoardCount: String {

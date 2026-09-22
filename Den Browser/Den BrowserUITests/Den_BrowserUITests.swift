@@ -349,6 +349,52 @@ final class Den_BrowserUITests: XCTestCase, BDD {
         }
     }
 
+    // Protects SwiftUI ScrollView visibility callback ordering; a unit test cannot observe this native boundary.
+    @MainActor
+    func testOffscreenTerminalWaitsForInitialAlignmentAndDeskReturn() throws {
+        let app = launchApp(fixture: .focusedTerminalBeforeAlignment, terminalBoard: true)
+        let charlie = board(.charlie, in: app)
+        let mainDesk = desk(.main, in: app)
+        let secondDesk = desk(.second, in: app)
+        let alphaActivityRow = app.buttons[
+            "board-activity-board.\(FixtureBoard.alpha.rawValue.lowercased())"
+        ]
+
+        given("the focused Charlie Board is visible after the initial alignment") {
+            XCTAssertTrue(charlie.wait(for: \.isHittable, toEqual: true, timeout: 5))
+        }
+
+        when("opening Board Activity after the initial alignment") {
+            app.typeKey(.escape, modifierFlags: [.shift])
+            XCTAssertTrue(app.staticTexts["Board Activity"].waitForExistence(timeout: 5))
+        }
+
+        then("the offscreen Terminal Board remains inactive") {
+            XCTAssertTrue(alphaActivityRow.waitForExistence(timeout: 5))
+            XCTAssertTrue(alphaActivityRow.label.contains("Not active"), alphaActivityRow.label)
+        }
+
+        when("switching to Main and returning to Second") {
+            app.typeKey(.escape, modifierFlags: [])
+            enterDenMode(in: app)
+            app.typeKey("1", modifierFlags: [])
+            XCTAssertTrue(mainDesk.wait(for: \.isSelected, toEqual: true, timeout: 5))
+            enterDenMode(in: app)
+            app.typeKey("2", modifierFlags: [])
+            XCTAssertTrue(secondDesk.wait(for: \.isSelected, toEqual: true, timeout: 5))
+            XCTAssertTrue(charlie.wait(for: \.isHittable, toEqual: true, timeout: 5))
+        }
+
+        when("checking Board Activity again") {
+            app.typeKey(.escape, modifierFlags: [.shift])
+            XCTAssertTrue(app.staticTexts["Board Activity"].waitForExistence(timeout: 5))
+        }
+
+        then("alignment on the returned Desk still has not activated Alpha") {
+            XCTAssertTrue(alphaActivityRow.label.contains("Not active"), alphaActivityRow.label)
+        }
+    }
+
     @MainActor
     private func launchApp(
         fixture: UITestFixture = .interactionBasics,
@@ -503,10 +549,11 @@ private enum UITestFixture: String {
     case interactionBasics = "interaction-basics"
     case overviewBoardPair = "overview-board-pair"
     case focusedNonLeadingBoard = "focused-non-leading-board"
+    case focusedTerminalBeforeAlignment = "focused-terminal-before-alignment"
 
     var initialBoard: FixtureBoard {
         switch self {
-        case .focusedNonLeadingBoard: .charlie
+        case .focusedNonLeadingBoard, .focusedTerminalBeforeAlignment: .charlie
         case .overviewBoardPair: .bravo
         default: .alpha
         }
@@ -524,6 +571,7 @@ private enum FixtureBoard: String, CaseIterable {
 }
 
 private enum FixtureDesk: String {
+    case main = "00000000-0000-0000-0000-000000000200"
     case second = "00000000-0000-0000-0000-000000000201"
     case third = "00000000-0000-0000-0000-000000000202"
 }
