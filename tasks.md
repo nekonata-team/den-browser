@@ -287,7 +287,7 @@
 - **Current Status:** 固定のuBOLite archive URLとfallback経路を削除し、release APIの失敗をそのままinstall失敗として扱うようにしました。候補archiveのmanifest検証・version比較・配置復旧はTASK-027へ分離しました。
 
 <a id="task-024"></a>
-### [ ] TASK-024：公開Webの日英ページの構造を共通化する
+### [x] TASK-024：公開Webの日英ページの構造を共通化する
 
 - **Priority / Purpose:** P3。日英ページとページ内で重複する構造・振る舞いの修正漏れを減らします。
 - **Prerequisites:** なし。
@@ -295,6 +295,7 @@
 - **Work:** ページ構造、インストールUI、SVG、copy／video scriptを必要な単位で共通化します。文言は言語別に保持し、汎用CMSや新しいi18n依存を追加しません。
 - **Acceptance Criteria:** 構造と操作の修正箇所が共通化され、両言語の製品事実、リンク、アクセシビリティが維持されます。
 - **Verification:** `just --list`で適切なWeb recipeを確認しbuildします。生成HTMLの日英リンク・重複ID・操作用属性を確認し、差分を自己レビューします。公開・deployはしません。
+- **Current Status:** `HomePage`、`InstallBox`、日英コピーを共通化し、英日ルートの重複を解消しました。`mise exec -- just web::build`、生成HTMLのリンク・重複ID・動画／コピー操作属性検査、`git diff --check`を通過。公開・deployは未実施です。
 
 <a id="task-025"></a>
 ### [ ] TASK-025：保守コストの高い機能の縮小を判断する

@@ -1,0 +1,233 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { home } from '../i18n/ui';
+import InstallBox from './InstallBox.astro';
+
+type Language = keyof typeof home;
+
+interface Props {
+	lang: Language;
+}
+
+const { lang } = Astro.props;
+const copy = home[lang];
+const inlineCodeClass = 'bg-white/5 px-1 rounded border border-white/10 text-zinc-300';
+---
+
+<Layout title={copy.title}>
+	<div id="home-page" data-copy-error={copy.script.copyError} data-playback-error={copy.script.playbackError}>
+		<!-- Hero Section -->
+		<section class="relative pt-20 pb-16 md:pt-32 md:pb-20 px-6 overflow-hidden">
+			<div class="mx-auto max-w-4xl text-center flex flex-col items-center mb-12 md:mb-16">
+				<h1 class="font-extrabold text-4xl sm:text-5xl md:text-6xl tracking-tight leading-none mb-8 max-w-3xl">
+					{copy.hero.title}<br class="sm:hidden" />
+					<span class="metallic-text">{copy.hero.accent}</span>
+				</h1>
+				<p class="text-zinc-400 text-lg md:text-xl max-w-2xl leading-relaxed mb-8">{copy.hero.subtitle}</p>
+				<a href="#install" class="glass-button text-xs sm:text-sm py-2.5 px-6 flex items-center gap-2">
+					<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4 text-cyan-400">
+						<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+						<polyline points="7 10 12 15 17 10"></polyline>
+						<line x1="12" y1="15" x2="12" y2="3"></line>
+					</svg>
+					{copy.hero.cta}
+				</a>
+			</div>
+
+			<!-- App Video Preview Showcase (Click-to-Play) -->
+			<div class="mx-auto max-w-5xl px-6 mb-16 md:mb-20">
+				<div id="video-wrapper" class="glass-panel rounded-2xl overflow-hidden shadow-2xl border border-white/10 aspect-video relative group cursor-pointer">
+					<div class="absolute top-0 left-0 right-0 z-10 bg-black/40 border-b border-white/5 px-4 py-2.5 flex items-center justify-between backdrop-blur-sm pointer-events-none">
+						<div class="flex items-center gap-2">
+							<span class="w-2.5 h-2.5 rounded-full bg-red-500/40"></span>
+							<span class="w-2.5 h-2.5 rounded-full bg-yellow-500/40"></span>
+							<span class="w-2.5 h-2.5 rounded-full bg-green-500/40"></span>
+						</div>
+						<div class="text-[10px] font-medium text-zinc-400 bg-white/5 px-2.5 py-0.5 rounded border border-white/5">{copy.video.label}</div>
+						<div class="w-10"></div>
+					</div>
+
+					<video
+						id="demo-video"
+						class="w-full h-full object-cover pt-9"
+						poster="/videos/poster.png"
+						preload="none"
+						playsinline
+						data-src="/videos/preview.mp4"
+					>
+						{copy.video.fallback}
+					</video>
+
+					<div id="play-overlay" class="absolute inset-0 pt-9 flex items-center justify-center bg-black/20 hover:bg-black/10 transition-colors pointer-events-auto">
+						<button type="button" id="play-trigger" class="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-cyan-500/20 border border-cyan-400/40 flex items-center justify-center text-cyan-300 shadow-2xl group-hover:scale-110 group-hover:bg-cyan-500/30 group-hover:border-cyan-400/70 transition-all duration-300" aria-label={copy.video.play}>
+							<svg class="w-7 h-7 sm:w-8 sm:h-8 translate-x-0.5 text-cyan-300 drop-shadow" fill="currentColor" viewBox="0 0 24 24">
+								<path d="M8 5v14l11-7z"/>
+							</svg>
+						</button>
+					</div>
+				</div>
+			</div>
+
+			<InstallBox id="install" copy={copy.install} />
+		</section>
+
+		<!-- Conceptual Model (No Tabs) -->
+		<section class="py-20 border-t border-b border-white/5 bg-black/10 px-6">
+			<div class="mx-auto max-w-4xl">
+				<div class="text-center mb-16">
+					<span class="text-xs font-bold uppercase tracking-wider text-purple-400">{copy.concept.eyebrow}</span>
+					<h2 class="text-3xl font-extrabold text-white mt-2 mb-4">{copy.concept.title}</h2>
+					<p class="text-zinc-400 max-w-xl mx-auto">{copy.concept.description}</p>
+				</div>
+
+				<div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+					{copy.concept.items.map((item) => (
+						<div class="glass-card rounded-2xl p-6 border border-white/10 flex flex-col gap-3">
+							<div class:list={[
+								'text-[10px] font-bold uppercase tracking-widest',
+								item.tone === 'cyan' && 'text-cyan-400',
+								item.tone === 'purple' && 'text-purple-400',
+								item.tone === 'pink' && 'text-pink-400',
+							]}>{item.eyebrow}</div>
+							<h3 class="text-xl font-bold text-white">{item.title}{item.label && <span class="text-zinc-500 font-normal">{item.label}</span>}</h3>
+							<p class="text-zinc-400 text-sm leading-relaxed">{item.description}</p>
+						</div>
+					))}
+				</div>
+			</div>
+		</section>
+
+		<!-- Features Grid Section -->
+		<section id="features" class="py-20 bg-black/20 px-6">
+			<div class="mx-auto max-w-7xl">
+				<div class="text-center mb-16">
+					<h2 class="text-3xl font-extrabold text-white mb-4">{copy.features.title}</h2>
+					<p class="text-zinc-400 max-w-xl mx-auto">{copy.features.subtitle}</p>
+				</div>
+
+				<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+					{copy.features.items.map((feature) => (
+						<div class="glass-card rounded-2xl p-8 border border-white/10 flex flex-col gap-4">
+							<div class:list={[
+								'w-10 h-10 rounded-xl flex items-center justify-center border',
+								feature.icon === 'canvas' && 'bg-cyan-500/10 border-cyan-500/30 text-cyan-400',
+								feature.icon === 'terminal' && 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400',
+								feature.icon === 'agent' && 'bg-purple-500/10 border-purple-500/30 text-purple-400',
+								feature.icon === 'keyboard' && 'bg-pink-500/10 border-pink-500/30 text-pink-400',
+								feature.icon === 'drawer' && 'bg-amber-500/10 border-amber-500/30 text-amber-400',
+								feature.icon === 'ubol' && 'bg-blue-500/10 border-blue-500/30 text-blue-400',
+							]}>
+								{feature.icon === 'canvas' && (
+									<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5">
+										<rect x="3" y="3" width="18" height="18" rx="2"></rect>
+										<path d="M9 3v18"></path>
+									</svg>
+								)}
+								{feature.icon === 'terminal' && (
+									<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5">
+										<polyline points="4 17 10 11 4 5"></polyline>
+										<line x1="12" y1="19" x2="20" y2="19"></line>
+									</svg>
+								)}
+								{feature.icon === 'agent' && (
+									<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5">
+										<path d="M12 8V4H8"></path>
+										<rect width="16" height="12" x="4" y="8" rx="2"></rect>
+										<path d="M2 14h2"></path>
+										<path d="M20 14h2"></path>
+										<path d="M15 13v2"></path>
+										<path d="M9 13v2"></path>
+									</svg>
+								)}
+								{feature.icon === 'keyboard' && (
+									<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5">
+										<rect x="2" y="4" width="20" height="16" rx="2"></rect>
+										<path d="M6 8h.01"></path>
+										<path d="M10 8h.01"></path>
+										<path d="M14 8h.01"></path>
+										<path d="M18 8h.01"></path>
+										<path d="M8 12h8"></path>
+										<path d="M7 16h10"></path>
+									</svg>
+								)}
+								{feature.icon === 'drawer' && (
+									<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5">
+										<rect x="3" y="3" width="18" height="18" rx="2"></rect>
+										<path d="M3 9h18"></path>
+										<path d="M3 15h18"></path>
+										<path d="M12 12h.01"></path>
+									</svg>
+								)}
+								{feature.icon === 'ubol' && (
+									<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5">
+										<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+										<path d="m9 12 2 2 4-4"></path>
+									</svg>
+								)}
+							</div>
+							<h3 class="text-xl font-semibold text-white">{feature.title}</h3>
+							<p class="text-zinc-400 leading-relaxed">
+								{feature.description.map((part) => typeof part === 'string' ? part : <code class={inlineCodeClass}>{part.code}</code>)}
+							</p>
+						</div>
+					))}
+				</div>
+			</div>
+		</section>
+
+		<!-- Bottom CTA / Install Section -->
+		<section class="py-24 border-t border-white/5 bg-gradient-to-b from-transparent to-cyan-950/10 px-6">
+			<div class="mx-auto max-w-4xl text-center flex flex-col items-center">
+				<h2 class="text-3xl sm:text-4xl font-extrabold text-white mb-4">{copy.cta.title}</h2>
+				<p class="text-zinc-400 text-base sm:text-lg max-w-xl mb-10 leading-relaxed">{copy.cta.description}</p>
+				<InstallBox copy={copy.install} />
+			</div>
+		</section>
+	</div>
+
+	<!-- Script for copy & video feature -->
+	<script is:inline>
+		document.querySelectorAll('.copy-btn').forEach((btn) => {
+			const codeEl = btn.parentElement.querySelector('code');
+			const copyIcon = btn.querySelector('.copy-icon');
+			const successIcon = btn.querySelector('.success-icon');
+
+			btn.addEventListener('click', async (e) => {
+				e.stopPropagation();
+				try {
+					await navigator.clipboard.writeText(codeEl.textContent.trim());
+
+					copyIcon.classList.add('hidden');
+					successIcon.classList.remove('hidden');
+					btn.classList.add('bg-cyan-500/20', 'border-cyan-500/40');
+
+					setTimeout(() => {
+						copyIcon.classList.remove('hidden');
+						successIcon.classList.add('hidden');
+						btn.classList.remove('bg-cyan-500/20', 'border-cyan-500/40');
+					}, 2000);
+				} catch (err) {
+					console.error(document.getElementById('home-page')?.dataset.copyError, err);
+				}
+			});
+		});
+
+		const playOverlay = document.getElementById('play-overlay');
+		const demoVideo = document.getElementById('demo-video');
+		const videoWrapper = document.getElementById('video-wrapper');
+
+		if (playOverlay && demoVideo && videoWrapper) {
+			playOverlay.addEventListener('click', () => {
+				if (!demoVideo.src && demoVideo.dataset.src) {
+				demoVideo.src = demoVideo.dataset.src;
+				}
+				playOverlay.classList.add('hidden');
+				demoVideo.controls = true;
+				videoWrapper.classList.remove('cursor-pointer');
+				demoVideo.play().catch((err) => {
+					console.log(document.getElementById('home-page')?.dataset.playbackError, err);
+				});
+			});
+		}
+	</script>
+</Layout>

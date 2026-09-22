@@ -1,0 +1,60 @@
+---
+import type { HomeCopy } from '../i18n/ui';
+
+interface Props {
+	copy: HomeCopy['install'];
+	id?: string;
+}
+
+const { copy, id } = Astro.props;
+const brewCommand = 'brew install --cask nekonata-team/tap/den-browser';
+const skillCommand = 'npx skills add nekonata-team/den-browser --skill den';
+const inlineCodeClass = 'bg-white/5 px-1 rounded border border-white/10 text-zinc-300';
+---
+
+<div id={id} class:list={['mx-auto w-full max-w-xl glass-panel rounded-2xl p-5 flex flex-col gap-3', id && 'scroll-mt-24']}>
+	<div class="flex items-center justify-between text-xs text-zinc-500 px-1">
+		<span class="font-semibold uppercase tracking-wider">{copy.title}</span>
+		<span>macOS 26+</span>
+	</div>
+	<div class="flex items-center justify-between bg-black/40 rounded-xl border border-white/5 p-3 group hover:border-white/10 transition-colors gap-3">
+		<div class="overflow-x-auto min-w-0 flex-1">
+			<code class="font-mono text-xs sm:text-[13px] text-cyan-300 select-all whitespace-nowrap block">{brewCommand}</code>
+		</div>
+		<button type="button" class="copy-btn glass-button p-2.5 shrink-0 active:scale-95 transition-transform" aria-label={copy.copyCommand}>
+			<svg class="copy-icon h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+				<rect x="9" y="9" width="13" height="13" rx="2"></rect>
+				<path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+			</svg>
+			<svg class="success-icon h-4 w-4 text-cyan-400 hidden" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+				<polyline points="20 6 9 17 4 12"></polyline>
+			</svg>
+		</button>
+	</div>
+
+	<div class="flex items-center justify-between text-xs text-zinc-500 px-1 pt-1 border-t border-white/5">
+		<span class="font-semibold uppercase tracking-wider">Agent Skill</span>
+		<span>{copy.skillAudience}</span>
+	</div>
+	<div class="flex items-center justify-between bg-black/40 rounded-xl border border-white/5 p-3 group hover:border-white/10 transition-colors gap-3">
+		<div class="overflow-x-auto min-w-0 flex-1">
+			<code class="font-mono text-xs sm:text-[13px] text-cyan-300 select-all whitespace-nowrap block">{skillCommand}</code>
+		</div>
+		<button type="button" class="copy-btn glass-button p-2.5 shrink-0 active:scale-95 transition-transform" aria-label={copy.copySkillCommand}>
+			<svg class="copy-icon h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+				<rect x="9" y="9" width="13" height="13" rx="2"></rect>
+				<path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+			</svg>
+			<svg class="success-icon h-4 w-4 text-cyan-400 hidden" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+				<polyline points="20 6 9 17 4 12"></polyline>
+			</svg>
+		</button>
+	</div>
+
+	<p class="text-xs text-zinc-500 text-center px-2">
+		{copy.note.map((part) => typeof part === 'string' ? part : <code class={inlineCodeClass}>{part.code}</code>)}
+	</p>
+	<a href="https://github.com/nekonata-team/den-browser/releases/latest" target="_blank" rel="noopener noreferrer" class="glass-button text-xs self-center">
+		{copy.release}
+	</a>
+</div>
