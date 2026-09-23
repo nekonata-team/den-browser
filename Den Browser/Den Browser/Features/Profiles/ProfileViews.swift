@@ -4,6 +4,7 @@ import SwiftUI
 
 struct ProfileWindowView: View {
     let route: ProfileWindowRoute
+    let startUpdater: () -> Void
 
     @Environment(ProfileManager.self) private var profileManager
     @Environment(\.appearsActive) private var appearsActive
@@ -19,6 +20,7 @@ struct ProfileWindowView: View {
                 profileManager.openWindowAction = { [openWindow] targetRoute in
                     openWindow(value: targetRoute)
                 }
+                DispatchQueue.main.async(execute: startUpdater)
             }
             .onChange(of: appearsActive, initial: true) { _, isActive in
                 guard isActive else { return }

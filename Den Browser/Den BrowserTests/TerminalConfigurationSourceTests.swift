@@ -382,6 +382,35 @@ struct TerminalConfigurationSourceTests {
         closeProfileWindow.keycode = 13
         #expect(!ghostty_config_key_is_binding(config, closeProfileWindow))
     }
+
+    @Test func benchmarkTerminalConfigurationIgnoresUserGhosttySettings() throws {
+        // Arrange
+        let root = FileManager.default.temporaryDirectory
+            .appending(path: "den-browser-benchmark-terminal-config-\(UUID())", directoryHint: .isDirectory)
+        let configDirectory = root.appending(path: "ghostty", directoryHint: .isDirectory)
+        try FileManager.default.createDirectory(at: configDirectory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        try "command = /bin/bash\nfont-size = 14".write(
+            to: configDirectory.appending(path: "config.ghostty"),
+            atomically: true,
+            encoding: .utf8)
+
+        // Act
+        let resolution = TerminalConfigurationSource.make(
+            environment: ["XDG_CONFIG_HOME": root.path],
+            arguments: ["--benchmark-scenario", "one-terminal-board"])
+
+        // Assert
+        guard case let .generated(contents) = resolution.configSource else {
+            Issue.record("Expected a generated Ghostty config")
+            return
+        }
+
+        #expect(contents.contains("command = /bin/zsh -f"))
+        #expect(!contents.contains("/bin/bash"))
+        #expect(!contents.contains("font-size = 14"))
+    }
 }
 
 private struct StubTerminalCommandRunner: TerminalCommandRunning, Sendable {

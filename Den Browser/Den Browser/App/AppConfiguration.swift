@@ -1,6 +1,12 @@
 import Foundation
 import WebKit
 
+enum BenchmarkScenario: String, CaseIterable, Sendable {
+    case emptyDesk = "empty-desk"
+    case oneTerminalBoard = "one-terminal-board"
+    case oneWebBoard = "one-web-board"
+}
+
 struct AppConfiguration {
     let profileDirectoryURL: URL
     let defaults: UserDefaults
@@ -10,6 +16,18 @@ struct AppConfiguration {
     let websiteDataStore: (WebProfileStore) -> WKWebsiteDataStore
 
     static func current(processInfo: ProcessInfo = .processInfo) -> AppConfiguration {
+        if processInfo.arguments.contains("--benchmark-scenario") {
+            guard
+                let rawScenario = argumentValue(after: "--benchmark-scenario", in: processInfo.arguments),
+                let scenario = BenchmarkScenario(rawValue: rawScenario)
+            else {
+                preconditionFailure("Benchmark launch requires a supported --benchmark-scenario")
+            }
+            return benchmark(
+                scenario: scenario,
+                runID: processInfo.environment["DEN_BENCHMARK_RUN_ID"] ?? UUID().uuidString)
+        }
+
         guard processInfo.arguments.contains("--ui-testing") else {
             let isPrivateDen = processInfo.arguments.contains("--private-den")
             let isUnitTestHost = processInfo.environment["XCTestConfigurationFilePath"] != nil
@@ -91,6 +109,23 @@ struct AppConfiguration {
             websiteDataStore: { _ in .nonPersistent() })
     }
 
+    static func benchmark(scenario: BenchmarkScenario, runID: String = UUID().uuidString) -> AppConfiguration {
+        let suiteName = "dev.nekonata.denbrowser.benchmark.\(runID)"
+        guard let defaults = UserDefaults(suiteName: suiteName) else {
+            preconditionFailure("Could not create benchmark preferences")
+        }
+        defaults.removePersistentDomain(forName: suiteName)
+
+        return AppConfiguration(
+            profileDirectoryURL: FileManager.default.temporaryDirectory
+                .appending(path: "DenBrowserBenchmark/\(runID)", directoryHint: .isDirectory),
+            defaults: defaults,
+            initialProfile: benchmarkProfile(scenario: scenario),
+            isEphemeral: true,
+            ipcSocketPath: DenSocketPath.temporary(prefix: "den-benchmark", identifier: runID),
+            websiteDataStore: { _ in .nonPersistent() })
+    }
+
     private static func privateDenProfile() -> PersistedProfile {
         PersistedProfile(
             profile: ProfileState(
@@ -99,6 +134,37 @@ struct AppConfiguration {
                 color: .gray,
                 webProfileStore: .default),
             den: .sample)
+    }
+
+    private static func benchmarkProfile(scenario: BenchmarkScenario) -> PersistedProfile {
+        let web1 = BoardState(
+            id: fixtureID("00000000-0000-0000-0000-000000000511"),
+            label: "Web 1",
+            width: 520,
+            currentSheetURL: fixtureSheetURLValue())
+        let terminal = BoardState(
+            id: fixtureID("00000000-0000-0000-0000-000000000514"),
+            label: "Terminal",
+            width: 520,
+            workingDirectory: "/")
+        let boards: [BoardState] =
+            switch scenario {
+            case .emptyDesk: []
+            case .oneTerminalBoard: [terminal]
+            case .oneWebBoard: [web1]
+            }
+        let desk = DeskState(
+            id: fixtureID("00000000-0000-0000-0000-000000000502"),
+            label: "Benchmark",
+            boards: boards)
+
+        return PersistedProfile(
+            profile: ProfileState(
+                id: fixtureID("00000000-0000-0000-0000-000000000501"),
+                name: "Benchmark",
+                color: .gray,
+                webProfileStore: .default),
+            den: DenState(desks: [desk], focusedDeskID: desk.id))
     }
 
     private static func argumentValue(after name: String, in arguments: [String]) -> String? {

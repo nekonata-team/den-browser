@@ -80,6 +80,15 @@ final class BoardRuntime: BaseWebRuntime, ObservableObject {
     private var loadingObservation: NSKeyValueObservation?
     private var progressObservation: NSKeyValueObservation?
     private var fullscreenObservation: NSKeyValueObservation?
+    private var lastTracedWebProcessIdentifier: pid_t?
+
+    private func traceWebProcessIdentifier() {
+        guard let processIdentifier = webProcessIdentifier,
+            processIdentifier != lastTracedWebProcessIdentifier
+        else { return }
+        lastTracedWebProcessIdentifier = processIdentifier
+        PerformanceTrace.mark("webProcessPID=\(processIdentifier)", category: "WebKit")
+    }
 
     init(
         board: BoardState,
@@ -318,12 +327,14 @@ final class BoardRuntime: BaseWebRuntime, ObservableObject {
 
     override func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
         PerformanceTrace.mark("BoardRuntime.didFinish navigation (\(id.uuidString.prefix(8)))", category: "Board")
+        traceWebProcessIdentifier()
         sheetNavigation.refreshConfiguration(for: webView)
         updateFavicon()
     }
 
     override func webView(_ webView: WKWebView, didCommit navigation: WKNavigation!) {
         PerformanceTrace.mark("BoardRuntime.didCommit navigation (\(id.uuidString.prefix(8)))", category: "Board")
+        traceWebProcessIdentifier()
         didTerminateContentProcess = false
         guard isShowingInitialLoadFallback else { return }
         DispatchQueue.main.async { [weak self] in
@@ -340,6 +351,7 @@ final class BoardRuntime: BaseWebRuntime, ObservableObject {
         didStartProvisionalNavigation navigation: WKNavigation!
     ) {
         faviconURL = nil
+        traceWebProcessIdentifier()
     }
 
     override func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {

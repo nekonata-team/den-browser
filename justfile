@@ -70,8 +70,8 @@ den *args:
 
 # Benchmark startup and idle resource usage.
 [group("development")]
-benchmark *args: build
-    ./scripts/measure {{args}}
+benchmark scenario *args: build
+    swift scripts/measure.swift --scenario "{{scenario}}" {{args}}
 
 # Remove all derived data build directories.
 [group("development")]

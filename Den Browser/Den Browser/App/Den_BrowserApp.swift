@@ -5,7 +5,7 @@ import SwiftUI
 @main
 struct Den_BrowserApp: App {
     @NSApplicationDelegateAdaptor(DenApplicationDelegate.self) private var appDelegate
-    private let updaterController: SPUStandardUpdaterController
+    private let updaterController = UpdaterControllerCoordinator()
     @State private var preferences: AppPreferences
     @State private var sheetNavigation: SheetNavigationManager
     @State private var profileManager: ProfileManager
@@ -14,11 +14,6 @@ struct Den_BrowserApp: App {
 
     init() {
         PerformanceTrace.mark("App.init start", category: "Launch")
-        updaterController = SPUStandardUpdaterController(
-            startingUpdater: true,
-            updaterDelegate: nil,
-            userDriverDelegate: nil)
-        PerformanceTrace.mark("UpdaterController initialized", category: "Launch")
         let configuration = AppConfiguration.current()
         let preferences = AppPreferences(defaults: configuration.defaults)
         let sheetNavigation = SheetNavigationManager(defaults: configuration.defaults)
@@ -41,18 +36,20 @@ struct Den_BrowserApp: App {
 
     var body: some Scene {
         WindowGroup("Den Browser", for: ProfileWindowRoute.self) { $route in
-            ProfileWindowView(route: route)
-                .environment(profileManager)
-                .environment(preferences)
-                .environment(\.colorScheme, .dark)
-                .containerBackground(.clear, for: .window)
-                .background {
-                    KeyboardControllerBridge(
-                        controller: keyboardController,
-                        profileManager: profileManager,
-                        preferences: preferences,
-                        openSettingsCoordinator: openSettingsCoordinator)
-                }
+            ProfileWindowView(route: route) {
+                updaterController.start()
+            }
+            .environment(profileManager)
+            .environment(preferences)
+            .environment(\.colorScheme, .dark)
+            .containerBackground(.clear, for: .window)
+            .background {
+                KeyboardControllerBridge(
+                    controller: keyboardController,
+                    profileManager: profileManager,
+                    preferences: preferences,
+                    openSettingsCoordinator: openSettingsCoordinator)
+            }
         } defaultValue: {
             ProfileWindowRoute(
                 windowID: profileManager.personalProfileID,
@@ -105,9 +102,28 @@ private final class OpenSettingsCoordinator {
     }
 }
 
+@MainActor
+private final class UpdaterControllerCoordinator {
+    private var controller: SPUStandardUpdaterController?
+
+    func start() {
+        guard controller == nil else { return }
+        controller = SPUStandardUpdaterController(
+            startingUpdater: true,
+            updaterDelegate: nil,
+            userDriverDelegate: nil)
+        PerformanceTrace.mark("UpdaterController initialized after window presentation", category: "Launch")
+    }
+
+    func checkForUpdates() {
+        start()
+        controller?.checkForUpdates(nil)
+    }
+}
+
 private struct DenCommands: Commands {
     let profileManager: ProfileManager
-    let updaterController: SPUStandardUpdaterController
+    let updaterController: UpdaterControllerCoordinator
     let openSettingsCoordinator: OpenSettingsCoordinator
 
     @FocusedValue(\.denStore) private var store
@@ -118,7 +134,7 @@ private struct DenCommands: Commands {
     var body: some Commands {
         CommandGroup(after: .appInfo) {
             Button("Check for Updates…") {
-                updaterController.checkForUpdates(nil)
+                updaterController.checkForUpdates()
             }
         }
 

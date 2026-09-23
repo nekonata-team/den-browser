@@ -46,6 +46,7 @@ enum TerminalConfigurationSource {
         commandOverride: String? = nil
     ) -> Resolution {
         let home = fileManager.homeDirectoryForCurrentUser
+        let isIsolatedRun = arguments.contains("--ui-testing") || arguments.contains("--benchmark-scenario")
         let xdgRoot: URL
         if let value = environment["XDG_CONFIG_HOME"], !value.isEmpty {
             xdgRoot = URL(fileURLWithPath: value, relativeTo: home).standardizedFileURL
@@ -59,7 +60,7 @@ enum TerminalConfigurationSource {
             home.appending(path: "Library/Application Support/com.mitchellh.ghostty/config.ghostty"),
             home.appending(path: "Library/Application Support/com.mitchellh.ghostty/config"),
         ]
-        let loadedCandidates = (arguments.contains("--ui-testing") ? [] : candidates)
+        let loadedCandidates = (isIsolatedRun ? [] : candidates)
             .filter { fileManager.fileExists(atPath: $0.path) }
         var contents = loadedCandidates.compactMap {
             try? String(contentsOf: $0, encoding: .utf8)
@@ -71,7 +72,7 @@ enum TerminalConfigurationSource {
         if let commandOverride {
             if !contents.isEmpty { contents.append("\n") }
             contents.append("command = \(commandOverride)")
-        } else if arguments.contains("--ui-testing") {
+        } else if isIsolatedRun {
             if !contents.isEmpty { contents.append("\n") }
             contents.append("command = /bin/zsh -f")
         }

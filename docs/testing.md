@@ -82,14 +82,7 @@ Profile documents use a fresh temporary directory, preferences use a dedicated d
 non-persistent WebKit store with local data URLs. UI tests must not read or write the user's Profiles, preferences,
 website data, window restoration, or external services. Terminal UI tests use an isolated `/bin/zsh -f` command and do not load the user's Ghostty configuration.
 
-The separate `Den_BrowserUIPerformanceTests` class measures application launch with XCTest's
-`XCTApplicationLaunchMetric`; it is not part of the default interaction test class. Run it explicitly when
-checking launch performance:
-
-```sh
-just ui-test Den_BrowserUIPerformanceTests/testApplicationLaunchPerformance
-xcrun xcresulttool get test-results metrics --path <path-to-xcresult>
-```
+For launch and resource measurements, see [Performance benchmarking](./benchmarking.md).
 
 Use the XCTest result bundle for per-test durations. Do not add ad hoc timers or sleeps to interaction tests.
 

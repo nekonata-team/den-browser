@@ -18,8 +18,16 @@ enum PerformanceTrace {
         let elapsedMilliseconds =
             Double(elapsed.components.seconds) * 1000
             + Double(elapsed.components.attoseconds) / 1_000_000_000_000_000
-        print(String(format: "[PERF:%@] +%.2fms: %@", category.uppercased(), elapsedMilliseconds, label))
+        let line = String(format: "[PERF:%@] +%.2fms: %@", category.uppercased(), elapsedMilliseconds, label)
+        print(line)
         fflush(stdout)
+
+        guard let path = ProcessInfo.processInfo.environment["DEN_BENCHMARK_TRACE_FILE"] else { return }
+        let url = URL(fileURLWithPath: path)
+        guard let file = try? FileHandle(forWritingTo: url) else { return }
+        defer { try? file.close() }
+        _ = try? file.seekToEnd()
+        try? file.write(contentsOf: Data((line + "\n").utf8))
     }
 
     static func beginInterval(_ name: StaticString) -> OSSignpostIntervalState? {
