@@ -9,12 +9,12 @@
 /* Begin PBXBuildFile section */
 		531CEFA4304D48CF00C9C636 /* den in CopyFiles */ = {isa = PBXBuildFile; fileRef = 531CEF98304D46A100C9C636 /* den */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		531CEFB2304D500000C9C636 /* ArgumentParser in Frameworks */ = {isa = PBXBuildFile; productRef = 531CEFB1304D500000C9C636 /* ArgumentParser */; };
-		57C0A1E03000000000000003 /* MCP in Frameworks */ = {isa = PBXBuildFile; productRef = 57C0A1E03000000000000002 /* MCP */; };
 		533B2064303A206F00B2A985 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = 533B2063303A206F00B2A985 /* Sparkle */; };
 		53A10001301A000000000001 /* GhosttyTerminal in Frameworks */ = {isa = PBXBuildFile; productRef = 53A10003301A000000000001 /* GhosttyTerminal */; };
 		53A10004301A000000000001 /* GhosttyTheme in Frameworks */ = {isa = PBXBuildFile; productRef = 53A10005301A000000000001 /* GhosttyTheme */; };
 		55A10001301A000000000001 /* SFSafeSymbols in Frameworks */ = {isa = PBXBuildFile; productRef = 55A10003301A000000000001 /* SFSafeSymbols */; };
 		56B1000130C0000000000001 /* Subprocess in Frameworks */ = {isa = PBXBuildFile; productRef = 56B1000330C0000000000001 /* Subprocess */; };
+		57C0A1E03000000000000003 /* MCP in Frameworks */ = {isa = PBXBuildFile; productRef = 57C0A1E03000000000000002 /* MCP */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -103,22 +103,16 @@
 		};
 		530E9DEB2FFFFEDB0033427C /* Den BrowserTests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-			);
 			path = "Den BrowserTests";
 			sourceTree = "<group>";
 		};
 		530E9DF52FFFFEDB0033427C /* Den BrowserUITests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-			);
 			path = "Den BrowserUITests";
 			sourceTree = "<group>";
 		};
 		531CEF99304D46A100C9C636 /* den */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-			);
 			path = den;
 			sourceTree = "<group>";
 		};
@@ -300,7 +294,7 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 2660;
-				LastUpgradeCheck = 2660;
+				LastUpgradeCheck = 2700;
 				TargetAttributes = {
 					530E9DDA2FFFFED90033427C = {
 						CreatedOnToolsVersion = 26.6;
@@ -486,6 +480,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
+				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = F79C2UJ844;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -512,6 +507,7 @@
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = macosx;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_TREAT_WARNINGS_AS_ERRORS = YES;
@@ -522,10 +518,6 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
-				ARCHS = (
-					arm64,
-					x86_64,
-				);
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
@@ -556,6 +548,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
+				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = F79C2UJ844;
 				ENABLE_NS_ASSERTIONS = NO;
@@ -576,6 +569,7 @@
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = NO;
 				SDKROOT = macosx;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				SWIFT_TREAT_WARNINGS_AS_ERRORS = YES;
 			};
@@ -591,6 +585,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 42;
+				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = F79C2UJ844;
 				ENABLE_APP_SANDBOX = NO;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -626,10 +621,11 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = DenBrowserIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = "Den-Browser.entitlements";
-				CODE_SIGN_IDENTITY = "Developer ID Application";
+				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Manual;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 42;
+				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = F79C2UJ844;
 				ENABLE_APP_SANDBOX = NO;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -665,6 +661,7 @@
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 42;
+				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = F79C2UJ844;
 				GENERATE_INFOPLIST_FILE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 26.0;
@@ -686,6 +683,7 @@
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 42;
+				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = F79C2UJ844;
 				GENERATE_INFOPLIST_FILE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 26.0;
@@ -706,6 +704,7 @@
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 42;
+				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = F79C2UJ844;
 				GENERATE_INFOPLIST_FILE = YES;
 				MARKETING_VERSION = 0.37.0;
@@ -725,6 +724,7 @@
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 42;
+				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = F79C2UJ844;
 				GENERATE_INFOPLIST_FILE = YES;
 				MARKETING_VERSION = 0.37.0;
@@ -743,6 +743,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
+				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = F79C2UJ844;
 				ENABLE_HARDENED_RUNTIME = YES;
 				MACOSX_DEPLOYMENT_TARGET = 26.0;
@@ -757,6 +758,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
+				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = F79C2UJ844;
 				ENABLE_HARDENED_RUNTIME = YES;
 				MACOSX_DEPLOYMENT_TARGET = 26.0;

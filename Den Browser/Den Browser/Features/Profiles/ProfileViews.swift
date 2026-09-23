@@ -4,7 +4,7 @@ import SwiftUI
 
 struct ProfileWindowView: View {
     let route: ProfileWindowRoute
-    let startUpdater: () -> Void
+    let startUpdater: @MainActor @Sendable () -> Void
 
     @Environment(ProfileManager.self) private var profileManager
     @Environment(\.appearsActive) private var appearsActive
