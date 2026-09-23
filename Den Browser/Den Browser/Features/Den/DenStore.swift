@@ -15,7 +15,7 @@ final class DenStorage {
     var recentlyRemovedBoards: [RecentlyRemovedBoard] = []
     var recentlyDiscardedDrawerItems: [DrawerItem] = []
 
-    @ObservationIgnored var runtimes: [UUID: BoardRuntime] = [:]
+    var runtimes: [UUID: BoardRuntime] = [:]
     @ObservationIgnored var terminalRuntimes: [UUID: TerminalRuntime] = [:]
     @ObservationIgnored var runtimeOwners: [UUID: DenStore] = [:]
     @ObservationIgnored let drawerPresentations = NSHashTable<DenStore>.weakObjects()
