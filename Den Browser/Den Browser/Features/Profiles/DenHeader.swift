@@ -10,65 +10,62 @@ struct DenHeader: View {
     @Environment(\.openWindow) private var openWindow
 
     var body: some View {
-        HStack(alignment: .center, spacing: 8) {
-            DeskSwitcher(
-                profileColor: profile.color.color,
-                canOpenInNewWindow: {
-                    profileManager.canOpenDeskInNewWindow(
-                        $0,
+        DeskSwitcher(
+            profileColor: profile.color.color,
+            canOpenInNewWindow: {
+                profileManager.canOpenDeskInNewWindow(
+                    $0,
+                    profileID: profile.id,
+                    sourceWindowID: windowID)
+            },
+            isPresentedInAnotherWindow: {
+                profileManager.isDeskPresentedInAnotherWindow(
+                    $0,
+                    profileID: profile.id,
+                    excludingWindowID: windowID)
+            },
+            onOpenInNewWindow: { deskID in
+                guard
+                    let route = profileManager.routeForOpeningDesk(
+                        deskID,
                         profileID: profile.id,
                         sourceWindowID: windowID)
-                },
-                isPresentedInAnotherWindow: {
-                    profileManager.isDeskPresentedInAnotherWindow(
-                        $0,
-                        profileID: profile.id,
-                        excludingWindowID: windowID)
-                },
-                onOpenInNewWindow: { deskID in
-                    guard
-                        let route = profileManager.routeForOpeningDesk(
-                            deskID,
-                            profileID: profile.id,
-                            sourceWindowID: windowID)
-                    else { return }
-                    openWindow(value: route)
-                }
-            )
-            .frame(maxWidth: .infinity)
-            .allowsHitTesting(store.temporaryContext == nil)
-            .accessibilityHidden(store.temporaryContext != nil)
-
-            if !store.isOverviewPresented {
-                DenHeaderControls(profile: profile, windowID: windowID)
+                else { return }
+                openWindow(value: route)
             }
-        }
+        )
+        .frame(maxWidth: .infinity)
+        .allowsHitTesting(store.temporaryContext == nil)
+        .accessibilityHidden(store.temporaryContext != nil)
         .frame(height: DenLayout.denHeaderHeight)
     }
 }
 
-struct DenHeaderControls: View {
+struct DenHeaderControls: ToolbarContent {
     let profile: ProfileState
     let windowID: UUID
 
     @Environment(DenStore.self) private var store
     @Environment(ProfileManager.self) private var profileManager
 
-    var body: some View {
-        HStack(spacing: 8) {
-            if profileManager.isPrivateDen {
-                PrivateDenBadge(color: profile.color.color)
+    @ToolbarContentBuilder
+    var body: some ToolbarContent {
+        if !store.isOverviewPresented {
+            ToolbarSpacer(.flexible)
+            ToolbarItemGroup(placement: .automatic) {
+                if profileManager.isPrivateDen {
+                    PrivateDenBadge(color: profile.color.color)
+                }
+
+                NotificationButton()
+
+                if store.focusedDesk?.boards.isEmpty == false {
+                    SaveDeskPresetButton()
+                }
+
+                ProfileChip(profile: profile, windowID: windowID)
             }
-
-            NotificationButton()
-
-            if store.focusedDesk?.boards.isEmpty == false {
-                SaveDeskPresetButton()
-            }
-
-            ProfileChip(profile: profile, windowID: windowID)
         }
-        .padding(.trailing, DenLayout.chromeHorizontalPadding)
     }
 }
 
@@ -96,11 +93,8 @@ private struct NotificationButton: View {
         } label: {
             Image(systemSymbol: store.unreadNotificationCount > 0 ? .bellBadge : .bell)
                 .font(.system(size: 13, weight: .semibold))
-                .frame(width: 30, height: 30)
         }
-        .buttonStyle(.borderless)
         .tint(.secondary)
-        .fixedSize()
         .disabled(store.temporaryContext != nil)
         .accessibilityLabel("Notifications")
         .accessibilityValue(
@@ -121,11 +115,8 @@ private struct SaveDeskPresetButton: View {
         } label: {
             Image(systemSymbol: .bookmark)
                 .font(.system(size: 13, weight: .semibold))
-                .frame(width: 30, height: 30)
         }
-        .buttonStyle(.borderless)
         .tint(.secondary)
-        .fixedSize()
         .accessibilityLabel("Save Desk as Preset")
         .help("Save Desk as Preset")
     }
@@ -172,11 +163,8 @@ private struct ProfileChip: View {
         } label: {
             Image(systemSymbol: .personFill)
                 .font(.system(size: 13, weight: .semibold))
-                .frame(width: 30, height: 30)
         }
-        .menuStyle(.borderlessButton)
         .tint(.secondary)
-        .fixedSize()
         .accessibilityLabel("Profile: \(profile.name)")
         .help("Profile: \(profile.name)")
     }

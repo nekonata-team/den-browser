@@ -105,6 +105,7 @@ final class DenStore {
     var saveEssentialDraft: SaveEssentialDraft?
     var isZenViewPresented = false
     var isFocusModePresented = false
+    var isBoardRailPresented = false
     var isNotificationListPresented = false
     var selectedNotificationID: UUID?
     var isDenMode = false
@@ -440,6 +441,7 @@ final class DenStore {
         resetTemporaryPresentationState()
         isZenViewPresented = false
         isFocusModePresented = false
+        isBoardRailPresented = false
         activeDrag = nil
         boardWidthPanelMessage = nil
         pendingConfirmation = nil

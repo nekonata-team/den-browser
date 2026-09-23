@@ -38,75 +38,45 @@ struct DenView<Header: View>: View {
     var body: some View {
         GeometryReader { geometry in
             ZStack(alignment: .top) {
-                boardStrip(in: geometry.size)
-                    .allowsHitTesting(
-                        store.temporaryContext == nil && store.focusedDesk?.boards.isEmpty == false
-                    )
-                    .accessibilityHidden(
-                        store.temporaryContext != nil || store.focusedDesk?.boards.isEmpty != false)
+                NavigationSplitView(columnVisibility: boardRailVisibility) {
+                    BoardRail()
+                        .navigationSplitViewColumnWidth(min: 192, ideal: 208, max: 224)
+                } detail: {
+                    VStack(spacing: 0) {
+                        if shouldShowHeader {
+                            header
+                                .frame(maxWidth: .infinity)
+                                .frame(height: DenLayout.denHeaderHeight)
+                        }
 
-                if store.focusedDesk?.boards.isEmpty != false {
-                    EmptyDenView {
-                        store.showOpenBoardPanel()
-                    }
-                    .allowsHitTesting(store.temporaryContext == nil)
-                    .accessibilityHidden(store.temporaryContext != nil)
-                }
-
-                if shouldShowHeader {
-                    header
-                }
-
-                if store.isDeskFilterPresented && store.filteredDeskBoards.isEmpty {
-                    ContentUnavailableView.search(text: store.deskFilterQuery)
+                        GeometryReader { detailGeometry in
+                            denContent(in: detailGeometry.size)
+                        }
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        .allowsHitTesting(false)
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
-
-                if store.isDeskFilterPresented {
-                    DeskFilterOverlay(profileColor: profileColor)
-                        .padding(
-                            .top,
-                            shouldShowHeader
-                                ? DenLayout.denHeaderHeight + DenLayout.outerInset
-                                : DenLayout.outerInset
-                        )
-                        .transition(DenMotion.transition(reduceMotion: shouldReduceMotion, scale: 0.96))
-                        .zIndex(DenOverlayLayer.deskFilter)
-                }
-
-                activePanel(
-                    newBoardWidth: newBoardWidth(in: geometry.size),
-                    boardHeight: DenLayout.boardHeight(
-                        for: geometry.size,
-                        shouldShowHeader: shouldShowHeader
-                    )
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .animation(
+                    DenMotion.spatial(reduceMotion: shouldReduceMotion),
+                    value: store.isBoardRailPresented
                 )
-                .zIndex(DenOverlayLayer.activePanel)
 
                 notificationsOverlay
+                    .zIndex(DenOverlayLayer.notificationList)
                 drawerOverlay(in: geometry.size)
+                    .zIndex(DenOverlayLayer.drawer)
                 feedbackOverlay
-                indicatorOverlay
+                    .zIndex(DenOverlayLayer.toast)
             }
             .onChange(of: preferences.sheetScale) { _, scale in
                 store.applySheetScale(scale)
             }
             .onAppear {
                 store.sheetNavigation.setReduceMotion(shouldReduceMotion)
-                store.updateBoardLayout(
-                    availableWidth: geometry.size.width - DenLayout.outerInset * 2,
-                    spacing: DenLayout.outerInset
-                )
             }
             .onChange(of: shouldReduceMotion) { _, reduceMotion in
                 store.sheetNavigation.setReduceMotion(reduceMotion)
-            }
-            .onChange(of: geometry.size.width) { _, width in
-                store.updateBoardLayout(
-                    availableWidth: width - DenLayout.outerInset * 2,
-                    spacing: DenLayout.outerInset
-                )
             }
             .animation(DenMotion.feedback(reduceMotion: shouldReduceMotion), value: store.temporaryContext)
             .animation(DenMotion.feedback(reduceMotion: shouldReduceMotion), value: store.isDeskFilterPresented)
@@ -127,6 +97,75 @@ struct DenView<Header: View>: View {
         .accessibilityLabel(contentAccessibilityValue)
         .accessibilityValue(contentAccessibilityValue)
         .modifier(DenDialogs())
+    }
+
+    private var boardRailVisibility: Binding<NavigationSplitViewVisibility> {
+        Binding(
+            get: {
+                store.isBoardRailPresented && !store.isZenViewPresented
+                    ? .doubleColumn
+                    : .detailOnly
+            },
+            set: { visibility in
+                guard !store.isZenViewPresented else { return }
+                store.setBoardRailPresented(visibility != .detailOnly)
+            }
+        )
+    }
+
+    @ViewBuilder
+    private func denContent(in size: CGSize) -> some View {
+        ZStack(alignment: .top) {
+            boardStrip(in: size)
+                .allowsHitTesting(
+                    store.temporaryContext == nil && store.focusedDesk?.boards.isEmpty == false
+                )
+                .accessibilityHidden(
+                    store.temporaryContext != nil || store.focusedDesk?.boards.isEmpty != false
+                )
+
+            if store.focusedDesk?.boards.isEmpty != false {
+                EmptyDenView {
+                    store.showOpenBoardPanel()
+                }
+                .allowsHitTesting(store.temporaryContext == nil)
+                .accessibilityHidden(store.temporaryContext != nil)
+            }
+
+            if store.isDeskFilterPresented && store.filteredDeskBoards.isEmpty {
+                ContentUnavailableView.search(text: store.deskFilterQuery)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .allowsHitTesting(false)
+            }
+
+            if store.isDeskFilterPresented {
+                DeskFilterOverlay(profileColor: profileColor)
+                    .padding(.top, DenLayout.outerInset)
+                    .transition(DenMotion.transition(reduceMotion: shouldReduceMotion, scale: 0.96))
+                    .zIndex(DenOverlayLayer.deskFilter)
+            }
+
+            activePanel(
+                newBoardWidth: newBoardWidth(in: size),
+                boardHeight: DenLayout.boardHeight(for: size, shouldShowHeader: false)
+            )
+            .zIndex(DenOverlayLayer.activePanel)
+
+            indicatorOverlay
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .onAppear {
+            store.updateBoardLayout(
+                availableWidth: size.width - DenLayout.outerInset * 2,
+                spacing: DenLayout.outerInset
+            )
+        }
+        .onChange(of: size.width) { _, width in
+            store.updateBoardLayout(
+                availableWidth: width - DenLayout.outerInset * 2,
+                spacing: DenLayout.outerInset
+            )
+        }
     }
 
     private var contentAccessibilityValue: String {
@@ -199,7 +238,7 @@ struct DenView<Header: View>: View {
             .padding(
                 .top,
                 shouldShowHeader
-                    ? DenLayout.denHeaderHeight + DenLayout.panelGap
+                    ? DenLayout.panelGap
                     : DenLayout.outerInset
             )
             .transition(DenMotion.transition(reduceMotion: shouldReduceMotion, scale: 0.96))
@@ -265,7 +304,7 @@ struct DenView<Header: View>: View {
     private func boardStrip(in size: CGSize) -> some View {
         BoardStrip(
             size: size,
-            shouldShowHeader: shouldShowHeader,
+            shouldShowHeader: false,
             profileColor: profileColor,
             boardSpacing: DenLayout.outerInset,
             boardHorizontalPadding: DenLayout.outerInset,

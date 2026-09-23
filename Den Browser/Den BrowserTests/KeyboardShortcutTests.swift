@@ -155,6 +155,33 @@ struct KeyboardShortcutTests {
         #expect(ConfigurableShortcut.moveFocusedBoardLeft.defaultBinding.displayTokens == ["⌥", "⇧", "⌘", "←"])
     }
 
+    @Test func commandSTogglesBoardRailAndIgnoresKeyRepeat() throws {
+        let toggle = try keyEvent(
+            characters: "s",
+            charactersIgnoringModifiers: "s",
+            modifiers: [.command],
+            keyCode: 1
+        )
+        let repeatToggle = try keyEvent(
+            characters: "s",
+            charactersIgnoringModifiers: "s",
+            modifiers: [.command],
+            isARepeat: true,
+            keyCode: 1
+        )
+
+        #expect(
+            KeyboardController.decision(for: toggle, store: try makeStore(boards: [board("Board")]))
+                == .perform(.toggleBoardRail)
+        )
+        #expect(
+            KeyboardController.decision(
+                for: repeatToggle,
+                store: try makeStore(boards: [board("Board")])
+            ) == .consume(.ignoredRepeat)
+        )
+    }
+
     @Test func denModeShiftDigitMovesFocusedBoardToDesk() throws {
         let movedBoard = board("Moved")
         let firstDesk = DeskState(label: "First", boards: [], focusedBoardID: nil)

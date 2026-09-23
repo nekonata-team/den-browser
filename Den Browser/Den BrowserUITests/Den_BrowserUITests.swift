@@ -83,6 +83,69 @@ final class Den_BrowserUITests: XCTestCase, BDD {
         }
     }
 
+    // Protects AppKit toolbar and shortcut delivery plus native split-view geometry, which unit tests cannot observe.
+    @MainActor
+    func testBoardRailShortcutPushesDeskSwitcherAndResizesBoardStrip() throws {
+        let app = launchApp(boardCount: .two)
+        let rail = app.descendants(matching: .any).matching(identifier: "board-rail").firstMatch
+        let strip = app.scrollViews["board-strip"].firstMatch
+        let mainDesk = desk(.main, in: app)
+        let notifications = app.toolbars.buttons["Notifications"].firstMatch
+        let saveDeskPreset = app.toolbars.buttons["Save Desk as Preset"].firstMatch
+        XCTAssertTrue(strip.waitForExistence(timeout: 5))
+        XCTAssertTrue(mainDesk.waitForExistence(timeout: 5))
+        XCTAssertTrue(notifications.waitForExistence(timeout: 5))
+        XCTAssertTrue(saveDeskPreset.exists)
+        let initialStripWidth = strip.frame.width
+        let initialStripHeight = strip.frame.height
+        let initialDeskSwitcherMinX = mainDesk.frame.minX
+
+        given("BoardRail is hidden and BoardStrip fills the detail column") {
+            XCTAssertFalse(rail.isHittable)
+        }
+
+        when("opening BoardRail with Command-S") {
+            app.typeKey("s", modifierFlags: [.command])
+            XCTAssertTrue(rail.wait(for: \.isHittable, toEqual: true, timeout: 5))
+            assertEventually("BoardRail should reduce BoardStrip width") {
+                strip.frame.width < initialStripWidth
+            }
+            assertEventually("DeskSwitcher should move with BoardStrip into the detail column") {
+                mainDesk.frame.minX > initialDeskSwitcherMinX
+            }
+            XCTAssertEqual(strip.frame.height, initialStripHeight, accuracy: 1)
+        }
+
+        let bravoInRail = app.descendants(matching: .any)
+            .matching(identifier: "board-rail-board.\(FixtureBoard.bravo.rawValue)")
+            .firstMatch
+
+        when("selecting Bravo from BoardRail") {
+            XCTAssertTrue(bravoInRail.waitForExistence(timeout: 5))
+            bravoInRail.click()
+        }
+
+        then("Bravo is focused and BoardRail remains open") {
+            XCTAssertTrue(board(.bravo, in: app).isSelected)
+            XCTAssertTrue(rail.isHittable)
+            XCTAssertTrue(bravoInRail.isSelected)
+        }
+
+        when("closing BoardRail with Command-S") {
+            app.typeKey("s", modifierFlags: [.command])
+        }
+
+        then("BoardStrip regains the available width") {
+            XCTAssertTrue(rail.wait(for: \.isHittable, toEqual: false, timeout: 5))
+            assertEventually("BoardStrip should regain its original width") {
+                strip.frame.width >= initialStripWidth
+            }
+            assertEventually("DeskSwitcher should return to its original position") {
+                abs(mainDesk.frame.minX - initialDeskSwitcherMinX) < 1
+            }
+        }
+    }
+
     @MainActor
     func testClickingInputOnUnfocusedBoardPreservesClickedResponder() throws {
         let app = launchApp(boardCount: .two)

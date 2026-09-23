@@ -53,11 +53,14 @@ struct ProfileWindowView: View {
                 }
             }
             .tint(profile.color.color)
-            .environment(store)
             .focusedSceneValue(\.denStore, store)
             .focusedSceneValue(\.profileID, activeProfileID)
             .focusedSceneValue(\.profileWindowID, route.windowID)
             .background(WindowRegistration(route: route))
+            .toolbar {
+                DenHeaderControls(profile: profile, windowID: route.windowID)
+            }
+            .environment(store)
             .toolbarVisibility(store.isZenViewPresented ? .hidden : .visible, for: .windowToolbar)
             .toolbarBackgroundVisibility(.hidden, for: .windowToolbar)
             .ignoresSafeArea(.container, edges: store.isZenViewPresented ? .top : [])

@@ -28,8 +28,8 @@ struct DeskSwitcher: View {
     var body: some View {
         GeometryReader { geometry in
             ScrollView(.horizontal) {
-                GlassEffectContainer(spacing: DenLayout.outerInset) {
-                    HStack(spacing: DenLayout.outerInset) {
+                GlassEffectContainer(spacing: 4) {
+                    HStack(spacing: 4) {
                         ForEach(Array(store.state.desks.enumerated()), id: \.element.id) { index, desk in
                             deskSwitcherItem(desk, number: index + 1, in: geometry.size)
                         }
@@ -39,7 +39,7 @@ struct DeskSwitcher: View {
                         } label: {
                             Image(systemSymbol: .plus)
                                 .font(.system(size: 13, weight: .semibold))
-                                .frame(width: 30, height: 30)
+                                .frame(width: 28, height: 28)
                         }
                         .buttonStyle(.borderless)
                         .tint(.secondary)
@@ -104,7 +104,7 @@ struct DeskSwitcher: View {
             }
         }
         .frame(maxWidth: DenLayout.deskButtonMaxWidth)
-        .padding(.horizontal, DenLayout.chromeHorizontalPadding)
+        .padding(.horizontal, 8)
         .frame(height: DenLayout.deskButtonHeight)
         .background {
             if desk.id == store.presentedDeskID {

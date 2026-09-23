@@ -6,7 +6,7 @@ enum DenLayout {
     static let boardHeaderHeight: CGFloat = 38
     static let boardControlSize: CGFloat = 24
     static let minimumBoardHeight: CGFloat = 420
-    static let deskSwitcherHeight: CGFloat = 36
+    static let deskSwitcherHeight: CGFloat = 32
     static let deskButtonHeight: CGFloat = 28
     static let deskButtonMaxWidth: CGFloat = 180
     static let panelGap: CGFloat = 26

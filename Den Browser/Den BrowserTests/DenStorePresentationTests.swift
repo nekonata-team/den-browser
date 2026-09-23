@@ -20,6 +20,7 @@ struct DenStorePresentationTests {
         let runtime = store.runtime(for: board)
         store.deleteFocusedDesk()
         store.toggleFocusedBoardMaximized()
+        store.isBoardRailPresented = true
         #expect(store.beginBoardDrag(board.id))
         store.recentlyRemovedBoards = [
             RecentlyRemovedBoard(board: board, sourceDeskID: populated.id, sourceBoardIndex: 0)
@@ -42,6 +43,7 @@ struct DenStorePresentationTests {
         #expect(store.deskPendingDeletion == nil)
         #expect(store.maximizedBoardID == nil)
         #expect(!store.isFocusModePresented)
+        #expect(!store.isBoardRailPresented)
         #expect(!store.isBoardDragging)
         #expect(!store.isZmxSessionsPresented)
         #expect(store.deskFilterCenteringTask == nil)
@@ -58,6 +60,26 @@ struct DenStorePresentationTests {
         #expect(store.anchorJumpOriginBoardIDByDesk.isEmpty)
         #expect(runtime.webView.navigationDelegate == nil)
         #expect(runtime.webView.uiDelegate == nil)
+    }
+
+    @Test func boardRailStaysOpenWhenFocusChangesAndPanelOpens() {
+        // Arrange
+        let first = board("First")
+        let second = board("Second")
+        let focusedDesk = desk("Desk", boards: [first, second], focusedBoardID: first.id)
+        let store = DenStore(
+            state: DenState(desks: [focusedDesk], focusedDeskID: focusedDesk.id)
+        )
+
+        // Act
+        store.toggleBoardRail()
+        store.focusBoard(second.id)
+        store.showOpenBoardPanel()
+
+        // Assert
+        #expect(store.focusedBoard?.id == second.id)
+        #expect(store.isOpenBoardPanelPresented)
+        #expect(store.isBoardRailPresented)
     }
 
     @Test func restoreRecentlyRemovedBoardShowsToastWhenNoneExists() {

@@ -4,7 +4,7 @@ Vim-style commands for the Current Sheet are documented in [vim.md](./vim.md).
 
 Den Mode makes Den operations available while a Sheet has keyboard focus. Toggle it with `Control` + `,` (customizable). The titlebar indicates `DEN MODE` or `SHEET INPUT`. `Escape` returns to Sheet Input.
 
-The eight primary navigation shortcuts (toggling Den Mode, desk switching, board focus, and board movement) can be customized in Settings > Shortcuts. The complete in-app guide is available via `?` in Den Mode or the Den menu.
+The nine primary navigation shortcuts (toggling Den Mode and Board Rail, desk switching, board focus, and board movement) can be customized in Settings > Shortcuts. The complete in-app guide is available via `?` in Den Mode or the Den menu.
 
 ---
 
@@ -19,6 +19,7 @@ When the Profile panel is open, type to filter Profiles, use `Up` / `Down` to se
 | `Control` + `Command` + `P` | Open Profile panel |
 | `Shift` + `Command` + `N` | Open Private Den |
 | `Command` + `T` | Open Board panel (URL, search, `:terminal`, `:zellij`, `:zmx`) |
+| `Command` + `S` | Toggle Board Rail |
 | `Command` + `L` | Edit Focused Board Link |
 | `Command` + `W` | Remove Focused Board (or discard selected Drawer item) |
 | `Shift` + `Command` + `W` | Close Profile window |

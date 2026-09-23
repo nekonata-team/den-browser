@@ -144,6 +144,7 @@ enum AppAction: Equatable {
     case moveNotificationSelection(Int)
     case openSelectedNotification
     case toggleDenMode
+    case toggleBoardRail
     case exitDenMode
     case enterEssentialsPrefix
     case exitEssentialsPrefix
@@ -388,10 +389,13 @@ enum KeyboardRouter {
     }
 
     private static func route(shortcut: ConfigurableShortcut, isRepeat: Bool) -> InputDecision {
-        if shortcut == .toggleDenMode, isRepeat { return .consume(.ignoredRepeat) }
+        if [.toggleDenMode, .toggleBoardRail].contains(shortcut), isRepeat {
+            return .consume(.ignoredRepeat)
+        }
         let action: AppAction =
             switch shortcut {
             case .toggleDenMode: .toggleDenMode
+            case .toggleBoardRail: .toggleBoardRail
             case .focusPreviousDesk: .focusPreviousDesk
             case .focusNextDesk: .focusNextDesk
             case .returnToPreviousDesk: .returnToPreviousDesk
@@ -768,6 +772,7 @@ enum AppActionHandler {
         case .moveNotificationSelection(let offset): store.moveNotificationSelection(by: offset)
         case .openSelectedNotification: store.openSelectedNotification()
         case .toggleDenMode: store.toggleDenMode()
+        case .toggleBoardRail: store.toggleBoardRail()
         case .exitDenMode: store.exitDenMode()
         case .enterEssentialsPrefix: store.enterEssentialsPrefix()
         case .exitEssentialsPrefix: store.exitEssentialsPrefix()

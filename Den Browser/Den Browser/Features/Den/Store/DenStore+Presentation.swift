@@ -35,6 +35,15 @@ extension DenStore {
         isZenViewPresented.toggle()
     }
 
+    func setBoardRailPresented(_ isPresented: Bool) {
+        guard !isZenViewPresented else { return }
+        isBoardRailPresented = isPresented
+    }
+
+    func toggleBoardRail() {
+        setBoardRailPresented(!isBoardRailPresented)
+    }
+
     func toggleFocusMode() {
         isFocusModePresented.toggle()
     }

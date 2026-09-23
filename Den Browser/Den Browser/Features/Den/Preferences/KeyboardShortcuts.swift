@@ -3,6 +3,7 @@ import Foundation
 
 enum ConfigurableShortcut: String, CaseIterable, Codable, Identifiable {
     case toggleDenMode = "toggle-den-mode"
+    case toggleBoardRail = "toggle-board-rail"
     case focusPreviousDesk = "focus-previous-desk"
     case focusNextDesk = "focus-next-desk"
     case returnToPreviousDesk = "return-to-previous-desk"
@@ -16,6 +17,7 @@ enum ConfigurableShortcut: String, CaseIterable, Codable, Identifiable {
     var label: String {
         switch self {
         case .toggleDenMode: "Toggle Den Mode"
+        case .toggleBoardRail: "Toggle Board Rail"
         case .focusPreviousDesk: "Focus Previous Desk"
         case .focusNextDesk: "Focus Next Desk"
         case .returnToPreviousDesk: "Return to Previous Desk"
@@ -30,6 +32,8 @@ enum ConfigurableShortcut: String, CaseIterable, Codable, Identifiable {
         switch self {
         case .toggleDenMode:
             ShortcutBinding(key: .character(","), modifiers: [.control])
+        case .toggleBoardRail:
+            ShortcutBinding(key: .character("s"), modifiers: [.command])
         case .focusPreviousDesk:
             ShortcutBinding(key: .tab, modifiers: [.control, .shift])
         case .focusNextDesk:
