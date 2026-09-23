@@ -124,6 +124,56 @@ struct DenSheetCommandTests {
         #expect(response.snapshot == "full")
     }
 
+    @Test func interactForwardsNoSnapshotOption() async throws {
+        // Arrange
+        let socketPath = FileManager.default.temporaryDirectory
+            .appendingPathComponent("den-cli-\(UUID().uuidString).sock").path
+        let server = DenSocketServer(socketPath: socketPath)
+        try server.start { data in
+            do {
+                let request = try JSONDecoder().decode(DenIPCRequest.self, from: data)
+                let noSnapshot: Bool
+                if case .sheet(.interact(let payload)) = request.command {
+                    noSnapshot = payload.noSnapshot
+                } else {
+                    noSnapshot = false
+                }
+                return try JSONEncoder().encode(
+                    DenIPCResponse.success(
+                        snapshot: noSnapshot ? nil : "unexpected",
+                        completedActions: noSnapshot ? 1 : nil
+                    ))
+            } catch {
+                return Data()
+            }
+        }
+        defer { server.stop() }
+        let process = Process()
+        process.executableURL = Bundle.main.bundleURL.appendingPathComponent("Contents/MacOS/den")
+        process.arguments = ["sheet", "interact", "click @e1", "--no-snapshot", "--socket", socketPath]
+        let output = Pipe()
+        process.standardOutput = output
+
+        // Act
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, any Error>) in
+            process.terminationHandler = { _ in continuation.resume() }
+            do {
+                try process.run()
+            } catch {
+                continuation.resume(throwing: error)
+            }
+        }
+        let response = try JSONDecoder().decode(
+            DenIPCResponse.self,
+            from: output.fileHandleForReading.readDataToEndOfFile()
+        )
+
+        // Assert
+        #expect(process.terminationStatus == 0)
+        #expect(response.snapshot == nil)
+        #expect(response.completedActions == 1)
+    }
+
     @Test func interactHandlesCommentsSemicolonsAndQuotes() async throws {
         // Arrange
         let socketPath = FileManager.default.temporaryDirectory

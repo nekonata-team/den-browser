@@ -694,10 +694,15 @@ final class DenIPCService {
                 return targetUnavailable(at: index)
             }
             if case .interact = step.command {
-                let snapshot = try? await SheetInteraction.snapshot(
-                    in: target.runtime.webView,
-                    interactiveOnly: !payload.full
-                )
+                let snapshot: String?
+                if payload.noSnapshot {
+                    snapshot = nil
+                } else {
+                    snapshot = try? await SheetInteraction.snapshot(
+                        in: target.runtime.webView,
+                        interactiveOnly: !payload.full
+                    )
+                }
                 guard isSheetInteractTargetAvailable(target) else {
                     return targetUnavailable(at: index)
                 }
@@ -717,7 +722,7 @@ final class DenIPCService {
             )
             guard actionResponse.isOk else {
                 let snapshot: String?
-                if !isSheetInteractTargetAvailable(target) {
+                if payload.noSnapshot || !isSheetInteractTargetAvailable(target) {
                     snapshot = nil
                 } else {
                     snapshot = try? await SheetInteraction.snapshot(
@@ -737,6 +742,13 @@ final class DenIPCService {
                 return targetUnavailable(at: index)
             }
             completedActions += 1
+        }
+
+        if payload.noSnapshot {
+            guard isSheetInteractTargetAvailable(target) else {
+                return targetUnavailable(at: payload.steps.count - 1)
+            }
+            return .success(completedActions: completedActions)
         }
 
         do {

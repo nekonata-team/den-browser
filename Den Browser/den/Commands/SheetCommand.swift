@@ -448,9 +448,9 @@ struct SheetMouseWheelCommand: ParsableCommand {
 struct SheetInteractCommand: ParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "interact",
-        abstract: "Run multiple Sheet actions from a script, file, or stdin and return a final semantic snapshot",
+        abstract: "Run multiple Sheet actions from a script, file, or stdin",
         discussion: """
-            Executes a series of Sheet actions line-by-line and returns the final semantic snapshot.
+            Executes a series of Sheet actions line-by-line and returns the final semantic snapshot unless --no-snapshot is specified.
             Each line or semicolon-separated statement uses the same syntax as 'den sheet <subcommand>'.
 
             Available actions:
@@ -487,14 +487,19 @@ struct SheetInteractCommand: ParsableCommand {
     var scriptOrPath: String?
     @Flag(name: .long, help: "Include the full semantic tree in the final snapshot")
     var full: Bool = false
+    @Flag(name: .long, help: "Do not return a final semantic snapshot")
+    var noSnapshot: Bool = false
 
     func run() throws {
+        guard !(full && noSnapshot) else {
+            throw ValidationError("Please choose either --full or --no-snapshot")
+        }
         let script = try readScript()
         let steps = try DenSheetScriptParser.parse(script)
         guard !steps.isEmpty else {
             throw ValidationError("Script contains no valid actions")
         }
-        let payload = DenSheetInteractPayload(steps: steps, full: full)
+        let payload = DenSheetInteractPayload(steps: steps, full: full, noSnapshot: noSnapshot)
         try DenIPCClient.execute(
             command: .sheet(.interact(payload)),
             options: target

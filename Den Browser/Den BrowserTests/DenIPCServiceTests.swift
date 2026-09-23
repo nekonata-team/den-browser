@@ -562,6 +562,85 @@ struct DenIPCServiceTests {
         #expect(response.completedActions == 2)
     }
 
+    @Test func sheetInteractCanSkipSnapshotsAfterSuccessAndFailure() async throws {
+        // Arrange
+        let directory = FileManager.default.temporaryDirectory
+            .appending(path: "den-browser-ipc-interact-no-snapshot-\(UUID().uuidString)", directoryHint: .isDirectory)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let suiteName = "IPCServiceInteractNoSnapshotPreferences-\(UUID().uuidString)"
+        let manager = ProfileManager(
+            directoryURL: directory,
+            sheetNavigation: SheetNavigationManager(
+                defaults: makeTestDefaults(suiteName: suiteName),
+                scriptSource: ""),
+            preferences: AppPreferences(defaults: makeTestDefaults(suiteName: suiteName)),
+            removeDataStore: { _ in },
+            websiteDataStore: { _ in .nonPersistent() })
+        let store = try #require(manager.store(for: manager.personalProfileID))
+        let boardID = try #require(store.createBoard(urlString: "https://interact.example/"))
+        let board = try #require(store.board(for: boardID))
+        let webView = store.runtime(for: board).webView
+        let waiter = SheetInteractionWebViewLoadWaiter()
+        await waiter.load(
+            "<!doctype html><body><button id=\"continue\">Continue</button></body>",
+            baseURL: URL(string: "https://interact.example/")!,
+            in: webView)
+        let service = DenIPCService(profileManager: manager)
+
+        // Act
+        let success = await service.handleRequest(
+            DenIPCRequest(
+                command: .sheet(
+                    .interact(
+                        DenSheetInteractPayload(
+                            steps: [
+                                DenSheetInteractStep(
+                                    line: 1,
+                                    text: "click #continue",
+                                    command: .click(
+                                        DenSheetClickPayload(
+                                            target: "#continue",
+                                            role: nil,
+                                            name: nil,
+                                            exact: false,
+                                            newBoard: false,
+                                            focus: false)))
+                            ],
+                            full: false,
+                            noSnapshot: true))),
+                boardID: boardID.uuidString))
+        let failure = await service.handleRequest(
+            DenIPCRequest(
+                command: .sheet(
+                    .interact(
+                        DenSheetInteractPayload(
+                            steps: [
+                                DenSheetInteractStep(
+                                    line: 1,
+                                    text: "click #missing",
+                                    command: .click(
+                                        DenSheetClickPayload(
+                                            target: "#missing",
+                                            role: nil,
+                                            name: nil,
+                                            exact: false,
+                                            newBoard: false,
+                                            focus: false)))
+                            ],
+                            full: false,
+                            noSnapshot: true))),
+                boardID: boardID.uuidString))
+
+        // Assert
+        #expect(success.isOk)
+        #expect(success.snapshot == nil)
+        #expect(success.completedActions == 1)
+        #expect(failure.isOk == false)
+        #expect(failure.snapshot == nil)
+        #expect(failure.completedActions == 0)
+        #expect(failure.failedActionIndex == 0)
+    }
+
     @Test func sheetInteractFailsWhenInitialBoardDisappearsDuringWait() async throws {
         // Arrange
         let directory = FileManager.default.temporaryDirectory

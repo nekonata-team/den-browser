@@ -75,7 +75,7 @@ The CLI communicates with Den Browser through a newline-delimited JSON request o
 - Value-bearing commands such as `sheet click`, `sheet wait`, `sheet get`, and `terminal send` carry positional values and flags in the typed command; the server does not re-parse command-line strings.
 - Missing, unknown, or invalid command values fail before a side effect.
 - Direct socket clients must follow the current typed command schema; cross-version JSON compatibility is not guaranteed.
-- `sheet interact` sends one `sheet.interact` command containing typed steps. The Web Board is resolved once when the batch starts, so focus, Desk, or ambient-target changes while a step awaits do not retarget later steps. If that Board or its Profile disappears, the command fails; `completed_actions` and `snapshot` refer to the fixed Board. Each step retains its source line and text for failure reporting, plus the typed command used for execution.
+- `sheet interact` sends one `sheet.interact` command containing typed steps. The Web Board is resolved once when the batch starts, so focus, Desk, or ambient-target changes while a step awaits do not retarget later steps. If that Board or its Profile disappears, the command fails; `completed_actions` and any returned `snapshot` refer to the fixed Board. Each step retains its source line and text for failure reporting, plus the typed command used for execution.
 
 ---
 
@@ -121,7 +121,7 @@ Commands operating on the Current Sheet of the resolved Web Board.
 | `den sheet type` | `[<target>] <text>` | Type text into an element by reference/selector or into the currently focused element (supports rich editors, Canvas, and contenteditable). | `den sheet type @e2 "search query"` |
 | `den sheet drag` | `<source> [<target>] [--dx <dx>] [--dy <dy>] [--steps <steps>]` | Drag an element to another element or relative pixel offset (`--dx`, `--dy`). | `den sheet drag @e1 --dx 100 --dy 50` |
 | `den sheet mouse` | `<move\|down\|up\|click\|wheel> ...` | Dispatch low-level pointer events (`move <x> <y>`, `down [btn]`, `up [btn]`, `click <x> <y> [--button <btn>] [--count <n>]`, `wheel <dy> [--dx <dx>]`). | `den sheet mouse click 400 300 --json` |
-| `den sheet interact` | `[<script-or-file>] [--full]` | Execute multiple sheet actions in order from a script, script file, or stdin (`-`) and return a final semantic snapshot. Actions follow standard `den sheet` subcommand syntax (e.g. `click`, `dblclick`, `focus`, `fill`, `type`, `drag`, `mouse`, `wait`); execution stops at the first failure. Use `--full` for the complete semantic tree. | `den sheet interact "click @e1; fill @e2 'query'"` |
+| `den sheet interact` | `[<script-or-file>] [--full] [--no-snapshot]` | Execute multiple sheet actions in order from a script, script file, or stdin (`-`) and return a final semantic snapshot. Actions follow standard `den sheet` subcommand syntax (e.g. `click`, `dblclick`, `focus`, `fill`, `type`, `drag`, `mouse`, `wait`); execution stops at the first failure. Use `--full` for the complete semantic tree or `--no-snapshot` to skip snapshot generation; JSON keeps status and action metadata. These options cannot be combined. | `den sheet interact "click @e1; fill @e2 'query'" --no-snapshot` |
 | `den sheet screenshot` | `[<path>]` | Save a PNG screenshot of the web sheet (defaults to temporary directory). | `den sheet screenshot /tmp/screen.png` |
 
 ### 3.3 `den board` (Board Surfaces & Layout)

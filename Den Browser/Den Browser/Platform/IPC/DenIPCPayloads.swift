@@ -90,6 +90,7 @@ nonisolated struct DenSheetStatePayload: Codable, Equatable, Sendable {
 nonisolated struct DenSheetInteractPayload: Codable, Equatable, Sendable {
     var steps: [DenSheetInteractStep]
     var full: Bool
+    var noSnapshot: Bool = false
 }
 
 nonisolated struct DenSheetOpenPayload: Codable, Equatable, Sendable {
