@@ -103,9 +103,7 @@ struct BoardRail: View {
         let isAnchor = railDesk?.anchorBoardID == board.id
 
         return HStack(spacing: 8) {
-            Image(systemSymbol: symbol(for: board))
-                .foregroundStyle(.secondary)
-                .frame(width: 16, height: 16)
+            boardIcon(for: board)
 
             BoardHeaderTitle(
                 board: board,
@@ -137,6 +135,21 @@ struct BoardRail: View {
         .help(board.displayName)
     }
 
+    @ViewBuilder
+    private func boardIcon(for board: BoardState) -> some View {
+        if board.isTerminal {
+            Image(systemSymbol: symbol(for: board))
+                .foregroundStyle(.secondary)
+                .frame(width: 16, height: 16)
+        } else if let runtime = store.runtimes[board.id] {
+            BoardRailFavicon(runtime: runtime)
+        } else {
+            Image(systemSymbol: .globe)
+                .foregroundStyle(.secondary)
+                .frame(width: 16, height: 16)
+        }
+    }
+
     private func boardAccessibilityLabel(
         _ board: BoardState,
         isFocused: Bool,
@@ -163,6 +176,20 @@ struct BoardRail: View {
     private func symbol(for board: BoardState) -> SFSymbol {
         board.isZellij
             ? .rectangle3Group
-            : (board.isZmx ? .arrowTrianglehead2ClockwiseRotate90 : (board.isTerminal ? .appleTerminal : .globe))
+            : (board.isZmx ? .arrowTrianglehead2ClockwiseRotate90 : .appleTerminal)
+    }
+}
+
+private struct BoardRailFavicon: View {
+    @ObservedObject var runtime: BoardRuntime
+
+    var body: some View {
+        AsyncImage(url: runtime.faviconURL) { image in
+            image.resizable().scaledToFit()
+        } placeholder: {
+            Image(systemSymbol: .globe)
+                .foregroundStyle(.secondary)
+        }
+        .frame(width: 16, height: 16)
     }
 }
