@@ -4,6 +4,8 @@ status: accepted
 
 # Integrate Den CLI
 
+ADR-0055 supersedes only this ADR's decision to avoid MCP. The first-party CLI, its bundled distribution, and its user-scoped Unix socket remain accepted.
+
 Den Browser bundles a first-party command-line tool (`den`) inside the application bundle to enable developers and coding agents to inspect and drive Web Boards from Terminal Boards or external shells. Communication between the CLI and the running Den Browser process is routed over a user-scoped Unix domain socket using line-delimited JSON.
 
 Terminal Boards automatically inject spatial context (`DEN_SOCKET`, `DEN_BOARD_ID`) into the shell environment. When invoked without an explicit target, `den` resolves contextually to the adjacent Web Board on the active Desk, removing the need to pass Board identifiers during standard terminal workflows.

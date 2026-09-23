@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "den": {
+      "command": "just",
+      "args": ["den", "mcp"]
+    }
+  }
+}

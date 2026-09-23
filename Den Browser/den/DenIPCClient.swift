@@ -25,6 +25,24 @@ private struct CLIOutputOptions {
     let showBoardIDs: Bool
 }
 
+private enum DenIPCClientError: LocalizedError {
+    case createSocket(String)
+    case socketPathTooLong(String)
+    case connect(String, String)
+    case send(String)
+    case invalidResponse(String)
+
+    var errorDescription: String? {
+        switch self {
+        case .createSocket(let message): "Could not create socket: \(message)"
+        case .socketPathTooLong(let path): "Socket path too long: \(path)"
+        case .connect(let path, let message): "Could not connect to Den Browser at \(path): \(message)"
+        case .send(let message): "Could not send request to Den Browser: \(message)"
+        case .invalidResponse(let response): "Invalid response from Den Browser: \(response)"
+        }
+    }
+}
+
 enum DenIPCClient {
     static func execute(
         command: DenIPCCommand,
@@ -54,84 +72,17 @@ enum DenIPCClient {
         output: CLIOutputOptions,
         boardID: String?
     ) throws {
-        let env = ProcessInfo.processInfo.environment
-        let callerBoardID = env["DEN_BOARD_ID"]
-        let effectiveProfileID = options.profileID ?? env["DEN_PROFILE"]
-
-        let socketPath = DenSocketPath.resolve(explicit: options.socketPath, environment: env)
-
-        let request = DenIPCRequest(
-            command: command,
-            boardID: boardID,
-            deskID: nil,
-            callerBoardID: callerBoardID,
-            profileID: effectiveProfileID)
-
-        guard let requestData = try? JSONEncoder().encode(request) else {
-            fputs("Error: Failed to encode request\n", stderr)
-            throw ExitCode.failure
-        }
-
-        let socketDescriptor = socket(AF_UNIX, SOCK_STREAM, 0)
-        guard socketDescriptor >= 0 else {
-            fputs("Error: Failed to create socket\n", stderr)
-            throw ExitCode.failure
-        }
-        defer { close(socketDescriptor) }
-
-        var addr = sockaddr_un()
-        addr.sun_family = sa_family_t(AF_UNIX)
-
-        let pathBytes = socketPath.utf8CString
-        guard pathBytes.count <= MemoryLayout.size(ofValue: addr.sun_path) else {
-            fputs("Error: Socket path too long: \(socketPath)\n", stderr)
-            throw ExitCode.failure
-        }
-
-        withUnsafeMutableBytes(of: &addr.sun_path) { buffer in
-            pathBytes.withUnsafeBytes { source in
-                buffer.copyMemory(from: source)
-            }
-        }
-
-        let connectResult = withUnsafePointer(to: &addr) { ptr in
-            ptr.withMemoryRebound(to: sockaddr.self, capacity: 1) { sockAddrPtr in
-                connect(socketDescriptor, sockAddrPtr, socklen_t(MemoryLayout<sockaddr_un>.size))
-            }
-        }
-
-        guard connectResult == 0 else {
-            let errMsg = String(cString: strerror(errno))
-            fputs("Error: Could not connect to Den Browser at \(socketPath): \(errMsg)\n", stderr)
-            throw ExitCode.failure
-        }
-
-        var packet = requestData
-        packet.append(UInt8(ascii: "\n"))
-
-        packet.withUnsafeBytes { rawBuffer in
-            guard let base = rawBuffer.baseAddress else { return }
-            var written = 0
-            while written < rawBuffer.count {
-                let writtenBytes = send(
-                    socketDescriptor, base.advanced(by: written), rawBuffer.count - written, MSG_NOSIGNAL)
-                guard writtenBytes > 0 else { break }
-                written += writtenBytes
-            }
-        }
-
-        var responseData = Data()
-        var buffer = [UInt8](repeating: 0, count: 65536)
-        while true {
-            let readBytes = read(socketDescriptor, &buffer, buffer.count)
-            guard readBytes > 0 else { break }
-            responseData.append(buffer, count: readBytes)
-            if responseData.contains(UInt8(ascii: "\n")) { break }
-        }
-
-        guard let response = try? JSONDecoder().decode(DenIPCResponse.self, from: responseData) else {
-            let rawStr = String(data: responseData, encoding: .utf8) ?? ""
-            fputs("Error: Invalid response from Den Browser: \(rawStr)\n", stderr)
+        let response: DenIPCResponse
+        let responseData: Data
+        do {
+            (response, responseData) = try sendRequest(
+                command: command,
+                socketPath: options.socketPath,
+                profileID: options.profileID,
+                boardID: boardID
+            )
+        } catch {
+            fputs("Error: \(error.localizedDescription)\n", stderr)
             throw ExitCode.failure
         }
 
@@ -243,5 +194,89 @@ enum DenIPCClient {
         if !response.isOk {
             throw ExitCode.failure
         }
+    }
+
+    static func sendRequest(
+        command: DenIPCCommand,
+        socketPath explicitSocketPath: String? = nil,
+        profileID: String? = nil,
+        boardID: String? = nil,
+        includeTargetContext: Bool = false
+    ) throws -> (DenIPCResponse, Data) {
+        let environment = ProcessInfo.processInfo.environment
+        let socketPath = DenSocketPath.resolve(explicit: explicitSocketPath, environment: environment)
+        let request = DenIPCRequest(
+            command: command,
+            boardID: boardID,
+            callerBoardID: environment["DEN_BOARD_ID"],
+            profileID: profileID ?? environment["DEN_PROFILE"],
+            includeTargetContext: includeTargetContext ? true : nil
+        )
+        let requestData = try JSONEncoder().encode(request)
+
+        let socketDescriptor = socket(AF_UNIX, SOCK_STREAM, 0)
+        guard socketDescriptor >= 0 else {
+            throw DenIPCClientError.createSocket(String(cString: strerror(errno)))
+        }
+        defer { close(socketDescriptor) }
+
+        var address = sockaddr_un()
+        address.sun_family = sa_family_t(AF_UNIX)
+        let pathBytes = socketPath.utf8CString
+        guard pathBytes.count <= MemoryLayout.size(ofValue: address.sun_path) else {
+            throw DenIPCClientError.socketPathTooLong(socketPath)
+        }
+        withUnsafeMutableBytes(of: &address.sun_path) { buffer in
+            pathBytes.withUnsafeBytes { source in
+                buffer.copyMemory(from: source)
+            }
+        }
+
+        let connectResult = withUnsafePointer(to: &address) { pointer in
+            pointer.withMemoryRebound(to: sockaddr.self, capacity: 1) { socketAddress in
+                connect(socketDescriptor, socketAddress, socklen_t(MemoryLayout<sockaddr_un>.size))
+            }
+        }
+        guard connectResult == 0 else {
+            throw DenIPCClientError.connect(socketPath, String(cString: strerror(errno)))
+        }
+
+        var packet = requestData
+        packet.append(UInt8(ascii: "\n"))
+        var writeError: Int32?
+        packet.withUnsafeBytes { buffer in
+            guard let baseAddress = buffer.baseAddress else { return }
+            var written = 0
+            while written < buffer.count {
+                let count = send(
+                    socketDescriptor,
+                    baseAddress.advanced(by: written),
+                    buffer.count - written,
+                    MSG_NOSIGNAL
+                )
+                guard count > 0 else {
+                    writeError = errno
+                    break
+                }
+                written += count
+            }
+        }
+        if let writeError {
+            throw DenIPCClientError.send(String(cString: strerror(writeError)))
+        }
+
+        var responseData = Data()
+        var buffer = [UInt8](repeating: 0, count: 65536)
+        while true {
+            let count = read(socketDescriptor, &buffer, buffer.count)
+            guard count > 0 else { break }
+            responseData.append(buffer, count: count)
+            if responseData.contains(UInt8(ascii: "\n")) { break }
+        }
+
+        guard let response = try? JSONDecoder().decode(DenIPCResponse.self, from: responseData) else {
+            throw DenIPCClientError.invalidResponse(String(data: responseData, encoding: .utf8) ?? "")
+        }
+        return (response, responseData)
     }
 }

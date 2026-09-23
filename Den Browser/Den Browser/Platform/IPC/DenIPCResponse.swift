@@ -116,6 +116,11 @@ nonisolated struct DenProfileInfo: Codable, Sendable {
     }
 }
 
+nonisolated struct DenSelectedProfileInfo: Codable, Sendable {
+    var id: String
+    var name: String
+}
+
 nonisolated struct DenBoundingBox: Codable, Equatable, Sendable {
     var originX: Double
     var originY: Double
@@ -142,6 +147,11 @@ nonisolated struct DenIPCResponse: Codable, Sendable {
     var drawerItemId: String?
     var drawerItems: [DenDrawerItemInfo]?
     var profiles: [DenProfileInfo]?
+    var profile: DenSelectedProfileInfo?
+    var profileID: String?
+    var activeDesk: DenDeskInfo?
+    var focusedBoardID: String?
+    var drawerItemCount: Int?
     var url: String?
     var snapshot: String?
     var elements: [DenSheetElementInfo]?
@@ -169,6 +179,11 @@ nonisolated struct DenIPCResponse: Codable, Sendable {
         case drawerItemId = "drawer_item_id"
         case drawerItems = "drawer_items"
         case profiles
+        case profile
+        case profileID = "profile_id"
+        case activeDesk = "active_desk"
+        case focusedBoardID = "focused_board_id"
+        case drawerItemCount = "drawer_item_count"
         case url
         case snapshot
         case elements
@@ -195,6 +210,11 @@ nonisolated struct DenIPCResponse: Codable, Sendable {
         drawerItemId: String? = nil,
         drawerItems: [DenDrawerItemInfo]? = nil,
         profiles: [DenProfileInfo]? = nil,
+        profile: DenSelectedProfileInfo? = nil,
+        profileID: String? = nil,
+        activeDesk: DenDeskInfo? = nil,
+        focusedBoardID: String? = nil,
+        drawerItemCount: Int? = nil,
         url: String? = nil,
         snapshot: String? = nil,
         elements: [DenSheetElementInfo]? = nil,
@@ -222,6 +242,11 @@ nonisolated struct DenIPCResponse: Codable, Sendable {
             drawerItemId: drawerItemId,
             drawerItems: drawerItems,
             profiles: profiles,
+            profile: profile,
+            profileID: profileID,
+            activeDesk: activeDesk,
+            focusedBoardID: focusedBoardID,
+            drawerItemCount: drawerItemCount,
             url: url,
             snapshot: snapshot,
             elements: elements,
@@ -257,6 +282,11 @@ nonisolated struct DenIPCResponse: Codable, Sendable {
             drawerItemId: nil,
             drawerItems: nil,
             profiles: nil,
+            profile: nil,
+            profileID: nil,
+            activeDesk: nil,
+            focusedBoardID: nil,
+            drawerItemCount: nil,
             url: nil,
             snapshot: snapshot,
             elements: nil,

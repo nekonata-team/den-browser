@@ -1,0 +1,3 @@
+[mcp_servers.den]
+command = "just"
+args = ["den", "mcp"]

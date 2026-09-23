@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		531CEFA4304D48CF00C9C636 /* den in CopyFiles */ = {isa = PBXBuildFile; fileRef = 531CEF98304D46A100C9C636 /* den */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		531CEFB2304D500000C9C636 /* ArgumentParser in Frameworks */ = {isa = PBXBuildFile; productRef = 531CEFB1304D500000C9C636 /* ArgumentParser */; };
+		57C0A1E03000000000000003 /* MCP in Frameworks */ = {isa = PBXBuildFile; productRef = 57C0A1E03000000000000002 /* MCP */; };
 		533B2064303A206F00B2A985 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = 533B2063303A206F00B2A985 /* Sparkle */; };
 		53A10001301A000000000001 /* GhosttyTerminal in Frameworks */ = {isa = PBXBuildFile; productRef = 53A10003301A000000000001 /* GhosttyTerminal */; };
 		53A10004301A000000000001 /* GhosttyTheme in Frameworks */ = {isa = PBXBuildFile; productRef = 53A10005301A000000000001 /* GhosttyTheme */; };
@@ -155,6 +156,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				531CEFB2304D500000C9C636 /* ArgumentParser in Frameworks */,
+				57C0A1E03000000000000003 /* MCP in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -284,6 +286,7 @@
 			name = den;
 			packageProductDependencies = (
 				531CEFB1304D500000C9C636 /* ArgumentParser */,
+				57C0A1E03000000000000002 /* MCP */,
 			);
 			productName = den;
 			productReference = 531CEF98304D46A100C9C636 /* den */;
@@ -330,6 +333,7 @@
 				531CEFB0304D500000C9C636 /* XCRemoteSwiftPackageReference "swift-argument-parser" */,
 				55A10002301A000000000001 /* XCRemoteSwiftPackageReference "SFSafeSymbols" */,
 				56B1000230C0000000000001 /* XCRemoteSwiftPackageReference "swift-subprocess" */,
+				57C0A1E03000000000000001 /* XCRemoteSwiftPackageReference "swift-sdk" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 530E9DDC2FFFFED90033427C /* Products */;
@@ -855,6 +859,14 @@
 				version = 1.0.0;
 			};
 		};
+		57C0A1E03000000000000001 /* XCRemoteSwiftPackageReference "swift-sdk" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/modelcontextprotocol/swift-sdk.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.12.1;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -887,6 +899,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 56B1000230C0000000000001 /* XCRemoteSwiftPackageReference "swift-subprocess" */;
 			productName = Subprocess;
+		};
+		57C0A1E03000000000000002 /* MCP */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 57C0A1E03000000000000001 /* XCRemoteSwiftPackageReference "swift-sdk" */;
+			productName = MCP;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

@@ -33,6 +33,7 @@ nonisolated enum DenBoardTerminalCommand: Codable, Equatable, Sendable {
 nonisolated enum DenIPCCommand: Codable, Equatable, Sendable {
     indirect enum Sheet: Codable, Equatable, Sendable {
         case open(DenSheetOpenPayload)
+        case inspect(DenSheetSnapshotPayload)
         case url
         case reload
         case eval(DenSheetEvalPayload)
@@ -94,5 +95,6 @@ nonisolated enum DenIPCCommand: Codable, Equatable, Sendable {
     case drawer(Drawer)
     case terminal(Terminal)
     case profile(Profile)
+    case inspectDen
     case health
 }
