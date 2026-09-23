@@ -55,6 +55,7 @@ struct DenView<Header: View>: View {
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .ignoresSafeArea(.container, edges: store.isZenViewPresented ? .top : [])
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .animation(

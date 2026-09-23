@@ -137,6 +137,8 @@ private struct WindowRegistration: NSViewRepresentable {
         func register(_ window: NSWindow?) {
             guard let window, self.window !== window else { return }
             self.window = window
+            window.styleMask.insert(.fullSizeContentView)
+            window.titlebarAppearsTransparent = true
             profileManager?.register(window: window, for: route)
             closeObserver = NotificationCenter.default.addObserver(
                 forName: NSWindow.willCloseNotification,
