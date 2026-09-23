@@ -32,12 +32,12 @@ format-staged +files:
 [group("quality")]
 lint:
     {{swift_format}} lint --strict --recursive --parallel --configuration .swift-format "{{swift_sources}}"
-    swiftlint lint --strict
+    swiftlint lint --quiet --strict
 
 # Build macOS app with development signing.
 [group("build")]
 build:
-    rtk xcodebuild build -project "{{project}}" -scheme "{{scheme}}" -destination 'platform=macOS,arch=arm64' -derivedDataPath "{{derived_data}}"
+    @rtk xcodebuild build -project "{{project}}" -scheme "{{scheme}}" -destination 'platform=macOS,arch=arm64' -derivedDataPath "{{derived_data}}"
 
 # Type-check embedded JavaScript sources.
 [group("quality")]
@@ -89,22 +89,22 @@ prepush:
 # Run unit tests without code signing.
 [group("test")]
 test:
-    rm -rf "{{unit_test_result}}"
-    rtk test "xcodebuild test -project '{{project}}' -scheme '{{scheme}}' -destination 'platform=macOS,arch=arm64' -derivedDataPath '{{derived_data}}' -resultBundlePath '{{unit_test_result}}' -only-testing:'Den BrowserTests' -parallel-testing-enabled NO CODE_SIGNING_ALLOWED=NO" || { echo "✗ Unit tests failed."; echo '  Inspect: just test-results'; exit 1; }
+    @rm -rf "{{unit_test_result}}"
+    @rtk test "xcodebuild test -project '{{project}}' -scheme '{{scheme}}' -destination 'platform=macOS,arch=arm64' -derivedDataPath '{{derived_data}}' -resultBundlePath '{{unit_test_result}}' -only-testing:'Den BrowserTests' -parallel-testing-enabled NO CODE_SIGNING_ALLOWED=NO" || { echo "✗ Unit tests failed."; echo '  Inspect: just test-results'; exit 1; }
     echo "✓ Unit tests passed"
 
 # Run deterministic macOS UI interaction tests. Pass a target to run a specific class or case (e.g. just ui-test Den_BrowserUITests/testNewBoardIsCenteredAfterCreation).
 [group("test")]
 ui-test target="Den_BrowserUITests":
-    rm -rf "{{ui_test_result}}"
-    rtk test "xcodebuild test -project '{{project}}' -scheme '{{scheme}}' -destination 'platform=macOS,arch=arm64' -derivedDataPath '{{ui_test_derived_data}}' -resultBundlePath '{{ui_test_result}}' -only-testing:'Den BrowserUITests/{{target}}'" || { echo "✗ UI tests failed."; echo '  Inspect: just test-results .derived-data-ui/TestResults.xcresult'; exit 1; }
+    @rm -rf "{{ui_test_result}}"
+    @rtk test "xcodebuild test -project '{{project}}' -scheme '{{scheme}}' -destination 'platform=macOS,arch=arm64' -derivedDataPath '{{ui_test_derived_data}}' -resultBundlePath '{{ui_test_result}}' -only-testing:'Den BrowserUITests/{{target}}'" || { echo "✗ UI tests failed."; echo '  Inspect: just test-results .derived-data-ui/TestResults.xcresult'; exit 1; }
     echo "✓ UI tests passed"
 
 # Show a test result summary. Pass another result bundle path as the first argument.
 [group("test")]
 test-results result_path=unit_test_result:
-    test -d "{{result_path}}"
-    rtk xcrun xcresulttool get test-results summary --path "{{result_path}}"
+    @test -d "{{result_path}}"
+    xcrun xcresulttool get test-results summary --path "{{result_path}}"
 
 # Run lint, TypeScript checks, and unit tests.
 [group("test")]
