@@ -299,7 +299,7 @@
 - **Current Status:** `HomePage`、`InstallBox`、日英コピーを共通化し、英日ルートの重複を解消しました。uBlock Origin Liteの表現を「任意インストール／オンデマンド」に修正し、Privacyと第三者ライセンス記載も整合させました。`mise exec -- just web::build`、生成HTMLのリンク・重複ID・動画／コピー操作属性検査、`git diff --check`を通過。公開・deployは未実施です。
 
 <a id="task-025"></a>
-### [ ] TASK-025：保守コストの高い機能の縮小を判断する
+### [x] TASK-025：保守コストの高い機能の縮小を判断する
 
 - **Priority / Purpose:** P3。機能の利用価値に見合う保守範囲へ絞るための判断材料を揃えます。機能削除自体はこのタスクの完了条件ではありません。
 - **Prerequisites:** なし。
@@ -307,6 +307,15 @@
 - **Work:** networkidleの簡易判定、zmxの一覧／階層／一括終了／複製、Board Activityの詳細監視、Desk合成Screenshot、Drawerの二つの表示形式を対象に、利用目的、代替操作、保守対象、削除時の互換性を比較します。利用頻度は推測で決めません。維持・限定・削除案を利用者が判断できる形で提示します。
 - **Acceptance Criteria:** 候補ごとに採否と理由、未決事項、文書・設定・CLI・保存データへの影響が記録されています。採用された変更だけを次の未使用IDで実装タスク化し、TASK-019／TASK-021等の範囲を整合させます。
 - **Verification:** 代替操作の成立と参照箇所を確認し、既存ADRとの矛盾をレビューします。製品判断が未確定なら実装を進めず、Deferred Itemsへ記録します。
+- **Assessment (2026-09-23):** コード、ショートカット／CLI仕様、永続化文書、関連ADR、テストを確認。利用頻度を示す根拠はなく、以下は利用者判断前の推奨案でした。
+  - **`den sheet wait --load networkidle` — 維持を推奨。** 実装は `document.readyState` とResource Timingの変化が500ms止まったことを見る簡易判定です。ページ固有の待機には `--state`、`--url`、`--text`、`--fn` が使えます。削除はCLI契約とADR 0052を変えますが、保存データには影響しません。
+  - **zmx Sessions — 維持を推奨。** zmx Boardはセッション名を保存し、外部プロセスはDen終了後も存続します。一覧と終了操作はその発見・管理をDen内で行う入口です。root階層表示、一括終了、複製は縮小候補ですが、個別に削るとADR 0039、ショートカット、パネルの契約が変わります。zmx CLIでの一覧・終了は代替になりますが、Den内のBoardとの連携は失われます。zmx全体を外す場合はBoard、Recent、Essential、Desk Presetの保存形式と `:zmx`、設定も影響します。
+  - **Board Activity — 維持を推奨。** パネル表示中だけ1秒ごとにCPU・メモリ等を採取します。Activity Monitorは全体のプロセス確認に使えますが、Board単位の対応付けは代替できません。削除しても保存データやCLIには影響しませんが、`Shift` + `Escape`、ショートカット文書、`DenStoreBoardActivityTests`、`ProcessResourceSamplerTests`を更新する必要があります。
+  - **Desk合成Screenshot — 削除を採用。** Desk全体を一度に共有する操作はなくなります。Sheet単体の保存・コピーと `den sheet screenshot` は維持し、保存形式には影響しません。
+  - **ページ内全体のPNG取得方式:** `takeSnapshot` の撮影rect拡張はbounds制約で不可。PNGなら、document rootをスクロールして複数位置のviewportを撮り、縦につなぐ方式が現実的です。ただしlive WebViewのscroll stateを動かし、lazy loadで高さが変わる、sticky要素が各片に重複する、巨大画像がメモリを使う問題があります。元のscroll位置を必ず復元し、ページ高／画素数の上限とlazy loadの終了条件を決める必要があります。PDF／印刷は文書向けの別出力で、一枚のPNGという要件には含めません。
+  - **ページ全体のScreenshot:** 代替実装は今回の対象外。必要になった時点で取得方式とCLIを別途判断します。
+  - **DrawerのFloating／Bottom表示 — 維持を推奨。** 同じDrawerの表示位置・サイズを選ぶだけで、入力先を増やさずADR 0030と整合します。どちらかを外す場合は `preferences.drawer.style` の既存値をどう扱うか決め、`f` と表示ボタン、ショートカット／永続化文書、`AppPreferencesTests`を更新します。
+- **Current Status:** Desk合成Screenshotを削除し、Sheet単体Screenshotは維持しました。保存データとCLI契約への影響はありません。その他の縮小案は未採用です。
 
 <a id="task-026"></a>
 ### [/] TASK-026：RecentとBoard挿入の責務を整理する
@@ -345,10 +354,11 @@
 
 ## Deferred Items
 
+- TASK-025：ページ全体を一枚のPNGに撮る代替機能は未決です。必要になった時点で取得方式とCLIを判断します。zmx Sessionsの階層表示・一括終了・複製やDrawer表示形式の縮小も未決です。
 - Ghosttyの未attach Surface、hidden tick除去、Fork配布と移行は[tasks-ghostty.md](tasks-ghostty.md)を参照します。この台帳から重複着手しません。
 - `TerminalRuntime`のMirrorによる`core`／`surface`探索の除去は、依存側の公開APIを確認してから具体化します。既存Ghostty計画との責任分担を決め、公開APIの追加やFork範囲の拡大が必要ならその判断を記録します。現時点で内部名変更を実証した不具合ではありません。
-- TASK-016のDrawer所有権とTASK-025の機能削減で未決の製品判断が生じた場合は、選択肢・影響・待ち条件をここへ追記します。時間経過を承認とみなしません。
-- 非表示Terminalの定期tickとnetworkidleの簡易判定は既存ADR上の意図的な仕様です。定期tickを根拠なく除去せず、networkidleはTASK-025で保証と名称・機能範囲を評価します。
+- TASK-016のDrawer所有権で未決の製品判断が生じた場合は、選択肢・影響・待ち条件をここへ追記します。時間経過を承認とみなしません。
+- 非表示Terminalの定期tickは既存ADR上の意図的な仕様です。根拠なく除去しません。networkidleの評価はTASK-025を参照します。
 
 ## Out of Scope
 

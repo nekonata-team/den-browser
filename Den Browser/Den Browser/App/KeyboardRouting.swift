@@ -238,9 +238,7 @@ enum AppAction: Equatable {
     case revealNextBoard
     case toggleFocusedBoardSheetNavigationPause
     case captureCurrentSheet
-    case captureFocusedDesk
     case copyCurrentSheetScreenshot
-    case copyFocusedDeskScreenshot
     case copyFocusedBoardLocation
     case copyFocusedBoardID
     case keepCurrentSheetInDrawer
@@ -720,11 +718,8 @@ enum KeyboardRouter {
         binding("c"): KeyboardCommand(action: .centerBoard, repeatPolicy: .ignore),
         binding("t"): KeyboardCommand(action: .toggleFocusedBoardSheetNavigationPause, repeatPolicy: .ignore),
         binding("s"): KeyboardCommand(action: .captureCurrentSheet, repeatPolicy: .ignore),
-        binding("s", modifiers: [.shift]): KeyboardCommand(action: .captureFocusedDesk, repeatPolicy: .ignore),
         binding("s", modifiers: [.control]): KeyboardCommand(
             action: .copyCurrentSheetScreenshot, repeatPolicy: .ignore),
-        binding("s", modifiers: [.control, .shift]): KeyboardCommand(
-            action: .copyFocusedDeskScreenshot, repeatPolicy: .ignore),
         binding("y"): KeyboardCommand(action: .copyFocusedBoardLocation, repeatPolicy: .ignore),
         binding("y", modifiers: [.shift]): KeyboardCommand(action: .copyFocusedBoardID, repeatPolicy: .ignore),
         binding("a"): KeyboardCommand(action: .keepCurrentSheetInDrawer, repeatPolicy: .ignore),
@@ -878,9 +873,7 @@ enum AppActionHandler {
         case .revealNextBoard: store.revealNextBoard()
         case .toggleFocusedBoardSheetNavigationPause: store.toggleFocusedBoardSheetNavigationPause()
         case .captureCurrentSheet: store.captureFocusedSheetScreenshot()
-        case .captureFocusedDesk: store.captureFocusedDeskScreenshot()
         case .copyCurrentSheetScreenshot: store.copyFocusedSheetScreenshot()
-        case .copyFocusedDeskScreenshot: store.copyFocusedDeskScreenshot()
         case .copyFocusedBoardLocation: store.copyFocusedBoardLocation()
         case .copyFocusedBoardID:
             if let boardID = store.focusedBoard?.id {

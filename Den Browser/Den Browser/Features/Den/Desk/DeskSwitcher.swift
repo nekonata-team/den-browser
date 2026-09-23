@@ -174,16 +174,6 @@ struct DeskSwitcher: View {
                     Label("Copy Desk Links as Markdown", systemSymbol: .documentOnDocument)
                 }
                 .disabled(!store.canExportDeskLinks(for: desk.id))
-
-                Divider()
-
-                Button {
-                    store.focusDesk(desk.id)
-                    store.captureFocusedDeskScreenshot()
-                } label: {
-                    Label("Capture Desk Screenshot...", systemSymbol: .cameraOnRectangle)
-                }
-                .disabled(!store.canSelectDesk(desk.id) || desk.boards.isEmpty)
             }
 
             Button {

@@ -220,7 +220,7 @@ struct KeyboardShortcutTests {
         #expect(store.focusedDesk?.focusedBoardID == first.id)
     }
 
-    @Test func denModeControlScreenshotShortcutsCopyCurrentSheetOrDesk() throws {
+    @Test func denModeControlSCopiesCurrentSheetScreenshot() throws {
         let store = try makeStore(boards: [board("First"), board("Second")])
         store.isDenMode = true
         let controlS = try keyEvent(
@@ -228,18 +228,9 @@ struct KeyboardShortcutTests {
             charactersIgnoringModifiers: "s",
             modifiers: [.control],
             keyCode: 1)
-        let controlShiftS = try keyEvent(
-            characters: "S",
-            charactersIgnoringModifiers: "s",
-            modifiers: [.control, .shift],
-            keyCode: 1)
-
         #expect(
             KeyboardController.decision(for: controlS, store: store)
                 == .perform(.copyCurrentSheetScreenshot))
-        #expect(
-            KeyboardController.decision(for: controlShiftS, store: store)
-                == .perform(.copyFocusedDeskScreenshot))
     }
 
     @Test func denModeYCopiesFocusedBoardLocationAndShiftYCopiesBoardID() throws {

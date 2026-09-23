@@ -24,22 +24,6 @@ extension DenStore {
             })
     }
 
-    func captureFocusedDeskScreenshot() {
-        guard let boards = focusedDeskRuntimes() else { return }
-        startScreenshotTask(
-            capture: {
-                let items = try await Self.captureDeskItems(for: boards)
-                return try ScreenshotCapture.composeDesk(items)
-            },
-            destination: .save(
-                scope: "Desk Screenshot",
-                window: boards.first?.1.webView.window),
-            successMessage: { result in
-                guard case let .saved(destination) = result else { return "" }
-                return "Saved \(destination.lastPathComponent)."
-            })
-    }
-
     func copyFocusedSheetScreenshot() {
         guard let runtime = focusedSheetRuntime() else { return }
         startScreenshotTask(
@@ -48,35 +32,12 @@ extension DenStore {
             successMessage: { _ in "Copied Current Sheet screenshot to clipboard." })
     }
 
-    func copyFocusedDeskScreenshot() {
-        guard let boards = focusedDeskRuntimes() else { return }
-        startScreenshotTask(
-            capture: {
-                let items = try await Self.captureDeskItems(for: boards)
-                return try ScreenshotCapture.composeDesk(items)
-            },
-            destination: .clipboard,
-            successMessage: { _ in "Copied Focused Desk screenshot to clipboard." })
-    }
-
     private func focusedSheetRuntime() -> BoardRuntime? {
         guard let board = focusedBoard, !board.isTerminal else {
             showToast("No focused Board.", style: .warning)
             return nil
         }
         return runtime(for: board)
-    }
-
-    private func focusedDeskRuntimes() -> [(BoardState, BoardRuntime)]? {
-        guard let desk = focusedDesk, !desk.boards.isEmpty else {
-            showToast("Focused Desk has no Boards.", style: .warning)
-            return nil
-        }
-        guard !desk.boards.contains(where: \.isTerminal) else {
-            showToast("Desk screenshots do not support Terminal Boards.", style: .warning)
-            return nil
-        }
-        return desk.boards.map { ($0, runtime(for: $0)) }
     }
 
     private func startScreenshotTask(
@@ -119,14 +80,4 @@ extension DenStore {
         }
     }
 
-    private static func captureDeskItems(
-        for boards: [(BoardState, BoardRuntime)]
-    ) async throws -> [ScreenshotCapture.DeskItem] {
-        var items: [ScreenshotCapture.DeskItem] = []
-        for (board, runtime) in boards {
-            let image = try await ScreenshotCapture.visibleCurrentSheet(in: runtime.webView)
-            items.append(.init(label: board.displayName, image: image))
-        }
-        return items
-    }
 }

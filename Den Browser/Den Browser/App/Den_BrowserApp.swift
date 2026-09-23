@@ -276,13 +276,6 @@ private struct DenCommands: Commands {
                 }
                 .disabled(store == nil)
 
-                Button("Capture Focused Desk Screenshot…") {
-                    store?.performAppAction(.captureFocusedDesk)
-                }
-                .disabled(
-                    store?.focusedDesk?.boards.isEmpty != false
-                        || store?.focusedDesk?.boards.contains(where: \.isTerminal) == true)
-
                 Menu("Resize Boards to Fit") {
                     ForEach(1...9, id: \.self) { count in
                         Button(count == 1 ? "1 Board" : "\(count) Boards") {
