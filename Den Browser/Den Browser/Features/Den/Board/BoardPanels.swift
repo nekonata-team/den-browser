@@ -94,9 +94,7 @@ struct OpenBoardPanel: View {
                             openRecent(item)
                         } label: {
                             HStack(spacing: DenPanelLayout.controlSpacing) {
-                                Image(systemSymbol: item.systemSymbol)
-                                    .foregroundStyle(.secondary)
-                                    .frame(width: 16)
+                                recentItemIcon(for: item)
                                 Text(item.displayText)
                                     .lineLimit(1)
                                     .truncationMode(.middle)
@@ -208,6 +206,18 @@ struct OpenBoardPanel: View {
     private func finishOpeningBoardIfNeeded() {
         guard !store.isOpenBoardPanelPresented else { return }
         store.clearOpenBoardPanelDraft()
+    }
+
+    @ViewBuilder
+    private func recentItemIcon(for item: RecentItem) -> some View {
+        if case .zmx = item {
+            ZmxIcon(size: 16)
+                .foregroundStyle(.secondary)
+        } else {
+            Image(systemSymbol: item.systemSymbol)
+                .foregroundStyle(.secondary)
+                .frame(width: 16)
+        }
     }
 
     private func moveRecentSelection(by offset: Int) {

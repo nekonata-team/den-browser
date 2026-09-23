@@ -119,12 +119,15 @@ struct TerminalBoardView: View {
                     store.moveFocusedBoardRight()
                 },
                 leadingContent: {
-                    Image(
-                        systemSymbol: board.isZellij
-                            ? .rectangle3Group
-                            : (board.isZmx ? .arrowTrianglehead2ClockwiseRotate90 : .appleTerminal)
-                    )
-                    .foregroundStyle(.secondary)
+                    if board.isZmx {
+                        ZmxIcon(size: 16)
+                            .foregroundStyle(.secondary)
+                    } else {
+                        Image(
+                            systemSymbol: board.isZellij ? .rectangle3Group : .appleTerminal
+                        )
+                        .foregroundStyle(.secondary)
+                    }
                 }
             )
             Button(action: onRemove) {
@@ -193,7 +196,11 @@ struct TerminalBoardView: View {
                 store.focusBoard(board.id)
                 store.showZmxSessions(selectedSessionName: board.zmxSessionName)
             } label: {
-                Label("zmx Sessions…", systemSymbol: .arrowTrianglehead2ClockwiseRotate90)
+                Label {
+                    Text("zmx Sessions…")
+                } icon: {
+                    ZmxIcon(size: 14)
+                }
             }
         }
         Divider()

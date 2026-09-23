@@ -137,7 +137,10 @@ struct BoardRail: View {
 
     @ViewBuilder
     private func boardIcon(for board: BoardState) -> some View {
-        if board.isTerminal {
+        if board.isZmx {
+            ZmxIcon(size: 16)
+                .foregroundStyle(.secondary)
+        } else if board.isTerminal {
             Image(systemSymbol: symbol(for: board))
                 .foregroundStyle(.secondary)
                 .frame(width: 16, height: 16)
@@ -176,7 +179,7 @@ struct BoardRail: View {
     private func symbol(for board: BoardState) -> SFSymbol {
         board.isZellij
             ? .rectangle3Group
-            : (board.isZmx ? .arrowTrianglehead2ClockwiseRotate90 : .appleTerminal)
+            : .appleTerminal
     }
 }
 

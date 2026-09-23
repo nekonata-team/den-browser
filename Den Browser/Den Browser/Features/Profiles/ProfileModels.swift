@@ -271,7 +271,7 @@ enum RecentItem: Codable, Equatable, Hashable, Identifiable {
         case .search: .magnifyingglass
         case .terminal: .appleTerminal
         case .zellij: .rectangleSplit3x1
-        case .zmx: .arrowTrianglehead2ClockwiseRotate90
+        case .zmx: .appleTerminal
         }
     }
 

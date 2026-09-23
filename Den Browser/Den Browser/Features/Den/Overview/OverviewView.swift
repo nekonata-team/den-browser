@@ -659,6 +659,18 @@ private struct OverviewBoardCard: View {
         board.isTerminal ? .appleTerminal : .globe
     }
 
+    @ViewBuilder
+    private var boardTypeIcon: some View {
+        if board.isZmx {
+            ZmxIcon(size: 12)
+                .foregroundStyle(typeColor)
+        } else {
+            Image(systemSymbol: systemSymbol)
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(typeColor)
+        }
+    }
+
     private var typeColor: Color {
         board.isTerminal ? DenOverviewColors.terminal : DenOverviewColors.web
     }
@@ -680,9 +692,7 @@ private struct OverviewBoardCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 6) {
-                Image(systemSymbol: systemSymbol)
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(typeColor)
+                boardTypeIcon
                     .accessibilityHidden(true)
 
                 Text(Self.kindLabel(for: board))

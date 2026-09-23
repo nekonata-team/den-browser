@@ -63,7 +63,7 @@ struct ZmxSessionsPanel: View {
 
     private var header: some View {
         HStack(spacing: DenPanelLayout.controlSpacing) {
-            DenPanelHeader(systemSymbol: .arrowTrianglehead2ClockwiseRotate90) {
+            DenPanelHeader(icon: ZmxIcon(size: 18)) {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("zmx Sessions")
                         .font(.headline)
