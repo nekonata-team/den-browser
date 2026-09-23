@@ -92,13 +92,19 @@ extension DenStore {
             return
         }
 
-        setFocusedDesk(selection.deskID)
         if let boardID = selection.boardID,
             state.desks[deskIndex].boards.contains(where: { $0.id == boardID })
         {
             state.desks[deskIndex].focusedBoardID = boardID
         } else if state.desks[deskIndex].focusedBoardID == nil {
             state.desks[deskIndex].focusedBoardID = state.desks[deskIndex].boards.first?.id
+        }
+        let changedDesk = setFocusedDesk(selection.deskID)
+        if !changedDesk,
+            presentedDeskID == selection.deskID,
+            let boardID = state.desks[deskIndex].focusedBoardID
+        {
+            markNotificationsRead(for: boardID)
         }
         isDenMode = false
         hideOverview()

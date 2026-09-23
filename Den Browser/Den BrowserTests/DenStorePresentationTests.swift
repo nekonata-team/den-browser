@@ -167,6 +167,66 @@ struct DenStorePresentationTests {
         #expect(store.toastMessage?.target == .notification(store.notifications[0].id))
     }
 
+    @Test func unreadNotificationCountIsScopedToBoard() {
+        // Arrange
+        let firstBoard = board("First")
+        let secondBoard = board("Second")
+        let desk = desk("Desk", boards: [firstBoard, secondBoard], focusedBoardID: firstBoard.id)
+        let store = DenStore(state: DenState(desks: [desk], focusedDeskID: desk.id))
+
+        store.recordNotification(title: "First build", body: "Finished", boardID: firstBoard.id)
+        let readNotificationID = store.notifications[0].id
+        store.recordNotification(title: "Second build", body: "Finished", boardID: firstBoard.id)
+        store.recordNotification(title: "Other build", body: "Finished", boardID: secondBoard.id)
+        store.markNotificationRead(readNotificationID)
+
+        // Act
+        let firstCount = store.unreadNotificationCount(for: firstBoard.id)
+        let secondCount = store.unreadNotificationCount(for: secondBoard.id)
+
+        // Assert
+        #expect(firstCount == 1)
+        #expect(secondCount == 1)
+    }
+
+    @Test func focusingBoardMarksItsUnreadNotificationsRead() {
+        // Arrange
+        let currentBoard = board("Current")
+        let targetBoard = board("Target")
+        let desk = desk("Desk", boards: [currentBoard, targetBoard], focusedBoardID: currentBoard.id)
+        let store = DenStore(state: DenState(desks: [desk], focusedDeskID: desk.id))
+        store.recordNotification(title: "First", body: "Finished", boardID: targetBoard.id)
+        store.recordNotification(title: "Second", body: "Finished", boardID: targetBoard.id)
+        store.recordNotification(title: "Other", body: "Finished", boardID: currentBoard.id)
+
+        // Act
+        store.focusBoard(targetBoard.id)
+
+        // Assert
+        #expect(store.focusedBoard?.id == targetBoard.id)
+        #expect(store.unreadNotificationCount(for: targetBoard.id) == 0)
+        #expect(store.unreadNotificationCount(for: currentBoard.id) == 1)
+        #expect(store.unreadNotificationCount == 1)
+    }
+
+    @Test func focusingDeskMarksItsFocusedBoardNotificationsRead() {
+        // Arrange
+        let currentBoard = board("Current")
+        let targetBoard = board("Target")
+        let currentDesk = desk("Current", boards: [currentBoard], focusedBoardID: currentBoard.id)
+        let targetDesk = desk("Target", boards: [targetBoard], focusedBoardID: targetBoard.id)
+        let store = DenStore(
+            state: DenState(desks: [currentDesk, targetDesk], focusedDeskID: currentDesk.id))
+        store.recordNotification(title: "Build", body: "Finished", boardID: targetBoard.id)
+
+        // Act
+        store.focusDesk(targetDesk.id)
+
+        // Assert
+        #expect(store.unreadNotificationCount(for: targetBoard.id) == 0)
+        #expect(store.unreadNotificationCount == 0)
+    }
+
     @Test func clearingNotificationsRemovesSessionHistoryAfterConfirmation() {
         let target = board("Terminal")
         let desk = desk("Desk", boards: [target], focusedBoardID: target.id)

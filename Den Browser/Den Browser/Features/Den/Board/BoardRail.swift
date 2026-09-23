@@ -2,6 +2,8 @@ import SFSafeSymbols
 import SwiftUI
 
 struct BoardRail: View {
+    let profileColor: Color
+
     @Environment(DenStore.self) private var store
 
     private var railDesk: DeskState? {
@@ -74,6 +76,7 @@ struct BoardRail: View {
     }
 
     private func boardRow(_ board: BoardState) -> some View {
+        let unreadNotificationCount = store.unreadNotificationCount(for: board.id)
         let isFocused = !store.isOverviewPresented && board.id == railDesk?.focusedBoardID
         let isOverviewSelected =
             store.isOverviewPresented
@@ -91,6 +94,13 @@ struct BoardRail: View {
                 isFocused: isFocused,
                 isAnchor: isAnchor
             )
+
+            if unreadNotificationCount > 0 {
+                Circle()
+                    .fill(profileColor)
+                    .frame(width: 8, height: 8)
+                    .accessibilityHidden(true)
+            }
         }
         .padding(.vertical, 2)
         .tag(board.id)
@@ -100,7 +110,8 @@ struct BoardRail: View {
                 board,
                 isFocused: isFocused,
                 isAnchor: isAnchor,
-                isOverviewSelected: isOverviewSelected
+                isOverviewSelected: isOverviewSelected,
+                unreadNotificationCount: unreadNotificationCount
             )
         )
         .accessibilityAddTraits(isFocused || isOverviewSelected ? .isSelected : [])
@@ -112,7 +123,8 @@ struct BoardRail: View {
         _ board: BoardState,
         isFocused: Bool,
         isAnchor: Bool,
-        isOverviewSelected: Bool
+        isOverviewSelected: Bool,
+        unreadNotificationCount: Int
     ) -> String {
         let supplementaryText =
             board.currentSheetURL?.absoluteString
@@ -122,6 +134,7 @@ struct BoardRail: View {
             isAnchor ? "Anchor Board" : nil,
             "Board: \(board.displayName)",
             supplementaryText,
+            unreadNotificationCount > 0 ? "\(unreadNotificationCount) unread notifications" : nil,
             isFocused ? "Focused Board" : nil,
             isOverviewSelected ? "Overview Selection" : nil,
         ]

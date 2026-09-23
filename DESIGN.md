@@ -15,7 +15,8 @@ Den controls feel like a calm desk laid over live web sheets. Web content remain
   Use a native split view for the on-demand Board Rail sidebar and the horizontal Board Strip so the switcher and
   Strip move together when the Rail opens. Keep the Rail open when focus changes, let it take width from the Strip
   without changing its height or surface colors, and keep the Board header above Sheet with the Sheet stack indicator
-  secondary.
+  secondary. Show a small Profile-colored dot on each Board with unread Notifications, and include the exact count in
+  the row's accessibility label. When a Board receives focus, mark its unread Notifications as read.
 - Show the current Profile name in the titlebar and a distinct background gradient for Private Den while preserving its Profile color in the Den glow and controls. Place Notifications, Save Desk as Preset when the Focused Desk has Boards, and Profile controls in the trailing window toolbar; place the `Private` badge beside them when applicable. Use native toolbar button styling, and give icons and badges accessibility labels and help text; Profile identity must not depend on color alone.
 - Prefer SF Symbols and system typography. Preserve macOS accessibility defaults where possible.
 - Use SwiftUI semantic text styles such as `title`, `headline`, `body`, `caption`, and `caption2` for app-owned

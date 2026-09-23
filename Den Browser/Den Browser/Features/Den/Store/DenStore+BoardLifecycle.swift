@@ -386,7 +386,11 @@ extension DenStore {
         let board = recentlyRemovedBoard.board
         state.desks[deskIndex].boards.insert(board, at: insertIndex)
         state.desks[deskIndex].focusedBoardID = board.id
-        setFocusedDesk(state.desks[deskIndex].id)
+        let deskID = state.desks[deskIndex].id
+        let changedDesk = setFocusedDesk(deskID)
+        if !changedDesk && presentedDeskID == deskID {
+            markNotificationsRead(for: board.id)
+        }
         recentlyRemovedBoards.removeFirst()
         save()
     }

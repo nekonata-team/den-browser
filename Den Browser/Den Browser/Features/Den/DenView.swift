@@ -39,7 +39,7 @@ struct DenView<Header: View>: View {
         GeometryReader { geometry in
             ZStack(alignment: .top) {
                 NavigationSplitView(columnVisibility: boardRailVisibility) {
-                    BoardRail()
+                    BoardRail(profileColor: profileColor)
                         .navigationSplitViewColumnWidth(min: 192, ideal: 208, max: 224)
                 } detail: {
                     VStack(spacing: 0) {

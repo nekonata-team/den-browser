@@ -3,7 +3,11 @@ import Foundation
 
 extension DenStore {
     func focusDesk(_ deskID: UUID) {
-        guard setFocusedDesk(deskID) || presentedDeskID == deskID else { return }
+        let changedDesk = setFocusedDesk(deskID)
+        guard changedDesk || presentedDeskID == deskID else { return }
+        if !changedDesk, let boardID = focusedDesk?.focusedBoardID {
+            markNotificationsRead(for: boardID)
+        }
         dismissDeskFilter()
         isDenMode = false
         save()
@@ -14,6 +18,7 @@ extension DenStore {
         let deskID = state.desks[indices.desk].id
         let changed = presentedDeskID != deskID || state.desks[indices.desk].focusedBoardID != boardID
         if !changed {
+            markNotificationsRead(for: boardID)
             if exitsDenMode {
                 isDenMode = false
             }
@@ -21,8 +26,11 @@ extension DenStore {
         }
         pendingBoardLinkFocus = nil
         pendingBoardRemoval = nil
-        setFocusedDesk(deskID)
         state.desks[indices.desk].focusedBoardID = boardID
+        let changedDesk = setFocusedDesk(deskID)
+        if !changedDesk && presentedDeskID == deskID {
+            markNotificationsRead(for: boardID)
+        }
         if exitsDenMode {
             isDenMode = false
         }
@@ -158,6 +166,7 @@ extension DenStore {
             return false
         }
         state.desks[indices.desk].focusedBoardID = boardID
+        markNotificationsRead(for: boardID)
         maximizedBoardID = nil
         activeDrag = .board(boardID)
         save()
@@ -270,6 +279,7 @@ extension DenStore {
             nextIndex = delta >= 0 ? 0 : boards.count - 1
         }
         state.desks[deskIndex].focusedBoardID = boards[nextIndex].id
+        markNotificationsRead(for: boards[nextIndex].id)
         save()
     }
 

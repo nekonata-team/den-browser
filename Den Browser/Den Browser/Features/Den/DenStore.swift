@@ -618,6 +618,9 @@ final class DenStore {
         state.focusedDeskID = deskID
         pendingBoardLinkFocus = nil
         pendingBoardRemoval = nil
+        if let boardID = focusedDesk?.focusedBoardID {
+            markNotificationsRead(for: boardID)
+        }
         return true
     }
 
