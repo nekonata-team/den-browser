@@ -38,8 +38,18 @@ struct BoardRail: View {
         VStack(spacing: 0) {
             railHeader
 
-            List(railDesk?.boards ?? [], selection: boardSelection) { board in
-                boardRow(board)
+            List(selection: boardSelection) {
+                ForEach(railDesk?.boards ?? []) { board in
+                    boardRow(board)
+                }
+
+                Button(action: openBoardAtEnd) {
+                    Image(systemSymbol: .plus)
+                        .frame(maxWidth: .infinity, alignment: .center)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Open Board at End of Desk")
+                .help("Open Board at End of Desk")
             }
             .listStyle(.sidebar)
             .scrollContentBackground(.hidden)
@@ -73,6 +83,14 @@ struct BoardRail: View {
         .padding(.horizontal, DenLayout.chromeHorizontalPadding)
         .padding(.vertical, DenLayout.chromeHorizontalPadding)
         .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func openBoardAtEnd() {
+        guard let desk = railDesk else { return }
+        if store.isOverviewPresented {
+            store.enterOverviewDesk(desk.id)
+        }
+        store.showOpenBoardPanel(afterBoardID: desk.boards.last?.id)
     }
 
     private func boardRow(_ board: BoardState) -> some View {
