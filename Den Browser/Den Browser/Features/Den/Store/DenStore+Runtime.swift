@@ -364,7 +364,6 @@ extension DenStore {
         }
         if let title, !title.isEmpty, state.desks[indices.desk].boards[indices.board].label != title {
             state.desks[indices.desk].boards[indices.board].label = title
-            changed = true
         }
         if changed {
             save()
@@ -390,7 +389,6 @@ extension DenStore {
             state.desks[indices.desk].boards[indices.board].label != title
         {
             state.desks[indices.desk].boards[indices.board].label = title
-            changed = true
         }
         if changed { save() }
     }

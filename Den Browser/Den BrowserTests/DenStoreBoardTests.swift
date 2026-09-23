@@ -655,7 +655,24 @@ struct DenStoreBoardTests {
 
         #expect(store.focusedBoard?.currentSheetURL == URL(string: "https://before.example/"))
         #expect(store.focusedBoard?.label == "Updated title")
-        #expect(savedState == store.state)
+        #expect(savedState == nil)
+    }
+
+    @Test func updateBoardDoesNotTriggerSaveWhenOnlyTitleChanges() throws {
+        let board = board("Board", url: "https://example.com/")
+        let source = desk("Desk", boards: [board], focusedBoardID: board.id)
+        var saveCount = 0
+        let store = DenStore(
+            state: DenState(desks: [source], focusedDeskID: source.id),
+            onSave: { _ in saveCount += 1 })
+
+        store.updateBoard(boardID: board.id, url: nil, title: "New Title")
+        #expect(store.focusedBoard?.label == "New Title")
+        #expect(saveCount == 0)
+
+        store.updateBoard(boardID: board.id, url: URL(string: "https://example.com/updated"), title: nil)
+        #expect(store.focusedBoard?.currentSheetURL == URL(string: "https://example.com/updated"))
+        #expect(saveCount == 1)
     }
 
     @Test func boardFocusMovesAndWrapsAtBothEdges() {
@@ -1277,6 +1294,27 @@ struct DenStoreBoardTests {
             #expect(createdBoard.terminalWorkingDirectory == dir)
             #expect(store.focusedBoard?.id == boardID)
         }
+    }
+
+    @Test func terminalTitleChangeDoesNotTriggerSave() throws {
+        let dir = FileManager.default.temporaryDirectory.path
+        let terminalBoard = BoardState(width: 520, workingDirectory: dir)
+        let source = desk("Desk", boards: [terminalBoard], focusedBoardID: terminalBoard.id)
+        var saveCount = 0
+        let store = DenStore(
+            state: DenState(desks: [source], focusedDeskID: source.id),
+            onSave: { _ in saveCount += 1 })
+
+        let runtime = store.terminalRuntime(for: terminalBoard)
+        defer { runtime.dispose() }
+
+        runtime.terminalDidChangeTitle("codex: thinking...")
+        #expect(store.focusedBoard?.label == "codex: thinking...")
+        #expect(saveCount == 0)
+
+        runtime.terminalDidChangeWorkingDirectory("/tmp/new-working-dir")
+        #expect(store.focusedBoard?.terminalWorkingDirectory == "/tmp/new-working-dir")
+        #expect(saveCount == 1)
     }
 
     @Test func copyBoardIDCopiesLowercasedUUIDToPasteboardAndShowsToast() {
