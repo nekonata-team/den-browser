@@ -79,8 +79,6 @@ enum DenIPCClient {
         }
         defer { close(socketDescriptor) }
 
-        DenSocketOption.disableSIGPIPE(on: socketDescriptor)
-
         var addr = sockaddr_un()
         addr.sun_family = sa_family_t(AF_UNIX)
 
@@ -115,7 +113,8 @@ enum DenIPCClient {
             guard let base = rawBuffer.baseAddress else { return }
             var written = 0
             while written < rawBuffer.count {
-                let writtenBytes = write(socketDescriptor, base.advanced(by: written), rawBuffer.count - written)
+                let writtenBytes = send(
+                    socketDescriptor, base.advanced(by: written), rawBuffer.count - written, MSG_NOSIGNAL)
                 guard writtenBytes > 0 else { break }
                 written += writtenBytes
             }

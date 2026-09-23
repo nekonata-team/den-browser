@@ -51,7 +51,7 @@ struct DenSocketServerTests {
 
         requestData.withUnsafeBytes { rawBuffer in
             guard let base = rawBuffer.baseAddress else { return }
-            _ = write(socketDescriptor, base, rawBuffer.count)
+            _ = send(socketDescriptor, base, rawBuffer.count, MSG_NOSIGNAL)
         }
 
         var responseData = Data()
@@ -149,15 +149,14 @@ struct DenSocketServerTests {
         try await Task.sleep(for: .milliseconds(20))
 
         // Connect and send valid request, then immediately close FD before server replies
-        if let clientFD = connectClient(to: tempSocketPath) {
-            let requestData = (try? JSONEncoder().encode(DenIPCRequest(command: .health))) ?? Data()
-            var packet = requestData
-            packet.append(UInt8(ascii: "\n"))
-            _ = packet.withUnsafeBytes { raw in
-                write(clientFD, raw.baseAddress!, raw.count)
-            }
-            close(clientFD)
+        let clientFD = try #require(connectClient(to: tempSocketPath))
+        let requestData = (try? JSONEncoder().encode(DenIPCRequest(command: .health))) ?? Data()
+        var packet = requestData
+        packet.append(UInt8(ascii: "\n"))
+        _ = packet.withUnsafeBytes { raw in
+            send(clientFD, raw.baseAddress!, raw.count, MSG_NOSIGNAL)
         }
+        close(clientFD)
 
         // Wait for server's handler to attempt writing to closed FD
         try await Task.sleep(for: .milliseconds(100))
@@ -185,7 +184,7 @@ struct DenSocketServerTests {
         if let clientFD = connectClient(to: tempSocketPath) {
             let partial = Data("{\"command\":\"health\"".utf8)
             _ = partial.withUnsafeBytes { raw in
-                write(clientFD, raw.baseAddress!, raw.count)
+                send(clientFD, raw.baseAddress!, raw.count, MSG_NOSIGNAL)
             }
             close(clientFD)
         }
@@ -201,8 +200,6 @@ struct DenSocketServerTests {
     private func connectClient(to socketPath: String) -> Int32? {
         let descriptor = socket(AF_UNIX, SOCK_STREAM, 0)
         guard descriptor >= 0 else { return nil }
-
-        DenSocketOption.disableSIGPIPE(on: descriptor)
 
         var addr = sockaddr_un()
         addr.sun_family = sa_family_t(AF_UNIX)
@@ -238,7 +235,7 @@ struct DenSocketServerTests {
 
         let writeSuccess = requestData.withUnsafeBytes { rawBuffer -> Bool in
             guard let base = rawBuffer.baseAddress else { return false }
-            return write(socketDescriptor, base, rawBuffer.count) > 0
+            return send(socketDescriptor, base, rawBuffer.count, MSG_NOSIGNAL) > 0
         }
         guard writeSuccess else { return false }
 

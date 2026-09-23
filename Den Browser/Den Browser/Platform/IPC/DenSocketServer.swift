@@ -98,8 +98,6 @@ nonisolated final class DenSocketServer: @unchecked Sendable {
             let clientFD = Darwin.accept(listeningFD, nil, nil)
             guard clientFD >= 0 else { break }
 
-            DenSocketOption.disableSIGPIPE(on: clientFD)
-
             queue.async {
                 Task {
                     await self.handleClient(clientFD: clientFD, handler: handler)
@@ -136,7 +134,8 @@ nonisolated final class DenSocketServer: @unchecked Sendable {
             guard let baseAddress = rawBuffer.baseAddress, rawBuffer.count > 0 else { return }
             var written = 0
             while written < rawBuffer.count {
-                let bytesWritten = Darwin.write(clientFD, baseAddress.advanced(by: written), rawBuffer.count - written)
+                let bytesWritten = Darwin.send(
+                    clientFD, baseAddress.advanced(by: written), rawBuffer.count - written, MSG_NOSIGNAL)
                 guard bytesWritten > 0 else { break }
                 written += bytesWritten
             }
