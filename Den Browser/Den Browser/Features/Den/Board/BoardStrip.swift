@@ -285,9 +285,11 @@ struct BoardStrip: View {
         .scrollPosition($scrollPosition)
         .onScrollGeometryChange(for: BoardStripScrollGeometry.self) { geometry in
             BoardStripScrollGeometry(
-                offsetX: geometry.contentOffset.x,
+                offsetX: geometry.contentOffset.x + geometry.contentInsets.leading,
                 contentWidth: geometry.contentSize.width,
-                containerWidth: geometry.containerSize.width
+                containerWidth: geometry.containerSize.width,
+                leadingContentInset: geometry.contentInsets.leading,
+                trailingContentInset: geometry.contentInsets.trailing
             )
         } action: { _, geometry in
             scrollGeometry = geometry
@@ -875,7 +877,7 @@ struct BoardStrip: View {
             for: boardIndex,
             in: params,
             containerWidth: scrollGeometry.containerWidth,
-            contentWidth: scrollGeometry.contentWidth
+            contentWidth: scrollGeometry.scrollableContentWidth
         )
     }
 
@@ -936,9 +938,9 @@ struct BoardStrip: View {
         guard
             let pending = pendingBoardActivationAlignment,
             pending.deskID == store.presentedDeskID,
-            pending.layoutKey == nil || pending.layoutKey == layoutKey,
-            abs(geometry.offsetX - pending.offsetX) <= 1
+            pending.layoutKey == nil || pending.layoutKey == layoutKey
         else { return }
+        guard abs(geometry.offsetX - pending.offsetX) <= 1 else { return }
 
         alignedBoardDeskID = pending.deskID
         pendingBoardActivationAlignment = nil
@@ -1038,7 +1040,7 @@ struct BoardStrip: View {
             for: boardIndex,
             in: boardLayoutParameters(for: boards),
             currentScrollX: scrollGeometry.offsetX,
-            contentWidth: scrollGeometry.contentWidth,
+            contentWidth: scrollGeometry.scrollableContentWidth,
             containerWidth: scrollGeometry.containerWidth
         )
     }
@@ -1125,7 +1127,7 @@ struct BoardStrip: View {
     private func clampedScrollX(_ offset: CGFloat) -> CGFloat {
         min(
             max(0, offset),
-            max(0, scrollGeometry.contentWidth - scrollGeometry.containerWidth)
+            max(0, scrollGeometry.scrollableContentWidth - scrollGeometry.containerWidth)
         )
     }
 }
@@ -1195,11 +1197,23 @@ struct PendingBoardAlignment {
 }
 
 private struct BoardStripScrollGeometry: Equatable {
-    static let zero = BoardStripScrollGeometry(offsetX: 0, contentWidth: 0, containerWidth: 0)
+    static let zero = BoardStripScrollGeometry(
+        offsetX: 0,
+        contentWidth: 0,
+        containerWidth: 0,
+        leadingContentInset: 0,
+        trailingContentInset: 0
+    )
 
     let offsetX: CGFloat
     let contentWidth: CGFloat
     let containerWidth: CGFloat
+    let leadingContentInset: CGFloat
+    let trailingContentInset: CGFloat
+
+    var scrollableContentWidth: CGFloat {
+        contentWidth + leadingContentInset + trailingContentInset
+    }
 }
 
 struct BoardDragState {
