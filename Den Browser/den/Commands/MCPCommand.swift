@@ -65,6 +65,7 @@ private enum DenMCPArgument: String, Sendable {
     case profileID = "profile_id"
     case boardID = "board_id"
     case url
+    case width
     case focus
     case full
     case within
@@ -188,8 +189,9 @@ private struct DenMCPToolDefinition: Sendable {
             readOnly: true),
         .init(.openProfile, "Open or activate a Profile Window.", [.profileID: uuid()], [.profileID]),
         .init(
-            .createWebBoard, "Create a Web Board from a URL, hostname, or search query; focus defaults to false.",
-            [.url: string(), .profileID: uuid(), .focus: bool()], [.url]),
+            .createWebBoard,
+            "Create a Web Board from a URL, hostname, or search query; focus defaults to false. Set width to a positive point value.",
+            [.url: string(), .profileID: uuid(), .focus: bool(), .width: boardWidth()], [.url]),
         .init(
             .openSheet, "Navigate the target Web Board to a URL or search query.",
             [.url: string(), .profileID: uuid(), .boardID: uuid()], [.url]),
@@ -296,11 +298,11 @@ private struct DenMCPToolDefinition: Sendable {
             destructive: true),
         .init(
             .createTerminalBoard,
-            "Create a Terminal Board at an optional working directory; focus defaults to false.",
+            "Create a Terminal Board at an optional working directory; focus defaults to false. Set width to a positive point value.",
             merge(
                 profileTarget,
                 [
-                    .path: string(), .focus: bool(),
+                    .path: string(), .focus: bool(), .width: boardWidth(),
                 ]), destructive: false),
         .init(
             .readTerminalSession, "Read the visible buffer of a Terminal Session.", terminalTarget, readOnly: true),
@@ -406,6 +408,9 @@ private struct DenMCPToolDefinition: Sendable {
     private static func uuid() -> Value { string(format: "uuid") }
     private static func bool() -> Value { .object(["type": .string("boolean")]) }
     private static func number() -> Value { .object(["type": .string("number"), "minimum": .int(0)]) }
+    private static func boardWidth() -> Value {
+        .object(["type": .string("number"), "exclusiveMinimum": .int(0)])
+    }
     private static func stringArray(_ description: String? = nil) -> Value {
         var schema: [String: Value] = ["type": .string("array"), "items": string()]
         if let description { schema["description"] = .string(description) }
@@ -458,7 +463,10 @@ private struct DenMCPToolRunner: Sendable {
                 .web(
                     .new(
                         DenBoardWebNewPayload(
-                            url: try input.requiredString(.url), focus: try input.boolean(.focus))))
+                            url: try input.requiredString(.url),
+                            focus: try input.boolean(.focus),
+                            width: try input.boardWidth()
+                        )))
             )
         case .openSheet:
             return .sheet(.open(DenSheetOpenPayload(url: try input.requiredString(.url))))
@@ -604,7 +612,8 @@ private struct DenMCPToolRunner: Sendable {
                         DenBoardTerminalNewPayload(
                             path: path,
                             runCommand: nil,
-                            focus: try input.boolean(.focus)
+                            focus: try input.boolean(.focus),
+                            width: try input.boardWidth()
                         )))
             )
         case .readTerminalSession:
@@ -671,6 +680,14 @@ private struct DenMCPToolInput {
     func number(_ key: DenMCPArgument, default defaultValue: Double) throws -> Double {
         let value = try decode(key, as: Double.self) ?? defaultValue
         guard value.isFinite, value >= 0 else { throw invalid(key, "must be a finite non-negative number") }
+        return value
+    }
+
+    func boardWidth() throws -> Double? {
+        guard let value = try decode(.width, as: Double.self) else { return nil }
+        guard value.isFinite, value > 0 else {
+            throw invalid(.width, "must be a finite positive number of points")
+        }
         return value
     }
 

@@ -178,12 +178,14 @@ nonisolated struct DenSheetMousePayload: Codable, Equatable, Sendable {
 nonisolated struct DenBoardWebNewPayload: Codable, Equatable, Sendable {
     var url: String
     var focus: Bool
+    var width: Double?
 }
 
 nonisolated struct DenBoardTerminalNewPayload: Codable, Equatable, Sendable {
     var path: String?
     var runCommand: String?
     var focus: Bool
+    var width: Double?
 }
 
 nonisolated struct DenDrawerKeepPayload: Codable, Equatable, Sendable {

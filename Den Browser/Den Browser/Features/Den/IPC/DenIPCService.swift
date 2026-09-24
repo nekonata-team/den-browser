@@ -841,6 +841,7 @@ final class DenIPCService {
             let callerID = request.callerBoardID.flatMap(UUID.init)
             if let boardID = store.createBoard(
                 urlString: urlString,
+                preferredWidth: payload.width,
                 afterBoardID: callerID ?? store.focusedBoard?.id,
                 focus: payload.focus,
                 origin: .cli
@@ -902,6 +903,7 @@ final class DenIPCService {
         guard
             let boardID = store.createTerminalBoard(
                 workingDirectory: resolvedDir,
+                preferredWidth: payload.width,
                 afterBoardID: callerID ?? store.focusedBoard?.id,
                 focus: payload.focus,
                 origin: .cli

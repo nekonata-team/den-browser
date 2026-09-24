@@ -13,7 +13,7 @@ struct DenIPCServiceTests {
         #expect(response.message == nil)
     }
 
-    @Test func webBoardCreationStartsRuntime() async throws {
+    @Test func webBoardCreationUsesRequestedWidthAndStartsRuntime() async throws {
         // Arrange
         let directory = FileManager.default.temporaryDirectory
             .appending(path: "den-browser-ipc-service-tests-\(UUID().uuidString)", directoryHint: .isDirectory)
@@ -33,13 +33,54 @@ struct DenIPCServiceTests {
         // Act
         let response = await service.handleRequest(
             DenIPCRequest(
-                command: .board(.web(.new(DenBoardWebNewPayload(url: "https://example.com/", focus: false))))
+                command: .board(
+                    .web(
+                        .new(
+                            DenBoardWebNewPayload(
+                                url: "https://example.com/",
+                                focus: false,
+                                width: 200
+                            ))))
             )
         )
 
         // Assert
         let boardID = try #require(response.boardId.flatMap(UUID.init(uuidString:)))
         #expect(store.runtimes[boardID] != nil)
+        #expect(store.board(for: boardID)?.width == 200)
+    }
+
+    @Test func terminalBoardCreationUsesRequestedWidth() async throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appending(path: "den-browser-ipc-terminal-board-tests-\(UUID().uuidString)", directoryHint: .isDirectory)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let suiteName = "IPCServiceTerminalPreferences-\(UUID().uuidString)"
+        let manager = ProfileManager(
+            directoryURL: directory,
+            sheetNavigation: SheetNavigationManager(
+                defaults: makeTestDefaults(suiteName: suiteName),
+                scriptSource: ""),
+            preferences: AppPreferences(defaults: makeTestDefaults(suiteName: suiteName)),
+            removeDataStore: { _ in },
+            websiteDataStore: { _ in .nonPersistent() })
+        let store = try #require(manager.store(for: manager.personalProfileID))
+        let service = DenIPCService(profileManager: manager)
+
+        let response = await service.handleRequest(
+            DenIPCRequest(
+                command: .board(
+                    .terminal(
+                        .new(
+                            DenBoardTerminalNewPayload(
+                                path: nil,
+                                runCommand: nil,
+                                focus: false,
+                                width: 1_500
+                            ))))
+            )
+        )
+        let terminalID = try #require(response.boardId.flatMap(UUID.init(uuidString:)))
+        #expect(store.board(for: terminalID)?.width == 1_500)
     }
 
     @Test func sheetOpenUsesSharedInputResolution() async throws {

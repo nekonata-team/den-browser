@@ -1,6 +1,13 @@
 import ArgumentParser
 import Foundation
 
+private func validateBoardWidth(_ width: Double?) throws {
+    guard let width else { return }
+    guard width.isFinite, width > 0 else {
+        throw ValidationError("Board width must be a finite positive number of points")
+    }
+}
+
 struct BoardCommand: ParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "board",
@@ -80,12 +87,17 @@ struct BoardWebNewCommand: ParsableCommand {
 
     @OptionGroup var options: CLIOptions
     @Argument(help: "URL or search query for the new board") var url: String
+    @Option(name: .long, help: "Initial Board width in points") var width: Double?
     @Flag(name: .long, help: "Focus the newly created Board")
     var focus: Bool = false
 
+    func validate() throws {
+        try validateBoardWidth(width)
+    }
+
     func run() throws {
         try DenIPCClient.execute(
-            command: .board(.web(.new(DenBoardWebNewPayload(url: url, focus: focus)))),
+            command: .board(.web(.new(DenBoardWebNewPayload(url: url, focus: focus, width: width)))),
             options: options
         )
     }
@@ -109,14 +121,25 @@ struct BoardTerminalNewCommand: ParsableCommand {
     @OptionGroup var options: CLIOptions
     @Argument(help: "Working directory for the terminal board") var path: String?
     @Option(name: .customLong("run"), help: "Initial command to run in the terminal") var runCommand: String?
+    @Option(name: .long, help: "Initial Board width in points") var width: Double?
     @Flag(name: .long, help: "Focus the new terminal board") var focus = false
+
+    func validate() throws {
+        try validateBoardWidth(width)
+    }
 
     func run() throws {
         let resolvedPath = path.map { URL(fileURLWithPath: $0).standardizedFileURL.path }
         try DenIPCClient.execute(
             command: .board(
                 .terminal(
-                    .new(DenBoardTerminalNewPayload(path: resolvedPath, runCommand: runCommand, focus: focus))
+                    .new(
+                        DenBoardTerminalNewPayload(
+                            path: resolvedPath,
+                            runCommand: runCommand,
+                            focus: focus,
+                            width: width
+                        ))
                 )
             ),
             options: options

@@ -138,13 +138,13 @@ Commands operating on Boards within the active Desk.
 
 | Command | Arguments | Description | Example |
 |---|---|---|---|
-| `den board web new` | `<url> [--focus]` | Open a **new** Web Board with a supported URL, bare hostname, or search query on the active Desk, start its Web runtime immediately, and return its UUID. Invalid or unsupported URL schemes fail. Use `den sheet wait` to wait for loaded content. | `den board web new https://example.com` |
+| `den board web new` | `<url> [--width <points>] [--focus]` | Open a **new** Web Board with a supported URL, bare hostname, or search query on the active Desk, start its Web runtime immediately, and return its UUID. `--width` sets its initial width in positive points; it may exceed the manual resize limit. Invalid or unsupported URL schemes fail. Use `den sheet wait` to wait for loaded content. | `den board web new https://example.com --width 800` |
 
 ### 3.5 `den board terminal` (Terminal Boards)
 
 | Command | Arguments | Description | Example |
 |---|---|---|---|
-| `den board terminal new` | `[<path>] [--run <cmd>] [--focus]` | Open a new Terminal Board, optionally running an initial command in an interactive shell. | `den board terminal new . --run "npm test" --focus` |
+| `den board terminal new` | `[<path>] [--run <cmd>] [--width <points>] [--focus]` | Open a new Terminal Board, optionally running an initial command in an interactive shell. `--width` sets its initial width in positive points; it may exceed the manual resize limit. | `den board terminal new . --run "npm test" --width 800 --focus` |
 
 ### 3.6 `den desk` (Desks & Workspaces)
 Commands operating on Desks within the Den.
