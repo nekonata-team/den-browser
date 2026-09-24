@@ -285,6 +285,29 @@ struct DenStoreOverviewTests {
         #expect(saveCount == 0)
     }
 
+    @Test func overviewBoardMovementAtDeskEdgesDoesNotSave() {
+        // Arrange
+        let first = board("First")
+        let second = board("Second")
+        let third = board("Third")
+        let main = desk("Main", boards: [first, second, third], focusedBoardID: first.id)
+        var saveCount = 0
+        let store = DenStore(
+            state: DenState(desks: [main], focusedDeskID: main.id),
+            onSave: { _ in saveCount += 1 })
+        store.showOverview()
+
+        // Act
+        store.selectBoardInOverview(first.id)
+        store.moveOverviewSelectionBoardLeft()
+        store.selectBoardInOverview(third.id)
+        store.moveOverviewSelectionBoardRight()
+
+        // Assert
+        #expect(store.state.desks[0].boards.map(\.id) == [first.id, second.id, third.id])
+        #expect(saveCount == 0)
+    }
+
     @Test func overviewBoardDragIsUnavailableWhileFiltering() {
         // Arrange
         let first = board("First")

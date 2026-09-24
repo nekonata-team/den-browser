@@ -263,8 +263,10 @@ extension DenStore {
         var boards = state.desks[indices.desk].boards
         guard boards.count > 1 else { return }
 
+        let targetIndex = min(max(indices.board + delta, 0), boards.count - 1)
+        guard targetIndex != indices.board else { return }
+
         let board = boards.remove(at: indices.board)
-        let targetIndex = min(max(indices.board + delta, 0), boards.count)
         boards.insert(board, at: targetIndex)
         state.desks[indices.desk].boards = boards
         overviewSelection = OverviewSelection(
