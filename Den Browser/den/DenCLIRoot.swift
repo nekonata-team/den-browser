@@ -1,4 +1,5 @@
 import ArgumentParser
+import Foundation
 
 @main
 @available(macOS 10.15, macCatalyst 13, iOS 13, tvOS 13, watchOS 6, *)
@@ -6,6 +7,7 @@ struct DenCLI: AsyncParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "den",
         abstract: "Control and inspect Den Browser from terminal or external shell",
+        version: Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "unknown",
         subcommands: [
             HealthCommand.self,
             SheetCommand.self,

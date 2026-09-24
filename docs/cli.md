@@ -62,6 +62,7 @@ For `sheet` commands, target Web Board resolution follows this priority:
 For `terminal` commands, the caller's Terminal Board is preferred; otherwise the nearest Terminal Board is resolved relative to the caller on the current Desk.
 
 ### Global Options
+- `--version`: Print the bundled Den Browser version and exit.
 - `--json`: Force output as structured JSON. When standard output is redirected or piped (non-TTY), JSON output is enabled automatically.
 - `--socket <path>`: Override the Unix domain socket path. Resolution order is explicit `--socket`, `$DEN_SOCKET`, then `~/.den/den.sock`.
 - `--profile <uuid>`: Target specific Profile UUID (defaults to `$DEN_PROFILE` or ambient Profile). Fails immediately (`exit 1`) if invalid, not found, or has no active window.

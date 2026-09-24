@@ -66,7 +66,7 @@ restart: quit && run
 # Run the bundled den CLI.
 [group("development")]
 den *args:
-    "{{derived_data}}/Build/Products/Debug/Den Browser.app/Contents/MacOS/den" "$@"
+    @"{{derived_data}}/Build/Products/Debug/Den Browser.app/Contents/MacOS/den" "$@"
 
 # Benchmark startup and idle resource usage.
 [group("development")]
