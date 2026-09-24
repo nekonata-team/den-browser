@@ -9,7 +9,7 @@ private struct TerminalSignalError: LocalizedError {
 }
 
 extension DenStore {
-    func runtime(for board: BoardState) -> BoardRuntime {
+    func runtime(for board: BoardState, popupWebView: WKWebView? = nil) -> BoardRuntime {
         precondition(!board.isTerminal, "Terminal Board cannot create a web runtime")
         let actions = sheetNavigationActions(for: board)
         let events = boardRuntimeEvents(for: board)
@@ -35,6 +35,7 @@ extension DenStore {
             webExtensionHost: webExtensionHost,
             webExtensionWindow: webExtensionWindow,
             sheetScale: preferences.sheetScale,
+            popupWebView: popupWebView,
             sheetNavigationActions: actions,
             events: events
         )
@@ -167,6 +168,16 @@ extension DenStore {
             },
             onFullscreenChange: { [weak self] boardID, isFullscreen in
                 self?.updateFullscreenStatus(boardID: boardID, isFullscreen: isFullscreen)
+            },
+            onCreatePopupBoard: { [weak self] webView, url, modifierFlags in
+                self?.createPopupBoard(
+                    webView,
+                    requestedURL: url,
+                    fromBoardID: board.id,
+                    modifierFlags: modifierFlags) ?? false
+            },
+            onClosePopupBoard: { [weak self] in
+                self?.removeBoard(board.id)
             },
             onLinkActivated: { [weak self] in
                 self?.prepareBoardLinkFocus(board.id)

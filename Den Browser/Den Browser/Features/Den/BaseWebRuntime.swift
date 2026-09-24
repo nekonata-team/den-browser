@@ -70,19 +70,25 @@ class BaseWebRuntime: NSObject, NSWindowDelegate, WKDownloadDelegate, WKNavigati
         webExtensionController: WKWebExtensionController? = nil,
         sheetScale: Int,
         enableElementFullscreen: Bool = true,
+        existingWebView: WKWebView? = nil,
         makeWebView: ((WKWebViewConfiguration) -> WKWebView)? = nil
     ) {
         self.id = id
 
-        let configuration = WKWebViewConfiguration()
-        configuration.websiteDataStore = websiteDataStore
-        if let userContentController {
-            configuration.userContentController = userContentController
+        let webView: WKWebView
+        if let existingWebView {
+            webView = existingWebView
+        } else {
+            let configuration = WKWebViewConfiguration()
+            configuration.websiteDataStore = websiteDataStore
+            if let userContentController {
+                configuration.userContentController = userContentController
+            }
+            configuration.webExtensionController = webExtensionController
+            configuration.preferences.javaScriptCanOpenWindowsAutomatically = false
+            configuration.preferences.isElementFullscreenEnabled = enableElementFullscreen
+            webView = makeWebView?(configuration) ?? WKWebView(frame: .zero, configuration: configuration)
         }
-        configuration.webExtensionController = webExtensionController
-        configuration.preferences.isElementFullscreenEnabled = enableElementFullscreen
-
-        let webView = makeWebView?(configuration) ?? WKWebView(frame: .zero, configuration: configuration)
         self.webView = webView
         let fallbackColor = DenSurfaceColors.webViewFallbackBackground
         webView.underPageBackgroundColor = NSColor(
@@ -92,7 +98,9 @@ class BaseWebRuntime: NSObject, NSWindowDelegate, WKDownloadDelegate, WKNavigati
             alpha: 1
         )
         webView.customUserAgent = Self.defaultUserAgent
-        webView.pageZoom = CGFloat(sheetScale) / 100
+        if existingWebView == nil {
+            webView.pageZoom = CGFloat(sheetScale) / 100
+        }
         webView.allowsBackForwardNavigationGestures = true
 
         super.init()
@@ -113,7 +121,7 @@ class BaseWebRuntime: NSObject, NSWindowDelegate, WKDownloadDelegate, WKNavigati
             }
         }
 
-        if let initialURL {
+        if existingWebView == nil, let initialURL {
             load(initialURL)
         }
     }
@@ -392,12 +400,15 @@ class BaseWebRuntime: NSObject, NSWindowDelegate, WKDownloadDelegate, WKNavigati
     }
 
     func webViewDidClose(_ webView: WKWebView) {
-        guard let window = auxiliaryWindows.removeValue(forKey: ObjectIdentifier(webView)) else {
+        if let window = auxiliaryWindows.removeValue(forKey: ObjectIdentifier(webView)) {
+            window.delegate = nil
+            window.close()
             return
         }
-        window.delegate = nil
-        window.close()
+        handleWebViewDidClose(webView)
     }
+
+    func handleWebViewDidClose(_ webView: WKWebView) {}
 
     func windowWillClose(_ notification: Notification) {
         guard let window = notification.object as? NSWindow else { return }

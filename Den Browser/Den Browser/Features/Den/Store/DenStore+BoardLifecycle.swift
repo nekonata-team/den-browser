@@ -189,6 +189,43 @@ extension DenStore {
     }
 
     @discardableResult
+    func createPopupBoard(
+        _ popupWebView: WKWebView,
+        requestedURL: URL?,
+        fromBoardID: UUID,
+        modifierFlags: NSEvent.ModifierFlags
+    ) -> Bool {
+        guard let sourceIndices = boardIndices(for: fromBoardID) else { return false }
+        let sourceBoard = state.desks[sourceIndices.desk].boards[sourceIndices.board]
+        guard !sourceBoard.isTerminal
+        else { return false }
+
+        let initialURL = requestedURL.flatMap { SheetURLPolicy.isSupported($0) ? $0 : nil }
+        let board = BoardState(
+            label: initialURL?.host(percentEncoded: false) ?? "New Board",
+            width: sourceBoard.width,
+            currentSheetURL: initialURL)
+        let focus = !modifierFlags.contains(.command) || modifierFlags.contains(.shift)
+        let runtime = runtime(for: board, popupWebView: popupWebView)
+        guard runtime.webView === popupWebView else {
+            disposeRuntime(for: board.id)
+            return false
+        }
+        guard
+            insertBoard(
+                board,
+                afterBoardID: fromBoardID,
+                focus: focus,
+                origin: .interactive)
+        else {
+            disposeRuntime(for: board.id)
+            return false
+        }
+
+        return true
+    }
+
+    @discardableResult
     func createTerminalBoard(
         workingDirectory: String? = nil,
         preferredWidth: Double? = nil,

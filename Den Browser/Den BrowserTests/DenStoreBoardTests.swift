@@ -324,6 +324,174 @@ struct DenStoreBoardTests {
         #expect(store.recentItems.isEmpty)
     }
 
+    @Test func popupBoardKeepsItsOpenerRequestAndUsesTheProvidedWebView() throws {
+        // Arrange
+        let sourceBoard = BoardState(label: "Source", width: 520, currentSheetURL: nil)
+        let store = popupStore(for: sourceBoard)
+        defer { store.releaseRuntimes() }
+
+        let popupURL = try #require(URL(string: "https://login.example/authorize"))
+        let backgroundPopup = BoardWKWebView(frame: .zero, configuration: WKWebViewConfiguration())
+
+        // Act
+        #expect(
+            store.createPopupBoard(
+                backgroundPopup,
+                requestedURL: popupURL,
+                fromBoardID: sourceBoard.id,
+                modifierFlags: .command))
+        let backgroundBoard = try #require(store.state.desks[0].boards.first { $0.id != sourceBoard.id })
+
+        // Assert
+        #expect(store.focusedBoard?.id == sourceBoard.id)
+        #expect(backgroundBoard.currentSheetURL == popupURL)
+        #expect(backgroundBoard.firstSheetURL == popupURL)
+        #expect(store.runtimes[backgroundBoard.id]?.webView === backgroundPopup)
+        #expect(backgroundPopup.url == nil)
+    }
+
+    @Test func commandShiftPopupFocusesItsBoard() throws {
+        // Arrange
+        let sourceBoard = BoardState(label: "Source", width: 520, currentSheetURL: nil)
+        let store = popupStore(for: sourceBoard)
+        defer { store.releaseRuntimes() }
+        let popup = BoardWKWebView(frame: .zero, configuration: WKWebViewConfiguration())
+
+        // Act
+        #expect(
+            store.createPopupBoard(
+                popup,
+                requestedURL: nil,
+                fromBoardID: sourceBoard.id,
+                modifierFlags: [.command, .shift]))
+
+        // Assert
+        let focusedBoard = try #require(store.focusedBoard)
+        #expect(focusedBoard.id != sourceBoard.id)
+        #expect(focusedBoard.currentSheetURL == nil)
+        #expect(store.runtimes[focusedBoard.id]?.webView === popup)
+        #expect(popup.url == nil)
+    }
+
+    @Test func popupBoardFocusesByDefault() throws {
+        // Arrange
+        let sourceBoard = BoardState(label: "Source", width: 520, currentSheetURL: nil)
+        let store = popupStore(for: sourceBoard)
+        defer { store.releaseRuntimes() }
+        let popup = BoardWKWebView(frame: .zero, configuration: WKWebViewConfiguration())
+
+        // Act
+        #expect(
+            store.createPopupBoard(
+                popup,
+                requestedURL: nil,
+                fromBoardID: sourceBoard.id,
+                modifierFlags: []))
+
+        // Assert
+        let focusedBoard = try #require(store.focusedBoard)
+        #expect(focusedBoard.id != sourceBoard.id)
+        #expect(store.runtimes[focusedBoard.id]?.webView === popup)
+    }
+
+    @Test func closingPopupWebViewRemovesItsBoard() throws {
+        // Arrange
+        let sourceBoard = BoardState(label: "Source", width: 520, currentSheetURL: nil)
+        let store = popupStore(for: sourceBoard)
+        defer { store.releaseRuntimes() }
+        let popup = BoardWKWebView(frame: .zero, configuration: WKWebViewConfiguration())
+        #expect(
+            store.createPopupBoard(
+                popup,
+                requestedURL: nil,
+                fromBoardID: sourceBoard.id,
+                modifierFlags: []))
+        let popupBoard = try #require(store.focusedBoard)
+
+        // Act
+        store.runtimes[popupBoard.id]?.webViewDidClose(popup)
+
+        // Assert
+        #expect(store.board(for: popupBoard.id) == nil)
+        #expect(store.runtimes[popupBoard.id] == nil)
+    }
+
+    @Test func windowOpenPopupPreservesOpenerPostMessage() async throws {
+        // Arrange
+        let sourceBoard = BoardState(label: "Source", width: 520, currentSheetURL: nil)
+        let store = popupStore(for: sourceBoard)
+        defer { store.releaseRuntimes() }
+        let configuration = WKWebViewConfiguration()
+        configuration.websiteDataStore = store.websiteDataStore
+        configuration.userContentController = store.sheetNavigation.userContentController
+        configuration.preferences.javaScriptCanOpenWindowsAutomatically = true
+        let sourceWebView = BoardWKWebView(frame: .zero, configuration: configuration)
+        let sourceRuntime = store.runtime(for: sourceBoard, popupWebView: sourceWebView)
+        let waiter = SheetInteractionWebViewLoadWaiter()
+        await waiter.load(
+            """
+            <!doctype html>
+            <title>Ready</title>
+            <script>
+            window.addEventListener('message', event => {
+                document.title = event.data;
+            });
+            </script>
+            """,
+            baseURL: URL(string: "file:///tmp/window-open-popup-test.html")!,
+            in: sourceRuntime.webView)
+        sourceRuntime.webView.navigationDelegate = sourceRuntime
+
+        // Act
+        _ = try await sourceRuntime.webView.evaluateJavaScript(
+            "window.open('about:blank', '_blank'); true")
+        let popupBoard = try #require(store.state.desks[0].boards.first { $0.id != sourceBoard.id })
+        let popupRuntime = try #require(store.runtimes[popupBoard.id])
+        _ = try await popupRuntime.webView.evaluateJavaScript(
+            "window.opener.postMessage('popup-message', '*')")
+        try await SheetInteraction.waitForFunction(
+            expression: "document.title === 'popup-message'",
+            in: sourceRuntime.webView,
+            timeout: 5)
+
+        // Assert
+        #expect(popupRuntime.webView !== sourceRuntime.webView)
+        #expect(popupRuntime.webView.uiDelegate === popupRuntime)
+        #expect(try await sourceRuntime.webView.evaluateJavaScript("document.title") as? String == "popup-message")
+    }
+
+    @Test func unsolicitedJavaScriptPopupIsBlocked() async throws {
+        // Arrange
+        let sourceBoard = BoardState(label: "Source", width: 520, currentSheetURL: nil)
+        let store = popupStore(for: sourceBoard)
+        defer { store.releaseRuntimes() }
+        let sourceRuntime = store.runtime(for: sourceBoard)
+        let waiter = SheetInteractionWebViewLoadWaiter()
+        await waiter.load(
+            """
+            <!doctype html>
+            <title>Waiting</title>
+            <script>
+            setTimeout(() => {
+                document.title = window.open('about:blank') === null ? 'Blocked' : 'Opened';
+            }, 0);
+            </script>
+            """,
+            baseURL: URL(string: "file:///tmp/unsolicited-popup-test.html")!,
+            in: sourceRuntime.webView)
+        sourceRuntime.webView.navigationDelegate = sourceRuntime
+
+        // Act
+        try await SheetInteraction.waitForFunction(
+            expression: "document.title === 'Blocked'",
+            in: sourceRuntime.webView,
+            timeout: 5)
+
+        // Assert
+        #expect(!sourceRuntime.webView.configuration.preferences.javaScriptCanOpenWindowsAutomatically)
+        #expect(store.state.desks[0].boards.map(\.id) == [sourceBoard.id])
+    }
+
     @Test func terminalBoardsCreateDuplicateRemoveAndRestoreWithRecentItems() throws {
         let source = desk("Desk")
         let store = DenStore(state: DenState(desks: [source], focusedDeskID: source.id))
@@ -1321,6 +1489,15 @@ struct DenStoreBoardTests {
 
     private func desk(_ label: String, boards: [BoardState] = [], focusedBoardID: UUID? = nil) -> DeskState {
         DeskState(label: label, boards: boards, focusedBoardID: focusedBoardID)
+    }
+
+    private func popupStore(for sourceBoard: BoardState) -> DenStore {
+        let sourceDesk = desk("Desk", boards: [sourceBoard], focusedBoardID: sourceBoard.id)
+        return DenStore(
+            state: DenState(desks: [sourceDesk], focusedDeskID: sourceDesk.id),
+            websiteDataStore: .nonPersistent(),
+            sheetNavigation: makeTestSheetNavigationManager(scriptSource: ""),
+            preferences: AppPreferences(defaults: makeTestDefaults()))
     }
 
     private func board(_ label: String, width: Double = 520, url: String = "https://example.com/") -> BoardState {

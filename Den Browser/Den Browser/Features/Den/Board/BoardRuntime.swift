@@ -37,6 +37,8 @@ final class BoardRuntime: BaseWebRuntime, ObservableObject {
     struct Events {
         var onChange: (UUID, URL?, String?) -> Void
         var onFullscreenChange: ((UUID, Bool) -> Void)?
+        var onCreatePopupBoard: (WKWebView, URL?, NSEvent.ModifierFlags) -> Bool = { _, _, _ in false }
+        var onClosePopupBoard: () -> Void = {}
         var onLinkActivated: () -> Void = {}
         var downloadActivityOwnerID: ObjectIdentifier?
         var onDownloadActivity: (DownloadActivityEvent) -> Void = { _ in }
@@ -97,6 +99,7 @@ final class BoardRuntime: BaseWebRuntime, ObservableObject {
         webExtensionHost: WebExtensionHost? = nil,
         webExtensionWindow: MV3WebExtensionWindow? = nil,
         sheetScale: Int,
+        popupWebView: WKWebView? = nil,
         sheetNavigationActions: SheetNavigationManager.Actions,
         events: Events
     ) {
@@ -117,6 +120,7 @@ final class BoardRuntime: BaseWebRuntime, ObservableObject {
             webExtensionController: webExtensionHost?.controller,
             sheetScale: sheetScale,
             enableElementFullscreen: true,
+            existingWebView: popupWebView,
             makeWebView: { configuration in
                 BoardWKWebView(frame: .zero, configuration: configuration)
             }
@@ -147,7 +151,7 @@ final class BoardRuntime: BaseWebRuntime, ObservableObject {
             webExtensionHost.register(
                 webView: webView,
                 in: webExtensionWindow,
-                initialURL: board.currentSheetURL
+                initialURL: popupWebView == nil ? board.currentSheetURL : nil
             ) { [weak self] url in
                 self?.load(url)
             }
@@ -268,6 +272,11 @@ final class BoardRuntime: BaseWebRuntime, ObservableObject {
 
     override func handleURLOrTitleChange(url: URL?, title: String?) {
         events.onChange(id, url, title)
+    }
+
+    override func handleWebViewDidClose(_ webView: WKWebView) {
+        guard webView === self.webView else { return }
+        events.onClosePopupBoard()
     }
 
     override func handleLinkNavigation(
@@ -393,36 +402,28 @@ final class BoardRuntime: BaseWebRuntime, ObservableObject {
         for navigationAction: WKNavigationAction,
         windowFeatures: WKWindowFeatures
     ) -> WKWebView? {
-        guard navigationAction.targetFrame == nil, let url = navigationAction.request.url else {
+        guard navigationAction.targetFrame == nil else { return nil }
+        let url = navigationAction.request.url
+
+        if navigationAction.shouldPerformDownload, let url {
+            load(url)
             return nil
         }
 
-        if SheetNavigationPolicy.shouldOpenExternalApplication(
-            navigationType: navigationAction.navigationType,
-            url: url
-        ) {
+        if let url,
+            SheetNavigationPolicy.shouldOpenExternalApplication(
+                navigationType: navigationAction.navigationType,
+                url: url
+            )
+        {
             NSWorkspace.shared.open(url)
             return nil
         }
 
-        if SheetNavigationPolicy.shouldOpenTargetlessNavigationInNewBoard(
-            navigationType: navigationAction.navigationType,
-            url: url
-        ) {
-            if SheetNavigationPolicy.shouldOpenLinkInNewBoard(
-                navigationType: navigationAction.navigationType,
-                modifierFlags: navigationAction.modifierFlags,
-                button: MouseButton(rawValue: navigationAction.buttonNumber),
-                url: url
-            ) {
-                openBoardFromModifierClick(url, modifierFlags: navigationAction.modifierFlags)
-            } else {
-                sheetNavigationActions.onOpenBoard(url)
-            }
-            return nil
-        }
-
-        return makeAuxiliaryWebView(configuration: configuration, sourceWebView: webView)
+        let popup = BoardWKWebView(frame: .zero, configuration: configuration)
+        popup.pageZoom = webView.pageZoom
+        guard events.onCreatePopupBoard(popup, url, navigationAction.modifierFlags) else { return nil }
+        return popup
     }
 
     func togglePictureInPicture() {
