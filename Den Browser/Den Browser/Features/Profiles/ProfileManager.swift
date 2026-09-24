@@ -22,7 +22,7 @@ final class ProfileManager {
     @ObservationIgnored private let directoryURL: URL
     @ObservationIgnored private var persistedProfiles: [UUID: PersistedProfile] = [:]
     @ObservationIgnored private(set) var profileSaveCount = 0
-    @ObservationIgnored private var pendingFocusSaves: [UUID: Task<Void, Never>] = [:]
+    @ObservationIgnored private var pendingDeferredSaves: [UUID: Task<Void, Never>] = [:]
     @ObservationIgnored private var storages: [UUID: DenStorage] = [:]
     @ObservationIgnored private var stores: [UUID: DenStore] = [:]
     @ObservationIgnored private var storeProfileIDs: [UUID: UUID] = [:]
@@ -37,7 +37,7 @@ final class ProfileManager {
     @ObservationIgnored private let removeWebsiteDataTypes: (WKWebsiteDataStore, Set<String>) async throws -> Void
     @ObservationIgnored private let initialProfile: PersistedProfile?
     @ObservationIgnored private let isEphemeral: Bool
-    private static let focusSaveDelay: Duration = .milliseconds(300)
+    private static let deferredSaveDelay: Duration = .milliseconds(300)
     @ObservationIgnored private let websiteDataStore: (WebProfileStore) -> WKWebsiteDataStore
     @ObservationIgnored private let quarantineFile: (URL, URL) throws -> Void
     let ipcSocketPath: String
@@ -175,7 +175,7 @@ final class ProfileManager {
         do {
             if let persisted = persistedProfiles[profileID] {
                 try save(persisted)
-                cancelPendingFocusSave(for: profileID)
+                cancelPendingDeferredSave(for: profileID)
             }
             return true
         } catch {
@@ -200,7 +200,7 @@ final class ProfileManager {
             if hadDocument { try FileManager.default.removeItem(at: profileURL) }
             profiles.removeAll { $0.id == profileID }
             persistedProfiles.removeValue(forKey: profileID)
-            cancelPendingFocusSave(for: profileID)
+            cancelPendingDeferredSave(for: profileID)
             do {
                 try saveIndex()
             } catch {
@@ -400,7 +400,7 @@ final class ProfileManager {
             deskPresets: persisted.deskPresets,
             recentItems: persisted.recentItems,
             onSave: { [weak self] den in self?.saveDen(den, for: profileID) ?? false },
-            onFocusSave: { [weak self] in self?.scheduleFocusSave(for: profileID) },
+            onDeferredSave: { [weak self] in self?.scheduleDeferredSave(for: profileID) },
             onDeskPresetsSave: { [weak self] presets in self?.saveDeskPresets(presets, for: profileID) ?? false },
             onRecentItemsSave: { [weak self] items in self?.saveRecentItems(items, for: profileID) ?? false })
         storages[profileID] = storage
@@ -798,7 +798,7 @@ final class ProfileManager {
         persistedProfiles[profileID] = persisted
         do {
             try save(persisted)
-            cancelPendingFocusSave(for: profileID)
+            cancelPendingDeferredSave(for: profileID)
             return true
         } catch {
             reportSaveError(error)
@@ -814,7 +814,7 @@ final class ProfileManager {
         persistedProfiles[profileID] = persisted
         do {
             try save(persisted)
-            cancelPendingFocusSave(for: profileID)
+            cancelPendingDeferredSave(for: profileID)
             return true
         } catch {
             reportSaveError(error)
@@ -830,7 +830,7 @@ final class ProfileManager {
         persistedProfiles[profileID] = persisted
         do {
             try save(persisted)
-            cancelPendingFocusSave(for: profileID)
+            cancelPendingDeferredSave(for: profileID)
             return true
         } catch {
             reportSaveError(error)
@@ -847,17 +847,17 @@ final class ProfileManager {
         try write(persisted, to: profileURL(for: persisted.profile.id))
     }
 
-    func flushPendingFocusSaves() {
-        for profileID in Array(pendingFocusSaves.keys) {
+    func flushPendingDeferredSaves() {
+        for profileID in Array(pendingDeferredSaves.keys) {
             guard let storage = storages[profileID] else {
-                cancelPendingFocusSave(for: profileID)
+                cancelPendingDeferredSave(for: profileID)
                 continue
             }
             if storage.activeDrag != nil {
                 guard let persisted = persistedProfiles[profileID] else { continue }
                 do {
                     try save(persisted)
-                    cancelPendingFocusSave(for: profileID)
+                    cancelPendingDeferredSave(for: profileID)
                 } catch {
                     reportSaveError(error)
                 }
@@ -867,7 +867,7 @@ final class ProfileManager {
         }
     }
 
-    private func scheduleFocusSave(for profileID: UUID) {
+    private func scheduleDeferredSave(for profileID: UUID) {
         guard
             !isEphemeral,
             var persisted = persistedProfiles[profileID],
@@ -875,30 +875,30 @@ final class ProfileManager {
         else { return }
         refreshDenData(in: &persisted, for: profileID)
         persistedProfiles[profileID] = persisted
-        pendingFocusSaves.removeValue(forKey: profileID)?.cancel()
-        pendingFocusSaves[profileID] = Task { [weak self] in
+        pendingDeferredSaves.removeValue(forKey: profileID)?.cancel()
+        pendingDeferredSaves[profileID] = Task { [weak self] in
             while !Task.isCancelled {
                 do {
-                    try await Task.sleep(for: Self.focusSaveDelay)
+                    try await Task.sleep(for: Self.deferredSaveDelay)
                 } catch {
                     return
                 }
                 guard !Task.isCancelled else { return }
                 guard let self else { return }
                 guard let storage = self.storages[profileID] else {
-                    self.cancelPendingFocusSave(for: profileID)
+                    self.cancelPendingDeferredSave(for: profileID)
                     return
                 }
                 guard storage.activeDrag == nil else { continue }
-                self.pendingFocusSaves.removeValue(forKey: profileID)
+                self.pendingDeferredSaves.removeValue(forKey: profileID)
                 _ = self.saveDen(storage.state, for: profileID)
                 return
             }
         }
     }
 
-    private func cancelPendingFocusSave(for profileID: UUID) {
-        pendingFocusSaves.removeValue(forKey: profileID)?.cancel()
+    private func cancelPendingDeferredSave(for profileID: UUID) {
+        pendingDeferredSaves.removeValue(forKey: profileID)?.cancel()
     }
 
     private func refreshDenData(in persisted: inout PersistedProfile, for profileID: UUID) {

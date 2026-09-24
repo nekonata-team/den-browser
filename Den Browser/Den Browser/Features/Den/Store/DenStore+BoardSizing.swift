@@ -9,19 +9,24 @@ extension DenStore {
 
         maximizedBoardID = nil
         let width = state.desks[deskIndex].boards[boardIndex].width + delta
-        state.desks[deskIndex].boards[boardIndex].width = BoardState.constrainedWidth(width)
-        save()
+        let constrainedWidth = BoardState.constrainedWidth(width)
+        guard constrainedWidth != state.desks[deskIndex].boards[boardIndex].width else { return }
+        state.desks[deskIndex].boards[boardIndex].width = constrainedWidth
+        saveDeferredState()
     }
 
     func adjustFocusedDeskBoardWidths(by delta: Double) {
         guard let deskIndex = focusedDeskIndex else { return }
 
         maximizedBoardID = nil
+        var changed = false
         for boardIndex in state.desks[deskIndex].boards.indices {
             let width = state.desks[deskIndex].boards[boardIndex].width + delta
-            state.desks[deskIndex].boards[boardIndex].width = BoardState.constrainedWidth(width)
+            let constrainedWidth = BoardState.constrainedWidth(width)
+            changed = changed || constrainedWidth != state.desks[deskIndex].boards[boardIndex].width
+            state.desks[deskIndex].boards[boardIndex].width = constrainedWidth
         }
-        save()
+        if changed { saveDeferredState() }
     }
 
     func updateBoardLayout(availableWidth: Double, spacing: Double) {

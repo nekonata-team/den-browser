@@ -113,7 +113,7 @@ extension DenStore {
         if state.focusedDeskID != previousFocusedDeskID
             || state.desks[deskIndex].focusedBoardID != previousFocusedBoardID
         {
-            saveFocus()
+            saveDeferredState()
         }
     }
 

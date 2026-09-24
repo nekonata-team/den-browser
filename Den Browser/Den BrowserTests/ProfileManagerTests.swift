@@ -575,7 +575,7 @@ struct ProfileManagerTests {
         #expect(restoredStore.recentItems == [.url(url)])
     }
 
-    @Test func focusSaveWaitsUntilFocusHasBeenQuietFor300Milliseconds() async throws {
+    @Test func deferredSaveWaitsUntilChangesHaveBeenQuietFor300Milliseconds() async throws {
         // Arrange
         let directory = temporaryProfileDirectory()
         defer { try? FileManager.default.removeItem(at: directory) }
@@ -601,7 +601,40 @@ struct ProfileManagerTests {
         #expect(restored.store(for: manager.personalProfileID)?.state.focusedDeskID == secondDeskID)
     }
 
-    @Test func successfulImmediateSaveCancelsPendingFocusSave() async throws {
+    @Test func boardWidthAdjustmentsShareDeferredSaveAndSkipUnchangedWidths() async throws {
+        // Arrange
+        let directory = temporaryProfileDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let manager = makeProfileManager(directory: directory)
+        let profileID = manager.personalProfileID
+        let store = try #require(manager.store(for: profileID))
+        let first = board("First", width: BoardState.maximumWidth)
+        let second = board("Second", width: BoardState.maximumWidth)
+        store.state.desks[0].boards = [first, second]
+        store.state.desks[0].focusedBoardID = first.id
+        #expect(store.save())
+        let writesBefore = manager.profileSaveCount
+
+        // Act
+        store.adjustFocusedDeskBoardWidths(by: 10)
+        #expect(manager.profileSaveCount == writesBefore)
+        store.maximizedBoardID = first.id
+        store.adjustFocusedBoardWidth(by: 20)
+        #expect(store.maximizedBoardID == nil)
+        #expect(manager.profileSaveCount == writesBefore)
+        store.adjustFocusedBoardWidth(by: -20)
+        try await Task.sleep(for: .milliseconds(200))
+        store.adjustFocusedDeskBoardWidths(by: 10)
+        #expect(manager.profileSaveCount == writesBefore)
+        try await Task.sleep(for: .milliseconds(350))
+
+        // Assert
+        #expect(manager.profileSaveCount == writesBefore + 1)
+        let restored = try #require(makeProfileManager(directory: directory).store(for: profileID))
+        #expect(restored.state.desks[0].boards.map(\.width) == [BoardState.maximumWidth - 10, BoardState.maximumWidth])
+    }
+
+    @Test func successfulImmediateSaveCancelsPendingDeferredSave() async throws {
         // Arrange
         let directory = temporaryProfileDirectory()
         defer { try? FileManager.default.removeItem(at: directory) }
@@ -622,7 +655,7 @@ struct ProfileManagerTests {
         #expect(restored.store(for: manager.personalProfileID)?.state.focusedDeskID == firstDeskID)
     }
 
-    @Test func flushPendingFocusSavesWritesBeforeReturning() throws {
+    @Test func flushPendingDeferredSavesWritesBeforeReturning() throws {
         // Arrange
         let directory = temporaryProfileDirectory()
         defer { try? FileManager.default.removeItem(at: directory) }
@@ -634,7 +667,7 @@ struct ProfileManagerTests {
 
         // Act
         store.focusDesk(firstDeskID)
-        manager.flushPendingFocusSaves()
+        manager.flushPendingDeferredSaves()
 
         // Assert
         #expect(manager.profileSaveCount == writesBefore + 1)
@@ -660,7 +693,7 @@ struct ProfileManagerTests {
         store.focusBoard(secondBoard.id)
         #expect(store.beginBoardDrag(firstBoard.id))
         store.previewBoardMove(secondBoard.id, to: 0)
-        manager.flushPendingFocusSaves()
+        manager.flushPendingDeferredSaves()
 
         // Assert
         #expect(manager.profileSaveCount == writesBefore + 1)
@@ -694,7 +727,7 @@ struct ProfileManagerTests {
         #expect(restored.focusedDesk?.boards.map(\.id) == [firstBoard.id, secondBoard.id])
     }
 
-    @Test func expiredFocusSaveWaitsForOverviewDragCancellation() async throws {
+    @Test func expiredDeferredSaveWaitsForOverviewDragCancellation() async throws {
         // Arrange
         let directory = temporaryProfileDirectory()
         defer { try? FileManager.default.removeItem(at: directory) }
@@ -723,7 +756,7 @@ struct ProfileManagerTests {
         #expect(restored.focusedDesk?.focusedBoardID == secondBoard.id)
     }
 
-    @Test func failedImmediateSaveKeepsPendingFocusSave() async throws {
+    @Test func failedImmediateSaveKeepsPendingDeferredSave() async throws {
         // Arrange
         let directory = temporaryProfileDirectory()
         defer { try? FileManager.default.removeItem(at: directory) }

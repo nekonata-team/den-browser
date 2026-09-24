@@ -20,7 +20,7 @@ final class DenStorage {
     @ObservationIgnored var runtimeOwners: [UUID: DenStore] = [:]
     @ObservationIgnored let drawerPresentations = NSHashTable<DenStore>.weakObjects()
     @ObservationIgnored let onSave: ((DenState) -> Bool)?
-    @ObservationIgnored let onFocusSave: (() -> Void)?
+    @ObservationIgnored let onDeferredSave: (() -> Void)?
     @ObservationIgnored let onDeskPresetsSave: (([PersonalDeskPreset]) -> Bool)?
     @ObservationIgnored let onRecentItemsSave: (([RecentItem]) -> Bool)?
 
@@ -29,7 +29,7 @@ final class DenStorage {
         deskPresets: [PersonalDeskPreset] = [],
         recentItems: [RecentItem] = [],
         onSave: ((DenState) -> Bool)? = nil,
-        onFocusSave: (() -> Void)? = nil,
+        onDeferredSave: (() -> Void)? = nil,
         onDeskPresetsSave: (([PersonalDeskPreset]) -> Bool)? = nil,
         onRecentItemsSave: (([RecentItem]) -> Bool)? = nil
     ) {
@@ -37,7 +37,7 @@ final class DenStorage {
         self.deskPresets = deskPresets
         self.recentItems = recentItems
         self.onSave = onSave
-        self.onFocusSave = onFocusSave
+        self.onDeferredSave = onDeferredSave
         self.onDeskPresetsSave = onDeskPresetsSave
         self.onRecentItemsSave = onRecentItemsSave
     }
@@ -650,7 +650,7 @@ final class DenStore {
         }
         dismissDeskFilter()
         isDenMode = false
-        saveFocus()
+        saveDeferredState()
     }
 
     @discardableResult
@@ -692,10 +692,10 @@ final class DenStore {
         return storage.onSave?(state) ?? false
     }
 
-    func saveFocus() {
+    func saveDeferredState() {
         guard activeDrag == nil else { return }
-        if let onFocusSave = storage.onFocusSave {
-            onFocusSave()
+        if let onDeferredSave = storage.onDeferredSave {
+            onDeferredSave()
         } else {
             _ = save()
         }

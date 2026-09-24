@@ -357,7 +357,7 @@ private final class DenApplicationDelegate: NSObject, NSApplicationDelegate {
     var profileManager: ProfileManager?
 
     func applicationWillTerminate(_ notification: Notification) {
-        profileManager?.flushPendingFocusSaves()
+        profileManager?.flushPendingDeferredSaves()
     }
 
     func applicationDockMenu(_ sender: NSApplication) -> NSMenu? {
