@@ -69,6 +69,9 @@ extension DenStore {
         }
         maximizedBoardID = nil
         hideBoardWidthPanel()
+        if focusedDesk?.focusedBoardID != nil {
+            state.desks[deskIndex].scrollOffsetX = nil
+        }
         centerFocusedBoard()
         save()
         return true

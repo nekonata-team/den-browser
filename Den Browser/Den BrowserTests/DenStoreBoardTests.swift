@@ -690,6 +690,55 @@ struct DenStoreBoardTests {
         }
     }
 
+    @Test func focusMovesDoNotSaveWhenThereIsOnlyOneTarget() {
+        let board = board("Board")
+        let onlyDesk = desk("Desk", boards: [board], focusedBoardID: board.id)
+        var saveCount = 0
+        withTestStore(
+            desks: [onlyDesk],
+            onSave: { _ in
+                saveCount += 1
+                return true
+            },
+            body: { store in
+                store.focusNextDesk()
+                store.focusPreviousDesk()
+                store.focusNextBoard()
+                store.focusPreviousBoard()
+
+                #expect(store.presentedDeskID == onlyDesk.id)
+                #expect(store.focusedDesk?.focusedBoardID == board.id)
+                #expect(saveCount == 0)
+            })
+    }
+
+    @Test func reselectingPresentedDeskKeepsTransientEffectsWithoutSaving() {
+        let board = board("Board")
+        let onlyDesk = desk("Desk", boards: [board], focusedBoardID: board.id)
+        var saveCount = 0
+
+        withTestStore(
+            desks: [onlyDesk],
+            onSave: { _ in
+                saveCount += 1
+                return true
+            },
+            body: { store in
+                store.enterDeskFilter()
+                store.setDeskFilterQuery("board")
+                store.isDenMode = true
+                store.recordNotification(title: "Build", body: "Finished", boardID: board.id)
+
+                store.focusDesk(onlyDesk.id)
+
+                #expect(!store.isDeskFilterPresented)
+                #expect(store.deskFilterQuery.isEmpty)
+                #expect(!store.isDenMode)
+                #expect(store.unreadNotificationCount == 0)
+                #expect(saveCount == 0)
+            })
+    }
+
     @Test func boardFocusRecoversWhenNoBoardIsFocused() {
         let boards = [board("A"), board("B"), board("C")]
         let deskState = desk("Desk", boards: boards)
@@ -755,6 +804,28 @@ struct DenStoreBoardTests {
             #expect(store.focusedDesk?.focusedBoardID == boards[1].id)
             #expect(store.centerFocusedBoardRequest == 1)
         }
+    }
+
+    @Test func reorderingBoardWithScrollOffsetSavesOnceAndCenters() {
+        let boards = [board("A"), board("B")]
+        var source = desk("Desk", boards: boards, focusedBoardID: boards[0].id)
+        source.scrollOffsetX = 180
+        var saveCount = 0
+
+        withTestStore(
+            desks: [source],
+            onSave: { _ in
+                saveCount += 1
+                return true
+            },
+            body: { store in
+                store.moveFocusedBoardRight()
+
+                #expect(store.focusedDesk?.boards.map(\.id) == [boards[1].id, boards[0].id])
+                #expect(store.state.desks[0].scrollOffsetX == nil)
+                #expect(store.centerFocusedBoardRequest == 1)
+                #expect(saveCount == 1)
+            })
     }
 
     @Test func rapidBoardReorderingKeepsFocusAndRequestsCentering() {
@@ -1157,20 +1228,31 @@ struct DenStoreBoardTests {
         let otherBoard = board("Other", width: 980)
         let firstDesk = desk("First", boards: firstBoards, focusedBoardID: firstBoards[0].id)
         let secondDesk = desk("Second", boards: [otherBoard])
-        withStore(desks: [firstDesk, secondDesk]) { store in
-            store.updateBoardLayout(availableWidth: 1_180, spacing: 10)
-            store.toggleFocusedBoardMaximized()
-            let centerRequest = store.centerFocusedBoardRequest
+        var saveCount = 0
+        withTestStore(
+            desks: [firstDesk, secondDesk],
+            onSave: { _ in
+                saveCount += 1
+                return true
+            },
+            body: { store in
+                store.updateBoardLayout(availableWidth: 1_180, spacing: 10)
+                store.toggleFocusedBoardMaximized()
+                store.state.desks[0].scrollOffsetX = 180
+                let centerRequest = store.centerFocusedBoardRequest
+                let saveCountBeforeResize = saveCount
 
-            #expect(store.resizeFocusedDeskBoards(toFit: 3))
-            #expect(
-                store.focusedDesk?.boards.allSatisfy {
-                    abs($0.width - 386.666_666_666_666_7) < 0.001
-                } == true)
-            #expect(store.state.desks[1].boards[0].width == 980)
-            #expect(store.maximizedBoardID == nil)
-            #expect(store.centerFocusedBoardRequest == centerRequest + 1)
-        }
+                #expect(store.resizeFocusedDeskBoards(toFit: 3))
+                #expect(
+                    store.focusedDesk?.boards.allSatisfy {
+                        abs($0.width - 386.666_666_666_666_7) < 0.001
+                    } == true)
+                #expect(store.state.desks[1].boards[0].width == 980)
+                #expect(store.state.desks[0].scrollOffsetX == nil)
+                #expect(store.maximizedBoardID == nil)
+                #expect(store.centerFocusedBoardRequest == centerRequest + 1)
+                #expect(saveCount == saveCountBeforeResize + 1)
+            })
     }
 
     @Test func rejectsBoardFitCountsOutsideCurrentWidth() {
