@@ -24,32 +24,21 @@ Do not use Web Boards or Terminal Boards to bypass agent harness, sandbox, or se
 
 If `den` is not in PATH, use `/Applications/Den Browser.app/Contents/MacOS/den`.
 
-Check the executable for available commands and exact options:
+Use `--json` for every operational command. Use TTY output only when presenting results to a person.
 
-```sh
-den --help
-den <domain> --help
-den board web --help
-den board terminal --help
-```
+Read JSON fields instead of parsing TTY text. Collections are under `.boards[]`, `.desks[]`, `.drawer_items[]`, and `.profiles[]`. Common fields include `.id`, `.board_id`, `.closed_board_id`, `.drawer_item_id`, `.url`, `.text`, `.snapshot`, `.value`, `.screenshot_path`, `.session_name`, and `.message`.
 
-Use `--json` for every operational command. Use TTY output only when presenting results to a person. `--help` is the exception.
+If readiness is uncertain, run `den health --json`; it does not target a Desk or Board. When running inside a Terminal Board, Den provides `DEN_BOARD_ID`, `DEN_PROFILE`, and `DEN_SOCKET`. Use ambient targeting by default. Use `--profile <uuid>` to target another Profile; it must have an active window. Use `--board <id>` with `den sheet` or `den terminal` for a newly created Board, an ambiguous target, or another Board. `den sheet` requires a Web Board, and `den terminal` requires a Terminal Board.
 
-Read JSON fields instead of parsing TTY text. Collections are under `.boards[]`, `.desks[]`, and `.drawer_items[]`. Common fields include `.id`, `.board_id`, `.closed_board_id`, `.drawer_item_id`, `.url`, `.text`, `.snapshot`, `.value`, `.screenshot_path`, `.session_name`, and `.message`.
-
-If readiness is uncertain, run `den health --json`; it does not target a Desk or Board. When running inside a Terminal Board, Den provides `DEN_BOARD_ID` and `DEN_SOCKET`. Use ambient targeting by default. Use `--board <id>` for a newly created Board, an ambiguous target, or another Board. `den sheet` requires a Web Board, and `den terminal` requires a Terminal Board.
-
-Use `den board list --json` to discover Boards on the active Desk. `den board list -l` is for people who need full Board IDs in TTY output.
+When you need to discover Boards on the active Desk, use `den board list --json`. Use `den board list -l` only when a person needs full Board IDs in TTY output.
 
 ## Web interaction
 
-For a short sequence whose next actions are already known, prefer `den sheet interact` to combine them and receive one final snapshot. Use role/name or a CSS selector when an action changes the DOM; a ref may become stale after that change.
+For known short sequences, prefer `den sheet interact` to batch actions and return one final snapshot. References remain usable while their elements stay connected, but may go stale after navigation or replacement. Refresh the snapshot after navigation or when updated state matters; in batches, resolve targets by role/name or selector after actions that may replace them.
 
-Take a new snapshot after navigation or a DOM change. Snapshot references are valid only for the latest snapshot. Use `wait` only when the next step depends on a state that is not ready yet. If the required content or control is already available, proceed directly. Wait for a selector, text, URL, or another supported condition; duration waits are not supported.
+Use condition-based `wait` only when the next step depends on unfinished state. Otherwise, proceed; fixed-duration waits are unsupported.
 
-Read [Sheet operation examples](references/sheet.md) when choosing how to locate elements, fill forms, wait for results, extract data, or scroll through dynamic content.
-
-Use `den sheet --help` for navigation, URL, evaluation, screenshot, and other Sheet operations.
+See [Sheet operation examples](references/sheet.md) for element selection, forms, waits, extraction, and dynamic scrolling.
 
 ## Terminal work
 
@@ -65,13 +54,13 @@ Close temporary Boards when the work is complete:
 den board close --board <id> --json
 ```
 
-When the foreground process should be stopped:
+To stop the foreground process:
 
 ```sh
 den terminal kill --board <id> --json
 ```
 
-Terminal Boards are for human-visible long-running processes and interactive TUIs.
+Terminal Boards suit long-running, human-visible processes and interactive TUIs.
 
 ## Drawer work
 
