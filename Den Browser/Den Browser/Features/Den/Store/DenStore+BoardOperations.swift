@@ -10,7 +10,7 @@ extension DenStore {
         }
         dismissDeskFilter()
         isDenMode = false
-        if changedDesk { save() }
+        if changedDesk { saveFocus() }
     }
 
     func focusBoard(_ boardID: UUID, exitsDenMode: Bool = false) {
@@ -34,7 +34,7 @@ extension DenStore {
         if exitsDenMode {
             isDenMode = false
         }
-        save()
+        saveFocus()
     }
 
     func focusPreviousDesk() {
@@ -264,7 +264,7 @@ extension DenStore {
         let nextIndex = wrappedIndex(currentIndex + delta, count: state.desks.count)
         let targetDeskID = state.desks[nextIndex].id
         guard setFocusedDesk(targetDeskID) else { return }
-        save()
+        saveFocus()
     }
 
     private func moveBoardFocus(by delta: Int) {
@@ -283,7 +283,7 @@ extension DenStore {
         state.desks[deskIndex].focusedBoardID = boardID
         markNotificationsRead(for: boardID)
         guard changesFocus else { return }
-        save()
+        saveFocus()
     }
 
     private func moveFocusedBoard(by delta: Int) {

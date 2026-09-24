@@ -356,6 +356,10 @@ private struct DenCommands: Commands {
 private final class DenApplicationDelegate: NSObject, NSApplicationDelegate {
     var profileManager: ProfileManager?
 
+    func applicationWillTerminate(_ notification: Notification) {
+        profileManager?.flushPendingFocusSaves()
+    }
+
     func applicationDockMenu(_ sender: NSApplication) -> NSMenu? {
         let menu = NSMenu()
         let privateDenItem = NSMenuItem(

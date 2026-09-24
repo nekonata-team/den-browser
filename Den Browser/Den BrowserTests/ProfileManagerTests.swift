@@ -575,6 +575,181 @@ struct ProfileManagerTests {
         #expect(restoredStore.recentItems == [.url(url)])
     }
 
+    @Test func focusSaveWaitsUntilFocusHasBeenQuietFor300Milliseconds() async throws {
+        // Arrange
+        let directory = temporaryProfileDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let manager = makeProfileManager(directory: directory)
+        let store = try #require(manager.store(for: manager.personalProfileID))
+        let firstDeskID = try #require(store.state.desks.first?.id)
+        store.createDesk(label: "Second", preset: .empty)
+        let secondDeskID = try #require(store.state.desks.last?.id)
+        let writesBefore = manager.profileSaveCount
+
+        // Act
+        store.focusDesk(firstDeskID)
+        try await Task.sleep(for: .milliseconds(200))
+        store.focusDesk(secondDeskID)
+        #expect(manager.profileSaveCount == writesBefore)
+        try await Task.sleep(for: .milliseconds(200))
+        #expect(manager.profileSaveCount == writesBefore)
+        try await Task.sleep(for: .milliseconds(200))
+
+        // Assert
+        #expect(manager.profileSaveCount == writesBefore + 1)
+        let restored = makeProfileManager(directory: directory)
+        #expect(restored.store(for: manager.personalProfileID)?.state.focusedDeskID == secondDeskID)
+    }
+
+    @Test func successfulImmediateSaveCancelsPendingFocusSave() async throws {
+        // Arrange
+        let directory = temporaryProfileDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let manager = makeProfileManager(directory: directory)
+        let store = try #require(manager.store(for: manager.personalProfileID))
+        let firstDeskID = try #require(store.state.desks.first?.id)
+        store.createDesk(label: "Second", preset: .empty)
+        let writesBefore = manager.profileSaveCount
+
+        // Act
+        store.focusDesk(firstDeskID)
+        #expect(store.saveDeskPresets())
+        try await Task.sleep(for: .milliseconds(350))
+
+        // Assert
+        #expect(manager.profileSaveCount == writesBefore + 1)
+        let restored = makeProfileManager(directory: directory)
+        #expect(restored.store(for: manager.personalProfileID)?.state.focusedDeskID == firstDeskID)
+    }
+
+    @Test func flushPendingFocusSavesWritesBeforeReturning() throws {
+        // Arrange
+        let directory = temporaryProfileDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let manager = makeProfileManager(directory: directory)
+        let store = try #require(manager.store(for: manager.personalProfileID))
+        let firstDeskID = try #require(store.state.desks.first?.id)
+        store.createDesk(label: "Second", preset: .empty)
+        let writesBefore = manager.profileSaveCount
+
+        // Act
+        store.focusDesk(firstDeskID)
+        manager.flushPendingFocusSaves()
+
+        // Assert
+        #expect(manager.profileSaveCount == writesBefore + 1)
+        let restored = makeProfileManager(directory: directory)
+        #expect(restored.store(for: manager.personalProfileID)?.state.focusedDeskID == firstDeskID)
+    }
+
+    @Test func flushDuringBoardDragWritesTheLastStableProfileSnapshot() throws {
+        // Arrange
+        let directory = temporaryProfileDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let manager = makeProfileManager(directory: directory)
+        let profileID = manager.personalProfileID
+        let store = try #require(manager.store(for: profileID))
+        let firstBoard = board("First")
+        let secondBoard = board("Second")
+        let deskState = desk("Main", boards: [firstBoard, secondBoard], focusedBoardID: firstBoard.id)
+        store.state = DenState(desks: [deskState], focusedDeskID: deskState.id)
+        #expect(store.save())
+        let writesBefore = manager.profileSaveCount
+
+        // Act
+        store.focusBoard(secondBoard.id)
+        #expect(store.beginBoardDrag(firstBoard.id))
+        store.previewBoardMove(secondBoard.id, to: 0)
+        manager.flushPendingFocusSaves()
+
+        // Assert
+        #expect(manager.profileSaveCount == writesBefore + 1)
+        let restored = try #require(makeProfileManager(directory: directory).store(for: profileID))
+        #expect(restored.focusedDesk?.focusedBoardID == secondBoard.id)
+        #expect(restored.focusedDesk?.boards.map(\.id) == [firstBoard.id, secondBoard.id])
+    }
+
+    @Test func immediatePresetSaveDuringBoardDragKeepsStableDeskOrder() throws {
+        // Arrange
+        let directory = temporaryProfileDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let manager = makeProfileManager(directory: directory)
+        let profileID = manager.personalProfileID
+        let store = try #require(manager.store(for: profileID))
+        let firstBoard = board("First")
+        let secondBoard = board("Second")
+        let deskState = desk("Main", boards: [firstBoard, secondBoard], focusedBoardID: firstBoard.id)
+        store.state = DenState(desks: [deskState], focusedDeskID: deskState.id)
+        #expect(store.save())
+
+        // Act
+        store.focusBoard(secondBoard.id)
+        #expect(store.beginBoardDrag(firstBoard.id))
+        store.previewBoardMove(secondBoard.id, to: 0)
+        #expect(store.saveDeskPresets())
+
+        // Assert
+        let restored = try #require(makeProfileManager(directory: directory).store(for: profileID))
+        #expect(restored.focusedDesk?.focusedBoardID == secondBoard.id)
+        #expect(restored.focusedDesk?.boards.map(\.id) == [firstBoard.id, secondBoard.id])
+    }
+
+    @Test func expiredFocusSaveWaitsForOverviewDragCancellation() async throws {
+        // Arrange
+        let directory = temporaryProfileDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let manager = makeProfileManager(directory: directory)
+        let profileID = manager.personalProfileID
+        let store = try #require(manager.store(for: profileID))
+        let firstBoard = board("First")
+        let secondBoard = board("Second")
+        let deskState = desk("Main", boards: [firstBoard, secondBoard], focusedBoardID: firstBoard.id)
+        store.state = DenState(desks: [deskState], focusedDeskID: deskState.id)
+        #expect(store.save())
+        let writesBefore = manager.profileSaveCount
+
+        // Act
+        store.focusBoard(secondBoard.id)
+        store.showOverview()
+        #expect(store.beginOverviewBoardDrag(firstBoard.id))
+        try await Task.sleep(for: .milliseconds(450))
+        #expect(manager.profileSaveCount == writesBefore)
+        store.cancelOverviewBoardDrag()
+        try await Task.sleep(for: .milliseconds(450))
+
+        // Assert
+        #expect(manager.profileSaveCount == writesBefore + 1)
+        let restored = try #require(makeProfileManager(directory: directory).store(for: profileID))
+        #expect(restored.focusedDesk?.focusedBoardID == secondBoard.id)
+    }
+
+    @Test func failedImmediateSaveKeepsPendingFocusSave() async throws {
+        // Arrange
+        let directory = temporaryProfileDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let manager = makeProfileManager(directory: directory)
+        let profileID = manager.personalProfileID
+        let store = try #require(manager.store(for: profileID))
+        let firstDeskID = try #require(store.state.desks.first?.id)
+        store.createDesk(label: "Second", preset: .empty)
+        let writesBefore = manager.profileSaveCount
+        let profileURL = directory.appending(path: "\(profileID.uuidString.lowercased()).json")
+        try FileManager.default.removeItem(at: profileURL)
+        try FileManager.default.createDirectory(at: profileURL, withIntermediateDirectories: false)
+
+        // Act
+        store.focusDesk(firstDeskID)
+        #expect(!store.saveDeskPresets())
+        #expect(manager.errorMessage != nil)
+        try FileManager.default.removeItem(at: profileURL)
+        try await Task.sleep(for: .milliseconds(350))
+
+        // Assert
+        #expect(manager.profileSaveCount == writesBefore + 2)
+        let restored = makeProfileManager(directory: directory)
+        #expect(restored.store(for: profileID)?.state.focusedDeskID == firstDeskID)
+    }
+
     @Test func multipleWindowsRetainSharedRuntimesWhenNonFinalWindowCloses() throws {
         // Arrange
         let directory = temporaryProfileDirectory()

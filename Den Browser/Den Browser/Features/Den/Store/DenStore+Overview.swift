@@ -92,6 +92,8 @@ extension DenStore {
             return
         }
 
+        let previousFocusedDeskID = state.focusedDeskID
+        let previousFocusedBoardID = state.desks[deskIndex].focusedBoardID
         if let boardID = selection.boardID,
             state.desks[deskIndex].boards.contains(where: { $0.id == boardID })
         {
@@ -108,7 +110,11 @@ extension DenStore {
         }
         isDenMode = false
         hideOverview()
-        save()
+        if state.focusedDeskID != previousFocusedDeskID
+            || state.desks[deskIndex].focusedBoardID != previousFocusedBoardID
+        {
+            saveFocus()
+        }
     }
 
     func selectBoardInOverview(_ boardID: UUID) {

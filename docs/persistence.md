@@ -104,6 +104,8 @@ silently replaced. If a confirmed-invalid file cannot be quarantined, recovery d
 ## Persistence failure and recovery contract
 
 - Profile document saves use atomic file writes.
+- Focus changes are coalesced per Profile and saved 300 ms after the latest focus change. Successful immediate Profile document saves include the latest Den state and cancel its pending focus save; failed writes leave the pending focus save scheduled.
+- Normal app termination synchronously flushes pending focus saves, using the last stable Profile snapshot if a Board drag is active. An abrupt termination before focus has been quiet for 300 ms can lose the latest focus state; continuous focus changes can keep it unsaved for longer than 300 ms from the first change.
 - `ProfileManager` maintains the latest intended `PersistedProfile` document in memory (`persistedProfiles`).
 - If writing a document to disk fails, `ProfileManager` reports the error and returns `false` without rolling back its in-memory document cache. This guarantees that subsequent saves of another collection (such as Recent Items or Desk Presets) do not overwrite the file with an outdated `DenState`.
 - Operations with irreversible runtime side effects (such as closing a live Board) retain the latest intended state in UI and cache; they are not artificially rewound, allowing subsequent writes to persist the intended state.
