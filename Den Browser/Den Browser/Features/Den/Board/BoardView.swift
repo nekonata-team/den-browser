@@ -92,7 +92,7 @@ struct BoardView: View {
     }
 
     private var initialLoadFallback: some View {
-        DenSurfaceColors.webViewFallbackBackground.color
+        DenSurfaceColors.standardBackgroundColor
             .accessibilityHidden(true)
             .allowsHitTesting(false)
     }

@@ -10,17 +10,17 @@ struct DenBackground: View {
         let backgroundColors =
             if isPrivateDen {
                 isDenMode
-                    ? DenSurfaceColors.privateDenModeBackground
-                    : DenSurfaceColors.privateDenBackground
+                    ? DenSurfaceColors.privateDenModeBackgroundGradientColors
+                    : DenSurfaceColors.privateDenBackgroundGradientColors
             } else {
                 isDenMode
-                    ? DenSurfaceColors.denModeBackground
-                    : DenSurfaceColors.standardBackground
+                    ? DenSurfaceColors.denModeBackgroundGradientColors
+                    : DenSurfaceColors.standardBackgroundGradientColors
             }
         let accentColor = profileColor
 
         LinearGradient(
-            colors: backgroundColors.map(\.color),
+            colors: backgroundColors,
             startPoint: .topLeading,
             endPoint: .bottomTrailing
         )

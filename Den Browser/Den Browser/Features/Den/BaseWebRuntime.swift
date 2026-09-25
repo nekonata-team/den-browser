@@ -89,13 +89,6 @@ class BaseWebRuntime: NSObject, NSWindowDelegate, WKDownloadDelegate, WKNavigati
             webView = makeWebView?(configuration) ?? WKWebView(frame: .zero, configuration: configuration)
         }
         self.webView = webView
-        let fallbackColor = DenSurfaceColors.webViewFallbackBackground
-        webView.underPageBackgroundColor = NSColor(
-            calibratedRed: fallbackColor.red,
-            green: fallbackColor.green,
-            blue: fallbackColor.blue,
-            alpha: 1
-        )
         webView.customUserAgent = Self.defaultUserAgent
         if existingWebView == nil {
             webView.pageZoom = CGFloat(sheetScale) / 100
