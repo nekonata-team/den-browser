@@ -215,6 +215,52 @@ struct InspectionBoardCapabilityTests {
         #expect(!snapshot.isPicking)
     }
 
+    @Test func domTreeReturnsSelectedAncestorPathAndLoadsChildrenOnDemand() async throws {
+        // Arrange
+        let (webView, window, probe) = fixture()
+        defer { window.close() }
+        await probe.load(
+            """
+            <!doctype html><html><body>
+              <main id="main"><section aria-label="Group">
+                <button id="target" data-kind="action">Choose</button>
+                <span id="sibling">Other</span>
+              </section></main>
+            </body></html>
+            """,
+            in: webView
+        )
+
+        // Act
+        _ = try await webView.evaluateJavaScript(InspectionPageScript.startPicking)
+        _ = try await webView.evaluateJavaScript(
+            "document.querySelector('#target').dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }))"
+        )
+        let json = try #require(try await webView.evaluateJavaScript(InspectionPageScript.readSnapshot) as? String)
+        let snapshot = try JSONDecoder().decode(InspectionPageSnapshot.self, from: Data(json.utf8))
+        let section = try #require(snapshot.treePath.first(where: { $0.tag == "section" }))
+        let button = try #require(snapshot.treePath.last)
+        let childrenJSON = try #require(
+            try await webView.evaluateJavaScript(InspectionPageScript.readChildren(section.id)) as? String)
+        let children = try JSONDecoder().decode([InspectionDOMNode].self, from: Data(childrenJSON.utf8))
+        _ = try await webView.evaluateJavaScript(InspectionPageScript.selectNode(children[1].id))
+        let selectedJSON = try #require(
+            try await webView.evaluateJavaScript(InspectionPageScript.readSnapshot) as? String)
+        let selectedSnapshot = try JSONDecoder().decode(InspectionPageSnapshot.self, from: Data(selectedJSON.utf8))
+        _ = try await webView.evaluateJavaScript(InspectionPageScript.highlightNode(button.id))
+        let highlightExists =
+            try await webView.evaluateJavaScript(
+                "!!document.querySelector('[data-den-inspection-highlight]')") as? Bool
+
+        // Assert
+        #expect(snapshot.treePath.map(\.tag) == ["html", "body", "main", "section", "button"])
+        #expect(button.attributes.contains { $0.name == "data-kind" && $0.value == "action" })
+        #expect(section.childCount == 2)
+        #expect(children.map(\.tag) == ["button", "span"])
+        #expect(selectedSnapshot.selection?.id == "sibling")
+        #expect(highlightExists == true)
+    }
+
     @Test func hoverHighlightIsRemovedOnSelectionStopAndNavigation() async throws {
         // Arrange
         let (webView, window, probe) = fixture()

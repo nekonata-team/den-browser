@@ -3,9 +3,24 @@ import Foundation
 struct InspectionPageSnapshot: Decodable, Equatable {
     var isPicking: Bool
     var selection: InspectionElementSummary?
+    var treePath: [InspectionDOMNode]
     var events: [InspectionConsoleEvent]
 
-    static let empty = InspectionPageSnapshot(isPicking: false, selection: nil, events: [])
+    static let empty = InspectionPageSnapshot(isPicking: false, selection: nil, treePath: [], events: [])
+}
+
+struct InspectionDOMNode: Decodable, Equatable, Identifiable {
+    var id: String
+    var tag: String
+    var attributes: [InspectionDOMAttribute]
+    var text: String
+    var childCount: Int
+}
+
+struct InspectionDOMAttribute: Decodable, Equatable, Identifiable {
+    var name: String
+    var value: String
+    var id: String { name }
 }
 
 struct InspectionElementSummary: Decodable, Equatable {
@@ -38,8 +53,25 @@ enum InspectionPageScript {
 
     static let readSnapshot = #"""
         window.__denInspection?.readSnapshot()
-          ?? JSON.stringify({ isPicking: false, selection: null, events: [] })
+          ?? JSON.stringify({ isPicking: false, selection: null, treePath: [], events: [] })
         """#
+
+    static func readChildren(_ id: String) -> String {
+        guard id.hasPrefix("n"), let number = Int(id.dropFirst()) else { return "[]" }
+        return "window.__denInspection?.readChildren('n\(number)') ?? '[]'"
+    }
+
+    static func selectNode(_ id: String) -> String {
+        guard id.hasPrefix("n"), let number = Int(id.dropFirst()) else { return "false" }
+        return "window.__denInspection?.selectNode('n\(number)') ?? false"
+    }
+
+    static func highlightNode(_ id: String?) -> String {
+        guard let id, id.hasPrefix("n"), let number = Int(id.dropFirst()) else {
+            return "window.__denInspection?.clearHighlight()"
+        }
+        return "window.__denInspection?.highlightNode('n\(number)')"
+    }
 
     static let stop = #"window.__denInspection?.stop()"#
 }

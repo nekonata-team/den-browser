@@ -367,6 +367,24 @@ final class BoardRuntime: BaseWebRuntime, ObservableObject {
         return snapshot
     }
 
+    func readInspectionChildren(for nodeID: String) async -> [InspectionDOMNode] {
+        guard isInspectionActive,
+            let json = try? await webView.evaluateJavaScript(InspectionPageScript.readChildren(nodeID)) as? String,
+            let data = json.data(using: .utf8)
+        else { return [] }
+        return (try? JSONDecoder().decode([InspectionDOMNode].self, from: data)) ?? []
+    }
+
+    func selectInspectionNode(_ nodeID: String) {
+        guard isInspectionActive else { return }
+        webView.evaluateJavaScript(InspectionPageScript.selectNode(nodeID))
+    }
+
+    func highlightInspectionNode(_ nodeID: String?) {
+        guard isInspectionActive else { return }
+        webView.evaluateJavaScript(InspectionPageScript.highlightNode(nodeID))
+    }
+
     override func webView(_ webView: WKWebView, didCommit navigation: WKNavigation!) {
         PerformanceTrace.mark("BoardRuntime.didCommit navigation (\(id.uuidString.prefix(8)))", category: "Board")
         traceWebProcessIdentifier()

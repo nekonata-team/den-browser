@@ -12,6 +12,16 @@ type InspectionPageSelection = {
   ancestors: string[];
 };
 
+type InspectionDOMAttribute = { name: string; value: string };
+
+type InspectionDOMNode = {
+  id: string;
+  tag: string;
+  attributes: InspectionDOMAttribute[];
+  text: string;
+  childCount: number;
+};
+
 type InspectionConsoleEvent = {
   id: string;
   time: string;
@@ -29,6 +39,10 @@ type InspectionPageState = {
   active: boolean;
   picking: boolean;
   selection: InspectionPageSelection | null;
+  selectedElement: Element | null;
+  nodeIDs: WeakMap<Element, string>;
+  elements: Map<string, Element>;
+  nextNodeID: number;
   events: InspectionConsoleEvent[];
   previousCursor: string;
   consoleHooks: Partial<Record<InspectionConsoleLevel, InspectionConsoleHook>>;
@@ -51,6 +65,10 @@ type InspectionPageState = {
   repositionHighlight: () => void;
   startPicking: () => void;
   readSnapshot: () => string;
+  readChildren: (id: string) => string;
+  selectNode: (id: string) => boolean;
+  highlightNode: (id: string) => boolean;
+  clearHighlight: () => void;
   stop: () => void;
 };
 
@@ -67,6 +85,10 @@ interface Window {
       active: true,
       picking: false,
       selection: null,
+      selectedElement: null,
+      nodeIDs: new WeakMap(),
+      elements: new Map(),
+      nextNodeID: 0,
       events: [],
       previousCursor: "",
       consoleHooks: {},
@@ -81,6 +103,10 @@ interface Window {
       repositionHighlight: () => {},
       startPicking: () => {},
       readSnapshot: () => "",
+      readChildren: () => "[]",
+      selectNode: () => false,
+      highlightNode: () => false,
+      clearHighlight: () => {},
       stop: () => {},
     };
   if (state !== previousState) {
@@ -111,6 +137,8 @@ interface Window {
         state.consoleHooks[level] = hook;
         console[level] = hook.wrapped;
       }
+      window.addEventListener("error", state.listeners.error!);
+      window.addEventListener("unhandledrejection", state.listeners.rejection!);
       document.addEventListener("pointermove", state.listeners.pointermove!, true);
       document.addEventListener("scroll", state.listeners.reposition!, true);
       window.addEventListener("resize", state.listeners.reposition!);
@@ -186,6 +214,32 @@ interface Window {
       document.documentElement.style.cursor = state.previousCursor;
     };
     const textOf = (element: Element) => (element.textContent || "").replace(/\s+/g, " ").trim().slice(0, 240);
+    const idOf = (element: Element) => {
+      let id = state.nodeIDs.get(element);
+      if (!id) {
+        id = `n${++state.nextNodeID}`;
+        state.nodeIDs.set(element, id);
+      }
+      state.elements.set(id, element);
+      return id;
+    };
+    const domNode = (element: Element): InspectionDOMNode => ({
+      id: idOf(element),
+      tag: element.tagName.toLowerCase(),
+      attributes: Array.from(element.attributes).slice(0, 16).map(attribute => ({
+        name: attribute.name,
+        value: attribute.value.slice(0, 160),
+      })),
+      text: element.children.length === 0 ? textOf(element) : "",
+      childCount: element.children.length,
+    });
+    const selectedPath = () => {
+      const selected = state.selectedElement;
+      if (!selected?.isConnected) return [];
+      const path: Element[] = [];
+      for (let element: Element | null = selected; element; element = element.parentElement) path.push(element);
+      return path.reverse().map(domNode);
+    };
     const describe = (element: Element): InspectionPageSelection => {
       const id = element.id || "";
       const labelledBy = (element.getAttribute("aria-labelledby") || "").split(/\s+/).filter(Boolean);
@@ -223,6 +277,8 @@ interface Window {
       event.stopPropagation();
       event.stopImmediatePropagation();
       state.selection = describe(element);
+      state.selectedElement = element;
+      idOf(element);
       state.picking = false;
       state.removeHighlight();
       document.documentElement.style.cursor = state.previousCursor;
@@ -238,13 +294,39 @@ interface Window {
     state.readSnapshot = () => JSON.stringify({
       isPicking: state.picking,
       selection: state.selection,
+      treePath: selectedPath(),
       events: state.events.slice(-80),
     });
+    state.readChildren = id => {
+      const element = state.elements.get(id);
+      return JSON.stringify(element ? Array.from(element.children).map(domNode) : []);
+    };
+    state.selectNode = id => {
+      const element = state.elements.get(id);
+      if (!element) return false;
+      state.selection = describe(element);
+      state.selectedElement = element;
+      state.picking = false;
+      state.removeHighlight();
+      document.documentElement.style.cursor = state.previousCursor;
+      return true;
+    };
+    state.highlightNode = id => {
+      const element = state.elements.get(id);
+      if (!element) return false;
+      state.showHighlight(element);
+      return true;
+    };
+    state.clearHighlight = () => state.removeHighlight();
     state.stop = () => {
       state.active = false;
       state.picking = false;
       state.selection = null;
+      state.selectedElement = null;
       state.events.length = 0;
+      state.nodeIDs = new WeakMap();
+      state.elements.clear();
+      state.nextNodeID = 0;
       state.uninstall();
       state.pointer = null;
       document.documentElement.style.cursor = state.previousCursor;

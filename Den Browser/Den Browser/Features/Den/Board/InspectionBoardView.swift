@@ -19,6 +19,9 @@ struct InspectionBoardView: View {
     let onDragEnded: (DragGesture.Value) -> Void
 
     @State private var snapshot = InspectionPageSnapshot.empty
+    @State private var expandedNodeIDs: Set<String> = []
+    @State private var loadedChildren: [String: [InspectionDOMNode]] = [:]
+    @State private var loadingNodeIDs: Set<String> = []
     @Environment(\.accessibilityDifferentiateWithoutColor) private var differentiateWithoutColor
 
     private var targetBoard: BoardState? { store.board(for: targetBoardID) }
@@ -56,6 +59,15 @@ struct InspectionBoardView: View {
                 try? await Task.sleep(for: .milliseconds(250))
             }
         }
+        .onChange(of: snapshot.treePath.map(\.id)) { _, path in
+            if path.isEmpty {
+                expandedNodeIDs.removeAll()
+                loadedChildren.removeAll()
+                loadingNodeIDs.removeAll()
+                return
+            }
+            expandedNodeIDs.formUnion(path.dropLast())
+        }
     }
 
     private var header: some View {
@@ -75,11 +87,12 @@ struct InspectionBoardView: View {
                 onMoveRight: {
                     store.focusBoard(board.id)
                     store.moveFocusedBoardRight()
+                },
+                leadingContent: {
+                    Image(systemSymbol: .magnifyingglass)
+                        .foregroundStyle(profileColor)
                 }
-            ) {
-                Image(systemSymbol: .magnifyingglass)
-                    .foregroundStyle(profileColor)
-            }
+            )
 
             Button(action: onRemove) {
                 Image(systemSymbol: .xmark)
@@ -126,10 +139,10 @@ struct InspectionBoardView: View {
                     .accessibilityHint("Choose an element in the target Web Board's Current Sheet")
 
                     if targetRuntime?.isInspectionActive == true {
-                        Button(action: {
+                        Button {
                             targetRuntime?.stopInspection()
                             snapshot = .empty
-                        }) {
+                        } label: {
                             Label("Stop", systemSymbol: .stopCircle)
                         }
                         .buttonStyle(.borderless)
@@ -147,6 +160,8 @@ struct InspectionBoardView: View {
 
                 ScrollView {
                     VStack(alignment: .leading, spacing: 12) {
+                        domTree
+                        Divider()
                         selectionDetails
                         consoleDetails
                     }
@@ -156,9 +171,70 @@ struct InspectionBoardView: View {
         } else {
             ContentUnavailableView(
                 "Target Web Board Unavailable",
-                systemImage: "globe.badge.chevron.backward",
+                systemSymbol: .globe,
                 description: Text("The linked Web Board or its Current Sheet is not available.")
             )
+        }
+    }
+
+    private var domTree: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text("DOM").font(.headline)
+            if let root = snapshot.treePath.first {
+                domNodeBranch(root, depth: 0)
+            } else {
+                Text("Pick an element to show its path in the page DOM.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .accessibilityIdentifier("inspection-dom-tree")
+    }
+
+    private func domNodeBranch(_ node: InspectionDOMNode, depth: Int) -> InspectionDOMBranch {
+        InspectionDOMBranch(
+            node: node,
+            depth: depth,
+            isExpanded: expandedNodeIDs.contains(node.id),
+            isLoading: loadingNodeIDs.contains(node.id),
+            isSelected: node.id == snapshot.treePath.last?.id,
+            profileColor: profileColor,
+            children: children(for: node),
+            hasMoreChildren: children(for: node).count < node.childCount,
+            label: InspectionDOMSyntaxLabel(node: node),
+            makeBranch: { child, childDepth in domNodeBranch(child, depth: childDepth) },
+            onToggle: { toggleDOMNode(node) },
+            onSelect: { targetRuntime?.selectInspectionNode(node.id) },
+            onHover: { targetRuntime?.highlightInspectionNode($0 ? node.id : nil) }
+        )
+    }
+
+    private func children(for node: InspectionDOMNode) -> [InspectionDOMNode] {
+        if let loaded = loadedChildren[node.id] { return loaded }
+        guard let index = snapshot.treePath.firstIndex(where: { $0.id == node.id }),
+            snapshot.treePath.indices.contains(index + 1)
+        else { return [] }
+        return [snapshot.treePath[index + 1]]
+    }
+
+    private func toggleDOMNode(_ node: InspectionDOMNode) {
+        if expandedNodeIDs.contains(node.id),
+            loadedChildren[node.id] != nil || children(for: node).count >= node.childCount
+        {
+            expandedNodeIDs.remove(node.id)
+            return
+        }
+        expandedNodeIDs.insert(node.id)
+        guard loadedChildren[node.id] == nil, !loadingNodeIDs.contains(node.id) else { return }
+        loadingNodeIDs.insert(node.id)
+        Task {
+            let children = await targetRuntime?.readInspectionChildren(for: node.id) ?? []
+            guard targetRuntime?.isInspectionActive == true else {
+                loadingNodeIDs.remove(node.id)
+                return
+            }
+            if !children.isEmpty { loadedChildren[node.id] = children }
+            loadingNodeIDs.remove(node.id)
         }
     }
 
@@ -229,6 +305,109 @@ struct InspectionBoardView: View {
         VStack(alignment: .leading, spacing: 2) {
             Text(title).font(.caption.weight(.semibold))
             Text(value).font(.system(.caption, design: .monospaced)).textSelection(.enabled)
+        }
+    }
+}
+
+private struct InspectionDOMBranch: View {
+    let node: InspectionDOMNode
+    let depth: Int
+    let isExpanded: Bool
+    let isLoading: Bool
+    let isSelected: Bool
+    let profileColor: Color
+    let children: [InspectionDOMNode]
+    let hasMoreChildren: Bool
+    let label: InspectionDOMSyntaxLabel
+    let makeBranch: (InspectionDOMNode, Int) -> InspectionDOMBranch
+    let onToggle: () -> Void
+    let onSelect: () -> Void
+    let onHover: (Bool) -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 3) {
+            HStack(spacing: 4) {
+                Button(action: onToggle) {
+                    Image(systemSymbol: disclosureSymbol)
+                        .font(.system(size: 9, weight: .semibold))
+                        .foregroundStyle(.secondary)
+                        .frame(width: 12, height: 16)
+                }
+                .buttonStyle(.plain)
+                .disabled(node.childCount == 0)
+                .accessibilityLabel(disclosureLabel)
+                Button(action: onSelect) {
+                    label
+                        .font(.system(.caption2, design: .monospaced))
+                        .lineLimit(1)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("\(node.tag) DOM element")
+                .accessibilityIdentifier("inspection-dom-node-\(node.id)")
+                .padding(.horizontal, 4)
+                .background(isSelected ? profileColor.opacity(0.2) : .clear)
+                .clipShape(RoundedRectangle(cornerRadius: 3))
+                .overlay {
+                    if isSelected {
+                        RoundedRectangle(cornerRadius: 3).stroke(profileColor.opacity(0.6), lineWidth: 1)
+                    }
+                }
+                .onHover(perform: onHover)
+                Spacer(minLength: 0)
+            }
+            .padding(.leading, CGFloat(depth) * 12)
+
+            if isExpanded {
+                if isLoading {
+                    ProgressView().controlSize(.small).padding(.leading, CGFloat(depth + 1) * 12)
+                }
+                ForEach(children) { child in
+                    makeBranch(child, depth + 1)
+                }
+            }
+        }
+    }
+
+    private var disclosureSymbol: SFSymbol {
+        if node.childCount == 0 { return .chevronRight }
+        if isLoading { return .ellipsis }
+        if isExpanded && hasMoreChildren { return .plus }
+        return isExpanded ? .chevronDown : .chevronRight
+    }
+
+    private var disclosureLabel: String {
+        if isExpanded && hasMoreChildren { return "Load remaining child elements" }
+        return isExpanded ? "Collapse child elements" : "Expand child elements"
+    }
+}
+
+private struct InspectionDOMSyntaxLabel: View {
+    let node: InspectionDOMNode
+
+    var body: some View {
+        HStack(spacing: 0) {
+            Text("<").foregroundStyle(.secondary)
+            Text(node.tag).foregroundStyle(.orange)
+            ForEach(node.attributes) { attribute in
+                Text(" ").foregroundStyle(.secondary)
+                Text(attribute.name).foregroundStyle(.blue)
+                Text("=\"").foregroundStyle(.secondary)
+                Text(attribute.value).foregroundStyle(.green)
+                Text("\"").foregroundStyle(.secondary)
+            }
+            if node.childCount == 0 {
+                if node.text.isEmpty {
+                    Text(" />").foregroundStyle(.secondary)
+                } else {
+                    Text(">").foregroundStyle(.secondary)
+                    Text(node.text).foregroundStyle(.primary.opacity(0.75))
+                    Text("</\(node.tag)>").foregroundStyle(.orange)
+                }
+            } else {
+                Text(">").foregroundStyle(.secondary)
+            }
         }
     }
 }
