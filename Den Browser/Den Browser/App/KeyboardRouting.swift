@@ -1,91 +1,4 @@
-import AppKit
 import Foundation
-
-struct KeyEvent {
-    let character: String?
-    let baseCharacter: String?
-    let characters: String?
-    let key: ShortcutKey?
-    let modifiers: ShortcutModifiers
-    let isRepeat: Bool
-    let hasMarkedText: Bool
-    let isEscape: Bool
-
-    var binding: ShortcutBinding? {
-        guard let key else { return nil }
-        return ShortcutBinding(key: key, modifiers: modifiers)
-    }
-
-    init(_ event: NSEvent) {
-        character = event.charactersIgnoringModifiers
-        baseCharacter = event.characters(byApplyingModifiers: [])
-        characters = event.characters
-        key = ShortcutKey(event: event)
-        modifiers = ShortcutModifiers(event.modifierFlags)
-        isRepeat = event.isARepeat
-        hasMarkedText = TextInputComposition.isActive(in: event.window)
-        isEscape = event.keyCode == 53
-    }
-}
-
-struct InputContext {
-    let isFullscreenActive: Bool
-    let hasPendingConfirmation: Bool
-    let isDrawerOpen: Bool
-    let isBoardDragging: Bool
-    let isDeskDragging: Bool
-    let temporaryContext: TemporaryContext?
-    let isDenMode: Bool
-    let isDeskFilterPresented: Bool
-    let isDeskFilterInputActive: Bool
-    let isDrawerPreviewFirstResponder: Bool
-    let isDrawerFilterInputActive: Bool
-    let isDrawerFilterSelecting: Bool
-    let isOverviewFilterInputActive: Bool
-    let hasOverviewQuery: Bool
-    let isZmxSessionFilterInputActive: Bool
-    let hasZmxSessionQuery: Bool
-    let hasZmxSessionSelection: Bool
-    let isNotificationListPresented: Bool
-    let hasFocusedBoard: Bool
-    let isProfilePanelPresented: Bool
-
-    init(store: DenStore, event: NSEvent, isProfilePanelPresented: Bool = false) {
-        isFullscreenActive = store.isFullscreenActive
-        hasPendingConfirmation = store.hasPendingConfirmation
-        isDrawerOpen = store.isDrawerOpen
-        isBoardDragging = store.isBoardDragging
-        isDeskDragging = store.isDeskDragging
-        temporaryContext = store.temporaryContext
-        isDenMode = store.isDenMode
-        isDeskFilterPresented = store.isDeskFilterPresented
-        isDeskFilterInputActive = store.isDeskFilterInputActive
-        isDrawerPreviewFirstResponder = Self.isDrawerPreviewFirstResponder(event, store: store)
-        isDrawerFilterInputActive = store.isDrawerFilterInputActive
-        isDrawerFilterSelecting = store.isDrawerFilterSelecting
-        isOverviewFilterInputActive = store.isOverviewFilterInputActive
-        hasOverviewQuery = !store.overviewQuery.isEmpty
-        isZmxSessionFilterInputActive = store.zmxSessions.isFilterInputActive
-        hasZmxSessionQuery = !store.zmxSessions.query.isEmpty
-        hasZmxSessionSelection = store.zmxSessions.hasMarkedSessions
-        isNotificationListPresented = store.isNotificationListPresented
-        hasFocusedBoard = store.focusedBoard != nil
-        self.isProfilePanelPresented = isProfilePanelPresented
-    }
-
-    private static func isDrawerPreviewFirstResponder(_ event: NSEvent, store: DenStore) -> Bool {
-        guard
-            let webView = store.drawerPreviewRuntime?.webView,
-            var view = event.window?.firstResponder as? NSView
-        else { return false }
-
-        while view !== webView {
-            guard let superview = view.superview else { return false }
-            view = superview
-        }
-        return true
-    }
-}
 
 struct ShortcutConfiguration {
     let bindings: [ConfigurableShortcut: ShortcutBinding]
@@ -275,28 +188,22 @@ enum KeyboardRouter {
             return event.isRepeat ? .consume(.ignoredRepeat) : .perform(.toggleBoardActivity)
         }
 
-        if context.isDrawerOpen,
+        if case .drawer? = context.surface,
             let binding = event.binding,
             binding == shortcuts.bindings[.toggleDenMode]
         {
             return event.isRepeat ? .consume(.ignoredRepeat) : .perform(.toggleDenMode)
         }
 
-        if context.isNotificationListPresented {
-            if event.isEscape, modifiers == [] { return .perform(.closeNotifications) }
-            if modifiers == [] {
-                if event.key == .upArrow { return .perform(.moveNotificationSelection(-1)) }
-                if event.key == .downArrow { return .perform(.moveNotificationSelection(1)) }
-                if event.key == .returnKey { return .perform(.openSelectedNotification) }
-            }
-            return .consume(.exclusiveContext)
+        if case .notifications? = context.surface {
+            return routeNotifications(event)
         }
 
-        if context.isBoardDragging {
+        if case .board? = context.activeDrag {
             if event.isEscape, modifiers == [] { return .perform(.requestBoardDragCancellation) }
             return .consume(.dragging)
         }
-        if context.isDeskDragging {
+        if case .desk? = context.activeDrag {
             if event.isEscape, modifiers == [] { return .perform(.requestDeskDragCancellation) }
             return .consume(.dragging)
         }
@@ -307,7 +214,9 @@ enum KeyboardRouter {
             return .forward(.temporaryTextInput)
         }
 
-        switch context.temporaryContext {
+        switch context.surface {
+        case .notifications:
+            return routeNotifications(event)
         case .keyboardShortcuts:
             if (event.isEscape && modifiers == []) || isQuestionMark(event) {
                 return .perform(.hideKeyboardShortcuts)
@@ -317,17 +226,20 @@ enum KeyboardRouter {
             return routeEssentialsPrefix(event, shortcuts: shortcuts)
         case .boardWidth:
             return routeBoardWidth(event)
-        case .overview:
-            return routeOverview(event, context: context)
+        case .overview(let filterPhase, let hasQuery):
+            return routeOverview(event, filterPhase: filterPhase, hasQuery: hasQuery, activeDrag: context.activeDrag)
         case .boardActivity:
             if event.isEscape, modifiers == [] { return .perform(.hideBoardActivity) }
             return .forward(.temporaryTextInput)
-        case .drawer:
-            return routeDrawer(event, context: context)
-        case .zmxSessions:
-            return routeZmxSessions(event, context: context)
-        case .openBoard, .zmxDuplication, .editBoardLink, .newDesk, .replaceDesk, .deskPresetManagement,
-            .saveDeskPreset, .renameBoard, .renameDesk, .saveEssential:
+        case .drawer(let filterPhase, let previewFirstResponder):
+            return routeDrawer(
+                event,
+                mode: context.mode,
+                filterPhase: filterPhase,
+                previewFirstResponder: previewFirstResponder)
+        case .zmxSessions(let filterPhase, let hasQuery, let hasSelection):
+            return routeZmxSessions(event, filterPhase: filterPhase, hasQuery: hasQuery, hasSelection: hasSelection)
+        case .textInput:
             return .forward(.temporaryTextInput)
         case nil:
             break
@@ -349,7 +261,7 @@ enum KeyboardRouter {
             }
         }
 
-        if !context.isDenMode,
+        if context.mode == .sheet,
             let deskNumberBinding = shortcuts.deskNumberBinding,
             modifiers == deskNumberBinding.modifiers,
             let digit = event.baseCharacter.flatMap({ Int($0.lowercased()) }),
@@ -358,7 +270,7 @@ enum KeyboardRouter {
             return .perform(.focusDesk(digit == 0 ? 10 : digit))
         }
 
-        if !context.isDenMode, character == "r", modifiers == [.command] {
+        if context.mode == .sheet, character == "r", modifiers == [.command] {
             return .forward(.nativeCommand)
         }
         if character == "r", modifiers == [.command, .shift] {
@@ -368,15 +280,15 @@ enum KeyboardRouter {
             return event.isRepeat ? .consume(.ignoredRepeat) : .perform(.reloadFocusedDeskSheets)
         }
 
-        if context.isDenMode, context.isDeskFilterPresented {
-            return routeDeskFilter(event, context: context)
+        if context.mode == .den, context.deskFilterPhase != .inactive {
+            return routeDeskFilter(event, phase: context.deskFilterPhase)
         }
 
-        if context.isDenMode, character == ",", modifiers == [] {
+        if context.mode == .den, character == ",", modifiers == [] {
             return .perform(.openSettings)
         }
 
-        if context.isDenMode, character == "g", modifiers == [] {
+        if context.mode == .den, character == "g", modifiers == [] {
             return event.isRepeat ? .consume(.ignoredRepeat) : .perform(.enterEssentialsPrefix)
         }
 
@@ -384,8 +296,18 @@ enum KeyboardRouter {
             return route(shortcut: shortcut, isRepeat: event.isRepeat)
         }
 
-        if context.isDenMode { return routeDenMode(event) }
+        if context.mode == .den { return routeDenMode(event) }
         return .forward(.sheetOrTerminal)
+    }
+
+    private static func routeNotifications(_ event: KeyEvent) -> InputDecision {
+        if event.isEscape, event.modifiers == [] { return .perform(.closeNotifications) }
+        if event.modifiers == [] {
+            if event.key == .upArrow { return .perform(.moveNotificationSelection(-1)) }
+            if event.key == .downArrow { return .perform(.moveNotificationSelection(1)) }
+            if event.key == .returnKey { return .perform(.openSelectedNotification) }
+        }
+        return .consume(.exclusiveContext)
     }
 
     private static func route(shortcut: ConfigurableShortcut, isRepeat: Bool) -> InputDecision {
@@ -461,9 +383,9 @@ enum KeyboardRouter {
         return .perform(command.action)
     }
 
-    private static func routeDeskFilter(_ event: KeyEvent, context: InputContext) -> InputDecision {
+    private static func routeDeskFilter(_ event: KeyEvent, phase: DenFilterPhase) -> InputDecision {
         let modifiers = event.modifiers
-        if context.isDeskFilterInputActive {
+        if phase == .filtering {
             if event.hasMarkedText { return .forward(.filterTextInput) }
             if event.isEscape, modifiers == [] { return .perform(.dismissDeskFilter) }
             if event.key == .returnKey, modifiers == [] { return .perform(.confirmDeskFilterQuery) }
@@ -480,7 +402,12 @@ enum KeyboardRouter {
         }
     }
 
-    private static func routeDrawer(_ event: KeyEvent, context: InputContext) -> InputDecision {
+    private static func routeDrawer(
+        _ event: KeyEvent,
+        mode: KeyboardMode,
+        filterPhase: DenFilterPhase,
+        previewFirstResponder: Bool
+    ) -> InputDecision {
         let modifiers = event.modifiers
         let character = event.character?.lowercased()
 
@@ -490,15 +417,15 @@ enum KeyboardRouter {
                 : .perform(.discardSelectedDrawerItem(focusNext: true))
         }
         if event.isEscape, modifiers == [.control] { return .perform(.closeDrawer) }
-        if !context.isDenMode, context.isDrawerPreviewFirstResponder { return .forward(.drawerPreview) }
+        if mode == .sheet, previewFirstResponder { return .forward(.drawerPreview) }
 
-        if context.isDrawerFilterInputActive {
+        if filterPhase == .filtering {
             if event.hasMarkedText { return .forward(.filterTextInput) }
             if event.isEscape, modifiers == [] { return .perform(.exitDrawerFilterMode) }
             if event.key == .returnKey, modifiers == [] { return .perform(.confirmDrawerFilterQuery) }
             return .forward(.filterTextInput)
         }
-        if context.isDrawerFilterSelecting {
+        if filterPhase == .selecting {
             guard modifiers == [] else { return .consume(.exclusiveContext) }
             if event.isEscape { return .perform(.exitDrawerFilterMode) }
             if event.key == .returnKey { return .perform(.confirmDrawerFilterSelection) }
@@ -509,7 +436,7 @@ enum KeyboardRouter {
             }
         }
 
-        if context.isDenMode {
+        if mode == .den {
             if modifiers == [], event.character?.lowercased() == "u" {
                 return event.isRepeat
                     ? .consume(.ignoredRepeat)
@@ -591,19 +518,24 @@ enum KeyboardRouter {
         return .consume(.exclusiveContext)
     }
 
-    private static func routeOverview(_ event: KeyEvent, context: InputContext) -> InputDecision {
+    private static func routeOverview(
+        _ event: KeyEvent,
+        filterPhase: DenFilterPhase,
+        hasQuery: Bool,
+        activeDrag: ActiveDrag?
+    ) -> InputDecision {
         let modifiers = event.modifiers
-        if context.isOverviewFilterInputActive {
+        if filterPhase == .filtering {
             if event.hasMarkedText { return .forward(.filterTextInput) }
             if event.isEscape, modifiers == [] { return .perform(.exitOverviewFilterMode) }
             if event.key == .returnKey, modifiers == [] { return .perform(.confirmOverviewFilterQuery) }
             return .forward(.filterTextInput)
         }
-        if context.isBoardDragging, event.isEscape, modifiers == [] {
+        if case .board? = activeDrag, event.isEscape, modifiers == [] {
             return .perform(.requestBoardDragCancellation)
         }
         if event.isEscape, modifiers == [] {
-            return .perform(context.hasOverviewQuery ? .clearOverviewQuery : .hideOverview)
+            return .perform(hasQuery ? .clearOverviewQuery : .hideOverview)
         }
         if event.key == .returnKey, modifiers == [] { return .perform(.enterOverviewSelection) }
         if event.character?.lowercased() == "/", modifiers == [] { return .perform(.enterOverviewFilterMode) }
@@ -611,9 +543,14 @@ enum KeyboardRouter {
         return .consume(.exclusiveContext)
     }
 
-    private static func routeZmxSessions(_ event: KeyEvent, context: InputContext) -> InputDecision {
+    private static func routeZmxSessions(
+        _ event: KeyEvent,
+        filterPhase: DenFilterPhase,
+        hasQuery: Bool,
+        hasSelection: Bool
+    ) -> InputDecision {
         let modifiers = event.modifiers
-        if context.isZmxSessionFilterInputActive {
+        if filterPhase == .filtering {
             if event.hasMarkedText { return .forward(.filterTextInput) }
             if modifiers == [.command], event.character?.lowercased() == "a" {
                 return .perform(.selectAllZmxSessions)
@@ -630,8 +567,8 @@ enum KeyboardRouter {
         }
         if event.isEscape {
             guard modifiers == [] else { return .consume(.exclusiveContext) }
-            if context.hasZmxSessionSelection { return .perform(.clearZmxSessionSelection) }
-            return .perform(context.hasZmxSessionQuery ? .clearZmxSessionFilter : .hideZmxSessions)
+            if hasSelection { return .perform(.clearZmxSessionSelection) }
+            return .perform(hasQuery ? .clearZmxSessionFilter : .hideZmxSessions)
         }
         if modifiers == [.command], event.character?.lowercased() == "a" {
             return .perform(.selectAllZmxSessions)
