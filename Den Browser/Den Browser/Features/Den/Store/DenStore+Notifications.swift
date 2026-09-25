@@ -36,6 +36,7 @@ extension DenStore {
         if isNotificationListPresented {
             closeNotificationList()
         } else {
+            dismissDeskFilter()
             isNotificationListPresented = true
             selectedNotificationID = notifications.first?.id
         }

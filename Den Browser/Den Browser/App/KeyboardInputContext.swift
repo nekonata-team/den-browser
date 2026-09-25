@@ -35,6 +35,7 @@ enum KeyboardMode: Equatable {
 
 enum KeyboardSurface {
     case notifications
+    case deskFilter(phase: DenFilterPhase)
     case keyboardShortcuts
     case essentialsPrefix
     case boardWidth
@@ -51,7 +52,6 @@ struct InputContext {
     let activeDrag: ActiveDrag?
     let surface: KeyboardSurface?
     let mode: KeyboardMode
-    let deskFilterPhase: DenFilterPhase
     let hasFocusedBoard: Bool
     let isProfilePanelPresented: Bool
 
@@ -60,7 +60,6 @@ struct InputContext {
         hasPendingConfirmation = store.hasPendingConfirmation
         activeDrag = store.activeDrag
         mode = store.isDenMode ? .den : .sheet
-        deskFilterPhase = store.deskFilterPhase
         if store.isNotificationListPresented {
             surface = .notifications
         } else {
@@ -84,6 +83,8 @@ struct InputContext {
                 case .openBoard, .zmxDuplication, .editBoardLink, .newDesk, .replaceDesk, .deskPresetManagement,
                     .saveDeskPreset, .renameBoard, .renameDesk, .saveEssential:
                     .textInput
+                case nil where store.deskFilterPhase != .inactive:
+                    .deskFilter(phase: store.deskFilterPhase)
                 case nil: nil
                 }
         }

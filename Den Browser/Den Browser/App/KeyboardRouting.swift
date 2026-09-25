@@ -217,6 +217,8 @@ enum KeyboardRouter {
         switch context.surface {
         case .notifications:
             return routeNotifications(event)
+        case .deskFilter:
+            break
         case .keyboardShortcuts:
             if (event.isEscape && modifiers == []) || isQuestionMark(event) {
                 return .perform(.hideKeyboardShortcuts)
@@ -280,8 +282,8 @@ enum KeyboardRouter {
             return event.isRepeat ? .consume(.ignoredRepeat) : .perform(.reloadFocusedDeskSheets)
         }
 
-        if context.mode == .den, context.deskFilterPhase != .inactive {
-            return routeDeskFilter(event, phase: context.deskFilterPhase)
+        if context.mode == .den, case .deskFilter(let phase)? = context.surface {
+            return routeDeskFilter(event, phase: phase)
         }
 
         if context.mode == .den, character == ",", modifiers == [] {
