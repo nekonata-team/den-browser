@@ -167,9 +167,9 @@ extension DenStore {
             source.desk == targetDeskIndex
             && state.desks[source.desk].focusedBoardID == boardID
         if source.desk == targetDeskIndex {
-            reorderSideBoardGroup(containing: boardID, to: targetIndex, in: source.desk)
+            reorderBoardGroup(containing: boardID, to: targetIndex, in: source.desk)
         } else {
-            transferSideBoardGroup(containing: boardID, from: source.desk, to: targetDeskIndex, at: targetIndex)
+            transferBoardGroup(containing: boardID, from: source.desk, to: targetDeskIndex, at: targetIndex)
         }
         if keepsDeskFocus || state.desks[targetDeskIndex].focusedBoardID == nil {
             state.desks[targetDeskIndex].focusedBoardID = boardID
@@ -265,15 +265,16 @@ extension DenStore {
         let boards = state.desks[indices.desk].boards
         guard boards.count > 1 else { return }
 
-        let group = sideBoardGroup(containing: boardID, in: boards)
-        guard let first = group.first, let last = group.last,
+        guard let group = BoardGroup.containing(boardID, in: boards),
+            let first = group.boards.first,
+            let last = group.boards.last,
             let firstIndex = boards.firstIndex(where: { $0.id == first.id }),
             let lastIndex = boards.firstIndex(where: { $0.id == last.id })
         else { return }
         let targetIndex = delta < 0 ? firstIndex - 1 : lastIndex + 1
         guard boards.indices.contains(targetIndex) else { return }
 
-        reorderSideBoardGroup(containing: boardID, to: targetIndex, in: indices.desk)
+        reorderBoardGroup(containing: boardID, to: targetIndex, in: indices.desk)
         overviewSelection = OverviewSelection(
             deskID: state.desks[indices.desk].id,
             boardID: boardID)
@@ -298,7 +299,7 @@ extension DenStore {
             insertIndex = state.desks[targetDeskIndex].boards.endIndex
         }
 
-        transferSideBoardGroup(containing: boardID, from: source.desk, to: targetDeskIndex, at: insertIndex)
+        transferBoardGroup(containing: boardID, from: source.desk, to: targetDeskIndex, at: insertIndex)
         if state.desks[targetDeskIndex].focusedBoardID == nil {
             state.desks[targetDeskIndex].focusedBoardID = boardID
         }

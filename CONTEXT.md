@@ -49,7 +49,10 @@ A Board whose content is a Sheet Stack.
 _Avoid_: Browser tab
 
 **Side Board**:
-A separately focusable companion Board that stays alongside a target Board.
+A separately focusable companion Board attached to a target Board. A target has at most one Side Board.
+
+**Board Group**:
+A target Board and its optional Side Board, considered together as one unit.
 
 **Inspection**:
 A focused investigation of a selected element in a Web Board's Current Sheet, using related elements and console output as evidence.

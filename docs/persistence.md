@@ -1,6 +1,6 @@
 # Local persistence
 
-Den Browser persists only state needed to restore user-owned work. Version 2 adds explicit Web, Terminal, Zellij, and zmx Board content.
+Den Browser persists only state needed to restore user-owned work. Version 2 adds explicit Web, Inspection, Terminal, Zellij, and zmx Board content.
 
 ## Ownership
 
@@ -32,8 +32,10 @@ Nested objects use these keys:
 - `DenState`: `desks`, `focusedDeskID`, optional `drawerItems`
 - `DrawerItem`: `id`, `url`, optional `title`
 - `DeskState`: `id`, `label`, `boards`, optional `focusedBoardID`
-- `BoardState`: `id`, `label`, `width`, optional `customLabel`, optional `sheetNavigationPaused`, `content`
+- `BoardState`: `id`, `label`, `width`, optional `customLabel`, optional `sheetNavigationPaused`, optional `sideBoard`, `content`
 - Web Board `content`: `kind: web`, optional `currentSheetURL`, optional `firstSheetURL`
+- Inspection Board `content`: `kind: inspection`
+- Side Board `sideBoard`: `targetBoardID`
 - Terminal Board `content`: `kind: terminal`, `workingDirectory`
 - Zellij Board `content`: `kind: zellij`, optional `sessionName`
 - zmx Board `content`: `kind: zmx`, `sessionName`

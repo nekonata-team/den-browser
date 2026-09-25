@@ -597,7 +597,7 @@ struct BoardStrip: View {
                 onRemove: { store.removeBoard(board.id) },
                 onDragChanged: { updateBoardDrag(board, value: $0, in: containerSize) },
                 onDragEnded: { finishBoardDrag(value: $0, in: containerSize) })
-        } else if board.isInspection, let targetBoardID = board.inspectionTargetBoardID {
+        } else if board.isInspection, let targetBoardID = board.sideBoardTargetBoardID {
             InspectionBoardView(
                 board: board,
                 isFocused: focused,
@@ -894,9 +894,9 @@ struct BoardStrip: View {
         let boards = alignmentBoards
         guard boards.contains(where: { $0.id == boardID }) else { return nil }
         let params = boardLayoutParameters(for: boards)
-        let group = store.sideBoardGroup(containing: boardID, in: boards)
-        let firstID = group.first?.id ?? boardID
-        let lastID = group.last?.id ?? boardID
+        let group = BoardGroup.containing(boardID, in: boards)
+        let firstID = group?.boards.first?.id ?? boardID
+        let lastID = group?.boards.last?.id ?? boardID
         guard
             let firstIndex = boards.firstIndex(where: { $0.id == firstID }),
             let lastIndex = boards.firstIndex(where: { $0.id == lastID })

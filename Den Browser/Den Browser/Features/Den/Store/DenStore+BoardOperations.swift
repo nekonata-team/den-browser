@@ -153,25 +153,20 @@ extension DenStore {
     func canMoveBoard(_ boardID: UUID, by delta: Int) -> Bool {
         guard let indices = boardIndices(for: boardID), delta != 0 else { return false }
         let boards = state.desks[indices.desk].boards
-        let group = sideBoardGroup(containing: boardID, in: boards)
-        guard let first = group.first, let last = group.last,
+        guard let group = BoardGroup.containing(boardID, in: boards),
+            let first = group.boards.first,
+            let last = group.boards.last,
             let firstIndex = boards.firstIndex(where: { $0.id == first.id }),
             let lastIndex = boards.firstIndex(where: { $0.id == last.id })
         else { return false }
         return delta < 0 ? firstIndex > 0 : lastIndex < boards.count - 1
     }
 
-    func sideBoardGroup(containing boardID: UUID, in boards: [BoardState]) -> [BoardState] {
-        guard let board = boards.first(where: { $0.id == boardID }) else { return [] }
-        let targetID = board.inspectionTargetBoardID ?? board.id
-        guard let target = boards.first(where: { $0.id == targetID }) else { return [board] }
-        return [target] + boards.filter { $0.inspectionTargetBoardID == targetID }
-    }
-
-    func transferSideBoardGroup(containing boardID: UUID, from sourceIndex: Int, to targetIndex: Int, at index: Int) {
+    func transferBoardGroup(containing boardID: UUID, from sourceIndex: Int, to targetIndex: Int, at index: Int) {
         let sourceBoards = state.desks[sourceIndex].boards
-        let group = sideBoardGroup(containing: boardID, in: sourceBoards)
-        let ids = Set(group.map(\.id))
+        guard let group = BoardGroup.containing(boardID, in: sourceBoards) else { return }
+        let groupBoards = group.boards
+        let ids = Set(groupBoards.map(\.id))
         let removedIndex = sourceBoards.firstIndex { ids.contains($0.id) } ?? 0
         let sourceWasFocused = state.desks[sourceIndex].focusedBoardID.map(ids.contains) ?? false
         state.desks[sourceIndex].boards.removeAll { ids.contains($0.id) }
@@ -185,15 +180,15 @@ extension DenStore {
         let targetBoards = state.desks[targetIndex].boards
         var insertionIndex = min(max(index, 0), targetBoards.count)
         if insertionIndex > 0, insertionIndex < targetBoards.count {
-            let precedingGroup = sideBoardGroup(containing: targetBoards[insertionIndex - 1].id, in: targetBoards)
-            let precedingIDs = Set(precedingGroup.map(\.id))
+            let precedingGroup = BoardGroup.containing(targetBoards[insertionIndex - 1].id, in: targetBoards)
+            let precedingIDs = Set(precedingGroup?.boards.map(\.id) ?? [])
             if let lastMemberIndex = targetBoards.lastIndex(where: { precedingIDs.contains($0.id) }),
                 insertionIndex <= lastMemberIndex
             {
                 insertionIndex = lastMemberIndex + 1
             }
         }
-        state.desks[targetIndex].boards.insert(contentsOf: group, at: insertionIndex)
+        state.desks[targetIndex].boards.insert(contentsOf: groupBoards, at: insertionIndex)
     }
 
     func beginBoardDrag(_ boardID: UUID) -> Bool {
@@ -220,33 +215,34 @@ extension DenStore {
             (0..<state.desks[deskIndex].boards.count).contains(targetIndex)
         else { return }
 
-        reorderSideBoardGroup(containing: boardID, to: targetIndex, in: deskIndex)
+        reorderBoardGroup(containing: boardID, to: targetIndex, in: deskIndex)
         state.desks[deskIndex].focusedBoardID = boardID
     }
 
-    func reorderSideBoardGroup(containing boardID: UUID, to targetIndex: Int, in deskIndex: Int) {
+    func reorderBoardGroup(containing boardID: UUID, to targetIndex: Int, in deskIndex: Int) {
         let boards = state.desks[deskIndex].boards
-        let group = sideBoardGroup(containing: boardID, in: boards)
-        let groupIDs = Set(group.map(\.id))
-        guard !group.isEmpty, boards.indices.contains(targetIndex) else { return }
+        guard let group = BoardGroup.containing(boardID, in: boards), boards.indices.contains(targetIndex) else {
+            return
+        }
+        let groupIDs = Set(group.boards.map(\.id))
         guard let firstIndex = boards.firstIndex(where: { groupIDs.contains($0.id) }) else { return }
-        let destinationGroup = sideBoardGroup(containing: boards[targetIndex].id, in: boards)
-        guard !destinationGroup.contains(where: { groupIDs.contains($0.id) }) else { return }
+        guard let destinationGroup = BoardGroup.containing(boards[targetIndex].id, in: boards) else { return }
+        guard !destinationGroup.boards.contains(where: { groupIDs.contains($0.id) }) else { return }
         var remaining = boards.filter { !groupIDs.contains($0.id) }
         let insertionIndex: Int
         if targetIndex < firstIndex {
             insertionIndex =
-                destinationGroup.first.flatMap { member in
+                destinationGroup.boards.first.flatMap { member in
                     remaining.firstIndex(where: { $0.id == member.id })
                 } ?? 0
-        } else if let destinationLastID = destinationGroup.last?.id,
+        } else if let destinationLastID = destinationGroup.boards.last?.id,
             let index = remaining.firstIndex(where: { $0.id == destinationLastID })
         {
             insertionIndex = index + 1
         } else {
             insertionIndex = remaining.endIndex
         }
-        remaining.insert(contentsOf: group, at: insertionIndex)
+        remaining.insert(contentsOf: group.boards, at: insertionIndex)
         state.desks[deskIndex].boards = remaining
     }
 
@@ -354,14 +350,15 @@ extension DenStore {
     private func moveFocusedBoard(by delta: Int) {
         guard let deskIndex = focusedDeskIndex, let board = focusedBoard else { return }
         let boards = state.desks[deskIndex].boards
-        let group = sideBoardGroup(containing: board.id, in: boards)
-        guard let last = group.last,
-            let firstIndex = boards.firstIndex(where: { $0.id == group[0].id }),
+        guard let group = BoardGroup.containing(board.id, in: boards),
+            let first = group.boards.first,
+            let last = group.boards.last,
+            let firstIndex = boards.firstIndex(where: { $0.id == first.id }),
             let lastIndex = boards.firstIndex(where: { $0.id == last.id })
         else { return }
         let boundaryIndex = delta < 0 ? firstIndex - 1 : lastIndex + 1
         guard boards.indices.contains(boundaryIndex) else { return }
-        reorderSideBoardGroup(containing: board.id, to: boundaryIndex, in: deskIndex)
+        reorderBoardGroup(containing: board.id, to: boundaryIndex, in: deskIndex)
         state.desks[deskIndex].scrollOffsetX = nil
         centerFocusedBoard()
         save()
@@ -394,7 +391,7 @@ extension DenStore {
             insertIndex = state.desks[targetDeskIndex].boards.endIndex
         }
 
-        transferSideBoardGroup(containing: boardID, from: sourceDeskIndex, to: targetDeskIndex, at: insertIndex)
+        transferBoardGroup(containing: boardID, from: sourceDeskIndex, to: targetDeskIndex, at: insertIndex)
         state.desks[targetDeskIndex].focusedBoardID = boardID
         setFocusedDesk(state.desks[targetDeskIndex].id, autoPIP: false)
         isDenMode = false
@@ -420,8 +417,9 @@ extension DenStore {
             guard let url = web.currentSheetURL ?? web.firstSheetURL else { return }
             value = url.absoluteString
             message = "Copied Current Sheet URL."
-        case .inspection(let inspection):
-            value = inspection.targetBoardID.uuidString.lowercased()
+        case .inspection:
+            guard let targetBoardID = board.sideBoardTargetBoardID else { return }
+            value = targetBoardID.uuidString.lowercased()
             message = "Copied target Board ID."
         case .terminal(let terminal):
             value = terminal.workingDirectory

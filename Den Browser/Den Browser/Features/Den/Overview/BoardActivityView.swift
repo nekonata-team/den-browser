@@ -262,7 +262,7 @@ private struct BoardActivityRow: View {
 
     private var detail: String {
         if board.isInspection {
-            return board.inspectionTargetBoardID.map { "Target Board \($0.uuidString.prefix(8))" }
+            return board.sideBoardTargetBoardID.map { "Target Board \($0.uuidString.prefix(8))" }
                 ?? "Inspection Board"
         }
         if board.isTerminal {

@@ -193,15 +193,16 @@ extension DenStore {
         guard let indices = boardIndices(for: targetBoardID) else { return nil }
         let targetBoard = state.desks[indices.desk].boards[indices.board]
         guard targetBoard.isWeb else { return nil }
-        if let existing = state.desks[indices.desk].boards.first(where: {
-            $0.inspectionTargetBoardID == targetBoardID
+        if let existingSideBoard = state.desks[indices.desk].boards.first(where: {
+            $0.sideBoardTargetBoardID == targetBoardID
         }) {
-            focusBoard(existing.id, exitsDenMode: true)
-            return existing.id
+            guard existingSideBoard.isInspection else { return nil }
+            focusBoard(existingSideBoard.id, exitsDenMode: true)
+            return existingSideBoard.id
         }
         let board = BoardState(
             width: targetBoard.width,
-            inspectionTargetBoardID: targetBoardID
+            sideBoardTargetBoardID: targetBoardID
         )
         guard insertBoard(board, afterBoardID: targetBoardID, focus: true, origin: .interactive) else {
             return nil
@@ -288,9 +289,9 @@ extension DenStore {
             guard let indices = boardIndices(for: afterBoardID) else { return false }
             deskIndex = indices.desk
             let boards = state.desks[deskIndex].boards
-            let group = sideBoardGroup(containing: afterBoardID, in: boards)
+            let group = BoardGroup.containing(afterBoardID, in: boards)
             insertIndex =
-                group.last.flatMap { member in
+                group?.boards.last.flatMap { member in
                     boards.firstIndex(where: { $0.id == member.id }).map { $0 + 1 }
                 } ?? indices.board + 1
         } else {
@@ -392,13 +393,13 @@ extension DenStore {
             }
             let sourceDeskID = state.desks[indices.desk].id
             let board = state.desks[indices.desk].boards[indices.board]
-            let group =
-                board.inspectionTargetBoardID == nil
-                ? sideBoardGroup(containing: board.id, in: state.desks[indices.desk].boards)
-                : [board]
-            let removedIDs = Set(group.map(\.id))
-            let removed = group.filter { $0.id != board.id }
-            for member in group.reversed() {
+            let groupBoards =
+                board.isSideBoard
+                ? [board]
+                : (BoardGroup.containing(board.id, in: state.desks[indices.desk].boards)?.boards ?? [board])
+            let removedIDs = Set(groupBoards.map(\.id))
+            let removed = groupBoards.filter { $0.id != board.id }
+            for member in groupBoards.reversed() {
                 guard let memberIndex = state.desks[indices.desk].boards.firstIndex(where: { $0.id == member.id })
                 else { continue }
                 _ = removeBoard(at: (desk: indices.desk, board: memberIndex), focusNext: focusNext)
@@ -406,7 +407,7 @@ extension DenStore {
             recentlyRemovedBoards.insert(
                 RecentlyRemovedBoard(
                     board: board,
-                    sideBoards: removed,
+                    sideBoard: removed.first,
                     sourceDeskID: sourceDeskID,
                     sourceBoardIndex: indices.board
                 ),
@@ -415,8 +416,8 @@ extension DenStore {
             if recentlyRemovedBoards.count > Self.maximumRecentlyRemovedBoardCount {
                 recentlyRemovedBoards.removeLast()
             }
-            for removedBoard in group {
-                if let targetBoardID = removedBoard.inspectionTargetBoardID {
+            for removedBoard in groupBoards {
+                if removedBoard.isInspection, let targetBoardID = removedBoard.sideBoardTargetBoardID {
                     runtimes[targetBoardID]?.stopInspection()
                 }
                 disposeRuntime(for: removedBoard.id)
@@ -451,7 +452,23 @@ extension DenStore {
 
         let deskIndex: Int
         let insertIndex: Int
-        if let sourceDeskIndex = state.desks.firstIndex(where: { $0.id == recentlyRemovedBoard.sourceDeskID }) {
+        if let targetBoardID = recentlyRemovedBoard.board.sideBoardTargetBoardID,
+            let targetIndices = boardIndices(for: targetBoardID)
+        {
+            let targetBoards = state.desks[targetIndices.desk].boards
+            guard !targetBoards.contains(where: { $0.sideBoardTargetBoardID == targetBoardID }) else {
+                showToast("A Side Board already exists for this Board.", style: .warning)
+                return
+            }
+            deskIndex = targetIndices.desk
+            insertIndex =
+                BoardGroup.containing(targetBoardID, in: targetBoards)?.boards.last.flatMap { member in
+                    targetBoards.firstIndex(where: { $0.id == member.id }).map { $0 + 1 }
+                } ?? targetIndices.board + 1
+        } else if recentlyRemovedBoard.board.isSideBoard {
+            showToast("The target Board no longer exists.", style: .warning)
+            return
+        } else if let sourceDeskIndex = state.desks.firstIndex(where: { $0.id == recentlyRemovedBoard.sourceDeskID }) {
             deskIndex = sourceDeskIndex
             insertIndex = min(recentlyRemovedBoard.sourceBoardIndex, state.desks[deskIndex].boards.endIndex)
         } else {
@@ -465,7 +482,8 @@ extension DenStore {
         }
 
         let board = recentlyRemovedBoard.board
-        state.desks[deskIndex].boards.insert(contentsOf: [board] + recentlyRemovedBoard.sideBoards, at: insertIndex)
+        let restoredBoards = [board] + (recentlyRemovedBoard.sideBoard.map { [$0] } ?? [])
+        state.desks[deskIndex].boards.insert(contentsOf: restoredBoards, at: insertIndex)
         state.desks[deskIndex].focusedBoardID = board.id
         let deskID = state.desks[deskIndex].id
         let changedDesk = setFocusedDesk(deskID)

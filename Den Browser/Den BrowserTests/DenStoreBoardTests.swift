@@ -574,10 +574,37 @@ struct DenStoreBoardTests {
         #expect(inspection.isInspection)
         #expect(!inspection.isWeb)
         #expect(!inspection.isTerminal)
-        #expect(inspection.inspectionTargetBoardID == target.id)
+        #expect(inspection.isSideBoard)
+        #expect(inspection.sideBoardTargetBoardID == target.id)
         #expect(try JSONDecoder().decode(BoardState.self, from: JSONEncoder().encode(inspection)) == inspection)
         #expect(store.createInspectionBoard(targetBoardID: target.id) == inspectionID)
         #expect(store.state.desks[0].boards.count == 2)
+    }
+
+    @Test func inspectionBoardRequiresSideBoardRelationshipToDecode() {
+        let boardID = UUID()
+        let data = Data(
+            """
+            {"id":"\(boardID.uuidString)","label":"Inspection Board","width":390,"content":{"kind":"inspection"}}
+            """.utf8)
+
+        #expect(throws: DecodingError.self) {
+            try JSONDecoder().decode(BoardState.self, from: data)
+        }
+    }
+
+    @Test func boardGroupKeepsSideRoleSeparateFromBoardContent() throws {
+        let target = board("Target")
+        var side = BoardState(label: "Side Terminal", width: 390, workingDirectory: "/tmp")
+        side.sideBoard = SideBoard(targetBoardID: target.id)
+
+        let group = try #require(BoardGroup.containing(side.id, in: [target, side]))
+
+        #expect(!side.isInspection)
+        #expect(group.primaryBoard.id == target.id)
+        #expect(group.sideBoard?.id == side.id)
+        #expect(group.boards.map(\.id) == [target.id, side.id])
+        #expect(try JSONDecoder().decode(BoardState.self, from: JSONEncoder().encode(side)) == side)
     }
 
     @Test func backgroundBoardFocusSuppressionEndsOnNextFocus() throws {
@@ -995,7 +1022,7 @@ struct DenStoreBoardTests {
 
     @Test func sideBoardMovesWithTargetAndIsRestoredWithItAfterRemoval() {
         let target = board("Target")
-        let side = BoardState(width: 390, inspectionTargetBoardID: target.id)
+        let side = BoardState(width: 390, sideBoardTargetBoardID: target.id)
         let after = board("After")
         withStore(desks: [desk("Desk", boards: [target, side, after], focusedBoardID: target.id)]) { store in
             store.moveFocusedBoardRight()
@@ -1004,7 +1031,7 @@ struct DenStoreBoardTests {
 
             store.removeBoard(target.id)
             #expect(store.focusedDesk?.boards.map(\.id) == [after.id])
-            #expect(store.recentlyRemovedBoards.first?.sideBoards.map(\.id) == [side.id])
+            #expect(store.recentlyRemovedBoards.first?.sideBoard?.id == side.id)
 
             store.restoreRecentlyRemovedBoard()
             #expect(store.focusedDesk?.boards.map(\.id) == [after.id, target.id, side.id])
@@ -1014,35 +1041,53 @@ struct DenStoreBoardTests {
 
     @Test func removingSideBoardLeavesItsTarget() {
         let target = board("Target")
-        let side = BoardState(width: 390, inspectionTargetBoardID: target.id)
+        let side = BoardState(width: 390, sideBoardTargetBoardID: target.id)
         withStore(desks: [desk("Desk", boards: [target, side], focusedBoardID: side.id)]) { store in
             store.removeFocusedBoard()
 
             #expect(store.focusedDesk?.boards.map(\.id) == [target.id])
             #expect(store.recentlyRemovedBoards.first?.board.id == side.id)
-            #expect(store.recentlyRemovedBoards.first?.sideBoards.isEmpty == true)
+            #expect(store.recentlyRemovedBoards.first?.sideBoard == nil)
+        }
+    }
+
+    @Test func restoringRemovedSideBoardFollowsTargetToItsCurrentDesk() {
+        let target = board("Target")
+        let side = BoardState(width: 390, sideBoardTargetBoardID: target.id)
+        let source = desk("Source", boards: [target, side], focusedBoardID: side.id)
+        let destination = desk("Destination")
+        withStore(desks: [source, destination]) { store in
+            store.removeBoard(side.id)
+            store.focusBoard(target.id)
+            store.moveFocusedBoardToNextDesk()
+
+            store.restoreRecentlyRemovedBoard()
+
+            #expect(store.state.desks[0].boards.isEmpty)
+            #expect(store.state.desks[1].boards.map(\.id) == [target.id, side.id])
+            #expect(store.focusedDesk?.focusedBoardID == side.id)
         }
     }
 
     @Test func movingSideBoardGroupAcrossAnotherGroupKeepsBothAdjacent() {
         let firstTarget = board("First")
-        let firstSide = BoardState(width: 390, inspectionTargetBoardID: firstTarget.id)
+        let firstSide = BoardState(width: 390, sideBoardTargetBoardID: firstTarget.id)
         let secondTarget = board("Second")
-        let secondSide = BoardState(width: 410, inspectionTargetBoardID: secondTarget.id)
+        let secondSide = BoardState(width: 410, sideBoardTargetBoardID: secondTarget.id)
         let boards = [firstTarget, firstSide, secondTarget, secondSide]
         withStore(desks: [desk("Desk", boards: boards, focusedBoardID: firstTarget.id)]) { store in
             store.moveFocusedBoardRight()
 
             #expect(
                 store.focusedDesk?.boards.map(\.id) == [secondTarget.id, secondSide.id, firstTarget.id, firstSide.id])
-            #expect(store.focusedDesk?.boards[1].inspectionTargetBoardID == secondTarget.id)
-            #expect(store.focusedDesk?.boards[3].inspectionTargetBoardID == firstTarget.id)
+            #expect(store.focusedDesk?.boards[1].sideBoardTargetBoardID == secondTarget.id)
+            #expect(store.focusedDesk?.boards[3].sideBoardTargetBoardID == firstTarget.id)
         }
     }
 
     @Test func movingInspectionBoardToDeskCarriesTargetGroup() {
         let target = board("Target")
-        let side = BoardState(width: 390, inspectionTargetBoardID: target.id)
+        let side = BoardState(width: 390, sideBoardTargetBoardID: target.id)
         let source = desk("Source", boards: [target, side], focusedBoardID: side.id)
         let destinationBoard = board("Destination")
         let destination = desk("Destination", boards: [destinationBoard], focusedBoardID: destinationBoard.id)
@@ -1117,7 +1162,7 @@ struct DenStoreBoardTests {
 
     @Test func boardDragMovesSideBoardGroupAsOneBlock() {
         let target = board("Target")
-        let side = BoardState(width: 390, inspectionTargetBoardID: target.id)
+        let side = BoardState(width: 390, sideBoardTargetBoardID: target.id)
         let middle = board("Middle")
         let last = board("Last")
         let boards = [target, side, middle, last]
