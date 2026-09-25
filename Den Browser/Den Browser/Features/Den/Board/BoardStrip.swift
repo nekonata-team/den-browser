@@ -152,6 +152,7 @@ struct BoardStrip: View {
                     let isFocused = store.focusedDesk?.focusedBoardID == board.id
                     let isVisible = visibleBoardIDs.contains(board.id) || isFocused
                     let isActivated = activatedBoardIDs.contains(board.id) || isVisible
+                    let needsRuntime = isActivated && !board.isTerminal && store.runtimes[board.id] == nil
 
                     boardView(
                         board,
@@ -163,6 +164,10 @@ struct BoardStrip: View {
                         isActivated: isActivated,
                         isVisible: isVisible
                     )
+                    .task(id: needsRuntime) {
+                        guard needsRuntime else { return }
+                        _ = store.runtime(for: board)
+                    }
                     .onScrollVisibilityChange(threshold: 0.05) { visible in
                         if visible {
                             guard alignedBoardDeskID == store.presentedDeskID else { return }
@@ -608,13 +613,13 @@ struct BoardStrip: View {
                 onRemove: { store.removeBoard(board.id) },
                 onDragChanged: { updateBoardDrag(board, value: $0, in: containerSize) },
                 onDragEnded: { finishBoardDrag(value: $0, in: containerSize) })
-        } else {
+        } else if let runtime = store.runtimes[board.id] {
             BoardView(
                 board: board,
                 isFocused: focused,
                 focusRequest: boardFocusRequest,
                 isDragging: boardDrag?.boardID == board.id,
-                runtime: store.runtime(for: board),
+                runtime: runtime,
                 profileColor: profileColor,
                 width: size.width,
                 height: size.height,
@@ -627,6 +632,9 @@ struct BoardStrip: View {
                 onRemove: { store.removeBoard(board.id) },
                 onDragChanged: { updateBoardDrag(board, value: $0, in: containerSize) },
                 onDragEnded: { finishBoardDrag(value: $0, in: containerSize) })
+        } else {
+            Color.clear
+                .frame(width: size.width, height: size.height)
         }
     }
 
