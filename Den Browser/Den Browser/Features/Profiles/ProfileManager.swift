@@ -3,11 +3,6 @@ import Foundation
 import Observation
 import WebKit
 
-private enum ProfileFileLoadError: Error {
-    case read(Error)
-    case decode(Error)
-}
-
 @MainActor
 @Observable
 final class ProfileManager {
@@ -17,10 +12,9 @@ final class ProfileManager {
     var clearBrowsingDataWindowID: UUID?
     private(set) var windowAssignmentRevision = 0
 
-    @ObservationIgnored private let directoryURL: URL
+    @ObservationIgnored private let persistence: ProfilePersistence
     @ObservationIgnored private var persistedProfiles: [UUID: PersistedProfile] = [:]
-    @ObservationIgnored private(set) var profileSaveCount = 0
-    @ObservationIgnored private var pendingDeferredSaves: [UUID: Task<Void, Never>] = [:]
+    var profileSaveCount: Int { persistence.profileSaveCount }
     @ObservationIgnored private var storages: [UUID: DenStorage] = [:]
     @ObservationIgnored private var stores: [UUID: DenStore] = [:]
     @ObservationIgnored private var storeProfileIDs: [UUID: UUID] = [:]
@@ -35,9 +29,7 @@ final class ProfileManager {
     @ObservationIgnored private let removeWebsiteDataTypes: (WKWebsiteDataStore, Set<String>) async throws -> Void
     @ObservationIgnored private let initialProfile: PersistedProfile?
     @ObservationIgnored private let isEphemeral: Bool
-    private static let deferredSaveDelay: Duration = .milliseconds(300)
     @ObservationIgnored private let websiteDataStore: (WebProfileStore) -> WKWebsiteDataStore
-    @ObservationIgnored private let quarantineFile: (URL, URL) throws -> Void
     let ipcSocketPath: String
 
     var personalProfileID: UUID {
@@ -61,11 +53,12 @@ final class ProfileManager {
         websiteDataStore: @escaping (WebProfileStore) -> WKWebsiteDataStore,
         webExtensionDescriptors: [WebExtensionDescriptor] = [],
         ipcSocketPath: String = DenSocketPath.resolve(),
-        quarantineFile: @escaping (URL, URL) throws -> Void = { source, destination in
-            try FileManager.default.moveItem(at: source, to: destination)
-        }
+        quarantineFile: @escaping (URL, URL) throws -> Void = ProfilePersistence.moveFileToQuarantine
     ) {
-        self.directoryURL = directoryURL
+        self.persistence = ProfilePersistence(
+            directoryURL: directoryURL,
+            isEphemeral: isEphemeral,
+            quarantineFile: quarantineFile)
         self.sheetNavigation = sheetNavigation
         self.preferences = preferences
         self.uboliteInstaller = uboliteInstaller
@@ -76,7 +69,6 @@ final class ProfileManager {
         self.websiteDataStore = websiteDataStore
         self.webExtensionDescriptors = webExtensionDescriptors
         self.ipcSocketPath = ipcSocketPath
-        self.quarantineFile = quarantineFile
         load()
     }
 
@@ -144,13 +136,13 @@ final class ProfileManager {
         profiles.append(profile)
         persistedProfiles[profile.id] = persisted
         do {
-            try save(persisted)
-            try saveIndex()
+            try persistence.save(persisted)
+            try persistence.saveIndex(profileIDs: profiles.map(\.id))
             return profile
         } catch {
             profiles.removeAll { $0.id == profile.id }
             persistedProfiles.removeValue(forKey: profile.id)
-            try? FileManager.default.removeItem(at: profileURL(for: profile.id))
+            try? persistence.removeProfileDocument(for: profile.id)
             reportSaveError(error)
             return nil
         }
@@ -172,7 +164,7 @@ final class ProfileManager {
         persistedProfiles[profileID]?.profile = profiles[index]
         do {
             if let persisted = persistedProfiles[profileID] {
-                try save(persisted)
+                try persistence.save(persisted)
                 cancelPendingDeferredSave(for: profileID)
             }
             return true
@@ -191,16 +183,15 @@ final class ProfileManager {
         else { return false }
 
         closeWindows(for: profileID)
-        let profileURL = profileURL(for: profileID)
-        let hadDocument = FileManager.default.fileExists(atPath: profileURL.path)
+        let hadDocument = persistence.profileDocumentExists(for: profileID)
         do {
             try await removeDataStore(dataStoreID)
-            if hadDocument { try FileManager.default.removeItem(at: profileURL) }
+            if hadDocument { try persistence.removeProfileDocument(for: profileID) }
             profiles.removeAll { $0.id == profileID }
             persistedProfiles.removeValue(forKey: profileID)
             cancelPendingDeferredSave(for: profileID)
             do {
-                try saveIndex()
+                try persistence.saveIndex(profileIDs: profiles.map(\.id))
             } catch {
                 reportSaveError(error)
             }
@@ -638,57 +629,21 @@ final class ProfileManager {
             profiles = [profile.profile]
             return
         }
-        var loadIssues: [String] = []
-        var canRewriteIndex = true
         do {
-            try FileManager.default.createDirectory(at: directoryURL, withIntermediateDirectories: true)
+            try persistence.prepareDirectory()
         } catch {
             errorMessage = "Could not read Profiles: \(error.localizedDescription)"
             return
         }
-        var canReadDirectory = true
-        var loaded = scanProfiles(
-            loadIssues: &loadIssues,
-            canRewriteIndex: &canRewriteIndex,
-            canReadDirectory: &canReadDirectory)
-        guard canReadDirectory else {
+        let result = persistence.load()
+        var loadIssues = result.issues
+        let canRewriteIndex = result.canRewriteIndex
+        var loaded = result.profiles
+        guard result.canReadDirectory else {
             errorMessage = loadIssues.joined(separator: "\n\n")
             return
         }
         PerformanceTrace.mark("ProfileManager.scanProfiles finished (\(loaded.count) found)", category: "Launch")
-        let indexURL = directoryURL.appending(path: "profile-index.json")
-        if FileManager.default.fileExists(atPath: indexURL.path) {
-            switch decode(ProfileIndex.self, from: indexURL) {
-            case .success(let index):
-                let byID = Dictionary(grouping: loaded, by: { $0.profile.id })
-                if byID.contains(where: { $0.value.count > 1 }) {
-                    canRewriteIndex = false
-                    loadIssues.append(
-                        "Multiple Profile documents use the same Profile ID; the first document was kept.")
-                }
-                var orderedIDs = Set<UUID>()
-                loaded =
-                    index.profileIDs.compactMap { profileID in
-                        guard orderedIDs.insert(profileID).inserted else { return nil }
-                        return byID[profileID]?.first
-                    }
-                    + loaded.filter { orderedIDs.insert($0.profile.id).inserted }
-            case .failure(let failure):
-                switch failure {
-                case .read(let error):
-                    canRewriteIndex = false
-                    loadIssues.append(
-                        "Could not read the Profile index \(indexURL.lastPathComponent): \(error.localizedDescription)")
-                case .decode(let error):
-                    if let message = unsupportedSchemaMessage(for: indexURL, error: error) {
-                        canRewriteIndex = false
-                        loadIssues.append(message)
-                    } else if !quarantine(indexURL, reason: "invalid Profile index", issues: &loadIssues) {
-                        canRewriteIndex = false
-                    }
-                }
-            }
-        }
 
         var newPersonalProfile: PersistedProfile?
         if !loaded.contains(where: { $0.profile.webProfileStore == .default }) {
@@ -701,14 +656,14 @@ final class ProfileManager {
         profiles = loaded.map(\.profile)
         if let newPersonalProfile {
             do {
-                try save(newPersonalProfile)
+                try persistence.save(newPersonalProfile)
             } catch {
                 loadIssues.append("Could not save the new Personal Profile: \(error.localizedDescription)")
             }
         }
         if canRewriteIndex {
             do {
-                try saveIndex()
+                try persistence.saveIndex(profileIDs: profiles.map(\.id))
             } catch {
                 loadIssues.append("Could not save the Profile index: \(error.localizedDescription)")
             }
@@ -717,52 +672,6 @@ final class ProfileManager {
             errorMessage = loadIssues.joined(separator: "\n\n")
         }
         PerformanceTrace.mark("ProfileManager.load completed (\(profiles.count) profiles loaded)", category: "Launch")
-    }
-
-    private func scanProfiles(
-        loadIssues: inout [String],
-        canRewriteIndex: inout Bool,
-        canReadDirectory: inout Bool
-    ) -> [PersistedProfile] {
-        let urls: [URL]
-        do {
-            urls = try FileManager.default.contentsOfDirectory(
-                at: directoryURL, includingPropertiesForKeys: nil)
-        } catch {
-            canReadDirectory = false
-            loadIssues.append("Could not read the Profile directory: \(error.localizedDescription)")
-            return []
-        }
-
-        var profiles: [PersistedProfile] = []
-        for url in urls where url.pathExtension == "json" && url.lastPathComponent != "profile-index.json" {
-            switch decode(PersistedProfile.self, from: url) {
-            case .success(let profile):
-                let filename = url.deletingPathExtension().lastPathComponent
-                guard profile.profile.id.uuidString.caseInsensitiveCompare(filename) == .orderedSame else {
-                    if !quarantine(url, reason: "Profile filename and identity do not match", issues: &loadIssues) {
-                        canRewriteIndex = false
-                    }
-                    continue
-                }
-                profiles.append(profile)
-            case .failure(let failure):
-                switch failure {
-                case .read(let error):
-                    canRewriteIndex = false
-                    loadIssues.append(
-                        "Could not read Profile \(url.lastPathComponent): \(error.localizedDescription)")
-                case .decode(let error):
-                    if let message = unsupportedSchemaMessage(for: url, error: error) {
-                        canRewriteIndex = false
-                        loadIssues.append(message)
-                    } else if !quarantine(url, reason: "invalid Profile document", issues: &loadIssues) {
-                        canRewriteIndex = false
-                    }
-                }
-            }
-        }
-        return profiles.sorted { $0.profile.id.uuidString < $1.profile.id.uuidString }
     }
 
     private func deduplicated(_ profiles: [PersistedProfile]) -> [PersistedProfile] {
@@ -788,7 +697,7 @@ final class ProfileManager {
         }
         persistedProfiles[profileID] = persisted
         do {
-            try save(persisted)
+            try persistence.save(persisted)
             cancelPendingDeferredSave(for: profileID)
             return true
         } catch {
@@ -804,7 +713,7 @@ final class ProfileManager {
         persisted.deskPresets = deskPresets
         persistedProfiles[profileID] = persisted
         do {
-            try save(persisted)
+            try persistence.save(persisted)
             cancelPendingDeferredSave(for: profileID)
             return true
         } catch {
@@ -820,7 +729,7 @@ final class ProfileManager {
         persisted.recentItems = recentItems
         persistedProfiles[profileID] = persisted
         do {
-            try save(persisted)
+            try persistence.save(persisted)
             cancelPendingDeferredSave(for: profileID)
             return true
         } catch {
@@ -829,17 +738,9 @@ final class ProfileManager {
         }
     }
 
-    private func save(_ persisted: PersistedProfile) throws {
-        guard !isEphemeral else { return }
-        profileSaveCount += 1
-        PerformanceTrace.mark(
-            "ProfileManager.save #\(profileSaveCount)",
-            category: "Persistence")
-        try write(persisted, to: profileURL(for: persisted.profile.id))
-    }
-
+    // The manager chooses each snapshot from DenStorage; persistence owns the timer and pending Task.
     func flushPendingDeferredSaves() {
-        for profileID in Array(pendingDeferredSaves.keys) {
+        for profileID in persistence.pendingDeferredSaveIDs {
             guard let storage = storages[profileID] else {
                 cancelPendingDeferredSave(for: profileID)
                 continue
@@ -847,7 +748,7 @@ final class ProfileManager {
             if storage.activeDrag != nil {
                 guard let persisted = persistedProfiles[profileID] else { continue }
                 do {
-                    try save(persisted)
+                    try persistence.save(persisted)
                     cancelPendingDeferredSave(for: profileID)
                 } catch {
                     reportSaveError(error)
@@ -866,30 +767,16 @@ final class ProfileManager {
         else { return }
         refreshDenData(in: &persisted, for: profileID)
         persistedProfiles[profileID] = persisted
-        pendingDeferredSaves.removeValue(forKey: profileID)?.cancel()
-        pendingDeferredSaves[profileID] = Task { [weak self] in
-            while !Task.isCancelled {
-                do {
-                    try await Task.sleep(for: Self.deferredSaveDelay)
-                } catch {
-                    return
-                }
-                guard !Task.isCancelled else { return }
-                guard let self else { return }
-                guard let storage = self.storages[profileID] else {
-                    self.cancelPendingDeferredSave(for: profileID)
-                    return
-                }
-                guard storage.activeDrag == nil else { continue }
-                self.pendingDeferredSaves.removeValue(forKey: profileID)
-                _ = self.saveDen(storage.state, for: profileID)
-                return
-            }
+        persistence.scheduleDeferredSave(for: profileID) { [weak self] in
+            guard let self, let storage = self.storages[profileID] else { return true }
+            guard storage.activeDrag == nil else { return false }
+            _ = self.saveDen(storage.state, for: profileID)
+            return true
         }
     }
 
     private func cancelPendingDeferredSave(for profileID: UUID) {
-        pendingDeferredSaves.removeValue(forKey: profileID)?.cancel()
+        persistence.cancelPendingDeferredSave(for: profileID)
     }
 
     private func refreshDenData(in persisted: inout PersistedProfile, for profileID: UUID) {
@@ -901,79 +788,18 @@ final class ProfileManager {
         persisted.recentItems = storage.recentItems
     }
 
-    private func saveIndex() throws {
-        guard !isEphemeral else { return }
-        try write(ProfileIndex(profileIDs: profiles.map(\.id)), to: directoryURL.appending(path: "profile-index.json"))
-    }
-
-    private func profileURL(for id: UUID) -> URL {
-        directoryURL.appending(path: "\(id.uuidString.lowercased()).json")
-    }
-
-    private func write<T: Encodable>(_ value: T, to url: URL) throws {
-        let encodeSignpost = PerformanceTrace.beginInterval("ProfileManager.encode")
-        defer { PerformanceTrace.endInterval("ProfileManager.encode", encodeSignpost) }
-        let data = try JSONEncoder.denEncoder.encode(value)
-
-        let writeSignpost = PerformanceTrace.beginInterval("ProfileManager.fileWrite")
-        defer { PerformanceTrace.endInterval("ProfileManager.fileWrite", writeSignpost) }
-        try data.write(to: url, options: Data.WritingOptions.atomic)
-    }
-
     private func reportSaveError(_ error: Error) {
         errorMessage = "Could not save Profiles: \(error.localizedDescription)"
-    }
-
-    private func decode<T: Decodable>(_ type: T.Type, from url: URL) -> Result<T, ProfileFileLoadError> {
-        let data: Data
-        do {
-            data = try Data(contentsOf: url)
-        } catch {
-            return .failure(.read(error))
-        }
-        do {
-            return .success(try JSONDecoder().decode(type, from: data))
-        } catch {
-            return .failure(.decode(error))
-        }
-    }
-
-    @discardableResult
-    private func quarantine(_ url: URL, reason: String, issues: inout [String]) -> Bool {
-        let formatter = ISO8601DateFormatter()
-        let stamp = formatter.string(from: Date()).replacingOccurrences(of: ":", with: "-")
-        let backup = url.appendingPathExtension("corrupt-\(stamp)")
-        do {
-            try quarantineFile(url, backup)
-            issues.append("\(reason): \(url.lastPathComponent) was preserved as \(backup.lastPathComponent).")
-            return true
-        } catch {
-            issues.append("Could not quarantine \(url.lastPathComponent): \(error.localizedDescription)")
-            return false
-        }
-    }
-
-    private func unsupportedSchemaMessage(for url: URL, error: Error) -> String? {
-        guard let error = error as? ProfilePersistenceError else { return nil }
-        switch error {
-        case .unsupportedProfileIndexSchema(let version):
-            return "Profile index \(url.lastPathComponent) uses unsupported schema version \(version); it was kept."
-        case .unsupportedPersistedProfileSchema(let version):
-            return "Profile \(url.lastPathComponent) uses unsupported schema version \(version); it was kept."
-        case .duplicateProfileIDs:
-            return nil
-        }
-    }
-
-    nonisolated static func defaultDirectoryURL() -> URL {
-        FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-            .appending(path: "Den Browser/Profiles", directoryHint: .isDirectory)
     }
 
     private static func personalProfile() -> PersistedProfile {
         PersistedProfile(
             profile: ProfileState(id: UUID(), name: "Personal", color: .blue, webProfileStore: .default),
             den: .sample)
+    }
+
+    nonisolated static func defaultDirectoryURL() -> URL {
+        ProfilePersistence.defaultDirectoryURL()
     }
 
     private static func removeWebsiteDataStore(_ identifier: UUID) async throws {
