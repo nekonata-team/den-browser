@@ -89,6 +89,13 @@
 			);
 			target = 530E9DDA2FFFFED90033427C /* Den Browser */;
 		};
+		53B261EF3066A958000AE1A2 /* Exceptions for "Den Browser" folder in "Den BrowserUITests" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				"Resources/interaction-basics.html",
+			);
+			target = 530E9DF12FFFFEDB0033427C /* Den BrowserUITests */;
+		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -96,6 +103,7 @@
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
 				531DA46B3012544F00589CAD /* Exceptions for "Den Browser" folder in "Den Browser" target */,
+				53B261EF3066A958000AE1A2 /* Exceptions for "Den Browser" folder in "Den BrowserUITests" target */,
 				531CEFA0304D475F00C9C636 /* Exceptions for "Den Browser" folder in "den" target */,
 			);
 			path = "Den Browser";
@@ -103,22 +111,16 @@
 		};
 		530E9DEB2FFFFEDB0033427C /* Den BrowserTests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-			);
 			path = "Den BrowserTests";
 			sourceTree = "<group>";
 		};
 		530E9DF52FFFFEDB0033427C /* Den BrowserUITests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-			);
 			path = "Den BrowserUITests";
 			sourceTree = "<group>";
 		};
 		531CEF99304D46A100C9C636 /* den */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-			);
 			path = den;
 			sourceTree = "<group>";
 		};
