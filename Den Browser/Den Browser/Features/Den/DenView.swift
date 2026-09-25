@@ -229,6 +229,8 @@ struct DenView<Header: View>: View {
                     )
                     .transition(DenMotion.transition(reduceMotion: shouldReduceMotion, scale: 0.98))
             }
+        case .profilePicker:
+            panelOverlay(OpenProfilePanel())
         case .drawer, nil:
             EmptyView()
         }

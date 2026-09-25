@@ -210,10 +210,6 @@ enum KeyboardRouter {
 
         if character == "w", modifiers == [.command, .shift] { return .forward(.nativeCommand) }
 
-        if context.isProfilePanelPresented {
-            return .forward(.temporaryTextInput)
-        }
-
         switch context.surface {
         case .notifications:
             return routeNotifications(event)

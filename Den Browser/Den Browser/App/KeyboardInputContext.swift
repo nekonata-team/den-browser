@@ -53,9 +53,8 @@ struct InputContext {
     let surface: KeyboardSurface?
     let mode: KeyboardMode
     let hasFocusedBoard: Bool
-    let isProfilePanelPresented: Bool
 
-    init(store: DenStore, event: NSEvent, isProfilePanelPresented: Bool = false) {
+    init(store: DenStore, event: NSEvent) {
         isFullscreenActive = store.isFullscreenActive
         hasPendingConfirmation = store.hasPendingConfirmation
         activeDrag = store.activeDrag
@@ -81,7 +80,7 @@ struct InputContext {
                         hasQuery: !store.zmxSessions.query.isEmpty,
                         hasSelection: store.zmxSessions.hasMarkedSessions)
                 case .openBoard, .zmxDuplication, .editBoardLink, .newDesk, .replaceDesk, .deskPresetManagement,
-                    .saveDeskPreset, .renameBoard, .renameDesk, .saveEssential:
+                    .saveDeskPreset, .renameBoard, .renameDesk, .saveEssential, .profilePicker:
                     .textInput
                 case nil where store.deskFilterPhase != .inactive:
                     .deskFilter(phase: store.deskFilterPhase)
@@ -89,7 +88,6 @@ struct InputContext {
                 }
         }
         hasFocusedBoard = store.focusedBoard != nil
-        self.isProfilePanelPresented = isProfilePanelPresented
     }
 
     private static func isDrawerPreviewFirstResponder(_ event: NSEvent, store: DenStore) -> Bool {

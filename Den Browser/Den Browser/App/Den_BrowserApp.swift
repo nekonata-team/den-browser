@@ -180,8 +180,7 @@ private struct DenCommands: Commands {
 
             Menu("Manage Profiles") {
                 Button("Open Profile…") {
-                    profileManager.openProfilePanelProfileID = profileID
-                    profileManager.openProfilePanelWindowID = profileWindowID
+                    store?.setTemporaryContext(.profilePicker)
                 }
                 .keyboardShortcut("p", modifiers: [.control, .command])
 

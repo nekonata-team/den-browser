@@ -126,6 +126,7 @@ private struct ProfileChip: View {
     let profile: ProfileState
     let windowID: UUID
 
+    @Environment(DenStore.self) private var store
     @Environment(ProfileManager.self) private var profileManager
     @Environment(\.openWindow) private var openWindow
 
@@ -144,8 +145,7 @@ private struct ProfileChip: View {
             Divider()
 
             Button("Open Profile…") {
-                profileManager.openProfilePanelProfileID = profile.id
-                profileManager.openProfilePanelWindowID = windowID
+                store.setTemporaryContext(.profilePicker)
             }
             .keyboardShortcut("p", modifiers: [.control, .command])
 

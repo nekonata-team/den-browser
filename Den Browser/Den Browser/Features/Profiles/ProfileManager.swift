@@ -13,8 +13,6 @@ private enum ProfileFileLoadError: Error {
 final class ProfileManager {
     private(set) var profiles: [ProfileState] = []
     private(set) var errorMessage: String?
-    var openProfilePanelProfileID: UUID?
-    var openProfilePanelWindowID: UUID?
     var clearBrowsingDataProfileID: UUID?
     var clearBrowsingDataWindowID: UUID?
     private(set) var windowAssignmentRevision = 0
@@ -312,13 +310,6 @@ final class ProfileManager {
         guard let window else { return nil }
         let windowID = windows.first(where: { $0.value.window === window })?.key
         return windowID.flatMap { stores[$0] }
-    }
-
-    func isOpenProfilePanelPresented(for window: NSWindow?) -> Bool {
-        guard let window,
-            let windowID = windows.first(where: { $0.value.window === window })?.key
-        else { return false }
-        return openProfilePanelProfileID != nil && openProfilePanelWindowID == windowID
     }
 
     func activateWindow(for profileID: UUID) -> Bool {

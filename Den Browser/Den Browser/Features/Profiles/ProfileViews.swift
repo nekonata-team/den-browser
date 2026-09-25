@@ -34,23 +34,13 @@ struct ProfileWindowView: View {
         if let profile = profileManager.profile(id: activeProfileID),
             let store = profileManager.store(for: route)
         {
-            ZStack(alignment: .top) {
-                DenView(
-                    profileName: profile.name,
-                    profileColor: profile.color.color,
-                    isPrivateDen: profileManager.isPrivateDen,
-                    shouldShowHeader: !store.isZenViewPresented
-                ) {
-                    DenHeader(profile: profile, windowID: route.windowID)
-                }
-
-                if profileManager.openProfilePanelProfileID == activeProfileID,
-                    profileManager.openProfilePanelWindowID == route.windowID
-                {
-                    OpenProfilePanel()
-                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-                        .padding(.top, 64)
-                }
+            DenView(
+                profileName: profile.name,
+                profileColor: profile.color.color,
+                isPrivateDen: profileManager.isPrivateDen,
+                shouldShowHeader: !store.isZenViewPresented
+            ) {
+                DenHeader(profile: profile, windowID: route.windowID)
             }
             .tint(profile.color.color)
             .focusedSceneValue(\.denStore, store)
@@ -175,7 +165,8 @@ private struct WindowRegistration: NSViewRepresentable {
     }
 }
 
-private struct OpenProfilePanel: View {
+struct OpenProfilePanel: View {
+    @Environment(DenStore.self) private var store
     @Environment(ProfileManager.self) private var profileManager
     @Environment(\.openWindow) private var openWindow
     @State private var query = ""
@@ -273,8 +264,7 @@ private struct OpenProfilePanel: View {
     }
 
     private func close() {
-        profileManager.openProfilePanelProfileID = nil
-        profileManager.openProfilePanelWindowID = nil
+        store.setTemporaryContext(nil)
     }
 }
 

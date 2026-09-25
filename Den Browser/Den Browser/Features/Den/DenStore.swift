@@ -846,6 +846,7 @@ enum TemporaryContext: Equatable {
     case renameDesk
     case drawer
     case saveEssential
+    case profilePicker
 }
 
 struct SaveEssentialDraft: Equatable {

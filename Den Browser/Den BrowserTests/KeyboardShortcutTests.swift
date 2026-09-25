@@ -784,30 +784,21 @@ struct KeyboardShortcutTests {
     @Test func openProfilePanelForwardsKeyboardNavigationToItsTextField() throws {
         let store = try makeStore(boards: [board("First")])
         store.isDenMode = true
+        store.enterDeskFilter()
+        store.isNotificationListPresented = true
+        store.setTemporaryContext(.profilePicker)
+        #expect(store.temporaryContext == .profilePicker)
+        #expect(store.deskFilterPhase == .inactive)
+        #expect(!store.isNotificationListPresented)
         let down = try arrowEvent(.downArrow, modifiers: [])
         let returnKey = try keyEvent(
             characters: "\r", charactersIgnoringModifiers: "\r", keyCode: 36)
         let escape = try keyEvent(
             characters: "\u{1B}", charactersIgnoringModifiers: "\u{1B}", keyCode: 53)
 
-        #expect(
-            KeyboardController.decision(
-                for: down,
-                store: store,
-                isProfilePanelPresented: true)
-                == .forward(.temporaryTextInput))
-        #expect(
-            KeyboardController.decision(
-                for: returnKey,
-                store: store,
-                isProfilePanelPresented: true)
-                == .forward(.temporaryTextInput))
-        #expect(
-            KeyboardController.decision(
-                for: escape,
-                store: store,
-                isProfilePanelPresented: true)
-                == .forward(.temporaryTextInput))
+        #expect(KeyboardController.decision(for: down, store: store) == .forward(.temporaryTextInput))
+        #expect(KeyboardController.decision(for: returnKey, store: store) == .forward(.temporaryTextInput))
+        #expect(KeyboardController.decision(for: escape, store: store) == .forward(.temporaryTextInput))
     }
 
     @Test func drawerFilterPassesShiftedCharactersToTextInput() throws {

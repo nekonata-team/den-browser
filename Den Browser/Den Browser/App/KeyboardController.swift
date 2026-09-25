@@ -19,7 +19,6 @@ final class KeyboardController {
                 event,
                 store: store,
                 preferences: preferences,
-                isProfilePanelPresented: profileManager?.isOpenProfilePanelPresented(for: event.window) ?? false,
                 openSettings: openSettings) ? nil : event
         }
     }
@@ -35,14 +34,12 @@ final class KeyboardController {
         _ event: NSEvent,
         store: DenStore,
         preferences: AppPreferences? = nil,
-        isProfilePanelPresented: Bool = false,
         openSettings: @MainActor () -> Void = {}
     ) -> Bool {
         let decision = decision(
             for: event,
             store: store,
-            preferences: preferences,
-            isProfilePanelPresented: isProfilePanelPresented)
+            preferences: preferences)
         apply(decision, store: store, openSettings: openSettings)
         return !decision.isForwarded
     }
@@ -50,16 +47,12 @@ final class KeyboardController {
     static func decision(
         for event: NSEvent,
         store: DenStore,
-        preferences: AppPreferences? = nil,
-        isProfilePanelPresented: Bool = false
+        preferences: AppPreferences? = nil
     ) -> InputDecision {
         let preferences = preferences ?? store.preferences
         return KeyboardRouter.route(
             event: KeyEvent(event),
-            context: InputContext(
-                store: store,
-                event: event,
-                isProfilePanelPresented: isProfilePanelPresented),
+            context: InputContext(store: store, event: event),
             shortcuts: ShortcutConfiguration(preferences: preferences))
     }
 
