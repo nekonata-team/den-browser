@@ -29,6 +29,7 @@ final class Den_BrowserUITests: XCTestCase, BDD {
     private var previousInputSource: TISInputSource?
     private var processLock: UITestProcessLock?
     private var defaultsSuiteNames: [String] = []
+    private var fixtureDirectories: [URL] = []
 
     override func setUpWithError() throws {
         processLock = try UITestProcessLock()
@@ -40,13 +41,16 @@ final class Den_BrowserUITests: XCTestCase, BDD {
 
     override func tearDownWithError() throws {
         MainActor.assumeIsolated {
-            XCUIApplication().terminate()
+            uiTestApplication().terminate()
         }
         if let previousInputSource {
             XCTAssertEqual(TISSelectInputSource(previousInputSource), noErr)
         }
         for suiteName in defaultsSuiteNames {
             UserDefaults().removePersistentDomain(forName: suiteName)
+        }
+        for directory in fixtureDirectories {
+            try? FileManager.default.removeItem(at: directory)
         }
         processLock = nil
     }
@@ -466,23 +470,33 @@ final class Den_BrowserUITests: XCTestCase, BDD {
         sheetNavigationEnabled: Bool = false,
         multipleDrawerItems: Bool = false
     ) -> XCUIApplication {
-        let app = XCUIApplication()
+        let app = uiTestApplication()
+        let runID = UUID().uuidString
+        let runDirectory = FileManager.default.temporaryDirectory
+            .appending(path: "DenBrowserUITests", directoryHint: .isDirectory)
+            .appending(path: runID, directoryHint: .isDirectory)
+        let seedURL = runDirectory.appending(path: "initial-profile.json")
+        fixtureDirectories.append(runDirectory)
+        do {
+            try FileManager.default.createDirectory(at: runDirectory, withIntermediateDirectories: true)
+            try uiTestProfile(
+                fixture: fixture,
+                boardCount: boardCount,
+                terminalBoard: terminalBoard,
+                multipleDrawerItems: multipleDrawerItems
+            )
+            .write(to: seedURL, options: .atomic)
+        } catch {
+            XCTFail("Could not write UI test profile seed: \(error)")
+        }
         var args = [
             "-ApplePersistenceIgnoreState", "YES",
-            "--ui-testing", "--fixture", fixture.rawValue,
-            "--board-count", boardCount.rawValue,
+            "--ui-testing", "--initial-profile", seedURL.path,
         ]
-        if terminalBoard {
-            args.append("--terminal-board")
-        }
         if sheetNavigationEnabled {
             args.append("--enable-sheet-navigation")
         }
-        if multipleDrawerItems {
-            args.append("--multiple-drawer-items")
-        }
         app.launchArguments = args
-        let runID = UUID().uuidString
         defaultsSuiteNames.append(uiTestDefaultsSuiteName(runID: runID))
         app.launchEnvironment["DEN_UI_TEST_RUN_ID"] = runID
         app.launch()
@@ -569,6 +583,7 @@ final class Den_BrowserUITests: XCTestCase, BDD {
 final class Den_BrowserUIPerformanceTests: XCTestCase {
     private var processLock: UITestProcessLock?
     private var defaultsSuiteName: String?
+    private var fixtureDirectory: URL?
 
     override func setUpWithError() throws {
         processLock = try UITestProcessLock()
@@ -577,23 +592,37 @@ final class Den_BrowserUIPerformanceTests: XCTestCase {
 
     override func tearDownWithError() throws {
         MainActor.assumeIsolated {
-            XCUIApplication().terminate()
+            uiTestApplication().terminate()
         }
         if let defaultsSuiteName {
             UserDefaults().removePersistentDomain(forName: defaultsSuiteName)
+        }
+        if let fixtureDirectory {
+            try? FileManager.default.removeItem(at: fixtureDirectory)
         }
         processLock = nil
         try super.tearDownWithError()
     }
 
     func testApplicationLaunchPerformance() {
-        let app = XCUIApplication()
+        let app = uiTestApplication()
+        let runID = UUID().uuidString
+        let fixtureDirectory = FileManager.default.temporaryDirectory
+            .appending(path: "DenBrowserUITests", directoryHint: .isDirectory)
+            .appending(path: runID, directoryHint: .isDirectory)
+        self.fixtureDirectory = fixtureDirectory
+        let seedURL = fixtureDirectory.appending(path: "initial-profile.json")
+        do {
+            try FileManager.default.createDirectory(at: fixtureDirectory, withIntermediateDirectories: true)
+            try uiTestProfile(fixture: .interactionBasics, boardCount: .one)
+                .write(to: seedURL, options: .atomic)
+        } catch {
+            XCTFail("Could not write UI test profile seed: \(error)")
+        }
         app.launchArguments = [
             "-ApplePersistenceIgnoreState", "YES",
-            "--ui-testing", "--fixture", UITestFixture.interactionBasics.rawValue,
-            "--board-count", UITestBoardCount.one.rawValue,
+            "--ui-testing", "--initial-profile", seedURL.path,
         ]
-        let runID = UUID().uuidString
         defaultsSuiteName = uiTestDefaultsSuiteName(runID: runID)
         app.launchEnvironment["DEN_UI_TEST_RUN_ID"] = runID
 
@@ -606,6 +635,144 @@ final class Den_BrowserUIPerformanceTests: XCTestCase {
             app.launch()
         }
     }
+}
+
+private func uiTestProfile(
+    fixture: UITestFixture,
+    boardCount: UITestBoardCount = .three,
+    terminalBoard: Bool = false,
+    multipleDrawerItems: Bool = false
+) throws -> Data {
+    let alphaID = "00000000-0000-0000-0000-000000000301"
+    let bravoID = "00000000-0000-0000-0000-000000000302"
+    let charlieID = "00000000-0000-0000-0000-000000000303"
+    let mainDeskID = "00000000-0000-0000-0000-000000000200"
+    let secondDeskID = "00000000-0000-0000-0000-000000000201"
+    let thirdDeskID = "00000000-0000-0000-0000-000000000202"
+    let sheetURL = uiTestSheetURL().absoluteString
+    func webBoard(_ id: String, _ label: String, width: Double = 320) -> [String: Any] {
+        [
+            "id": id, "label": label, "width": width,
+            "content": ["kind": "web", "currentSheetURL": sheetURL, "firstSheetURL": sheetURL],
+            "sheetNavigationPaused": false,
+        ]
+    }
+    func makeTerminalBoard(_ id: String, _ label: String, width: Double = 320) -> [String: Any] {
+        [
+            "id": id, "label": label, "width": width,
+            "content": ["kind": "terminal", "workingDirectory": "/tmp"],
+            "sheetNavigationPaused": false,
+        ]
+    }
+    let alpha = terminalBoard ? makeTerminalBoard(alphaID, "Terminal") : webBoard(alphaID, "Alpha")
+    let bravo = webBoard(bravoID, "Bravo")
+    let charlie = webBoard(charlieID, "Charlie")
+    let mainBoards: [[String: Any]]
+    let secondBoards: [[String: Any]]
+    let secondFocusedBoardID: String?
+    let mainFocusedBoardID: String
+    let focusedDeskID: String
+    switch fixture {
+    case .interactionBasics:
+        switch boardCount {
+        case .one: mainBoards = [alpha]
+        case .two: mainBoards = [alpha, bravo]
+        case .three: mainBoards = [alpha, bravo, charlie]
+        }
+        secondBoards = []
+        secondFocusedBoardID = nil
+        mainFocusedBoardID = alphaID
+        focusedDeskID = mainDeskID
+    case .overviewBoardPair:
+        mainBoards = [bravo, charlie]
+        secondBoards = []
+        secondFocusedBoardID = nil
+        mainFocusedBoardID = bravoID
+        focusedDeskID = mainDeskID
+    case .focusedNonLeadingBoard:
+        mainBoards = [alpha]
+        secondBoards = [bravo, charlie]
+        secondFocusedBoardID = charlieID
+        mainFocusedBoardID = alphaID
+        focusedDeskID = secondDeskID
+    case .focusedTerminalBeforeAlignment:
+        let leadingBoard =
+            terminalBoard
+            ? makeTerminalBoard(alphaID, "Terminal", width: 1_400)
+            : webBoard(alphaID, "Alpha", width: 1_400)
+        let middleBoard = webBoard(bravoID, "Bravo", width: 1_400)
+        let focusedBoard = webBoard(charlieID, "Charlie", width: 1_400)
+        let mainBoard = webBoard("00000000-0000-0000-0000-000000000304", "Main")
+        mainBoards = [mainBoard]
+        secondBoards = [leadingBoard, middleBoard, focusedBoard]
+        secondFocusedBoardID = charlieID
+        mainFocusedBoardID = "00000000-0000-0000-0000-000000000304"
+        focusedDeskID = secondDeskID
+    }
+    let desk: [String: Any] = [
+        "id": mainDeskID, "label": "Main", "boards": mainBoards,
+        "focusedBoardID": mainFocusedBoardID,
+    ]
+    let secondDesk: [String: Any] = [
+        "id": secondDeskID, "label": "Second", "boards": secondBoards,
+        "focusedBoardID": secondFocusedBoardID as Any? ?? NSNull(),
+    ]
+    let thirdDesk: [String: Any] = ["id": thirdDeskID, "label": "Third", "boards": [] as [[String: Any]]]
+    let drawerItem: [String: Any] = [
+        "id": "00000000-0000-0000-0000-000000000401", "url": sheetURL, "title": "Drawer Fixture",
+    ]
+    let secondDrawerItem: [String: Any] = [
+        "id": "00000000-0000-0000-0000-000000000402", "url": sheetURL, "title": "Next Drawer Fixture",
+    ]
+    let drawerItems = multipleDrawerItems ? [secondDrawerItem, drawerItem] : [drawerItem]
+    let seed: [String: Any] = [
+        "schemaVersion": 2,
+        "profile": [
+            "id": "00000000-0000-0000-0000-000000000100", "name": "UI Testing",
+            "color": "blue", "webProfileStore": ["kind": "default"],
+        ],
+        "den": [
+            "desks": [desk, secondDesk, thirdDesk], "focusedDeskID": focusedDeskID,
+            "drawerItems": drawerItems,
+        ],
+        "deskPresets": [],
+    ]
+    return try JSONSerialization.data(withJSONObject: seed)
+}
+
+private func uiTestSheetURL() -> URL {
+    guard
+        let url = uiTestAppBundle().url(
+            forResource: "interaction-basics", withExtension: "html"),
+        let html = try? String(contentsOf: url, encoding: .utf8)
+    else {
+        preconditionFailure("Could not load UI test fixture")
+    }
+    let allowed = CharacterSet.urlQueryAllowed.subtracting(CharacterSet(charactersIn: "#"))
+    guard
+        let encoded = html.addingPercentEncoding(withAllowedCharacters: allowed),
+        let url = URL(string: "data:text/html,\(encoded)")
+    else {
+        preconditionFailure("Could not encode UI test fixture")
+    }
+    return url
+}
+
+private func uiTestApplication() -> XCUIApplication {
+    XCUIApplication(url: uiTestAppBundle().bundleURL)
+}
+
+private func uiTestAppBundle() -> Bundle {
+    let productsURL = Bundle(for: Den_BrowserUITests.self).bundleURL
+        .deletingLastPathComponent()
+        .deletingLastPathComponent()
+        .deletingLastPathComponent()
+        .deletingLastPathComponent()
+    let appURL = productsURL.appending(path: "Den Browser.app", directoryHint: .isDirectory)
+    guard let appBundle = Bundle(url: appURL) else {
+        preconditionFailure("Could not load the app bundle for UI tests")
+    }
+    return appBundle
 }
 
 private enum UITestFixture: String {

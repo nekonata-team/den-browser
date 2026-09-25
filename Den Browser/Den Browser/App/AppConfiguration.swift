@@ -1,12 +1,6 @@
 import Foundation
 import WebKit
 
-enum BenchmarkScenario: String, CaseIterable, Sendable {
-    case emptyDesk = "empty-desk"
-    case oneTerminalBoard = "one-terminal-board"
-    case oneWebBoard = "one-web-board"
-}
-
 struct AppConfiguration {
     let profileDirectoryURL: URL
     let defaults: UserDefaults
@@ -17,15 +11,9 @@ struct AppConfiguration {
 
     static func current(processInfo: ProcessInfo = .processInfo) -> AppConfiguration {
         if processInfo.arguments.contains("--benchmark-scenario") {
-            guard
-                let rawScenario = argumentValue(after: "--benchmark-scenario", in: processInfo.arguments),
-                let scenario = BenchmarkScenario(rawValue: rawScenario)
-            else {
-                preconditionFailure("Benchmark launch requires a supported --benchmark-scenario")
-            }
             return benchmark(
-                scenario: scenario,
-                runID: processInfo.environment["DEN_BENCHMARK_RUN_ID"] ?? UUID().uuidString)
+                runID: processInfo.environment["DEN_BENCHMARK_RUN_ID"] ?? UUID().uuidString,
+                arguments: processInfo.arguments)
         }
 
         guard processInfo.arguments.contains("--ui-testing") else {
@@ -50,26 +38,16 @@ struct AppConfiguration {
                 websiteDataStore: isPrivateDen ? { _ in .nonPersistent() } : { $0.websiteDataStore })
         }
 
-        guard
-            let fixtureName = argumentValue(after: "--fixture", in: processInfo.arguments),
-            let fixture = UITestFixture(rawValue: fixtureName)
-        else {
-            preconditionFailure("UI tests require a supported fixture")
-        }
-        let boardCountArgument =
-            argumentValue(after: "--board-count", in: processInfo.arguments)
-            ?? UITestBoardCount.three.rawValue
-        guard let boardCount = UITestBoardCount(rawValue: boardCountArgument) else {
-            preconditionFailure("UI tests require a supported Board count")
-        }
-
         let runID = processInfo.environment["DEN_UI_TEST_RUN_ID"] ?? UUID().uuidString
-        let directoryURL = FileManager.default.temporaryDirectory
+        let runDirectoryURL = FileManager.default.temporaryDirectory
             .appending(path: "DenBrowserUITests", directoryHint: .isDirectory)
             .appending(path: runID, directoryHint: .isDirectory)
+        let directoryURL = runDirectoryURL.appending(path: "Profile", directoryHint: .isDirectory)
         if FileManager.default.fileExists(atPath: directoryURL.path) {
             try? FileManager.default.removeItem(at: directoryURL)
         }
+
+        let initialProfile = initialProfile(from: processInfo.arguments)
 
         let suiteName = "dev.nekonata.denbrowser.ui-testing.\(runID)"
         guard let defaults = UserDefaults(suiteName: suiteName) else {
@@ -83,11 +61,7 @@ struct AppConfiguration {
         return AppConfiguration(
             profileDirectoryURL: directoryURL,
             defaults: defaults,
-            initialProfile: uiTestProfile(
-                fixture: fixture,
-                boardCount: boardCount,
-                terminalBoard: processInfo.arguments.contains("--terminal-board"),
-                multipleDrawerItems: processInfo.arguments.contains("--multiple-drawer-items")),
+            initialProfile: initialProfile,
             isEphemeral: false,
             ipcSocketPath: DenSocketPath.temporary(prefix: "den-test", identifier: runID),
             websiteDataStore: { _ in .nonPersistent() })
@@ -109,18 +83,20 @@ struct AppConfiguration {
             websiteDataStore: { _ in .nonPersistent() })
     }
 
-    static func benchmark(scenario: BenchmarkScenario, runID: String = UUID().uuidString) -> AppConfiguration {
+    private static func benchmark(runID: String, arguments: [String]) -> AppConfiguration {
         let suiteName = "dev.nekonata.denbrowser.benchmark.\(runID)"
         guard let defaults = UserDefaults(suiteName: suiteName) else {
             preconditionFailure("Could not create benchmark preferences")
         }
         defaults.removePersistentDomain(forName: suiteName)
 
+        let runDirectoryURL = FileManager.default.temporaryDirectory
+            .appending(path: "DenBrowserBenchmark", directoryHint: .isDirectory)
+            .appending(path: runID, directoryHint: .isDirectory)
         return AppConfiguration(
-            profileDirectoryURL: FileManager.default.temporaryDirectory
-                .appending(path: "DenBrowserBenchmark/\(runID)", directoryHint: .isDirectory),
+            profileDirectoryURL: runDirectoryURL.appending(path: "Profile", directoryHint: .isDirectory),
             defaults: defaults,
-            initialProfile: benchmarkProfile(scenario: scenario),
+            initialProfile: initialProfile(from: arguments),
             isEphemeral: true,
             ipcSocketPath: DenSocketPath.temporary(prefix: "den-benchmark", identifier: runID),
             websiteDataStore: { _ in .nonPersistent() })
@@ -136,35 +112,18 @@ struct AppConfiguration {
             den: .sample)
     }
 
-    private static func benchmarkProfile(scenario: BenchmarkScenario) -> PersistedProfile {
-        let web1 = BoardState(
-            id: fixtureID("00000000-0000-0000-0000-000000000511"),
-            label: "Web 1",
-            width: 520,
-            currentSheetURL: fixtureSheetURLValue())
-        let terminal = BoardState(
-            id: fixtureID("00000000-0000-0000-0000-000000000514"),
-            label: "Terminal",
-            width: 520,
-            workingDirectory: "/")
-        let boards: [BoardState] =
-            switch scenario {
-            case .emptyDesk: []
-            case .oneTerminalBoard: [terminal]
-            case .oneWebBoard: [web1]
-            }
-        let desk = DeskState(
-            id: fixtureID("00000000-0000-0000-0000-000000000502"),
-            label: "Benchmark",
-            boards: boards)
+    private static func initialProfile(from arguments: [String]) -> PersistedProfile {
+        guard
+            let seedPath = argumentValue(after: "--initial-profile", in: arguments),
+            let profile = try? loadInitialProfile(at: URL(fileURLWithPath: seedPath))
+        else {
+            preconditionFailure("A valid initial profile is required")
+        }
+        return profile
+    }
 
-        return PersistedProfile(
-            profile: ProfileState(
-                id: fixtureID("00000000-0000-0000-0000-000000000501"),
-                name: "Benchmark",
-                color: .gray,
-                webProfileStore: .default),
-            den: DenState(desks: [desk], focusedDeskID: desk.id))
+    static func loadInitialProfile(at url: URL) throws -> PersistedProfile {
+        try JSONDecoder().decode(PersistedProfile.self, from: Data(contentsOf: url))
     }
 
     private static func argumentValue(after name: String, in arguments: [String]) -> String? {
@@ -174,159 +133,4 @@ struct AppConfiguration {
         return arguments[index + 1]
     }
 
-    private static func uiTestProfile(
-        fixture: UITestFixture,
-        boardCount: UITestBoardCount,
-        terminalBoard: Bool,
-        multipleDrawerItems: Bool = false
-    ) -> PersistedProfile {
-        let alpha =
-            if terminalBoard {
-                BoardState(
-                    id: fixtureID("00000000-0000-0000-0000-000000000301"),
-                    label: "Terminal",
-                    width: 320,
-                    workingDirectory: "/tmp")
-            } else {
-                BoardState(
-                    id: fixtureID("00000000-0000-0000-0000-000000000301"),
-                    label: "Alpha",
-                    width: 320,
-                    currentSheetURL: URL(string: fixtureSheetURL))
-            }
-        let bravo = BoardState(
-            id: fixtureID("00000000-0000-0000-0000-000000000302"),
-            label: "Bravo",
-            width: 320,
-            currentSheetURL: URL(string: fixtureSheetURL))
-        let charlie = BoardState(
-            id: fixtureID("00000000-0000-0000-0000-000000000303"),
-            label: "Charlie",
-            width: 320,
-            currentSheetURL: URL(string: fixtureSheetURL))
-        let mainDeskID = fixtureID("00000000-0000-0000-0000-000000000200")
-        let secondDeskID = fixtureID("00000000-0000-0000-0000-000000000201")
-        let thirdDeskID = fixtureID("00000000-0000-0000-0000-000000000202")
-        let mainBoards: [BoardState]
-        let secondBoards: [BoardState]
-        let secondFocusedBoardID: UUID?
-        let mainFocusedBoardID: UUID
-        let focusedDeskID: UUID
-        switch fixture {
-        case .interactionBasics:
-            mainBoards =
-                switch boardCount {
-                case .one: [alpha]
-                case .two: [alpha, bravo]
-                case .three: [alpha, bravo, charlie]
-                }
-            secondBoards = []
-            secondFocusedBoardID = nil
-            mainFocusedBoardID = alpha.id
-            focusedDeskID = mainDeskID
-        case .overviewBoardPair:
-            mainBoards = [bravo, charlie]
-            secondBoards = []
-            secondFocusedBoardID = nil
-            mainFocusedBoardID = bravo.id
-            focusedDeskID = mainDeskID
-        case .focusedNonLeadingBoard:
-            mainBoards = [alpha]
-            secondBoards = [bravo, charlie]
-            secondFocusedBoardID = charlie.id
-            mainFocusedBoardID = alpha.id
-            focusedDeskID = secondDeskID
-        case .focusedTerminalBeforeAlignment:
-            var leadingBoard = alpha
-            var middleBoard = bravo
-            var focusedBoard = charlie
-            leadingBoard.width = BoardState.maximumWidth
-            middleBoard.width = BoardState.maximumWidth
-            focusedBoard.width = BoardState.maximumWidth
-            let mainBoard = BoardState(
-                id: fixtureID("00000000-0000-0000-0000-000000000304"),
-                label: "Main",
-                width: 320,
-                currentSheetURL: URL(string: fixtureSheetURL))
-            mainBoards = [mainBoard]
-            secondBoards = [leadingBoard, middleBoard, focusedBoard]
-            secondFocusedBoardID = charlie.id
-            mainFocusedBoardID = mainBoard.id
-            focusedDeskID = secondDeskID
-        }
-        let desk = DeskState(
-            id: mainDeskID,
-            label: "Main",
-            boards: mainBoards,
-            focusedBoardID: mainFocusedBoardID)
-        let secondDesk = DeskState(
-            id: secondDeskID,
-            label: "Second",
-            boards: secondBoards,
-            focusedBoardID: secondFocusedBoardID)
-        let thirdDesk = DeskState(
-            id: thirdDeskID,
-            label: "Third",
-            boards: [])
-        let drawerItem = DrawerItem(
-            id: fixtureID("00000000-0000-0000-0000-000000000401"),
-            url: fixtureSheetURLValue(),
-            title: "Drawer Fixture")
-        let secondDrawerItem = DrawerItem(
-            id: fixtureID("00000000-0000-0000-0000-000000000402"),
-            url: fixtureSheetURLValue(),
-            title: "Next Drawer Fixture")
-        let drawerItems = multipleDrawerItems ? [secondDrawerItem, drawerItem] : [drawerItem]
-        return PersistedProfile(
-            profile: ProfileState(
-                id: fixtureID("00000000-0000-0000-0000-000000000100"),
-                name: "UI Testing",
-                color: .blue,
-                webProfileStore: .default),
-            den: DenState(
-                desks: [desk, secondDesk, thirdDesk],
-                focusedDeskID: focusedDeskID,
-                drawerItems: drawerItems))
-    }
-
-    private static let fixtureSheetURL: String = {
-        guard
-            let url = Bundle.main.url(forResource: "interaction-basics", withExtension: "html"),
-            let html = try? String(contentsOf: url, encoding: .utf8)
-        else {
-            preconditionFailure("Could not load UI test fixture")
-        }
-        let allowed = CharacterSet.urlQueryAllowed.subtracting(CharacterSet(charactersIn: "#"))
-        guard let encoded = html.addingPercentEncoding(withAllowedCharacters: allowed) else {
-            preconditionFailure("Could not encode UI test fixture")
-        }
-        return "data:text/html,\(encoded)"
-    }()
-
-    private static func fixtureID(_ value: String) -> UUID {
-        guard let id = UUID(uuidString: value) else {
-            preconditionFailure("Invalid UI test fixture UUID: \(value)")
-        }
-        return id
-    }
-
-    private static func fixtureSheetURLValue() -> URL {
-        guard let url = URL(string: fixtureSheetURL) else {
-            preconditionFailure("Invalid UI test fixture URL")
-        }
-        return url
-    }
-}
-
-private enum UITestFixture: String {
-    case interactionBasics = "interaction-basics"
-    case overviewBoardPair = "overview-board-pair"
-    case focusedNonLeadingBoard = "focused-non-leading-board"
-    case focusedTerminalBeforeAlignment = "focused-terminal-before-alignment"
-}
-
-private enum UITestBoardCount: String {
-    case one
-    case two
-    case three
 }

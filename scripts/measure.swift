@@ -62,8 +62,19 @@ else {
         stderr)
     exit(2)
 }
-appArgs.append(contentsOf: ["--benchmark-scenario", selectedScenario.rawValue])
 let benchmarkRunID = UUID().uuidString
+let suiteName = "dev.nekonata.denbrowser.benchmark.\(benchmarkRunID)"
+let runDirectory = FileManager.default.temporaryDirectory
+    .appending(path: "DenBrowserBenchmark", directoryHint: .isDirectory)
+    .appending(path: benchmarkRunID, directoryHint: .isDirectory)
+defer { try? FileManager.default.removeItem(at: runDirectory) }
+let seedURL = runDirectory.appending(path: "initial-profile.json")
+try FileManager.default.createDirectory(at: runDirectory, withIntermediateDirectories: true)
+try benchmarkProfileSeed(for: selectedScenario).write(to: seedURL, options: .atomic)
+appArgs.append(contentsOf: [
+    "--benchmark-scenario", selectedScenario.rawValue,
+    "--initial-profile", seedURL.path,
+])
 
 var env = ProcessInfo.processInfo.environment
 env["DEN_BENCHMARK"] = "1"
@@ -72,6 +83,10 @@ let traceFileURL = FileManager.default.temporaryDirectory
     .appending(path: "den-benchmark-\(benchmarkRunID).log")
 _ = FileManager.default.createFile(atPath: traceFileURL.path, contents: Data())
 env["DEN_BENCHMARK_TRACE_FILE"] = traceFileURL.path
+defer {
+    UserDefaults(suiteName: suiteName)?.removePersistentDomain(forName: suiteName)
+    try? FileManager.default.removeItem(at: traceFileURL)
+}
 
 print("Launching: \(appPath) \(appArgs.joined(separator: " "))")
 let prelaunchSnapshot = queryProcessSnapshot()
@@ -140,18 +155,7 @@ let app: NSRunningApplication = try await withCheckedThrowingContinuation {
     }
 }
 let mainPID = app.processIdentifier
-let suiteName = "dev.nekonata.denbrowser.benchmark.\(benchmarkRunID)"
-let profileDirectory = FileManager.default.temporaryDirectory
-    .appending(path: "DenBrowserBenchmark/\(benchmarkRunID)", directoryHint: .isDirectory)
-func cleanBenchmarkFiles() {
-    UserDefaults(suiteName: suiteName)?.removePersistentDomain(forName: suiteName)
-    try? FileManager.default.removeItem(at: profileDirectory)
-    try? FileManager.default.removeItem(at: traceFileURL)
-}
-defer {
-    if !app.isTerminated { _ = app.forceTerminate() }
-    cleanBenchmarkFiles()
-}
+defer { if !app.isTerminated { _ = app.forceTerminate() } }
 
 struct Sample {
     let appCPU: Double
@@ -171,6 +175,70 @@ enum BenchmarkScenario: String, CaseIterable {
     case emptyDesk = "empty-desk"
     case oneTerminalBoard = "one-terminal-board"
     case oneWebBoard = "one-web-board"
+}
+
+func benchmarkProfileSeed(for scenario: BenchmarkScenario) throws -> Data {
+    guard
+        let bundle = Bundle(url: URL(fileURLWithPath: appBundlePath)),
+        let resourceURL = bundle.url(forResource: "interaction-basics", withExtension: "html"),
+        let html = try? String(contentsOf: resourceURL, encoding: .utf8)
+    else {
+        throw NSError(
+            domain: "DenBenchmark", code: 2,
+            userInfo: [NSLocalizedDescriptionKey: "Could not load benchmark Sheet fixture."])
+    }
+    let allowed = CharacterSet.urlQueryAllowed.subtracting(CharacterSet(charactersIn: "#"))
+    guard
+        let encoded = html.addingPercentEncoding(withAllowedCharacters: allowed),
+        let url = URL(string: "data:text/html,\(encoded)")
+    else {
+        throw NSError(
+            domain: "DenBenchmark", code: 3,
+            userInfo: [NSLocalizedDescriptionKey: "Could not encode benchmark Sheet fixture."])
+    }
+    let webBoard: [String: Any] = [
+        "id": "00000000-0000-0000-0000-000000000511",
+        "label": "Web 1",
+        "width": 520.0,
+        "content": ["kind": "web", "currentSheetURL": url.absoluteString, "firstSheetURL": url.absoluteString],
+        "sheetNavigationPaused": false,
+    ]
+    let terminalBoard: [String: Any] = [
+        "id": "00000000-0000-0000-0000-000000000514",
+        "label": "Terminal",
+        "width": 520.0,
+        "content": ["kind": "terminal", "workingDirectory": "/"],
+        "sheetNavigationPaused": false,
+    ]
+    let boards: [[String: Any]]
+    switch scenario {
+    case .emptyDesk: boards = []
+    case .oneTerminalBoard: boards = [terminalBoard]
+    case .oneWebBoard: boards = [webBoard]
+    }
+    var desk: [String: Any] = [
+        "id": "00000000-0000-0000-0000-000000000502",
+        "label": "Benchmark",
+        "boards": boards,
+    ]
+    if let focusedBoardID = boards.first?["id"] {
+        desk["focusedBoardID"] = focusedBoardID
+    }
+    let seed: [String: Any] = [
+        "schemaVersion": 2,
+        "profile": [
+            "id": "00000000-0000-0000-0000-000000000501",
+            "name": "Benchmark",
+            "color": "gray",
+            "webProfileStore": ["kind": "default"],
+        ],
+        "den": [
+            "desks": [desk],
+            "focusedDeskID": "00000000-0000-0000-0000-000000000502",
+        ],
+        "deskPresets": [],
+    ]
+    return try JSONSerialization.data(withJSONObject: seed)
 }
 
 struct ProcessMetric {
@@ -492,9 +560,10 @@ let startupDuration = Date().timeIntervalSince(launchRequestedAt)
 guard collector.isReady(for: selectedScenario) else {
     printPhaseSummary("Startup", samples: startupSamples, duration: startupDuration)
     _ = app.forceTerminate()
-    cleanBenchmarkFiles()
-    fputs("Error: Benchmark window or scenario did not become ready within 30 seconds.\n", stderr)
-    exit(1)
+    throw NSError(
+        domain: "DenBenchmark",
+        code: 1,
+        userInfo: [NSLocalizedDescriptionKey: "Benchmark window or scenario did not become ready within 30 seconds."])
 }
 
 print("\nSampling post-ready settle for \(settleSeconds)s...")
