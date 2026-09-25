@@ -33,7 +33,7 @@ extension DenStore {
     }
 
     private func focusedSheetRuntime() -> BoardRuntime? {
-        guard let board = focusedBoard, !board.isTerminal else {
+        guard let board = focusedBoard, board.isWeb else {
             showToast("No focused Board.", style: .warning)
             return nil
         }

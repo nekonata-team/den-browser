@@ -166,9 +166,11 @@ extension DenStore {
         let keepsDeskFocus =
             source.desk == targetDeskIndex
             && state.desks[source.desk].focusedBoardID == boardID
-        let board = removeBoard(at: source)
-        let insertionIndex = min(max(targetIndex, 0), state.desks[targetDeskIndex].boards.count)
-        state.desks[targetDeskIndex].boards.insert(board, at: insertionIndex)
+        if source.desk == targetDeskIndex {
+            reorderSideBoardGroup(containing: boardID, to: targetIndex, in: source.desk)
+        } else {
+            transferSideBoardGroup(containing: boardID, from: source.desk, to: targetDeskIndex, at: targetIndex)
+        }
         if keepsDeskFocus || state.desks[targetDeskIndex].focusedBoardID == nil {
             state.desks[targetDeskIndex].focusedBoardID = boardID
         }
@@ -260,18 +262,21 @@ extension DenStore {
             let indices = boardIndices(for: boardID)
         else { return }
 
-        var boards = state.desks[indices.desk].boards
+        let boards = state.desks[indices.desk].boards
         guard boards.count > 1 else { return }
 
-        let targetIndex = min(max(indices.board + delta, 0), boards.count - 1)
-        guard targetIndex != indices.board else { return }
+        let group = sideBoardGroup(containing: boardID, in: boards)
+        guard let first = group.first, let last = group.last,
+            let firstIndex = boards.firstIndex(where: { $0.id == first.id }),
+            let lastIndex = boards.firstIndex(where: { $0.id == last.id })
+        else { return }
+        let targetIndex = delta < 0 ? firstIndex - 1 : lastIndex + 1
+        guard boards.indices.contains(targetIndex) else { return }
 
-        let board = boards.remove(at: indices.board)
-        boards.insert(board, at: targetIndex)
-        state.desks[indices.desk].boards = boards
+        reorderSideBoardGroup(containing: boardID, to: targetIndex, in: indices.desk)
         overviewSelection = OverviewSelection(
             deskID: state.desks[indices.desk].id,
-            boardID: board.id)
+            boardID: boardID)
         save()
     }
 
@@ -283,8 +288,6 @@ extension DenStore {
             let source = boardIndices(for: boardID)
         else { return }
 
-        let board = removeBoard(at: source)
-
         let targetDeskIndex = wrappedIndex(source.desk + delta, count: state.desks.count)
         let insertIndex: Int
         if let focusedBoardID = state.desks[targetDeskIndex].focusedBoardID,
@@ -295,13 +298,13 @@ extension DenStore {
             insertIndex = state.desks[targetDeskIndex].boards.endIndex
         }
 
-        state.desks[targetDeskIndex].boards.insert(board, at: insertIndex)
+        transferSideBoardGroup(containing: boardID, from: source.desk, to: targetDeskIndex, at: insertIndex)
         if state.desks[targetDeskIndex].focusedBoardID == nil {
-            state.desks[targetDeskIndex].focusedBoardID = board.id
+            state.desks[targetDeskIndex].focusedBoardID = boardID
         }
         overviewSelection = OverviewSelection(
             deskID: state.desks[targetDeskIndex].id,
-            boardID: board.id)
+            boardID: boardID)
         save()
     }
 

@@ -130,7 +130,7 @@ extension DenStore {
     }
 
     func showEditBoardLinkPanel() {
-        guard focusedBoard?.isTerminal == false else {
+        guard focusedBoard?.isWeb == true else {
             showToast("No focused board.", style: .warning)
             return
         }

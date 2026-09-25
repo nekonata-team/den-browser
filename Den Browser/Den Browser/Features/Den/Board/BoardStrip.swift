@@ -152,7 +152,7 @@ struct BoardStrip: View {
                     let isFocused = store.focusedDesk?.focusedBoardID == board.id
                     let isVisible = visibleBoardIDs.contains(board.id) || isFocused
                     let isActivated = activatedBoardIDs.contains(board.id) || isVisible
-                    let needsRuntime = isActivated && !board.isTerminal && store.runtimes[board.id] == nil
+                    let needsRuntime = isActivated && board.isWeb && store.runtimes[board.id] == nil
 
                     boardView(
                         board,
@@ -597,6 +597,22 @@ struct BoardStrip: View {
                 onRemove: { store.removeBoard(board.id) },
                 onDragChanged: { updateBoardDrag(board, value: $0, in: containerSize) },
                 onDragEnded: { finishBoardDrag(value: $0, in: containerSize) })
+        } else if board.isInspection, let targetBoardID = board.inspectionTargetBoardID {
+            InspectionBoardView(
+                board: board,
+                isFocused: focused,
+                isDragging: boardDrag?.boardID == board.id,
+                isPointerFocusEnabled: pointerFocusEnabled,
+                profileColor: profileColor,
+                width: size.width,
+                height: size.height,
+                isVisibleInViewport: isVisible,
+                targetBoardID: targetBoardID,
+                onFocus: focus,
+                onRemove: { store.removeBoard(board.id) },
+                onDragChanged: { updateBoardDrag(board, value: $0, in: containerSize) },
+                onDragEnded: { finishBoardDrag(value: $0, in: containerSize) }
+            )
         } else if board.isTerminal {
             TerminalBoardView(
                 board: board,
@@ -875,18 +891,21 @@ struct BoardStrip: View {
     }
 
     private func centeredBoardScrollX(for boardID: UUID) -> CGFloat? {
-        guard
-            let boardIndex = alignmentBoards.firstIndex(where: { $0.id == boardID })
-        else { return nil }
-
         let boards = alignmentBoards
+        guard boards.contains(where: { $0.id == boardID }) else { return nil }
         let params = boardLayoutParameters(for: boards)
+        let group = store.sideBoardGroup(containing: boardID, in: boards)
+        let firstID = group.first?.id ?? boardID
+        let lastID = group.last?.id ?? boardID
+        guard
+            let firstIndex = boards.firstIndex(where: { $0.id == firstID }),
+            let lastIndex = boards.firstIndex(where: { $0.id == lastID })
+        else { return nil }
         return BoardLayout.centeredScrollX(
-            for: boardIndex,
+            for: firstIndex...lastIndex,
             in: params,
             containerWidth: scrollGeometry.containerWidth,
-            contentWidth: scrollGeometry.scrollableContentWidth
-        )
+            contentWidth: scrollGeometry.scrollableContentWidth)
     }
 
     private func performBoardVisibility(_ targetOffsetX: CGFloat, animated: Bool) {

@@ -204,6 +204,12 @@ private struct DenCommands: Commands {
                 Button("Open Board") { store?.performAppAction(.board(.showOpenPanel)) }
                     .keyboardShortcut("t", modifiers: [.command])
                     .disabled(store == nil)
+                Button("Inspect Current Sheet") {
+                    guard let board = store?.focusedBoard, board.isWeb else { return }
+                    store?.createInspectionBoard(targetBoardID: board.id)
+                }
+                .keyboardShortcut("i", modifiers: [.command, .option])
+                .disabled(store?.focusedBoard?.isWeb != true)
                 Menu("Content Size") {
                     Button(
                         store?.focusedBoard?.isTerminal == true
@@ -229,27 +235,27 @@ private struct DenCommands: Commands {
                     }
                     .keyboardShortcut("0", modifiers: [.command])
                 }
-                .disabled(store?.focusedBoard == nil)
+                .disabled(!(store?.focusedBoard?.isWeb == true || store?.focusedBoard?.isTerminal == true))
                 Button("Edit Focused Board Link") {
                     store?.performAppAction(.board(.showEditLinkPanel))
                 }
                 .keyboardShortcut("l", modifiers: [.command])
-                .disabled(store?.focusedBoard?.isTerminal != false)
+                .disabled(store?.focusedBoard?.isWeb != true)
 
                 Divider()
 
                 Button("Reload Current Sheet") { store?.performAppAction(.board(.reload)) }
                     .keyboardShortcut("r", modifiers: [.command])
-                    .disabled(store?.focusedBoard?.isTerminal != false)
+                    .disabled(store?.focusedBoard?.isWeb != true)
                 Button("Hard Reload Current Sheet") {
                     store?.performAppAction(.board(.reloadFromOrigin))
                 }
                 .keyboardShortcut("r", modifiers: [.command, .shift])
-                .disabled(store?.focusedBoard?.isTerminal != false)
+                .disabled(store?.focusedBoard?.isWeb != true)
                 Button("Capture Current Sheet Screenshot…") {
                     store?.performAppAction(.board(.captureSheet))
                 }
-                .disabled(store?.focusedBoard?.isTerminal != false)
+                .disabled(store?.focusedBoard?.isWeb != true)
 
                 Divider()
 
@@ -305,7 +311,7 @@ private struct DenCommands: Commands {
                     store?.performAppAction(.desk(.reloadSheets))
                 }
                 .keyboardShortcut("r", modifiers: [.command, .option, .shift])
-                .disabled(store?.focusedDesk?.boards.allSatisfy(\.isTerminal) != false)
+                .disabled(store?.focusedDesk?.boards.contains(where: \.isWeb) != true)
 
                 Divider()
 

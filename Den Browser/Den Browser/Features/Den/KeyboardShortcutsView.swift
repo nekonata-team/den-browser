@@ -33,14 +33,10 @@ struct KeyboardShortcutsView: View {
     private var sections: [ShortcutGuideSection] {
         [
             ShortcutGuideSection(
-                title: "App and Sheet Input",
+                title: "App",
                 items: [
                     item(["⌃", "⌘", "P"], "Open Profile panel"),
                     item(["⌘", "T"], "Open Board"),
-                    item(["⌘", "L"], "Edit Focused Board Link"),
-                    item(["⌘", "R"], "Reload Current Sheet"),
-                    item(["⇧", "⌘", "R"], "Hard Reload Current Sheet"),
-                    item(["⌘", "⌥", "⇧", "R"], "Reload Focused Desk Sheets"),
                     item(["⌘", "+", "/", "-"], "Increase / decrease Focused Board content size"),
                     item(["⌘", "0"], "Reset Focused Board content size"),
                     item(["⌘", "W"], "Remove Focused Board"),
@@ -50,14 +46,29 @@ struct KeyboardShortcutsView: View {
                     item(deskNumberShortcutTokens, "Focus Desk 1–10"),
                 ] + ConfigurableShortcut.allCases.map(customItem)),
             ShortcutGuideSection(
-                title: "Den Mode",
+                title: "Browser / Web Board",
+                items: [
+                    item(["⌘", "⌥", "I"], "Inspect Current Sheet"),
+                    item(["⌘", "L"], "Edit Focused Board Link"),
+                    item(["⌘", "R"], "Reload Current Sheet"),
+                    item(["⇧", "⌘", "R"], "Hard Reload Current Sheet"),
+                    item(["⌘", "⌥", "⇧", "R"], "Reload Focused Desk Sheets"),
+                    item(["⌃", "s"], "Den Mode: Copy Current Sheet screenshot to clipboard"),
+                    item(["[", "/", "]"], "Den Mode: Back / forward Sheet"),
+                    item(["⇧", "[", "/", "⇧", "]"], "Den Mode: First / latest Sheet"),
+                    item(["t"], "Den Mode: Pause / resume Sheet Navigation for Focused Board"),
+                    item(["a"], "Den Mode: Keep Current Sheet in Drawer"),
+                    item(["s"], "Den Mode: Capture Current Sheet Screenshot"),
+                    item(["a", "then", "link hint"], "Den Mode: Keep link in Drawer with Sheet Navigation"),
+                ]),
+            ShortcutGuideSection(
+                title: "Den Mode — Focus and Navigation",
                 items: [
                     item(["Escape"], "Exit Den Mode"),
                     item(["←", "/", "→", "or", "h", "/", "l"], "Focus previous / next Board"),
                     item(["↑", "/", "↓", "or", "j", "/", "k"], "Focus previous / next Desk"),
                     item(["Shift", "+", "movement"], "Move Focused Board"),
                     item(["<", "/", ">"], "Browse Boards without changing focus"),
-                    item(["⌃", "s"], "Copy Current Sheet screenshot to clipboard"),
                     item(["/"], "Filter Boards in Focused Desk"),
                     item(["1–9", "/", "0"], "Focus Desk 1–10"),
                     item(["Shift", "+", "digit"], "Move Focused Board to Desk"),
@@ -77,24 +88,18 @@ struct KeyboardShortcutsView: View {
                     item(["⇧", "F"], "Toggle Focus Mode"),
                 ]),
             ShortcutGuideSection(
-                title: "Board Actions",
+                title: "Den Mode — Board Actions",
                 items: [
-                    item(["[", "/", "]"], "Back / forward Sheet"),
-                    item(["⇧", "[", "/", "⇧", "]"], "First / latest Sheet"),
                     item(["-", "/", "="], "Narrow / widen Board"),
                     item(["w", "then", "- / = / 1–9"], "Resize all Boards"),
                     item(["f"], "Toggle maximized Board"),
                     item(["c"], "Center Focused Board"),
                     item(["m"], "Set / clear Anchor Board"),
                     item(["⇧", "M"], "Jump to Anchor Board / return to origin"),
-                    item(["t"], "Pause / resume Sheet Navigation for Focused Board"),
-                    item(["a"], "Keep Current Sheet in Drawer"),
-                    item(["s"], "Capture Current Sheet Screenshot"),
                     item(["y"], "Copy Focused Board URL / working directory / session"),
                     item(["⇧", "Y"], "Copy Focused Board ID"),
                     item(["Return"], "Duplicate Focused Board"),
                     item(["Shift", "+", "Return"], "New Board from First Sheet; zmx duplicate"),
-                    item(["e"], "Edit Focused Board Link"),
                     item(["r"], "Rename Board"),
                     item(["b"], "Save Board as Essential"),
                     item(["d"], "Remove Focused Board and focus next Board"),
@@ -140,11 +145,6 @@ struct KeyboardShortcutsView: View {
                     item(["d", "or", "Delete"], "Discard Drawer Item and focus next"),
                     item(["u"], "Restore discarded Drawer Item"),
                     item(["Escape"], "Exit Den Mode / close Drawer"),
-                ]),
-            ShortcutGuideSection(
-                title: "Sheet Input",
-                items: [
-                    item(["a", "then", "link hint"], "Keep link in Drawer with Sheet Navigation")
                 ]),
         ]
     }

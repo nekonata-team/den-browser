@@ -260,6 +260,54 @@ struct DenStoreOverviewTests {
         #expect(store.overviewSelectionBoardID == second.id)
     }
 
+    @Test func overviewDeskMovementCarriesSelectedSideBoardGroup() {
+        let target = board("Target")
+        let side = BoardState(width: 390, inspectionTargetBoardID: target.id)
+        let source = desk("Source", boards: [target, side], focusedBoardID: target.id)
+        let destination = desk("Destination")
+        let store = DenStore(state: DenState(desks: [source, destination], focusedDeskID: source.id))
+        store.showOverview()
+        store.selectBoardInOverview(side.id)
+
+        store.moveOverviewSelectionBoardToNextDesk()
+
+        #expect(store.state.desks[0].boards.isEmpty)
+        #expect(store.state.desks[1].boards.map(\.id) == [target.id, side.id])
+        #expect(store.overviewSelectionBoardID == side.id)
+    }
+
+    @Test func overviewDragCarriesSideBoardGroupToAnotherDesk() {
+        let target = board("Target")
+        let side = BoardState(width: 390, inspectionTargetBoardID: target.id)
+        let source = desk("Source", boards: [target, side], focusedBoardID: target.id)
+        let destination = desk("Destination")
+        let store = DenStore(state: DenState(desks: [source, destination], focusedDeskID: source.id))
+        store.showOverview()
+
+        #expect(store.beginOverviewBoardDrag(side.id))
+        store.finishOverviewBoardDrag(side.id, toDeskID: destination.id, at: 0)
+
+        #expect(store.state.desks[0].boards.isEmpty)
+        #expect(store.state.desks[1].boards.map(\.id) == [target.id, side.id])
+        #expect(store.overviewSelectionBoardID == side.id)
+    }
+
+    @Test func overviewReordersSideBoardGroupFromEitherMember() {
+        let before = board("Before")
+        let target = board("Target")
+        let side = BoardState(width: 390, inspectionTargetBoardID: target.id)
+        let after = board("After")
+        let source = desk("Desk", boards: [before, target, side, after])
+        let store = DenStore(state: DenState(desks: [source], focusedDeskID: source.id))
+        store.showOverview()
+        store.selectBoardInOverview(side.id)
+
+        store.moveOverviewSelectionBoardLeft()
+
+        #expect(store.state.desks[0].boards.map(\.id) == [target.id, side.id, before.id, after.id])
+        #expect(store.overviewSelectionBoardID == side.id)
+    }
+
     @Test func overviewBoardDragCancellationLeavesEveryDeskUnchanged() {
         // Arrange
         let first = board("First")

@@ -645,6 +645,7 @@ private struct OverviewBoardCard: View {
     let differentiateWithoutColor: Bool
 
     static func kindLabel(for board: BoardState) -> String {
+        if board.isInspection { return "Inspection" }
         if board.isZmx { return "zmx" }
         if board.isZellij { return "Zellij" }
         if board.isTerminal { return "Terminal" }
@@ -662,7 +663,7 @@ private struct OverviewBoardCard: View {
     }
 
     private var typeColor: Color {
-        board.isTerminal ? DenOverviewColors.terminal : DenOverviewColors.web
+        board.isInspection ? .purple : (board.isTerminal ? DenOverviewColors.terminal : DenOverviewColors.web)
     }
 
     private var backgroundColor: Color {

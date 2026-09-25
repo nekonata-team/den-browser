@@ -10,7 +10,7 @@ private struct TerminalSignalError: LocalizedError {
 
 extension DenStore {
     func runtime(for board: BoardState, popupWebView: WKWebView? = nil) -> BoardRuntime {
-        precondition(!board.isTerminal, "Terminal Board cannot create a web runtime")
+        precondition(board.isWeb, "Only Web Boards can create a web runtime")
         let actions = sheetNavigationActions(for: board)
         let events = boardRuntimeEvents(for: board)
         storage.runtimeOwners[board.id] = self
@@ -287,6 +287,7 @@ extension DenStore {
             terminalRuntime(for: board).adjustFontSize(by: delta)
             return
         }
+        guard board.isWeb else { return }
 
         let webView = runtime(for: board).webView
         webView.magnification = 1
@@ -304,6 +305,7 @@ extension DenStore {
             terminalRuntime(for: board).resetFontSize()
             return
         }
+        guard board.isWeb else { return }
 
         let webView = runtime(for: board).webView
         webView.magnification = 1
@@ -354,7 +356,7 @@ extension DenStore {
             let focusedBoardID = desk.focusedBoardID,
             let board = desk.boards.first(where: { $0.id == focusedBoardID })
         else { return nil }
-        guard !board.isTerminal else { return nil }
+        guard board.isWeb else { return nil }
         return runtime(for: board)
     }
 

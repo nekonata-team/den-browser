@@ -100,6 +100,19 @@ struct BoardLayoutTests {
         )
     }
 
+    @Test func centersCombinedBoardSpan() {
+        let params = parameters(centering: .always, boardCount: 4)
+
+        #expect(
+            BoardLayout.centeredScrollX(
+                for: 1...2,
+                in: params,
+                containerWidth: 1_000,
+                contentWidth: 2_000
+            ) == 652
+        )
+    }
+
     @Test func calculatesContentWidthForEachMode() {
         let alwaysParams = parameters(centering: .always, boardCount: 3)
         #expect(BoardLayout.contentWidth(for: alwaysParams) == 1_976)

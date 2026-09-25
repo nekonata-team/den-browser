@@ -9,8 +9,8 @@ enum DenIPCTargetResolver {
 
         func matches(_ board: BoardState) -> Bool {
             switch self {
-            case .any: return true
-            case .web: return !board.isTerminal
+            case .any: return !board.isInspection
+            case .web: return board.isWeb
             case .terminal: return board.isTerminal
             }
         }

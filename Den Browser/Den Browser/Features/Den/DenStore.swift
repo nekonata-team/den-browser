@@ -263,7 +263,9 @@ final class DenStore {
     }
 
     var contentInputLabel: String {
-        focusedBoard?.isTerminal == true ? "Terminal Input" : "Sheet Input"
+        if focusedBoard?.isTerminal == true { return "Terminal Input" }
+        if focusedBoard?.isInspection == true { return "Inspection Board" }
+        return "Sheet Input"
     }
 
     var canCreateDesk: Bool {
@@ -891,6 +893,7 @@ struct BoardLayoutMetrics: Equatable {
 
 struct RecentlyRemovedBoard {
     let board: BoardState
+    var sideBoards: [BoardState] = []
     let sourceDeskID: UUID
     let sourceBoardIndex: Int
 }

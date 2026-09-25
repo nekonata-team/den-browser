@@ -83,12 +83,33 @@ struct BoardLayout {
         containerWidth: CGFloat,
         contentWidth: CGFloat
     ) -> CGFloat? {
-        guard params.boards.indices.contains(boardIndex), containerWidth > 0, contentWidth > 0 else {
+        centeredScrollX(
+            for: boardIndex...boardIndex,
+            in: params,
+            containerWidth: containerWidth,
+            contentWidth: contentWidth)
+    }
+
+    static func centeredScrollX(
+        for boardRange: ClosedRange<Int>,
+        in params: Parameters,
+        containerWidth: CGFloat,
+        contentWidth: CGFloat
+    ) -> CGFloat? {
+        guard
+            params.boards.indices.contains(boardRange.lowerBound),
+            params.boards.indices.contains(boardRange.upperBound),
+            containerWidth > 0,
+            contentWidth > 0
+        else {
             return nil
         }
 
-        guard let boardRange = boardContentRange(for: boardIndex, in: params) else { return nil }
-        let boardCenter = (boardRange.minX + boardRange.maxX) / 2
+        guard
+            let firstRange = boardContentRange(for: boardRange.lowerBound, in: params),
+            let lastRange = boardContentRange(for: boardRange.upperBound, in: params)
+        else { return nil }
+        let boardCenter = (firstRange.minX + lastRange.maxX) / 2
         let maximumOffset = max(0, contentWidth - containerWidth)
         return min(max(0, boardCenter - containerWidth / 2), maximumOffset)
     }

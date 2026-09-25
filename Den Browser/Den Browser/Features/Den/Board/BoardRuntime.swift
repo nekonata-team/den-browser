@@ -60,6 +60,7 @@ final class BoardRuntime: BaseWebRuntime, ObservableObject {
     @Published private(set) var isShowingInitialLoadFallback = false
     @Published private(set) var didTerminateContentProcess = false
     @Published private(set) var actionHighlight: ActionHighlight?
+    private(set) var isInspectionActive = false
     private var actionHighlightTask: Task<Void, Never>?
 
     var webProcessIdentifier: pid_t? {
@@ -252,6 +253,7 @@ final class BoardRuntime: BaseWebRuntime, ObservableObject {
     }
 
     override func dispose() {
+        stopInspection()
         actionHighlightTask?.cancel()
         actionHighlightTask = nil
         actionHighlight = nil
@@ -339,6 +341,30 @@ final class BoardRuntime: BaseWebRuntime, ObservableObject {
         traceWebProcessIdentifier()
         sheetNavigation.refreshConfiguration(for: webView)
         updateFavicon()
+        if isInspectionActive {
+            webView.evaluateJavaScript(InspectionPageScript.startPicking)
+        }
+    }
+
+    func beginInspectionPicking() {
+        guard webView.url != nil else { return }
+        isInspectionActive = true
+        webView.evaluateJavaScript(InspectionPageScript.startPicking)
+    }
+
+    func stopInspection() {
+        guard isInspectionActive else { return }
+        isInspectionActive = false
+        webView.evaluateJavaScript(InspectionPageScript.stop)
+    }
+
+    func readInspectionSnapshot() async -> InspectionPageSnapshot {
+        guard isInspectionActive,
+            let json = try? await webView.evaluateJavaScript(InspectionPageScript.readSnapshot) as? String,
+            let data = json.data(using: .utf8),
+            let snapshot = try? JSONDecoder().decode(InspectionPageSnapshot.self, from: data)
+        else { return .empty }
+        return snapshot
     }
 
     override func webView(_ webView: WKWebView, didCommit navigation: WKNavigation!) {

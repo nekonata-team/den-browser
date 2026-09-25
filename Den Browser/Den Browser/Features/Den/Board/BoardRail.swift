@@ -137,7 +137,7 @@ struct BoardRail: View {
 
     @ViewBuilder
     private func boardIcon(for board: BoardState) -> some View {
-        if board.isTerminal {
+        if board.isTerminal || board.isInspection {
             Image(systemSymbol: board.systemSymbol)
                 .foregroundStyle(.secondary)
                 .frame(width: 16, height: 16)

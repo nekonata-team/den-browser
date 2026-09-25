@@ -189,6 +189,27 @@ extension DenStore {
     }
 
     @discardableResult
+    func createInspectionBoard(targetBoardID: UUID) -> UUID? {
+        guard let indices = boardIndices(for: targetBoardID) else { return nil }
+        let targetBoard = state.desks[indices.desk].boards[indices.board]
+        guard targetBoard.isWeb else { return nil }
+        if let existing = state.desks[indices.desk].boards.first(where: {
+            $0.inspectionTargetBoardID == targetBoardID
+        }) {
+            focusBoard(existing.id, exitsDenMode: true)
+            return existing.id
+        }
+        let board = BoardState(
+            width: targetBoard.width,
+            inspectionTargetBoardID: targetBoardID
+        )
+        guard insertBoard(board, afterBoardID: targetBoardID, focus: true, origin: .interactive) else {
+            return nil
+        }
+        return board.id
+    }
+
+    @discardableResult
     func createPopupBoard(
         _ popupWebView: WKWebView,
         requestedURL: URL?,
@@ -197,7 +218,7 @@ extension DenStore {
     ) -> Bool {
         guard let sourceIndices = boardIndices(for: fromBoardID) else { return false }
         let sourceBoard = state.desks[sourceIndices.desk].boards[sourceIndices.board]
-        guard !sourceBoard.isTerminal
+        guard sourceBoard.isWeb
         else { return false }
 
         let initialURL = requestedURL.flatMap { SheetURLPolicy.isSupported($0) ? $0 : nil }
@@ -266,7 +287,12 @@ extension DenStore {
         if let afterBoardID {
             guard let indices = boardIndices(for: afterBoardID) else { return false }
             deskIndex = indices.desk
-            insertIndex = indices.board + 1
+            let boards = state.desks[deskIndex].boards
+            let group = sideBoardGroup(containing: afterBoardID, in: boards)
+            insertIndex =
+                group.last.flatMap { member in
+                    boards.firstIndex(where: { $0.id == member.id }).map { $0 + 1 }
+                } ?? indices.board + 1
         } else {
             guard let focusedDeskIndex else { return false }
             deskIndex = focusedDeskIndex
@@ -364,11 +390,24 @@ extension DenStore {
             if isCLIBackgroundRemoval {
                 _ = prepareBoardRemoval(origin: origin)
             }
-            let board = removeBoard(at: indices, focusNext: focusNext)
+            let sourceDeskID = state.desks[indices.desk].id
+            let board = state.desks[indices.desk].boards[indices.board]
+            let group =
+                board.inspectionTargetBoardID == nil
+                ? sideBoardGroup(containing: board.id, in: state.desks[indices.desk].boards)
+                : [board]
+            let removedIDs = Set(group.map(\.id))
+            let removed = group.filter { $0.id != board.id }
+            for member in group.reversed() {
+                guard let memberIndex = state.desks[indices.desk].boards.firstIndex(where: { $0.id == member.id })
+                else { continue }
+                _ = removeBoard(at: (desk: indices.desk, board: memberIndex), focusNext: focusNext)
+            }
             recentlyRemovedBoards.insert(
                 RecentlyRemovedBoard(
                     board: board,
-                    sourceDeskID: state.desks[indices.desk].id,
+                    sideBoards: removed,
+                    sourceDeskID: sourceDeskID,
                     sourceBoardIndex: indices.board
                 ),
                 at: 0
@@ -376,7 +415,12 @@ extension DenStore {
             if recentlyRemovedBoards.count > Self.maximumRecentlyRemovedBoardCount {
                 recentlyRemovedBoards.removeLast()
             }
-            disposeRuntime(for: board.id)
+            for removedBoard in group {
+                if let targetBoardID = removedBoard.inspectionTargetBoardID {
+                    runtimes[targetBoardID]?.stopInspection()
+                }
+                disposeRuntime(for: removedBoard.id)
+            }
 
             if isOverviewPresented, overviewSelection?.boardID == board.id {
                 let deskBoards = state.desks[indices.desk].boards
@@ -387,7 +431,7 @@ extension DenStore {
                 overviewSelection = OverviewSelection(deskID: state.desks[indices.desk].id, boardID: nextBoardID)
             }
 
-            invalidateReferences(toRemovedBoardIDs: Set([board.id]))
+            invalidateReferences(toRemovedBoardIDs: removedIDs)
             save()
         }
         if isCLIBackgroundRemoval {
@@ -421,7 +465,7 @@ extension DenStore {
         }
 
         let board = recentlyRemovedBoard.board
-        state.desks[deskIndex].boards.insert(board, at: insertIndex)
+        state.desks[deskIndex].boards.insert(contentsOf: [board] + recentlyRemovedBoard.sideBoards, at: insertIndex)
         state.desks[deskIndex].focusedBoardID = board.id
         let deskID = state.desks[deskIndex].id
         let changedDesk = setFocusedDesk(deskID)
@@ -646,7 +690,7 @@ extension DenStore {
 
     func reloadFocusedDeskSheets() {
         guard let desk = focusedDesk else { return }
-        for board in desk.boards where !board.isTerminal {
+        for board in desk.boards where board.isWeb {
             runtime(for: board).webView.reload()
         }
     }

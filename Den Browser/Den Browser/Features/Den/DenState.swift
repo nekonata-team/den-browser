@@ -151,8 +151,9 @@ struct PersonalDeskPreset: Codable, Equatable, Identifiable {
     init(id: UUID = UUID(), label: String, desk: DeskState) {
         self.id = id
         self.label = label
-        boards = desk.boards.map(DeskPresetBoard.init)
-        focusedBoardIndex = desk.boards.firstIndex { $0.id == desk.focusedBoardID }
+        let presetBoards = desk.boards.filter { !$0.isInspection }
+        boards = presetBoards.map(DeskPresetBoard.init)
+        focusedBoardIndex = presetBoards.firstIndex { $0.id == desk.focusedBoardID }
     }
 }
 
@@ -260,6 +261,8 @@ struct DeskPresetBoard: Codable, Equatable {
                 width: board.width,
                 initialSheetURL: web.currentSheetURL,
                 customLabel: board.customLabel)
+        case .inspection:
+            self.init(label: board.label, width: board.width, initialSheetURL: nil, customLabel: board.customLabel)
         case .terminal(let terminal):
             self.init(
                 label: board.label,
@@ -361,16 +364,21 @@ struct ZmxBoardState: Codable, Equatable {
     }
 }
 
+struct InspectionBoardState: Codable, Equatable {
+    var targetBoardID: UUID
+}
+
 enum BoardContentState: Codable, Equatable {
     case web(WebBoardState)
+    case inspection(InspectionBoardState)
     case terminal(TerminalBoardState)
     case zellij(ZellijBoardState)
     case zmx(ZmxBoardState)
 
     private enum CodingKeys: String, CodingKey {
-        case kind, currentSheetURL, firstSheetURL, workingDirectory, sessionName, rootSessionName
+        case kind, currentSheetURL, firstSheetURL, workingDirectory, sessionName, rootSessionName, targetBoardID
     }
-    private enum Kind: String, Codable { case web, terminal, zellij, zmx }
+    private enum Kind: String, Codable { case web, inspection, terminal, zellij, zmx }
 
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
@@ -380,6 +388,9 @@ enum BoardContentState: Codable, Equatable {
                 WebBoardState(
                     currentSheetURL: try container.decodeIfPresent(URL.self, forKey: .currentSheetURL),
                     firstSheetURL: try container.decodeIfPresent(URL.self, forKey: .firstSheetURL)))
+        case .inspection:
+            self = .inspection(
+                InspectionBoardState(targetBoardID: try container.decode(UUID.self, forKey: .targetBoardID)))
         case .terminal:
             self = .terminal(
                 TerminalBoardState(
@@ -406,6 +417,9 @@ enum BoardContentState: Codable, Equatable {
             try container.encode(Kind.web, forKey: .kind)
             try container.encodeIfPresent(web.currentSheetURL, forKey: .currentSheetURL)
             try container.encodeIfPresent(web.firstSheetURL, forKey: .firstSheetURL)
+        case .inspection(let inspection):
+            try container.encode(Kind.inspection, forKey: .kind)
+            try container.encode(inspection.targetBoardID, forKey: .targetBoardID)
         case .terminal(let terminal):
             try container.encode(Kind.terminal, forKey: .kind)
             try container.encode(terminal.workingDirectory, forKey: .workingDirectory)
@@ -461,7 +475,7 @@ struct BoardState: Codable, Equatable, Identifiable {
             switch content {
             case .terminal(let terminal): terminal.workingDirectory
             case .zmx(let zmx): zmx.workingDirectory
-            case .web, .zellij: nil
+            case .web, .inspection, .zellij: nil
             }
         }
         set {
@@ -472,7 +486,7 @@ struct BoardState: Codable, Equatable, Identifiable {
             case .zmx(var zmx):
                 zmx.workingDirectory = newValue
                 content = .zmx(zmx)
-            case .web, .zellij:
+            case .web, .inspection, .zellij:
                 return
             }
         }
@@ -496,8 +510,23 @@ struct BoardState: Codable, Equatable, Identifiable {
     var isTerminal: Bool {
         switch content {
         case .terminal, .zellij, .zmx: true
-        case .web: false
+        case .web, .inspection: false
         }
+    }
+
+    var isWeb: Bool {
+        if case .web = content { return true }
+        return false
+    }
+
+    var isInspection: Bool {
+        if case .inspection = content { return true }
+        return false
+    }
+
+    var inspectionTargetBoardID: UUID? {
+        guard case .inspection(let inspection) = content else { return nil }
+        return inspection.targetBoardID
     }
 
     var isZellij: Bool {
@@ -513,6 +542,7 @@ struct BoardState: Codable, Equatable, Identifiable {
     var systemSymbol: SFSymbol {
         switch content {
         case .web: .globe
+        case .inspection: .magnifyingglass
         case .terminal: .appleTerminal
         case .zellij: .rectangle3Group
         case .zmx: .appleTerminalOnRectangle
@@ -531,6 +561,8 @@ struct BoardState: Codable, Equatable, Identifiable {
         switch content {
         case .web(let web):
             return (web.currentSheetURL ?? web.firstSheetURL)?.absoluteString
+        case .inspection:
+            return nil
         case .terminal(let terminal):
             let homeDirectory = FileManager.default.homeDirectoryForCurrentUser.standardizedFileURL.path
             return terminal.workingDirectory == homeDirectory ? ":terminal" : ":terminal \(terminal.workingDirectory)"
@@ -614,6 +646,15 @@ struct BoardState: Codable, Equatable, Identifiable {
                 workingDirectory: workingDirectory,
                 rootSessionName: rootSessionName))
         self.customLabel = customLabel
+        sheetNavigationPaused = false
+    }
+
+    init(id: UUID = UUID(), label: String = "Inspection Board", width: Double, inspectionTargetBoardID: UUID) {
+        self.id = id
+        self.label = label
+        self.width = width
+        content = .inspection(InspectionBoardState(targetBoardID: inspectionTargetBoardID))
+        customLabel = nil
         sheetNavigationPaused = false
     }
 

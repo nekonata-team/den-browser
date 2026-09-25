@@ -26,6 +26,24 @@ struct DenIPCTargetResolverTests {
         #expect(target.1.id == terminalBoardID)
     }
 
+    @Test func ambientBoardTargetSkipsFocusedInspectionBoard() throws {
+        // Arrange
+        let directory = temporaryProfileDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let manager = makeProfileManager(directory: directory)
+        let store = try #require(manager.store(for: manager.personalProfileID))
+        let webBoardID = try #require(store.createBoard(urlString: "https://example.com/"))
+        _ = try #require(store.createInspectionBoard(targetBoardID: webBoardID))
+        let request = DenIPCRequest(command: .board(.focused))
+
+        // Act
+        let resolved = try DenIPCTargetResolver.resolveTargetAnyBoardResult(request: request, in: manager).get()
+
+        // Assert
+        #expect(resolved.1.id == webBoardID)
+        #expect(resolved.1.isWeb)
+    }
+
     @Test func resolveTargetTerminalBoardFindsAmbientBoardRelativeToCallerWebBoard() throws {
         // Arrange
         let directory = temporaryProfileDirectory()

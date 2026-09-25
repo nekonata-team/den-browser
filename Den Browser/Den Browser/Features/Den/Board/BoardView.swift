@@ -175,6 +175,14 @@ struct BoardView: View {
     @ViewBuilder
     private var boardContextMenu: some View {
         Button {
+            store.createInspectionBoard(targetBoardID: board.id)
+        } label: {
+            Label("Inspect Current Sheet", systemSymbol: .magnifyingglass)
+        }
+
+        Divider()
+
+        Button {
             store.focusBoard(board.id)
             store.duplicateFocusedBoard()
         } label: {

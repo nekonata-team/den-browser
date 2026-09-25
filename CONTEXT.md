@@ -41,8 +41,23 @@ A user-visible label for a desk preset. It becomes the initial Desk Label when t
 _Avoid_: Desk Label, preset name
 
 **Board**:
-A user-created work surface that holds one focused task context within a desk. A Board contains either a Sheet Stack or one live Terminal Session.
+A user-created work surface that holds one focused task context within a desk. A Board presents a Sheet Stack, a live Terminal Session, or an Inspection.
 _Avoid_: Tab, card, pane, slot
+
+**Web Board**:
+A Board whose content is a Sheet Stack.
+_Avoid_: Browser tab
+
+**Side Board**:
+A separately focusable companion Board that stays alongside a target Board.
+
+**Inspection**:
+A focused investigation of a selected element in a Web Board's Current Sheet, using related elements and console output as evidence.
+_Avoid_: Debug session
+
+**Inspection Board**:
+A Side Board for a human and AI to investigate its target Web Board.
+_Avoid_: InspectBoard, Web Inspector
 
 **Terminal Board**:
 A Board whose content is a live shell or terminal session instead of a Sheet Stack. Its process remains live across Desk changes while the Profile Window remains open.
