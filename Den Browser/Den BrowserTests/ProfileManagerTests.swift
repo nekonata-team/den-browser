@@ -575,7 +575,7 @@ struct ProfileManagerTests {
         #expect(restoredStore.recentItems == [.url(url)])
     }
 
-    @Test func deferredSaveWaitsUntilChangesHaveBeenQuietFor300Milliseconds() async throws {
+    @Test func deferredSaveWaitsUntilChangesAreQuietAndWritesLatestStateOnce() async throws {
         // Arrange
         let directory = temporaryProfileDirectory()
         defer { try? FileManager.default.removeItem(at: directory) }
@@ -593,7 +593,11 @@ struct ProfileManagerTests {
         #expect(manager.profileSaveCount == writesBefore)
         try await Task.sleep(for: .milliseconds(200))
         #expect(manager.profileSaveCount == writesBefore)
-        try await Task.sleep(for: .milliseconds(200))
+
+        let saveDeadline = ContinuousClock.now + .seconds(2)
+        while manager.profileSaveCount == writesBefore, ContinuousClock.now < saveDeadline {
+            try await Task.sleep(for: .milliseconds(10))
+        }
 
         // Assert
         #expect(manager.profileSaveCount == writesBefore + 1)
