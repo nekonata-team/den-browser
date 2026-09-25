@@ -178,7 +178,7 @@ Open with `o` in Den Mode.
   - Drag Board cards to reposition within or across Desks.
   - Click selects; double-click opens that Desk and Board. Hover card shows close button.
 - **Web Popups**:
-  - User-initiated `window.open()` calls and links targeting a new browsing context open as adjacent Web Boards. They receive focus by default; hold `Command` to open in the background, or `Command` + `Shift` to focus the new Board.
+  - `window.open()` calls and links targeting a new browsing context open as adjacent Web Boards. They receive focus by default; hold `Command` to open in the background, or `Command` + `Shift` to focus the new Board.
 - **Terminal Links**:
   - `Command`-click HTTP/HTTPS link to open adjacent Web Board without adding to Drawer.
   - `Command`-click `file://` or file path to open in default macOS application.

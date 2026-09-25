@@ -424,7 +424,6 @@ struct DenStoreBoardTests {
         let configuration = WKWebViewConfiguration()
         configuration.websiteDataStore = store.websiteDataStore
         configuration.userContentController = store.sheetNavigation.userContentController
-        configuration.preferences.javaScriptCanOpenWindowsAutomatically = true
         let sourceWebView = BoardWKWebView(frame: .zero, configuration: configuration)
         let sourceRuntime = store.runtime(for: sourceBoard, popupWebView: sourceWebView)
         let waiter = SheetInteractionWebViewLoadWaiter()
@@ -460,7 +459,7 @@ struct DenStoreBoardTests {
         #expect(try await sourceRuntime.webView.evaluateJavaScript("document.title") as? String == "popup-message")
     }
 
-    @Test func unsolicitedJavaScriptPopupIsBlocked() async throws {
+    @Test func timerTriggeredJavaScriptPopupCreatesBoard() async throws {
         // Arrange
         let sourceBoard = BoardState(label: "Source", width: 520, currentSheetURL: nil)
         let store = popupStore(for: sourceBoard)
@@ -473,23 +472,24 @@ struct DenStoreBoardTests {
             <title>Waiting</title>
             <script>
             setTimeout(() => {
-                document.title = window.open('about:blank') === null ? 'Blocked' : 'Opened';
+                const popup = window.open('about:blank', '_blank');
+                document.title = popup === null ? 'Blocked' : 'Opened';
             }, 0);
             </script>
             """,
-            baseURL: URL(string: "file:///tmp/unsolicited-popup-test.html")!,
+            baseURL: URL(string: "file:///tmp/timer-popup-test.html")!,
             in: sourceRuntime.webView)
         sourceRuntime.webView.navigationDelegate = sourceRuntime
 
         // Act
         try await SheetInteraction.waitForFunction(
-            expression: "document.title === 'Blocked'",
+            expression: "document.title === 'Opened'",
             in: sourceRuntime.webView,
             timeout: 5)
 
         // Assert
-        #expect(!sourceRuntime.webView.configuration.preferences.javaScriptCanOpenWindowsAutomatically)
-        #expect(store.state.desks[0].boards.map(\.id) == [sourceBoard.id])
+        #expect(store.state.desks[0].boards.count == 2)
+        #expect(store.state.desks[0].boards[1].id != sourceBoard.id)
     }
 
     @Test func terminalBoardsCreateDuplicateRemoveAndRestoreWithRecentItems() throws {

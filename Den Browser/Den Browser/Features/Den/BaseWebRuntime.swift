@@ -85,7 +85,6 @@ class BaseWebRuntime: NSObject, NSWindowDelegate, WKDownloadDelegate, WKNavigati
                 configuration.userContentController = userContentController
             }
             configuration.webExtensionController = webExtensionController
-            configuration.preferences.javaScriptCanOpenWindowsAutomatically = false
             configuration.preferences.isElementFullscreenEnabled = enableElementFullscreen
             webView = makeWebView?(configuration) ?? WKWebView(frame: .zero, configuration: configuration)
         }
