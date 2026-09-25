@@ -154,7 +154,7 @@ private struct DenCommands: Commands {
         }
 
         CommandGroup(after: .toolbar) {
-            Button("Board Activity") { store?.performAppAction(.toggleBoardActivity) }
+            Button("Board Activity") { store?.performAppAction(.overview(.toggleActivity)) }
                 .keyboardShortcut(.escape, modifiers: [.shift])
                 .disabled(
                     store == nil
@@ -197,11 +197,11 @@ private struct DenCommands: Commands {
         }
 
         CommandMenu("Den") {
-            Button("Toggle Den Mode") { store?.performAppAction(.toggleDenMode) }
+            Button("Toggle Den Mode") { store?.performAppAction(.application(.toggleDenMode)) }
                 .disabled(store == nil)
 
             Menu("Board") {
-                Button("Open Board") { store?.performAppAction(.showOpenBoardPanel) }
+                Button("Open Board") { store?.performAppAction(.board(.showOpenPanel)) }
                     .keyboardShortcut("t", modifiers: [.command])
                     .disabled(store == nil)
                 Menu("Content Size") {
@@ -209,7 +209,7 @@ private struct DenCommands: Commands {
                         store?.focusedBoard?.isTerminal == true
                             ? "Increase Font Size" : "Increase Sheet Scale"
                     ) {
-                        store?.performAppAction(.increaseFocusedBoardContentSize)
+                        store?.performAppAction(.board(.increaseContentSize))
                     }
                     .keyboardShortcut("=", modifiers: [.command, .shift])
 
@@ -217,7 +217,7 @@ private struct DenCommands: Commands {
                         store?.focusedBoard?.isTerminal == true
                             ? "Decrease Font Size" : "Decrease Sheet Scale"
                     ) {
-                        store?.performAppAction(.decreaseFocusedBoardContentSize)
+                        store?.performAppAction(.board(.decreaseContentSize))
                     }
                     .keyboardShortcut("-", modifiers: [.command])
 
@@ -225,40 +225,40 @@ private struct DenCommands: Commands {
                         store?.focusedBoard?.isTerminal == true
                             ? "Reset Font Size" : "Reset Sheet Scale"
                     ) {
-                        store?.performAppAction(.resetFocusedBoardContentSize)
+                        store?.performAppAction(.board(.resetContentSize))
                     }
                     .keyboardShortcut("0", modifiers: [.command])
                 }
                 .disabled(store?.focusedBoard == nil)
                 Button("Edit Focused Board Link") {
-                    store?.performAppAction(.showEditBoardLinkPanel)
+                    store?.performAppAction(.board(.showEditLinkPanel))
                 }
                 .keyboardShortcut("l", modifiers: [.command])
                 .disabled(store?.focusedBoard?.isTerminal != false)
 
                 Divider()
 
-                Button("Reload Current Sheet") { store?.performAppAction(.reloadFocusedBoard) }
+                Button("Reload Current Sheet") { store?.performAppAction(.board(.reload)) }
                     .keyboardShortcut("r", modifiers: [.command])
                     .disabled(store?.focusedBoard?.isTerminal != false)
                 Button("Hard Reload Current Sheet") {
-                    store?.performAppAction(.reloadFocusedBoardFromOrigin)
+                    store?.performAppAction(.board(.reloadFromOrigin))
                 }
                 .keyboardShortcut("r", modifiers: [.command, .shift])
                 .disabled(store?.focusedBoard?.isTerminal != false)
                 Button("Capture Current Sheet Screenshot…") {
-                    store?.performAppAction(.captureCurrentSheet)
+                    store?.performAppAction(.board(.captureSheet))
                 }
                 .disabled(store?.focusedBoard?.isTerminal != false)
 
                 Divider()
 
-                Button("Remove Board") { store?.performAppAction(.removeBoard) }
+                Button("Remove Board") { store?.performAppAction(.board(.remove)) }
                     .keyboardShortcut("w", modifiers: [.command])
                     .disabled(
                         store?.focusedDesk?.focusedBoardID == nil
                             || store?.hasPendingConfirmation == true)
-                Button("Restore Removed Board") { store?.performAppAction(.restoreBoard) }
+                Button("Restore Removed Board") { store?.performAppAction(.board(.restore)) }
                     .disabled(store?.recentlyRemovedBoards.isEmpty ?? true)
             }
 
@@ -267,15 +267,15 @@ private struct DenCommands: Commands {
 
             Menu("Drawer") {
                 Button("Restore Discarded Drawer Item") {
-                    store?.performAppAction(.restoreDiscardedDrawerItem)
+                    store?.performAppAction(.drawer(.restoreDiscardedItem))
                 }
                 .disabled(store?.recentlyDiscardedDrawerItems.isEmpty ?? true)
             }
 
             Menu("Desk") {
-                Button("New Desk") { store?.performAppAction(.showNewDeskPanel) }
+                Button("New Desk") { store?.performAppAction(.desk(.showNewPanel)) }
                     .disabled(store?.canCreateDesk != true)
-                Button("Save Desk as Preset…") { store?.performAppAction(.showSaveDeskPresetPanel) }
+                Button("Save Desk as Preset…") { store?.performAppAction(.desk(.showSavePresetPanel)) }
                     .disabled(store?.focusedDesk?.boards.isEmpty != false)
 
                 Menu("Export") {
@@ -294,7 +294,7 @@ private struct DenCommands: Commands {
                 Menu("Resize Boards to Fit") {
                     ForEach(1...9, id: \.self) { count in
                         Button(count == 1 ? "1 Board" : "\(count) Boards") {
-                            store?.performAppAction(.resizeFocusedDeskBoards(count))
+                            store?.performAppAction(.desk(.resizeBoards(count)))
                         }
                         .disabled(store?.canResizeFocusedDeskBoards(toFit: count) != true)
                     }
@@ -302,21 +302,21 @@ private struct DenCommands: Commands {
                 .disabled(store == nil)
 
                 Button("Reload Focused Desk Sheets") {
-                    store?.performAppAction(.reloadFocusedDeskSheets)
+                    store?.performAppAction(.desk(.reloadSheets))
                 }
                 .keyboardShortcut("r", modifiers: [.command, .option, .shift])
                 .disabled(store?.focusedDesk?.boards.allSatisfy(\.isTerminal) != false)
 
                 Divider()
 
-                Button("Delete Desk") { store?.performAppAction(.deleteDesk) }
+                Button("Delete Desk") { store?.performAppAction(.desk(.delete)) }
                     .disabled(store?.canDeleteFocusedDesk != true)
             }
 
             Menu("Presentation") {
                 Button("Toggle Overview") { store?.toggleOverview() }
                     .disabled(store == nil)
-                Button("Toggle Zen View") { store?.performAppAction(.toggleZenView) }
+                Button("Toggle Zen View") { store?.performAppAction(.application(.toggleZenView)) }
                     .disabled(store == nil)
                 Toggle(
                     "Focus Mode",
@@ -324,19 +324,19 @@ private struct DenCommands: Commands {
                         get: { store?.isFocusModePresented == true },
                         set: { isPresented in
                             guard isPresented != (store?.isFocusModePresented ?? false) else { return }
-                            store?.performAppAction(.toggleFocusMode)
+                            store?.performAppAction(.application(.toggleFocusMode))
                         })
                 )
                 .disabled(store == nil || store?.temporaryContext != nil)
-                Button("Toggle Drawer") { store?.performAppAction(.toggleDrawer) }
+                Button("Toggle Drawer") { store?.performAppAction(.drawer(.toggle)) }
                     .disabled(store == nil)
             }
 
-            Button("Keyboard Shortcuts…") { store?.performAppAction(.showKeyboardShortcuts) }
+            Button("Keyboard Shortcuts…") { store?.performAppAction(.application(.showKeyboardShortcuts)) }
                 .disabled(store == nil)
             Button("Settings…") {
                 AppActionHandler.perform(
-                    .openSettings,
+                    .application(.openSettings),
                     store: store,
                     openSettings: { openSettingsCoordinator.open() })
             }

@@ -172,7 +172,7 @@ struct KeyboardShortcutTests {
 
         #expect(
             KeyboardController.decision(for: toggle, store: try makeStore(boards: [board("Board")]))
-                == .perform(.toggleBoardRail)
+                == .perform(.application(.toggleBoardRail))
         )
         #expect(
             KeyboardController.decision(
@@ -257,7 +257,7 @@ struct KeyboardShortcutTests {
             keyCode: 1)
         #expect(
             KeyboardController.decision(for: controlS, store: store)
-                == .perform(.copyCurrentSheetScreenshot))
+                == .perform(.board(.copySheetScreenshot)))
     }
 
     @Test func denModeYCopiesFocusedBoardLocationAndShiftYCopiesBoardID() throws {
@@ -280,9 +280,9 @@ struct KeyboardShortcutTests {
 
         // Assert
         #expect(
-            locationDecision == .perform(.copyFocusedBoardLocation))
+            locationDecision == .perform(.board(.copyLocation)))
         #expect(
-            boardIDDecision == .perform(.copyFocusedBoardID))
+            boardIDDecision == .perform(.board(.copyID)))
     }
 
     @Test func sheetInputCommandOptionDigitFocusesDeskAndLeavesCommandZeroAvailable() throws {
@@ -338,21 +338,21 @@ struct KeyboardShortcutTests {
 
         #expect(
             KeyboardController.decision(for: increase, store: store)
-                == .perform(.increaseFocusedBoardContentSize))
+                == .perform(.board(.increaseContentSize)))
         #expect(
             KeyboardController.decision(for: plus, store: store)
-                == .perform(.increaseFocusedBoardContentSize))
+                == .perform(.board(.increaseContentSize)))
         #expect(
             KeyboardController.decision(for: decrease, store: store)
-                == .perform(.decreaseFocusedBoardContentSize))
+                == .perform(.board(.decreaseContentSize)))
         #expect(
             KeyboardController.decision(for: reset, store: store)
-                == .perform(.resetFocusedBoardContentSize))
+                == .perform(.board(.resetContentSize)))
 
         store.isDenMode = true
         #expect(
             KeyboardController.decision(for: decrease, store: store)
-                == .perform(.decreaseFocusedBoardContentSize))
+                == .perform(.board(.decreaseContentSize)))
     }
 
     @Test func controlTabDeskShortcutsNavigateAndReturn() throws {
@@ -618,7 +618,7 @@ struct KeyboardShortcutTests {
 
         #expect(
             KeyboardController.decision(for: commandW, store: store)
-                == .perform(.discardSelectedDrawerItem(focusNext: true)))
+                == .perform(.drawer(.discardSelectedItem(focusNext: true))))
         #expect(KeyboardController.handle(commandW, store: store))
         #expect(store.state.drawerItems.count == 1)
         #expect(!store.state.drawerItems.contains { $0.id == selectedItemID })
@@ -650,7 +650,7 @@ struct KeyboardShortcutTests {
 
         #expect(
             KeyboardController.decision(for: controlEscape, store: store)
-                == .perform(.closeDrawer))
+                == .perform(.drawer(.close)))
         #expect(KeyboardController.handle(controlEscape, store: store))
         #expect(!store.isDrawerOpen)
         #expect(store.expandedDrawerItemID == itemID)
@@ -775,10 +775,10 @@ struct KeyboardShortcutTests {
 
         #expect(
             KeyboardController.decision(for: returnKey, store: store)
-                == .perform(.duplicateBoard))
+                == .perform(.board(.duplicate)))
         #expect(
             KeyboardController.decision(for: shiftReturn, store: store)
-                == .perform(.duplicateFirstSheet))
+                == .perform(.board(.duplicateFirstSheet)))
     }
 
     @Test func openProfilePanelForwardsKeyboardNavigationToItsTextField() throws {
@@ -837,7 +837,7 @@ struct KeyboardShortcutTests {
         #expect(!KeyboardController.handle(modifiedReturn, store: store))
         #expect(
             KeyboardController.decision(for: controlEscape, store: store)
-                == .perform(.closeDrawer))
+                == .perform(.drawer(.close)))
         #expect(KeyboardController.handle(controlEscape, store: store))
         #expect(!store.isDrawerOpen)
     }
@@ -885,7 +885,7 @@ struct KeyboardShortcutTests {
 
         #expect(
             KeyboardController.decision(for: escape, store: store)
-                == .perform(.requestBoardDragCancellation))
+                == .perform(.board(.requestDragCancellation)))
         #expect(KeyboardController.handle(escape, store: store))
         #expect(store.boardDragCancellationRequest == 1)
         #expect(store.isOverviewPresented)
@@ -900,7 +900,7 @@ struct KeyboardShortcutTests {
 
         #expect(
             KeyboardController.decision(for: dEvent, store: dStore)
-                == .perform(.removeBoardAndFocusNext))
+                == .perform(.board(.removeAndFocusNext)))
         #expect(KeyboardController.handle(dEvent, store: dStore))
         #expect(dStore.focusedDesk?.boards.map(\.id) == [dBoards[0].id, dBoards[2].id])
         #expect(dStore.focusedDesk?.focusedBoardID == dBoards[2].id)
@@ -913,7 +913,7 @@ struct KeyboardShortcutTests {
 
         #expect(
             KeyboardController.decision(for: xEvent, store: xStore)
-                == .perform(.removeBoard))
+                == .perform(.board(.remove)))
         #expect(KeyboardController.handle(xEvent, store: xStore))
         #expect(xStore.focusedDesk?.boards.map(\.id) == [xBoards[0].id, xBoards[2].id])
         #expect(xStore.focusedDesk?.focusedBoardID == xBoards[0].id)
@@ -955,7 +955,7 @@ struct KeyboardShortcutTests {
         #expect(!KeyboardController.handle(comma, store: store))
 
         store.isDenMode = true
-        #expect(KeyboardController.decision(for: comma, store: store) == .perform(.openSettings))
+        #expect(KeyboardController.decision(for: comma, store: store) == .perform(.application(.openSettings)))
         var didOpenSettings = false
         let handled = KeyboardController.handle(
             comma,
@@ -982,12 +982,12 @@ struct KeyboardShortcutTests {
 
         #expect(
             KeyboardController.decision(for: prefix, store: store)
-                == .perform(.enterEssentialsPrefix))
+                == .perform(.essentials(.enterPrefix)))
         #expect(KeyboardController.handle(prefix, store: store))
         #expect(store.temporaryContext == .essentialsPrefix)
         #expect(
             KeyboardController.decision(for: key, store: store)
-                == .perform(.launchEssential(essential.id)))
+                == .perform(.essentials(.launch(essential.id))))
         #expect(KeyboardController.handle(key, store: store))
         #expect(store.temporaryContext == nil)
         #expect(!store.isDenMode)
@@ -1006,7 +1006,7 @@ struct KeyboardShortcutTests {
 
         #expect(
             KeyboardController.decision(for: key, store: store)
-                == .perform(.launchEssential(essential.id)))
+                == .perform(.essentials(.launch(essential.id))))
         #expect(KeyboardController.handle(key, store: store))
         #expect(store.temporaryContext == nil)
         #expect(!store.isDenMode)
@@ -1028,7 +1028,7 @@ struct KeyboardShortcutTests {
         #expect(KeyboardController.handle(prefix, store: store))
         #expect(
             KeyboardController.decision(for: unknown, store: store)
-                == .perform(.showEssentialNotFound("x")))
+                == .perform(.essentials(.showNotFound("x"))))
         #expect(KeyboardController.handle(unknown, store: store))
         #expect(store.temporaryContext == nil)
         #expect(store.isDenMode)
@@ -1078,7 +1078,7 @@ struct KeyboardShortcutTests {
         store.showZmxSessions()
 
         #expect(store.isZmxSessionsPresented)
-        #expect(KeyboardController.decision(for: escape, store: store) == .perform(.hideZmxSessions))
+        #expect(KeyboardController.decision(for: escape, store: store) == .perform(.zmxSessions(.hide)))
         #expect(KeyboardController.handle(escape, store: store))
         #expect(!store.isZmxSessionsPresented)
     }
@@ -1116,14 +1116,14 @@ struct KeyboardShortcutTests {
         #expect(store.zmxSessions.selectedSessionName == "den")
         #expect(
             KeyboardController.decision(for: down, store: store)
-                == .perform(.moveZmxSessionSelection(1)))
+                == .perform(.zmxSessions(.moveSelection(1))))
         #expect(KeyboardController.handle(down, store: store))
         #expect(store.zmxSessions.selectedSessionName == "den-vi")
         #expect(KeyboardController.handle(upArrow, store: store))
         #expect(store.zmxSessions.selectedSessionName == "den")
         #expect(
             KeyboardController.decision(for: jKey, store: store)
-                == .perform(.moveZmxSessionSelection(1)))
+                == .perform(.zmxSessions(.moveSelection(1))))
         #expect(KeyboardController.handle(jKey, store: store))
         #expect(store.zmxSessions.selectedSessionName == "den-vi")
         #expect(KeyboardController.handle(kKey, store: store))
@@ -1132,46 +1132,46 @@ struct KeyboardShortcutTests {
         #expect(store.zmxSessions.markedSessionNames == ["den"])
         #expect(
             KeyboardController.decision(for: selectAll, store: store)
-                == .perform(.selectAllZmxSessions))
+                == .perform(.zmxSessions(.selectAll)))
         #expect(KeyboardController.handle(selectAll, store: store))
         #expect(store.zmxSessions.markedSessionNames == ["den", "den-vi"])
         #expect(
             KeyboardController.decision(for: escape, store: store)
-                == .perform(.clearZmxSessionSelection))
+                == .perform(.zmxSessions(.clearSelection)))
         #expect(KeyboardController.handle(escape, store: store))
         #expect(store.zmxSessions.markedSessionNames.isEmpty)
         #expect(
             KeyboardController.decision(for: returnKey, store: store)
-                == .perform(.openSelectedZmxSession))
+                == .perform(.zmxSessions(.openSelected)))
         #expect(
             KeyboardController.decision(for: filter, store: store)
-                == .perform(.enterZmxSessionFilter))
+                == .perform(.zmxSessions(.enterFilter)))
         #expect(KeyboardController.handle(filter, store: store))
         #expect(store.zmxSessions.isFilterInputActive)
         #expect(
             KeyboardController.decision(for: selectAll, store: store)
-                == .perform(.selectAllZmxSessions))
+                == .perform(.zmxSessions(.selectAll)))
         #expect(
             KeyboardController.decision(for: deleteKey, store: store)
                 == .forward(.filterTextInput))
         #expect(
             KeyboardController.decision(for: returnKey, store: store)
-                == .perform(.openSelectedZmxSession))
+                == .perform(.zmxSessions(.openSelected)))
         #expect(KeyboardController.handle(escape, store: store))
         #expect(!store.zmxSessions.isFilterInputActive)
         #expect(store.zmxSessions.query.isEmpty)
         #expect(
             KeyboardController.decision(for: escape, store: store)
-                == .perform(.hideZmxSessions))
+                == .perform(.zmxSessions(.hide)))
         #expect(
             KeyboardController.decision(for: delete, store: store)
-                == .perform(.deleteSelectedZmxSession))
+                == .perform(.zmxSessions(.deleteSelected)))
         #expect(
             KeyboardController.decision(for: deleteKey, store: store)
-                == .perform(.deleteSelectedZmxSession))
+                == .perform(.zmxSessions(.deleteSelected)))
         #expect(
             KeyboardController.decision(for: reload, store: store)
-                == .perform(.refreshZmxSessions))
+                == .perform(.zmxSessions(.refresh)))
         #expect(KeyboardController.handle(delete, store: store))
         #expect(store.zmxSessions.pendingDeletion == ["den"])
         #expect(
@@ -1196,10 +1196,10 @@ struct KeyboardShortcutTests {
         #expect(KeyboardController.handle(prefix, store: store))
         #expect(
             KeyboardController.decision(for: lowercaseKey, store: store)
-                == .perform(.launchEssential(lowercase.id)))
+                == .perform(.essentials(.launch(lowercase.id))))
         #expect(
             KeyboardController.decision(for: uppercaseKey, store: store)
-                == .perform(.launchEssential(uppercase.id)))
+                == .perform(.essentials(.launch(uppercase.id))))
         #expect(KeyboardController.handle(uppercaseKey, store: store))
         #expect(store.focusedBoard?.currentSheetURL == URL(string: "https://example.com/upper"))
     }

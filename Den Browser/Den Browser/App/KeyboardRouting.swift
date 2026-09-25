@@ -50,126 +50,6 @@ enum InputDestination: Equatable {
     case filterTextInput
 }
 
-enum AppAction: Equatable {
-    case openSettings
-    case toggleNotifications
-    case closeNotifications
-    case moveNotificationSelection(Int)
-    case openSelectedNotification
-    case toggleDenMode
-    case toggleBoardRail
-    case exitDenMode
-    case enterEssentialsPrefix
-    case exitEssentialsPrefix
-    case showEssentialNotFound(String)
-    case launchEssential(UUID)
-    case focusPreviousDesk
-    case focusNextDesk
-    case returnToPreviousDesk
-    case focusPreviousBoard
-    case focusNextBoard
-    case moveFocusedBoardLeft
-    case moveFocusedBoardRight
-    case increaseFocusedBoardContentSize
-    case decreaseFocusedBoardContentSize
-    case resetFocusedBoardContentSize
-    case toggleAnchorBoard
-    case jumpToAnchorBoard
-    case moveFocusedBoardToPreviousDesk
-    case moveFocusedBoardToNextDesk
-    case focusDesk(Int)
-    case moveFocusedBoardToDesk(Int)
-    case showOpenBoardPanel
-    case openBoardFromClipboard
-    case hideZmxSessions
-    case enterZmxSessionFilter
-    case exitZmxSessionFilter
-    case clearZmxSessionFilter
-    case moveZmxSessionSelection(Int)
-    case toggleZmxSessionSelection
-    case selectAllZmxSessions
-    case clearZmxSessionSelection
-    case openSelectedZmxSession
-    case deleteSelectedZmxSession
-    case refreshZmxSessions
-    case showNewDeskPanel
-    case showSaveDeskPresetPanel
-    case showReplaceDeskPanel
-    case showOverview
-    case hideOverview
-    case toggleBoardActivity
-    case hideBoardActivity
-    case enterOverviewSelection
-    case enterOverviewFilterMode
-    case exitOverviewFilterMode
-    case confirmOverviewFilterQuery
-    case clearOverviewQuery
-    case selectPreviousBoardInOverview
-    case selectNextBoardInOverview
-    case selectPreviousDeskInOverview
-    case selectNextDeskInOverview
-    case moveOverviewSelectionBoardLeft
-    case moveOverviewSelectionBoardRight
-    case moveOverviewSelectionBoardToPreviousDesk
-    case moveOverviewSelectionBoardToNextDesk
-    case showKeyboardShortcuts
-    case hideKeyboardShortcuts
-    case showBoardWidthPanel
-    case hideBoardWidthPanel
-    case adjustFocusedDeskBoardWidths(Double)
-    case resizeFocusedDeskBoards(Int)
-    case toggleDrawer
-    case toggleDrawerStyle
-    case closeDrawer
-    case enterDrawerFilterMode
-    case exitDrawerFilterMode
-    case confirmDrawerFilterQuery
-    case confirmDrawerFilterSelection
-    case selectDrawerItem(Int)
-    case toggleSelectedDrawerItem
-    case discardSelectedDrawerItem(focusNext: Bool)
-    case restoreDiscardedDrawerItem
-    case placeSelectedDrawerItemAsBoard
-    case requestDrawerClearConfirmation
-    case enterDeskFilter
-    case dismissDeskFilter
-    case confirmDeskFilterQuery
-    case confirmDeskFilterSelection
-    case selectDeskFilterBoard(Int)
-    case requestBoardDragCancellation
-    case requestDeskDragCancellation
-    case reloadFocusedBoardFromOrigin
-    case reloadFocusedDeskSheets
-    case reloadFocusedBoard
-    case goBack
-    case goForward
-    case goToFirstSheet
-    case goToLatestSheet
-    case adjustBoardWidth(Double)
-    case toggleBoardMaximized
-    case centerBoard
-    case revealPreviousBoard
-    case revealNextBoard
-    case toggleFocusedBoardSheetNavigationPause
-    case captureCurrentSheet
-    case copyCurrentSheetScreenshot
-    case copyFocusedBoardLocation
-    case copyFocusedBoardID
-    case keepCurrentSheetInDrawer
-    case toggleZenView
-    case toggleFocusMode
-    case removeBoard
-    case removeBoardAndFocusNext
-    case restoreBoard
-    case showRenameBoardPanel
-    case showRenameDeskPanel
-    case saveFocusedBoardAsEssential
-    case deleteDesk
-    case showEditBoardLinkPanel
-    case duplicateBoard
-    case duplicateFirstSheet
-}
-
 enum KeyboardRouter {
     static func route(
         event: KeyEvent,
@@ -185,14 +65,14 @@ enum KeyboardRouter {
         if context.hasPendingConfirmation { return .forward(.temporaryTextInput) }
 
         if event.isEscape, modifiers == [.shift] {
-            return event.isRepeat ? .consume(.ignoredRepeat) : .perform(.toggleBoardActivity)
+            return event.isRepeat ? .consume(.ignoredRepeat) : .perform(.overview(.toggleActivity))
         }
 
         if case .drawer? = context.surface,
             let binding = event.binding,
             binding == shortcuts.bindings[.toggleDenMode]
         {
-            return event.isRepeat ? .consume(.ignoredRepeat) : .perform(.toggleDenMode)
+            return event.isRepeat ? .consume(.ignoredRepeat) : .perform(.application(.toggleDenMode))
         }
 
         if case .notifications? = context.surface {
@@ -200,11 +80,11 @@ enum KeyboardRouter {
         }
 
         if case .board? = context.activeDrag {
-            if event.isEscape, modifiers == [] { return .perform(.requestBoardDragCancellation) }
+            if event.isEscape, modifiers == [] { return .perform(.board(.requestDragCancellation)) }
             return .consume(.dragging)
         }
         if case .desk? = context.activeDrag {
-            if event.isEscape, modifiers == [] { return .perform(.requestDeskDragCancellation) }
+            if event.isEscape, modifiers == [] { return .perform(.desk(.requestDragCancellation)) }
             return .consume(.dragging)
         }
 
@@ -217,7 +97,7 @@ enum KeyboardRouter {
             break
         case .keyboardShortcuts:
             if (event.isEscape && modifiers == []) || isQuestionMark(event) {
-                return .perform(.hideKeyboardShortcuts)
+                return .perform(.application(.hideKeyboardShortcuts))
             }
             return .consume(.exclusiveContext)
         case .essentialsPrefix:
@@ -227,7 +107,7 @@ enum KeyboardRouter {
         case .overview(let filterPhase, let hasQuery):
             return routeOverview(event, filterPhase: filterPhase, hasQuery: hasQuery, activeDrag: context.activeDrag)
         case .boardActivity:
-            if event.isEscape, modifiers == [] { return .perform(.hideBoardActivity) }
+            if event.isEscape, modifiers == [] { return .perform(.overview(.hideActivity)) }
             return .forward(.temporaryTextInput)
         case .drawer(let filterPhase, let previewFirstResponder):
             return routeDrawer(
@@ -249,13 +129,13 @@ enum KeyboardRouter {
 
         if context.hasFocusedBoard {
             if character == "=", modifiers == [.command] || modifiers == [.command, .shift] {
-                return .perform(.increaseFocusedBoardContentSize)
+                return .perform(.board(.increaseContentSize))
             }
             if character == "-", modifiers == [.command] {
-                return .perform(.decreaseFocusedBoardContentSize)
+                return .perform(.board(.decreaseContentSize))
             }
             if character == "0", modifiers == [.command] {
-                return .perform(.resetFocusedBoardContentSize)
+                return .perform(.board(.resetContentSize))
             }
         }
 
@@ -265,17 +145,17 @@ enum KeyboardRouter {
             let digit = event.baseCharacter.flatMap({ Int($0.lowercased()) }),
             (0...9).contains(digit)
         {
-            return .perform(.focusDesk(digit == 0 ? 10 : digit))
+            return .perform(.desk(.focus(digit == 0 ? 10 : digit)))
         }
 
         if context.mode == .sheet, character == "r", modifiers == [.command] {
             return .forward(.nativeCommand)
         }
         if character == "r", modifiers == [.command, .shift] {
-            return event.isRepeat ? .consume(.ignoredRepeat) : .perform(.reloadFocusedBoardFromOrigin)
+            return event.isRepeat ? .consume(.ignoredRepeat) : .perform(.board(.reloadFromOrigin))
         }
         if character == "r", modifiers == [.command, .option, .shift] {
-            return event.isRepeat ? .consume(.ignoredRepeat) : .perform(.reloadFocusedDeskSheets)
+            return event.isRepeat ? .consume(.ignoredRepeat) : .perform(.desk(.reloadSheets))
         }
 
         if context.mode == .den, case .deskFilter(let phase)? = context.surface {
@@ -283,11 +163,11 @@ enum KeyboardRouter {
         }
 
         if context.mode == .den, character == ",", modifiers == [] {
-            return .perform(.openSettings)
+            return .perform(.application(.openSettings))
         }
 
         if context.mode == .den, character == "g", modifiers == [] {
-            return event.isRepeat ? .consume(.ignoredRepeat) : .perform(.enterEssentialsPrefix)
+            return event.isRepeat ? .consume(.ignoredRepeat) : .perform(.essentials(.enterPrefix))
         }
 
         if let binding = event.binding, let shortcut = shortcuts.shortcut(matching: binding) {
@@ -299,11 +179,11 @@ enum KeyboardRouter {
     }
 
     private static func routeNotifications(_ event: KeyEvent) -> InputDecision {
-        if event.isEscape, event.modifiers == [] { return .perform(.closeNotifications) }
+        if event.isEscape, event.modifiers == [] { return .perform(.notifications(.close)) }
         if event.modifiers == [] {
-            if event.key == .upArrow { return .perform(.moveNotificationSelection(-1)) }
-            if event.key == .downArrow { return .perform(.moveNotificationSelection(1)) }
-            if event.key == .returnKey { return .perform(.openSelectedNotification) }
+            if event.key == .upArrow { return .perform(.notifications(.moveSelection(-1))) }
+            if event.key == .downArrow { return .perform(.notifications(.moveSelection(1))) }
+            if event.key == .returnKey { return .perform(.notifications(.openSelected)) }
         }
         return .consume(.exclusiveContext)
     }
@@ -314,15 +194,15 @@ enum KeyboardRouter {
         }
         let action: AppAction =
             switch shortcut {
-            case .toggleDenMode: .toggleDenMode
-            case .toggleBoardRail: .toggleBoardRail
-            case .focusPreviousDesk: .focusPreviousDesk
-            case .focusNextDesk: .focusNextDesk
-            case .returnToPreviousDesk: .returnToPreviousDesk
-            case .focusPreviousBoard: .focusPreviousBoard
-            case .focusNextBoard: .focusNextBoard
-            case .moveFocusedBoardLeft: .moveFocusedBoardLeft
-            case .moveFocusedBoardRight: .moveFocusedBoardRight
+            case .toggleDenMode: .application(.toggleDenMode)
+            case .toggleBoardRail: .application(.toggleBoardRail)
+            case .focusPreviousDesk: .desk(.focusPrevious)
+            case .focusNextDesk: .desk(.focusNext)
+            case .returnToPreviousDesk: .desk(.returnToPrevious)
+            case .focusPreviousBoard: .board(.focusPrevious)
+            case .focusNextBoard: .board(.focusNext)
+            case .moveFocusedBoardLeft: .board(.moveLeft)
+            case .moveFocusedBoardRight: .board(.moveRight)
             }
         return .perform(action)
     }
@@ -333,19 +213,19 @@ enum KeyboardRouter {
     ) -> InputDecision {
         if event.isRepeat { return .consume(.ignoredRepeat) }
         if event.isEscape, event.modifiers == [] {
-            return .perform(.exitEssentialsPrefix)
+            return .perform(.essentials(.exitPrefix))
         }
         guard
             event.modifiers == [] || event.modifiers == [.shift],
             let character = event.characters,
             !character.isEmpty
         else {
-            return .perform(.exitEssentialsPrefix)
+            return .perform(.essentials(.exitPrefix))
         }
         guard let essential = shortcuts.essential(matching: character) else {
-            return .perform(.showEssentialNotFound(character))
+            return .perform(.essentials(.showNotFound(character)))
         }
-        return .perform(.launchEssential(essential.id))
+        return .perform(.essentials(.launch(essential.id)))
     }
 
     private static func routeDenMode(_ event: KeyEvent) -> InputDecision {
@@ -353,24 +233,24 @@ enum KeyboardRouter {
         let character = event.character?.lowercased()
 
         if event.key == .tab, modifiers == [] {
-            return event.isRepeat ? .consume(.ignoredRepeat) : .perform(.toggleDrawer)
+            return event.isRepeat ? .consume(.ignoredRepeat) : .perform(.drawer(.toggle))
         }
-        if event.isEscape, modifiers == [] { return .perform(.exitDenMode) }
+        if event.isEscape, modifiers == [] { return .perform(.application(.exitDenMode)) }
         if modifiers == [.shift] {
             switch event.characters {
-            case "<": return .perform(.revealPreviousBoard)
-            case ">": return .perform(.revealNextBoard)
+            case "<": return .perform(.board(.revealPrevious))
+            case ">": return .perform(.board(.revealNext))
             default: break
             }
         }
-        if character == "/", modifiers == [] { return .perform(.enterDeskFilter) }
+        if character == "/", modifiers == [] { return .perform(.desk(.enterFilter)) }
         if let action = movementAction(event, overview: false) { return .perform(action) }
-        if isQuestionMark(event) { return .perform(.showKeyboardShortcuts) }
+        if isQuestionMark(event) { return .perform(.application(.showKeyboardShortcuts)) }
 
         if let digit = event.baseCharacter.flatMap({ Int($0.lowercased()) }), (0...9).contains(digit) {
             let deskNumber = digit == 0 ? 10 : digit
-            if modifiers == [] { return .perform(.focusDesk(deskNumber)) }
-            if modifiers == [.shift] { return .perform(.moveFocusedBoardToDesk(deskNumber)) }
+            if modifiers == [] { return .perform(.desk(.focus(deskNumber))) }
+            if modifiers == [.shift] { return .perform(.board(.moveToDesk(deskNumber))) }
             return .consume(.denModeUnmapped)
         }
 
@@ -385,17 +265,17 @@ enum KeyboardRouter {
         let modifiers = event.modifiers
         if phase == .filtering {
             if event.hasMarkedText { return .forward(.filterTextInput) }
-            if event.isEscape, modifiers == [] { return .perform(.dismissDeskFilter) }
-            if event.key == .returnKey, modifiers == [] { return .perform(.confirmDeskFilterQuery) }
+            if event.isEscape, modifiers == [] { return .perform(.desk(.dismissFilter)) }
+            if event.key == .returnKey, modifiers == [] { return .perform(.desk(.confirmFilterQuery)) }
             return .forward(.filterTextInput)
         }
         guard modifiers == [] else { return .consume(.exclusiveContext) }
-        if event.isEscape { return .perform(.dismissDeskFilter) }
-        if event.key == .returnKey { return .perform(.confirmDeskFilterSelection) }
-        if event.character?.lowercased() == "/" { return .perform(.enterDeskFilter) }
+        if event.isEscape { return .perform(.desk(.dismissFilter)) }
+        if event.key == .returnKey { return .perform(.desk(.confirmFilterSelection)) }
+        if event.character?.lowercased() == "/" { return .perform(.desk(.enterFilter)) }
         return switch (event.key, event.character?.lowercased()) {
-        case (.leftArrow, _), (_, "h"): .perform(.selectDeskFilterBoard(-1))
-        case (.rightArrow, _), (_, "l"): .perform(.selectDeskFilterBoard(1))
+        case (.leftArrow, _), (_, "h"): .perform(.desk(.selectFilterBoard(-1)))
+        case (.rightArrow, _), (_, "l"): .perform(.desk(.selectFilterBoard(1)))
         default: .consume(.exclusiveContext)
         }
     }
@@ -412,24 +292,24 @@ enum KeyboardRouter {
         if modifiers == [.command], character == "w" {
             return event.isRepeat
                 ? .consume(.ignoredRepeat)
-                : .perform(.discardSelectedDrawerItem(focusNext: true))
+                : .perform(.drawer(.discardSelectedItem(focusNext: true)))
         }
-        if event.isEscape, modifiers == [.control] { return .perform(.closeDrawer) }
+        if event.isEscape, modifiers == [.control] { return .perform(.drawer(.close)) }
         if mode == .sheet, previewFirstResponder { return .forward(.drawerPreview) }
 
         if filterPhase == .filtering {
             if event.hasMarkedText { return .forward(.filterTextInput) }
-            if event.isEscape, modifiers == [] { return .perform(.exitDrawerFilterMode) }
-            if event.key == .returnKey, modifiers == [] { return .perform(.confirmDrawerFilterQuery) }
+            if event.isEscape, modifiers == [] { return .perform(.drawer(.exitFilterMode)) }
+            if event.key == .returnKey, modifiers == [] { return .perform(.drawer(.confirmFilterQuery)) }
             return .forward(.filterTextInput)
         }
         if filterPhase == .selecting {
             guard modifiers == [] else { return .consume(.exclusiveContext) }
-            if event.isEscape { return .perform(.exitDrawerFilterMode) }
-            if event.key == .returnKey { return .perform(.confirmDrawerFilterSelection) }
+            if event.isEscape { return .perform(.drawer(.exitFilterMode)) }
+            if event.key == .returnKey { return .perform(.drawer(.confirmFilterSelection)) }
             return switch (event.key, event.character?.lowercased()) {
-            case (.downArrow, _), (_, "j"): .perform(.selectDrawerItem(1))
-            case (.upArrow, _), (_, "k"): .perform(.selectDrawerItem(-1))
+            case (.downArrow, _), (_, "j"): .perform(.drawer(.selectItem(1)))
+            case (.upArrow, _), (_, "k"): .perform(.drawer(.selectItem(-1)))
             default: .consume(.exclusiveContext)
             }
         }
@@ -438,42 +318,43 @@ enum KeyboardRouter {
             if modifiers == [], event.character?.lowercased() == "u" {
                 return event.isRepeat
                     ? .consume(.ignoredRepeat)
-                    : .perform(.restoreDiscardedDrawerItem)
+                    : .perform(.drawer(.restoreDiscardedItem))
             }
             if modifiers == [.shift], event.character?.lowercased() == "d" {
-                return event.isRepeat ? .consume(.ignoredRepeat) : .perform(.requestDrawerClearConfirmation)
+                return event.isRepeat ? .consume(.ignoredRepeat) : .perform(.drawer(.requestClearConfirmation))
             }
             guard modifiers == [] else { return .consume(.exclusiveContext) }
-            if event.key == .tab { return .perform(.closeDrawer) }
-            if event.isEscape { return .perform(.exitDenMode) }
+            if event.key == .tab { return .perform(.drawer(.close)) }
+            if event.isEscape { return .perform(.application(.exitDenMode)) }
             if event.key == .returnKey {
-                return event.isRepeat ? .consume(.ignoredRepeat) : .perform(.toggleSelectedDrawerItem)
+                return event.isRepeat ? .consume(.ignoredRepeat) : .perform(.drawer(.toggleSelectedItem))
             }
             if event.key == .backspace || event.key == .deleteForward {
                 return event.isRepeat
                     ? .consume(.ignoredRepeat)
-                    : .perform(.discardSelectedDrawerItem(focusNext: true))
+                    : .perform(.drawer(.discardSelectedItem(focusNext: true)))
             }
             let action: AppAction? =
                 switch event.character?.lowercased() {
-                case "/": .enterDrawerFilterMode
-                case "f": .toggleDrawerStyle
-                case "j": .selectDrawerItem(1)
-                case "k": .selectDrawerItem(-1)
-                case "p": .placeSelectedDrawerItemAsBoard
-                case "x": .discardSelectedDrawerItem(focusNext: false)
-                case "d": .discardSelectedDrawerItem(focusNext: true)
+                case "/": .drawer(.enterFilterMode)
+                case "f": .drawer(.toggleStyle)
+                case "j": .drawer(.selectItem(1))
+                case "k": .drawer(.selectItem(-1))
+                case "p": .drawer(.placeSelectedItemAsBoard)
+                case "x": .drawer(.discardSelectedItem(focusNext: false))
+                case "d": .drawer(.discardSelectedItem(focusNext: true))
                 default:
                     switch event.key {
-                    case .downArrow: .selectDrawerItem(1)
-                    case .upArrow: .selectDrawerItem(-1)
+                    case .downArrow: .drawer(.selectItem(1))
+                    case .upArrow: .drawer(.selectItem(-1))
                     default: nil
                     }
                 }
             guard let action else { return .consume(.exclusiveContext) }
             if event.isRepeat {
                 switch action {
-                case .placeSelectedDrawerItemAsBoard, .discardSelectedDrawerItem, .toggleDrawerStyle:
+                case .drawer(.placeSelectedItemAsBoard), .drawer(.discardSelectedItem),
+                    .drawer(.toggleStyle):
                     return .consume(.ignoredRepeat)
                 default:
                     break
@@ -483,18 +364,18 @@ enum KeyboardRouter {
         }
 
         guard modifiers == [] else { return .consume(.exclusiveContext) }
-        if event.isEscape { return .perform(.closeDrawer) }
+        if event.isEscape { return .perform(.drawer(.close)) }
         if event.key == .returnKey {
-            return event.isRepeat ? .consume(.ignoredRepeat) : .perform(.toggleSelectedDrawerItem)
+            return event.isRepeat ? .consume(.ignoredRepeat) : .perform(.drawer(.toggleSelectedItem))
         }
         if event.key == .backspace || event.key == .deleteForward {
             return event.isRepeat
                 ? .consume(.ignoredRepeat)
-                : .perform(.discardSelectedDrawerItem(focusNext: true))
+                : .perform(.drawer(.discardSelectedItem(focusNext: true)))
         }
         return switch event.key {
-        case .downArrow: .perform(.selectDrawerItem(1))
-        case .upArrow: .perform(.selectDrawerItem(-1))
+        case .downArrow: .perform(.drawer(.selectItem(1)))
+        case .upArrow: .perform(.drawer(.selectItem(-1)))
         default: .consume(.exclusiveContext)
         }
     }
@@ -502,16 +383,16 @@ enum KeyboardRouter {
     private static func routeBoardWidth(_ event: KeyEvent) -> InputDecision {
         let modifiers = event.modifiers
         let character = event.character?.lowercased()
-        if event.isEscape, modifiers == [] { return .perform(.hideBoardWidthPanel) }
+        if event.isEscape, modifiers == [] { return .perform(.board(.hideWidthPanel)) }
         if character == "w", modifiers == [] {
-            return event.isRepeat ? .consume(.ignoredRepeat) : .perform(.hideBoardWidthPanel)
+            return event.isRepeat ? .consume(.ignoredRepeat) : .perform(.board(.hideWidthPanel))
         }
-        if character == "-", modifiers == [] { return .perform(.adjustFocusedDeskBoardWidths(-80)) }
+        if character == "-", modifiers == [] { return .perform(.desk(.adjustBoardWidths(-80))) }
         if character == "=", modifiers == [] || modifiers == [.shift] {
-            return .perform(.adjustFocusedDeskBoardWidths(80))
+            return .perform(.desk(.adjustBoardWidths(80)))
         }
         if let count = character.flatMap(Int.init), (1...9).contains(count), modifiers == [] {
-            return .perform(.resizeFocusedDeskBoards(count))
+            return .perform(.desk(.resizeBoards(count)))
         }
         return .consume(.exclusiveContext)
     }
@@ -525,18 +406,20 @@ enum KeyboardRouter {
         let modifiers = event.modifiers
         if filterPhase == .filtering {
             if event.hasMarkedText { return .forward(.filterTextInput) }
-            if event.isEscape, modifiers == [] { return .perform(.exitOverviewFilterMode) }
-            if event.key == .returnKey, modifiers == [] { return .perform(.confirmOverviewFilterQuery) }
+            if event.isEscape, modifiers == [] { return .perform(.overview(.exitFilterMode)) }
+            if event.key == .returnKey, modifiers == [] { return .perform(.overview(.confirmFilterQuery)) }
             return .forward(.filterTextInput)
         }
         if case .board? = activeDrag, event.isEscape, modifiers == [] {
-            return .perform(.requestBoardDragCancellation)
+            return .perform(.board(.requestDragCancellation))
         }
         if event.isEscape, modifiers == [] {
-            return .perform(hasQuery ? .clearOverviewQuery : .hideOverview)
+            return .perform(hasQuery ? .overview(.clearQuery) : .overview(.hide))
         }
-        if event.key == .returnKey, modifiers == [] { return .perform(.enterOverviewSelection) }
-        if event.character?.lowercased() == "/", modifiers == [] { return .perform(.enterOverviewFilterMode) }
+        if event.key == .returnKey, modifiers == [] { return .perform(.overview(.enterSelection)) }
+        if event.character?.lowercased() == "/", modifiers == [] {
+            return .perform(.overview(.enterFilterMode))
+        }
         if let action = movementAction(event, overview: true) { return .perform(action) }
         return .consume(.exclusiveContext)
     }
@@ -551,39 +434,39 @@ enum KeyboardRouter {
         if filterPhase == .filtering {
             if event.hasMarkedText { return .forward(.filterTextInput) }
             if modifiers == [.command], event.character?.lowercased() == "a" {
-                return .perform(.selectAllZmxSessions)
+                return .perform(.zmxSessions(.selectAll))
             }
-            if event.isEscape, modifiers == [] { return .perform(.exitZmxSessionFilter) }
+            if event.isEscape, modifiers == [] { return .perform(.zmxSessions(.exitFilter)) }
             if event.key == .upArrow, modifiers == [] {
-                return .perform(.moveZmxSessionSelection(-1))
+                return .perform(.zmxSessions(.moveSelection(-1)))
             }
             if event.key == .downArrow, modifiers == [] {
-                return .perform(.moveZmxSessionSelection(1))
+                return .perform(.zmxSessions(.moveSelection(1)))
             }
-            if event.key == .returnKey, modifiers == [] { return .perform(.openSelectedZmxSession) }
+            if event.key == .returnKey, modifiers == [] { return .perform(.zmxSessions(.openSelected)) }
             return .forward(.filterTextInput)
         }
         if event.isEscape {
             guard modifiers == [] else { return .consume(.exclusiveContext) }
-            if hasSelection { return .perform(.clearZmxSessionSelection) }
-            return .perform(hasQuery ? .clearZmxSessionFilter : .hideZmxSessions)
+            if hasSelection { return .perform(.zmxSessions(.clearSelection)) }
+            return .perform(hasQuery ? .zmxSessions(.clearFilter) : .zmxSessions(.hide))
         }
         if modifiers == [.command], event.character?.lowercased() == "a" {
-            return .perform(.selectAllZmxSessions)
+            return .perform(.zmxSessions(.selectAll))
         }
         guard modifiers == [] else { return .consume(.exclusiveContext) }
-        if event.character?.lowercased() == "/" { return .perform(.enterZmxSessionFilter) }
-        if event.key == .upArrow { return .perform(.moveZmxSessionSelection(-1)) }
-        if event.key == .downArrow { return .perform(.moveZmxSessionSelection(1)) }
-        if event.character?.lowercased() == "k" { return .perform(.moveZmxSessionSelection(-1)) }
-        if event.character?.lowercased() == "j" { return .perform(.moveZmxSessionSelection(1)) }
-        if event.character == " " { return .perform(.toggleZmxSessionSelection) }
-        if event.key == .returnKey { return .perform(.openSelectedZmxSession) }
+        if event.character?.lowercased() == "/" { return .perform(.zmxSessions(.enterFilter)) }
+        if event.key == .upArrow { return .perform(.zmxSessions(.moveSelection(-1))) }
+        if event.key == .downArrow { return .perform(.zmxSessions(.moveSelection(1))) }
+        if event.character?.lowercased() == "k" { return .perform(.zmxSessions(.moveSelection(-1))) }
+        if event.character?.lowercased() == "j" { return .perform(.zmxSessions(.moveSelection(1))) }
+        if event.character == " " { return .perform(.zmxSessions(.toggleSelection)) }
+        if event.key == .returnKey { return .perform(.zmxSessions(.openSelected)) }
         if event.key == .backspace || event.key == .deleteForward {
-            return .perform(.deleteSelectedZmxSession)
+            return .perform(.zmxSessions(.deleteSelected))
         }
-        if event.character?.lowercased() == "x" { return .perform(.deleteSelectedZmxSession) }
-        if event.character?.lowercased() == "r" { return .perform(.refreshZmxSessions) }
+        if event.character?.lowercased() == "x" { return .perform(.zmxSessions(.deleteSelected)) }
+        if event.character?.lowercased() == "r" { return .perform(.zmxSessions(.refresh)) }
         return .consume(.exclusiveContext)
     }
 
@@ -592,22 +475,22 @@ enum KeyboardRouter {
             return nil
         }
         return switch (overview, event.modifiers == [.shift], direction) {
-        case (false, false, .left): .focusPreviousBoard
-        case (false, false, .right): .focusNextBoard
-        case (false, false, .upward): .focusPreviousDesk
-        case (false, false, .down): .focusNextDesk
-        case (false, true, .left): .moveFocusedBoardLeft
-        case (false, true, .right): .moveFocusedBoardRight
-        case (false, true, .upward): .moveFocusedBoardToPreviousDesk
-        case (false, true, .down): .moveFocusedBoardToNextDesk
-        case (true, false, .left): .selectPreviousBoardInOverview
-        case (true, false, .right): .selectNextBoardInOverview
-        case (true, false, .upward): .selectPreviousDeskInOverview
-        case (true, false, .down): .selectNextDeskInOverview
-        case (true, true, .left): .moveOverviewSelectionBoardLeft
-        case (true, true, .right): .moveOverviewSelectionBoardRight
-        case (true, true, .upward): .moveOverviewSelectionBoardToPreviousDesk
-        case (true, true, .down): .moveOverviewSelectionBoardToNextDesk
+        case (false, false, .left): .board(.focusPrevious)
+        case (false, false, .right): .board(.focusNext)
+        case (false, false, .upward): .desk(.focusPrevious)
+        case (false, false, .down): .desk(.focusNext)
+        case (false, true, .left): .board(.moveLeft)
+        case (false, true, .right): .board(.moveRight)
+        case (false, true, .upward): .board(.moveToPreviousDesk)
+        case (false, true, .down): .board(.moveToNextDesk)
+        case (true, false, .left): .overview(.selectPreviousBoard)
+        case (true, false, .right): .overview(.selectNextBoard)
+        case (true, false, .upward): .overview(.selectPreviousDesk)
+        case (true, false, .down): .overview(.selectNextDesk)
+        case (true, true, .left): .overview(.moveSelectionBoardLeft)
+        case (true, true, .right): .overview(.moveSelectionBoardRight)
+        case (true, true, .upward): .overview(.moveSelectionBoardToPreviousDesk)
+        case (true, true, .down): .overview(.moveSelectionBoardToNextDesk)
         }
     }
 
@@ -633,50 +516,51 @@ enum KeyboardRouter {
     }
 
     private static let denModeCommands: [ShortcutBinding: KeyboardCommand] = [
-        binding("i"): KeyboardCommand(action: .toggleNotifications),
-        binding("n"): KeyboardCommand(action: .showOpenBoardPanel),
-        binding(" "): KeyboardCommand(action: .showOpenBoardPanel),
-        binding("v"): KeyboardCommand(action: .openBoardFromClipboard, repeatPolicy: .ignore),
-        binding("n", modifiers: [.shift]): KeyboardCommand(action: .showNewDeskPanel),
-        binding("p"): KeyboardCommand(action: .showSaveDeskPresetPanel, repeatPolicy: .ignore),
-        binding("p", modifiers: [.shift]): KeyboardCommand(action: .showReplaceDeskPanel, repeatPolicy: .ignore),
-        binding("o"): KeyboardCommand(action: .showOverview),
-        binding("w"): KeyboardCommand(action: .showBoardWidthPanel, repeatPolicy: .ignore),
-        binding("["): KeyboardCommand(action: .goBack),
-        binding("]"): KeyboardCommand(action: .goForward),
-        binding("[", modifiers: [.shift]): KeyboardCommand(action: .goToFirstSheet),
-        binding("{", modifiers: [.shift]): KeyboardCommand(action: .goToFirstSheet),
-        binding("]", modifiers: [.shift]): KeyboardCommand(action: .goToLatestSheet),
-        binding("}", modifiers: [.shift]): KeyboardCommand(action: .goToLatestSheet),
-        binding("-"): KeyboardCommand(action: .adjustBoardWidth(-80)),
-        binding("="): KeyboardCommand(action: .adjustBoardWidth(80)),
-        binding("=", modifiers: [.shift]): KeyboardCommand(action: .adjustBoardWidth(80)),
-        binding("+", modifiers: [.shift]): KeyboardCommand(action: .adjustBoardWidth(80)),
-        binding("f"): KeyboardCommand(action: .toggleBoardMaximized, repeatPolicy: .ignore),
-        binding("f", modifiers: [.shift]): KeyboardCommand(action: .toggleFocusMode, repeatPolicy: .ignore),
-        binding("c"): KeyboardCommand(action: .centerBoard, repeatPolicy: .ignore),
-        binding("t"): KeyboardCommand(action: .toggleFocusedBoardSheetNavigationPause, repeatPolicy: .ignore),
-        binding("s"): KeyboardCommand(action: .captureCurrentSheet, repeatPolicy: .ignore),
+        binding("i"): KeyboardCommand(action: .notifications(.toggle)),
+        binding("n"): KeyboardCommand(action: .board(.showOpenPanel)),
+        binding(" "): KeyboardCommand(action: .board(.showOpenPanel)),
+        binding("v"): KeyboardCommand(action: .board(.openFromClipboard), repeatPolicy: .ignore),
+        binding("n", modifiers: [.shift]): KeyboardCommand(action: .desk(.showNewPanel)),
+        binding("p"): KeyboardCommand(action: .desk(.showSavePresetPanel), repeatPolicy: .ignore),
+        binding("p", modifiers: [.shift]): KeyboardCommand(action: .desk(.showReplacePanel), repeatPolicy: .ignore),
+        binding("o"): KeyboardCommand(action: .overview(.show)),
+        binding("w"): KeyboardCommand(action: .board(.showWidthPanel), repeatPolicy: .ignore),
+        binding("["): KeyboardCommand(action: .board(.goBack)),
+        binding("]"): KeyboardCommand(action: .board(.goForward)),
+        binding("[", modifiers: [.shift]): KeyboardCommand(action: .board(.goToFirstSheet)),
+        binding("{", modifiers: [.shift]): KeyboardCommand(action: .board(.goToFirstSheet)),
+        binding("]", modifiers: [.shift]): KeyboardCommand(action: .board(.goToLatestSheet)),
+        binding("}", modifiers: [.shift]): KeyboardCommand(action: .board(.goToLatestSheet)),
+        binding("-"): KeyboardCommand(action: .board(.adjustWidth(-80))),
+        binding("="): KeyboardCommand(action: .board(.adjustWidth(80))),
+        binding("=", modifiers: [.shift]): KeyboardCommand(action: .board(.adjustWidth(80))),
+        binding("+", modifiers: [.shift]): KeyboardCommand(action: .board(.adjustWidth(80))),
+        binding("f"): KeyboardCommand(action: .board(.toggleMaximized), repeatPolicy: .ignore),
+        binding("f", modifiers: [.shift]): KeyboardCommand(
+            action: .application(.toggleFocusMode), repeatPolicy: .ignore),
+        binding("c"): KeyboardCommand(action: .board(.center), repeatPolicy: .ignore),
+        binding("t"): KeyboardCommand(action: .board(.toggleSheetNavigationPause), repeatPolicy: .ignore),
+        binding("s"): KeyboardCommand(action: .board(.captureSheet), repeatPolicy: .ignore),
         binding("s", modifiers: [.control]): KeyboardCommand(
-            action: .copyCurrentSheetScreenshot, repeatPolicy: .ignore),
-        binding("y"): KeyboardCommand(action: .copyFocusedBoardLocation, repeatPolicy: .ignore),
-        binding("y", modifiers: [.shift]): KeyboardCommand(action: .copyFocusedBoardID, repeatPolicy: .ignore),
-        binding("a"): KeyboardCommand(action: .keepCurrentSheetInDrawer, repeatPolicy: .ignore),
-        binding("z"): KeyboardCommand(action: .toggleZenView, repeatPolicy: .ignore),
-        binding("x"): KeyboardCommand(action: .removeBoard, repeatPolicy: .ignore),
-        binding("u"): KeyboardCommand(action: .restoreBoard, repeatPolicy: .ignore),
-        binding("r"): KeyboardCommand(action: .showRenameBoardPanel, repeatPolicy: .ignore),
-        binding("r", modifiers: [.shift]): KeyboardCommand(action: .showRenameDeskPanel, repeatPolicy: .ignore),
-        binding("d"): KeyboardCommand(action: .removeBoardAndFocusNext, repeatPolicy: .ignore),
-        binding("d", modifiers: [.shift]): KeyboardCommand(action: .deleteDesk),
-        binding("m"): KeyboardCommand(action: .toggleAnchorBoard, repeatPolicy: .ignore),
-        binding("m", modifiers: [.shift]): KeyboardCommand(action: .jumpToAnchorBoard, repeatPolicy: .ignore),
-        binding("b"): KeyboardCommand(action: .saveFocusedBoardAsEssential, repeatPolicy: .ignore),
-        binding("e"): KeyboardCommand(action: .showEditBoardLinkPanel, repeatPolicy: .ignore),
+            action: .board(.copySheetScreenshot), repeatPolicy: .ignore),
+        binding("y"): KeyboardCommand(action: .board(.copyLocation), repeatPolicy: .ignore),
+        binding("y", modifiers: [.shift]): KeyboardCommand(action: .board(.copyID), repeatPolicy: .ignore),
+        binding("a"): KeyboardCommand(action: .board(.keepSheetInDrawer), repeatPolicy: .ignore),
+        binding("z"): KeyboardCommand(action: .application(.toggleZenView), repeatPolicy: .ignore),
+        binding("x"): KeyboardCommand(action: .board(.remove), repeatPolicy: .ignore),
+        binding("u"): KeyboardCommand(action: .board(.restore), repeatPolicy: .ignore),
+        binding("r"): KeyboardCommand(action: .board(.showRenamePanel), repeatPolicy: .ignore),
+        binding("r", modifiers: [.shift]): KeyboardCommand(action: .desk(.showRenamePanel), repeatPolicy: .ignore),
+        binding("d"): KeyboardCommand(action: .board(.removeAndFocusNext), repeatPolicy: .ignore),
+        binding("d", modifiers: [.shift]): KeyboardCommand(action: .desk(.delete)),
+        binding("m"): KeyboardCommand(action: .board(.toggleAnchor), repeatPolicy: .ignore),
+        binding("m", modifiers: [.shift]): KeyboardCommand(action: .board(.jumpToAnchor), repeatPolicy: .ignore),
+        binding("b"): KeyboardCommand(action: .essentials(.saveFocusedBoardAsEssential), repeatPolicy: .ignore),
+        binding("e"): KeyboardCommand(action: .board(.showEditLinkPanel), repeatPolicy: .ignore),
         ShortcutBinding(key: .returnKey, modifiers: [.shift]): KeyboardCommand(
-            action: .duplicateFirstSheet, repeatPolicy: .ignore),
+            action: .board(.duplicateFirstSheet), repeatPolicy: .ignore),
         ShortcutBinding(key: .returnKey, modifiers: []): KeyboardCommand(
-            action: .duplicateBoard, repeatPolicy: .ignore),
+            action: .board(.duplicate), repeatPolicy: .ignore),
     ]
 
     private static func binding(
@@ -684,161 +568,6 @@ enum KeyboardRouter {
         modifiers: ShortcutModifiers = []
     ) -> ShortcutBinding {
         ShortcutBinding(key: .character(character), modifiers: modifiers)
-    }
-}
-
-@MainActor
-enum AppActionHandler {
-    static func perform(
-        _ action: AppAction,
-        store: DenStore?,
-        openSettings: () -> Void = {}
-    ) {
-        if action == .openSettings {
-            openSettings()
-            return
-        }
-        guard let store else { return }
-
-        switch action {
-        case .openSettings: break
-        case .toggleNotifications: store.toggleNotificationList()
-        case .closeNotifications: store.closeNotificationList()
-        case .moveNotificationSelection(let offset): store.moveNotificationSelection(by: offset)
-        case .openSelectedNotification: store.openSelectedNotification()
-        case .toggleDenMode: store.toggleDenMode()
-        case .toggleBoardRail: store.toggleBoardRail()
-        case .exitDenMode: store.exitDenMode()
-        case .enterEssentialsPrefix: store.enterEssentialsPrefix()
-        case .exitEssentialsPrefix: store.exitEssentialsPrefix()
-        case .showEssentialNotFound(let key):
-            store.exitEssentialsPrefix()
-            let label: String
-            switch key {
-            case " ": label = "Space"
-            case "\r", "\n": label = "Return"
-            case "\t": label = "Tab"
-            case "\u{8}", "\u{7F}": label = "Delete"
-            default: label = key
-            }
-            store.showToast("No Essential assigned to '\(label)'.", style: .warning)
-        case .launchEssential(let id): store.launchEssential(id: id)
-        case .focusPreviousDesk: store.focusPreviousDesk()
-        case .focusNextDesk: store.focusNextDesk()
-        case .returnToPreviousDesk: store.returnToPreviousDesk()
-        case .focusPreviousBoard: store.focusPreviousBoard()
-        case .focusNextBoard: store.focusNextBoard()
-        case .moveFocusedBoardLeft: store.moveFocusedBoardLeft()
-        case .moveFocusedBoardRight: store.moveFocusedBoardRight()
-        case .increaseFocusedBoardContentSize: store.adjustFocusedBoardContentSize(by: 1)
-        case .decreaseFocusedBoardContentSize: store.adjustFocusedBoardContentSize(by: -1)
-        case .resetFocusedBoardContentSize: store.resetFocusedBoardContentSize()
-        case .toggleAnchorBoard: store.toggleAnchorBoard()
-        case .jumpToAnchorBoard: store.jumpToAnchorBoard()
-        case .moveFocusedBoardToPreviousDesk: store.moveFocusedBoardToPreviousDesk()
-        case .moveFocusedBoardToNextDesk: store.moveFocusedBoardToNextDesk()
-        case .focusDesk(let number): store.focusDesk(number: number)
-        case .moveFocusedBoardToDesk(let number): store.moveFocusedBoard(toDeskNumber: number)
-        case .showOpenBoardPanel: store.showOpenBoardPanel()
-        case .openBoardFromClipboard: store.openBoardFromClipboard()
-        case .hideZmxSessions: store.hideZmxSessions()
-        case .enterZmxSessionFilter: store.enterZmxSessionFilter()
-        case .exitZmxSessionFilter: store.exitZmxSessionFilter()
-        case .clearZmxSessionFilter: store.clearZmxSessionFilter()
-        case .moveZmxSessionSelection(let offset): store.selectZmxSession(by: offset)
-        case .toggleZmxSessionSelection: store.toggleZmxSessionSelection()
-        case .selectAllZmxSessions: store.selectAllZmxSessions()
-        case .clearZmxSessionSelection: store.clearZmxSessionSelection()
-        case .openSelectedZmxSession: store.openSelectedZmxSession()
-        case .deleteSelectedZmxSession: store.requestZmxSessionDeletion()
-        case .refreshZmxSessions: store.refreshZmxSessions()
-        case .showNewDeskPanel: store.showNewDeskPanel()
-        case .showSaveDeskPresetPanel: store.showSaveDeskPresetPanel()
-        case .showReplaceDeskPanel: store.showReplaceDeskPanel()
-        case .showOverview: store.showOverview()
-        case .hideOverview: store.hideOverview()
-        case .toggleBoardActivity: store.toggleBoardActivity()
-        case .hideBoardActivity: store.hideBoardActivity()
-        case .enterOverviewSelection: store.enterOverviewSelection()
-        case .enterOverviewFilterMode: store.enterOverviewFilterMode()
-        case .exitOverviewFilterMode: store.exitOverviewFilterMode()
-        case .confirmOverviewFilterQuery: store.confirmOverviewFilterQuery()
-        case .clearOverviewQuery: store.clearOverviewQuery()
-        case .selectPreviousBoardInOverview: store.selectPreviousBoardInOverview()
-        case .selectNextBoardInOverview: store.selectNextBoardInOverview()
-        case .selectPreviousDeskInOverview: store.selectPreviousDeskInOverview()
-        case .selectNextDeskInOverview: store.selectNextDeskInOverview()
-        case .moveOverviewSelectionBoardLeft: store.moveOverviewSelectionBoardLeft()
-        case .moveOverviewSelectionBoardRight: store.moveOverviewSelectionBoardRight()
-        case .moveOverviewSelectionBoardToPreviousDesk: store.moveOverviewSelectionBoardToPreviousDesk()
-        case .moveOverviewSelectionBoardToNextDesk: store.moveOverviewSelectionBoardToNextDesk()
-        case .showKeyboardShortcuts: store.showKeyboardShortcuts()
-        case .hideKeyboardShortcuts: store.hideKeyboardShortcuts()
-        case .showBoardWidthPanel: store.showBoardWidthPanel()
-        case .hideBoardWidthPanel: store.hideBoardWidthPanel()
-        case .adjustFocusedDeskBoardWidths(let amount): store.adjustFocusedDeskBoardWidths(by: amount)
-        case .resizeFocusedDeskBoards(let count): store.resizeFocusedDeskBoards(toFit: count)
-        case .toggleDrawer: store.toggleDrawer()
-        case .toggleDrawerStyle: store.toggleDrawerStyle()
-        case .closeDrawer: store.closeDrawer()
-        case .enterDrawerFilterMode: store.enterDrawerFilterMode()
-        case .exitDrawerFilterMode: store.exitDrawerFilterMode()
-        case .confirmDrawerFilterQuery: store.confirmDrawerFilterQuery()
-        case .confirmDrawerFilterSelection: store.confirmDrawerFilterSelection()
-        case .selectDrawerItem(let offset): store.selectDrawerItem(by: offset)
-        case .toggleSelectedDrawerItem: store.toggleSelectedDrawerItem()
-        case .discardSelectedDrawerItem(let focusNext):
-            store.discardSelectedDrawerItem(focusNext: focusNext)
-        case .restoreDiscardedDrawerItem: store.restoreRecentlyDiscardedDrawerItem()
-        case .placeSelectedDrawerItemAsBoard: store.placeSelectedDrawerItemAsBoard()
-        case .requestDrawerClearConfirmation: store.requestDrawerClearConfirmation()
-        case .enterDeskFilter: store.enterDeskFilter()
-        case .dismissDeskFilter: store.dismissDeskFilter()
-        case .confirmDeskFilterQuery: store.confirmDeskFilterQuery()
-        case .confirmDeskFilterSelection: store.confirmDeskFilterSelection()
-        case .selectDeskFilterBoard(let offset): store.selectDeskFilterBoard(by: offset)
-        case .requestBoardDragCancellation: store.requestBoardDragCancellation()
-        case .requestDeskDragCancellation: store.requestDeskDragCancellation()
-        case .reloadFocusedBoardFromOrigin: store.reloadFocusedBoardFromOrigin()
-        case .reloadFocusedDeskSheets: store.reloadFocusedDeskSheets()
-        case .reloadFocusedBoard: store.reloadFocusedBoard()
-        case .goBack: store.goBackInFocusedBoard()
-        case .goForward: store.goForwardInFocusedBoard()
-        case .goToFirstSheet: store.goToFirstSheetInFocusedBoard()
-        case .goToLatestSheet: store.goToLatestSheetInFocusedBoard()
-        case .adjustBoardWidth(let amount): store.adjustFocusedBoardWidth(by: amount)
-        case .toggleBoardMaximized: store.toggleFocusedBoardMaximized()
-        case .centerBoard: store.centerFocusedBoard()
-        case .revealPreviousBoard: store.revealPreviousBoard()
-        case .revealNextBoard: store.revealNextBoard()
-        case .toggleFocusedBoardSheetNavigationPause: store.toggleFocusedBoardSheetNavigationPause()
-        case .captureCurrentSheet: store.captureFocusedSheetScreenshot()
-        case .copyCurrentSheetScreenshot: store.copyFocusedSheetScreenshot()
-        case .copyFocusedBoardLocation: store.copyFocusedBoardLocation()
-        case .copyFocusedBoardID:
-            if let boardID = store.focusedBoard?.id {
-                store.copyBoardID(boardID)
-            }
-        case .keepCurrentSheetInDrawer: store.keepFocusedSheetInDrawer()
-        case .toggleZenView: store.toggleZenView()
-        case .toggleFocusMode: store.toggleFocusMode()
-        case .removeBoard: store.removeFocusedBoard()
-        case .removeBoardAndFocusNext: store.removeFocusedBoard(focusNext: true)
-        case .restoreBoard: store.restoreRecentlyRemovedBoard()
-        case .showRenameBoardPanel: store.showRenameBoardPanel()
-        case .showRenameDeskPanel: store.showRenameDeskPanel()
-        case .saveFocusedBoardAsEssential: store.saveFocusedBoardAsEssential()
-        case .deleteDesk: store.deleteFocusedDesk()
-        case .showEditBoardLinkPanel: store.showEditBoardLinkPanel()
-        case .duplicateBoard: store.duplicateFocusedBoard()
-        case .duplicateFirstSheet: store.duplicateFocusedBoardFromFirstSheet()
-        }
-    }
-}
-
-extension DenStore {
-    func performAppAction(_ action: AppAction, openSettings: () -> Void = {}) {
-        AppActionHandler.perform(action, store: self, openSettings: openSettings)
     }
 }
 
