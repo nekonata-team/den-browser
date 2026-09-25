@@ -15,6 +15,7 @@
     "src/sheet-dom/entry.ts",
     "src/sheet-navigation/entry.ts",
     "src/picture-in-picture/entry.ts",
+    "src/inspection/entry.ts",
     "../../Den Browser/Den BrowserTests/Fixtures/MV3Extension/content.js"
   ]
 }

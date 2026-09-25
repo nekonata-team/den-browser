@@ -29,6 +29,10 @@ const entries = [
     entry: 'src/picture-in-picture/entry.ts',
     output: 'PictureInPicture.js',
   },
+  {
+    entry: 'src/inspection/entry.ts',
+    output: 'InspectionAgent.js',
+  },
 ];
 
 try {
