@@ -18,7 +18,7 @@ The minimum supported platform is macOS 26.0 for the app and its tests.
 
 ## Implementation flow
 
-1. Read `CONTEXT.md` when the change touches product behavior or user-visible wording. Read `docs/architecture.md` and relevant ADRs in `docs/adr/` when the change affects architecture or records a design decision. Read affected code/tests. Read `docs/testing.md` before adding or updating any tests (unit or UI). For every XCUITest, record the native UI boundary it protects and why a unit test cannot observe the failure; ordinary Button clicks do not qualify. Read `docs/keyboard-input.md` before changing keyboard routing, Commands, shortcut recording, or local key handling.
+1. Read `CONTEXT.md` for product behavior or user-visible wording. For architecture changes, read `docs/architecture.md` and relevant ADRs. Read affected code and tests. Before test changes, read `docs/testing.md` and follow its XCUITest admission rule. Before keyboard routing, Commands, shortcut recording, or local key handling changes, read `docs/keyboard-input.md`.
 2. Keep persisted `DenState` separate from live `BoardRuntime`/`WKWebView` objects.
 3. Add or update focused unit tests for changed stable `DenStore` behavior when existing tests do not already protect it.
 4. Choose validation in proportion to the change. Run `just check` before handoff for Swift source, Xcode settings, or test and validation configuration changes. Otherwise, run focused validation that exercises the changed behavior. Reuse successful checks when the final diff does not affect what they cover.
@@ -46,6 +46,7 @@ manual candidate verification, `just release publish X.Y.Z`.
 - `docs/architecture.md` and `docs/adr/`: architecture and product decisions
 - `scripts/embedded-js/README.md`: TypeScript sources and generated JavaScript resource workflow
 - `docs/cli.md`: command-line interface specification and agent integration
+- `docs/mcp.md`: MCP server interface and tool reference
 - `docs/testing.md`: automated and exploratory validation
 - `docs/releasing.md`: signed release and publishing workflow
 - `web/README.md`: public website and deployment

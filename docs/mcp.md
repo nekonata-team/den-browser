@@ -1,28 +1,16 @@
-# Den MCP Server (`den mcp`) Specification
+# Den MCP Server (`den mcp`)
 
-**Status: Approved for implementation**
+`den mcp` exposes common Den operations as typed MCP tools. Tools reuse Den's operation semantics and typed IPC. Den Browser remains the owner of Profile, Board, Sheet, and Terminal state.
 
-Den Browser exposes its common operations as MCP tools so MCP clients can present them to models with descriptions and typed arguments. This is a second interface to Den operations, alongside the first-party [`den` CLI](cli.md).
+## 1. Tool model
 
-## 1. Rationale and Design Philosophy
-
-### Why Reconsider MCP Now
-
-[ADR 0047](adr/0047-integrate-den-cli.md) avoided MCP when the CLI's operational surface was intentionally small. The CLI now covers common Den, Sheet, Drawer, and Terminal operations over typed IPC, so MCP can reuse existing behavior instead of adding a second browser-automation stack.
-
-MCP adds a distinct benefit: compatible clients can discover Den tools with descriptions and JSON Schemas, then call them without learning CLI syntax or parsing shell output. The current stateless MCP core also makes a sessionless Streamable HTTP server practical when remote transport is needed. It does not remove Den's own live Profile, Board, Sheet, or Terminal state; those remain owned by Den Browser.
-
-Version 1 remains a local stdio server because the MCP client can launch the bundled `den` executable directly. Stdio still has one child process per client. Den MCP itself keeps no client-specific target state: each tool call carries optional `profile_id` and `board_id` arguments or resolves them using the CLI's documented defaults. The [2026-07-28 MCP specification](https://blog.modelcontextprotocol.io/posts/2026-07-28/) removes protocol-level sessions from Streamable HTTP; it does not change stdio's process lifetime.
-
-### Action-First Tools
-
-The CLI groups commands by domain:
+The CLI uses domain-first commands:
 
 ```text
 den <domain> <action>
 ```
 
-MCP tools are presented as a flat catalog, so tool names lead with the action and identify its object:
+MCP presents a flat catalog with action-first names:
 
 ```text
 inspect_den
@@ -31,9 +19,7 @@ click_sheet_element
 save_url_to_drawer
 ```
 
-Tool arguments are JSON objects described by JSON Schema. They are not CLI argument strings, and tools do not accept a generic command to execute. An MCP tool may combine related CLI reads when one result gives the model better context; `inspect_den` is the primary example.
-
-MCP tools reuse Den's existing operation semantics, URL rules, and typed IPC. They do not create a second set of Den behavior. Product terms follow [CONTEXT.md](../CONTEXT.md): Den, Desk, Board, Sheet, and Terminal Session.
+Clients discover JSON Schema inputs and call tools directly; tools do not accept shell command strings. `inspect_den` combines related reads into one consistent result. Other tools map to existing CLI operations where possible. Product terms follow [CONTEXT.md](../CONTEXT.md).
 
 ## 2. Server Lifecycle and Transport
 
@@ -65,26 +51,7 @@ Example client configuration:
 
 ## 3. Tool Arguments and Targeting
 
-MCP clients discover tools with their descriptions and `inputSchema`. A call supplies a tool name and an `arguments` object matching that schema:
-
-```json
-{
-  "jsonrpc": "2.0",
-  "id": 1,
-  "method": "tools/call",
-  "params": {
-    "name": "open_sheet",
-    "arguments": {
-      "url": "https://example.com",
-      "board_id": "4F72344C-F4E3-438D-99CB-2F12A79F0004"
-    }
-  }
-}
-```
-
-`tools/call` carries that object in the MCP request. Missing, unknown, or invalid values fail before a side effect.
-
-For example, `open_sheet` advertises an object schema with a required URL and optional targets:
+Each tool publishes an `inputSchema`. Clients call a tool by name with an `arguments` object. Invalid or unknown values fail before side effects. For example, `open_sheet` requires a URL and accepts optional targets:
 
 ```json
 {
@@ -103,16 +70,18 @@ For example, `open_sheet` advertises an object schema with a required URL and op
 
 | Argument | Type | Description |
 |---|---|---|
-| `profile_id` | UUID string, optional | Target Profile. A tool argument overrides the server's `--profile`; otherwise resolution follows `--profile`, `$DEN_PROFILE`, ambient Board's Profile, then the active Profile. An explicit invalid, missing, or windowless Profile fails without fallback. |
-| `board_id` | UUID string, optional | Target a specific Board for Sheet and Terminal Session tools. An explicit invalid or non-existent Board fails without fallback. If omitted, Sheet tools use the CLI's ambient, adjacent, focused, then first-Web-Board resolution; Terminal tools prefer the ambient Terminal Board, then the nearest Terminal Board. |
+| `profile_id` | UUID string, optional | Overrides server `--profile`. If omitted, Profile resolution follows the CLI rules in [`cli.md`](cli.md). Invalid or windowless explicit Profiles fail without fallback. |
+| `board_id` | UUID string, optional | Pins a Board for Sheet and Terminal tools. If omitted, Board resolution follows the CLI rules. Invalid explicit Boards fail without fallback. |
 
-After `inspect_den` or `inspect_sheet`, clients should pass the returned `profile_id` and `board_id` to subsequent calls when a workflow must stay on that target. A successful Board-targeted call returns its effective `profile_id` and `board_id` so the model can keep later calls anchored if focus changes.
+Board-targeted results include their effective `profile_id` and `board_id`. Pass those values to later calls to keep a workflow anchored when focus changes. `open_profile` changes the active Profile Window but not the server's launch options.
 
-For `click_sheet_element`, provide either `target` or both `role` and `name`; `role` and `name` must be used together. `focus_new_board` requires `open_in_new_board`. For `read_sheet_element`, `field` is `text`, `value`, `attribute`, `count`, or `box`; `attribute` is required for the `attribute` field. For `wait_for_sheet`, provide exactly one condition: `target` with an optional `state`, `url`, `text`, or `load_state`. Selector states are `attached`, `visible`, `hidden`, or `detached`; load states follow [`cli.md`](cli.md).
+Tool-specific constraints:
 
-`query_sheet.fields` accepts `tag`, `role`, `name`, `text`, `value`, `checked`, `disabled`, `selected`, `expanded`, `class`, and `attr:<name>`. `read_sheet_state.state` is `visible`, `enabled`, or `checked`. For `scroll_sheet`, provide `direction` (`down`, `up`, `top`, or `bottom`) or `target` (a ref or selector); they are mutually exclusive and the default direction is `down`.
-
-`open_profile` changes the active Profile Window but does not change the server's launch options. Pass `profile_id` on later calls when they must stay scoped to that Profile.
+- `click_sheet_element` accepts `target` or both `role` and `name`; `focus_new_board` requires `open_in_new_board`.
+- `read_sheet_element.field` is `text`, `value`, `attribute`, `count`, or `box`; `attribute` requires an attribute name.
+- `wait_for_sheet` requires exactly one of `target`, `url`, `text`, or `load_state`. `state` requires `target`. Selector states are `attached`, `visible`, `hidden`, or `detached`; load states follow [`cli.md`](cli.md).
+- `query_sheet.fields` accepts `tag`, `role`, `name`, `text`, `value`, `checked`, `disabled`, `selected`, `expanded`, `class`, and `attr:<name>`.
+- `read_sheet_state.state` is `visible`, `enabled`, or `checked`. `scroll_sheet` accepts `direction` or `target`, not both; the default direction is `down`.
 
 ## 4. Tool Specification (v1)
 
@@ -198,6 +167,6 @@ The first tool catalog focuses on common Den, Sheet, Drawer, and Terminal workfl
 - Raw Terminal input and process signaling (`terminal send`, `terminal kill`).
 - Desk switching and creation, when those operations are available through the CLI.
 
-## 7. Decision Status
+## 7. Related decision
 
 The MCP adoption and v1 direction in this specification are approved by [ADR 0055](adr/0055-add-den-mcp-server.md). ADR 0055 supersedes only ADR 0047's decision to avoid MCP; its CLI and IPC decisions remain in effect.
