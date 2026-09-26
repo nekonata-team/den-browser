@@ -41,8 +41,12 @@ A user-visible label for a desk preset. It becomes the initial Desk Label when t
 _Avoid_: Desk Label, preset name
 
 **Board**:
-A user-created work surface that holds one focused task context within a desk. A Board presents a Sheet Stack, a live Terminal Session, or an Inspection.
+A user-created or app-provided work surface that holds one focused task context within a desk. A Board presents a Sheet Stack, a live Terminal Session, an Inspection, or an interactive tutorial.
 _Avoid_: Tab, card, pane, slot
+
+**Tutorial Board**:
+An app-provided Board that teaches Den's core operations through a resumable checklist that tracks semantic actions inside Den. A Den has at most one Tutorial Board, opened from an empty Desk or from Open Board with `:tutorial`.
+_Avoid_: Demo Desk, tour screen
 
 **Web Board**:
 A Board whose content is a Sheet Stack.
