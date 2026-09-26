@@ -46,7 +46,10 @@ enum TerminalConfigurationSource {
         commandOverride: String? = nil
     ) -> Resolution {
         let home = fileManager.homeDirectoryForCurrentUser
-        let isIsolatedRun = arguments.contains("--ui-testing") || arguments.contains("--benchmark-scenario")
+        let isIsolatedRun =
+            environment["XCTestConfigurationFilePath"] != nil
+            || arguments.contains("--ui-testing")
+            || arguments.contains("--benchmark-scenario")
         let xdgRoot: URL
         if let value = environment["XDG_CONFIG_HOME"], !value.isEmpty {
             xdgRoot = URL(fileURLWithPath: value, relativeTo: home).standardizedFileURL

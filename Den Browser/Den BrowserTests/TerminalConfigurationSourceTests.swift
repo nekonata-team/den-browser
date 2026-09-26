@@ -411,6 +411,39 @@ struct TerminalConfigurationSourceTests {
         #expect(!contents.contains("/bin/bash"))
         #expect(!contents.contains("font-size = 14"))
     }
+
+    @Test func unitTestHostIgnoresUserGhosttyConfiguration() throws {
+        // Arrange
+        let root = FileManager.default.temporaryDirectory
+            .appending(path: "den-browser-unit-test-terminal-config-\(UUID())", directoryHint: .isDirectory)
+        let configDirectory = root.appending(path: "ghostty", directoryHint: .isDirectory)
+        try FileManager.default.createDirectory(at: configDirectory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        try "command = /bin/bash\nfont-size = 14\ntheme = Gruvbox Dark".write(
+            to: configDirectory.appending(path: "config.ghostty"),
+            atomically: true,
+            encoding: .utf8)
+
+        // Act
+        let resolution = TerminalConfigurationSource.make(
+            environment: [
+                "XDG_CONFIG_HOME": root.path,
+                "XCTestConfigurationFilePath": "/tmp/DenBrowserTests.xctest",
+            ],
+            arguments: [])
+
+        // Assert
+        guard case let .generated(contents) = resolution.configSource else {
+            Issue.record("Expected a generated Ghostty config")
+            return
+        }
+
+        #expect(contents.contains("command = /bin/zsh -f"))
+        #expect(!contents.contains("/bin/bash"))
+        #expect(!contents.contains("font-size = 14"))
+        #expect(!resolution.theme.dark.rendered.contains("palette = 1=#cc241d"))
+    }
 }
 
 private struct StubTerminalCommandRunner: TerminalCommandRunning, Sendable {
