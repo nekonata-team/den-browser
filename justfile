@@ -54,6 +54,11 @@ lsp-config:
 run: build
     open -n "{{derived_data}}/Build/Products/Debug/Den Browser.app"
 
+# Build and launch the application locally in a Private Den.
+[group("development")]
+run-private: build
+    open -n "{{derived_data}}/Build/Products/Debug/Den Browser.app" --args --private-den
+
 # Quit Den Browser.
 [group("development")]
 quit:
