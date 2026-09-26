@@ -46,17 +46,12 @@ struct DenHeaderControls: ToolbarContent {
     let windowID: UUID
 
     @Environment(DenStore.self) private var store
-    @Environment(ProfileManager.self) private var profileManager
 
     @ToolbarContentBuilder
     var body: some ToolbarContent {
         if !store.isOverviewPresented {
             ToolbarSpacer(.flexible)
             ToolbarItemGroup(placement: .automatic) {
-                if profileManager.isPrivateDen {
-                    PrivateDenBadge(color: profile.color.color)
-                }
-
                 NotificationButton()
 
                 if store.focusedDesk?.boards.isEmpty == false {
@@ -66,21 +61,6 @@ struct DenHeaderControls: ToolbarContent {
                 ProfileChip(profile: profile, windowID: windowID)
             }
         }
-    }
-}
-
-private struct PrivateDenBadge: View {
-    let color: Color
-
-    var body: some View {
-        Label("Private", systemSymbol: .lock)
-            .font(.caption.weight(.semibold))
-            .foregroundStyle(color)
-            .padding(.horizontal, 9)
-            .frame(height: 30)
-            .background(color.opacity(0.14), in: Capsule())
-            .accessibilityLabel("Private Den")
-            .help("Private Den")
     }
 }
 
