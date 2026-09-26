@@ -284,25 +284,22 @@ extension DenStore {
         save: Bool = true
     ) -> Bool {
         let deskIndex: Int
-        let insertIndex: Int
         if let afterBoardID {
             guard let indices = boardIndices(for: afterBoardID) else { return false }
             deskIndex = indices.desk
-            let boards = state.desks[deskIndex].boards
-            let group = BoardGroup.containing(afterBoardID, in: boards)
-            insertIndex =
-                group?.boards.last.flatMap { member in
-                    boards.firstIndex(where: { $0.id == member.id }).map { $0 + 1 }
-                } ?? indices.board + 1
         } else {
             guard let focusedDeskIndex else { return false }
             deskIndex = focusedDeskIndex
-            if let focusedBoardIndex = focusedBoardIndex(in: deskIndex) {
-                insertIndex = focusedBoardIndex + 1
-            } else {
-                insertIndex = state.desks[deskIndex].boards.endIndex
+        }
+        let boards = state.desks[deskIndex].boards
+        let anchorBoardID = afterBoardID ?? state.desks[deskIndex].focusedBoardID
+        let anchorIndex = anchorBoardID.flatMap { id in boards.firstIndex(where: { $0.id == id }) }
+        let groupEndIndex = anchorBoardID.flatMap { id in
+            BoardGroup.containing(id, in: boards)?.boards.last.flatMap { member in
+                boards.firstIndex(where: { $0.id == member.id })
             }
         }
+        let insertIndex = (groupEndIndex ?? anchorIndex).map { $0 + 1 } ?? boards.endIndex
 
         if !focus, let afterBoardID {
             _ = prepareBoardLinkFocus(afterBoardID, origin: origin)
@@ -495,7 +492,7 @@ extension DenStore {
     }
 
     func duplicateFocusedBoard() {
-        guard let source = focusedBoard else { return }
+        guard let source = focusedBoard, !source.isSideBoard else { return }
 
         if source.isZmx {
             showZmxDuplicationPanel()
@@ -601,7 +598,7 @@ extension DenStore {
     }
 
     func duplicateFocusedBoardFromFirstSheet() {
-        guard let source = focusedBoard else { return }
+        guard let source = focusedBoard, !source.isSideBoard else { return }
 
         if source.isZmx {
             duplicateFocusedZmxBoard(suffix: "")

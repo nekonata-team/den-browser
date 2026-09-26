@@ -581,6 +581,53 @@ struct DenStoreBoardTests {
         #expect(store.state.desks[0].boards.count == 2)
     }
 
+    @Test(arguments: [false, true], [false, true])
+    func sideBoardCannotBeDuplicated(isInspection: Bool, fromFirstSheet: Bool) {
+        // Arrange
+        let target = board("Target")
+        var side =
+            isInspection
+            ? BoardState(width: 360, sideBoardTargetBoardID: target.id)
+            : board("Side")
+        if !isInspection {
+            side.firstSheetURL = URL(string: "https://example.com/first")
+        }
+        side.sideBoard = SideBoard(targetBoardID: target.id)
+        let sourceDesk = desk("Desk", boards: [target, side], focusedBoardID: side.id)
+        let store = DenStore(state: DenState(desks: [sourceDesk], focusedDeskID: sourceDesk.id))
+
+        // Act
+        if fromFirstSheet {
+            store.duplicateFocusedBoardFromFirstSheet()
+        } else {
+            store.duplicateFocusedBoard()
+        }
+
+        // Assert
+        #expect(store.state.desks[0].boards.map(\.id) == [target.id, side.id])
+        #expect(store.focusedBoard?.id == side.id)
+    }
+
+    @Test(arguments: [0, 1])
+    func focusedBoardCreationKeepsSideBoardGroupAdjacent(focusedIndex: Int) throws {
+        // Arrange
+        let target = board("Target")
+        var side = board("Side")
+        side.sideBoard = SideBoard(targetBoardID: target.id)
+        let following = board("Following")
+        let sourceDesk = desk(
+            "Desk",
+            boards: [target, side, following],
+            focusedBoardID: [target.id, side.id][focusedIndex])
+        let store = DenStore(state: DenState(desks: [sourceDesk], focusedDeskID: sourceDesk.id))
+
+        // Act
+        let insertedID = try #require(store.createBoard(urlString: "https://new.example"))
+
+        // Assert
+        #expect(store.state.desks[0].boards.map(\.id) == [target.id, side.id, insertedID, following.id])
+    }
+
     @Test(arguments: await [BoardState.minimumWidth, BuiltInDeskPreset.boardWidth, BoardState.maximumWidth])
     func inspectionBoardStartsAtCompactWidthRegardlessOfTargetWidth(targetWidth: Double) throws {
         // Arrange

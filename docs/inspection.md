@@ -4,6 +4,8 @@ An Inspection Board investigates its target Web Board's Current Sheet. See the [
 
 New Inspection Boards start at 360 points wide. This is an initial size, and their width can be resized independently using the normal Board width limits.
 
+Inspection Boards cannot be duplicated.
+
 ## Selected element and ancestors
 
 Pick an element in the Current Sheet or select a node in the DOM tree. The DOM tree shows the selected element's ancestor path and lets the user expand and select related nodes.
