@@ -893,7 +893,7 @@ struct BoardLayoutMetrics: Equatable {
 
 struct RecentlyRemovedBoard {
     let board: BoardState
-    var sideBoard: BoardState? = nil
+    var sideBoard: BoardState?
     let sourceDeskID: UUID
     let sourceBoardIndex: Int
 }

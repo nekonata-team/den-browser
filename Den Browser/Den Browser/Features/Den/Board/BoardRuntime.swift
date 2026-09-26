@@ -373,12 +373,6 @@ final class BoardRuntime: BaseWebRuntime, ObservableObject {
         }
     }
 
-    func stopInspectionCollection() {
-        guard isInspectionCollecting else { return }
-        isInspectionCollecting = false
-        webView.evaluateJavaScript(InspectionPageScript.pauseCollection)
-    }
-
     func stopInspection() {
         guard isInspectionActive else { return }
         isInspectionActive = false
@@ -401,6 +395,14 @@ final class BoardRuntime: BaseWebRuntime, ObservableObject {
             let data = json.data(using: .utf8)
         else { return [] }
         return (try? JSONDecoder().decode([InspectionDOMNode].self, from: data)) ?? []
+    }
+
+    func readInspectionChildren(for nodeIDs: [String]) async -> [String: [InspectionDOMNode]] {
+        guard isInspectionActive, !nodeIDs.isEmpty,
+            let json = try? await webView.evaluateJavaScript(InspectionPageScript.readChildren(nodeIDs)) as? String,
+            let data = json.data(using: .utf8)
+        else { return [:] }
+        return (try? JSONDecoder().decode([String: [InspectionDOMNode]].self, from: data)) ?? [:]
     }
 
     func selectInspectionNode(_ nodeID: String) {

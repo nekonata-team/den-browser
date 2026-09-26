@@ -44,6 +44,7 @@ type InspectionPageState = {
   nodeIDs: WeakMap<Element, string>;
   elements: Map<string, Element>;
   nextNodeID: number;
+  nextEventID: number;
   events: InspectionConsoleEvent[];
   previousCursor: string;
   consoleHooks: Partial<Record<InspectionConsoleLevel, InspectionConsoleHook>>;
@@ -69,7 +70,6 @@ type InspectionPageState = {
   repositionHighlight: () => void;
   startPicking: () => void;
   startCollection: () => void;
-  stopCollection: () => void;
   readSnapshot: () => string;
   readChildren: (id: string) => string;
   selectNode: (id: string) => boolean;
@@ -96,6 +96,7 @@ interface Window {
       nodeIDs: new WeakMap(),
       elements: new Map(),
       nextNodeID: 0,
+      nextEventID: 0,
       events: [],
       previousCursor: "",
       consoleHooks: {},
@@ -113,7 +114,6 @@ interface Window {
       repositionHighlight: () => {},
       startPicking: () => {},
       startCollection: () => {},
-      stopCollection: () => {},
       readSnapshot: () => "",
       readChildren: () => "[]",
       selectNode: () => false,
@@ -129,7 +129,7 @@ interface Window {
         if (value instanceof Error) return String(value);
         try { return JSON.stringify(value) ?? String(value); } catch { return String(value); }
       }).join(" ");
-      state.events.push({ id: `${Date.now()}-${state.events.length}`, time: new Date().toLocaleTimeString(), level, message });
+      state.events.push({ id: `${Date.now()}-${++state.nextEventID}`, time: new Date().toLocaleTimeString(), level, message });
       if (state.events.length > 80) state.events.shift();
     };
     state.listeners.error = event => record("error", [event.message]);
@@ -308,7 +308,7 @@ interface Window {
     state.startPicking = () => {
       state.install();
       state.active = true;
-      state.previousCursor = document.documentElement.style.cursor;
+      if (!state.picking) state.previousCursor = document.documentElement.style.cursor;
       state.removeHighlight();
       state.picking = true;
       document.documentElement.style.cursor = "crosshair";
@@ -317,10 +317,6 @@ interface Window {
       state.active = true;
       state.collecting = true;
       state.installCollection();
-    };
-    state.stopCollection = () => {
-      state.collecting = false;
-      state.uninstallCollection();
     };
     state.readSnapshot = () => JSON.stringify({
       isPicking: state.picking,

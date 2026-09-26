@@ -15,6 +15,13 @@ enum DenIPCTargetResolver {
             }
         }
 
+        func matchesExplicit(_ board: BoardState) -> Bool {
+            switch self {
+            case .any: true
+            case .web, .terminal: matches(board)
+            }
+        }
+
         var label: String {
             switch self {
             case .any: ""
@@ -219,7 +226,7 @@ enum DenIPCTargetResolver {
                 guard let indices = store.boardIndices(for: id) else { continue }
                 let desk = store.state.desks[indices.desk]
                 let board = desk.boards[indices.board]
-                guard kind.matches(board) else {
+                guard kind.matchesExplicit(board) else {
                     return .failure(.boardNotMatchingKind(idString, kindLabel))
                 }
                 let profileID = profileManager.profileID(for: store)

@@ -69,6 +69,7 @@ For `terminal` commands, the caller's Terminal Board is preferred; otherwise the
 
 ### Board Targeting
 - `--board <id>`: Explicitly target a specific Board by its UUID. Available on `den sheet`, `den terminal`, and `den board close`; fails immediately if not found or invalid.
+- `den board close --board <id>` accepts any Board kind, including Inspection Boards. Sheet and Terminal commands require their corresponding Board kind.
 
 ### Direct IPC Requests
 The CLI communicates with Den Browser through a newline-delimited JSON request on the Unix domain socket. A request contains the typed `command` and optional target IDs; command values and their associated payloads are encoded together.

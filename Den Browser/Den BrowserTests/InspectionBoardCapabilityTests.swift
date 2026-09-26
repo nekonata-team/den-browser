@@ -186,15 +186,15 @@ struct InspectionBoardCapabilityTests {
         // Act
         try await startCollection(webView)
         _ = try await webView.evaluateJavaScript("console.log('first-session')")
-        _ = try await webView.evaluateJavaScript(InspectionPageScript.pauseCollection)
+        _ = try await webView.evaluateJavaScript(InspectionPageScript.stop)
         _ = try await webView.evaluateJavaScript("console.log('stopped-session')")
-        _ = try await webView.evaluateJavaScript(InspectionPageScript.collect)
+        try await startCollection(webView)
         _ = try await webView.evaluateJavaScript("console.warn('restarted-session')")
         let json = try #require(try await webView.evaluateJavaScript(InspectionPageScript.readSnapshot) as? String)
 
         // Assert
         #expect(json.contains("restarted-session"))
-        #expect(json.contains("first-session"))
+        #expect(!json.contains("first-session"))
         #expect(!json.contains("stopped-session"))
     }
 
@@ -260,6 +260,44 @@ struct InspectionBoardCapabilityTests {
         #expect(pickingSnapshot.isCollecting)
         #expect(selectedSnapshot.isCollecting)
         #expect(selectedSnapshot.events.contains { $0.message.contains("before-pick") })
+    }
+
+    @Test func repeatedPickingRestoresTheCursorThatPrecededTheFirstPick() async throws {
+        // Arrange
+        let (webView, window, probe) = fixture()
+        defer { window.close() }
+        await probe.load("<!doctype html><html><body><button id='target'>Target</button></body></html>", in: webView)
+        _ = try await webView.evaluateJavaScript("document.documentElement.style.cursor = 'wait'")
+        try await startPicking(webView)
+
+        // Act
+        try await startPicking(webView)
+        _ = try await webView.evaluateJavaScript(
+            "document.querySelector('#target').dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }))"
+        )
+        let cursor = try await webView.evaluateJavaScript("document.documentElement.style.cursor") as? String
+
+        // Assert
+        #expect(cursor == "wait")
+    }
+
+    @Test func retainedConsoleEventsHaveUniqueIDsAfterBufferOverflow() async throws {
+        // Arrange
+        let (webView, window, probe) = fixture()
+        defer { window.close() }
+        await probe.load("<!doctype html><html><body>Console events</body></html>", in: webView)
+        try await startCollection(webView)
+
+        // Act
+        _ = try await webView.evaluateJavaScript(
+            "(() => { const originalNow = Date.now; Date.now = () => 123; for (let i = 0; i < 82; i++) console.log(`event-${i}`); Date.now = originalNow; })()"
+        )
+        let json = try #require(try await webView.evaluateJavaScript(InspectionPageScript.readSnapshot) as? String)
+        let snapshot = try JSONDecoder().decode(InspectionPageSnapshot.self, from: Data(json.utf8))
+
+        // Assert
+        #expect(snapshot.events.count == 80)
+        #expect(Set(snapshot.events.map(\.id)).count == snapshot.events.count)
     }
 
     @Test func repeatedCollectionStartAndNavigationDoNotDuplicateOrRetainOldEvents() async throws {
@@ -373,6 +411,41 @@ struct InspectionBoardCapabilityTests {
         #expect(children.map(\.tag) == ["button", "span"])
         #expect(selectedSnapshot.selection?.id == "sibling")
         #expect(highlightExists == true)
+    }
+
+    @Test func batchedChildrenReadReflectsDOMChangesInTheSameDocument() async throws {
+        // Arrange
+        let (webView, window, probe) = fixture()
+        defer { window.close() }
+        await probe.load(
+            "<!doctype html><html><body><section id='parent'><button>Before</button></section></body></html>",
+            in: webView
+        )
+        try await startPicking(webView)
+        _ = try await webView.evaluateJavaScript(
+            "document.querySelector('#parent button').dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }))"
+        )
+        let snapshotJSON = try #require(
+            try await webView.evaluateJavaScript(InspectionPageScript.readSnapshot) as? String)
+        let snapshot = try JSONDecoder().decode(InspectionPageSnapshot.self, from: Data(snapshotJSON.utf8))
+        let parent = try #require(snapshot.treePath.first(where: { $0.tag == "section" }))
+
+        // Act
+        func readChildren() async throws -> [InspectionDOMNode] {
+            let json = try #require(
+                try await webView.evaluateJavaScript(InspectionPageScript.readChildren([parent.id])) as? String)
+            let children = try JSONDecoder().decode([String: [InspectionDOMNode]].self, from: Data(json.utf8))
+            return try #require(children[parent.id])
+        }
+        let beforeMutation = try await readChildren()
+        _ = try await webView.evaluateJavaScript(
+            "document.querySelector('#parent').insertAdjacentHTML('beforeend', '<span>After</span>')"
+        )
+        let afterMutation = try await readChildren()
+
+        // Assert
+        #expect(beforeMutation.map(\.tag) == ["button"])
+        #expect(afterMutation.map(\.tag) == ["button", "span"])
     }
 
     @Test func hoverHighlightIsRemovedOnSelectionStopAndNavigation() async throws {

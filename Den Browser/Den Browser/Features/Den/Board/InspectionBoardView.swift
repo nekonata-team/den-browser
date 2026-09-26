@@ -23,7 +23,6 @@ struct InspectionBoardView: View {
     @State private var expandedNodeIDs: Set<String> = []
     @State private var loadedChildren: [String: [InspectionDOMNode]] = [:]
     @State private var loadingNodeIDs: Set<String> = []
-    @State private var isCollecting = false
     @State private var observedInspectionPageGeneration = 0
     @Environment(\.accessibilityDifferentiateWithoutColor) private var differentiateWithoutColor
 
@@ -51,15 +50,23 @@ struct InspectionBoardView: View {
                 shouldReduceMotion: false
             )
         )
-        .onAppear {
+        .task(id: targetRuntime?.id) {
             targetRuntime?.startInspectionCollection()
-            isCollecting = targetRuntime?.isInspectionCollecting ?? false
         }
-        .task(id: isVisibleInViewport && isCollecting) {
-            guard isVisibleInViewport, isCollecting else { return }
+        .task(id: isVisibleInViewport ? targetRuntime?.id : nil) {
+            guard isVisibleInViewport else { return }
             while !Task.isCancelled {
-                guard let targetRuntime, isCollecting else { return }
-                snapshot = await targetRuntime.readInspectionSnapshot()
+                guard let targetRuntime else { return }
+                let generation = targetRuntime.inspectionPageGeneration
+                let nextSnapshot = await targetRuntime.readInspectionSnapshot()
+                let children = await targetRuntime.readInspectionChildren(for: Array(loadedChildren.keys))
+                guard !Task.isCancelled else { return }
+                if generation == targetRuntime.inspectionPageGeneration {
+                    snapshot = nextSnapshot
+                    for (nodeID, refreshedChildren) in children where loadedChildren[nodeID] != nil {
+                        loadedChildren[nodeID] = refreshedChildren
+                    }
+                }
                 try? await Task.sleep(for: .milliseconds(250))
             }
         }
@@ -143,37 +150,21 @@ struct InspectionBoardView: View {
                 .foregroundStyle(.secondary)
 
                 HStack(spacing: 8) {
-                    Button(
-                        snapshot.isPicking ? "Picking…" : (snapshot.selection == nil ? "Pick Element" : "Pick Another")
-                    ) {
+                    Button {
                         targetRuntime?.beginInspectionPicking()
+                    } label: {
+                        Label("Pick Element", systemSymbol: .pointerArrowSquare)
+                            .labelStyle(.iconOnly)
+                            .frame(width: DenLayout.boardControlSize, height: DenLayout.boardControlSize)
                     }
-                    .buttonStyle(.glassProminent)
+                    .buttonStyle(.glass)
+                    .tint(snapshot.isPicking ? profileColor : nil)
                     .disabled(targetRuntime?.webView.url == nil)
+                    .help("Pick an element in the target Web Board's Current Sheet")
+                    .accessibilityValue(snapshot.isPicking ? "Picking" : "Ready")
                     .accessibilityHint("Choose an element in the target Web Board's Current Sheet")
 
-                    Button {
-                        if isCollecting {
-                            targetRuntime?.stopInspectionCollection()
-                            isCollecting = false
-                        } else {
-                            targetRuntime?.startInspectionCollection()
-                            isCollecting = targetRuntime?.isInspectionCollecting ?? false
-                        }
-                    } label: {
-                        Label(
-                            isCollecting ? "Stop" : "Resume",
-                            systemSymbol: isCollecting ? .stopCircle : .playCircle
-                        )
-                    }
-                    .buttonStyle(.borderless)
                     Spacer()
-                }
-
-                if snapshot.isPicking {
-                    Text("Click an element in the target Web Board.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
                 }
 
                 Divider()
@@ -248,12 +239,16 @@ struct InspectionBoardView: View {
         guard loadedChildren[node.id] == nil, !loadingNodeIDs.contains(node.id) else { return }
         loadingNodeIDs.insert(node.id)
         Task {
-            let children = await targetRuntime?.readInspectionChildren(for: node.id) ?? []
-            guard targetRuntime?.isInspectionActive == true else {
+            guard let targetRuntime else {
                 loadingNodeIDs.remove(node.id)
                 return
             }
-            if !children.isEmpty { loadedChildren[node.id] = children }
+            let generation = targetRuntime.inspectionPageGeneration
+            let children = await targetRuntime.readInspectionChildren(for: node.id)
+            guard targetRuntime.isInspectionActive,
+                generation == targetRuntime.inspectionPageGeneration
+            else { return }
+            loadedChildren[node.id] = children
             loadingNodeIDs.remove(node.id)
         }
     }
