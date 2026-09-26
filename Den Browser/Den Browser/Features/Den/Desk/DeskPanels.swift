@@ -267,7 +267,7 @@ struct SaveDeskPresetPanel: View {
             .textFieldStyle(.roundedBorder)
             .focused($isFocused)
             .onSubmit { TextInputComposition.performUnlessActive(save) }
-            DeskPresetPreview(boards: store.focusedDesk?.boards.map(DeskPresetBoard.init) ?? [])
+            DeskPresetPreview(boards: DeskPresetBoard.capture(from: store.focusedDesk?.boards ?? []))
             HStack {
                 Text(message ?? "Captures the current Board arrangement")
                     .font(.caption)

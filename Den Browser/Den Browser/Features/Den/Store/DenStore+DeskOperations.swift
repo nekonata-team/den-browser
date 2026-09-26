@@ -21,7 +21,7 @@ extension DenStore {
         let trimmedLabel = label.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedLabel.isEmpty, canCreateDesk, let focusedDeskIndex else { return }
 
-        let boards = boards.map { $0.makeBoard() }
+        guard let boards = DeskPresetBoard.makeBoards(from: boards) else { return }
         let focusedBoardID = focusedBoardIndex.flatMap { boards.indices.contains($0) ? boards[$0].id : nil }
         let desk = DeskState(label: trimmedLabel, boards: boards, focusedBoardID: focusedBoardID)
         state.desks.insert(desk, at: focusedDeskIndex + 1)
@@ -90,13 +90,15 @@ extension DenStore {
     }
 
     private func applyDeskReplacement(_ replacement: PendingDeskReplacement) {
-        guard let deskIndex = state.desks.firstIndex(where: { $0.id == replacement.deskID }) else { return }
+        guard
+            let deskIndex = state.desks.firstIndex(where: { $0.id == replacement.deskID }),
+            let boards = DeskPresetBoard.makeBoards(from: replacement.boards)
+        else { return }
 
         let removedBoardIDs = Set(state.desks[deskIndex].boards.map(\.id))
         for board in state.desks[deskIndex].boards {
             disposeRuntime(for: board.id)
         }
-        let boards = replacement.boards.map { $0.makeBoard() }
         state.desks[deskIndex].label = replacement.label
         state.desks[deskIndex].boards = boards
         state.desks[deskIndex].focusedBoardID =

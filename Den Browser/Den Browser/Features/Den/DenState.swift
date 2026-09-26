@@ -151,28 +151,28 @@ struct PersonalDeskPreset: Codable, Equatable, Identifiable {
     init(id: UUID = UUID(), label: String, desk: DeskState) {
         self.id = id
         self.label = label
-        let presetBoards = desk.boards.filter { !$0.isInspection }
-        boards = presetBoards.map(DeskPresetBoard.init)
-        let focusedBoard = desk.boards.first { $0.id == desk.focusedBoardID }
-        let focusedBoardID = focusedBoard.flatMap { $0.isInspection ? $0.sideBoardTargetBoardID : $0.id }
-        focusedBoardIndex = presetBoards.firstIndex { $0.id == focusedBoardID }
+        boards = DeskPresetBoard.capture(from: desk.boards)
+        focusedBoardIndex = desk.boards.firstIndex { $0.id == desk.focusedBoardID }
     }
 }
 
 enum DeskPresetBoardContent: Codable, Equatable {
     case web(URL?)
+    case inspection
     case terminal(String)
     case zellij(String?)
     case zmx(String)
 
     private enum CodingKeys: String, CodingKey { case kind, initialSheetURL, workingDirectory, sessionName }
-    private enum Kind: String, Codable { case web, terminal, zellij, zmx }
+    private enum Kind: String, Codable { case web, inspection, terminal, zellij, zmx }
 
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         switch try container.decode(Kind.self, forKey: .kind) {
         case .web:
             self = .web(try container.decodeIfPresent(URL.self, forKey: .initialSheetURL))
+        case .inspection:
+            self = .inspection
         case .terminal:
             self = .terminal(try container.decode(String.self, forKey: .workingDirectory))
         case .zellij:
@@ -188,6 +188,8 @@ enum DeskPresetBoardContent: Codable, Equatable {
         case .web(let url):
             try container.encode(Kind.web, forKey: .kind)
             try container.encodeIfPresent(url, forKey: .initialSheetURL)
+        case .inspection:
+            try container.encode(Kind.inspection, forKey: .kind)
         case .terminal(let workingDirectory):
             try container.encode(Kind.terminal, forKey: .kind)
             try container.encode(workingDirectory, forKey: .workingDirectory)
@@ -206,6 +208,7 @@ struct DeskPresetBoard: Codable, Equatable {
     var width: Double
     var content: DeskPresetBoardContent
     var customLabel: String?
+    var targetBoardIndex: Int?
 
     var initialSheetURL: URL? {
         guard case .web(let url) = content else { return nil }
@@ -228,87 +231,99 @@ struct DeskPresetBoard: Codable, Equatable {
     }
 
     nonisolated init(label: String, width: Double, initialSheetURL: URL?, customLabel: String? = nil) {
-        self.label = label
-        self.width = width
-        content = .web(initialSheetURL)
-        self.customLabel = customLabel
+        self.init(label: label, width: width, content: .web(initialSheetURL), customLabel: customLabel)
     }
 
     nonisolated init(label: String, width: Double, workingDirectory: String, customLabel: String? = nil) {
-        self.label = label
-        self.width = width
-        content = .terminal(workingDirectory)
-        self.customLabel = customLabel
+        self.init(label: label, width: width, content: .terminal(workingDirectory), customLabel: customLabel)
     }
 
     nonisolated init(label: String, width: Double, zellijSessionName: String?, customLabel: String? = nil) {
-        self.label = label
-        self.width = width
-        content = .zellij(zellijSessionName)
-        self.customLabel = customLabel
+        self.init(label: label, width: width, content: .zellij(zellijSessionName), customLabel: customLabel)
     }
 
     nonisolated init(label: String, width: Double, zmxSessionName: String, customLabel: String? = nil) {
+        self.init(label: label, width: width, content: .zmx(zmxSessionName), customLabel: customLabel)
+    }
+
+    nonisolated init(
+        label: String,
+        width: Double,
+        content: DeskPresetBoardContent,
+        customLabel: String? = nil,
+        targetBoardIndex: Int? = nil
+    ) {
         self.label = label
         self.width = width
-        content = .zmx(zmxSessionName)
+        self.content = content
         self.customLabel = customLabel
+        self.targetBoardIndex = targetBoardIndex
     }
 
     nonisolated init(board: BoardState) {
+        self.init(board: board, targetBoardIndex: nil)
+    }
+
+    nonisolated init(board: BoardState, targetBoardIndex: Int?) {
+        let content: DeskPresetBoardContent
         switch board.content {
         case .web(let web):
-            self.init(
-                label: board.label,
-                width: board.width,
-                initialSheetURL: web.currentSheetURL,
-                customLabel: board.customLabel)
+            content = .web(web.currentSheetURL)
         case .inspection:
-            self.init(label: board.label, width: board.width, initialSheetURL: nil, customLabel: board.customLabel)
+            content = .inspection
         case .terminal(let terminal):
-            self.init(
-                label: board.label,
-                width: board.width,
-                workingDirectory: terminal.workingDirectory,
-                customLabel: board.customLabel)
+            content = .terminal(terminal.workingDirectory)
         case .zellij(let zellij):
-            self.init(
-                label: board.label,
-                width: board.width,
-                zellijSessionName: zellij.sessionName,
-                customLabel: board.customLabel)
+            content = .zellij(zellij.sessionName)
         case .zmx(let zmx):
-            self.init(
-                label: board.label,
-                width: board.width,
-                zmxSessionName: zmx.sessionName,
-                customLabel: board.customLabel)
+            content = .zmx(zmx.sessionName)
+        }
+        self.init(
+            label: board.label,
+            width: board.width,
+            content: content,
+            customLabel: board.customLabel,
+            targetBoardIndex: targetBoardIndex)
+    }
+
+    static func capture(from boards: [BoardState]) -> [DeskPresetBoard] {
+        return boards.map { board in
+            let targetBoardIndex = board.sideBoardTargetBoardID.flatMap { targetBoardID in
+                boards.firstIndex { $0.id == targetBoardID }
+            }
+            return DeskPresetBoard(board: board, targetBoardIndex: targetBoardIndex)
         }
     }
 
-    func makeBoard() -> BoardState {
+    func makeBoard(id: UUID = UUID()) -> BoardState? {
         switch content {
         case .web(let initialSheetURL):
-            BoardState(
+            return BoardState(
+                id: id,
                 label: label,
                 width: width,
                 currentSheetURL: initialSheetURL,
                 firstSheetURL: initialSheetURL,
                 customLabel: customLabel)
+        case .inspection:
+            return nil
         case .terminal(let workingDirectory):
-            BoardState(
+            return BoardState(
+                id: id,
                 label: label,
                 width: width,
                 workingDirectory: workingDirectory,
                 customLabel: customLabel)
         case .zellij(let sessionName):
-            BoardState(
+            return BoardState(
+                id: id,
                 label: label,
                 width: width,
                 zellijSessionName: sessionName,
                 customLabel: customLabel)
         case .zmx(let sessionName):
-            BoardState(
+            return BoardState(
+                id: id,
                 label: label,
                 width: width,
                 zmxSessionName: sessionName,
@@ -316,8 +331,34 @@ struct DeskPresetBoard: Codable, Equatable {
         }
     }
 
+    static func makeBoards(from presetBoards: [DeskPresetBoard]) -> [BoardState]? {
+        let boardIDs = presetBoards.map { _ in UUID() }
+        var boards: [BoardState] = []
+        boards.reserveCapacity(presetBoards.count)
+
+        for (index, presetBoard) in presetBoards.enumerated() {
+            if case .inspection = presetBoard.content {
+                guard
+                    let targetBoardIndex = presetBoard.targetBoardIndex,
+                    presetBoards.indices.contains(targetBoardIndex),
+                    case .web = presetBoards[targetBoardIndex].content
+                else { return nil }
+                boards.append(
+                    BoardState(
+                        id: boardIDs[index],
+                        label: presetBoard.label,
+                        width: presetBoard.width,
+                        targetBoardID: boardIDs[targetBoardIndex]))
+            } else {
+                guard let board = presetBoard.makeBoard(id: boardIDs[index]) else { return nil }
+                boards.append(board)
+            }
+        }
+        return boards
+    }
+
     private enum CodingKeys: String, CodingKey {
-        case label, width, content, customLabel, initialSheetURL
+        case label, width, content, customLabel, initialSheetURL, targetBoardIndex
     }
 
     init(from decoder: Decoder) throws {
@@ -325,6 +366,7 @@ struct DeskPresetBoard: Codable, Equatable {
         label = try container.decode(String.self, forKey: .label)
         width = try container.decode(Double.self, forKey: .width)
         customLabel = try container.decodeIfPresent(String.self, forKey: .customLabel)
+        targetBoardIndex = try container.decodeIfPresent(Int.self, forKey: .targetBoardIndex)
         if let content = try container.decodeIfPresent(DeskPresetBoardContent.self, forKey: .content) {
             self.content = content
         } else {
@@ -338,6 +380,7 @@ struct DeskPresetBoard: Codable, Equatable {
         try container.encode(width, forKey: .width)
         try container.encode(content, forKey: .content)
         try container.encodeIfPresent(customLabel, forKey: .customLabel)
+        try container.encodeIfPresent(targetBoardIndex, forKey: .targetBoardIndex)
     }
 }
 

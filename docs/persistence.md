@@ -40,7 +40,7 @@ Nested objects use these keys:
 - Zellij Board `content`: `kind: zellij`, optional `sessionName`
 - zmx Board `content`: `kind: zmx`, `sessionName`
 - `PersonalDeskPreset`: `id`, `label`, `boards`, optional `focusedBoardIndex`
-- `DeskPresetBoard`: `label`, `width`, optional `customLabel`, and equivalent Web, Terminal, Zellij, or zmx `content`
+- `DeskPresetBoard`: `label`, `width`, optional `customLabel`, equivalent Web, Inspection, Terminal, Zellij, or zmx `content`, and optional `targetBoardIndex` for an Inspection Board
 - `RecentItem`: `kind`, plus `url` for a URL, `query` for a search term, `workingDirectory` for a Terminal location, optional `sessionName` for a Zellij session intent, or `sessionName` for a zmx session intent used by Open Board
 
 Recent Items are recorded when a new Board is successfully opened from an input, including an Essential, an explicit link-to-new-Board action, a Drawer placement, or a zmx Session selection. Sheet navigation, Board restoration, and Drawer Preview do not create Recent Items. Opening the zmx Sessions picker without selecting a session does not create one.

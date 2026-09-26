@@ -112,8 +112,9 @@ struct DenStoreDeskPresetTests {
     @Test func personalPresetCapturesStableBoardStateAndCreatesIndependentDesk() throws {
         // Arrange
         let first = board("Mail", width: 420, url: "https://mail.example.com/inbox?label=work#today")
+        let inspection = BoardState(width: 360, targetBoardID: first.id)
         let second = board("Notes", width: 760, url: "")
-        let source = desk("Morning", boards: [first, second], focusedBoardID: second.id)
+        let source = desk("Morning", boards: [first, inspection, second], focusedBoardID: inspection.id)
         let store = DenStore(state: DenState(desks: [source], focusedDeskID: source.id))
         store.isDenMode = true
 
@@ -125,12 +126,14 @@ struct DenStoreDeskPresetTests {
         #expect(!store.isDenMode)
         let preset = try #require(store.deskPresets.first)
         #expect(preset.label == "Morning")
-        #expect(preset.boards.map(\.label) == ["Mail", "Notes"])
-        #expect(preset.boards.map(\.width) == [420, 760])
+        #expect(preset.boards.map(\.label) == ["Mail", "Inspection Board", "Notes"])
+        #expect(preset.boards.map(\.width) == [420, 360, 760])
         #expect(
             preset.boards[0].initialSheetURL
                 == URL(string: "https://mail.example.com/inbox?label=work#today"))
-        #expect(preset.boards[1].initialSheetURL == nil)
+        #expect(preset.boards[1].content == .inspection)
+        #expect(preset.boards[1].targetBoardIndex == 0)
+        #expect(preset.boards[2].initialSheetURL == nil)
         #expect(preset.focusedBoardIndex == 1)
 
         // Act - instantiate new desk from preset
@@ -138,10 +141,40 @@ struct DenStoreDeskPresetTests {
 
         // Assert - independent desk created
         let copy = try #require(store.focusedDesk)
-        #expect(copy.boards.map(\.id) != source.boards.map(\.id))
+        #expect(Set(copy.boards.map(\.id)).isDisjoint(with: source.boards.map(\.id)))
         #expect(copy.boards.map(\.label) == source.boards.map(\.label))
         #expect(copy.boards.map(\.firstSheetURL) == preset.boards.map(\.initialSheetURL))
+        #expect(copy.boards[1].isInspection)
+        #expect(copy.boards[1].sideBoardTargetBoardID == copy.boards[0].id)
+        #expect(copy.boards[1].sideBoardTargetBoardID != first.id)
         #expect(copy.focusedBoardID == copy.boards[1].id)
+    }
+
+    @Test func replacingDeskFromPersonalPresetRestoresInspectionGroupAndFocus() throws {
+        // Arrange
+        let target = board("Target", width: 620, url: "https://example.com/")
+        let inspection = BoardState(width: 360, targetBoardID: target.id)
+        let presetSource = desk("Research", boards: [target, inspection], focusedBoardID: inspection.id)
+        let preset = PersonalDeskPreset(label: "Research", desk: presetSource)
+        let oldBoard = board("Old")
+        let oldDesk = desk("Old Desk", boards: [oldBoard], focusedBoardID: oldBoard.id)
+        let store = DenStore(
+            state: DenState(desks: [oldDesk], focusedDeskID: oldDesk.id),
+            deskPresets: [preset])
+
+        // Act
+        let result = store.replaceFocusedDesk(label: "Research Copy", personalPresetID: preset.id)
+        store.confirmDeskReplacement()
+
+        // Assert
+        #expect(result == .confirmationPending)
+        let replaced = try #require(store.focusedDesk)
+        #expect(replaced.id == oldDesk.id)
+        #expect(replaced.boards.map(\.width) == [620, 360])
+        #expect(Set(replaced.boards.map(\.id)).isDisjoint(with: [target.id, inspection.id, oldBoard.id]))
+        #expect(replaced.boards[1].isInspection)
+        #expect(replaced.boards[1].sideBoardTargetBoardID == replaced.boards[0].id)
+        #expect(replaced.focusedBoardID == replaced.boards[1].id)
     }
 
     @Test func personalPresetRestoresTerminalAsANewBoard() throws {

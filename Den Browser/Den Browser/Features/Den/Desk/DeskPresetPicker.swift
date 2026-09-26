@@ -429,7 +429,7 @@ struct DeskPresetPreview: View {
                         VStack(alignment: .leading, spacing: 3) {
                             Text(board.customLabel ?? board.label)
                                 .lineLimit(1)
-                            Text(board.initialSheetURL?.host(percentEncoded: false) ?? "Empty Board")
+                            Text(previewSubtitle(for: board))
                                 .font(.caption2)
                                 .foregroundStyle(.secondary)
                                 .lineLimit(1)
@@ -451,5 +451,16 @@ struct DeskPresetPreview: View {
             }
             .scrollIndicators(.hidden)
         }
+    }
+
+    private func previewSubtitle(for board: DeskPresetBoard) -> String {
+        guard case .inspection = board.content else {
+            return board.initialSheetURL?.host(percentEncoded: false) ?? "Empty Board"
+        }
+        guard let targetBoardIndex = board.targetBoardIndex, boards.indices.contains(targetBoardIndex) else {
+            return "Inspection Board"
+        }
+        let targetBoard = boards[targetBoardIndex]
+        return "Inspection of \(targetBoard.customLabel ?? targetBoard.label)"
     }
 }

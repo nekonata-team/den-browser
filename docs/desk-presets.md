@@ -13,12 +13,13 @@ Saving the Focused Desk as a Personal Desk Preset captures:
 - First Sheet URLs, initialized from each Board's Current Sheet URL at capture time
 - Terminal Working Directories, optional Zellij session names, and zmx session names
 - Focused Board
+- Inspection Boards, including their position, width, and Board Group connection to a Target Board
 
-Inspection Boards are omitted. When an Inspection Board is focused, the Preset captures focus on its target Primary Board.
+An Inspection Board's Target Board is stored by its position in the Preset. Applying the Preset creates new Board IDs and reconnects the Inspection Board to the new Target Board ID. Focus keeps its original Board position, including when the Focused Board is an Inspection Board.
 
-At least one Board is required. A Board without a Current Sheet URL remains valid because its Label, Width, position, or terminal content can still carry meaning. Sheet Stacks, live `WKWebView` state, scroll positions, input, and sign-in state are not captured.
+At least one Board is required. A Board without a Current Sheet URL remains valid because its Label, Width, position, or terminal content can still carry meaning. Inspection runtime data such as DOM selections, highlights, and Console events is not captured; applying the Preset creates an empty Inspection Board. Sheet Stacks, live `WKWebView` state, scroll positions, input, and sign-in state are not captured.
 
-Creating a Desk from any Desk Preset creates new Desk and Board identities. Web Boards receive the Preset's initial Sheet URL as both their Current Sheet URL and First Sheet URL; Terminal, Zellij, and zmx Boards receive their persisted terminal content. Replacing a Desk preserves its Desk identity and position while creating new Board identities. Neither operation leaves the Desk linked to the Desk Preset. Profile-owned WebKit data still supplies that Profile's existing site sessions.
+Creating a Desk from any Desk Preset creates new Desk and Board identities. Web Boards receive the Preset's initial Sheet URL as both their Current Sheet URL and First Sheet URL; Inspection Boards start empty and link to the new Target Board ID; Terminal, Zellij, and zmx Boards receive their persisted terminal content. Replacing a Desk preserves its Desk identity and position while creating new Board identities. Neither operation leaves the Desk linked to the Desk Preset. Profile-owned WebKit data still supplies that Profile's existing site sessions.
 
 ## Saving
 
