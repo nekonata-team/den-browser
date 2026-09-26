@@ -150,7 +150,6 @@ private enum DenMCPWaitState: String, CaseIterable, Sendable {
 }
 
 private enum DenMCPLoadState: String, CaseIterable, Sendable {
-    case commit
     case domContentLoaded = "domcontentloaded"
     case load
     case networkidle
