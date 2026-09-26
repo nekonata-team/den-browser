@@ -203,7 +203,7 @@ extension DenStore {
         }
         let board = BoardState(
             width: 360,
-            sideBoardTargetBoardID: targetBoardID
+            targetBoardID: targetBoardID
         )
         let targetRuntime = focus ? nil : runtime(for: targetBoard)
         guard insertBoard(board, afterBoardID: targetBoardID, focus: focus, origin: focus ? .interactive : .cli) else {

@@ -262,7 +262,7 @@ struct DenStoreOverviewTests {
 
     @Test func overviewDeskMovementCarriesSelectedSideBoardGroup() {
         let target = board("Target")
-        let side = BoardState(width: 390, sideBoardTargetBoardID: target.id)
+        let side = BoardState(width: 390, targetBoardID: target.id)
         let source = desk("Source", boards: [target, side], focusedBoardID: target.id)
         let destination = desk("Destination")
         let store = DenStore(state: DenState(desks: [source, destination], focusedDeskID: source.id))
@@ -278,7 +278,7 @@ struct DenStoreOverviewTests {
 
     @Test func overviewDragCarriesSideBoardGroupToAnotherDesk() {
         let target = board("Target")
-        let side = BoardState(width: 390, sideBoardTargetBoardID: target.id)
+        let side = BoardState(width: 390, targetBoardID: target.id)
         let source = desk("Source", boards: [target, side], focusedBoardID: target.id)
         let destination = desk("Destination")
         let store = DenStore(state: DenState(desks: [source, destination], focusedDeskID: source.id))
@@ -295,7 +295,7 @@ struct DenStoreOverviewTests {
     @Test func overviewReordersSideBoardGroupFromEitherMember() {
         let before = board("Before")
         let target = board("Target")
-        let side = BoardState(width: 390, sideBoardTargetBoardID: target.id)
+        let side = BoardState(width: 390, targetBoardID: target.id)
         let after = board("After")
         let source = desk("Desk", boards: [before, target, side, after])
         let store = DenStore(state: DenState(desks: [source], focusedDeskID: source.id))

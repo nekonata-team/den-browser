@@ -32,10 +32,10 @@ Nested objects use these keys:
 - `DenState`: `desks`, `focusedDeskID`, optional `drawerItems`
 - `DrawerItem`: `id`, `url`, optional `title`
 - `DeskState`: `id`, `label`, `boards`, optional `focusedBoardID`
-- `BoardState`: `id`, `label`, `width`, optional `customLabel`, optional `sheetNavigationPaused`, optional `sideBoard`, `content`
+- `BoardState`: `id`, `label`, `width`, `role`, `content`, optional `customLabel`, optional `sheetNavigationPaused`
+- `BoardRole`: `kind: primary`, or `kind: sideBoard` with `targetBoardID`
 - Web Board `content`: `kind: web`, optional `currentSheetURL`, optional `firstSheetURL`
 - Inspection Board `content`: `kind: inspection`
-- Side Board `sideBoard`: `targetBoardID`
 - Terminal Board `content`: `kind: terminal`, `workingDirectory`
 - Zellij Board `content`: `kind: zellij`, optional `sessionName`
 - zmx Board `content`: `kind: zmx`, `sessionName`
@@ -48,6 +48,8 @@ Recent Items are recorded when a new Board is successfully opened from an input,
 A missing optional Current Sheet URL means the Board has no Current Sheet. A missing First Sheet URL means the Board cannot use the persisted First Sheet return action. Board Sheet URLs normalize HTTP(S) root paths to `/` before persistence. Absolute local file URLs are stored with the same Foundation `URL` `Codable` representation; no file contents, access bookmarks, or existence state are persisted. A moved, deleted, or machine-specific local file may therefore fail to load after restoration without invalidating the saved Board, Drawer Item, Recent Item, or Desk Preset.
 
 Version 1 documents decode as Web Boards and are written back as version 2. An ordinary Terminal Board restores a new Shell in the saved Working Directory. Named Zellij restoration runs `zellij attach --create <sessionName>`; an unnamed Zellij Board runs `zellij -l welcome`. zmx restoration runs `zmx attach <sessionName>`.
+
+When `BoardState.role` is absent, it decodes as `primary`.
 
 ## App preference keys
 

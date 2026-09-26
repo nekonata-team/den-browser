@@ -587,12 +587,12 @@ struct DenStoreBoardTests {
         let target = board("Target")
         var side =
             isInspection
-            ? BoardState(width: 360, sideBoardTargetBoardID: target.id)
+            ? BoardState(width: 360, targetBoardID: target.id)
             : board("Side")
         if !isInspection {
             side.firstSheetURL = URL(string: "https://example.com/first")
+            side.role = .sideBoard(targetBoardID: target.id)
         }
-        side.sideBoard = SideBoard(targetBoardID: target.id)
         let sourceDesk = desk("Desk", boards: [target, side], focusedBoardID: side.id)
         let store = DenStore(state: DenState(desks: [sourceDesk], focusedDeskID: sourceDesk.id))
 
@@ -613,7 +613,7 @@ struct DenStoreBoardTests {
         // Arrange
         let target = board("Target")
         var side = board("Side")
-        side.sideBoard = SideBoard(targetBoardID: target.id)
+        side.role = .sideBoard(targetBoardID: target.id)
         let following = board("Following")
         let sourceDesk = desk(
             "Desk",
@@ -644,7 +644,7 @@ struct DenStoreBoardTests {
         #expect(inspection.width == 360)
     }
 
-    @Test func inspectionBoardRequiresSideBoardRelationshipToDecode() {
+    @Test func inspectionBoardRequiresSideBoardRoleToDecode() {
         let boardID = UUID()
         let data = Data(
             """
@@ -656,10 +656,22 @@ struct DenStoreBoardTests {
         }
     }
 
+    @Test func boardWithoutRoleDecodesAsPrimary() throws {
+        let boardID = UUID()
+        let data = Data(
+            """
+            {"id":"\(boardID.uuidString)","label":"Web","width":520,"content":{"kind":"web"}}
+            """.utf8)
+
+        let board = try JSONDecoder().decode(BoardState.self, from: data)
+
+        #expect(board.role == .primary)
+    }
+
     @Test func boardGroupKeepsSideRoleSeparateFromBoardContent() throws {
         let target = board("Target")
         var side = BoardState(label: "Side Terminal", width: 390, workingDirectory: "/tmp")
-        side.sideBoard = SideBoard(targetBoardID: target.id)
+        side.role = .sideBoard(targetBoardID: target.id)
 
         let group = try #require(BoardGroup.containing(side.id, in: [target, side]))
 
@@ -667,7 +679,13 @@ struct DenStoreBoardTests {
         #expect(group.primaryBoard.id == target.id)
         #expect(group.sideBoard?.id == side.id)
         #expect(group.boards.map(\.id) == [target.id, side.id])
-        #expect(try JSONDecoder().decode(BoardState.self, from: JSONEncoder().encode(side)) == side)
+        let encoded = try JSONEncoder().encode(side)
+        let object = try #require(JSONSerialization.jsonObject(with: encoded) as? [String: Any])
+        let role = try #require(object["role"] as? [String: Any])
+        #expect(role["kind"] as? String == "sideBoard")
+        #expect(role["targetBoardID"] as? String == target.id.uuidString)
+        #expect(object["sideBoard"] == nil)
+        #expect(try JSONDecoder().decode(BoardState.self, from: encoded) == side)
     }
 
     @Test func backgroundBoardFocusSuppressionEndsOnNextFocus() throws {
@@ -1085,7 +1103,7 @@ struct DenStoreBoardTests {
 
     @Test func sideBoardMovesWithTargetAndIsRestoredWithItAfterRemoval() {
         let target = board("Target")
-        let side = BoardState(width: 390, sideBoardTargetBoardID: target.id)
+        let side = BoardState(width: 390, targetBoardID: target.id)
         let after = board("After")
         withStore(desks: [desk("Desk", boards: [target, side, after], focusedBoardID: target.id)]) { store in
             store.moveFocusedBoardRight()
@@ -1104,7 +1122,7 @@ struct DenStoreBoardTests {
 
     @Test func removingSideBoardLeavesItsTarget() {
         let target = board("Target")
-        let side = BoardState(width: 390, sideBoardTargetBoardID: target.id)
+        let side = BoardState(width: 390, targetBoardID: target.id)
         withStore(desks: [desk("Desk", boards: [target, side], focusedBoardID: side.id)]) { store in
             store.removeFocusedBoard()
 
@@ -1116,7 +1134,7 @@ struct DenStoreBoardTests {
 
     @Test func restoringRemovedSideBoardFollowsTargetToItsCurrentDesk() {
         let target = board("Target")
-        let side = BoardState(width: 390, sideBoardTargetBoardID: target.id)
+        let side = BoardState(width: 390, targetBoardID: target.id)
         let source = desk("Source", boards: [target, side], focusedBoardID: side.id)
         let destination = desk("Destination")
         withStore(desks: [source, destination]) { store in
@@ -1134,9 +1152,9 @@ struct DenStoreBoardTests {
 
     @Test func movingSideBoardGroupAcrossAnotherGroupKeepsBothAdjacent() {
         let firstTarget = board("First")
-        let firstSide = BoardState(width: 390, sideBoardTargetBoardID: firstTarget.id)
+        let firstSide = BoardState(width: 390, targetBoardID: firstTarget.id)
         let secondTarget = board("Second")
-        let secondSide = BoardState(width: 410, sideBoardTargetBoardID: secondTarget.id)
+        let secondSide = BoardState(width: 410, targetBoardID: secondTarget.id)
         let boards = [firstTarget, firstSide, secondTarget, secondSide]
         withStore(desks: [desk("Desk", boards: boards, focusedBoardID: firstTarget.id)]) { store in
             store.moveFocusedBoardRight()
@@ -1150,7 +1168,7 @@ struct DenStoreBoardTests {
 
     @Test func movingInspectionBoardToDeskCarriesTargetGroup() {
         let target = board("Target")
-        let side = BoardState(width: 390, sideBoardTargetBoardID: target.id)
+        let side = BoardState(width: 390, targetBoardID: target.id)
         let source = desk("Source", boards: [target, side], focusedBoardID: side.id)
         let destinationBoard = board("Destination")
         let destination = desk("Destination", boards: [destinationBoard], focusedBoardID: destinationBoard.id)
@@ -1225,7 +1243,7 @@ struct DenStoreBoardTests {
 
     @Test func boardDragMovesSideBoardGroupAsOneBlock() {
         let target = board("Target")
-        let side = BoardState(width: 390, sideBoardTargetBoardID: target.id)
+        let side = BoardState(width: 390, targetBoardID: target.id)
         let middle = board("Middle")
         let last = board("Last")
         let boards = [target, side, middle, last]

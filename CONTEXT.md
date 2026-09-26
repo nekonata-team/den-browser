@@ -51,6 +51,12 @@ _Avoid_: Browser tab
 **Side Board**:
 A separately focusable companion Board attached to a target Board. A target has at most one Side Board.
 
+**Board Role**:
+A Board's place in a Board Group: Primary Board or Side Board.
+
+**Primary Board**:
+The Board that a Side Board attaches to. A standalone Board is the Primary Board of its one-Board group.
+
 **Board Group**:
 A target Board and its optional Side Board, considered together as one unit.
 
