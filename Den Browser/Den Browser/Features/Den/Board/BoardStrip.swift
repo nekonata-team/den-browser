@@ -111,6 +111,7 @@ struct BoardStrip: View {
             store.isDeskFilterPresented
             ? store.filteredDeskBoards
             : store.focusedDesk?.boards ?? []
+        let draggedBoardIDs = draggedGroupBoardIDs
         let shouldShowIndicator = !store.isZenViewPresented && boards.count > 1
         let topInset = shouldShowHeader ? DenLayout.denHeaderHeight : DenLayout.outerInset
         let bottomInset = DenLayout.outerInset + (shouldShowIndicator ? DenLayout.boardIndicatorHeight : 0)
@@ -153,6 +154,7 @@ struct BoardStrip: View {
                     let isVisible = visibleBoardIDs.contains(board.id) || isFocused
                     let isActivated = activatedBoardIDs.contains(board.id) || isVisible
                     let needsRuntime = isActivated && board.isWeb && store.runtimes[board.id] == nil
+                    let isDragging = draggedBoardIDs.contains(board.id)
 
                     boardView(
                         board,
@@ -193,8 +195,8 @@ struct BoardStrip: View {
                     .id(board.id)
                     .transition(DenMotion.boardTransition(reduceMotion: shouldReduceMotion))
                     .offset(
-                        x: boardDrag?.boardID == board.id ? boardDrag?.offset.width ?? 0 : 0,
-                        y: boardDrag?.boardID == board.id ? boardDrag?.offset.height ?? 0 : 0
+                        x: isDragging ? boardDrag?.offset.width ?? 0 : 0,
+                        y: isDragging ? boardDrag?.offset.height ?? 0 : 0
                     )
                     .background {
                         GeometryReader { proxy in
@@ -236,7 +238,7 @@ struct BoardStrip: View {
                     }
                     .allowsHitTesting(isBoardHitTestingEnabled(for: board.id))
                     .accessibilityHidden(!isPointerFocusEnabled(for: board.id))
-                    .zIndex(boardDrag?.boardID == board.id ? 2 : 1)
+                    .zIndex(isDragging ? 2 : 1)
                 }
 
                 if !store.isDeskFilterPresented, let lastBoardID = boards.last?.id {
@@ -316,6 +318,20 @@ struct BoardStrip: View {
             }
         }
         .coordinateSpace(name: BoardStripCoordinateSpace.name)
+        .overlay {
+            GeometryReader { _ in
+                if let frame = draggedGroupOutlineFrame {
+                    RoundedRectangle(cornerRadius: DenRadius.large, style: .continuous)
+                        .stroke(profileColor, lineWidth: 2)
+                        .frame(width: frame.width, height: frame.height)
+                        .position(x: frame.midX, y: frame.midY)
+                        .accessibilityHidden(true)
+                        .allowsHitTesting(false)
+                }
+            }
+            .clipped()
+            .allowsHitTesting(false)
+        }
         .scrollIndicators(.never)
         .accessibilityIdentifier("board-strip")
         .onChange(of: store.presentedDeskID) { _, deskID in
@@ -571,6 +587,7 @@ struct BoardStrip: View {
         isActivated: Bool,
         isVisible: Bool
     ) -> some View {
+        let isDragging = draggedGroupBoardIDs.contains(board.id)
         let focused =
             store.isDeskFilterPresented
             ? board.id == store.deskFilterSelectionBoardID
@@ -589,6 +606,7 @@ struct BoardStrip: View {
             UnactivatedBoardView(
                 board: board,
                 isFocused: focused,
+                isDragging: isDragging,
                 profileColor: profileColor,
                 width: size.width,
                 height: size.height,
@@ -602,7 +620,7 @@ struct BoardStrip: View {
                 board: board,
                 isFocused: focused,
                 focusRequest: boardFocusRequest,
-                isDragging: boardDrag?.boardID == board.id,
+                isDragging: isDragging,
                 isPointerFocusEnabled: pointerFocusEnabled,
                 profileColor: profileColor,
                 width: size.width,
@@ -619,7 +637,7 @@ struct BoardStrip: View {
                 board: board,
                 isFocused: focused,
                 focusRequest: boardFocusRequest,
-                isDragging: boardDrag?.boardID == board.id,
+                isDragging: isDragging,
                 runtime: store.terminalRuntime(for: board),
                 profileColor: profileColor,
                 width: size.width,
@@ -635,7 +653,7 @@ struct BoardStrip: View {
                 board: board,
                 isFocused: focused,
                 focusRequest: boardFocusRequest,
-                isDragging: boardDrag?.boardID == board.id,
+                isDragging: isDragging,
                 runtime: runtime,
                 profileColor: profileColor,
                 width: size.width,
@@ -660,6 +678,29 @@ struct BoardStrip: View {
             availableWidth: size.width - DenLayout.outerInset * 2,
             spacing: DenLayout.outerInset
         )
+    }
+
+    private var draggedGroupBoardIDs: Set<UUID> {
+        guard let drag = boardDrag,
+            let boards = store.focusedDesk?.boards,
+            let group = BoardGroup.containing(drag.boardID, in: boards)
+        else { return [] }
+        return Set(group.boards.map(\.id))
+    }
+
+    private var draggedGroupOutlineFrame: CGRect? {
+        guard let drag = boardDrag,
+            let boards = store.focusedDesk?.boards,
+            let group = BoardGroup.containing(drag.boardID, in: boards),
+            let firstID = group.boards.first?.id,
+            var frame = boardFrames[firstID]
+        else { return nil }
+
+        for board in group.boards.dropFirst() {
+            guard let nextFrame = boardFrames[board.id] else { return nil }
+            frame = frame.union(nextFrame)
+        }
+        return frame.insetBy(dx: -8, dy: -8).offsetBy(dx: drag.offset.width, dy: drag.offset.height)
     }
 
     private func updateBoardDrag(
@@ -1346,6 +1387,7 @@ private struct UnactivatedBoardView: View {
     @Environment(DenStore.self) private var store
     let board: BoardState
     let isFocused: Bool
+    let isDragging: Bool
     let profileColor: Color
     let width: Double
     let height: Double
@@ -1367,8 +1409,8 @@ private struct UnactivatedBoardView: View {
                 .stroke(borderColor, lineWidth: isFocused ? 2 : 1)
         }
         .shadow(
-            color: .black.opacity(isFocused ? 0.42 : 0.30),
-            radius: isFocused ? 34 : 24, x: 0, y: 22
+            color: .black.opacity(isDragging ? 0.55 : (isFocused ? 0.42 : 0.30)),
+            radius: isDragging ? 42 : (isFocused ? 34 : 24), x: 0, y: isDragging ? 28 : 22
         )
     }
 

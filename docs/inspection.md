@@ -6,6 +6,8 @@ New Inspection Boards start at 360 points wide. This is an initial size, and the
 
 Inspection Boards cannot be duplicated.
 
+Drag the header of either the target Web Board or its Inspection Board to move their Board Group together. Both Boards follow the pointer, and an outline surrounds the group while dragging. The Boards remain independently focusable and resizable.
+
 ## Selected element and ancestors
 
 Pick an element in the Current Sheet or select a node in the DOM tree. The DOM tree shows the selected element's ancestor path and lets the user expand and select related nodes.

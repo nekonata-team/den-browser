@@ -32,7 +32,6 @@ struct BoardSurfaceModifier: ViewModifier {
                 x: 0,
                 y: 0
             )
-            .scaleEffect(isDragging && !shouldReduceMotion ? 1.02 : 1)
             .animation(DenMotion.feedback(reduceMotion: shouldReduceMotion), value: isFocused)
             .animation(DenMotion.feedback(reduceMotion: shouldReduceMotion), value: isDragging)
             .animation(
@@ -140,9 +139,9 @@ struct BoardDragHeader<LeadingContent: View>: View {
                 }
         )
         .pointerStyle(isDragging ? .grabActive : .grabIdle)
-        .help("Drag to move Board")
+        .help("Drag to move this Board Group")
         .accessibilityHint(
-            "Drag to reorder this Board within the Focused Desk, or use Board movement actions"
+            "Drag to reorder this Board Group within the Focused Desk, or use Board movement actions"
         )
         .accessibilityElement(children: .combine)
         .accessibilityIdentifier("board-header.\(board.id.uuidString.lowercased())")

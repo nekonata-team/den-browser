@@ -305,6 +305,60 @@ final class Den_BrowserUITests: XCTestCase, BDD {
         }
     }
 
+    // Protects the SwiftUI Board-header drag boundary for a Board Group.
+    // Unit tests cannot observe the mounted SwiftUI header gesture committing the Board Group reorder.
+    @MainActor
+    func testMovesBoardGroupUsingSideBoardHeader() throws {
+        let app = launchApp(boardCount: .two)
+        let alpha = board(.alpha, in: app)
+        let bravo = board(.bravo, in: app)
+
+        given("Alpha and Bravo are visible Web Boards") {
+            XCTAssertTrue(alpha.wait(for: \.isSelected, toEqual: true, timeout: 5))
+            XCTAssertTrue(bravo.exists)
+        }
+
+        when("creating Alpha's Inspection Board") {
+            app.typeKey("i", modifierFlags: [.command, .option])
+        }
+
+        let inspectionHeader = app.descendants(matching: .any)
+            .matching(
+                NSPredicate(
+                    format: "identifier BEGINSWITH 'board-header.' AND label CONTAINS 'Board: Inspection Board'"
+                )
+            )
+            .firstMatch
+        XCTAssertTrue(inspectionHeader.waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["Pick Element"].exists)
+        let inspectionID = String(inspectionHeader.identifier.dropFirst("board-header.".count))
+        let inspectionSurface = app.descendants(matching: .any)
+            .matching(identifier: "board-surface.\(inspectionID)")
+            .firstMatch
+        let alphaSurface = boardSurface(.alpha, in: app)
+        XCTAssertTrue(inspectionSurface.waitForExistence(timeout: 5))
+        XCTAssertTrue(alphaSurface.waitForExistence(timeout: 5))
+        let alphaWidth = alphaSurface.frame.width
+        let inspectionWidth = inspectionSurface.frame.width
+
+        when("dragging the Inspection Board header past Bravo") {
+            let start = inspectionHeader.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+            let end = bravo.coordinate(withNormalizedOffset: CGVector(dx: 0.75, dy: 0.1))
+            start.click(forDuration: 0.5, thenDragTo: end)
+        }
+
+        then("Alpha and its Inspection Board move together after Bravo") {
+            assertEventually("the Board Group should move after Bravo") {
+                bravo.frame.minX < alphaSurface.frame.minX
+                    && alphaSurface.frame.minX < inspectionSurface.frame.minX
+                    && inspectionSurface.frame.minX - alphaSurface.frame.maxX < 40
+            }
+            XCTAssertTrue(inspectionHeader.isSelected)
+            XCTAssertEqual(alphaSurface.frame.width, alphaWidth, accuracy: 1)
+            XCTAssertEqual(inspectionSurface.frame.width, inspectionWidth, accuracy: 1)
+        }
+    }
+
     @MainActor
     func testOrganizesOverviewBoardsUsingPointer() throws {
         let app = launchApp(fixture: .overviewBoardPair)
