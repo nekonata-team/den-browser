@@ -39,6 +39,7 @@ struct InspectionBoardView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
                 .padding(12)
         }
+        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: DenRadius.large, style: .continuous))
         .modifier(
             BoardSurfaceModifier(
                 boardID: board.id,
@@ -135,6 +136,7 @@ struct InspectionBoardView: View {
         }
         .padding(.horizontal, DenLayout.chromeHorizontalPadding)
         .frame(height: DenLayout.boardHeaderHeight)
+        .background(store.isDenMode && isFocused ? profileColor.opacity(0.12) : Color.clear)
         .background(.regularMaterial)
         .contextMenu {
             if targetBoard != nil {
