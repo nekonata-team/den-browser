@@ -133,6 +133,7 @@ final class AppPreferences {
     private(set) var externalLinkDestination: ExternalLinkDestination
     private(set) var drawerStyle: DrawerStyle
     private(set) var automaticPIPOnDeskSwitch: Bool
+    private(set) var isBoardRailPresented: Bool
     private(set) var sheetScale: Int
     private(set) var zellijPath: String
     private(set) var zmxPath: String
@@ -153,6 +154,7 @@ final class AppPreferences {
     private static let drawerStyleKey = "preferences.drawer.style"
     private static let automaticPictureInPictureOnDeskSwitchKey =
         "preferences.picture-in-picture.auto-on-desk-switch"
+    private static let boardRailPresentedKey = "preferences.appearance.board-rail-presented"
     private static let sheetScaleKey = "preferences.appearance.sheet-scale.percent"
     private static let zellijPathKey = "preferences.terminal.zellij.executable-path"
     private static let zmxPathKey = "preferences.terminal.zmx.executable-path"
@@ -180,6 +182,7 @@ final class AppPreferences {
         automaticPIPOnDeskSwitch =
             defaults.object(forKey: Self.automaticPictureInPictureOnDeskSwitchKey) as? Bool
             ?? Self.defaultAutomaticPIPOnDeskSwitch
+        isBoardRailPresented = defaults.bool(forKey: Self.boardRailPresentedKey)
         sheetScale =
             Self.normalizedSheetScale(defaults.object(forKey: Self.sheetScaleKey) as? Int)
             ?? Self.defaultSheetScale
@@ -210,6 +213,11 @@ final class AppPreferences {
     func setSearchEngine(_ engine: SearchEngine) {
         searchEngine = engine
         defaults.set(engine.rawValue, forKey: Self.searchEngineKey)
+    }
+
+    func setBoardRailPresented(_ isPresented: Bool) {
+        self.isBoardRailPresented = isPresented
+        defaults.set(isPresented, forKey: Self.boardRailPresentedKey)
     }
 
     func setUBOLiteEnabled(_ enabled: Bool) {

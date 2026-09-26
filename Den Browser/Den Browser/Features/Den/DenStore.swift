@@ -108,7 +108,10 @@ final class DenStore {
     var saveEssentialDraft: SaveEssentialDraft?
     var isZenViewPresented = false
     var isFocusModePresented = false
-    var isBoardRailPresented = false
+    var isBoardRailPresented: Bool {
+        get { preferences.isBoardRailPresented }
+        set { preferences.setBoardRailPresented(newValue) }
+    }
     var isNotificationListPresented = false
     var selectedNotificationID: UUID?
     var isDenMode = false

@@ -67,6 +67,7 @@ Version 1 documents decode as Web Boards and are written back as version 2. An o
 | `shortcuts` | Desk number disabled | `preferences.shortcuts.desk-number.disabled` | `Bool` | Absent / `false` | Shortcuts > Focus Desk 1–10 |
 | `appearance` | Motion mode | `preferences.appearance.motion.mode` | `MotionPreference.rawValue` | `follow-system` | Appearance > Motion |
 | `appearance` | Board centering mode | `preferences.appearance.board-centering.mode` | `FocusedBoardCentering.rawValue` | `never` | Appearance > Board Centering |
+| `appearance` | Board Rail visibility | `preferences.appearance.board-rail-presented` | `Bool` | `false`; shared across windows and restored at launch | Board Rail |
 | `appearance` | Sheet scale | `preferences.appearance.sheet-scale.percent` | `Int` (`50...200`) | `100` | Appearance > Sheet Scale |
 | `drawer` | Style | `preferences.drawer.style` | `DrawerStyle.rawValue` | `floating` | Appearance > Drawer |
 | `content-blocking` | uBlock Origin Lite enabled | `preferences.content-blocking.ubolite.enabled` | `Bool` | `false` | Web > Content Blocking |

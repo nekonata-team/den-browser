@@ -37,7 +37,7 @@ extension DenStore {
 
     func setBoardRailPresented(_ isPresented: Bool) {
         guard !isZenViewPresented else { return }
-        isBoardRailPresented = isPresented
+        preferences.setBoardRailPresented(isPresented)
     }
 
     func toggleBoardRail() {
