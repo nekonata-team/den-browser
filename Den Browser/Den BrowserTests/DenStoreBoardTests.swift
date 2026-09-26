@@ -1507,6 +1507,47 @@ struct DenStoreBoardTests {
         }
     }
 
+    @Test func restorationAtStaleIndexDoesNotSplitExistingSideBoardGroup() throws {
+        // Arrange
+        let target = board("Target")
+        let removed = board("Removed")
+        let following = board("Following")
+        let source = desk("Desk", boards: [target, removed, following], focusedBoardID: removed.id)
+        try withStore(desks: [source]) { store in
+            store.removeBoard(removed.id)
+            let sideID = try #require(store.createInspectionBoard(targetBoardID: target.id))
+
+            // Act
+            store.restoreRecentlyRemovedBoard()
+
+            // Assert
+            let boards = try #require(store.focusedDesk?.boards)
+            #expect(boards.map(\.id) == [target.id, sideID, removed.id, following.id])
+            #expect(BoardGroup.containing(target.id, in: boards)?.boards.map(\.id) == [target.id, sideID])
+        }
+    }
+
+    @Test func restorationToFallbackDeskDoesNotSplitFocusedSideBoardGroup() throws {
+        // Arrange
+        let removed = board("Removed")
+        let source = desk("Source", boards: [removed], focusedBoardID: removed.id)
+        let target = board("Target")
+        let side = BoardState(width: 360, targetBoardID: target.id)
+        let destination = desk("Destination", boards: [target, side], focusedBoardID: target.id)
+        try withStore(desks: [source, destination]) { store in
+            store.removeBoard(removed.id)
+            store.deleteFocusedDesk()
+
+            // Act
+            store.restoreRecentlyRemovedBoard()
+
+            // Assert
+            let boards = try #require(store.focusedDesk?.boards)
+            #expect(boards.map(\.id) == [target.id, side.id, removed.id])
+            #expect(BoardGroup.containing(target.id, in: boards)?.boards.map(\.id) == [target.id, side.id])
+        }
+    }
+
     @Test func restorationCreatesANewBoardRuntime() throws {
         let removed = board("Removed")
         try withStore(desks: [desk("Desk", boards: [removed])]) { store in

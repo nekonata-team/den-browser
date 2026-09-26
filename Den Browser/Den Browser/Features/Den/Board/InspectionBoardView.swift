@@ -1,3 +1,4 @@
+import AppKit
 import Combine
 import SFSafeSymbols
 import SwiftUI
@@ -7,6 +8,7 @@ struct InspectionBoardView: View {
 
     let board: BoardState
     let isFocused: Bool
+    let focusRequest: BoardFocusRequest?
     let isDragging: Bool
     let isPointerFocusEnabled: Bool
     let profileColor: Color
@@ -51,6 +53,11 @@ struct InspectionBoardView: View {
                 shouldReduceMotion: false
             )
         )
+        .background {
+            InspectionBoardFocusSurface(request: focusRequest)
+                .allowsHitTesting(false)
+                .accessibilityHidden(true)
+        }
         .task(id: targetRuntime?.id) {
             targetRuntime?.startInspectionCollection(highlightColor: inspectionHighlightColor)
         }
@@ -318,6 +325,52 @@ struct InspectionBoardView: View {
         VStack(alignment: .leading, spacing: 2) {
             Text(title).font(.caption.weight(.semibold))
             Text(value).font(.system(.caption, design: .monospaced)).textSelection(.enabled)
+        }
+    }
+}
+
+private struct InspectionBoardFocusSurface: NSViewRepresentable {
+    let request: BoardFocusRequest?
+
+    func makeNSView(context _: Context) -> SurfaceHost<BoardFocusRequest, InspectionBoardInputView> {
+        let inputView = InspectionBoardInputView(frame: .zero)
+        let host = SurfaceHost<BoardFocusRequest, InspectionBoardInputView>(content: inputView)
+        host.update(
+            request: request,
+            onReady: { window in
+                guard
+                    needsFirstResponderActivation(window.firstResponder, target: inputView)
+                else { return true }
+                return window.makeFirstResponder(inputView)
+            })
+        return host
+    }
+
+    func updateNSView(
+        _ host: SurfaceHost<BoardFocusRequest, InspectionBoardInputView>,
+        context _: Context
+    ) {
+        let inputView = host.content
+        host.update(
+            request: request,
+            onReady: { window in
+                guard
+                    needsFirstResponderActivation(window.firstResponder, target: inputView)
+                else { return true }
+                return window.makeFirstResponder(inputView)
+            })
+    }
+}
+
+private final class InspectionBoardInputView: NSView {
+    override var acceptsFirstResponder: Bool { true }
+
+    override func keyDown(with event: NSEvent) {
+        guard event.charactersIgnoringModifiers == "\t" else { return }
+        if event.modifierFlags.contains(.shift) {
+            window?.selectPreviousKeyView(self)
+        } else {
+            window?.selectNextKeyView(self)
         }
     }
 }

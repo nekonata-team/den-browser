@@ -48,6 +48,38 @@ struct HorizontalDragGeometryTests {
                 frames: horizontalFrames) == nil)
     }
 
+    @Test func insertionSkipsOtherMembersOfDraggedGroup() throws {
+        // Arrange
+        let frames = horizontalFrames
+        let beyondNextGroup = try #require(frames[third]).midX + 1
+        let beforePreviousGroup = try #require(frames[first]).midX - 1
+
+        // Act
+        let primaryTarget = HorizontalDragInsertion.targetIndex(
+            draggedID: first,
+            orderedIDs: [first, second, third],
+            desiredCenterX: beyondNextGroup,
+            frames: frames,
+            excludingIDs: [first, second])
+        let sideTarget = HorizontalDragInsertion.targetIndex(
+            draggedID: third,
+            orderedIDs: [first, second, third],
+            desiredCenterX: beforePreviousGroup,
+            frames: frames,
+            excludingIDs: [second, third])
+        let ownMemberBoundary = HorizontalDragInsertion.targetIndex(
+            draggedID: first,
+            orderedIDs: [first, second],
+            desiredCenterX: try #require(frames[second]).midX + 1,
+            frames: frames,
+            excludingIDs: [first, second])
+
+        // Assert
+        #expect(primaryTarget == 2)
+        #expect(sideTarget == 0)
+        #expect(ownMemberBoundary == nil)
+    }
+
     @Test func autoScrollTargetsAdjacentIDAtLeadingAndTrailingEdges() {
         let leading = HorizontalDragAutoScroll.decision(
             location: CGPoint(x: 10, y: 50),
@@ -96,6 +128,31 @@ struct HorizontalDragGeometryTests {
             orderedIDs: [first, second, third],
             edge: 40)
         #expect(missingID == nil)
+    }
+
+    @Test func autoScrollSkipsOtherMembersOfDraggedGroup() {
+        // Arrange
+        let size = CGSize(width: 300, height: 100)
+
+        // Act
+        let trailing = HorizontalDragAutoScroll.decision(
+            location: CGPoint(x: 290, y: 50),
+            size: size,
+            draggedID: first,
+            orderedIDs: [first, second, third],
+            edge: 40,
+            excludingIDs: [first, second])
+        let leading = HorizontalDragAutoScroll.decision(
+            location: CGPoint(x: 10, y: 50),
+            size: size,
+            draggedID: third,
+            orderedIDs: [first, second, third],
+            edge: 40,
+            excludingIDs: [second, third])
+
+        // Assert
+        #expect(leading?.targetID == first)
+        #expect(trailing?.targetID == third)
     }
 
     @Test func overviewInsertionUsesBoardHalvesAndSupportsEmptyDesk() {

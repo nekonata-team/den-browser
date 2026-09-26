@@ -2,25 +2,30 @@ import CoreGraphics
 import Foundation
 
 nonisolated enum HorizontalDragInsertion {
-    static func targetIndex<ID: Equatable>(
+    static func targetIndex<ID: Hashable>(
         draggedID: ID,
         orderedIDs: [ID],
         desiredCenterX: CGFloat,
-        frames: [ID: CGRect]
+        frames: [ID: CGRect],
+        excludingIDs: Set<ID> = []
     ) -> Int? {
         guard let index = orderedIDs.firstIndex(of: draggedID) else { return nil }
 
-        if orderedIDs.indices.contains(index + 1),
-            let nextFrame = frames[orderedIDs[index + 1]],
+        if let nextIndex = orderedIDs.indices.dropFirst(index + 1).first(where: {
+            !excludingIDs.contains(orderedIDs[$0])
+        }),
+            let nextFrame = frames[orderedIDs[nextIndex]],
             desiredCenterX > nextFrame.midX
         {
-            return index + 1
+            return nextIndex
         }
-        if orderedIDs.indices.contains(index - 1),
-            let previousFrame = frames[orderedIDs[index - 1]],
+        if let previousIndex = orderedIDs.indices.prefix(index).reversed().first(where: {
+            !excludingIDs.contains(orderedIDs[$0])
+        }),
+            let previousFrame = frames[orderedIDs[previousIndex]],
             desiredCenterX < previousFrame.midX
         {
-            return index - 1
+            return previousIndex
         }
         return nil
     }
@@ -39,27 +44,32 @@ nonisolated enum HorizontalDragAutoScroll {
         let interval: TimeInterval
     }
 
-    static func decision<ID: Equatable>(
+    static func decision<ID: Hashable>(
         location: CGPoint,
         size: CGSize,
         draggedID: ID,
         orderedIDs: [ID],
-        edge: CGFloat
+        edge: CGFloat,
+        excludingIDs: Set<ID> = []
     ) -> Decision<ID>? {
         guard location.y >= 0, location.y <= size.height,
             let index = orderedIDs.firstIndex(of: draggedID)
         else { return nil }
 
         let direction: Direction
-        let targetIndex: Int
+        let targetID: ID
         let distanceToEdge: CGFloat
-        if location.x < edge, index > 0 {
+        if location.x < edge,
+            let target = orderedIDs[..<index].reversed().first(where: { !excludingIDs.contains($0) })
+        {
             direction = .leading
-            targetIndex = index - 1
+            targetID = target
             distanceToEdge = max(0, location.x)
-        } else if location.x > size.width - edge, index < orderedIDs.count - 1 {
+        } else if location.x > size.width - edge,
+            let target = orderedIDs.dropFirst(index + 1).first(where: { !excludingIDs.contains($0) })
+        {
             direction = .trailing
-            targetIndex = index + 1
+            targetID = target
             distanceToEdge = max(0, size.width - location.x)
         } else {
             return nil
@@ -67,7 +77,7 @@ nonisolated enum HorizontalDragAutoScroll {
 
         return Decision(
             direction: direction,
-            targetID: orderedIDs[targetIndex],
+            targetID: targetID,
             distanceToEdge: distanceToEdge,
             interval: distanceToEdge < 16 ? 0.06 : 0.16
         )

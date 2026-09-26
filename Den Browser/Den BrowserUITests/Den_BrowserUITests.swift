@@ -173,6 +173,51 @@ final class Den_BrowserUITests: XCTestCase, BDD {
         }
     }
 
+    // Protects the AppKit responder handoff between a WebKit Sheet and its Inspection Board.
+    // A unit test cannot observe which mounted native surface receives real keyboard input.
+    @MainActor
+    func testInspectionBoardFocusStopsAndRestoresSheetInput() throws {
+        let app = launchApp(boardCount: .one)
+        let alpha = board(.alpha, in: app)
+        let sheetInput = boardSurface(.alpha, in: app).textFields["Sheet input"].firstMatch
+
+        given("Alpha is focused and its Sheet input is available") {
+            XCTAssertTrue(alpha.wait(for: \.isSelected, toEqual: true, timeout: 5))
+            XCTAssertTrue(sheetInput.waitForExistence(timeout: 5))
+        }
+
+        when("focusing the Sheet input and typing a starting value") {
+            sheetInput.click()
+            app.typeText("seed")
+        }
+
+        then("the starting value is in the Sheet") {
+            XCTAssertEqual(sheetInput.value as? String, "seed")
+        }
+
+        when("creating a focused Inspection Board with Command-Option-I") {
+            app.typeKey("i", modifierFlags: [.command, .option])
+            XCTAssertTrue(app.buttons["Pick Element"].waitForExistence(timeout: 5))
+        }
+
+        when("typing while the Inspection Board is focused") {
+            app.typeText("x")
+        }
+
+        then("Alpha's Sheet input does not receive that typing") {
+            XCTAssertEqual(sheetInput.value as? String, "seed")
+        }
+
+        when("returning focus to Alpha and typing again") {
+            app.buttons["Focus"].firstMatch.click()
+            app.typeText("y")
+        }
+
+        then("Alpha's Sheet input receives typing after focus returns") {
+            XCTAssertEqual(sheetInput.value as? String, "seedy")
+        }
+    }
+
     @MainActor
     func testDrawerPreviewReceivesVimAndFormInputAndRetainsAfterDiscarding() throws {
         let app = launchApp(

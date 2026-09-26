@@ -481,9 +481,21 @@ extension DenStore {
             }
         }
 
+        let boards = state.desks[deskIndex].boards
+        var insertionIndex = min(max(insertIndex, 0), boards.count)
+        if insertionIndex > 0, insertionIndex < boards.count {
+            let precedingGroup = BoardGroup.containing(boards[insertionIndex - 1].id, in: boards)
+            if let lastMember = precedingGroup?.boards.last,
+                let lastMemberIndex = boards.lastIndex(where: { $0.id == lastMember.id }),
+                insertionIndex <= lastMemberIndex
+            {
+                insertionIndex = lastMemberIndex + 1
+            }
+        }
+
         let board = recentlyRemovedBoard.board
         let restoredBoards = [board] + (recentlyRemovedBoard.sideBoard.map { [$0] } ?? [])
-        state.desks[deskIndex].boards.insert(contentsOf: restoredBoards, at: insertIndex)
+        state.desks[deskIndex].boards.insert(contentsOf: restoredBoards, at: insertionIndex)
         state.desks[deskIndex].focusedBoardID = board.id
         let deskID = state.desks[deskIndex].id
         let changedDesk = setFocusedDesk(deskID)

@@ -601,6 +601,7 @@ struct BoardStrip: View {
             InspectionBoardView(
                 board: board,
                 isFocused: focused,
+                focusRequest: boardFocusRequest,
                 isDragging: boardDrag?.boardID == board.id,
                 isPointerFocusEnabled: pointerFocusEnabled,
                 profileColor: profileColor,
@@ -695,17 +696,26 @@ struct BoardStrip: View {
         guard var drag = boardDrag, store.focusedDesk?.id == drag.deskID else { return }
 
         while let boards = store.focusedDesk?.boards,
-            let index = store.focusedDesk?.boards.firstIndex(where: { $0.id == drag.boardID }),
+            let index = boards.firstIndex(where: { $0.id == drag.boardID }),
+            let group = BoardGroup.containing(drag.boardID, in: boards),
             let targetIndex = HorizontalDragInsertion.targetIndex(
                 draggedID: drag.boardID,
                 orderedIDs: boards.map(\.id),
                 desiredCenterX: drag.desiredCenterX,
-                frames: boardFrames)
+                frames: boardFrames,
+                excludingIDs: Set(group.boards.map(\.id)))
         {
             let crossedBoard = boards[targetIndex]
+            let crossedGroup = BoardGroup.containing(crossedBoard.id, in: boards)?.boards ?? [crossedBoard]
+            let previousOrder = boards.map(\.id)
             store.previewBoardMove(drag.boardID, to: targetIndex)
+            guard store.focusedDesk?.boards.map(\.id) != previousOrder else { break }
+
             let direction = targetIndex > index ? -1.0 : 1.0
-            drag.offset.width += direction * (crossedBoard.width + DenLayout.outerInset)
+            let crossedWidth =
+                crossedGroup.reduce(CGFloat.zero) { $0 + CGFloat($1.width) }
+                + CGFloat(crossedGroup.count) * DenLayout.outerInset
+            drag.offset.width += direction * crossedWidth
             boardDrag = drag
         }
     }
@@ -720,13 +730,15 @@ struct BoardStrip: View {
 
     private func autoScrollBoardStrip(at location: CGPoint, in size: CGSize) {
         guard let drag = boardDrag, let boards = store.focusedDesk?.boards else { return }
+        let groupIDs = Set(BoardGroup.containing(drag.boardID, in: boards)?.boards.map(\.id) ?? [drag.boardID])
         guard
             let decision = HorizontalDragAutoScroll.decision(
                 location: location,
                 size: size,
                 draggedID: drag.boardID,
                 orderedIDs: boards.map(\.id),
-                edge: 48
+                edge: 48,
+                excludingIDs: groupIDs
             )
         else { return }
 
