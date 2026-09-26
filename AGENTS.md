@@ -49,6 +49,7 @@ manual candidate verification, `just release publish X.Y.Z`.
 - `docs/testing.md`: automated and exploratory validation
 - `docs/releasing.md`: signed release and publishing workflow
 - `web/README.md`: public website and deployment
+- `.agents/skills/den`: AI agent skill for end-users. Do not include the project path.
 
 ## Documentation operation
 
