@@ -201,7 +201,7 @@ extension DenStore {
             return existingSideBoard.id
         }
         let board = BoardState(
-            width: targetBoard.width,
+            width: 360,
             sideBoardTargetBoardID: targetBoardID
         )
         guard insertBoard(board, afterBoardID: targetBoardID, focus: true, origin: .interactive) else {

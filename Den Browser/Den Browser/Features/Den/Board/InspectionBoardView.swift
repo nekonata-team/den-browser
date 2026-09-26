@@ -28,6 +28,7 @@ struct InspectionBoardView: View {
 
     private var targetBoard: BoardState? { store.board(for: targetBoardID) }
     private var targetRuntime: BoardRuntime? { store.runtimes[targetBoardID] }
+    private var inspectionHighlightColor: ProfileRGB? { ProfileRGB(color: profileColor) }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -51,7 +52,7 @@ struct InspectionBoardView: View {
             )
         )
         .task(id: targetRuntime?.id) {
-            targetRuntime?.startInspectionCollection()
+            targetRuntime?.startInspectionCollection(highlightColor: inspectionHighlightColor)
         }
         .task(id: isVisibleInViewport ? targetRuntime?.id : nil) {
             guard isVisibleInViewport else { return }
@@ -78,6 +79,9 @@ struct InspectionBoardView: View {
                 return
             }
             expandedNodeIDs.formUnion(path.dropLast())
+        }
+        .onChange(of: inspectionHighlightColor) { _, color in
+            targetRuntime?.setInspectionHighlightColor(color)
         }
         .onReceive(
             targetRuntime?.inspectionPageGenerationPublisher ?? Just(0).eraseToAnyPublisher()
@@ -151,7 +155,7 @@ struct InspectionBoardView: View {
 
                 HStack(spacing: 8) {
                     Button {
-                        targetRuntime?.beginInspectionPicking()
+                        targetRuntime?.beginInspectionPicking(highlightColor: inspectionHighlightColor)
                     } label: {
                         Label("Pick Element", systemSymbol: .pointerArrowSquare)
                             .labelStyle(.iconOnly)

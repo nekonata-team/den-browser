@@ -64,6 +64,7 @@ final class BoardRuntime: BaseWebRuntime, ObservableObject {
     @Published private(set) var isInspectionCollecting = false
     @Published private(set) var inspectionPageGeneration = 0
     private var actionHighlightTask: Task<Void, Never>?
+    private var inspectionHighlightColor: ProfileRGB?
 
     var inspectionPageGenerationPublisher: AnyPublisher<Int, Never> {
         $inspectionPageGeneration.eraseToAnyPublisher()
@@ -349,28 +350,49 @@ final class BoardRuntime: BaseWebRuntime, ObservableObject {
         updateFavicon()
         if isInspectionActive {
             webView.evaluateJavaScript(InspectionPageScript.initialize) { [weak self] _, _ in
-                guard let self, self.isInspectionCollecting else { return }
-                self.webView.evaluateJavaScript(InspectionPageScript.collect)
+                guard let self, self.isInspectionActive else { return }
+                if let color = self.inspectionHighlightColor {
+                    self.webView.evaluateJavaScript(InspectionPageScript.setHighlightColor(color))
+                }
+                if self.isInspectionCollecting {
+                    self.webView.evaluateJavaScript(InspectionPageScript.collect)
+                }
             }
         }
     }
 
-    func startInspectionCollection() {
+    func startInspectionCollection(highlightColor: ProfileRGB?) {
+        if let highlightColor { inspectionHighlightColor = highlightColor }
         isInspectionActive = true
         isInspectionCollecting = true
         guard webView.url != nil else { return }
         webView.evaluateJavaScript(InspectionPageScript.initialize) { [weak self] _, _ in
             guard let self, self.isInspectionCollecting else { return }
+            if let color = self.inspectionHighlightColor {
+                self.webView.evaluateJavaScript(InspectionPageScript.setHighlightColor(color))
+            }
             self.webView.evaluateJavaScript(InspectionPageScript.collect)
         }
     }
 
-    func beginInspectionPicking() {
+    func beginInspectionPicking(highlightColor: ProfileRGB?) {
         guard webView.url != nil else { return }
+        if let highlightColor { inspectionHighlightColor = highlightColor }
         isInspectionActive = true
-        webView.evaluateJavaScript(InspectionPageScript.initialize) { [weak webView] _, _ in
-            webView?.evaluateJavaScript(InspectionPageScript.startPicking)
+        webView.evaluateJavaScript(InspectionPageScript.initialize) { [weak self] _, _ in
+            guard let self, self.isInspectionActive else { return }
+            if let color = self.inspectionHighlightColor {
+                self.webView.evaluateJavaScript(InspectionPageScript.setHighlightColor(color))
+            }
+            self.webView.evaluateJavaScript(InspectionPageScript.startPicking)
         }
+    }
+
+    func setInspectionHighlightColor(_ color: ProfileRGB?) {
+        guard let color else { return }
+        inspectionHighlightColor = color
+        guard isInspectionActive else { return }
+        webView.evaluateJavaScript(InspectionPageScript.setHighlightColor(color))
     }
 
     func stopInspection() {

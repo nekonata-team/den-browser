@@ -581,6 +581,22 @@ struct DenStoreBoardTests {
         #expect(store.state.desks[0].boards.count == 2)
     }
 
+    @Test(arguments: await [BoardState.minimumWidth, BuiltInDeskPreset.boardWidth, BoardState.maximumWidth])
+    func inspectionBoardStartsAtCompactWidthRegardlessOfTargetWidth(targetWidth: Double) throws {
+        // Arrange
+        let target = BoardState(
+            label: "Target", width: targetWidth, currentSheetURL: URL(string: "https://example.com"))
+        let sourceDesk = desk("Desk", boards: [target], focusedBoardID: target.id)
+        let store = DenStore(state: DenState(desks: [sourceDesk], focusedDeskID: sourceDesk.id))
+
+        // Act
+        let inspectionID = try #require(store.createInspectionBoard(targetBoardID: target.id))
+        let inspection = try #require(store.board(for: inspectionID))
+
+        // Assert
+        #expect(inspection.width == 360)
+    }
+
     @Test func inspectionBoardRequiresSideBoardRelationshipToDecode() {
         let boardID = UUID()
         let data = Data(

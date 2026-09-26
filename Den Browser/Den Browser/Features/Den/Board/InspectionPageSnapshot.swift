@@ -54,6 +54,10 @@ enum InspectionPageScript {
 
     static let startPicking = #"window.__denInspection?.startPicking()"#
 
+    static func setHighlightColor(_ color: ProfileRGB) -> String {
+        "window.__denInspection?.setHighlightColor({ red: \(color.red), green: \(color.green), blue: \(color.blue) })"
+    }
+
     static let collect = #"window.__denInspection?.startCollection()"#
 
     static let readSnapshot = #"""

@@ -508,4 +508,49 @@ struct InspectionBoardCapabilityTests {
         #expect(!removedOnStop)
         #expect(!remainsAfterNavigation)
     }
+
+    @Test func pickAndDOMHoverHighlightUseAndUpdateProfileColor() async throws {
+        // Arrange
+        let (webView, window, probe) = fixture()
+        defer { window.close() }
+        await probe.load(
+            """
+            <!doctype html><html><body><button id="target">Target</button></body></html>
+            """,
+            in: webView
+        )
+        let initialColor = ProfileRGB(red: 18, green: 52, blue: 86)
+        let changedColor = ProfileRGB(red: 87, green: 101, blue: 121)
+        func highlightColors() async throws -> [String] {
+            try #require(
+                try await webView.evaluateJavaScript(
+                    "(() => { const item = document.querySelector('[data-den-inspection-highlight]'); return [item.style.borderTopColor, item.style.backgroundColor]; })()"
+                ) as? [String]
+            )
+        }
+
+        // Act
+        try await initializeInspection(webView)
+        _ = try await webView.evaluateJavaScript(InspectionPageScript.setHighlightColor(initialColor))
+        try await startPicking(webView)
+        _ = try await webView.evaluateJavaScript(
+            "document.querySelector('#target').dispatchEvent(new MouseEvent('pointermove', { bubbles: true, clientX: 4, clientY: 4 }))"
+        )
+        let pickColors = try await highlightColors()
+        _ = try await webView.evaluateJavaScript(InspectionPageScript.setHighlightColor(changedColor))
+        let updatedPickColors = try await highlightColors()
+        _ = try await webView.evaluateJavaScript(
+            "document.querySelector('#target').dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }))"
+        )
+        let json = try #require(try await webView.evaluateJavaScript(InspectionPageScript.readSnapshot) as? String)
+        let snapshot = try JSONDecoder().decode(InspectionPageSnapshot.self, from: Data(json.utf8))
+        let targetID = try #require(snapshot.treePath.last?.id)
+        _ = try await webView.evaluateJavaScript(InspectionPageScript.highlightNode(targetID))
+        let domHoverColors = try await highlightColors()
+
+        // Assert
+        #expect(pickColors == ["rgb(18, 52, 86)", "rgba(18, 52, 86, 0.12)"])
+        #expect(updatedPickColors == ["rgb(87, 101, 121)", "rgba(87, 101, 121, 0.12)"])
+        #expect(domHoverColors == updatedPickColors)
+    }
 }

@@ -59,12 +59,14 @@ type InspectionPageState = {
   installed: boolean;
   collectionInstalled: boolean;
   highlight: HTMLDivElement | null;
+  highlightColor: { red: number; green: number; blue: number };
   pointer: { x: number; y: number } | null;
   install: () => void;
   uninstall: () => void;
   installCollection: () => void;
   uninstallCollection: () => void;
   removeHighlight: () => void;
+  setHighlightColor: (color: { red: number; green: number; blue: number }) => void;
   showHighlight: (element: Element) => void;
   repositionHighlight: () => void;
   startPicking: () => void;
@@ -103,12 +105,14 @@ interface Window {
       installed: false,
       collectionInstalled: false,
       highlight: null,
+      highlightColor: { red: 0, green: 122, blue: 255 },
       pointer: null,
       install: () => {},
       uninstall: () => {},
       installCollection: () => {},
       uninstallCollection: () => {},
       removeHighlight: () => {},
+      setHighlightColor: () => {},
       showHighlight: () => {},
       repositionHighlight: () => {},
       startPicking: () => {},
@@ -185,15 +189,23 @@ interface Window {
       state.highlight?.remove();
       state.highlight = null;
     };
+    state.setHighlightColor = color => {
+      state.highlightColor = color;
+      if (!state.highlight) return;
+      const { red, green, blue } = color;
+      state.highlight.style.setProperty("border-color", `rgb(${red}, ${green}, ${blue})`, "important");
+      state.highlight.style.setProperty("background-color", `rgba(${red}, ${green}, ${blue}, .12)`, "important");
+    };
     state.showHighlight = element => {
       if (!(element instanceof Element) || element === state.highlight) return;
       if (!state.highlight) {
         state.highlight = document.createElement("div");
         state.highlight.setAttribute("data-den-inspection-highlight", "");
         state.highlight.setAttribute("aria-hidden", "true");
-        state.highlight.style.cssText = "all:initial!important;display:block!important;position:fixed!important;pointer-events:none!important;z-index:2147483647!important;box-sizing:border-box!important;border:2px solid #ff5a1f!important;background:rgba(255,90,31,.12)!important;";
+        state.highlight.style.cssText = "all:initial!important;display:block!important;position:fixed!important;pointer-events:none!important;z-index:2147483647!important;box-sizing:border-box!important;border:2px solid!important;";
         document.documentElement.appendChild(state.highlight);
       }
+      state.setHighlightColor(state.highlightColor);
       const rect = element.getBoundingClientRect();
       const highlight = state.highlight;
       if (!highlight) return;
