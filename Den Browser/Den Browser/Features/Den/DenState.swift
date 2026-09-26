@@ -1,4 +1,5 @@
 import Foundation
+import SFSafeSymbols
 
 struct DenState: Codable, Equatable {
     var desks: [DeskState]
@@ -507,6 +508,15 @@ struct BoardState: Codable, Equatable, Identifiable {
     var isZmx: Bool {
         guard case .zmx = content else { return false }
         return true
+    }
+
+    var systemSymbol: SFSymbol {
+        switch content {
+        case .web: .globe
+        case .terminal: .appleTerminal
+        case .zellij: .rectangle3Group
+        case .zmx: .appleTerminalOnRectangle
+        }
     }
 
     var displayName: String {

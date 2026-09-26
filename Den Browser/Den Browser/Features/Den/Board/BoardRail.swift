@@ -137,11 +137,8 @@ struct BoardRail: View {
 
     @ViewBuilder
     private func boardIcon(for board: BoardState) -> some View {
-        if board.isZmx {
-            ZmxIcon(size: 16)
-                .foregroundStyle(.secondary)
-        } else if board.isTerminal {
-            Image(systemSymbol: symbol(for: board))
+        if board.isTerminal {
+            Image(systemSymbol: board.systemSymbol)
                 .foregroundStyle(.secondary)
                 .frame(width: 16, height: 16)
         } else if let runtime = store.runtimes[board.id] {
@@ -176,11 +173,6 @@ struct BoardRail: View {
         .joined(separator: ", ")
     }
 
-    private func symbol(for board: BoardState) -> SFSymbol {
-        board.isZellij
-            ? .rectangle3Group
-            : .appleTerminal
-    }
 }
 
 private struct BoardRailFavicon: View {

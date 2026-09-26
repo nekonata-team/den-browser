@@ -119,15 +119,8 @@ struct TerminalBoardView: View {
                     store.moveFocusedBoardRight()
                 },
                 leadingContent: {
-                    if board.isZmx {
-                        ZmxIcon(size: 16)
-                            .foregroundStyle(.secondary)
-                    } else {
-                        Image(
-                            systemSymbol: board.isZellij ? .rectangle3Group : .appleTerminal
-                        )
+                    Image(systemSymbol: board.systemSymbol)
                         .foregroundStyle(.secondary)
-                    }
                 }
             )
             Button(action: onRemove) {
@@ -199,7 +192,7 @@ struct TerminalBoardView: View {
                 Label {
                     Text("zmx Sessions…")
                 } icon: {
-                    ZmxIcon(size: 14)
+                    Image(systemSymbol: .appleTerminalOnRectangle)
                 }
             }
         }

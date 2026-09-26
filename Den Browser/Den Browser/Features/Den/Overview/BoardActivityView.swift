@@ -173,15 +173,9 @@ private struct BoardActivityRow: View {
                 HStack(spacing: 12) {
                     boardStateIcon
                         .frame(width: 14)
-                    if board.isZmx {
-                        ZmxIcon(size: 12)
-                            .foregroundStyle(.orange)
-                            .frame(width: 20)
-                    } else {
-                        Image(systemSymbol: board.isTerminal ? .appleTerminal : .globe)
-                            .foregroundStyle(board.isTerminal ? .orange : .blue)
-                            .frame(width: 20)
-                    }
+                    Image(systemSymbol: board.systemSymbol)
+                        .foregroundStyle(board.isTerminal ? .orange : .blue)
+                        .frame(width: 20)
                     VStack(alignment: .leading, spacing: 3) {
                         Text(board.displayName)
                             .font(.body.weight(.medium))

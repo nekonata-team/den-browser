@@ -655,20 +655,10 @@ private struct OverviewBoardCard: View {
         CGFloat(board.width) * DenOverviewLayout.boardCardHeight / boardHeight
     }
 
-    private var systemSymbol: SFSymbol {
-        board.isTerminal ? .appleTerminal : .globe
-    }
-
-    @ViewBuilder
     private var boardTypeIcon: some View {
-        if board.isZmx {
-            ZmxIcon(size: 12)
-                .foregroundStyle(typeColor)
-        } else {
-            Image(systemSymbol: systemSymbol)
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(typeColor)
-        }
+        Image(systemSymbol: board.systemSymbol)
+            .font(.caption.weight(.semibold))
+            .foregroundStyle(typeColor)
     }
 
     private var typeColor: Color {

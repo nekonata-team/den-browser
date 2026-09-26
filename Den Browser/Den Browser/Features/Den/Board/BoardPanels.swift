@@ -208,16 +208,10 @@ struct OpenBoardPanel: View {
         store.clearOpenBoardPanelDraft()
     }
 
-    @ViewBuilder
     private func recentItemIcon(for item: RecentItem) -> some View {
-        if case .zmx = item {
-            ZmxIcon(size: 16)
-                .foregroundStyle(.secondary)
-        } else {
-            Image(systemSymbol: item.systemSymbol)
-                .foregroundStyle(.secondary)
-                .frame(width: 16)
-        }
+        Image(systemSymbol: item.systemSymbol)
+            .foregroundStyle(.secondary)
+            .frame(width: 16)
     }
 
     private func moveRecentSelection(by offset: Int) {

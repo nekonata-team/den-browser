@@ -1367,18 +1367,9 @@ private struct UnactivatedBoardView: View {
 
     private var dragHandle: some View {
         HStack(spacing: 8) {
-            if board.isZmx {
-                ZmxIcon(size: 16)
-                    .foregroundStyle(.secondary)
-            } else {
-                Image(
-                    systemSymbol: board.isZellij
-                        ? .rectangle3Group
-                        : (board.isTerminal ? .appleTerminal : .globe)
-                )
+            Image(systemSymbol: board.systemSymbol)
                 .foregroundStyle(.secondary)
                 .frame(width: 16, height: 16)
-            }
             BoardHeaderTitle(
                 board: board,
                 isFocused: isFocused,
