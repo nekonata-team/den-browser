@@ -162,7 +162,7 @@ Commands operating on Boards within the active Desk.
 |---|---|---|---|
 | `den inspection read` | `--board <inspection-board-id>` | Read the selected element and available page inspection context from the specified Inspection Board's target Web Board. This is read-only and requires an explicit Inspection Board ID. | `den inspection read --board 4F72344C-... --json` |
 
-The JSON result contains an `inspection` object describing the target page and current inspection data, including available selection details, accessible labels, a CSS selector and optional `@e…` reference, capture time, document identity, ancestor path, retained console or JavaScript events, and dropped-event count. A page with no selected element is reported as unselected. Exact optional fields depend on available page data; see [Inspection](inspection.md).
+The JSON result contains an `inspection` object describing the target page and current inspection data, including available selection details, accessible labels, a captured CSS selector, capture time, document identity, ancestor path, retained console or JavaScript events, and dropped-event count. A page with no selected element is reported as unselected. For current `@e…` references, use `den sheet snapshot` or `den sheet query` on the target Web Board. Exact optional fields depend on available page data; see [Inspection](inspection.md).
 
 ### 3.8 `den desk` (Desks & Workspaces)
 Commands operating on Desks within the Den.

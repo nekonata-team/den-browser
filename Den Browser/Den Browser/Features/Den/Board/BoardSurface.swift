@@ -32,6 +32,7 @@ struct BoardSurfaceModifier: ViewModifier {
                 x: 0,
                 y: 0
             )
+            .scaleEffect(isDragging && !shouldReduceMotion ? 1.02 : 1)
             .animation(DenMotion.feedback(reduceMotion: shouldReduceMotion), value: isFocused)
             .animation(DenMotion.feedback(reduceMotion: shouldReduceMotion), value: isDragging)
             .animation(

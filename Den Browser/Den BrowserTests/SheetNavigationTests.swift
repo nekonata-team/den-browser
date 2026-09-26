@@ -717,7 +717,7 @@ struct SheetNavigationTests {
         #expect(manager.setIgnoredSites(""))
     }
 
-    @Test func boardWebViewUsesSharedSheetNavigationController() {
+    @Test func boardWebViewUsesIsolatedSheetNavigationController() {
         let manager = makeTestSheetNavigationManager(scriptSource: "")
         let runtime = BoardRuntime(
             board: board("Navigation", url: "about:blank"),
@@ -727,8 +727,10 @@ struct SheetNavigationTests {
             sheetNavigationActions: noOpSheetNavigationActions(),
             events: boardRuntimeEvents())
 
-        #expect(runtime.webView.configuration.userContentController === manager.userContentController)
-        #expect(manager.userContentController.userScripts.count == 2)
+        let userContentController = runtime.webView.configuration.userContentController
+        #expect(userContentController !== manager.userContentController)
+        #expect(userContentController.userScripts.count == 2)
+        #expect(userContentController.userScripts[0].source.contains("__denSheetNavigation"))
     }
 
     @Test func sheetNavigationCanOpenLinkAsAdjacentBoard() {

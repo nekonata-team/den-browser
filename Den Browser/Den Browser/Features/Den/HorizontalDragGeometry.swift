@@ -2,6 +2,44 @@ import CoreGraphics
 import Foundation
 
 nonisolated enum HorizontalDragInsertion {
+    static func groupedTargetIndex<ID: Hashable>(
+        draggedID: ID,
+        orderedGroups: [[ID]],
+        desiredCenterX: CGFloat,
+        frames: [ID: CGRect]
+    ) -> Int? {
+        guard let sourceIndex = orderedGroups.firstIndex(where: { $0.contains(draggedID) }) else {
+            return nil
+        }
+
+        func frame(for group: [ID]) -> CGRect? {
+            var result: CGRect?
+            for id in group {
+                guard let nextFrame = frames[id] else { return nil }
+                result = result.map { $0.union(nextFrame) } ?? nextFrame
+            }
+            return result
+        }
+
+        func flattenedIndex(before groupIndex: Int) -> Int {
+            orderedGroups[..<groupIndex].reduce(0) { $0 + $1.count }
+        }
+
+        if let nextIndex = orderedGroups.indices.dropFirst(sourceIndex + 1).first(where: {
+            guard let nextFrame = frame(for: orderedGroups[$0]) else { return false }
+            return desiredCenterX > nextFrame.midX
+        }) {
+            return flattenedIndex(before: nextIndex)
+        }
+        if let previousIndex = orderedGroups.indices.prefix(sourceIndex).reversed().first(where: {
+            guard let previousFrame = frame(for: orderedGroups[$0]) else { return false }
+            return desiredCenterX < previousFrame.midX
+        }) {
+            return flattenedIndex(before: previousIndex)
+        }
+        return nil
+    }
+
     static func targetIndex<ID: Hashable>(
         draggedID: ID,
         orderedIDs: [ID],

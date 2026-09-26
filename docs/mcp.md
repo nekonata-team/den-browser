@@ -119,7 +119,7 @@ Tool-specific constraints:
 
 Sheet references such as `@e1` are document-scoped. They remain usable across operations in the same document and are regenerated when navigation replaces the document. Use the `board_id` returned from `inspect_sheet` for subsequent Sheet calls.
 
-`read_inspection` requires `board_id` and accepts only an Inspection Board. Its structured result has an `inspection` object with page metadata and available inspection data: selected-element details, accessible labels, a CSS selector and optional `@e…` reference, capture time, document identity, ancestors, retained console or JavaScript events, and a count of dropped events. A page with no selected element is represented as unselected. The read-only call does not change Board focus, selection, or the target Sheet. Use the returned target Web Board ID with Sheet tools when more page content is needed.
+`read_inspection` requires `board_id` and accepts only an Inspection Board. Its structured result has an `inspection` object with page metadata and available inspection data: selected-element details, accessible labels, a captured CSS selector, capture time, document identity, ancestors, retained console or JavaScript events, and a count of dropped events. A page with no selected element is represented as unselected. The read-only call does not change Board focus, selection, or the target Sheet. Use the returned target Web Board ID with Sheet tools for current `@e…` references or more page content.
 
 ### 4.3 Drawer
 

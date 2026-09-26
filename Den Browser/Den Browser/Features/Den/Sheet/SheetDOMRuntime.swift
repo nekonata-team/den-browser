@@ -6,7 +6,9 @@ enum SheetDOMRuntime {
     static let contentWorld = WKContentWorld.world(name: "dev.nekonata.denbrowser.sheet-dom")
 
     static func install(on userContentController: WKUserContentController) {
-        guard !source.isEmpty else { return }
+        guard !source.isEmpty,
+            !userContentController.userScripts.contains(where: { $0.source == source })
+        else { return }
         userContentController.addUserScript(
             WKUserScript(
                 source: source,

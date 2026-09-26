@@ -80,6 +80,44 @@ struct HorizontalDragGeometryTests {
         #expect(ownMemberBoundary == nil)
     }
 
+    @Test func groupedInsertionUsesWholeGroupCenterAndDoesNotReverse() throws {
+        // Arrange
+        let dragged = UUID.fixture(20)
+        let primary = UUID.fixture(21)
+        let side = UUID.fixture(22)
+        let last = UUID.fixture(23)
+        let frames = [
+            dragged: CGRect(x: 0, y: 0, width: 100, height: 100),
+            primary: CGRect(x: 110, y: 0, width: 100, height: 100),
+            side: CGRect(x: 220, y: 0, width: 100, height: 100),
+            last: CGRect(x: 330, y: 0, width: 100, height: 100),
+        ]
+        let orderedGroups = [[dragged], [primary, side], [last]]
+        let groupCenter = try #require(frames[primary]).union(try #require(frames[side])).midX
+
+        // Act
+        let betweenMembers = HorizontalDragInsertion.groupedTargetIndex(
+            draggedID: dragged,
+            orderedGroups: orderedGroups,
+            desiredCenterX: try #require(frames[primary]).midX + 1,
+            frames: frames)
+        let beyondGroupCenter = HorizontalDragInsertion.groupedTargetIndex(
+            draggedID: dragged,
+            orderedGroups: orderedGroups,
+            desiredCenterX: groupCenter + 1,
+            frames: frames)
+        let reverseAcrossGroup = HorizontalDragInsertion.groupedTargetIndex(
+            draggedID: dragged,
+            orderedGroups: [[primary, side], [dragged], [last]],
+            desiredCenterX: groupCenter + 1,
+            frames: frames)
+
+        // Assert
+        #expect(betweenMembers == nil)
+        #expect(beyondGroupCenter == 1)
+        #expect(reverseAcrossGroup == nil)
+    }
+
     @Test func autoScrollTargetsAdjacentIDAtLeadingAndTrailingEdges() {
         let leading = HorizontalDragAutoScroll.decision(
             location: CGPoint(x: 10, y: 50),

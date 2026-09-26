@@ -65,6 +65,7 @@ final class BoardRuntime: BaseWebRuntime, ObservableObject {
     @Published private(set) var inspectionPageGeneration = 0
     private var actionHighlightTask: Task<Void, Never>?
     private var inspectionHighlightColor: ProfileRGB?
+    private var inspectionCollectionUserScript: WKUserScript?
 
     var inspectionPageGenerationPublisher: AnyPublisher<Int, Never> {
         $inspectionPageGeneration.eraseToAnyPublisher()
@@ -124,7 +125,8 @@ final class BoardRuntime: BaseWebRuntime, ObservableObject {
                 ? nil
                 : board.currentSheetURL,
             websiteDataStore: websiteDataStore,
-            userContentController: sheetNavigation.userContentController,
+            userContentController: popupWebView?.configuration.userContentController
+                ?? sheetNavigation.makeBoardUserContentController(),
             webExtensionController: webExtensionHost?.controller,
             sheetScale: sheetScale,
             enableElementFullscreen: true,
@@ -348,7 +350,7 @@ final class BoardRuntime: BaseWebRuntime, ObservableObject {
         traceWebProcessIdentifier()
         sheetNavigation.refreshConfiguration(for: webView)
         updateFavicon()
-        if isInspectionActive {
+        if webView === self.webView, isInspectionActive {
             webView.evaluateJavaScript(InspectionPageScript.initialize) { [weak self] _, _ in
                 guard let self, self.isInspectionActive else { return }
                 if let color = self.inspectionHighlightColor {
@@ -365,6 +367,7 @@ final class BoardRuntime: BaseWebRuntime, ObservableObject {
         if let highlightColor { inspectionHighlightColor = highlightColor }
         isInspectionActive = true
         isInspectionCollecting = true
+        updateInspectionCollectionUserScript()
         guard webView.url != nil else { return }
         webView.evaluateJavaScript(InspectionPageScript.initialize) { [weak self] _, _ in
             guard let self, self.isInspectionCollecting else { return }
@@ -399,7 +402,39 @@ final class BoardRuntime: BaseWebRuntime, ObservableObject {
         guard isInspectionActive else { return }
         isInspectionActive = false
         isInspectionCollecting = false
+        updateInspectionCollectionUserScript()
         webView.evaluateJavaScript(InspectionPageScript.stop)
+    }
+
+    private func updateInspectionCollectionUserScript() {
+        let userContentController = webView.configuration.userContentController
+        let previousScript = inspectionCollectionUserScript
+        let script: WKUserScript?
+        if isInspectionCollecting, !InspectionPageScript.initialize.isEmpty {
+            let colorScript = inspectionHighlightColor.map(InspectionPageScript.setHighlightColor) ?? ""
+            script = WKUserScript(
+                source: InspectionPageScript.initialize + "\n" + colorScript + "\n" + InspectionPageScript.collect,
+                injectionTime: .atDocumentStart,
+                forMainFrameOnly: true
+            )
+        } else {
+            script = nil
+        }
+
+        var didReplace = false
+        let scripts = userContentController.userScripts.compactMap { current -> WKUserScript? in
+            guard current === previousScript else { return current }
+            didReplace = true
+            return script
+        }
+        userContentController.removeAllUserScripts()
+        for retainedScript in scripts {
+            userContentController.addUserScript(retainedScript)
+        }
+        if !didReplace, let script {
+            userContentController.addUserScript(script)
+        }
+        inspectionCollectionUserScript = script
     }
 
     func readInspectionSnapshot() async -> InspectionPageSnapshot {
@@ -471,7 +506,7 @@ final class BoardRuntime: BaseWebRuntime, ObservableObject {
         didStartProvisionalNavigation navigation: WKNavigation!
     ) {
         faviconURL = nil
-        if isInspectionActive { inspectionPageGeneration &+= 1 }
+        if webView === self.webView, isInspectionActive { inspectionPageGeneration &+= 1 }
         traceWebProcessIdentifier()
     }
 
@@ -532,10 +567,19 @@ final class BoardRuntime: BaseWebRuntime, ObservableObject {
             return nil
         }
 
+        configuration.userContentController = sheetNavigation.makeBoardUserContentController()
         let popup = BoardWKWebView(frame: .zero, configuration: configuration)
         popup.pageZoom = webView.pageZoom
         guard events.onCreatePopupBoard(popup, url, navigationAction.modifierFlags) else { return nil }
         return popup
+    }
+
+    override func makeAuxiliaryWebView(
+        configuration: WKWebViewConfiguration,
+        sourceWebView: WKWebView
+    ) -> WKWebView {
+        configuration.userContentController = sheetNavigation.makeBoardUserContentController()
+        return super.makeAuxiliaryWebView(configuration: configuration, sourceWebView: sourceWebView)
     }
 
     func togglePictureInPicture() {

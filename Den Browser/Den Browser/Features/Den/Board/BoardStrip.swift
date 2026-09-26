@@ -318,20 +318,6 @@ struct BoardStrip: View {
             }
         }
         .coordinateSpace(name: BoardStripCoordinateSpace.name)
-        .overlay {
-            GeometryReader { _ in
-                if let frame = draggedGroupOutlineFrame {
-                    RoundedRectangle(cornerRadius: DenRadius.large, style: .continuous)
-                        .stroke(profileColor, lineWidth: 2)
-                        .frame(width: frame.width, height: frame.height)
-                        .position(x: frame.midX, y: frame.midY)
-                        .accessibilityHidden(true)
-                        .allowsHitTesting(false)
-                }
-            }
-            .clipped()
-            .allowsHitTesting(false)
-        }
         .scrollIndicators(.never)
         .accessibilityIdentifier("board-strip")
         .onChange(of: store.presentedDeskID) { _, deskID in
@@ -688,21 +674,6 @@ struct BoardStrip: View {
         return Set(group.boards.map(\.id))
     }
 
-    private var draggedGroupOutlineFrame: CGRect? {
-        guard let drag = boardDrag,
-            let boards = store.focusedDesk?.boards,
-            let group = BoardGroup.containing(drag.boardID, in: boards),
-            let firstID = group.boards.first?.id,
-            var frame = boardFrames[firstID]
-        else { return nil }
-
-        for board in group.boards.dropFirst() {
-            guard let nextFrame = boardFrames[board.id] else { return nil }
-            frame = frame.union(nextFrame)
-        }
-        return frame.insetBy(dx: -8, dy: -8).offsetBy(dx: drag.offset.width, dy: drag.offset.height)
-    }
-
     private func updateBoardDrag(
         _ board: BoardState,
         value: DragGesture.Value,
@@ -738,16 +709,20 @@ struct BoardStrip: View {
 
         while let boards = store.focusedDesk?.boards,
             let index = boards.firstIndex(where: { $0.id == drag.boardID }),
-            let group = BoardGroup.containing(drag.boardID, in: boards),
-            let targetIndex = HorizontalDragInsertion.targetIndex(
-                draggedID: drag.boardID,
-                orderedIDs: boards.map(\.id),
-                desiredCenterX: drag.desiredCenterX,
-                frames: boardFrames,
-                excludingIDs: Set(group.boards.map(\.id)))
+            BoardGroup.containing(drag.boardID, in: boards) != nil
         {
-            let crossedBoard = boards[targetIndex]
-            let crossedGroup = BoardGroup.containing(crossedBoard.id, in: boards)?.boards ?? [crossedBoard]
+            let groups = boardGroups(in: boards)
+            guard
+                let targetIndex = HorizontalDragInsertion.groupedTargetIndex(
+                    draggedID: drag.boardID,
+                    orderedGroups: groups.map { $0.boards.map(\.id) },
+                    desiredCenterX: drag.desiredCenterX,
+                    frames: boardFrames),
+                boards.indices.contains(targetIndex),
+                let targetGroup = groups.first(where: { $0.boards.first?.id == boards[targetIndex].id })
+            else { break }
+
+            let crossedGroup = targetGroup.boards
             let previousOrder = boards.map(\.id)
             store.previewBoardMove(drag.boardID, to: targetIndex)
             guard store.focusedDesk?.boards.map(\.id) != previousOrder else { break }
@@ -758,6 +733,16 @@ struct BoardStrip: View {
                 + CGFloat(crossedGroup.count) * DenLayout.outerInset
             drag.offset.width += direction * crossedWidth
             boardDrag = drag
+        }
+    }
+
+    private func boardGroups(in boards: [BoardState]) -> [BoardGroup] {
+        var seen = Set<UUID>()
+        return boards.compactMap { board in
+            guard let group = BoardGroup.containing(board.id, in: boards), seen.insert(group.id).inserted else {
+                return nil
+            }
+            return group
         }
     }
 

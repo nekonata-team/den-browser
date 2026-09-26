@@ -153,7 +153,9 @@ struct PersonalDeskPreset: Codable, Equatable, Identifiable {
         self.label = label
         let presetBoards = desk.boards.filter { !$0.isInspection }
         boards = presetBoards.map(DeskPresetBoard.init)
-        focusedBoardIndex = presetBoards.firstIndex { $0.id == desk.focusedBoardID }
+        let focusedBoard = desk.boards.first { $0.id == desk.focusedBoardID }
+        let focusedBoardID = focusedBoard.flatMap { $0.isInspection ? $0.sideBoardTargetBoardID : $0.id }
+        focusedBoardIndex = presetBoards.firstIndex { $0.id == focusedBoardID }
     }
 }
 

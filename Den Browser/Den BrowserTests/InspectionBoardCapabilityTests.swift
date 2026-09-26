@@ -235,6 +235,43 @@ struct InspectionBoardCapabilityTests {
         #expect(snapshot.events.contains { $0.message.contains("rejection-event") })
     }
 
+    @Test(arguments: ["stop", "pagehide"])
+    func collectionCleanupPreservesPageCursorWithoutPicking(_ cleanup: String) async throws {
+        // Arrange
+        let (webView, window, probe) = fixture()
+        defer { window.close() }
+        await probe.load("<!doctype html><html><body>Cursor probe</body></html>", in: webView)
+        _ = try await webView.evaluateJavaScript("document.documentElement.style.cursor = 'wait'")
+
+        // Act
+        try await startCollection(webView)
+        let script = cleanup == "stop" ? InspectionPageScript.stop : "window.dispatchEvent(new Event('pagehide'))"
+        _ = try await webView.evaluateJavaScript(script)
+        let cursor = try await webView.evaluateJavaScript("document.documentElement.style.cursor") as? String
+
+        // Assert
+        #expect(cursor == "wait")
+    }
+
+    @Test(arguments: ["stop", "pagehide"])
+    func pickerCleanupRestoresCursor(_ cleanup: String) async throws {
+        // Arrange
+        let (webView, window, probe) = fixture()
+        defer { window.close() }
+        await probe.load("<!doctype html><html><body>Cursor probe</body></html>", in: webView)
+        _ = try await webView.evaluateJavaScript("document.documentElement.style.cursor = 'wait'")
+        try await startCollection(webView)
+        try await startPicking(webView)
+
+        // Act
+        let script = cleanup == "stop" ? InspectionPageScript.stop : "window.dispatchEvent(new Event('pagehide'))"
+        _ = try await webView.evaluateJavaScript(script)
+        let cursor = try await webView.evaluateJavaScript("document.documentElement.style.cursor") as? String
+
+        // Assert
+        #expect(cursor == "wait")
+    }
+
     @Test func pickingDoesNotChangeCollectionOrClearCapturedEvents() async throws {
         // Arrange
         let (webView, window, probe) = fixture()
@@ -420,6 +457,32 @@ struct InspectionBoardCapabilityTests {
         #expect(children.map(\.tag) == ["button", "span"])
         #expect(selectedSnapshot.selection?.id == "sibling")
         #expect(highlightExists == true)
+    }
+
+    @Test func detachedDOMNodesArePrunedFromInspectionIndex() async throws {
+        // Arrange
+        let (webView, window, probe) = fixture()
+        defer { window.close() }
+        await probe.load("<!doctype html><html><body><button id='target'>Target</button></body></html>", in: webView)
+        try await startPicking(webView)
+        _ = try await webView.evaluateJavaScript(
+            "document.querySelector('#target').dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }))"
+        )
+        let snapshotJSON = try #require(
+            try await webView.evaluateJavaScript(InspectionPageScript.readSnapshot) as? String)
+        let snapshot = try JSONDecoder().decode(InspectionPageSnapshot.self, from: Data(snapshotJSON.utf8))
+        let nodeID = try #require(snapshot.selection?.nodeID)
+
+        // Act
+        _ = try await webView.evaluateJavaScript("document.querySelector('#target').remove()")
+        _ = try await webView.evaluateJavaScript(InspectionPageScript.readSnapshot)
+        let remainsIndexed =
+            try await webView.evaluateJavaScript("window.__denInspection.elements.has('\(nodeID)')") as? Bool
+        let selected = try await webView.evaluateJavaScript(InspectionPageScript.selectNode(nodeID)) as? Bool
+
+        // Assert
+        #expect(remainsIndexed == false)
+        #expect(selected == false)
     }
 
     @Test func batchedChildrenReadReflectsDOMChangesInTheSameDocument() async throws {

@@ -58,6 +58,8 @@ final class SheetNavigationManager {
     @ObservationIgnored private var reduceMotion = false
     @ObservationIgnored private let webViews = NSHashTable<WKWebView>.weakObjects()
     @ObservationIgnored private let messageHandler = SheetNavigationMessageHandler()
+    @ObservationIgnored private let userContentControllers = NSHashTable<WKUserContentController>.weakObjects()
+    @ObservationIgnored private var startupScript: WKUserScript?
     @ObservationIgnored private var actionsByWebView: [ObjectIdentifier: Actions] = [:]
     @ObservationIgnored private var boardIDByWebView: [ObjectIdentifier: UUID] = [:]
     @ObservationIgnored private var pausedByWebView: [ObjectIdentifier: Bool] = [:]
@@ -82,12 +84,17 @@ final class SheetNavigationManager {
         messageHandler.onMessage = { [weak self] message in
             self?.handleScriptMessage(message)
         }
-        userContentController.add(
-            messageHandler,
-            contentWorld: Self.contentWorld,
-            name: "denSheetNavigation"
-        )
+        userContentController.add(messageHandler, contentWorld: Self.contentWorld, name: "denSheetNavigation")
+        userContentControllers.add(userContentController)
         installStartupScript()
+    }
+
+    func makeBoardUserContentController() -> WKUserContentController {
+        let controller = WKUserContentController()
+        controller.add(messageHandler, contentWorld: Self.contentWorld, name: "denSheetNavigation")
+        userContentControllers.add(controller)
+        installStartupScript(on: controller)
+        return controller
     }
 
     func setEnabled(_ enabled: Bool) {
@@ -129,6 +136,12 @@ final class SheetNavigationManager {
         paused: Bool = false,
         actions: Actions
     ) {
+        let controller = webView.configuration.userContentController
+        if !userContentControllers.allObjects.contains(where: { $0 === controller }) {
+            controller.add(messageHandler, contentWorld: Self.contentWorld, name: "denSheetNavigation")
+            userContentControllers.add(controller)
+            installStartupScript(on: controller)
+        }
         let webViewID = ObjectIdentifier(webView)
         webViews.add(webView)
         actionsByWebView[webViewID] = actions
@@ -143,6 +156,12 @@ final class SheetNavigationManager {
         actionsByWebView.removeValue(forKey: webViewID)
         boardIDByWebView.removeValue(forKey: webViewID)
         pausedByWebView.removeValue(forKey: webViewID)
+        let controller = webView.configuration.userContentController
+        guard !webViews.allObjects.contains(where: { $0.configuration.userContentController === controller }) else {
+            return
+        }
+        guard controller !== userContentController else { return }
+        userContentControllers.remove(controller)
     }
 
     func updateActions(_ actions: Actions, for webView: WKWebView) {
@@ -411,15 +430,47 @@ final class SheetNavigationManager {
     }
 
     private func installStartupScript() {
-        userContentController.removeAllUserScripts()
-        userContentController.addUserScript(
-            WKUserScript(
-                source: scriptSource + "\n" + configurationJavaScript(for: nil),
-                injectionTime: .atDocumentStart,
-                forMainFrameOnly: true,
-                in: Self.contentWorld
-            ))
-        SheetDOMRuntime.install(on: userContentController)
+        let previousScript = startupScript
+        let script = WKUserScript(
+            source: scriptSource + "\n" + configurationJavaScript(for: nil),
+            injectionTime: .atDocumentStart,
+            forMainFrameOnly: true,
+            in: Self.contentWorld
+        )
+        startupScript = script
+        for controller in userContentControllers.allObjects {
+            replaceStartupScript(previousScript, with: script, in: controller)
+            SheetDOMRuntime.install(on: controller)
+        }
+    }
+
+    private func installStartupScript(on controller: WKUserContentController) {
+        guard let startupScript else {
+            installStartupScript()
+            return
+        }
+        replaceStartupScript(nil, with: startupScript, in: controller)
+        SheetDOMRuntime.install(on: controller)
+    }
+
+    private func replaceStartupScript(
+        _ previousScript: WKUserScript?,
+        with script: WKUserScript,
+        in controller: WKUserContentController
+    ) {
+        var didReplace = false
+        let scripts = controller.userScripts.map { current in
+            guard current === previousScript else { return current }
+            didReplace = true
+            return script
+        }
+        controller.removeAllUserScripts()
+        for retainedScript in scripts {
+            controller.addUserScript(retainedScript)
+        }
+        if !didReplace {
+            controller.addUserScript(script)
+        }
     }
 
     private func configurationJavaScript(for webView: WKWebView?) -> String {

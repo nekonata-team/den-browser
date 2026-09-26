@@ -45,7 +45,7 @@ type InspectionPageState = {
   selection: InspectionPageSelection | null;
   selectedElement: Element | null;
   nodeIDs: WeakMap<Element, string>;
-  elements: Map<string, Element>;
+  elements: Map<string, WeakRef<Element>>;
   nextNodeID: number;
   nextEventID: number;
   events: InspectionConsoleEvent[];
@@ -73,6 +73,7 @@ type InspectionPageState = {
   installCollection: () => void;
   uninstallCollection: () => void;
   removeHighlight: () => void;
+  restoreCursor: () => void;
   setHighlightColor: (color: { red: number; green: number; blue: number }) => void;
   showHighlight: (element: Element) => void;
   repositionHighlight: () => void;
@@ -122,6 +123,7 @@ interface Window {
       installCollection: () => {},
       uninstallCollection: () => {},
       removeHighlight: () => {},
+      restoreCursor: () => {},
       setHighlightColor: () => {},
       showHighlight: () => {},
       repositionHighlight: () => {},
@@ -208,6 +210,10 @@ interface Window {
       state.highlight?.remove();
       state.highlight = null;
     };
+    state.restoreCursor = () => {
+      if (!state.picking) return;
+      document.documentElement.style.cursor = state.previousCursor;
+    };
     state.setHighlightColor = color => {
       state.highlightColor = color;
       if (!state.highlight) return;
@@ -257,6 +263,7 @@ interface Window {
     state.listeners.pagehide = () => {
       state.active = false;
       state.collecting = false;
+      state.restoreCursor();
       state.picking = false;
       state.events.length = 0;
       state.eventsDropped = 0;
@@ -265,7 +272,6 @@ interface Window {
       state.selectedElement = null;
       state.uninstallCollection();
       state.uninstall();
-      document.documentElement.style.cursor = state.previousCursor;
     };
     const textOf = (element: Element) => (element.textContent || "").replace(/\s+/g, " ").trim().slice(0, 240);
     const idOf = (element: Element) => {
@@ -274,8 +280,16 @@ interface Window {
         id = `n${++state.nextNodeID}`;
         state.nodeIDs.set(element, id);
       }
-      state.elements.set(id, element);
+      state.elements.set(id, new WeakRef(element));
       return id;
+    };
+    const elementFor = (id: string) => {
+      const element = state.elements.get(id)?.deref();
+      if (!element?.isConnected) {
+        state.elements.delete(id);
+        return undefined;
+      }
+      return element;
     };
     const domNode = (element: Element): InspectionDOMNode => ({
       id: idOf(element),
@@ -335,9 +349,9 @@ interface Window {
       state.selection = describe(element);
       state.selectedElement = element;
       idOf(element);
+      state.restoreCursor();
       state.picking = false;
       state.removeHighlight();
-      document.documentElement.style.cursor = state.previousCursor;
     };
     state.startPicking = () => {
       state.install();
@@ -353,33 +367,36 @@ interface Window {
       state.collecting = true;
       state.installCollection();
     };
-    state.readSnapshot = () => JSON.stringify({
-      documentID: state.documentID,
-      collectionStartedAt: state.collectionStartedAt,
-      eventsDropped: state.eventsDropped,
-      isPicking: state.picking,
-      isCollecting: state.collecting,
-      selection: state.selection,
-      selectionConnected: state.selectedElement?.isConnected ?? false,
-      treePath: selectedPath(),
-      events: state.events.slice(-80),
-    });
+    state.readSnapshot = () => {
+      for (const id of state.elements.keys()) elementFor(id);
+      return JSON.stringify({
+        documentID: state.documentID,
+        collectionStartedAt: state.collectionStartedAt,
+        eventsDropped: state.eventsDropped,
+        isPicking: state.picking,
+        isCollecting: state.collecting,
+        selection: state.selection,
+        selectionConnected: state.selectedElement?.isConnected ?? false,
+        treePath: selectedPath(),
+        events: state.events.slice(-80),
+      });
+    };
     state.readChildren = id => {
-      const element = state.elements.get(id);
+      const element = elementFor(id);
       return JSON.stringify(element ? Array.from(element.children).map(domNode) : []);
     };
     state.selectNode = id => {
-      const element = state.elements.get(id);
+      const element = elementFor(id);
       if (!element) return false;
       state.selection = describe(element);
       state.selectedElement = element;
+      state.restoreCursor();
       state.picking = false;
       state.removeHighlight();
-      document.documentElement.style.cursor = state.previousCursor;
       return true;
     };
     state.highlightNode = id => {
-      const element = state.elements.get(id);
+      const element = elementFor(id);
       if (!element) return false;
       state.showHighlight(element);
       return true;
@@ -388,6 +405,7 @@ interface Window {
     state.stop = () => {
       state.active = false;
       state.collecting = false;
+      state.restoreCursor();
       state.picking = false;
       state.selection = null;
       state.selectedElement = null;
@@ -400,7 +418,6 @@ interface Window {
       state.uninstallCollection();
       state.uninstall();
       state.pointer = null;
-      document.documentElement.style.cursor = state.previousCursor;
       window.__denInspection = undefined;
     };
     window.__denInspection = state;

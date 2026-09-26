@@ -124,15 +124,6 @@ final class DenIPCService {
             guard generation == runtime.inspectionPageGeneration else {
                 return .failure("The target Sheet changed while reading Inspection data")
             }
-            let ref: String?
-            if page.selectionConnected == true, let selector = page.selection?.selector {
-                ref = try? await SheetInteraction.reference(for: selector, in: runtime.webView)
-            } else {
-                ref = nil
-            }
-            guard generation == runtime.inspectionPageGeneration else {
-                return .failure("The target Sheet changed while reading Inspection data")
-            }
             let ancestors = page.selectionConnected == true ? Array(page.treePath.dropLast()) : []
             let result = DenInspectionReadInfo(
                 boardID: inspection.id.uuidString,
@@ -145,7 +136,7 @@ final class DenIPCService {
                 selection: page.selection.map {
                     DenInspectionElementInfo(
                         nodeID: $0.nodeID,
-                        ref: ref,
+                        ref: nil,
                         selector: $0.selector,
                         tag: $0.tag,
                         id: $0.id,

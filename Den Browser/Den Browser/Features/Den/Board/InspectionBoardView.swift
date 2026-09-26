@@ -366,12 +366,21 @@ private final class InspectionBoardInputView: NSView {
     override var acceptsFirstResponder: Bool { true }
 
     override func keyDown(with event: NSEvent) {
-        guard event.charactersIgnoringModifiers == "\t" else { return }
-        if event.modifierFlags.contains(.shift) {
+        guard let movesBackward = InspectionBoardKeyTraversal.movesBackward(for: event) else { return }
+        if movesBackward {
             window?.selectPreviousKeyView(self)
         } else {
             window?.selectNextKeyView(self)
         }
+    }
+}
+
+enum InspectionBoardKeyTraversal {
+    static func movesBackward(for event: NSEvent) -> Bool? {
+        guard ShortcutKey(event: event) == .tab || event.characters == "\u{19}" else { return nil }
+        return event.specialKey == .backTab
+            || event.characters == "\u{19}"
+            || event.modifierFlags.contains(.shift)
     }
 }
 
