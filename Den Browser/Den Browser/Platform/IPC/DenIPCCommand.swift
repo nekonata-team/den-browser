@@ -30,6 +30,10 @@ nonisolated enum DenBoardTerminalCommand: Codable, Equatable, Sendable {
     case new(DenBoardTerminalNewPayload)
 }
 
+nonisolated enum DenBoardInspectionCommand: Codable, Equatable, Sendable {
+    case new(DenBoardInspectionNewPayload)
+}
+
 nonisolated enum DenIPCCommand: Codable, Equatable, Sendable {
     indirect enum Sheet: Codable, Equatable, Sendable {
         case open(DenSheetOpenPayload)
@@ -64,6 +68,7 @@ nonisolated enum DenIPCCommand: Codable, Equatable, Sendable {
         case close
         case web(DenBoardWebCommand)
         case terminal(DenBoardTerminalCommand)
+        case inspection(DenBoardInspectionCommand)
     }
 
     enum Desk: Codable, Equatable, Sendable {
@@ -84,6 +89,10 @@ nonisolated enum DenIPCCommand: Codable, Equatable, Sendable {
         case kill(signal: String)
     }
 
+    enum Inspection: Codable, Equatable, Sendable {
+        case read
+    }
+
     enum Profile: Codable, Equatable, Sendable {
         case list
         case open(profileID: String?)
@@ -94,6 +103,7 @@ nonisolated enum DenIPCCommand: Codable, Equatable, Sendable {
     case desk(Desk)
     case drawer(Drawer)
     case terminal(Terminal)
+    case inspection(Inspection)
     case profile(Profile)
     case inspectDen
     case health

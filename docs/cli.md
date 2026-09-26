@@ -26,6 +26,8 @@ Den (Application Workspace) ─── den
       └── Board (Work Surface) ─── den board <action>
            ├── Web Board ─── den board web <action>
            │    └── Sheet (Web Screen) ─── den sheet <action>
+           ├── Inspection Board ─── den board inspection <action>
+           │    └── Inspection ─── den inspection <action>
            └── Terminal Board ─── den board terminal <action>
                 └── Terminal Session ─── den terminal <action>
 ```
@@ -70,6 +72,7 @@ For `terminal` commands, the caller's Terminal Board is preferred; otherwise the
 ### Board Targeting
 - `--board <id>`: Explicitly target a specific Board by its UUID. Available on `den sheet`, `den terminal`, and `den board close`; fails immediately if not found or invalid.
 - `den board close --board <id>` accepts any Board kind, including Inspection Boards. Sheet and Terminal commands require their corresponding Board kind.
+- Inspection commands require an explicit Board ID. `den inspection read --board <id>` requires an Inspection Board; it does not infer one from ambient focus or choose another Board.
 
 ### Direct IPC Requests
 The CLI communicates with Den Browser through a newline-delimited JSON request on the Unix domain socket. A request contains the typed `command` and optional target IDs; command values and their associated payloads are encoded together.
@@ -131,7 +134,7 @@ Commands operating on Boards within the active Desk.
 
 | Command | Arguments | Description | Example |
 |---|---|---|---|
-| `den board list` | `[-l]` | List all Boards on the active Desk with type (`web`/`terminal`), label, and type-specific secondary information. Use `-l` to include full Board IDs in human-readable output. | `den board list -l` |
+| `den board list` | `[-l]` | List all Boards on the active Desk with type (`web`/`inspection`/`terminal`), label, and type-specific secondary information. JSON Inspection Board entries include their `target_board_id`. Use `-l` to include full Board IDs in human-readable output. | `den board list -l` |
 | `den board focused` | `[-l]` | Show the currently focused Board on the active Desk. Use `-l` to include full Board ID in human-readable output. | `den board focused -l` |
 | `den board close` | `[--board <id>]` | Close the specified Board or the target Web Board. Explicit IDs fail (`exit 1`) if invalid or not found. | `den board close --board 4F72344C-...` |
 
@@ -147,14 +150,28 @@ Commands operating on Boards within the active Desk.
 |---|---|---|---|
 | `den board terminal new` | `[<path>] [--run <cmd>] [--width <points>] [--focus]` | Open a new Terminal Board, optionally running an initial command in an interactive shell. `--width` sets its initial width in positive points; it may exceed the manual resize limit. | `den board terminal new . --run "npm test" --width 800 --focus` |
 
-### 3.6 `den desk` (Desks & Workspaces)
+### 3.6 `den board inspection` (Inspection Boards)
+
+| Command | Arguments | Description | Example |
+|---|---|---|---|
+| `den board inspection new` | `--target <web-board-id> [--focus]` | Create or reuse the Inspection Board associated with the specified Web Board and return its Board ID. The target must be an existing Web Board; the target relationship is preserved in the Board Group. Focus stays unchanged by default; use `--focus` to focus the Inspection Board. | `den board inspection new --target 4F72344C-... --json` |
+
+### 3.7 `den inspection` (Inspection)
+
+| Command | Arguments | Description | Example |
+|---|---|---|---|
+| `den inspection read` | `--board <inspection-board-id>` | Read the selected element and available page inspection context from the specified Inspection Board's target Web Board. This is read-only and requires an explicit Inspection Board ID. | `den inspection read --board 4F72344C-... --json` |
+
+The JSON result contains an `inspection` object describing the target page and current inspection data, including available selection details, accessible labels, a CSS selector and optional `@e…` reference, capture time, document identity, ancestor path, retained console or JavaScript events, and dropped-event count. A page with no selected element is reported as unselected. Exact optional fields depend on available page data; see [Inspection](inspection.md).
+
+### 3.8 `den desk` (Desks & Workspaces)
 Commands operating on Desks within the Den.
 
 | Command | Arguments | Description | Example |
 |---|---|---|---|
 | `den desk list` | None | List all Desks in the Den with ID, label, board count, and active status. | `den desk list` |
 
-### 3.7 `den drawer` (Drawer & Web Material)
+### 3.9 `den drawer` (Drawer & Web Material)
 Commands operating on the Den-wide Drawer for web material whose Desk context is not yet settled.
 
 | Command | Arguments | Description | Example |
@@ -166,7 +183,7 @@ Commands operating on the Den-wide Drawer for web material whose Desk context is
 
 Web URL inputs use the same resolution policy across these commands. Explicit `http://`, `https://`, and absolute local `file://` URLs are accepted; a bare hostname such as `example.com` or `localhost:3000` is completed with `https://`. `sheet open` and `board web new` also accept search queries, using the configured Search Engine. `drawer keep` accepts only URL input, so search queries and unsupported schemes such as `ftp://` or `mailto:` fail before any state change. Accepted URLs are canonicalized after validation.
 
-### 3.8 `den terminal` (Terminal Sessions)
+### 3.10 `den terminal` (Terminal Sessions)
 Commands operating on Terminal Sessions in the target Terminal Board.
 
 | Command | Arguments | Description | Example |
@@ -176,7 +193,7 @@ Commands operating on Terminal Sessions in the target Terminal Board.
 | `den terminal run` | `<command> [--board <id>]` | Send a shell command and press Enter in the target Terminal Board. | `den terminal run "git status"` |
 | `den terminal kill` | `[-s <signal>] [--board <id>]` | Send a POSIX signal to the foreground process group (defaults to `TERM`). | `den terminal kill -s TERM` |
 
-### 3.9 `den profile` (Profiles)
+### 3.11 `den profile` (Profiles)
 Commands inspecting and managing profiles in Den Browser.
 
 | Command | Arguments | Description | Example |
@@ -199,7 +216,7 @@ https://example.com/docs
 ### Non-TTY / `--json` Output (Agent & `jq` Mode)
 When piped or when `--json` is supplied, `den` outputs single-line JSON on standard output with standard Unix exit codes. Properties are flat and use `snake_case` for direct 1-level `jq` access:
 
-**Board Creation (`board web new`, `board terminal new`)**:
+**Board Creation (`board web new`, `board terminal new`, `board inspection new`)**:
 ```json
 {"ok":true,"board_id":"4F72344C-F4E3-438D-99CB-2F12A79F0004"}
 ```
@@ -214,7 +231,7 @@ BOARD_ID=$(den board web new https://example.com | jq -r .board_id)
 ```bash
 den board list | jq -r '.boards[] | select(.type == "web") | .id'
 ```
-Web Boards include `url`; Zellij and zmx Terminal Boards include `session_name` when a named session is attached. `is_focused` indicates whether the Board is currently focused on the Desk.
+Web Boards include `url`; Zellij and zmx Terminal Boards include `session_name` when a named session is attached. Inspection Boards identify their target with `target_board_id`. `is_focused` indicates whether the Board is currently focused on the Desk.
 
 **Board Focused (`board focused`)**:
 ```json

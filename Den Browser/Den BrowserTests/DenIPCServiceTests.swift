@@ -50,6 +50,40 @@ struct DenIPCServiceTests {
         #expect(store.board(for: boardID)?.width == 200)
     }
 
+    @Test func inspectionBoardCreationUsesExplicitTargetWithoutChangingFocus() async throws {
+        // Arrange
+        let directory = FileManager.default.temporaryDirectory
+            .appending(path: "den-browser-ipc-inspection-board-\(UUID().uuidString)", directoryHint: .isDirectory)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let suiteName = "IPCServiceInspectionPreferences-\(UUID().uuidString)"
+        let manager = ProfileManager(
+            directoryURL: directory,
+            sheetNavigation: SheetNavigationManager(
+                defaults: makeTestDefaults(suiteName: suiteName),
+                scriptSource: ""),
+            preferences: AppPreferences(defaults: makeTestDefaults(suiteName: suiteName)),
+            removeDataStore: { _ in },
+            websiteDataStore: { _ in .nonPersistent() })
+        let store = try #require(manager.store(for: manager.personalProfileID))
+        let targetBoardID = try #require(store.createBoard(urlString: "https://example.com/"))
+        let focusedBoardID = store.state.desks.first?.focusedBoardID
+        let service = DenIPCService(profileManager: manager)
+
+        // Act
+        let response = await service.handleRequest(
+            DenIPCRequest(
+                command: .board(.inspection(.new(DenBoardInspectionNewPayload(focus: false)))),
+                boardID: targetBoardID.uuidString))
+
+        // Assert
+        let inspectionBoardID = try #require(response.boardId.flatMap(UUID.init(uuidString:)))
+        let inspectionBoard = try #require(store.board(for: inspectionBoardID))
+        #expect(response.isOk)
+        #expect(inspectionBoard.sideBoardTargetBoardID == targetBoardID)
+        #expect(store.state.desks.first?.focusedBoardID == focusedBoardID)
+        #expect(store.runtimes[targetBoardID]?.isInspectionCollecting == true)
+    }
+
     @Test func terminalBoardCreationUsesRequestedWidth() async throws {
         let directory = FileManager.default.temporaryDirectory
             .appending(path: "den-browser-ipc-terminal-board-tests-\(UUID().uuidString)", directoryHint: .isDirectory)

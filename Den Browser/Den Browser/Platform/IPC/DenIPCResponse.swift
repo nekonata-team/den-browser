@@ -6,6 +6,7 @@ nonisolated struct DenBoardInfo: Codable, Sendable {
     var label: String
     var url: String?
     var sessionName: String?
+    var targetBoardID: String?
     var isFocused: Bool
 
     enum CodingKeys: String, CodingKey {
@@ -14,6 +15,7 @@ nonisolated struct DenBoardInfo: Codable, Sendable {
         case label
         case url
         case sessionName = "session_name"
+        case targetBoardID = "target_board_id"
         case isFocused = "is_focused"
     }
 
@@ -23,6 +25,7 @@ nonisolated struct DenBoardInfo: Codable, Sendable {
         label: String,
         url: String? = nil,
         sessionName: String? = nil,
+        targetBoardID: String? = nil,
         isFocused: Bool = false
     ) {
         self.id = id
@@ -30,6 +33,7 @@ nonisolated struct DenBoardInfo: Codable, Sendable {
         self.label = label
         self.url = url
         self.sessionName = sessionName
+        self.targetBoardID = targetBoardID
         self.isFocused = isFocused
     }
 }
@@ -164,6 +168,7 @@ nonisolated struct DenIPCResponse: Codable, Sendable {
     var enabled: Bool?
     var box: DenBoundingBox?
     var screenshotPath: String?
+    var inspection: DenInspectionReadInfo?
     var completedActions: Int?
     var failedActionIndex: Int?
 
@@ -196,6 +201,7 @@ nonisolated struct DenIPCResponse: Codable, Sendable {
         case enabled
         case box
         case screenshotPath = "screenshot_path"
+        case inspection
         case completedActions = "completed_actions"
         case failedActionIndex = "failed_action_index"
     }
@@ -227,6 +233,7 @@ nonisolated struct DenIPCResponse: Codable, Sendable {
         enabled: Bool? = nil,
         box: DenBoundingBox? = nil,
         screenshotPath: String? = nil,
+        inspection: DenInspectionReadInfo? = nil,
         completedActions: Int? = nil,
         failedActionIndex: Int? = nil
     ) -> DenIPCResponse {
@@ -259,6 +266,7 @@ nonisolated struct DenIPCResponse: Codable, Sendable {
             enabled: enabled,
             box: box,
             screenshotPath: screenshotPath,
+            inspection: inspection,
             completedActions: completedActions,
             failedActionIndex: failedActionIndex
         )
@@ -298,6 +306,7 @@ nonisolated struct DenIPCResponse: Codable, Sendable {
             visible: nil,
             enabled: nil,
             screenshotPath: nil,
+            inspection: nil,
             completedActions: completedActions,
             failedActionIndex: failedActionIndex
         )

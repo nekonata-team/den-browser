@@ -37,6 +37,8 @@ private enum DenMCPToolName: String, Sendable {
     case inspectDen = "inspect_den"
     case openProfile = "open_profile"
     case createWebBoard = "create_web_board"
+    case createInspectionBoard = "create_inspection_board"
+    case readInspection = "read_inspection"
     case openSheet = "open_sheet"
     case inspectSheet = "inspect_sheet"
     case readSheetText = "read_sheet_text"
@@ -64,6 +66,7 @@ private enum DenMCPToolName: String, Sendable {
 private enum DenMCPArgument: String, Sendable {
     case profileID = "profile_id"
     case boardID = "board_id"
+    case targetBoardID = "target_board_id"
     case url
     case width
     case focus
@@ -119,6 +122,7 @@ private enum DenMCPOutputField: String {
     case closedBoardID = "closed_board_id"
     case drawerItems = "drawer_items"
     case drawerItemID = "drawer_item_id"
+    case inspection
 }
 
 private enum DenMCPReadSheetElementField: String, CaseIterable, Sendable {
@@ -191,6 +195,13 @@ private struct DenMCPToolDefinition: Sendable {
             .createWebBoard,
             "Create a Web Board from a URL, hostname, or search query; focus defaults to false. Set width to a positive point value.",
             [.url: string(), .profileID: uuid(), .focus: bool(), .width: boardWidth()], [.url]),
+        .init(
+            .createInspectionBoard,
+            "Create or reuse an Inspection Board for a Web Board; focus defaults to false.",
+            [.targetBoardID: uuid(), .profileID: uuid(), .focus: bool()], [.targetBoardID]),
+        .init(
+            .readInspection, "Read the selected element and collected page events from an Inspection Board.",
+            [.profileID: uuid(), .boardID: uuid()], [.boardID], readOnly: true),
         .init(
             .openSheet, "Navigate the target Web Board to a URL or search query.",
             [.url: string(), .profileID: uuid(), .boardID: uuid()], [.url]),
@@ -340,6 +351,10 @@ private struct DenMCPToolDefinition: Sendable {
             case .openProfile: profile.merging([.message: stringSchema]) { _, new in new }
             case .createWebBoard, .createTerminalBoard:
                 profile.merging([.boardID: stringSchema]) { _, new in new }
+            case .createInspectionBoard:
+                profile.merging([.boardID: stringSchema]) { _, new in new }
+            case .readInspection:
+                board.merging([.inspection: objectSchema]) { _, new in new }
             case .openSheet: board.merging([.url: stringSchema, .message: stringSchema]) { _, new in new }
             case .inspectSheet: board.merging([.url: stringSchema, .snapshot: stringSchema]) { _, new in new }
             case .readSheetText, .readTerminalSession: board.merging([.text: stringSchema]) { _, new in new }
@@ -439,7 +454,8 @@ private struct DenMCPToolRunner: Sendable {
                 command: command,
                 socketPath: socketPath,
                 profileID: try input.string(.profileID) ?? profileID,
-                boardID: try input.string(.boardID),
+                boardID: try input.string(.boardID)
+                    ?? (name == .createInspectionBoard ? try input.string(.targetBoardID) : nil),
                 includeTargetContext: true
             )
             guard response.isOk else {
@@ -467,6 +483,12 @@ private struct DenMCPToolRunner: Sendable {
                             width: try input.boardWidth()
                         )))
             )
+        case .createInspectionBoard:
+            return .board(
+                .inspection(.new(DenBoardInspectionNewPayload(focus: try input.boolean(.focus))))
+            )
+        case .readInspection:
+            return .inspection(.read)
         case .openSheet:
             return .sheet(.open(DenSheetOpenPayload(url: try input.requiredString(.url))))
         case .inspectSheet:

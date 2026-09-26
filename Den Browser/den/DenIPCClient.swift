@@ -66,6 +66,14 @@ enum DenIPCClient {
         )
     }
 
+    static func execute(command: DenIPCCommand, options: CLIOptions, boardID: String) throws {
+        try execute(
+            command: command,
+            options: options,
+            output: CLIOutputOptions(isJSON: options.isJSON, showBoardIDs: false),
+            boardID: boardID)
+    }
+
     private static func execute(
         command: DenIPCCommand,
         options: CLIOptions,
@@ -102,6 +110,14 @@ enum DenIPCClient {
                     let secondary = board.url ?? board.sessionName
                     let secondarySuffix = secondary.map { " (\($0))" } ?? ""
                     print("* \(type) \(boardIDPrefix)\(board.label)\(secondarySuffix)")
+                } else if let inspection = response.inspection {
+                    print("Inspection Board \(inspection.boardID) for Web Board \(inspection.targetBoardID)")
+                    print(inspection.url ?? "(no URL)")
+                    if let selection = inspection.selection {
+                        print("Selected <\(selection.tag)> \(selection.role) \"\(selection.text)\"")
+                    } else {
+                        print("No element selected")
+                    }
                 } else if let boardId = response.boardId {
                     print(boardId)
                 } else if let boards = response.boards {

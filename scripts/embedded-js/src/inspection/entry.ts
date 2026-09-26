@@ -1,6 +1,9 @@
 type InspectionConsoleLevel = "debug" | "info" | "log" | "warn" | "error";
 
 type InspectionPageSelection = {
+  nodeID: string;
+  capturedAt: string;
+  selector: string | null;
   tag: string;
   id: string;
   className: string;
@@ -24,6 +27,7 @@ type InspectionDOMNode = {
 type InspectionConsoleEvent = {
   id: string;
   time: string;
+  timestamp: string;
   level: string;
   message: string;
 };
@@ -45,6 +49,9 @@ type InspectionPageState = {
   nextNodeID: number;
   nextEventID: number;
   events: InspectionConsoleEvent[];
+  eventsDropped: number;
+  documentID: string;
+  collectionStartedAt: string | null;
   previousCursor: string;
   consoleHooks: Partial<Record<InspectionConsoleLevel, InspectionConsoleHook>>;
   listeners: {
@@ -99,6 +106,9 @@ interface Window {
       nextNodeID: 0,
       nextEventID: 0,
       events: [],
+      eventsDropped: 0,
+      documentID: crypto.randomUUID?.() ?? `${Date.now()}-${Math.random()}`,
+      collectionStartedAt: null,
       previousCursor: "",
       consoleHooks: {},
       listeners: {},
@@ -132,8 +142,17 @@ interface Window {
         if (value instanceof Error) return String(value);
         try { return JSON.stringify(value) ?? String(value); } catch { return String(value); }
       }).join(" ");
-      state.events.push({ id: `${Date.now()}-${++state.nextEventID}`, time: new Date().toLocaleTimeString(), level, message });
-      if (state.events.length > 80) state.events.shift();
+      state.events.push({
+        id: `${Date.now()}-${++state.nextEventID}`,
+        time: new Date().toLocaleTimeString(),
+        timestamp: new Date().toISOString(),
+        level,
+        message,
+      });
+      if (state.events.length > 80) {
+        state.events.shift();
+        state.eventsDropped++;
+      }
     };
     state.listeners.error = event => record("error", [event.message]);
     state.listeners.rejection = event => record("rejection", [event.reason]);
@@ -240,6 +259,8 @@ interface Window {
       state.collecting = false;
       state.picking = false;
       state.events.length = 0;
+      state.eventsDropped = 0;
+      state.collectionStartedAt = null;
       state.selection = null;
       state.selectedElement = null;
       state.uninstallCollection();
@@ -282,7 +303,16 @@ interface Window {
       const attributes = Array.from(element.attributes)
         .filter(attribute => attribute.name === "role" || attribute.name.startsWith("aria-") || ["title", "name", "placeholder"].includes(attribute.name))
         .map(attribute => `${attribute.name}=${attribute.value}`);
+      const selectorParts: string[] = [];
+      for (let current: Element | null = element; current?.parentElement; current = current.parentElement) {
+        const parent = current.parentElement;
+        if (!parent) break;
+        const tagName = current.tagName.toLowerCase();
+        const siblings = Array.from(parent.children).filter(sibling => sibling.tagName === current.tagName);
+        selectorParts.unshift(`${tagName}:nth-of-type(${siblings.indexOf(current) + 1})`);
+      }
       return {
+        nodeID: idOf(element), capturedAt: new Date().toISOString(), selector: selectorParts.join(' > '),
         tag: element.tagName.toLowerCase(), id, className: String((element as HTMLElement).className || ""),
         role: element.getAttribute("role") || "", ariaLabel: element.getAttribute("aria-label") || "",
         text: textOf(element), attributes,
@@ -319,13 +349,18 @@ interface Window {
     };
     state.startCollection = () => {
       state.active = true;
+      if (!state.collecting) state.collectionStartedAt = new Date().toISOString();
       state.collecting = true;
       state.installCollection();
     };
     state.readSnapshot = () => JSON.stringify({
+      documentID: state.documentID,
+      collectionStartedAt: state.collectionStartedAt,
+      eventsDropped: state.eventsDropped,
       isPicking: state.picking,
       isCollecting: state.collecting,
       selection: state.selection,
+      selectionConnected: state.selectedElement?.isConnected ?? false,
       treePath: selectedPath(),
       events: state.events.slice(-80),
     });
@@ -357,6 +392,8 @@ interface Window {
       state.selection = null;
       state.selectedElement = null;
       state.events.length = 0;
+      state.eventsDropped = 0;
+      state.collectionStartedAt = null;
       state.nodeIDs = new WeakMap();
       state.elements.clear();
       state.nextNodeID = 0;

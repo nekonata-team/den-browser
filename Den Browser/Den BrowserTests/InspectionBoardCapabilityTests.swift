@@ -298,6 +298,8 @@ struct InspectionBoardCapabilityTests {
         // Assert
         #expect(snapshot.events.count == 80)
         #expect(Set(snapshot.events.map(\.id)).count == snapshot.events.count)
+        #expect(snapshot.eventsDropped == 2)
+        #expect(snapshot.events.allSatisfy { $0.timestamp?.contains("T") == true })
     }
 
     @Test func repeatedCollectionStartAndNavigationDoNotDuplicateOrRetainOldEvents() async throws {
@@ -351,6 +353,7 @@ struct InspectionBoardCapabilityTests {
         )
 
         // Act
+        try await startCollection(webView)
         try await startPicking(webView)
         _ = try await webView.evaluateJavaScript(
             "document.querySelector('#target').dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }))"
@@ -362,8 +365,14 @@ struct InspectionBoardCapabilityTests {
         let selection = try #require(snapshot.selection)
         #expect(selection.tag == "input")
         #expect(selection.id == "target")
+        #expect(selection.nodeID?.isEmpty == false)
+        #expect(selection.selector?.isEmpty == false)
+        #expect(selection.capturedAt?.isEmpty == false)
         #expect(selection.ariaLabel == "Account field")
         #expect(selection.labels.contains("Account name"))
+        #expect(snapshot.documentID?.isEmpty == false)
+        #expect(snapshot.collectionStartedAt?.isEmpty == false)
+        #expect(snapshot.selectionConnected == true)
         #expect(!snapshot.isPicking)
     }
 

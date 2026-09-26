@@ -411,6 +411,21 @@ final class BoardRuntime: BaseWebRuntime, ObservableObject {
         return snapshot
     }
 
+    func readInspectionSnapshotForIPC() async throws -> InspectionPageSnapshot {
+        guard isInspectionActive, webView.url != nil else {
+            throw SheetInteractionError.executionFailed("Inspection collection is unavailable")
+        }
+        let result = try await webView.evaluateJavaScript(InspectionPageScript.readSnapshot)
+        guard let json = result as? String, let data = json.data(using: .utf8),
+            let snapshot = try? JSONDecoder().decode(InspectionPageSnapshot.self, from: data),
+            snapshot.isCollecting,
+            let documentID = snapshot.documentID, !documentID.isEmpty
+        else {
+            throw SheetInteractionError.executionFailed("Could not read Inspection data")
+        }
+        return snapshot
+    }
+
     func readInspectionChildren(for nodeID: String) async -> [InspectionDOMNode] {
         guard isInspectionActive,
             let json = try? await webView.evaluateJavaScript(InspectionPageScript.readChildren(nodeID)) as? String,

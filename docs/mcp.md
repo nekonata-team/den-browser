@@ -71,7 +71,7 @@ Each tool publishes an `inputSchema`. Clients call a tool by name with an `argum
 | Argument | Type | Description |
 |---|---|---|
 | `profile_id` | UUID string, optional | Overrides server `--profile`. If omitted, Profile resolution follows the CLI rules in [`cli.md`](cli.md). Invalid or windowless explicit Profiles fail without fallback. |
-| `board_id` | UUID string, optional | Pins a Board for Sheet and Terminal tools. If omitted, Board resolution follows the CLI rules. Invalid explicit Boards fail without fallback. |
+| `board_id` | UUID string, optional | Pins a Board for Sheet and Terminal tools. `read_inspection` requires an Inspection Board ID. If omitted, Board resolution follows the CLI rules. Invalid explicit Boards fail without fallback. |
 
 Board-targeted results include their effective `profile_id` and `board_id`. Pass those values to later calls to keep a workflow anchored when focus changes. `open_profile` changes the active Profile Window but not the server's launch options.
 
@@ -99,8 +99,10 @@ Tool-specific constraints:
 | Tool | Arguments | Description | CLI equivalent |
 |---|---|---|---|
 | `create_web_board` | `url`, `[focus]`, `[profile_id]` | Create a Web Board on the active Desk and return its ID. Accept the CLI's supported URL, hostname, or search-query inputs. | `board web new` |
+| `create_inspection_board` | `target_board_id`, `[focus]`, `[profile_id]` | Create or reuse the Inspection Board associated with the specified Web Board and return its ID. The target must be a Web Board; focus defaults to false. | `board inspection new --target` |
 | `open_sheet` | `url`, `[board_id]`, `[profile_id]` | Navigate the target Web Board's Current Sheet. Accept the same inputs and validation as `sheet open`. | `sheet open` |
 | `inspect_sheet` | `[board_id]`, `[profile_id]`, `[full]`, `[within]` | Return the target Board ID, Current Sheet URL, and semantic snapshot. The default snapshot contains interactive elements. | `sheet url`, `sheet snapshot` |
+| `read_inspection` | `board_id`, `[profile_id]` | Read inspection context from the specified Inspection Board and its target Web Board. Requires the Inspection Board ID explicitly; it does not change focus, selection, or page state. | `inspection read --board` |
 | `read_sheet_text` | `[board_id]`, `[profile_id]` | Read visible text (`innerText`) from the Current Sheet. | `sheet text` |
 | `query_sheet` | `selector`, `[visible]`, `[all]`, `[fields]`, `[board_id]`, `[profile_id]` | Return matching elements as structured data. `fields` is an array; defaults are `tag`, `role`, `name`, and `text`. | `sheet query` |
 | `read_sheet_element` | `target`, `field`, `[attribute]`, `[board_id]`, `[profile_id]` | Read text, value, an attribute, match count, or bounding box for a target. `attribute` is required when `field` is `attribute`. | `sheet get` |
@@ -116,6 +118,8 @@ Tool-specific constraints:
 | `close_board` | `board_id`, `[profile_id]` | Remove the specified Board from its Desk and end its live runtime. A Board ID is required. | `board close --board <id>` |
 
 Sheet references such as `@e1` are document-scoped. They remain usable across operations in the same document and are regenerated when navigation replaces the document. Use the `board_id` returned from `inspect_sheet` for subsequent Sheet calls.
+
+`read_inspection` requires `board_id` and accepts only an Inspection Board. Its structured result has an `inspection` object with page metadata and available inspection data: selected-element details, accessible labels, a CSS selector and optional `@e…` reference, capture time, document identity, ancestors, retained console or JavaScript events, and a count of dropped events. A page with no selected element is represented as unselected. The read-only call does not change Board focus, selection, or the target Sheet. Use the returned target Web Board ID with Sheet tools when more page content is needed.
 
 ### 4.3 Drawer
 
@@ -155,6 +159,8 @@ Example `inspect_den` result:
   "drawer_item_count": 1
 }
 ```
+
+Inspection results describe the information available for the target page. Optional details can be absent when the page has not supplied them; consumers should not treat missing details as a failed read.
 
 ## 6. Deferred Tools
 

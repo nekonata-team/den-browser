@@ -189,7 +189,7 @@ extension DenStore {
     }
 
     @discardableResult
-    func createInspectionBoard(targetBoardID: UUID) -> UUID? {
+    func createInspectionBoard(targetBoardID: UUID, focus: Bool = true) -> UUID? {
         guard let indices = boardIndices(for: targetBoardID) else { return nil }
         let targetBoard = state.desks[indices.desk].boards[indices.board]
         guard targetBoard.isWeb else { return nil }
@@ -197,16 +197,19 @@ extension DenStore {
             $0.sideBoardTargetBoardID == targetBoardID
         }) {
             guard existingSideBoard.isInspection else { return nil }
-            focusBoard(existingSideBoard.id, exitsDenMode: true)
+            if focus { focusBoard(existingSideBoard.id, exitsDenMode: true) }
+            if !focus { runtime(for: targetBoard).startInspectionCollection(highlightColor: nil) }
             return existingSideBoard.id
         }
         let board = BoardState(
             width: 360,
             sideBoardTargetBoardID: targetBoardID
         )
-        guard insertBoard(board, afterBoardID: targetBoardID, focus: true, origin: .interactive) else {
+        let targetRuntime = focus ? nil : runtime(for: targetBoard)
+        guard insertBoard(board, afterBoardID: targetBoardID, focus: focus, origin: focus ? .interactive : .cli) else {
             return nil
         }
+        targetRuntime?.startInspectionCollection(highlightColor: nil)
         return board.id
     }
 

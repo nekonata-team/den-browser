@@ -62,6 +62,24 @@ struct DenIPCTargetResolverTests {
         #expect(resolved.1.isInspection)
     }
 
+    @Test func inspectionReadResolvesOnlyTheExplicitInspectionBoard() throws {
+        // Arrange
+        let directory = temporaryProfileDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let manager = makeProfileManager(directory: directory)
+        let store = try #require(manager.store(for: manager.personalProfileID))
+        let webBoardID = try #require(store.createBoard(urlString: "https://example.com/"))
+        let inspectionBoardID = try #require(store.createInspectionBoard(targetBoardID: webBoardID))
+        let request = DenIPCRequest(command: .inspection(.read), boardID: inspectionBoardID.uuidString)
+
+        // Act
+        let resolved = try DenIPCTargetResolver.resolveTargetInspectionBoardResult(request: request, in: manager).get()
+
+        // Assert
+        #expect(resolved.1.id == inspectionBoardID)
+        #expect(resolved.1.isInspection)
+    }
+
     @Test func resolveTargetTerminalBoardFindsAmbientBoardRelativeToCallerWebBoard() throws {
         // Arrange
         let directory = temporaryProfileDirectory()

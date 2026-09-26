@@ -69,6 +69,8 @@ final class DenIPCService {
             response = handleDrawerCommand(command, request: request)
         case .terminal(let command):
             response = await handleTerminalCommand(command, request: request)
+        case .inspection(let command):
+            response = await handleInspectionCommand(command, request: request)
         case .profile(let command):
             response = handleProfileCommand(command, request: request)
         case .inspectDen:
@@ -81,6 +83,101 @@ final class DenIPCService {
             }
         }
         return response
+    }
+
+    private func handleInspectionCommand(
+        _ command: DenIPCCommand.Inspection,
+        request: DenIPCRequest
+    ) async -> DenIPCResponse {
+        switch command {
+        case .read:
+            return await handleInspectionRead(request: request)
+        }
+    }
+
+    private func handleInspectionRead(request: DenIPCRequest) async -> DenIPCResponse {
+        guard let boardID = request.boardID, UUID(uuidString: boardID) != nil else {
+            return .failure("Usage: den inspection read --board <inspection-board-id>")
+        }
+        let store: DenStore
+        let inspection: BoardState
+        switch DenIPCTargetResolver.resolveTargetInspectionBoardResult(request: request, in: profileManager) {
+        case .success(let resolved):
+            (store, inspection) = resolved
+        case .failure(let error):
+            return .failure(error.localizedDescription)
+        }
+        guard let targetBoardID = inspection.sideBoardTargetBoardID,
+            let target = store.board(for: targetBoardID), target.isWeb
+        else {
+            return .failure("Inspection Board target Web Board is unavailable")
+        }
+        guard let runtime = store.runtimes[target.id] else {
+            return .failure("Inspection collection is unavailable for the target Web Board")
+        }
+        let generation = runtime.inspectionPageGeneration
+        do {
+            let page = try await runtime.readInspectionSnapshotForIPC()
+            guard let documentID = page.documentID, !documentID.isEmpty else {
+                return .failure("Inspection data has no document identity")
+            }
+            guard generation == runtime.inspectionPageGeneration else {
+                return .failure("The target Sheet changed while reading Inspection data")
+            }
+            let ref: String?
+            if page.selectionConnected == true, let selector = page.selection?.selector {
+                ref = try? await SheetInteraction.reference(for: selector, in: runtime.webView)
+            } else {
+                ref = nil
+            }
+            guard generation == runtime.inspectionPageGeneration else {
+                return .failure("The target Sheet changed while reading Inspection data")
+            }
+            let ancestors = page.selectionConnected == true ? Array(page.treePath.dropLast()) : []
+            let result = DenInspectionReadInfo(
+                boardID: inspection.id.uuidString,
+                targetBoardID: target.id.uuidString,
+                url: runtime.webView.url?.absoluteString,
+                pageGeneration: generation,
+                documentID: documentID,
+                capturedAt: ISO8601DateFormatter().string(from: Date()),
+                collectionStartedAt: page.collectionStartedAt,
+                selection: page.selection.map {
+                    DenInspectionElementInfo(
+                        nodeID: $0.nodeID,
+                        ref: ref,
+                        selector: $0.selector,
+                        tag: $0.tag,
+                        id: $0.id,
+                        className: $0.className,
+                        role: $0.role,
+                        ariaLabel: $0.ariaLabel,
+                        text: $0.text,
+                        attributes: $0.attributes,
+                        labels: $0.labels,
+                        capturedAt: $0.capturedAt,
+                        isConnected: page.selectionConnected ?? false)
+                },
+                ancestors: ancestors.map {
+                    DenInspectionNodeInfo(
+                        nodeID: $0.id,
+                        tag: $0.tag,
+                        attributes: $0.attributes.map { DenInspectionAttributeInfo(name: $0.name, value: $0.value) },
+                        text: $0.text,
+                        childCount: $0.childCount)
+                },
+                events: page.events.map {
+                    DenInspectionEventInfo(
+                        id: $0.id,
+                        time: $0.timestamp ?? $0.time,
+                        level: $0.level,
+                        message: $0.message)
+                },
+                eventsDropped: page.eventsDropped ?? 0)
+            return .success(boardId: inspection.id.uuidString, inspection: result)
+        } catch {
+            return .failure(error.localizedDescription)
+        }
     }
 
     private func handleInspectDen(request: DenIPCRequest) -> DenIPCResponse {
@@ -124,6 +221,7 @@ final class DenIPCService {
                 label: $0.displayName,
                 url: $0.currentSheetURL?.absoluteString,
                 sessionName: $0.zellijSessionName ?? $0.zmxSessionName,
+                targetBoardID: $0.sideBoardTargetBoardID?.uuidString,
                 isFocused: $0.id == desk.focusedBoardID
             )
         }
@@ -169,6 +267,22 @@ final class DenIPCService {
             guard case .success(let resolved) = target else { return nil }
             store = resolved.0
             boardID = resolved.1.id
+        case .board(.inspection(.new)):
+            guard
+                case .success(let target) = DenIPCTargetResolver.resolveTargetWebBoardResult(
+                    request: request, in: profileManager
+                )
+            else { return nil }
+            store = target.0
+            boardID = target.1.id
+        case .inspection(.read):
+            guard
+                case .success(let target) = DenIPCTargetResolver.resolveTargetInspectionBoardResult(
+                    request: request, in: profileManager
+                )
+            else { return nil }
+            store = target.0
+            boardID = target.1.id
         case .inspectDen:
             guard
                 case .success(let target) = DenIPCTargetResolver.resolveStoreAndDesk(
@@ -800,6 +914,7 @@ final class DenIPCService {
                     label: currentBoard.displayName,
                     url: currentBoard.currentSheetURL?.absoluteString,
                     sessionName: currentBoard.zellijSessionName ?? currentBoard.zmxSessionName,
+                    targetBoardID: currentBoard.sideBoardTargetBoardID?.uuidString,
                     isFocused: currentBoard.id == desk.focusedBoardID
                 )
             }
@@ -822,6 +937,7 @@ final class DenIPCService {
                 label: focusedBoard.displayName,
                 url: focusedBoard.currentSheetURL?.absoluteString,
                 sessionName: focusedBoard.zellijSessionName ?? focusedBoard.zmxSessionName,
+                targetBoardID: focusedBoard.sideBoardTargetBoardID?.uuidString,
                 isFocused: true
             )
             return .success(boardId: info.id, board: info)
@@ -853,6 +969,25 @@ final class DenIPCService {
 
         case .terminal(.new(let payload)):
             return handleTerminalBoardNew(payload: payload, request: request)
+
+        case .inspection(.new(let payload)):
+            guard let boardID = request.boardID, let targetBoardID = UUID(uuidString: boardID) else {
+                return .failure("Usage: den board inspection new --target <web-board-id>")
+            }
+            let store: DenStore
+            let target: BoardState
+            switch DenIPCTargetResolver.resolveTargetWebBoardResult(request: request, in: profileManager) {
+            case .success(let resolved):
+                (store, target) = resolved
+            case .failure(let error):
+                return .failure(error.localizedDescription)
+            }
+            guard target.id == targetBoardID,
+                let inspectionID = store.createInspectionBoard(targetBoardID: targetBoardID, focus: payload.focus)
+            else {
+                return .failure("Could not create an Inspection Board for \(boardID)")
+            }
+            return .success(boardId: inspectionID.uuidString)
 
         case .close:
             let targetResult: Result<(DenStore, BoardState), DenIPCTargetResolver.TargetResolutionError>

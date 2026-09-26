@@ -6,19 +6,21 @@ enum DenIPCTargetResolver {
         case any
         case web
         case terminal
+        case inspection
 
         func matches(_ board: BoardState) -> Bool {
             switch self {
             case .any: return !board.isInspection
             case .web: return board.isWeb
             case .terminal: return board.isTerminal
+            case .inspection: return board.isInspection
             }
         }
 
         func matchesExplicit(_ board: BoardState) -> Bool {
             switch self {
             case .any: true
-            case .web, .terminal: matches(board)
+            case .web, .terminal, .inspection: matches(board)
             }
         }
 
@@ -27,6 +29,7 @@ enum DenIPCTargetResolver {
             case .any: ""
             case .web: "Web"
             case .terminal: "Terminal"
+            case .inspection: "Inspection"
             }
         }
     }
@@ -181,6 +184,13 @@ enum DenIPCTargetResolver {
         in profileManager: ProfileManager?
     ) -> Result<(DenStore, BoardState), TargetResolutionError> {
         resolveTargetBoard(request: request, in: profileManager, kind: .any)
+    }
+
+    static func resolveTargetInspectionBoardResult(
+        request: DenIPCRequest,
+        in profileManager: ProfileManager?
+    ) -> Result<(DenStore, BoardState), TargetResolutionError> {
+        resolveTargetBoard(request: request, in: profileManager, kind: .inspection)
     }
 
     private static func resolveTargetBoard(

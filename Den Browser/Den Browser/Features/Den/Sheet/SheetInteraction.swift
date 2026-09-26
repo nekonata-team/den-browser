@@ -142,6 +142,20 @@ enum SheetInteraction {
         return dictionary["snapshot"] as? String ?? ""
     }
 
+    static func reference(for selector: String, in webView: WKWebView) async throws -> String? {
+        let literal = try javascriptLiteral(selector)
+        let result = try await evaluate(
+            operationScript(
+                """
+                let element;
+                try { element = denResolveTarget(\(literal)); }
+                catch { return null; }
+                return element ? denRefFor(element) : null;
+                """),
+            in: webView)
+        return result as? String
+    }
+
     static func query(
         selector: String,
         visibleOnly: Bool,

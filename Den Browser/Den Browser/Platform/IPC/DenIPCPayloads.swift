@@ -188,6 +188,105 @@ nonisolated struct DenBoardTerminalNewPayload: Codable, Equatable, Sendable {
     var width: Double?
 }
 
+nonisolated struct DenBoardInspectionNewPayload: Codable, Equatable, Sendable {
+    var focus: Bool
+}
+
+nonisolated struct DenInspectionElementInfo: Codable, Sendable {
+    var nodeID: String?
+    var ref: String?
+    var selector: String?
+    var tag: String
+    var id: String
+    var className: String
+    var role: String
+    var ariaLabel: String
+    var text: String
+    var attributes: [String]
+    var labels: [String]
+    var capturedAt: String?
+    var isConnected: Bool
+
+    enum CodingKeys: String, CodingKey {
+        case nodeID = "node_id"
+        case ref, selector
+        case tag, id
+        case className = "class_name"
+        case role
+        case ariaLabel = "aria_label"
+        case text, attributes, labels
+        case capturedAt = "captured_at"
+        case isConnected = "is_connected"
+    }
+}
+
+nonisolated struct DenInspectionNodeInfo: Codable, Sendable {
+    var nodeID: String
+    var tag: String
+    var attributes: [DenInspectionAttributeInfo]
+    var text: String
+    var childCount: Int
+
+    enum CodingKeys: String, CodingKey {
+        case nodeID = "node_id"
+        case tag, attributes, text
+        case childCount = "child_count"
+    }
+}
+
+nonisolated struct DenInspectionAttributeInfo: Codable, Sendable {
+    var name: String
+    var value: String
+}
+
+nonisolated struct DenInspectionEventInfo: Codable, Sendable {
+    var id: String
+    var time: String
+    var level: String
+    var message: String
+}
+
+nonisolated struct DenInspectionReadInfo: Codable, Sendable {
+    var boardID: String
+    var targetBoardID: String
+    var url: String?
+    var pageGeneration: Int
+    var documentID: String
+    var capturedAt: String
+    var collectionStartedAt: String?
+    var selection: DenInspectionElementInfo?
+    var ancestors: [DenInspectionNodeInfo]
+    var events: [DenInspectionEventInfo]
+    var eventsDropped: Int
+
+    enum CodingKeys: String, CodingKey {
+        case boardID = "board_id"
+        case targetBoardID = "target_board_id"
+        case url
+        case pageGeneration = "page_generation"
+        case documentID = "document_id"
+        case capturedAt = "captured_at"
+        case collectionStartedAt = "collection_started_at"
+        case selection, ancestors, events
+        case eventsDropped = "events_dropped"
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(boardID, forKey: .boardID)
+        try container.encode(targetBoardID, forKey: .targetBoardID)
+        try container.encodeIfPresent(url, forKey: .url)
+        try container.encode(pageGeneration, forKey: .pageGeneration)
+        try container.encode(documentID, forKey: .documentID)
+        try container.encode(capturedAt, forKey: .capturedAt)
+        try container.encodeIfPresent(collectionStartedAt, forKey: .collectionStartedAt)
+        try container.encode(selection, forKey: .selection)
+        try container.encode(ancestors, forKey: .ancestors)
+        try container.encode(events, forKey: .events)
+        try container.encode(eventsDropped, forKey: .eventsDropped)
+    }
+}
+
 nonisolated struct DenDrawerKeepPayload: Codable, Equatable, Sendable {
     var url: String
     var title: String?

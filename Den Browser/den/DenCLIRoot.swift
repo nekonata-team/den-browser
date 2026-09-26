@@ -12,6 +12,7 @@ struct DenCLI: AsyncParsableCommand {
             HealthCommand.self,
             SheetCommand.self,
             BoardCommand.self,
+            InspectionCommand.self,
             DeskCommand.self,
             DrawerCommand.self,
             TerminalCommand.self,

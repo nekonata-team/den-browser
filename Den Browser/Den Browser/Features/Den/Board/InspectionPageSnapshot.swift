@@ -1,17 +1,22 @@
 import Foundation
 
-struct InspectionPageSnapshot: Decodable, Equatable {
+struct InspectionPageSnapshot: Decodable, Equatable, Sendable {
+    var documentID: String?
+    var collectionStartedAt: String?
+    var eventsDropped: Int?
     var isPicking: Bool
     var isCollecting: Bool
     var selection: InspectionElementSummary?
+    var selectionConnected: Bool?
     var treePath: [InspectionDOMNode]
     var events: [InspectionConsoleEvent]
 
     static let empty = InspectionPageSnapshot(
-        isPicking: false, isCollecting: false, selection: nil, treePath: [], events: [])
+        documentID: nil, collectionStartedAt: nil, eventsDropped: nil,
+        isPicking: false, isCollecting: false, selection: nil, selectionConnected: nil, treePath: [], events: [])
 }
 
-struct InspectionDOMNode: Decodable, Equatable, Identifiable {
+struct InspectionDOMNode: Decodable, Equatable, Identifiable, Sendable {
     var id: String
     var tag: String
     var attributes: [InspectionDOMAttribute]
@@ -19,13 +24,15 @@ struct InspectionDOMNode: Decodable, Equatable, Identifiable {
     var childCount: Int
 }
 
-struct InspectionDOMAttribute: Decodable, Equatable, Identifiable {
+struct InspectionDOMAttribute: Decodable, Equatable, Identifiable, Sendable {
     var name: String
     var value: String
     var id: String { name }
 }
 
-struct InspectionElementSummary: Decodable, Equatable {
+struct InspectionElementSummary: Decodable, Equatable, Sendable {
+    var nodeID: String?
+    var selector: String?
     var tag: String
     var id: String
     var className: String
@@ -34,11 +41,13 @@ struct InspectionElementSummary: Decodable, Equatable {
     var text: String
     var attributes: [String]
     var labels: [String]
+    var capturedAt: String?
 }
 
-struct InspectionConsoleEvent: Decodable, Equatable, Identifiable {
+struct InspectionConsoleEvent: Decodable, Equatable, Identifiable, Sendable {
     var id: String
     var time: String
+    var timestamp: String?
     var level: String
     var message: String
 }
@@ -62,7 +71,7 @@ enum InspectionPageScript {
 
     static let readSnapshot = #"""
         window.__denInspection?.readSnapshot()
-          ?? JSON.stringify({ isPicking: false, isCollecting: false, selection: null, treePath: [], events: [] })
+          ?? JSON.stringify({ documentID: null, collectionStartedAt: null, eventsDropped: 0, isPicking: false, isCollecting: false, selection: null, selectionConnected: false, treePath: [], events: [] })
         """#
 
     static func readChildren(_ id: String) -> String {

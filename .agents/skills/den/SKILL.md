@@ -1,6 +1,6 @@
 ---
 name: den
-description: Control Den Browser through its first-party den CLI when inspecting or operating Web Boards, Terminal Boards, Sheets, or Drawer items.
+description: Control Den Browser through its first-party den CLI when inspecting or operating Web Boards, Inspection Boards, Terminal Boards, Sheets, or Drawer items.
 ---
 
 # Den Browser (`den`)
@@ -15,6 +15,7 @@ Use Den's bundled `den` CLI to inspect and control that workspace.
 - **Desk**: A work context containing an ordered collection of Boards.
 - **Board**: A work surface on a Desk.
   - **Web Board**: Contains a web **Sheet**.
+  - **Inspection Board**: A Side Board that inspects its target Web Board's Current Sheet.
   - **Terminal Board**: Contains a native Terminal Session. Ordinary Shell, Zellij, and zmx surfaces are Terminal Boards.
 - **Drawer**: Den-wide staging for web material before it is placed on a Desk.
 
@@ -26,7 +27,7 @@ If `den` is not in PATH, use `/Applications/Den Browser.app/Contents/MacOS/den`.
 
 Use `--json` for every operational command. Use TTY output only when presenting results to a person.
 
-Read JSON fields instead of parsing TTY text. Collections are under `.boards[]`, `.desks[]`, `.drawer_items[]`, and `.profiles[]`. Common fields include `.id`, `.board_id`, `.closed_board_id`, `.drawer_item_id`, `.url`, `.text`, `.snapshot`, `.value`, `.screenshot_path`, `.session_name`, and `.message`.
+Read JSON fields instead of parsing TTY text. Collections are under `.boards[]`, `.desks[]`, `.drawer_items[]`, and `.profiles[]`. Common fields include `.id`, `.board_id`, `.target_board_id`, `.closed_board_id`, `.drawer_item_id`, `.url`, `.text`, `.snapshot`, `.value`, `.screenshot_path`, `.session_name`, and `.message`.
 
 If readiness is uncertain, run `den health --json`; it does not target a Desk or Board. When running inside a Terminal Board, Den provides `DEN_BOARD_ID`, `DEN_PROFILE`, and `DEN_SOCKET`. Use ambient targeting by default. Use `--profile <uuid>` to target another Profile; it must have an active window. Use `--board <id>` with `den sheet` or `den terminal` for a newly created Board, an ambiguous target, or another Board. `den sheet` requires a Web Board, and `den terminal` requires a Terminal Board.
 
@@ -69,3 +70,14 @@ den drawer keep https://example.com --json
 den drawer list --json
 den drawer place <drawer-item-id> --json
 ```
+
+## Inspection context
+
+Use Inspection when a person picks an element.
+
+```sh
+den board inspection new --target <web-board-id> --json
+den inspection read --board <inspection-board-id> --json
+```
+
+`den inspection read` requires the Inspection Board ID and returns the captured element, its ancestors, and retained events without changing the Sheet. Use the target Web Board ID with `den sheet snapshot` for page-wide semantic DOM.

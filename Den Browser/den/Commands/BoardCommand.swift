@@ -17,9 +17,38 @@ struct BoardCommand: ParsableCommand {
             BoardFocusedCommand.self,
             BoardWebCommand.self,
             BoardTerminalCommand.self,
+            BoardInspectionCommand.self,
             BoardCloseCommand.self,
         ]
     )
+}
+
+struct BoardInspectionCommand: ParsableCommand {
+    static let configuration = CommandConfiguration(
+        commandName: "inspection",
+        abstract: "Manage Inspection Boards",
+        subcommands: [BoardInspectionNewCommand.self])
+}
+
+struct BoardInspectionNewCommand: ParsableCommand {
+    static let configuration = CommandConfiguration(
+        commandName: "new",
+        abstract: "Create or reuse an Inspection Board for a Web Board")
+
+    @OptionGroup var common: CLIOptions
+
+    @Option(name: .customLong("target"), help: "Target Web Board ID")
+    var targetBoardID: String
+
+    @Flag(name: .customLong("focus"), help: "Focus the Inspection Board")
+    var focus = false
+
+    func run() throws {
+        try DenIPCClient.execute(
+            command: .board(.inspection(.new(DenBoardInspectionNewPayload(focus: focus)))),
+            options: common,
+            boardID: targetBoardID)
+    }
 }
 
 struct BoardListCommand: ParsableCommand {
