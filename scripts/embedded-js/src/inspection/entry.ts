@@ -9,7 +9,6 @@ type InspectionPageSelection = {
   text: string;
   attributes: string[];
   labels: string[];
-  ancestors: string[];
 };
 
 type InspectionDOMAttribute = { name: string; value: string };
@@ -271,12 +270,6 @@ interface Window {
       const attributes = Array.from(element.attributes)
         .filter(attribute => attribute.name === "role" || attribute.name.startsWith("aria-") || ["title", "name", "placeholder"].includes(attribute.name))
         .map(attribute => `${attribute.name}=${attribute.value}`);
-      const ancestors: string[] = [];
-      for (let parent = element.parentElement; parent && ancestors.length < 6; parent = parent.parentElement) {
-        const parentRole = parent.getAttribute("role") || "";
-        const parentLabel = parent.getAttribute("aria-label") || "";
-        ancestors.push(`${parent.tagName.toLowerCase()}${parentRole ? ` role=${parentRole}` : ""}${parentLabel ? ` aria-label=${parentLabel}` : ""}: ${textOf(parent)}`);
-      }
       return {
         tag: element.tagName.toLowerCase(), id, className: String((element as HTMLElement).className || ""),
         role: element.getAttribute("role") || "", ariaLabel: element.getAttribute("aria-label") || "",
@@ -285,7 +278,6 @@ interface Window {
           const label = document.getElementById(labelID);
           return label ? textOf(label) : "";
         }).filter(Boolean)],
-        ancestors,
       };
     };
     state.listeners.click = event => {

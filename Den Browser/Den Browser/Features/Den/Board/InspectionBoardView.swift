@@ -269,12 +269,6 @@ struct InspectionBoardView: View {
                     detailLine("ARIA / attributes", selection.attributes.joined(separator: " · "))
                 }
                 if !selection.labels.isEmpty { detailLine("Labels", selection.labels.joined(separator: " · ")) }
-                if !selection.ancestors.isEmpty {
-                    Text("Ancestors").font(.caption.weight(.semibold))
-                    ForEach(Array(selection.ancestors.enumerated()), id: \.offset) { _, ancestor in
-                        Text(ancestor).font(.system(.caption2, design: .monospaced))
-                    }
-                }
             }
             .accessibilityIdentifier("inspection-selection")
         } else {

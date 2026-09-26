@@ -34,7 +34,6 @@ struct InspectionElementSummary: Decodable, Equatable {
     var text: String
     var attributes: [String]
     var labels: [String]
-    var ancestors: [String]
 }
 
 struct InspectionConsoleEvent: Decodable, Equatable, Identifiable {
