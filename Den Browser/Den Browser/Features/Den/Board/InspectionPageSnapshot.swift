@@ -2,11 +2,13 @@ import Foundation
 
 struct InspectionPageSnapshot: Decodable, Equatable {
     var isPicking: Bool
+    var isCollecting: Bool
     var selection: InspectionElementSummary?
     var treePath: [InspectionDOMNode]
     var events: [InspectionConsoleEvent]
 
-    static let empty = InspectionPageSnapshot(isPicking: false, selection: nil, treePath: [], events: [])
+    static let empty = InspectionPageSnapshot(
+        isPicking: false, isCollecting: false, selection: nil, treePath: [], events: [])
 }
 
 struct InspectionDOMNode: Decodable, Equatable, Identifiable {
@@ -43,7 +45,7 @@ struct InspectionConsoleEvent: Decodable, Equatable, Identifiable {
 }
 
 enum InspectionPageScript {
-    static let startPicking: String = {
+    static let initialize: String = {
         guard
             let url = Bundle.main.url(forResource: "InspectionAgent", withExtension: "js"),
             let source = try? String(contentsOf: url, encoding: .utf8)
@@ -51,9 +53,15 @@ enum InspectionPageScript {
         return source
     }()
 
+    static let startPicking = #"window.__denInspection?.startPicking()"#
+
+    static let collect = #"window.__denInspection?.startCollection()"#
+
+    static let pauseCollection = #"window.__denInspection?.stopCollection()"#
+
     static let readSnapshot = #"""
         window.__denInspection?.readSnapshot()
-          ?? JSON.stringify({ isPicking: false, selection: null, treePath: [], events: [] })
+          ?? JSON.stringify({ isPicking: false, isCollecting: false, selection: null, treePath: [], events: [] })
         """#
 
     static func readChildren(_ id: String) -> String {

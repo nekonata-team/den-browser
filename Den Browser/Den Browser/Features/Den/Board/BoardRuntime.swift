@@ -60,8 +60,14 @@ final class BoardRuntime: BaseWebRuntime, ObservableObject {
     @Published private(set) var isShowingInitialLoadFallback = false
     @Published private(set) var didTerminateContentProcess = false
     @Published private(set) var actionHighlight: ActionHighlight?
-    private(set) var isInspectionActive = false
+    @Published private(set) var isInspectionActive = false
+    @Published private(set) var isInspectionCollecting = false
+    @Published private(set) var inspectionPageGeneration = 0
     private var actionHighlightTask: Task<Void, Never>?
+
+    var inspectionPageGenerationPublisher: AnyPublisher<Int, Never> {
+        $inspectionPageGeneration.eraseToAnyPublisher()
+    }
 
     var webProcessIdentifier: pid_t? {
         guard webView.responds(to: NSSelectorFromString("_webProcessIdentifier")) else { return nil }
@@ -342,19 +348,41 @@ final class BoardRuntime: BaseWebRuntime, ObservableObject {
         sheetNavigation.refreshConfiguration(for: webView)
         updateFavicon()
         if isInspectionActive {
-            webView.evaluateJavaScript(InspectionPageScript.startPicking)
+            webView.evaluateJavaScript(InspectionPageScript.initialize) { [weak self] _, _ in
+                guard let self, self.isInspectionCollecting else { return }
+                self.webView.evaluateJavaScript(InspectionPageScript.collect)
+            }
+        }
+    }
+
+    func startInspectionCollection() {
+        isInspectionActive = true
+        isInspectionCollecting = true
+        guard webView.url != nil else { return }
+        webView.evaluateJavaScript(InspectionPageScript.initialize) { [weak self] _, _ in
+            guard let self, self.isInspectionCollecting else { return }
+            self.webView.evaluateJavaScript(InspectionPageScript.collect)
         }
     }
 
     func beginInspectionPicking() {
         guard webView.url != nil else { return }
         isInspectionActive = true
-        webView.evaluateJavaScript(InspectionPageScript.startPicking)
+        webView.evaluateJavaScript(InspectionPageScript.initialize) { [weak webView] _, _ in
+            webView?.evaluateJavaScript(InspectionPageScript.startPicking)
+        }
+    }
+
+    func stopInspectionCollection() {
+        guard isInspectionCollecting else { return }
+        isInspectionCollecting = false
+        webView.evaluateJavaScript(InspectionPageScript.pauseCollection)
     }
 
     func stopInspection() {
         guard isInspectionActive else { return }
         isInspectionActive = false
+        isInspectionCollecting = false
         webView.evaluateJavaScript(InspectionPageScript.stop)
     }
 
@@ -404,6 +432,7 @@ final class BoardRuntime: BaseWebRuntime, ObservableObject {
         didStartProvisionalNavigation navigation: WKNavigation!
     ) {
         faviconURL = nil
+        if isInspectionActive { inspectionPageGeneration &+= 1 }
         traceWebProcessIdentifier()
     }
 

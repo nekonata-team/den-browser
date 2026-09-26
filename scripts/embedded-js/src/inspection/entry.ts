@@ -1,4 +1,4 @@
-type InspectionConsoleLevel = "log" | "warn" | "error";
+type InspectionConsoleLevel = "debug" | "info" | "log" | "warn" | "error";
 
 type InspectionPageSelection = {
   tag: string;
@@ -37,6 +37,7 @@ type InspectionConsoleHook = {
 type InspectionPageState = {
   document: Document;
   active: boolean;
+  collecting: boolean;
   picking: boolean;
   selection: InspectionPageSelection | null;
   selectedElement: Element | null;
@@ -56,14 +57,19 @@ type InspectionPageState = {
     pagehide?: () => void;
   };
   installed: boolean;
+  collectionInstalled: boolean;
   highlight: HTMLDivElement | null;
   pointer: { x: number; y: number } | null;
   install: () => void;
   uninstall: () => void;
+  installCollection: () => void;
+  uninstallCollection: () => void;
   removeHighlight: () => void;
   showHighlight: (element: Element) => void;
   repositionHighlight: () => void;
   startPicking: () => void;
+  startCollection: () => void;
+  stopCollection: () => void;
   readSnapshot: () => string;
   readChildren: (id: string) => string;
   selectNode: (id: string) => boolean;
@@ -83,6 +89,7 @@ interface Window {
     : {
       document,
       active: true,
+      collecting: false,
       picking: false,
       selection: null,
       selectedElement: null,
@@ -94,14 +101,19 @@ interface Window {
       consoleHooks: {},
       listeners: {},
       installed: false,
+      collectionInstalled: false,
       highlight: null,
       pointer: null,
       install: () => {},
       uninstall: () => {},
+      installCollection: () => {},
+      uninstallCollection: () => {},
       removeHighlight: () => {},
       showHighlight: () => {},
       repositionHighlight: () => {},
       startPicking: () => {},
+      startCollection: () => {},
+      stopCollection: () => {},
       readSnapshot: () => "",
       readChildren: () => "[]",
       selectNode: () => false,
@@ -111,7 +123,7 @@ interface Window {
     };
   if (state !== previousState) {
     const record = (level: string, values: unknown[]) => {
-      if (!state.active) return;
+      if (!state.active || !state.collecting) return;
       const message = values.map(value => {
         if (typeof value === "string") return value;
         if (value instanceof Error) return String(value);
@@ -122,13 +134,10 @@ interface Window {
     };
     state.listeners.error = event => record("error", [event.message]);
     state.listeners.rejection = event => record("rejection", [event.reason]);
-    state.install = () => {
-      if (state.installed) return;
-      for (const level of ["log", "warn", "error"] as const) {
-        const hook = state.consoleHooks[level] ?? {
-          original: () => {},
-          wrapped: () => {},
-        };
+    state.installCollection = () => {
+      if (state.collectionInstalled) return;
+      for (const level of ["debug", "info", "log", "warn", "error"] as const) {
+        const hook = state.consoleHooks[level] ?? { original: () => {}, wrapped: () => {} };
         hook.original = console[level];
         hook.wrapped = function (this: Console, ...values: any[]) {
           record(level, values);
@@ -139,16 +148,11 @@ interface Window {
       }
       window.addEventListener("error", state.listeners.error!);
       window.addEventListener("unhandledrejection", state.listeners.rejection!);
-      document.addEventListener("pointermove", state.listeners.pointermove!, true);
-      document.addEventListener("scroll", state.listeners.reposition!, true);
-      window.addEventListener("resize", state.listeners.reposition!);
-      document.addEventListener("click", state.listeners.click!, true);
-      document.addEventListener("pointerout", state.listeners.pointerout!, true);
       window.addEventListener("pagehide", state.listeners.pagehide!);
-      state.installed = true;
+      state.collectionInstalled = true;
     };
-    state.uninstall = () => {
-      if (!state.installed) return;
+    state.uninstallCollection = () => {
+      if (!state.collectionInstalled) return;
       for (const [level, hook] of Object.entries(state.consoleHooks)) {
         if (hook && console[level as InspectionConsoleLevel] === hook.wrapped) {
           console[level as InspectionConsoleLevel] = hook.original;
@@ -156,12 +160,25 @@ interface Window {
       }
       window.removeEventListener("error", state.listeners.error!);
       window.removeEventListener("unhandledrejection", state.listeners.rejection!);
+      window.removeEventListener("pagehide", state.listeners.pagehide!);
+      state.collectionInstalled = false;
+    };
+    state.install = () => {
+      if (state.installed) return;
+      document.addEventListener("pointermove", state.listeners.pointermove!, true);
+      document.addEventListener("scroll", state.listeners.reposition!, true);
+      window.addEventListener("resize", state.listeners.reposition!);
+      document.addEventListener("click", state.listeners.click!, true);
+      document.addEventListener("pointerout", state.listeners.pointerout!, true);
+      state.installed = true;
+    };
+    state.uninstall = () => {
+      if (!state.installed) return;
       document.removeEventListener("pointermove", state.listeners.pointermove!, true);
       document.removeEventListener("scroll", state.listeners.reposition!, true);
       window.removeEventListener("resize", state.listeners.reposition!);
       document.removeEventListener("click", state.listeners.click!, true);
       document.removeEventListener("pointerout", state.listeners.pointerout!, true);
-      window.removeEventListener("pagehide", state.listeners.pagehide!);
       state.removeHighlight();
       state.installed = false;
     };
@@ -209,7 +226,12 @@ interface Window {
     };
     state.listeners.pagehide = () => {
       state.active = false;
+      state.collecting = false;
       state.picking = false;
+      state.events.length = 0;
+      state.selection = null;
+      state.selectedElement = null;
+      state.uninstallCollection();
       state.uninstall();
       document.documentElement.style.cursor = state.previousCursor;
     };
@@ -291,8 +313,18 @@ interface Window {
       state.picking = true;
       document.documentElement.style.cursor = "crosshair";
     };
+    state.startCollection = () => {
+      state.active = true;
+      state.collecting = true;
+      state.installCollection();
+    };
+    state.stopCollection = () => {
+      state.collecting = false;
+      state.uninstallCollection();
+    };
     state.readSnapshot = () => JSON.stringify({
       isPicking: state.picking,
+      isCollecting: state.collecting,
       selection: state.selection,
       treePath: selectedPath(),
       events: state.events.slice(-80),
@@ -320,6 +352,7 @@ interface Window {
     state.clearHighlight = () => state.removeHighlight();
     state.stop = () => {
       state.active = false;
+      state.collecting = false;
       state.picking = false;
       state.selection = null;
       state.selectedElement = null;
@@ -327,11 +360,12 @@ interface Window {
       state.nodeIDs = new WeakMap();
       state.elements.clear();
       state.nextNodeID = 0;
+      state.uninstallCollection();
       state.uninstall();
       state.pointer = null;
       document.documentElement.style.cursor = state.previousCursor;
+      window.__denInspection = undefined;
     };
     window.__denInspection = state;
   }
-  state.startPicking();
 })();

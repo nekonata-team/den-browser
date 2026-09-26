@@ -1,3 +1,4 @@
+import Combine
 import SFSafeSymbols
 import SwiftUI
 
@@ -22,6 +23,8 @@ struct InspectionBoardView: View {
     @State private var expandedNodeIDs: Set<String> = []
     @State private var loadedChildren: [String: [InspectionDOMNode]] = [:]
     @State private var loadingNodeIDs: Set<String> = []
+    @State private var isCollecting = false
+    @State private var observedInspectionPageGeneration = 0
     @Environment(\.accessibilityDifferentiateWithoutColor) private var differentiateWithoutColor
 
     private var targetBoard: BoardState? { store.board(for: targetBoardID) }
@@ -48,14 +51,15 @@ struct InspectionBoardView: View {
                 shouldReduceMotion: false
             )
         )
-        .task(id: isVisibleInViewport) {
-            guard isVisibleInViewport else { return }
+        .onAppear {
+            targetRuntime?.startInspectionCollection()
+            isCollecting = targetRuntime?.isInspectionCollecting ?? false
+        }
+        .task(id: isVisibleInViewport && isCollecting) {
+            guard isVisibleInViewport, isCollecting else { return }
             while !Task.isCancelled {
-                if let targetRuntime, targetRuntime.isInspectionActive {
-                    snapshot = await targetRuntime.readInspectionSnapshot()
-                } else {
-                    snapshot = .empty
-                }
+                guard let targetRuntime, isCollecting else { return }
+                snapshot = await targetRuntime.readInspectionSnapshot()
                 try? await Task.sleep(for: .milliseconds(250))
             }
         }
@@ -67,6 +71,16 @@ struct InspectionBoardView: View {
                 return
             }
             expandedNodeIDs.formUnion(path.dropLast())
+        }
+        .onReceive(
+            targetRuntime?.inspectionPageGenerationPublisher ?? Just(0).eraseToAnyPublisher()
+        ) { generation in
+            guard generation != observedInspectionPageGeneration else { return }
+            observedInspectionPageGeneration = generation
+            snapshot = .empty
+            expandedNodeIDs.removeAll()
+            loadedChildren.removeAll()
+            loadingNodeIDs.removeAll()
         }
     }
 
@@ -138,15 +152,21 @@ struct InspectionBoardView: View {
                     .disabled(targetRuntime?.webView.url == nil)
                     .accessibilityHint("Choose an element in the target Web Board's Current Sheet")
 
-                    if targetRuntime?.isInspectionActive == true {
-                        Button {
-                            targetRuntime?.stopInspection()
-                            snapshot = .empty
-                        } label: {
-                            Label("Stop", systemSymbol: .stopCircle)
+                    Button {
+                        if isCollecting {
+                            targetRuntime?.stopInspectionCollection()
+                            isCollecting = false
+                        } else {
+                            targetRuntime?.startInspectionCollection()
+                            isCollecting = targetRuntime?.isInspectionCollecting ?? false
                         }
-                        .buttonStyle(.borderless)
+                    } label: {
+                        Label(
+                            isCollecting ? "Stop" : "Resume",
+                            systemSymbol: isCollecting ? .stopCircle : .playCircle
+                        )
                     }
+                    .buttonStyle(.borderless)
                     Spacer()
                 }
 
@@ -278,7 +298,7 @@ struct InspectionBoardView: View {
                 Text("\(snapshot.events.count)").font(.caption).foregroundStyle(.secondary)
             }
             if snapshot.events.isEmpty {
-                Text("Page console output and JavaScript errors appear after inspection starts.")
+                Text("Page console output and JavaScript errors appear here.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             } else {

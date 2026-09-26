@@ -51,6 +51,20 @@ private final class InspectionBoardProbe: NSObject, WKNavigationDelegate, WKScri
 @MainActor
 @Suite(.serialized)
 struct InspectionBoardCapabilityTests {
+    private func initializeInspection(_ webView: WKWebView) async throws {
+        _ = try await webView.evaluateJavaScript(InspectionPageScript.initialize)
+    }
+
+    private func startPicking(_ webView: WKWebView) async throws {
+        try await initializeInspection(webView)
+        _ = try await webView.evaluateJavaScript(InspectionPageScript.startPicking)
+    }
+
+    private func startCollection(_ webView: WKWebView) async throws {
+        try await initializeInspection(webView)
+        _ = try await webView.evaluateJavaScript(InspectionPageScript.collect)
+    }
+
     private func fixture() -> (WKWebView, NSWindow, InspectionBoardProbe) {
         let probe = InspectionBoardProbe()
         let configuration = WKWebViewConfiguration()
@@ -170,18 +184,118 @@ struct InspectionBoardCapabilityTests {
         await probe.load("<!doctype html><html><body>Restart probe</body></html>", in: webView)
 
         // Act
-        _ = try await webView.evaluateJavaScript(InspectionPageScript.startPicking)
+        try await startCollection(webView)
         _ = try await webView.evaluateJavaScript("console.log('first-session')")
-        _ = try await webView.evaluateJavaScript(InspectionPageScript.stop)
+        _ = try await webView.evaluateJavaScript(InspectionPageScript.pauseCollection)
         _ = try await webView.evaluateJavaScript("console.log('stopped-session')")
-        _ = try await webView.evaluateJavaScript(InspectionPageScript.startPicking)
+        _ = try await webView.evaluateJavaScript(InspectionPageScript.collect)
         _ = try await webView.evaluateJavaScript("console.warn('restarted-session')")
         let json = try #require(try await webView.evaluateJavaScript(InspectionPageScript.readSnapshot) as? String)
 
         // Assert
         #expect(json.contains("restarted-session"))
-        #expect(!json.contains("first-session"))
+        #expect(json.contains("first-session"))
         #expect(!json.contains("stopped-session"))
+    }
+
+    @Test func collectionStartsWithoutPickingAndCoversPageConsoleAndErrors() async throws {
+        // Arrange
+        let (webView, window, probe) = fixture()
+        defer { window.close() }
+        await probe.load("<!doctype html><html><body><button>Target</button></body></html>", in: webView)
+
+        // Act
+        _ = try await webView.evaluateJavaScript(
+            "(() => { const levels = ['debug', 'info', 'log', 'warn', 'error']; window.__inspectionOriginalCalls = Object.fromEntries(levels.map(level => [level, 0])); for (const level of levels) { const original = console[level]; console[level] = function (...values) { window.__inspectionOriginalCalls[level] += 1; return original.apply(this, values); }; } })()"
+        )
+        try await startCollection(webView)
+        _ = try await webView.evaluateJavaScript(
+            "(() => { console.debug('debug-event'); console.info('info-event'); console.log('log-event'); console.warn('warn-event'); console.error('error-event'); setTimeout(() => { throw new Error('window-error-event'); }, 0); Promise.reject('rejection-event'); })()"
+        )
+        for _ in 0..<100 {
+            let json = try #require(try await webView.evaluateJavaScript(InspectionPageScript.readSnapshot) as? String)
+            if json.contains("window-error-event") && json.contains("rejection-event") { break }
+            try await Task.sleep(for: .milliseconds(10))
+        }
+        let json = try #require(try await webView.evaluateJavaScript(InspectionPageScript.readSnapshot) as? String)
+        let originalCallsJSON = try #require(
+            try await webView.evaluateJavaScript("JSON.stringify(window.__inspectionOriginalCalls)") as? String
+        )
+        let originalCalls = try JSONDecoder().decode([String: Int].self, from: Data(originalCallsJSON.utf8))
+        let snapshot = try JSONDecoder().decode(InspectionPageSnapshot.self, from: Data(json.utf8))
+
+        // Assert
+        #expect(snapshot.isCollecting)
+        #expect(!snapshot.isPicking)
+        #expect(originalCalls == ["debug": 1, "info": 1, "log": 1, "warn": 1, "error": 1])
+        #expect(
+            Set(snapshot.events.map(\.level)).isSuperset(of: ["debug", "info", "log", "warn", "error", "rejection"])
+        )
+        #expect(snapshot.events.contains { $0.message.contains("window-error-event") })
+        #expect(snapshot.events.contains { $0.message.contains("rejection-event") })
+    }
+
+    @Test func pickingDoesNotChangeCollectionOrClearCapturedEvents() async throws {
+        // Arrange
+        let (webView, window, probe) = fixture()
+        defer { window.close() }
+        await probe.load("<!doctype html><html><body><button id='target'>Target</button></body></html>", in: webView)
+        try await startCollection(webView)
+        _ = try await webView.evaluateJavaScript("console.log('before-pick')")
+
+        // Act
+        try await startPicking(webView)
+        let pickingJSON = try #require(
+            try await webView.evaluateJavaScript(InspectionPageScript.readSnapshot) as? String)
+        _ = try await webView.evaluateJavaScript(
+            "document.querySelector('#target').dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }))"
+        )
+        let selectedJSON = try #require(
+            try await webView.evaluateJavaScript(InspectionPageScript.readSnapshot) as? String)
+        let pickingSnapshot = try JSONDecoder().decode(InspectionPageSnapshot.self, from: Data(pickingJSON.utf8))
+        let selectedSnapshot = try JSONDecoder().decode(InspectionPageSnapshot.self, from: Data(selectedJSON.utf8))
+
+        // Assert
+        #expect(pickingSnapshot.isPicking)
+        #expect(pickingSnapshot.isCollecting)
+        #expect(selectedSnapshot.isCollecting)
+        #expect(selectedSnapshot.events.contains { $0.message.contains("before-pick") })
+    }
+
+    @Test func repeatedCollectionStartAndNavigationDoNotDuplicateOrRetainOldEvents() async throws {
+        // Arrange
+        let (webView, window, probe) = fixture()
+        defer { window.close() }
+        await probe.load("<!doctype html><html><body>First document</body></html>", in: webView)
+        try await startCollection(webView)
+
+        // Act
+        _ = try await webView.evaluateJavaScript("console.log('first-document-event')")
+        _ = try await webView.evaluateJavaScript(InspectionPageScript.collect)
+        _ = try await webView.evaluateJavaScript("console.log('once-after-restart')")
+        let repeatedStartJSON = try #require(
+            try await webView.evaluateJavaScript(InspectionPageScript.readSnapshot) as? String)
+        _ = try await webView.evaluateJavaScript("window.dispatchEvent(new Event('pagehide'))")
+        try await startCollection(webView)
+        _ = try await webView.evaluateJavaScript("console.log('after-pagehide')")
+        let pagehideJSON = try #require(
+            try await webView.evaluateJavaScript(InspectionPageScript.readSnapshot) as? String)
+        await probe.load("<!doctype html><html><body>Second document</body></html>", in: webView)
+        try await startCollection(webView)
+        _ = try await webView.evaluateJavaScript("console.log('second-document-event')")
+        let navigationJSON = try #require(
+            try await webView.evaluateJavaScript(InspectionPageScript.readSnapshot) as? String)
+        let repeatedStart = try JSONDecoder().decode(InspectionPageSnapshot.self, from: Data(repeatedStartJSON.utf8))
+        let afterPagehide = try JSONDecoder().decode(InspectionPageSnapshot.self, from: Data(pagehideJSON.utf8))
+        let afterNavigation = try JSONDecoder().decode(InspectionPageSnapshot.self, from: Data(navigationJSON.utf8))
+
+        // Assert
+        #expect(repeatedStart.events.filter { $0.message.contains("once-after-restart") }.count == 1)
+        #expect(!afterPagehide.events.contains { $0.message.contains("first-document-event") })
+        #expect(afterPagehide.events.contains { $0.message.contains("after-pagehide") })
+        #expect(afterNavigation.events.contains { $0.message.contains("second-document-event") })
+        #expect(!afterNavigation.events.contains { $0.message.contains("first-document-event") })
+        #expect(afterNavigation.events.filter { $0.message.contains("second-document-event") }.count == 1)
     }
 
     @Test func pickingElementReportsItsAccessibleLabelAndRelatedLabelElement() async throws {
@@ -199,7 +313,7 @@ struct InspectionBoardCapabilityTests {
         )
 
         // Act
-        _ = try await webView.evaluateJavaScript(InspectionPageScript.startPicking)
+        try await startPicking(webView)
         _ = try await webView.evaluateJavaScript(
             "document.querySelector('#target').dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }))"
         )
@@ -232,7 +346,7 @@ struct InspectionBoardCapabilityTests {
         )
 
         // Act
-        _ = try await webView.evaluateJavaScript(InspectionPageScript.startPicking)
+        try await startPicking(webView)
         _ = try await webView.evaluateJavaScript(
             "document.querySelector('#target').dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }))"
         )
@@ -291,7 +405,7 @@ struct InspectionBoardCapabilityTests {
         }
 
         // Act: hover, then select a different element
-        _ = try await webView.evaluateJavaScript(InspectionPageScript.startPicking)
+        try await startPicking(webView)
         try await movePointerToHoverTarget()
         let visibleOnHover = try await highlightIsVisible()
         try await leavePage()
@@ -303,13 +417,13 @@ struct InspectionBoardCapabilityTests {
         let removedOnSelection = try await highlightIsVisible()
 
         // Act: restart, hover, then stop
-        _ = try await webView.evaluateJavaScript(InspectionPageScript.startPicking)
+        try await startPicking(webView)
         try await movePointerToHoverTarget()
         _ = try await webView.evaluateJavaScript(InspectionPageScript.stop)
         let removedOnStop = try await highlightIsVisible()
 
         // Act: a fresh document does not retain the previous overlay
-        _ = try await webView.evaluateJavaScript(InspectionPageScript.startPicking)
+        try await startPicking(webView)
         try await movePointerToHoverTarget()
         await probe.load("<!doctype html><html><body>New document</body></html>", in: webView)
         let remainsAfterNavigation = try await highlightIsVisible()
