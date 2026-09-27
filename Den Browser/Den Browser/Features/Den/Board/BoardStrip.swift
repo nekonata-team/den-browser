@@ -289,6 +289,7 @@ struct BoardStrip: View {
                 }
             }
         }
+        .scrollClipDisabled(boardDrag != nil)
         .scrollPosition($scrollPosition)
         .onScrollGeometryChange(for: BoardStripScrollGeometry.self) { geometry in
             BoardStripScrollGeometry(
