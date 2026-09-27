@@ -1389,6 +1389,7 @@ private struct UnactivatedBoardView: View {
             Color.clear
         }
         .frame(width: width, height: height)
+        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: DenRadius.large, style: .continuous))
         .clipShape(RoundedRectangle(cornerRadius: DenRadius.large, style: .continuous))
         .overlay {
             RoundedRectangle(cornerRadius: DenRadius.large, style: .continuous)
@@ -1449,4 +1450,37 @@ private struct UnactivatedBoardView: View {
     private var borderColor: Color {
         isFocused ? profileColor.opacity(0.75) : Color.primary.opacity(0.16)
     }
+}
+
+#Preview("Unactivated Board") {
+    let defaults = UserDefaults(suiteName: "dev.nekonata.denbrowser.preview") ?? .standard
+    let preferences = AppPreferences(defaults: defaults)
+    let sheetNavigation = SheetNavigationManager(defaults: defaults)
+    let store = DenStore(
+        state: .sample,
+        websiteDataStore: .nonPersistent(),
+        sheetNavigation: sheetNavigation,
+        preferences: preferences)
+    let board = BoardState(label: "Example Board", width: 520, currentSheetURL: nil)
+
+    ZStack {
+        DenSurfaceColors.standardBackgroundColor
+            .ignoresSafeArea()
+        UnactivatedBoardView(
+            board: board,
+            isFocused: false,
+            isDragging: false,
+            profileColor: .blue,
+            width: 520,
+            height: 520,
+            isPointerFocusEnabled: false,
+            onFocus: {},
+            onRemove: {},
+            onDragChanged: { _ in },
+            onDragEnded: { _ in }
+        )
+    }
+    .environment(store)
+    .environment(preferences)
+    .preferredColorScheme(.dark)
 }
