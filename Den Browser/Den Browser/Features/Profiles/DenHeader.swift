@@ -71,8 +71,12 @@ private struct NotificationButton: View {
         Button {
             store.toggleNotificationList()
         } label: {
-            Image(systemSymbol: store.unreadNotificationCount > 0 ? .bellBadge : .bell)
-                .font(.system(size: 13, weight: .semibold))
+            Label {
+                Text("Notifications")
+            } icon: {
+                Image(systemSymbol: store.unreadNotificationCount > 0 ? .bellBadge : .bell)
+                    .font(.system(size: 13, weight: .semibold))
+            }
         }
         .tint(.secondary)
         .disabled(store.temporaryContext != nil)
@@ -93,8 +97,12 @@ private struct SaveDeskPresetButton: View {
         Button {
             store.showSaveDeskPresetPanel()
         } label: {
-            Image(systemSymbol: .bookmark)
-                .font(.system(size: 13, weight: .semibold))
+            Label {
+                Text("Save Desk as Preset")
+            } icon: {
+                Image(systemSymbol: .bookmark)
+                    .font(.system(size: 13, weight: .semibold))
+            }
         }
         .tint(.secondary)
         .accessibilityLabel("Save Desk as Preset")
@@ -141,8 +149,12 @@ private struct ProfileChip: View {
                 Text("Manage Profiles…")
             }
         } label: {
-            Image(systemSymbol: .personFill)
-                .font(.system(size: 13, weight: .semibold))
+            Label {
+                Text("Profile")
+            } icon: {
+                Image(systemSymbol: .personFill)
+                    .font(.system(size: 13, weight: .semibold))
+            }
         }
         .tint(.secondary)
         .accessibilityLabel("Profile: \(profile.name)")
