@@ -74,7 +74,7 @@ struct BoardRemovalIntent: Equatable {
 @Observable
 final class DenStore {
     static let maximumDeskCount = 10
-    static let maximumRecentItemCount = 100
+    static let maximumRecentItemCount = 500
     static let maximumNotificationCount = 200
     static let maximumRecentlyRemovedBoardCount = 10
     static let maximumRecentlyDiscardedDrawerItemCount = 10

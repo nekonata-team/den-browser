@@ -84,12 +84,12 @@ struct DenStoreRecentTests {
                 return true
             },
             body: { store in
-                for index in 0...100 {
+                for index in 0...500 {
                     store.openBoard(input: "https://example.com/\(index)")
                 }
 
-                #expect(store.recentItems.count == 100)
-                #expect(store.recentItems.first == .url(URL(string: "https://example.com/100")!))
+                #expect(store.recentItems.count == 500)
+                #expect(store.recentItems.first == .url(URL(string: "https://example.com/500")!))
                 #expect(store.recentItems.last == .url(URL(string: "https://example.com/1")!))
 
                 store.clearRecent()
