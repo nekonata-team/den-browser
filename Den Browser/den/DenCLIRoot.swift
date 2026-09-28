@@ -7,7 +7,7 @@ struct DenCLI: AsyncParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "den",
         abstract: "Control and inspect Den Browser from terminal or external shell",
-        version: Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "unknown",
+        version: appVersion,
         subcommands: [
             HealthCommand.self,
             SheetCommand.self,
@@ -20,4 +20,23 @@ struct DenCLI: AsyncParsableCommand {
             MCPCommand.self,
         ]
     )
+
+    private static var appVersion: String {
+        let versionKey = "CFBundleShortVersionString"
+        if let version = Bundle.main.infoDictionary?[versionKey] as? String {
+            return version
+        }
+
+        guard var bundleURL = Bundle.main.executableURL?.resolvingSymlinksInPath() else {
+            return "unknown"
+        }
+
+        while bundleURL.pathExtension != "app" {
+            let parentURL = bundleURL.deletingLastPathComponent()
+            guard parentURL != bundleURL else { return "unknown" }
+            bundleURL = parentURL
+        }
+
+        return Bundle(url: bundleURL)?.infoDictionary?[versionKey] as? String ?? "unknown"
+    }
 }
