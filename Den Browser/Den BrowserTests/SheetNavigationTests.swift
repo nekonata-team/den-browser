@@ -95,7 +95,7 @@ struct SheetNavigationTests {
 
         var continuation: AsyncStream<(URL?, String?)>.Continuation?
         let changes = AsyncStream<(URL?, String?)> { continuation = $0 }
-        let runtime = BoardRuntime(
+        let runtime = WebBoardRuntime(
             board: BoardState(label: "Local", width: 520, currentSheetURL: htmlURL),
             websiteDataStore: .nonPersistent(),
             sheetNavigation: makeTestSheetNavigationManager(scriptSource: ""),
@@ -133,7 +133,7 @@ struct SheetNavigationTests {
             defaults: makeTestDefaults(),
             scriptSource: "")
         let board = BoardState(label: "Test", width: 520, currentSheetURL: nil)
-        let runtime = BoardRuntime(
+        let runtime = WebBoardRuntime(
             board: board,
             websiteDataStore: .nonPersistent(),
             sheetNavigation: navigation,
@@ -142,7 +142,7 @@ struct SheetNavigationTests {
             events: boardRuntimeEvents()
         )
 
-        #expect(runtime.webView.customUserAgent == BoardRuntime.defaultUserAgent)
+        #expect(runtime.webView.customUserAgent == WebBoardRuntime.defaultUserAgent)
         #expect(runtime.webView.customUserAgent?.contains("Version/") == true)
         #expect(runtime.webView.customUserAgent?.contains("Safari/") == true)
     }
@@ -719,7 +719,7 @@ struct SheetNavigationTests {
 
     @Test func boardWebViewUsesIsolatedSheetNavigationController() {
         let manager = makeTestSheetNavigationManager(scriptSource: "")
-        let runtime = BoardRuntime(
+        let runtime = WebBoardRuntime(
             board: board("Navigation", url: "about:blank"),
             websiteDataStore: .nonPersistent(),
             sheetNavigation: manager,
@@ -742,7 +742,7 @@ struct SheetNavigationTests {
             state: DenState(desks: [currentDesk], focusedDeskID: currentDesk.id),
             sheetNavigation: manager
         )
-        let sourceWebView = store.runtime(for: source).webView
+        let sourceWebView = store.webRuntime(for: source).webView
         manager.setEnabled(true)
 
         #expect(
@@ -767,7 +767,7 @@ struct SheetNavigationTests {
         let store = DenStore(
             state: DenState(desks: [currentDesk], focusedDeskID: currentDesk.id),
             sheetNavigation: manager)
-        let sourceWebView = store.runtime(for: source).webView
+        let sourceWebView = store.webRuntime(for: source).webView
         let fileURL = try #require(URL(string: "file:///tmp/Den%20Browser/reference.html"))
         manager.setEnabled(true)
 
@@ -792,7 +792,7 @@ struct SheetNavigationTests {
             state: DenState(desks: [currentDesk], focusedDeskID: currentDesk.id),
             sheetNavigation: manager
         )
-        let webView = store.runtime(for: source).webView
+        let webView = store.webRuntime(for: source).webView
         let waiter = WebViewLoadWaiter()
 
         manager.setEnabled(true)
@@ -930,7 +930,7 @@ struct SheetNavigationTests {
             state: DenState(desks: [currentDesk], focusedDeskID: currentDesk.id),
             sheetNavigation: manager
         )
-        let sourceWebView = store.runtime(for: source).webView
+        let sourceWebView = store.webRuntime(for: source).webView
 
         #expect(
             manager.handleScriptMessage(
@@ -969,7 +969,7 @@ struct SheetNavigationTests {
             state: DenState(desks: [currentDesk], focusedDeskID: currentDesk.id),
             sheetNavigation: manager
         )
-        let sourceWebView = store.runtime(for: source).webView
+        let sourceWebView = store.webRuntime(for: source).webView
         let destination = URL(string: "https://destination.example/path")!
 
         #expect(
@@ -993,8 +993,8 @@ struct SheetNavigationTests {
             state: DenState(desks: [currentDesk], focusedDeskID: currentDesk.id),
             sheetNavigation: manager
         )
-        let sourceWebView = store.runtime(for: source).webView
-        let secondWebView = store.runtime(for: second).webView
+        let sourceWebView = store.webRuntime(for: source).webView
+        let secondWebView = store.webRuntime(for: second).webView
         manager.setEnabled(true)
 
         #expect(store.focusedDesk?.boards.count == 2)
@@ -1033,7 +1033,7 @@ struct SheetNavigationTests {
             state: DenState(desks: [desk], focusedDeskID: desk.id),
             sheetNavigation: manager
         )
-        let webView = store.runtime(for: board).webView
+        let webView = store.webRuntime(for: board).webView
         let waiter = WebViewLoadWaiter()
         let url = URL(string: "https://source.example/current")!
 
@@ -1075,7 +1075,7 @@ struct SheetNavigationTests {
             state: DenState(desks: [desk], focusedDeskID: desk.id),
             sheetNavigation: manager
         )
-        let webView = store.runtime(for: board).webView
+        let webView = store.webRuntime(for: board).webView
         let waiter = WebViewLoadWaiter()
 
         manager.setEnabled(true)
@@ -1105,7 +1105,7 @@ struct SheetNavigationTests {
             state: DenState(desks: [desk], focusedDeskID: desk.id),
             sheetNavigation: manager
         )
-        let webView = store.runtime(for: board).webView
+        let webView = store.webRuntime(for: board).webView
         let waiter = WebViewLoadWaiter()
 
         manager.setEnabled(true)
@@ -1137,7 +1137,7 @@ struct SheetNavigationTests {
             state: DenState(desks: [currentDesk], focusedDeskID: currentDesk.id),
             sheetNavigation: manager
         )
-        let webView = store.runtime(for: boards[1]).webView
+        let webView = store.webRuntime(for: boards[1]).webView
         let waiter = WebViewLoadWaiter()
 
         manager.setEnabled(true)
@@ -1175,7 +1175,7 @@ struct SheetNavigationTests {
             state: DenState(desks: [currentDesk], focusedDeskID: currentDesk.id),
             sheetNavigation: manager
         )
-        let webView = store.runtime(for: boards[1]).webView
+        let webView = store.webRuntime(for: boards[1]).webView
         let waiter = WebViewLoadWaiter()
 
         manager.setEnabled(true)
@@ -1195,7 +1195,7 @@ struct SheetNavigationTests {
             changeContinuation = continuation
         }
 
-        let runtime = BoardRuntime(
+        let runtime = WebBoardRuntime(
             board: board("Initial", url: "about:blank"),
             websiteDataStore: .nonPersistent(),
             sheetNavigation: manager,
@@ -1240,7 +1240,7 @@ struct SheetNavigationTests {
     }
 
     @Test func boardRuntimeFindsPageFavicon() async throws {
-        let runtime = BoardRuntime(
+        let runtime = WebBoardRuntime(
             board: BoardState(label: "Initial", width: 520, currentSheetURL: nil),
             websiteDataStore: .nonPersistent(),
             sheetNavigation: makeTestSheetNavigationManager(scriptSource: ""),
@@ -1326,7 +1326,7 @@ struct SheetNavigationTests {
     @Test func boardRuntimeTriggerActionHighlightSetsAndClearsHighlight() async throws {
         let navigation = makeTestSheetNavigationManager(scriptSource: "")
         let board = BoardState(label: "Test", width: 520, currentSheetURL: nil)
-        let runtime = BoardRuntime(
+        let runtime = WebBoardRuntime(
             board: board,
             websiteDataStore: .nonPersistent(),
             sheetNavigation: navigation,
@@ -1418,7 +1418,7 @@ struct SheetNavigationTests {
         onFullscreenChange: ((UUID, Bool) -> Void)? = nil,
         onDownloadFinished: @escaping (String) -> Void = { _ in },
         onDownloadFailed: @escaping (String) -> Void = { _ in }
-    ) -> BoardRuntime.Events {
+    ) -> WebBoardRuntime.Events {
         .init(
             onChange: onChange,
             onFullscreenChange: onFullscreenChange,

@@ -163,7 +163,7 @@ final class ProfilePersistence {
 
         var profiles: [PersistedProfile] = []
         for url in urls where url.pathExtension == "json" && url.lastPathComponent != "profile-index.json" {
-            switch decode(PersistedProfile.self, from: url) {
+            switch decodePersistedProfile(from: url) {
             case .success(let profile):
                 let filename = url.deletingPathExtension().lastPathComponent
                 guard profile.profile.id.uuidString.caseInsensitiveCompare(filename) == .orderedSame else {
@@ -209,6 +209,20 @@ final class ProfilePersistence {
         }
         do {
             return .success(try JSONDecoder().decode(type, from: data))
+        } catch {
+            return .failure(.decode(error))
+        }
+    }
+
+    private func decodePersistedProfile(from url: URL) -> Result<PersistedProfile, ProfileFileLoadError> {
+        let data: Data
+        do {
+            data = try Data(contentsOf: url)
+        } catch {
+            return .failure(.read(error))
+        }
+        do {
+            return .success(try PersistedProfileDocumentDecoder.decode(data))
         } catch {
             return .failure(.decode(error))
         }

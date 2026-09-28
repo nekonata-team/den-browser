@@ -422,15 +422,18 @@ extension DenStore {
             value = targetBoardID.uuidString.lowercased()
             message = "Copied target Board ID."
         case .terminal(let terminal):
-            value = terminal.workingDirectory
-            message = "Copied Terminal working directory."
-        case .zellij(let zellij):
-            guard let sessionName = zellij.sessionName, !sessionName.isEmpty else { return }
-            value = sessionName
-            message = "Copied Zellij session name."
-        case .zmx(let zmx):
-            value = zmx.sessionName
-            message = "Copied zmx session name."
+            switch terminal {
+            case .shell(let workingDirectory):
+                value = workingDirectory
+                message = "Copied Terminal working directory."
+            case .zellij(let zellij):
+                guard let sessionName = zellij.sessionName, !sessionName.isEmpty else { return }
+                value = sessionName
+                message = "Copied Zellij session name."
+            case .zmx(let zmx):
+                value = zmx.sessionName
+                message = "Copied zmx session name."
+            }
         }
 
         pasteboard.clearContents()

@@ -15,7 +15,7 @@ final class DenStorage {
     var recentlyRemovedBoards: [RecentlyRemovedBoard] = []
     var recentlyDiscardedDrawerItems: [DrawerItem] = []
 
-    var runtimes: [UUID: BoardRuntime] = [:]
+    var webRuntimes: [UUID: WebBoardRuntime] = [:]
     @ObservationIgnored var terminalRuntimes: [UUID: TerminalRuntime] = [:]
     @ObservationIgnored var runtimeOwners: [UUID: DenStore] = [:]
     @ObservationIgnored let drawerPresentations = NSHashTable<DenStore>.weakObjects()
@@ -206,9 +206,9 @@ final class DenStore {
     private(set) var webExtensionHost: WebExtensionHost?
     private(set) var webExtensionWindow: MV3WebExtensionWindow?
 
-    var runtimes: [UUID: BoardRuntime] {
-        get { storage.runtimes }
-        set { storage.runtimes = newValue }
+    var webRuntimes: [UUID: WebBoardRuntime] {
+        get { storage.webRuntimes }
+        set { storage.webRuntimes = newValue }
     }
     var terminalRuntimes: [UUID: TerminalRuntime] {
         get { storage.terminalRuntimes }
@@ -637,7 +637,7 @@ final class DenStore {
             preferences.automaticPIPOnDeskSwitch,
             let focusedDesk,
             let focusedBoardID = focusedDesk.focusedBoardID,
-            let runtime = runtimes[focusedBoardID]
+            let runtime = webRuntimes[focusedBoardID]
         else { return }
 
         runtime.enterPictureInPictureIfPlaying()
@@ -729,7 +729,7 @@ final class DenStore {
             isFullscreenActive = true
         } else {
             let focusedBoardIDs = Set(focusedDesk?.boards.map(\.id) ?? [])
-            isFullscreenActive = runtimes.contains { boardID, runtime in
+            isFullscreenActive = webRuntimes.contains { boardID, runtime in
                 focusedBoardIDs.contains(boardID)
                     && (runtime.webView.fullscreenState == .inFullscreen
                         || runtime.webView.fullscreenState == .enteringFullscreen)

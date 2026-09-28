@@ -7,7 +7,7 @@ import WebKit
 @MainActor
 struct BoardRuntimeWebUITests {
     @Test func runtimeEnablesNativePictureInPicture() {
-        let runtime = BoardRuntime(
+        let runtime = WebBoardRuntime(
             board: BoardState(label: "Board", width: 320, currentSheetURL: nil),
             websiteDataStore: .nonPersistent(),
             sheetNavigation: makeTestSheetNavigationManager(scriptSource: ""),
@@ -26,7 +26,7 @@ struct BoardRuntimeWebUITests {
     }
 
     @Test func runtimeEnablesNativeMagnification() {
-        let runtime = BoardRuntime(
+        let runtime = WebBoardRuntime(
             board: BoardState(label: "Board", width: 320, currentSheetURL: nil),
             websiteDataStore: .nonPersistent(),
             sheetNavigation: makeTestSheetNavigationManager(scriptSource: ""),
@@ -46,7 +46,7 @@ struct BoardRuntimeWebUITests {
 
     @Test func runtimeReportsNativeLinkActivationOnly() {
         var activationCount = 0
-        let runtime = BoardRuntime(
+        let runtime = WebBoardRuntime(
             board: BoardState(label: "Board", width: 320, currentSheetURL: nil),
             websiteDataStore: .nonPersistent(),
             sheetNavigation: makeTestSheetNavigationManager(scriptSource: ""),
@@ -69,7 +69,7 @@ struct BoardRuntimeWebUITests {
     }
 
     @Test func runtimeHandlesWebPageDialogsAndOpenPanels() {
-        let runtime = BoardRuntime(
+        let runtime = WebBoardRuntime(
             board: BoardState(label: "Board", width: 320, currentSheetURL: nil),
             websiteDataStore: .nonPersistent(),
             sheetNavigation: makeTestSheetNavigationManager(scriptSource: ""),
@@ -196,7 +196,7 @@ struct BoardRuntimeWebUITests {
         actions.onOpenBoard = { openedURL = $0 }
         actions.onOpenBoardInBackground = { backgroundURL = $0 }
 
-        let runtime = BoardRuntime(
+        let runtime = WebBoardRuntime(
             board: BoardState(label: "Board", width: 320, currentSheetURL: nil),
             websiteDataStore: .nonPersistent(),
             sheetNavigation: makeTestSheetNavigationManager(scriptSource: ""),
@@ -479,7 +479,7 @@ struct BoardRuntimeWebUITests {
 
         var finishedFilename: String?
         var activityEvents: [DownloadActivityEvent] = []
-        let runtime = BoardRuntime(
+        let runtime = WebBoardRuntime(
             board: BoardState(label: "Board", width: 320, currentSheetURL: nil),
             websiteDataStore: .nonPersistent(),
             sheetNavigation: makeTestSheetNavigationManager(scriptSource: ""),
@@ -550,7 +550,7 @@ struct BoardRuntimeWebUITests {
         try originalData.write(to: destinationURL)
 
         var failedFilename: String?
-        let runtime = BoardRuntime(
+        let runtime = WebBoardRuntime(
             board: BoardState(label: "Board", width: 320, currentSheetURL: nil),
             websiteDataStore: .nonPersistent(),
             sheetNavigation: makeTestSheetNavigationManager(scriptSource: ""),
@@ -589,7 +589,7 @@ struct BoardRuntimeWebUITests {
         defer { try? FileManager.default.removeItem(at: directory) }
 
         let destinationURL = directory.appending(path: "abandoned.pdf")
-        let runtime = BoardRuntime(
+        let runtime = WebBoardRuntime(
             board: BoardState(label: "Board", width: 320, currentSheetURL: nil),
             websiteDataStore: .nonPersistent(),
             sheetNavigation: makeTestSheetNavigationManager(scriptSource: ""),
@@ -650,7 +650,7 @@ struct BoardRuntimeWebUITests {
 
     @Test func auxiliaryWebViewConfiguresBothUIDelegateAndNavigationDelegate() {
         // Arrange
-        let runtime = BoardRuntime(
+        let runtime = WebBoardRuntime(
             board: BoardState(label: "Board", width: 320, currentSheetURL: nil),
             websiteDataStore: .nonPersistent(),
             sheetNavigation: makeTestSheetNavigationManager(scriptSource: ""),

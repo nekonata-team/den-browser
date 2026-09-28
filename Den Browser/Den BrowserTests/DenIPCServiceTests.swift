@@ -46,7 +46,7 @@ struct DenIPCServiceTests {
 
         // Assert
         let boardID = try #require(response.boardId.flatMap(UUID.init(uuidString:)))
-        #expect(store.runtimes[boardID] != nil)
+        #expect(store.webRuntimes[boardID] != nil)
         #expect(store.board(for: boardID)?.width == 200)
     }
 
@@ -81,7 +81,7 @@ struct DenIPCServiceTests {
         #expect(response.isOk)
         #expect(inspectionBoard.sideBoardTargetBoardID == targetBoardID)
         #expect(store.state.desks.first?.focusedBoardID == focusedBoardID)
-        #expect(store.runtimes[targetBoardID]?.isInspectionCollecting == true)
+        #expect(store.webRuntimes[targetBoardID]?.isInspectionCollecting == true)
     }
 
     @Test func terminalBoardCreationUsesRequestedWidth() async throws {
@@ -205,7 +205,7 @@ struct DenIPCServiceTests {
 
         // Assert
         let boardID = try #require(response.boardId.flatMap(UUID.init(uuidString:)))
-        #expect(store.runtimes[boardID] != nil)
+        #expect(store.webRuntimes[boardID] != nil)
     }
 
     @Test func profileListCommandReturnsAllProfiles() async throws {
@@ -500,7 +500,7 @@ struct DenIPCServiceTests {
         let store = try #require(manager.store(for: manager.personalProfileID))
         let boardID = try #require(store.createBoard(urlString: "https://example.com/"))
         let board = try #require(store.board(for: boardID))
-        let runtime = store.runtime(for: board)
+        let runtime = store.webRuntime(for: board)
 
         let waiter = SheetInteractionWebViewLoadWaiter()
         let html = """
@@ -562,8 +562,8 @@ struct DenIPCServiceTests {
         store.focusBoard(firstBoardID)
         let firstBoard = try #require(store.board(for: firstBoardID))
         let secondBoard = try #require(store.board(for: secondBoardID))
-        let firstRuntime = store.runtime(for: firstBoard)
-        let secondRuntime = store.runtime(for: secondBoard)
+        let firstRuntime = store.webRuntime(for: firstBoard)
+        let secondRuntime = store.webRuntime(for: secondBoard)
         let firstWaiter = SheetInteractionWebViewLoadWaiter()
         let secondWaiter = SheetInteractionWebViewLoadWaiter()
         await firstWaiter.load(
@@ -654,7 +654,7 @@ struct DenIPCServiceTests {
         let store = try #require(manager.store(for: manager.personalProfileID))
         let boardID = try #require(store.createBoard(urlString: "https://interact.example/"))
         let board = try #require(store.board(for: boardID))
-        let webView = store.runtime(for: board).webView
+        let webView = store.webRuntime(for: board).webView
         let waiter = SheetInteractionWebViewLoadWaiter()
         await waiter.load(
             "<!doctype html><body><button id=\"continue\">Continue</button></body>",
@@ -736,8 +736,8 @@ struct DenIPCServiceTests {
         store.focusBoard(firstBoardID)
         let firstBoard = try #require(store.board(for: firstBoardID))
         let secondBoard = try #require(store.board(for: secondBoardID))
-        let firstRuntime = store.runtime(for: firstBoard)
-        let secondRuntime = store.runtime(for: secondBoard)
+        let firstRuntime = store.webRuntime(for: firstBoard)
+        let secondRuntime = store.webRuntime(for: secondBoard)
         let firstWaiter = SheetInteractionWebViewLoadWaiter()
         let secondWaiter = SheetInteractionWebViewLoadWaiter()
         await firstWaiter.load(

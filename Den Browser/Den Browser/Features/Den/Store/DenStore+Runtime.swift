@@ -9,12 +9,12 @@ private struct TerminalSignalError: LocalizedError {
 }
 
 extension DenStore {
-    func runtime(for board: BoardState, popupWebView: WKWebView? = nil) -> BoardRuntime {
+    func webRuntime(for board: BoardState, popupWebView: WKWebView? = nil) -> WebBoardRuntime {
         precondition(board.isWeb, "Only Web Boards can create a web runtime")
         let actions = sheetNavigationActions(for: board)
         let events = boardRuntimeEvents(for: board)
         storage.runtimeOwners[board.id] = self
-        if let runtime = runtimes[board.id] {
+        if let runtime = webRuntimes[board.id] {
             runtime.updateOwner(sheetNavigationActions: actions, events: events)
             if let webExtensionHost, let webExtensionWindow {
                 webExtensionHost.register(
@@ -28,7 +28,7 @@ extension DenStore {
             return runtime
         }
 
-        let runtime = BoardRuntime(
+        let runtime = WebBoardRuntime(
             board: board,
             websiteDataStore: websiteDataStore,
             sheetNavigation: sheetNavigation,
@@ -39,7 +39,7 @@ extension DenStore {
             sheetNavigationActions: actions,
             events: events
         )
-        runtimes[board.id] = runtime
+        webRuntimes[board.id] = runtime
         return runtime
     }
 
@@ -161,7 +161,7 @@ extension DenStore {
             })
     }
 
-    private func boardRuntimeEvents(for board: BoardState) -> BoardRuntime.Events {
+    private func boardRuntimeEvents(for board: BoardState) -> WebBoardRuntime.Events {
         .init(
             onChange: { [weak self] boardID, url, title in
                 self?.updateBoard(boardID: boardID, url: url, title: title)
@@ -212,7 +212,7 @@ extension DenStore {
         DispatchQueue.main.async { [weak self] in
             guard let self else { return }
             let target: NSView?
-            if let webView = self.focusedRuntime?.webView {
+            if let webView = self.focusedWebRuntime?.webView {
                 target = webView
             } else {
                 target = self.focusedTerminalRuntime?.terminalView
@@ -273,7 +273,7 @@ extension DenStore {
     }
 
     func applySheetScale(_ scale: Int) {
-        for runtime in runtimes.values {
+        for runtime in webRuntimes.values {
             runtime.webView.magnification = 1
             runtime.webView.pageZoom = CGFloat(scale) / 100
         }
@@ -289,7 +289,7 @@ extension DenStore {
         }
         guard board.isWeb else { return }
 
-        let webView = runtime(for: board).webView
+        let webView = webRuntime(for: board).webView
         webView.magnification = 1
         let currentScale = Int((webView.pageZoom * 100).rounded())
         let scale = min(
@@ -307,7 +307,7 @@ extension DenStore {
         }
         guard board.isWeb else { return }
 
-        let webView = runtime(for: board).webView
+        let webView = webRuntime(for: board).webView
         webView.magnification = 1
         webView.pageZoom = CGFloat(preferences.sheetScale) / 100
     }
@@ -322,13 +322,13 @@ extension DenStore {
     }
 
     func releaseWebRuntimes() {
-        for boardID in runtimes.keys {
+        for boardID in webRuntimes.keys {
             storage.runtimeOwners.removeValue(forKey: boardID)
         }
-        for runtime in runtimes.values {
+        for runtime in webRuntimes.values {
             runtime.dispose()
         }
-        runtimes.removeAll()
+        webRuntimes.removeAll()
         releaseDrawerPreview()
     }
 
@@ -346,18 +346,18 @@ extension DenStore {
 
     func disposeRuntime(for boardID: UUID) {
         storage.runtimeOwners.removeValue(forKey: boardID)
-        runtimes.removeValue(forKey: boardID)?.dispose()
+        webRuntimes.removeValue(forKey: boardID)?.dispose()
         terminalRuntimes.removeValue(forKey: boardID)?.dispose()
     }
 
-    var focusedRuntime: BoardRuntime? {
+    var focusedWebRuntime: WebBoardRuntime? {
         guard
             let desk = focusedDesk,
             let focusedBoardID = desk.focusedBoardID,
             let board = desk.boards.first(where: { $0.id == focusedBoardID })
         else { return nil }
         guard board.isWeb else { return nil }
-        return runtime(for: board)
+        return webRuntime(for: board)
     }
 
     var focusedTerminalRuntime: TerminalRuntime? {

@@ -1,7 +1,7 @@
 import SFSafeSymbols
 import SwiftUI
 
-struct BoardView: View {
+struct WebBoardView: View {
     @Environment(DenStore.self) private var store
     @Environment(AppPreferences.self) private var preferences
     @Environment(\.accessibilityReduceMotion) private var systemReduceMotion
@@ -10,7 +10,7 @@ struct BoardView: View {
     let isFocused: Bool
     let focusRequest: BoardFocusRequest?
     let isDragging: Bool
-    @ObservedObject var runtime: BoardRuntime
+    @ObservedObject var runtime: WebBoardRuntime
     let profileColor: Color
     let width: Double
     let height: Double

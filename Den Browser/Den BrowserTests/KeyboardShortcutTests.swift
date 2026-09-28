@@ -1262,7 +1262,7 @@ struct KeyboardShortcutTests {
             keyCode: 15)
 
         #expect(KeyboardController.handle(reload, store: store))
-        #expect(Set(store.runtimes.keys) == Set([first.id]))
+        #expect(Set(store.webRuntimes.keys) == Set([first.id]))
         #expect(store.focusedDesk?.focusedBoardID == first.id)
     }
 
@@ -1289,7 +1289,7 @@ struct KeyboardShortcutTests {
             keyCode: 15)
 
         #expect(KeyboardController.handle(reload, store: store))
-        #expect(Set(store.runtimes.keys) == Set([first.id, second.id]))
+        #expect(Set(store.webRuntimes.keys) == Set([first.id, second.id]))
         #expect(store.focusedDesk?.id == firstDesk.id)
         #expect(store.state.desks.map(\.id) == [firstDesk.id, secondDesk.id])
     }

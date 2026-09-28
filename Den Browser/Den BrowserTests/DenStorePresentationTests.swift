@@ -17,7 +17,7 @@ struct DenStorePresentationTests {
         let store = DenStore(
             state: DenState(desks: [populated, empty], focusedDeskID: populated.id),
             onSave: { savedState = $0 })
-        let runtime = store.runtime(for: board)
+        let runtime = store.webRuntime(for: board)
         store.deleteFocusedDesk()
         store.toggleFocusedBoardMaximized()
         store.isBoardRailPresented = true
@@ -50,7 +50,7 @@ struct DenStorePresentationTests {
         #expect(savedState == store.state)
         #expect(store.toastMessage?.message == "Reset Den completed.")
         #expect(store.toastMessage?.style == .success)
-        #expect(store.runtimes.isEmpty)
+        #expect(store.webRuntimes.isEmpty)
         #expect(store.recentlyRemovedBoards.isEmpty)
         #expect(store.recentlyDiscardedDrawerItems.isEmpty)
         #expect(store.notifications.isEmpty)

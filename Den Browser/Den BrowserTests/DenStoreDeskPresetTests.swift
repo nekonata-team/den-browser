@@ -190,7 +190,7 @@ struct DenStoreDeskPresetTests {
 
         // Assert
         #expect(saveResult == .created)
-        #expect(preset.boards.first?.content == .terminal("/tmp"))
+        #expect(preset.boards.first?.content == .terminal(.shell(workingDirectory: "/tmp")))
         #expect(store.focusedBoard?.id != terminal.id)
         #expect(store.focusedBoard?.terminalWorkingDirectory == "/tmp")
         #expect(store.focusedBoard?.customLabel == "Build")
@@ -209,7 +209,7 @@ struct DenStoreDeskPresetTests {
 
         // Assert
         #expect(saveResult == .created)
-        #expect(preset.boards.first?.content == .zellij("project-a"))
+        #expect(preset.boards.first?.content == .terminal(.zellij(sessionName: "project-a")))
         #expect(store.focusedBoard?.id != zellij.id)
         #expect(store.focusedBoard?.isZellij == true)
         #expect(store.focusedBoard?.zellijSessionName == "project-a")
@@ -229,7 +229,7 @@ struct DenStoreDeskPresetTests {
 
         // Assert
         #expect(saveResult == .created)
-        #expect(preset.boards.first?.content == .zmx("project-a"))
+        #expect(preset.boards.first?.content == .terminal(.zmx(sessionName: "project-a")))
         #expect(store.focusedBoard?.id != zmx.id)
         #expect(store.focusedBoard?.isZmx == true)
         #expect(store.focusedBoard?.zmxSessionName == "project-a")

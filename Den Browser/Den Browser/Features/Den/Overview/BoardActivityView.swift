@@ -60,7 +60,7 @@ struct BoardActivityView: View {
                                         ForEach(desk.boards) { board in
                                             BoardActivityRow(
                                                 board: board,
-                                                webRuntime: store.runtimes[board.id],
+                                                webRuntime: store.webRuntimes[board.id],
                                                 terminalRuntime: store.terminalRuntimes[board.id],
                                                 usage: usage(for: board),
                                                 processLabel: processLabel(for: board),
@@ -100,7 +100,7 @@ struct BoardActivityView: View {
     }
 
     private func usage(for board: BoardState) -> ProcessResourceUsage? {
-        if let processID = store.runtimes[board.id]?.webProcessIdentifier {
+        if let processID = store.webRuntimes[board.id]?.webProcessIdentifier {
             return webUsage[processID]
         }
         return terminalUsage[board.id]
@@ -113,12 +113,12 @@ struct BoardActivityView: View {
     }
 
     private func sharedWebBoardCount(for board: BoardState) -> Int {
-        guard let processID = store.runtimes[board.id]?.webProcessIdentifier else { return 0 }
-        return store.runtimes.values.count { $0.webProcessIdentifier == processID }
+        guard let processID = store.webRuntimes[board.id]?.webProcessIdentifier else { return 0 }
+        return store.webRuntimes.values.count { $0.webProcessIdentifier == processID }
     }
 
     private func processLabel(for board: BoardState) -> String? {
-        if let processID = store.runtimes[board.id]?.webProcessIdentifier {
+        if let processID = store.webRuntimes[board.id]?.webProcessIdentifier {
             return "Web PID \(processID)"
         }
         if let processGroupID = store.terminalRuntimes[board.id]?.foregroundProcessGroupID {
@@ -128,13 +128,13 @@ struct BoardActivityView: View {
     }
 
     private func processIdentifier(for board: BoardState) -> pid_t? {
-        store.runtimes[board.id]?.webProcessIdentifier
+        store.webRuntimes[board.id]?.webProcessIdentifier
             ?? store.terminalRuntimes[board.id]?.foregroundProcessGroupID
     }
 
     private func refreshResourceUsage() {
         var activeSamplerKeys = Set<String>()
-        let webProcessIDs = Set(store.runtimes.values.compactMap(\.webProcessIdentifier))
+        let webProcessIDs = Set(store.webRuntimes.values.compactMap(\.webProcessIdentifier))
         webUsage = Dictionary(
             uniqueKeysWithValues: webProcessIDs.compactMap { processID in
                 let key = "web:\(processID)"
@@ -156,7 +156,7 @@ struct BoardActivityView: View {
 
 private struct BoardActivityRow: View {
     let board: BoardState
-    let webRuntime: BoardRuntime?
+    let webRuntime: WebBoardRuntime?
     let terminalRuntime: TerminalRuntime?
     let usage: ProcessResourceUsage?
     let processLabel: String?
@@ -343,7 +343,7 @@ private struct BoardActivityTableHeader: View {
 }
 
 private struct WebActivityStateIcon: View {
-    @ObservedObject var runtime: BoardRuntime
+    @ObservedObject var runtime: WebBoardRuntime
 
     @ViewBuilder
     var body: some View {

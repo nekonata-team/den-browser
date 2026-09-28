@@ -3,7 +3,7 @@ import Combine
 import Foundation
 import WebKit
 
-final class BoardWKWebView: WKWebView {
+final class WebBoardWKWebView: WKWebView {
     var isFocusAllowed: () -> Bool = { false }
     var onUserInteraction: (() -> Void)?
     var onRejectedFocus: (() -> Void)?
@@ -33,7 +33,7 @@ final class BoardWKWebView: WKWebView {
 }
 
 @MainActor
-final class BoardRuntime: BaseWebRuntime, ObservableObject {
+final class WebBoardRuntime: BaseWebRuntime, ObservableObject {
     struct Events {
         var onChange: (UUID, URL?, String?) -> Void
         var onFullscreenChange: ((UUID, Bool) -> Void)?
@@ -117,7 +117,7 @@ final class BoardRuntime: BaseWebRuntime, ObservableObject {
         self.webExtensionWindow = webExtensionWindow
         self.sheetNavigationActions = sheetNavigationActions
         self.events = events
-        PerformanceTrace.mark("BoardRuntime.init (\(board.id.uuidString.prefix(8)))", category: "Board")
+        PerformanceTrace.mark("WebBoardRuntime.init (\(board.id.uuidString.prefix(8)))", category: "Board")
 
         super.init(
             id: board.id,
@@ -132,12 +132,12 @@ final class BoardRuntime: BaseWebRuntime, ObservableObject {
             enableElementFullscreen: true,
             existingWebView: popupWebView,
             makeWebView: { configuration in
-                BoardWKWebView(frame: .zero, configuration: configuration)
+                WebBoardWKWebView(frame: .zero, configuration: configuration)
             }
         )
         webView.allowsMagnification = true
 
-        if let boardWebView = webView as? BoardWKWebView {
+        if let boardWebView = webView as? WebBoardWKWebView {
             boardWebView.isFocusAllowed = { [weak self] in
                 self?.events.isFocused() ?? false
             }
@@ -216,7 +216,7 @@ final class BoardRuntime: BaseWebRuntime, ObservableObject {
             }
         }
         sheetNavigation.updateActions(sheetNavigationActions, for: webView)
-        if let boardWebView = webView as? BoardWKWebView {
+        if let boardWebView = webView as? WebBoardWKWebView {
             boardWebView.isFocusAllowed = { [weak self] in
                 self?.events.isFocused() ?? false
             }
@@ -346,7 +346,7 @@ final class BoardRuntime: BaseWebRuntime, ObservableObject {
     }
 
     override func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
-        PerformanceTrace.mark("BoardRuntime.didFinish navigation (\(id.uuidString.prefix(8)))", category: "Board")
+        PerformanceTrace.mark("WebBoardRuntime.didFinish navigation (\(id.uuidString.prefix(8)))", category: "Board")
         traceWebProcessIdentifier()
         sheetNavigation.refreshConfiguration(for: webView)
         updateFavicon()
@@ -488,7 +488,7 @@ final class BoardRuntime: BaseWebRuntime, ObservableObject {
     }
 
     override func webView(_ webView: WKWebView, didCommit navigation: WKNavigation!) {
-        PerformanceTrace.mark("BoardRuntime.didCommit navigation (\(id.uuidString.prefix(8)))", category: "Board")
+        PerformanceTrace.mark("WebBoardRuntime.didCommit navigation (\(id.uuidString.prefix(8)))", category: "Board")
         traceWebProcessIdentifier()
         didTerminateContentProcess = false
         guard isShowingInitialLoadFallback else { return }
@@ -568,7 +568,7 @@ final class BoardRuntime: BaseWebRuntime, ObservableObject {
         }
 
         configuration.userContentController = sheetNavigation.makeBoardUserContentController()
-        let popup = BoardWKWebView(frame: .zero, configuration: configuration)
+        let popup = WebBoardWKWebView(frame: .zero, configuration: configuration)
         popup.pageZoom = webView.pageZoom
         guard events.onCreatePopupBoard(popup, url, navigationAction.modifierFlags) else { return nil }
         return popup

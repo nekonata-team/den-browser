@@ -24,7 +24,7 @@ struct DenStorePersistenceTests {
             preferences: preferences)
 
         // Act
-        let runtime = store.runtime(for: board)
+        let runtime = store.webRuntime(for: board)
 
         // Assert
         #expect(runtime.webView.pageZoom == 0.8)
@@ -44,7 +44,7 @@ struct DenStorePersistenceTests {
             state: DenState(desks: [source], focusedDeskID: source.id),
             sheetNavigation: sheetNavigation,
             preferences: preferences)
-        let runtime = store.runtime(for: board)
+        let runtime = store.webRuntime(for: board)
         runtime.webView.magnification = 1.2
         preferences.setSheetScale(90)
 
@@ -69,7 +69,7 @@ struct DenStorePersistenceTests {
             state: DenState(desks: [source], focusedDeskID: source.id),
             sheetNavigation: sheetNavigation,
             preferences: preferences)
-        let runtime = store.runtime(for: board)
+        let runtime = store.webRuntime(for: board)
         runtime.webView.magnification = 1.2
 
         // Act
@@ -95,7 +95,7 @@ struct DenStorePersistenceTests {
             state: DenState(desks: [source], focusedDeskID: source.id),
             sheetNavigation: sheetNavigation,
             preferences: preferences)
-        let runtime = store.runtime(for: board)
+        let runtime = store.webRuntime(for: board)
         runtime.webView.pageZoom = 1.4
         runtime.webView.magnification = 1.2
 

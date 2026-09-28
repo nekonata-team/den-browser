@@ -10,7 +10,7 @@ final class DenIPCService {
         let profileID: UUID
         let store: DenStore
         let board: BoardState
-        let runtime: BoardRuntime
+        let runtime: WebBoardRuntime
     }
 
     private var server: DenSocketServer?
@@ -112,7 +112,7 @@ final class DenIPCService {
         else {
             return .failure("Inspection Board target Web Board is unavailable")
         }
-        guard let runtime = store.runtimes[target.id] else {
+        guard let runtime = store.webRuntimes[target.id] else {
             return .failure("Inspection collection is unavailable for the target Web Board")
         }
         let generation = runtime.inspectionPageGeneration
@@ -334,7 +334,7 @@ final class DenIPCService {
                 profileID: profileID,
                 store: store,
                 board: board,
-                runtime: store.runtime(for: board)
+                runtime: store.webRuntime(for: board)
             )
         }
         let store = target.store
@@ -580,7 +580,7 @@ final class DenIPCService {
                     else {
                         return .failure("Failed to create new Web Board for \(href)")
                     }
-                    _ = store.runtime(for: newBoard)
+                    _ = store.webRuntime(for: newBoard)
                     return .success(
                         message: "Opened \(description) in new Board",
                         boardId: newBoardID.uuidString,
@@ -953,7 +953,7 @@ final class DenIPCService {
                 focus: payload.focus,
                 origin: .cli
             ), let board = store.board(for: boardID) {
-                _ = store.runtime(for: board)
+                _ = store.webRuntime(for: board)
                 return .success(boardId: boardID.uuidString)
             }
             return .failure("Failed to open board with \(urlString)")
@@ -1125,7 +1125,7 @@ final class DenIPCService {
             if let boardID = store.placeDrawerItemAsBoard(item.id),
                 let board = store.board(for: boardID)
             {
-                _ = store.runtime(for: board)
+                _ = store.webRuntime(for: board)
                 return .success(message: "Placed Drawer Item as Board", boardId: boardID.uuidString)
             }
             return .failure("Failed to place Drawer Item as Board: \(idString)")

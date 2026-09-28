@@ -198,14 +198,14 @@ extension DenStore {
         }) {
             guard existingSideBoard.isInspection else { return nil }
             if focus { focusBoard(existingSideBoard.id, exitsDenMode: true) }
-            if !focus { runtime(for: targetBoard).startInspectionCollection(highlightColor: nil) }
+            if !focus { webRuntime(for: targetBoard).startInspectionCollection(highlightColor: nil) }
             return existingSideBoard.id
         }
         let board = BoardState(
             width: 360,
             targetBoardID: targetBoardID
         )
-        let targetRuntime = focus ? nil : runtime(for: targetBoard)
+        let targetRuntime = focus ? nil : webRuntime(for: targetBoard)
         guard insertBoard(board, afterBoardID: targetBoardID, focus: focus, origin: focus ? .interactive : .cli) else {
             return nil
         }
@@ -231,7 +231,7 @@ extension DenStore {
             width: sourceBoard.width,
             currentSheetURL: initialURL)
         let focus = !modifierFlags.contains(.command) || modifierFlags.contains(.shift)
-        let runtime = runtime(for: board, popupWebView: popupWebView)
+        let runtime = webRuntime(for: board, popupWebView: popupWebView)
         guard runtime.webView === popupWebView else {
             disposeRuntime(for: board.id)
             return false
@@ -368,7 +368,7 @@ extension DenStore {
         setTemporaryContext(nil)
         isDenMode = false
         save()
-        runtimes[boardID]?.load(url)
+        webRuntimes[boardID]?.load(url)
         return true
     }
 
@@ -418,7 +418,7 @@ extension DenStore {
             }
             for removedBoard in groupBoards {
                 if removedBoard.isInspection, let targetBoardID = removedBoard.sideBoardTargetBoardID {
-                    runtimes[targetBoardID]?.stopInspection()
+                    webRuntimes[targetBoardID]?.stopInspection()
                 }
                 disposeRuntime(for: removedBoard.id)
             }
@@ -661,11 +661,11 @@ extension DenStore {
     }
 
     func goBackInFocusedBoard() {
-        focusedRuntime?.webView.goBack()
+        focusedWebRuntime?.webView.goBack()
     }
 
     func goForwardInFocusedBoard() {
-        focusedRuntime?.webView.goForward()
+        focusedWebRuntime?.webView.goForward()
     }
 
     func goToFirstSheetInFocusedBoard() {
@@ -673,7 +673,7 @@ extension DenStore {
             let firstSheetURL = focusedBoard?.firstSheetURL,
             let currentSheetURL = focusedBoard?.currentSheetURL,
             currentSheetURL != firstSheetURL,
-            let runtime = focusedRuntime
+            let runtime = focusedWebRuntime
         else { return }
         runtime.load(firstSheetURL)
     }
@@ -686,7 +686,7 @@ extension DenStore {
 
     func goToLatestSheetInFocusedBoard() {
         guard
-            let webView = focusedRuntime?.webView,
+            let webView = focusedWebRuntime?.webView,
             let latestSheet = webView.backForwardList.forwardList.last
         else { return }
         webView.go(to: latestSheet)
@@ -701,27 +701,27 @@ extension DenStore {
     func goBackInBoard(_ boardID: UUID) {
         guard boardIndices(for: boardID) != nil else { return }
         focusBoard(boardID)
-        focusedRuntime?.webView.goBack()
+        focusedWebRuntime?.webView.goBack()
     }
 
     func goForwardInBoard(_ boardID: UUID) {
         guard boardIndices(for: boardID) != nil else { return }
         focusBoard(boardID)
-        focusedRuntime?.webView.goForward()
+        focusedWebRuntime?.webView.goForward()
     }
 
     func reloadFocusedBoard() {
-        focusedRuntime?.webView.reload()
+        focusedWebRuntime?.webView.reload()
     }
 
     func reloadFocusedBoardFromOrigin() {
-        focusedRuntime?.webView.reloadFromOrigin()
+        focusedWebRuntime?.webView.reloadFromOrigin()
     }
 
     func reloadFocusedDeskSheets() {
         guard let desk = focusedDesk else { return }
         for board in desk.boards where board.isWeb {
-            runtime(for: board).webView.reload()
+            webRuntime(for: board).webView.reload()
         }
     }
 

@@ -360,8 +360,8 @@ struct ProfileManagerTests {
         firstStore.focusDesk(firstStore.state.desks[0].id)
         secondStore.state = DenState(desks: [desk("Second", boards: [secondBoard])], focusedDeskID: UUID())
         secondStore.focusDesk(secondStore.state.desks[0].id)
-        let firstWebView = firstStore.runtime(for: firstBoard).webView
-        let secondWebView = secondStore.runtime(for: secondBoard).webView
+        let firstWebView = firstStore.webRuntime(for: firstBoard).webView
+        let secondWebView = secondStore.webRuntime(for: secondBoard).webView
 
         // Act
         let firstHandled = navigation.handleScriptMessage(
@@ -813,14 +813,14 @@ struct ProfileManagerTests {
         let targetBoard = board("SharedBoard")
         store1.state = DenState(desks: [desk("Main", boards: [targetBoard])], focusedDeskID: UUID())
         store1.focusDesk(store1.state.desks[0].id)
-        let runtime = store1.runtime(for: targetBoard)
+        let runtime = store1.webRuntime(for: targetBoard)
 
         // Act
         manager.unregister(window: window1, for: route1)
 
         // Assert
         #expect(runtime.webView.navigationDelegate != nil)
-        #expect(store2.storage.runtimes[targetBoard.id] === runtime)
+        #expect(store2.storage.webRuntimes[targetBoard.id] === runtime)
     }
 
     @Test func closingFinalWindowReleasesSharedRuntimes() throws {
@@ -838,7 +838,7 @@ struct ProfileManagerTests {
         let targetBoard = board("TargetBoard")
         store.state = DenState(desks: [desk("Main", boards: [targetBoard])], focusedDeskID: UUID())
         store.focusDesk(store.state.desks[0].id)
-        let runtime = store.runtime(for: targetBoard)
+        let runtime = store.webRuntime(for: targetBoard)
 
         // Act
         manager.unregister(window: window, for: route)

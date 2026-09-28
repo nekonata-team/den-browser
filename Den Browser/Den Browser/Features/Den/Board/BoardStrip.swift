@@ -153,7 +153,7 @@ struct BoardStrip: View {
                     let isFocused = store.focusedDesk?.focusedBoardID == board.id
                     let isVisible = visibleBoardIDs.contains(board.id) || isFocused
                     let isActivated = activatedBoardIDs.contains(board.id) || isVisible
-                    let needsRuntime = isActivated && board.isWeb && store.runtimes[board.id] == nil
+                    let needsRuntime = isActivated && board.isWeb && store.webRuntimes[board.id] == nil
                     let isDragging = draggedBoardIDs.contains(board.id)
 
                     boardView(
@@ -168,7 +168,7 @@ struct BoardStrip: View {
                     )
                     .task(id: needsRuntime) {
                         guard needsRuntime else { return }
-                        _ = store.runtime(for: board)
+                        _ = store.webRuntime(for: board)
                     }
                     .onScrollVisibilityChange(threshold: 0.05) { visible in
                         if visible {
@@ -602,61 +602,69 @@ struct BoardStrip: View {
                 onRemove: { store.removeBoard(board.id) },
                 onDragChanged: { updateBoardDrag(board, value: $0, in: containerSize) },
                 onDragEnded: { finishBoardDrag(value: $0, in: containerSize) })
-        } else if board.isInspection, let targetBoardID = board.sideBoardTargetBoardID {
-            InspectionBoardView(
-                board: board,
-                isFocused: focused,
-                focusRequest: boardFocusRequest,
-                isDragging: isDragging,
-                isPointerFocusEnabled: pointerFocusEnabled,
-                profileColor: profileColor,
-                width: size.width,
-                height: size.height,
-                isVisibleInViewport: isVisible,
-                targetBoardID: targetBoardID,
-                onFocus: focus,
-                onRemove: { store.removeBoard(board.id) },
-                onDragChanged: { updateBoardDrag(board, value: $0, in: containerSize) },
-                onDragEnded: { finishBoardDrag(value: $0, in: containerSize) }
-            )
-        } else if board.isTerminal {
-            TerminalBoardView(
-                board: board,
-                isFocused: focused,
-                focusRequest: boardFocusRequest,
-                isDragging: isDragging,
-                runtime: store.terminalRuntime(for: board),
-                profileColor: profileColor,
-                width: size.width,
-                height: size.height,
-                isPointerFocusEnabled: pointerFocusEnabled,
-                isVisibleInViewport: isVisible,
-                onFocus: focus,
-                onRemove: { store.removeBoard(board.id) },
-                onDragChanged: { updateBoardDrag(board, value: $0, in: containerSize) },
-                onDragEnded: { finishBoardDrag(value: $0, in: containerSize) })
-        } else if let runtime = store.runtimes[board.id] {
-            BoardView(
-                board: board,
-                isFocused: focused,
-                focusRequest: boardFocusRequest,
-                isDragging: isDragging,
-                runtime: runtime,
-                profileColor: profileColor,
-                width: size.width,
-                height: size.height,
-                isPointerFocusEnabled: pointerFocusEnabled,
-                isVisibleInViewport: isVisible,
-                onFocus: focus,
-                onGoToFirst: { store.goToFirstSheetInBoard(board.id) },
-                onGoBack: { store.goBackInBoard(board.id) },
-                onGoForward: { store.goForwardInBoard(board.id) },
-                onRemove: { store.removeBoard(board.id) },
-                onDragChanged: { updateBoardDrag(board, value: $0, in: containerSize) },
-                onDragEnded: { finishBoardDrag(value: $0, in: containerSize) })
         } else {
-            Color.clear
-                .frame(width: size.width, height: size.height)
+            switch board.content {
+            case .inspection:
+                if let targetBoardID = board.sideBoardTargetBoardID {
+                    InspectionBoardView(
+                        board: board,
+                        isFocused: focused,
+                        focusRequest: boardFocusRequest,
+                        isDragging: isDragging,
+                        isPointerFocusEnabled: pointerFocusEnabled,
+                        profileColor: profileColor,
+                        width: size.width,
+                        height: size.height,
+                        isVisibleInViewport: isVisible,
+                        targetBoardID: targetBoardID,
+                        onFocus: focus,
+                        onRemove: { store.removeBoard(board.id) },
+                        onDragChanged: { updateBoardDrag(board, value: $0, in: containerSize) },
+                        onDragEnded: { finishBoardDrag(value: $0, in: containerSize) }
+                    )
+                } else {
+                    Color.clear.frame(width: size.width, height: size.height)
+                }
+            case .terminal:
+                TerminalBoardView(
+                    board: board,
+                    isFocused: focused,
+                    focusRequest: boardFocusRequest,
+                    isDragging: isDragging,
+                    runtime: store.terminalRuntime(for: board),
+                    profileColor: profileColor,
+                    width: size.width,
+                    height: size.height,
+                    isPointerFocusEnabled: pointerFocusEnabled,
+                    isVisibleInViewport: isVisible,
+                    onFocus: focus,
+                    onRemove: { store.removeBoard(board.id) },
+                    onDragChanged: { updateBoardDrag(board, value: $0, in: containerSize) },
+                    onDragEnded: { finishBoardDrag(value: $0, in: containerSize) })
+            case .web:
+                if let runtime = store.webRuntimes[board.id] {
+                    WebBoardView(
+                        board: board,
+                        isFocused: focused,
+                        focusRequest: boardFocusRequest,
+                        isDragging: isDragging,
+                        runtime: runtime,
+                        profileColor: profileColor,
+                        width: size.width,
+                        height: size.height,
+                        isPointerFocusEnabled: pointerFocusEnabled,
+                        isVisibleInViewport: isVisible,
+                        onFocus: focus,
+                        onGoToFirst: { store.goToFirstSheetInBoard(board.id) },
+                        onGoBack: { store.goBackInBoard(board.id) },
+                        onGoForward: { store.goForwardInBoard(board.id) },
+                        onRemove: { store.removeBoard(board.id) },
+                        onDragChanged: { updateBoardDrag(board, value: $0, in: containerSize) },
+                        onDragEnded: { finishBoardDrag(value: $0, in: containerSize) })
+                } else {
+                    Color.clear.frame(width: size.width, height: size.height)
+                }
+            }
         }
     }
 

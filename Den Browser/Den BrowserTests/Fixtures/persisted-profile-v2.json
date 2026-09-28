@@ -1,0 +1,100 @@
+{
+  "schemaVersion": 2,
+  "profile": {
+    "id": "00000000-0000-0000-0000-000000000100",
+    "name": "Work",
+    "color": "purple",
+    "webProfileStore": { "kind": "default" }
+  },
+  "den": {
+    "focusedDeskID": "00000000-0000-0000-0000-000000000201",
+    "desks": [{
+      "id": "00000000-0000-0000-0000-000000000201",
+      "label": "Migration",
+      "focusedBoardID": "00000000-0000-0000-0000-000000000301",
+      "boards": [
+        {
+          "id": "00000000-0000-0000-0000-000000000301",
+          "label": "Web",
+          "width": 520,
+          "role": { "kind": "primary" },
+          "content": {
+            "kind": "web",
+            "currentSheetURL": "https://example.com/current",
+            "firstSheetURL": "https://example.com/first"
+          },
+          "sheetNavigationPaused": true
+        },
+        {
+          "id": "00000000-0000-0000-0000-000000000302",
+          "label": "Inspection",
+          "width": 360,
+          "role": {
+            "kind": "sideBoard",
+            "targetBoardID": "00000000-0000-0000-0000-000000000301"
+          },
+          "content": { "kind": "inspection" }
+        },
+        {
+          "id": "00000000-0000-0000-0000-000000000303",
+          "label": "Shell",
+          "width": 640,
+          "role": { "kind": "primary" },
+          "content": { "kind": "terminal", "workingDirectory": "/work" }
+        },
+        {
+          "id": "00000000-0000-0000-0000-000000000304",
+          "label": "Zellij",
+          "width": 640,
+          "role": { "kind": "primary" },
+          "content": { "kind": "zellij", "sessionName": "project" }
+        },
+        {
+          "id": "00000000-0000-0000-0000-000000000305",
+          "label": "zmx",
+          "width": 640,
+          "role": { "kind": "primary" },
+          "content": {
+            "kind": "zmx",
+            "sessionName": "project-zmx",
+            "workingDirectory": "/work/zmx",
+            "rootSessionName": "project"
+          }
+        }
+      ]
+    }]
+  },
+  "deskPresets": [{
+    "id": "00000000-0000-0000-0000-000000000401",
+    "label": "Migration preset",
+    "focusedBoardIndex": 0,
+    "boards": [
+      {
+        "label": "Preset Web",
+        "width": 520,
+        "content": { "kind": "web", "initialSheetURL": "https://example.com/preset" }
+      },
+      {
+        "label": "Preset Inspection",
+        "width": 360,
+        "content": { "kind": "inspection" },
+        "targetBoardIndex": 0
+      },
+      {
+        "label": "Preset Shell",
+        "width": 640,
+        "content": { "kind": "terminal", "workingDirectory": "/preset" }
+      },
+      {
+        "label": "Preset Zellij",
+        "width": 640,
+        "content": { "kind": "zellij", "sessionName": "preset-zellij" }
+      },
+      {
+        "label": "Preset zmx",
+        "width": 640,
+        "content": { "kind": "zmx", "sessionName": "preset-zmx" }
+      }
+    ]
+  }]
+}

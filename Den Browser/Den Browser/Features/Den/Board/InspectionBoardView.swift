@@ -29,7 +29,7 @@ struct InspectionBoardView: View {
     @Environment(\.accessibilityDifferentiateWithoutColor) private var differentiateWithoutColor
 
     private var targetBoard: BoardState? { store.board(for: targetBoardID) }
-    private var targetRuntime: BoardRuntime? { store.runtimes[targetBoardID] }
+    private var targetRuntime: WebBoardRuntime? { store.webRuntimes[targetBoardID] }
     private var inspectionHighlightColor: ProfileRGB? { ProfileRGB(color: profileColor) }
 
     var body: some View {

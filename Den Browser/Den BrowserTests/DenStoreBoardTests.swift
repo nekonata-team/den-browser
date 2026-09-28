@@ -62,7 +62,9 @@ struct DenStoreBoardTests {
             let restoredNamed = try JSONDecoder().decode(
                 BoardState.self,
                 from: JSONEncoder().encode(named))
-            #expect(restoredNamed.content == .zellij(ZellijBoardState(sessionName: "project-a")))
+            #expect(
+                restoredNamed.content
+                    == .terminal(.zellij(ZellijBoardState(sessionName: "project-a"))))
 
             store.openBoard(input: ":zellij")
             let welcome = try #require(store.focusedBoard)
@@ -76,7 +78,9 @@ struct DenStoreBoardTests {
             let restoredWelcome = try JSONDecoder().decode(
                 BoardState.self,
                 from: JSONEncoder().encode(welcome))
-            #expect(restoredWelcome.content == .zellij(ZellijBoardState(sessionName: nil)))
+            #expect(
+                restoredWelcome.content
+                    == .terminal(.zellij(ZellijBoardState(sessionName: nil))))
         }
     }
 
@@ -115,10 +119,11 @@ struct DenStoreBoardTests {
                 from: JSONEncoder().encode(board))
             #expect(
                 restored.content
-                    == .zmx(
-                        ZmxBoardState(
-                            sessionName: "project-a",
-                            workingDirectory: FileManager.default.homeDirectoryForCurrentUser.path)))
+                    == .terminal(
+                        .zmx(
+                            ZmxBoardState(
+                                sessionName: "project-a",
+                                workingDirectory: FileManager.default.homeDirectoryForCurrentUser.path))))
 
             store.openBoard(input: ":zmx")
             await waitForZmxSessionLoad(store)
@@ -262,11 +267,12 @@ struct DenStoreBoardTests {
                 from: JSONEncoder().encode(firstChild))
             #expect(
                 restoredChild.content
-                    == .zmx(
-                        ZmxBoardState(
-                            sessionName: "den-vi",
-                            workingDirectory: "/tmp/project",
-                            rootSessionName: "den")))
+                    == .terminal(
+                        .zmx(
+                            ZmxBoardState(
+                                sessionName: "den-vi",
+                                workingDirectory: "/tmp/project",
+                                rootSessionName: "den"))))
 
             store.duplicateFocusedBoard()
             await store.waitForZmxCommand()
@@ -331,7 +337,7 @@ struct DenStoreBoardTests {
         defer { store.releaseRuntimes() }
 
         let popupURL = try #require(URL(string: "https://login.example/authorize"))
-        let backgroundPopup = BoardWKWebView(frame: .zero, configuration: WKWebViewConfiguration())
+        let backgroundPopup = WebBoardWKWebView(frame: .zero, configuration: WKWebViewConfiguration())
 
         // Act
         #expect(
@@ -346,7 +352,7 @@ struct DenStoreBoardTests {
         #expect(store.focusedBoard?.id == sourceBoard.id)
         #expect(backgroundBoard.currentSheetURL == popupURL)
         #expect(backgroundBoard.firstSheetURL == popupURL)
-        #expect(store.runtimes[backgroundBoard.id]?.webView === backgroundPopup)
+        #expect(store.webRuntimes[backgroundBoard.id]?.webView === backgroundPopup)
         #expect(backgroundPopup.url == nil)
     }
 
@@ -355,7 +361,7 @@ struct DenStoreBoardTests {
         let sourceBoard = BoardState(label: "Source", width: 520, currentSheetURL: nil)
         let store = popupStore(for: sourceBoard)
         defer { store.releaseRuntimes() }
-        let popup = BoardWKWebView(frame: .zero, configuration: WKWebViewConfiguration())
+        let popup = WebBoardWKWebView(frame: .zero, configuration: WKWebViewConfiguration())
 
         // Act
         #expect(
@@ -369,7 +375,7 @@ struct DenStoreBoardTests {
         let focusedBoard = try #require(store.focusedBoard)
         #expect(focusedBoard.id != sourceBoard.id)
         #expect(focusedBoard.currentSheetURL == nil)
-        #expect(store.runtimes[focusedBoard.id]?.webView === popup)
+        #expect(store.webRuntimes[focusedBoard.id]?.webView === popup)
         #expect(popup.url == nil)
     }
 
@@ -378,7 +384,7 @@ struct DenStoreBoardTests {
         let sourceBoard = BoardState(label: "Source", width: 520, currentSheetURL: nil)
         let store = popupStore(for: sourceBoard)
         defer { store.releaseRuntimes() }
-        let popup = BoardWKWebView(frame: .zero, configuration: WKWebViewConfiguration())
+        let popup = WebBoardWKWebView(frame: .zero, configuration: WKWebViewConfiguration())
 
         // Act
         #expect(
@@ -391,7 +397,7 @@ struct DenStoreBoardTests {
         // Assert
         let focusedBoard = try #require(store.focusedBoard)
         #expect(focusedBoard.id != sourceBoard.id)
-        #expect(store.runtimes[focusedBoard.id]?.webView === popup)
+        #expect(store.webRuntimes[focusedBoard.id]?.webView === popup)
     }
 
     @Test func closingPopupWebViewRemovesItsBoard() throws {
@@ -399,7 +405,7 @@ struct DenStoreBoardTests {
         let sourceBoard = BoardState(label: "Source", width: 520, currentSheetURL: nil)
         let store = popupStore(for: sourceBoard)
         defer { store.releaseRuntimes() }
-        let popup = BoardWKWebView(frame: .zero, configuration: WKWebViewConfiguration())
+        let popup = WebBoardWKWebView(frame: .zero, configuration: WKWebViewConfiguration())
         #expect(
             store.createPopupBoard(
                 popup,
@@ -409,11 +415,11 @@ struct DenStoreBoardTests {
         let popupBoard = try #require(store.focusedBoard)
 
         // Act
-        store.runtimes[popupBoard.id]?.webViewDidClose(popup)
+        store.webRuntimes[popupBoard.id]?.webViewDidClose(popup)
 
         // Assert
         #expect(store.board(for: popupBoard.id) == nil)
-        #expect(store.runtimes[popupBoard.id] == nil)
+        #expect(store.webRuntimes[popupBoard.id] == nil)
     }
 
     @Test func windowOpenPopupPreservesOpenerPostMessage() async throws {
@@ -424,8 +430,8 @@ struct DenStoreBoardTests {
         let configuration = WKWebViewConfiguration()
         configuration.websiteDataStore = store.websiteDataStore
         configuration.userContentController = store.sheetNavigation.userContentController
-        let sourceWebView = BoardWKWebView(frame: .zero, configuration: configuration)
-        let sourceRuntime = store.runtime(for: sourceBoard, popupWebView: sourceWebView)
+        let sourceWebView = WebBoardWKWebView(frame: .zero, configuration: configuration)
+        let sourceRuntime = store.webRuntime(for: sourceBoard, popupWebView: sourceWebView)
         let waiter = SheetInteractionWebViewLoadWaiter()
         await waiter.load(
             """
@@ -445,7 +451,7 @@ struct DenStoreBoardTests {
         _ = try await sourceRuntime.webView.evaluateJavaScript(
             "window.open('about:blank', '_blank'); true")
         let popupBoard = try #require(store.state.desks[0].boards.first { $0.id != sourceBoard.id })
-        let popupRuntime = try #require(store.runtimes[popupBoard.id])
+        let popupRuntime = try #require(store.webRuntimes[popupBoard.id])
         _ = try await popupRuntime.webView.evaluateJavaScript(
             "window.opener.postMessage('popup-message', '*')")
         try await SheetInteraction.waitForFunction(
@@ -464,7 +470,7 @@ struct DenStoreBoardTests {
         let sourceBoard = BoardState(label: "Source", width: 520, currentSheetURL: nil)
         let store = popupStore(for: sourceBoard)
         defer { store.releaseRuntimes() }
-        let sourceRuntime = store.runtime(for: sourceBoard)
+        let sourceRuntime = store.webRuntime(for: sourceBoard)
         let waiter = SheetInteractionWebViewLoadWaiter()
         await waiter.load(
             """
@@ -1551,14 +1557,14 @@ struct DenStoreBoardTests {
     @Test func restorationCreatesANewBoardRuntime() throws {
         let removed = board("Removed")
         try withStore(desks: [desk("Desk", boards: [removed])]) { store in
-            let originalRuntime = store.runtime(for: removed)
+            let originalRuntime = store.webRuntime(for: removed)
 
             store.removeFocusedBoard()
-            #expect(store.runtimes[removed.id] == nil)
+            #expect(store.webRuntimes[removed.id] == nil)
 
             store.restoreRecentlyRemovedBoard()
             let restoredBoard = try #require(store.focusedDesk?.boards.first)
-            let restoredRuntime = store.runtime(for: restoredBoard)
+            let restoredRuntime = store.webRuntime(for: restoredBoard)
             #expect(restoredRuntime !== originalRuntime)
         }
     }
@@ -1566,11 +1572,11 @@ struct DenStoreBoardTests {
     @Test func removingBoardDisposesItsRuntime() {
         let removed = board("Removed")
         withStore(desks: [desk("Desk", boards: [removed])]) { store in
-            let runtime = store.runtime(for: removed)
+            let runtime = store.webRuntime(for: removed)
 
             store.removeFocusedBoard()
 
-            #expect(store.runtimes[removed.id] == nil)
+            #expect(store.webRuntimes[removed.id] == nil)
             #expect(runtime.webView.navigationDelegate == nil)
             #expect(runtime.webView.uiDelegate == nil)
         }

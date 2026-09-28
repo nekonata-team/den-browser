@@ -332,8 +332,8 @@ extension DenStore {
         guard let runtime = drawerPreviewRuntime else { return }
         runtime.dispose()
         drawerPreviewRuntime = nil
-        if let focusedBoardID = focusedBoard?.id, let focusedRuntime = runtimes[focusedBoardID] {
-            webExtensionHost?.activate(webView: focusedRuntime.webView)
+        if let focusedBoardID = focusedBoard?.id, let focusedWebRuntime = webRuntimes[focusedBoardID] {
+            webExtensionHost?.activate(webView: focusedWebRuntime.webView)
         }
     }
 

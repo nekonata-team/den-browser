@@ -141,7 +141,7 @@ struct BoardRail: View {
             Image(systemSymbol: board.systemSymbol)
                 .foregroundStyle(.secondary)
                 .frame(width: 16, height: 16)
-        } else if let runtime = store.runtimes[board.id] {
+        } else if let runtime = store.webRuntimes[board.id] {
             BoardRailFavicon(runtime: runtime)
         } else {
             Image(systemSymbol: .globe)
@@ -176,7 +176,7 @@ struct BoardRail: View {
 }
 
 private struct BoardRailFavicon: View {
-    @ObservedObject var runtime: BoardRuntime
+    @ObservedObject var runtime: WebBoardRuntime
 
     var body: some View {
         AsyncImage(url: runtime.faviconURL) { image in

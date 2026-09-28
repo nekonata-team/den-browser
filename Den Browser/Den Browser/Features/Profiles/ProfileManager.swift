@@ -526,8 +526,8 @@ final class ProfileManager {
     }
 
     private func releaseRuntimes(_ storage: DenStorage) {
-        for runtime in storage.runtimes.values { runtime.dispose() }
-        storage.runtimes.removeAll()
+        for runtime in storage.webRuntimes.values { runtime.dispose() }
+        storage.webRuntimes.removeAll()
         for runtime in storage.terminalRuntimes.values { runtime.dispose() }
         storage.terminalRuntimes.removeAll()
         storage.runtimeOwners.removeAll()

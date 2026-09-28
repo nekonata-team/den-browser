@@ -64,7 +64,7 @@ struct DenStoreDeskTests {
         let store = DenStore(
             state: DenState(desks: [replacing, other], focusedDeskID: replacing.id),
             onSave: { savedState = $0 })
-        let runtime = store.runtime(for: oldBoards[0])
+        let runtime = store.webRuntime(for: oldBoards[0])
         let restorationCandidate = RecentlyRemovedBoard(
             board: board("Removed"),
             sourceDeskID: other.id,
@@ -91,7 +91,7 @@ struct DenStoreDeskTests {
         #expect(replaced.boards.allSatisfy { $0.currentSheetURL == URL(string: "https://chatgpt.com/") })
         #expect(Set(replaced.boards.map(\.id)).isDisjoint(with: oldBoards.map(\.id)))
         #expect(replaced.focusedBoardID == replaced.boards.first?.id)
-        #expect(store.runtimes[oldBoards[0].id] == nil)
+        #expect(store.webRuntimes[oldBoards[0].id] == nil)
         #expect(runtime.webView.navigationDelegate == nil)
         #expect(runtime.webView.uiDelegate == nil)
         #expect(store.maximizedBoardID == nil)
@@ -411,12 +411,12 @@ struct DenStoreDeskTests {
         let populated = desk("Populated", boards: [board])
         let empty = desk("Empty")
         withStore(desks: [populated, empty]) { store in
-            let runtime = store.runtime(for: board)
+            let runtime = store.webRuntime(for: board)
             store.deleteFocusedDesk()
 
             store.confirmDeskDeletion()
 
-            #expect(store.runtimes[board.id] == nil)
+            #expect(store.webRuntimes[board.id] == nil)
             #expect(runtime.webView.navigationDelegate == nil)
             #expect(runtime.webView.uiDelegate == nil)
         }

@@ -123,7 +123,7 @@ struct AppConfiguration {
     }
 
     static func loadInitialProfile(at url: URL) throws -> PersistedProfile {
-        try JSONDecoder().decode(PersistedProfile.self, from: Data(contentsOf: url))
+        try PersistedProfileDocumentDecoder.decode(Data(contentsOf: url))
     }
 
     private static func argumentValue(after name: String, in arguments: [String]) -> String? {

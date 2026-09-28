@@ -32,12 +32,12 @@ extension DenStore {
             successMessage: { _ in "Copied Current Sheet screenshot to clipboard." })
     }
 
-    private func focusedSheetRuntime() -> BoardRuntime? {
+    private func focusedSheetRuntime() -> WebBoardRuntime? {
         guard let board = focusedBoard, board.isWeb else {
             showToast("No focused Board.", style: .warning)
             return nil
         }
-        return runtime(for: board)
+        return webRuntime(for: board)
     }
 
     private func startScreenshotTask(
