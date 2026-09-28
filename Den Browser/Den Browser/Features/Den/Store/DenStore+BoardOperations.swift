@@ -442,15 +442,20 @@ extension DenStore {
     }
 
     func toggleAnchorBoard() {
-        guard let deskIndex = focusedDeskIndex,
-            let focusedBoardID = state.desks[deskIndex].focusedBoardID
+        guard let desk = focusedDesk, let focusedBoardID = desk.focusedBoardID else { return }
+        toggleAnchorBoard(focusedBoardID, in: desk.id)
+    }
+
+    func toggleAnchorBoard(_ boardID: UUID, in deskID: UUID) {
+        guard let deskIndex = state.desks.firstIndex(where: { $0.id == deskID }),
+            state.desks[deskIndex].boards.contains(where: { $0.id == boardID })
         else { return }
 
-        if state.desks[deskIndex].anchorBoardID == focusedBoardID {
+        if state.desks[deskIndex].anchorBoardID == boardID {
             state.desks[deskIndex].anchorBoardID = nil
             showToast("Cleared Anchor Board")
         } else {
-            state.desks[deskIndex].anchorBoardID = focusedBoardID
+            state.desks[deskIndex].anchorBoardID = boardID
             showToast("Set Anchor Board")
         }
         save()

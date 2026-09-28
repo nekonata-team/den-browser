@@ -41,6 +41,7 @@ Den controls feel like a calm desk laid over live web sheets. Web content remain
 
 - Keyboard operation leads. Pointer actions support it and must keep focused-board state consistent.
 - Use the native context menu on Board headers for concise, Board-specific actions. Keep Sheet context menus owned by web content, and focus the targeted Board when its header menu opens.
+- BoardRail context menus target the clicked Board without changing focus when they open.
 - Hide Sheet-only controls on Terminal Boards. Keep only shared Board actions such as move, resize, duplicate, rename, maximize, and remove.
 - Keep context-menu ordering stable by disabling unavailable left/right movement instead of hiding it. Do not show Den Mode-only or configurable key equivalents there.
 - Do not make color the only state signal. Focus and direct manipulation need borders, elevation, motion, and accessible labels.

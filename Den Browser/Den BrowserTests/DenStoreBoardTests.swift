@@ -1958,6 +1958,27 @@ struct DenStoreBoardTests {
         }
     }
 
+    @Test func toggleAnchorBoardForAnotherDeskKeepsCurrentFocus() {
+        let focusedBoard = board("Focused")
+        let targetBoard = board("Target")
+        let focusedDesk = desk("Current", boards: [focusedBoard], focusedBoardID: focusedBoard.id)
+        let targetDesk = desk("Overview", boards: [targetBoard])
+
+        withTestStore(desks: [focusedDesk, targetDesk]) { store in
+            store.focusBoard(focusedBoard.id)
+
+            store.toggleAnchorBoard(targetBoard.id, in: targetDesk.id)
+            #expect(store.state.desks.first(where: { $0.id == targetDesk.id })?.anchorBoardID == targetBoard.id)
+            #expect(store.focusedDesk?.id == focusedDesk.id)
+            #expect(store.focusedBoard?.id == focusedBoard.id)
+
+            store.toggleAnchorBoard(targetBoard.id, in: targetDesk.id)
+            #expect(store.state.desks.first(where: { $0.id == targetDesk.id })?.anchorBoardID == nil)
+            #expect(store.focusedDesk?.id == focusedDesk.id)
+            #expect(store.focusedBoard?.id == focusedBoard.id)
+        }
+    }
+
     @Test func jumpToAnchorBoardTogglesBetweenAnchorAndOrigin() {
         let firstBoard = board("First")
         let secondBoard = board("Second")

@@ -168,6 +168,8 @@ Open with `o` in Den Mode.
   - Double-click to focus and center the Board.
   - Drag label or empty area to reorder within the Desk. Dragging either a Primary Board or its Side Board moves the whole Board Group together, with an outline around the group while dragging.
   - Right-click or Control-click for context menu (copy ID, keep in Drawer, duplicate, reload, adjust or reset content size, center, maximize, move to Desk, remove).
+- **BoardRail**:
+  - Right-click or Control-click a Board for its context menu (set or clear Anchor, rename, duplicate, move to Desk, remove). Opening the menu does not change focus.
 - **Board Resize**:
   - Drag the gap after a Board to resize it. Hold `Shift` to resize it with the next Board while keeping the pair's outer edges fixed.
 - **Desk Switcher**:

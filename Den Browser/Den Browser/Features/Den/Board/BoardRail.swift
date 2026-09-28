@@ -133,6 +133,63 @@ struct BoardRail: View {
         .accessibilityAddTraits(isFocused || isOverviewSelected ? .isSelected : [])
         .accessibilityIdentifier("board-rail-board.\(board.id.uuidString.lowercased())")
         .help(board.displayName)
+        .contextMenu {
+            if let desk = railDesk {
+                boardContextMenu(board, in: desk)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func boardContextMenu(_ board: BoardState, in desk: DeskState) -> some View {
+        Button {
+            store.toggleAnchorBoard(board.id, in: desk.id)
+        } label: {
+            Label(
+                desk.anchorBoardID == board.id ? "Clear Anchor Board" : "Set Anchor Board",
+                systemSymbol: .pinFill
+            )
+        }
+
+        Divider()
+
+        Button {
+            store.focusBoard(board.id)
+            store.showRenameBoardPanel()
+        } label: {
+            Label("Rename Board", systemSymbol: .pencil)
+        }
+
+        Button {
+            store.focusBoard(board.id)
+            store.duplicateFocusedBoard()
+        } label: {
+            Label("Duplicate Board", systemSymbol: .plusSquareOnSquare)
+        }
+        .disabled(board.isSideBoard)
+
+        if store.state.desks.count > 1 {
+            Menu {
+                ForEach(Array(store.state.desks.enumerated()), id: \.element.id) { entry in
+                    if entry.element.id != desk.id {
+                        Button("\(entry.offset + 1). \(entry.element.label)") {
+                            store.focusBoard(board.id)
+                            store.moveFocusedBoard(toDeskNumber: entry.offset + 1)
+                        }
+                    }
+                }
+            } label: {
+                Label("Move to Desk", systemSymbol: .rectangleStack)
+            }
+        }
+
+        Divider()
+
+        Button(role: .destructive) {
+            store.removeBoard(board.id)
+        } label: {
+            Label("Remove Board", systemSymbol: .xmark)
+        }
     }
 
     @ViewBuilder
