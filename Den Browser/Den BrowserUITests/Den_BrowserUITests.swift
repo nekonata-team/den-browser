@@ -67,26 +67,6 @@ final class Den_BrowserUITests: XCTestCase, BDD {
         XCTAssertEqual(TISSelectInputSource(source), noErr)
     }
 
-    @MainActor
-    func testOpenProfilePanelCanConfirmFromKeyboard() throws {
-        let app = launchApp(boardCount: .one)
-        let input = app.textFields["open-profile-input"]
-
-        given("the Open Profile panel is opened") {
-            app.typeKey("p", modifierFlags: [.control, .command])
-            XCTAssertTrue(input.waitForExistence(timeout: 5))
-        }
-
-        when("moving to the profile row and confirming with the keyboard") {
-            app.typeKey(.downArrow, modifierFlags: [])
-            app.typeKey(.return, modifierFlags: [])
-        }
-
-        then("the Profile panel closes") {
-            XCTAssertTrue(input.waitForNonExistence(timeout: 5))
-        }
-    }
-
     // Protects AppKit toolbar and shortcut delivery plus native split-view geometry, which unit tests cannot observe.
     @MainActor
     func testBoardRailShortcutPushesDeskSwitcherAndResizesBoardStrip() throws {

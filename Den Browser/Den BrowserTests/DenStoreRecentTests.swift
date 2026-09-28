@@ -76,21 +76,24 @@ struct DenStoreRecentTests {
             })
     }
 
-    @Test func recentKeepsOneHundredItemsAndClearPersists() {
+    @Test func recentKeepsFiveHundredItemsAndClearPersists() {
         var savedItems: [RecentItem] = []
+        let initialItems: [RecentItem] = (0...499)
+            .reversed()
+            .map { .url(URL(string: "https://example.com/\($0)")!) }
         withTestStore(
+            recentItems: initialItems,
             onRecentItemsSave: {
                 savedItems = $0
                 return true
             },
             body: { store in
-                for index in 0...500 {
-                    store.openBoard(input: "https://example.com/\(index)")
-                }
+                store.openBoard(input: "https://example.com/500")
 
                 #expect(store.recentItems.count == 500)
                 #expect(store.recentItems.first == .url(URL(string: "https://example.com/500")!))
                 #expect(store.recentItems.last == .url(URL(string: "https://example.com/1")!))
+                #expect(!store.recentItems.contains(.url(URL(string: "https://example.com/0")!)))
 
                 store.clearRecent()
 
