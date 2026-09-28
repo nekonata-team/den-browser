@@ -218,22 +218,33 @@ struct DenStoreDeskPresetTests {
 
     @Test func personalPresetRestoresZmxBoardSession() throws {
         // Arrange
-        let zmx = BoardState(width: 700, zmxSessionName: "project-a", customLabel: "Project")
+        let zmx = BoardState(
+            width: 700,
+            zmxSessionName: "project-a",
+            rootSessionName: "project",
+            customLabel: "Project")
         let source = desk("Development", boards: [zmx], focusedBoardID: zmx.id)
         let store = DenStore(state: DenState(desks: [source], focusedDeskID: source.id))
 
         // Act
         let saveResult = store.saveFocusedDeskAsPreset(label: "zmx")
         let preset = try #require(store.deskPresets.first)
-        store.createDesk(label: "Copy", personalPresetID: preset.id)
+        let restoredPreset = try JSONDecoder().decode(PersonalDeskPreset.self, from: JSONEncoder().encode(preset))
+        let restoredStore = DenStore(
+            state: DenState(desks: [source], focusedDeskID: source.id),
+            deskPresets: [restoredPreset])
+        restoredStore.createDesk(label: "Copy", personalPresetID: restoredPreset.id)
 
         // Assert
         #expect(saveResult == .created)
-        #expect(preset.boards.first?.content == .terminal(.zmx(sessionName: "project-a")))
-        #expect(store.focusedBoard?.id != zmx.id)
-        #expect(store.focusedBoard?.isZmx == true)
-        #expect(store.focusedBoard?.zmxSessionName == "project-a")
-        #expect(store.focusedBoard?.customLabel == "Project")
+        #expect(
+            restoredPreset.boards.first?.content
+                == .terminal(.zmx(sessionName: "project-a", rootSessionName: "project")))
+        #expect(restoredStore.focusedBoard?.id != zmx.id)
+        #expect(restoredStore.focusedBoard?.isZmx == true)
+        #expect(restoredStore.focusedBoard?.zmxSessionName == "project-a")
+        #expect(restoredStore.focusedBoard?.zmxRootSessionName == "project")
+        #expect(restoredStore.focusedBoard?.customLabel == "Project")
     }
 
     @Test func personalPresetRejectsReservedLabels() {

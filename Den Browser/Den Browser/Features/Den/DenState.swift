@@ -359,8 +359,15 @@ struct BoardState: Codable, Equatable, Identifiable {
     }
 
     var zmxRootSessionName: String? {
-        guard case .terminal(let terminal) = content else { return nil }
-        return terminal.zmxRootSessionName
+        get {
+            guard case .terminal(let terminal) = content else { return nil }
+            return terminal.zmxRootSessionName
+        }
+        set {
+            guard case .terminal(.zmx(var zmx)) = content else { return }
+            zmx.rootSessionName = newValue
+            content = .terminal(.zmx(zmx))
+        }
     }
 
     var isTerminal: Bool {

@@ -78,6 +78,10 @@ final class ZmxSessionsModel {
         processNames[sessionName]
     }
 
+    func rootSessionName(for sessionName: String) -> String? {
+        groups.first { $0.childSessionNames.contains(sessionName) }?.rootSessionName
+    }
+
     func start(client: ZmxClient, selectedSessionName: String?) {
         refreshTask?.cancel()
         killTask?.cancel()

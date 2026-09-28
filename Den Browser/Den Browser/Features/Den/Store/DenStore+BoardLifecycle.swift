@@ -35,7 +35,8 @@ extension DenStore {
             }
             let board = BoardState(
                 width: preferredWidth ?? inheritedBoardWidth,
-                zmxSessionName: sessionName)
+                zmxSessionName: sessionName,
+                rootSessionName: zmxSessions.rootSessionName(for: sessionName))
             let recentItem =
                 input.count <= Self.maximumPersistedRecentInputLength
                 ? RecentItem.zmx(sessionName: sessionName)

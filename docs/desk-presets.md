@@ -11,7 +11,7 @@ Saving the Focused Desk as a Personal Desk Preset captures:
 - Board Widths
 - Current Sheet URLs, including path, query, and fragment
 - First Sheet URLs, initialized from each Board's Current Sheet URL at capture time
-- Terminal Working Directories, optional Zellij session names, and zmx session names
+- Terminal Working Directories, optional Zellij session names, zmx session names, and known zmx root session names
 - Focused Board
 - Inspection Boards, including their position, width, and Board Group connection to a Target Board
 
@@ -20,6 +20,8 @@ An Inspection Board's Target Board is stored by its position in the Preset. Appl
 At least one Board is required. A Board without a Current Sheet URL remains valid because its Label, Width, position, or terminal content can still carry meaning. Inspection runtime data such as DOM selections, highlights, and Console events is not captured; applying the Preset creates an empty Inspection Board. Sheet Stacks, live `WKWebView` state, scroll positions, input, and sign-in state are not captured.
 
 Creating a Desk from any Desk Preset creates new Desk and Board identities. Web Boards receive the Preset's initial Sheet URL as both their Current Sheet URL and First Sheet URL; Inspection Boards start empty and link to the new Target Board ID; Terminal, Zellij, and zmx Boards receive their persisted terminal content. Replacing a Desk preserves its Desk identity and position while creating new Board identities. Neither operation leaves the Desk linked to the Desk Preset. Profile-owned WebKit data still supplies that Profile's existing site sessions.
+
+When a zmx Board's root session name is known, its Personal Desk Preset retains that name. If the zmx session must be created again, the Board uses it to restore the `den.root` group label. Older Presets without a root session name keep their previous behavior.
 
 ## Saving
 

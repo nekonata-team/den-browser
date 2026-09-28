@@ -60,9 +60,9 @@ struct PersonalDeskPreset: Codable, Equatable, Identifiable {
 enum DeskPresetTerminalContent: Codable, Equatable {
     case shell(workingDirectory: String)
     case zellij(sessionName: String?)
-    case zmx(sessionName: String)
+    case zmx(sessionName: String, rootSessionName: String?)
 
-    private enum CodingKeys: String, CodingKey { case kind, workingDirectory, sessionName }
+    private enum CodingKeys: String, CodingKey { case kind, workingDirectory, sessionName, rootSessionName }
     private enum Kind: String, Codable { case shell, zellij, zmx }
 
     init(from decoder: Decoder) throws {
@@ -73,7 +73,9 @@ enum DeskPresetTerminalContent: Codable, Equatable {
         case .zellij:
             self = .zellij(sessionName: try container.decodeIfPresent(String.self, forKey: .sessionName))
         case .zmx:
-            self = .zmx(sessionName: try container.decode(String.self, forKey: .sessionName))
+            self = .zmx(
+                sessionName: try container.decode(String.self, forKey: .sessionName),
+                rootSessionName: try container.decodeIfPresent(String.self, forKey: .rootSessionName))
         }
     }
 
@@ -86,9 +88,10 @@ enum DeskPresetTerminalContent: Codable, Equatable {
         case .zellij(let sessionName):
             try container.encode(Kind.zellij, forKey: .kind)
             try container.encodeIfPresent(sessionName, forKey: .sessionName)
-        case .zmx(let sessionName):
+        case .zmx(let sessionName, let rootSessionName):
             try container.encode(Kind.zmx, forKey: .kind)
             try container.encode(sessionName, forKey: .sessionName)
+            try container.encodeIfPresent(rootSessionName, forKey: .rootSessionName)
         }
     }
 }
@@ -151,7 +154,7 @@ struct DeskPresetBoard: Codable, Equatable {
     }
 
     var zmxSessionName: String? {
-        guard case .terminal(.zmx(let sessionName)) = content else { return nil }
+        guard case .terminal(.zmx(let sessionName, _)) = content else { return nil }
         return sessionName
     }
 
@@ -179,7 +182,7 @@ struct DeskPresetBoard: Codable, Equatable {
         self.init(
             label: label,
             width: width,
-            content: .terminal(.zmx(sessionName: zmxSessionName)),
+            content: .terminal(.zmx(sessionName: zmxSessionName, rootSessionName: nil)),
             customLabel: customLabel)
     }
 
@@ -213,7 +216,7 @@ struct DeskPresetBoard: Codable, Equatable {
         case .terminal(.zellij(let zellij)):
             content = .terminal(.zellij(sessionName: zellij.sessionName))
         case .terminal(.zmx(let zmx)):
-            content = .terminal(.zmx(sessionName: zmx.sessionName))
+            content = .terminal(.zmx(sessionName: zmx.sessionName, rootSessionName: zmx.rootSessionName))
         }
         self.init(
             label: board.label,
@@ -258,12 +261,13 @@ struct DeskPresetBoard: Codable, Equatable {
                 width: width,
                 zellijSessionName: sessionName,
                 customLabel: customLabel)
-        case .terminal(.zmx(let sessionName)):
+        case .terminal(.zmx(let sessionName, let rootSessionName)):
             return BoardState(
                 id: id,
                 label: label,
                 width: width,
                 zmxSessionName: sessionName,
+                rootSessionName: rootSessionName,
                 customLabel: customLabel)
         }
     }

@@ -206,6 +206,9 @@ struct ProfilePersistenceTests {
         #expect(persisted.deskPresets[0].boards[2].terminalWorkingDirectory == "/preset")
         #expect(persisted.deskPresets[0].boards[3].zellijSessionName == "preset-zellij")
         #expect(persisted.deskPresets[0].boards[4].zmxSessionName == "preset-zmx")
+        #expect(
+            persisted.deskPresets[0].boards[4].content
+                == .terminal(.zmx(sessionName: "preset-zmx", rootSessionName: nil)))
 
         let encoded = try JSONEncoder().encode(persisted)
         let object = try jsonObject(encoded)

@@ -183,6 +183,7 @@ struct DenStoreBoardTests {
 
             store.openZmxSession("den-vi")
             #expect(store.focusedBoard?.zmxSessionName == "den-vi")
+            #expect(store.focusedBoard?.zmxRootSessionName == "den")
             #expect(store.recentItems.first == .zmx(sessionName: "den-vi"))
             #expect(!store.isZmxSessionsPresented)
 
@@ -196,6 +197,30 @@ struct DenStoreBoardTests {
             store.killZmxSession("den-vi")
             await waitForZmxSessionLoad(store)
             #expect(store.zmxSessions.message == nil)
+        }
+    }
+
+    @Test func openingExistingZmxBoardFromSessionsCapturesRoot() async {
+        // Arrange
+        let existing = BoardState(width: 520, zmxSessionName: "den-vi")
+        let commandRunner = StubTerminalCommandRunner(
+            responses: [
+                ["list"]: TerminalCommandResult(
+                    terminationStatus: 0,
+                    standardOutput: "name=den\nname=den-vi\tden.root=den\n")
+            ])
+        await withTestStore(boards: [existing], terminalCommandRunner: commandRunner) { store in
+            store.preferences.setZmxPath("/opt/homebrew/bin/zmx")
+            store.showZmxSessions(selectedSessionName: "den-vi")
+            await waitForZmxSessionLoad(store)
+
+            // Act
+            store.openZmxSession("den-vi")
+
+            // Assert
+            #expect(store.focusedDesk?.boards.count == 1)
+            #expect(store.focusedBoard?.id == existing.id)
+            #expect(store.focusedBoard?.zmxRootSessionName == "den")
         }
     }
 

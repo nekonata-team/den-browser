@@ -36,6 +36,13 @@ extension DenStore {
 
     func openZmxSession(_ sessionName: String) {
         if let board = state.desks.lazy.flatMap(\.boards).first(where: { $0.zmxSessionName == sessionName }) {
+            if let rootSessionName = zmxSessions.rootSessionName(for: sessionName),
+                board.zmxRootSessionName != rootSessionName,
+                let indices = boardIndices(for: board.id)
+            {
+                state.desks[indices.desk].boards[indices.board].zmxRootSessionName = rootSessionName
+                save()
+            }
             focusBoard(board.id, exitsDenMode: true)
             hideZmxSessions(returnToSource: false)
             return
