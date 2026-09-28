@@ -255,7 +255,7 @@ enum AppActionHandler {
             case .goToLatestSheet: store.goToLatestSheetInFocusedBoard()
             case .captureSheet: store.captureFocusedSheetScreenshot()
             case .copySheetScreenshot: store.copyFocusedSheetScreenshot()
-            case .copyLocation: store.copyFocusedBoardLocation()
+            case .copyLocation: store.copyBoardLocation()
             case .copyID:
                 if let boardID = store.focusedBoard?.id {
                     store.copyBoardID(boardID)

@@ -183,6 +183,15 @@ struct BoardRail: View {
             }
         }
 
+        if board.isWeb {
+            Button {
+                store.copyBoardLocation(board.id)
+            } label: {
+                Label("Copy Current Sheet URL", systemSymbol: .documentOnDocument)
+            }
+            .disabled(board.currentSheetURL == nil && board.firstSheetURL == nil)
+        }
+
         Divider()
 
         Button(role: .destructive) {

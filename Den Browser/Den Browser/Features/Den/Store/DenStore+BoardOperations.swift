@@ -406,9 +406,16 @@ extension DenStore {
         showToast("Copied Board ID.", style: .success)
     }
 
-    func copyFocusedBoardLocation(pasteboard: NSPasteboard? = nil) {
+    func copyBoardLocation(_ boardID: UUID? = nil, pasteboard: NSPasteboard? = nil) {
         let pasteboard = pasteboard ?? self.pasteboard
-        guard let board = focusedBoard else { return }
+        let board: BoardState?
+        if let boardID {
+            guard let indices = boardIndices(for: boardID) else { return }
+            board = state.desks[indices.desk].boards[indices.board]
+        } else {
+            board = focusedBoard
+        }
+        guard let board else { return }
 
         let value: String
         let message: String

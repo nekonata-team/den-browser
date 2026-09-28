@@ -213,6 +213,13 @@ struct WebBoardView: View {
         }
 
         Button {
+            store.copyBoardLocation(board.id)
+        } label: {
+            Label("Copy Current Sheet URL", systemSymbol: .documentOnDocument)
+        }
+        .disabled(board.currentSheetURL == nil && board.firstSheetURL == nil)
+
+        Button {
             runtime.webView.reload()
         } label: {
             Label("Reload Current Sheet", systemSymbol: .arrowClockwise)

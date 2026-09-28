@@ -1896,7 +1896,7 @@ struct DenStoreBoardTests {
         }
     }
 
-    @Test func copyFocusedBoardLocationCopiesWebTerminalAndSessionLocations() {
+    @Test func copyBoardLocationCopiesWebTerminalAndSessionLocations() {
         let cases: [(BoardState, String, String)] = [
             (
                 BoardState(label: "Web", width: 520, currentSheetURL: URL(string: "https://example.com/sheet")),
@@ -1926,7 +1926,7 @@ struct DenStoreBoardTests {
             let pasteboard = NSPasteboard.withUniqueName()
             withTestStore(desks: [source]) { store in
                 // Act
-                store.copyFocusedBoardLocation(pasteboard: pasteboard)
+                store.copyBoardLocation(pasteboard: pasteboard)
 
                 // Assert
                 #expect(pasteboard.string(forType: .string) == expectedValue)
