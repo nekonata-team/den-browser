@@ -117,6 +117,43 @@ struct DenIPCServiceTests {
         #expect(store.board(for: terminalID)?.width == 1_500)
     }
 
+    @Test func boardCreationFallsBackWhenAmbientBoardIDIsStale() async throws {
+        // Arrange
+        let directory = FileManager.default.temporaryDirectory
+            .appending(path: "den-browser-ipc-stale-board-tests-\(UUID().uuidString)", directoryHint: .isDirectory)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let suiteName = "IPCServiceStaleBoardPreferences-\(UUID().uuidString)"
+        let manager = ProfileManager(
+            directoryURL: directory,
+            sheetNavigation: SheetNavigationManager(
+                defaults: makeTestDefaults(suiteName: suiteName),
+                scriptSource: ""),
+            preferences: AppPreferences(defaults: makeTestDefaults(suiteName: suiteName)),
+            removeDataStore: { _ in },
+            websiteDataStore: { _ in .nonPersistent() })
+        let store = try #require(manager.store(for: manager.personalProfileID))
+        let service = DenIPCService(profileManager: manager)
+        let staleBoardID = UUID().uuidString
+
+        // Act
+        let webResponse = await service.handleRequest(
+            DenIPCRequest(
+                command: .board(.web(.new(DenBoardWebNewPayload(url: "https://example.com/", focus: false)))),
+                callerBoardID: staleBoardID))
+        let terminalResponse = await service.handleRequest(
+            DenIPCRequest(
+                command: .board(.terminal(.new(DenBoardTerminalNewPayload(path: nil, runCommand: nil, focus: false)))),
+                callerBoardID: staleBoardID))
+
+        // Assert
+        let webBoardID = try #require(webResponse.boardId.flatMap(UUID.init(uuidString:)))
+        let terminalBoardID = try #require(terminalResponse.boardId.flatMap(UUID.init(uuidString:)))
+        #expect(webResponse.isOk)
+        #expect(terminalResponse.isOk)
+        #expect(store.board(for: webBoardID)?.isWeb == true)
+        #expect(store.board(for: terminalBoardID)?.isTerminal == true)
+    }
+
     @Test func sheetOpenUsesSharedInputResolution() async throws {
         let directory = FileManager.default.temporaryDirectory
             .appending(path: "den-browser-ipc-sheet-open-\(UUID().uuidString)", directoryHint: .isDirectory)

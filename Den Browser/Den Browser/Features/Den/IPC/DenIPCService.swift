@@ -945,11 +945,10 @@ final class DenIPCService {
             case .failure(let error):
                 return .failure(error.localizedDescription)
             }
-            let callerID = request.callerBoardID.flatMap(UUID.init)
             if let boardID = store.createBoard(
                 urlString: urlString,
                 preferredWidth: payload.width,
-                afterBoardID: callerID ?? store.focusedBoard?.id,
+                afterBoardID: newBoardInsertionAnchor(for: request, in: store),
                 focus: payload.focus,
                 origin: .cli
             ), let board = store.board(for: boardID) {
@@ -1025,12 +1024,11 @@ final class DenIPCService {
             resolvedDir = FileManager.default.homeDirectoryForCurrentUser.path
         }
 
-        let callerID = request.callerBoardID.flatMap(UUID.init)
         guard
             let boardID = store.createTerminalBoard(
                 workingDirectory: resolvedDir,
                 preferredWidth: payload.width,
-                afterBoardID: callerID ?? store.focusedBoard?.id,
+                afterBoardID: newBoardInsertionAnchor(for: request, in: store),
                 focus: payload.focus,
                 origin: .cli
             )
@@ -1044,6 +1042,13 @@ final class DenIPCService {
         }
 
         return .success(boardId: boardID.uuidString)
+    }
+
+    private func newBoardInsertionAnchor(for request: DenIPCRequest, in store: DenStore) -> UUID? {
+        request.callerBoardID
+            .flatMap(UUID.init)
+            .flatMap { store.board(for: $0)?.id }
+            ?? store.focusedBoard?.id
     }
 
     // MARK: - Desk Commands

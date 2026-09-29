@@ -42,7 +42,7 @@ When `den` is executed from a shell inside a Terminal Board, Den Browser automat
 - `DEN_PROFILE`: The UUID of the Profile owning the calling Terminal Board.
 - `DEN_SOCKET`: The actual IPC domain socket path selected by Den Browser. It is `~/.den/den.sock` unless the app was started with a custom `DEN_SOCKET`.
 
-These variables are attached when the Terminal Session is created and remain with that Session when its Board moves between Desks or reconnects to an existing zmx Session. A Session is never given another Profile's context.
+These variables are attached when the Terminal Session is created and remain with that Session when its Board moves between Desks. A reattached zmx session keeps the shell environment from when the session was created. A Session is never given another Profile's context.
 
 #### Profile Resolution
 Target Profile resolution follows this strict priority:
@@ -54,6 +54,8 @@ Target Profile resolution follows this strict priority:
 When a command is received with `DEN_BOARD_ID`:
 1. Den Browser dynamically locates the Desk that currently contains that Terminal Board. Moving Boards across Desks does not break targeting because Desk membership is evaluated dynamically from live state.
 2. Board-targeting commands resolve the appropriate Board on that Desk. Web commands scan for a Web Board; Terminal commands scan for a Terminal Board.
+
+Board creation commands fall back to the active Desk when the ambient Board ID no longer exists, so a persistent Terminal session can still open a new Board after its original Board is removed.
 
 For `sheet` commands, target Web Board resolution follows this priority:
 1. **Explicit Board ID**: Supplied via `--board <id>`. If specified, the target must be a valid UUID for an existing Board; invalid or non-existent IDs fail immediately (`exit 1`) with an error and never fall back to ambient candidates.
