@@ -398,16 +398,18 @@ struct BoardRuntimeWebUITests {
             onDownloadFinished: { _ in },
             onDownloadFailed: { _ in }
         )
+        runtime.auxiliaryWindowFactory = { _ in TestWindow() }
         let popup = runtime.makeAuxiliaryWebView(
             configuration: WKWebViewConfiguration(),
             sourceWebView: runtime.webView
         )
-        let popupWindow = try #require(popup.window)
-        #expect(popupWindow.contentView === popup)
+        let window = try #require(popup.window as? TestWindow)
+        #expect(window.contentView === popup)
+        #expect(window.presentationRequests == 1)
 
         runtime.dispose()
 
-        #expect(!popupWindow.isVisible)
+        #expect(window.closeRequests == 1)
     }
 
     @Test func customSchemeNavigationOpensInExternalApplication() {
@@ -664,6 +666,7 @@ struct BoardRuntimeWebUITests {
             )
         )
         defer { runtime.dispose() }
+        runtime.auxiliaryWindowFactory = { _ in TestWindow() }
 
         // Act
         let auxiliary = runtime.makeAuxiliaryWebView(

@@ -53,6 +53,14 @@ class BaseWebRuntime: NSObject, NSWindowDelegate, WKDownloadDelegate, WKNavigati
     }
 
     private var auxiliaryWindows: [ObjectIdentifier: NSWindow] = [:]
+    var auxiliaryWindowFactory: (NSRect) -> NSWindow = { contentRect in
+        NSWindow(
+            contentRect: contentRect,
+            styleMask: [.titled, .closable, .resizable],
+            backing: .buffered,
+            defer: false
+        )
+    }
     private(set) var pendingDownloads: [ObjectIdentifier: PendingDownload] = [:]
     private var downloadProgressObservations: [ObjectIdentifier: NSKeyValueObservation] = [:]
     private var urlObservation: NSKeyValueObservation?
@@ -304,12 +312,7 @@ class BaseWebRuntime: NSObject, NSWindowDelegate, WKDownloadDelegate, WKNavigati
         auxiliaryWebView.uiDelegate = self
         auxiliaryWebView.navigationDelegate = self
 
-        let window = NSWindow(
-            contentRect: .init(x: 0, y: 0, width: 720, height: 640),
-            styleMask: [.titled, .closable, .resizable],
-            backing: .buffered,
-            defer: false
-        )
+        let window = auxiliaryWindowFactory(.init(x: 0, y: 0, width: 720, height: 640))
         window.contentView = auxiliaryWebView
         window.delegate = self
         window.isReleasedWhenClosed = false

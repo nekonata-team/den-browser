@@ -16,6 +16,7 @@ struct InspectionCollectionNavigationTests {
             active.dispose()
             inactive.dispose()
         }
+        active.auxiliaryWindowFactory = { _ in TestWindow() }
         active.startInspectionCollection(highlightColor: nil)
         #expect(
             active.webView.configuration.userContentController

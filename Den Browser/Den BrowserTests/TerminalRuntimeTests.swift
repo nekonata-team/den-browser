@@ -207,11 +207,7 @@ struct TerminalRuntimeTests {
             defer: false
         )
         window.contentView = runtime.terminalView
-        window.makeKeyAndOrderFront(nil)
-        defer {
-            runtime.dispose()
-            window.orderOut(nil)
-        }
+        defer { runtime.dispose() }
 
         let marker = "den_terminal_run_marker"
         runtime.runCommand("printf \(marker)")
@@ -250,11 +246,7 @@ struct TerminalRuntimeTests {
             defer: false
         )
         window.contentView = runtime.terminalView
-        window.makeKeyAndOrderFront(nil)
-        defer {
-            runtime.dispose()
-            window.orderOut(nil)
-        }
+        defer { runtime.dispose() }
 
         for _ in 0..<40 {
             if runtime.readViewportText()?.contains(marker) == true {

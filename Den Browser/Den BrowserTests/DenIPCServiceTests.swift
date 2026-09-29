@@ -321,7 +321,7 @@ struct DenIPCServiceTests {
             websiteDataStore: { _ in .nonPersistent() })
         let route = ProfileWindowRoute(profileID: manager.personalProfileID)
         _ = try #require(manager.store(for: route))
-        let window = NSWindow()
+        let window = TestWindow()
         manager.register(window: window, for: route)
         let service = DenIPCService(profileManager: manager)
 
@@ -335,6 +335,7 @@ struct DenIPCServiceTests {
         // Assert
         #expect(response.isOk)
         #expect(response.message?.contains("Activated window") == true)
+        #expect(window.presentationRequests == 1)
     }
 
     @Test func profileOpenCommandRejectsInvalidProfileID() async throws {
