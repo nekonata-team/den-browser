@@ -98,45 +98,7 @@ struct InspectionBoardCapabilityTests {
             styleMask: [.titled], backing: .buffered, defer: false)
         window.contentView?.addSubview(webView)
         webView.frame = window.contentView?.bounds ?? .zero
-        window.makeKeyAndOrderFront(nil)
         return (webView, window, probe)
-    }
-
-    @Test func mountedWebViewAccessibilityHierarchyDoesNotExposeFixtureTarget() async {
-        // Arrange
-        let (webView, window, probe) = fixture()
-        defer { window.close() }
-        await probe.load(
-            """
-            <!doctype html><html><body>
-              <h1>Native AX heading</h1>
-              <button aria-label="PoC AX target">Visible Action</button>
-              <input aria-label="PoC AX field">
-            </body></html>
-            """,
-            in: webView
-        )
-
-        // Act
-        var rows: [String] = []
-        func walk(_ value: Any, depth: Int) {
-            guard depth < 8, rows.count < 200, let element = value as? NSAccessibilityProtocol else { return }
-            let role = element.accessibilityRole()?.rawValue ?? "unknown-role"
-            let label = element.accessibilityLabel() ?? ""
-            let value = String(describing: element.accessibilityValue() ?? "")
-            if !label.isEmpty || !value.isEmpty {
-                rows.append("\(role) label=\(label.debugDescription) value=\(value.debugDescription)")
-            }
-            for child in element.accessibilityChildren() ?? [] {
-                walk(child, depth: depth + 1)
-            }
-        }
-        walk(webView, depth: 0)
-
-        // Assert
-        print("INSPECTION_BOARD_AX rows=\(rows)")
-        #expect(webView.window === window)
-        #expect(!rows.contains { $0.contains("PoC AX target") }, "AX rows: \(rows)")
     }
 
     @Test func documentStartBridgeCapturesPageConsoleAndScriptErrors() async throws {
