@@ -35,9 +35,11 @@ When you need to discover Boards on the active Desk, use `den board list --json`
 
 ## Web interaction
 
-For known short sequences, prefer `den sheet interact` to batch actions and return one final snapshot. References remain usable while their elements stay connected, but may go stale after navigation or replacement. Refresh the snapshot after navigation or when updated state matters; in batches, resolve targets by role/name or selector after actions that may replace them.
+Add `--snapshot` to a Sheet command when its resulting state determines the next action. The response keeps the usual result and adds `.snapshot` from the same resolved Web Board. For known short sequences, prefer `den sheet interact`: it fixes the target Board once and returns completion metadata. Add `--snapshot` for one final observation, or `--snapshot --full` for the full semantic tree. Without `--snapshot`, it does not capture a snapshot.
 
-Use condition-based `wait` only when the next step depends on unfinished state. Otherwise, proceed; fixed-duration waits are unsupported.
+Snapshots show interactive elements inside their semantic ancestor areas, short popup context, and compact text-control values except password inputs. Use the hierarchy to distinguish repeated labels; use a scoped snapshot when more context is needed. References remain usable while their elements stay connected, but may go stale after navigation or replacement. In batches, resolve targets by role/name or selector after actions that may replace them.
+
+Snapshot capture does not wait for asynchronous page updates. Use condition-based `wait --snapshot`, or include `wait` as the final batch step, when the next decision depends on unfinished state. Otherwise, proceed; fixed-duration waits are unsupported. If an action succeeds but snapshot capture fails, inspect the error and current state before repeating the action.
 
 See [Sheet operation examples](references/sheet.md) for element selection, forms, waits, extraction, and dynamic scrolling.
 

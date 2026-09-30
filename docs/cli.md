@@ -105,6 +105,12 @@ On a TTY, it prints `healthy`. With `--json` or when piped, it returns:
 ### 3.2 `den sheet` (Web Screen & Content)
 Commands operating on the Current Sheet of the resolved Web Board.
 
+Every Sheet command accepts `--snapshot` to include a compact semantic snapshot after a successful command. JSON retains the command's usual result fields and adds `snapshot`; TTY output prints the usual result followed by the snapshot. The snapshot comes from the same resolved Web Board, even if focus changes while the command awaits. It does not wait for subsequent page activity: use a condition such as `den sheet wait --text "Saved" --snapshot` when the observation depends on asynchronous completion. If the command succeeds but snapshot capture fails, the response reports that distinction and exits with an error.
+
+`sheet snapshot` already returns a snapshot, so `--snapshot` does not capture twice. Like other Sheet commands, `sheet interact` captures a final snapshot only when `--snapshot` is specified. `interact --full` requires `--snapshot`; `--no-snapshot` has been removed. On an action failure, `interact --snapshot` attempts a best-effort snapshot alongside failure metadata.
+
+Compact snapshots retain visible semantic ancestors of interactive elements, such as menus, dialogs, navigation, and regions, so indentation identifies which area owns a control. Menus, dialogs, and listboxes also include a short contextual text line when available, without treating all descendant text as the area's name. Text controls include their current value (including an empty value), except password inputs; names, values, and contextual text are limited to 80 characters. `--full` retains these observations and includes other eligible visible semantic elements.
+
 | Command | Arguments | Description | Example |
 |---|---|---|---|
 | `den sheet open` | `<url>` | Navigate Current Sheet in the target Web Board to a supported URL, bare hostname, or search query. Invalid or unsupported URL schemes fail. | `den sheet open https://example.com` |
@@ -128,7 +134,7 @@ Commands operating on the Current Sheet of the resolved Web Board.
 | `den sheet type` | `[<target>] <text>` | Type text into an element by reference/selector or into the currently focused element (supports rich editors, Canvas, and contenteditable). | `den sheet type @e2 "search query"` |
 | `den sheet drag` | `<source> [<target>] [--dx <dx>] [--dy <dy>] [--steps <steps>]` | Drag an element to another element or relative pixel offset (`--dx`, `--dy`). | `den sheet drag @e1 --dx 100 --dy 50` |
 | `den sheet mouse` | `<move\|down\|up\|click\|wheel> ...` | Dispatch low-level pointer events (`move <x> <y>`, `down [btn]`, `up [btn]`, `click <x> <y> [--button <btn>] [--count <n>]`, `wheel <dy> [--dx <dx>]`). | `den sheet mouse click 400 300 --json` |
-| `den sheet interact` | `[<script-or-file>] [--full] [--no-snapshot]` | Execute multiple sheet actions in order from a script, script file, or stdin (`-`) and return a final semantic snapshot. Actions follow standard `den sheet` subcommand syntax (e.g. `click`, `dblclick`, `focus`, `fill`, `type`, `drag`, `mouse`, `wait`); execution stops at the first failure. Use `--full` for the complete semantic tree or `--no-snapshot` to skip snapshot generation; JSON keeps status and action metadata. These options cannot be combined. | `den sheet interact "click @e1; fill @e2 'query'" --no-snapshot` |
+| `den sheet interact` | `[<script-or-file>] [--snapshot [--full]]` | Execute multiple sheet actions in order from a script, script file, or stdin (`-`). Actions follow standard `den sheet` subcommand syntax (e.g. `click`, `dblclick`, `focus`, `fill`, `type`, `drag`, `mouse`, `wait`); execution stops at the first failure. JSON returns status and action metadata. Add `--snapshot` for a final semantic snapshot, and `--full` for the complete semantic tree. | `den sheet interact "click @e1; fill @e2 'query'" --snapshot` |
 | `den sheet screenshot` | `[<path>]` | Save a PNG screenshot of the web sheet (defaults to temporary directory). | `den sheet screenshot /tmp/screen.png` |
 
 ### 3.3 `den board` (Board Surfaces & Layout)
@@ -283,7 +289,7 @@ BOARD_ID=$(den board focused | jq -r .board_id)
 {"ok":true,"box":{"height":40,"width":120,"x":10,"y":20}}
 ```
 
-Query fields that are unavailable on an element are omitted. `attributes` contains requested `class` or `attr:<name>` values that exist on the element. The `value` response can be an empty string. Snapshot omits form values; use `get value` when a value is needed.
+Query fields that are unavailable on an element are omitted. `attributes` contains requested `class` or `attr:<name>` values that exist on the element. The `value` response can be an empty string. Snapshots include compact text-control values except password inputs; use `get value` when the complete value is needed.
 
 Element names use labels and visible content rather than form values, except for input buttons whose value is their caption. Native disabled state, including inheritance from a disabled fieldset, takes precedence over `aria-disabled="false"`. URL globs match literal segments in order without overlap; `*` matches zero or more characters.
 

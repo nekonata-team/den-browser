@@ -218,6 +218,53 @@ function denSnapshotStates(el: DenElement): string[] {
     return states;
 }
 
+function denSnapshotValue(el: DenElement): string | null {
+    if (el.tagName.toLowerCase() === 'input' &&
+        (el.getAttribute('type') || 'text').toLowerCase() === 'password') return null;
+    return ['textbox', 'searchbox', 'combobox'].includes(denRole(el)) ? denValue(el) : null;
+}
+
+function denSnapshotContextText(el: DenElement, interactiveSelector: string): string[] {
+    if (!['alertdialog', 'dialog', 'listbox', 'menu', 'menubar'].includes(denRole(el))) return [];
+    const texts: string[] = [];
+    let visited = 0;
+    let characterCount = 0;
+    let truncated = false;
+    const visit = (node: DenElement) => {
+        // ponytail: 50 descendants, raise if real popup titles exceed this limit.
+        if (visited++ >= 50) return;
+        if (!denIsVisible(node) || node.hasAttribute('aria-live') ||
+            ['status', 'alert', 'log'].includes(denNormalize(node.getAttribute('role')).toLowerCase())) return;
+        if (node !== el && node.matches(interactiveSelector)) return;
+        const rect = node.getBoundingClientRect();
+        if (rect.bottom <= 0 || rect.right <= 0 || rect.top >= window.innerHeight || rect.left >= window.innerWidth) return;
+        for (const child of Array.from(node.childNodes)) {
+            if (child.nodeType === Node.TEXT_NODE) {
+                const text = denNormalize(child.textContent);
+                if (text && characterCount < 80) {
+                    const remaining = 80 - characterCount;
+                    if (text.length > remaining) truncated = true;
+                    texts.push(text.slice(0, remaining));
+                    characterCount += text.length + 1;
+                }
+            }
+        }
+        for (const child of Array.from(node.children)) {
+            if (!child.matches(interactiveSelector)) visit(child);
+        }
+    };
+    visit(el);
+    const text = denNormalize(texts.join(' '));
+    return text ? [truncated ? text.slice(0, 77) + '...' : text] : [];
+}
+
+function denSnapshotContextRole(el: DenElement): boolean {
+    return [
+        'alertdialog', 'banner', 'complementary', 'contentinfo', 'dialog', 'form', 'grid', 'list',
+        'listbox', 'main', 'menu', 'menubar', 'navigation', 'region', 'toolbar', 'tree', 'treegrid',
+    ].includes(denRole(el));
+}
+
 function denSnapshotEligible(el: DenElement, selectors: string[]): boolean {
     const tag = el.tagName.toLowerCase();
     const explicitRole = denNormalize(el.getAttribute('role')).toLowerCase();
@@ -348,6 +395,9 @@ function denInspect(el: DenElement, fields: string[]): Record<string, unknown> {
         denSelected,
         denExpanded,
         denSnapshotStates,
+        denSnapshotValue,
+        denSnapshotContextText,
+        denSnapshotContextRole,
         denSnapshotEligible,
         denSnapshotName,
         denSnapshotLevel,

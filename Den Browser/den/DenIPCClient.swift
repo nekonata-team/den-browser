@@ -20,6 +20,13 @@ struct BoardTargetOptions: ParsableArguments {
     var boardID: String?
 }
 
+struct SheetTargetOptions: ParsableArguments {
+    @OptionGroup var target: BoardTargetOptions
+
+    @Flag(name: .long, help: "Include a semantic snapshot with the command result")
+    var snapshot = false
+}
+
 private struct CLIOutputOptions {
     let isJSON: Bool
     let showBoardIDs: Bool
@@ -53,7 +60,8 @@ enum DenIPCClient {
             command: command,
             options: options,
             output: CLIOutputOptions(isJSON: options.isJSON, showBoardIDs: showBoardIDs),
-            boardID: nil
+            boardID: nil,
+            includeSnapshot: false
         )
     }
 
@@ -62,7 +70,18 @@ enum DenIPCClient {
             command: command,
             options: options.common,
             output: CLIOutputOptions(isJSON: options.common.isJSON, showBoardIDs: false),
-            boardID: options.boardID
+            boardID: options.boardID,
+            includeSnapshot: false
+        )
+    }
+
+    static func execute(command: DenIPCCommand, options: SheetTargetOptions) throws {
+        try execute(
+            command: command,
+            options: options.target.common,
+            output: CLIOutputOptions(isJSON: options.target.common.isJSON, showBoardIDs: false),
+            boardID: options.target.boardID,
+            includeSnapshot: options.snapshot
         )
     }
 
@@ -71,14 +90,16 @@ enum DenIPCClient {
             command: command,
             options: options,
             output: CLIOutputOptions(isJSON: options.isJSON, showBoardIDs: false),
-            boardID: boardID)
+            boardID: boardID,
+            includeSnapshot: false)
     }
 
     private static func execute(
         command: DenIPCCommand,
         options: CLIOptions,
         output: CLIOutputOptions,
-        boardID: String?
+        boardID: String?,
+        includeSnapshot: Bool
     ) throws {
         let response: DenIPCResponse
         let responseData: Data
@@ -87,7 +108,8 @@ enum DenIPCClient {
                 command: command,
                 socketPath: options.socketPath,
                 profileID: options.profileID,
-                boardID: boardID
+                boardID: boardID,
+                includeSnapshot: includeSnapshot
             )
         } catch {
             fputs("Error: \(error.localizedDescription)\n", stderr)
@@ -163,8 +185,6 @@ enum DenIPCClient {
                     }
                 } else if let drawerItemId = response.drawerItemId {
                     print(drawerItemId)
-                } else if let snapshot = response.snapshot {
-                    print(snapshot)
                 } else if let elements = response.elements {
                     for element in elements {
                         var line = element.ref
@@ -202,6 +222,12 @@ enum DenIPCClient {
                 } else if let message = response.message {
                     print(message)
                 }
+                if let completedActions = response.completedActions {
+                    print("Completed \(completedActions) actions")
+                }
+                if let snapshot = response.snapshot {
+                    print(snapshot)
+                }
             } else {
                 fputs("Error: \(response.error ?? "Unknown error")\n", stderr)
             }
@@ -217,7 +243,8 @@ enum DenIPCClient {
         socketPath explicitSocketPath: String? = nil,
         profileID: String? = nil,
         boardID: String? = nil,
-        includeTargetContext: Bool = false
+        includeTargetContext: Bool = false,
+        includeSnapshot: Bool = false
     ) throws -> (DenIPCResponse, Data) {
         let environment = ProcessInfo.processInfo.environment
         let socketPath = DenSocketPath.resolve(explicit: explicitSocketPath, environment: environment)
@@ -226,7 +253,8 @@ enum DenIPCClient {
             boardID: boardID,
             callerBoardID: environment["DEN_BOARD_ID"],
             profileID: profileID ?? environment["DEN_PROFILE"],
-            includeTargetContext: includeTargetContext ? true : nil
+            includeTargetContext: includeTargetContext ? true : nil,
+            includeSnapshot: includeSnapshot ? true : nil
         )
         let requestData = try JSONEncoder().encode(request)
 

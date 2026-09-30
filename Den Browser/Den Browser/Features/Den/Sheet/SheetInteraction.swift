@@ -105,16 +105,36 @@ enum SheetInteraction {
             }
 
             const interactiveSelector = selectors.join(',');
-            const candidateSelector = \(interactiveOnly) ? interactiveSelector : '*';
-            let elements = scope instanceof Element
-                ? [scope, ...Array.from(scope.querySelectorAll(candidateSelector))]
-                : Array.from(scope.querySelectorAll(candidateSelector));
-            elements = elements.filter(el =>
+            const interactiveElements = scope instanceof Element
+                ? [scope, ...Array.from(scope.querySelectorAll(interactiveSelector))]
+                : Array.from(scope.querySelectorAll(interactiveSelector));
+            const elements = \(interactiveOnly) ? new Set(interactiveElements.filter(el =>
                 denIsVisible(el) &&
                 denSnapshotEligible(el, selectors) &&
-                (!\(interactiveOnly) || el.matches(interactiveSelector)));
+                el.matches(interactiveSelector))) : new Set(
+                    (scope instanceof Element ? [scope, ...Array.from(scope.querySelectorAll('*'))] : Array.from(scope.querySelectorAll('*')))
+                        .filter(el => denIsVisible(el) && denSnapshotEligible(el, selectors)));
+            if (\(interactiveOnly)) {
+                for (const el of interactiveElements) {
+                    if (!elements.has(el) || !denIsVisible(el)) continue;
+                    let parent = el.parentElement;
+                    while (parent && (!(scope instanceof Element) || parent !== scope.parentElement)) {
+                        if (denSnapshotContextRole(parent) && denIsVisible(parent) && denSnapshotEligible(parent, selectors)) {
+                            elements.add(parent);
+                        }
+                        if (parent === scope) break;
+                        parent = parent.parentElement;
+                    }
+                }
+            }
+            const orderedElements = Array.from(elements).sort((a, b) => {
+                const position = a.compareDocumentPosition(b);
+                return position & Node.DOCUMENT_POSITION_FOLLOWING ? -1 :
+                    position & Node.DOCUMENT_POSITION_PRECEDING ? 1 : 0;
+            });
             const elementSet = new Set(elements);
-            const lines = elements.map(el => {
+            const lines = [];
+            orderedElements.forEach(el => {
                 const ref = denRefFor(el);
                 const role = denRole(el);
                 const level = denSnapshotLevel(el);
@@ -130,9 +150,16 @@ enum SheetInteraction {
                 if (level !== null) line += ':level=' + level;
                 line += ']';
                 if (truncatedName) line += ' ' + JSON.stringify(truncatedName);
+                const value = denSnapshotValue(el);
+                if (value !== null) line += ' [value=' + JSON.stringify(value.length > 80 ? value.slice(0, 77) + '...' : value) + ']';
                 const states = denSnapshotStates(el);
                 if (states.length) line += ' [' + states.join(',') + ']';
-                return line;
+                lines.push(line);
+                if (denSnapshotContextRole(el)) {
+                    for (const text of denSnapshotContextText(el, interactiveSelector)) {
+                        lines.push('  '.repeat(depth + 1) + 'text ' + JSON.stringify(text));
+                    }
+                }
             });
             return { ok: true, snapshot: lines.join('\\n') };
             """
@@ -1248,6 +1275,9 @@ enum SheetInteraction {
             denSelected,
             denExpanded,
             denSnapshotStates,
+            denSnapshotValue,
+            denSnapshotContextText,
+            denSnapshotContextRole,
             denSnapshotEligible,
             denSnapshotName,
             denSnapshotLevel,

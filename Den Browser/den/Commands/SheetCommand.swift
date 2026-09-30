@@ -38,7 +38,7 @@ struct SheetOpenCommand: ParsableCommand {
         commandName: "open",
         abstract: "Navigate Current Sheet in the target Web Board to a URL or search query")
 
-    @OptionGroup var target: BoardTargetOptions
+    @OptionGroup var target: SheetTargetOptions
     @Argument(help: "URL or search query to open") var url: String
 
     func run() throws {
@@ -54,7 +54,7 @@ struct SheetURLCommand: ParsableCommand {
         commandName: "url",
         abstract: "Print Current Sheet URL of the target Web Board")
 
-    @OptionGroup var target: BoardTargetOptions
+    @OptionGroup var target: SheetTargetOptions
 
     func run() throws {
         try DenIPCClient.execute(command: .sheet(.url), options: target)
@@ -66,7 +66,7 @@ struct SheetReloadCommand: ParsableCommand {
         commandName: "reload",
         abstract: "Reload Current Sheet in the target Web Board")
 
-    @OptionGroup var target: BoardTargetOptions
+    @OptionGroup var target: SheetTargetOptions
 
     func run() throws {
         try DenIPCClient.execute(command: .sheet(.reload), options: target)
@@ -78,7 +78,7 @@ struct SheetEvalCommand: ParsableCommand {
         commandName: "eval",
         abstract: "Evaluate JavaScript in the target Web Board")
 
-    @OptionGroup var target: BoardTargetOptions
+    @OptionGroup var target: SheetTargetOptions
     @Argument(parsing: .remaining, help: "JavaScript code to evaluate") var scriptParts: [String]
 
     func run() throws {
@@ -98,7 +98,7 @@ struct SheetTextCommand: ParsableCommand {
         commandName: "text",
         abstract: "Print visible text from the target Web Board")
 
-    @OptionGroup var target: BoardTargetOptions
+    @OptionGroup var target: SheetTargetOptions
 
     func run() throws {
         try DenIPCClient.execute(command: .sheet(.text), options: target)
@@ -110,7 +110,7 @@ struct SheetSnapshotCommand: ParsableCommand {
         commandName: "snapshot",
         abstract: "Extract semantic DOM tree with short references (@e1, @e2)")
 
-    @OptionGroup var target: BoardTargetOptions
+    @OptionGroup var target: SheetTargetOptions
     @Flag(name: [.customShort("i"), .long], help: "Filter to interactive elements only (default)")
     var interactive: Bool = false
     @Flag(name: .long, help: "Include the full semantic tree")
@@ -134,7 +134,7 @@ struct SheetQueryCommand: ParsableCommand {
         commandName: "query",
         abstract: "Inspect matching DOM elements")
 
-    @OptionGroup var target: BoardTargetOptions
+    @OptionGroup var target: SheetTargetOptions
     @Argument(help: "CSS selector to query")
     var selector: String
     @Flag(name: .long, help: "Keep only visible elements")
@@ -166,7 +166,7 @@ struct SheetClickCommand: ParsableCommand {
         commandName: "click",
         abstract: "Click an element by reference (@e1) or CSS selector")
 
-    @OptionGroup var target: BoardTargetOptions
+    @OptionGroup var target: SheetTargetOptions
     @Argument(help: "Element reference (@e1) or CSS selector to click")
     var targetElement: String?
     @Option(name: .long, help: "ARIA or implicit role to match")
@@ -205,7 +205,7 @@ struct SheetDblclickCommand: ParsableCommand {
         abstract: "Double-click an element by reference (@e1) or CSS selector"
     )
 
-    @OptionGroup var target: BoardTargetOptions
+    @OptionGroup var target: SheetTargetOptions
     @Argument(help: "Element reference (@e1) or CSS selector to double-click")
     var targetElement: String
 
@@ -223,7 +223,7 @@ struct SheetFocusCommand: ParsableCommand {
         abstract: "Focus an element by reference (@e1) or CSS selector"
     )
 
-    @OptionGroup var target: BoardTargetOptions
+    @OptionGroup var target: SheetTargetOptions
     @Argument(help: "Element reference (@e1) or CSS selector to focus")
     var targetElement: String
 
@@ -240,7 +240,7 @@ struct SheetFillCommand: ParsableCommand {
         commandName: "fill",
         abstract: "Fill an input, textarea, or editable element with text by reference or selector")
 
-    @OptionGroup var target: BoardTargetOptions
+    @OptionGroup var target: SheetTargetOptions
     @Argument(help: "Element reference (@e1) or CSS selector to fill")
     var targetElement: String
     @Argument(parsing: .remaining, help: "Text value to fill into the input")
@@ -264,7 +264,7 @@ struct SheetTypeCommand: ParsableCommand {
         abstract: "Type text into an element by reference/selector or into the currently focused element"
     )
 
-    @OptionGroup var target: BoardTargetOptions
+    @OptionGroup var target: SheetTargetOptions
     @Argument(help: "Target element reference/selector, or text if typing into focused element")
     var firstArg: String
     @Argument(parsing: .remaining, help: "Text to type if target element was specified")
@@ -290,7 +290,7 @@ struct SheetDragCommand: ParsableCommand {
         abstract: "Drag an element by reference (@e1) or selector to another element or relative offset"
     )
 
-    @OptionGroup var target: BoardTargetOptions
+    @OptionGroup var target: SheetTargetOptions
     @Argument(help: "Source element reference (@e1) or CSS selector to drag")
     var source: String
     @Argument(help: "Target element reference (@e1) or CSS selector to drop onto (optional)")
@@ -346,7 +346,7 @@ struct SheetMouseMoveCommand: ParsableCommand {
         abstract: "Move mouse pointer to viewport coordinates"
     )
 
-    @OptionGroup var target: BoardTargetOptions
+    @OptionGroup var target: SheetTargetOptions
     @Argument(help: "X coordinate in viewport pixels") var coordX: Double
     @Argument(help: "Y coordinate in viewport pixels") var coordY: Double
 
@@ -364,7 +364,7 @@ struct SheetMouseDownCommand: ParsableCommand {
         abstract: "Press mouse button down"
     )
 
-    @OptionGroup var target: BoardTargetOptions
+    @OptionGroup var target: SheetTargetOptions
     @Argument(help: "Button to press (left, right, middle; default: left)")
     var button: String?
 
@@ -382,7 +382,7 @@ struct SheetMouseUpCommand: ParsableCommand {
         abstract: "Release mouse button"
     )
 
-    @OptionGroup var target: BoardTargetOptions
+    @OptionGroup var target: SheetTargetOptions
     @Argument(help: "Button to release (left, right, middle; default: left)")
     var button: String?
 
@@ -400,7 +400,7 @@ struct SheetMouseClickCommand: ParsableCommand {
         abstract: "Click at viewport coordinates"
     )
 
-    @OptionGroup var target: BoardTargetOptions
+    @OptionGroup var target: SheetTargetOptions
     @Argument(help: "X coordinate in viewport pixels") var coordX: Double
     @Argument(help: "Y coordinate in viewport pixels") var coordY: Double
     @Option(name: .long, help: "Mouse button (left, right, middle; default: left)")
@@ -432,7 +432,7 @@ struct SheetMouseWheelCommand: ParsableCommand {
         abstract: "Scroll mouse wheel"
     )
 
-    @OptionGroup var target: BoardTargetOptions
+    @OptionGroup var target: SheetTargetOptions
     @Argument(help: "Vertical scroll delta in pixels") var deltaY: Double
     @Option(name: .customLong("dx"), help: "Horizontal scroll delta in pixels (default: 0)")
     var deltaX: Double?
@@ -450,7 +450,7 @@ struct SheetInteractCommand: ParsableCommand {
         commandName: "interact",
         abstract: "Run multiple Sheet actions from a script, file, or stdin",
         discussion: """
-            Executes a series of Sheet actions line-by-line and returns the final semantic snapshot unless --no-snapshot is specified.
+            Executes a series of Sheet actions line-by-line. Add --snapshot to include the final semantic snapshot.
             Each line or semicolon-separated statement uses the same syntax as 'den sheet <subcommand>'.
 
             Available actions:
@@ -482,24 +482,22 @@ struct SheetInteractCommand: ParsableCommand {
               den sheet interact path/to/script.den
             """)
 
-    @OptionGroup var target: BoardTargetOptions
+    @OptionGroup var target: SheetTargetOptions
     @Argument(help: "Script text, script file path, or - for stdin (defaults to stdin if piped)")
     var scriptOrPath: String?
-    @Flag(name: .long, help: "Include the full semantic tree in the final snapshot")
+    @Flag(name: .long, help: "Include the full semantic tree (requires --snapshot)")
     var full: Bool = false
-    @Flag(name: .long, help: "Do not return a final semantic snapshot")
-    var noSnapshot: Bool = false
 
     func run() throws {
-        guard !(full && noSnapshot) else {
-            throw ValidationError("Please choose either --full or --no-snapshot")
+        guard !full || target.snapshot else {
+            throw ValidationError("--full requires --snapshot")
         }
         let script = try readScript()
         let steps = try DenSheetScriptParser.parse(script)
         guard !steps.isEmpty else {
             throw ValidationError("Script contains no valid actions")
         }
-        let payload = DenSheetInteractPayload(steps: steps, full: full, noSnapshot: noSnapshot)
+        let payload = DenSheetInteractPayload(steps: steps, full: full)
         try DenIPCClient.execute(
             command: .sheet(.interact(payload)),
             options: target
@@ -1084,7 +1082,7 @@ struct SheetGetBoxCommand: ParsableCommand {
         commandName: "box",
         abstract: "Get bounding box of an element")
 
-    @OptionGroup var target: BoardTargetOptions
+    @OptionGroup var target: SheetTargetOptions
     @Argument(help: "Element reference (@e1) or CSS selector")
     var targetElement: String
 
@@ -1101,7 +1099,7 @@ struct SheetGetTextCommand: ParsableCommand {
         commandName: "text",
         abstract: "Get text from an element")
 
-    @OptionGroup var target: BoardTargetOptions
+    @OptionGroup var target: SheetTargetOptions
     @Argument(help: "Element reference (@e1) or CSS selector")
     var targetElement: String
 
@@ -1118,7 +1116,7 @@ struct SheetGetValueCommand: ParsableCommand {
         commandName: "value",
         abstract: "Get an element value")
 
-    @OptionGroup var target: BoardTargetOptions
+    @OptionGroup var target: SheetTargetOptions
     @Argument(help: "Element reference (@e1) or CSS selector")
     var targetElement: String
     func run() throws {
@@ -1134,7 +1132,7 @@ struct SheetGetAttributeCommand: ParsableCommand {
         commandName: "attr",
         abstract: "Get an element attribute")
 
-    @OptionGroup var target: BoardTargetOptions
+    @OptionGroup var target: SheetTargetOptions
     @Argument(help: "Element reference (@e1) or CSS selector")
     var targetElement: String
     @Argument(help: "Attribute name")
@@ -1157,7 +1155,7 @@ struct SheetGetCountCommand: ParsableCommand {
         commandName: "count",
         abstract: "Count elements matching a selector")
 
-    @OptionGroup var target: BoardTargetOptions
+    @OptionGroup var target: SheetTargetOptions
     @Argument(help: "CSS selector")
     var selector: String
 
@@ -1186,7 +1184,7 @@ struct SheetIsVisibleCommand: ParsableCommand {
         commandName: "visible",
         abstract: "Check whether an element is visible")
 
-    @OptionGroup var target: BoardTargetOptions
+    @OptionGroup var target: SheetTargetOptions
     @Argument(help: "Element reference (@e1) or CSS selector")
     var targetElement: String
 
@@ -1203,7 +1201,7 @@ struct SheetIsEnabledCommand: ParsableCommand {
         commandName: "enabled",
         abstract: "Check whether an element is enabled")
 
-    @OptionGroup var target: BoardTargetOptions
+    @OptionGroup var target: SheetTargetOptions
     @Argument(help: "Element reference (@e1) or CSS selector")
     var targetElement: String
 
@@ -1220,7 +1218,7 @@ struct SheetIsCheckedCommand: ParsableCommand {
         commandName: "checked",
         abstract: "Check whether a checkbox is checked")
 
-    @OptionGroup var target: BoardTargetOptions
+    @OptionGroup var target: SheetTargetOptions
     @Argument(help: "Element reference (@e1) or CSS selector")
     var targetElement: String
 
@@ -1237,7 +1235,7 @@ struct SheetScreenshotCommand: ParsableCommand {
         commandName: "screenshot",
         abstract: "Capture a PNG screenshot of the target Web Board")
 
-    @OptionGroup var target: BoardTargetOptions
+    @OptionGroup var target: SheetTargetOptions
     @Argument(help: "Destination file path for PNG screenshot (optional)")
     var outputPath: String?
 
@@ -1254,7 +1252,7 @@ struct SheetBackCommand: ParsableCommand {
         commandName: "back",
         abstract: "Navigate back in browsing history")
 
-    @OptionGroup var target: BoardTargetOptions
+    @OptionGroup var target: SheetTargetOptions
 
     func run() throws {
         try DenIPCClient.execute(command: .sheet(.back), options: target)
@@ -1266,7 +1264,7 @@ struct SheetForwardCommand: ParsableCommand {
         commandName: "forward",
         abstract: "Navigate forward in browsing history")
 
-    @OptionGroup var target: BoardTargetOptions
+    @OptionGroup var target: SheetTargetOptions
 
     func run() throws {
         try DenIPCClient.execute(command: .sheet(.forward), options: target)
@@ -1278,7 +1276,7 @@ struct SheetPressCommand: ParsableCommand {
         commandName: "press",
         abstract: "Dispatch key events (Enter, Escape, Tab, arrows) to the active element")
 
-    @OptionGroup var target: BoardTargetOptions
+    @OptionGroup var target: SheetTargetOptions
     @Argument(help: "Key to press (e.g. Enter, Escape, Tab, ArrowDown, ArrowUp)")
     var key: String
 
@@ -1295,7 +1293,7 @@ struct SheetScrollCommand: ParsableCommand {
         commandName: "scroll",
         abstract: "Scroll the page or bring an element into view")
 
-    @OptionGroup var target: BoardTargetOptions
+    @OptionGroup var target: SheetTargetOptions
     @Argument(help: "Direction, pixel amount, element ref (@e1), or CSS selector (optional, defaults to down)")
     var directionOrTarget: String?
 
@@ -1312,7 +1310,7 @@ struct SheetWaitCommand: ParsableCommand {
         commandName: "wait",
         abstract: "Wait for a DOM state, text, load state, URL, or JavaScript condition")
 
-    @OptionGroup var target: BoardTargetOptions
+    @OptionGroup var target: SheetTargetOptions
     @Argument(help: "CSS selector or element reference (@e1)")
     var targetValue: String?
     @Option(name: .long, help: "State: attached, visible, hidden, or detached")

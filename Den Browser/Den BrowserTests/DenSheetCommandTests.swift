@@ -4,6 +4,49 @@ import Testing
 @testable import Den_Browser
 
 struct DenSheetCommandTests {
+    @Test func sheetCommandForwardsOptionalSnapshotAlongsideResult() async throws {
+        // Arrange
+        let socketPath = FileManager.default.temporaryDirectory
+            .appendingPathComponent("den-cli-\(UUID().uuidString).sock").path
+        let server = DenSocketServer(socketPath: socketPath)
+        try server.start { data in
+            do {
+                let request = try JSONDecoder().decode(DenIPCRequest.self, from: data)
+                let includesSnapshot = request.includeSnapshot == true
+                return try JSONEncoder().encode(
+                    DenIPCResponse.success(
+                        url: includesSnapshot ? "https://example.com/" : nil,
+                        snapshot: includesSnapshot ? "@e1 button \"Continue\"" : nil
+                    ))
+            } catch {
+                return Data()
+            }
+        }
+        defer { server.stop() }
+        let process = Process()
+        process.executableURL = Bundle.main.bundleURL.appendingPathComponent("Contents/MacOS/den")
+        process.arguments = ["sheet", "url", "--snapshot", "--socket", socketPath]
+        let output = Pipe()
+        process.standardOutput = output
+
+        // Act
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, any Error>) in
+            process.terminationHandler = { _ in continuation.resume() }
+            do {
+                try process.run()
+            } catch {
+                continuation.resume(throwing: error)
+            }
+        }
+        let response = try JSONDecoder().decode(
+            DenIPCResponse.self, from: output.fileHandleForReading.readDataToEndOfFile())
+
+        // Assert
+        #expect(process.terminationStatus == 0)
+        #expect(response.url == "https://example.com/")
+        #expect(response.snapshot == "@e1 button \"Continue\"")
+    }
+
     @Test(arguments: [false, true])
     func snapshotForwardsFullMode(full: Bool) async throws {
         // Arrange
@@ -85,7 +128,7 @@ struct DenSheetCommandTests {
                 ]
                 let isExpected: Bool
                 if case .sheet(.interact(let payload)) = request.command {
-                    isExpected = payload.full && payload.steps == expectedSteps
+                    isExpected = request.includeSnapshot == true && payload.full && payload.steps == expectedSteps
                 } else {
                     isExpected = false
                 }
@@ -100,7 +143,7 @@ struct DenSheetCommandTests {
         let process = Process()
         process.executableURL = Bundle.main.bundleURL.appendingPathComponent("Contents/MacOS/den")
         process.arguments = [
-            "sheet", "interact", script, "--full", "--socket", socketPath,
+            "sheet", "interact", script, "--snapshot", "--full", "--socket", socketPath,
         ]
         let output = Pipe()
         process.standardOutput = output
@@ -124,7 +167,7 @@ struct DenSheetCommandTests {
         #expect(response.snapshot == "full")
     }
 
-    @Test func interactForwardsNoSnapshotOption() async throws {
+    @Test func interactDefaultsToNoSnapshot() async throws {
         // Arrange
         let socketPath = FileManager.default.temporaryDirectory
             .appendingPathComponent("den-cli-\(UUID().uuidString).sock").path
@@ -132,16 +175,16 @@ struct DenSheetCommandTests {
         try server.start { data in
             do {
                 let request = try JSONDecoder().decode(DenIPCRequest.self, from: data)
-                let noSnapshot: Bool
-                if case .sheet(.interact(let payload)) = request.command {
-                    noSnapshot = payload.noSnapshot
+                let includeSnapshot: Bool
+                if case .sheet(.interact) = request.command {
+                    includeSnapshot = request.includeSnapshot == true
                 } else {
-                    noSnapshot = false
+                    includeSnapshot = true
                 }
                 return try JSONEncoder().encode(
                     DenIPCResponse.success(
-                        snapshot: noSnapshot ? nil : "unexpected",
-                        completedActions: noSnapshot ? 1 : nil
+                        snapshot: includeSnapshot ? "unexpected" : nil,
+                        completedActions: includeSnapshot ? nil : 1
                     ))
             } catch {
                 return Data()
@@ -150,7 +193,7 @@ struct DenSheetCommandTests {
         defer { server.stop() }
         let process = Process()
         process.executableURL = Bundle.main.bundleURL.appendingPathComponent("Contents/MacOS/den")
-        process.arguments = ["sheet", "interact", "click @e1", "--no-snapshot", "--socket", socketPath]
+        process.arguments = ["sheet", "interact", "click @e1", "--socket", socketPath]
         let output = Pipe()
         process.standardOutput = output
 

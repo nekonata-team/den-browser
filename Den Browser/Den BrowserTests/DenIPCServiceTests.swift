@@ -580,6 +580,48 @@ struct DenIPCServiceTests {
         #expect(response.url == "https://example.com/subpage")
     }
 
+    @Test func sheetCommandCanReturnSnapshotWithItsOriginalResult() async throws {
+        // Arrange
+        let directory = FileManager.default.temporaryDirectory
+            .appending(path: "den-browser-ipc-sheet-snapshot-\(UUID().uuidString)", directoryHint: .isDirectory)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let suiteName = "IPCServiceSheetSnapshotPreferences-\(UUID().uuidString)"
+        let manager = ProfileManager(
+            directoryURL: directory,
+            sheetNavigation: SheetNavigationManager(
+                defaults: makeTestDefaults(suiteName: suiteName),
+                scriptSource: ""),
+            preferences: AppPreferences(defaults: makeTestDefaults(suiteName: suiteName)),
+            removeDataStore: { _ in },
+            websiteDataStore: { _ in .nonPersistent() })
+        let store = try #require(manager.store(for: manager.personalProfileID))
+        let boardID = try #require(store.createBoard(urlString: "https://snapshot.example/"))
+        let board = try #require(store.board(for: boardID))
+        let runtime = store.webRuntime(for: board)
+        let waiter = SheetInteractionWebViewLoadWaiter()
+        await waiter.load(
+            """
+            <!doctype html>
+            <body><button id="continue">Before</button></body>
+            """,
+            baseURL: URL(string: "https://snapshot.example/")!,
+            in: runtime.webView)
+        let service = DenIPCService(profileManager: manager)
+
+        // Act
+        let script = "document.querySelector('button').textContent = 'After'; 'eval-result'"
+        let response = await service.handleRequest(
+            DenIPCRequest(
+                command: .sheet(.eval(DenSheetEvalPayload(script: script))),
+                boardID: boardID.uuidString,
+                includeSnapshot: true))
+
+        // Assert
+        #expect(response.isOk)
+        #expect(response.value == "eval-result")
+        #expect(response.snapshot?.contains("After") == true)
+    }
+
     @Test func sheetInteractKeepsInitialBoardWhenFocusChangesDuringWait() async throws {
         // Arrange
         let directory = FileManager.default.temporaryDirectory
@@ -654,7 +696,10 @@ struct DenIPCServiceTests {
 
         // Act
         let interactTask = Task {
-            await service.handleRequest(DenIPCRequest(command: .sheet(.interact(payload))))
+            await service.handleRequest(
+                DenIPCRequest(
+                    command: .sheet(.interact(payload)),
+                    includeSnapshot: true))
         }
         var waitStarted = false
         for _ in 0..<100 {
@@ -673,14 +718,15 @@ struct DenIPCServiceTests {
         // Assert
         #expect(response.isOk)
         #expect(response.completedActions == 2)
+        #expect(response.snapshot?.contains("Clicked") == true)
     }
 
-    @Test func sheetInteractCanSkipSnapshotsAfterSuccessAndFailure() async throws {
+    @Test func sheetInteractSnapshotsOnlyWhenRequested() async throws {
         // Arrange
         let directory = FileManager.default.temporaryDirectory
-            .appending(path: "den-browser-ipc-interact-no-snapshot-\(UUID().uuidString)", directoryHint: .isDirectory)
+            .appending(path: "den-browser-ipc-interact-snapshot-\(UUID().uuidString)", directoryHint: .isDirectory)
         defer { try? FileManager.default.removeItem(at: directory) }
-        let suiteName = "IPCServiceInteractNoSnapshotPreferences-\(UUID().uuidString)"
+        let suiteName = "IPCServiceInteractSnapshotPreferences-\(UUID().uuidString)"
         let manager = ProfileManager(
             directoryURL: directory,
             sheetNavigation: SheetNavigationManager(
@@ -700,49 +746,36 @@ struct DenIPCServiceTests {
             in: webView)
         let service = DenIPCService(profileManager: manager)
 
+        func request(target: String, includeSnapshot: Bool, full: Bool = false) -> DenIPCRequest {
+            DenIPCRequest(
+                command: .sheet(
+                    .interact(
+                        DenSheetInteractPayload(
+                            steps: [
+                                DenSheetInteractStep(
+                                    line: 1,
+                                    text: "click \(target)",
+                                    command: .click(
+                                        DenSheetClickPayload(
+                                            target: target,
+                                            role: nil,
+                                            name: nil,
+                                            exact: false,
+                                            newBoard: false,
+                                            focus: false)))
+                            ],
+                            full: full))),
+                boardID: boardID.uuidString,
+                includeSnapshot: includeSnapshot)
+        }
+
         // Act
-        let success = await service.handleRequest(
-            DenIPCRequest(
-                command: .sheet(
-                    .interact(
-                        DenSheetInteractPayload(
-                            steps: [
-                                DenSheetInteractStep(
-                                    line: 1,
-                                    text: "click #continue",
-                                    command: .click(
-                                        DenSheetClickPayload(
-                                            target: "#continue",
-                                            role: nil,
-                                            name: nil,
-                                            exact: false,
-                                            newBoard: false,
-                                            focus: false)))
-                            ],
-                            full: false,
-                            noSnapshot: true))),
-                boardID: boardID.uuidString))
-        let failure = await service.handleRequest(
-            DenIPCRequest(
-                command: .sheet(
-                    .interact(
-                        DenSheetInteractPayload(
-                            steps: [
-                                DenSheetInteractStep(
-                                    line: 1,
-                                    text: "click #missing",
-                                    command: .click(
-                                        DenSheetClickPayload(
-                                            target: "#missing",
-                                            role: nil,
-                                            name: nil,
-                                            exact: false,
-                                            newBoard: false,
-                                            focus: false)))
-                            ],
-                            full: false,
-                            noSnapshot: true))),
-                boardID: boardID.uuidString))
+        let success = await service.handleRequest(request(target: "#continue", includeSnapshot: false))
+        let failure = await service.handleRequest(request(target: "#missing", includeSnapshot: false))
+        let successWithSnapshot = await service.handleRequest(request(target: "#continue", includeSnapshot: true))
+        let failureWithSnapshot = await service.handleRequest(request(target: "#missing", includeSnapshot: true))
+        let fullWithoutSnapshot = await service.handleRequest(
+            request(target: "#continue", includeSnapshot: false, full: true))
 
         // Assert
         #expect(success.isOk)
@@ -752,6 +785,16 @@ struct DenIPCServiceTests {
         #expect(failure.snapshot == nil)
         #expect(failure.completedActions == 0)
         #expect(failure.failedActionIndex == 0)
+        #expect(successWithSnapshot.isOk)
+        #expect(successWithSnapshot.snapshot?.contains("Continue") == true)
+        #expect(successWithSnapshot.completedActions == 1)
+        #expect(failureWithSnapshot.isOk == false)
+        #expect(failureWithSnapshot.snapshot?.contains("Continue") == true)
+        #expect(failureWithSnapshot.completedActions == 0)
+        #expect(failureWithSnapshot.failedActionIndex == 0)
+        #expect(fullWithoutSnapshot.isOk == false)
+        #expect(fullWithoutSnapshot.error == "--full requires --snapshot")
+        #expect(fullWithoutSnapshot.completedActions == nil)
     }
 
     @Test func sheetInteractFailsWhenInitialBoardDisappearsDuringWait() async throws {

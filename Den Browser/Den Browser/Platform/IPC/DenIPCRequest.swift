@@ -18,6 +18,7 @@ nonisolated struct DenIPCRequest: Codable, Sendable {
     var callerBoardID: String?
     var profileID: String?
     var includeTargetContext: Bool?
+    var includeSnapshot: Bool?
 
     init(
         command: DenIPCCommand,
@@ -25,7 +26,8 @@ nonisolated struct DenIPCRequest: Codable, Sendable {
         deskID: String? = nil,
         callerBoardID: String? = nil,
         profileID: String? = nil,
-        includeTargetContext: Bool? = nil
+        includeTargetContext: Bool? = nil,
+        includeSnapshot: Bool? = nil
     ) {
         self.command = command
         self.boardID = boardID
@@ -33,6 +35,7 @@ nonisolated struct DenIPCRequest: Codable, Sendable {
         self.callerBoardID = callerBoardID
         self.profileID = profileID
         self.includeTargetContext = includeTargetContext
+        self.includeSnapshot = includeSnapshot
     }
 
 }

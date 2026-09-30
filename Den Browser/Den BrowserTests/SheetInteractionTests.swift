@@ -217,6 +217,89 @@ struct SheetInteractionTests {
         #expect(snapshot.contains("Save changes"))
     }
 
+    @Test func interactiveSnapshotContextExcludesControlAndStatusText() async throws {
+        // Arrange
+        let webView = makeWebView()
+        let waiter = SheetInteractionWebViewLoadWaiter()
+        await waiter.load(
+            """
+            <!doctype html>
+            <div role="menu">
+              <span>Available actions</span>
+              <button role="menuitem">Save</button>
+              <span role="status">Updated</span>
+            </div>
+            """,
+            baseURL: URL(string: "https://example.com/")!,
+            in: webView
+        )
+
+        // Act
+        let snapshot = try await SheetInteraction.snapshot(
+            in: webView,
+            interactiveOnly: true
+        )
+        let contextLine = try #require(snapshot.split(separator: "\n").first { $0.contains("Available actions") })
+
+        // Assert
+        #expect(contextLine.contains("text \""))
+        #expect(contextLine.contains("Available actions"))
+        #expect(!contextLine.contains("Save"))
+        #expect(!contextLine.contains("Updated"))
+    }
+
+    @Test func interactiveSnapshotNestsActionsUnderSemanticContainer() async throws {
+        // Arrange
+        let webView = makeWebView()
+        let waiter = SheetInteractionWebViewLoadWaiter()
+        await waiter.load(
+            """
+            <!doctype html>
+            <div role="menu">
+              <button>Continue</button>
+            </div>
+            """,
+            baseURL: URL(string: "https://example.com/")!,
+            in: webView
+        )
+
+        // Act
+        let snapshot = try await SheetInteraction.snapshot(in: webView, interactiveOnly: true)
+        let lines = snapshot.split(separator: "\n").map(String.init)
+        let menuIndex = try #require(lines.firstIndex { $0.contains("[menu]") })
+        let buttonIndex = try #require(lines.firstIndex { $0.contains("[button]") })
+        let menuIndent = lines[menuIndex].prefix(while: { $0 == " " }).count
+        let buttonIndent = lines[buttonIndex].prefix(while: { $0 == " " }).count
+
+        // Assert
+        #expect(menuIndex < buttonIndex)
+        #expect(buttonIndent > menuIndent)
+    }
+
+    @Test func interactiveSnapshotShowsTextboxValuesButNotPasswordContents() async throws {
+        // Arrange
+        let webView = makeWebView()
+        let waiter = SheetInteractionWebViewLoadWaiter()
+        await waiter.load(
+            """
+            <!doctype html>
+            <input type="search" value="current">
+            <input type="text" value="">
+            <input type="password" value="secret">
+            """,
+            baseURL: URL(string: "https://example.com/")!,
+            in: webView
+        )
+
+        // Act
+        let snapshot = try await SheetInteraction.snapshot(in: webView, interactiveOnly: true)
+
+        // Assert
+        #expect(snapshot.contains("[value=\"current\"]"))
+        #expect(snapshot.contains("[value=\"\"]"))
+        #expect(!snapshot.contains("secret"))
+    }
+
     @Test func refTargetsUseWeakReferencesAndFollowClonedElements() async throws {
         // Arrange
         let webView = makeWebView()

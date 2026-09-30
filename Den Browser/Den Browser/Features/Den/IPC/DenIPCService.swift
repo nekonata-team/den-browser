@@ -339,6 +339,49 @@ final class DenIPCService {
                 runtime: store.webRuntime(for: board)
             )
         }
+        var response = await performSheetCommand(
+            command,
+            target: target,
+            includeSnapshot: request.includeSnapshot == true
+        )
+        guard request.includeSnapshot == true, response.isOk else { return response }
+        switch command {
+        case .inspect, .snapshot, .interact:
+            return response
+        default:
+            break
+        }
+
+        guard isSheetInteractTargetAvailable(target) else {
+            response.isOk = false
+            response.error =
+                "Command succeeded, but the target Web Board no longer exists: \(target.board.id.uuidString)"
+            return response
+        }
+
+        do {
+            response.snapshot = try await SheetInteraction.snapshot(
+                in: target.runtime.webView,
+                interactiveOnly: true
+            )
+            guard isSheetInteractTargetAvailable(target) else {
+                response.isOk = false
+                response.error =
+                    "Command succeeded, but the target Web Board no longer exists: \(target.board.id.uuidString)"
+                return response
+            }
+        } catch {
+            response.isOk = false
+            response.error = "Command succeeded, but snapshot failed: \(error.localizedDescription)"
+        }
+        return response
+    }
+
+    private func performSheetCommand(
+        _ command: DenIPCCommand.Sheet,
+        target: SheetInteractTarget,
+        includeSnapshot: Bool
+    ) async -> DenIPCResponse {
         let store = target.store
         let board = target.board
         let runtime = target.runtime
@@ -408,7 +451,11 @@ final class DenIPCService {
                 return .success(message: "Navigated forward")
 
             case .interact(let payload):
-                return await handleSheetInteract(payload: payload, target: target)
+                return await handleSheetInteract(
+                    payload: payload,
+                    target: target,
+                    includeSnapshot: includeSnapshot
+                )
 
             case .press(let payload):
                 guard !payload.key.isEmpty else {
@@ -781,10 +828,14 @@ final class DenIPCService {
 
     private func handleSheetInteract(
         payload: DenSheetInteractPayload,
-        target: SheetInteractTarget
+        target: SheetInteractTarget,
+        includeSnapshot: Bool
     ) async -> DenIPCResponse {
         guard !payload.steps.isEmpty else {
             return .failure("Usage: den sheet interact <script-or-file>")
+        }
+        guard !payload.full || includeSnapshot else {
+            return .failure("--full requires --snapshot")
         }
 
         var completedActions = 0
@@ -802,7 +853,7 @@ final class DenIPCService {
             }
             if case .interact = step.command {
                 let snapshot: String?
-                if payload.noSnapshot {
+                if !includeSnapshot {
                     snapshot = nil
                 } else {
                     snapshot = try? await SheetInteraction.snapshot(
@@ -829,7 +880,7 @@ final class DenIPCService {
             )
             guard actionResponse.isOk else {
                 let snapshot: String?
-                if payload.noSnapshot || !isSheetInteractTargetAvailable(target) {
+                if !includeSnapshot || !isSheetInteractTargetAvailable(target) {
                     snapshot = nil
                 } else {
                     snapshot = try? await SheetInteraction.snapshot(
@@ -851,7 +902,7 @@ final class DenIPCService {
             completedActions += 1
         }
 
-        if payload.noSnapshot {
+        if !includeSnapshot {
             guard isSheetInteractTargetAvailable(target) else {
                 return targetUnavailable(at: payload.steps.count - 1)
             }
