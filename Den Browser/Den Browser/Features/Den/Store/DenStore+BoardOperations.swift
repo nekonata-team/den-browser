@@ -344,6 +344,7 @@ extension DenStore {
         state.desks[deskIndex].focusedBoardID = boardID
         markNotificationsRead(for: boardID)
         guard changesFocus else { return }
+        dispatchDenOperationEvent(.boardFocusMoved)
         saveDeferredState()
     }
 
@@ -441,6 +442,8 @@ extension DenStore {
                 value = zmx.sessionName
                 message = "Copied zmx session name."
             }
+        case .tutorial:
+            return
         }
 
         pasteboard.clearContents()

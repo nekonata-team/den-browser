@@ -23,6 +23,10 @@ extension DenStore {
 
     @discardableResult
     func openBoard(input: String, preferredWidth: Double? = nil, afterBoardID: UUID? = nil) -> Bool {
+        if input.trimmingCharacters(in: .whitespacesAndNewlines) == ":tutorial" {
+            return openTutorialBoard(preferredWidth: preferredWidth, afterBoardID: afterBoardID)
+        }
+
         if let zmx = Self.resolveZmxInput(input) {
             guard zmxClient.isConfigured else {
                 openBoardPanelMessage =
@@ -124,6 +128,58 @@ extension DenStore {
             return false
         }
         return true
+    }
+
+    @discardableResult
+    func openTutorialBoard(preferredWidth: Double? = nil, afterBoardID: UUID? = nil) -> Bool {
+        if let tutorialBoard = state.desks.lazy.flatMap(\.boards).first(where: \.isTutorial) {
+            focusBoard(tutorialBoard.id, exitsDenMode: true)
+            hideOpenBoardPanel()
+            return true
+        }
+
+        let board = BoardState(
+            width: preferredWidth ?? inheritedBoardWidth,
+            tutorial: TutorialBoardState())
+        return insertBoard(
+            board,
+            afterBoardID: afterBoardID,
+            focus: true,
+            origin: .interactive)
+    }
+
+    private func tutorialBoardIndices() -> (desk: Int, board: Int)? {
+        for deskIndex in state.desks.indices {
+            if let boardIndex = state.desks[deskIndex].boards.firstIndex(where: \.isTutorial) {
+                return (deskIndex, boardIndex)
+            }
+        }
+        return nil
+    }
+
+    func dispatchDenOperationEvent(_ event: DenOperationEvent) {
+        advanceTutorial(for: event)
+        storage.onDenOperationEvent(event)
+    }
+
+    private func advanceTutorial(for event: DenOperationEvent) {
+        guard let indices = tutorialBoardIndices(),
+            case .tutorial(var tutorial) = state.desks[indices.desk].boards[indices.board].content
+        else { return }
+
+        var completedSteps = tutorial.completedSteps
+        for step in TutorialBoardStep.allCases where !step.isRequired && step.completionEvents.contains(event) {
+            completedSteps.insert(step)
+        }
+        if let nextStep = TutorialBoardStep.requiredSteps
+            .first(where: { !completedSteps.contains($0) }),
+            nextStep.completionEvents.contains(event)
+        {
+            completedSteps.insert(nextStep)
+        }
+        guard completedSteps != tutorial.completedSteps else { return }
+        tutorial.completedSteps = completedSteps
+        state.desks[indices.desk].boards[indices.board].content = .tutorial(tutorial)
     }
 
     static func resolveZellijInput(_ input: String) -> ZellijInput? {
@@ -333,6 +389,11 @@ extension DenStore {
         } else {
             insert()
         }
+        if board.isWeb {
+            dispatchDenOperationEvent(.webBoardOpened)
+        } else if board.isTerminal {
+            dispatchDenOperationEvent(.terminalBoardOpened)
+        }
         return true
     }
 
@@ -451,6 +512,15 @@ extension DenStore {
             return
         }
 
+        if recentlyRemovedBoard.board.isTutorial,
+            let existingTutorialBoard = state.desks.lazy.flatMap(\.boards).first(where: \.isTutorial)
+        {
+            recentlyRemovedBoards.removeFirst()
+            focusBoard(existingTutorialBoard.id, exitsDenMode: true)
+            showToast("Tutorial Board is already open.", style: .warning)
+            return
+        }
+
         let deskIndex: Int
         let insertIndex: Int
         if let targetBoardID = recentlyRemovedBoard.board.sideBoardTargetBoardID,
@@ -508,7 +578,7 @@ extension DenStore {
     }
 
     func duplicateFocusedBoard() {
-        guard let source = focusedBoard, !source.isSideBoard else { return }
+        guard let source = focusedBoard, !source.isSideBoard, !source.isTutorial else { return }
 
         if source.isZmx {
             showZmxDuplicationPanel()

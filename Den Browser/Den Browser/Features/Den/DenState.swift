@@ -234,15 +234,38 @@ enum BoardRole: Codable, Equatable {
     }
 }
 
+enum TutorialBoardStep: CaseIterable, Hashable {
+    case openBoard, navigateBoards, createDesk, keyboardShortcuts, terminalBoard
+
+    var completionEvents: [DenOperationEvent] {
+        switch self {
+        case .openBoard: [.webBoardOpened]
+        case .navigateBoards: [.boardFocusMoved]
+        case .createDesk: [.deskCreated]
+        case .keyboardShortcuts: [.keyboardShortcutsShown]
+        case .terminalBoard: [.terminalBoardOpened]
+        }
+    }
+
+    var isRequired: Bool { self != .keyboardShortcuts && self != .terminalBoard }
+
+    static var requiredSteps: [Self] { allCases.filter(\.isRequired) }
+}
+
+struct TutorialBoardState: Equatable {
+    var completedSteps: Set<TutorialBoardStep> = []
+}
+
 enum BoardContentState: Codable, Equatable {
     case web(WebBoardState)
     case inspection
     case terminal(TerminalBoardState)
+    case tutorial(TutorialBoardState)
 
     private enum CodingKeys: String, CodingKey {
         case kind, session, currentSheetURL, firstSheetURL, sheetNavigationPaused
     }
-    private enum Kind: String, Codable { case web, inspection, terminal }
+    private enum Kind: String, Codable { case web, inspection, terminal, tutorial }
 
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
@@ -259,6 +282,8 @@ enum BoardContentState: Codable, Equatable {
             self = .inspection
         case .terminal:
             self = .terminal(try container.decode(TerminalBoardState.self, forKey: .session))
+        case .tutorial:
+            self = .tutorial(TutorialBoardState())
         }
     }
 
@@ -277,6 +302,8 @@ enum BoardContentState: Codable, Equatable {
         case .terminal(let terminal):
             try container.encode(Kind.terminal, forKey: .kind)
             try container.encode(terminal, forKey: .session)
+        case .tutorial:
+            try container.encode(Kind.tutorial, forKey: .kind)
         }
     }
 }
@@ -373,7 +400,7 @@ struct BoardState: Codable, Equatable, Identifiable {
     var isTerminal: Bool {
         switch content {
         case .terminal: true
-        case .web, .inspection: false
+        case .web, .inspection, .tutorial: false
         }
     }
 
@@ -385,6 +412,16 @@ struct BoardState: Codable, Equatable, Identifiable {
     var isInspection: Bool {
         if case .inspection = content { return true }
         return false
+    }
+
+    var isTutorial: Bool {
+        if case .tutorial = content { return true }
+        return false
+    }
+
+    var tutorialCompletedSteps: Set<TutorialBoardStep>? {
+        guard case .tutorial(let tutorial) = content else { return nil }
+        return tutorial.completedSteps
     }
 
     var isSideBoard: Bool {
@@ -414,6 +451,7 @@ struct BoardState: Codable, Equatable, Identifiable {
         case .terminal(.shell): .appleTerminal
         case .terminal(.zellij): .rectangle3Group
         case .terminal(.zmx): .appleTerminalOnRectangle
+        case .tutorial: .book
         }
     }
 
@@ -438,6 +476,8 @@ struct BoardState: Codable, Equatable, Identifiable {
             return zellij.sessionName.map { ":zellij \($0)" } ?? ":zellij"
         case .terminal(.zmx(let zmx)):
             return zmx.sessionName.isEmpty ? ":zmx" : ":zmx \(zmx.sessionName)"
+        case .tutorial:
+            return nil
         }
     }
 
@@ -524,6 +564,20 @@ struct BoardState: Codable, Equatable, Identifiable {
         self.width = width
         content = .inspection
         role = .sideBoard(targetBoardID: targetBoardID)
+        customLabel = nil
+    }
+
+    init(
+        id: UUID = UUID(),
+        label: String = "Tutorial",
+        width: Double,
+        tutorial: TutorialBoardState = TutorialBoardState()
+    ) {
+        self.id = id
+        self.label = label
+        self.width = width
+        content = .tutorial(tutorial)
+        role = .primary
         customLabel = nil
     }
 

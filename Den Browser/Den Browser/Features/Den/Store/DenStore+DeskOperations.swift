@@ -29,6 +29,7 @@ extension DenStore {
         setTemporaryContext(nil)
         isDenMode = false
         save()
+        dispatchDenOperationEvent(.deskCreated)
     }
 
     func replaceFocusedDesk(label: String, preset: BuiltInDeskPreset) -> DeskReplacementResult {

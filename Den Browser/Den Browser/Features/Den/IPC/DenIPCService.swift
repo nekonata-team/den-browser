@@ -208,7 +208,9 @@ final class DenIPCService {
         let boards = desk.boards.map {
             DenBoardInfo(
                 id: $0.id.uuidString,
-                type: $0.isInspection ? "inspection" : ($0.isTerminal ? "terminal" : "web"),
+                type: $0.isInspection
+                    ? "inspection"
+                    : ($0.isTutorial ? "tutorial" : ($0.isTerminal ? "terminal" : "web")),
                 label: $0.displayName,
                 url: $0.currentSheetURL?.absoluteString,
                 sessionName: $0.zellijSessionName ?? $0.zmxSessionName,
@@ -901,7 +903,9 @@ final class DenIPCService {
             let boards = desk.boards.map { currentBoard in
                 DenBoardInfo(
                     id: currentBoard.id.uuidString,
-                    type: currentBoard.isInspection ? "inspection" : (currentBoard.isTerminal ? "terminal" : "web"),
+                    type: currentBoard.isInspection
+                        ? "inspection"
+                        : (currentBoard.isTutorial ? "tutorial" : (currentBoard.isTerminal ? "terminal" : "web")),
                     label: currentBoard.displayName,
                     url: currentBoard.currentSheetURL?.absoluteString,
                     sessionName: currentBoard.zellijSessionName ?? currentBoard.zmxSessionName,
@@ -924,7 +928,9 @@ final class DenIPCService {
             }
             let info = DenBoardInfo(
                 id: focusedBoard.id.uuidString,
-                type: focusedBoard.isInspection ? "inspection" : (focusedBoard.isTerminal ? "terminal" : "web"),
+                type: focusedBoard.isInspection
+                    ? "inspection"
+                    : (focusedBoard.isTutorial ? "tutorial" : (focusedBoard.isTerminal ? "terminal" : "web")),
                 label: focusedBoard.displayName,
                 url: focusedBoard.currentSheetURL?.absoluteString,
                 sessionName: focusedBoard.zellijSessionName ?? focusedBoard.zmxSessionName,

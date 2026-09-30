@@ -604,7 +604,7 @@ final class ProfileManager {
     @discardableResult
     private func saveDen(_ den: DenState, for profileID: UUID) -> Bool {
         guard var persisted = persistedProfiles[profileID] else { return false }
-        persisted.den = den
+        persisted.den = DenStore.normalizedPersistedState(den)
         if let storage = storages[profileID] {
             persisted.deskPresets = storage.deskPresets
             persisted.recentItems = storage.recentItems
@@ -694,9 +694,10 @@ final class ProfileManager {
     }
 
     private func refreshDenData(in persisted: inout PersistedProfile, for profileID: UUID) {
+        persisted.den = DenStore.normalizedPersistedState(persisted.den)
         guard let storage = storages[profileID] else { return }
         if storage.activeDrag == nil {
-            persisted.den = storage.state
+            persisted.den = DenStore.normalizedPersistedState(storage.state)
         }
         persisted.deskPresets = storage.deskPresets
         persisted.recentItems = storage.recentItems

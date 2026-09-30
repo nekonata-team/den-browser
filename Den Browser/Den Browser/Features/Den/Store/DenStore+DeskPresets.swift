@@ -12,7 +12,7 @@ extension DenStore {
     func saveFocusedDeskAsPreset(label: String) -> DeskPresetSaveResult {
         let label = label.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !label.isEmpty else { return .invalidLabel }
-        guard let desk = focusedDesk, !desk.boards.isEmpty else { return .emptyDesk }
+        guard let desk = focusedDesk, desk.boards.contains(where: { !$0.isTutorial }) else { return .emptyDesk }
         guard !BuiltInDeskPreset.allCases.contains(where: { samePresetLabel($0.label, label) }) else {
             return .reservedLabel
         }

@@ -52,8 +52,11 @@ struct PersonalDeskPreset: Codable, Equatable, Identifiable {
     init(id: UUID = UUID(), label: String, desk: DeskState) {
         self.id = id
         self.label = label
-        boards = DeskPresetBoard.capture(from: desk.boards)
-        focusedBoardIndex = desk.boards.firstIndex { $0.id == desk.focusedBoardID }
+        let presetBoards = desk.boards.filter { !$0.isTutorial }
+        boards = DeskPresetBoard.capture(from: presetBoards)
+        focusedBoardIndex = desk.focusedBoardID.flatMap { focusedBoardID in
+            presetBoards.firstIndex { $0.id == focusedBoardID }
+        }
     }
 }
 
@@ -200,11 +203,7 @@ struct DeskPresetBoard: Codable, Equatable {
         self.targetBoardIndex = targetBoardIndex
     }
 
-    nonisolated init(board: BoardState) {
-        self.init(board: board, targetBoardIndex: nil)
-    }
-
-    nonisolated init(board: BoardState, targetBoardIndex: Int?) {
+    nonisolated init?(board: BoardState, targetBoardIndex: Int? = nil) {
         let content: DeskPresetBoardContent
         switch board.content {
         case .web(let web):
@@ -217,6 +216,8 @@ struct DeskPresetBoard: Codable, Equatable {
             content = .terminal(.zellij(sessionName: zellij.sessionName))
         case .terminal(.zmx(let zmx)):
             content = .terminal(.zmx(sessionName: zmx.sessionName, rootSessionName: zmx.rootSessionName))
+        case .tutorial:
+            return nil
         }
         self.init(
             label: board.label,
@@ -227,9 +228,10 @@ struct DeskPresetBoard: Codable, Equatable {
     }
 
     static func capture(from boards: [BoardState]) -> [DeskPresetBoard] {
-        return boards.map { board in
+        let presetBoards = boards.filter { !$0.isTutorial }
+        return presetBoards.compactMap { board in
             let targetBoardIndex = board.sideBoardTargetBoardID.flatMap { targetBoardID in
-                boards.firstIndex { $0.id == targetBoardID }
+                presetBoards.firstIndex { $0.id == targetBoardID }
             }
             return DeskPresetBoard(board: board, targetBoardIndex: targetBoardIndex)
         }

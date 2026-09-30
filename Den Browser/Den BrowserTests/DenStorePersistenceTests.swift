@@ -122,6 +122,48 @@ struct DenStorePersistenceTests {
         #expect(savedState == store.state)
     }
 
+    @Test func tutorialBoardAndProgressStayInMemory() throws {
+        // Arrange
+        var savedState: DenState?
+        var saveCount = 0
+        let store = DenStore(
+            state: .sample,
+            onSave: { state in
+                savedState = state
+                saveCount += 1
+            })
+
+        // Act
+        #expect(store.openTutorialBoard())
+        let saveCountAfterOpening = saveCount
+        store.dispatchDenOperationEvent(.webBoardOpened)
+
+        // Assert
+        #expect(store.state.desks[0].boards.first?.isTutorial == true)
+        #expect(
+            store.state.desks[0].boards.first?.tutorialCompletedSteps?.contains(.openBoard) == true)
+        #expect(saveCount == saveCountAfterOpening)
+        #expect(store.save())
+        #expect(savedState?.desks[0].boards.isEmpty == true)
+
+        let encodedContent = try JSONEncoder().encode(
+            BoardContentState.tutorial(TutorialBoardState(completedSteps: [.openBoard])))
+        let content = try JSONSerialization.jsonObject(with: encodedContent) as? [String: String]
+        #expect(content == ["kind": "tutorial"])
+
+        let oldContent = Data(
+            #"""
+            {
+              "kind": "tutorial",
+              "selectedTutorialID": "getting-started",
+              "completedStepIDs": ["getting-started.open-board"]
+            }
+            """#.utf8)
+        #expect(
+            try JSONDecoder().decode(BoardContentState.self, from: oldContent)
+                == .tutorial(TutorialBoardState()))
+    }
+
     @Test func persistedStateRestoresDeskAndBoardDataAndFocus() throws {
         // Arrange
         let firstBoards = [

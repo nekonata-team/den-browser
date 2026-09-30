@@ -23,6 +23,7 @@ final class DenStorage {
     @ObservationIgnored let onDeferredSave: (() -> Void)?
     @ObservationIgnored let onDeskPresetsSave: (([PersonalDeskPreset]) -> Bool)?
     @ObservationIgnored let onRecentItemsSave: (([RecentItem]) -> Bool)?
+    @ObservationIgnored var onDenOperationEvent: (DenOperationEvent) -> Void = { _ in }
 
     init(
         state: DenState,
@@ -46,6 +47,15 @@ final class DenStorage {
 enum BoardOperationOrigin: Equatable {
     case interactive
     case cli
+}
+
+enum DenOperationEvent: Equatable {
+    case webBoardOpened
+    case terminalBoardOpened
+    case deskCreated
+    case denModeEntered
+    case boardFocusMoved
+    case keyboardShortcutsShown
 }
 
 struct BoardLinkFocusIntent: Equatable {
@@ -265,6 +275,7 @@ final class DenStore {
     var contentInputLabel: String {
         if focusedBoard?.isTerminal == true { return "Terminal Input" }
         if focusedBoard?.isInspection == true { return "Inspection Board" }
+        if focusedBoard?.isTutorial == true { return "Tutorial" }
         return "Sheet Input"
     }
 
@@ -415,6 +426,11 @@ final class DenStore {
             copy.focusedDeskID = firstDeskID
         }
         for deskIndex in copy.desks.indices {
+            let boardCount = copy.desks[deskIndex].boards.count
+            copy.desks[deskIndex].boards.removeAll(where: \.isTutorial)
+            if copy.desks[deskIndex].boards.count != boardCount {
+                copy.desks[deskIndex].scrollOffsetX = nil
+            }
             for boardIndex in copy.desks[deskIndex].boards.indices {
                 copy.desks[deskIndex].boards[boardIndex].currentSheetURL =
                     copy.desks[deskIndex].boards[boardIndex].currentSheetURL.map(SheetURLPolicy.canonicalSheetURL)
@@ -694,7 +710,7 @@ final class DenStore {
         let signpost = PerformanceTrace.beginInterval("DenStore.save")
         defer { PerformanceTrace.endInterval("DenStore.save", signpost) }
         guard activeDrag == nil else { return false }
-        return storage.onSave?(state) ?? false
+        return storage.onSave?(Self.normalizedPersistedState(state)) ?? false
     }
 
     func saveDeferredState() {

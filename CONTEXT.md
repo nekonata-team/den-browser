@@ -45,7 +45,7 @@ A user-created or app-provided work surface that holds one focused task context 
 _Avoid_: Tab, card, pane, slot
 
 **Tutorial Board**:
-An app-provided Board that teaches Den's core operations through a resumable checklist that tracks semantic actions inside Den. A Den has at most one Tutorial Board, opened from an empty Desk or from Open Board with `:tutorial`.
+An app-provided Board that presents Den-owned tutorials as interactive checklists. A Den has at most one Tutorial Board, opened from an empty Desk or from Open Board with `:tutorial`. When multiple tutorials are available, users can select one from its catalog.
 _Avoid_: Demo Desk, tour screen
 
 **Web Board**:

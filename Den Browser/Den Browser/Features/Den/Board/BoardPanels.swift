@@ -30,7 +30,7 @@ struct OpenBoardPanel: View {
             DenPanelHeader(systemSymbol: .plusRectangleOnRectangle) {
                 TextField(
                     text: urlTextBinding,
-                    prompt: Text(verbatim: "https://example.com, search, or :terminal / :zellij / :zmx")
+                    prompt: Text(verbatim: "https://example.com, search, or :terminal / :tutorial")
                 ) {
                     Text("Open URL, search, or command")
                 }
@@ -159,8 +159,11 @@ struct OpenBoardPanel: View {
             }
 
             HStack(spacing: DenPanelLayout.contentSpacing) {
-                Text("Use :terminal [path], :zellij [session], or :zmx [session] for a Terminal Board")
-                    .foregroundStyle(.secondary)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Use :tutorial for the interactive guide")
+                    Text("Use :terminal [path], :zellij [session], or :zmx [session] for a Terminal Board")
+                }
+                .foregroundStyle(.secondary)
                 Spacer()
                 Text("n in Den Mode")
                     .foregroundStyle(.secondary)

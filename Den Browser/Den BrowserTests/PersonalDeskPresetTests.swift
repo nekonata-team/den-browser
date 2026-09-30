@@ -35,6 +35,30 @@ struct PersonalDeskPresetTests {
         #expect(try JSONDecoder().decode(PersonalDeskPreset.self, from: encoded) == preset)
     }
 
+    @Test(arguments: [false, true])
+    func captureOmitsTutorialBoardAndKeepsRemainingFocus(focusTutorial: Bool) throws {
+        // Arrange
+        let tutorial = BoardState(
+            label: "Tutorial",
+            width: 520,
+            tutorial: TutorialBoardState())
+        let target = BoardState(label: "Target", width: 520, currentSheetURL: nil)
+        let inspection = BoardState(width: 360, targetBoardID: target.id)
+        let desk = DeskState(
+            label: "Research",
+            boards: [tutorial, target, inspection],
+            focusedBoardID: focusTutorial ? tutorial.id : inspection.id)
+
+        // Act
+        let preset = PersonalDeskPreset(label: "Research", desk: desk)
+
+        // Assert
+        #expect(preset.boards.map(\.label) == [target.label, inspection.label])
+        let savedInspection = try #require(preset.boards.last)
+        #expect(savedInspection.targetBoardIndex == 0)
+        #expect(preset.focusedBoardIndex == (focusTutorial ? nil : 1))
+    }
+
     @Test func decodesPreviouslySavedPresetWithoutInspectionMetadata() throws {
         // Arrange
         let data = Data(

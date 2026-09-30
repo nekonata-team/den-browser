@@ -1016,6 +1016,41 @@ struct DenStoreBoardTests {
         }
     }
 
+    @Test(arguments: [false, true])
+    func movingBoardFocusCompletesTutorialNavigationStep(inDenMode: Bool) {
+        // Arrange
+        let sourceDesk = desk("Desk")
+        let store = DenStore(state: DenState(desks: [sourceDesk], focusedDeskID: sourceDesk.id))
+
+        #expect(store.openTutorialBoard())
+        #expect(store.openBoard(input: "https://one.example/"))
+        #expect(store.focusedDesk?.boards.count == 2)
+        if inDenMode { store.toggleDenMode() }
+
+        // Act
+        store.focusNextBoard()
+
+        // Assert
+        #expect(
+            store.focusedDesk?.boards.contains {
+                $0.tutorialCompletedSteps?.contains(.navigateBoards) == true
+            } == true)
+    }
+
+    @Test(arguments: [false, true])
+    func showingKeyboardShortcutsCompletesOptionalTutorialStepOnlyInDenMode(inDenMode: Bool) {
+        let store = DenStore(state: .sample)
+        #expect(store.openTutorialBoard())
+        if inDenMode { store.toggleDenMode() }
+
+        store.showKeyboardShortcuts()
+
+        #expect(store.isKeyboardShortcutsPresented)
+        #expect(
+            store.state.desks[0].boards.first?.tutorialCompletedSteps?.contains(.keyboardShortcuts)
+                == inDenMode)
+    }
+
     @Test func focusMovesDoNotSaveWhenThereIsOnlyOneTarget() {
         let board = board("Board")
         let onlyDesk = desk("Desk", boards: [board], focusedBoardID: board.id)

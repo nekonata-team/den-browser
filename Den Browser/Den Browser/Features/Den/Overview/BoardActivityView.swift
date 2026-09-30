@@ -174,7 +174,11 @@ private struct BoardActivityRow: View {
                     boardStateIcon
                         .frame(width: 14)
                     Image(systemSymbol: board.systemSymbol)
-                        .foregroundStyle(board.isInspection ? .purple : (board.isTerminal ? .orange : .blue))
+                        .foregroundStyle(
+                            board.isInspection || board.isTutorial
+                                ? .purple
+                                : (board.isTerminal ? .orange : .blue)
+                        )
                         .frame(width: 20)
                     VStack(alignment: .leading, spacing: 3) {
                         Text(board.displayName)
@@ -264,6 +268,8 @@ private struct BoardActivityRow: View {
         if board.isInspection {
             return board.sideBoardTargetBoardID.map { "Target Board \($0.uuidString.prefix(8))" }
                 ?? "Inspection Board"
+        } else if board.isTutorial {
+            return "Interactive tutorial"
         }
         if board.isTerminal {
             return board.terminalWorkingDirectory

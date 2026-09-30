@@ -542,6 +542,7 @@ private struct OverviewBoardCloseButton: View {
 private enum DenOverviewColors {
     static let web = Color.blue
     static let terminal = Color.orange
+    static let tutorial = Color.purple
 }
 
 private struct OverviewDragState {
@@ -646,6 +647,7 @@ private struct OverviewBoardCard: View {
 
     static func kindLabel(for board: BoardState) -> String {
         if board.isInspection { return "Inspection" }
+        if board.isTutorial { return "Tutorial" }
         if board.isZmx { return "zmx" }
         if board.isZellij { return "Zellij" }
         if board.isTerminal { return "Terminal" }
@@ -663,7 +665,9 @@ private struct OverviewBoardCard: View {
     }
 
     private var typeColor: Color {
-        board.isInspection ? .purple : (board.isTerminal ? DenOverviewColors.terminal : DenOverviewColors.web)
+        if board.isInspection { return .purple }
+        if board.isTutorial { return DenOverviewColors.tutorial }
+        return board.isTerminal ? DenOverviewColors.terminal : DenOverviewColors.web
     }
 
     private var backgroundColor: Color {
@@ -672,7 +676,8 @@ private struct OverviewBoardCard: View {
     }
 
     private var detailText: String {
-        board.zmxSessionName
+        if board.isTutorial { return "Interactive checklist" }
+        return board.zmxSessionName
             ?? board.zellijSessionName
             ?? board.terminalWorkingDirectory
             ?? board.currentSheetURL?.host(percentEncoded: false)

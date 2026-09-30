@@ -20,6 +20,9 @@ extension DenStore {
     func toggleDenMode() {
         guard temporaryContext == nil || temporaryContext == .drawer else { return }
         isDenMode.toggle()
+        if isDenMode {
+            dispatchDenOperationEvent(.denModeEntered)
+        }
         if !isDenMode {
             dismissDeskFilter()
         }
@@ -50,6 +53,7 @@ extension DenStore {
 
     func showKeyboardShortcuts() {
         setTemporaryContext(.keyboardShortcuts)
+        if isDenMode { dispatchDenOperationEvent(.keyboardShortcutsShown) }
     }
 
     func hideKeyboardShortcuts() {
@@ -131,7 +135,7 @@ extension DenStore {
 
     func showEditBoardLinkPanel() {
         guard focusedBoard?.isWeb == true else {
-            showToast("No focused board.", style: .warning)
+            showToast("No focused Web Board.", style: .warning)
             return
         }
         setTemporaryContext(.editBoardLink)
@@ -226,11 +230,12 @@ extension DenStore {
     }
 
     func showSaveEssentialPanel(for board: BoardState) {
+        guard let input = board.essentialInput else { return }
         focusBoard(board.id)
         showSaveEssentialPanel(
             name: board.defaultEssentialName,
             key: "",
-            input: board.essentialInput ?? ""
+            input: input
         )
     }
 

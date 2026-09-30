@@ -20,6 +20,25 @@ struct DenStoreDeskTests {
         }
     }
 
+    @Test func creatingDeskCompletesTutorialDeskStep() {
+        // Arrange
+        let sourceDesk = desk("First")
+        let store = DenStore(state: DenState(desks: [sourceDesk], focusedDeskID: sourceDesk.id))
+        #expect(store.openTutorialBoard())
+        #expect(store.openBoard(input: "https://one.example/"))
+        #expect(store.focusedDesk?.boards.count == 2)
+        store.focusNextBoard()
+
+        // Act
+        store.createDesk(label: "Writing", preset: .empty)
+
+        // Assert
+        #expect(store.focusedDesk?.label == "Writing")
+        #expect(
+            store.state.desks.flatMap(\.boards).first(where: \.isTutorial)?.tutorialCompletedSteps?.isSuperset(
+                of: [.openBoard, .navigateBoards, .createDesk]) == true)
+    }
+
     @Test func createsChatGPTPresetWithThreeBoards() {
         withStore(desks: [desk("First")]) { store in
             store.createDesk(label: "AI", preset: .chatGPT)
@@ -237,13 +256,35 @@ struct DenStoreDeskTests {
 
     @Test func normalizedPersistedStateEnsuresFocusedObjects() {
         let boardItem = board("Board")
-        let first = desk("First", boards: [boardItem], focusedBoardID: UUID())
+        let tutorialBoard = BoardState(
+            label: "Tutorial",
+            width: 520,
+            tutorial: TutorialBoardState())
+        var first = desk(
+            "First",
+            boards: [tutorialBoard, boardItem],
+            focusedBoardID: tutorialBoard.id)
+        first.anchorBoardID = tutorialBoard.id
+        first.scrollOffsetX = 80
         let second = desk("Second")
-        let rawState = DenState(desks: [second, first], focusedDeskID: UUID())
+        let tutorialOnlyBoard = BoardState(
+            label: "Tutorial",
+            width: 520,
+            tutorial: TutorialBoardState())
+        let tutorialOnlyDesk = desk(
+            "Tutorial only",
+            boards: [tutorialOnlyBoard],
+            focusedBoardID: tutorialOnlyBoard.id)
+        let rawState = DenState(desks: [second, first, tutorialOnlyDesk], focusedDeskID: UUID())
 
         let normalized = DenStore.normalizedPersistedState(rawState)
         #expect(normalized.focusedDeskID == second.id)
         #expect(normalized.desks[1].focusedBoardID == boardItem.id)
+        #expect(normalized.desks[1].boards.map(\.id) == [boardItem.id])
+        #expect(normalized.desks[1].anchorBoardID == nil)
+        #expect(normalized.desks[1].scrollOffsetX == nil)
+        #expect(normalized.desks[2].boards.isEmpty)
+        #expect(normalized.desks[2].focusedBoardID == nil)
     }
 
     @Test func focusDeskByNumberDelegatesToFocusDesk() {

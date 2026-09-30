@@ -8,6 +8,7 @@ Den Browser persists only state needed to restore user-owned work. Version 3 gro
 - A versioned JSON `ProfileIndex` stores Profile order.
 - App-wide preferences use typed, independent `UserDefaults` keys. Retired keys may remain in `UserDefaults` and are ignored.
 - WebKit owns website data in each Profile's `WKWebsiteDataStore`.
+- Tutorial Boards and their checklist progress are session-only and omitted from Profile JSON. A Desk remains saved if its only Board was a Tutorial Board; it restores empty.
 - Live Web and Terminal runtimes, `WKWebView`, Shell, Zellij, and zmx processes, terminal screens, scrollback, transient presentation state, Recently Removed Boards, and recently discarded Drawer Item restoration history are not persisted.
 
 ## Version 3 JSON keys

@@ -625,6 +625,19 @@ struct BoardStrip: View {
                 } else {
                     Color.clear.frame(width: size.width, height: size.height)
                 }
+            case .tutorial:
+                TutorialBoardView(
+                    board: board,
+                    isFocused: focused,
+                    isDragging: isDragging,
+                    profileColor: profileColor,
+                    width: size.width,
+                    height: size.height,
+                    isPointerFocusEnabled: pointerFocusEnabled,
+                    onFocus: focus,
+                    onRemove: { store.removeBoard(board.id) },
+                    onDragChanged: { updateBoardDrag(board, value: $0, in: containerSize) },
+                    onDragEnded: { finishBoardDrag(value: $0, in: containerSize) })
             case .terminal:
                 TerminalBoardView(
                     board: board,

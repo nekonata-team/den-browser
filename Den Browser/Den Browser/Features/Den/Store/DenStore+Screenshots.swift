@@ -34,7 +34,7 @@ extension DenStore {
 
     private func focusedSheetRuntime() -> WebBoardRuntime? {
         guard let board = focusedBoard, board.isWeb else {
-            showToast("No focused Board.", style: .warning)
+            showToast("No focused Web Board.", style: .warning)
             return nil
         }
         return webRuntime(for: board)

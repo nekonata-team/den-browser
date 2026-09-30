@@ -203,7 +203,7 @@ struct BoardRail: View {
 
     @ViewBuilder
     private func boardIcon(for board: BoardState) -> some View {
-        if board.isTerminal || board.isInspection {
+        if board.isTutorial || board.isTerminal || board.isInspection {
             Image(systemSymbol: board.systemSymbol)
                 .foregroundStyle(.secondary)
                 .frame(width: 16, height: 16)

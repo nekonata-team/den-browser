@@ -73,7 +73,7 @@ For `terminal` commands, the caller's Terminal Board is preferred; otherwise the
 
 ### Board Targeting
 - `--board <id>`: Explicitly target a specific Board by its UUID. Available on `den sheet`, `den terminal`, and `den board close`; fails immediately if not found or invalid.
-- `den board close --board <id>` accepts any Board kind, including Inspection Boards. Sheet and Terminal commands require their corresponding Board kind.
+- `den board close --board <id>` accepts any Board kind, including Inspection and Tutorial Boards. Sheet and Terminal commands require their corresponding Board kind.
 - Inspection commands require an explicit Board ID. `den inspection read --board <id>` requires an Inspection Board; it does not infer one from ambient focus or choose another Board.
 
 ### Direct IPC Requests
@@ -136,7 +136,7 @@ Commands operating on Boards within the active Desk.
 
 | Command | Arguments | Description | Example |
 |---|---|---|---|
-| `den board list` | `[-l]` | List all Boards on the active Desk with type (`web`/`inspection`/`terminal`), label, and type-specific secondary information. JSON Inspection Board entries include their `target_board_id`. Use `-l` to include full Board IDs in human-readable output. | `den board list -l` |
+| `den board list` | `[-l]` | List all Boards on the active Desk with type (`web`/`inspection`/`terminal`/`tutorial`), label, and type-specific secondary information. JSON Inspection Board entries include their `target_board_id`. Use `-l` to include full Board IDs in human-readable output. | `den board list -l` |
 | `den board focused` | `[-l]` | Show the currently focused Board on the active Desk. Use `-l` to include full Board ID in human-readable output. | `den board focused -l` |
 | `den board close` | `[--board <id>]` | Close the specified Board or the target Web Board. Explicit IDs fail (`exit 1`) if invalid or not found. | `den board close --board 4F72344C-...` |
 

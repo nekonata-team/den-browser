@@ -126,9 +126,13 @@ struct DenView<Header: View>: View {
                 )
 
             if store.focusedDesk?.boards.isEmpty != false {
-                EmptyDenView {
-                    store.showOpenBoardPanel()
-                }
+                EmptyDenView(
+                    openBoard: { store.showOpenBoardPanel() },
+                    openTutorial: {
+                        store.openTutorialBoard(preferredWidth: newBoardWidth(in: size))
+                    },
+                    showKeyboardShortcuts: store.showKeyboardShortcuts
+                )
                 .allowsHitTesting(store.temporaryContext == nil)
                 .accessibilityHidden(store.temporaryContext != nil)
             }
@@ -216,19 +220,17 @@ struct DenView<Header: View>: View {
                 .padding(DenLayout.overlayInset)
                 .transition(DenMotion.transition(reduceMotion: shouldReduceMotion, scale: 0.98))
         case .keyboardShortcuts:
-            if store.focusedDesk?.boards.isEmpty == false {
-                KeyboardShortcutsView(onClose: store.hideKeyboardShortcuts)
-                    .padding(DenKeyboardShortcutsLayout.guidePadding)
-                    .frame(
-                        width: DenKeyboardShortcutsLayout.guideSize.width,
-                        height: DenKeyboardShortcutsLayout.guideSize.height
-                    )
-                    .glassEffect(
-                        .regular,
-                        in: RoundedRectangle(cornerRadius: DenRadius.large, style: .continuous)
-                    )
-                    .transition(DenMotion.transition(reduceMotion: shouldReduceMotion, scale: 0.98))
-            }
+            KeyboardShortcutsView(onClose: store.hideKeyboardShortcuts)
+                .padding(DenKeyboardShortcutsLayout.guidePadding)
+                .frame(
+                    width: DenKeyboardShortcutsLayout.guideSize.width,
+                    height: DenKeyboardShortcutsLayout.guideSize.height
+                )
+                .glassEffect(
+                    .regular,
+                    in: RoundedRectangle(cornerRadius: DenRadius.large, style: .continuous)
+                )
+                .transition(DenMotion.transition(reduceMotion: shouldReduceMotion, scale: 0.98))
         case .profilePicker:
             panelOverlay(OpenProfilePanel())
         case .drawer, nil:

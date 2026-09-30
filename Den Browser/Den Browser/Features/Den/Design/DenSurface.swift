@@ -61,9 +61,11 @@ struct DenCloseButton: View {
 
 struct EmptyDenView: View {
     let openBoard: () -> Void
+    let openTutorial: () -> Void
+    let showKeyboardShortcuts: () -> Void
 
     var body: some View {
-        VStack(spacing: 22) {
+        VStack(spacing: 20) {
             VStack(spacing: 8) {
                 Text("Den Browser")
                     .font(.title.weight(.semibold))
@@ -73,13 +75,20 @@ struct EmptyDenView: View {
                     .foregroundStyle(.secondary)
             }
 
-            KeyboardShortcutsView()
-                .padding(18)
-                .frame(width: 760, height: 460)
-                .glassEffect(.regular, in: RoundedRectangle(cornerRadius: DenRadius.large, style: .continuous))
+            VStack(spacing: 12) {
+                Group {
+                    Button("Open Board", action: openBoard)
+                        .buttonStyle(.glassProminent)
 
-            Button("Open Board", action: openBoard)
-                .buttonStyle(.glassProminent)
+                    Button("Try Tutorial", action: openTutorial)
+                        .buttonStyle(.glass)
+                }
+                .controlSize(.large)
+
+                Button("Keyboard Shortcuts", action: showKeyboardShortcuts)
+                    .buttonStyle(.plain)
+                    .foregroundStyle(.secondary)
+            }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .padding(.bottom, 24)
