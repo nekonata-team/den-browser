@@ -1509,11 +1509,16 @@ struct KeyboardShortcutTests {
     ) throws -> DenStore {
         let storeDesks = desks ?? [DeskState(label: "Desk", boards: boards, focusedBoardID: boards.first?.id)]
         let defaults = try #require(TestUserDefaults(suiteName: "KeyboardShortcutStore-\(UUID())"))
+        let pasteboard = NSPasteboard.withUniqueName()
         return DenStore(
             state: DenState(desks: storeDesks, focusedDeskID: storeDesks.first?.id ?? UUID()),
             websiteDataStore: .nonPersistent(),
-            sheetNavigation: SheetNavigationManager(defaults: defaults, scriptSource: ""),
+            sheetNavigation: SheetNavigationManager(
+                defaults: defaults,
+                pasteboard: pasteboard,
+                scriptSource: ""),
             preferences: AppPreferences(defaults: defaults),
+            pasteboard: pasteboard,
             terminalCommandRunner: terminalCommandRunner)
     }
 
