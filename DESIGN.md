@@ -7,9 +7,13 @@ Den controls feel like a calm desk laid over live web sheets. Web content remain
 ## Visual rules
 
 - Use dark, low-contrast Den background with restrained Profile-colored ambient light.
-- Use Liquid Glass for Den controls, panels, and desk switcher. Do not apply glass treatment to sheet content.
-- Boards stay white with rounded continuous corners. Focus uses the active Profile color.
-- Terminal Boards keep the same Board chrome and focus treatment while their Ghostty-rendered surface owns terminal colors, text, cursor, selection, and IME presentation.
+- Use Liquid Glass for Den controls, panels, the desk switcher, app-owned Inspection and Tutorial Boards, and unactivated Board placeholders.
+  Keep Web Sheets visually independent and do not apply glass to sheet content.
+- Boards use rounded continuous corners. Focus uses the active Profile color.
+- Terminal Boards keep shared Board chrome and focus treatment. Ghostty owns the Terminal surface appearance, text, cursor, selection, and IME presentation.
+- Treat a Primary Board and its Side Board as one adjacent group for dragging, reordering, and centering. Keep focus and width individual to each Board.
+  Show each Board's own border and raised shadow while dragging; scale it only when motion is enabled. Do not draw a group-wide outline.
+  Center using the group's full width, clamped to the scroll bounds.
 - Use only continuous 8pt, 12pt, and 18pt corner radii: small controls use 8pt, inner cards and inputs use 12pt, and Boards, panels, and Overview use 18pt.
 - Keep the Desk switcher in its own row at the top of the detail column, aligned with the horizontal Board Strip.
   Use a native split view for the on-demand Board Rail sidebar and the horizontal Board Strip so the switcher and
@@ -40,9 +44,10 @@ Den controls feel like a calm desk laid over live web sheets. Web content remain
 ## Interaction rules
 
 - Keyboard operation leads. Pointer actions support it and must keep focused-board state consistent.
-- Use the native context menu on Board headers for concise, Board-specific actions. Keep Sheet context menus owned by web content, and focus the targeted Board when its header menu opens.
+- Use native, Board-specific context menus where a Board kind provides them. Opening a Web Board header menu focuses that Board.
+  Keep Sheet context menus owned by web content.
 - BoardRail context menus target the clicked Board without changing focus when they open.
-- Hide Sheet-only controls on Terminal Boards. Keep only shared Board actions such as move, resize, duplicate, rename, maximize, and remove.
+- Reserve Sheet-only controls for Web Boards. Terminal Boards add font-size controls; zmx Boards expose zmx Sessions.
 - Keep context-menu ordering stable by disabling unavailable left/right movement instead of hiding it. Do not show Den Mode-only or configurable key equivalents there.
 - Do not make color the only state signal. Focus and direct manipulation need borders, elevation, motion, and accessible labels.
 - Keep New Desk and Replace Desk keyboard-first: choose an active Desk Preset through fuzzy search and arrow keys, confirm it, then edit the initialized Desk Label before applying it. Do not treat search-driven active results as confirmed selections.
@@ -91,12 +96,20 @@ Error and feedback presentation is strictly unified into three channels:
 
 ## Focus Mode
 
-- Focus Mode keeps the Focused Board's Current Sheet or Terminal surface clear and softly de-emphasizes other Board content.
+- Focus Mode keeps the Focused Board's content clear and blurs unfocused Web Sheets and Terminal surfaces.
+  Inspection and Tutorial Boards use shared focus chrome without a blur.
 - Keep non-focused Board Headers, labels, order, widths, and direct manipulation visible so the Desk's spatial map remains usable.
 - Keep the existing Focused Board ring as the boundary cue; in Focus Mode, add only a subtle Profile-colored halo to give it quiet foreground presence. Reserve Header tint for Den Mode.
 - Treat Focus Mode as window-local runtime presentation. A recreated Den window starts with Focus Mode off, while Den Mode, Sheet Input, and Desk changes do not turn it off.
 - Do not pause, mute, or alter web content as part of Focus Mode. The effect is visual only.
 - Keep Focus Mode optional and user-controlled; describe it as a visual presentation aid.
+
+## Tutorial Board
+
+- Present Getting Started as an app-owned checklist with Liquid Glass treatment and shared Board focus behavior.
+- Keep Tutorial Board header controls for movement, centering, and removal; do not provide a header context menu or duplication.
+- Advance checklist steps only after the matching Den operation succeeds, not when the user requests it. Require Web Board creation, keyboard Board navigation, then Desk creation; show optional shortcuts and Terminal steps after the required sequence.
+- Offer the Tutorial Board from the empty Desk's Try Tutorial action and `:tutorial`. Keep at most one per Den and keep its state session-only; see [ADR 0056](docs/adr/0056-provide-an-interactive-tutorial-board.md).
 
 ## Review checklist
 
@@ -105,4 +118,4 @@ Error and feedback presentation is strictly unified into three channels:
 - Does keyboard focus still make sense after pointer interaction?
 - Does UI use Den, Desk, Board, and Sheet terminology correctly?
 - Does Zen View remove native window and Den chrome while preserving Board controls and Den Mode feedback?
-- Does Focus Mode preserve Board spatial orientation, keyboard focus, and Web/Terminal input?
+- Does Focus Mode preserve Board spatial orientation, keyboard focus, and focused content input across Board kinds?

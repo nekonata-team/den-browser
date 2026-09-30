@@ -166,8 +166,8 @@ Open with `o` in Den Mode.
   - Pinch in or out over a Terminal Board to adjust its font size for that Board.
 - **Board Headers**:
   - Double-click to focus and center the Board.
-  - Drag label or empty area to reorder within the Desk. Dragging either a Primary Board or its Side Board moves the whole Board Group together, with an outline around the group while dragging.
-  - Right-click or Control-click for context menu (copy Current Sheet URL or ID, keep in Drawer, duplicate, reload, adjust or reset content size, center, maximize, move to Desk, remove).
+  - Drag label or empty area to reorder within the Desk. Dragging either a Primary Board or its Side Board moves the whole Board Group together.
+  - Web, Terminal, and Inspection Board headers provide context menus with actions appropriate to their content. Web Board actions include copying the Current Sheet URL or Board ID, keeping the Sheet in Drawer, duplicating, reloading, adjusting content size, centering, maximizing, moving to a Desk, and removing. Tutorial Board headers have no context menu.
 - **BoardRail**:
   - Right-click or Control-click a Board for its context menu (set or clear Anchor, rename, duplicate, move to Desk, copy Current Sheet URL for Web Boards, remove). Opening the menu does not change focus.
 - **Board Resize**:
