@@ -43,6 +43,15 @@ Den controls feel like a calm desk laid over live web sheets. Web content remain
 
 ## Interaction rules
 
+### Panels
+
+- Share panel width horizontally; let height follow content.
+- Use the active Profile color for selected-item highlights.
+- A panel should not display the shortcut used to open it.
+- Candidate-list selection wraps between the first and last items in both directions. Reuse shared
+  selection-navigation logic. Keep Board and Desk movement or reordering separate with
+  action-specific boundaries.
+
 - Keyboard operation leads. Pointer actions support it and must keep focused-board state consistent.
 - Use native, Board-specific context menus where a Board kind provides them. Opening a Web Board header menu focuses that Board.
   Keep Sheet context menus owned by web content.
