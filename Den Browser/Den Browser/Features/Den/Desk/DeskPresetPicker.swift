@@ -82,7 +82,7 @@ struct DeskPresetPicker: View {
                         .scrollTargetLayout()
                 }
                 .scrollPosition($scrollPosition, anchor: .center)
-                .frame(maxHeight: 220)
+                .frame(maxHeight: DenPanelLayout.deskPresetListMaxHeight)
             }
             .deskPresetArrowNavigation { moveSelection(by: $0) }
 
