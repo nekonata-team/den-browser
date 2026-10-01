@@ -299,7 +299,7 @@ struct DrawerView: View {
             RoundedRectangle(cornerRadius: DenRadius.medium, style: .continuous)
                 .fill(
                     store.selectedDrawerItemID == item.id
-                        ? profileColor.opacity(0.18)
+                        ? (differentiateWithoutColor ? Color.primary : profileColor).opacity(0.18)
                         : Color.primary.opacity(0.04)
                 )
         )

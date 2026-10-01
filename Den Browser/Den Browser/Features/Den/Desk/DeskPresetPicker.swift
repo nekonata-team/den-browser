@@ -8,6 +8,7 @@ enum DeskPresetSelection: Hashable {
 }
 
 struct DeskPresetPicker: View {
+    let profileColor: Color
     let initialSelection: DeskPresetSelection
     @Binding var query: String
     @Binding var isManagementPresented: Bool
@@ -21,6 +22,7 @@ struct DeskPresetPicker: View {
     @State private var preservesSelectionAfterManagement = false
 
     init(
+        profileColor: Color,
         initialSelection: DeskPresetSelection,
         query: Binding<String>,
         isManagementPresented: Binding<Bool>,
@@ -28,6 +30,7 @@ struct DeskPresetPicker: View {
         isSearchFocused: FocusState<Bool>.Binding,
         onConfirm: @escaping (DeskPresetSelection) -> Void
     ) {
+        self.profileColor = profileColor
         self.initialSelection = initialSelection
         self._query = query
         self._isManagementPresented = isManagementPresented
@@ -147,14 +150,14 @@ struct DeskPresetPicker: View {
     }
 
     private func choiceRow(_ choice: DeskPresetChoice, showsSource: Bool = false) -> some View {
-        Button {
+        let isSelected = selection == choice.selection
+        return Button {
             selection = choice.selection
             onConfirm(choice.selection)
         } label: {
             HStack {
-                let isSelected = selection == choice.selection
                 Image(systemSymbol: isSelected ? .chevronRight : .circle)
-                    .foregroundStyle(isSelected ? Color.accentColor : Color.secondary)
+                    .foregroundStyle(isSelected ? profileColor : Color.secondary)
                     .frame(width: 16)
                 Text(choice.label)
                 Spacer()
@@ -171,10 +174,7 @@ struct DeskPresetPicker: View {
         .buttonStyle(.plain)
         .accessibilityValue(selection == choice.selection ? "Active" : "")
         .padding(8)
-        .background(
-            Color.primary.opacity(selection == choice.selection ? 0.11 : 0.045),
-            in: RoundedRectangle(cornerRadius: DenRadius.small, style: .continuous)
-        )
+        .denSelectionHighlight(isSelected, profileColor: profileColor, inactiveOpacity: 0.045)
         .id(scrollID(for: choice.selection))
     }
 

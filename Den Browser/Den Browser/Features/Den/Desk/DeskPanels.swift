@@ -2,6 +2,8 @@ import SFSafeSymbols
 import SwiftUI
 
 struct NewDeskPanel: View {
+    let profileColor: Color
+
     @Environment(DenStore.self) private var store
     @State private var selectedDeskPreset: DeskPresetSelection = .builtIn(.empty)
     @State private var query = ""
@@ -24,6 +26,7 @@ struct NewDeskPanel: View {
 
             if isChoosing {
                 DeskPresetPicker(
+                    profileColor: profileColor,
                     initialSelection: selectedDeskPreset,
                     query: $query,
                     isManagementPresented: $isManagementPresented,
@@ -96,7 +99,7 @@ struct NewDeskPanel: View {
         .accessibilityHidden(isManagementPresented)
         .overlay {
             if isManagementPresented {
-                DeskPresetManagementPanel(isStandalone: false) {
+                DeskPresetManagementPanel(isStandalone: false, profileColor: profileColor) {
                     isManagementPresented = false
                     DispatchQueue.main.async { isSearchFocused = true }
                 }

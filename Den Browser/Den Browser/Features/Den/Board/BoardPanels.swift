@@ -8,6 +8,7 @@ struct OpenBoardPanel: View {
     @FocusState private var isFocused: Bool
     @State private var selectedRecentItemID: RecentItem?
 
+    let profileColor: Color
     let newBoardWidth: Double
 
     private var filteredRecentItems: [RecentItem] {
@@ -132,12 +133,7 @@ struct OpenBoardPanel: View {
                     .padding(.horizontal, 8)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .frame(height: 30)
-                    .background(
-                        item.id == selectedRecentItemID ? Color.primary.opacity(0.1) : Color.clear,
-                        in: RoundedRectangle(
-                            cornerRadius: DenRadius.small,
-                            style: .continuous)
-                    )
+                    .denSelectionHighlight(item.id == selectedRecentItemID, profileColor: profileColor)
                     .contextMenu {
                         if let matchedEssential {
                             Button {

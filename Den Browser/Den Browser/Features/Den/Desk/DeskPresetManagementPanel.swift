@@ -3,6 +3,7 @@ import SwiftUI
 
 struct DeskPresetManagementPanel: View {
     let isStandalone: Bool
+    let profileColor: Color
     let onClose: () -> Void
 
     @Environment(DenStore.self) private var store
@@ -112,7 +113,9 @@ struct DeskPresetManagementPanel: View {
     }
 
     private func presetRow(_ preset: PersonalDeskPreset) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
+        let isSelected = selectedPresetID == preset.id
+
+        return VStack(alignment: .leading, spacing: 4) {
             HStack(spacing: 8) {
                 if editingPresetID == preset.id {
                     TextField(
@@ -193,17 +196,7 @@ struct DeskPresetManagementPanel: View {
         }
         .padding(8)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(
-            Color.primary.opacity(selectedPresetID == preset.id ? 0.11 : 0.055),
-            in: RoundedRectangle(cornerRadius: DenRadius.small, style: .continuous)
-        )
-        .overlay {
-            RoundedRectangle(cornerRadius: DenRadius.small, style: .continuous)
-                .strokeBorder(
-                    selectedPresetID == preset.id ? Color.accentColor.opacity(0.8) : Color.clear,
-                    lineWidth: 1
-                )
-        }
+        .denSelectionHighlight(isSelected, profileColor: profileColor, inactiveOpacity: 0.055)
     }
 
     private func moveSelection(by offset: Int) {

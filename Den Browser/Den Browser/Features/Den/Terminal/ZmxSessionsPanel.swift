@@ -256,7 +256,7 @@ struct ZmxSessionsPanel: View {
         .padding(.horizontal, 8)
         .frame(minHeight: 48)
         .background(
-            Color.primary.opacity(isMarked ? 0.1 : 0.04),
+            (isFocused ? focusColor : Color.primary).opacity(isFocused ? 0.12 : (isMarked ? 0.1 : 0.04)),
             in: RoundedRectangle(cornerRadius: DenRadius.small)
         )
         .overlay {

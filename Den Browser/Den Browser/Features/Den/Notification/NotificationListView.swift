@@ -106,6 +106,8 @@ private struct NotificationRow: View {
     let profileColor: Color
     let isSelected: Bool
 
+    @Environment(\.accessibilityDifferentiateWithoutColor) private var differentiateWithoutColor
+
     var body: some View {
         HStack(alignment: .top, spacing: 10) {
             Circle()
@@ -143,12 +145,21 @@ private struct NotificationRow: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
             isSelected
-                ? profileColor.opacity(0.2)
+                ? (differentiateWithoutColor ? Color.primary : profileColor).opacity(0.2)
                 : notification.isRead
                     ? Color.clear
                     : profileColor.opacity(0.1),
             in: RoundedRectangle(cornerRadius: DenRadius.medium, style: .continuous)
         )
+        .overlay {
+            RoundedRectangle(cornerRadius: DenRadius.medium, style: .continuous)
+                .strokeBorder(
+                    isSelected
+                        ? (differentiateWithoutColor ? Color.primary : profileColor.opacity(0.85))
+                        : Color.clear,
+                    lineWidth: 1
+                )
+        }
         .opacity(source == nil ? 0.55 : 1)
         .contentShape(Rectangle())
         .accessibilityElement(children: .combine)

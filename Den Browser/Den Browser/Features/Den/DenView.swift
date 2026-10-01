@@ -192,7 +192,7 @@ struct DenView<Header: View>: View {
         case .essentialsPrefix:
             panelOverlay(essentialsPrefixPanel)
         case .openBoard:
-            panelOverlay(OpenBoardPanel(newBoardWidth: newBoardWidth))
+            panelOverlay(OpenBoardPanel(profileColor: profileColor, newBoardWidth: newBoardWidth))
         case .zmxSessions:
             panelOverlay(ZmxSessionsPanel(profileColor: profileColor))
         case .zmxDuplication:
@@ -203,7 +203,7 @@ struct DenView<Header: View>: View {
             panelOverlay(newDeskPanel)
         case .deskPresetManagement:
             panelOverlay(
-                DeskPresetManagementPanel(isStandalone: true) {
+                DeskPresetManagementPanel(isStandalone: true, profileColor: profileColor) {
                     store.hideNewDeskPanel(exitsDenMode: true)
                 })
         case .boardWidth:
@@ -237,7 +237,7 @@ struct DenView<Header: View>: View {
                 )
                 .transition(DenMotion.transition(reduceMotion: shouldReduceMotion, scale: 0.98))
         case .profilePicker:
-            panelOverlay(OpenProfilePanel())
+            panelOverlay(OpenProfilePanel(profileColor: profileColor))
         case .drawer, nil:
             EmptyView()
         }
@@ -255,7 +255,7 @@ struct DenView<Header: View>: View {
     }
 
     private var newDeskPanel: some View {
-        NewDeskPanel()
+        NewDeskPanel(profileColor: profileColor)
     }
 
     private var essentialsPrefixPanel: some View {

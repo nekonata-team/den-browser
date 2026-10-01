@@ -671,7 +671,7 @@ private struct OverviewBoardCard: View {
     }
 
     private var backgroundColor: Color {
-        if isSelected { return profileColor.opacity(0.18) }
+        if isSelected { return (differentiateWithoutColor ? Color.primary : profileColor).opacity(0.18) }
         return typeColor.opacity(0.09)
     }
 
