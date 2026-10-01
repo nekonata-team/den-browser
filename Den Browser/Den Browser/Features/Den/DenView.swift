@@ -199,8 +199,13 @@ struct DenView<Header: View>: View {
             panelOverlay(ZmxDuplicationPanel())
         case .editBoardLink:
             panelOverlay(EditBoardLinkPanel())
-        case .newDesk, .replaceDesk, .deskPresetManagement:
+        case .newDesk, .replaceDesk:
             panelOverlay(newDeskPanel)
+        case .deskPresetManagement:
+            panelOverlay(
+                DeskPresetManagementPanel(isStandalone: true) {
+                    store.hideNewDeskPanel(exitsDenMode: true)
+                })
         case .boardWidth:
             panelOverlay(boardWidthPanel)
         case .saveDeskPreset:

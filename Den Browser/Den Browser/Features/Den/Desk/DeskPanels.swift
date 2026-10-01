@@ -5,7 +5,7 @@ struct NewDeskPanel: View {
     @Environment(DenStore.self) private var store
     @State private var selectedDeskPreset: DeskPresetSelection = .builtIn(.empty)
     @State private var query = ""
-    @State private var isManaging = false
+    @State private var isManagementPresented = false
     @State private var isChoosing = true
     @State private var didAttemptAction = false
     @State private var newDeskLabel = ""
@@ -16,24 +16,17 @@ struct NewDeskPanel: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             DenPanelHeader(
-                systemSymbol: store.isDeskPresetManagementPresented
-                    ? .bookmark
-                    : store.isReplaceDeskPanelPresented
-                        ? .rectangleStackBadgeMinus : .rectangleStackBadgePlus
+                systemSymbol: store.isReplaceDeskPanelPresented ? .rectangleStackBadgeMinus : .rectangleStackBadgePlus
             ) {
-                Text(
-                    store.isDeskPresetManagementPresented
-                        ? "Manage Presets"
-                        : store.isReplaceDeskPanelPresented ? "Replace Desk" : "New Desk"
-                )
-                .font(.headline)
+                Text(store.isReplaceDeskPanelPresented ? "Replace Desk" : "New Desk")
+                    .font(.headline)
             }
 
             if isChoosing {
                 DeskPresetPicker(
                     initialSelection: selectedDeskPreset,
                     query: $query,
-                    isManaging: $isManaging,
+                    isManagementPresented: $isManagementPresented,
                     allowsEmptyPreset: !store.isReplaceDeskPanelPresented,
                     isSearchFocused: $isSearchFocused,
                     onConfirm: confirmDeskPreset)
@@ -98,6 +91,18 @@ struct NewDeskPanel: View {
             }
         }
         .denPanel(width: DenPanelLayout.wideWidth)
+        .opacity(isManagementPresented ? 0 : 1)
+        .disabled(isManagementPresented)
+        .accessibilityHidden(isManagementPresented)
+        .overlay {
+            if isManagementPresented {
+                DeskPresetManagementPanel(isStandalone: false) {
+                    isManagementPresented = false
+                    DispatchQueue.main.async { isSearchFocused = true }
+                }
+                .zIndex(1)
+            }
+        }
         .onAppear {
             let initialPreset: DeskPresetSelection =
                 store.isReplaceDeskPanelPresented ? .builtIn(.chatGPT) : .builtIn(.empty)
@@ -105,7 +110,7 @@ struct NewDeskPanel: View {
             newDeskLabel =
                 store.isReplaceDeskPanelPresented ? BuiltInDeskPreset.chatGPT.label : BuiltInDeskPreset.empty.label
             query = ""
-            isManaging = store.isDeskPresetManagementPresented
+            isManagementPresented = false
             isChoosing = true
             didAttemptAction = false
             DispatchQueue.main.async { isSearchFocused = true }
@@ -114,7 +119,12 @@ struct NewDeskPanel: View {
             ensureSelectedPresetExists()
         }
         .onExitCommand {
-            if isChoosing { store.hideNewDeskPanel() } else { beginDeskPresetSelection() }
+            guard !isManagementPresented else { return }
+            if isChoosing {
+                store.hideNewDeskPanel()
+            } else {
+                beginDeskPresetSelection()
+            }
         }
     }
 
@@ -218,7 +228,6 @@ struct NewDeskPanel: View {
 
     private func beginDeskPresetSelection() {
         isChoosing = true
-        isManaging = false
         DispatchQueue.main.async { isSearchFocused = true }
     }
 

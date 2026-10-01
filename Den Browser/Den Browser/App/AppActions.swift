@@ -45,6 +45,7 @@ enum DeskAction: Equatable {
     case showNewPanel
     case showSavePresetPanel
     case showReplacePanel
+    case showPresetManager
     case showRenamePanel
     case delete
     case adjustBoardWidths(Double)
@@ -211,6 +212,7 @@ enum AppActionHandler {
             case .showNewPanel: store.showNewDeskPanel()
             case .showSavePresetPanel: store.showSaveDeskPresetPanel()
             case .showReplacePanel: store.showReplaceDeskPanel()
+            case .showPresetManager: store.showDeskPresetManagement()
             case .showRenamePanel: store.showRenameDeskPanel()
             case .delete: store.deleteFocusedDesk()
             case .adjustBoardWidths(let amount): store.adjustFocusedDeskBoardWidths(by: amount)

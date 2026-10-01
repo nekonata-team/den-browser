@@ -8,6 +8,15 @@ enum DeskPresetSaveResult: Equatable {
     case reservedLabel
 }
 
+enum DeskPresetRenameResult: Equatable {
+    case renamed
+    case unchanged
+    case invalidLabel
+    case reservedLabel
+    case duplicateLabel
+    case unavailable
+}
+
 extension DenStore {
     func saveFocusedDeskAsPreset(label: String) -> DeskPresetSaveResult {
         let label = label.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -57,6 +66,25 @@ extension DenStore {
     func requestDeskPresetDeletion(_ id: UUID) {
         guard let preset = deskPresets.first(where: { $0.id == id }) else { return }
         pendingConfirmation = .deleteDeskPreset(preset)
+    }
+
+    func renameDeskPreset(_ id: UUID, to rawLabel: String) -> DeskPresetRenameResult {
+        let label = rawLabel.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !label.isEmpty else { return .invalidLabel }
+        guard !BuiltInDeskPreset.allCases.contains(where: { samePresetLabel($0.label, label) }) else {
+            return .reservedLabel
+        }
+        guard let index = deskPresets.firstIndex(where: { $0.id == id }) else { return .unavailable }
+        guard !deskPresets.contains(where: { $0.id != id && samePresetLabel($0.label, label) }) else {
+            return .duplicateLabel
+        }
+        guard deskPresets[index].label != label else { return .unchanged }
+
+        deskPresets[index].label = label
+        if !saveDeskPresets() {
+            showToast("Could not rename Desk Preset.", style: .error)
+        }
+        return .renamed
     }
 
     func confirmDeskPresetDeletion() {

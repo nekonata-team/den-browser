@@ -523,6 +523,7 @@ enum KeyboardRouter {
         binding("n", modifiers: [.shift]): KeyboardCommand(action: .desk(.showNewPanel)),
         binding("p"): KeyboardCommand(action: .desk(.showSavePresetPanel), repeatPolicy: .ignore),
         binding("p", modifiers: [.shift]): KeyboardCommand(action: .desk(.showReplacePanel), repeatPolicy: .ignore),
+        binding("p", modifiers: [.control]): KeyboardCommand(action: .desk(.showPresetManager), repeatPolicy: .ignore),
         binding("o"): KeyboardCommand(action: .overview(.show)),
         binding("w"): KeyboardCommand(action: .board(.showWidthPanel), repeatPolicy: .ignore),
         binding("["): KeyboardCommand(action: .board(.goBack)),

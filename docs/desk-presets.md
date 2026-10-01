@@ -29,7 +29,7 @@ When the Focused Desk contains a Board, an outline bookmark button appears left 
 
 All three actions open the same top-center Liquid Glass panel. Its only editable value is the Desk Preset Label, initialized from the current Desk Label. Saving a new label inserts the Personal Desk Preset at the top of My Presets. Saving an existing Personal Desk Preset Label asks before replacing its captured state while preserving its identity and position. Built-in labels are reserved.
 
-Labels are trimmed, cannot be empty, and compare case-insensitively. A Desk with no Boards cannot be saved: its button is absent, its Den menu item is disabled, and `p` is a no-op.
+Labels are trimmed, cannot be empty, and compare case- and width-insensitively. A Desk with no Boards cannot be saved: its button is absent, its Den menu item is disabled, and `p` is a no-op.
 
 ## Creating a Desk
 
@@ -53,7 +53,9 @@ An empty Desk is replaced immediately. A Desk containing Boards asks for confirm
 
 ## Managing Personal Desk Presets
 
-`Manage Presets…` switches the Desk Preset picker to an inline management view. Preset management has no dedicated Den Mode shortcut; it remains available from the picker and each Desk button's context menu. It supports search and deletion. Built-in Desk Presets are visible during selection but are not managed.
+Manage Presets opens the same searchable panel from `Control` + `P` in Den Mode, the Desk Preset picker's sliders button, or a Desk button's context menu. In New Desk and Replace Desk, closing management returns to the same search and active selection. Up and Down move through filtered Personal Desk Presets and keep the active row visible; Return starts renaming it. The pencil and trash buttons rename and delete individual Presets. Escape cancels an active rename, then returns to the picker or closes standalone management. Renaming trims the label and rejects empty, duplicate, and Built-in Desk Preset labels; it keeps the captured Boards unchanged. Built-in Desk Presets are visible during selection but are not managed.
+
+Saving a Focused Desk under an existing Personal Desk Preset Label remains the way to replace its captured state; it asks for confirmation and preserves the Desk Preset's identity and position.
 
 Deleting always asks for confirmation and states that existing Desks are unaffected. Deleting the selected Personal Desk Preset returns selection to Empty during creation, or to the first available non-empty Preset during replacement.
 
@@ -61,8 +63,7 @@ Personal Desk Presets have no artificial count limit. They are deleted with thei
 
 ## Deferred
 
-- Dedicated Desk Preset editing
-- Renaming without capture
+- Editing individual Board details inside a Desk Preset
 - Import and export
 - Sharing between Profiles
 - Cloud sync

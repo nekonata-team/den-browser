@@ -298,6 +298,32 @@ struct DenStoreDeskPresetTests {
         #expect(store.deskPresets.map(\.label) == ["Other"])
     }
 
+    @Test func renamingPersonalPresetPreservesCapturedStateAndRejectsReservedOrDuplicateLabels() throws {
+        // Arrange
+        let source = desk("Desk", boards: [board("First")])
+        let store = DenStore(state: DenState(desks: [source], focusedDeskID: source.id))
+        #expect(store.saveFocusedDeskAsPreset(label: "Routine") == .created)
+        #expect(store.saveFocusedDeskAsPreset(label: "Other") == .created)
+        let presetID = try #require(store.deskPresets.last?.id)
+        let originalBoards = try #require(store.deskPresets.last?.boards)
+
+        // Act
+        let renamed = store.renameDeskPreset(presetID, to: "  Daily  ")
+        let duplicate = store.renameDeskPreset(presetID, to: "ＯＴＨＥＲ")
+        let reserved = store.renameDeskPreset(presetID, to: "ChatGPT")
+        let empty = store.renameDeskPreset(presetID, to: "   ")
+        let preset = try #require(store.deskPresets.last)
+
+        // Assert
+        #expect(renamed == .renamed)
+        #expect(duplicate == .duplicateLabel)
+        #expect(reserved == .reservedLabel)
+        #expect(empty == .invalidLabel)
+        #expect(preset.id == presetID)
+        #expect(preset.label == "Daily")
+        #expect(preset.boards == originalBoards)
+    }
+
     @Test func finishingPresetManagementExitsDenMode() {
         // Arrange
         let source = desk("Desk", boards: [board("Board")])

@@ -60,6 +60,7 @@ Toggle with `Control` + `,`. Press `Escape` to exit to Sheet Input.
 | `Shift` + `N` | New Desk panel |
 | `p` | Save Desk as Preset |
 | `Shift` + `P` | Replace Desk from Preset |
+| `Control` + `P` | Manage Desk Presets |
 | `Tab` | Toggle Drawer |
 | `o` | Toggle Overview |
 | `i` | Show Notifications (`Up` / `Down` to select, `Return` to open) |

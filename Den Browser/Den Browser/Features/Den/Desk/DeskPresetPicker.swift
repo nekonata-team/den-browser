@@ -10,7 +10,7 @@ enum DeskPresetSelection: Hashable {
 struct DeskPresetPicker: View {
     let initialSelection: DeskPresetSelection
     @Binding var query: String
-    @Binding var isManaging: Bool
+    @Binding var isManagementPresented: Bool
     let allowsEmptyPreset: Bool
     let isSearchFocused: FocusState<Bool>.Binding
     let onConfirm: (DeskPresetSelection) -> Void
@@ -18,18 +18,19 @@ struct DeskPresetPicker: View {
     @Environment(DenStore.self) private var store
     @State private var scrollPosition = ScrollPosition()
     @State private var selection: DeskPresetSelection
+    @State private var preservesSelectionAfterManagement = false
 
     init(
         initialSelection: DeskPresetSelection,
         query: Binding<String>,
-        isManaging: Binding<Bool>,
+        isManagementPresented: Binding<Bool>,
         allowsEmptyPreset: Bool,
         isSearchFocused: FocusState<Bool>.Binding,
         onConfirm: @escaping (DeskPresetSelection) -> Void
     ) {
         self.initialSelection = initialSelection
         self._query = query
-        self._isManaging = isManaging
+        self._isManagementPresented = isManagementPresented
         self.allowsEmptyPreset = allowsEmptyPreset
         self.isSearchFocused = isSearchFocused
         self.onConfirm = onConfirm
@@ -38,84 +39,67 @@ struct DeskPresetPicker: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            HStack {
-                if isManaging {
-                    Button(store.isDeskPresetManagementPresented ? "Done" : "Back") {
-                        if store.isDeskPresetManagementPresented {
-                            store.hideNewDeskPanel(exitsDenMode: true)
-                        } else {
-                            isManaging = false
+            VStack(alignment: .leading, spacing: 10) {
+                HStack {
+                    TextField(
+                        text: $query,
+                        prompt: Text("Filter presets")
+                    ) {
+                        Text("Search Desk Presets")
+                    }
+                    .labelsHidden()
+                    .textFieldStyle(.roundedBorder)
+                    .focused(isSearchFocused)
+                    .onSubmit { TextInputComposition.performUnlessActive(confirmSelection) }
+                    .onKeyPress(phases: .down) { keyPress in
+                        guard
+                            keyPress.key == .tab,
+                            !keyPress.modifiers.contains(.shift),
+                            !TextInputComposition.isActive
+                        else {
+                            return .ignored
                         }
+                        confirmSelection()
+                        return .handled
+                    }
+                    Button {
+                        isSearchFocused.wrappedValue = false
+                        isManagementPresented = true
+                    } label: {
+                        Image(systemSymbol: .sliderHorizontal3)
+                            .frame(width: 30, height: 30)
                     }
                     .buttonStyle(.plain)
-                    Text("Manage Presets")
-                        .font(.headline)
+                    .disabled(store.deskPresets.isEmpty)
+                    .accessibilityLabel("Manage Presets")
+                    .help("Manage Personal Desk Presets")
                 }
-                TextField(
-                    text: $query,
-                    prompt: Text("Filter presets")
-                ) {
-                    Text("Search Desk Presets")
+                ScrollView {
+                    presetChoices
+                        .scrollTargetLayout()
                 }
-                .labelsHidden()
-                .textFieldStyle(.roundedBorder)
-                .focused(isSearchFocused)
-                .onSubmit { TextInputComposition.performUnlessActive(confirmSelection) }
-                .onKeyPress(.upArrow) {
-                    guard !isManaging, !TextInputComposition.isActive else { return .ignored }
-                    moveSelection(by: -1)
-                    return .handled
-                }
-                .onKeyPress(.downArrow) {
-                    guard !isManaging, !TextInputComposition.isActive else { return .ignored }
-                    moveSelection(by: 1)
-                    return .handled
-                }
-                .onKeyPress(phases: .down) { keyPress in
-                    guard
-                        !isManaging,
-                        keyPress.key == .tab,
-                        !keyPress.modifiers.contains(.shift),
-                        !TextInputComposition.isActive
-                    else {
-                        return .ignored
-                    }
-                    confirmSelection()
-                    return .handled
-                }
+                .scrollPosition($scrollPosition, anchor: .center)
+                .frame(maxHeight: 220)
             }
+            .deskPresetArrowNavigation { moveSelection(by: $0) }
 
-            ScrollView {
-                Group {
-                    if isManaging {
-                        personalPresets
-                    } else {
-                        presetChoices
-                    }
-                }
-                .scrollTargetLayout()
-            }
-            .scrollPosition($scrollPosition, anchor: .center)
-            .frame(maxHeight: 220)
+            DeskPresetPreview(boards: selectedBoards)
 
-            if !isManaging {
-                DeskPresetPreview(boards: selectedBoards)
-
-                HStack {
-                    Spacer()
-                    Button("Manage Presets…") { isManaging = true }
-                        .buttonStyle(.plain)
-                        .disabled(store.deskPresets.isEmpty)
-                }
-            }
         }
         .onChange(of: store.deskPresets.map(\.id)) { _, ids in
             if case .personal(let id) = selection, !ids.contains(id) {
+                preservesSelectionAfterManagement = false
                 let fallback = matchingChoices.first?.selection ?? .builtIn(.empty)
                 selection = fallback
             }
         }
-        .onChange(of: query) { _, _ in ensureValidSelection() }
+        .onChange(of: query) { _, _ in
+            preservesSelectionAfterManagement = false
+            ensureValidSelection()
+        }
+        .onChange(of: isManagementPresented) { wasPresented, isPresented in
+            if wasPresented && !isPresented { preservesSelectionAfterManagement = true }
+        }
         .onChange(of: initialSelection) { _, newSelection in
             selection = newSelection
         }
@@ -160,44 +144,6 @@ struct DeskPresetPicker: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-    }
-
-    private var personalPresets: some View {
-        VStack(spacing: 6) {
-            if filteredPersonalPresets.isEmpty {
-                if query.isEmpty {
-                    ContentUnavailableView("No Personal Desk Presets", systemSymbol: .bookmark)
-                        .frame(maxWidth: .infinity, minHeight: 220)
-                } else {
-                    ContentUnavailableView.search(text: query)
-                        .frame(maxWidth: .infinity, minHeight: 220)
-                }
-            } else {
-                ForEach(filteredPersonalPresets) { preset in
-                    HStack {
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(preset.label)
-                            Text(boardCountLabel(preset.boards.count))
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        }
-                        Spacer()
-                        Button(role: .destructive) {
-                            store.requestDeskPresetDeletion(preset.id)
-                        } label: {
-                            Image(systemSymbol: .trash)
-                        }
-                        .accessibilityLabel("Delete \(preset.label)")
-                    }
-                    .padding(8)
-                    .background(
-                        Color.primary.opacity(0.055),
-                        in: RoundedRectangle(cornerRadius: DenRadius.small, style: .continuous)
-                    )
-                }
-            }
-        }
-        .frame(maxWidth: .infinity)
     }
 
     private func choiceRow(_ choice: DeskPresetChoice, showsSource: Bool = false) -> some View {
@@ -258,33 +204,44 @@ struct DeskPresetPicker: View {
     }
 
     private var matchingChoices: [DeskPresetChoice] {
-        DeskPresetSearch.matchingChoices(
+        let matches = DeskPresetSearch.matchingChoices(
             allChoices: allChoices,
             query: query,
             allowsEmptyPreset: allowsEmptyPreset
         )
-    }
-
-    private var filteredPersonalPresets: [PersonalDeskPreset] {
-        guard !query.isEmpty else { return store.deskPresets }
-        return store.deskPresets.filter {
-            DeskPresetSearch.score(query: query, label: $0.label, boards: $0.boards) != nil
-        }
+        guard
+            preservesSelectionAfterManagement,
+            case .personal(let id) = selection,
+            !matches.contains(where: { $0.selection == selection }),
+            let selectedChoice = allChoices.first(where: { $0.selection == .personal(id) })
+        else { return matches }
+        return [selectedChoice] + matches
     }
 
     private var selectedBoards: [DeskPresetBoard] {
-        matchingChoices.first(where: { $0.selection == selection })?.boards ?? []
+        switch selection {
+        case .personal(let id):
+            store.deskPresets.first(where: { $0.id == id })?.boards ?? []
+        case .builtIn(let preset):
+            preset.boards
+        case .newDesk:
+            []
+        }
     }
 
     private func moveSelection(by offset: Int) {
-        guard !isManaging, !matchingChoices.isEmpty else { return }
-        let currentIndex = matchingChoices.firstIndex(where: { $0.selection == selection }) ?? 0
-        let nextIndex = min(max(currentIndex + offset, 0), matchingChoices.count - 1)
-        selection = matchingChoices[nextIndex].selection
+        guard
+            let nextSelection = DeskPresetSelectionNavigation.next(
+                selection,
+                among: matchingChoices.map(\.selection),
+                by: offset
+            )
+        else { return }
+        selection = nextSelection
     }
 
     private func confirmSelection() {
-        guard !isManaging,
+        guard
             let choice = matchingChoices.first(where: { $0.selection == selection })
                 ?? matchingChoices.first
         else { return }
@@ -308,6 +265,38 @@ struct DeskPresetChoice: Equatable {
     let label: String
     let boards: [DeskPresetBoard]
     let sourceLabel: String
+}
+
+enum DeskPresetSelectionNavigation {
+    static func next<Value: Equatable>(_ selection: Value?, among values: [Value], by offset: Int) -> Value? {
+        guard !values.isEmpty else { return nil }
+        let currentIndex =
+            selection.flatMap { value in values.firstIndex(of: value) } ?? (offset > 0 ? -1 : values.count)
+        return values[min(max(currentIndex + offset, 0), values.count - 1)]
+    }
+}
+
+private struct DeskPresetArrowNavigation: ViewModifier {
+    let isEditing: Bool
+    let moveSelection: (Int) -> Void
+
+    func body(content: Content) -> some View {
+        content
+            .onKeyPress(.upArrow) { handle(-1) }
+            .onKeyPress(.downArrow) { handle(1) }
+    }
+
+    private func handle(_ offset: Int) -> KeyPress.Result {
+        guard !isEditing, !TextInputComposition.isActive else { return .ignored }
+        moveSelection(offset)
+        return .handled
+    }
+}
+
+extension View {
+    func deskPresetArrowNavigation(isEditing: Bool = false, moveSelection: @escaping (Int) -> Void) -> some View {
+        modifier(DeskPresetArrowNavigation(isEditing: isEditing, moveSelection: moveSelection))
+    }
 }
 
 enum DeskPresetSearch {

@@ -79,6 +79,7 @@ struct KeyboardShortcutsView: View {
                     item(["⇧", "N"], "New Desk"),
                     item(["p"], "Save Desk as Preset"),
                     item(["⇧", "P"], "Replace Desk from Preset"),
+                    item(["⌃", "P"], "Manage Desk Presets"),
                     item(["o"], "Overview"),
                     item(["Tab"], "Toggle Drawer"),
                     item([","], "Open Settings"),
