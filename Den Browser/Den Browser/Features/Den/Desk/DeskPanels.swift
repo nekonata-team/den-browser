@@ -14,7 +14,7 @@ struct NewDeskPanel: View {
     @FocusState private var isLabelFocused: Bool
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
+        VStack(alignment: .leading, spacing: DenPanelLayout.contentSpacing) {
             DenPanelHeader(
                 systemSymbol: store.isReplaceDeskPanelPresented ? .rectangleStackBadgeMinus : .rectangleStackBadgePlus
             ) {
@@ -73,9 +73,9 @@ struct NewDeskPanel: View {
 
                 HStack(spacing: DenPanelLayout.contentSpacing) {
                     if didAttemptAction && trimmedNewDeskLabel.isEmpty {
-                        Text("Enter a desk label").foregroundStyle(.red)
+                        DenValidationMessage("Enter a desk label")
                     } else {
-                        Text(newDeskPanelDescription).foregroundStyle(.secondary)
+                        DenPanelHint(newDeskPanelDescription)
                     }
                     Spacer()
                     Button(
@@ -262,8 +262,7 @@ struct SaveDeskPresetPanel: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: DenPanelLayout.contentSpacing) {
-            HStack(spacing: DenPanelLayout.controlSpacing) {
-                Image(systemSymbol: .bookmark).foregroundStyle(.secondary)
+            DenPanelHeader(systemSymbol: .bookmark) {
                 Text("Save Desk as Preset").font(.headline)
             }
             TextField(
@@ -279,9 +278,11 @@ struct SaveDeskPresetPanel: View {
             DeskPresetPreview(
                 boards: DeskPresetBoard.capture(from: store.focusedDesk?.boards ?? []))
             HStack {
-                Text(message ?? "Captures the current Board arrangement")
-                    .font(.caption)
-                    .foregroundStyle(message == nil ? Color.secondary : Color.red)
+                if let message {
+                    DenValidationMessage(message)
+                } else {
+                    DenPanelHint("Captures the current Board arrangement")
+                }
                 Spacer()
                 Button("Save Preset", action: save)
                     .buttonStyle(.glassProminent)
@@ -327,9 +328,7 @@ struct RenameDeskPanel: View {
                 ) {
                     Text("Rename desk")
                 }
-                .labelsHidden()
-                .textFieldStyle(.plain)
-                .font(.title3.weight(.medium))
+                .denPanelHeaderField()
                 .focused($isFocused)
                 .onSubmit {
                     TextInputComposition.performUnlessActive {
@@ -337,12 +336,7 @@ struct RenameDeskPanel: View {
                     }
                 }
             }
-            HStack(spacing: DenPanelLayout.contentSpacing) {
-                Text("Press Return to confirm, Escape to cancel").foregroundStyle(.secondary)
-                Spacer()
-                Text("R in Den Mode").foregroundStyle(.secondary)
-            }
-            .font(.caption)
+            DenPanelHint("Press Return to confirm, Escape to cancel")
         }
         .denPanel()
         .onAppear {

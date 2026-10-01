@@ -296,7 +296,7 @@ struct DenView<Header: View>: View {
             .font(.caption)
             .foregroundStyle(.secondary)
         }
-        .denPanel(width: 300)
+        .denPanel(width: DenPanelLayout.essentialsPrefixWidth)
     }
 
     private func newBoardWidth(in size: CGSize) -> Double {

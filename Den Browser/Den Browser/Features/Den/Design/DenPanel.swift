@@ -34,6 +34,12 @@ extension View {
                 in: RoundedRectangle(cornerRadius: DenRadius.large, style: .continuous)
             )
     }
+
+    func denPanelHeaderField() -> some View {
+        labelsHidden()
+            .textFieldStyle(.plain)
+            .font(.title3.weight(.medium))
+    }
 }
 
 struct DenValidationMessage: View {
@@ -47,5 +53,19 @@ struct DenValidationMessage: View {
         Text(message)
             .font(.caption)
             .foregroundStyle(.red)
+    }
+}
+
+struct DenPanelHint: View {
+    private let text: String
+
+    init(_ text: String) {
+        self.text = text
+    }
+
+    var body: some View {
+        Text(text)
+            .font(.caption)
+            .foregroundStyle(.secondary)
     }
 }

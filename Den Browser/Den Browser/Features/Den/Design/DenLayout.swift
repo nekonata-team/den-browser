@@ -53,6 +53,8 @@ enum DenPanelLayout {
     static let contentSpacing: CGFloat = 12
     static let controlSpacing: CGFloat = 10
     static let titleHeight: CGFloat = 38
+    static let essentialsPrefixWidth: CGFloat = 300
+    static let narrowWidth: CGFloat = 380
     static let compactWidth: CGFloat = 420
     static let standardWidth: CGFloat = 520
     static let wideWidth: CGFloat = 620

@@ -182,9 +182,7 @@ struct OpenProfilePanel: View {
                 ) {
                     Text("Open Profile")
                 }
-                .labelsHidden()
-                .textFieldStyle(.plain)
-                .font(.title3.weight(.medium))
+                .denPanelHeaderField()
                 .focused($isFocused)
                 .accessibilityIdentifier("open-profile-input")
                 .onKeyPress(.downArrow) {
@@ -227,7 +225,7 @@ struct OpenProfilePanel: View {
                 )
             }
         }
-        .denPanel(width: 380)
+        .denPanel(width: DenPanelLayout.narrowWidth)
         .onAppear { DispatchQueue.main.async { isFocused = true } }
         .onChange(of: query) { _, _ in selectedProfileID = nil }
         .onExitCommand(perform: close)

@@ -34,9 +34,7 @@ struct OpenBoardPanel: View {
                 ) {
                     Text("Open URL, search, or command")
                 }
-                .labelsHidden()
-                .textFieldStyle(.plain)
-                .font(.title3.weight(.medium))
+                .denPanelHeaderField()
                 .focused($isFocused)
                 .accessibilityIdentifier("open-board-input")
                 .onKeyPress(.downArrow) {
@@ -158,17 +156,10 @@ struct OpenBoardPanel: View {
                 }
             }
 
-            HStack(spacing: DenPanelLayout.contentSpacing) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Use :tutorial for the interactive guide")
-                    Text("Use :terminal [path], :zellij [session], or :zmx [session] for a Terminal Board")
-                }
-                .foregroundStyle(.secondary)
-                Spacer()
-                Text("n in Den Mode")
-                    .foregroundStyle(.secondary)
+            VStack(alignment: .leading, spacing: 2) {
+                DenPanelHint("Use :tutorial for the interactive guide")
+                DenPanelHint("Use :terminal [path], :zellij [session], or :zmx [session] for a Terminal Board")
             }
-            .font(.caption)
         }
         .denPanel()
         .onAppear {
@@ -243,9 +234,7 @@ struct EditBoardLinkPanel: View {
                 ) {
                     Text("Open URL or search")
                 }
-                .labelsHidden()
-                .textFieldStyle(.plain)
-                .font(.title3.weight(.medium))
+                .denPanelHeaderField()
                 .focused($isFocused)
                 .onSubmit { TextInputComposition.performUnlessActive(submit) }
                 .onChange(of: text) { _, newValue in
@@ -259,14 +248,7 @@ struct EditBoardLinkPanel: View {
                 }
             }
 
-            HStack(spacing: DenPanelLayout.contentSpacing) {
-                Text("Replace the Current Sheet in the focused Board")
-                    .foregroundStyle(.secondary)
-                Spacer()
-                Text("⌘L")
-                    .foregroundStyle(.secondary)
-            }
-            .font(.caption)
+            DenPanelHint("Replace the Current Sheet in the focused Board")
         }
         .denPanel()
         .onAppear {
@@ -313,9 +295,7 @@ struct ZmxDuplicationPanel: View {
                 ) {
                     Text("Duplicate zmx Board")
                 }
-                .labelsHidden()
-                .textFieldStyle(.plain)
-                .font(.title3.weight(.medium))
+                .denPanelHeaderField()
                 .focused($isFocused)
                 .accessibilityIdentifier("zmx-duplication-input")
                 .onSubmit { TextInputComposition.performUnlessActive(submit) }
@@ -325,13 +305,10 @@ struct ZmxDuplicationPanel: View {
                 .foregroundStyle(.secondary)
 
             HStack(spacing: DenPanelLayout.contentSpacing) {
-                Text("Letters, numbers, -, _, . only")
-                    .foregroundStyle(.secondary)
+                DenPanelHint("Letters, numbers, -, _, . only")
                 Spacer()
-                Text("Enter to duplicate · Escape to cancel")
-                    .foregroundStyle(.secondary)
+                DenPanelHint("Enter to duplicate · Escape to cancel")
             }
-            .font(.caption)
         }
         .denPanel()
         .onAppear {
@@ -366,9 +343,7 @@ struct RenameBoardPanel: View {
                 ) {
                     Text("Rename board")
                 }
-                .labelsHidden()
-                .textFieldStyle(.plain)
-                .font(.title3.weight(.medium))
+                .denPanelHeaderField()
                 .focused($isFocused)
                 .onSubmit {
                     TextInputComposition.performUnlessActive {
@@ -376,12 +351,7 @@ struct RenameBoardPanel: View {
                     }
                 }
             }
-            HStack(spacing: DenPanelLayout.contentSpacing) {
-                Text("Leave empty to restore page-provided title").foregroundStyle(.secondary)
-                Spacer()
-                Text("r in Den Mode").foregroundStyle(.secondary)
-            }
-            .font(.caption)
+            DenPanelHint("Leave empty to restore page-provided title")
         }
         .denPanel()
         .onAppear {
@@ -397,7 +367,7 @@ struct BoardWidthPanel: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: DenPanelLayout.contentSpacing) {
-            HStack {
+            DenPanelHeader(icon: Image(systemSymbol: .arrowLeftAndRight)) {
                 Text("Resize Boards to Fit").font(.headline)
                 Spacer()
                 DenCloseButton(label: "Close Board Width", action: store.hideBoardWidthPanel)
@@ -420,12 +390,11 @@ struct BoardWidthPanel: View {
                     .accessibilityHint("Applies to every Board in the Focused Desk")
                 }
             }
-            Text(
-                store.boardWidthPanelMessage
-                    ?? "Changes every Board in the Focused Desk. Press - / = or 1–9, then Escape."
-            )
-            .font(.caption)
-            .foregroundStyle(store.boardWidthPanelMessage == nil ? Color.secondary : Color.red)
+            if let message = store.boardWidthPanelMessage {
+                DenValidationMessage(message)
+            } else {
+                DenPanelHint("Changes every Board in the Focused Desk. Press - / = or 1–9, then Escape.")
+            }
         }
         .denPanel(width: DenPanelLayout.compactWidth)
         .onExitCommand { store.hideBoardWidthPanel() }
@@ -508,16 +477,14 @@ struct SaveEssentialPanel: View {
             }
 
             HStack {
-                Text("Press Return to save, Escape to cancel")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                DenPanelHint("Press Return to save, Escape to cancel")
                 Spacer()
                 Button("Save Essential", action: save)
                     .buttonStyle(.glassProminent)
                     .disabled(!canSave)
             }
         }
-        .denPanel(width: 380)
+        .denPanel(width: DenPanelLayout.narrowWidth)
         .onAppear {
             if let draft = store.saveEssentialDraft {
                 name = draft.name

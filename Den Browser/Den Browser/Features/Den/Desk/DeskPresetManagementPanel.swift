@@ -24,7 +24,7 @@ struct DeskPresetManagementPanel: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: DenPanelLayout.contentSpacing) {
             DenPanelHeader(systemSymbol: .bookmark) {
                 Text("Manage Presets")
                     .font(.headline)
@@ -42,7 +42,7 @@ struct DeskPresetManagementPanel: View {
                 }
             }
 
-            VStack(alignment: .leading, spacing: 10) {
+            VStack(alignment: .leading, spacing: DenPanelLayout.contentSpacing) {
                 TextField(text: $query, prompt: Text("Filter presets")) {
                     Text("Search Personal Desk Presets")
                 }
