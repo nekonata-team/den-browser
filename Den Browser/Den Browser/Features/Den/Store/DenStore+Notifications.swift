@@ -63,13 +63,11 @@ extension DenStore {
     }
 
     func moveNotificationSelection(by offset: Int) {
-        guard !notifications.isEmpty else { return }
-        let currentIndex =
-            selectedNotificationID.flatMap { id in
-                notifications.firstIndex { $0.id == id }
-            } ?? 0
-        let nextIndex = min(max(currentIndex + offset, 0), notifications.count - 1)
-        selectedNotificationID = notifications[nextIndex].id
+        selectedNotificationID = DenSelectionNavigation.next(
+            selectedNotificationID,
+            among: notifications.map(\.id),
+            by: offset
+        )
     }
 
     func openSelectedNotification() {

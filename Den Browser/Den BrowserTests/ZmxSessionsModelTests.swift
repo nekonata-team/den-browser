@@ -49,6 +49,26 @@ struct ZmxSessionsModelTests {
         #expect(model.pendingDeletion == ["den", "den-vi"])
     }
 
+    @Test func selectionWrapsAtBothEnds() async {
+        let model = ZmxSessionsModel(
+            client: ZmxClient(
+                executablePath: "/opt/homebrew/bin/zmx",
+                commandRunner: ModelTerminalCommandRunner(
+                    responses: [
+                        ["list"]: TerminalCommandResult(
+                            terminationStatus: 0,
+                            standardOutput: "name=den\nname=den-vi\n")
+                    ])))
+
+        model.refresh()
+        await model.waitForRefresh()
+        model.select(sessionName: "den")
+        model.select(by: -1)
+        #expect(model.selectedSessionName == "den-vi")
+        model.select(by: 1)
+        #expect(model.selectedSessionName == "den")
+    }
+
     @Test func failedRefreshClearsSessionsAndReportsMessage() async {
         let model = ZmxSessionsModel(
             client: ZmxClient(

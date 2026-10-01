@@ -36,11 +36,10 @@ extension DenStore {
 
     func selectDeskFilterBoard(by offset: Int) {
         let boards = filteredDeskBoards
-        guard !boards.isEmpty else { return }
-        let currentIndex =
-            deskFilterSelectionBoardID.flatMap { id in boards.firstIndex { $0.id == id } }
-            ?? 0
-        deskFilterSelectionBoardID = boards[wrappedIndex(currentIndex + offset, count: boards.count)].id
+        deskFilterSelectionBoardID = DenSelectionNavigation.next(
+            deskFilterSelectionBoardID,
+            among: boards.map(\.id),
+            by: offset)
     }
 
     func confirmDeskFilterSelection(_ boardID: UUID? = nil) {

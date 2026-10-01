@@ -145,12 +145,12 @@ extension DenStore {
 
     func selectDrawerItem(by offset: Int) {
         let items = filteredDrawerItems
-        guard !items.isEmpty else { return }
-        let currentIndex =
-            selectedDrawerItemID.flatMap { id in items.firstIndex { $0.id == id } }
-            ?? 0
-        let targetIndex = min(max(currentIndex + offset, 0), items.count - 1)
-        let targetID = items[targetIndex].id
+        guard
+            let targetID = DenSelectionNavigation.next(
+                selectedDrawerItemID,
+                among: items.map(\.id),
+                by: offset)
+        else { return }
         guard selectedDrawerItemID != targetID else { return }
         selectedDrawerItemID = targetID
         if expandedDrawerItemID != nil {

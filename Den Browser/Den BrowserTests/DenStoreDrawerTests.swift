@@ -8,6 +8,24 @@ import WebKit
 @MainActor
 @Suite(.serialized)
 struct DenStoreDrawerTests {
+    @Test func drawerSelectionWrapsAtBothEnds() throws {
+        let first = DrawerItem(url: try #require(URL(string: "https://first.example/")))
+        let last = DrawerItem(url: try #require(URL(string: "https://last.example/")))
+        let source = desk("Desk")
+        let store = DenStore(
+            state: DenState(
+                desks: [source],
+                focusedDeskID: source.id,
+                drawerItems: [first, last]))
+        store.selectedDrawerItemID = last.id
+
+        store.selectDrawerItem(by: 1)
+        #expect(store.selectedDrawerItemID == first.id)
+
+        store.selectDrawerItem(by: -1)
+        #expect(store.selectedDrawerItemID == last.id)
+    }
+
     @Test func keepPreservesDeskLayoutAndOpensNewestItem() throws {
         let existingBoard = board("Existing", url: "https://desk.example/")
         let source = desk("Desk", boards: [existingBoard], focusedBoardID: existingBoard.id)

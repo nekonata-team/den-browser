@@ -161,11 +161,11 @@ final class ZmxSessionsModel {
     }
 
     func select(by offset: Int) {
-        let names = sessionNames
-        guard !names.isEmpty else { return }
-        let currentIndex = selectedSessionName.flatMap { names.firstIndex(of: $0) } ?? 0
-        let nextIndex = min(max(currentIndex + offset, 0), names.count - 1)
-        selectedSessionName = names[nextIndex]
+        selectedSessionName = DenSelectionNavigation.next(
+            selectedSessionName,
+            among: sessionNames,
+            by: offset
+        )
     }
 
     func select(sessionName: String) {

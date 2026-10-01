@@ -233,16 +233,11 @@ struct OpenProfilePanel: View {
     }
 
     private func moveProfileSelection(by offset: Int) {
-        guard !filteredProfiles.isEmpty else { return }
-        let ids = filteredProfiles.map(\.id)
-        let currentIndex = selectedProfileID.flatMap(ids.firstIndex(of:))
-        let nextIndex: Int
-        if let currentIndex {
-            nextIndex = (currentIndex + offset + ids.count) % ids.count
-        } else {
-            nextIndex = offset > 0 ? 0 : ids.count - 1
-        }
-        selectedProfileID = ids[nextIndex]
+        selectedProfileID = DenSelectionNavigation.next(
+            selectedProfileID,
+            among: filteredProfiles.map(\.id),
+            by: offset
+        )
     }
 
     private func confirmSelection() {

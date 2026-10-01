@@ -63,6 +63,20 @@ struct DenStoreDeskFilterTests {
         #expect(!store.isDenMode)
     }
 
+    @Test func selectionNavigationWrapsAtBothEnds() {
+        let alpha = board("Alpha")
+        let bravo = board("Bravo")
+        let charlie = board("Charlie")
+        let source = desk("Desk", boards: [alpha, bravo, charlie], focusedBoardID: alpha.id)
+        let store = DenStore(state: DenState(desks: [source], focusedDeskID: source.id))
+        store.enterDeskFilter()
+
+        store.selectDeskFilterBoard(by: -1)
+        #expect(store.deskFilterSelectionBoardID == charlie.id)
+        store.selectDeskFilterBoard(by: 1)
+        #expect(store.deskFilterSelectionBoardID == alpha.id)
+    }
+
     @Test func presentingTemporaryContextCancelsPendingCentering() async throws {
         // Arrange
         let alpha = board("Alpha")

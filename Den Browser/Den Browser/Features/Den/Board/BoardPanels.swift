@@ -205,13 +205,11 @@ struct OpenBoardPanel: View {
     }
 
     private func moveRecentSelection(by offset: Int) {
-        guard !filteredRecentItems.isEmpty else { return }
-        let ids = filteredRecentItems.map(\.id)
-        guard let selectedRecentItemID, let index = ids.firstIndex(of: selectedRecentItemID) else {
-            self.selectedRecentItemID = offset > 0 ? ids.first : ids.last
-            return
-        }
-        self.selectedRecentItemID = ids[(index + offset + ids.count) % ids.count]
+        selectedRecentItemID = DenSelectionNavigation.next(
+            selectedRecentItemID,
+            among: filteredRecentItems.map(\.id),
+            by: offset
+        )
     }
 }
 

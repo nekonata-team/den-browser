@@ -231,7 +231,7 @@ struct DeskPresetPicker: View {
 
     private func moveSelection(by offset: Int) {
         guard
-            let nextSelection = DeskPresetSelectionNavigation.next(
+            let nextSelection = DenSelectionNavigation.next(
                 selection,
                 among: matchingChoices.map(\.selection),
                 by: offset
@@ -265,15 +265,6 @@ struct DeskPresetChoice: Equatable {
     let label: String
     let boards: [DeskPresetBoard]
     let sourceLabel: String
-}
-
-enum DeskPresetSelectionNavigation {
-    static func next<Value: Equatable>(_ selection: Value?, among values: [Value], by offset: Int) -> Value? {
-        guard !values.isEmpty else { return nil }
-        let currentIndex =
-            selection.flatMap { value in values.firstIndex(of: value) } ?? (offset > 0 ? -1 : values.count)
-        return values[min(max(currentIndex + offset, 0), values.count - 1)]
-    }
 }
 
 private struct DeskPresetArrowNavigation: ViewModifier {

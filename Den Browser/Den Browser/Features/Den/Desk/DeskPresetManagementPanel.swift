@@ -200,7 +200,7 @@ struct DeskPresetManagementPanel: View {
     }
 
     private func moveSelection(by offset: Int) {
-        selectedPresetID = DeskPresetSelectionNavigation.next(
+        selectedPresetID = DenSelectionNavigation.next(
             selectedPresetID,
             among: filteredPresets.map(\.id),
             by: offset

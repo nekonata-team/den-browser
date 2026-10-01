@@ -8,6 +8,16 @@ import Testing
 @Suite(.serialized)
 struct DenStoreDeskPresetTests {
 
+    @Test func selectionNavigationWrapsAndStartsAtTheDirectionalEdge() {
+        let values = ["first", "middle", "last"]
+
+        #expect(DenSelectionNavigation.next("last", among: values, by: 1) == "first")
+        #expect(DenSelectionNavigation.next("first", among: values, by: -1) == "last")
+        #expect(DenSelectionNavigation.next(nil, among: values, by: 1) == "first")
+        #expect(DenSelectionNavigation.next(nil, among: values, by: -1) == "last")
+        #expect(DenSelectionNavigation.next(nil, among: [String](), by: 1) == nil)
+    }
+
     @Test func deskPresetSearchRanksFuzzyLabelsBeforeBoardAndHostMatches() throws {
         // Arrange
         let boards = [
