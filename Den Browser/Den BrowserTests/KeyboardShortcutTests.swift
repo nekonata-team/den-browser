@@ -39,6 +39,36 @@ private final class TestUserDefaults: UserDefaults {
 @MainActor
 @Suite(.serialized)
 struct KeyboardShortcutTests {
+    @Test func keyboardShortcutGuideForwardsTextInputAndKeepsEscapeToClose() throws {
+        // Arrange
+        let store = try makeStore(boards: [board("First")])
+        store.showKeyboardShortcuts()
+        let letterA = try keyEvent(
+            characters: "a", charactersIgnoringModifiers: "a", keyCode: 0)
+        let commandA = try keyEvent(
+            characters: "a", charactersIgnoringModifiers: "a", modifiers: [.command], keyCode: 0)
+        let commandT = try keyEvent(
+            characters: "t", charactersIgnoringModifiers: "t", modifiers: [.command], keyCode: 17)
+        let questionMark = try keyEvent(
+            characters: "?", charactersIgnoringModifiers: "/", modifiers: [.shift], keyCode: 44)
+        let escape = try keyEvent(
+            characters: "\u{1B}", charactersIgnoringModifiers: "\u{1B}", keyCode: 53)
+
+        // Act
+        let letterDecision = KeyboardController.decision(for: letterA, store: store)
+        let selectAllDecision = KeyboardController.decision(for: commandA, store: store)
+        let commandTDecision = KeyboardController.decision(for: commandT, store: store)
+        let questionDecision = KeyboardController.decision(for: questionMark, store: store)
+        let escapeDecision = KeyboardController.decision(for: escape, store: store)
+
+        // Assert
+        #expect(letterDecision == .forward(.filterTextInput))
+        #expect(selectAllDecision == .forward(.filterTextInput))
+        #expect(commandTDecision == .forward(.filterTextInput))
+        #expect(questionDecision == .forward(.filterTextInput))
+        #expect(escapeDecision == .perform(.application(.hideKeyboardShortcuts)))
+    }
+
     @Test func shortcutOverridesPersistClearAndReset() throws {
         let suiteName = "KeyboardShortcutTests-\(UUID())"
         let defaults = try #require(UserDefaults(suiteName: suiteName))
@@ -1392,9 +1422,13 @@ struct KeyboardShortcutTests {
         #expect(KeyboardController.handle(question, store: store, preferences: preferences))
         #expect(store.isKeyboardShortcutsPresented)
         let movement = try keyEvent(characters: "h", charactersIgnoringModifiers: "h", keyCode: 4)
-        #expect(KeyboardController.handle(movement, store: store, preferences: preferences))
+        #expect(!KeyboardController.handle(movement, store: store, preferences: preferences))
         #expect(store.isKeyboardShortcutsPresented)
-        #expect(KeyboardController.handle(question, store: store, preferences: preferences))
+        #expect(!KeyboardController.handle(question, store: store, preferences: preferences))
+        #expect(store.isKeyboardShortcutsPresented)
+        let escape = try keyEvent(
+            characters: "\u{1B}", charactersIgnoringModifiers: "\u{1B}", keyCode: 53)
+        #expect(KeyboardController.handle(escape, store: store, preferences: preferences))
         #expect(!store.isKeyboardShortcutsPresented)
 
         let space = try keyEvent(characters: " ", charactersIgnoringModifiers: " ", keyCode: 49)

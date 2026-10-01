@@ -1,9 +1,12 @@
+import SFSafeSymbols
 import SwiftUI
 
 struct KeyboardShortcutsView: View {
     var onClose: (() -> Void)?
 
     @Environment(AppPreferences.self) private var preferences
+    @FocusState private var isSearchFocused: Bool
+    @State private var query = ""
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -16,18 +19,54 @@ struct KeyboardShortcutsView: View {
                 }
             }
 
+            searchField
+
             ScrollView {
-                LazyVGrid(
-                    columns: [GridItem(.adaptive(minimum: 300), alignment: .top)],
-                    spacing: DenPanelLayout.contentSpacing
-                ) {
-                    ForEach(sections) { section in
-                        shortcutSection(section)
+                if visibleSections.isEmpty {
+                    Text("No shortcuts found")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .frame(maxWidth: .infinity, minHeight: 100)
+                } else {
+                    LazyVStack(alignment: .leading, spacing: DenPanelLayout.contentSpacing) {
+                        ForEach(visibleSections) { section in
+                            shortcutSection(section)
+                        }
                     }
+                    .padding(1)
                 }
-                .padding(1)
             }
         }
+        .onAppear { isSearchFocused = true }
+    }
+
+    private var searchField: some View {
+        HStack(spacing: 8) {
+            Image(systemSymbol: .magnifyingglass)
+                .foregroundStyle(.secondary)
+                .accessibilityHidden(true)
+
+            TextField(text: $query, prompt: Text("Search shortcuts")) {
+                Text("Search shortcuts")
+            }
+            .labelsHidden()
+            .textFieldStyle(.plain)
+            .focused($isSearchFocused)
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .background(
+            Color.primary.opacity(0.055),
+            in: RoundedRectangle(cornerRadius: DenRadius.medium, style: .continuous)
+        )
+        .overlay {
+            RoundedRectangle(cornerRadius: DenRadius.medium, style: .continuous)
+                .stroke(Color.primary.opacity(0.12), lineWidth: 1)
+        }
+    }
+
+    private var visibleSections: [ShortcutGuideSection] {
+        sections.compactMap { $0.filtered(matching: query) }
     }
 
     private var sections: [ShortcutGuideSection] {
@@ -180,17 +219,17 @@ struct KeyboardShortcutsView: View {
                     ShortcutChip(tokens: item.keys, width: 112)
                     Text(item.label)
                         .font(.caption)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
                     Spacer(minLength: 0)
                 }
+                .frame(height: 30, alignment: .leading)
+                .frame(maxWidth: .infinity, alignment: .leading)
                 .accessibilityElement(children: .ignore)
                 .accessibilityLabel("\(item.label), \(item.accessibilityKeys)")
             }
         }
-        .padding(DenPanelLayout.contentSpacing)
         .frame(maxWidth: .infinity, alignment: .topLeading)
-        .background(
-            Color.primary.opacity(0.055),
-            in: RoundedRectangle(cornerRadius: DenRadius.medium, style: .continuous))
     }
 }
 
@@ -227,16 +266,32 @@ struct ShortcutChip: View {
     }
 }
 
-private struct ShortcutGuideSection: Identifiable {
+struct ShortcutGuideSection: Identifiable {
     let title: String
     let items: [ShortcutGuideItem]
     var id: String { title }
+
+    func filtered(matching query: String) -> Self? {
+        let query = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !query.isEmpty else { return self }
+        guard !title.localizedStandardContains(query) else { return self }
+
+        let matchingItems = items.filter { $0.matches(query) }
+        guard !matchingItems.isEmpty else { return nil }
+        return Self(title: title, items: matchingItems)
+    }
 }
 
-private struct ShortcutGuideItem: Identifiable {
+struct ShortcutGuideItem: Identifiable {
     let keys: [String]
     let label: String
     let accessibilityKeys: String
     var id: String { titleKey }
     private var titleKey: String { "\(label)-\(keys.joined())" }
+
+    func matches(_ query: String) -> Bool {
+        label.localizedStandardContains(query)
+            || keys.joined(separator: " ").localizedStandardContains(query)
+            || accessibilityKeys.localizedStandardContains(query)
+    }
 }

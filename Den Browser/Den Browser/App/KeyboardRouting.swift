@@ -96,10 +96,11 @@ enum KeyboardRouter {
         case .deskFilter:
             break
         case .keyboardShortcuts:
-            if (event.isEscape && modifiers == []) || isQuestionMark(event) {
+            if event.hasMarkedText { return .forward(.filterTextInput) }
+            if event.isEscape, modifiers == [] {
                 return .perform(.application(.hideKeyboardShortcuts))
             }
-            return .consume(.exclusiveContext)
+            return .forward(.filterTextInput)
         case .essentialsPrefix:
             return routeEssentialsPrefix(event, shortcuts: shortcuts)
         case .boardWidth:
