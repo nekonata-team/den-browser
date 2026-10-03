@@ -349,6 +349,7 @@ struct TerminalConfigurationSourceTests {
             Issue.record("Expected a generated Ghostty config")
             return
         }
+        #expect(contents.contains("keybind = super+t=unbind"))
         #expect(contents.contains("keybind = super+q=unbind"))
         #expect(contents.contains("keybind = super+shift+w=unbind"))
 
@@ -369,6 +370,12 @@ struct TerminalConfigurationSourceTests {
 
         // Assert
         #expect(ghostty_config_diagnostics_count(config) == 0)
+        var openBoard = ghostty_input_key_s()
+        openBoard.action = GHOSTTY_ACTION_PRESS
+        openBoard.mods = GHOSTTY_MODS_SUPER
+        openBoard.keycode = 17
+        #expect(!ghostty_config_key_is_binding(config, openBoard))
+
         var quit = ghostty_input_key_s()
         quit.action = GHOSTTY_ACTION_PRESS
         quit.mods = GHOSTTY_MODS_SUPER

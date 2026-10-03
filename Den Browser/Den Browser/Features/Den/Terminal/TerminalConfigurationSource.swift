@@ -82,6 +82,8 @@ enum TerminalConfigurationSource {
 
         // Den owns app-level shortcuts, not the embedded Ghostty surface.
         if !contents.isEmpty { contents.append("\n") }
+        contents.append("keybind = super+t=unbind")
+        contents.append("\n")
         contents.append("keybind = super+q=unbind")
         contents.append("\nkeybind = super+shift+w=unbind")
 
