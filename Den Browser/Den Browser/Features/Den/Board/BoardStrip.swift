@@ -603,7 +603,7 @@ struct BoardStrip: View {
                 onDragChanged: { updateBoardDrag(board, value: $0, in: containerSize) },
                 onDragEnded: { finishBoardDrag(value: $0, in: containerSize) })
         } else {
-            switch board.content {
+            switch board.kind {
             case .inspection:
                 if let targetBoardID = board.sideBoardTargetBoardID {
                     InspectionBoardView(

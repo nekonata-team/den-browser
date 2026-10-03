@@ -21,7 +21,7 @@ struct PersonalDeskPresetTests {
         // Assert
         #expect(preset.boards.map(\.label) == [other.label, target.label, inspection.label])
         #expect(preset.boards.map(\.width) == [other.width, target.width, inspection.width])
-        #expect(preset.boards[2].content == .inspection)
+        #expect(preset.boards[2].kind == .inspection)
         #expect(preset.boards[2].targetBoardIndex == 1)
         #expect(preset.focusedBoardIndex == (focusInspection ? 2 : 1))
 

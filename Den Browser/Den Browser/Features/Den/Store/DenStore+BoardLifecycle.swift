@@ -164,7 +164,7 @@ extension DenStore {
 
     private func advanceTutorial(for event: DenOperationEvent) {
         guard let indices = tutorialBoardIndices(),
-            case .tutorial(var tutorial) = state.desks[indices.desk].boards[indices.board].content
+            case .tutorial(var tutorial) = state.desks[indices.desk].boards[indices.board].kind
         else { return }
 
         var completedSteps = tutorial.completedSteps
@@ -179,7 +179,7 @@ extension DenStore {
         }
         guard completedSteps != tutorial.completedSteps else { return }
         tutorial.completedSteps = completedSteps
-        state.desks[indices.desk].boards[indices.board].content = .tutorial(tutorial)
+        state.desks[indices.desk].boards[indices.board].kind = .tutorial(tutorial)
     }
 
     static func resolveZellijInput(_ input: String) -> ZellijInput? {

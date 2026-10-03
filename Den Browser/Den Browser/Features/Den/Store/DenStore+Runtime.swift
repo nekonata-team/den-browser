@@ -282,7 +282,7 @@ extension DenStore {
         drawerPreviewRuntime?.webView.pageZoom = CGFloat(scale) / 100
     }
 
-    func adjustFocusedBoardContentSize(by delta: Int) {
+    func adjustFocusedSheetSize(by delta: Int) {
         guard let board = focusedBoard, delta != 0 else { return }
         if board.isTerminal {
             terminalRuntime(for: board).adjustFontSize(by: delta)
@@ -300,7 +300,7 @@ extension DenStore {
         webView.pageZoom = CGFloat(scale) / 100
     }
 
-    func resetFocusedBoardContentSize() {
+    func resetFocusedSheetSize() {
         guard let board = focusedBoard else { return }
         if board.isTerminal {
             terminalRuntime(for: board).resetFontSize()

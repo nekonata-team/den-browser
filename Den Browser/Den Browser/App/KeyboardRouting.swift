@@ -45,7 +45,7 @@ enum InputReason: Equatable {
 enum InputDestination: Equatable {
     case nativeCommand
     case temporaryTextInput
-    case sheetOrTerminal
+    case sheet
     case drawerPreview
     case filterTextInput
 }
@@ -56,7 +56,7 @@ enum KeyboardRouter {
         context: InputContext,
         shortcuts: ShortcutConfiguration
     ) -> InputDecision {
-        if context.isFullscreenActive { return .forward(.sheetOrTerminal) }
+        if context.isFullscreenActive { return .forward(.sheet) }
 
         let modifiers = event.modifiers
         let character = event.character?.lowercased()
@@ -130,13 +130,13 @@ enum KeyboardRouter {
 
         if context.hasFocusedBoard {
             if character == "=", modifiers == [.command] || modifiers == [.command, .shift] {
-                return .perform(.board(.increaseContentSize))
+                return .perform(.board(.increaseSheetSize))
             }
             if character == "-", modifiers == [.command] {
-                return .perform(.board(.decreaseContentSize))
+                return .perform(.board(.decreaseSheetSize))
             }
             if character == "0", modifiers == [.command] {
-                return .perform(.board(.resetContentSize))
+                return .perform(.board(.resetSheetSize))
             }
         }
 
@@ -176,7 +176,7 @@ enum KeyboardRouter {
         }
 
         if context.mode == .den { return routeDenMode(event) }
-        return .forward(.sheetOrTerminal)
+        return .forward(.sheet)
     }
 
     private static func routeNotifications(_ event: KeyEvent) -> InputDecision {

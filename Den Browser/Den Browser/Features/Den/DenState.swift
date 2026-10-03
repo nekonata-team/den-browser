@@ -256,7 +256,7 @@ struct TutorialBoardState: Equatable {
     var completedSteps: Set<TutorialBoardStep> = []
 }
 
-enum BoardContentState: Codable, Equatable {
+enum BoardKind: Codable, Equatable {
     case web(WebBoardState)
     case inspection
     case terminal(TerminalBoardState)
@@ -315,60 +315,60 @@ struct BoardState: Codable, Equatable, Identifiable {
     var id: UUID
     var label: String
     var width: Double
-    var content: BoardContentState
+    var kind: BoardKind
     var role: BoardRole
     var customLabel: String?
 
     var sheetNavigationPaused: Bool {
         get {
-            guard case .web(let web) = content else { return false }
+            guard case .web(let web) = kind else { return false }
             return web.sheetNavigationPaused
         }
         set {
-            guard case .web(var web) = content else { return }
+            guard case .web(var web) = kind else { return }
             web.sheetNavigationPaused = newValue
-            content = .web(web)
+            kind = .web(web)
         }
     }
 
     var currentSheetURL: URL? {
         get {
-            guard case .web(let web) = content else { return nil }
+            guard case .web(let web) = kind else { return nil }
             return web.currentSheetURL
         }
         set {
-            guard case .web(var web) = content else { return }
+            guard case .web(var web) = kind else { return }
             web.currentSheetURL = newValue.map(SheetURLPolicy.canonicalSheetURL)
-            content = .web(web)
+            kind = .web(web)
         }
     }
 
     var firstSheetURL: URL? {
         get {
-            guard case .web(let web) = content else { return nil }
+            guard case .web(let web) = kind else { return nil }
             return web.firstSheetURL
         }
         set {
-            guard case .web(var web) = content else { return }
+            guard case .web(var web) = kind else { return }
             web.firstSheetURL = newValue.map(SheetURLPolicy.canonicalSheetURL)
-            content = .web(web)
+            kind = .web(web)
         }
     }
 
     var terminalWorkingDirectory: String? {
         get {
-            guard case .terminal(let terminal) = content else { return nil }
+            guard case .terminal(let terminal) = kind else { return nil }
             return terminal.workingDirectory
         }
         set {
             guard let newValue else { return }
-            guard case .terminal(let terminal) = content else { return }
+            guard case .terminal(let terminal) = kind else { return }
             switch terminal {
             case .shell:
-                content = .terminal(.shell(workingDirectory: newValue))
+                kind = .terminal(.shell(workingDirectory: newValue))
             case .zmx(var zmx):
                 zmx.workingDirectory = newValue
-                content = .terminal(.zmx(zmx))
+                kind = .terminal(.zmx(zmx))
             case .zellij:
                 return
             }
@@ -376,51 +376,51 @@ struct BoardState: Codable, Equatable, Identifiable {
     }
 
     var zellijSessionName: String? {
-        guard case .terminal(let terminal) = content else { return nil }
+        guard case .terminal(let terminal) = kind else { return nil }
         return terminal.zellijSessionName
     }
 
     var zmxSessionName: String? {
-        guard case .terminal(let terminal) = content else { return nil }
+        guard case .terminal(let terminal) = kind else { return nil }
         return terminal.zmxSessionName
     }
 
     var zmxRootSessionName: String? {
         get {
-            guard case .terminal(let terminal) = content else { return nil }
+            guard case .terminal(let terminal) = kind else { return nil }
             return terminal.zmxRootSessionName
         }
         set {
-            guard case .terminal(.zmx(var zmx)) = content else { return }
+            guard case .terminal(.zmx(var zmx)) = kind else { return }
             zmx.rootSessionName = newValue
-            content = .terminal(.zmx(zmx))
+            kind = .terminal(.zmx(zmx))
         }
     }
 
     var isTerminal: Bool {
-        switch content {
+        switch kind {
         case .terminal: true
         case .web, .inspection, .tutorial: false
         }
     }
 
     var isWeb: Bool {
-        if case .web = content { return true }
+        if case .web = kind { return true }
         return false
     }
 
     var isInspection: Bool {
-        if case .inspection = content { return true }
+        if case .inspection = kind { return true }
         return false
     }
 
     var isTutorial: Bool {
-        if case .tutorial = content { return true }
+        if case .tutorial = kind { return true }
         return false
     }
 
     var tutorialCompletedSteps: Set<TutorialBoardStep>? {
-        guard case .tutorial(let tutorial) = content else { return nil }
+        guard case .tutorial(let tutorial) = kind else { return nil }
         return tutorial.completedSteps
     }
 
@@ -435,17 +435,17 @@ struct BoardState: Codable, Equatable, Identifiable {
     }
 
     var isZellij: Bool {
-        guard case .terminal(.zellij) = content else { return false }
+        guard case .terminal(.zellij) = kind else { return false }
         return true
     }
 
     var isZmx: Bool {
-        guard case .terminal(.zmx) = content else { return false }
+        guard case .terminal(.zmx) = kind else { return false }
         return true
     }
 
     var systemSymbol: SFSymbol {
-        switch content {
+        switch kind {
         case .web: .globe
         case .inspection: .magnifyingglass
         case .terminal(.shell): .appleTerminal
@@ -464,7 +464,7 @@ struct BoardState: Codable, Equatable, Identifiable {
     }
 
     var essentialInput: String? {
-        switch content {
+        switch kind {
         case .web(let web):
             return (web.currentSheetURL ?? web.firstSheetURL)?.absoluteString
         case .inspection:
@@ -497,7 +497,7 @@ struct BoardState: Codable, Equatable, Identifiable {
         self.id = id
         self.label = label
         self.width = width
-        content = .web(
+        kind = .web(
             WebBoardState(
                 currentSheetURL: currentSheetURL,
                 firstSheetURL: firstSheetURL ?? currentSheetURL,
@@ -516,7 +516,7 @@ struct BoardState: Codable, Equatable, Identifiable {
         self.id = id
         self.label = label
         self.width = width
-        content = .terminal(.shell(workingDirectory: workingDirectory))
+        kind = .terminal(.shell(workingDirectory: workingDirectory))
         role = .primary
         self.customLabel = customLabel
     }
@@ -531,7 +531,7 @@ struct BoardState: Codable, Equatable, Identifiable {
         self.id = id
         self.label = label
         self.width = width
-        content = .terminal(.zellij(ZellijBoardState(sessionName: zellijSessionName)))
+        kind = .terminal(.zellij(ZellijBoardState(sessionName: zellijSessionName)))
         role = .primary
         self.customLabel = customLabel
     }
@@ -548,7 +548,7 @@ struct BoardState: Codable, Equatable, Identifiable {
         self.id = id
         self.label = label
         self.width = width
-        content = .terminal(
+        kind = .terminal(
             .zmx(
                 ZmxBoardState(
                     sessionName: zmxSessionName,
@@ -562,7 +562,7 @@ struct BoardState: Codable, Equatable, Identifiable {
         self.id = id
         self.label = label
         self.width = width
-        content = .inspection
+        kind = .inspection
         role = .sideBoard(targetBoardID: targetBoardID)
         customLabel = nil
     }
@@ -576,13 +576,14 @@ struct BoardState: Codable, Equatable, Identifiable {
         self.id = id
         self.label = label
         self.width = width
-        content = .tutorial(tutorial)
+        kind = .tutorial(tutorial)
         role = .primary
         customLabel = nil
     }
 
     private enum CodingKeys: String, CodingKey {
-        case id, label, width, content, role, customLabel
+        case id, label, width, role, customLabel
+        case kind = "content"
     }
 
     init(from decoder: Decoder) throws {
@@ -596,8 +597,8 @@ struct BoardState: Codable, Equatable, Identifiable {
         } else {
             role = .primary
         }
-        content = try container.decode(BoardContentState.self, forKey: .content)
-        if case .inspection = content, !isSideBoard {
+        kind = try container.decode(BoardKind.self, forKey: .kind)
+        if case .inspection = kind, !isSideBoard {
             throw DecodingError.dataCorruptedError(
                 forKey: .role,
                 in: container,
@@ -610,7 +611,7 @@ struct BoardState: Codable, Equatable, Identifiable {
         try container.encode(id, forKey: .id)
         try container.encode(label, forKey: .label)
         try container.encode(width, forKey: .width)
-        try container.encode(content, forKey: .content)
+        try container.encode(kind, forKey: .kind)
         try container.encode(role, forKey: .role)
         try container.encodeIfPresent(customLabel, forKey: .customLabel)
     }

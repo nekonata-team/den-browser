@@ -403,7 +403,6 @@ final class Den_BrowserUITests: XCTestCase, BDD {
         let alpha = board(.alpha, in: app)
         let bravo = board(.bravo, in: app)
         let sheetInputWindow = app.windows["UI Testing · SHEET INPUT"]
-        let terminalInputWindow = app.windows["UI Testing · TERMINAL INPUT"]
         let surfacePredicate = NSPredicate(format: "identifier BEGINSWITH 'board-surface.'")
         let surfaces = app.scrollViews["board-strip"].firstMatch
             .descendants(matching: .any)
@@ -423,8 +422,8 @@ final class Den_BrowserUITests: XCTestCase, BDD {
         XCTAssertTrue(alpha.wait(for: \.isSelected, toEqual: true, timeout: 5))
         app.typeKey(",", modifierFlags: [.control])
         XCTAssertTrue(
-            terminalInputWindow.waitForExistence(timeout: 5),
-            "Den Mode should return to Terminal Input after focusing Alpha")
+            sheetInputWindow.waitForExistence(timeout: 5),
+            "Den Mode should return to Sheet Input after focusing Alpha")
         XCTAssertTrue(alpha.isSelected)
 
         when("typing a Shell command after returning from Den Mode") {

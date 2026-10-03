@@ -63,7 +63,7 @@ struct DenStoreBoardTests {
                 BoardState.self,
                 from: JSONEncoder().encode(named))
             #expect(
-                restoredNamed.content
+                restoredNamed.kind
                     == .terminal(.zellij(ZellijBoardState(sessionName: "project-a"))))
 
             store.openBoard(input: ":zellij")
@@ -79,7 +79,7 @@ struct DenStoreBoardTests {
                 BoardState.self,
                 from: JSONEncoder().encode(welcome))
             #expect(
-                restoredWelcome.content
+                restoredWelcome.kind
                     == .terminal(.zellij(ZellijBoardState(sessionName: nil))))
         }
     }
@@ -118,7 +118,7 @@ struct DenStoreBoardTests {
                 BoardState.self,
                 from: JSONEncoder().encode(board))
             #expect(
-                restored.content
+                restored.kind
                     == .terminal(
                         .zmx(
                             ZmxBoardState(
@@ -291,7 +291,7 @@ struct DenStoreBoardTests {
                 BoardState.self,
                 from: JSONEncoder().encode(firstChild))
             #expect(
-                restoredChild.content
+                restoredChild.kind
                     == .terminal(
                         .zmx(
                             ZmxBoardState(

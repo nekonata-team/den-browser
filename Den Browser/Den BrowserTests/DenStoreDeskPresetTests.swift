@@ -141,7 +141,7 @@ struct DenStoreDeskPresetTests {
         #expect(
             preset.boards[0].initialSheetURL
                 == URL(string: "https://mail.example.com/inbox?label=work#today"))
-        #expect(preset.boards[1].content == .inspection)
+        #expect(preset.boards[1].kind == .inspection)
         #expect(preset.boards[1].targetBoardIndex == 0)
         #expect(preset.boards[2].initialSheetURL == nil)
         #expect(preset.focusedBoardIndex == 1)
@@ -200,7 +200,7 @@ struct DenStoreDeskPresetTests {
 
         // Assert
         #expect(saveResult == .created)
-        #expect(preset.boards.first?.content == .terminal(.shell(workingDirectory: "/tmp")))
+        #expect(preset.boards.first?.kind == .terminal(.shell(workingDirectory: "/tmp")))
         #expect(store.focusedBoard?.id != terminal.id)
         #expect(store.focusedBoard?.terminalWorkingDirectory == "/tmp")
         #expect(store.focusedBoard?.customLabel == "Build")
@@ -219,7 +219,7 @@ struct DenStoreDeskPresetTests {
 
         // Assert
         #expect(saveResult == .created)
-        #expect(preset.boards.first?.content == .terminal(.zellij(sessionName: "project-a")))
+        #expect(preset.boards.first?.kind == .terminal(.zellij(sessionName: "project-a")))
         #expect(store.focusedBoard?.id != zellij.id)
         #expect(store.focusedBoard?.isZellij == true)
         #expect(store.focusedBoard?.zellijSessionName == "project-a")
@@ -248,7 +248,7 @@ struct DenStoreDeskPresetTests {
         // Assert
         #expect(saveResult == .created)
         #expect(
-            restoredPreset.boards.first?.content
+            restoredPreset.boards.first?.kind
                 == .terminal(.zmx(sessionName: "project-a", rootSessionName: "project")))
         #expect(restoredStore.focusedBoard?.id != zmx.id)
         #expect(restoredStore.focusedBoard?.isZmx == true)

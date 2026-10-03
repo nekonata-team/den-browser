@@ -174,7 +174,7 @@ struct DenView<Header: View>: View {
     }
 
     private var contentAccessibilityValue: String {
-        let inputContext = store.isDenMode ? "Den Mode" : store.contentInputLabel
+        let inputContext = store.isDenMode ? "Den Mode" : "Sheet Input"
         return store.isFocusModePresented ? "\(inputContext), Focus Mode" : inputContext
     }
 
@@ -183,7 +183,7 @@ struct DenView<Header: View>: View {
         guard store.temporaryContext == nil, store.focusedBoard != nil else {
             return profileTitle
         }
-        return "\(profileTitle) · \(store.isDenMode ? "DEN MODE" : store.contentInputLabel.uppercased())"
+        return "\(profileTitle) · \(store.isDenMode ? "DEN MODE" : "SHEET INPUT")"
     }
 
     @ViewBuilder

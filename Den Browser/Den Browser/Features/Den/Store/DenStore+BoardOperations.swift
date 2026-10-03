@@ -420,7 +420,7 @@ extension DenStore {
 
         let value: String
         let message: String
-        switch board.content {
+        switch board.kind {
         case .web(let web):
             guard let url = web.currentSheetURL ?? web.firstSheetURL else { return }
             value = url.absoluteString

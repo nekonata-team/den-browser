@@ -66,9 +66,9 @@ enum BoardAction: Equatable {
     case focusNext
     case moveLeft
     case moveRight
-    case increaseContentSize
-    case decreaseContentSize
-    case resetContentSize
+    case increaseSheetSize
+    case decreaseSheetSize
+    case resetSheetSize
     case toggleAnchor
     case jumpToAnchor
     case moveToPreviousDesk
@@ -235,9 +235,9 @@ enum AppActionHandler {
             case .focusNext: store.focusNextBoard()
             case .moveLeft: store.moveFocusedBoardLeft()
             case .moveRight: store.moveFocusedBoardRight()
-            case .increaseContentSize: store.adjustFocusedBoardContentSize(by: 1)
-            case .decreaseContentSize: store.adjustFocusedBoardContentSize(by: -1)
-            case .resetContentSize: store.resetFocusedBoardContentSize()
+            case .increaseSheetSize: store.adjustFocusedSheetSize(by: 1)
+            case .decreaseSheetSize: store.adjustFocusedSheetSize(by: -1)
+            case .resetSheetSize: store.resetFocusedSheetSize()
             case .toggleAnchor: store.toggleAnchorBoard()
             case .jumpToAnchor: store.jumpToAnchorBoard()
             case .moveToPreviousDesk: store.moveFocusedBoardToPreviousDesk()

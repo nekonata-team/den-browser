@@ -1,6 +1,6 @@
 # Local persistence
 
-Den Browser persists only state needed to restore user-owned work. Version 3 groups Board data by content kind and stores terminal session configuration under Terminal content.
+Den Browser persists only state needed to restore user-owned work. Version 3 groups Board data by Board kind and stores terminal session configuration under Terminal Board state.
 
 ## Ownership
 
@@ -13,6 +13,8 @@ Den Browser persists only state needed to restore user-owned work. Version 3 gro
 - Live Web and Terminal runtimes, `WKWebView`, Shell, Zellij, and zmx processes, terminal screens, scrollback, transient presentation state, Recently Removed Boards, and recently discarded Drawer Item restoration history are not persisted.
 
 ## Version 3 JSON keys
+
+`BoardState.kind` and `DeskPresetBoard.kind` retain the JSON key `content` for version 3 compatibility. This is a storage key, not a separate domain concept; the schema and migrations remain unchanged.
 
 `ProfileIndex`:
 
@@ -48,7 +50,7 @@ Nested objects use these keys:
 
 Recent Items are recorded when a new Board is successfully opened from an input, including an Essential, an explicit link-to-new-Board action, a Drawer placement, or a zmx Session selection. Sheet navigation, Board restoration, and Drawer Preview do not create Recent Items. Opening the zmx Sessions picker without selecting a session does not create one.
 
-A missing optional Current Sheet URL means the Board has no Current Sheet. A missing First Sheet URL means the Board cannot use the persisted First Sheet return action. Board Sheet URLs normalize HTTP(S) root paths to `/` before persistence. Absolute local file URLs are stored with the same Foundation `URL` `Codable` representation; no file contents, access bookmarks, or existence state are persisted. A moved, deleted, or machine-specific local file may therefore fail to load after restoration without invalidating the saved Board, Drawer Item, Recent Item, or Desk Preset.
+A missing optional Current Sheet URL means the Web Board has no Current Sheet. A missing First Sheet URL means the Web Board cannot use the persisted First Sheet return action. Web Board Sheet URLs normalize HTTP(S) root paths to `/` before persistence. Absolute local file URLs are stored with the same Foundation `URL` `Codable` representation; no file contents, access bookmarks, or existence state are persisted. A moved, deleted, or machine-specific local file may therefore fail to load after restoration without invalidating the saved Board, Drawer Item, Recent Item, or Desk Preset.
 
 `PersistedProfileDocumentDecoder` migrates version 1 and 2 documents before the current models decode them. Version 1 Boards decode as Web Boards. Version 2 flat Board kinds (`terminal`, `zellij`, `zmx`) and legacy Desk Preset kinds normalize to version 3 in memory; the next save writes version 3. Top-level `sheetNavigationPaused` moves into Web Board content. Desk Preset `targetBoardIndex` and Board Role `targetBoardID` retain their meaning and encoded names. An ordinary Terminal Board restores a new Shell in the saved Working Directory. Named Zellij restoration runs `zellij attach --create <sessionName>`; an unnamed Zellij Board runs `zellij -l welcome`. zmx restoration runs `zmx attach <sessionName>`.
 
@@ -82,7 +84,7 @@ When `BoardState.role` is absent, it decodes as `primary`.
 | `terminal` | zmx executable path | `preferences.terminal.zmx.executable-path` | `String` | Empty | Terminal > zmx |
 | `essentials` | Items | `preferences.essentials.items` | Property-list encoded `[Essential]` | Absent | Essentials |
 
-Web Board content's `sheetNavigationPaused` stores whether Vim-style Sheet Navigation is
+Web Board state's `sheetNavigationPaused` stores whether Vim-style Sheet Navigation is
 paused for that Board. It defaults to `false` when absent, follows the Board
 through Desk moves and restoration, and is copied when a Web Board is duplicated.
 

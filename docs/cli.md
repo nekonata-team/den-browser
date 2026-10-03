@@ -102,8 +102,10 @@ On a TTY, it prints `healthy`. With `--json` or when piped, it returns:
 {"ok":true}
 ```
 
-### 3.2 `den sheet` (Web Screen & Content)
+### 3.2 `den sheet` (Web Board Sheet Operations)
 Commands operating on the Current Sheet of the resolved Web Board.
+
+These commands operate on Web Boards only. Terminal Board interaction uses the `den board terminal` command family.
 
 Every Sheet command accepts `--snapshot` to include a compact semantic snapshot after a successful command. JSON retains the command's usual result fields and adds `snapshot`; TTY output prints the usual result followed by the snapshot. The snapshot comes from the same resolved Web Board, even if focus changes while the command awaits. It does not wait for subsequent page activity: use a condition such as `den sheet wait --text "Saved" --snapshot` when the observation depends on asynchronous completion. If the command succeeds but snapshot capture fails, the response reports that distinction and exits with an error.
 

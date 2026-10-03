@@ -368,21 +368,21 @@ struct KeyboardShortcutTests {
 
         #expect(
             KeyboardController.decision(for: increase, store: store)
-                == .perform(.board(.increaseContentSize)))
+                == .perform(.board(.increaseSheetSize)))
         #expect(
             KeyboardController.decision(for: plus, store: store)
-                == .perform(.board(.increaseContentSize)))
+                == .perform(.board(.increaseSheetSize)))
         #expect(
             KeyboardController.decision(for: decrease, store: store)
-                == .perform(.board(.decreaseContentSize)))
+                == .perform(.board(.decreaseSheetSize)))
         #expect(
             KeyboardController.decision(for: reset, store: store)
-                == .perform(.board(.resetContentSize)))
+                == .perform(.board(.resetSheetSize)))
 
         store.isDenMode = true
         #expect(
             KeyboardController.decision(for: decrease, store: store)
-                == .perform(.board(.decreaseContentSize)))
+                == .perform(.board(.decreaseSheetSize)))
     }
 
     @Test func controlTabDeskShortcutsNavigateAndReturn() throws {

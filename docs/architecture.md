@@ -80,10 +80,10 @@ When a dependency would create a cycle, do not hide it behind an App coordinator
 
 Persisted Profile data remains separate from live Web and Terminal runtime objects.
 
-- `DenState` is the source of truth for Desk and Board identity, order, labels, widths, focus, Board content, Drawer Items, and the expanded Drawer Item identity used to restore a Preview.
+- `DenState` is the source of truth for Desk and Board identity, order, labels, widths, focus, Board kinds and their saved state, Drawer Items, and the expanded Drawer Item identity used to restore a Preview.
 - `DenStorage` also holds Profile-owned persisted Desk Presets and Recent Items. These are persisted alongside `DenState` but remain separate data collections.
 - `WebBoardRuntime` owns live WebKit state, including each Web Board's in-memory Sheet Stack.
-- `BoardState.content` distinguishes Web, Inspection, Terminal, and Tutorial Boards. Tutorial Boards and their progress are session-only and stay out of persisted DenState and Desk Presets. Terminal session choices (Shell, Zellij, and zmx) belong inside Terminal content; Web-specific Sheet state stays inside Web content.
+- `BoardState.kind` distinguishes Web, Inspection, Terminal, and Tutorial Boards and carries their kind-specific state. A Board presents Sheets; Web Boards have a Sheet Stack, while Terminal Boards present one Sheet backed by a live Terminal Session. Tutorial Boards and their progress are session-only and stay out of persisted DenState and Desk Presets. Terminal session choices (Shell, Zellij, and zmx) belong to Terminal Board state; URLs and Vim-style Sheet Navigation settings belong to Web Board state.
 - `TerminalRuntime` owns one libghostty surface and Shell, Zellij, or zmx process. One controller is used per Terminal Board.
 - Each Profile has one shared `DenStorage` for persisted data, Profile-shared transient state, and live runtime registries. Profile-shared transient state includes Notifications, active drag state, Recently Removed Boards, and discarded Drawer Item restoration history. Each Profile window has a `DenStore` for its presented Desk and window-local presentation state.
 - `DenView` renders only the Desk assigned to its window. Shared runtime storage retains both runtime types across Desk and window changes; detached Terminal views stop rendering without ending their process. A detached TerminalRuntime also runs low-frequency app ticks until its surface is visible again or the runtime is disposed; this follows [ADR 0040](./adr/0040-tick-detached-terminal-runtimes.md).

@@ -199,19 +199,19 @@ struct TerminalBoardView: View {
         Divider()
         Button {
             store.focusBoard(board.id)
-            store.adjustFocusedBoardContentSize(by: 1)
+            store.adjustFocusedSheetSize(by: 1)
         } label: {
             Label("Increase Font Size", systemSymbol: .plus)
         }
         Button {
             store.focusBoard(board.id)
-            store.adjustFocusedBoardContentSize(by: -1)
+            store.adjustFocusedSheetSize(by: -1)
         } label: {
             Label("Decrease Font Size", systemSymbol: .minus)
         }
         Button {
             store.focusBoard(board.id)
-            store.resetFocusedBoardContentSize()
+            store.resetFocusedSheetSize()
         } label: {
             Label("Reset Font Size", systemSymbol: .arrowCounterclockwise)
         }

@@ -210,12 +210,12 @@ private struct DenCommands: Commands {
                 }
                 .keyboardShortcut("i", modifiers: [.command, .option])
                 .disabled(store?.focusedBoard?.isWeb != true)
-                Menu("Content Size") {
+                Menu("Sheet Size") {
                     Button(
                         store?.focusedBoard?.isTerminal == true
                             ? "Increase Font Size" : "Increase Sheet Scale"
                     ) {
-                        store?.performAppAction(.board(.increaseContentSize))
+                        store?.performAppAction(.board(.increaseSheetSize))
                     }
                     .keyboardShortcut("=", modifiers: [.command, .shift])
 
@@ -223,7 +223,7 @@ private struct DenCommands: Commands {
                         store?.focusedBoard?.isTerminal == true
                             ? "Decrease Font Size" : "Decrease Sheet Scale"
                     ) {
-                        store?.performAppAction(.board(.decreaseContentSize))
+                        store?.performAppAction(.board(.decreaseSheetSize))
                     }
                     .keyboardShortcut("-", modifiers: [.command])
 
@@ -231,7 +231,7 @@ private struct DenCommands: Commands {
                         store?.focusedBoard?.isTerminal == true
                             ? "Reset Font Size" : "Reset Sheet Scale"
                     ) {
-                        store?.performAppAction(.board(.resetContentSize))
+                        store?.performAppAction(.board(.resetSheetSize))
                     }
                     .keyboardShortcut("0", modifiers: [.command])
                 }

@@ -31,11 +31,11 @@ Routing must preserve this order:
 
 1. Fullscreen, pending confirmations, native application commands, and text-entry panels receive their explicitly forwarded keys.
 2. Dragging and exclusive temporary contexts consume keys they own. Their allowed cancellation and movement keys become `AppAction` values.
-3. Configurable app-wide shortcuts take priority over Sheet Input and Terminal Input while a Profile window is active.
+3. Configurable app-wide shortcuts take priority over Sheet Input while a Profile window is active.
 4. Den Mode owns every remaining key. The reserved `g` enters the Essentials Prefix; its next key, including its case, is handled by that temporary context. Other mapped keys perform an action; an unmapped key is consumed with a warning Toast.
-5. Sheet Input, Terminal Input, Drawer Preview input, and filter text fields receive only events explicitly forwarded to them.
+5. Sheet Input, Drawer Preview input, and filter text fields receive only events explicitly forwarded to them.
 
-Den Mode actions must never be implemented by forwarding an event and relying on a SwiftUI menu item to catch it. In particular, unmodified comma performs `openSettings` and is consumed before a Sheet or Terminal can receive it.
+Den Mode actions must never be implemented by forwarding an event and relying on a SwiftUI menu item to catch it. In particular, unmodified comma performs `openSettings` and is consumed before Sheet Input can receive it.
 
 ## Enforced rules
 
@@ -45,7 +45,7 @@ Den Mode actions must never be implemented by forwarding an event and relying on
 - Confirmation dialogs must provide a default action for Return and a cancel action for Escape. While a confirmation is presented, the Router forwards both keys to the native dialog.
 - Shortcut persistence uses logical characters or named special keys plus modifiers. Do not persist physical key codes.
 - Do not add global hotkeys without a new architectural decision.
-- Do not log raw keys, composed text, or forwarded terminal and Sheet input.
+- Do not log raw keys, composed text, or forwarded Sheet Input.
 - Native SwiftUI controls may handle local navigation or editing only after the Router has forwarded the event to their input destination.
 
 The exhaustive decision and action enums, the pure Router boundary, focused tests, and the single runtime monitor provide enforcement beyond code review.

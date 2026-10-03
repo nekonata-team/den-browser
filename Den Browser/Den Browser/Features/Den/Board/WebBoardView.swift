@@ -269,21 +269,21 @@ struct WebBoardView: View {
 
         Button {
             store.focusBoard(board.id)
-            store.adjustFocusedBoardContentSize(by: 1)
+            store.adjustFocusedSheetSize(by: 1)
         } label: {
             Label("Increase Sheet Scale", systemSymbol: .plus)
         }
 
         Button {
             store.focusBoard(board.id)
-            store.adjustFocusedBoardContentSize(by: -1)
+            store.adjustFocusedSheetSize(by: -1)
         } label: {
             Label("Decrease Sheet Scale", systemSymbol: .minus)
         }
 
         Button {
             store.focusBoard(board.id)
-            store.resetFocusedBoardContentSize()
+            store.resetFocusedSheetSize()
         } label: {
             Label("Reset Sheet Scale", systemSymbol: .arrowCounterclockwise)
         }

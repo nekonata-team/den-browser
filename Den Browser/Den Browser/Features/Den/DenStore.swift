@@ -285,13 +285,6 @@ final class DenStore {
         webExtensionWindow = window
     }
 
-    var contentInputLabel: String {
-        if focusedBoard?.isTerminal == true { return "Terminal Input" }
-        if focusedBoard?.isInspection == true { return "Inspection Board" }
-        if focusedBoard?.isTutorial == true { return "Tutorial" }
-        return "Sheet Input"
-    }
-
     var canCreateDesk: Bool {
         state.desks.count < Self.maximumDeskCount
     }

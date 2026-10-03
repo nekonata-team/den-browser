@@ -434,7 +434,7 @@ struct DeskPresetPreview: View {
     }
 
     private func previewSubtitle(for board: DeskPresetBoard) -> String {
-        guard case .inspection = board.content else {
+        guard case .inspection = board.kind else {
             return board.initialSheetURL?.host(percentEncoded: false) ?? "Empty Board"
         }
         guard let targetBoardIndex = board.targetBoardIndex, boards.indices.contains(targetBoardIndex) else {

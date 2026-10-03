@@ -73,7 +73,7 @@ struct DenStorePersistenceTests {
         runtime.webView.magnification = 1.2
 
         // Act
-        store.adjustFocusedBoardContentSize(by: 1)
+        store.adjustFocusedSheetSize(by: 1)
 
         // Assert
         #expect(runtime.webView.pageZoom == 1.1)
@@ -100,7 +100,7 @@ struct DenStorePersistenceTests {
         runtime.webView.magnification = 1.2
 
         // Act
-        store.resetFocusedBoardContentSize()
+        store.resetFocusedSheetSize()
 
         // Assert
         #expect(runtime.webView.pageZoom == 0.8)
@@ -147,7 +147,7 @@ struct DenStorePersistenceTests {
         #expect(savedState?.desks[0].boards.isEmpty == true)
 
         let encodedContent = try JSONEncoder().encode(
-            BoardContentState.tutorial(TutorialBoardState(completedSteps: [.openBoard])))
+            BoardKind.tutorial(TutorialBoardState(completedSteps: [.openBoard])))
         let content = try JSONSerialization.jsonObject(with: encodedContent) as? [String: String]
         #expect(content == ["kind": "tutorial"])
 
@@ -160,7 +160,7 @@ struct DenStorePersistenceTests {
             }
             """#.utf8)
         #expect(
-            try JSONDecoder().decode(BoardContentState.self, from: oldContent)
+            try JSONDecoder().decode(BoardKind.self, from: oldContent)
                 == .tutorial(TutorialBoardState()))
     }
 

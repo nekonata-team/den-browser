@@ -57,7 +57,7 @@ XCUITests own native UI integration, including:
 
 - SwiftUI-specific gesture identity (e.g. pointer drag-and-drop between Boards), which cannot be simulated in unit tests.
 - Board input activation across the native responder boundary, such as clicking an unfocused Board and sending input, or switching Desks and sending input without another click.
-- Creating a Terminal, Zellij, or zmx Board, entering Terminal Input, and removing it when the Shell, Zellij, or zmx process exits.
+- Creating a Terminal, Zellij, or zmx Board, entering Sheet Input, and removing it when the Shell, Zellij, or zmx process exits.
 
 ### UI test readability
 
