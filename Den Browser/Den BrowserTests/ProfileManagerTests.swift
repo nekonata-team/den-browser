@@ -60,6 +60,153 @@ struct ProfileManagerTests {
         #expect(!FileManager.default.fileExists(atPath: directory.path))
     }
 
+    @Test func extensionHostStaysUnloadedForEmptyAndTerminalStores() throws {
+        // Arrange
+        let directory = temporaryProfileDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let manager = makeProfileManager(
+            directory: directory,
+            isEphemeral: true,
+            webExtensionDescriptors: [extensionFixtureDescriptor()],
+            uBOLiteEnabled: true)
+        defer { manager.setUBOLiteEnabled(false) }
+        let profileID = manager.personalProfileID
+        let store = try #require(manager.store(for: profileID))
+        #expect(store.webExtensionHost == nil)
+        let terminal = BoardState(label: "Terminal", width: 520, workingDirectory: "/tmp")
+        let desk = DeskState(label: "Terminal", boards: [terminal], focusedBoardID: terminal.id)
+        store.state = DenState(
+            desks: [desk],
+            focusedDeskID: desk.id)
+        let window = NSWindow()
+        let route = ProfileWindowRoute(windowID: profileID, profileID: profileID)
+        defer { manager.unregister(window: window, for: route) }
+
+        // Act
+        manager.register(window: window, for: route)
+        manager.focusWebExtensionWindow(for: route)
+        manager.setUBOLiteEnabled(false)
+        manager.setUBOLiteEnabled(true)
+
+        // Assert
+        #expect(store.webExtensionHost == nil)
+        #expect(store.webExtensionWindow == nil)
+    }
+
+    @Test func firstWebRuntimeLoadsOneSharedHostAcrossProfileWindows() throws {
+        // Arrange
+        let directory = temporaryProfileDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let manager = makeProfileManager(
+            directory: directory,
+            isEphemeral: true,
+            webExtensionDescriptors: [extensionFixtureDescriptor()])
+        defer { manager.setUBOLiteEnabled(false) }
+        let profileID = manager.personalProfileID
+        let firstRoute = ProfileWindowRoute(windowID: profileID, profileID: profileID)
+        let first = try #require(manager.store(for: firstRoute))
+        manager.setUBOLiteEnabled(true)
+        let sourceDeskID = first.presentedDeskID
+        let boardID = try #require(
+            first.createBoard(urlString: URL(fileURLWithPath: #filePath).absoluteString))
+        let board = try #require(first.board(for: boardID))
+        let firstRuntime = first.webRuntime(for: board)
+        first.createDesk(label: "Second", preset: .empty)
+        let secondRoute = try #require(
+            manager.routeForOpeningDesk(
+                sourceDeskID,
+                profileID: profileID,
+                sourceWindowID: firstRoute.windowID))
+        let second = try #require(manager.store(for: secondRoute))
+
+        #expect(first.webExtensionHost != nil)
+        #expect(second.webExtensionHost == nil)
+
+        // Act
+        let secondRuntime = second.webRuntime(for: board)
+
+        // Assert
+        #expect(firstRuntime === secondRuntime)
+        #expect(first.webExtensionHost?.controller === second.webExtensionHost?.controller)
+        #expect(first.webExtensionWindow !== second.webExtensionWindow)
+        #expect(first.webExtensionWindow?.tabs.isEmpty == true)
+        #expect(second.webExtensionWindow?.tabs.count == 1)
+    }
+
+    @Test func drawerPreviewRequestsHost() throws {
+        // Arrange
+        let directory = temporaryProfileDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let manager = makeProfileManager(
+            directory: directory,
+            isEphemeral: true,
+            webExtensionDescriptors: [extensionFixtureDescriptor()])
+        let profileID = manager.personalProfileID
+        let store = try #require(manager.store(for: profileID))
+        let fileURL = URL(fileURLWithPath: #filePath)
+        let itemID = try #require(store.keepInDrawer(fileURL, opensDrawer: false))
+        let item = try #require(store.state.drawerItems.first { $0.id == itemID })
+        manager.setUBOLiteEnabled(true)
+        defer { manager.setUBOLiteEnabled(false) }
+
+        // Act
+        let firstPreview = store.drawerRuntime(for: item)
+
+        // Assert
+        #expect(store.webExtensionHost != nil)
+        #expect(store.webExtensionWindow?.tabs.count == 1)
+        #expect(firstPreview.id == item.id)
+    }
+
+    @Test func disablingExtensionDisconnectsLiveDrawerPreview() throws {
+        // Arrange
+        let directory = temporaryProfileDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let manager = makeProfileManager(
+            directory: directory,
+            isEphemeral: true,
+            webExtensionDescriptors: [extensionFixtureDescriptor()])
+        let store = try #require(manager.store(for: manager.personalProfileID))
+        let itemID = try #require(store.keepInDrawer(URL(fileURLWithPath: #filePath), opensDrawer: false))
+        let item = try #require(store.state.drawerItems.first { $0.id == itemID })
+        manager.setUBOLiteEnabled(true)
+        let preview = store.drawerRuntime(for: item)
+        defer { manager.setUBOLiteEnabled(false) }
+
+        // Act
+        manager.setUBOLiteEnabled(false)
+
+        // Assert
+        #expect(store.drawerPreviewRuntime == nil)
+        #expect(store.webExtensionHost == nil)
+        #expect(preview.webView.navigationDelegate == nil)
+    }
+
+    @Test func enablingExtensionAppliesToExistingWebRuntimeDemand() throws {
+        // Arrange
+        let directory = temporaryProfileDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let manager = makeProfileManager(
+            directory: directory,
+            isEphemeral: true,
+            webExtensionDescriptors: [extensionFixtureDescriptor()])
+        let store = try #require(manager.store(for: manager.personalProfileID))
+        let board = BoardState(label: "Web", width: 520, currentSheetURL: nil)
+        let desk = DeskState(label: "Desk", boards: [board], focusedBoardID: board.id)
+        store.state = DenState(desks: [desk], focusedDeskID: desk.id)
+        _ = store.webRuntime(for: board)
+        defer { manager.setUBOLiteEnabled(false) }
+        #expect(store.webExtensionHost == nil)
+
+        // Act
+        manager.setUBOLiteEnabled(true)
+        _ = store.webRuntime(for: board)
+
+        // Assert
+        #expect(store.webExtensionHost != nil)
+        #expect(store.webExtensionWindow?.tabs.count == 1)
+    }
+
     @Test func profileManagerPersistsProfileOrderAndUpdates() throws {
         // Arrange
         let directory = temporaryProfileDirectory()
@@ -911,22 +1058,37 @@ struct ProfileManagerTests {
 
     private func makeProfileManager(
         directory: URL,
-        quarantineFile: ((URL, URL) throws -> Void)? = nil
+        quarantineFile: ((URL, URL) throws -> Void)? = nil,
+        isEphemeral: Bool = false,
+        webExtensionDescriptors: [WebExtensionDescriptor] = [],
+        uBOLiteEnabled: Bool = false
     ) -> ProfileManager {
         let suiteName = "ProfileManagerPreferences-\(UUID().uuidString)"
-        let preferences = AppPreferences(defaults: makeTestDefaults(suiteName: suiteName))
+        let defaults = makeTestDefaults(suiteName: suiteName)
+        let preferences = AppPreferences(defaults: defaults)
+        if uBOLiteEnabled { preferences.setUBOLiteEnabled(true) }
         let navigation = SheetNavigationManager(
-            defaults: makeTestDefaults(suiteName: suiteName),
+            defaults: defaults,
             scriptSource: "")
         return ProfileManager(
             directoryURL: directory,
             sheetNavigation: navigation,
             preferences: preferences,
             removeDataStore: { _ in },
+            isEphemeral: isEphemeral,
             websiteDataStore: { _ in .nonPersistent() },
+            webExtensionDescriptors: webExtensionDescriptors,
             quarantineFile: quarantineFile ?? { source, destination in
                 try FileManager.default.moveItem(at: source, to: destination)
             })
+    }
+
+    private func extensionFixtureDescriptor() -> WebExtensionDescriptor {
+        WebExtensionDescriptor(
+            identifier: "test.extension",
+            directoryURL: URL(fileURLWithPath: #filePath)
+                .deletingLastPathComponent()
+                .appending(path: "Fixtures/MV3Extension", directoryHint: .isDirectory))
     }
 
     private func desk(_ label: String, boards: [BoardState] = [], focusedBoardID: UUID? = nil) -> DeskState {

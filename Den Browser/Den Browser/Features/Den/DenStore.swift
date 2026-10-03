@@ -231,6 +231,7 @@ final class DenStore {
     @ObservationIgnored var previousFocusedDeskID: UUID?
     @ObservationIgnored var anchorJumpOriginBoardIDByDesk: [UUID: UUID] = [:]
     @ObservationIgnored private let terminalCommandRunner: any TerminalCommandRunning
+    @ObservationIgnored private let requestWebExtensionContext: (() -> (WebExtensionHost, MV3WebExtensionWindow)?)?
     @ObservationIgnored let canPresentDesk: ((UUID) -> Bool)?
     @ObservationIgnored private let onDeskPresentationRequest: ((UUID) -> Bool)?
     @ObservationIgnored private let onWillResetDen: (() -> Void)?
@@ -268,6 +269,17 @@ final class DenStore {
     ) {
         guard webExtensionHost !== host || webExtensionWindow !== window else { return }
         releaseWebRuntimes()
+        releaseDrawerPreview()
+        webExtensionHost = host
+        webExtensionWindow = window
+    }
+
+    var hasWebExtensionDemand: Bool {
+        !webRuntimes.isEmpty || drawerPreviewRuntime != nil
+    }
+
+    func ensureWebExtensionContext() {
+        guard webExtensionHost == nil, let (host, window) = requestWebExtensionContext?() else { return }
         webExtensionHost = host
         webExtensionWindow = window
     }
@@ -343,6 +355,7 @@ final class DenStore {
         terminalCommandRunner: any TerminalCommandRunning = SubprocessCommandRunner(),
         webExtensionHost: WebExtensionHost? = nil,
         webExtensionWindow: MV3WebExtensionWindow? = nil,
+        requestWebExtensionContext: (() -> (WebExtensionHost, MV3WebExtensionWindow)?)? = nil,
         deskPresets: [PersonalDeskPreset] = [],
         recentItems: [RecentItem] = [],
         onSave: ((DenState) -> Bool)? = nil,
@@ -368,6 +381,7 @@ final class DenStore {
         self.preferences = preferences
         self.pasteboard = pasteboard
         self.terminalCommandRunner = terminalCommandRunner
+        self.requestWebExtensionContext = requestWebExtensionContext
         self.webExtensionHost = webExtensionHost
         self.webExtensionWindow = webExtensionWindow
         self.canPresentDesk = nil
@@ -388,6 +402,7 @@ final class DenStore {
         pasteboard: NSPasteboard = .general,
         webExtensionHost: WebExtensionHost? = nil,
         webExtensionWindow: MV3WebExtensionWindow? = nil,
+        requestWebExtensionContext: (() -> (WebExtensionHost, MV3WebExtensionWindow)?)? = nil,
         canPresentDesk: @escaping (UUID) -> Bool,
         onDeskPresentationRequest: @escaping (UUID) -> Bool,
         onWillResetDen: @escaping () -> Void,
@@ -407,6 +422,7 @@ final class DenStore {
         self.preferences = preferences
         self.pasteboard = pasteboard
         self.terminalCommandRunner = terminalCommandRunner
+        self.requestWebExtensionContext = requestWebExtensionContext
         self.webExtensionHost = webExtensionHost
         self.webExtensionWindow = webExtensionWindow
         self.canPresentDesk = canPresentDesk

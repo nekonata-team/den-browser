@@ -8,6 +8,7 @@ Den Browser persists only state needed to restore user-owned work. Version 3 gro
 - A versioned JSON `ProfileIndex` stores Profile order.
 - App-wide preferences use typed, independent `UserDefaults` keys. Retired keys may remain in `UserDefaults` and are ignored.
 - WebKit owns website data in each Profile's `WKWebsiteDataStore`.
+- Installed uBlock Origin Lite resources and its app-wide enabled preference remain persistent. Extension state and compiled rules use a persistent WebKit extension controller for ordinary Profiles, and a non-persistent controller for Private Den. Private Den does not reuse extension state from a previous session. WebKit may still create compiled-rule files in an internal temporary directory; its current implementation does not explicitly delete that directory on unload, and Den leaves those files to OS management. Den does not automatically migrate or delete existing extension cache directories.
 - Tutorial Boards and their checklist progress are session-only and omitted from Profile JSON. A Desk remains saved if its only Board was a Tutorial Board; it restores empty.
 - Live Web and Terminal runtimes, `WKWebView`, Shell, Zellij, and zmx processes, terminal screens, scrollback, transient presentation state, Recently Removed Boards, and recently discarded Drawer Item restoration history are not persisted.
 

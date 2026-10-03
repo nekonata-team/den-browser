@@ -8,18 +8,21 @@ final class ProfileExtensionCoordinator {
     private let preferences: AppPreferences
     private let userContentController: WKUserContentController
     private let descriptors: [WebExtensionDescriptor]
+    private let isEphemeral: Bool
     private var hosts: [UUID: MV3WebExtensionHost] = [:]
 
     init(
         installer: UBOLiteInstaller,
         preferences: AppPreferences,
         userContentController: WKUserContentController,
-        descriptors: [WebExtensionDescriptor]
+        descriptors: [WebExtensionDescriptor],
+        isEphemeral: Bool
     ) {
         self.installer = installer
         self.preferences = preferences
         self.userContentController = userContentController
         self.descriptors = descriptors
+        self.isEphemeral = isEphemeral
     }
 
     var canUseExtensions: Bool {
@@ -33,7 +36,8 @@ final class ProfileExtensionCoordinator {
             profileID: profileID,
             websiteDataStore: websiteDataStore,
             userContentController: userContentController,
-            descriptors: effectiveDescriptors)
+            descriptors: effectiveDescriptors,
+            isEphemeral: isEphemeral)
         hosts[profileID] = host
         return host
     }
@@ -91,7 +95,12 @@ final class ProfileExtensionCoordinator {
 
     private func updateStores(_ stores: [(windowID: UUID, profileID: UUID?, store: DenStore)]) {
         for (windowID, profileID, store) in stores {
-            let host = profileID.flatMap { self.host(for: $0, websiteDataStore: store.websiteDataStore) }
+            let host: MV3WebExtensionHost?
+            if store.hasWebExtensionDemand, let profileID {
+                host = self.host(for: profileID, websiteDataStore: store.websiteDataStore)
+            } else {
+                host = nil
+            }
             store.updateWebExtensionHost(host, window: host?.window(for: windowID))
         }
     }

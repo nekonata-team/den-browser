@@ -275,6 +275,7 @@ extension DenStore {
     }
 
     func drawerRuntime(for item: DrawerItem) -> DrawerPreviewRuntime {
+        ensureWebExtensionContext()
         if let drawerPreviewRuntime, drawerPreviewRuntime.id == item.id {
             return drawerPreviewRuntime
         }

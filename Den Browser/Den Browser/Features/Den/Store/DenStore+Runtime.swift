@@ -11,6 +11,7 @@ private struct TerminalSignalError: LocalizedError {
 extension DenStore {
     func webRuntime(for board: BoardState, popupWebView: WKWebView? = nil) -> WebBoardRuntime {
         precondition(board.isWeb, "Only Web Boards can create a web runtime")
+        ensureWebExtensionContext()
         let actions = sheetNavigationActions(for: board)
         let events = boardRuntimeEvents(for: board)
         storage.runtimeOwners[board.id] = self

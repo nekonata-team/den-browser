@@ -107,7 +107,7 @@ Owns Den composition and the workflows connecting Desks, Boards, Sheets, and Ove
 
 Owns Profile identity, Profile-scoped persistence, website-data isolation, and Profile window lifecycle. A Profile owns one Den and may present distinct Desks from it in multiple windows, so this Feature may depend on the Den Feature to create, restore, and present that Den. WebKit storage mechanics may live in `Platform`, while Profile policy remains in the feature.
 
-`ProfileManager` owns the lifecycle binding: one `MV3WebExtensionHost` per Profile and one extension window per Profile Window when the capability is enabled. Host implementation, curated descriptors, on-demand installation, resource loading, and WebKit controller integration belong to `Extensions`.
+`ProfileManager` owns the lifecycle binding: one lazily created `MV3WebExtensionHost` per Profile and one extension window per Profile Window using that host. When content blocking is enabled, the first live Web Board, Drawer Preview, or explicit extension popup/options request creates the host. Creating or focusing an empty or Terminal-only Profile Window does not load the extension. Ordinary Profiles use a persistent extension controller identified by their stable Profile ID; Private Den uses a non-persistent extension controller so its extension state does not carry into another session. Host implementation, curated descriptors, on-demand installation, resource loading, and WebKit controller integration belong to `Extensions`.
 
 ### Extensions
 

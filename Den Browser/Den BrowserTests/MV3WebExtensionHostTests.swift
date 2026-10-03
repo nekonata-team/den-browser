@@ -22,9 +22,28 @@ struct MV3WebExtensionHostTests {
         #expect(first.controller !== second.controller)
         #expect(first.controller.configuration.identifier == firstProfileID)
         #expect(second.controller.configuration.identifier == secondProfileID)
+        #expect(first.controller.configuration.isPersistent)
+        #expect(second.controller.configuration.isPersistent)
 
         first.dispose()
         second.dispose()
+    }
+
+    @Test func privateDenUsesNonPersistentControllerConfiguration() {
+        // Arrange
+        let host = MV3WebExtensionHost(
+            profileID: UUID(),
+            websiteDataStore: .nonPersistent(),
+            userContentController: WKUserContentController(),
+            isEphemeral: true)
+        defer { host.dispose() }
+
+        // Act
+        let configuration = host.controller.configuration
+
+        // Assert
+        #expect(!configuration.isPersistent)
+        #expect(configuration.identifier == nil)
     }
 
     @Test func registeringWebViewInAnotherWindowMovesItsTab() {

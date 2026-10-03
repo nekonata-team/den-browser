@@ -99,14 +99,20 @@ final class MV3WebExtensionHost: NSObject, WKWebExtensionControllerDelegate, Web
         websiteDataStore: WKWebsiteDataStore,
         userContentController: WKUserContentController,
         descriptors: [BundledWebExtensionDescriptor] = [],
-        bundle: Bundle = .main
+        bundle: Bundle = .main,
+        isEphemeral: Bool = false
     ) {
         self.bundle = bundle
         self.descriptors = descriptors
         remainingExtensionLoads = descriptors.count
         isReady = descriptors.isEmpty
 
-        let configuration = WKWebExtensionController.Configuration(identifier: profileID)
+        let configuration: WKWebExtensionController.Configuration
+        if isEphemeral {
+            configuration = .nonPersistent()
+        } else {
+            configuration = .init(identifier: profileID)
+        }
         configuration.defaultWebsiteDataStore = websiteDataStore
         let webViewConfiguration = WKWebViewConfiguration()
         webViewConfiguration.websiteDataStore = websiteDataStore

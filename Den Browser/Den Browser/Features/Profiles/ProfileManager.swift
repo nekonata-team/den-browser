@@ -63,7 +63,8 @@ final class ProfileManager {
             installer: uboliteInstaller,
             preferences: preferences,
             userContentController: sheetNavigation.userContentController,
-            descriptors: webExtensionDescriptors)
+            descriptors: webExtensionDescriptors,
+            isEphemeral: isEphemeral)
         self.removeDataStore = removeDataStore
         self.removeWebsiteDataTypes = removeWebsiteDataTypes
         self.initialProfile = initialProfile
@@ -99,19 +100,20 @@ final class ProfileManager {
             profileID: profileID,
             excludingWindowID: route.windowID)
         guard let presentedDeskID else { return nil }
-        let webExtensionHost = extensionCoordinator.host(
-            for: profileID,
-            websiteDataStore: profileWebsiteDataStore(for: profileID))
-        let webExtensionWindow = webExtensionHost?.window(for: route.windowID)
-
         let store = DenStore(
             storage: storage,
             presentedDeskID: presentedDeskID,
             websiteDataStore: profileWebsiteDataStore(for: profileID),
             sheetNavigation: sheetNavigation,
             preferences: preferences,
-            webExtensionHost: webExtensionHost,
-            webExtensionWindow: webExtensionWindow,
+            requestWebExtensionContext: { [weak self] in
+                guard let self,
+                    let host = self.extensionCoordinator.host(
+                        for: profileID,
+                        websiteDataStore: self.profileWebsiteDataStore(for: profileID))
+                else { return nil }
+                return (host, host.window(for: route.windowID))
+            },
             canPresentDesk: { [weak self] deskID in
                 self?.canPresent(deskID, profileID: profileID, excludingWindowID: route.windowID) ?? true
             },
