@@ -2,15 +2,15 @@
 status: accepted
 ---
 
-# Add Structured DOM Queries and State Waits to `den sheet`
+# Add Structured DOM Queries and State Waits to `den board web`
 
 ## Context and Problem
 
-Agents currently need `den sheet eval` to inspect DOM attributes, identify elements by accessible semantics, read form state, and wait for a page transition. Fixed duration waits do not express whether a Sheet is ready, hidden, or detached, and repeated full snapshots are expensive for large pages.
+Agents currently need `den board web eval` to inspect DOM attributes, identify elements by accessible semantics, read form state, and wait for a page transition. Fixed duration waits do not express whether a Sheet is ready, hidden, or detached, and repeated full snapshots are expensive for large pages.
 
 ## Decision
 
-Add `den sheet query`, compact control states in `snapshot`, semantic role/name matching for `click`, scoped `snapshot`, `get`, `is`, and state, text, load state, URL, or JavaScript condition matching for `wait`. `snapshot` defaults to interactive elements to keep routine observations small; `--full` opts into all eligible visible semantic elements, and `--within` scopes either form. DOM operations share document-scoped `@eN` references and visibility/name resolution in the Web Board's `WKWebView`. Keep `fill` as the value-writing operation, use `click` for checkbox and switch interaction, and accept element refs or selectors in `scroll` for scroll-into-view. Clicks dispatch synthetic pointer and mouse events followed by one element click activation; native trusted input is outside this interface. Remove numeric duration waits and keep `eval` as the escape hatch for unsupported page behavior.
+Add `den board web query`, compact control states in `snapshot`, semantic role/name matching for `click`, scoped `snapshot`, `get`, `is`, and state, text, load state, URL, or JavaScript condition matching for `wait`. Web Board command placement follows [ADR 0051](0051-structure-den-cli-by-board-kind.md). `snapshot` defaults to interactive elements to keep routine observations small; `--full` opts into all eligible visible semantic elements, and `--within` scopes either form. DOM operations share document-scoped `@eN` references and visibility/name resolution in the Web Board's `WKWebView`. Keep `fill` as the value-writing operation, use `click` for checkbox and switch interaction, and accept element refs or selectors in `scroll` for scroll-into-view. Clicks dispatch synthetic pointer and mouse events followed by one element click activation; native trusted input is outside this interface. Remove numeric duration waits and keep `eval` as the escape hatch for unsupported page behavior.
 
 ## Consequences
 

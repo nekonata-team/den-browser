@@ -22,18 +22,18 @@ Den Browser replaces the untyped `result` envelope with a typed, flat domain sch
    - On error, `ok` is `false`, `error` contains a descriptive diagnostic message, and the CLI exits with non-zero status.
    - On success, `ok` is `true`, and domain-specific properties are exposed directly at the top level without intermediate nesting wrappers (`data` or `result`).
 
-2. **Domain-Specific Payloads**:
+2. **Domain-Specific Payloads** (command paths follow [ADR 0051](0051-structure-den-cli-by-board-kind.md)):
    - **Board Creation (`board web new`, `board terminal new`)**: Returns `board_id` (`String`).
    - **Board Closure (`board close`)**: Returns `closed_board_id` (`String`) and confirmation `message`.
    - **Board Query (`board list`)**: Returns `boards` array of `DenBoardInfo` objects (`id`, `type`, `label`, optional `url`, optional `session_name`).
    - **Desk Query (`desk list`)**: Returns `desks` array of `DenDeskInfo` objects (`id`, `label`, `is_active`, `board_count`).
    - **Sheet Inspection**:
-     - `sheet url`: Returns `url` (`String`).
-     - `sheet text`: Returns `text` (`String`).
-     - `sheet eval`: Returns `value` (`String`).
-     - `sheet snapshot`: Returns `snapshot` (`String`), retaining compact accessibility tree formatting to conserve agent context tokens.
-     - `sheet screenshot`: Returns `screenshot_path` (`String`).
-   - **Sheet Actions (`click`, `fill`, `press`, `scroll`, `wait`, `open`, `reload`)**: Return `ok: true` alongside human-readable `message`.
+     - `board web url`: Returns `url` (`String`).
+     - `board web text`: Returns `text` (`String`).
+     - `board web eval`: Returns `value` (`String`).
+     - `board web snapshot`: Returns `snapshot` (`String`), retaining compact accessibility tree formatting to conserve agent context tokens.
+     - `board web screenshot`: Returns `screenshot_path` (`String`).
+   - **Sheet Actions (`click`, `fill`, `press`, `scroll`, `wait`, `navigate`, `reload`)**: Return `ok: true` alongside human-readable `message`.
 
 3. **Dual Human and Machine Ergonomics**:
    - **Interactive Terminal (TTY)**: Emits clean, readable standard output (e.g. raw UUID for `board web new`, multi-column table for `board list`, raw semantic tree for `snapshot`).
@@ -41,5 +41,5 @@ Den Browser replaces the untyped `result` envelope with a typed, flat domain sch
      ```bash
      BOARD_ID=$(den board web new https://example.com | jq -r .board_id)
      WEB_BOARDS=$(den board list | jq -r '.boards[] | select(.type == "web") | .id')
-     URL=$(den sheet url | jq -r .url)
+     URL=$(den board web url | jq -r .url)
      ```

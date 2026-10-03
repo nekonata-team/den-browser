@@ -38,8 +38,8 @@ adjacent Web Board:
 
 ```sh
 den board list
-den sheet snapshot -i
-den sheet text
+den board web snapshot -i
+den board web text
 ```
 
 ### Ghostty configuration

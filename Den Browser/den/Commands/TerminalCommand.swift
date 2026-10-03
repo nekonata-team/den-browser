@@ -1,18 +1,5 @@
 import ArgumentParser
 
-struct TerminalCommand: ParsableCommand {
-    static let configuration = CommandConfiguration(
-        commandName: "terminal",
-        abstract: "Inspect and control Terminal Sessions",
-        subcommands: [
-            TerminalTextCommand.self,
-            TerminalSendCommand.self,
-            TerminalRunCommand.self,
-            TerminalKillCommand.self,
-        ]
-    )
-}
-
 struct TerminalTextCommand: ParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "text",

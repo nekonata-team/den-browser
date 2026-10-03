@@ -97,7 +97,7 @@ final class DenIPCService {
 
     private func handleInspectionRead(request: DenIPCRequest) async -> DenIPCResponse {
         guard let boardID = request.boardID, UUID(uuidString: boardID) != nil else {
-            return .failure("Usage: den inspection read --board <inspection-board-id>")
+            return .failure("Usage: den board inspection read --board <inspection-board-id>")
         }
         let store: DenStore
         let inspection: BoardState
@@ -390,7 +390,7 @@ final class DenIPCService {
             switch command {
             case .open(let payload):
                 guard !payload.url.isEmpty else {
-                    return .failure("Usage: den sheet open <url>")
+                    return .failure("Usage: den board web navigate <url>")
                 }
                 guard
                     let resolved = BoardInputResolver.resolveOpenBoardInput(
@@ -423,7 +423,7 @@ final class DenIPCService {
 
             case .eval(let payload):
                 guard !payload.script.isEmpty else {
-                    return .failure("Usage: den sheet eval <javascript>")
+                    return .failure("Usage: den board web eval <javascript>")
                 }
                 let script = payload.script
                 let evalResult = try await runtime.webView.evaluateJavaScript(script)
@@ -459,7 +459,7 @@ final class DenIPCService {
 
             case .press(let payload):
                 guard !payload.key.isEmpty else {
-                    return .failure("Usage: den sheet press <key>")
+                    return .failure("Usage: den board web press <key>")
                 }
                 let key = payload.key
                 try await SheetInteraction.press(key: key, in: runtime.webView)
@@ -538,7 +538,7 @@ final class DenIPCService {
                 }
 
                 guard let target else {
-                    return .failure("Usage: den sheet wait <selector|ref> [--state <state>]")
+                    return .failure("Usage: den board web wait <selector|ref> [--state <state>]")
                 }
                 let stateValue = payload.state?.lowercased() ?? "attached"
                 guard let state = SheetWaitState(rawValue: stateValue) else {
@@ -577,7 +577,7 @@ final class DenIPCService {
 
             case .query(let payload):
                 guard !payload.selector.isEmpty else {
-                    return .failure("Usage: den sheet query <selector>")
+                    return .failure("Usage: den board web query <selector>")
                 }
                 let fields = try SheetInteraction.queryFields(
                     from: payload.fields
@@ -599,7 +599,7 @@ final class DenIPCService {
                 let newBoard = payload.newBoard
                 let shouldFocus = payload.focus
                 if target == nil && (role == nil || name == nil) {
-                    return .failure("Usage: den sheet click <@ref|selector> or --role <role> --name <name>")
+                    return .failure("Usage: den board web click <@ref|selector> or --role <role> --name <name>")
                 }
                 if target != nil && (role != nil || name != nil) {
                     return .failure("Provide either a selector/ref or --role and --name, not both")
@@ -641,7 +641,7 @@ final class DenIPCService {
 
             case .dblclick(let payload):
                 guard !payload.target.isEmpty else {
-                    return .failure("Usage: den sheet dblclick <@ref|selector>")
+                    return .failure("Usage: den board web dblclick <@ref|selector>")
                 }
                 let target = payload.target
                 let rect = try await SheetInteraction.dblclick(target: target, in: runtime.webView)
@@ -650,7 +650,7 @@ final class DenIPCService {
 
             case .focus(let payload):
                 guard !payload.target.isEmpty else {
-                    return .failure("Usage: den sheet focus <@ref|selector>")
+                    return .failure("Usage: den board web focus <@ref|selector>")
                 }
                 let target = payload.target
                 let rect = try await SheetInteraction.focus(target: target, in: runtime.webView)
@@ -659,7 +659,7 @@ final class DenIPCService {
 
             case .fill(let payload):
                 guard !payload.target.isEmpty else {
-                    return .failure("Usage: den sheet fill <@ref|selector> <value>")
+                    return .failure("Usage: den board web fill <@ref|selector> <value>")
                 }
                 let target = payload.target
                 let value = payload.value
@@ -669,7 +669,7 @@ final class DenIPCService {
 
             case .type(let payload):
                 guard !payload.text.isEmpty else {
-                    return .failure("Usage: den sheet type [<@ref|selector>] <text>")
+                    return .failure("Usage: den board web type [<@ref|selector>] <text>")
                 }
                 let target = payload.target
                 let text = payload.text
@@ -681,7 +681,7 @@ final class DenIPCService {
             case .drag(let payload):
                 guard !payload.source.isEmpty else {
                     return .failure(
-                        "Usage: den sheet drag <source> [<target>] [--dx <dx>] [--dy <dy>] [--steps <steps>]")
+                        "Usage: den board web drag <source> [<target>] [--dx <dx>] [--dy <dy>] [--steps <steps>]")
                 }
                 let source = payload.source
                 let target = payload.destination
@@ -779,7 +779,7 @@ final class DenIPCService {
                 switch action {
                 case .move(let payload):
                     guard let coordX = payload.coordX, let coordY = payload.coordY else {
-                        return .failure("Usage: den sheet mouse move <x> <y>")
+                        return .failure("Usage: den board web mouse move <x> <y>")
                     }
                     try await SheetInteraction.mouseMove(coordX: coordX, coordY: coordY, in: runtime.webView)
                     return .success(message: "Mouse moved to \(coordX), \(coordY)")
@@ -797,7 +797,7 @@ final class DenIPCService {
                 case .click(let payload):
                     guard let coordX = payload.coordX, let coordY = payload.coordY else {
                         return .failure(
-                            "Usage: den sheet mouse click <x> <y> [--button <left|right|middle>] [--count <n>]")
+                            "Usage: den board web mouse click <x> <y> [--button <left|right|middle>] [--count <n>]")
                     }
                     let button = buttonCode(payload.button)
                     let count = payload.count ?? 1
@@ -813,7 +813,7 @@ final class DenIPCService {
 
                 case .wheel(let payload):
                     guard let deltaY = payload.deltaY else {
-                        return .failure("Usage: den sheet mouse wheel <dy> [--dx <dx>]")
+                        return .failure("Usage: den board web mouse wheel <dy> [--dx <dx>]")
                     }
                     let deltaX = payload.deltaX ?? 0
                     try await SheetInteraction.mouseWheel(deltaX: deltaX, deltaY: deltaY, in: runtime.webView)
@@ -832,7 +832,7 @@ final class DenIPCService {
         includeSnapshot: Bool
     ) async -> DenIPCResponse {
         guard !payload.steps.isEmpty else {
-            return .failure("Usage: den sheet interact <script-or-file>")
+            return .failure("Usage: den board web interact <script-or-file>")
         }
         guard !payload.full || includeSnapshot else {
             return .failure("--full requires --snapshot")
@@ -1242,7 +1242,7 @@ final class DenIPCService {
 
         case .send(let rawText):
             guard !rawText.isEmpty else {
-                return .failure("Usage: den terminal send <text> [--board <id>]")
+                return .failure("Usage: den board terminal send <text> [--board <id>]")
             }
             let text =
                 rawText
@@ -1255,7 +1255,7 @@ final class DenIPCService {
 
         case .run(let command):
             guard !command.isEmpty else {
-                return .failure("Usage: den terminal run <command> [--board <id>]")
+                return .failure("Usage: den board terminal run <command> [--board <id>]")
             }
             let runtime = store.terminalRuntime(for: board)
             runtime.runCommand(command)

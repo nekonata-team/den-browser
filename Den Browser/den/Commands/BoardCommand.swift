@@ -26,8 +26,8 @@ struct BoardCommand: ParsableCommand {
 struct BoardInspectionCommand: ParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "inspection",
-        abstract: "Manage Inspection Boards",
-        subcommands: [BoardInspectionNewCommand.self])
+        abstract: "Create Inspection Boards and read their selected elements",
+        subcommands: [BoardInspectionNewCommand.self, BoardInspectionReadCommand.self])
 }
 
 struct BoardInspectionNewCommand: ParsableCommand {
@@ -102,9 +102,32 @@ struct BoardFocusedOptions: ParsableArguments {
 struct BoardWebCommand: ParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "web",
-        abstract: "Manage Web Boards",
+        abstract: "Create Web Boards and control their Current Sheets",
         subcommands: [
-            BoardWebNewCommand.self
+            BoardWebNewCommand.self,
+            SheetNavigateCommand.self,
+            SheetURLCommand.self,
+            SheetReloadCommand.self,
+            SheetBackCommand.self,
+            SheetForwardCommand.self,
+            SheetPressCommand.self,
+            SheetScrollCommand.self,
+            SheetWaitCommand.self,
+            SheetEvalCommand.self,
+            SheetTextCommand.self,
+            SheetSnapshotCommand.self,
+            SheetQueryCommand.self,
+            SheetGetCommand.self,
+            SheetIsCommand.self,
+            SheetClickCommand.self,
+            SheetDblclickCommand.self,
+            SheetFocusCommand.self,
+            SheetFillCommand.self,
+            SheetTypeCommand.self,
+            SheetDragCommand.self,
+            SheetMouseCommand.self,
+            SheetInteractCommand.self,
+            SheetScreenshotCommand.self,
         ]
     )
 }
@@ -135,9 +158,13 @@ struct BoardWebNewCommand: ParsableCommand {
 struct BoardTerminalCommand: ParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "terminal",
-        abstract: "Manage Terminal Boards",
+        abstract: "Create Terminal Boards and control their Terminal Sessions",
         subcommands: [
-            BoardTerminalNewCommand.self
+            BoardTerminalNewCommand.self,
+            TerminalTextCommand.self,
+            TerminalSendCommand.self,
+            TerminalRunCommand.self,
+            TerminalKillCommand.self,
         ]
     )
 }

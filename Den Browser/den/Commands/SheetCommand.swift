@@ -1,41 +1,9 @@
 import ArgumentParser
 import Foundation
 
-struct SheetCommand: ParsableCommand {
+struct SheetNavigateCommand: ParsableCommand {
     static let configuration = CommandConfiguration(
-        commandName: "sheet",
-        abstract: "Inspect and control Sheets in Web Boards",
-        subcommands: [
-            SheetOpenCommand.self,
-            SheetURLCommand.self,
-            SheetReloadCommand.self,
-            SheetBackCommand.self,
-            SheetForwardCommand.self,
-            SheetPressCommand.self,
-            SheetScrollCommand.self,
-            SheetWaitCommand.self,
-            SheetEvalCommand.self,
-            SheetTextCommand.self,
-            SheetSnapshotCommand.self,
-            SheetQueryCommand.self,
-            SheetGetCommand.self,
-            SheetIsCommand.self,
-            SheetClickCommand.self,
-            SheetDblclickCommand.self,
-            SheetFocusCommand.self,
-            SheetFillCommand.self,
-            SheetTypeCommand.self,
-            SheetDragCommand.self,
-            SheetMouseCommand.self,
-            SheetInteractCommand.self,
-            SheetScreenshotCommand.self,
-        ]
-    )
-}
-
-struct SheetOpenCommand: ParsableCommand {
-    static let configuration = CommandConfiguration(
-        commandName: "open",
+        commandName: "navigate",
         abstract: "Navigate Current Sheet in the target Web Board to a URL or search query")
 
     @OptionGroup var target: SheetTargetOptions
@@ -451,7 +419,7 @@ struct SheetInteractCommand: ParsableCommand {
         abstract: "Run multiple Sheet actions from a script, file, or stdin",
         discussion: """
             Executes a series of Sheet actions line-by-line. Add --snapshot to include the final semantic snapshot.
-            Each line or semicolon-separated statement uses the same syntax as 'den sheet <subcommand>'.
+            Each line or semicolon-separated statement uses the same syntax as 'den board web <subcommand>'.
 
             Available actions:
               click <ref|selector>              Click an element (e.g. click @e1)
@@ -465,21 +433,21 @@ struct SheetInteractCommand: ParsableCommand {
               scroll [direction|ref|selector]   Scroll the page or scroll an element into view
               wait <ref|--load|--url|--text>    Wait for DOM state, load state, or URL
               screenshot [output-path]          Capture a PNG screenshot
-              open <url>                        Navigate to a URL
+              navigate <url>                   Navigate to a URL
               reload                            Reload current Sheet
               back / forward                    Navigate history
               eval <javascript>                 Evaluate JavaScript code
 
             Examples:
-              den sheet interact "click @e1; fill @e2 Hello; press Enter"
-              den sheet interact << 'EOF'
+              den board web interact "click @e1; fill @e2 Hello; press Enter"
+              den board web interact << 'EOF'
               click @e1
               fill @e2 "query text"
               press Enter
               wait --load networkidle
               screenshot /tmp/result.png
               EOF
-              den sheet interact path/to/script.den
+              den board web interact path/to/script.den
             """)
 
     @OptionGroup var target: SheetTargetOptions
@@ -653,20 +621,20 @@ private enum DenSheetScriptParser {
             try requireArguments(0...0, "forward does not accept arguments")
             return .forward
 
-        case "open":
-            try requireArguments(1...1, "Usage: den sheet open <url>")
+        case "navigate":
+            try requireArguments(1...1, "Usage: den board web navigate <url>")
             return .open(DenSheetOpenPayload(url: arguments[0]))
 
         case "eval":
-            guard !arguments.isEmpty else { throw usage("Usage: den sheet eval <javascript>") }
+            guard !arguments.isEmpty else { throw usage("Usage: den board web eval <javascript>") }
             return .eval(DenSheetEvalPayload(script: arguments.joined(separator: " ")))
 
         case "press":
-            try requireArguments(1...1, "Usage: den sheet press <key>")
+            try requireArguments(1...1, "Usage: den board web press <key>")
             return .press(DenSheetPressPayload(key: arguments[0]))
 
         case "scroll":
-            try requireArguments(0...1, "Usage: den sheet scroll [<direction|amount|target>]")
+            try requireArguments(0...1, "Usage: den board web scroll [<direction|amount|target>]")
             return .scroll(DenSheetScrollPayload(directionOrTarget: arguments.first))
 
         case "wait":
@@ -685,7 +653,9 @@ private enum DenSheetScriptParser {
             guard modes == 1 else {
                 throw usage("Provide exactly one of a selector/ref, --url, --text, --load, or --fn")
             }
-            guard parsed.positionals.count <= 1 else { throw usage("Usage: den sheet wait <selector|ref> [options]") }
+            guard parsed.positionals.count <= 1 else {
+                throw usage("Usage: den board web wait <selector|ref> [options]")
+            }
             if parsed.positionals.isEmpty, parsed.values["--state"] != nil {
                 throw usage("--state requires a selector or element reference")
             }
@@ -718,13 +688,13 @@ private enum DenSheetScriptParser {
             )
 
         case "screenshot":
-            try requireArguments(0...1, "Usage: den sheet screenshot [<output-path>]")
+            try requireArguments(0...1, "Usage: den board web screenshot [<output-path>]")
             return .screenshot(DenSheetScreenshotPayload(outputPath: arguments.first))
 
         case "snapshot":
             let parsed = try parseOptions(arguments, valued: ["--within"], flags: ["--full", "--interactive", "-i"])
             guard parsed.positionals.isEmpty else {
-                throw usage("Usage: den sheet snapshot [--interactive|--full] [--within <selector|ref>]")
+                throw usage("Usage: den board web snapshot [--interactive|--full] [--within <selector|ref>]")
             }
             let interactive = parsed.flags.contains("--interactive") || parsed.flags.contains("-i")
             guard !(parsed.flags.contains("--full") && interactive) else {
@@ -740,7 +710,7 @@ private enum DenSheetScriptParser {
         case "query":
             let parsed = try parseOptions(arguments, valued: ["--fields"], flags: ["--visible", "--all"])
             guard parsed.positionals.count == 1, !parsed.positionals[0].isEmpty else {
-                throw usage("Usage: den sheet query <selector>")
+                throw usage("Usage: den board web query <selector>")
             }
             return .query(
                 DenSheetQueryPayload(
@@ -758,13 +728,13 @@ private enum DenSheetScriptParser {
                 flags: ["--exact", "--new-board", "--focus"]
             )
             guard parsed.positionals.count <= 1 else {
-                throw usage("Usage: den sheet click <@ref|selector> or --role <role> --name <name>")
+                throw usage("Usage: den board web click <@ref|selector> or --role <role> --name <name>")
             }
             let target = parsed.positionals.first
             let role = parsed.values["--role"]
             let name = parsed.values["--name"]
             guard target != nil || (role != nil && name != nil) else {
-                throw usage("Usage: den sheet click <@ref|selector> or --role <role> --name <name>")
+                throw usage("Usage: den board web click <@ref|selector> or --role <role> --name <name>")
             }
             guard target == nil || (role == nil && name == nil) else {
                 throw usage("Provide either a selector/ref or --role and --name, not both")
@@ -781,7 +751,7 @@ private enum DenSheetScriptParser {
             )
 
         case "dblclick", "focus":
-            try requireArguments(1...1, "Usage: den sheet \(commandName) <@ref|selector>")
+            try requireArguments(1...1, "Usage: den board web \(commandName) <@ref|selector>")
             let payload = DenSheetElementTargetPayload(target: arguments[0])
             if commandName == "dblclick" {
                 return .dblclick(payload)
@@ -789,13 +759,13 @@ private enum DenSheetScriptParser {
             return .focus(payload)
 
         case "fill":
-            guard arguments.count >= 2 else { throw usage("Usage: den sheet fill <@ref|selector> <value>") }
+            guard arguments.count >= 2 else { throw usage("Usage: den board web fill <@ref|selector> <value>") }
             return .fill(
                 DenSheetFillPayload(target: arguments[0], value: arguments.dropFirst().joined(separator: " "))
             )
 
         case "type":
-            guard !arguments.isEmpty else { throw usage("Usage: den sheet type [<@ref|selector>] <text>") }
+            guard !arguments.isEmpty else { throw usage("Usage: den board web type [<@ref|selector>] <text>") }
             let payload =
                 arguments.count == 1
                 ? DenSheetTypePayload(target: nil, text: arguments[0])
@@ -805,7 +775,7 @@ private enum DenSheetScriptParser {
         case "drag":
             let parsed = try parseOptions(arguments, valued: ["--dx", "--dy", "--steps"], flags: [])
             guard parsed.positionals.count >= 1, parsed.positionals.count <= 2 else {
-                throw usage("Usage: den sheet drag <source> [<target>] [--dx <dx>] [--dy <dy>] [--steps <steps>]")
+                throw usage("Usage: den board web drag <source> [<target>] [--dx <dx>] [--dy <dy>] [--steps <steps>]")
             }
             let deltaX = try doubleValue("--dx", from: parsed.values)
             let deltaY = try doubleValue("--dy", from: parsed.values)
@@ -831,7 +801,7 @@ private enum DenSheetScriptParser {
 
         case "mouse":
             guard let action = arguments.first else {
-                throw usage("Usage: den sheet mouse <move|down|up|click|wheel> ...")
+                throw usage("Usage: den board web mouse <move|down|up|click|wheel> ...")
             }
             let actionArguments = Array(arguments.dropFirst())
             switch action {
@@ -839,21 +809,21 @@ private enum DenSheetScriptParser {
                 guard actionArguments.count == 2,
                     let coordinateX = Double(actionArguments[0]),
                     let coordinateY = Double(actionArguments[1])
-                else { throw usage("Usage: den sheet mouse move <x> <y>") }
+                else { throw usage("Usage: den board web mouse move <x> <y>") }
                 return .mouse(.move(DenSheetMousePayload(coordX: coordinateX, coordY: coordinateY)))
             case "down":
                 guard actionArguments.count <= 1 else {
-                    throw usage("Usage: den sheet mouse down [<button>]")
+                    throw usage("Usage: den board web mouse down [<button>]")
                 }
                 return .mouse(.down(DenSheetMousePayload(button: actionArguments.first)))
             case "up":
                 guard actionArguments.count <= 1 else {
-                    throw usage("Usage: den sheet mouse up [<button>]")
+                    throw usage("Usage: den board web mouse up [<button>]")
                 }
                 return .mouse(.release(DenSheetMousePayload(button: actionArguments.first)))
             case "click":
                 guard actionArguments.count >= 2 else {
-                    throw usage("Usage: den sheet mouse click <x> <y> [--button <left|right|middle>] [--count <n>]")
+                    throw usage("Usage: den board web mouse click <x> <y> [--button <left|right|middle>] [--count <n>]")
                 }
                 let clickArguments = Array(actionArguments.dropFirst(2))
                 let parsed = try parseOptions(
@@ -862,10 +832,10 @@ private enum DenSheetScriptParser {
                     flags: []
                 )
                 guard parsed.positionals.isEmpty else {
-                    throw usage("Usage: den sheet mouse click <x> <y> [--button <left|right|middle>] [--count <n>]")
+                    throw usage("Usage: den board web mouse click <x> <y> [--button <left|right|middle>] [--count <n>]")
                 }
                 guard let coordinateX = Double(actionArguments[0]), let coordinateY = Double(actionArguments[1]) else {
-                    throw usage("Usage: den sheet mouse click <x> <y> [--button <left|right|middle>] [--count <n>]")
+                    throw usage("Usage: den board web mouse click <x> <y> [--button <left|right|middle>] [--count <n>]")
                 }
                 let button = parsed.values["--button"]
                 let count = try parsed.values["--count"].map {
@@ -883,15 +853,15 @@ private enum DenSheetScriptParser {
                 )
             case "wheel":
                 guard actionArguments.count >= 1 else {
-                    throw usage("Usage: den sheet mouse wheel <dy> [--dx <dx>]")
+                    throw usage("Usage: den board web mouse wheel <dy> [--dx <dx>]")
                 }
                 let wheelArguments = Array(actionArguments.dropFirst())
                 let parsed = try parseOptions(wheelArguments, valued: ["--dx"], flags: [])
                 guard parsed.positionals.isEmpty else {
-                    throw usage("Usage: den sheet mouse wheel <dy> [--dx <dx>]")
+                    throw usage("Usage: den board web mouse wheel <dy> [--dx <dx>]")
                 }
                 guard let deltaY = Double(actionArguments[0]) else {
-                    throw usage("Usage: den sheet mouse wheel <dy> [--dx <dx>]")
+                    throw usage("Usage: den board web mouse wheel <dy> [--dx <dx>]")
                 }
                 return .mouse(
                     .wheel(
@@ -906,27 +876,27 @@ private enum DenSheetScriptParser {
 
         case "get":
             guard let kind = arguments.first else {
-                throw usage("Usage: den sheet get <text|value|attr|count|box> ...")
+                throw usage("Usage: den board web get <text|value|attr|count|box> ...")
             }
             let values = Array(arguments.dropFirst())
             do {
                 switch kind {
                 case "text":
-                    try requireArguments(2...2, "Usage: den sheet get text <target>")
+                    try requireArguments(2...2, "Usage: den board web get text <target>")
                     return .get(.text(try DenSheetGetTargetPayload(target: values[0])))
                 case "value":
-                    try requireArguments(2...2, "Usage: den sheet get value <target>")
+                    try requireArguments(2...2, "Usage: den board web get value <target>")
                     return .get(.value(try DenSheetGetTargetPayload(target: values[0])))
                 case "attr":
-                    try requireArguments(3...3, "Usage: den sheet get attr <target> <attribute>")
+                    try requireArguments(3...3, "Usage: den board web get attr <target> <attribute>")
                     return .get(
                         .attribute(try DenSheetGetAttributePayload(target: values[0], attribute: values[1]))
                     )
                 case "count":
-                    try requireArguments(2...2, "Usage: den sheet get count <selector>")
+                    try requireArguments(2...2, "Usage: den board web get count <selector>")
                     return .get(.count(try DenSheetGetTargetPayload(target: values[0])))
                 case "box":
-                    try requireArguments(2...2, "Usage: den sheet get box <target>")
+                    try requireArguments(2...2, "Usage: den board web get box <target>")
                     return .get(.box(try DenSheetGetTargetPayload(target: values[0])))
                 default:
                     throw usage("Unknown get kind: \(kind)")
@@ -939,7 +909,7 @@ private enum DenSheetScriptParser {
 
         case "is":
             guard arguments.count == 2 else {
-                throw usage("Usage: den sheet is <visible|enabled|checked> <target>")
+                throw usage("Usage: den board web is <visible|enabled|checked> <target>")
             }
             do {
                 let payload = try DenSheetStatePayload(target: arguments[1])

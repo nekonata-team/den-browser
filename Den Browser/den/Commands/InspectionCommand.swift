@@ -1,14 +1,7 @@
 import ArgumentParser
 import Foundation
 
-struct InspectionCommand: ParsableCommand {
-    static let configuration = CommandConfiguration(
-        commandName: "inspection",
-        abstract: "Read an Inspection Board",
-        subcommands: [InspectionReadCommand.self])
-}
-
-struct InspectionReadCommand: ParsableCommand {
+struct BoardInspectionReadCommand: ParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "read",
         abstract: "Read the selected element and recent page events")

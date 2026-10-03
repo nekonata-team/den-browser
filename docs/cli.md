@@ -8,7 +8,7 @@ It enables AI coding agents (such as Codex and Claude Code) and human developers
 
 ## 1. Design Philosophy: `den <domain> <action>`
 
-Den CLI follows a strict resource-oriented pattern:
+Den CLI groups resource operations by the kind of Board they act on:
 
 ```text
 den <domain> <action> [arguments...] [options...]
@@ -16,20 +16,19 @@ den <domain> <action> [arguments...] [options...]
 
 `den health` is an application-level readiness check. It does not target a Desk or Board.
 
-Each `<domain>` corresponds directly to a core domain entity defined in [CONTEXT.md](../CONTEXT.md) and reflects the directory structure in `Den Browser/Features/Den/`:
+The command hierarchy follows the product model while keeping kind-specific operations under their Board:
 
 ```text
-Den (Application Workspace) ─── den
+Den (Personal Environment for a Profile) ─── den
  ├── Profile (Isolated Browser Profile) ─── den profile <action>
- ├── Drawer (Temporary Web Material) ─── den drawer <action>
- ├── Desk (Virtual Workspace) ─── den desk <action>
+ ├── Drawer (Unplaced Web Material) ─── den drawer <action>
+ ├── Desk (Work Context) ─── den desk <action>
       └── Board (Work Surface) ─── den board <action>
            ├── Web Board ─── den board web <action>
-           │    └── Sheet (Web Screen) ─── den sheet <action>
+           │    └── Sheet Stack
            ├── Inspection Board ─── den board inspection <action>
-           │    └── Inspection ─── den inspection <action>
            └── Terminal Board ─── den board terminal <action>
-                └── Terminal Session ─── den terminal <action>
+                └── one Sheet backed by a Terminal Session
 ```
 
 ---
@@ -57,13 +56,13 @@ When a command is received with `DEN_BOARD_ID`:
 
 Board creation commands fall back to the active Desk when the ambient Board ID no longer exists, so a persistent Terminal session can still open a new Board after its original Board is removed.
 
-For `sheet` commands, target Web Board resolution follows this priority:
+For `den board web` operations on an existing Board, target Board resolution follows this priority:
 1. **Explicit Board ID**: Supplied via `--board <id>`. If specified, the target must be a valid UUID for an existing Board; invalid or non-existent IDs fail immediately (`exit 1`) with an error and never fall back to ambient candidates.
 2. **Adjacent Web Board**: Resolved relative to `callerBoardID` on its current Desk.
 3. **Focused Board**: The currently focused Board on the active Desk, if it is a Web Board.
 4. **First Web Board**: The first Web Board found on the active Desk.
 
-For `terminal` commands, the caller's Terminal Board is preferred; otherwise the nearest Terminal Board is resolved relative to the caller on the current Desk.
+For `den board terminal` operations on an existing Board, the caller's Terminal Board is preferred; otherwise the nearest Terminal Board is resolved relative to the caller on the current Desk.
 
 ### Global Options
 - `--version`: Print the bundled Den Browser version and exit.
@@ -72,17 +71,12 @@ For `terminal` commands, the caller's Terminal Board is preferred; otherwise the
 - `--profile <uuid>`: Target specific Profile UUID (defaults to `$DEN_PROFILE` or ambient Profile). Fails immediately (`exit 1`) if invalid, not found, or has no active window.
 
 ### Board Targeting
-- `--board <id>`: Explicitly target a specific Board by its UUID. Available on `den sheet`, `den terminal`, and `den board close`; fails immediately if not found or invalid.
-- `den board close --board <id>` accepts any Board kind, including Inspection and Tutorial Boards. Sheet and Terminal commands require their corresponding Board kind.
-- Inspection commands require an explicit Board ID. `den inspection read --board <id>` requires an Inspection Board; it does not infer one from ambient focus or choose another Board.
+- `--board <id>`: Explicitly target a specific Board by its UUID. Available on existing-Board operations under `den board web`, `den board terminal`, and `den board inspection read`, plus `den board close`; fails immediately if not found or invalid. Creation commands (`new`) do not accept `--board`.
+- `den board close --board <id>` accepts any Board kind, including Inspection and Tutorial Boards. Web and Terminal Board commands require their corresponding Board kind.
+- Inspection commands require an explicit Board ID. `den board inspection read --board <id>` requires an Inspection Board; it does not infer one from ambient focus or choose another Board.
 
 ### Direct IPC Requests
 The CLI communicates with Den Browser through a newline-delimited JSON request on the Unix domain socket. A request contains the typed `command` and optional target IDs; command values and their associated payloads are encoded together.
-
-- Value-bearing commands such as `sheet click`, `sheet wait`, `sheet get`, and `terminal send` carry positional values and flags in the typed command; the server does not re-parse command-line strings.
-- Missing, unknown, or invalid command values fail before a side effect.
-- Direct socket clients must follow the current typed command schema; cross-version JSON compatibility is not guaranteed.
-- `sheet interact` sends one `sheet.interact` command containing typed steps. The Web Board is resolved once when the batch starts, so focus, Desk, or ambient-target changes while a step awaits do not retarget later steps. If that Board or its Profile disappears, the command fails; `completed_actions` and any returned `snapshot` refer to the fixed Board. Each step retains its source line and text for failure reporting, plus the typed command used for execution.
 
 ---
 
@@ -102,44 +96,8 @@ On a TTY, it prints `healthy`. With `--json` or when piped, it returns:
 {"ok":true}
 ```
 
-### 3.2 `den sheet` (Web Board Sheet Operations)
-Commands operating on the Current Sheet of the resolved Web Board.
+### 3.2 `den board` (Board Surfaces & Layout)
 
-These commands operate on Web Boards only. Terminal Board interaction uses the `den board terminal` command family.
-
-Every Sheet command accepts `--snapshot` to include a compact semantic snapshot after a successful command. JSON retains the command's usual result fields and adds `snapshot`; TTY output prints the usual result followed by the snapshot. The snapshot comes from the same resolved Web Board, even if focus changes while the command awaits. It does not wait for subsequent page activity: use a condition such as `den sheet wait --text "Saved" --snapshot` when the observation depends on asynchronous completion. If the command succeeds but snapshot capture fails, the response reports that distinction and exits with an error.
-
-`sheet snapshot` already returns a snapshot, so `--snapshot` does not capture twice. Like other Sheet commands, `sheet interact` captures a final snapshot only when `--snapshot` is specified. `interact --full` requires `--snapshot`; `--no-snapshot` has been removed. On an action failure, `interact --snapshot` attempts a best-effort snapshot alongside failure metadata.
-
-Compact snapshots retain visible semantic ancestors of interactive elements, such as menus, dialogs, navigation, and regions, so indentation identifies which area owns a control. Menus, dialogs, and listboxes also include a short contextual text line when available, without treating all descendant text as the area's name. Text controls include their current value (including an empty value), except password inputs; names, values, and contextual text are limited to 80 characters. `--full` retains these observations and includes other eligible visible semantic elements.
-
-| Command | Arguments | Description | Example |
-|---|---|---|---|
-| `den sheet open` | `<url>` | Navigate Current Sheet in the target Web Board to a supported URL, bare hostname, or search query. Invalid or unsupported URL schemes fail. | `den sheet open https://example.com` |
-| `den sheet url` | None | Print Current Sheet URL of the target Web Board. | `den sheet url` |
-| `den sheet reload` | None | Reload Current Sheet in the target Web Board. | `den sheet reload` |
-| `den sheet eval` | `<script>` | Evaluate JavaScript and return the result. | `den sheet eval document.title` |
-| `den sheet text` | None | Extract visible text content (`innerText`) from the sheet. | `den sheet text` |
-| `den sheet back` | None | Navigate back in browsing history. | `den sheet back` |
-| `den sheet forward` | None | Navigate forward in browsing history. | `den sheet forward` |
-| `den sheet press` | `<key>` | Dispatch key events (`Enter`, `Escape`, `Tab`, arrows) to the active element. | `den sheet press Enter` |
-| `den sheet scroll` | `[<direction-or-target>]` | Scroll the page (`down`, `up`, `top`, `bottom`, or pixel amount), or scroll a ref/selector into view. Defaults to `down`. | `den sheet scroll @e2` |
-| `den sheet wait` | `[<target>] [--state <state>] [--url <glob>] [--text <text>] [--load <state>] [--fn <expression>] [--timeout <seconds>]` | Wait for one selector/ref state, URL glob, visible page text, load state (`domcontentloaded`, `load`, or `networkidle`), or JavaScript condition. Matching selectors use any visible element for `visible`, and succeed when all matches are hidden or absent for `hidden` and `detached`. The default timeout is 10 seconds. | `den sheet wait --text "Saved"` |
-| `den sheet snapshot` | `[--full] [-i] [--within <target>]` | Extract the compact interactive semantic tree by default with short references (`@e1`, `@e2`) and control states such as `checked`, `unchecked`, `disabled`, `selected`, and `expanded`. `--full` includes all eligible visible semantic elements; `-i`/`--interactive` selects the default compact form explicitly; `--within` scopes either form to one selector or ref. | `den sheet snapshot --within '[role=dialog]'` |
-| `den sheet query` | `<selector> [--visible] [--all] [--fields <list>]` | Return matching elements as structured JSON. Every result includes `ref` and `visible`; the default fields are `tag,role,name,text`. Use `value`, `checked`, `disabled`, `selected`, `expanded`, `class`, or `attr:<name>` for additional fields. `--visible` filters matches and `--all` returns every match instead of the first. | `den sheet query "tr.zA" --visible --all --fields text,attr:data-email,class --json` |
-| `den sheet get` | `<text\|value\|attr\|count\|box> ...` | Read text, a form value, an attribute, the number of elements matching a selector, or bounding box (`x, y, width, height`). | `den sheet get box @e1 --json` |
-| `den sheet is` | `<visible\|enabled\|checked> <target>` | Check one current boolean state for an element. | `den sheet is checked @e3 --json` |
-| `den sheet click` | `[<target>] [--role <role> --name <name>] [--exact] [--new-board] [--focus]` | Click by ref/selector or by an accessible role and name. Semantic matching requires both `--role` and `--name`; `--exact` requires an exact name match. Use `--new-board` to open a clicked link in a new Web Board, returning `board_id`; add `--focus` to focus the new Board. | `den sheet click @e1 --new-board --json` |
-| `den sheet dblclick` | `<target>` | Double-click an element by reference or selector. | `den sheet dblclick @e1 --json` |
-| `den sheet focus` | `<target>` | Focus an element by reference or selector. | `den sheet focus @e1 --json` |
-| `den sheet fill` | `<target> <value>` | Fill an input, textarea, or editable element with text by reference or selector. An empty value is valid. | `den sheet fill @e2 "search query"` |
-| `den sheet type` | `[<target>] <text>` | Type text into an element by reference/selector or into the currently focused element (supports rich editors, Canvas, and contenteditable). | `den sheet type @e2 "search query"` |
-| `den sheet drag` | `<source> [<target>] [--dx <dx>] [--dy <dy>] [--steps <steps>]` | Drag an element to another element or relative pixel offset (`--dx`, `--dy`). | `den sheet drag @e1 --dx 100 --dy 50` |
-| `den sheet mouse` | `<move\|down\|up\|click\|wheel> ...` | Dispatch low-level pointer events (`move <x> <y>`, `down [btn]`, `up [btn]`, `click <x> <y> [--button <btn>] [--count <n>]`, `wheel <dy> [--dx <dx>]`). | `den sheet mouse click 400 300 --json` |
-| `den sheet interact` | `[<script-or-file>] [--snapshot [--full]]` | Execute multiple sheet actions in order from a script, script file, or stdin (`-`). Actions follow standard `den sheet` subcommand syntax (e.g. `click`, `dblclick`, `focus`, `fill`, `type`, `drag`, `mouse`, `wait`); execution stops at the first failure. JSON returns status and action metadata. Add `--snapshot` for a final semantic snapshot, and `--full` for the complete semantic tree. | `den sheet interact "click @e1; fill @e2 'query'" --snapshot` |
-| `den sheet screenshot` | `[<path>]` | Save a PNG screenshot of the web sheet (defaults to temporary directory). | `den sheet screenshot /tmp/screen.png` |
-
-### 3.3 `den board` (Board Surfaces & Layout)
 Commands operating on Boards within the active Desk.
 
 | Command | Arguments | Description | Example |
@@ -148,40 +106,75 @@ Commands operating on Boards within the active Desk.
 | `den board focused` | `[-l]` | Show the currently focused Board on the active Desk. Use `-l` to include full Board ID in human-readable output. | `den board focused -l` |
 | `den board close` | `[--board <id>]` | Close the specified Board or the target Web Board. Explicit IDs fail (`exit 1`) if invalid or not found. | `den board close --board 4F72344C-...` |
 
-### 3.4 `den board web` (Web Boards)
+### 3.3 `den board web` (Web Board and Sheet Operations)
+Commands operating on the Current Sheet of the resolved Web Board.
+
+These commands operate on the Sheet Stack of a Web Board. Terminal Board interaction uses the `den board terminal` command family.
+
+Every existing-Board Sheet operation accepts `--snapshot` to include a compact semantic snapshot after a successful operation. JSON retains the usual result fields and adds `snapshot`; TTY output prints the usual result followed by the snapshot. The snapshot comes from the same resolved Web Board, even if focus changes while the operation awaits. It does not wait for subsequent page activity: use a condition such as `den board web wait --text "Saved" --snapshot` when the observation depends on asynchronous completion. If the operation succeeds but snapshot capture fails, the response reports that distinction and exits with an error.
+
+`den board web snapshot` already returns a snapshot, so `--snapshot` does not capture twice. Like other Sheet operations, `den board web interact` captures a final snapshot only when `--snapshot` is specified. `interact --full` requires `--snapshot`; `--no-snapshot` has been removed. On an action failure, `interact --snapshot` attempts a best-effort snapshot alongside failure metadata.
+
+Compact snapshots retain visible semantic ancestors of interactive elements, such as menus, dialogs, navigation, and regions, so indentation identifies which area owns a control. Menus, dialogs, and listboxes also include a short contextual text line when available, without treating all descendant text as the area's name. Text controls include their current value (including an empty value), except password inputs; names, values, and contextual text are limited to 80 characters. `--full` retains these observations and includes other eligible visible semantic elements.
 
 | Command | Arguments | Description | Example |
 |---|---|---|---|
-| `den board web new` | `<url> [--width <points>] [--focus]` | Open a **new** Web Board with a supported URL, bare hostname, or search query on the active Desk, start its Web runtime immediately, and return its UUID. `--width` sets its initial width in positive points; it may exceed the manual resize limit. Invalid or unsupported URL schemes fail. Use `den sheet wait` to wait for loaded content. | `den board web new https://example.com --width 800` |
+| `den board web new` | `<url> [--width <points>] [--focus]` | Open a **new** Web Board with a supported URL, bare hostname, or search query on the active Desk, start its Web runtime immediately, and return its UUID. `--width` sets its initial width in positive points; it may exceed the manual resize limit. Invalid or unsupported URL schemes fail. Use `den board web wait` to wait for loaded content. | `den board web new https://example.com --width 800` |
+| `den board web navigate` | `<url>` | Navigate Current Sheet in the target Web Board to a supported URL, bare hostname, or search query. Invalid or unsupported URL schemes fail. | `den board web navigate https://example.com` |
+| `den board web url` | None | Print Current Sheet URL of the target Web Board. | `den board web url` |
+| `den board web reload` | None | Reload Current Sheet in the target Web Board. | `den board web reload` |
+| `den board web eval` | `<script>` | Evaluate JavaScript and return the result. | `den board web eval document.title` |
+| `den board web text` | None | Extract visible text content (`innerText`) from the sheet. | `den board web text` |
+| `den board web back` | None | Navigate back in browsing history. | `den board web back` |
+| `den board web forward` | None | Navigate forward in browsing history. | `den board web forward` |
+| `den board web press` | `<key>` | Dispatch key events (`Enter`, `Escape`, `Tab`, arrows) to the active element. | `den board web press Enter` |
+| `den board web scroll` | `[<direction-or-target>]` | Scroll the page (`down`, `up`, `top`, `bottom`, or pixel amount), or scroll a ref/selector into view. Defaults to `down`. | `den board web scroll @e2` |
+| `den board web wait` | `[<target>] [--state <state>] [--url <glob>] [--text <text>] [--load <state>] [--fn <expression>] [--timeout <seconds>]` | Wait for one selector/ref state, URL glob, visible page text, load state (`domcontentloaded`, `load`, or `networkidle`), or JavaScript condition. Matching selectors use any visible element for `visible`, and succeed when all matches are hidden or absent for `hidden` and `detached`. The default timeout is 10 seconds. | `den board web wait --text "Saved"` |
+| `den board web snapshot` | `[--full] [-i] [--within <target>]` | Extract the compact interactive semantic tree by default with short references (`@e1`, `@e2`) and control states such as `checked`, `unchecked`, `disabled`, `selected`, and `expanded`. `--full` includes all eligible visible semantic elements; `-i`/`--interactive` selects the default compact form explicitly; `--within` scopes either form to one selector or ref. | `den board web snapshot --within '[role=dialog]'` |
+| `den board web query` | `<selector> [--visible] [--all] [--fields <list>]` | Return matching elements as structured JSON. Every result includes `ref` and `visible`; the default fields are `tag,role,name,text`. Use `value`, `checked`, `disabled`, `selected`, `expanded`, `class`, or `attr:<name>` for additional fields. `--visible` filters matches and `--all` returns every match instead of the first. | `den board web query "tr.zA" --visible --all --fields text,attr:data-email,class --json` |
+| `den board web get` | `<text\|value\|attr\|count\|box> ...` | Read text, a form value, an attribute, the number of elements matching a selector, or bounding box (`x, y, width, height`). | `den board web get box @e1 --json` |
+| `den board web is` | `<visible\|enabled\|checked> <target>` | Check one current boolean state for an element. | `den board web is checked @e3 --json` |
+| `den board web click` | `[<target>] [--role <role> --name <name>] [--exact] [--new-board] [--focus]` | Click by ref/selector or by an accessible role and name. Semantic matching requires both `--role` and `--name`; `--exact` requires an exact name match. Use `--new-board` to open a clicked link in a new Web Board, returning `board_id`; add `--focus` to focus the new Board. | `den board web click @e1 --new-board --json` |
+| `den board web dblclick` | `<target>` | Double-click an element by reference or selector. | `den board web dblclick @e1 --json` |
+| `den board web focus` | `<target>` | Focus an element by reference or selector. | `den board web focus @e1 --json` |
+| `den board web fill` | `<target> <value>` | Fill an input, textarea, or editable element with text by reference or selector. An empty value is valid. | `den board web fill @e2 "search query"` |
+| `den board web type` | `[<target>] <text>` | Type text into an element by reference/selector or into the currently focused element (supports rich editors, Canvas, and contenteditable). | `den board web type @e2 "search query"` |
+| `den board web drag` | `<source> [<target>] [--dx <dx>] [--dy <dy>] [--steps <steps>]` | Drag an element to another element or relative pixel offset (`--dx`, `--dy`). | `den board web drag @e1 --dx 100 --dy 50` |
+| `den board web mouse` | `<move\|down\|up\|click\|wheel> ...` | Dispatch low-level pointer events (`move <x> <y>`, `down [btn]`, `up [btn]`, `click <x> <y> [--button <btn>] [--count <n>]`, `wheel <dy> [--dx <dx>]`). | `den board web mouse click 400 300 --json` |
+| `den board web interact` | `[<script-or-file>] [--snapshot [--full]]` | Execute multiple sheet actions in order from a script, script file, or stdin (`-`). Actions follow standard `den board web` subcommand syntax (e.g. `click`, `dblclick`, `focus`, `fill`, `type`, `drag`, `mouse`, `wait`, `navigate`); execution stops at the first failure. JSON returns status and action metadata. Add `--snapshot` for a final semantic snapshot, and `--full` for the complete semantic tree. | `den board web interact "click @e1; fill @e2 'query'" --snapshot` |
+| `den board web screenshot` | `[<path>]` | Save a PNG screenshot of the web sheet (defaults to temporary directory). | `den board web screenshot /tmp/screen.png` |
 
-### 3.5 `den board terminal` (Terminal Boards)
+### 3.4 `den board terminal` (Terminal Board & Session Operations)
+
+Commands operating on a Terminal Board and the Terminal Session it presents.
 
 | Command | Arguments | Description | Example |
 |---|---|---|---|
 | `den board terminal new` | `[<path>] [--run <cmd>] [--width <points>] [--focus]` | Open a new Terminal Board, optionally running an initial command in an interactive shell. `--width` sets its initial width in positive points; it may exceed the manual resize limit. | `den board terminal new . --run "npm test" --width 800 --focus` |
+| `den board terminal text` | `[--board <id>]` | Read visible terminal screen buffer as clean plain text. | `den board terminal text` |
+| `den board terminal send` | `<text> [--board <id>]` | Inject raw text or escape sequences into the Terminal Session without executing it. | `den board terminal send "git status"` |
+| `den board terminal run` | `<command> [--board <id>]` | Send a shell command and press Enter in the target Terminal Board. | `den board terminal run "git status"` |
+| `den board terminal kill` | `[-s <signal>] [--board <id>]` | Send a POSIX signal to the foreground process group (defaults to `TERM`). | `den board terminal kill -s TERM` |
 
-### 3.6 `den board inspection` (Inspection Boards)
+### 3.5 `den board inspection` (Inspection Boards & Context)
 
 | Command | Arguments | Description | Example |
 |---|---|---|---|
 | `den board inspection new` | `--target <web-board-id> [--focus]` | Create or reuse the Inspection Board associated with the specified Web Board and return its Board ID. The target must be an existing Web Board; the target relationship is preserved in the Board Group. Focus stays unchanged by default; use `--focus` to focus the Inspection Board. | `den board inspection new --target 4F72344C-... --json` |
+| `den board inspection read` | `--board <inspection-board-id>` | Read the selected element and available page inspection context from the specified Inspection Board's target Web Board. This is read-only and requires an explicit Inspection Board ID. | `den board inspection read --board 4F72344C-... --json` |
 
-### 3.7 `den inspection` (Inspection)
+The JSON result contains an `inspection` object describing the target page and current inspection data, including available selection details, accessible labels, a captured CSS selector, capture time, document identity, ancestor path, retained console or JavaScript events, and dropped-event count. A page with no selected element is reported as unselected. For current `@e…` references, use `den board web snapshot` or `den board web query` on the target Web Board. Exact optional fields depend on available page data; see [Inspection](inspection.md).
 
-| Command | Arguments | Description | Example |
-|---|---|---|---|
-| `den inspection read` | `--board <inspection-board-id>` | Read the selected element and available page inspection context from the specified Inspection Board's target Web Board. This is read-only and requires an explicit Inspection Board ID. | `den inspection read --board 4F72344C-... --json` |
+### 3.6 `den desk` (Desks)
 
-The JSON result contains an `inspection` object describing the target page and current inspection data, including available selection details, accessible labels, a captured CSS selector, capture time, document identity, ancestor path, retained console or JavaScript events, and dropped-event count. A page with no selected element is reported as unselected. For current `@e…` references, use `den sheet snapshot` or `den sheet query` on the target Web Board. Exact optional fields depend on available page data; see [Inspection](inspection.md).
-
-### 3.8 `den desk` (Desks & Workspaces)
 Commands operating on Desks within the Den.
 
 | Command | Arguments | Description | Example |
 |---|---|---|---|
 | `den desk list` | None | List all Desks in the Den with ID, label, board count, and active status. | `den desk list` |
 
-### 3.9 `den drawer` (Drawer & Web Material)
+### 3.7 `den drawer` (Drawer & Web Material)
+
 Commands operating on the Den-wide Drawer for web material whose Desk context is not yet settled.
 
 | Command | Arguments | Description | Example |
@@ -191,19 +184,10 @@ Commands operating on the Den-wide Drawer for web material whose Desk context is
 | `den drawer place` | `<id>` | Place a Drawer Item onto the active Desk as a Web Board, start its Web runtime immediately, and remove the item from the Drawer. | `den drawer place 4F72344C-...` |
 | `den drawer discard` | `<id>` | Discard a Drawer Item without placing it onto a Desk. | `den drawer discard 4F72344C-...` |
 
-Web URL inputs use the same resolution policy across these commands. Explicit `http://`, `https://`, and absolute local `file://` URLs are accepted; a bare hostname such as `example.com` or `localhost:3000` is completed with `https://`. `sheet open` and `board web new` also accept search queries, using the configured Search Engine. `drawer keep` accepts only URL input, so search queries and unsupported schemes such as `ftp://` or `mailto:` fail before any state change. Accepted URLs are canonicalized after validation.
+Web URL inputs use the same resolution policy across these commands. Explicit `http://`, `https://`, and absolute local `file://` URLs are accepted; a bare hostname such as `example.com` or `localhost:3000` is completed with `https://`. `den board web navigate` and `den board web new` also accept search queries, using the configured Search Engine. `den drawer keep` accepts only URL input, so search queries and unsupported schemes such as `ftp://` or `mailto:` fail before any state change. Accepted URLs are canonicalized after validation.
 
-### 3.10 `den terminal` (Terminal Sessions)
-Commands operating on Terminal Sessions in the target Terminal Board.
+### 3.8 `den profile` (Profiles)
 
-| Command | Arguments | Description | Example |
-|---|---|---|---|
-| `den terminal text` | `[--board <id>]` | Read visible terminal screen buffer as clean plain text. | `den terminal text` |
-| `den terminal send` | `<text> [--board <id>]` | Inject raw text or escape sequences into the Terminal Session without executing it. | `den terminal send "git status"` |
-| `den terminal run` | `<command> [--board <id>]` | Send a shell command and press Enter in the target Terminal Board. | `den terminal run "git status"` |
-| `den terminal kill` | `[-s <signal>] [--board <id>]` | Send a POSIX signal to the foreground process group (defaults to `TERM`). | `den terminal kill -s TERM` |
-
-### 3.11 `den profile` (Profiles)
 Commands inspecting and managing profiles in Den Browser.
 
 | Command | Arguments | Description | Example |
@@ -219,7 +203,7 @@ Commands inspecting and managing profiles in Den Browser.
 When connected to an interactive terminal, `den` prints readable plain text and writes error messages to `stderr`.
 
 ```text
-$ den sheet url
+$ den board web url
 https://example.com/docs
 ```
 
@@ -295,7 +279,7 @@ Query fields that are unavailable on an element are omitted. `attributes` contai
 
 Element names use labels and visible content rather than form values, except for input buttons whose value is their caption. Native disabled state, including inheritance from a disabled fieldset, takes precedence over `aria-disabled="false"`. URL globs match literal segments in order without overlap; `*` matches zero or more characters.
 
-**Actions (`click`, `dblclick`, `focus`, `fill`, `type`, `drag`, `mouse`, `press`, `scroll`, `wait`, `open`, `place`, `discard`, `send`)**:
+**Actions (`click`, `dblclick`, `focus`, `fill`, `type`, `drag`, `mouse`, `press`, `scroll`, `navigate`, `place`, `discard`, `send`)**:
 ```json
 {"message":"Clicked @e1","ok":true}
 ```

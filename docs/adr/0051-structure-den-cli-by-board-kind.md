@@ -10,14 +10,13 @@ Den has one Board collection on each Desk, but Web Boards and Terminal Boards ex
 
 ## Decision
 
-- Keep common Board operations under `den board`: `list` and `close`.
-- Put Board-kind operations under `den board web` and `den board terminal`.
-- Keep Sheet operations under `den sheet` and Terminal Session operations under `den terminal`.
+- Keep common Board operations under `den board`: `list`, `focused`, and `close`.
+- Put creation and kind-specific operations under `den board web`, `den board terminal`, and `den board inspection`.
+- Use `new` for Board creation and `navigate` for URL or search navigation within an existing Web Board's Sheet Stack.
 - Treat shell, Zellij, and zmx surfaces as Terminal Boards; their backend kind remains an internal detail of the Terminal Board.
-- Keep `--json` and `--socket` as common CLI options. Expose `--board` only on commands that target a Board: Sheet commands, Terminal Session commands, and `den board close`.
+- Keep `--json` and `--socket` as common CLI options. Expose `--board` only on commands that target an existing Board: Web Sheet operations, Terminal Session operations, `den board inspection read`, and `den board close`.
 - Use `--board` for an explicit Board target. Keep positional IDs for other resources such as Drawer Items. `den board close` rejects positional arguments.
-- Represent IPC commands as the same nested domain Enum on both sides and let Swift synthesize their `Codable` representation.
 
 ## Consequences
 
-The CLI makes the distinction between a Board, a Web Board, a Sheet, a Terminal Board, and a Terminal Session visible in its command paths. Creating a Board requires a longer command, but invalid target options and ambiguous Board ID forms are removed. The Desk can continue to store Web and Terminal Boards in one ordered collection, which preserves spatial adjacency and ambient targeting.
+The CLI makes the Board kind explicit for operations on Web and Terminal Boards. Creating a Board requires a longer command, but invalid target options and ambiguous Board ID forms are removed. The Desk can continue to store Web and Terminal Boards in one ordered collection, which preserves spatial adjacency and ambient targeting.

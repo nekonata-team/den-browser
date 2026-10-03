@@ -37,8 +37,8 @@ Terminal Boardからは、同梱の`den` CLIで隣接するWeb Boardの確認・
 
 ```sh
 den board list
-den sheet snapshot -i
-den sheet text
+den board web snapshot -i
+den board web text
 ```
 
 ### Ghostty設定

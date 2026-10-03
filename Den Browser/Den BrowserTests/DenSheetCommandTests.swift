@@ -25,7 +25,7 @@ struct DenSheetCommandTests {
         defer { server.stop() }
         let process = Process()
         process.executableURL = Bundle.main.bundleURL.appendingPathComponent("Contents/MacOS/den")
-        process.arguments = ["sheet", "url", "--snapshot", "--socket", socketPath]
+        process.arguments = ["board", "web", "url", "--snapshot", "--socket", socketPath]
         let output = Pipe()
         process.standardOutput = output
 
@@ -71,7 +71,7 @@ struct DenSheetCommandTests {
         defer { server.stop() }
         let process = Process()
         process.executableURL = Bundle.main.bundleURL.appendingPathComponent("Contents/MacOS/den")
-        process.arguments = ["sheet", "snapshot", "--socket", socketPath] + (full ? ["--full"] : [])
+        process.arguments = ["board", "web", "snapshot", "--socket", socketPath] + (full ? ["--full"] : [])
         let output = Pipe()
         process.standardOutput = output
 
@@ -97,8 +97,8 @@ struct DenSheetCommandTests {
         let socketPath = FileManager.default.temporaryDirectory
             .appendingPathComponent("den-cli-\(UUID().uuidString).sock").path
         let script = """
-            # First click
-            click @e1
+            # Navigate before filling
+            navigate https://example.com
             fill @e2 "penguin"
             """
         let server = DenSocketServer(socketPath: socketPath)
@@ -108,17 +108,8 @@ struct DenSheetCommandTests {
                 let expectedSteps: [DenSheetInteractStep] = [
                     DenSheetInteractStep(
                         line: 2,
-                        text: "click @e1",
-                        command: .click(
-                            DenSheetClickPayload(
-                                target: "@e1",
-                                role: nil,
-                                name: nil,
-                                exact: false,
-                                newBoard: false,
-                                focus: false
-                            )
-                        )
+                        text: "navigate https://example.com",
+                        command: .open(DenSheetOpenPayload(url: "https://example.com"))
                     ),
                     DenSheetInteractStep(
                         line: 3,
@@ -143,7 +134,7 @@ struct DenSheetCommandTests {
         let process = Process()
         process.executableURL = Bundle.main.bundleURL.appendingPathComponent("Contents/MacOS/den")
         process.arguments = [
-            "sheet", "interact", script, "--snapshot", "--full", "--socket", socketPath,
+            "board", "web", "interact", script, "--snapshot", "--full", "--socket", socketPath,
         ]
         let output = Pipe()
         process.standardOutput = output
@@ -193,7 +184,7 @@ struct DenSheetCommandTests {
         defer { server.stop() }
         let process = Process()
         process.executableURL = Bundle.main.bundleURL.appendingPathComponent("Contents/MacOS/den")
-        process.arguments = ["sheet", "interact", "click @e1", "--socket", socketPath]
+        process.arguments = ["board", "web", "interact", "click @e1", "--socket", socketPath]
         let output = Pipe()
         process.standardOutput = output
 
@@ -289,7 +280,7 @@ struct DenSheetCommandTests {
 
         let process = Process()
         process.executableURL = Bundle.main.bundleURL.appendingPathComponent("Contents/MacOS/den")
-        process.arguments = ["sheet", "interact", script, "--socket", socketPath]
+        process.arguments = ["board", "web", "interact", script, "--socket", socketPath]
         let output = Pipe()
         process.standardOutput = output
 
@@ -349,7 +340,7 @@ struct DenSheetCommandTests {
 
         let process = Process()
         process.executableURL = Bundle.main.bundleURL.appendingPathComponent("Contents/MacOS/den")
-        process.arguments = ["sheet", "interact", "-", "--socket", socketPath]
+        process.arguments = ["board", "web", "interact", "-", "--socket", socketPath]
         let inputPipe = Pipe()
         let outputPipe = Pipe()
         process.standardInput = inputPipe
@@ -409,7 +400,7 @@ struct DenSheetCommandTests {
 
         let process = Process()
         process.executableURL = Bundle.main.bundleURL.appendingPathComponent("Contents/MacOS/den")
-        process.arguments = ["sheet", "click", "@e1", "--new-board", "--focus", "--socket", socketPath]
+        process.arguments = ["board", "web", "click", "@e1", "--new-board", "--focus", "--socket", socketPath]
         let output = Pipe()
         process.standardOutput = output
 
