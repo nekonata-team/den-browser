@@ -8,11 +8,34 @@ extension DenStore {
 
     func showEssentialsPrefix() {
         guard temporaryContext == nil else { return }
+        selectedEssentialID = essentials.first?.id
         setTemporaryContext(.essentialsPrefix)
+    }
+
+    func moveEssentialSelection(by offset: Int) {
+        selectedEssentialID = DenSelectionNavigation.next(
+            selectedEssentialID,
+            among: essentials.map(\.id),
+            by: offset
+        )
+    }
+
+    func selectEssential(_ id: UUID) {
+        guard essentials.contains(where: { $0.id == id }) else { return }
+        selectedEssentialID = id
+    }
+
+    func launchSelectedEssential() {
+        guard let selectedEssentialID else {
+            exitEssentialsPrefix()
+            return
+        }
+        launchEssential(id: selectedEssentialID)
     }
 
     func exitEssentialsPrefix() {
         if temporaryContext == .essentialsPrefix {
+            selectedEssentialID = nil
             setTemporaryContext(nil)
         }
     }

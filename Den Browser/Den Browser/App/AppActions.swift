@@ -32,6 +32,8 @@ enum NotificationsAction: Equatable {
 enum EssentialsAction: Equatable {
     case enterPrefix
     case exitPrefix
+    case moveSelection(Int)
+    case launchSelected
     case showNotFound(String)
     case launch(UUID)
     case saveFocusedBoardAsEssential
@@ -189,6 +191,8 @@ enum AppActionHandler {
             switch action {
             case .enterPrefix: store.enterEssentialsPrefix()
             case .exitPrefix: store.exitEssentialsPrefix()
+            case .moveSelection(let offset): store.moveEssentialSelection(by: offset)
+            case .launchSelected: store.launchSelectedEssential()
             case .showNotFound(let key):
                 store.exitEssentialsPrefix()
                 let label: String

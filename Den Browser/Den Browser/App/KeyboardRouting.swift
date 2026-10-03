@@ -212,9 +212,16 @@ enum KeyboardRouter {
         _ event: KeyEvent,
         shortcuts: ShortcutConfiguration
     ) -> InputDecision {
+        if event.modifiers == [] {
+            if event.key == .upArrow { return .perform(.essentials(.moveSelection(-1))) }
+            if event.key == .downArrow { return .perform(.essentials(.moveSelection(1))) }
+        }
         if event.isRepeat { return .consume(.ignoredRepeat) }
         if event.isEscape, event.modifiers == [] {
             return .perform(.essentials(.exitPrefix))
+        }
+        if event.modifiers == [] {
+            if event.key == .returnKey { return .perform(.essentials(.launchSelected)) }
         }
         guard
             event.modifiers == [] || event.modifiers == [.shift],

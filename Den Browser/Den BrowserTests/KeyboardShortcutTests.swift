@@ -1043,12 +1043,143 @@ struct KeyboardShortcutTests {
         #expect(store.focusedBoard?.currentSheetURL == URL(string: "https://chatgpt.com/"))
     }
 
+    @Test func essentialsPrefixSelectionWrapsBetweenFirstAndLast() throws {
+        // Arrange
+        let store = try makeStore(boards: [board("First")])
+        let first = Essential(name: "First Essential", key: "a", input: "https://first.example")
+        let second = Essential(name: "Second Essential", key: "b", input: "https://second.example")
+        #expect(store.preferences.setEssentials([first, second]))
+
+        // Act
+        store.showEssentialsPrefix()
+        store.moveEssentialSelection(by: -1)
+
+        // Assert
+        #expect(store.selectedEssentialID == second.id)
+
+        // Act
+        store.moveEssentialSelection(by: 1)
+
+        // Assert
+        #expect(store.selectedEssentialID == first.id)
+    }
+
+    @Test func essentialsPrefixOpeningResetsSelectionToFirst() throws {
+        // Arrange
+        let store = try makeStore(boards: [board("First")])
+        let first = Essential(name: "First Essential", key: "a", input: "https://first.example")
+        let second = Essential(name: "Second Essential", key: "b", input: "https://second.example")
+        #expect(store.preferences.setEssentials([first, second]))
+        store.showEssentialsPrefix()
+
+        // Act
+        store.moveEssentialSelection(by: 1)
+        store.exitEssentialsPrefix()
+        store.showEssentialsPrefix()
+
+        // Assert
+        #expect(store.selectedEssentialID == first.id)
+    }
+
+    @Test func essentialsPrefixReturnLaunchesFocusedEssentialAndClosesPrefix() throws {
+        // Arrange
+        let store = try makeStore(boards: [board("First")])
+        let first = Essential(name: "First Essential", key: "a", input: "https://first.example")
+        let second = Essential(name: "Second Essential", key: "b", input: "https://second.example")
+        #expect(store.preferences.setEssentials([first, second]))
+        store.showEssentialsPrefix()
+
+        // Act
+        store.moveEssentialSelection(by: 1)
+        store.launchSelectedEssential()
+
+        // Assert
+        #expect(store.temporaryContext == nil)
+        #expect(store.selectedEssentialID == nil)
+        #expect(store.focusedBoard?.currentSheetURL == URL(string: "https://second.example/"))
+    }
+
+    @Test func essentialsPrefixRoutesArrowsReturnAndConfiguredJkKeys() throws {
+        // Arrange
+        let store = try makeStore(boards: [board("First")])
+        let jEssential = Essential(name: "J Essential", key: "j", input: "https://j.example")
+        let kEssential = Essential(name: "K Essential", key: "k", input: "https://k.example")
+        #expect(store.preferences.setEssentials([jEssential, kEssential]))
+        store.showEssentialsPrefix()
+        let upArrow = try arrowEvent(.upArrow, modifiers: [])
+        let down = try arrowEvent(.downArrow, modifiers: [])
+        let returnKey = try keyEvent(
+            characters: "\r", charactersIgnoringModifiers: "\r", keyCode: 36)
+        let jKey = try keyEvent(characters: "j", charactersIgnoringModifiers: "j", keyCode: 38)
+        let kKey = try keyEvent(characters: "k", charactersIgnoringModifiers: "k", keyCode: 40)
+
+        // Act
+        func route(_ event: NSEvent) -> InputDecision {
+            KeyboardRouter.route(
+                event: KeyEvent(event),
+                context: InputContext(store: store, event: event),
+                shortcuts: ShortcutConfiguration(preferences: store.preferences))
+        }
+        let upDecision = route(upArrow)
+        let downDecision = route(down)
+        let returnDecision = route(returnKey)
+        let jDecision = route(jKey)
+        let kDecision = route(kKey)
+
+        // Assert
+        #expect(upDecision == .perform(.essentials(.moveSelection(-1))))
+        #expect(downDecision == .perform(.essentials(.moveSelection(1))))
+        #expect(returnDecision == .perform(.essentials(.launchSelected)))
+        #expect(jDecision == .perform(.essentials(.launch(jEssential.id))))
+        #expect(kDecision == .perform(.essentials(.launch(kEssential.id))))
+    }
+
+    @Test func essentialsPrefixAllowsRepeatedArrowMovementButSuppressesRepeatedLaunch() throws {
+        // Arrange
+        let store = try makeStore(boards: [board("First")])
+        let essential = Essential(name: "Essential", key: "a", input: "https://essential.example")
+        let nextEssential = Essential(name: "Next", key: "b", input: "https://next.example")
+        #expect(store.preferences.setEssentials([essential, nextEssential]))
+        store.showEssentialsPrefix()
+        let repeatedUp = try arrowEvent(.upArrow, modifiers: [], isARepeat: true)
+        let repeatedDown = try arrowEvent(.downArrow, modifiers: [], isARepeat: true)
+        let repeatedReturn = try keyEvent(
+            characters: "\r", charactersIgnoringModifiers: "\r", isARepeat: true, keyCode: 36)
+        let repeatedKey = try keyEvent(
+            characters: "a", charactersIgnoringModifiers: "a", isARepeat: true, keyCode: 0)
+        let repeatedEscape = try keyEvent(
+            characters: "\u{1B}", charactersIgnoringModifiers: "\u{1B}", isARepeat: true, keyCode: 53)
+        func route(_ event: NSEvent) -> InputDecision {
+            KeyboardRouter.route(
+                event: KeyEvent(event),
+                context: InputContext(store: store, event: event),
+                shortcuts: ShortcutConfiguration(preferences: store.preferences))
+        }
+
+        // Act
+        let upDecision = route(repeatedUp)
+        let movementDecision = route(repeatedDown)
+        let returnDecision = route(repeatedReturn)
+        let keyDecision = route(repeatedKey)
+        let escapeDecision = route(repeatedEscape)
+        #expect(KeyboardController.handle(repeatedDown, store: store))
+        #expect(KeyboardController.handle(repeatedReturn, store: store))
+        #expect(KeyboardController.handle(repeatedKey, store: store))
+
+        // Assert
+        #expect(upDecision == .perform(.essentials(.moveSelection(-1))))
+        #expect(movementDecision == .perform(.essentials(.moveSelection(1))))
+        #expect(store.selectedEssentialID == nextEssential.id)
+        #expect(returnDecision == .consume(.ignoredRepeat))
+        #expect(keyDecision == .consume(.ignoredRepeat))
+        #expect(escapeDecision == .consume(.ignoredRepeat))
+        #expect(store.focusedDesk?.boards.count == 1)
+    }
+
     @Test func denModeGPrefixShowsToastForUnregisteredKeys() throws {
         let store = try makeStore(boards: [board("First")])
-        #expect(
-            store.preferences.setEssentials([
-                Essential(name: "ChatGPT", key: "c", input: "https://chatgpt.com")
-            ]))
+        let essential = Essential(name: "ChatGPT", key: "c", input: "https://chatgpt.com")
+        #expect(store.preferences.setEssentials([essential]))
         store.isDenMode = true
         let prefix = try keyEvent(
             characters: "g", charactersIgnoringModifiers: "g", keyCode: 5)
@@ -1066,11 +1197,6 @@ struct KeyboardShortcutTests {
         #expect(store.toastMessage?.message == "No Essential assigned to 'x'.")
         #expect(store.toastMessage?.style == .warning)
 
-        let returnKey = try keyEvent(
-            characters: "\r", charactersIgnoringModifiers: "\r", keyCode: 36)
-        #expect(KeyboardController.handle(prefix, store: store))
-        #expect(KeyboardController.handle(returnKey, store: store))
-        #expect(store.toastMessage?.message == "No Essential assigned to 'Return'.")
     }
 
     @Test func denModeGPrefixCancelsQuietlyForEscapeAndModifiedKeys() throws {
@@ -1579,7 +1705,8 @@ struct KeyboardShortcutTests {
 
     private func arrowEvent(
         _ specialKey: NSEvent.SpecialKey,
-        modifiers: NSEvent.ModifierFlags
+        modifiers: NSEvent.ModifierFlags,
+        isARepeat: Bool = false
     ) throws -> NSEvent {
         let (characters, keyCode): (String, UInt16) =
             switch specialKey {
@@ -1593,6 +1720,7 @@ struct KeyboardShortcutTests {
             characters: characters,
             charactersIgnoringModifiers: characters,
             modifiers: modifiers,
+            isARepeat: isARepeat,
             keyCode: keyCode)
     }
 

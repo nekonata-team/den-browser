@@ -64,7 +64,8 @@ Toggle with `Control` + `,`. Press `Escape` to exit to Sheet Input.
 | `Tab` | Toggle Drawer |
 | `o` | Toggle Overview |
 | `i` | Show Notifications (`Up` / `Down` to select, `Return` to open) |
-| `g`, then Essential key | Start Essential Board input |
+| `g`, then Essential key | Start that Essential Board input directly |
+| After `g`: `Up` / `Down`, then `Return` | Focus an Essential and start it; focus wraps at either end |
 | `,` | Open Settings |
 | `?` | Show Keyboard Shortcuts guide |
 | `z` | Toggle Zen View (hide titlebar and chrome) |

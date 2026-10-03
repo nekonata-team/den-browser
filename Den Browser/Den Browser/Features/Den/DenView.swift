@@ -190,7 +190,7 @@ struct DenView<Header: View>: View {
     private func activePanel(newBoardWidth: CGFloat, boardHeight: CGFloat) -> some View {
         switch store.temporaryContext {
         case .essentialsPrefix:
-            panelOverlay(essentialsPrefixPanel)
+            panelOverlay(EssentialsPrefixPanel(profileColor: profileColor))
         case .openBoard:
             panelOverlay(OpenBoardPanel(profileColor: profileColor, newBoardWidth: newBoardWidth))
         case .zmxSessions:
@@ -256,47 +256,6 @@ struct DenView<Header: View>: View {
 
     private var newDeskPanel: some View {
         NewDeskPanel(profileColor: profileColor)
-    }
-
-    private var essentialsPrefixPanel: some View {
-        VStack(alignment: .leading, spacing: DenPanelLayout.contentSpacing) {
-            DenPanelHeader(systemSymbol: .sparkles) {
-                Text("Essentials")
-                    .font(.headline)
-            }
-
-            if store.essentials.isEmpty {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("No Essentials configured.")
-                    Text("Configure Essentials in Settings.")
-                        .font(.caption)
-                }
-                .foregroundStyle(.secondary)
-            } else {
-                ScrollView {
-                    LazyVStack(alignment: .leading, spacing: DenPanelLayout.controlSpacing) {
-                        ForEach(store.essentials) { essential in
-                            HStack(spacing: DenPanelLayout.controlSpacing) {
-                                ShortcutChip(tokens: [essential.displayKey], width: 42)
-                                Text(essential.name)
-                                    .lineLimit(1)
-                                Spacer(minLength: 0)
-                            }
-                        }
-                    }
-                }
-                .frame(maxHeight: 320)
-            }
-
-            Text(
-                store.essentials.isEmpty
-                    ? "Press Escape to cancel"
-                    : "Press an Essential key · Escape to cancel"
-            )
-            .font(.caption)
-            .foregroundStyle(.secondary)
-        }
-        .denPanel(width: DenPanelLayout.essentialsPrefixWidth)
     }
 
     private func newBoardWidth(in size: CGSize) -> Double {

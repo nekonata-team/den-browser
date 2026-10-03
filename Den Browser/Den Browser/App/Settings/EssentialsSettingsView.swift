@@ -31,7 +31,7 @@ struct EssentialsSettingsView: View {
             }
 
             SettingsHelpText {
-                Text("Press g followed by an Essential key in Den Mode to start a Board.")
+                Text("In Den Mode, press g then an Essential key, or after g use Up / Down and Return.")
             }
         }
         .sheet(item: $editingEssential) { editor in

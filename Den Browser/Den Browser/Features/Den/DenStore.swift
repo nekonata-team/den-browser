@@ -114,6 +114,7 @@ final class DenStore {
     var essentials: [Essential] { preferences.essentials }
     private(set) var presentedDeskID: UUID
     private(set) var temporaryContext: TemporaryContext?
+    var selectedEssentialID: UUID?
     private(set) var zmxDuplicationRootSessionName: String?
     var saveEssentialDraft: SaveEssentialDraft?
     var isZenViewPresented = false
