@@ -341,6 +341,10 @@ struct SheetNavigationTests {
         try await dispatchSheetKey("3", in: webView)
         try await dispatchSheetKey("j", in: webView)
         let afterCountedScroll = try #require(await webView.evaluateJavaScript("scrollY") as? Int)
+        let spacePreventedDefault = try await dispatchSheetKey(" ", in: webView)
+        let hintCountAfterSpace = try #require(
+            await webView.evaluateJavaScript(
+                "document.querySelectorAll('[data-den-sheet-hints] span').length") as? Int)
         _ = try await webView.evaluateJavaScript("scrollTo(0, 0)")
         try await dispatchSheetKey("f", in: webView)
         let hintCount = try #require(
@@ -356,6 +360,8 @@ struct SheetNavigationTests {
         #expect(afterBottom[1] > 300)
         #expect(afterLeft == [0, 300])
         #expect(afterCountedScroll == 180)
+        #expect(!spacePreventedDefault)
+        #expect(hintCountAfterSpace == 0)
         #expect(hintCount == 1)
         #expect(hasFindBar)
     }
@@ -1427,12 +1433,20 @@ struct SheetNavigationTests {
         )
     }
 
-    private func dispatchSheetKey(_ key: String, shift: Bool = false, in webView: WKWebView) async throws {
+    @discardableResult
+    private func dispatchSheetKey(
+        _ key: String,
+        shift: Bool = false,
+        in webView: WKWebView
+    ) async throws -> Bool {
         let keyData = try JSONEncoder().encode(key)
-        guard let keyLiteral = String(data: keyData, encoding: .utf8) else { return }
-        _ = try await webView.evaluateJavaScript(
-            "document.dispatchEvent(new KeyboardEvent('keydown', "
-                + "{key: \(keyLiteral), shiftKey: \(shift), bubbles: true, cancelable: true}))")
+        guard let keyLiteral = String(data: keyData, encoding: .utf8) else { return false }
+        let wasPrevented =
+            try await webView.evaluateJavaScript(
+                "(() => { const event = new KeyboardEvent('keydown', "
+                    + "{key: \(keyLiteral), shiftKey: \(shift), bubbles: true, cancelable: true}); "
+                    + "document.dispatchEvent(event); return event.defaultPrevented; })()") as? Bool
+        return wasPrevented ?? false
     }
 
     private func desk(_ label: String, boards: [BoardState] = [], focusedBoardID: UUID? = nil) -> DeskState {

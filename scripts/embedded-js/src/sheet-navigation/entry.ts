@@ -452,7 +452,7 @@
 
     const sections: Array<[string, Array<[string, string]>]> = [
       ["Scrolling", [["j / k", "scroll down / up"], ["d / u", "scroll half page down / up"], ["h / l", "scroll left / right"], ["gg / G", "top / bottom"], ["zH / zL", "left / right edge"]]],
-      ["Hints", [["f / Space", "activate a target or select a scrollable area"], ["Escape", "cancel hints or return to document scrolling"], ["F", "open link as a new Board"], ["a", "keep link in Drawer"]]],
+      ["Hints", [["f", "activate a target or select a scrollable area"], ["Escape", "cancel hints or return to document scrolling"], ["F", "open link as a new Board"], ["a", "keep link in Drawer"]]],
       ["Boards and Sheets", [["gt / gT", "next / previous Board in the Desk"], ["g0 / g$", "first / last Board in the Desk"], ["g[ / g]", "First / latest Sheet"], ["H / L", "back / forward in Sheet Stack"], ["r", "reload Current Sheet"], ["gu / gU", "URL parent / root"], ["ge / gE", "edit URL / open URL in new Board"], ["o", "open Essentials; press an Essential key"], ["t / T", "Open Board / Overview"], ["x / gx", "remove Board / remove and focus next Board"], ["yy / ym / yb", "copy Current Sheet URL / Markdown link / Board ID"]]],
       ["Find", [["/", "find in Current Sheet"], ["n / N", "next / previous match"]]],
     ];
@@ -911,13 +911,6 @@
     if (["g", "y", "z"].includes(event.key)) {
       consume(event);
       beginSequence(event.key);
-      return;
-    }
-
-    if (event.key === " " && !event.shiftKey && bodyHasFocus()) {
-      resetCommand();
-      consume(event);
-      openHints("activate");
       return;
     }
 

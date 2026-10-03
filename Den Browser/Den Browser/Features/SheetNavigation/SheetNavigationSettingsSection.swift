@@ -12,7 +12,7 @@ struct SheetNavigationSettingsSection: View {
                     .labelsHidden()
             } label: {
                 SettingsHelpText {
-                    Text("Use j / k and Space hints within Sheets")
+                    Text("Use j / k to scroll and f to show hints in Sheets")
                 }
             }
 

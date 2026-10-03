@@ -27,12 +27,12 @@ Scrolling commands follow Den's Motion setting; Follow System respects macOS Red
 
 | Keys | Action |
 | --- | --- |
-| `f` or `Space` | Show hints; activate a target or select a scrollable area for subsequent motions. |
+| `f` | Show hints; activate a target or select a scrollable area for subsequent motions. |
 | `F` | Show link hints and open the selected link as a new Board to the right. |
 | `a` | Show link hints and keep the selected link in the Drawer. |
 | `Escape` | Cancel hints or return scrolling to the document. |
 
-`Space` remains an alias for the existing interaction. `F` only includes links with an `href`; controls that cannot sensibly open as a new Board are excluded.
+`F` only includes links with an `href`; controls that cannot sensibly open as a new Board are excluded.
 
 ### Board, Sheet, and URL navigation
 
