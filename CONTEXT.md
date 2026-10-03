@@ -41,7 +41,7 @@ A user-visible label for a desk preset. It becomes the initial Desk Label when t
 _Avoid_: Desk Label, preset name
 
 **Board**:
-A user-created or app-provided work surface that holds one focused task context within a desk. A Board presents a Sheet Stack, a live Terminal Session, an Inspection, or an interactive tutorial.
+A user-created or app-provided clipboard-like work surface that holds one focused task context within a desk and presents its Sheet content.
 _Avoid_: Tab, card, pane, slot
 
 **Tutorial Board**:
@@ -49,7 +49,7 @@ An app-provided Board that presents Den-owned tutorials as interactive checklist
 _Avoid_: Demo Desk, tour screen
 
 **Web Board**:
-A Board whose content is a Sheet Stack.
+A Board whose content is a back-forward Sheet Stack.
 _Avoid_: Browser tab
 
 **Side Board**:
@@ -73,7 +73,7 @@ A Side Board for a human and AI to investigate its target Web Board.
 _Avoid_: InspectBoard, Web Inspector
 
 **Terminal Board**:
-A Board whose content is a live shell or terminal session instead of a Sheet Stack. Its process remains live across Desk changes while the Profile Window remains open.
+A Board that presents one Sheet for a live Terminal Session. Its process remains live across Desk changes while the Profile Window remains open.
 _Avoid_: Terminal window, terminal tab, pane
 
 **Terminal Session**:
@@ -101,19 +101,19 @@ A user-designated Board within a Desk that acts as a return anchor during horizo
 _Avoid_: Marked Board, Pinned Board, Home Board
 
 **Sheet**:
-A web screen held within a board. A sheet is the content being viewed, not the work surface itself.
-_Avoid_: Page, view, document
+A unit of content held and presented by a Board. A Sheet is not limited to web content; its content kind is determined by the Board kind.
+_Avoid_: Content, Board Content, Page, view, document
 
 **Sheet Stack**:
-The back-forward sequence of sheets within one board.
+The back-forward sequence of Sheets within a Web Board.
 _Avoid_: Browser history, tab stack, card stack
 
 **Current Sheet**:
-The sheet currently shown from a board's sheet stack.
+The Sheet currently presented by a Board. On a Web Board it is the selected Sheet in the Sheet Stack; on a single-sheet Board it is that Board's one Sheet.
 _Avoid_: Active page, top page, visible sheet
 
 **First Sheet**:
-The Sheet URL held when a Board was created. It remains the Board's fixed return point independently of the Current Sheet and may be absent on Boards restored from older data.
+The URL held by a Web Board when it was created. It remains that Board's fixed return point independently of the Current Sheet and may be absent on Boards restored from older data.
 _Avoid_: Home page, bookmark, browser history
 
 **Recent**:
@@ -170,15 +170,11 @@ Moving focus between boards in a desk. Board navigation is distinct from scrolli
 _Avoid_: Desk scrolling, tab switching
 
 **Sheet Input**:
-The keyboard context in which the Current Sheet receives input instead of Den. Sheet Input may provide ordinary web input or Vim-style Sheet Navigation.
+The keyboard context in which the Current Sheet receives input instead of Den, regardless of Board kind.
 _Avoid_: Normal mode, browser mode
 
-**Terminal Input**:
-The keyboard context in which a Terminal Board receives input instead of Den.
-_Avoid_: Shell mode, terminal tab input
-
 **Vim-style Sheet Navigation**:
-An optional keyboard interaction style for navigating within the current sheet. It is distinct from Den Mode and board navigation.
+An optional keyboard interaction style for navigating within the Current Sheet of a Web Board. It is distinct from Den Mode and board navigation.
 _Avoid_: Vimium C mode, extension mode, Den Mode
 
 **Ignored Site**:
@@ -194,7 +190,7 @@ A temporary Den presentation that hides Desk and Profile controls so Boards rece
 _Avoid_: Zen Mode, Compact Mode
 
 **Focus Mode**:
-A temporary Den presentation that keeps the Focused Board clear while visually de-emphasizing other Boards' Sheets and Terminal surfaces. It does not change Desk layout, Board focus, or keyboard ownership.
+A temporary Den presentation that keeps the Focused Board clear while visually de-emphasizing other Boards' Sheets. It does not change Desk layout, Board focus, or keyboard ownership.
 _Avoid_: distraction-free mode
 
 **Den Mode Toggle**:
@@ -202,7 +198,7 @@ The action that switches keyboard ownership between Sheet Input and Den Mode.
 _Avoid_: Leader, prefix, mode key
 
 **Board Removal**:
-Taking a Board off its Desk and ending its live Sheet or Terminal runtime. Removing a Terminal Board terminates its process without confirmation.
+Taking a Board off its Desk and ending the live activity of its Sheets. Removing a Terminal Board terminates its process without confirmation.
 _Avoid_: Close tab, delete page, trash
 
 **Recently Removed Board**:
