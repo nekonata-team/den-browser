@@ -349,10 +349,6 @@ struct TerminalConfigurationSourceTests {
             Issue.record("Expected a generated Ghostty config")
             return
         }
-        #expect(contents.contains("keybind = super+t=unbind"))
-        #expect(contents.contains("keybind = super+q=unbind"))
-        #expect(contents.contains("keybind = super+shift+w=unbind"))
-
         let generatedURL = FileManager.default.temporaryDirectory
             .appending(path: "den-browser-terminal-quit-" + UUID().uuidString + ".conf")
         try contents.write(to: generatedURL, atomically: true, encoding: .utf8)
@@ -374,12 +370,14 @@ struct TerminalConfigurationSourceTests {
         openBoard.action = GHOSTTY_ACTION_PRESS
         openBoard.mods = GHOSTTY_MODS_SUPER
         openBoard.keycode = 17
+        openBoard.unshifted_codepoint = 116  // t
         #expect(!ghostty_config_key_is_binding(config, openBoard))
 
         var quit = ghostty_input_key_s()
         quit.action = GHOSTTY_ACTION_PRESS
         quit.mods = GHOSTTY_MODS_SUPER
         quit.keycode = 12
+        quit.unshifted_codepoint = 113  // q
         #expect(!ghostty_config_key_is_binding(config, quit))
 
         var closeProfileWindow = ghostty_input_key_s()
@@ -387,6 +385,7 @@ struct TerminalConfigurationSourceTests {
         closeProfileWindow.mods = ghostty_input_mods_e(
             rawValue: GHOSTTY_MODS_SUPER.rawValue | GHOSTTY_MODS_SHIFT.rawValue)
         closeProfileWindow.keycode = 13
+        closeProfileWindow.unshifted_codepoint = 119  // w
         #expect(!ghostty_config_key_is_binding(config, closeProfileWindow))
     }
 
