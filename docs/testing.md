@@ -41,6 +41,13 @@ Unit tests must never read or write shared user defaults (`UserDefaults.standard
 
 ### Unit test structure and boundary rules
 
+Test files under `Den Browser/Den BrowserTests` are grouped by the responsibility they verify,
+such as `Den`, `Desk`, `Board`, `Drawer`, `Profiles`, `Web`, `IPC`, and `CLI`. Board-kind-specific
+tests belong under `Board/Web`, `Board/Terminal`, or `Board/Inspection`. Class names do not determine
+placement: for example, `DenStoreBoardTests` belongs under `Board` because it protects Board operations.
+Do not mechanically reproduce the source's `Domain`, `Application`, and `Infrastructure` folders.
+Shared Swift test helpers belong under `Support`; test resource files remain under `Fixtures`.
+
 Unit tests follow the Arrange-Act-Assert (AAA) pattern for consistency across the test suite, using explicit section comments (`// Arrange`, `// Act`, `// Assert`):
 
 - `// Arrange`: Set up the initial state, fixtures, stubs, and isolated dependencies.

@@ -13,68 +13,67 @@ The app and test targets support macOS 26.0 and later. Availability checks and f
 ```text
 Den Browser/Den Browser/
   App/
-    app entry, configuration, and composition root
-    keyboard command integration
-    Settings/
-      Settings scene and app-wide settings UI
+    app entry, configuration, keyboard integration, and Settings composition
   Features/
     Den/
-      Den state, store, composition, and Den-level UI
-      Store/
+      Domain/                 aggregate Den state, Essentials, and Notifications
+      Application/            shared storage, window store, and cross-domain operations
+      Presentation/           Den composition, Overview, panels, Toast, and visual design
+      Infrastructure/         state encoding and process-resource sampling
       Preferences/
-      Board/
-      Desk/
-      Sheet/
-      Terminal/
-      Overview/
-      Toast/
-      Drawer/
-      Design/
-      IPC/
-      Notification/
+    Desk/
+      Domain/                 Desk state and Desk Presets
+      Presentation/           switcher, panels, and preset UI
+    Board/
+      Domain/                 identity, kind, grouping, and input resolution
+      Presentation/           strip, rail, layout, surfaces, and common panels
+      Web/                    Domain, Presentation, and Infrastructure
+      Terminal/               Domain, Application, Presentation, and Infrastructure
+      Inspection/             Domain, Presentation, and Infrastructure
+      Tutorial/               Domain and Presentation
+    Drawer/
+      Domain/
+      Presentation/
+      Infrastructure/
     Profiles/
+      Domain/
+      Application/
+      Presentation/
+      Infrastructure/
+    Web/
+      Domain/                 shared URL rules and Web input values
+      Infrastructure/         shared WebKit runtime, DOM, interactions, and screenshots
     Extensions/
-      bundled WebExtension descriptors and per-Profile WebKit host
     SheetNavigation/
-      settings UI, preferences, WebKit controller, and bundled script
+  IPC/
+    Protocol/                 typed command, payload, request, and response definitions
+    Transport/                socket client/server mechanics
+    Application/              request handling and ambient target resolution
   Platform/
-    feature-independent OS integration
+    feature-independent OS integration and native SurfaceHost
   PrivateWebKit/
     private WebKit API declarations
   Resources/
 ```
 
-`Den`, `Profiles`, `Extensions`, and `SheetNavigation` are the top-level Features. `Features/Den` is intentionally the largest Feature because a Den owns the workflows and invariants connecting Desks, Boards, Sheets, and Overview. Those folders are subfeatures or components, not independent top-level Features. A large cohesive Feature is preferable to false boundaries that make `DenStore` dependencies cyclic or scatter one workflow across the source tree.
+Features are source ownership groups inside one Swift target, not independently isolated modules or stores. Den owns aggregate state, the workflows joining Desks, Boards, and Drawer, and the composition of the Den window. Desk, Board, and Drawer own their data and presentation in sibling folders; Board kind-specific code stays under Board. Overview, Notifications, Essentials, Toast, and shared Den visual design stay in Den because they present or coordinate the complete Den.
+
+The shared Web group contains code used by Web Boards, Drawer Preview, and Sheet Navigation. A Web Board's state, view, and runtime belong to `Board/Web`; shared URL policy, DOM execution, and the base WebKit runtime belong to `Web`. Sheet is not a Web-only implementation boundary, so there is no generic Sheet runtime folder or shared Sheet interface.
 
 ## Dependency direction
 
-```text
-App -> Profiles -> Den -> SheetNavigation
-App -------------> Den
-App ---------------------> SheetNavigation
-Profiles ----------------> SheetNavigation
-Profiles ----------------> Extensions
-Den ---------------------> Extensions
-App ------------------------------> Platform
-Den ------------------------------> Platform
-SheetNavigation ------------------> Platform
-```
+- `App` assembles scenes, windows, commands, and dependencies. It does not acquire feature behavior merely because multiple Features use it.
+- `Domain` contains state and product rules. It does not depend on `DenStore`, SwiftUI, AppKit, WebKit, or live runtime objects. Domain groups may reference one another according to the product model: Den contains Desks, and Desks contain Boards.
+- `Application` owns operation sequencing, shared or window-local state, and lifecycle coordination. `DenStore` remains the shared operation entry point; its extensions live in `Den/Application/Operations`. No new per-domain store is introduced merely to match the folder tree.
+- `Presentation` owns views, geometry, visual tokens, and display-only extensions. Existing views may use `DenStore` across source groups. Native view adapters may use their concrete runtimes.
+- `Infrastructure` owns concrete WebKit, Terminal, persistence, and process integration. Application code can call these implementations directly; folder organization alone does not justify a protocol, repository, or coordinator.
+- `Platform` contains only feature-independent operating-system integration. Product URL rules and Den lifecycle remain with their owners.
+- IPC is an application adapter shared with the bundled CLI. Protocol definitions are compiled into both targets; socket transport does not own Board or Profile policy.
+- Feature-specific settings UI remains with its owner. `App/Settings` assembles those screens.
 
-- `App` assembles dependencies and owns application entry points. It does not contain feature behavior.
-- `Features` owns product state, behavior, presentation, and feature-local UI.
-- `Platform` owns only feature-independent operating-system integration. It is optional and may remain empty.
-- Feature dependencies must remain acyclic.
-- A Feature may depend on another Feature in one direction when a clear product ownership or lifecycle relationship explains that dependency. For example, a Profile owns one Den, so `Profiles -> Den` is allowed.
-- Feature-to-Feature dependencies use the narrowest practical entry point and do not reach into the other Feature's private UI or implementation details.
-- `App` coordinates scenes, windows, commands, navigation, and workflows that combine otherwise independent Features. Code is not promoted to `App` merely because two Features use it.
-- Feature-specific AppKit, WebKit, persistence, or keyboard integration stays with its owning Feature or in `App`. Code moves to `Platform` only after a concrete feature-independent boundary emerges.
-- `Platform` must not acquire feature policy. Temporary reverse dependencies are not hidden behind speculative protocols.
-- WebExtension integration uses a narrow `WebExtensionHost` boundary. `Den` supplies Web and Drawer `WKWebView` instances plus the URL-loading callback; `Extensions` owns WebKit tab registration and never imports Den runtime types.
-- Profile-window keyboard ownership follows the typed routing boundary in [keyboard-input.md](./keyboard-input.md). SwiftUI Commands and routed keys share application actions where they represent the same behavior.
+Folders communicate ownership but do not enforce access control in the shared Swift target. Judge dependencies by the role of the code, not by assuming every sibling Feature is an independent module. Keep domain rules free of UI and runtime dependencies, and use the narrowest practical entry point for cross-domain operations.
 
-Folders communicate intent but do not enforce access control inside the shared Swift target. Dependency direction is maintained through review, focused tests, and keeping platform APIs narrow.
-
-When a dependency would create a cycle, do not hide it behind an App coordinator or a generic shared type. Reconsider ownership, move orchestration to `App`, or narrow the exchanged data until the graph is acyclic.
+WebExtension integration uses the existing `WebExtensionHost` boundary. Board and Drawer supply their WebKit instances and URL-loading callbacks; Extensions owns tab registration and never imports Den runtime types. Profile-window keyboard ownership follows [keyboard-input.md](./keyboard-input.md).
 
 ## Den state and live runtimes
 
@@ -99,9 +98,11 @@ Terminal embedding and its security boundary follow [ADR 0032](./adr/0032-embed-
 
 ### Den
 
-Owns Den composition and the workflows connecting Desks, Boards, Sheets, and Overview. It also owns preferences for Den, Board, and shared presentation behavior, even when those preferences apply across every Profile. Sheet Navigation preferences remain owned by `SheetNavigation`. `DenStore` remains one Feature store split into focused extensions under `Store`; it owns exclusive panel presentation and commit operations. `ZmxSessionsModel` is a cohesive window-local model inside the Den Feature, not a second Feature store: it owns zmx session state and command Tasks, while `DenStore` keeps Board creation, focus, and panel transitions. Board, Desk, Sheet, and Overview remain inside this Feature because their UI and behavior depend on `DenStore`, while `DenView` composes them and each panel owns its editing draft and focus. Making them top-level Features would create immediate conceptual dependency cycles. Do not introduce repository, coordinator, or service layers solely to mirror folders.
+Owns Den aggregate state, shared and window-local storage, composition, and operations connecting Desks, Boards, Drawer, and Overview. `DenStore` remains one store split into focused operation extensions; it owns exclusive panel presentation and commit operations. `DenStorage` is a separate Application file containing Profile-shared data and runtime registries. Window-local workflow types are separate from the store implementation.
 
-`IPC` owns socket listening (`DenSocketServer`), request handling (`DenIPCService`), and ambient target resolution (`DenIPCTargetResolver`) connecting the bundled `den` CLI and external shells to active Profile workspaces, following [ADR 0047](./adr/0047-integrate-den-cli.md). The MCP adapter uses these typed IPC operations as decided in [ADR 0055](./adr/0055-add-den-mcp-server.md). IPC operates on domain operations without leaking WebKit or UI presentation internals. `Notification` owns transient Terminal Board event notifications and user alerts in the Den notification list.
+Desk owns Desk state and preset data. Board owns shared Board state and grouping plus its Web, Terminal, Inspection, and Tutorial implementations. Drawer owns Drawer Items, its view, and Preview runtime. Their views may depend on Den's application operations without changing data ownership. `ZmxSessionsModel` stays in `Board/Terminal/Application` and owns session state and command Tasks, while Den coordinates Board creation, focus, and panel transitions.
+
+Den also owns preferences for shared presentation behavior and the Den-wide Notification list. `IPC/Application` connects external CLI and MCP requests to active Profile windows through existing domain operations, following [ADR 0047](./adr/0047-integrate-den-cli.md) and [ADR 0055](./adr/0055-add-den-mcp-server.md).
 
 ### Profiles
 
@@ -125,12 +126,12 @@ Settings is not a Feature. `App/Settings` owns the Settings scene and its naviga
 
 ### Platform
 
-Contains reusable operating-system integration rather than product concepts. Do not create a global Platform folder merely because code imports AppKit or WebKit. `TextInputComposition` is a feature-independent IME composition helper shared by Den, Sheet Navigation, and App settings. `WebBoardRuntime` and `BoardWebView` remain in Den because they own Web Board lifecycle. `SheetNavigationManager` remains in SheetNavigation because its WebKit integration implements that Feature. `KeyboardController` remains in `App` while it routes app-wide commands into Den behavior. A component moves to `Platform` only when its API is feature-independent and no reverse dependency on a Feature is required.
+Contains reusable operating-system integration rather than product concepts. Do not create a global Platform folder merely because code imports AppKit or WebKit. `TextInputComposition` is a feature-independent IME composition helper shared by Den, Sheet Navigation, and App settings. `SurfaceHost` is a generic native-view host shared by Board kind adapters and Drawer Preview; its API uses only AppKit views and generic request values. `WebBoardRuntime` and `BoardWebView` remain in `Board/Web` because they own Web Board lifecycle. `SheetNavigationManager` remains in SheetNavigation because its WebKit integration implements that Feature. `KeyboardController` remains in `App` while it routes app-wide commands into Den behavior. A component moves to `Platform` only when its API is feature-independent and no reverse dependency on a Feature is required.
 
 ## Folder rules
 
 - Prefer feature-local files over global `Models`, `Managers`, `Utilities`, or `Views` folders.
-- Create a subfolder when it expresses a stable feature or platform boundary, not merely to hold one file.
+- Use Domain, Application, Presentation, and Infrastructure within a source group only where they clarify existing responsibilities. Keep small groups flat rather than creating empty or single-file layer scaffolding.
 - Promote code to `Platform` only after a feature-independent boundary genuinely exists; multiple callers alone are not sufficient.
 - Keep source moves separate from behavior changes and dependency refactors.
 - Do not edit `project.pbxproj` for ordinary moves under the file-system-synchronized root group.

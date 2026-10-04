@@ -1,11 +1,15 @@
 ---
-status: proposed
+status: accepted
 ---
 
-# Organize source by product feature
+# Organize source by product ownership and local layers
 
-Den Browser organizes source primarily by product feature, with `App` for composition and `Platform` for operating-system integration. A layer-first `Domain`, `UI`, and `Infrastructure` split was rejected because Den workflows deliberately connect persisted state, presentation state, and live WebKit runtime inside one Swift target; forcing those files into global layers would scatter cohesive changes and encourage abstractions that do not enforce a real boundary.
+Den Browser keeps product ownership as the primary source grouping and uses local layers to distinguish state, operations, views, and concrete runtime integration. The former `Features/Den` grouping held most application code and obscured the differences between Desk, Board, Drawer, and Den-wide composition.
 
-`Den`, `Profiles`, `Extensions`, and `SheetNavigation` are top-level Features. Board, Desk, Sheet, and Overview remain nested within the Den Feature because they share its `DenStore`, lifecycle, and invariants; treating them as top-level Features would create conceptual cycles between their UI and Den composition. Vim-style Sheet Navigation is separate because it owns independent preferences and WebKit content interaction, while Den only supplies its controller to each Board runtime. WebExtensions are separate because `Extensions` owns the WebKit host and bundled resources, while `Profiles` owns its lifecycle and `Den` supplies only a narrow `WebExtensionHost` boundary. Feature dependencies must form an acyclic graph. A one-way dependency is allowed when a clear product ownership or lifecycle relationship explains it, such as a Profile owning one Den. `App` contains composition and cross-feature orchestration, but feature behavior is not promoted there merely because another Feature uses it.
+Den now owns aggregate state, shared and window-local application operations, and Den-wide presentation. Desk, Board, and Drawer are sibling source groups. Web, Terminal, Inspection, and Tutorial implementations belong under Board. A separate shared Web group owns URL policy, the base WebKit runtime, and DOM operations used by Web Boards, Drawer Preview, and Sheet Navigation. Sheet remains a content concept rather than a Web-only implementation folder.
 
-Feature-specific WebKit, keyboard, and persistence integration remains with its owning Feature or in `App`. Code moves to `Platform` only after a concrete feature-independent boundary emerges; importing an operating-system framework alone is not a reason to create a global layer. Existing reverse dependencies are narrowed when useful during concrete changes rather than as a prerequisite for source organization.
+Within these groups, Domain contains data and rules, Application sequences operations, Presentation owns views and display-specific extensions, and Infrastructure owns runtime or persistence integration. Small groups remain flat when layers would only add scaffolding. A source group is not automatically an independent Swift module or store: existing views continue to use DenStore, and no new stores, protocols, repositories, or coordinators are introduced to mirror the tree.
+
+Domain code does not depend on UI frameworks or runtime implementation. DenStore remains the application entry point for operations crossing product domains. App assembles scenes, windows, and command integration. Platform contains only feature-independent OS integration. IPC protocol, transport, and application handling have an explicit shared boundary outside Features.
+
+Source moves and declaration extraction preserve behavior and persisted formats. Responsibility changes require their own evidence and review; a folder move alone does not establish an architectural boundary.

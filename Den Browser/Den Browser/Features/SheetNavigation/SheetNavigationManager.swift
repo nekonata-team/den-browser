@@ -333,7 +333,7 @@ final class SheetNavigationManager {
         case "pasteURL", "pasteURLInNewBoard":
             guard let actions = actionsByWebView[ObjectIdentifier(webView)] else { return false }
             let value = pasteboard.string(forType: .string)
-                .map { SheetURLPolicy.normalizePastedText($0, joiningLineBreaksWith: "") }
+                .map { WebURLPolicy.normalizePastedText($0, joiningLineBreaksWith: "") }
             guard
                 let value,
                 let url = URL(string: value),
