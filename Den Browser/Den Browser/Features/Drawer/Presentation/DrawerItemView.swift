@@ -3,24 +3,29 @@ import DenDomain
 import SFSafeSymbols
 import SwiftUI
 
-struct DrawerItemView: View {
-    @Environment(DenStore.self) private var store
-    @Environment(DenViewModel.self) private var viewModel
-    @Environment(DrawerViewModel.self) private var drawer
+struct DrawerItemView<Preview: View>: View {
     @Environment(\.accessibilityDifferentiateWithoutColor) private var differentiateWithoutColor
 
     @FocusState.Binding var focusedDrawerItemID: UUID?
     @State private var isDiscardHovered = false
 
     let item: DrawerItem
+    let isSelected: Bool
+    let isExpanded: Bool
+    let isPreviewVisible: Bool
     let profileColor: Color
     let previewHeight: CGFloat
+    let onToggle: () -> Void
+    let onPlaceFromContextMenu: () -> Void
+    let onPlaceAsBoard: () -> Void
+    let onDiscard: () -> Void
+    @ViewBuilder let preview: () -> Preview
 
     var body: some View {
         VStack(spacing: 0) {
             HStack(spacing: 0) {
                 Button {
-                    drawer.toggleItem(item.id)
+                    onToggle()
                 } label: {
                     HStack(spacing: 10) {
                         Image(systemSymbol: .link)
@@ -40,7 +45,7 @@ struct DrawerItemView: View {
                         Spacer(minLength: 12)
 
                         Image(
-                            systemSymbol: drawer.expandedItemID == item.id
+                            systemSymbol: isExpanded
                                 ? .chevronDown
                                 : .chevronRight
                         )
@@ -56,16 +61,16 @@ struct DrawerItemView: View {
                 .focused($focusedDrawerItemID, equals: item.id)
                 .contextMenu {
                     Button("Place as Board") {
-                        store.placeDrawerItemAsBoard(item.id)
+                        onPlaceFromContextMenu()
                     }
                     Button("Discard", role: .destructive) {
-                        store.discardDrawerItem(item.id)
+                        onDiscard()
                     }
                 }
-                .accessibilityAddTraits(drawer.selectedItemID == item.id ? .isSelected : [])
+                .accessibilityAddTraits(isSelected ? .isSelected : [])
 
                 Button {
-                    viewModel.placeDrawerItemAsBoard(item.id)
+                    onPlaceAsBoard()
                 } label: {
                     Image(systemSymbol: .rectangleStackBadgePlus)
                         .foregroundStyle(.primary)
@@ -78,7 +83,7 @@ struct DrawerItemView: View {
                 .help("Place as Board")
 
                 Button(role: .destructive) {
-                    store.discardDrawerItem(item.id)
+                    onDiscard()
                 } label: {
                     Image(systemSymbol: .trash)
                         .font(.system(size: 12, weight: .semibold))
@@ -95,22 +100,18 @@ struct DrawerItemView: View {
                 .help("Discard")
             }
 
-            if viewModel.isDrawerOpen, drawer.expandedItemID == item.id {
-                let runtime = store.drawerRuntime(for: item)
-                DrawerWebSurface(
-                    webView: runtime.webView,
-                    isFocused: !viewModel.isDenMode
-                )
-                .id(item.id)
-                .frame(height: previewHeight)
-                .clipShape(RoundedRectangle(cornerRadius: DenRadius.small, style: .continuous))
-                .padding([.horizontal, .bottom], DenLayout.outerInset)
+            if isPreviewVisible {
+                preview()
+                    .id(item.id)
+                    .frame(height: previewHeight)
+                    .clipShape(RoundedRectangle(cornerRadius: DenRadius.small, style: .continuous))
+                    .padding([.horizontal, .bottom], DenLayout.outerInset)
             }
         }
         .background(
             RoundedRectangle(cornerRadius: DenRadius.medium, style: .continuous)
                 .fill(
-                    drawer.selectedItemID == item.id
+                    isSelected
                         ? (differentiateWithoutColor ? Color.primary : profileColor).opacity(0.18)
                         : Color.primary.opacity(0.04)
                 )
@@ -118,7 +119,7 @@ struct DrawerItemView: View {
         .overlay {
             RoundedRectangle(cornerRadius: DenRadius.medium, style: .continuous)
                 .stroke(
-                    drawer.selectedItemID == item.id
+                    isSelected
                         ? (differentiateWithoutColor ? Color.primary : profileColor.opacity(0.38))
                         : Color.primary.opacity(0.08)
                 )

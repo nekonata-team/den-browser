@@ -2,16 +2,16 @@ import DenDomain
 import SwiftUI
 
 struct ClearBrowsingDataView: View {
-    let profileID: UUID
+    let profile: ProfileState?
+    let onClear: (Set<BrowsingDataCategory>) async -> Void
     let onDismiss: () -> Void
 
-    @Environment(ProfileManager.self) private var profileManager
     @State private var selectedCategories: Set<BrowsingDataCategory> = Set(BrowsingDataCategory.allCases)
     @State private var isClearing = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            if let profile = profileManager.profile(id: profileID) {
+            if let profile {
                 HStack(spacing: 8) {
                     Circle()
                         .fill(profileDisplayColor(for: profile.color))
@@ -83,7 +83,7 @@ struct ClearBrowsingDataView: View {
     private func clearData() {
         isClearing = true
         Task {
-            _ = await profileManager.clearBrowsingData(categories: selectedCategories, profileID: profileID)
+            await onClear(selectedCategories)
             isClearing = false
             onDismiss()
         }

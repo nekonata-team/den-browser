@@ -53,8 +53,7 @@ struct DrawerView: View {
     private var header: some View {
         DrawerHeaderView(
             isSearchFocused: $isSearchFocused,
-            profileColor: profileColor,
-            isBottomStyle: isBottomStyle
+            profileColor: profileColor
         )
         .onChange(of: drawer.isFilterInputActive) { _, newValue in
             if newValue {
@@ -85,11 +84,27 @@ struct DrawerView: View {
                     ScrollView {
                         LazyVStack(spacing: 6) {
                             ForEach(drawer.filteredItems) { item in
+                                let isPreviewFocused = !viewModel.isDenMode
                                 DrawerItemView(
                                     focusedDrawerItemID: $focusedDrawerItemID,
                                     item: item,
+                                    isSelected: drawer.selectedItemID == item.id,
+                                    isExpanded: drawer.expandedItemID == item.id,
+                                    isPreviewVisible: viewModel.isDrawerOpen
+                                        && drawer.expandedItemID == item.id,
                                     profileColor: profileColor,
-                                    previewHeight: previewHeight
+                                    previewHeight: previewHeight,
+                                    onToggle: { drawer.toggleItem(item.id) },
+                                    onPlaceFromContextMenu: { store.placeDrawerItemAsBoard(item.id) },
+                                    onPlaceAsBoard: { viewModel.placeDrawerItemAsBoard(item.id) },
+                                    onDiscard: { store.discardDrawerItem(item.id) },
+                                    preview: {
+                                        let runtime = store.drawerRuntime(for: item)
+                                        DrawerWebSurface(
+                                            webView: runtime.webView,
+                                            isFocused: isPreviewFocused
+                                        )
+                                    }
                                 )
                                 .id(drawerItemScrollID(for: item.id))
                             }
@@ -127,7 +142,7 @@ struct DrawerView: View {
     }
 
     private var isBottomStyle: Bool {
-        store.preferences.drawerStyle == .bottom
+        drawer.isBottomStyle
     }
 
     private var drawerShape: UnevenRoundedRectangle {

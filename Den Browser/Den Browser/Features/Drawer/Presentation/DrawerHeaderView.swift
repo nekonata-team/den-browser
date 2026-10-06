@@ -4,15 +4,12 @@ import SFSafeSymbols
 import SwiftUI
 
 struct DrawerHeaderView: View {
-    @Environment(DenStore.self) private var store
-    @Environment(DenViewModel.self) private var viewModel
     @Environment(DrawerViewModel.self) private var drawer
     @Environment(\.accessibilityDifferentiateWithoutColor) private var differentiateWithoutColor
 
     @FocusState.Binding var isSearchFocused: Bool
 
     let profileColor: Color
-    let isBottomStyle: Bool
 
     var body: some View {
         VStack(spacing: isSearchPresented ? 10 : 0) {
@@ -28,14 +25,14 @@ struct DrawerHeaderView: View {
                 HStack(spacing: 8) {
                     Spacer()
                     Button(role: .destructive) {
-                        store.requestDrawerClearConfirmation()
+                        drawer.requestClearConfirmation()
                     } label: {
                         Image(systemSymbol: .trash)
                             .font(.system(size: 12, weight: .semibold))
                             .frame(width: 30, height: 30)
                     }
                     .buttonStyle(.plain)
-                    .disabled(store.state.drawerItems.isEmpty)
+                    .disabled(drawer.itemCount == 0)
                     .accessibilityLabel("Discard All Drawer Items")
                     .help("Discard All Drawer Items")
 
@@ -54,7 +51,7 @@ struct DrawerHeaderView: View {
                         drawer.toggleStyle()
                     } label: {
                         Image(
-                            systemSymbol: isBottomStyle
+                            systemSymbol: drawer.isBottomStyle
                                 ? .arrowDownRightAndArrowUpLeft
                                 : .arrowUpLeftAndArrowDownRight
                         )
@@ -62,12 +59,10 @@ struct DrawerHeaderView: View {
                         .frame(width: 30, height: 30)
                     }
                     .buttonStyle(.plain)
-                    .accessibilityLabel(isBottomStyle ? "Contract Drawer (f)" : "Expand Drawer (f)")
-                    .help(isBottomStyle ? "Contract Drawer (f)" : "Expand Drawer (f)")
+                    .accessibilityLabel(drawer.isBottomStyle ? "Contract Drawer (f)" : "Expand Drawer (f)")
+                    .help(drawer.isBottomStyle ? "Contract Drawer (f)" : "Expand Drawer (f)")
 
-                    DenCloseButton(label: "Close Drawer") {
-                        viewModel.closeDrawer()
-                    }
+                    DenCloseButton(label: "Close Drawer", action: drawer.close)
                 }
             }
 
@@ -78,7 +73,7 @@ struct DrawerHeaderView: View {
                 TextField(
                     text: Binding(
                         get: { drawer.query },
-                        set: { drawer.setQuery($0) }
+                        set: drawer.setQuery
                     ),
                     prompt: Text("Search drawer items")
                 ) {
@@ -126,8 +121,8 @@ struct DrawerHeaderView: View {
     }
 
     private var itemCountLabel: String {
-        let total = store.state.drawerItems.count
-        guard !drawer.query.isEmpty else { return "\(total)" }
-        return "\(drawer.filteredItems.count) of \(total)"
+        drawer.query.isEmpty
+            ? "\(drawer.itemCount)"
+            : "\(drawer.filteredItemCount) of \(drawer.itemCount)"
     }
 }

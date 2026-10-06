@@ -12,6 +12,7 @@ final class DrawerViewModel {
     var expandedItemID: UUID?
 
     @ObservationIgnored var onPreviewExpanded: (() -> Void)?
+    @ObservationIgnored var onClose: (() -> Void)?
 
     init(store: DenStore) {
         self.store = store
@@ -20,6 +21,10 @@ final class DrawerViewModel {
     var filteredItems: [DrawerItem] {
         store.state.drawerItems.filter(matchesFilter)
     }
+
+    var itemCount: Int { store.state.drawerItems.count }
+    var filteredItemCount: Int { filteredItems.count }
+    var isBottomStyle: Bool { store.preferences.drawerStyle == .bottom }
 
     var selectedItem: DrawerItem? {
         guard let selectedItemID else { return nil }
@@ -114,6 +119,14 @@ final class DrawerViewModel {
 
     func toggleStyle() {
         store.preferences.toggleDrawerStyle()
+    }
+
+    func requestClearConfirmation() {
+        store.requestDrawerClearConfirmation()
+    }
+
+    func close() {
+        onClose?()
     }
 
     func preparePresentation() {

@@ -26,6 +26,8 @@ final class DeskFilterViewModel {
         return focusedDesk.boards.filter(matchesFilter)
     }
 
+    var totalBoardCount: Int { store.focusedDesk?.boards.count ?? 0 }
+
     var isPresented: Bool { phase != .inactive }
     var isInputActive: Bool { phase == .filtering }
     var isSelecting: Bool { phase == .selecting }

@@ -63,10 +63,16 @@ struct ProfileWindowView: View {
                 )
             ) {
                 if let id = profileManager.clearBrowsingDataProfileID {
-                    ClearBrowsingDataView(profileID: id) {
-                        profileManager.clearBrowsingDataProfileID = nil
-                        profileManager.clearBrowsingDataWindowID = nil
-                    }
+                    ClearBrowsingDataView(
+                        profile: profileManager.profile(id: id),
+                        onClear: { categories in
+                            _ = await profileManager.clearBrowsingData(categories: categories, profileID: id)
+                        },
+                        onDismiss: {
+                            profileManager.clearBrowsingDataProfileID = nil
+                            profileManager.clearBrowsingDataWindowID = nil
+                        }
+                    )
                 }
             }
         } else {
@@ -247,13 +253,14 @@ private struct WindowRegistration: NSViewRepresentable {
 }
 
 struct OpenProfilePanel: View {
-    @Environment(DenViewModel.self) private var viewModel
-    @Environment(ProfileManager.self) private var profileManager
-    @Environment(\.openWindow) private var openWindow
+    let profiles: [ProfileState]
+    let profileColor: Color
+    let onOpenProfile: (UUID) -> Void
+    let onClose: () -> Void
+
     @State private var query = ""
     @State private var selectedProfileID: UUID?
     @FocusState private var isFocused: Bool
-    let profileColor: Color
 
     var body: some View {
         VStack(alignment: .leading, spacing: DenPanelLayout.contentSpacing) {
@@ -309,8 +316,8 @@ struct OpenProfilePanel: View {
     }
 
     private var filteredProfiles: [ProfileState] {
-        guard !query.isEmpty else { return profileManager.profiles }
-        return profileManager.profiles.filter { $0.name.localizedCaseInsensitiveContains(query) }
+        guard !query.isEmpty else { return profiles }
+        return profiles.filter { $0.name.localizedCaseInsensitiveContains(query) }
     }
 
     private func moveProfileSelection(by offset: Int) {
@@ -327,14 +334,12 @@ struct OpenProfilePanel: View {
     }
 
     private func openProfile(_ profileID: UUID) {
-        close()
-        if !profileManager.activateWindow(for: profileID) {
-            openWindow(value: ProfileWindowRoute(profileID: profileID))
-        }
+        onClose()
+        onOpenProfile(profileID)
     }
 
     private func close() {
-        viewModel.setTemporaryContext(nil)
+        onClose()
     }
 }
 

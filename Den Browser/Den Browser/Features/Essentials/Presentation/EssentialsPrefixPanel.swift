@@ -5,9 +5,9 @@ import SwiftUI
 
 struct EssentialsPrefixPanel: View {
     let profileColor: Color
-
-    @Environment(DenStore.self) private var store
-    @Environment(DenViewModel.self) private var viewModel
+    let essentials: [Essential]
+    let selectedEssentialID: UUID?
+    let onSelect: (UUID) -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: DenPanelLayout.contentSpacing) {
@@ -16,7 +16,7 @@ struct EssentialsPrefixPanel: View {
                     .font(.headline)
             }
 
-            if store.essentials.isEmpty {
+            if essentials.isEmpty {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("No Essentials configured.")
                     Text("Configure Essentials in Settings.")
@@ -32,7 +32,7 @@ struct EssentialsPrefixPanel: View {
                             essentialRows
                         }
                         .onAppear { scrollToSelectedEssential(using: proxy) }
-                        .onChange(of: viewModel.selectedEssentialID) { _, _ in
+                        .onChange(of: selectedEssentialID) { _, _ in
                             scrollToSelectedEssential(using: proxy)
                         }
                     }
@@ -41,7 +41,7 @@ struct EssentialsPrefixPanel: View {
             }
 
             DenPanelHint(
-                store.essentials.isEmpty
+                essentials.isEmpty
                     ? "Press Escape to cancel"
                     : "↑↓ Focus · Return Start · Essential key Start · Esc Cancel"
             )
@@ -51,8 +51,8 @@ struct EssentialsPrefixPanel: View {
 
     private var essentialRows: some View {
         VStack(alignment: .leading, spacing: DenPanelLayout.controlSpacing) {
-            ForEach(store.essentials) { essential in
-                let isSelected = essential.id == viewModel.selectedEssentialID
+            ForEach(essentials) { essential in
+                let isSelected = essential.id == selectedEssentialID
                 HStack(spacing: DenPanelLayout.controlSpacing) {
                     ShortcutChip(tokens: [essential.displayKey], width: 42)
                     Text(essential.name)
@@ -64,7 +64,7 @@ struct EssentialsPrefixPanel: View {
                 .frame(minHeight: 36)
                 .denSelectionHighlight(isSelected, profileColor: profileColor, inactiveOpacity: 0.04)
                 .contentShape(RoundedRectangle(cornerRadius: DenRadius.small))
-                .onTapGesture { viewModel.selectEssential(essential.id) }
+                .onTapGesture { onSelect(essential.id) }
                 .id(essential.id)
                 .accessibilityElement(children: .combine)
                 .accessibilityAddTraits(isSelected ? .isSelected : [])
@@ -74,7 +74,7 @@ struct EssentialsPrefixPanel: View {
     }
 
     private func scrollToSelectedEssential(using proxy: ScrollViewProxy) {
-        guard let selectedEssentialID = viewModel.selectedEssentialID else { return }
+        guard let selectedEssentialID else { return }
         proxy.scrollTo(selectedEssentialID, anchor: .center)
     }
 }

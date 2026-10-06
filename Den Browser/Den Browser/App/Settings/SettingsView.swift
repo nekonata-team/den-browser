@@ -600,10 +600,16 @@ private struct ProfilesSettingsView: View {
             )
         ) {
             if let id = profileManager.clearBrowsingDataProfileID {
-                ClearBrowsingDataView(profileID: id) {
-                    profileManager.clearBrowsingDataProfileID = nil
-                    profileManager.clearBrowsingDataWindowID = nil
-                }
+                ClearBrowsingDataView(
+                    profile: profileManager.profile(id: id),
+                    onClear: { categories in
+                        _ = await profileManager.clearBrowsingData(categories: categories, profileID: id)
+                    },
+                    onDismiss: {
+                        profileManager.clearBrowsingDataProfileID = nil
+                        profileManager.clearBrowsingDataWindowID = nil
+                    }
+                )
             }
         }
     }

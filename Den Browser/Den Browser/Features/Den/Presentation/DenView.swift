@@ -21,7 +21,9 @@ struct DenView<Header: View>: View {
 
     @Environment(DenStore.self) private var store
     @Environment(DenViewModel.self) private var viewModel
+    @Environment(ProfileManager.self) private var profileManager
     @Environment(AppPreferences.self) private var preferences
+    @Environment(\.openWindow) private var openWindow
     @Environment(\.accessibilityReduceMotion) private var systemReduceMotion
 
     init(
@@ -204,7 +206,14 @@ struct DenView<Header: View>: View {
     private func activePanel(newBoardWidth: CGFloat, boardHeight: CGFloat) -> some View {
         switch viewModel.temporaryContext {
         case .essentialsPrefix:
-            panelOverlay(EssentialsPrefixPanel(profileColor: profileColor))
+            panelOverlay(
+                EssentialsPrefixPanel(
+                    profileColor: profileColor,
+                    essentials: store.essentials,
+                    selectedEssentialID: viewModel.selectedEssentialID,
+                    onSelect: { viewModel.selectEssential($0) }
+                )
+            )
         case .openBoard:
             panelOverlay(OpenBoardPanel(profileColor: profileColor, newBoardWidth: newBoardWidth))
         case .zmxSessions:
@@ -251,7 +260,18 @@ struct DenView<Header: View>: View {
                 )
                 .transition(DenMotion.transition(reduceMotion: shouldReduceMotion, scale: 0.98))
         case .profilePicker:
-            panelOverlay(OpenProfilePanel(profileColor: profileColor))
+            panelOverlay(
+                OpenProfilePanel(
+                    profiles: profileManager.profiles,
+                    profileColor: profileColor,
+                    onOpenProfile: { profileID in
+                        if !profileManager.activateWindow(for: profileID) {
+                            openWindow(value: ProfileWindowRoute(profileID: profileID))
+                        }
+                    },
+                    onClose: { viewModel.setTemporaryContext(nil) }
+                )
+            )
         case .drawer, nil:
             EmptyView()
         }
@@ -307,17 +327,19 @@ struct DenView<Header: View>: View {
                 .accessibilityHidden(true)
                 .zIndex(DenOverlayLayer.notificationDismissArea)
 
-            NotificationListView(profileColor: profileColor)
-                .padding(
-                    .top,
-                    shouldShowHeader
-                        ? DenLayout.denHeaderHeight + DenLayout.panelGap
-                        : DenLayout.outerInset
-                )
-                .padding(.trailing, DenLayout.outerInset)
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
-                .transition(DenMotion.transition(reduceMotion: shouldReduceMotion, scale: 0.96))
-                .zIndex(DenOverlayLayer.notificationList)
+            NotificationListView(
+                profileColor: profileColor
+            )
+            .padding(
+                .top,
+                shouldShowHeader
+                    ? DenLayout.denHeaderHeight + DenLayout.panelGap
+                    : DenLayout.outerInset
+            )
+            .padding(.trailing, DenLayout.outerInset)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
+            .transition(DenMotion.transition(reduceMotion: shouldReduceMotion, scale: 0.96))
+            .zIndex(DenOverlayLayer.notificationList)
         }
     }
 
@@ -441,7 +463,6 @@ extension DenView where Header == EmptyView {
 }
 
 private struct DeskFilterOverlay: View {
-    @Environment(DenStore.self) private var store
     @Environment(DeskFilterViewModel.self) private var deskFilter
     @Environment(\.accessibilityDifferentiateWithoutColor) private var differentiateWithoutColor
     let profileColor: Color
@@ -468,7 +489,7 @@ private struct DeskFilterOverlay: View {
             .disabled(!deskFilter.isInputActive)
             .accessibilityIdentifier("desk-filter-input")
 
-            Text("\(deskFilter.filteredBoards.count)/\(store.focusedDesk?.boards.count ?? 0)")
+            Text("\(deskFilter.filteredBoards.count)/\(deskFilter.totalBoardCount)")
                 .font(.caption.monospacedDigit())
                 .foregroundStyle(.secondary)
         }

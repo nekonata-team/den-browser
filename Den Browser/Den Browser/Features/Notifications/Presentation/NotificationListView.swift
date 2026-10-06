@@ -7,11 +7,12 @@ import SwiftUI
 struct NotificationListView: View {
     let profileColor: Color
 
-    @Environment(DenStore.self) private var store
-    @Environment(NotificationListViewModel.self) private var notificationList
-    @Environment(DenViewModel.self) private var viewModel
+    @Environment(NotificationListViewModel.self) private var viewModel
 
     var body: some View {
+        let items = viewModel.items
+        let unreadCount = viewModel.unreadCount
+
         VStack(alignment: .leading, spacing: DenPanelLayout.contentSpacing) {
             HStack {
                 Image(systemSymbol: .bell)
@@ -19,48 +20,44 @@ struct NotificationListView: View {
                 Text("Notifications")
                     .font(.headline)
                 Spacer()
-                if store.unreadNotificationCount > 0 {
-                    Text("\(store.unreadNotificationCount) unread")
+                if unreadCount > 0 {
+                    Text("\(unreadCount) unread")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
                 Button(role: .destructive) {
-                    store.requestNotificationClearConfirmation()
+                    viewModel.requestClear()
                 } label: {
                     Image(systemSymbol: .trash)
                         .font(.system(size: 12, weight: .semibold))
                         .frame(width: 30, height: 30)
                 }
                 .buttonStyle(.plain)
-                .disabled(store.notifications.isEmpty)
+                .disabled(items.isEmpty)
                 .accessibilityLabel("Clear All Notifications")
                 .help("Clear All Notifications")
-                DenCloseButton(label: "Close Notifications", action: viewModel.closeNotificationList)
+                DenCloseButton(label: "Close Notifications", action: viewModel.close)
             }
 
-            if store.notifications.isEmpty {
+            if items.isEmpty {
                 ContentUnavailableView("No Notifications", systemSymbol: .bell)
                     .frame(maxWidth: .infinity, minHeight: 160)
             } else {
                 ScrollViewReader { proxy in
                     ScrollView {
                         LazyVStack(spacing: 6) {
-                            ForEach(store.notifications) { notification in
-                                Button {
-                                    store.openNotification(notification)
-                                } label: {
-                                    NotificationRow(
-                                        notification: notification,
-                                        source: store.notificationSource(for: notification),
-                                        profileColor: profileColor,
-                                        isSelected: notification.id == notificationList.selectedNotificationID)
-                                }
-                                .buttonStyle(.plain)
-                                .id(notification.id)
+                            ForEach(items) { item in
+                                NotificationRow(
+                                    item: item,
+                                    profileColor: profileColor,
+                                    isSelected: item.id == viewModel.selectedNotificationID,
+                                    onOpen: { viewModel.open(item.notification) }
+                                )
+                                .id(item.id)
                             }
                         }
                     }
-                    .onChange(of: notificationList.selectedNotificationID) { _, selectedNotificationID in
+                    .onChange(of: viewModel.selectedNotificationID) { _, selectedNotificationID in
                         guard let selectedNotificationID else { return }
                         proxy.scrollTo(selectedNotificationID, anchor: .center)
                     }
@@ -80,70 +77,75 @@ struct NotificationListView: View {
 }
 
 private struct NotificationRow: View {
-    let notification: DenNotification
-    let source: DenNotificationSource?
+    let item: NotificationListItem
     let profileColor: Color
     let isSelected: Bool
+    let onOpen: () -> Void
 
     @Environment(\.accessibilityDifferentiateWithoutColor) private var differentiateWithoutColor
 
     var body: some View {
-        HStack(alignment: .top, spacing: 10) {
-            Circle()
-                .fill(notification.isRead ? Color.clear : profileColor)
-                .frame(width: 8, height: 8)
-                .overlay {
-                    Circle().stroke(profileColor.opacity(0.7), lineWidth: notification.isRead ? 1 : 0)
-                }
-                .padding(.top, 6)
+        Button(action: onOpen) {
+            HStack(alignment: .top, spacing: 10) {
+                Circle()
+                    .fill(item.notification.isRead ? Color.clear : profileColor)
+                    .frame(width: 8, height: 8)
+                    .overlay {
+                        Circle().stroke(
+                            profileColor.opacity(0.7),
+                            lineWidth: item.notification.isRead ? 1 : 0)
+                    }
+                    .padding(.top, 6)
 
-            VStack(alignment: .leading, spacing: 4) {
-                HStack(alignment: .firstTextBaseline) {
-                    Text(notification.title ?? notification.body)
-                        .font(.callout.weight(notification.isRead ? .regular : .semibold))
-                        .lineLimit(2)
-                    Spacer(minLength: 8)
-                    NotificationTime(createdAt: notification.createdAt)
-                }
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack(alignment: .firstTextBaseline) {
+                        Text(item.notification.title ?? item.notification.body)
+                            .font(.callout.weight(item.notification.isRead ? .regular : .semibold))
+                            .lineLimit(2)
+                        Spacer(minLength: 8)
+                        NotificationTime(createdAt: item.notification.createdAt)
+                    }
 
-                if notification.title != nil, !notification.body.isEmpty {
-                    Text(notification.body)
-                        .font(.caption)
+                    if item.notification.title != nil, !item.notification.body.isEmpty {
+                        Text(item.notification.body)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(3)
+                    }
+
+                    Text(item.source.map { "\($0.deskLabel) · \($0.boardLabel)" } ?? "Board removed")
+                        .font(.caption2)
                         .foregroundStyle(.secondary)
-                        .lineLimit(3)
+                        .lineLimit(1)
                 }
-
-                Text(source.map { "\($0.deskLabel) · \($0.boardLabel)" } ?? "Board removed")
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 9)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(
+                isSelected
+                    ? (differentiateWithoutColor ? Color.primary : profileColor).opacity(0.2)
+                    : item.notification.isRead
+                        ? Color.clear
+                        : profileColor.opacity(0.1),
+                in: RoundedRectangle(cornerRadius: DenRadius.medium, style: .continuous)
+            )
+            .overlay {
+                RoundedRectangle(cornerRadius: DenRadius.medium, style: .continuous)
+                    .strokeBorder(
+                        isSelected
+                            ? (differentiateWithoutColor ? Color.primary : profileColor.opacity(0.85))
+                            : Color.clear,
+                        lineWidth: 1
+                    )
             }
         }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 9)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(
-            isSelected
-                ? (differentiateWithoutColor ? Color.primary : profileColor).opacity(0.2)
-                : notification.isRead
-                    ? Color.clear
-                    : profileColor.opacity(0.1),
-            in: RoundedRectangle(cornerRadius: DenRadius.medium, style: .continuous)
-        )
-        .overlay {
-            RoundedRectangle(cornerRadius: DenRadius.medium, style: .continuous)
-                .strokeBorder(
-                    isSelected
-                        ? (differentiateWithoutColor ? Color.primary : profileColor.opacity(0.85))
-                        : Color.clear,
-                    lineWidth: 1
-                )
-        }
-        .opacity(source == nil ? 0.55 : 1)
+        .buttonStyle(.plain)
+        .opacity(item.source == nil ? 0.55 : 1)
         .contentShape(Rectangle())
         .accessibilityElement(children: .combine)
-        .accessibilityLabel(notification.title ?? notification.body)
-        .accessibilityHint(source == nil ? "Board no longer exists" : "Focus notification source Board")
+        .accessibilityLabel(item.notification.title ?? item.notification.body)
+        .accessibilityHint(item.source == nil ? "Board no longer exists" : "Focus notification source Board")
     }
 }
 

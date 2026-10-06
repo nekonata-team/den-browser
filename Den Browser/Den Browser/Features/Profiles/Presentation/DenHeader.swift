@@ -58,7 +58,9 @@ struct DenHeaderControls: ToolbarContent {
                 NotificationButton()
 
                 if store.focusedDesk?.boards.isEmpty == false {
-                    SaveDeskPresetButton()
+                    SaveDeskPresetButton {
+                        viewModel.showSaveDeskPresetPanel()
+                    }
                 }
 
                 ProfileChip(profile: profile, windowID: windowID)
@@ -95,11 +97,11 @@ private struct NotificationButton: View {
 }
 
 private struct SaveDeskPresetButton: View {
-    @Environment(DenViewModel.self) private var viewModel
+    let action: () -> Void
 
     var body: some View {
         Button {
-            viewModel.showSaveDeskPresetPanel()
+            action()
         } label: {
             Label {
                 Text("Save Desk as Preset")
