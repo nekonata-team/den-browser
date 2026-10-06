@@ -1,5 +1,6 @@
 import AppKit
 import Darwin
+import DenDomain
 import Foundation
 import WebKit
 

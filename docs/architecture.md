@@ -18,30 +18,24 @@ Den Browser/Den Browser/
     shared visual tokens, color palettes, layout metrics, motion, panel styling, and reusable controls
   Features/
     Den/
-      Domain/                 aggregate Den state
       Application/            shared storage, window store, operations, and operation feedback
       Presentation/           window ViewModel, Den composition, panels, Toast, and window layout
       Preferences/
     Desk/
-      Domain/                 Desk state and Desk Presets
       Presentation/           switcher, panels, and preset UI
     Board/
-      Domain/                 identity, kind, and grouping
       Application/            input interpretation and launch validation
       Presentation/           strip, rail, layout, surfaces, and common panels
-      Web/                    Domain, Presentation, and Infrastructure
-      Terminal/               Domain, Application, Presentation, and Infrastructure
-      Inspection/             Domain, Presentation, and Infrastructure
-      Tutorial/               Domain and Presentation
+      Web/                    Presentation and Infrastructure
+      Terminal/               Application, Presentation, and Infrastructure
+      Inspection/             Presentation and Infrastructure
+      Tutorial/               Presentation
     Drawer/
-      Domain/
       Presentation/
       Infrastructure/
     Essentials/
-      Domain/                 named reusable Board inputs
       Presentation/           prefix panel and settings
     Notifications/
-      Domain/                 transient Board messages
       Presentation/           notification list and selection
     Overview/
       Presentation/           cross-Desk overview and selection
@@ -49,12 +43,10 @@ Den Browser/Den Browser/
       Presentation/           live Board resource usage
       Infrastructure/         process-resource sampling
     Profiles/
-      Domain/
       Application/
       Presentation/
       Infrastructure/
     Web/
-      Domain/                 shared URL rules and Web input values
       Infrastructure/         shared WebKit runtime, DOM, interactions, and screenshots
     Extensions/
     SheetNavigation/
@@ -67,9 +59,15 @@ Den Browser/Den Browser/
   PrivateWebKit/
     private WebKit API declarations
   Resources/
+Packages/DenDomain/
+  Sources/DenDomain/
+    Board/{Inspection,Terminal,Tutorial,Web}
+    Den, Desk, Drawer, Essentials, Notifications, Profiles, Web
 ```
 
-Features are source ownership groups inside one Swift target, not independently isolated modules or stores. Den owns aggregate state, the workflows joining Desks, Boards, and Drawer, and the composition of the Den window. Desk, Board, Drawer, Essentials, Notifications, Overview, and BoardActivity own their data or feature-specific presentation in sibling folders; Board kind-specific code stays under Board. Toast, Den backgrounds, confirmation dialogs, and window layout stay in Den because they present or coordinate the complete Den. Den retains the operations connecting Essentials and Notifications to Boards and the transitions between their panels and other window contexts.
+Features are source ownership groups inside the app target, not independently isolated modules or stores. Den owns aggregate state, the workflows joining Desks, Boards, and Drawer, and the composition of the Den window. Desk, Board, Drawer, Essentials, Notifications, Overview, and BoardActivity own their data or feature-specific presentation in sibling folders; Board kind-specific code stays under Board. Toast, Den backgrounds, confirmation dialogs, and window layout stay in Den because they present or coordinate the complete Den. Den retains the operations connecting Essentials and Notifications to Boards and the transitions between their panels and other window contexts.
+
+Selected shared Domain values live in one `DenDomain` Swift package target. Its Foundation-only model closure is shared by the app and unit tests; it contains no Stores, workflows, persistence adapters, presentation, or platform runtimes. A single module preserves cross-feature model references such as Den-to-Desk and Board-to-Web state. The app and unit-test targets import this product directly.
 
 `Design` owns shared visual tokens, color palettes, fixed layout metrics, motion choices and presets, panel styling, and reusable controls. This includes normal, Den Mode, and Private Den background palettes; Den Presentation selects and renders them from the current window state. `LayoutMetrics.swift` defines Den, panel, and shortcut-guide dimensions without Feature state. Den Presentation retains Board width and height calculations using window geometry and Board constraints. Features and App may depend on Design; Design does not depend on Feature state, Stores, or workflows. Feature-specific geometry calculations and transitions stay in their owning Presentation code. Selection navigation and drag geometry are presentation behavior rather than design components and remain outside Design.
 
@@ -80,6 +78,7 @@ The shared Web group contains code used by Web Boards, Drawer Preview, and Sheet
 - `App` assembles scenes, windows, commands, and dependencies. It does not acquire feature behavior merely because multiple Features use it.
 - `Design` provides shared visual presentation without depending on Feature models or operations. Motion preference storage remains in AppPreferences; its visual choice type belongs to Design.
 - `Domain` contains state and product rules. It does not depend on `DenStore`, Application-owned operation events, SwiftUI, AppKit, WebKit, or live runtime objects. Domain groups may reference one another according to the product model: Den contains Desks, and Desks contain Boards.
+- `DenDomain` is the compiler-enforced module for the moved shared Domain values. It depends only on Foundation and keeps the app's Swift 6 MainActor isolation policy; application behavior stays in the app target.
 - `Application` owns operation sequencing, application state, and runtime lifecycle coordination. `DenStore` remains the operation entry point; its extensions live in `Den/Application/Operations`. No new per-domain store is introduced merely to match the folder tree.
 - `Presentation` owns views, window-local UI models, geometry, visual tokens, and display mappings as independent functions. Existing views may use `DenStore` across source groups. Native view adapters may use their concrete runtimes.
 - `Infrastructure` owns concrete WebKit, Terminal, persistence, and process integration. Application code can call these implementations directly; folder organization alone does not justify a protocol, repository, or coordinator.
@@ -87,7 +86,7 @@ The shared Web group contains code used by Web Boards, Drawer Preview, and Sheet
 - IPC is an application adapter shared with the bundled CLI. Protocol definitions are compiled into both targets; socket transport does not own Board or Profile policy.
 - Feature-specific settings UI remains with its owner. `App/Settings` assembles those screens.
 
-Folders communicate ownership but do not enforce access control in the shared Swift target. Judge dependencies by the role of the code, not by assuming every sibling Feature is an independent module. Keep domain rules free of UI and runtime dependencies, and use the narrowest practical entry point for cross-domain operations.
+Folders communicate ownership but do not enforce access control between source groups that remain in the app target. `DenDomain` enforces the moved model boundary. Judge remaining dependencies by the role of the code, not by assuming every sibling Feature is an independent module. Keep domain rules free of UI and runtime dependencies, and use the narrowest practical entry point for cross-domain operations.
 
 WebExtension integration uses the existing `WebExtensionHost` boundary. Board and Drawer supply their WebKit instances and URL-loading callbacks; Extensions owns tab registration and never imports Den runtime types. Profile-window keyboard ownership follows [keyboard-input.md](./keyboard-input.md).
 
@@ -202,6 +201,7 @@ Contains reusable operating-system integration rather than product concepts. Do 
 - Use Domain, Application, Presentation, and Infrastructure within a source group only where they clarify existing responsibilities. Keep small groups flat rather than creating empty or single-file layer scaffolding.
 - Promote code to `Platform` only after a feature-independent boundary genuinely exists; multiple callers alone are not sufficient.
 - Keep source moves separate from behavior changes and dependency refactors.
+- Keep Domain in one shared model target; split by Feature only when an independent dependency boundary exists.
 - Do not edit `project.pbxproj` for ordinary moves under the file-system-synchronized root group.
 - Preserve Objective-C bridging-header paths, private WebKit header references, target membership, and bundled resources during moves.
 

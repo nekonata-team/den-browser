@@ -1,4 +1,5 @@
 import CoreGraphics
+import DenDomain
 import Foundation
 
 enum BoardStripCoordinateSpace {

@@ -1,4 +1,5 @@
 import AppKit
+import DenDomain
 import SwiftUI
 
 func profileDisplayColor(for rgb: ProfileRGB) -> Color {

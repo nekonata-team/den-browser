@@ -10,6 +10,7 @@ ui_test_result := ui_test_derived_data + "/TestResults.xcresult"
 export SPARKLE_TOOLS := derived_data + "/SourcePackages/artifacts/sparkle/Sparkle/bin"
 swift_format := "xcrun swift-format"
 swift_sources := "Den Browser"
+domain_sources := "Packages/DenDomain/Sources"
 
 # Web works.
 mod web
@@ -21,6 +22,7 @@ mod release
 [group("quality")]
 format:
     {{swift_format}} format --in-place --recursive --parallel --configuration .swift-format "{{swift_sources}}"
+    {{swift_format}} format --in-place --recursive --parallel --configuration .swift-format "{{domain_sources}}"
 
 # Format staged Swift sources in place.
 [group("quality")]
@@ -32,6 +34,7 @@ format-staged +files:
 [group("quality")]
 lint: architecture-check
     {{swift_format}} lint --strict --recursive --parallel --configuration .swift-format "{{swift_sources}}"
+    {{swift_format}} lint --strict --recursive --parallel --configuration .swift-format "{{domain_sources}}"
     swiftlint lint --quiet --strict
 
 # Check Swift layer import rules and their fixtures.
@@ -39,6 +42,7 @@ lint: architecture-check
 architecture-check:
     ast-grep test --config sgconfig.yml --skip-snapshot-tests
     ast-grep scan --config sgconfig.yml "{{swift_sources}}/Den Browser"
+    ast-grep scan --config sgconfig.yml "{{domain_sources}}"
 
 # Build macOS app with development signing.
 [group("build")]

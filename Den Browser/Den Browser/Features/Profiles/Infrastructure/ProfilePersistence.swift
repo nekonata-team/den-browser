@@ -1,3 +1,4 @@
+import DenDomain
 import Foundation
 
 private enum ProfileFileLoadError: Error {

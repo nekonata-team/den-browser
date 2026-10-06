@@ -1,3 +1,5 @@
+import DenDomain
+
 func browsingDataLabel(for category: BrowsingDataCategory) -> String {
     switch category {
     case .cookies: "Cookies and Site Data"

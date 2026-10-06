@@ -15,6 +15,8 @@
 		55A10001301A000000000001 /* SFSafeSymbols in Frameworks */ = {isa = PBXBuildFile; productRef = 55A10003301A000000000001 /* SFSafeSymbols */; };
 		56B1000130C0000000000001 /* Subprocess in Frameworks */ = {isa = PBXBuildFile; productRef = 56B1000330C0000000000001 /* Subprocess */; };
 		57C0A1E03000000000000003 /* MCP in Frameworks */ = {isa = PBXBuildFile; productRef = 57C0A1E03000000000000002 /* MCP */; };
+		58C0A1E03000000000000001 /* DenDomain in Frameworks */ = {isa = PBXBuildFile; productRef = 58C0A1E03000000000000003 /* DenDomain */; };
+		58C0A1E03000000000000004 /* DenDomain in Frameworks */ = {isa = PBXBuildFile; productRef = 58C0A1E03000000000000003 /* DenDomain */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -136,6 +138,7 @@
 				53A10004301A000000000001 /* GhosttyTheme in Frameworks */,
 				55A10001301A000000000001 /* SFSafeSymbols in Frameworks */,
 				56B1000130C0000000000001 /* Subprocess in Frameworks */,
+				58C0A1E03000000000000001 /* DenDomain in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -143,6 +146,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				58C0A1E03000000000000004 /* DenDomain in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -223,6 +227,7 @@
 				533B2063303A206F00B2A985 /* Sparkle */,
 				55A10003301A000000000001 /* SFSafeSymbols */,
 				56B1000330C0000000000001 /* Subprocess */,
+				58C0A1E03000000000000003 /* DenDomain */,
 			);
 			productName = "Den Browser";
 			productReference = 530E9DDB2FFFFED90033427C /* Den Browser.app */;
@@ -245,6 +250,9 @@
 				530E9DEB2FFFFEDB0033427C /* Den BrowserTests */,
 			);
 			name = "Den BrowserTests";
+			packageProductDependencies = (
+				58C0A1E03000000000000003 /* DenDomain */,
+			);
 			productName = "Den BrowserTests";
 			productReference = 530E9DE82FFFFEDB0033427C /* Den BrowserTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
@@ -336,6 +344,7 @@
 				55A10002301A000000000001 /* XCRemoteSwiftPackageReference "SFSafeSymbols" */,
 				56B1000230C0000000000001 /* XCRemoteSwiftPackageReference "swift-subprocess" */,
 				57C0A1E03000000000000001 /* XCRemoteSwiftPackageReference "swift-sdk" */,
+				58C0A1E03000000000000002 /* XCLocalSwiftPackageReference "../Packages/DenDomain" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 530E9DDC2FFFFED90033427C /* Products */;
@@ -830,6 +839,13 @@
 		};
 /* End XCConfigurationList section */
 
+/* Begin XCLocalSwiftPackageReference section */
+		58C0A1E03000000000000002 /* XCLocalSwiftPackageReference "../Packages/DenDomain" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ../Packages/DenDomain;
+		};
+/* End XCLocalSwiftPackageReference section */
+
 /* Begin XCRemoteSwiftPackageReference section */
 		531CEFB0304D500000C9C636 /* XCRemoteSwiftPackageReference "swift-argument-parser" */ = {
 			isa = XCRemoteSwiftPackageReference;
@@ -916,6 +932,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 57C0A1E03000000000000001 /* XCRemoteSwiftPackageReference "swift-sdk" */;
 			productName = MCP;
+		};
+		58C0A1E03000000000000003 /* DenDomain */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 58C0A1E03000000000000002 /* XCLocalSwiftPackageReference "../Packages/DenDomain" */;
+			productName = DenDomain;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

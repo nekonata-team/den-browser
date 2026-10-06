@@ -1,3 +1,5 @@
+import DenDomain
+
 enum TerminalLaunchCommand {
     static func make(
         for kind: BoardKind,

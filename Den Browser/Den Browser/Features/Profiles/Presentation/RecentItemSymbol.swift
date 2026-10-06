@@ -1,3 +1,4 @@
+import DenDomain
 import SFSafeSymbols
 
 func recentItemSymbol(for item: RecentItem) -> SFSymbol {

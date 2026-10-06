@@ -1,3 +1,4 @@
+import DenDomain
 import Foundation
 import GhosttyKit
 import GhosttyTerminal

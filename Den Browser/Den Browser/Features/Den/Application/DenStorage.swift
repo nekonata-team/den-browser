@@ -1,4 +1,5 @@
 import AppKit
+import DenDomain
 import Foundation
 import Observation
 

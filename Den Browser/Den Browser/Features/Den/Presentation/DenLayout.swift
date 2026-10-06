@@ -1,4 +1,5 @@
 import CoreGraphics
+import DenDomain
 
 extension DenLayout {
     static func boardWidth(

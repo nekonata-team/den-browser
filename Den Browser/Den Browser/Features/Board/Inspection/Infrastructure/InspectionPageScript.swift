@@ -1,3 +1,4 @@
+import DenDomain
 import Foundation
 
 enum InspectionPageScript {

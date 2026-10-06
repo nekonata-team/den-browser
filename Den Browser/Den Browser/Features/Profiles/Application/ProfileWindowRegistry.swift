@@ -1,4 +1,5 @@
 import AppKit
+import DenDomain
 
 @MainActor
 final class ProfileWindowRegistry {
