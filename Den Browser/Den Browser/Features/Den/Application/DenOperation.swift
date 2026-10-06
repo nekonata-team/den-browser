@@ -14,14 +14,15 @@ enum DenOperationEvent: Equatable {
     case keyboardShortcutsShown
 }
 
-extension TutorialBoardStep {
-    var completionEvents: [DenOperationEvent] {
+extension DenOperationEvent {
+    var tutorialStep: TutorialBoardStep? {
         switch self {
-        case .openBoard: [.webBoardOpened]
-        case .navigateBoards: [.boardFocusMoved]
-        case .createDesk: [.deskCreated]
-        case .keyboardShortcuts: [.keyboardShortcutsShown]
-        case .terminalBoard: [.terminalBoardOpened]
+        case .webBoardOpened: .openBoard
+        case .terminalBoardOpened: .terminalBoard
+        case .deskCreated: .createDesk
+        case .boardFocusMoved: .navigateBoards
+        case .keyboardShortcutsShown: .keyboardShortcuts
+        case .denModeEntered: nil
         }
     }
 }

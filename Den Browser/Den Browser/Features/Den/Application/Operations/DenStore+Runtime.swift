@@ -53,18 +53,10 @@ extension DenStore {
             return runtime
         }
 
-        let command: String?
-        if board.isZellij {
-            command = zellijClient.launchCommand(sessionName: board.zellijSessionName)
-        } else if board.isZmx {
-            command = board.zmxSessionName.flatMap {
-                zmxClient.launchCommand(
-                    sessionName: $0,
-                    rootSessionName: board.zmxRootSessionName)
-            }
-        } else {
-            command = nil
-        }
+        let command = TerminalLaunchCommand.make(
+            for: board.kind,
+            zellijClient: zellijClient,
+            zmxClient: zmxClient)
 
         let runtime = TerminalRuntime(
             workingDirectory: board.terminalWorkingDirectory ?? FileManager.default.homeDirectoryForCurrentUser.path,

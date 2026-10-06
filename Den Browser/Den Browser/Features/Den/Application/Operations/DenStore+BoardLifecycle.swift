@@ -161,22 +161,12 @@ extension DenStore {
     }
 
     private func advanceTutorial(for event: DenOperationEvent) {
+        guard let step = event.tutorialStep else { return }
         guard let indices = tutorialBoardIndices(),
             case .tutorial(var tutorial) = state.desks[indices.desk].boards[indices.board].kind
         else { return }
 
-        var completedSteps = tutorial.completedSteps
-        for step in TutorialBoardStep.allCases where !step.isRequired && step.completionEvents.contains(event) {
-            completedSteps.insert(step)
-        }
-        if let nextStep = TutorialBoardStep.requiredSteps
-            .first(where: { !completedSteps.contains($0) }),
-            nextStep.completionEvents.contains(event)
-        {
-            completedSteps.insert(nextStep)
-        }
-        guard completedSteps != tutorial.completedSteps else { return }
-        tutorial.completedSteps = completedSteps
+        guard tutorial.record(step: step) else { return }
         state.desks[indices.desk].boards[indices.board].kind = .tutorial(tutorial)
     }
 
@@ -576,32 +566,15 @@ extension DenStore {
         )
     }
 
-    static func zmxRootSessionName(
-        for board: BoardState,
-        using client: ZmxClient
-    ) async throws -> String? {
-        guard let sessionName = board.zmxSessionName else { return nil }
-        do {
-            return
-                try await client.rootSessionName(for: sessionName)
-                ?? board.zmxRootSessionName
-                ?? sessionName
-        } catch is CancellationError {
-            throw CancellationError()
-        } catch {
-            return board.zmxRootSessionName ?? sessionName
-        }
-    }
-
     private func presentZmxDuplicationPanel(for source: BoardState) {
-        guard source.zmxSessionName != nil else { return }
+        guard let sessionName = source.zmxSessionName else { return }
         let client = zmxClient
         zmxCommandTask?.cancel()
         zmxCommandTask = Task { [weak self, client] in
             do {
-                guard let rootSessionName = try await Self.zmxRootSessionName(for: source, using: client) else {
-                    return
-                }
+                let rootSessionName = try await client.resolvedRootSessionName(
+                    for: sessionName,
+                    savedRootSessionName: source.zmxRootSessionName)
                 guard !Task.isCancelled, let self, self.focusedBoard?.id == source.id else { return }
                 self.onWindowEffect?(.presentZmxDuplicationPanel(rootSessionName: rootSessionName))
             } catch {
@@ -620,20 +593,18 @@ extension DenStore {
         zmxCommandTask?.cancel()
         zmxCommandTask = Task { [weak self, client] in
             do {
-                let activeSessionNames = try await client.activeSessionNames()
-                let rootSessionName =
-                    try await Self.zmxRootSessionName(for: source, using: client)
-                    ?? source.zmxRootSessionName
-                    ?? sessionName
+                let context = try await client.duplicationContext(
+                    for: sessionName,
+                    savedRootSessionName: source.zmxRootSessionName)
                 guard !Task.isCancelled, let self, self.focusedBoard?.id == source.id else { return }
 
                 let denSessionNames = self.state.desks.flatMap { desk in
                     desk.boards.compactMap(\.zmxSessionName)
                 }
                 let newSessionName = ZmxSessionNameGenerator.nextName(
-                    rootSessionName: rootSessionName,
+                    rootSessionName: context.rootSessionName,
                     suffix: suffix,
-                    occupiedNames: activeSessionNames.union(denSessionNames))
+                    occupiedNames: context.activeSessionNames.union(denSessionNames))
                 let workingDirectory =
                     source.terminalWorkingDirectory
                     ?? FileManager.default.homeDirectoryForCurrentUser.path
@@ -642,7 +613,7 @@ extension DenStore {
                     width: source.width,
                     zmxSessionName: newSessionName,
                     workingDirectory: workingDirectory,
-                    rootSessionName: rootSessionName,
+                    rootSessionName: context.rootSessionName,
                     customLabel: source.customLabel)
                 guard
                     self.insertBoard(
@@ -720,11 +691,11 @@ extension DenStore {
     }
 
     func goBackInFocusedBoard() {
-        focusedWebRuntime?.webView.goBack()
+        focusedWebRuntime?.goBack()
     }
 
     func goForwardInFocusedBoard() {
-        focusedWebRuntime?.webView.goForward()
+        focusedWebRuntime?.goForward()
     }
 
     func goToFirstSheetInFocusedBoard() {
@@ -744,11 +715,7 @@ extension DenStore {
     }
 
     func goToLatestSheetInFocusedBoard() {
-        guard
-            let webView = focusedWebRuntime?.webView,
-            let latestSheet = webView.backForwardList.forwardList.last
-        else { return }
-        webView.go(to: latestSheet)
+        focusedWebRuntime?.goToLatestSheet()
     }
 
     func goToLatestSheetInBoard(_ boardID: UUID) {
@@ -760,27 +727,27 @@ extension DenStore {
     func goBackInBoard(_ boardID: UUID) {
         guard boardIndices(for: boardID) != nil else { return }
         focusBoard(boardID)
-        focusedWebRuntime?.webView.goBack()
+        focusedWebRuntime?.goBack()
     }
 
     func goForwardInBoard(_ boardID: UUID) {
         guard boardIndices(for: boardID) != nil else { return }
         focusBoard(boardID)
-        focusedWebRuntime?.webView.goForward()
+        focusedWebRuntime?.goForward()
     }
 
     func reloadFocusedBoard() {
-        focusedWebRuntime?.webView.reload()
+        focusedWebRuntime?.reload()
     }
 
     func reloadFocusedBoardFromOrigin() {
-        focusedWebRuntime?.webView.reloadFromOrigin()
+        focusedWebRuntime?.reloadFromOrigin()
     }
 
     func reloadFocusedDeskSheets() {
         guard let desk = focusedDesk else { return }
         for board in desk.boards where board.isWeb {
-            webRuntime(for: board).webView.reload()
+            webRuntime(for: board).reload()
         }
     }
 

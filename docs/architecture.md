@@ -140,8 +140,8 @@ ViewModel does not register callbacks.
 
 For Board mutations that must suppress animation, Store emits a plain window effect before changing
 state. The ViewModel records the request, and DenView applies the SwiftUI transaction to its rendered
-window content. Application does not construct SwiftUI transactions. Tutorial operation-event mappings
-also belong to Application; Tutorial Domain contains step requirements and progress state.
+window content. Application does not construct SwiftUI transactions. Tutorial operation events map to
+steps in Den Application; Tutorial Domain enforces step ordering and updates progress state.
 
 `DenFeedback` contains a message, severity, and optional Board, Drawer Item, or Notification target,
 without SwiftUI styling or a presentation timer. The Store retains the latest operation feedback and
@@ -154,7 +154,7 @@ Toast click passes the explicit target back to the Store's target-opening operat
 
 Owns Den aggregate state, shared and window-local application resources, composition, and operations connecting Desks, Boards, and Drawer. `DenStore` remains one store split into focused operation extensions. `DenViewModel` owns window presentation workflows. `DenStorage` contains Profile-shared data and runtime registries. Application command payloads and Presentation workflow types are kept with their respective owners.
 
-Desk owns Desk state and preset data. Board owns shared Board state and grouping plus its Web, Terminal, Inspection, and Tutorial implementations. Drawer owns Drawer Items, its view, and Preview runtime. Their views may depend on Den's application operations without changing data ownership. `ZmxSessionsModel` belongs to `Board/Terminal/Presentation` because its discovery Tasks, filtering, and selection serve the Sessions panel.
+Desk owns Desk state and preset data. Board owns shared Board state and grouping plus its Web, Terminal, Inspection, and Tutorial implementations. Drawer owns Drawer Items, its view, and Preview runtime. Their views may depend on Den's application operations without changing data ownership. Terminal owns launch command selection and zmx query results used to prepare duplication; DenStore owns task cancellation, focus checks, Board naming against current Den state, and insertion. `ZmxSessionsModel` belongs to `Board/Terminal/Presentation` because its discovery Tasks, filtering, and selection serve the Sessions panel.
 
 Den also owns preferences for shared presentation behavior. `IPC/Application` connects external CLI and MCP requests to active Profile windows through existing domain operations, following [ADR 0047](./adr/0047-integrate-den-cli.md) and [ADR 0055](./adr/0055-add-den-mcp-server.md).
 

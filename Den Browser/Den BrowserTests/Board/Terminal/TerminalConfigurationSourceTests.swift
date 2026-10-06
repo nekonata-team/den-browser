@@ -82,6 +82,22 @@ struct TerminalConfigurationSourceTests {
         #expect(command.contains("den.root=den"))
     }
 
+    @Test func terminalLaunchCommandSelectsTheSavedSessionPolicy() throws {
+        let zellij = BoardState(width: 500, zellijSessionName: "project")
+        let zmx = BoardState(width: 500, zmxSessionName: "project-child", rootSessionName: "project")
+        let shell = BoardState(width: 500, workingDirectory: "/tmp")
+        let zellijClient = ZellijClient(executablePath: "/opt/homebrew/bin/zellij")
+        let zmxClient = ZmxClient(executablePath: "/opt/homebrew/bin/zmx")
+
+        #expect(
+            TerminalLaunchCommand.make(for: zellij.kind, zellijClient: zellijClient, zmxClient: zmxClient)
+                == "'/opt/homebrew/bin/zellij' attach --create 'project'")
+        #expect(
+            TerminalLaunchCommand.make(for: zmx.kind, zellijClient: zellijClient, zmxClient: zmxClient)?
+                .contains("den.root=project") == true)
+        #expect(TerminalLaunchCommand.make(for: shell.kind, zellijClient: zellijClient, zmxClient: zmxClient) == nil)
+    }
+
     @Test func zmxClientReadsActiveSessionsAndRootLabel() async throws {
         let client = ZmxClient(
             executablePath: "/opt/homebrew/bin/zmx",
@@ -95,8 +111,9 @@ struct TerminalConfigurationSourceTests {
                         standardOutput: " den \n"),
                 ]))
 
-        #expect(try await client.activeSessionNames() == ["den-vi", "plain-session"])
-        #expect(try await client.rootSessionName(for: "den-vi") == "den")
+        let context = try await client.duplicationContext(for: "den-vi", savedRootSessionName: nil)
+        #expect(context.activeSessionNames == ["den-vi", "plain-session"])
+        #expect(context.rootSessionName == "den")
     }
 
     @Test func zmxClientReportsForegroundAndIdleProcesses() async throws {

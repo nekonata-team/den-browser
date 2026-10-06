@@ -10,4 +10,14 @@ enum TutorialBoardStep: CaseIterable, Hashable {
 
 struct TutorialBoardState: Equatable {
     var completedSteps: Set<TutorialBoardStep> = []
+
+    @discardableResult
+    mutating func record(step: TutorialBoardStep) -> Bool {
+        if step.isRequired,
+            TutorialBoardStep.requiredSteps.first(where: { !completedSteps.contains($0) }) != step
+        {
+            return false
+        }
+        return completedSteps.insert(step).inserted
+    }
 }

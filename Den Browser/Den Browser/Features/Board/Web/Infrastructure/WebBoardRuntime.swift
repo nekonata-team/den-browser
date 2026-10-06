@@ -233,6 +233,27 @@ final class WebBoardRuntime: BaseWebRuntime, ObservableObject {
         webExtensionHost?.activate(webView: webView)
     }
 
+    func goBack() {
+        webView.goBack()
+    }
+
+    func goForward() {
+        webView.goForward()
+    }
+
+    func goToLatestSheet() {
+        guard let latestSheet = webView.backForwardList.forwardList.last else { return }
+        webView.go(to: latestSheet)
+    }
+
+    func reload() {
+        webView.reload()
+    }
+
+    func reloadFromOrigin() {
+        webView.reloadFromOrigin()
+    }
+
     private static func configureNativePictureInPicture(
         preferences: WKPreferences
     ) {

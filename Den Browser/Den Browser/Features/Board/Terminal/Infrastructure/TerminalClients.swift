@@ -28,6 +28,11 @@ nonisolated struct ZmxSessionSnapshot: Sendable {
     let processNames: [String: String]
 }
 
+nonisolated struct ZmxDuplicationContext: Sendable {
+    let activeSessionNames: Set<String>
+    let rootSessionName: String
+}
+
 nonisolated protocol TerminalCommandRunning: Sendable {
     func run(
         executablePath: String,
@@ -183,6 +188,31 @@ nonisolated struct ZmxClient: Sendable {
 
         let rootSessionName = result.standardOutput.trimmingCharacters(in: .whitespacesAndNewlines)
         return rootSessionName.isEmpty ? nil : rootSessionName
+    }
+
+    func resolvedRootSessionName(for sessionName: String, savedRootSessionName: String?) async throws -> String {
+        do {
+            return try await rootSessionName(for: sessionName)
+                ?? savedRootSessionName
+                ?? sessionName
+        } catch is CancellationError {
+            throw CancellationError()
+        } catch {
+            return savedRootSessionName ?? sessionName
+        }
+    }
+
+    func duplicationContext(
+        for sessionName: String,
+        savedRootSessionName: String?
+    ) async throws -> ZmxDuplicationContext {
+        let activeSessionNames = try await activeSessionNames()
+        let rootSessionName = try await resolvedRootSessionName(
+            for: sessionName,
+            savedRootSessionName: savedRootSessionName)
+        return ZmxDuplicationContext(
+            activeSessionNames: activeSessionNames,
+            rootSessionName: rootSessionName)
     }
 
     func sessionSnapshot() async throws -> ZmxSessionSnapshot {
