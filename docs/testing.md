@@ -127,7 +127,14 @@ just format
 just check
 ```
 
-`just lint` runs Xcode-bundled `swift-format` in strict mode, including style and enabled safety rules. `just format` applies same configuration. Builds treat compiler warnings as errors.
+`just lint` runs `just architecture-check`, Xcode-bundled `swift-format` in strict mode, and SwiftLint. `just format` applies the same formatting configuration. Builds treat compiler warnings as errors.
+
+`just architecture-check` tests the ast-grep layer rules and scans the application sources.
+The checks reject UI/runtime SDK imports in Domain and SwiftUI imports in Application.
+Module boundaries should enforce type dependencies; behavioral tests verify runtime
+event routing and shared-state consistency. The scan does not prove layer isolation
+in the current single-target project.
+Rule scope, permitted references, and limitations are documented in [the rule guide](../.ast-grep/README.md).
 
 Before merge, run `just check`, then only the focused UI tests admitted by the rule above, then code review. Add
 exploratory validation when warranted, such as for UI behavior changes or milestone acceptance. Turn

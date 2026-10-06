@@ -30,9 +30,15 @@ format-staged +files:
 
 # Fail on Swift style and safety findings.
 [group("quality")]
-lint:
+lint: architecture-check
     {{swift_format}} lint --strict --recursive --parallel --configuration .swift-format "{{swift_sources}}"
     swiftlint lint --quiet --strict
+
+# Check Swift layer import rules and their fixtures.
+[group("quality")]
+architecture-check:
+    ast-grep test --config sgconfig.yml --skip-snapshot-tests
+    ast-grep scan --config sgconfig.yml "{{swift_sources}}/Den Browser"
 
 # Build macOS app with development signing.
 [group("build")]

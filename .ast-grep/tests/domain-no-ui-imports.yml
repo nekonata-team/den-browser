@@ -1,0 +1,12 @@
+id: domain-no-ui-imports
+valid:
+  - import Foundation
+  - "struct DenState { var desks: [DeskState] }"
+  - "enum BoardKind { case web(WebBoardState) }"
+  - "// import SwiftUI\nlet message = \"import WebKit\""
+invalid:
+  - import SwiftUI
+  - "@preconcurrency import AppKit"
+  - import struct SwiftUI.Color
+  - import WebKit
+  - import GhosttyTerminal

@@ -1,0 +1,13 @@
+id: application-no-swiftui
+valid:
+  - import Foundation
+  - "import AppKit\nfunc register(window: NSWindow) {}"
+  - "import WebKit\nvar view: WKWebView"
+  - "var state: DenState"
+  - "var runtime: WebBoardRuntime"
+  - "let effect = DenWindowEffect.exitDenMode"
+  - "// import SwiftUI\nlet message = \"import SwiftUI\""
+invalid:
+  - import SwiftUI
+  - "@preconcurrency import SwiftUI"
+  - import struct SwiftUI.Transaction

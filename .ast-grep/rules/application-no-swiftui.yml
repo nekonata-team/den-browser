@@ -1,0 +1,14 @@
+id: application-no-swiftui
+language: Swift
+severity: error
+message: Application must not import SwiftUI.
+note: Presentation owns SwiftUI rendering and transactions. Native AppKit integration remains allowed.
+files:
+  - "Den Browser/Den Browser/Features/**/Application/**/*.swift"
+  - "Den Browser/Den Browser/IPC/Application/**/*.swift"
+rule:
+  kind: import_declaration
+  has:
+    kind: identifier
+    regex: '^SwiftUI(\.|$)'
+    stopBy: end
