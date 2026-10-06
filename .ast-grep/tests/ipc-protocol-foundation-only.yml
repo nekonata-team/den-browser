@@ -1,0 +1,8 @@
+id: ipc-protocol-foundation-only
+valid:
+  - import Foundation
+  - "import Foundation\nstruct DenIPCRequest {}"
+invalid:
+  - import DenDomain
+  - import SwiftUI
+  - import AppKit

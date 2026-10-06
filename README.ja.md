@@ -99,9 +99,11 @@ just check
 - [CONTEXT.md](./CONTEXT.md): プロダクト用語とドメインモデル
 - [docs/shortcuts.md](./docs/shortcuts.md): キーボードとポインタ操作
 - [docs/cli.md](./docs/cli.md): CLIリファレンスとエージェントスキル
+- [docs/architecture.md](./docs/architecture.md): ソースの所有範囲とモジュール境界
+- [docs/testing.md](./docs/testing.md): 自動テストと探索的検証
 - [THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md): 同梱ソフトウェアのライセンス
 
-アーキテクチャやテスト等の開発者向けドキュメントは [AGENTS.md](./AGENTS.md) を参照してください。
+開発への参加方法は [AGENTS.md](./AGENTS.md) を参照してください。
 
 ## ライセンス
 

@@ -17,6 +17,11 @@
 		57C0A1E03000000000000003 /* MCP in Frameworks */ = {isa = PBXBuildFile; productRef = 57C0A1E03000000000000002 /* MCP */; };
 		58C0A1E03000000000000001 /* DenDomain in Frameworks */ = {isa = PBXBuildFile; productRef = 58C0A1E03000000000000003 /* DenDomain */; };
 		58C0A1E03000000000000004 /* DenDomain in Frameworks */ = {isa = PBXBuildFile; productRef = 58C0A1E03000000000000003 /* DenDomain */; };
+		59C0A1E03000000000000001 /* DenDesign in Frameworks */ = {isa = PBXBuildFile; productRef = 59C0A1E03000000000000003 /* DenDesign */; };
+		59C0A1E03000000000000004 /* DenDesign in Frameworks */ = {isa = PBXBuildFile; productRef = 59C0A1E03000000000000003 /* DenDesign */; };
+		5AC0A1E03000000000000001 /* DenIPCProtocol in Frameworks */ = {isa = PBXBuildFile; productRef = 5AC0A1E03000000000000003 /* DenIPCProtocol */; };
+		5AC0A1E03000000000000004 /* DenIPCProtocol in Frameworks */ = {isa = PBXBuildFile; productRef = 5AC0A1E03000000000000003 /* DenIPCProtocol */; };
+		5AC0A1E03000000000000005 /* DenIPCProtocol in Frameworks */ = {isa = PBXBuildFile; productRef = 5AC0A1E03000000000000003 /* DenIPCProtocol */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -76,10 +81,6 @@
 		531CEFA0304D475F00C9C636 /* Exceptions for "Den Browser" folder in "den" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
-				IPC/Protocol/DenIPCCommand.swift,
-				IPC/Protocol/DenIPCPayloads.swift,
-				IPC/Protocol/DenIPCRequest.swift,
-				IPC/Protocol/DenIPCResponse.swift,
 				IPC/Transport/DenIPCTransport.swift,
 			);
 			target = 531CEF97304D46A100C9C636 /* den */;
@@ -139,6 +140,8 @@
 				55A10001301A000000000001 /* SFSafeSymbols in Frameworks */,
 				56B1000130C0000000000001 /* Subprocess in Frameworks */,
 				58C0A1E03000000000000001 /* DenDomain in Frameworks */,
+				59C0A1E03000000000000001 /* DenDesign in Frameworks */,
+				5AC0A1E03000000000000001 /* DenIPCProtocol in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -147,6 +150,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				58C0A1E03000000000000004 /* DenDomain in Frameworks */,
+				59C0A1E03000000000000004 /* DenDesign in Frameworks */,
+				5AC0A1E03000000000000005 /* DenIPCProtocol in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -163,6 +168,7 @@
 			files = (
 				531CEFB2304D500000C9C636 /* ArgumentParser in Frameworks */,
 				57C0A1E03000000000000003 /* MCP in Frameworks */,
+				5AC0A1E03000000000000004 /* DenIPCProtocol in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -228,6 +234,8 @@
 				55A10003301A000000000001 /* SFSafeSymbols */,
 				56B1000330C0000000000001 /* Subprocess */,
 				58C0A1E03000000000000003 /* DenDomain */,
+				59C0A1E03000000000000003 /* DenDesign */,
+				5AC0A1E03000000000000003 /* DenIPCProtocol */,
 			);
 			productName = "Den Browser";
 			productReference = 530E9DDB2FFFFED90033427C /* Den Browser.app */;
@@ -252,6 +260,8 @@
 			name = "Den BrowserTests";
 			packageProductDependencies = (
 				58C0A1E03000000000000003 /* DenDomain */,
+				59C0A1E03000000000000003 /* DenDesign */,
+				5AC0A1E03000000000000003 /* DenIPCProtocol */,
 			);
 			productName = "Den BrowserTests";
 			productReference = 530E9DE82FFFFEDB0033427C /* Den BrowserTests.xctest */;
@@ -297,6 +307,7 @@
 			packageProductDependencies = (
 				531CEFB1304D500000C9C636 /* ArgumentParser */,
 				57C0A1E03000000000000002 /* MCP */,
+				5AC0A1E03000000000000003 /* DenIPCProtocol */,
 			);
 			productName = den;
 			productReference = 531CEF98304D46A100C9C636 /* den */;
@@ -345,6 +356,8 @@
 				56B1000230C0000000000001 /* XCRemoteSwiftPackageReference "swift-subprocess" */,
 				57C0A1E03000000000000001 /* XCRemoteSwiftPackageReference "swift-sdk" */,
 				58C0A1E03000000000000002 /* XCLocalSwiftPackageReference "../Packages/DenDomain" */,
+				59C0A1E03000000000000002 /* XCLocalSwiftPackageReference "../Packages/DenDesign" */,
+				5AC0A1E03000000000000002 /* XCLocalSwiftPackageReference "../Packages/DenIPCProtocol" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 530E9DDC2FFFFED90033427C /* Products */;
@@ -844,6 +857,14 @@
 			isa = XCLocalSwiftPackageReference;
 			relativePath = ../Packages/DenDomain;
 		};
+		59C0A1E03000000000000002 /* XCLocalSwiftPackageReference "../Packages/DenDesign" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ../Packages/DenDesign;
+		};
+		5AC0A1E03000000000000002 /* XCLocalSwiftPackageReference "../Packages/DenIPCProtocol" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ../Packages/DenIPCProtocol;
+		};
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCRemoteSwiftPackageReference section */
@@ -937,6 +958,16 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 58C0A1E03000000000000002 /* XCLocalSwiftPackageReference "../Packages/DenDomain" */;
 			productName = DenDomain;
+		};
+		59C0A1E03000000000000003 /* DenDesign */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 59C0A1E03000000000000002 /* XCLocalSwiftPackageReference "../Packages/DenDesign" */;
+			productName = DenDesign;
+		};
+		5AC0A1E03000000000000003 /* DenIPCProtocol */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 5AC0A1E03000000000000002 /* XCLocalSwiftPackageReference "../Packages/DenIPCProtocol" */;
+			productName = DenIPCProtocol;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

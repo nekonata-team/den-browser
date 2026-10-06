@@ -1,4 +1,5 @@
 import AppKit
+import DenDesign
 import SFSafeSymbols
 import SwiftUI
 

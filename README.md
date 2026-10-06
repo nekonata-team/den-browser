@@ -103,9 +103,11 @@ These commands disable code signing. Run `just --list` for the available tasks.
 - [CONTEXT.md](./CONTEXT.md): product language and domain model
 - [docs/shortcuts.md](./docs/shortcuts.md): keyboard and pointer controls
 - [docs/cli.md](./docs/cli.md): CLI reference and agent skill integration
+- [docs/architecture.md](./docs/architecture.md): source ownership and module boundaries
+- [docs/testing.md](./docs/testing.md): automated and exploratory validation
 - [THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md): bundled software licenses
 
-See [AGENTS.md](./AGENTS.md) for internal architecture, testing, and developer documentation.
+See [AGENTS.md](./AGENTS.md) for contributor instructions.
 
 ## License
 

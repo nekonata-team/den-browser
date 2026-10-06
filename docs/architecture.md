@@ -14,8 +14,6 @@ The app and test targets support macOS 26.0 and later. Availability checks and f
 Den Browser/Den Browser/
   App/
     app entry, configuration, keyboard integration, and Settings composition
-  Design/
-    shared visual tokens, color palettes, layout metrics, motion, panel styling, and reusable controls
   Features/
     Den/
       Application/            shared storage, window store, operations, and operation feedback
@@ -51,7 +49,6 @@ Den Browser/Den Browser/
     Extensions/
     SheetNavigation/
   IPC/
-    Protocol/                 typed command, payload, request, and response definitions
     Transport/                socket client/server mechanics
     Application/              request handling and ambient target resolution
   Platform/
@@ -63,30 +60,36 @@ Packages/DenDomain/
   Sources/DenDomain/
     Board/{Inspection,Terminal,Tutorial,Web}
     Den, Desk, Drawer, Essentials, Notifications, Profiles, Web
+Packages/DenDesign/Sources/DenDesign/
+  shared visual tokens, metrics, motion, panels, and controls
+Packages/DenIPCProtocol/Sources/DenIPCProtocol/
+  Foundation-only CLI/app wire DTOs
 ```
 
 Features are source ownership groups inside the app target, not independently isolated modules or stores. Den owns aggregate state, the workflows joining Desks, Boards, and Drawer, and the composition of the Den window. Desk, Board, Drawer, Essentials, Notifications, Overview, and BoardActivity own their data or feature-specific presentation in sibling folders; Board kind-specific code stays under Board. Toast, Den backgrounds, confirmation dialogs, and window layout stay in Den because they present or coordinate the complete Den. Den retains the operations connecting Essentials and Notifications to Boards and the transitions between their panels and other window contexts.
 
 Selected shared Domain values live in one `DenDomain` Swift package target. Its Foundation-only model closure is shared by the app and unit tests; it contains no Stores, workflows, persistence adapters, presentation, or platform runtimes. A single module preserves cross-feature model references such as Den-to-Desk and Board-to-Web state. The app and unit-test targets import this product directly.
 
-`Design` owns shared visual tokens, color palettes, fixed layout metrics, motion choices and presets, panel styling, and reusable controls. This includes normal, Den Mode, and Private Den background palettes; Den Presentation selects and renders them from the current window state. `LayoutMetrics.swift` defines Den, panel, and shortcut-guide dimensions without Feature state. Den Presentation retains Board width and height calculations using window geometry and Board constraints. Features and App may depend on Design; Design does not depend on Feature state, Stores, or workflows. Feature-specific geometry calculations and transitions stay in their owning Presentation code. Selection navigation and drag geometry are presentation behavior rather than design components and remain outside Design.
+`DenDesign` owns shared visual tokens, color palettes, fixed layout metrics, motion choices and presets, panel styling, and reusable controls. This includes normal, Den Mode, and Private Den background palettes; Den Presentation selects and renders them from the current window state. Den Presentation retains Board width and height calculations using window geometry and Board constraints, along with the `DenLayout` width helpers and `DenMotion.boardTransition` extension. The app and unit tests import `DenDesign`; it does not depend on Feature state, Stores, or workflows. Selection navigation and drag geometry remain presentation behavior outside the package. This boundary follows [ADR 0059](./adr/0059-share-presentation-primitives.md).
+
+`DenIPCProtocol` contains the Foundation-only command, request, response, and payload DTOs shared by the app, bundled CLI, and unit tests. It has no dependency on the app, UI, or `DenDomain`. The app owns request handling and ambient target resolution, while the CLI owns socket transport and command behavior. This boundary follows [ADR 0060](./adr/0060-share-ipc-wire-types.md).
 
 The shared Web group contains code used by Web Boards, Drawer Preview, and Sheet Navigation. A Web Board's state, view, and runtime belong to `Board/Web`; shared URL policy, DOM execution, and the base WebKit runtime belong to `Web`. Sheet is not a Web-only implementation boundary, so there is no generic Sheet runtime folder or shared Sheet interface.
 
 ## Dependency direction
 
 - `App` assembles scenes, windows, commands, and dependencies. It does not acquire feature behavior merely because multiple Features use it.
-- `Design` provides shared visual presentation without depending on Feature models or operations. Motion preference storage remains in AppPreferences; its visual choice type belongs to Design.
+- `DenDesign` provides shared visual presentation without depending on Feature models or operations. Motion preference storage remains in AppPreferences; its visual choice type belongs to DenDesign.
 - `Domain` contains state and product rules. It does not depend on `DenStore`, Application-owned operation events, SwiftUI, AppKit, WebKit, or live runtime objects. Domain groups may reference one another according to the product model: Den contains Desks, and Desks contain Boards.
 - `DenDomain` is the compiler-enforced module for the moved shared Domain values. It depends only on Foundation and keeps the app's Swift 6 MainActor isolation policy; application behavior stays in the app target.
 - `Application` owns operation sequencing, application state, and runtime lifecycle coordination. `DenStore` remains the operation entry point; its extensions live in `Den/Application/Operations`. No new per-domain store is introduced merely to match the folder tree.
 - `Presentation` owns views, window-local UI models, geometry, visual tokens, and display mappings as independent functions. Existing views may use `DenStore` across source groups. Native view adapters may use their concrete runtimes.
 - `Infrastructure` owns concrete WebKit, Terminal, persistence, and process integration. Application code can call these implementations directly; folder organization alone does not justify a protocol, repository, or coordinator.
 - `Platform` contains only feature-independent operating-system integration. Product URL rules and Den lifecycle remain with their owners.
-- IPC is an application adapter shared with the bundled CLI. Protocol definitions are compiled into both targets; socket transport does not own Board or Profile policy.
+- IPC is an application adapter shared with the bundled CLI. `DenIPCProtocol` supplies wire DTOs; socket transport does not own Board or Profile policy.
 - Feature-specific settings UI remains with its owner. `App/Settings` assembles those screens.
 
-Folders communicate ownership but do not enforce access control between source groups that remain in the app target. `DenDomain` enforces the moved model boundary. Judge remaining dependencies by the role of the code, not by assuming every sibling Feature is an independent module. Keep domain rules free of UI and runtime dependencies, and use the narrowest practical entry point for cross-domain operations.
+Folders communicate ownership but do not enforce access control between source groups that remain in the app target. `DenDomain`, `DenDesign`, and `DenIPCProtocol` enforce their module boundaries. Judge remaining dependencies by the role of the code, not by assuming every sibling Feature is an independent module. Keep domain rules free of UI and runtime dependencies, and use the narrowest practical entry point for cross-domain operations.
 
 WebExtension integration uses the existing `WebExtensionHost` boundary. Board and Drawer supply their WebKit instances and URL-loading callbacks; Extensions owns tab registration and never imports Den runtime types. Profile-window keyboard ownership follows [keyboard-input.md](./keyboard-input.md).
 

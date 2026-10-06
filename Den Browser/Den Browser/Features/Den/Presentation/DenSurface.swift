@@ -1,3 +1,4 @@
+import DenDesign
 import SwiftUI
 
 struct DenBackground: View {

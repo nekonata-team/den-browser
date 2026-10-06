@@ -1,4 +1,5 @@
 import Darwin
+import DenIPCProtocol
 import Foundation
 import Testing
 

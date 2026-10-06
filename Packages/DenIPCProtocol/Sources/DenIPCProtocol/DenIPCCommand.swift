@@ -1,6 +1,6 @@
 import Foundation
 
-nonisolated enum DenSheetGetCommand: Codable, Equatable, Sendable {
+public nonisolated enum DenSheetGetCommand: Codable, Equatable, Sendable {
     case text(DenSheetGetTargetPayload)
     case value(DenSheetGetTargetPayload)
     case attribute(DenSheetGetAttributePayload)
@@ -8,13 +8,13 @@ nonisolated enum DenSheetGetCommand: Codable, Equatable, Sendable {
     case box(DenSheetGetTargetPayload)
 }
 
-nonisolated enum DenSheetIsCommand: Codable, Equatable, Sendable {
+public nonisolated enum DenSheetIsCommand: Codable, Equatable, Sendable {
     case visible(DenSheetStatePayload)
     case enabled(DenSheetStatePayload)
     case checked(DenSheetStatePayload)
 }
 
-nonisolated enum DenSheetMouseCommand: Codable, Equatable, Sendable {
+public nonisolated enum DenSheetMouseCommand: Codable, Equatable, Sendable {
     case move(DenSheetMousePayload)
     case down(DenSheetMousePayload)
     case release(DenSheetMousePayload)
@@ -22,20 +22,20 @@ nonisolated enum DenSheetMouseCommand: Codable, Equatable, Sendable {
     case wheel(DenSheetMousePayload)
 }
 
-nonisolated enum DenBoardWebCommand: Codable, Equatable, Sendable {
+public nonisolated enum DenBoardWebCommand: Codable, Equatable, Sendable {
     case new(DenBoardWebNewPayload)
 }
 
-nonisolated enum DenBoardTerminalCommand: Codable, Equatable, Sendable {
+public nonisolated enum DenBoardTerminalCommand: Codable, Equatable, Sendable {
     case new(DenBoardTerminalNewPayload)
 }
 
-nonisolated enum DenBoardInspectionCommand: Codable, Equatable, Sendable {
+public nonisolated enum DenBoardInspectionCommand: Codable, Equatable, Sendable {
     case new(DenBoardInspectionNewPayload)
 }
 
-nonisolated enum DenIPCCommand: Codable, Equatable, Sendable {
-    indirect enum Sheet: Codable, Equatable, Sendable {
+public nonisolated enum DenIPCCommand: Codable, Equatable, Sendable {
+    public indirect enum Sheet: Codable, Equatable, Sendable {
         case open(DenSheetOpenPayload)
         case inspect(DenSheetSnapshotPayload)
         case url
@@ -62,7 +62,7 @@ nonisolated enum DenIPCCommand: Codable, Equatable, Sendable {
         case interact(DenSheetInteractPayload)
     }
 
-    enum Board: Codable, Equatable, Sendable {
+    public enum Board: Codable, Equatable, Sendable {
         case list
         case focused
         case close
@@ -71,29 +71,29 @@ nonisolated enum DenIPCCommand: Codable, Equatable, Sendable {
         case inspection(DenBoardInspectionCommand)
     }
 
-    enum Desk: Codable, Equatable, Sendable {
+    public enum Desk: Codable, Equatable, Sendable {
         case list
     }
 
-    enum Drawer: Codable, Equatable, Sendable {
+    public enum Drawer: Codable, Equatable, Sendable {
         case list
         case keep(DenDrawerKeepPayload)
         case place(id: String)
         case discard(id: String)
     }
 
-    enum Terminal: Codable, Equatable, Sendable {
+    public enum Terminal: Codable, Equatable, Sendable {
         case text
         case send(text: String)
         case run(command: String)
         case kill(signal: String)
     }
 
-    enum Inspection: Codable, Equatable, Sendable {
+    public enum Inspection: Codable, Equatable, Sendable {
         case read
     }
 
-    enum Profile: Codable, Equatable, Sendable {
+    public enum Profile: Codable, Equatable, Sendable {
         case list
         case open(profileID: String?)
     }

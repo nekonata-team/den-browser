@@ -1,4 +1,5 @@
 import ArgumentParser
+import DenIPCProtocol
 import Foundation
 
 private func validateBoardWidth(_ width: Double?) throws {

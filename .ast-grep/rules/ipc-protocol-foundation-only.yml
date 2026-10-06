@@ -1,0 +1,15 @@
+id: ipc-protocol-foundation-only
+language: Swift
+severity: error
+message: DenIPCProtocol must import Foundation only.
+note: Keep wire DTOs independent from app, domain, and UI modules.
+files:
+  - "Packages/DenIPCProtocol/Sources/DenIPCProtocol/**/*.swift"
+rule:
+  all:
+    - kind: import_declaration
+    - not:
+        has:
+          kind: identifier
+          regex: '^Foundation$'
+          stopBy: end

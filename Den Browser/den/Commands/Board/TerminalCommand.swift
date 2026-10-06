@@ -1,4 +1,5 @@
 import ArgumentParser
+import DenIPCProtocol
 
 struct TerminalTextCommand: ParsableCommand {
     static let configuration = CommandConfiguration(

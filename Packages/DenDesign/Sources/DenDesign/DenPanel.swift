@@ -1,21 +1,21 @@
-import SFSafeSymbols
+public import SFSafeSymbols
 import SwiftUI
 
-struct DenPanelHeader<Content: View>: View {
+public struct DenPanelHeader<Content: View>: View {
     private let icon: AnyView
     let content: Content
 
-    init(systemSymbol: SFSymbol, @ViewBuilder content: () -> Content) {
+    public init(systemSymbol: SFSymbol, @ViewBuilder content: () -> Content) {
         self.icon = AnyView(Image(systemSymbol: systemSymbol))
         self.content = content()
     }
 
-    init<Icon: View>(icon: Icon, @ViewBuilder content: () -> Content) {
+    public init<Icon: View>(icon: Icon, @ViewBuilder content: () -> Content) {
         self.icon = AnyView(icon)
         self.content = content()
     }
 
-    var body: some View {
+    public var body: some View {
         HStack(spacing: DenPanelLayout.controlSpacing) {
             icon
                 .foregroundStyle(.secondary)
@@ -26,7 +26,7 @@ struct DenPanelHeader<Content: View>: View {
 }
 
 extension View {
-    func denPanel(width: CGFloat = DenPanelLayout.standardWidth) -> some View {
+    public func denPanel(width: CGFloat = DenPanelLayout.standardWidth) -> some View {
         padding(DenPanelLayout.padding)
             .frame(width: width)
             .glassEffect(
@@ -35,13 +35,13 @@ extension View {
             )
     }
 
-    func denPanelHeaderField() -> some View {
+    public func denPanelHeaderField() -> some View {
         labelsHidden()
             .textFieldStyle(.plain)
             .font(.title3.weight(.medium))
     }
 
-    func denSelectionHighlight(
+    public func denSelectionHighlight(
         _ isSelected: Bool,
         profileColor: Color,
         inactiveOpacity: Double = 0
@@ -77,28 +77,28 @@ private struct DenSelectionHighlight: ViewModifier {
     }
 }
 
-struct DenValidationMessage: View {
+public struct DenValidationMessage: View {
     private let message: String
 
-    init(_ message: String) {
+    public init(_ message: String) {
         self.message = message
     }
 
-    var body: some View {
+    public var body: some View {
         Text(message)
             .font(.caption)
             .foregroundStyle(.red)
     }
 }
 
-struct DenPanelHint: View {
+public struct DenPanelHint: View {
     private let text: String
 
-    init(_ text: String) {
+    public init(_ text: String) {
         self.text = text
     }
 
-    var body: some View {
+    public var body: some View {
         Text(text)
             .font(.caption)
             .foregroundStyle(.secondary)

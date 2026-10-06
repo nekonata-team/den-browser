@@ -1,5 +1,6 @@
 import ArgumentParser
 import Darwin
+import DenIPCProtocol
 import Foundation
 
 struct CLIOptions: ParsableArguments {

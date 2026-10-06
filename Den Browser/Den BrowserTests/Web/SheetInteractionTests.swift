@@ -1,4 +1,5 @@
 import AppKit
+import DenIPCProtocol
 import Foundation
 import Testing
 import WebKit

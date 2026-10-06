@@ -11,6 +11,8 @@ export SPARKLE_TOOLS := derived_data + "/SourcePackages/artifacts/sparkle/Sparkl
 swift_format := "xcrun swift-format"
 swift_sources := "Den Browser"
 domain_sources := "Packages/DenDomain/Sources"
+design_sources := "Packages/DenDesign/Sources"
+ipc_protocol_sources := "Packages/DenIPCProtocol/Sources"
 
 # Web works.
 mod web
@@ -23,6 +25,8 @@ mod release
 format:
     {{swift_format}} format --in-place --recursive --parallel --configuration .swift-format "{{swift_sources}}"
     {{swift_format}} format --in-place --recursive --parallel --configuration .swift-format "{{domain_sources}}"
+    {{swift_format}} format --in-place --recursive --parallel --configuration .swift-format "{{design_sources}}"
+    {{swift_format}} format --in-place --recursive --parallel --configuration .swift-format "{{ipc_protocol_sources}}"
 
 # Format staged Swift sources in place.
 [group("quality")]
@@ -35,6 +39,8 @@ format-staged +files:
 lint: architecture-check
     {{swift_format}} lint --strict --recursive --parallel --configuration .swift-format "{{swift_sources}}"
     {{swift_format}} lint --strict --recursive --parallel --configuration .swift-format "{{domain_sources}}"
+    {{swift_format}} lint --strict --recursive --parallel --configuration .swift-format "{{design_sources}}"
+    {{swift_format}} lint --strict --recursive --parallel --configuration .swift-format "{{ipc_protocol_sources}}"
     swiftlint lint --quiet --strict
 
 # Check Swift layer import rules and their fixtures.
@@ -43,6 +49,8 @@ architecture-check:
     ast-grep test --config sgconfig.yml --skip-snapshot-tests
     ast-grep scan --config sgconfig.yml "{{swift_sources}}/Den Browser"
     ast-grep scan --config sgconfig.yml "{{domain_sources}}"
+    ast-grep scan --config sgconfig.yml "{{design_sources}}"
+    ast-grep scan --config sgconfig.yml "{{ipc_protocol_sources}}"
 
 # Build macOS app with development signing.
 [group("build")]

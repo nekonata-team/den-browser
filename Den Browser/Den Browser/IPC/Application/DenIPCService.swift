@@ -1,5 +1,6 @@
 import Darwin
 import DenDomain
+import DenIPCProtocol
 import Foundation
 import WebKit
 

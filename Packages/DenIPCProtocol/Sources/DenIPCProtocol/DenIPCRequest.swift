@@ -1,9 +1,9 @@
 import Foundation
 
-nonisolated enum DenIPCInputError: Error, Equatable, LocalizedError, Sendable {
+public nonisolated enum DenIPCInputError: Error, Equatable, LocalizedError, Sendable {
     case usage(String)
 
-    var errorDescription: String? {
+    public var errorDescription: String? {
         switch self {
         case .usage(let message):
             message
@@ -11,16 +11,16 @@ nonisolated enum DenIPCInputError: Error, Equatable, LocalizedError, Sendable {
     }
 }
 
-nonisolated struct DenIPCRequest: Codable, Sendable {
-    var command: DenIPCCommand
-    var boardID: String?
-    var deskID: String?
-    var callerBoardID: String?
-    var profileID: String?
-    var includeTargetContext: Bool?
-    var includeSnapshot: Bool?
+public nonisolated struct DenIPCRequest: Codable, Sendable {
+    public var command: DenIPCCommand
+    public var boardID: String?
+    public var deskID: String?
+    public var callerBoardID: String?
+    public var profileID: String?
+    public var includeTargetContext: Bool?
+    public var includeSnapshot: Bool?
 
-    init(
+    public init(
         command: DenIPCCommand,
         boardID: String? = nil,
         deskID: String? = nil,

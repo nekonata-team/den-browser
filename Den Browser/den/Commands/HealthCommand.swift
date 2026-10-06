@@ -1,4 +1,5 @@
 import ArgumentParser
+import DenIPCProtocol
 
 struct HealthCommand: ParsableCommand {
     static let configuration = CommandConfiguration(

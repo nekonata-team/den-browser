@@ -1,13 +1,13 @@
 import Foundation
 
-nonisolated struct DenBoardInfo: Codable, Sendable {
-    var id: String
-    var type: String
-    var label: String
-    var url: String?
-    var sessionName: String?
-    var targetBoardID: String?
-    var isFocused: Bool
+public nonisolated struct DenBoardInfo: Codable, Sendable {
+    public var id: String
+    public var type: String
+    public var label: String
+    public var url: String?
+    public var sessionName: String?
+    public var targetBoardID: String?
+    public var isFocused: Bool
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -19,7 +19,7 @@ nonisolated struct DenBoardInfo: Codable, Sendable {
         case isFocused = "is_focused"
     }
 
-    init(
+    public init(
         id: String,
         type: String,
         label: String,
@@ -38,12 +38,23 @@ nonisolated struct DenBoardInfo: Codable, Sendable {
     }
 }
 
-nonisolated struct DenDeskInfo: Codable, Sendable {
-    var id: String
-    var label: String
-    var isActive: Bool
-    var boardCount: Int
+public nonisolated struct DenDeskInfo: Codable, Sendable {
+    public var id: String
+    public var label: String
+    public var isActive: Bool
+    public var boardCount: Int
 
+    public init(
+        id: String,
+        label: String,
+        isActive: Bool,
+        boardCount: Int
+    ) {
+        self.id = id
+        self.label = label
+        self.isActive = isActive
+        self.boardCount = boardCount
+    }
     enum CodingKeys: String, CodingKey {
         case id
         case label
@@ -52,26 +63,63 @@ nonisolated struct DenDeskInfo: Codable, Sendable {
     }
 }
 
-nonisolated struct DenDrawerItemInfo: Codable, Sendable {
-    var id: String
-    var url: String
-    var title: String?
+public nonisolated struct DenDrawerItemInfo: Codable, Sendable {
+    public var id: String
+    public var url: String
+    public var title: String?
+
+    public init(
+        id: String,
+        url: String,
+        title: String? = nil
+    ) {
+        self.id = id
+        self.url = url
+        self.title = title
+    }
 }
 
-nonisolated struct DenSheetElementInfo: Codable, Sendable {
-    var ref: String
-    var tag: String?
-    var role: String?
-    var name: String?
-    var text: String?
-    var value: String?
-    var checked: Bool?
-    var disabled: Bool?
-    var selected: Bool?
-    var expanded: Bool?
-    var visible: Bool
-    var attributes: [String: String]?
+public nonisolated struct DenSheetElementInfo: Codable, Sendable {
+    public var ref: String
+    public var tag: String?
+    public var role: String?
+    public var name: String?
+    public var text: String?
+    public var value: String?
+    public var checked: Bool?
+    public var disabled: Bool?
+    public var selected: Bool?
+    public var expanded: Bool?
+    public var visible: Bool
+    public var attributes: [String: String]?
 
+    public init(
+        ref: String,
+        tag: String? = nil,
+        role: String? = nil,
+        name: String? = nil,
+        text: String? = nil,
+        value: String? = nil,
+        checked: Bool? = nil,
+        disabled: Bool? = nil,
+        selected: Bool? = nil,
+        expanded: Bool? = nil,
+        visible: Bool,
+        attributes: [String: String]? = nil
+    ) {
+        self.ref = ref
+        self.tag = tag
+        self.role = role
+        self.name = name
+        self.text = text
+        self.value = value
+        self.checked = checked
+        self.disabled = disabled
+        self.selected = selected
+        self.expanded = expanded
+        self.visible = visible
+        self.attributes = attributes
+    }
     enum CodingKeys: String, CodingKey {
         case ref
         case tag
@@ -87,7 +135,7 @@ nonisolated struct DenSheetElementInfo: Codable, Sendable {
         case attributes
     }
 
-    func encode(to encoder: Encoder) throws {
+    public func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encode(ref, forKey: .ref)
         try container.encodeIfPresent(tag, forKey: .tag)
@@ -106,12 +154,23 @@ nonisolated struct DenSheetElementInfo: Codable, Sendable {
     }
 }
 
-nonisolated struct DenProfileInfo: Codable, Sendable {
-    var id: String
-    var name: String
-    var isActive: Bool
-    var hasWindow: Bool
+public nonisolated struct DenProfileInfo: Codable, Sendable {
+    public var id: String
+    public var name: String
+    public var isActive: Bool
+    public var hasWindow: Bool
 
+    public init(
+        id: String,
+        name: String,
+        isActive: Bool,
+        hasWindow: Bool
+    ) {
+        self.id = id
+        self.name = name
+        self.isActive = isActive
+        self.hasWindow = hasWindow
+    }
     enum CodingKeys: String, CodingKey {
         case id
         case name
@@ -120,17 +179,36 @@ nonisolated struct DenProfileInfo: Codable, Sendable {
     }
 }
 
-nonisolated struct DenSelectedProfileInfo: Codable, Sendable {
-    var id: String
-    var name: String
+public nonisolated struct DenSelectedProfileInfo: Codable, Sendable {
+    public var id: String
+    public var name: String
+
+    public init(
+        id: String,
+        name: String
+    ) {
+        self.id = id
+        self.name = name
+    }
 }
 
-nonisolated struct DenBoundingBox: Codable, Equatable, Sendable {
-    var originX: Double
-    var originY: Double
-    var width: Double
-    var height: Double
+public nonisolated struct DenBoundingBox: Codable, Equatable, Sendable {
+    public var originX: Double
+    public var originY: Double
+    public var width: Double
+    public var height: Double
 
+    public init(
+        originX: Double,
+        originY: Double,
+        width: Double,
+        height: Double
+    ) {
+        self.originX = originX
+        self.originY = originY
+        self.width = width
+        self.height = height
+    }
     enum CodingKeys: String, CodingKey {
         case originX = "x"
         case originY = "y"
@@ -139,38 +217,38 @@ nonisolated struct DenBoundingBox: Codable, Equatable, Sendable {
     }
 }
 
-nonisolated struct DenIPCResponse: Codable, Sendable {
-    var isOk: Bool
-    var error: String?
-    var message: String?
-    var boardId: String?
-    var closedBoardId: String?
-    var board: DenBoardInfo?
-    var boards: [DenBoardInfo]?
-    var desks: [DenDeskInfo]?
-    var drawerItemId: String?
-    var drawerItems: [DenDrawerItemInfo]?
-    var profiles: [DenProfileInfo]?
-    var profile: DenSelectedProfileInfo?
-    var profileID: String?
-    var activeDesk: DenDeskInfo?
-    var focusedBoardID: String?
-    var drawerItemCount: Int?
-    var url: String?
-    var snapshot: String?
-    var elements: [DenSheetElementInfo]?
-    var text: String?
-    var value: String?
-    var checked: Bool?
-    var attribute: String?
-    var count: Int?
-    var visible: Bool?
-    var enabled: Bool?
-    var box: DenBoundingBox?
-    var screenshotPath: String?
-    var inspection: DenInspectionReadInfo?
-    var completedActions: Int?
-    var failedActionIndex: Int?
+public nonisolated struct DenIPCResponse: Codable, Sendable {
+    public var isOk: Bool
+    public var error: String?
+    public var message: String?
+    public var boardId: String?
+    public var closedBoardId: String?
+    public var board: DenBoardInfo?
+    public var boards: [DenBoardInfo]?
+    public var desks: [DenDeskInfo]?
+    public var drawerItemId: String?
+    public var drawerItems: [DenDrawerItemInfo]?
+    public var profiles: [DenProfileInfo]?
+    public var profile: DenSelectedProfileInfo?
+    public var profileID: String?
+    public var activeDesk: DenDeskInfo?
+    public var focusedBoardID: String?
+    public var drawerItemCount: Int?
+    public var url: String?
+    public var snapshot: String?
+    public var elements: [DenSheetElementInfo]?
+    public var text: String?
+    public var value: String?
+    public var checked: Bool?
+    public var attribute: String?
+    public var count: Int?
+    public var visible: Bool?
+    public var enabled: Bool?
+    public var box: DenBoundingBox?
+    public var screenshotPath: String?
+    public var inspection: DenInspectionReadInfo?
+    public var completedActions: Int?
+    public var failedActionIndex: Int?
 
     enum CodingKeys: String, CodingKey {
         case isOk = "ok"
@@ -206,7 +284,7 @@ nonisolated struct DenIPCResponse: Codable, Sendable {
         case failedActionIndex = "failed_action_index"
     }
 
-    static func success(
+    public static func success(
         message: String? = nil,
         boardId: String? = nil,
         closedBoardId: String? = nil,
@@ -272,7 +350,7 @@ nonisolated struct DenIPCResponse: Codable, Sendable {
         )
     }
 
-    static func failure(
+    public static func failure(
         _ error: String,
         snapshot: String? = nil,
         completedActions: Int? = nil,

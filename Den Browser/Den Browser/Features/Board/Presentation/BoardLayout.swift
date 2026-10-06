@@ -1,4 +1,5 @@
 import CoreGraphics
+import DenDesign
 import DenDomain
 import Foundation
 

@@ -129,12 +129,13 @@ just check
 
 `just lint` runs `just architecture-check`, Xcode-bundled `swift-format` in strict mode, and SwiftLint. `just format` applies the same formatting configuration. Builds treat compiler warnings as errors.
 
-`just architecture-check` tests the ast-grep layer rules and scans the application and
-`Packages/DenDomain/Sources`.
-The checks reject UI/runtime SDK imports in Domain and SwiftUI imports in Application.
-The package compiler boundary enforces dependencies for moved Domain values;
-behavioral tests verify runtime event routing and shared-state consistency. The scan
-does not prove isolation between app source groups.
+`just architecture-check` tests the ast-grep layer rules and scans the application plus
+`Packages/DenDomain/Sources`, `Packages/DenDesign/Sources`, and
+`Packages/DenIPCProtocol/Sources`. The checks reject UI/runtime SDK imports in Domain,
+SwiftUI imports in Application, and non-Foundation imports in the IPC protocol package.
+The package compiler boundaries enforce dependencies for moved Domain, Design, and wire
+types; behavioral tests verify runtime event routing and shared-state consistency. The
+scan does not prove isolation between app source groups.
 Rule scope, permitted references, and limitations are documented in [the rule guide](../.ast-grep/README.md).
 
 Before merge, run `just check`, then only the focused UI tests admitted by the rule above, then code review. Add

@@ -1,4 +1,5 @@
 import ArgumentParser
+import DenIPCProtocol
 import Foundation
 
 struct DeskCommand: ParsableCommand {
