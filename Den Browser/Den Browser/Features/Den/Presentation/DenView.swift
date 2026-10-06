@@ -18,6 +18,7 @@ struct DenView<Header: View>: View {
     private let header: Header
 
     @Environment(DenStore.self) private var store
+    @Environment(DenViewModel.self) private var viewModel
     @Environment(AppPreferences.self) private var preferences
     @Environment(\.accessibilityReduceMotion) private var systemReduceMotion
 
@@ -55,12 +56,12 @@ struct DenView<Header: View>: View {
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .ignoresSafeArea(.container, edges: store.isZenViewPresented ? .top : [])
+                    .ignoresSafeArea(.container, edges: viewModel.isZenViewPresented ? .top : [])
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .animation(
                     DenMotion.spatial(reduceMotion: shouldReduceMotion),
-                    value: store.isBoardRailPresented
+                    value: viewModel.isBoardRailPresented
                 )
 
                 notificationsOverlay
@@ -79,15 +80,20 @@ struct DenView<Header: View>: View {
             .onChange(of: shouldReduceMotion) { _, reduceMotion in
                 store.sheetNavigation.setReduceMotion(reduceMotion)
             }
-            .animation(DenMotion.feedback(reduceMotion: shouldReduceMotion), value: store.temporaryContext)
-            .animation(DenMotion.feedback(reduceMotion: shouldReduceMotion), value: store.isDeskFilterPresented)
-            .animation(DenMotion.spatial(reduceMotion: shouldReduceMotion), value: store.isZenViewPresented)
-            .animation(DenMotion.spatial(reduceMotion: shouldReduceMotion), value: store.isDrawerOpen)
+            .animation(DenMotion.feedback(reduceMotion: shouldReduceMotion), value: viewModel.temporaryContext)
+            .animation(DenMotion.feedback(reduceMotion: shouldReduceMotion), value: deskFilter.isPresented)
+            .animation(DenMotion.spatial(reduceMotion: shouldReduceMotion), value: viewModel.isZenViewPresented)
+            .animation(DenMotion.spatial(reduceMotion: shouldReduceMotion), value: viewModel.isDrawerOpen)
             .animation(DenMotion.spatial(reduceMotion: shouldReduceMotion), value: preferences.drawerStyle)
         }
+        .environment(viewModel.overview)
+        .environment(viewModel.drawer)
+        .environment(viewModel.openBoard)
+        .environment(viewModel.deskFilter)
+        .environment(viewModel.notificationList)
         .background(
             DenBackground(
-                isDenMode: store.isDenMode,
+                isDenMode: viewModel.isDenMode,
                 isPrivateDen: isPrivateDen,
                 profileColor: profileColor)
         )
@@ -98,52 +104,58 @@ struct DenView<Header: View>: View {
         .accessibilityLabel(contentAccessibilityValue)
         .accessibilityValue(contentAccessibilityValue)
         .modifier(DenDialogs())
+        .transaction(value: viewModel.boardMutationAnimationSuppressionRequest) { transaction in
+            transaction.animation = nil
+            transaction.disablesAnimations = true
+        }
     }
 
     private var boardRailVisibility: Binding<NavigationSplitViewVisibility> {
         Binding(
             get: {
-                store.isBoardRailPresented && !store.isZenViewPresented
+                viewModel.isBoardRailPresented && !viewModel.isZenViewPresented
                     ? .doubleColumn
                     : .detailOnly
             },
             set: { visibility in
-                guard !store.isZenViewPresented else { return }
-                store.setBoardRailPresented(visibility != .detailOnly)
+                guard !viewModel.isZenViewPresented else { return }
+                viewModel.setBoardRailPresented(visibility != .detailOnly)
             }
         )
     }
+
+    private var deskFilter: DeskFilterViewModel { viewModel.deskFilter }
 
     @ViewBuilder
     private func denContent(in size: CGSize) -> some View {
         ZStack(alignment: .top) {
             boardStrip(in: size)
                 .allowsHitTesting(
-                    store.temporaryContext == nil && store.focusedDesk?.boards.isEmpty == false
+                    viewModel.temporaryContext == nil && store.focusedDesk?.boards.isEmpty == false
                 )
                 .accessibilityHidden(
-                    store.temporaryContext != nil || store.focusedDesk?.boards.isEmpty != false
+                    viewModel.temporaryContext != nil || store.focusedDesk?.boards.isEmpty != false
                 )
 
             if store.focusedDesk?.boards.isEmpty != false {
                 EmptyDenView(
-                    openBoard: { store.showOpenBoardPanel() },
+                    openBoard: { viewModel.showOpenBoardPanel() },
                     openTutorial: {
                         store.openTutorialBoard(preferredWidth: newBoardWidth(in: size))
                     },
-                    showKeyboardShortcuts: store.showKeyboardShortcuts
+                    showKeyboardShortcuts: viewModel.showKeyboardShortcuts
                 )
-                .allowsHitTesting(store.temporaryContext == nil)
-                .accessibilityHidden(store.temporaryContext != nil)
+                .allowsHitTesting(viewModel.temporaryContext == nil)
+                .accessibilityHidden(viewModel.temporaryContext != nil)
             }
 
-            if store.isDeskFilterPresented && store.filteredDeskBoards.isEmpty {
-                ContentUnavailableView.search(text: store.deskFilterQuery)
+            if deskFilter.isPresented && deskFilter.filteredBoards.isEmpty {
+                ContentUnavailableView.search(text: deskFilter.query)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .allowsHitTesting(false)
             }
 
-            if store.isDeskFilterPresented {
+            if deskFilter.isPresented {
                 DeskFilterOverlay(profileColor: profileColor)
                     .padding(.top, DenLayout.outerInset)
                     .transition(DenMotion.transition(reduceMotion: shouldReduceMotion, scale: 0.96))
@@ -160,13 +172,13 @@ struct DenView<Header: View>: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .onAppear {
-            store.updateBoardLayout(
+            viewModel.updateBoardLayout(
                 availableWidth: size.width - DenLayout.outerInset * 2,
                 spacing: DenLayout.outerInset
             )
         }
         .onChange(of: size.width) { _, width in
-            store.updateBoardLayout(
+            viewModel.updateBoardLayout(
                 availableWidth: width - DenLayout.outerInset * 2,
                 spacing: DenLayout.outerInset
             )
@@ -174,21 +186,21 @@ struct DenView<Header: View>: View {
     }
 
     private var contentAccessibilityValue: String {
-        let inputContext = store.isDenMode ? "Den Mode" : "Sheet Input"
-        return store.isFocusModePresented ? "\(inputContext), Focus Mode" : inputContext
+        let inputContext = viewModel.isDenMode ? "Den Mode" : "Sheet Input"
+        return viewModel.isFocusModePresented ? "\(inputContext), Focus Mode" : inputContext
     }
 
     private var titlebarTitle: String {
         let profileTitle = profileName ?? "Den"
-        guard store.temporaryContext == nil, store.focusedBoard != nil else {
+        guard viewModel.temporaryContext == nil, store.focusedBoard != nil else {
             return profileTitle
         }
-        return "\(profileTitle) · \(store.isDenMode ? "DEN MODE" : "SHEET INPUT")"
+        return "\(profileTitle) · \(viewModel.isDenMode ? "DEN MODE" : "SHEET INPUT")"
     }
 
     @ViewBuilder
     private func activePanel(newBoardWidth: CGFloat, boardHeight: CGFloat) -> some View {
-        switch store.temporaryContext {
+        switch viewModel.temporaryContext {
         case .essentialsPrefix:
             panelOverlay(EssentialsPrefixPanel(profileColor: profileColor))
         case .openBoard:
@@ -204,7 +216,7 @@ struct DenView<Header: View>: View {
         case .deskPresetManagement:
             panelOverlay(
                 DeskPresetManagementPanel(isStandalone: true, profileColor: profileColor) {
-                    store.hideNewDeskPanel(exitsDenMode: true)
+                    viewModel.hideNewDeskPanel(exitsDenMode: true)
                 })
         case .boardWidth:
             panelOverlay(boardWidthPanel)
@@ -225,7 +237,7 @@ struct DenView<Header: View>: View {
                 .padding(DenLayout.overlayInset)
                 .transition(DenMotion.transition(reduceMotion: shouldReduceMotion, scale: 0.98))
         case .keyboardShortcuts:
-            KeyboardShortcutsView(onClose: store.hideKeyboardShortcuts)
+            KeyboardShortcutsView(onClose: viewModel.hideKeyboardShortcuts)
                 .padding(DenKeyboardShortcutsLayout.guidePadding)
                 .frame(
                     width: DenKeyboardShortcutsLayout.guideSize.width,
@@ -278,18 +290,18 @@ struct DenView<Header: View>: View {
             boardSpacing: DenLayout.outerInset,
             boardHorizontalPadding: DenLayout.outerInset,
             onOpenBoardAtEnd: { boardID in
-                store.showOpenBoardPanel(afterBoardID: boardID)
+                viewModel.showOpenBoardPanel(afterBoardID: boardID)
             }
         )
     }
 
     @ViewBuilder
     private var notificationsOverlay: some View {
-        if store.isNotificationListPresented {
+        if viewModel.isNotificationListPresented {
             Rectangle()
                 .fill(.clear)
                 .contentShape(Rectangle())
-                .onTapGesture { store.closeNotificationList() }
+                .onTapGesture { viewModel.closeNotificationList() }
                 .accessibilityHidden(true)
                 .zIndex(DenOverlayLayer.notificationDismissArea)
 
@@ -312,11 +324,11 @@ struct DenView<Header: View>: View {
         let isBottom = preferences.drawerStyle == .bottom
 
         ZStack(alignment: isBottom ? .bottom : .center) {
-            if store.isDrawerOpen {
+            if viewModel.isDrawerOpen {
                 Color.clear
                     .contentShape(Rectangle())
                     .onTapGesture {
-                        store.closeDrawer()
+                        viewModel.closeDrawer()
                     }
                     .accessibilityHidden(true)
                     .transition(.opacity)
@@ -336,7 +348,7 @@ struct DenView<Header: View>: View {
             }
         }
         .frame(width: size.width, height: size.height)
-        .allowsHitTesting(store.isDrawerOpen)
+        .allowsHitTesting(viewModel.isDrawerOpen)
         .zIndex(DenOverlayLayer.drawer)
     }
 
@@ -348,9 +360,11 @@ struct DenView<Header: View>: View {
                     .transition(feedbackTransition)
             }
 
-            if let toast = store.toastMessage {
-                ToastView(toast: toast, onTap: store.handleToastTap)
-                    .transition(feedbackTransition)
+            if let toast = viewModel.displayedFeedback {
+                ToastView(toast: toast) {
+                    viewModel.handleTap(on: toast)
+                }
+                .transition(feedbackTransition)
             }
         }
         .padding(.trailing, 20)
@@ -375,26 +389,26 @@ struct DenView<Header: View>: View {
             boardIndicator
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
                 .padding(.bottom, DenLayout.outerInset)
-                .allowsHitTesting(store.temporaryContext == nil)
-                .accessibilityHidden(store.temporaryContext != nil)
+                .allowsHitTesting(viewModel.temporaryContext == nil)
+                .accessibilityHidden(viewModel.temporaryContext != nil)
                 .transition(.opacity)
         }
     }
 
     private var shouldShowBoardIndicator: Bool {
-        !store.isZenViewPresented
-            && store.temporaryContext == nil
+        !viewModel.isZenViewPresented
+            && viewModel.temporaryContext == nil
             && (store.focusedDesk?.boards.count ?? 0) > 1
     }
 
     private var boardIndicator: some View {
         let boards =
-            store.isDeskFilterPresented
-            ? store.filteredDeskBoards
+            deskFilter.isPresented
+            ? deskFilter.filteredBoards
             : store.focusedDesk?.boards ?? []
         let focusedBoardID =
-            store.isDeskFilterPresented
-            ? store.deskFilterSelectionBoardID
+            deskFilter.isPresented
+            ? deskFilter.selectionBoardID
             : store.focusedDesk?.focusedBoardID
 
         return BoardStripIndicator(
@@ -426,6 +440,7 @@ extension DenView where Header == EmptyView {
 
 private struct DeskFilterOverlay: View {
     @Environment(DenStore.self) private var store
+    @Environment(DeskFilterViewModel.self) private var deskFilter
     @Environment(\.accessibilityDifferentiateWithoutColor) private var differentiateWithoutColor
     let profileColor: Color
     @FocusState private var isFocused: Bool
@@ -433,13 +448,13 @@ private struct DeskFilterOverlay: View {
     var body: some View {
         HStack(spacing: 8) {
             Image(systemSymbol: .magnifyingglass)
-                .foregroundStyle(store.isDeskFilterInputActive ? .primary : .secondary)
+                .foregroundStyle(deskFilter.isInputActive ? .primary : .secondary)
                 .accessibilityHidden(true)
 
             TextField(
                 text: Binding(
-                    get: { store.deskFilterQuery },
-                    set: { store.setDeskFilterQuery($0) }
+                    get: { deskFilter.query },
+                    set: { deskFilter.setQuery($0) }
                 ),
                 prompt: Text("Filter boards")
             ) {
@@ -448,10 +463,10 @@ private struct DeskFilterOverlay: View {
             .labelsHidden()
             .textFieldStyle(.plain)
             .focused($isFocused)
-            .disabled(!store.isDeskFilterInputActive)
+            .disabled(!deskFilter.isInputActive)
             .accessibilityIdentifier("desk-filter-input")
 
-            Text("\(store.filteredDeskBoards.count)/\(store.focusedDesk?.boards.count ?? 0)")
+            Text("\(deskFilter.filteredBoards.count)/\(store.focusedDesk?.boards.count ?? 0)")
                 .font(.caption.monospacedDigit())
                 .foregroundStyle(.secondary)
         }
@@ -465,25 +480,25 @@ private struct DeskFilterOverlay: View {
         .overlay {
             RoundedRectangle(cornerRadius: DenRadius.medium, style: .continuous)
                 .stroke(
-                    store.isDeskFilterInputActive
+                    deskFilter.isInputActive
                         ? (differentiateWithoutColor ? Color.primary : profileColor.opacity(0.86))
                         : Color.primary.opacity(0.16),
-                    lineWidth: store.isDeskFilterInputActive ? 1.5 : 1
+                    lineWidth: deskFilter.isInputActive ? 1.5 : 1
                 )
         }
         .shadow(color: .black.opacity(0.25), radius: 16, y: 8)
         .onTapGesture {
-            store.enterDeskFilter()
+            deskFilter.enter()
         }
         .onAppear {
             DispatchQueue.main.async {
-                isFocused = store.isDeskFilterInputActive
+                isFocused = deskFilter.isInputActive
             }
         }
-        .onChange(of: store.isDeskFilterInputActive) { _, isActive in
+        .onChange(of: deskFilter.isInputActive) { _, isActive in
             isFocused = isActive
         }
-        .onChange(of: store.deskFilterQuery) { _, newValue in
+        .onChange(of: deskFilter.query) { _, newValue in
             if isFocused {
                 TextInputComposition.syncActiveFieldEditor(to: newValue)
             }
@@ -501,9 +516,13 @@ private struct DeskFilterOverlay: View {
         websiteDataStore: .nonPersistent(),
         sheetNavigation: sheetNavigation,
         preferences: preferences)
+    let viewModel = DenViewModel(store: store)
     DenView()
         .environment(store)
+        .environment(viewModel)
         .environment(preferences)
+        .onAppear { viewModel.connect() }
+        .onDisappear { viewModel.disconnect() }
 }
 
 private struct BoardStripIndicator: View {

@@ -1,46 +1,44 @@
-import AppKit
 import Foundation
-import SwiftUI
 
 extension DenStore {
-    func openBoardFromClipboard(pasteboard: NSPasteboard? = nil) {
-        let pasteboard = pasteboard ?? self.pasteboard
+    func updateZmxRootSessionName(boardID: UUID, rootSessionName: String?) {
         guard
-            let text = pasteboard.string(forType: .string)?.trimmingCharacters(in: .whitespacesAndNewlines),
-            !text.isEmpty
-        else {
-            showToast("Clipboard is empty.", style: .warning)
-            return
-        }
-
-        guard openBoard(input: text, afterBoardID: focusedBoard?.id) else {
-            let message = openBoardPanelMessage ?? "Could not open board from clipboard."
-            openBoardPanelMessage = nil
-            showToast(message, style: .warning)
-            return
-        }
+            let rootSessionName,
+            let indices = boardIndices(for: boardID),
+            state.desks[indices.desk].boards[indices.board].zmxRootSessionName != rootSessionName
+        else { return }
+        state.desks[indices.desk].boards[indices.board].zmxRootSessionName = rootSessionName
+        save()
     }
 
     @discardableResult
-    func openBoard(input: String, preferredWidth: Double? = nil, afterBoardID: UUID? = nil) -> Bool {
+    func openBoard(
+        input: String,
+        preferredWidth: Double? = nil,
+        afterBoardID: UUID? = nil,
+        opensFromOpenBoardPanel: Bool = false,
+        zmxRootSessionName: String? = nil
+    ) -> Bool {
         if input.trimmingCharacters(in: .whitespacesAndNewlines) == ":tutorial" {
             return openTutorialBoard(preferredWidth: preferredWidth, afterBoardID: afterBoardID)
         }
 
         if let zmx = Self.resolveZmxInput(input) {
             guard zmxClient.isConfigured else {
-                openBoardPanelMessage =
-                    "Set an absolute zmx executable path in Settings > Terminal."
+                onWindowEffect?(.openBoardResult("Set an absolute zmx executable path in Settings > Terminal."))
                 return false
             }
             guard case .session(let sessionName) = zmx else {
-                showZmxSessions(returnsToOpenBoard: temporaryContext == .openBoard)
+                onWindowEffect?(
+                    .presentZmxSessions(
+                        returnsToOpenBoard: opensFromOpenBoardPanel,
+                        selectedSessionName: nil))
                 return true
             }
             let board = BoardState(
                 width: preferredWidth ?? inheritedBoardWidth,
                 zmxSessionName: sessionName,
-                rootSessionName: zmxSessions.rootSessionName(for: sessionName))
+                rootSessionName: zmxRootSessionName)
             let recentItem =
                 input.count <= Self.maximumPersistedRecentInputLength
                 ? RecentItem.zmx(sessionName: sessionName)
@@ -56,14 +54,13 @@ extension DenStore {
             if let recentItem {
                 saveRecentItem(recentItem)
             }
-            openBoardPanelMessage = nil
+            onWindowEffect?(.openBoardResult(nil))
             return true
         }
 
         if let zellij = Self.resolveZellijInput(input) {
             guard zellijClient.isConfigured else {
-                openBoardPanelMessage =
-                    "Set an absolute Zellij executable path in Settings > Terminal."
+                onWindowEffect?(.openBoardResult("Set an absolute Zellij executable path in Settings > Terminal."))
                 return false
             }
             let sessionName: String?
@@ -91,7 +88,7 @@ extension DenStore {
             if let recentItem {
                 saveRecentItem(recentItem)
             }
-            openBoardPanelMessage = nil
+            onWindowEffect?(.openBoardResult(nil))
             return true
         }
 
@@ -109,10 +106,10 @@ extension DenStore {
                         afterBoardID: afterBoardID,
                         recentItem: recentItem) != nil
                 else { return false }
-                openBoardPanelMessage = nil
+                onWindowEffect?(.openBoardResult(nil))
                 return true
             case .failure(let error):
-                openBoardPanelMessage = error.message
+                onWindowEffect?(.openBoardResult(error.message))
                 return false
             }
         }
@@ -127,6 +124,7 @@ extension DenStore {
         else {
             return false
         }
+        onWindowEffect?(.openBoardResult(nil))
         return true
     }
 
@@ -134,7 +132,7 @@ extension DenStore {
     func openTutorialBoard(preferredWidth: Double? = nil, afterBoardID: UUID? = nil) -> Bool {
         if let tutorialBoard = state.desks.lazy.flatMap(\.boards).first(where: \.isTutorial) {
             focusBoard(tutorialBoard.id, exitsDenMode: true)
-            hideOpenBoardPanel()
+            onWindowEffect?(.dismissTemporaryPresentation)
             return true
         }
 
@@ -371,24 +369,20 @@ extension DenStore {
         let insert = { [self] in
             state.desks[deskIndex].boards.insert(board, at: insertIndex)
             if focus {
-                pendingBoardLinkFocus = nil
-                pendingBoardRemoval = nil
+                onWindowEffect?(.clearBoardInputRequests)
                 state.desks[deskIndex].focusedBoardID = board.id
                 setFocusedDesk(state.desks[deskIndex].id)
-                setTemporaryContext(nil)
-                isDenMode = false
+                onWindowEffect?(.dismissTemporaryPresentation)
+                onWindowEffect?(.exitDenMode)
             } else if state.desks[deskIndex].focusedBoardID == nil {
                 state.desks[deskIndex].focusedBoardID = board.id
             }
             if save { self.save() }
         }
         if state.desks[deskIndex].boards.isEmpty || isCLIBackgroundInsertion {
-            var transaction = Transaction(animation: nil)
-            transaction.disablesAnimations = true
-            withTransaction(transaction, insert)
-        } else {
-            insert()
+            onWindowEffect?(.suppressBoardMutationAnimation)
         }
+        insert()
         if board.isWeb {
             dispatchDenOperationEvent(.webBoardOpened)
         } else if board.isTerminal {
@@ -398,23 +392,7 @@ extension DenStore {
     }
 
     var inheritedBoardWidth: Double {
-        focusedBoard?.width ?? boardWidth(toFit: 2) ?? BuiltInDeskPreset.boardWidth
-    }
-
-    func launchEssential(id: UUID) {
-        guard let essential = essentials.first(where: { $0.id == id }) else {
-            exitEssentialsPrefix()
-            return
-        }
-
-        exitEssentialsPrefix()
-        openBoardPanelMessage = nil
-        guard openBoard(input: essential.input) else {
-            let message = openBoardPanelMessage ?? "Could not open Essential '\(essential.name)'."
-            openBoardPanelMessage = nil
-            showToast(message, style: .warning)
-            return
-        }
+        focusedBoard?.width ?? BuiltInDeskPreset.boardWidth
     }
 
     @discardableResult
@@ -427,8 +405,8 @@ extension DenStore {
 
         let boardID = state.desks[deskIndex].boards[boardIndex].id
         state.desks[deskIndex].boards[boardIndex].currentSheetURL = url
-        setTemporaryContext(nil)
-        isDenMode = false
+        onWindowEffect?(.dismissTemporaryPresentation)
+        onWindowEffect?(.exitDenMode)
         save()
         webRuntimes[boardID]?.load(url)
         return true
@@ -485,30 +463,20 @@ extension DenStore {
                 disposeRuntime(for: removedBoard.id)
             }
 
-            if isOverviewPresented, overviewSelection?.boardID == board.id {
-                let deskBoards = state.desks[indices.desk].boards
-                let nextBoardID =
-                    indices.board < deskBoards.count
-                    ? deskBoards[indices.board].id
-                    : (indices.board > 0 ? deskBoards[indices.board - 1].id : deskBoards.first?.id)
-                overviewSelection = OverviewSelection(deskID: state.desks[indices.desk].id, boardID: nextBoardID)
-            }
-
+            onWindowEffect?(
+                .overviewBoardRemoved(boardID: board.id, deskID: sourceDeskID, oldIndex: indices.board))
             invalidateReferences(toRemovedBoardIDs: removedIDs)
             save()
         }
         if isCLIBackgroundRemoval {
-            var transaction = Transaction(animation: nil)
-            transaction.disablesAnimations = true
-            withTransaction(transaction, remove)
-        } else {
-            remove()
+            onWindowEffect?(.suppressBoardMutationAnimation)
         }
+        remove()
     }
 
     func restoreRecentlyRemovedBoard() {
         guard let recentlyRemovedBoard = recentlyRemovedBoards.first else {
-            showToast("No removed board to restore.", style: .warning)
+            reportFeedback("No removed board to restore.", severity: .warning)
             return
         }
 
@@ -517,7 +485,7 @@ extension DenStore {
         {
             recentlyRemovedBoards.removeFirst()
             focusBoard(existingTutorialBoard.id, exitsDenMode: true)
-            showToast("Tutorial Board is already open.", style: .warning)
+            reportFeedback("Tutorial Board is already open.", severity: .warning)
             return
         }
 
@@ -528,7 +496,7 @@ extension DenStore {
         {
             let targetBoards = state.desks[targetIndices.desk].boards
             guard !targetBoards.contains(where: { $0.sideBoardTargetBoardID == targetBoardID }) else {
-                showToast("A Side Board already exists for this Board.", style: .warning)
+                reportFeedback("A Side Board already exists for this Board.", severity: .warning)
                 return
             }
             deskIndex = targetIndices.desk
@@ -537,7 +505,7 @@ extension DenStore {
                     targetBoards.firstIndex(where: { $0.id == member.id }).map { $0 + 1 }
                 } ?? targetIndices.board + 1
         } else if recentlyRemovedBoard.board.isSideBoard {
-            showToast("The target Board no longer exists.", style: .warning)
+            reportFeedback("The target Board no longer exists.", severity: .warning)
             return
         } else if let sourceDeskIndex = state.desks.firstIndex(where: { $0.id == recentlyRemovedBoard.sourceDeskID }) {
             deskIndex = sourceDeskIndex
@@ -581,7 +549,7 @@ extension DenStore {
         guard let source = focusedBoard, !source.isSideBoard, !source.isTutorial else { return }
 
         if source.isZmx {
-            showZmxDuplicationPanel()
+            presentZmxDuplicationPanel(for: source)
             return
         }
         if let workingDirectory = source.terminalWorkingDirectory {
@@ -625,13 +593,29 @@ extension DenStore {
         }
     }
 
+    private func presentZmxDuplicationPanel(for source: BoardState) {
+        guard source.zmxSessionName != nil else { return }
+        let client = zmxClient
+        zmxCommandTask?.cancel()
+        zmxCommandTask = Task { [weak self, client] in
+            do {
+                guard let rootSessionName = try await Self.zmxRootSessionName(for: source, using: client) else {
+                    return
+                }
+                guard !Task.isCancelled, let self, self.focusedBoard?.id == source.id else { return }
+                self.onWindowEffect?(.presentZmxDuplicationPanel(rootSessionName: rootSessionName))
+            } catch {
+                return
+            }
+        }
+    }
+
     func duplicateFocusedZmxBoard(suffix: String) {
         guard
             let source = focusedBoard,
             let sessionName = source.zmxSessionName
         else { return }
 
-        let requiresOpenPanel = temporaryContext == .zmxDuplication
         let client = zmxClient
         zmxCommandTask?.cancel()
         zmxCommandTask = Task { [weak self, client] in
@@ -642,7 +626,6 @@ extension DenStore {
                     ?? source.zmxRootSessionName
                     ?? sessionName
                 guard !Task.isCancelled, let self, self.focusedBoard?.id == source.id else { return }
-                guard !requiresOpenPanel || self.temporaryContext == .zmxDuplication else { return }
 
                 let denSessionNames = self.state.desks.flatMap { desk in
                     desk.boards.compactMap(\.zmxSessionName)
@@ -672,11 +655,16 @@ extension DenStore {
                 return
             } catch {
                 guard !Task.isCancelled, let self, self.focusedBoard?.id == source.id else { return }
-                self.showToast(
+                self.reportFeedback(
                     "Could not inspect active zmx sessions: \(error.localizedDescription)",
-                    style: .warning)
+                    severity: .warning)
             }
         }
+    }
+
+    func cancelZmxDuplicationRequest() {
+        zmxCommandTask?.cancel()
+        zmxCommandTask = nil
     }
 
     func waitForZmxCommand() async {
@@ -726,8 +714,8 @@ extension DenStore {
         } else {
             state.desks[deskIndex].boards[boardIndex].customLabel = trimmed
         }
-        setTemporaryContext(nil)
-        isDenMode = false
+        onWindowEffect?(.dismissTemporaryPresentation)
+        onWindowEffect?(.exitDenMode)
         save()
     }
 

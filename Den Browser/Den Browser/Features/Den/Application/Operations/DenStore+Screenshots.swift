@@ -34,7 +34,7 @@ extension DenStore {
 
     private func focusedSheetRuntime() -> WebBoardRuntime? {
         guard let board = focusedBoard, board.isWeb else {
-            showToast("No focused Web Board.", style: .warning)
+            reportFeedback("No focused Web Board.", severity: .warning)
             return nil
         }
         return webRuntime(for: board)
@@ -71,11 +71,11 @@ extension DenStore {
                 }
 
                 guard !Task.isCancelled else { return }
-                showToast(successMessage(result), style: .success)
+                reportFeedback(successMessage(result), severity: .success)
             } catch is CancellationError {
                 return
             } catch {
-                showToast("Screenshot failed: \(error.localizedDescription)", style: .error)
+                reportFeedback("Screenshot failed: \(error.localizedDescription)", severity: .error)
             }
         }
     }

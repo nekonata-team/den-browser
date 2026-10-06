@@ -14,6 +14,18 @@ enum DenOperationEvent: Equatable {
     case keyboardShortcutsShown
 }
 
+extension TutorialBoardStep {
+    var completionEvents: [DenOperationEvent] {
+        switch self {
+        case .openBoard: [.webBoardOpened]
+        case .navigateBoards: [.boardFocusMoved]
+        case .createDesk: [.deskCreated]
+        case .keyboardShortcuts: [.keyboardShortcutsShown]
+        case .terminalBoard: [.terminalBoardOpened]
+        }
+    }
+}
+
 struct BoardLinkFocusIntent: Equatable {
     let id: UUID
     let boardID: UUID

@@ -219,3 +219,49 @@ func withStore<T>(
 ) async rethrows -> T {
     try await withTestStore(desks: desks, body: body)
 }
+
+@MainActor
+func withTestViewModel<T>(
+    store: DenStore,
+    body: (DenViewModel) throws -> T
+) rethrows -> T {
+    let viewModel = DenViewModel(store: store)
+    viewModel.connect()
+    defer { viewModel.disconnect() }
+    return try body(viewModel)
+}
+
+@MainActor
+func withTestViewModel<T>(
+    store: DenStore,
+    body: (DenViewModel) async throws -> T
+) async rethrows -> T {
+    let viewModel = DenViewModel(store: store)
+    viewModel.connect()
+    defer { viewModel.disconnect() }
+    return try await body(viewModel)
+}
+
+@MainActor
+func withTestViewModel<T>(
+    desks: [DeskState],
+    onSave: ((DenState) -> Bool)? = nil,
+    terminalCommandRunner: any TerminalCommandRunning = SubprocessCommandRunner(),
+    body: (DenViewModel) throws -> T
+) rethrows -> T {
+    try withTestStore(desks: desks, onSave: onSave, terminalCommandRunner: terminalCommandRunner) { store in
+        try withTestViewModel(store: store, body: body)
+    }
+}
+
+@MainActor
+func withTestViewModel<T>(
+    desks: [DeskState],
+    onSave: ((DenState) -> Bool)? = nil,
+    terminalCommandRunner: any TerminalCommandRunning = SubprocessCommandRunner(),
+    body: (DenViewModel) async throws -> T
+) async rethrows -> T {
+    try await withTestStore(desks: desks, onSave: onSave, terminalCommandRunner: terminalCommandRunner) { store in
+        try await withTestViewModel(store: store, body: body)
+    }
+}

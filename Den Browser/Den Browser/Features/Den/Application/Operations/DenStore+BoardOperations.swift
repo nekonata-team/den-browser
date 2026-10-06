@@ -8,8 +8,8 @@ extension DenStore {
         if !changedDesk, let boardID = focusedDesk?.focusedBoardID {
             markNotificationsRead(for: boardID)
         }
-        dismissDeskFilter()
-        isDenMode = false
+        onWindowEffect?(.dismissDeskFilter)
+        onWindowEffect?(.exitDenMode)
         if changedDesk { saveDeferredState() }
     }
 
@@ -20,19 +20,18 @@ extension DenStore {
         if !changed {
             markNotificationsRead(for: boardID)
             if exitsDenMode {
-                isDenMode = false
+                onWindowEffect?(.exitDenMode)
             }
             return
         }
-        pendingBoardLinkFocus = nil
-        pendingBoardRemoval = nil
+        onWindowEffect?(.clearBoardInputRequests)
         state.desks[indices.desk].focusedBoardID = boardID
         let changedDesk = setFocusedDesk(deskID)
         if !changedDesk && presentedDeskID == deskID {
             markNotificationsRead(for: boardID)
         }
         if exitsDenMode {
-            isDenMode = false
+            onWindowEffect?(.exitDenMode)
         }
         saveDeferredState()
     }
@@ -85,12 +84,6 @@ extension DenStore {
         moveFocusedBoardToDesk(by: 1)
     }
 
-    func toggleFocusedBoardMaximized() {
-        guard let focusedBoardID = focusedDesk?.focusedBoardID else { return }
-        maximizedBoardID = maximizedBoardID == focusedBoardID ? nil : focusedBoardID
-        centerFocusedBoard()
-    }
-
     func toggleFocusedBoardSheetNavigationPause() {
         guard let focusedBoardID = focusedDesk?.focusedBoardID else { return }
         toggleBoardSheetNavigationPause(focusedBoardID)
@@ -114,23 +107,23 @@ extension DenStore {
             state.desks[focusedDeskIndex].scrollOffsetX = nil
             save()
         }
-        centerFocusedBoardRequest &+= 1
+        onWindowEffect?(.centerFocusedBoard)
     }
 
     func revealPreviousBoard() {
         guard focusedDesk?.focusedBoardID != nil else { return }
-        revealPreviousBoardRequest &+= 1
+        onWindowEffect?(.revealPreviousBoard)
     }
 
     func revealNextBoard() {
         guard focusedDesk?.focusedBoardID != nil else { return }
-        revealNextBoardRequest &+= 1
+        onWindowEffect?(.revealNextBoard)
     }
 
     func focusDesk(number: Int) {
         guard (1...Self.maximumDeskCount).contains(number) else { return }
         guard state.desks.indices.contains(number - 1) else {
-            showToast("Desk \(number) does not exist.", style: .warning)
+            reportFeedback("Desk \(number) does not exist.", severity: .warning)
             return
         }
         focusDesk(state.desks[number - 1].id)
@@ -139,7 +132,7 @@ extension DenStore {
     func moveFocusedBoard(toDeskNumber number: Int) {
         guard (1...Self.maximumDeskCount).contains(number) else { return }
         guard state.desks.indices.contains(number - 1) else {
-            showToast("Desk \(number) does not exist.", style: .warning)
+            reportFeedback("Desk \(number) does not exist.", severity: .warning)
             return
         }
         moveFocusedBoard(toDeskAt: number - 1)
@@ -194,8 +187,6 @@ extension DenStore {
     func beginBoardDrag(_ boardID: UUID) -> Bool {
         guard
             activeDrag == nil,
-            !isDeskFilterPresented,
-            temporaryContext == nil,
             let indices = boardIndices(for: boardID),
             indices.desk == focusedDeskIndex
         else {
@@ -203,7 +194,7 @@ extension DenStore {
         }
         state.desks[indices.desk].focusedBoardID = boardID
         markNotificationsRead(for: boardID)
-        maximizedBoardID = nil
+        onWindowEffect?(.clearMaximizedBoard)
         activeDrag = .board(boardID)
         save()
         return true
@@ -262,13 +253,12 @@ extension DenStore {
 
     func requestBoardDragCancellation() {
         guard case .board? = activeDrag else { return }
-        boardDragCancellationRequest &+= 1
+        onWindowEffect?(.cancelBoardDrag)
     }
 
     func beginDeskDrag(_ deskID: UUID) -> Bool {
         guard
             activeDrag == nil,
-            temporaryContext == nil,
             state.desks.contains(where: { $0.id == deskID })
         else {
             return false
@@ -304,12 +294,11 @@ extension DenStore {
 
     func requestDeskDragCancellation() {
         guard case .desk? = activeDrag else { return }
-        deskDragCancellationRequest &+= 1
+        onWindowEffect?(.cancelDeskDrag)
     }
 
     func moveDesk(_ deskID: UUID, by delta: Int) {
         guard
-            temporaryContext == nil,
             activeDrag == nil,
             let deskIndex = state.desks.firstIndex(where: { $0.id == deskID }),
             state.desks.indices.contains(deskIndex + delta)
@@ -321,7 +310,7 @@ extension DenStore {
 
     private func moveDeskFocus(by delta: Int) {
         guard let currentIndex = focusedDeskIndex, !state.desks.isEmpty else { return }
-        dismissDeskFilter()
+        onWindowEffect?(.dismissDeskFilter)
         let nextIndex = wrappedIndex(currentIndex + delta, count: state.desks.count)
         let targetDeskID = state.desks[nextIndex].id
         guard setFocusedDesk(targetDeskID) else { return }
@@ -395,7 +384,7 @@ extension DenStore {
         transferBoardGroup(containing: boardID, from: sourceDeskIndex, to: targetDeskIndex, at: insertIndex)
         state.desks[targetDeskIndex].focusedBoardID = boardID
         setFocusedDesk(state.desks[targetDeskIndex].id, autoPIP: false)
-        isDenMode = false
+        onWindowEffect?(.exitDenMode)
         save()
     }
 
@@ -404,7 +393,7 @@ extension DenStore {
         guard state.desks.contains(where: { $0.boards.contains { $0.id == boardID } }) else { return }
         pasteboard.clearContents()
         pasteboard.setString(boardID.uuidString.lowercased(), forType: .string)
-        showToast("Copied Board ID.", style: .success)
+        reportFeedback("Copied Board ID.", severity: .success)
     }
 
     func copyBoardLocation(_ boardID: UUID? = nil, pasteboard: NSPasteboard? = nil) {
@@ -448,7 +437,7 @@ extension DenStore {
 
         pasteboard.clearContents()
         pasteboard.setString(value, forType: .string)
-        showToast(message, style: .success)
+        reportFeedback(message, severity: .success)
     }
 
     func toggleAnchorBoard() {
@@ -463,10 +452,10 @@ extension DenStore {
 
         if state.desks[deskIndex].anchorBoardID == boardID {
             state.desks[deskIndex].anchorBoardID = nil
-            showToast("Cleared Anchor Board")
+            reportFeedback("Cleared Anchor Board")
         } else {
             state.desks[deskIndex].anchorBoardID = boardID
-            showToast("Set Anchor Board")
+            reportFeedback("Set Anchor Board")
         }
         save()
     }
@@ -477,7 +466,7 @@ extension DenStore {
         guard let anchorBoardID = desk.anchorBoardID,
             desk.boards.contains(where: { $0.id == anchorBoardID })
         else {
-            showToast("No Anchor Board in Desk", style: .warning)
+            reportFeedback("No Anchor Board in Desk", severity: .warning)
             return
         }
 

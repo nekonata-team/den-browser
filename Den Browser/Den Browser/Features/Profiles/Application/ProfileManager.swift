@@ -16,6 +16,7 @@ final class ProfileManager {
     @ObservationIgnored private var persistedProfiles: [UUID: PersistedProfile] = [:]
     var profileSaveCount: Int { persistence.profileSaveCount }
     @ObservationIgnored private var storages: [UUID: DenStorage] = [:]
+    @ObservationIgnored private var runtimeOwners: [UUID: [UUID: DenStore]] = [:]
     @ObservationIgnored private let windowRegistry = ProfileWindowRegistry()
     @ObservationIgnored private var websiteDataStores: [UUID: WKWebsiteDataStore] = [:]
     @ObservationIgnored private let extensionCoordinator: ProfileExtensionCoordinator
@@ -361,7 +362,10 @@ final class ProfileManager {
             onSave: { [weak self] den in self?.saveDen(den, for: profileID) ?? false },
             onDeferredSave: { [weak self] in self?.scheduleDeferredSave(for: profileID) },
             onDeskPresetsSave: { [weak self] presets in self?.saveDeskPresets(presets, for: profileID) ?? false },
-            onRecentItemsSave: { [weak self] items in self?.saveRecentItems(items, for: profileID) ?? false })
+            onRecentItemsSave: { [weak self] items in self?.saveRecentItems(items, for: profileID) ?? false },
+            onRuntimeOwnerChange: { [weak self] boardID, store in
+                self?.setRuntimeOwner(store, boardID: boardID, profileID: profileID)
+            })
         storages[profileID] = storage
         if normalizedState != persisted.den {
             _ = saveDen(normalizedState, for: profileID)
@@ -504,7 +508,7 @@ final class ProfileManager {
             !windowRegistry.hasWindow(for: profileID)
         else { return }
         if let storage = storages.removeValue(forKey: profileID) {
-            releaseRuntimes(storage)
+            releaseRuntimes(storage, profileID: profileID)
         }
         websiteDataStores.removeValue(forKey: profileID)
         extensionCoordinator.releaseProfile(profileID)
@@ -527,12 +531,23 @@ final class ProfileManager {
         closeWindows(for: profileID, excludingWindowID: excludingWindowID)
     }
 
-    private func releaseRuntimes(_ storage: DenStorage) {
+    private func setRuntimeOwner(_ store: DenStore?, boardID: UUID, profileID: UUID) {
+        if let store {
+            runtimeOwners[profileID, default: [:]][boardID] = store
+        } else {
+            runtimeOwners[profileID]?.removeValue(forKey: boardID)
+            if runtimeOwners[profileID]?.isEmpty == true {
+                runtimeOwners.removeValue(forKey: profileID)
+            }
+        }
+    }
+
+    private func releaseRuntimes(_ storage: DenStorage, profileID: UUID) {
         for runtime in storage.webRuntimes.values { runtime.dispose() }
         storage.webRuntimes.removeAll()
         for runtime in storage.terminalRuntimes.values { runtime.dispose() }
         storage.terminalRuntimes.removeAll()
-        storage.runtimeOwners.removeAll()
+        runtimeOwners.removeValue(forKey: profileID)
     }
 
     private func load() {

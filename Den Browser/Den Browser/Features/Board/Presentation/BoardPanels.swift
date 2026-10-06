@@ -5,6 +5,8 @@ struct OpenBoardPanel: View {
     private static let maximumVisibleRecentItemCount = 5
 
     @Environment(DenStore.self) private var store
+    @Environment(DenViewModel.self) private var viewModel
+    @Environment(OpenBoardViewModel.self) private var openBoard
     @FocusState private var isFocused: Bool
     @State private var selectedRecentItemID: RecentItem?
 
@@ -12,7 +14,7 @@ struct OpenBoardPanel: View {
     let newBoardWidth: Double
 
     private var filteredRecentItems: [RecentItem] {
-        let query = store.openBoardPanelInput.trimmingCharacters(in: .whitespacesAndNewlines)
+        let query = openBoard.input.trimmingCharacters(in: .whitespacesAndNewlines)
         return Array(
             store.recentItems.lazy.filter {
                 query.isEmpty || $0.displayText.localizedCaseInsensitiveContains(query)
@@ -21,8 +23,8 @@ struct OpenBoardPanel: View {
 
     private var urlTextBinding: Binding<String> {
         Binding(
-            get: { store.openBoardPanelInput },
-            set: { store.openBoardPanelInput = $0 }
+            get: { openBoard.input },
+            set: { openBoard.input = $0 }
         )
     }
 
@@ -55,7 +57,7 @@ struct OpenBoardPanel: View {
                             $0.id == selectedRecentItemID
                         })
                     else { return .ignored }
-                    store.openBoardPanelInput = selected.displayText
+                    openBoard.input = selected.displayText
                     return .handled
                 }
                 .onSubmit {
@@ -63,13 +65,13 @@ struct OpenBoardPanel: View {
                         if let selected = filteredRecentItems.first(where: { $0.id == selectedRecentItemID }) {
                             openRecent(selected)
                         } else {
-                            openBoard()
+                            submitBoard()
                         }
                     }
                 }
             }
 
-            if let message = store.openBoardPanelMessage {
+            if let message = openBoard.message {
                 DenValidationMessage(message)
             }
 
@@ -117,7 +119,7 @@ struct OpenBoardPanel: View {
                                 "Essential: \(matchedEssential.name), key \(matchedEssential.displayKey)")
                         } else {
                             Button {
-                                store.showSaveEssentialPanel(for: item)
+                                viewModel.showSaveEssentialPanel(for: item)
                             } label: {
                                 Image(systemSymbol: .sparkles)
                                     .font(.caption)
@@ -143,7 +145,7 @@ struct OpenBoardPanel: View {
                             .disabled(true)
                         } else {
                             Button {
-                                store.showSaveEssentialPanel(for: item)
+                                viewModel.showSaveEssentialPanel(for: item)
                             } label: {
                                 Label("Save as Essential…", systemSymbol: .sparkles)
                             }
@@ -159,47 +161,41 @@ struct OpenBoardPanel: View {
         }
         .denPanel()
         .onAppear {
-            if let initialURL = store.openBoardPanelInitialURL {
-                store.openBoardPanelInput = initialURL.absoluteString
+            if let initialURL = openBoard.initialURL {
+                openBoard.input = initialURL.absoluteString
             }
             DispatchQueue.main.async { isFocused = true }
         }
-        .onChange(of: store.openBoardPanelInput) { _, newValue in
+        .onChange(of: openBoard.input) { _, newValue in
             selectedRecentItemID = nil
-            store.openBoardPanelMessage = nil
+            openBoard.message = nil
             if isFocused {
                 TextInputComposition.syncActiveFieldEditor(to: newValue)
             }
         }
         .onExitCommand {
-            store.hideOpenBoardPanel()
+            viewModel.hideOpenBoardPanel()
             store.restoreFocusedFirstResponder()
         }
     }
 
-    private func openBoard() {
-        store.openBoard(
-            input: store.openBoardPanelInput,
-            preferredWidth: newBoardWidth,
-            afterBoardID: store.openBoardAfterBoardID)
+    private func submitBoard() {
+        viewModel.submitOpenBoard(preferredWidth: newBoardWidth)
         finishOpeningBoardIfNeeded()
     }
 
     private func openRecent(_ item: RecentItem) {
-        store.openBoard(
-            recentItem: item,
-            preferredWidth: newBoardWidth,
-            afterBoardID: store.openBoardAfterBoardID)
+        viewModel.openRecentItem(item, preferredWidth: newBoardWidth)
         finishOpeningBoardIfNeeded()
     }
 
     private func finishOpeningBoardIfNeeded() {
-        guard !store.isOpenBoardPanelPresented else { return }
-        store.clearOpenBoardPanelDraft()
+        guard !viewModel.isOpenBoardPanelPresented else { return }
+        openBoard.clearDraft()
     }
 
     private func recentItemIcon(for item: RecentItem) -> some View {
-        Image(systemSymbol: item.systemSymbol)
+        Image(systemSymbol: recentItemSymbol(for: item))
             .foregroundStyle(.secondary)
             .frame(width: 16)
     }
@@ -215,6 +211,7 @@ struct OpenBoardPanel: View {
 
 struct EditBoardLinkPanel: View {
     @Environment(DenStore.self) private var store
+    @Environment(DenViewModel.self) private var viewModel
 
     @State private var text = ""
     @FocusState private var isFocused: Bool
@@ -250,7 +247,7 @@ struct EditBoardLinkPanel: View {
             DispatchQueue.main.async { isFocused = true }
         }
         .onExitCommand {
-            store.hideEditBoardLinkPanel()
+            viewModel.hideEditBoardLinkPanel()
             store.restoreFocusedFirstResponder()
         }
     }
@@ -264,11 +261,12 @@ struct EditBoardLinkPanel: View {
 
 struct ZmxDuplicationPanel: View {
     @Environment(DenStore.self) private var store
+    @Environment(DenViewModel.self) private var viewModel
     @State private var text = ""
     @FocusState private var isFocused: Bool
 
     private var rootSessionName: String {
-        store.zmxDuplicationRootSessionName
+        viewModel.zmxDuplicationRootSessionName
             ?? store.focusedBoard?.zmxSessionName
             ?? "zmx"
     }
@@ -310,7 +308,7 @@ struct ZmxDuplicationPanel: View {
             DispatchQueue.main.async { isFocused = true }
         }
         .onExitCommand {
-            store.hideZmxDuplicationPanel()
+            viewModel.hideZmxDuplicationPanel()
             text = ""
             store.restoreFocusedFirstResponder()
         }
@@ -325,6 +323,7 @@ struct ZmxDuplicationPanel: View {
 
 struct RenameBoardPanel: View {
     @Environment(DenStore.self) private var store
+    @Environment(DenViewModel.self) private var viewModel
     @State private var text = ""
     @FocusState private var isFocused: Bool
 
@@ -352,25 +351,26 @@ struct RenameBoardPanel: View {
             if let board = store.focusedBoard { text = board.customLabel ?? board.label } else { text = "" }
             DispatchQueue.main.async { isFocused = true }
         }
-        .onExitCommand { store.hideRenameBoardPanel() }
+        .onExitCommand { viewModel.hideRenameBoardPanel() }
     }
 }
 
 struct BoardWidthPanel: View {
     @Environment(DenStore.self) private var store
+    @Environment(DenViewModel.self) private var viewModel
 
     var body: some View {
         VStack(alignment: .leading, spacing: DenPanelLayout.contentSpacing) {
             DenPanelHeader(icon: Image(systemSymbol: .arrowLeftAndRight)) {
                 Text("Resize Boards to Fit").font(.headline)
                 Spacer()
-                DenCloseButton(label: "Close Board Width", action: store.hideBoardWidthPanel)
+                DenCloseButton(label: "Close Board Width", action: viewModel.hideBoardWidthPanel)
             }
             LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 3), spacing: 8) {
                 ForEach(1...9, id: \.self) { count in
-                    let width = store.boardWidth(toFit: count)
+                    let width = viewModel.boardWidth(toFit: count)
                     Button {
-                        store.resizeFocusedDeskBoards(toFit: count)
+                        viewModel.resizeFocusedDeskBoards(toFit: count)
                     } label: {
                         VStack(spacing: 2) {
                             Text(count == 1 ? "1 Board" : "\(count) Boards")
@@ -380,23 +380,24 @@ struct BoardWidthPanel: View {
                         .frame(maxWidth: .infinity)
                     }
                     .buttonStyle(.glass)
-                    .disabled(!store.canResizeFocusedDeskBoards(toFit: count))
+                    .disabled(!viewModel.canResizeFocusedDeskBoards(toFit: count))
                     .accessibilityHint("Applies to every Board in the Focused Desk")
                 }
             }
-            if let message = store.boardWidthPanelMessage {
+            if let message = viewModel.boardWidthPanelMessage {
                 DenValidationMessage(message)
             } else {
                 DenPanelHint("Changes every Board in the Focused Desk. Press - / = or 1–9, then Escape.")
             }
         }
         .denPanel(width: DenPanelLayout.compactWidth)
-        .onExitCommand { store.hideBoardWidthPanel() }
+        .onExitCommand { viewModel.hideBoardWidthPanel() }
     }
 }
 
 struct SaveEssentialPanel: View {
     @Environment(DenStore.self) private var store
+    @Environment(DenViewModel.self) private var viewModel
 
     @State private var name = ""
     @State private var key = ""
@@ -480,7 +481,7 @@ struct SaveEssentialPanel: View {
         }
         .denPanel(width: DenPanelLayout.narrowWidth)
         .onAppear {
-            if let draft = store.saveEssentialDraft {
+            if let draft = viewModel.saveEssentialDraft {
                 name = draft.name
                 key = draft.key
                 input = draft.input
@@ -495,7 +496,7 @@ struct SaveEssentialPanel: View {
                 }
             }
         }
-        .onExitCommand { store.hideSaveEssentialPanel() }
+        .onExitCommand { viewModel.hideSaveEssentialPanel() }
     }
 
     private var usedKeysString: String {
@@ -519,7 +520,7 @@ struct SaveEssentialPanel: View {
                 }
                 return
             }
-            if !store.saveEssential(name: name, key: key, input: input) {
+            if !viewModel.saveEssential(name: name, key: key, input: input) {
                 errorMessage = "Could not save Essential."
             }
         }

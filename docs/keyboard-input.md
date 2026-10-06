@@ -17,11 +17,11 @@ NSEvent
        -> forward(InputDestination)
 ```
 
-`KeyboardController` is the AppKit adapter. It normalizes the event, snapshots the current input context, calls `KeyboardRouter`, and applies the decision. It must not contain key policy or mutate `DenStore` directly.
+`KeyboardController` is the AppKit adapter. It normalizes the event, snapshots the current input context, calls `KeyboardRouter`, and applies the decision. It must not contain key policy or mutate `DenStore` directly. Each Profile window registers its mounted `DenViewModel`; events use the instance associated with `event.window`. `InputContext` combines that ViewModel's presentation state with its Store's application state.
 
 `KeyboardRouter` owns Profile-window key precedence. It is side-effect free: it receives values and returns exactly one `InputDecision`. It must not reference UI objects, call `DenStore`, or open windows. The Essentials Prefix is a temporary context: Den Mode's `g` or Vim-style Sheet Navigation's `o` enters it. Up and Down move the focused Essential, Return launches it, and one configured key, optionally with Shift for uppercase, still launches its matching Essential directly. Escape exits the prefix.
 
-`AppAction` names input-reachable application behavior. `AppActionHandler` is the only keyboard path that performs these actions. SwiftUI `Commands` must use the same action when a menu item and a key event represent the same behavior. Menu-only operations do not need an `AppAction`.
+`AppAction` names input-reachable application behavior. `AppActionHandler` is the only keyboard path that performs these actions. It uses the window ViewModel for UI workflows and the ViewModel's Store for application operations. SwiftUI `Commands` use the same focused ViewModel and action when a menu item and a key event represent the same behavior. Menu-only operations do not need an `AppAction`.
 
 Shortcut recording is configuration input, not an action entrance. It updates `AppPreferences`; the next event receives the effective values through `ShortcutConfiguration`.
 
@@ -59,7 +59,7 @@ Inspect the path in this order:
 3. Inspect `InputContext`, including Den Mode and any exclusive temporary context.
 4. Inspect the effective `ShortcutConfiguration`, including explicit unassignment.
 5. Inspect the returned `InputDecision` and its reason or destination.
-6. For `.perform`, inspect `AppActionHandler` and the resulting `DenStore` or system effect.
+6. For `.perform`, inspect `AppActionHandler` and the resulting ViewModel, Store, or system effect.
 7. For `.forward`, inspect only the named destination's responder path.
 
 When changing routing, add a Router decision test. Add an action-result test when behavior mutates Den. Add a UI test when the regression crosses AppKit, SwiftUI Commands, WebKit, or Terminal responder boundaries. Run `just check`; run the focused `just ui-test` target for affected UI behavior.

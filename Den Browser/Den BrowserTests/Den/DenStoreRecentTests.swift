@@ -59,20 +59,23 @@ struct DenStoreRecentTests {
                         .url(URL(string: "https://example.com/long-path")!),
                     ])
 
-                store.openBoardPanelInput = "https://example.com/sub-\npage"
-                #expect(store.openBoardPanelInput == "https://example.com/sub-page")
+                let viewModel = DenViewModel(store: store)
+                viewModel.connect()
+                defer { viewModel.disconnect() }
+                viewModel.openBoard.input = "https://example.com/sub-\npage"
+                #expect(viewModel.openBoard.input == "https://example.com/sub-page")
 
-                store.openBoardPanelInput = "search\nquery"
-                #expect(store.openBoardPanelInput == "searchquery")
+                viewModel.openBoard.input = "search\nquery"
+                #expect(viewModel.openBoard.input == "searchquery")
 
-                store.setDeskFilterQuery("desk\nfilter")
-                #expect(store.deskFilterQuery == "deskfilter")
+                viewModel.deskFilter.setQuery("desk\nfilter")
+                #expect(viewModel.deskFilter.query == "deskfilter")
 
-                store.setOverviewQuery("overview\nquery")
-                #expect(store.overviewQuery == "overviewquery")
+                viewModel.overview.setQuery("overview\nquery")
+                #expect(viewModel.overview.query == "overviewquery")
 
-                store.setDrawerQuery("drawer\nquery")
-                #expect(store.drawerQuery == "drawerquery")
+                viewModel.drawer.setQuery("drawer\nquery")
+                #expect(viewModel.drawer.query == "drawerquery")
             })
     }
 
@@ -145,10 +148,10 @@ struct DenStoreRecentTests {
         let expectedURL = try #require(URL(string: essential.input))
         withTestStore { store in
             #expect(store.preferences.setEssentials([essential]))
-
-            store.launchEssential(id: essential.id)
-
-            #expect(store.recentItems == [.url(expectedURL)])
+            withTestViewModel(store: store) { viewModel in
+                viewModel.launchEssential(id: essential.id)
+                #expect(store.recentItems == [.url(expectedURL)])
+            }
         }
     }
 
@@ -183,11 +186,13 @@ struct DenStoreRecentTests {
             recentItems: [item],
             onRecentItemsSave: { _ in true },
             body: { store in
-                store.openBoard(recentItem: item)
+                withTestViewModel(store: store) { viewModel in
+                    store.openBoard(recentItem: item)
 
-                #expect(store.focusedDesk?.boards.isEmpty == true)
-                #expect(store.openBoardPanelMessage?.contains("does not exist") == true)
-                #expect(store.recentItems == [item])
+                    #expect(store.focusedDesk?.boards.isEmpty == true)
+                    #expect(viewModel.openBoard.message?.contains("does not exist") == true)
+                    #expect(store.recentItems == [item])
+                }
             })
     }
 
@@ -227,11 +232,13 @@ struct DenStoreRecentTests {
             recentItems: [item],
             onRecentItemsSave: { _ in true },
             body: { store in
-                store.openBoard(recentItem: item)
+                withTestViewModel(store: store) { viewModel in
+                    store.openBoard(recentItem: item)
 
-                #expect(store.focusedDesk?.boards.isEmpty == true)
-                #expect(store.openBoardPanelMessage?.contains("absolute Zellij executable path") == true)
-                #expect(store.recentItems == [item])
+                    #expect(store.focusedDesk?.boards.isEmpty == true)
+                    #expect(viewModel.openBoard.message?.contains("absolute Zellij executable path") == true)
+                    #expect(store.recentItems == [item])
+                }
             })
     }
 
@@ -241,11 +248,13 @@ struct DenStoreRecentTests {
             recentItems: [item],
             onRecentItemsSave: { _ in true },
             body: { store in
-                store.openBoard(recentItem: item)
+                withTestViewModel(store: store) { viewModel in
+                    store.openBoard(recentItem: item)
 
-                #expect(store.focusedDesk?.boards.isEmpty == true)
-                #expect(store.openBoardPanelMessage?.contains("absolute zmx executable path") == true)
-                #expect(store.recentItems == [item])
+                    #expect(store.focusedDesk?.boards.isEmpty == true)
+                    #expect(viewModel.openBoard.message?.contains("absolute zmx executable path") == true)
+                    #expect(store.recentItems == [item])
+                }
             })
     }
 

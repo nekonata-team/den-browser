@@ -14,7 +14,7 @@ extension DenStore {
         ensureWebExtensionContext()
         let actions = sheetNavigationActions(for: board)
         let events = boardRuntimeEvents(for: board)
-        storage.runtimeOwners[board.id] = self
+        storage.onRuntimeOwnerChange?(board.id, self)
         if let runtime = webRuntimes[board.id] {
             runtime.updateOwner(sheetNavigationActions: actions, events: events)
             if let webExtensionHost, let webExtensionWindow {
@@ -47,7 +47,7 @@ extension DenStore {
     func terminalRuntime(for board: BoardState) -> TerminalRuntime {
         precondition(board.isTerminal, "Web Board cannot create a terminal runtime")
         let events = terminalRuntimeEvents(for: board)
-        storage.runtimeOwners[board.id] = self
+        storage.onRuntimeOwnerChange?(board.id, self)
         if let runtime = terminalRuntimes[board.id] {
             runtime.updateOwner(events: events)
             return runtime
@@ -97,11 +97,11 @@ extension DenStore {
             onKeepInDrawer: { [weak self] url in self?.keepInDrawer(url, opensDrawer: false) },
             onEditCurrentSheet: { [weak self] in
                 self?.focusBoard(board.id)
-                self?.showEditBoardLinkPanel()
+                self?.onWindowEffect?(.presentEditBoardLink)
             },
             onOpenCurrentSheetInNewBoard: { [weak self] url in
                 self?.focusBoard(board.id)
-                self?.showOpenBoardPanel(initialURL: url)
+                self?.onWindowEffect?(.presentOpenBoard(initialURL: url, afterBoardID: nil))
             },
             onPasteURLInNewBoard: { [weak self] url in
                 _ = self?.createBoard(
@@ -111,34 +111,35 @@ extension DenStore {
                     recentItem: .url(WebURLPolicy.canonicalSheetURL(url)))
             },
             onCopyURLSucceeded: { [weak self] in
-                self?.showToast("Copied Current Sheet URL.", style: .success)
+                self?.reportFeedback("Copied Current Sheet URL.", severity: .success)
             },
             onCopyURLFailed: { [weak self] in
-                self?.showToast("Could not copy Current Sheet URL.", style: .error)
+                self?.reportFeedback("Could not copy Current Sheet URL.", severity: .error)
             },
             onCopyMarkdownLinkSucceeded: { [weak self] in
-                self?.showToast("Copied Current Sheet Markdown link.", style: .success)
+                self?.reportFeedback("Copied Current Sheet Markdown link.", severity: .success)
             },
             onCopyMarkdownLinkFailed: { [weak self] in
-                self?.showToast("Could not copy Current Sheet Markdown link.", style: .error)
+                self?.reportFeedback("Could not copy Current Sheet Markdown link.", severity: .error)
             },
             onCopyBoardID: { [weak self] in
                 self?.copyBoardID(board.id)
             },
             onPasteURLFailed: { [weak self] in
-                self?.showToast("Clipboard does not contain a supported URL.", style: .warning)
+                self?.reportFeedback("Clipboard does not contain a supported URL.", severity: .warning)
             },
             onOpenBoardPanel: { [weak self] in
                 self?.focusBoard(board.id)
-                self?.showOpenBoardPanel()
+                self?.onWindowEffect?(.presentOpenBoard(initialURL: nil, afterBoardID: nil))
             },
             onShowOverview: { [weak self] in
                 self?.focusBoard(board.id)
-                self?.showOverview()
+                self?.onWindowEffect?(
+                    .presentOverview(deskID: self?.presentedDeskID, boardID: self?.focusedDesk?.focusedBoardID))
             },
             onShowEssentials: { [weak self] in
                 self?.focusBoard(board.id)
-                self?.showEssentialsPrefix()
+                self?.onWindowEffect?(.presentEssentialsPrefix)
             },
             onRemoveBoard: { [weak self] in self?.removeBoard(board.id) },
             onRemoveBoardAndFocusNext: { [weak self] in self?.removeBoard(board.id, focusNext: true) },
@@ -188,18 +189,13 @@ extension DenStore {
                 self?.handleDownloadActivity(event)
             },
             onDownloadFinished: { [weak self] filename in
-                self?.showToast("Downloaded \(filename).", style: .success)
+                self?.reportFeedback("Downloaded \(filename).", severity: .success)
             },
             onDownloadFailed: { [weak self] message in
-                self?.showToast("Download failed: \(message)", style: .error)
+                self?.reportFeedback("Download failed: \(message)", severity: .error)
             },
             onFocus: { [weak self] in
-                guard
-                    let self,
-                    !self.isDenMode,
-                    self.temporaryContext == nil
-                else { return }
-                self.focusBoard(board.id, exitsDenMode: true)
+                self?.onWindowEffect?(.runtimeFocusedBoard(board.id))
             },
             isFocused: { [weak self] in
                 self?.focusedDesk?.focusedBoardID == board.id
@@ -229,13 +225,7 @@ extension DenStore {
         .init(
             onClose: { [weak self] in self?.removeBoard(board.id) },
             onFocus: { [weak self] in
-                guard
-                    let self,
-                    !self.isDenMode,
-                    self.temporaryContext == nil,
-                    self.focusedBoard?.id == board.id
-                else { return }
-                self.focusBoard(board.id, exitsDenMode: true)
+                self?.onWindowEffect?(.runtimeFocusedBoard(board.id))
             },
             onWorkingDirectoryChange: { [weak self] path in
                 self?.updateTerminalBoard(boardID: board.id, workingDirectory: path)
@@ -315,18 +305,16 @@ extension DenStore {
 
     func releaseRuntimes() {
         releaseWebRuntimes()
-        for runtime in terminalRuntimes.values {
+        for (boardID, runtime) in terminalRuntimes {
+            storage.onRuntimeOwnerChange?(boardID, nil)
             runtime.dispose()
         }
         terminalRuntimes.removeAll()
-        storage.runtimeOwners.removeAll()
     }
 
     func releaseWebRuntimes() {
-        for boardID in webRuntimes.keys {
-            storage.runtimeOwners.removeValue(forKey: boardID)
-        }
-        for runtime in webRuntimes.values {
+        for (boardID, runtime) in webRuntimes {
+            storage.onRuntimeOwnerChange?(boardID, nil)
             runtime.dispose()
         }
         webRuntimes.removeAll()
@@ -334,19 +322,15 @@ extension DenStore {
     }
 
     func releaseWindowResources() {
-        cancelDeskFilterCentering()
-        toastTask?.cancel()
-        toastTask = nil
         zmxCommandTask?.cancel()
         zmxCommandTask = nil
         screenshotTask?.cancel()
         screenshotTask = nil
-        zmxSessions.stop()
         releaseDrawerPreview()
     }
 
     func disposeRuntime(for boardID: UUID) {
-        storage.runtimeOwners.removeValue(forKey: boardID)
+        storage.onRuntimeOwnerChange?(boardID, nil)
         webRuntimes.removeValue(forKey: boardID)?.dispose()
         terminalRuntimes.removeValue(forKey: boardID)?.dispose()
     }

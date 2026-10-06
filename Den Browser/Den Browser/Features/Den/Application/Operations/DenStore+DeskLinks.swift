@@ -62,7 +62,7 @@ extension DenStore {
 
     func exportFocusedDeskLinks() {
         guard let focusedDesk else {
-            showToast("No Focused Desk.", style: .warning)
+            reportFeedback("No Focused Desk.", severity: .warning)
             return
         }
         exportDeskLinks(for: focusedDesk.id)
@@ -70,7 +70,7 @@ extension DenStore {
 
     func copyFocusedDeskLinks() {
         guard let focusedDesk else {
-            showToast("No Focused Desk.", style: .warning)
+            reportFeedback("No Focused Desk.", severity: .warning)
             return
         }
         copyDeskLinks(for: focusedDesk.id)
@@ -81,7 +81,7 @@ extension DenStore {
             let desk = state.desks.first(where: { $0.id == deskID }),
             let markdown = DeskLinkExport.markdown(for: desk)
         else {
-            showToast("Desk has no Current Sheet links.", style: .warning)
+            reportFeedback("Desk has no Current Sheet links.", severity: .warning)
             return
         }
 
@@ -94,10 +94,10 @@ extension DenStore {
                     suggestedFilename: filename,
                     attachedTo: NSApp.keyWindow)
                 {
-                    showToast("Saved \(destination.lastPathComponent).", style: .success)
+                    reportFeedback("Saved \(destination.lastPathComponent).", severity: .success)
                 }
             } catch {
-                showToast("Desk links export failed: \(error.localizedDescription)", style: .error)
+                reportFeedback("Desk links export failed: \(error.localizedDescription)", severity: .error)
             }
         }
     }
@@ -107,12 +107,12 @@ extension DenStore {
             let desk = state.desks.first(where: { $0.id == deskID }),
             let markdown = DeskLinkExport.markdown(for: desk)
         else {
-            showToast("Desk has no Current Sheet links.", style: .warning)
+            reportFeedback("Desk has no Current Sheet links.", severity: .warning)
             return
         }
 
         NSPasteboard.general.clearContents()
         NSPasteboard.general.setString(markdown, forType: .string)
-        showToast("Copied Desk Links as Markdown.", style: .success)
+        reportFeedback("Copied Desk Links as Markdown.", severity: .success)
     }
 }

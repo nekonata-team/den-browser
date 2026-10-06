@@ -86,11 +86,13 @@ struct DenStoreBoardTests {
 
     @Test func zellijBoardRequiresConfiguredAbsoluteExecutablePath() {
         let source = desk("Desk")
-        withTestStore(desks: [source]) { store in
+        withTestViewModel(desks: [source]) { viewModel in
+            let store = viewModel.store
+            viewModel.showOpenBoardPanel()
             store.openBoard(input: ":zellij")
 
             #expect(store.focusedBoard?.isZellij != true)
-            #expect(store.openBoardPanelMessage?.contains("absolute Zellij executable path") == true)
+            #expect(viewModel.openBoard.message?.contains("absolute Zellij executable path") == true)
             #expect(store.recentItems.isEmpty)
         }
     }
@@ -100,8 +102,9 @@ struct DenStoreBoardTests {
         let runner = StubTerminalCommandRunner(responses: [
             ["list"]: TerminalCommandResult(terminationStatus: 0, standardOutput: "")
         ])
-        try await withTestStore(desks: [source], terminalCommandRunner: runner) {
-            store in
+        try await withTestViewModel(desks: [source], terminalCommandRunner: runner) {
+            viewModel in
+            let store = viewModel.store
             store.preferences.setZmxPath("/opt/homebrew/bin/zmx")
 
             store.openBoard(input: ":zmx project-a")
@@ -126,23 +129,23 @@ struct DenStoreBoardTests {
                                 workingDirectory: FileManager.default.homeDirectoryForCurrentUser.path))))
 
             store.openBoard(input: ":zmx")
-            await waitForZmxSessionLoad(store)
+            await waitForZmxSessionLoad(viewModel)
             #expect(store.focusedDesk?.boards.count == 1)
-            #expect(store.isZmxSessionsPresented)
+            #expect(viewModel.isZmxSessionsPresented)
             #expect(store.recentItems.first == .zmx(sessionName: "project-a"))
             #expect(RecentItem.zmx(sessionName: "").displayText == ":zmx")
 
-            store.hideZmxSessions()
+            viewModel.hideZmxSessions()
             store.openBoard(recentItem: .zmx(sessionName: ""))
-            await waitForZmxSessionLoad(store)
-            #expect(store.isZmxSessionsPresented)
+            await waitForZmxSessionLoad(viewModel)
+            #expect(viewModel.isZmxSessionsPresented)
 
-            store.hideZmxSessions()
-            store.showOpenBoardPanel()
-            store.openBoard(input: ":zmx")
-            await waitForZmxSessionLoad(store)
-            store.hideZmxSessions()
-            #expect(store.isOpenBoardPanelPresented)
+            viewModel.hideZmxSessions()
+            viewModel.showOpenBoardPanel()
+            viewModel.submitOpenBoard(":zmx")
+            await waitForZmxSessionLoad(viewModel)
+            viewModel.hideZmxSessions()
+            #expect(viewModel.isOpenBoardPanelPresented)
         }
     }
 
@@ -157,46 +160,47 @@ struct DenStoreBoardTests {
                     terminationStatus: 0,
                     standardOutput: ""),
             ])
-        await withTestStore(
+        await withTestViewModel(
             desks: [source], terminalCommandRunner: commandRunner
-        ) { store in
+        ) { viewModel in
+            let store = viewModel.store
             store.preferences.setZmxPath("/opt/homebrew/bin/zmx")
 
-            store.showZmxSessions(selectedSessionName: "den-vi")
-            await waitForZmxSessionLoad(store)
+            viewModel.showZmxSessions(selectedSessionName: "den-vi")
+            await waitForZmxSessionLoad(viewModel)
 
             #expect(
-                store.zmxSessions.groups == [
+                viewModel.zmxSessions.groups == [
                     ZmxSessionGroup(rootSessionName: "den", isRootActive: true, childSessionNames: ["den-vi"]),
                     ZmxSessionGroup(
                         rootSessionName: "old-root",
                         isRootActive: false,
                         childSessionNames: ["old-root-debug"]),
                 ])
-            #expect(store.zmxSessions.selectedSessionName == "den-vi")
-            store.zmxSessions.setQuery("vi")
+            #expect(viewModel.zmxSessions.selectedSessionName == "den-vi")
+            viewModel.zmxSessions.setQuery("vi")
             #expect(
-                store.zmxSessions.filteredGroups
+                viewModel.zmxSessions.filteredGroups
                     == [ZmxSessionGroup(rootSessionName: "den", isRootActive: true, childSessionNames: ["den-vi"])]
             )
-            store.clearZmxSessionFilter()
+            viewModel.clearZmxSessionFilter()
 
-            store.openZmxSession("den-vi")
+            viewModel.openZmxSession("den-vi")
             #expect(store.focusedBoard?.zmxSessionName == "den-vi")
             #expect(store.focusedBoard?.zmxRootSessionName == "den")
             #expect(store.recentItems.first == .zmx(sessionName: "den-vi"))
-            #expect(!store.isZmxSessionsPresented)
+            #expect(!viewModel.isZmxSessionsPresented)
 
-            store.showZmxSessions()
-            await waitForZmxSessionLoad(store)
-            store.openZmxSession("den-vi")
+            viewModel.showZmxSessions()
+            await waitForZmxSessionLoad(viewModel)
+            viewModel.openZmxSession("den-vi")
             #expect(store.focusedDesk?.boards.count == 1)
 
-            store.showZmxSessions()
-            await waitForZmxSessionLoad(store)
-            store.killZmxSession("den-vi")
-            await waitForZmxSessionLoad(store)
-            #expect(store.zmxSessions.message == nil)
+            viewModel.showZmxSessions()
+            await waitForZmxSessionLoad(viewModel)
+            viewModel.killZmxSession("den-vi")
+            await waitForZmxSessionLoad(viewModel)
+            #expect(viewModel.zmxSessions.message == nil)
         }
     }
 
@@ -209,13 +213,17 @@ struct DenStoreBoardTests {
                     terminationStatus: 0,
                     standardOutput: "name=den\nname=den-vi\tden.root=den\n")
             ])
-        await withTestStore(boards: [existing], terminalCommandRunner: commandRunner) { store in
+        await withTestViewModel(
+            desks: [desk("Desk", boards: [existing], focusedBoardID: existing.id)],
+            terminalCommandRunner: commandRunner
+        ) { viewModel in
+            let store = viewModel.store
             store.preferences.setZmxPath("/opt/homebrew/bin/zmx")
-            store.showZmxSessions(selectedSessionName: "den-vi")
-            await waitForZmxSessionLoad(store)
+            viewModel.showZmxSessions(selectedSessionName: "den-vi")
+            await waitForZmxSessionLoad(viewModel)
 
             // Act
-            store.openZmxSession("den-vi")
+            viewModel.openZmxSession("den-vi")
 
             // Assert
             #expect(store.focusedDesk?.boards.count == 1)
@@ -261,8 +269,9 @@ struct DenStoreBoardTests {
                     terminationStatus: 0,
                     standardOutput: "")
             ])
-        try await withTestStore(desks: [source], terminalCommandRunner: runner) {
-            store in
+        try await withTestViewModel(desks: [source], terminalCommandRunner: runner) {
+            viewModel in
+            let store = viewModel.store
             store.preferences.setZmxPath("/usr/bin/zmx")
 
             store.duplicateFocusedBoardFromFirstSheet()
@@ -272,13 +281,13 @@ struct DenStoreBoardTests {
             #expect(automaticChild.zmxSessionName == "den-2")
             #expect(automaticChild.zmxRootSessionName == "den")
             #expect(automaticChild.terminalWorkingDirectory == "/tmp/project")
-            #expect(store.temporaryContext == nil)
+            #expect(viewModel.temporaryContext == nil)
             #expect(store.recentItems.isEmpty)
 
             store.focusBoard(sourceBoard.id)
             store.duplicateFocusedBoard()
             await store.waitForZmxCommand()
-            #expect(store.temporaryContext == .zmxDuplication)
+            #expect(viewModel.temporaryContext == .zmxDuplication)
             #expect(store.focusedDesk?.boards.count == 2)
 
             store.duplicateFocusedZmxBoard(suffix: "vi")
@@ -330,14 +339,15 @@ struct DenStoreBoardTests {
                     terminationStatus: 0,
                     standardOutput: "den\n"),
             ])
-        await withTestStore(
+        await withTestViewModel(
             desks: [source], terminalCommandRunner: commandRunner
-        ) { store in
+        ) { viewModel in
+            let store = viewModel.store
             store.preferences.setZmxPath("/usr/bin/zmx")
 
             store.duplicateFocusedBoard()
             await store.waitForZmxCommand()
-            #expect(store.zmxDuplicationRootSessionName == "den")
+            #expect(viewModel.zmxDuplicationRootSessionName == "den")
             store.duplicateFocusedZmxBoard(suffix: "nvim")
             await store.waitForZmxCommand()
             #expect(store.focusedBoard?.zmxSessionName == "den-nvim")
@@ -551,11 +561,14 @@ struct DenStoreBoardTests {
         let terminal = BoardState(width: 520, workingDirectory: "/tmp")
         let source = desk("Desk", boards: [terminal], focusedBoardID: terminal.id)
         let store = DenStore(state: DenState(desks: [source], focusedDeskID: source.id))
-        store.isDenMode = true
+        let viewModel = DenViewModel(store: store)
+        viewModel.connect()
+        defer { viewModel.disconnect() }
+        viewModel.isDenMode = true
 
         store.terminalRuntime(for: terminal).terminalDidChangeFocus(true)
 
-        #expect(store.isDenMode)
+        #expect(viewModel.isDenMode)
         #expect(store.focusedBoard?.id == terminal.id)
     }
 
@@ -563,33 +576,35 @@ struct DenStoreBoardTests {
         let firstBoard = BoardState(label: "First", width: 520, currentSheetURL: nil)
         let secondBoard = BoardState(label: "Second", width: 520, currentSheetURL: nil)
         let source = desk("Desk", boards: [firstBoard, secondBoard], focusedBoardID: firstBoard.id)
-        let store = DenStore(state: DenState(desks: [source], focusedDeskID: source.id))
+        withTestViewModel(desks: [source]) { viewModel in
+            let store = viewModel.store
+            store.prepareBoardLinkFocus(firstBoard.id)
+            #expect(viewModel.pendingBoardLinkFocus != nil)
+            guard let firstIntent = viewModel.pendingBoardLinkFocus else { return }
+            #expect(firstIntent.origin == .interactive)
+            store.prepareBoardLinkFocus(secondBoard.id)
+            #expect(viewModel.pendingBoardLinkFocus != nil)
+            guard let secondIntent = viewModel.pendingBoardLinkFocus else { return }
 
-        store.prepareBoardLinkFocus(firstBoard.id)
-        #expect(store.pendingBoardLinkFocus != nil)
-        guard let firstIntent = store.pendingBoardLinkFocus else { return }
-        #expect(firstIntent.origin == .interactive)
-        store.prepareBoardLinkFocus(secondBoard.id)
-        #expect(store.pendingBoardLinkFocus != nil)
-        guard let secondIntent = store.pendingBoardLinkFocus else { return }
+            viewModel.consumeBoardLinkFocus(firstIntent)
+            #expect(viewModel.pendingBoardLinkFocus == secondIntent)
 
-        store.consumeBoardLinkFocus(firstIntent)
-        #expect(store.pendingBoardLinkFocus == secondIntent)
-
-        store.consumeBoardLinkFocus(secondIntent)
-        #expect(store.pendingBoardLinkFocus == nil)
+            viewModel.consumeBoardLinkFocus(secondIntent)
+            #expect(viewModel.pendingBoardLinkFocus == nil)
+        }
     }
 
     @Test func focusedBoardCreationEndsLinkFocusSuppression() throws {
         let source = BoardState(label: "Source", width: 520, currentSheetURL: nil)
         let desk = desk("Desk", boards: [source], focusedBoardID: source.id)
-        let store = DenStore(state: DenState(desks: [desk], focusedDeskID: desk.id))
+        withTestViewModel(desks: [desk]) { viewModel in
+            let store = viewModel.store
+            store.prepareBoardLinkFocus(source.id)
+            #expect(store.createBoard(urlString: "https://focused.example", afterBoardID: source.id) != nil)
 
-        store.prepareBoardLinkFocus(source.id)
-        #expect(store.createBoard(urlString: "https://focused.example", afterBoardID: source.id) != nil)
-
-        #expect(store.pendingBoardLinkFocus == nil)
-        #expect(store.focusedBoard?.currentSheetURL?.host == "focused.example")
+            #expect(viewModel.pendingBoardLinkFocus == nil)
+            #expect(store.focusedBoard?.currentSheetURL?.host == "focused.example")
+        }
     }
 
     @Test func inspectionBoardLinksToWebBoardAndReusesIt() throws {
@@ -723,52 +738,55 @@ struct DenStoreBoardTests {
         let source = BoardState(label: "Source", width: 520, currentSheetURL: nil)
         let other = BoardState(label: "Other", width: 520, currentSheetURL: nil)
         let desk = desk("Desk", boards: [source, other], focusedBoardID: source.id)
-        let store = DenStore(state: DenState(desks: [desk], focusedDeskID: desk.id))
+        try withTestViewModel(desks: [desk]) { viewModel in
+            let store = viewModel.store
+            #expect(
+                store.createBoard(
+                    urlString: "https://background.example",
+                    afterBoardID: source.id,
+                    focus: false) != nil)
+            let intent = try #require(viewModel.pendingBoardLinkFocus)
+            #expect(intent.origin == .interactive)
+            #expect(store.focusedBoard?.id == source.id)
 
-        #expect(
-            store.createBoard(
-                urlString: "https://background.example",
-                afterBoardID: source.id,
-                focus: false) != nil)
-        let intent = try #require(store.pendingBoardLinkFocus)
-        #expect(intent.origin == .interactive)
-        #expect(store.focusedBoard?.id == source.id)
+            store.focusBoard(other.id)
 
-        store.focusBoard(other.id)
-
-        #expect(store.pendingBoardLinkFocus == nil)
-        store.consumeBoardLinkFocus(intent)
-        #expect(store.pendingBoardLinkFocus == nil)
+            #expect(viewModel.pendingBoardLinkFocus == nil)
+            viewModel.consumeBoardLinkFocus(intent)
+            #expect(viewModel.pendingBoardLinkFocus == nil)
+        }
     }
 
     @Test func cliBackgroundBoardCarriesCLIInsertionOrigin() throws {
         let source = BoardState(label: "Source", width: 520, currentSheetURL: nil)
         let other = BoardState(label: "Other", width: 520, currentSheetURL: nil)
         let desk = desk("Desk", boards: [source, other], focusedBoardID: source.id)
-        let store = DenStore(state: DenState(desks: [desk], focusedDeskID: desk.id))
+        try withTestViewModel(desks: [desk]) { viewModel in
+            let store = viewModel.store
+            #expect(
+                store.createBoard(
+                    urlString: "https://cli.example",
+                    afterBoardID: source.id,
+                    focus: false,
+                    origin: .cli) != nil)
+            let intent = try #require(viewModel.pendingBoardLinkFocus)
 
-        #expect(
-            store.createBoard(
-                urlString: "https://cli.example",
-                afterBoardID: source.id,
-                focus: false,
-                origin: .cli) != nil)
-        let intent = try #require(store.pendingBoardLinkFocus)
-
-        #expect(intent.origin == .cli)
+            #expect(intent.origin == .cli)
+        }
     }
 
     @Test func cliBackgroundBoardRemovalCarriesCLIOperationOrigin() throws {
         let left = BoardState(label: "Left", width: 520, currentSheetURL: nil)
         let focused = BoardState(label: "Focused", width: 520, currentSheetURL: nil)
         let source = desk("Desk", boards: [left, focused], focusedBoardID: focused.id)
-        let store = DenStore(state: DenState(desks: [source], focusedDeskID: source.id))
+        try withTestViewModel(desks: [source]) { viewModel in
+            let store = viewModel.store
+            store.removeBoard(left.id, origin: .cli)
 
-        store.removeBoard(left.id, origin: .cli)
-
-        let intent = try #require(store.pendingBoardRemoval)
-        #expect(intent.origin == .cli)
-        #expect(store.focusedBoard?.id == focused.id)
+            let intent = try #require(viewModel.pendingBoardRemoval)
+            #expect(intent.origin == .cli)
+            #expect(store.focusedBoard?.id == focused.id)
+        }
     }
 
     @Test func terminalLinkCreatesFocusedBoardWithoutDrawer() throws {
@@ -860,14 +878,17 @@ struct DenStoreBoardTests {
         let board = board("Board", url: "https://before.example/")
         let source = desk("Desk", boards: [board], focusedBoardID: board.id)
         let store = DenStore(state: DenState(desks: [source], focusedDeskID: source.id))
+        let viewModel = DenViewModel(store: store)
+        viewModel.connect()
+        defer { viewModel.disconnect() }
 
-        store.showEditBoardLinkPanel()
+        viewModel.showEditBoardLinkPanel()
 
         #expect(store.navigateFocusedBoard(urlString: "after.example/path"))
         #expect(store.focusedBoard?.currentSheetURL == URL(string: "https://after.example/path"))
         #expect(store.focusedBoard?.firstSheetURL == URL(string: "https://before.example/"))
-        #expect(store.temporaryContext == nil)
-        #expect(!store.isDenMode)
+        #expect(viewModel.temporaryContext == nil)
+        #expect(!viewModel.isDenMode)
     }
 
     @Test func newBoardKeepsFirstSheetWhenCurrentSheetChanges() throws {
@@ -912,34 +933,37 @@ struct DenStoreBoardTests {
         #expect(focusedStore.focusedBoard?.width == 760)
     }
 
-    @Test func emptyDeskInheritsTwoBoardFitWidthWhenPreferredWidthIsUnset() {
+    @Test func emptyDeskUsesTwoBoardFitWidthAsDefault() {
         let emptyDesk = desk("Empty")
-        let store = DenStore(state: DenState(desks: [emptyDesk], focusedDeskID: emptyDesk.id))
+        withTestViewModel(desks: [emptyDesk]) { viewModel in
+            let store = viewModel.store
 
-        #expect(store.inheritedBoardWidth == BuiltInDeskPreset.boardWidth)
+            #expect(store.inheritedBoardWidth == BuiltInDeskPreset.boardWidth)
 
-        store.updateBoardLayout(availableWidth: 1376, spacing: 12)
-        #expect(store.inheritedBoardWidth == 682)
+            viewModel.updateBoardLayout(availableWidth: 1376, spacing: 12)
+            #expect(viewModel.defaultBoardWidth == 682)
 
-        _ = store.createBoard(urlString: "https://example.com")
-        #expect(store.focusedBoard?.width == 682)
+            _ = store.createBoard(urlString: "https://example.com", preferredWidth: viewModel.defaultBoardWidth)
+            #expect(store.focusedBoard?.width == 682)
+        }
     }
 
     @Test func emptyDeskAppliesFitWidthToClipboardAndEssential() {
         let emptyDesk = desk("Empty")
         let essential = Essential(name: "Search", key: "s", input: "https://example.com")
-        withTestStore(desks: [emptyDesk]) { store in
+        withTestViewModel(desks: [emptyDesk]) { viewModel in
+            let store = viewModel.store
             #expect(store.preferences.setEssentials([essential]))
-            store.updateBoardLayout(availableWidth: 1000, spacing: 12)
+            viewModel.updateBoardLayout(availableWidth: 1000, spacing: 12)
 
-            store.launchEssential(id: essential.id)
+            viewModel.launchEssential(id: essential.id)
             #expect(store.focusedBoard?.width == 494)
 
             store.state.desks[0].boards.removeAll()
             let pasteboard = NSPasteboard.withUniqueName()
             pasteboard.clearContents()
             pasteboard.setString("https://clipboard.example.com", forType: .string)
-            store.openBoardFromClipboard(pasteboard: pasteboard)
+            viewModel.openBoardFromClipboard(pasteboard: pasteboard)
             #expect(store.focusedBoard?.width == 494)
         }
     }
@@ -1021,34 +1045,38 @@ struct DenStoreBoardTests {
         // Arrange
         let sourceDesk = desk("Desk")
         let store = DenStore(state: DenState(desks: [sourceDesk], focusedDeskID: sourceDesk.id))
+        withTestViewModel(store: store) { viewModel in
 
-        #expect(store.openTutorialBoard())
-        #expect(store.openBoard(input: "https://one.example/"))
-        #expect(store.focusedDesk?.boards.count == 2)
-        if inDenMode { store.toggleDenMode() }
+            #expect(store.openTutorialBoard())
+            #expect(store.openBoard(input: "https://one.example/"))
+            #expect(store.focusedDesk?.boards.count == 2)
+            if inDenMode { viewModel.toggleDenMode() }
 
-        // Act
-        store.focusNextBoard()
+            // Act
+            store.focusNextBoard()
 
-        // Assert
-        #expect(
-            store.focusedDesk?.boards.contains {
-                $0.tutorialCompletedSteps?.contains(.navigateBoards) == true
-            } == true)
+            // Assert
+            #expect(
+                store.focusedDesk?.boards.contains {
+                    $0.tutorialCompletedSteps?.contains(.navigateBoards) == true
+                } == true)
+        }
     }
 
     @Test(arguments: [false, true])
     func showingKeyboardShortcutsCompletesOptionalTutorialStepOnlyInDenMode(inDenMode: Bool) {
         let store = DenStore(state: .sample)
-        #expect(store.openTutorialBoard())
-        if inDenMode { store.toggleDenMode() }
+        withTestViewModel(store: store) { viewModel in
+            #expect(store.openTutorialBoard())
+            if inDenMode { viewModel.toggleDenMode() }
 
-        store.showKeyboardShortcuts()
+            viewModel.showKeyboardShortcuts()
 
-        #expect(store.isKeyboardShortcutsPresented)
-        #expect(
-            store.state.desks[0].boards.first?.tutorialCompletedSteps?.contains(.keyboardShortcuts)
-                == inDenMode)
+            #expect(viewModel.isKeyboardShortcutsPresented)
+            #expect(
+                store.state.desks[0].boards.first?.tutorialCompletedSteps?.contains(.keyboardShortcuts)
+                    == inDenMode)
+        }
     }
 
     @Test func focusMovesDoNotSaveWhenThereIsOnlyOneTarget() {
@@ -1078,23 +1106,24 @@ struct DenStoreBoardTests {
         let onlyDesk = desk("Desk", boards: [board], focusedBoardID: board.id)
         var saveCount = 0
 
-        withTestStore(
+        withTestViewModel(
             desks: [onlyDesk],
             onSave: { _ in
                 saveCount += 1
                 return true
             },
-            body: { store in
-                store.enterDeskFilter()
-                store.setDeskFilterQuery("board")
-                store.isDenMode = true
+            body: { viewModel in
+                let store = viewModel.store
+                viewModel.deskFilter.enter()
+                viewModel.deskFilter.setQuery("board")
+                viewModel.isDenMode = true
                 store.recordNotification(title: "Build", body: "Finished", boardID: board.id)
 
                 store.focusDesk(onlyDesk.id)
 
-                #expect(!store.isDeskFilterPresented)
-                #expect(store.deskFilterQuery.isEmpty)
-                #expect(!store.isDenMode)
+                #expect(!viewModel.deskFilter.isPresented)
+                #expect(viewModel.deskFilter.query.isEmpty)
+                #expect(!viewModel.isDenMode)
                 #expect(store.unreadNotificationCount == 0)
                 #expect(saveCount == 0)
             })
@@ -1157,13 +1186,14 @@ struct DenStoreBoardTests {
 
     @Test func reorderingBoardKeepsItFocusedAndStopsAtDeskEdge() {
         let boards = [board("A"), board("B"), board("C")]
-        withStore(desks: [desk("Desk", boards: boards, focusedBoardID: boards[1].id)]) { store in
+        withTestViewModel(desks: [desk("Desk", boards: boards, focusedBoardID: boards[1].id)]) { viewModel in
+            let store = viewModel.store
             store.moveFocusedBoardLeft()
             store.moveFocusedBoardLeft()
 
             #expect(store.focusedDesk?.boards.map(\.id) == [boards[1].id, boards[0].id, boards[2].id])
             #expect(store.focusedDesk?.focusedBoardID == boards[1].id)
-            #expect(store.centerFocusedBoardRequest == 1)
+            #expect(viewModel.centerFocusedBoardRequest == 1)
         }
     }
 
@@ -1254,39 +1284,41 @@ struct DenStoreBoardTests {
         source.scrollOffsetX = 180
         var saveCount = 0
 
-        withTestStore(
+        withTestViewModel(
             desks: [source],
             onSave: { _ in
                 saveCount += 1
                 return true
             },
-            body: { store in
+            body: { viewModel in
+                let store = viewModel.store
                 store.moveFocusedBoardRight()
 
                 #expect(store.focusedDesk?.boards.map(\.id) == [boards[1].id, boards[0].id])
                 #expect(store.state.desks[0].scrollOffsetX == nil)
-                #expect(store.centerFocusedBoardRequest == 1)
+                #expect(viewModel.centerFocusedBoardRequest == 1)
                 #expect(saveCount == 1)
             })
     }
 
     @Test func rapidBoardReorderingKeepsFocusAndRequestsCentering() {
         let boards = [board("A"), board("B"), board("C"), board("D")]
-        withStore(desks: [desk("Desk", boards: boards, focusedBoardID: boards[0].id)]) { store in
+        withTestViewModel(desks: [desk("Desk", boards: boards, focusedBoardID: boards[0].id)]) { viewModel in
+            let store = viewModel.store
             store.moveFocusedBoardRight()
             #expect(store.focusedDesk?.focusedBoardID == boards[0].id)
             #expect(store.focusedDesk?.boards.map(\.id) == [boards[1].id, boards[0].id, boards[2].id, boards[3].id])
-            #expect(store.centerFocusedBoardRequest == 1)
+            #expect(viewModel.centerFocusedBoardRequest == 1)
 
             store.moveFocusedBoardRight()
             #expect(store.focusedDesk?.focusedBoardID == boards[0].id)
             #expect(store.focusedDesk?.boards.map(\.id) == [boards[1].id, boards[2].id, boards[0].id, boards[3].id])
-            #expect(store.centerFocusedBoardRequest == 2)
+            #expect(viewModel.centerFocusedBoardRequest == 2)
 
             store.moveFocusedBoardRight()
             #expect(store.focusedDesk?.focusedBoardID == boards[0].id)
             #expect(store.focusedDesk?.boards.map(\.id) == [boards[1].id, boards[2].id, boards[3].id, boards[0].id])
-            #expect(store.centerFocusedBoardRequest == 3)
+            #expect(viewModel.centerFocusedBoardRequest == 3)
         }
     }
 
@@ -1709,15 +1741,16 @@ struct DenStoreBoardTests {
         let otherBoard = board("Other", width: 760)
         let firstDesk = desk("First", boards: boards, focusedBoardID: boards[0].id)
         let secondDesk = desk("Second", boards: [otherBoard])
-        withStore(desks: [firstDesk, secondDesk]) { store in
-            store.toggleFocusedBoardMaximized()
+        withTestViewModel(desks: [firstDesk, secondDesk]) { viewModel in
+            let store = viewModel.store
+            viewModel.toggleFocusedBoardMaximized()
 
-            store.adjustFocusedDeskBoardWidths(by: -80)
+            viewModel.adjustFocusedDeskBoardWidths(by: -80)
             #expect(store.focusedDesk?.boards.map(\.width) == [280, 1_320])
             #expect(store.state.desks[1].boards.map(\.width) == [760])
-            #expect(store.maximizedBoardID == nil)
+            #expect(viewModel.maximizedBoardID == nil)
 
-            store.adjustFocusedDeskBoardWidths(by: 160)
+            viewModel.adjustFocusedDeskBoardWidths(by: 160)
             #expect(store.focusedDesk?.boards.map(\.width) == [440, 1_400])
         }
     }
@@ -1728,55 +1761,58 @@ struct DenStoreBoardTests {
         let firstDesk = desk("First", boards: firstBoards, focusedBoardID: firstBoards[0].id)
         let secondDesk = desk("Second", boards: [otherBoard])
         var saveCount = 0
-        withTestStore(
+        withTestViewModel(
             desks: [firstDesk, secondDesk],
             onSave: { _ in
                 saveCount += 1
                 return true
             },
-            body: { store in
-                store.updateBoardLayout(availableWidth: 1_180, spacing: 10)
-                store.toggleFocusedBoardMaximized()
+            body: { viewModel in
+                let store = viewModel.store
+                viewModel.updateBoardLayout(availableWidth: 1_180, spacing: 10)
+                viewModel.toggleFocusedBoardMaximized()
                 store.state.desks[0].scrollOffsetX = 180
-                let centerRequest = store.centerFocusedBoardRequest
+                let centerRequest = viewModel.centerFocusedBoardRequest
                 let saveCountBeforeResize = saveCount
 
-                #expect(store.resizeFocusedDeskBoards(toFit: 3))
+                #expect(viewModel.resizeFocusedDeskBoards(toFit: 3))
                 #expect(
                     store.focusedDesk?.boards.allSatisfy {
                         abs($0.width - 386.666_666_666_666_7) < 0.001
                     } == true)
                 #expect(store.state.desks[1].boards[0].width == 980)
                 #expect(store.state.desks[0].scrollOffsetX == nil)
-                #expect(store.maximizedBoardID == nil)
-                #expect(store.centerFocusedBoardRequest == centerRequest + 1)
+                #expect(viewModel.maximizedBoardID == nil)
+                #expect(viewModel.centerFocusedBoardRequest == centerRequest + 1)
                 #expect(saveCount == saveCountBeforeResize + 1)
             })
     }
 
     @Test func rejectsBoardFitCountsOutsideCurrentWidth() {
         let boards = [board("First"), board("Second")]
-        withStore(desks: [desk("Desk", boards: boards)]) { store in
-            #expect(store.boardLayoutMetrics == nil)
-            #expect(store.boardWidth(toFit: 3) == nil)
+        withTestViewModel(desks: [desk("Desk", boards: boards)]) { viewModel in
+            let store = viewModel.store
+            #expect(viewModel.boardLayoutMetrics == nil)
+            #expect(viewModel.boardWidth(toFit: 3) == nil)
 
-            store.updateBoardLayout(availableWidth: 1_080, spacing: 10)
+            viewModel.updateBoardLayout(availableWidth: 1_080, spacing: 10)
 
             #expect(
-                store.boardLayoutMetrics
+                viewModel.boardLayoutMetrics
                     == BoardLayoutMetrics(availableWidth: 1_080, spacing: 10))
-            #expect(store.boardWidth(toFit: 3) != nil)
-            #expect(store.boardWidth(toFit: 4) == nil)
-            #expect(!store.resizeFocusedDeskBoards(toFit: 4))
+            #expect(viewModel.boardWidth(toFit: 3) != nil)
+            #expect(viewModel.boardWidth(toFit: 4) == nil)
+            #expect(!viewModel.resizeFocusedDeskBoards(toFit: 4))
             #expect(store.focusedDesk?.boards.map(\.width) == [520, 520])
         }
     }
 
     @Test func oneBoardFitUsesFullWindowBeyondManualResizeLimit() {
-        withStore(desks: [desk("Desk", boards: [board("Wide")])]) { store in
-            store.updateBoardLayout(availableWidth: 2_480, spacing: 10)
+        withTestViewModel(desks: [desk("Desk", boards: [board("Wide")])]) { viewModel in
+            let store = viewModel.store
+            viewModel.updateBoardLayout(availableWidth: 2_480, spacing: 10)
 
-            #expect(store.resizeFocusedDeskBoards(toFit: 1))
+            #expect(viewModel.resizeFocusedDeskBoards(toFit: 1))
             #expect(store.focusedDesk?.boards[0].width == 2_480)
         }
     }
@@ -1835,42 +1871,48 @@ struct DenStoreBoardTests {
         BoardState(label: label, width: width, currentSheetURL: url.isEmpty ? nil : URL(string: url))
     }
 
-    private func waitForZmxSessionLoad(_ store: DenStore) async {
-        await store.zmxSessions.waitForRefresh()
+    private func waitForZmxSessionLoad(_ viewModel: DenViewModel) async {
+        await viewModel.zmxSessions.waitForRefresh()
     }
 
     @Test func openBoardFromClipboardOpensBoardToRightAndExitsDenMode() {
         let source = desk("Desk", boards: [board("First")])
         let store = DenStore(state: DenState(desks: [source], focusedDeskID: source.id))
-        store.isDenMode = true
-        #expect(store.isDenMode)
+        let viewModel = DenViewModel(store: store)
+        viewModel.connect()
+        defer { viewModel.disconnect() }
+        viewModel.isDenMode = true
+        #expect(viewModel.isDenMode)
         #expect(store.focusedDesk?.boards.count == 1)
 
         let pasteboard = NSPasteboard.withUniqueName()
         pasteboard.clearContents()
         pasteboard.setString("https://example.com/clipboard", forType: .string)
 
-        store.openBoardFromClipboard(pasteboard: pasteboard)
+        viewModel.openBoardFromClipboard(pasteboard: pasteboard)
 
         #expect(store.focusedDesk?.boards.count == 2)
         #expect(store.focusedBoard?.currentSheetURL == URL(string: "https://example.com/clipboard"))
-        #expect(!store.isDenMode)
-        #expect(store.toastMessage == nil)
+        #expect(!viewModel.isDenMode)
+        #expect(store.latestFeedback == nil)
     }
 
-    @Test func openBoardFromClipboardShowsWarningToastWhenEmpty() {
+    @Test func openBoardFromClipboardShowsWarningFeedbackWhenEmpty() {
         let source = desk("Desk", boards: [board("First")])
         let store = DenStore(state: DenState(desks: [source], focusedDeskID: source.id))
-        store.isDenMode = true
+        let viewModel = DenViewModel(store: store)
+        viewModel.connect()
+        defer { viewModel.disconnect() }
+        viewModel.isDenMode = true
         let initialCount = store.focusedDesk?.boards.count ?? 0
 
         let pasteboard = NSPasteboard.withUniqueName()
         pasteboard.clearContents()
 
-        store.openBoardFromClipboard(pasteboard: pasteboard)
+        viewModel.openBoardFromClipboard(pasteboard: pasteboard)
 
         #expect(store.focusedDesk?.boards.count == initialCount)
-        #expect(store.toastMessage?.message == "Clipboard is empty.")
+        #expect(store.latestFeedback?.message == "Clipboard is empty.")
     }
 
     @Test func createTerminalBoardAddsBoardToActiveDeskAndFocuses() throws {
@@ -1907,7 +1949,7 @@ struct DenStoreBoardTests {
         #expect(saveCount == 1)
     }
 
-    @Test func copyBoardIDCopiesLowercasedUUIDToPasteboardAndShowsToast() {
+    @Test func copyBoardIDCopiesLowercasedUUIDToPasteboardAndShowsFeedback() {
         let firstBoard = board("First")
         let source = desk("Desk", boards: [firstBoard])
         withTestStore(desks: [source]) { store in
@@ -1915,8 +1957,8 @@ struct DenStoreBoardTests {
             store.copyBoardID(firstBoard.id, pasteboard: pasteboard)
 
             #expect(pasteboard.string(forType: .string) == firstBoard.id.uuidString.lowercased())
-            #expect(store.toastMessage?.message == "Copied Board ID.")
-            #expect(store.toastMessage?.style == .success)
+            #expect(store.latestFeedback?.message == "Copied Board ID.")
+            #expect(store.latestFeedback?.severity == .success)
         }
     }
 
@@ -1927,7 +1969,7 @@ struct DenStoreBoardTests {
             store.copyBoardID(UUID(), pasteboard: pasteboard)
 
             #expect(pasteboard.string(forType: .string) == nil)
-            #expect(store.toastMessage == nil)
+            #expect(store.latestFeedback == nil)
         }
     }
 
@@ -1955,7 +1997,7 @@ struct DenStoreBoardTests {
             ),
         ]
 
-        for (board, expectedValue, expectedToast) in cases {
+        for (board, expectedValue, expectedFeedback) in cases {
             // Arrange
             let source = desk("Desk", boards: [board], focusedBoardID: board.id)
             let pasteboard = NSPasteboard.withUniqueName()
@@ -1965,8 +2007,8 @@ struct DenStoreBoardTests {
 
                 // Assert
                 #expect(pasteboard.string(forType: .string) == expectedValue)
-                #expect(store.toastMessage?.message == expectedToast)
-                #expect(store.toastMessage?.style == .success)
+                #expect(store.latestFeedback?.message == expectedFeedback)
+                #expect(store.latestFeedback?.severity == .success)
             }
         }
     }
@@ -1980,16 +2022,16 @@ struct DenStoreBoardTests {
 
             store.toggleAnchorBoard()
             #expect(store.focusedDesk?.anchorBoardID == firstBoard.id)
-            #expect(store.toastMessage?.message == "Set Anchor Board")
+            #expect(store.latestFeedback?.message == "Set Anchor Board")
 
             store.toggleAnchorBoard()
             #expect(store.focusedDesk?.anchorBoardID == nil)
-            #expect(store.toastMessage?.message == "Cleared Anchor Board")
+            #expect(store.latestFeedback?.message == "Cleared Anchor Board")
 
             store.focusBoard(secondBoard.id)
             store.toggleAnchorBoard()
             #expect(store.focusedDesk?.anchorBoardID == secondBoard.id)
-            #expect(store.toastMessage?.message == "Set Anchor Board")
+            #expect(store.latestFeedback?.message == "Set Anchor Board")
         }
     }
 
@@ -2037,8 +2079,8 @@ struct DenStoreBoardTests {
         let source = desk("Desk", boards: [board("First")])
         withTestStore(desks: [source]) { store in
             store.jumpToAnchorBoard()
-            #expect(store.toastMessage?.message == "No Anchor Board in Desk")
-            #expect(store.toastMessage?.style == .warning)
+            #expect(store.latestFeedback?.message == "No Anchor Board in Desk")
+            #expect(store.latestFeedback?.severity == .warning)
         }
     }
 
@@ -2064,12 +2106,13 @@ struct DenStoreBoardTests {
         let first = BoardState(width: 400, workingDirectory: "/tmp")
         let second = board("Second")
         let source = desk("Desk", boards: [first, second], focusedBoardID: first.id)
-        withTestStore(desks: [source]) { store in
-            store.setTemporaryContext(.openBoard)
+        withTestViewModel(desks: [source]) { viewModel in
+            let store = viewModel.store
+            viewModel.setTemporaryContext(.openBoard)
             store.duplicateFocusedBoard()
 
-            #expect(store.temporaryContext == nil)
-            #expect(store.isDenMode == false)
+            #expect(viewModel.temporaryContext == nil)
+            #expect(viewModel.isDenMode == false)
             let boards = store.focusedDesk?.boards ?? []
             #expect(boards.count == 3)
             #expect(boards[0].id == first.id)

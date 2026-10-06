@@ -17,13 +17,16 @@ struct DenStoreDrawerTests {
                 desks: [source],
                 focusedDeskID: source.id,
                 drawerItems: [first, last]))
-        store.selectedDrawerItemID = last.id
+        let viewModel = DenViewModel(store: store)
+        viewModel.connect()
+        defer { viewModel.disconnect() }
+        viewModel.drawer.selectedItemID = last.id
 
-        store.selectDrawerItem(by: 1)
-        #expect(store.selectedDrawerItemID == first.id)
+        viewModel.drawer.selectItem(by: 1)
+        #expect(viewModel.drawer.selectedItemID == first.id)
 
-        store.selectDrawerItem(by: -1)
-        #expect(store.selectedDrawerItemID == last.id)
+        viewModel.drawer.selectItem(by: -1)
+        #expect(viewModel.drawer.selectedItemID == last.id)
     }
 
     @Test func keepPreservesDeskLayoutAndOpensNewestItem() throws {
@@ -33,15 +36,18 @@ struct DenStoreDrawerTests {
         let store = DenStore(
             state: DenState(desks: [source], focusedDeskID: source.id),
             onSave: { savedState = $0 })
+        let viewModel = DenViewModel(store: store)
+        viewModel.connect()
+        defer { viewModel.disconnect() }
         let url = try #require(URL(string: "https://drawer.example/first"))
 
         store.keepInDrawer(url)
 
         #expect(store.focusedDesk == source)
         #expect(store.state.drawerItems.map(\.url) == [url])
-        #expect(store.selectedDrawerItemID == store.state.drawerItems[0].id)
-        #expect(store.expandedDrawerItemID == store.state.drawerItems[0].id)
-        #expect(store.isDrawerOpen)
+        #expect(viewModel.drawer.selectedItemID == store.state.drawerItems[0].id)
+        #expect(viewModel.drawer.expandedItemID == store.state.drawerItems[0].id)
+        #expect(viewModel.isDrawerOpen)
         #expect(savedState == store.state)
     }
 
@@ -91,31 +97,40 @@ struct DenStoreDrawerTests {
                 desks: [source],
                 focusedDeskID: source.id,
                 drawerItems: [currentItem]))
-        store.selectedDrawerItemID = currentItem.id
-        store.expandedDrawerItemID = currentItem.id
+        let viewModel = DenViewModel(store: store)
+        viewModel.connect()
+        defer { viewModel.disconnect() }
+        viewModel.drawer.selectedItemID = currentItem.id
+        viewModel.drawer.expandedItemID = currentItem.id
         let runtime = store.drawerRuntime(for: currentItem)
 
         let backgroundURL = try #require(URL(string: "https://background.example/"))
         store.keepInDrawerInBackground(backgroundURL)
 
         #expect(store.state.drawerItems.map(\.url) == [backgroundURL, currentItem.url])
-        #expect(store.selectedDrawerItemID == currentItem.id)
-        #expect(store.expandedDrawerItemID == currentItem.id)
+        #expect(viewModel.drawer.selectedItemID == currentItem.id)
+        #expect(viewModel.drawer.expandedItemID == currentItem.id)
         #expect(store.drawerPreviewRuntime === runtime)
     }
 
     @Test func drawerPreviewPresentationIsWindowLocalAndSharedMetadataUsesLatestUpdate() throws {
         let item = DrawerItem(url: try #require(URL(string: "https://initial.example/")))
         try withSharedDrawerStores(items: [item]) { first, second in
-            first.focusDrawerItem(item.id)
+            let firstViewModel = DenViewModel(store: first)
+            firstViewModel.connect()
+            defer { firstViewModel.disconnect() }
+            let secondViewModel = DenViewModel(store: second)
+            secondViewModel.connect()
+            defer { secondViewModel.disconnect() }
+            firstViewModel.focusDrawerItem(item.id)
             let firstRuntime = first.drawerRuntime(for: item)
 
-            #expect(first.expandedDrawerItemID == item.id)
-            #expect(second.expandedDrawerItemID == nil)
+            #expect(firstViewModel.drawer.expandedItemID == item.id)
+            #expect(secondViewModel.drawer.expandedItemID == nil)
 
-            second.focusDrawerItem(item.id)
+            secondViewModel.focusDrawerItem(item.id)
             let secondRuntime = second.drawerRuntime(for: item)
-            #expect(second.expandedDrawerItemID == item.id)
+            #expect(secondViewModel.drawer.expandedItemID == item.id)
             #expect(firstRuntime !== secondRuntime)
 
             let firstURL = try #require(URL(string: "https://first.example/"))
@@ -132,18 +147,24 @@ struct DenStoreDrawerTests {
         let firstItem = DrawerItem(url: try #require(URL(string: "https://first.example/")))
         let secondItem = DrawerItem(url: try #require(URL(string: "https://second.example/")))
         withSharedDrawerStores(items: [firstItem, secondItem]) { first, second in
-            first.focusDrawerItem(firstItem.id)
-            second.focusDrawerItem(firstItem.id)
+            let firstViewModel = DenViewModel(store: first)
+            firstViewModel.connect()
+            defer { firstViewModel.disconnect() }
+            let secondViewModel = DenViewModel(store: second)
+            secondViewModel.connect()
+            defer { secondViewModel.disconnect() }
+            firstViewModel.focusDrawerItem(firstItem.id)
+            secondViewModel.focusDrawerItem(firstItem.id)
             let firstRuntime = first.drawerRuntime(for: firstItem)
             let secondRuntime = second.drawerRuntime(for: firstItem)
 
             first.discardDrawerItem(firstItem.id)
 
             #expect(first.state.drawerItems.map(\.id) == [secondItem.id])
-            #expect(first.selectedDrawerItemID == secondItem.id)
-            #expect(second.selectedDrawerItemID == secondItem.id)
-            #expect(first.expandedDrawerItemID == secondItem.id)
-            #expect(second.expandedDrawerItemID == secondItem.id)
+            #expect(firstViewModel.drawer.selectedItemID == secondItem.id)
+            #expect(secondViewModel.drawer.selectedItemID == secondItem.id)
+            #expect(firstViewModel.drawer.expandedItemID == secondItem.id)
+            #expect(secondViewModel.drawer.expandedItemID == secondItem.id)
             #expect(first.drawerPreviewRuntime == nil)
             #expect(second.drawerPreviewRuntime == nil)
             #expect(firstRuntime.webView.navigationDelegate == nil)
@@ -155,23 +176,30 @@ struct DenStoreDrawerTests {
         let firstItem = DrawerItem(url: try #require(URL(string: "https://first.example/")))
         let secondItem = DrawerItem(url: try #require(URL(string: "https://second.example/")))
         withSharedDrawerStores(items: [firstItem, secondItem]) { first, second in
-            first.focusDrawerItem(firstItem.id)
-            second.focusDrawerItem(secondItem.id)
+            let firstViewModel = DenViewModel(store: first)
+            firstViewModel.connect()
+            defer { firstViewModel.disconnect() }
+            let secondViewModel = DenViewModel(store: second)
+            secondViewModel.connect()
+            defer { secondViewModel.disconnect() }
+            firstViewModel.focusDrawerItem(firstItem.id)
+            secondViewModel.focusDrawerItem(secondItem.id)
             _ = first.drawerRuntime(for: firstItem)
             _ = second.drawerRuntime(for: secondItem)
             first.requestDrawerClearConfirmation()
 
-            first.confirmDrawerClear()
+            #expect(firstViewModel.drawerPendingDeletionCount == 2)
+            firstViewModel.confirmDrawerClear()
 
             #expect(first.state.drawerItems.isEmpty)
-            #expect(first.selectedDrawerItemID == nil)
-            #expect(second.selectedDrawerItemID == nil)
-            #expect(first.expandedDrawerItemID == nil)
-            #expect(second.expandedDrawerItemID == nil)
+            #expect(firstViewModel.drawer.selectedItemID == nil)
+            #expect(secondViewModel.drawer.selectedItemID == nil)
+            #expect(firstViewModel.drawer.expandedItemID == nil)
+            #expect(secondViewModel.drawer.expandedItemID == nil)
             #expect(first.drawerPreviewRuntime == nil)
             #expect(second.drawerPreviewRuntime == nil)
-            #expect(!first.isDrawerOpen)
-            #expect(!second.isDrawerOpen)
+            #expect(!firstViewModel.isDrawerOpen)
+            #expect(!secondViewModel.isDrawerOpen)
         }
     }
 
@@ -185,17 +213,20 @@ struct DenStoreDrawerTests {
         ]
         let store = DenStore(
             state: DenState(desks: [source], focusedDeskID: source.id, drawerItems: items))
-        store.selectedDrawerItemID = items[1].id
+        let viewModel = DenViewModel(store: store)
+        viewModel.connect()
+        defer { viewModel.disconnect() }
+        viewModel.drawer.selectedItemID = items[1].id
 
-        store.setDrawerQuery("swift")
-        #expect(store.filteredDrawerItems.map(\.id) == [items[0].id])
-        #expect(store.selectedDrawerItemID == items[0].id)
+        viewModel.drawer.setQuery("swift")
+        #expect(viewModel.drawer.filteredItems.map(\.id) == [items[0].id])
+        #expect(viewModel.drawer.selectedItemID == items[0].id)
 
-        store.setDrawerQuery("example.org")
-        #expect(store.filteredDrawerItems.map(\.id) == [items[1].id])
+        viewModel.drawer.setQuery("example.org")
+        #expect(viewModel.drawer.filteredItems.map(\.id) == [items[1].id])
 
-        store.setDrawerQuery("releases")
-        #expect(store.filteredDrawerItems.map(\.id) == [items[1].id])
+        viewModel.drawer.setQuery("releases")
+        #expect(viewModel.drawer.filteredItems.map(\.id) == [items[1].id])
     }
 
     @Test func closingDrawerClearsFilterState() throws {
@@ -203,40 +234,49 @@ struct DenStoreDrawerTests {
         let item = DrawerItem(url: try #require(URL(string: "https://example.com/")))
         let store = DenStore(
             state: DenState(desks: [source], focusedDeskID: source.id, drawerItems: [item]))
-        store.toggleDrawer()
-        store.enterDrawerFilterMode()
-        store.setDrawerQuery("example")
+        let viewModel = DenViewModel(store: store)
+        viewModel.connect()
+        defer { viewModel.disconnect() }
+        viewModel.toggleDrawer()
+        viewModel.drawer.enterFilterMode()
+        viewModel.drawer.setQuery("example")
 
-        store.closeDrawer()
+        viewModel.closeDrawer()
 
-        #expect(!store.isDrawerOpen)
-        #expect(store.drawerFilterPhase == .inactive)
-        #expect(store.drawerQuery.isEmpty)
+        #expect(!viewModel.isDrawerOpen)
+        #expect(viewModel.drawer.filterPhase == .inactive)
+        #expect(viewModel.drawer.query.isEmpty)
     }
 
     @Test func keepCurrentSheetCopiesWithoutOpeningDrawerOrChangingBoard() {
         let existingBoard = board("Reference", url: "https://example.com/reference")
         let source = desk("Desk", boards: [existingBoard], focusedBoardID: existingBoard.id)
         let store = DenStore(state: DenState(desks: [source], focusedDeskID: source.id))
+        let viewModel = DenViewModel(store: store)
+        viewModel.connect()
+        defer { viewModel.disconnect() }
 
         store.keepFocusedSheetInDrawer()
 
         #expect(store.focusedBoard == existingBoard)
         #expect(store.state.drawerItems.first?.url == existingBoard.currentSheetURL)
         #expect(store.state.drawerItems.first?.title == existingBoard.displayName)
-        #expect(!store.isDrawerOpen)
-        #expect(store.temporaryContext == nil)
+        #expect(!viewModel.isDrawerOpen)
+        #expect(viewModel.temporaryContext == nil)
     }
 
     @Test func placementCreatesFocusedBoardAndRemovesItem() throws {
         let existingBoard = board("Existing", width: 2_480)
         let source = desk("Desk", boards: [existingBoard], focusedBoardID: existingBoard.id)
         let store = DenStore(state: DenState(desks: [source], focusedDeskID: source.id))
+        let viewModel = DenViewModel(store: store)
+        viewModel.connect()
+        defer { viewModel.disconnect() }
         let url = try #require(URL(string: "https://placed.example/"))
         store.keepInDrawer(url)
-        let itemID = try #require(store.selectedDrawerItemID)
+        let itemID = try #require(viewModel.drawer.selectedItemID)
 
-        store.placeDrawerItemAsBoard(itemID)
+        viewModel.placeDrawerItemAsBoard(itemID)
 
         #expect(store.state.drawerItems.isEmpty)
         #expect(store.focusedDesk?.boards.map(\.currentSheetURL) == [existingBoard.currentSheetURL, url])
@@ -244,7 +284,7 @@ struct DenStoreDrawerTests {
         #expect(store.focusedBoard?.width == existingBoard.width)
         #expect(store.recentItems == [.url(url)])
         #expect(store.recentlyDiscardedDrawerItems.isEmpty)
-        #expect(!store.isDrawerOpen)
+        #expect(!viewModel.isDrawerOpen)
     }
 
     @Test func keepAndPlaceReturnIdentifiersAndDiscardReturnsSuccess() throws {
@@ -270,21 +310,24 @@ struct DenStoreDrawerTests {
     @Test func discardingSelectedItemSelectsItsNeighborAndClosesWhenEmpty() throws {
         let source = desk("Desk")
         let store = DenStore(state: DenState(desks: [source], focusedDeskID: source.id))
+        let viewModel = DenViewModel(store: store)
+        viewModel.connect()
+        defer { viewModel.disconnect() }
         store.keepInDrawer(try #require(URL(string: "https://first.example/")))
         store.keepInDrawer(try #require(URL(string: "https://second.example/")))
 
-        store.discardSelectedDrawerItem()
+        viewModel.drawer.discardSelectedItem()
 
         #expect(store.state.drawerItems.count == 1)
-        #expect(store.selectedDrawerItemID == store.state.drawerItems[0].id)
-        #expect(store.isDrawerOpen)
+        #expect(viewModel.drawer.selectedItemID == store.state.drawerItems[0].id)
+        #expect(viewModel.isDrawerOpen)
 
-        store.discardSelectedDrawerItem()
+        viewModel.drawer.discardSelectedItem()
 
         #expect(store.state.drawerItems.isEmpty)
         #expect(store.recentlyDiscardedDrawerItems.count == 2)
-        #expect(!store.isDrawerOpen)
-        #expect(store.selectedDrawerItemID == nil)
+        #expect(!viewModel.isDrawerOpen)
+        #expect(viewModel.drawer.selectedItemID == nil)
     }
 
     @Test func discardHistoryIsTransientAndResetClearsIt() throws {
@@ -335,8 +378,11 @@ struct DenStoreDrawerTests {
     @Test func discardingExpandedItemDisposesItsPreviewRuntime() throws {
         let source = desk("Desk")
         let store = DenStore(state: DenState(desks: [source], focusedDeskID: source.id))
+        let viewModel = DenViewModel(store: store)
+        viewModel.connect()
+        defer { viewModel.disconnect() }
         store.keepInDrawer(try #require(URL(string: "https://preview.example/")))
-        let item = try #require(store.selectedDrawerItem)
+        let item = try #require(viewModel.drawer.selectedItem)
         let runtime = store.drawerRuntime(for: item)
 
         store.discardDrawerItem(item.id)
@@ -356,15 +402,18 @@ struct DenStoreDrawerTests {
                 desks: [source],
                 focusedDeskID: source.id,
                 drawerItems: [first, second, third]))
+        let viewModel = DenViewModel(store: store)
+        viewModel.connect()
+        defer { viewModel.disconnect() }
 
-        store.toggleDrawer()
-        store.toggleDrawerItem(second.id)
+        viewModel.toggleDrawer()
+        viewModel.drawer.toggleItem(second.id)
         store.discardDrawerItem(second.id)
 
         #expect(store.state.drawerItems.map(\.id) == [first.id, third.id])
-        #expect(store.selectedDrawerItemID == third.id)
-        #expect(store.expandedDrawerItemID == third.id)
-        #expect(store.isDrawerOpen)
+        #expect(viewModel.drawer.selectedItemID == third.id)
+        #expect(viewModel.drawer.expandedItemID == third.id)
+        #expect(viewModel.isDrawerOpen)
     }
 
     @Test func discardingLastExpandedItemOpensPreviousPreview() throws {
@@ -376,14 +425,17 @@ struct DenStoreDrawerTests {
                 desks: [source],
                 focusedDeskID: source.id,
                 drawerItems: [first, second]))
+        let viewModel = DenViewModel(store: store)
+        viewModel.connect()
+        defer { viewModel.disconnect() }
 
-        store.toggleDrawer()
-        store.toggleDrawerItem(second.id)
+        viewModel.toggleDrawer()
+        viewModel.drawer.toggleItem(second.id)
         store.discardDrawerItem(second.id)
 
         #expect(store.state.drawerItems.map(\.id) == [first.id])
-        #expect(store.selectedDrawerItemID == first.id)
-        #expect(store.expandedDrawerItemID == first.id)
+        #expect(viewModel.drawer.selectedItemID == first.id)
+        #expect(viewModel.drawer.expandedItemID == first.id)
     }
 
     @Test func placementDoesNotAdvanceToAnotherDrawerPreview() throws {
@@ -395,37 +447,43 @@ struct DenStoreDrawerTests {
                 desks: [source],
                 focusedDeskID: source.id,
                 drawerItems: [first, second]))
+        let viewModel = DenViewModel(store: store)
+        viewModel.connect()
+        defer { viewModel.disconnect() }
 
-        store.toggleDrawer()
-        store.toggleDrawerItem(second.id)
-        store.placeDrawerItemAsBoard(second.id)
+        viewModel.toggleDrawer()
+        viewModel.drawer.toggleItem(second.id)
+        viewModel.placeDrawerItemAsBoard(second.id)
 
         #expect(store.state.drawerItems.map(\.id) == [first.id])
-        #expect(store.expandedDrawerItemID == nil)
-        #expect(!store.isDrawerOpen)
+        #expect(viewModel.drawer.expandedItemID == nil)
+        #expect(!viewModel.isDrawerOpen)
     }
 
     @Test func clearingDrawerRequiresConfirmationAndDisposesAllItems() throws {
         let source = desk("Desk")
         let store = DenStore(state: DenState(desks: [source], focusedDeskID: source.id))
+        let viewModel = DenViewModel(store: store)
+        viewModel.connect()
+        defer { viewModel.disconnect() }
         store.keepInDrawer(try #require(URL(string: "https://first.example/")))
         store.keepInDrawer(try #require(URL(string: "https://second.example/")))
-        _ = store.drawerRuntime(for: try #require(store.selectedDrawerItem))
+        _ = store.drawerRuntime(for: try #require(viewModel.drawer.selectedItem))
 
         store.requestDrawerClearConfirmation()
 
         #expect(store.state.drawerItems.count == 2)
-        #expect(store.drawerPendingDeletionCount == 2)
+        #expect(viewModel.drawerPendingDeletionCount == 2)
 
-        store.confirmDrawerClear()
+        viewModel.confirmDrawerClear()
 
         #expect(store.state.drawerItems.isEmpty)
-        #expect(store.drawerPendingDeletionCount == nil)
-        #expect(store.selectedDrawerItemID == nil)
-        #expect(store.expandedDrawerItemID == nil)
+        #expect(viewModel.drawerPendingDeletionCount == nil)
+        #expect(viewModel.drawer.selectedItemID == nil)
+        #expect(viewModel.drawer.expandedItemID == nil)
         #expect(store.drawerPreviewRuntime == nil)
         #expect(store.recentlyDiscardedDrawerItems.count == 2)
-        #expect(!store.isDrawerOpen)
+        #expect(!viewModel.isDrawerOpen)
     }
 
     @Test func emptyDrawerStaysOmittedFromPersistence() throws {
@@ -446,33 +504,36 @@ struct DenStoreDrawerTests {
         let store = DenStore(
             state: DenState(desks: [source], focusedDeskID: source.id),
             onSave: { savedState = $0 })
+        let viewModel = DenViewModel(store: store)
+        viewModel.connect()
+        defer { viewModel.disconnect() }
         store.keepInDrawer(try #require(URL(string: "https://preview.example/")))
-        let itemID = try #require(store.expandedDrawerItemID)
+        let itemID = try #require(viewModel.drawer.expandedItemID)
 
-        store.toggleDrawerItem(itemID)
-
-        #expect(savedState == store.state)
-
-        store.toggleDrawerItem(itemID)
+        viewModel.drawer.toggleItem(itemID)
 
         #expect(savedState == store.state)
-        let item = try #require(store.selectedDrawerItem)
+
+        viewModel.drawer.toggleItem(itemID)
+
+        #expect(savedState == store.state)
+        let item = try #require(viewModel.drawer.selectedItem)
         let runtime = store.drawerRuntime(for: item)
 
-        store.closeDrawer()
+        viewModel.closeDrawer()
 
-        #expect(!store.isDrawerOpen)
-        #expect(store.expandedDrawerItemID == itemID)
+        #expect(!viewModel.isDrawerOpen)
+        #expect(viewModel.drawer.expandedItemID == itemID)
         #expect(store.drawerPreviewRuntime === runtime)
         #expect(savedState == store.state)
 
-        store.toggleDrawer()
+        viewModel.toggleDrawer()
 
-        #expect(store.isDrawerOpen)
-        #expect(store.expandedDrawerItemID == itemID)
+        #expect(viewModel.isDrawerOpen)
+        #expect(viewModel.drawer.expandedItemID == itemID)
         #expect(store.drawerRuntime(for: item) === runtime)
 
-        store.toggleDrawerItem(itemID)
+        viewModel.drawer.toggleItem(itemID)
 
         #expect(store.drawerPreviewRuntime == nil)
     }
@@ -480,22 +541,26 @@ struct DenStoreDrawerTests {
     @Test func denModeKeyboardControlsOpenDrawer() throws {
         let source = desk("Desk")
         let store = DenStore(state: DenState(desks: [source], focusedDeskID: source.id))
+        let viewModel = DenViewModel(store: store)
+        viewModel.connect()
+        defer { viewModel.disconnect() }
         store.keepInDrawer(try #require(URL(string: "https://first.example/")))
         store.keepInDrawer(try #require(URL(string: "https://second.example/")))
-        store.isDenMode = true
+        viewModel.isDenMode = true
 
-        #expect(KeyboardController.handle(try keyEvent(.downArrow, keyCode: 125), store: store))
-        #expect(store.selectedDrawerItemID == store.state.drawerItems[1].id)
-        #expect(store.expandedDrawerItemID == store.state.drawerItems[1].id)
-        #expect(KeyboardController.handle(try keyEvent(.carriageReturn, keyCode: 36), store: store))
-        #expect(store.expandedDrawerItemID == nil)
-        #expect(KeyboardController.handle(try keyEvent(.tab, keyCode: 48), store: store))
-        #expect(!store.isDrawerOpen)
+        #expect(KeyboardController.handle(try keyEvent(.downArrow, keyCode: 125), store: store, viewModel: viewModel))
+        #expect(viewModel.drawer.selectedItemID == store.state.drawerItems[1].id)
+        #expect(viewModel.drawer.expandedItemID == store.state.drawerItems[1].id)
+        #expect(
+            KeyboardController.handle(try keyEvent(.carriageReturn, keyCode: 36), store: store, viewModel: viewModel))
+        #expect(viewModel.drawer.expandedItemID == nil)
+        #expect(KeyboardController.handle(try keyEvent(.tab, keyCode: 48), store: store, viewModel: viewModel))
+        #expect(!viewModel.isDrawerOpen)
 
-        store.toggleDrawer()
+        viewModel.toggleDrawer()
 
-        #expect(store.isDrawerOpen)
-        #expect(store.expandedDrawerItemID == nil)
+        #expect(viewModel.isDrawerOpen)
+        #expect(viewModel.drawer.expandedItemID == nil)
     }
 
     @Test func openingDrawerExitsDenModeOnlyForExpandedPreview() throws {
@@ -506,16 +571,19 @@ struct DenStoreDrawerTests {
                 desks: [source],
                 focusedDeskID: source.id,
                 drawerItems: [item]))
+        let viewModel = DenViewModel(store: store)
+        viewModel.connect()
+        defer { viewModel.disconnect() }
 
-        store.isDenMode = true
-        store.openDrawer()
-        #expect(store.isDenMode)
+        viewModel.isDenMode = true
+        viewModel.openDrawer()
+        #expect(viewModel.isDenMode)
 
-        store.closeDrawer()
-        store.toggleDrawerItem(item.id)
-        store.isDenMode = true
-        store.openDrawer()
-        #expect(!store.isDenMode)
+        viewModel.closeDrawer()
+        viewModel.drawer.toggleItem(item.id)
+        viewModel.isDenMode = true
+        viewModel.openDrawer()
+        #expect(!viewModel.isDenMode)
     }
 
     @Test func slashSearchAndReturnToggleFilteredSelectionPreview() throws {
@@ -531,27 +599,32 @@ struct DenStoreDrawerTests {
                 desks: [source],
                 focusedDeskID: source.id,
                 drawerItems: [first, second]))
-        store.isDenMode = true
-        store.toggleDrawer()
+        let viewModel = DenViewModel(store: store)
+        viewModel.connect()
+        defer { viewModel.disconnect() }
+        viewModel.isDenMode = true
+        viewModel.toggleDrawer()
 
-        #expect(KeyboardController.handle(try keyEvent("/", keyCode: 44), store: store))
-        #expect(store.drawerFilterPhase == .filtering)
+        #expect(KeyboardController.handle(try keyEvent("/", keyCode: 44), store: store, viewModel: viewModel))
+        #expect(viewModel.drawer.filterPhase == .filtering)
 
-        store.setDrawerQuery("second")
-        #expect(store.selectedDrawerItemID == second.id)
-        #expect(KeyboardController.handle(try keyEvent(.carriageReturn, keyCode: 36), store: store))
-        #expect(store.drawerFilterPhase == .selecting)
-        #expect(store.expandedDrawerItemID == nil)
+        viewModel.drawer.setQuery("second")
+        #expect(viewModel.drawer.selectedItemID == second.id)
+        #expect(
+            KeyboardController.handle(try keyEvent(.carriageReturn, keyCode: 36), store: store, viewModel: viewModel))
+        #expect(viewModel.drawer.filterPhase == .selecting)
+        #expect(viewModel.drawer.expandedItemID == nil)
 
-        #expect(KeyboardController.handle(try keyEvent(.carriageReturn, keyCode: 36), store: store))
-        #expect(store.drawerFilterPhase == .inactive)
-        #expect(store.expandedDrawerItemID == second.id)
-        #expect(store.drawerQuery.isEmpty)
-        #expect(!store.isDenMode)
+        #expect(
+            KeyboardController.handle(try keyEvent(.carriageReturn, keyCode: 36), store: store, viewModel: viewModel))
+        #expect(viewModel.drawer.filterPhase == .inactive)
+        #expect(viewModel.drawer.expandedItemID == second.id)
+        #expect(viewModel.drawer.query.isEmpty)
+        #expect(!viewModel.isDenMode)
 
-        #expect(KeyboardController.handle(try keyEvent("\u{1B}", keyCode: 53), store: store))
-        #expect(!store.isDrawerOpen)
-        #expect(store.expandedDrawerItemID == second.id)
+        #expect(KeyboardController.handle(try keyEvent("\u{1B}", keyCode: 53), store: store, viewModel: viewModel))
+        #expect(!viewModel.isDrawerOpen)
+        #expect(viewModel.drawer.expandedItemID == second.id)
     }
 
     @Test func drawerFilterKeepsSelectingPhaseWhenThereAreNoMatches() throws {
@@ -562,43 +635,49 @@ struct DenStoreDrawerTests {
                 desks: [source],
                 focusedDeskID: source.id,
                 drawerItems: [item]))
-        store.isDenMode = true
-        store.toggleDrawer()
-        store.enterDrawerFilterMode()
-        store.setDrawerQuery("missing")
-        store.confirmDrawerFilterQuery()
+        let viewModel = DenViewModel(store: store)
+        viewModel.connect()
+        defer { viewModel.disconnect() }
+        viewModel.isDenMode = true
+        viewModel.toggleDrawer()
+        viewModel.drawer.enterFilterMode()
+        viewModel.drawer.setQuery("missing")
+        viewModel.drawer.confirmFilterQuery()
 
-        #expect(store.drawerFilterPhase == .selecting)
-        #expect(store.selectedDrawerItemID == nil)
-        store.confirmDrawerFilterSelection()
-        #expect(store.drawerFilterPhase == .selecting)
-        #expect(store.drawerQuery == "missing")
+        #expect(viewModel.drawer.filterPhase == .selecting)
+        #expect(viewModel.drawer.selectedItemID == nil)
+        viewModel.drawer.confirmFilterSelection()
+        #expect(viewModel.drawer.filterPhase == .selecting)
+        #expect(viewModel.drawer.query == "missing")
 
-        store.exitDrawerFilterMode()
-        #expect(store.drawerFilterPhase == .inactive)
-        #expect(store.drawerQuery.isEmpty)
+        viewModel.drawer.exitFilterMode()
+        #expect(viewModel.drawer.filterPhase == .inactive)
+        #expect(viewModel.drawer.query.isEmpty)
     }
 
     @Test func denModeKeyboardControlsDiscardDrawerItemWithXAndD() throws {
         let source = desk("Desk")
         let store = DenStore(state: DenState(desks: [source], focusedDeskID: source.id))
+        let viewModel = DenViewModel(store: store)
+        viewModel.connect()
+        defer { viewModel.disconnect() }
         store.keepInDrawer(try #require(URL(string: "https://first.example/")))
         store.keepInDrawer(try #require(URL(string: "https://second.example/")))
         store.keepInDrawer(try #require(URL(string: "https://third.example/")))
         store.keepInDrawer(try #require(URL(string: "https://fourth.example/")))
-        store.isDenMode = true
+        viewModel.isDenMode = true
         let itemIDs = store.state.drawerItems.map(\.id)
-        store.selectDrawerItem(by: 2)
+        viewModel.drawer.selectItem(by: 2)
 
-        #expect(store.isDrawerOpen)
-        #expect(store.selectedDrawerItemID == itemIDs[2])
-        #expect(KeyboardController.handle(try keyEvent("x", keyCode: 7), store: store))
+        #expect(viewModel.isDrawerOpen)
+        #expect(viewModel.drawer.selectedItemID == itemIDs[2])
+        #expect(KeyboardController.handle(try keyEvent("x", keyCode: 7), store: store, viewModel: viewModel))
         #expect(store.state.drawerItems.map(\.id) == [itemIDs[0], itemIDs[1], itemIDs[3]])
-        #expect(store.selectedDrawerItemID == itemIDs[1])
-        #expect(KeyboardController.handle(try keyEvent("d", keyCode: 2), store: store))
+        #expect(viewModel.drawer.selectedItemID == itemIDs[1])
+        #expect(KeyboardController.handle(try keyEvent("d", keyCode: 2), store: store, viewModel: viewModel))
         #expect(store.state.drawerItems.map(\.id) == [itemIDs[0], itemIDs[3]])
-        #expect(store.selectedDrawerItemID == itemIDs[3])
-        #expect(store.isDrawerOpen)
+        #expect(viewModel.drawer.selectedItemID == itemIDs[3])
+        #expect(viewModel.isDrawerOpen)
     }
 
     @Test func denModeKeyboardRestoresNewestDiscardedDrawerItemWithU() throws {
@@ -607,44 +686,50 @@ struct DenStoreDrawerTests {
         let store = DenStore(
             state: DenState(desks: [source], focusedDeskID: source.id, drawerItems: [item]))
 
-        store.openDrawer()
-        store.isDenMode = true
+        let viewModel = DenViewModel(store: store)
+        viewModel.connect()
+        defer { viewModel.disconnect() }
+        viewModel.openDrawer()
+        viewModel.isDenMode = true
         store.discardDrawerItem(item.id)
-        store.openDrawer()
-        store.isDenMode = true
+        viewModel.openDrawer()
+        viewModel.isDenMode = true
 
-        #expect(KeyboardController.handle(try keyEvent("u", keyCode: 32), store: store))
+        #expect(KeyboardController.handle(try keyEvent("u", keyCode: 32), store: store, viewModel: viewModel))
         #expect(store.state.drawerItems.map(\.id) == [item.id])
         #expect(store.recentlyDiscardedDrawerItems.isEmpty)
-        #expect(store.selectedDrawerItemID == item.id)
-        #expect(store.expandedDrawerItemID == item.id)
-        #expect(store.isDenMode)
+        #expect(viewModel.drawer.selectedItemID == item.id)
+        #expect(viewModel.drawer.expandedItemID == item.id)
+        #expect(viewModel.isDenMode)
     }
 
     @Test func sheetInputLeavesVimStyleDrawerKeysUnclaimed() throws {
         let source = desk("Desk")
         let store = DenStore(state: DenState(desks: [source], focusedDeskID: source.id))
+        let viewModel = DenViewModel(store: store)
+        viewModel.connect()
+        defer { viewModel.disconnect() }
         store.keepInDrawer(try #require(URL(string: "https://first.example/")))
         store.keepInDrawer(try #require(URL(string: "https://second.example/")))
 
         #expect(store.state.drawerItems.count == 2)
-        #expect(store.isDrawerOpen)
-        #expect(!store.isDenMode)
+        #expect(viewModel.isDrawerOpen)
+        #expect(!viewModel.isDenMode)
 
         for (key, keyCode) in [("d", 2), ("x", 7), ("j", 38), ("k", 40), ("p", 35), ("/", 44)] {
             let event = try keyEvent(key, keyCode: UInt16(keyCode))
             #expect(
-                KeyboardController.decision(for: event, store: store)
+                KeyboardController.decision(for: event, store: store, viewModel: viewModel)
                     == .consume(.exclusiveContext))
-            #expect(KeyboardController.handle(event, store: store))
+            #expect(KeyboardController.handle(event, store: store, viewModel: viewModel))
         }
         let tab = try keyEvent(.tab, keyCode: 48)
         #expect(
-            KeyboardController.decision(for: tab, store: store)
+            KeyboardController.decision(for: tab, store: store, viewModel: viewModel)
                 == .consume(.exclusiveContext))
-        #expect(KeyboardController.handle(tab, store: store))
+        #expect(KeyboardController.handle(tab, store: store, viewModel: viewModel))
         #expect(store.state.drawerItems.count == 2)
-        #expect(store.isDrawerOpen)
+        #expect(viewModel.isDrawerOpen)
     }
 
     private func keyEvent(_ specialKey: NSEvent.SpecialKey, keyCode: UInt16) throws -> NSEvent {

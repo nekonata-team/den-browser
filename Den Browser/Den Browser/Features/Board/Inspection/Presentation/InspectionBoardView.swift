@@ -5,6 +5,7 @@ import SwiftUI
 
 struct InspectionBoardView: View {
     @Environment(DenStore.self) private var store
+    @Environment(DenViewModel.self) private var viewModel
 
     let board: BoardState
     let isFocused: Bool
@@ -30,7 +31,7 @@ struct InspectionBoardView: View {
 
     private var targetBoard: BoardState? { store.board(for: targetBoardID) }
     private var targetRuntime: WebBoardRuntime? { store.webRuntimes[targetBoardID] }
-    private var inspectionHighlightColor: ProfileRGB? { ProfileRGB(color: profileColor) }
+    private var inspectionHighlightColor: ProfileRGB? { profileRGB(from: profileColor) }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -48,8 +49,8 @@ struct InspectionBoardView: View {
                 profileColor: profileColor,
                 width: width,
                 height: height,
-                isFocusModeDeemphasized: store.isFocusModePresented && !isFocused,
-                isFocusModeFocused: store.isFocusModePresented && isFocused,
+                isFocusModeDeemphasized: viewModel.isFocusModePresented && !isFocused,
+                isFocusModeFocused: viewModel.isFocusModePresented && isFocused,
                 differentiateWithoutColor: differentiateWithoutColor,
                 shouldReduceMotion: false
             )
@@ -136,7 +137,7 @@ struct InspectionBoardView: View {
         }
         .padding(.horizontal, DenLayout.chromeHorizontalPadding)
         .frame(height: DenLayout.boardHeaderHeight)
-        .background(store.isDenMode && isFocused ? profileColor.opacity(0.12) : Color.clear)
+        .background(viewModel.isDenMode && isFocused ? profileColor.opacity(0.12) : Color.clear)
         .background(.regularMaterial)
         .contextMenu {
             if targetBoard != nil {

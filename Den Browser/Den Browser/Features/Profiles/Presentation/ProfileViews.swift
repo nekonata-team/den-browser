@@ -5,6 +5,8 @@ import SwiftUI
 struct ProfileWindowView: View {
     let route: ProfileWindowRoute
     let startUpdater: @MainActor @Sendable () -> Void
+    let registerKeyboardWindow: @MainActor (NSWindow, DenViewModel) -> Void
+    let unregisterKeyboardWindow: @MainActor (NSWindow) -> Void
 
     @Environment(ProfileManager.self) private var profileManager
     @Environment(\.appearsActive) private var appearsActive
@@ -34,32 +36,16 @@ struct ProfileWindowView: View {
         if let profile = profileManager.profile(id: activeProfileID),
             let store = profileManager.store(for: route)
         {
-            DenView(
-                profileName: profile.name,
-                profileColor: profile.color.color,
+            ProfileDenWindow(
+                route: route,
+                profile: profile,
+                activeProfileID: activeProfileID,
+                store: store,
                 isPrivateDen: profileManager.isPrivateDen,
-                shouldShowHeader: !store.isZenViewPresented
-            ) {
-                DenHeader(profile: profile, windowID: route.windowID)
-            }
-            .tint(profile.color.color)
-            .focusedSceneValue(\.denStore, store)
-            .focusedSceneValue(\.profileID, activeProfileID)
-            .focusedSceneValue(\.profileWindowID, route.windowID)
-            .background(WindowRegistration(route: route))
-            .toolbar {
-                DenHeaderControls(profile: profile, windowID: route.windowID)
-            }
-            .environment(store)
-            .toolbarVisibility(store.isZenViewPresented ? .hidden : .visible, for: .windowToolbar)
-            .toolbarBackgroundVisibility(.hidden, for: .windowToolbar)
-            .ignoresSafeArea(.container, edges: store.isZenViewPresented ? .top : [])
-            .onOpenURL { url in
-                store.handleExternalURL(url)
-            }
-            .onAppear {
-                PerformanceTrace.mark("ProfileWindowView.onAppear (window content presented)", category: "Launch")
-            }
+                registerKeyboardWindow: registerKeyboardWindow,
+                unregisterKeyboardWindow: unregisterKeyboardWindow
+            )
+            .id(ObjectIdentifier(store))
             .sheet(
                 isPresented: Binding(
                     get: {
@@ -88,13 +74,90 @@ struct ProfileWindowView: View {
     }
 }
 
+private struct ProfileDenWindow: View {
+    let route: ProfileWindowRoute
+    let profile: ProfileState
+    let activeProfileID: UUID
+    let store: DenStore
+    let isPrivateDen: Bool
+    let registerKeyboardWindow: @MainActor (NSWindow, DenViewModel) -> Void
+    let unregisterKeyboardWindow: @MainActor (NSWindow) -> Void
+
+    @Environment(ProfileManager.self) private var profileManager
+    @State private var viewModel: DenViewModel
+
+    init(
+        route: ProfileWindowRoute,
+        profile: ProfileState,
+        activeProfileID: UUID,
+        store: DenStore,
+        isPrivateDen: Bool,
+        registerKeyboardWindow: @escaping @MainActor (NSWindow, DenViewModel) -> Void,
+        unregisterKeyboardWindow: @escaping @MainActor (NSWindow) -> Void
+    ) {
+        self.route = route
+        self.profile = profile
+        self.activeProfileID = activeProfileID
+        self.store = store
+        self.isPrivateDen = isPrivateDen
+        self.registerKeyboardWindow = registerKeyboardWindow
+        self.unregisterKeyboardWindow = unregisterKeyboardWindow
+        _viewModel = State(initialValue: DenViewModel(store: store))
+    }
+
+    var body: some View {
+        DenView(
+            profileName: profile.name,
+            profileColor: profileDisplayColor(for: profile.color),
+            isPrivateDen: isPrivateDen,
+            shouldShowHeader: !viewModel.isZenViewPresented
+        ) {
+            DenHeader(profile: profile, windowID: route.windowID)
+        }
+        .tint(profileDisplayColor(for: profile.color))
+        .focusedSceneValue(\.denStore, store)
+        .focusedSceneValue(\.denViewModel, viewModel)
+        .focusedSceneValue(\.profileID, activeProfileID)
+        .focusedSceneValue(\.profileWindowID, route.windowID)
+        .background(
+            WindowRegistration(
+                route: route,
+                viewModel: viewModel,
+                registerKeyboardWindow: registerKeyboardWindow,
+                unregisterKeyboardWindow: unregisterKeyboardWindow)
+        )
+        .toolbar {
+            DenHeaderControls(profile: profile, windowID: route.windowID)
+        }
+        .environment(store)
+        .environment(viewModel)
+        .toolbarVisibility(viewModel.isZenViewPresented ? .hidden : .visible, for: .windowToolbar)
+        .toolbarBackgroundVisibility(.hidden, for: .windowToolbar)
+        .ignoresSafeArea(.container, edges: viewModel.isZenViewPresented ? .top : [])
+        .onOpenURL { url in
+            store.handleExternalURL(url)
+        }
+        .onAppear {
+            PerformanceTrace.mark("ProfileWindowView.onAppear (window content presented)", category: "Launch")
+        }
+    }
+}
+
 private struct WindowRegistration: NSViewRepresentable {
     let route: ProfileWindowRoute
+    let viewModel: DenViewModel
+    let registerKeyboardWindow: @MainActor (NSWindow, DenViewModel) -> Void
+    let unregisterKeyboardWindow: @MainActor (NSWindow) -> Void
 
     @Environment(ProfileManager.self) private var profileManager
 
     func makeCoordinator() -> Coordinator {
-        Coordinator(route: route, profileManager: profileManager)
+        Coordinator(
+            route: route,
+            profileManager: profileManager,
+            viewModel: viewModel,
+            registerKeyboardWindow: registerKeyboardWindow,
+            unregisterKeyboardWindow: unregisterKeyboardWindow)
     }
 
     func makeNSView(context: Context) -> NSView {
@@ -115,12 +178,24 @@ private struct WindowRegistration: NSViewRepresentable {
     final class Coordinator: NSObject {
         private let route: ProfileWindowRoute
         private weak var profileManager: ProfileManager?
+        private let viewModel: DenViewModel
+        private let registerKeyboardWindow: @MainActor (NSWindow, DenViewModel) -> Void
+        private let unregisterKeyboardWindow: @MainActor (NSWindow) -> Void
         private weak var window: NSWindow?
         private var closeObserver: NSObjectProtocol?
 
-        init(route: ProfileWindowRoute, profileManager: ProfileManager) {
+        init(
+            route: ProfileWindowRoute,
+            profileManager: ProfileManager,
+            viewModel: DenViewModel,
+            registerKeyboardWindow: @escaping @MainActor (NSWindow, DenViewModel) -> Void,
+            unregisterKeyboardWindow: @escaping @MainActor (NSWindow) -> Void
+        ) {
             self.route = route
             self.profileManager = profileManager
+            self.viewModel = viewModel
+            self.registerKeyboardWindow = registerKeyboardWindow
+            self.unregisterKeyboardWindow = unregisterKeyboardWindow
             super.init()
         }
 
@@ -130,6 +205,8 @@ private struct WindowRegistration: NSViewRepresentable {
             window.styleMask.insert(.fullSizeContentView)
             window.titlebarAppearsTransparent = true
             profileManager?.register(window: window, for: route)
+            viewModel.connect()
+            registerKeyboardWindow(window, viewModel)
             closeObserver = NotificationCenter.default.addObserver(
                 forName: NSWindow.willCloseNotification,
                 object: window,
@@ -151,6 +228,8 @@ private struct WindowRegistration: NSViewRepresentable {
 
         private func unregister(window: NSWindow) {
             guard self.window === window else { return }
+            unregisterKeyboardWindow(window)
+            viewModel.disconnect()
             profileManager?.unregister(window: window, for: route)
             self.window = nil
             removeCloseObserver()
@@ -166,7 +245,7 @@ private struct WindowRegistration: NSViewRepresentable {
 }
 
 struct OpenProfilePanel: View {
-    @Environment(DenStore.self) private var store
+    @Environment(DenViewModel.self) private var viewModel
     @Environment(ProfileManager.self) private var profileManager
     @Environment(\.openWindow) private var openWindow
     @State private var query = ""
@@ -207,7 +286,7 @@ struct OpenProfilePanel: View {
                 } label: {
                     HStack(spacing: DenPanelLayout.controlSpacing) {
                         Circle()
-                            .fill(profile.color.color)
+                            .fill(profileDisplayColor(for: profile.color))
                             .frame(width: 10, height: 10)
                         Text(profile.name)
                         Spacer(minLength: 0)
@@ -253,12 +332,16 @@ struct OpenProfilePanel: View {
     }
 
     private func close() {
-        store.setTemporaryContext(nil)
+        viewModel.setTemporaryContext(nil)
     }
 }
 
 struct DenStoreFocusedValueKey: FocusedValueKey {
     typealias Value = DenStore
+}
+
+struct DenViewModelFocusedValueKey: FocusedValueKey {
+    typealias Value = DenViewModel
 }
 
 struct ProfileIDFocusedValueKey: FocusedValueKey {
@@ -273,6 +356,11 @@ extension FocusedValues {
     var denStore: DenStore? {
         get { self[DenStoreFocusedValueKey.self] }
         set { self[DenStoreFocusedValueKey.self] = newValue }
+    }
+
+    var denViewModel: DenViewModel? {
+        get { self[DenViewModelFocusedValueKey.self] }
+        set { self[DenViewModelFocusedValueKey.self] = newValue }
     }
 
     var profileID: UUID? {

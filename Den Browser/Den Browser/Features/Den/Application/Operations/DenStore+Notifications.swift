@@ -12,39 +12,12 @@ extension DenStore {
 
     func requestNotificationClearConfirmation() {
         guard !notifications.isEmpty else { return }
-        pendingConfirmation = .clearNotifications(notifications.count)
+        onWindowEffect?(.requestConfirmation(.clearNotifications(notifications.count)))
     }
 
-    func confirmNotificationClear() {
-        guard notificationPendingDeletionCount != nil else { return }
+    func clearNotifications() {
         notifications.removeAll()
-        if let target = toastMessage?.target, case .notification = target {
-            dismissToast()
-        }
-        closeNotificationList()
-        pendingConfirmation = nil
-    }
-
-    func cancelNotificationClear() {
-        if notificationPendingDeletionCount != nil {
-            pendingConfirmation = nil
-        }
-    }
-
-    func toggleNotificationList() {
-        guard temporaryContext == nil else { return }
-        if isNotificationListPresented {
-            closeNotificationList()
-        } else {
-            dismissDeskFilter()
-            isNotificationListPresented = true
-            selectedNotificationID = notifications.first?.id
-        }
-    }
-
-    func closeNotificationList() {
-        isNotificationListPresented = false
-        selectedNotificationID = nil
+        clearLatestNotificationFeedback()
     }
 
     func recordNotification(title: String?, body: String, boardID: UUID) {
@@ -54,39 +27,19 @@ extension DenStore {
         if notifications.count > Self.maximumNotificationCount {
             notifications.removeLast(notifications.count - Self.maximumNotificationCount)
         }
-        if let selectedNotificationID,
-            !notifications.contains(where: { $0.id == selectedNotificationID })
-        {
-            self.selectedNotificationID = notifications.first?.id
-        }
-        showToast(title: title, body: body, target: .notification(notification.id))
-    }
-
-    func moveNotificationSelection(by offset: Int) {
-        selectedNotificationID = DenSelectionNavigation.next(
-            selectedNotificationID,
-            among: notifications.map(\.id),
-            by: offset
-        )
-    }
-
-    func openSelectedNotification() {
-        guard
-            let selectedNotificationID,
-            let notification = notifications.first(where: { $0.id == selectedNotificationID })
-        else { return }
-        openNotification(notification)
+        onWindowEffect?(.notificationAdded(notification.id))
+        reportFeedback(title: title, body: body, target: .notification(notification.id))
     }
 
     func openNotification(_ notification: DenNotification) {
         guard boardIndices(for: notification.boardID) != nil else {
             markNotificationRead(notification.id)
-            showToast("Notification source Board no longer exists.", style: .warning)
+            reportFeedback("Notification source Board no longer exists.", severity: .warning)
             return
         }
         markNotificationRead(notification.id)
-        closeNotificationList()
-        setTemporaryContext(nil)
+        onWindowEffect?(.dismissTemporaryPresentation)
+        onWindowEffect?(.exitDenMode)
         focusBoard(notification.boardID, exitsDenMode: true)
     }
 

@@ -8,7 +8,7 @@ Den Browser should persist desks, boards, labels, widths, Current Sheet URLs, Fi
 
 ## Desk switching and WebView scheduling
 
-Only boards in the focused desk belong to the SwiftUI view hierarchy. When focus moves to another desk, its outgoing `BoardWebView` instances leave the window, while `DenStore` retains their `BoardRuntime` and `WKWebView` instances. Returning to a desk reattaches the existing web views; it does not reload them. This preserves each board's in-memory sheet state, including in-progress text.
+Only boards in the focused desk belong to the SwiftUI view hierarchy. When focus moves to another desk, its outgoing `WebBoardSurface` instances leave the window, while `DenStore` retains their `BoardRuntime` and `WKWebView` instances. Returning to a desk reattaches the existing web views; it does not reload them. This preserves each board's in-memory sheet state, including in-progress text.
 
 WebKit's `WKPreferences.inactiveSchedulingPolicy` applies to a web view that is not in a window. Its documented default is `.suspend`, which fully suspends that web view's tasks. Den Browser relies on this default for inactive desks rather than retaining every desk's web views in the window. Media playback, media capture, and other user-interactive activity are exempt, so this is a scheduling behavior, not a hard resource limit.
 

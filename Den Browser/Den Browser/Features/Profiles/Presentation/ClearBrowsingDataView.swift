@@ -13,7 +13,7 @@ struct ClearBrowsingDataView: View {
             if let profile = profileManager.profile(id: profileID) {
                 HStack(spacing: 8) {
                     Circle()
-                        .fill(profile.color.color)
+                        .fill(profileDisplayColor(for: profile.color))
                         .frame(width: 12, height: 12)
                     Text("Clear Browsing Data for \(profile.name)")
                         .font(.headline)
@@ -27,9 +27,9 @@ struct ClearBrowsingDataView: View {
                     ForEach(BrowsingDataCategory.allCases) { category in
                         Toggle(isOn: binding(for: category)) {
                             VStack(alignment: .leading, spacing: 2) {
-                                Text(category.label)
+                                Text(browsingDataLabel(for: category))
                                     .font(.body)
-                                Text(category.description)
+                                Text(browsingDataDescription(for: category))
                                     .font(.caption)
                                     .foregroundStyle(.secondary)
                             }

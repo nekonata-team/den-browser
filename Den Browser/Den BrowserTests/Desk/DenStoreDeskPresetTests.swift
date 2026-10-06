@@ -126,14 +126,17 @@ struct DenStoreDeskPresetTests {
         let second = board("Notes", width: 760, url: "")
         let source = desk("Morning", boards: [first, inspection, second], focusedBoardID: inspection.id)
         let store = DenStore(state: DenState(desks: [source], focusedDeskID: source.id))
-        store.isDenMode = true
+        let viewModel = DenViewModel(store: store)
+        viewModel.connect()
+        defer { viewModel.disconnect() }
+        viewModel.isDenMode = true
 
         // Act
         let saveResult = store.saveFocusedDeskAsPreset(label: "  Morning  ")
 
         // Assert - preset captured
         #expect(saveResult == .created)
-        #expect(!store.isDenMode)
+        #expect(!viewModel.isDenMode)
         let preset = try #require(store.deskPresets.first)
         #expect(preset.label == "Morning")
         #expect(preset.boards.map(\.label) == ["Mail", "Inspection Board", "Notes"])
@@ -171,10 +174,13 @@ struct DenStoreDeskPresetTests {
         let store = DenStore(
             state: DenState(desks: [oldDesk], focusedDeskID: oldDesk.id),
             deskPresets: [preset])
+        let viewModel = DenViewModel(store: store)
+        viewModel.connect()
+        defer { viewModel.disconnect() }
 
         // Act
         let result = store.replaceFocusedDesk(label: "Research Copy", personalPresetID: preset.id)
-        store.confirmDeskReplacement()
+        viewModel.confirmDeskReplacement()
 
         // Assert
         #expect(result == .confirmationPending)
@@ -276,18 +282,21 @@ struct DenStoreDeskPresetTests {
         // Arrange
         let source = desk("Desk", boards: [board("First")])
         let store = DenStore(state: DenState(desks: [source], focusedDeskID: source.id))
+        let viewModel = DenViewModel(store: store)
+        viewModel.connect()
+        defer { viewModel.disconnect() }
         #expect(store.saveFocusedDeskAsPreset(label: "Routine") == .created)
         let routineID = try #require(store.deskPresets.first?.id)
         store.state.desks[0].boards[0].width = 900
-        store.isDenMode = true
+        viewModel.isDenMode = true
 
         // Act
         let pending = store.saveFocusedDeskAsPreset(label: " routine ")
         #expect(pending == .replacementPending)
-        store.confirmDeskPresetReplacement()
+        viewModel.confirmDeskPresetReplacement()
 
         // Assert
-        #expect(!store.isDenMode)
+        #expect(!viewModel.isDenMode)
         #expect(store.deskPresets.first?.id == routineID)
         #expect(store.deskPresets.first?.boards[0].width == 900)
     }
@@ -299,10 +308,13 @@ struct DenStoreDeskPresetTests {
         #expect(store.saveFocusedDeskAsPreset(label: "Routine") == .created)
         #expect(store.saveFocusedDeskAsPreset(label: "Other") == .created)
         let routineID = try #require(store.deskPresets.last?.id)
+        let viewModel = DenViewModel(store: store)
+        viewModel.connect()
+        defer { viewModel.disconnect() }
 
         // Act
         store.requestDeskPresetDeletion(routineID)
-        store.confirmDeskPresetDeletion()
+        viewModel.confirmDeskPresetDeletion()
 
         // Assert
         #expect(store.deskPresets.map(\.label) == ["Other"])
@@ -338,15 +350,18 @@ struct DenStoreDeskPresetTests {
         // Arrange
         let source = desk("Desk", boards: [board("Board")])
         let store = DenStore(state: DenState(desks: [source], focusedDeskID: source.id))
-        store.isDenMode = true
-        store.showDeskPresetManagement()
+        let viewModel = DenViewModel(store: store)
+        viewModel.connect()
+        defer { viewModel.disconnect() }
+        viewModel.isDenMode = true
+        viewModel.showDeskPresetManagement()
 
         // Act
-        store.hideNewDeskPanel(exitsDenMode: true)
+        viewModel.hideNewDeskPanel(exitsDenMode: true)
 
         // Assert
-        #expect(store.temporaryContext == nil)
-        #expect(!store.isDenMode)
+        #expect(viewModel.temporaryContext == nil)
+        #expect(!viewModel.isDenMode)
     }
 
     @Test func emptyDeskCannotBecomePersonalPreset() {
@@ -367,16 +382,16 @@ struct DenStoreDeskPresetTests {
         // Arrange
         let empty = desk("Empty")
 
-        withStore(desks: [empty]) { store in
+        withTestViewModel(desks: [empty]) { viewModel in
             // Act
-            store.showSaveDeskPresetPanel()
+            viewModel.showSaveDeskPresetPanel()
 
             // Assert
-            #expect(!store.isSaveDeskPresetPanelPresented)
+            #expect(!viewModel.isSaveDeskPresetPanelPresented)
         }
     }
 
-    @Test func saveDeskPresetShowsErrorToastWhenPersistenceFails() {
+    @Test func saveDeskPresetShowsErrorFeedbackWhenPersistenceFails() {
         // Arrange
         let deskState = desk("Desk", boards: [board("Board")])
         var saveCallCount = 0
@@ -395,11 +410,11 @@ struct DenStoreDeskPresetTests {
         // Assert
         #expect(result == .created)
         #expect(saveCallCount == 1)
-        #expect(store.toastMessage?.message == "Could not save Desk Preset.")
-        #expect(store.toastMessage?.style == ToastMessage.ToastStyle.error)
+        #expect(store.latestFeedback?.message == "Could not save Desk Preset.")
+        #expect(store.latestFeedback?.severity == DenFeedback.Severity.error)
     }
 
-    @Test func saveDeskPresetShowsSuccessToastWhenPersistenceSucceeds() {
+    @Test func saveDeskPresetShowsSuccessFeedbackWhenPersistenceSucceeds() {
         // Arrange
         let deskState = desk("Desk", boards: [board("Board")])
         var saveCallCount = 0
@@ -418,8 +433,8 @@ struct DenStoreDeskPresetTests {
         // Assert
         #expect(result == .created)
         #expect(saveCallCount == 1)
-        #expect(store.toastMessage?.message == "Saved Desk Preset.")
-        #expect(store.toastMessage?.style == ToastMessage.ToastStyle.success)
+        #expect(store.latestFeedback?.message == "Saved Desk Preset.")
+        #expect(store.latestFeedback?.severity == DenFeedback.Severity.success)
     }
 
     private static func sampleChoices() -> [DeskPresetChoice] {

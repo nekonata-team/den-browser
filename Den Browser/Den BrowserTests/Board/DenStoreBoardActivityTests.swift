@@ -17,15 +17,18 @@ struct DenStoreBoardActivityTests {
             state: DenState(
                 desks: [firstDesk, secondDesk],
                 focusedDeskID: firstDesk.id))
-        store.toggleBoardActivity()
+        let viewModel = DenViewModel(store: store)
+        viewModel.connect()
+        defer { viewModel.disconnect() }
+        viewModel.toggleBoardActivity()
 
         // Act
-        store.enterBoardFromActivity(second.id)
+        viewModel.enterBoardFromActivity(second.id)
 
         // Assert
-        #expect(!store.isBoardActivityPresented)
+        #expect(!viewModel.isBoardActivityPresented)
         #expect(store.focusedDesk?.id == secondDesk.id)
         #expect(store.focusedBoard?.id == second.id)
-        #expect(!store.isDenMode)
+        #expect(!viewModel.isDenMode)
     }
 }

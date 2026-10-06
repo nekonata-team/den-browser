@@ -48,6 +48,12 @@ placement: for example, `DenStoreBoardTests` belongs under `Board` because it pr
 Do not mechanically reproduce the source's `Domain`, `Application`, and `Infrastructure` folders.
 Shared Swift test helpers belong under `Support`; test resource files remain under `Fixtures`.
 
+Test application operations and persistence directly through `DenStore`. Test window presentation
+transitions through `DenViewModel` and context-local state through the corresponding ViewModel,
+while asserting resulting domain changes on their shared Store when needed. Test delayed presentation
+by its observable result rather than the Task object used to produce it. Presentation suites use ViewModel names; moving UI state does not require routing unrelated
+Store tests through a ViewModel.
+
 Unit tests follow the Arrange-Act-Assert (AAA) pattern for consistency across the test suite, using explicit section comments (`// Arrange`, `// Act`, `// Assert`):
 
 - `// Arrange`: Set up the initial state, fixtures, stubs, and isolated dependencies.

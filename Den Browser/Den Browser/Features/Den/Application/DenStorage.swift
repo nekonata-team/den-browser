@@ -15,8 +15,8 @@ final class DenStorage {
 
     var webRuntimes: [UUID: WebBoardRuntime] = [:]
     @ObservationIgnored var terminalRuntimes: [UUID: TerminalRuntime] = [:]
-    @ObservationIgnored var runtimeOwners: [UUID: DenStore] = [:]
     @ObservationIgnored let drawerPresentations = NSHashTable<DenStore>.weakObjects()
+    @ObservationIgnored let onRuntimeOwnerChange: ((UUID, DenStore?) -> Void)?
     @ObservationIgnored let onSave: ((DenState) -> Bool)?
     @ObservationIgnored let onDeferredSave: (() -> Void)?
     @ObservationIgnored let onDeskPresetsSave: (([PersonalDeskPreset]) -> Bool)?
@@ -30,7 +30,8 @@ final class DenStorage {
         onSave: ((DenState) -> Bool)? = nil,
         onDeferredSave: (() -> Void)? = nil,
         onDeskPresetsSave: (([PersonalDeskPreset]) -> Bool)? = nil,
-        onRecentItemsSave: (([RecentItem]) -> Bool)? = nil
+        onRecentItemsSave: (([RecentItem]) -> Bool)? = nil,
+        onRuntimeOwnerChange: ((UUID, DenStore?) -> Void)? = nil
     ) {
         self.state = state
         self.deskPresets = deskPresets
@@ -39,5 +40,6 @@ final class DenStorage {
         self.onDeferredSave = onDeferredSave
         self.onDeskPresetsSave = onDeskPresetsSave
         self.onRecentItemsSave = onRecentItemsSave
+        self.onRuntimeOwnerChange = onRuntimeOwnerChange
     }
 }

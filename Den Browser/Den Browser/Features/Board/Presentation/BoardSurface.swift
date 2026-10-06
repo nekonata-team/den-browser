@@ -115,6 +115,7 @@ struct BoardSurfaceModifier: ViewModifier {
 
 struct BoardHeaderCenteringModifier: ViewModifier {
     @Environment(DenStore.self) private var store
+    @Environment(DenViewModel.self) private var viewModel
 
     let boardID: UUID
     let isEnabled: Bool
@@ -125,7 +126,7 @@ struct BoardHeaderCenteringModifier: ViewModifier {
                 .onEnded {
                     guard isEnabled else { return }
                     store.focusBoard(boardID, exitsDenMode: true)
-                    store.centerFocusedBoard()
+                    viewModel.centerFocusedBoard()
                 }
         )
     }
@@ -209,5 +210,11 @@ struct BoardDragHeader<LeadingContent: View>: View {
         .accessibilityAddTraits(isFocused ? .isSelected : [])
         .accessibilityAction(named: "Move Board Left", onMoveLeft)
         .accessibilityAction(named: "Move Board Right", onMoveRight)
+    }
+}
+
+extension DenMotion {
+    static func boardTransition(reduceMotion: Bool) -> AnyTransition {
+        reduceMotion ? .identity : .opacity
     }
 }

@@ -194,7 +194,9 @@ final class ProfilePersistence {
     private func write<T: Encodable>(_ value: T, to url: URL) throws {
         let encodeSignpost = PerformanceTrace.beginInterval("ProfilePersistence.encode")
         defer { PerformanceTrace.endInterval("ProfilePersistence.encode", encodeSignpost) }
-        let data = try JSONEncoder.denEncoder.encode(value)
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+        let data = try encoder.encode(value)
         let writeSignpost = PerformanceTrace.beginInterval("ProfilePersistence.fileWrite")
         defer { PerformanceTrace.endInterval("ProfilePersistence.fileWrite", writeSignpost) }
         try data.write(to: url, options: .atomic)

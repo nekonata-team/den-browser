@@ -4,6 +4,8 @@ import SwiftUI
 
 struct TerminalBoardView: View {
     @Environment(DenStore.self) private var store
+    @Environment(DenViewModel.self) private var viewModel
+    @Environment(DeskFilterViewModel.self) private var deskFilter
     @Environment(AppPreferences.self) private var preferences
     @Environment(\.accessibilityReduceMotion) private var systemReduceMotion
     @Environment(\.accessibilityDifferentiateWithoutColor) private var differentiateWithoutColor
@@ -32,8 +34,8 @@ struct TerminalBoardView: View {
             TerminalBoardSurface(
                 terminalView: runtime.terminalView,
                 onSurfaceVisibilityChange: { runtime.setSurfaceVisible($0) },
-                isHidden: !isVisibleInViewport || store.isOverviewPresented
-                    || (store.isDrawerOpen && preferences.drawerStyle == .bottom),
+                isHidden: !isVisibleInViewport || viewModel.isOverviewPresented
+                    || (viewModel.isDrawerOpen && preferences.drawerStyle == .bottom),
                 focusRequest: focusRequest,
                 onSurfaceReady: { window in
                     guard
@@ -93,11 +95,11 @@ struct TerminalBoardView: View {
     }
 
     private var isFocusModeDeemphasized: Bool {
-        store.isFocusModePresented && !isFocused && !store.isDeskFilterPresented
+        viewModel.isFocusModePresented && !isFocused && !deskFilter.isPresented
     }
 
     private var isFocusModeFocused: Bool {
-        store.isFocusModePresented && isFocused
+        viewModel.isFocusModePresented && isFocused
     }
 
     private var header: some View {
@@ -119,7 +121,7 @@ struct TerminalBoardView: View {
                     store.moveFocusedBoardRight()
                 },
                 leadingContent: {
-                    Image(systemSymbol: board.systemSymbol)
+                    Image(systemSymbol: boardSymbol(for: board.kind))
                         .foregroundStyle(.secondary)
                 }
             )
@@ -135,7 +137,7 @@ struct TerminalBoardView: View {
         }
         .padding(.horizontal, DenLayout.chromeHorizontalPadding)
         .frame(height: DenLayout.boardHeaderHeight)
-        .background(store.isDenMode && isFocused ? profileColor.opacity(0.12) : Color.clear)
+        .background(viewModel.isDenMode && isFocused ? profileColor.opacity(0.12) : Color.clear)
         .background(.regularMaterial)
         .modifier(
             BoardHeaderCenteringModifier(
@@ -160,7 +162,7 @@ struct TerminalBoardView: View {
         }
         Button {
             store.focusBoard(board.id)
-            store.showSaveEssentialPanel(for: board)
+            viewModel.showSaveEssentialPanel(for: board)
         } label: {
             Label("Save as Essential…", systemSymbol: .sparkles)
         }
@@ -171,23 +173,23 @@ struct TerminalBoardView: View {
         }
         Button {
             store.focusBoard(board.id)
-            store.toggleFocusedBoardMaximized()
+            viewModel.toggleFocusedBoardMaximized()
         } label: {
             Label(
-                store.maximizedBoardID == board.id ? "Restore Board Size" : "Maximize Board",
-                systemSymbol: store.maximizedBoardID == board.id
+                viewModel.maximizedBoardID == board.id ? "Restore Board Size" : "Maximize Board",
+                systemSymbol: viewModel.maximizedBoardID == board.id
                     ? .arrowDownRightAndArrowUpLeft : .arrowUpLeftAndArrowDownRight)
         }
         Button {
             store.focusBoard(board.id)
-            store.centerFocusedBoard()
+            viewModel.centerFocusedBoard()
         } label: {
             Label("Center Board", systemSymbol: .scope)
         }
         if board.isZmx {
             Button {
                 store.focusBoard(board.id)
-                store.showZmxSessions(selectedSessionName: board.zmxSessionName)
+                viewModel.showZmxSessions(selectedSessionName: board.zmxSessionName)
             } label: {
                 Label {
                     Text("zmx Sessions…")

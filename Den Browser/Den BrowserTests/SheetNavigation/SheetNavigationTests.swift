@@ -790,7 +790,7 @@ struct SheetNavigationTests {
         #expect(store.state.drawerItems.first?.url == fileURL)
     }
 
-    @Test func sheetNavigationShowsToastForCopyAndInvalidPaste() async throws {
+    @Test func sheetNavigationShowsFeedbackForCopyAndInvalidPaste() async throws {
         let manager = makeTestSheetNavigationManager(scriptSource: "")
         let source = board("Source", url: "https://source.example/")
         let currentDesk = desk("Desk", boards: [source], focusedBoardID: source.id)
@@ -806,13 +806,13 @@ struct SheetNavigationTests {
         defer { manager.pasteboard.clearContents() }
 
         #expect(manager.handleScriptMessage(["action": "copyURL"], from: webView))
-        #expect(store.toastMessage?.message == "Copied Current Sheet URL.")
+        #expect(store.latestFeedback?.message == "Copied Current Sheet URL.")
 
         #expect(
             manager.handleScriptMessage(
                 ["action": "copyMarkdownLink", "title": "Example [Page]\n Title "],
                 from: webView))
-        #expect(store.toastMessage?.message == "Copied Current Sheet Markdown link.")
+        #expect(store.latestFeedback?.message == "Copied Current Sheet Markdown link.")
         #expect(
             manager.pasteboard.string(forType: .string)
                 == "[Example \\[Page\\] Title](https://source.example/)")
@@ -837,11 +837,11 @@ struct SheetNavigationTests {
         manager.pasteboard.clearContents()
         for action in ["pasteURL", "pasteURLInNewBoard"] {
             #expect(!manager.handleScriptMessage(["action": action], from: webView))
-            #expect(store.toastMessage?.message == "Clipboard does not contain a supported URL.")
+            #expect(store.latestFeedback?.message == "Clipboard does not contain a supported URL.")
         }
     }
 
-    @Test func drawerPreviewShowsToastForCopyAndInvalidPaste() async throws {
+    @Test func drawerPreviewShowsFeedbackForCopyAndInvalidPaste() async throws {
         let manager = makeTestSheetNavigationManager(scriptSource: "")
         let item = DrawerItem(url: try #require(URL(string: "https://drawer.example/")))
         let desk = DeskState(label: "Desk", boards: [])
@@ -862,13 +862,13 @@ struct SheetNavigationTests {
         }
 
         #expect(manager.handleScriptMessage(["action": "copyURL"], from: runtime.webView))
-        #expect(store.toastMessage?.message == "Copied Current Sheet URL.")
+        #expect(store.latestFeedback?.message == "Copied Current Sheet URL.")
 
         #expect(
             manager.handleScriptMessage(
                 ["action": "copyMarkdownLink", "title": "Drawer Preview"],
                 from: runtime.webView))
-        #expect(store.toastMessage?.message == "Copied Current Sheet Markdown link.")
+        #expect(store.latestFeedback?.message == "Copied Current Sheet Markdown link.")
         #expect(
             manager.pasteboard.string(forType: .string)
                 == "[Drawer Preview](https://drawer.example/)")
@@ -876,7 +876,7 @@ struct SheetNavigationTests {
         manager.pasteboard.clearContents()
         for action in ["pasteURL", "pasteURLInNewBoard"] {
             #expect(!manager.handleScriptMessage(["action": action], from: runtime.webView))
-            #expect(store.toastMessage?.message == "Clipboard does not contain a supported URL.")
+            #expect(store.latestFeedback?.message == "Clipboard does not contain a supported URL.")
         }
     }
 
@@ -975,6 +975,9 @@ struct SheetNavigationTests {
             state: DenState(desks: [currentDesk], focusedDeskID: currentDesk.id),
             sheetNavigation: manager
         )
+        let viewModel = DenViewModel(store: store)
+        viewModel.connect()
+        defer { viewModel.disconnect() }
         let sourceWebView = store.webRuntime(for: source).webView
         let destination = URL(string: "https://destination.example/path")!
 
@@ -985,7 +988,7 @@ struct SheetNavigationTests {
                     "url": destination.absoluteString,
                 ], from: sourceWebView))
         #expect(store.state.drawerItems.map(\.url) == [destination])
-        #expect(!store.isDrawerOpen)
+        #expect(!viewModel.isDrawerOpen)
         #expect(store.focusedDesk?.focusedBoardID == source.id)
         #expect(store.focusedBoard?.currentSheetURL == source.currentSheetURL)
     }
@@ -1039,6 +1042,9 @@ struct SheetNavigationTests {
             state: DenState(desks: [desk], focusedDeskID: desk.id),
             sheetNavigation: manager
         )
+        let viewModel = DenViewModel(store: store)
+        viewModel.connect()
+        defer { viewModel.disconnect() }
         let webView = store.webRuntime(for: board).webView
         let waiter = WebViewLoadWaiter()
         let url = URL(string: "https://source.example/current")!
@@ -1047,26 +1053,26 @@ struct SheetNavigationTests {
         await waiter.load("<html>Current Sheet</html>", baseURL: url, in: webView)
 
         #expect(manager.handleScriptMessage(["action": "editCurrentSheet"], from: webView))
-        #expect(store.isEditBoardLinkPanelPresented)
+        #expect(viewModel.isEditBoardLinkPanelPresented)
 
-        store.hideEditBoardLinkPanel()
+        viewModel.hideEditBoardLinkPanel()
         try await dispatchSheetKey("g", in: webView)
         try await dispatchSheetKey("Shift", shift: true, in: webView)
         try await dispatchSheetKey("E", shift: true, in: webView)
-        #expect(store.isOpenBoardPanelPresented)
-        #expect(store.openBoardPanelInitialURL == url)
+        #expect(viewModel.isOpenBoardPanelPresented)
+        #expect(viewModel.openBoard.initialURL == url)
 
-        store.hideOpenBoardPanel()
+        viewModel.hideOpenBoardPanel()
         try await dispatchSheetKey("t", in: webView)
-        #expect(store.isOpenBoardPanelPresented)
+        #expect(viewModel.isOpenBoardPanelPresented)
 
-        store.hideOpenBoardPanel()
+        viewModel.hideOpenBoardPanel()
         try await dispatchSheetKey("T", shift: true, in: webView)
-        #expect(store.isOverviewPresented)
+        #expect(viewModel.isOverviewPresented)
 
-        store.hideOverview()
+        viewModel.hideOverview()
         try await dispatchSheetKey("o", in: webView)
-        #expect(store.temporaryContext == .essentialsPrefix)
+        #expect(viewModel.temporaryContext == .essentialsPrefix)
     }
 
     @Test func sheetNavigationDispatchesYmToCopyMarkdownLink() async throws {
@@ -1095,7 +1101,7 @@ struct SheetNavigationTests {
         try await dispatchSheetKey("y", in: webView)
         try await dispatchSheetKey("m", in: webView)
 
-        #expect(store.toastMessage?.message == "Copied Current Sheet Markdown link.")
+        #expect(store.latestFeedback?.message == "Copied Current Sheet Markdown link.")
         #expect(manager.pasteboard.string(forType: .string) == "[My Sheet](https://source.example/sheet)")
     }
 
@@ -1127,7 +1133,7 @@ struct SheetNavigationTests {
         try await dispatchSheetKey("b", in: webView)
 
         // Assert
-        #expect(store.toastMessage?.message == "Copied Board ID.")
+        #expect(store.latestFeedback?.message == "Copied Board ID.")
         #expect(manager.pasteboard.string(forType: .string) == board.id.uuidString.lowercased())
     }
 

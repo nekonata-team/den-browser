@@ -1,7 +1,6 @@
 import AppKit
 import Foundation
 import Observation
-import SwiftUI
 import WebKit
 
 @MainActor
@@ -13,7 +12,6 @@ final class DenStore {
     static let maximumRecentlyRemovedBoardCount = 10
     static let maximumRecentlyDiscardedDrawerItemCount = 10
     static let maximumPersistedRecentInputLength = 2_048
-    private static let toastDuration: Duration = .seconds(5)
 
     let storage: DenStorage
     var state: DenState {
@@ -37,53 +35,11 @@ final class DenStore {
     }
     var essentials: [Essential] { preferences.essentials }
     private(set) var presentedDeskID: UUID
-    private(set) var temporaryContext: TemporaryContext?
-    var selectedEssentialID: UUID?
-    private(set) var zmxDuplicationRootSessionName: String?
-    var saveEssentialDraft: SaveEssentialDraft?
-    var isZenViewPresented = false
-    var isFocusModePresented = false
-    var isBoardRailPresented: Bool {
-        get { preferences.isBoardRailPresented }
-        set { preferences.setBoardRailPresented(newValue) }
-    }
-    var isNotificationListPresented = false
-    var selectedNotificationID: UUID?
-    var isDenMode = false
-    var isFullscreenActive = false
-    var deskFilterPhase: DenFilterPhase = .inactive
-    var deskFilterQuery = ""
-    var deskFilterSelectionBoardID: UUID?
-    var overviewQuery = ""
-    var overviewFilterPhase: DenFilterPhase = .inactive
-    var boardWidthPanelMessage: String?
-    var openBoardPanelInitialURL: URL?
-    var openBoardPanelInput = "" {
-        didSet {
-            let stripped = WebURLPolicy.stripNewlines(openBoardPanelInput)
-            if openBoardPanelInput != stripped {
-                openBoardPanelInput = stripped
-            }
-        }
-    }
-    var openBoardAfterBoardID: UUID?
-    var openBoardPanelMessage: String?
-    var zmxSessionsReturnToOpenBoard = false
-    var pendingConfirmation: PendingConfirmation?
-    var maximizedBoardID: UUID?
-    var pendingBoardLinkFocus: BoardLinkFocusIntent?
-    var pendingBoardRemoval: BoardRemovalIntent?
-    var centerFocusedBoardRequest = 0
-    var revealPreviousBoardRequest = 0
-    var revealNextBoardRequest = 0
-    var deskFilterCenteringTask: Task<Void, Never>?
+    private(set) var latestFeedback: DenFeedback?
     var activeDrag: ActiveDrag? {
         get { storage.activeDrag }
         set { storage.activeDrag = newValue }
     }
-    var boardDragCancellationRequest = 0
-    var deskDragCancellationRequest = 0
-    var overviewSelection: OverviewSelection?
     var recentlyRemovedBoards: [RecentlyRemovedBoard] {
         get { storage.recentlyRemovedBoards }
         set { storage.recentlyRemovedBoards = newValue }
@@ -92,21 +48,6 @@ final class DenStore {
         get { storage.recentlyDiscardedDrawerItems }
         set { storage.recentlyDiscardedDrawerItems = newValue }
     }
-    var isDrawerOpen: Bool { temporaryContext == .drawer }
-
-    func updateZmxDuplicationRootSessionName(_ rootSessionName: String?) {
-        zmxDuplicationRootSessionName = rootSessionName
-    }
-
-    var isDeskFilterPresented: Bool { deskFilterPhase != .inactive }
-    var isDeskFilterInputActive: Bool { deskFilterPhase == .filtering }
-    var isDeskFilterSelecting: Bool { deskFilterPhase == .selecting }
-    var isOverviewFilterPresented: Bool { overviewFilterPhase != .inactive }
-    var isOverviewFilterInputActive: Bool { overviewFilterPhase == .filtering }
-    var isOverviewFilterSelecting: Bool { overviewFilterPhase == .selecting }
-    var isDrawerFilterPresented: Bool { drawerFilterPhase != .inactive }
-    var isDrawerFilterInputActive: Bool { drawerFilterPhase == .filtering }
-    var isDrawerFilterSelecting: Bool { drawerFilterPhase == .selecting }
     var isBoardDragging: Bool {
         guard case .board? = activeDrag else { return false }
         return true
@@ -115,14 +56,7 @@ final class DenStore {
         guard case .desk? = activeDrag else { return false }
         return true
     }
-    var overviewSelectionDeskID: UUID? { overviewSelection?.deskID }
-    var overviewSelectionBoardID: UUID? { overviewSelection?.boardID }
-    var drawerQuery = ""
-    var drawerFilterPhase: DenFilterPhase = .inactive
-    var selectedDrawerItemID: UUID?
-    var expandedDrawerItemID: UUID?
     private(set) var activeDownloads: [DownloadActivity] = []
-    private(set) var toastMessage: ToastMessage?
     let sheetNavigation: SheetNavigationManager
     let preferences: AppPreferences
     let pasteboard: NSPasteboard
@@ -137,7 +71,6 @@ final class DenStore {
             executablePath: preferences.zmxPath,
             commandRunner: terminalCommandRunner)
     }
-    let zmxSessions = ZmxSessionsModel()
     private(set) var webExtensionHost: WebExtensionHost?
     private(set) var webExtensionWindow: MV3WebExtensionWindow?
 
@@ -149,8 +82,8 @@ final class DenStore {
         get { storage.terminalRuntimes }
         set { storage.terminalRuntimes = newValue }
     }
+    @ObservationIgnored var onWindowEffect: ((DenWindowEffect) -> Void)?
     @ObservationIgnored var drawerPreviewRuntime: DrawerPreviewRuntime?
-    @ObservationIgnored var toastTask: Task<Void, Never>?
     @ObservationIgnored var zmxCommandTask: Task<Void, Never>?
     @ObservationIgnored var screenshotTask: Task<Void, Never>?
     @ObservationIgnored var previousFocusedDeskID: UUID?
@@ -161,7 +94,6 @@ final class DenStore {
     @ObservationIgnored private let onDeskPresentationRequest: ((UUID) -> Bool)?
     @ObservationIgnored private let onWillResetDen: (() -> Void)?
     var onRecentItemsSave: (([RecentItem]) -> Bool)? { storage.onRecentItemsSave }
-    var boardLayoutMetrics: BoardLayoutMetrics?
 
     func handleExternalURL(_ url: URL) {
         switch preferences.externalLinkDestination {
@@ -216,52 +148,6 @@ final class DenStore {
     var canDeleteFocusedDesk: Bool {
         state.desks.count > 1
             && state.desks.contains { $0.id != presentedDeskID && (canPresentDesk?($0.id) ?? true) }
-    }
-
-    var isOpenBoardPanelPresented: Bool { temporaryContext == .openBoard }
-    var isZmxSessionsPresented: Bool { temporaryContext == .zmxSessions }
-    var isNewDeskPanelPresented: Bool {
-        temporaryContext == .newDesk
-            || temporaryContext == .replaceDesk
-            || temporaryContext == .deskPresetManagement
-    }
-    var isReplaceDeskPanelPresented: Bool { temporaryContext == .replaceDesk }
-    var isDeskPresetManagementPresented: Bool { temporaryContext == .deskPresetManagement }
-    var isOverviewPresented: Bool { temporaryContext == .overview }
-    var isBoardActivityPresented: Bool { temporaryContext == .boardActivity }
-    var isKeyboardShortcutsPresented: Bool { temporaryContext == .keyboardShortcuts }
-    var isBoardWidthPanelPresented: Bool { temporaryContext == .boardWidth }
-    var isSaveDeskPresetPanelPresented: Bool { temporaryContext == .saveDeskPreset }
-    var deskPendingDeletion: DeskState? {
-        guard case .deleteDesk(let desk)? = pendingConfirmation else { return nil }
-        return desk
-    }
-    var deskPendingReplacement: PendingDeskReplacement? {
-        guard case .replaceDesk(let replacement)? = pendingConfirmation else { return nil }
-        return replacement
-    }
-    var deskPresetPendingDeletion: PersonalDeskPreset? {
-        guard case .deleteDeskPreset(let preset)? = pendingConfirmation else { return nil }
-        return preset
-    }
-    var deskPresetPendingReplacement: PersonalDeskPreset? {
-        guard case .replaceDeskPreset(let preset)? = pendingConfirmation else { return nil }
-        return preset
-    }
-    var drawerPendingDeletionCount: Int? {
-        guard case .clearDrawer(let count)? = pendingConfirmation else { return nil }
-        return count
-    }
-    var notificationPendingDeletionCount: Int? {
-        guard case .clearNotifications(let count)? = pendingConfirmation else { return nil }
-        return count
-    }
-    var isResetDenPending: Bool {
-        guard case .resetDen? = pendingConfirmation else { return false }
-        return true
-    }
-    var hasPendingConfirmation: Bool {
-        pendingConfirmation != nil || !zmxSessions.pendingDeletion.isEmpty
     }
 
     init(
@@ -388,38 +274,21 @@ final class DenStore {
         onWillResetDen?()
         releaseRuntimes()
         releaseWindowResources()
-        if isBoardDragging {
-            boardDragCancellationRequest &+= 1
-        }
-        if isDeskDragging {
-            deskDragCancellationRequest &+= 1
-        }
+        if case .board? = activeDrag { onWindowEffect?(.cancelBoardDrag) }
+        if case .desk? = activeDrag { onWindowEffect?(.cancelDeskDrag) }
         state = .sample
         presentedDeskID = state.focusedDeskID
-        resetTemporaryPresentationState()
-        isZenViewPresented = false
-        isFocusModePresented = false
-        isBoardRailPresented = false
+        preferences.setBoardRailPresented(false)
         activeDrag = nil
-        boardWidthPanelMessage = nil
-        pendingConfirmation = nil
-        maximizedBoardID = nil
-        pendingBoardLinkFocus = nil
-        pendingBoardRemoval = nil
+        onWindowEffect?(.clearBoardInputRequests)
         recentlyRemovedBoards.removeAll()
         recentlyDiscardedDrawerItems.removeAll()
         notifications.removeAll()
-        isNotificationListPresented = false
-        selectedNotificationID = nil
-        selectedDrawerItemID = nil
-        expandedDrawerItemID = nil
         previousFocusedDeskID = nil
         anchorJumpOriginBoardIDByDesk.removeAll()
-        toastTask?.cancel()
-        toastMessage = nil
-        isDenMode = false
         save()
-        showToast("Reset Den completed.", style: .success)
+        onWindowEffect?(.resetPresentation)
+        reportFeedback("Reset Den completed.", severity: .success)
     }
 
     @discardableResult
@@ -428,29 +297,19 @@ final class DenStore {
         origin: BoardOperationOrigin = .interactive
     ) -> BoardLinkFocusIntent {
         let intent = BoardLinkFocusIntent(boardID: boardID, origin: origin)
-        pendingBoardLinkFocus = intent
+        onWindowEffect?(.boardLinkFocusRequested(intent))
         return intent
-    }
-
-    func consumeBoardLinkFocus(_ intent: BoardLinkFocusIntent) {
-        guard pendingBoardLinkFocus == intent else { return }
-        pendingBoardLinkFocus = nil
     }
 
     @discardableResult
     func prepareBoardRemoval(origin: BoardOperationOrigin) -> BoardRemovalIntent {
         let intent = BoardRemovalIntent(origin: origin)
-        pendingBoardRemoval = intent
+        onWindowEffect?(.boardRemovalRequested(intent))
         return intent
     }
 
-    func consumeBoardRemoval(_ intent: BoardRemovalIntent) {
-        guard pendingBoardRemoval == intent else { return }
-        pendingBoardRemoval = nil
-    }
-
-    func showToast(_ message: String, style: ToastMessage.ToastStyle = .info) {
-        showToast(title: nil, body: message, style: style)
+    func reportFeedback(_ message: String, severity: DenFeedback.Severity = .info) {
+        reportFeedback(title: nil, body: message, severity: severity)
     }
 
     func handleDownloadActivity(_ event: DownloadActivityEvent) {
@@ -469,79 +328,42 @@ final class DenStore {
         }
     }
 
-    func showToast(
+    func reportFeedback(
         title: String?,
         body: String,
-        style: ToastMessage.ToastStyle = .info,
-        target: ToastTarget? = nil
+        severity: DenFeedback.Severity = .info,
+        target: DenFeedback.Target? = nil
     ) {
         guard title?.isEmpty == false || !body.isEmpty else { return }
-        toastTask?.cancel()
-        withAnimation(.easeOut(duration: 0.15)) {
-            toastMessage = ToastMessage(title: title, body: body, style: style, target: target)
-        }
-        toastTask = Task { @MainActor [weak self] in
-            try? await Task.sleep(for: Self.toastDuration)
-            guard !Task.isCancelled else { return }
-            withAnimation(.easeIn(duration: 0.15)) {
-                self?.toastMessage = nil
-            }
-        }
+        latestFeedback = DenFeedback(title: title, body: body, severity: severity, target: target)
+        onWindowEffect?(.feedback(latestFeedback))
     }
 
-    func handleToastTap() {
-        guard let target = toastMessage?.target else {
-            dismissToast()
-            return
-        }
+    func clearLatestNotificationFeedback() {
+        guard let target = latestFeedback?.target, case .notification = target else { return }
+        latestFeedback = nil
+        onWindowEffect?(.feedback(nil))
+    }
 
+    func openFeedbackTarget(_ target: DenFeedback.Target?) {
+        guard let target else { return }
         switch target {
         case .board(let boardID):
-            guard boardIndices(for: boardID) != nil else {
-                dismissToast()
-                return
-            }
-            setTemporaryContext(nil)
+            guard boardIndices(for: boardID) != nil else { return }
+            onWindowEffect?(.dismissTemporaryPresentation)
+            onWindowEffect?(.exitDenMode)
             focusBoard(boardID, exitsDenMode: true)
         case .drawerItem(let itemID):
-            focusDrawerItem(itemID)
+            onWindowEffect?(.openDrawerItem(itemID))
         case .notification(let notificationID):
             guard let notification = notifications.first(where: { $0.id == notificationID }) else {
-                dismissToast()
                 return
             }
             markNotificationRead(notificationID)
-            guard boardIndices(for: notification.boardID) != nil else {
-                dismissToast()
-                return
-            }
-            closeNotificationList()
-            setTemporaryContext(nil)
+            guard boardIndices(for: notification.boardID) != nil else { return }
+            onWindowEffect?(.dismissTemporaryPresentation)
+            onWindowEffect?(.exitDenMode)
             focusBoard(notification.boardID, exitsDenMode: true)
-        }
-        dismissToast()
-    }
-
-    func dismissToast() {
-        toastTask?.cancel()
-        toastTask = nil
-        withAnimation(.easeIn(duration: 0.15)) {
-            toastMessage = nil
-        }
-    }
-
-    func requestResetDenConfirmation() {
-        pendingConfirmation = .resetDen
-    }
-
-    func confirmResetDen() {
-        guard isResetDenPending else { return }
-        resetDen()
-    }
-
-    func cancelResetDen() {
-        if isResetDenPending {
-            pendingConfirmation = nil
         }
     }
 
@@ -574,8 +396,7 @@ final class DenStore {
         previousFocusedDeskID = presentedDeskID
         presentedDeskID = deskID
         state.focusedDeskID = deskID
-        pendingBoardLinkFocus = nil
-        pendingBoardRemoval = nil
+        onWindowEffect?(.clearBoardInputRequests)
         if let boardID = focusedDesk?.focusedBoardID {
             markNotificationsRead(for: boardID)
         }
@@ -603,17 +424,13 @@ final class DenStore {
             self.previousFocusedDeskID = nil
             return
         }
-        dismissDeskFilter()
-        isDenMode = false
+        onWindowEffect?(.exitDenMode)
         saveDeferredState()
     }
 
     @discardableResult
     func removeBoard(at indices: (desk: Int, board: Int), focusNext: Bool = false) -> BoardState {
         let board = state.desks[indices.desk].boards.remove(at: indices.board)
-        if pendingBoardLinkFocus?.boardID == board.id {
-            pendingBoardLinkFocus = nil
-        }
         let deskID = state.desks[indices.desk].id
         if state.desks[indices.desk].anchorBoardID == board.id {
             state.desks[indices.desk].anchorBoardID = nil
@@ -675,43 +492,21 @@ final class DenStore {
 
     func updateFullscreenStatus(boardID: UUID, isFullscreen: Bool) {
         if isFullscreen {
-            isDenMode = false
-            isFullscreenActive = true
+            onWindowEffect?(.exitDenMode)
+            onWindowEffect?(.fullscreenChanged(true))
         } else {
             let focusedBoardIDs = Set(focusedDesk?.boards.map(\.id) ?? [])
-            isFullscreenActive = webRuntimes.contains { boardID, runtime in
+            let isFullscreenActive = webRuntimes.contains { boardID, runtime in
                 focusedBoardIDs.contains(boardID)
                     && (runtime.webView.fullscreenState == .inFullscreen
                         || runtime.webView.fullscreenState == .enteringFullscreen)
             }
+            onWindowEffect?(.fullscreenChanged(isFullscreenActive))
         }
-    }
-
-    func setTemporaryContext(_ context: TemporaryContext?) {
-        if context != nil {
-            dismissDeskFilter()
-            isNotificationListPresented = false
-            selectedNotificationID = nil
-        }
-        if let previousContext = temporaryContext, previousContext != context {
-            endTemporaryContext(previousContext, transitioningTo: context)
-        }
-        temporaryContext = context
     }
 
     func invalidateReferences(toRemovedBoardIDs removedBoardIDs: Set<UUID>) {
-        if let openBoardAfterBoardID, removedBoardIDs.contains(openBoardAfterBoardID) {
-            self.openBoardAfterBoardID = nil
-        }
-        if let maximizedBoardID, removedBoardIDs.contains(maximizedBoardID) {
-            self.maximizedBoardID = nil
-        }
-        if let pendingBoardLinkFocus, removedBoardIDs.contains(pendingBoardLinkFocus.boardID) {
-            self.pendingBoardLinkFocus = nil
-        }
-        if let boardID = overviewSelection?.boardID, removedBoardIDs.contains(boardID) {
-            overviewSelection = nil
-        }
+        for boardID in removedBoardIDs { onWindowEffect?(.boardRemoved(boardID)) }
         if case .board(let boardID) = activeDrag, removedBoardIDs.contains(boardID) {
             activeDrag = nil
         }
@@ -722,63 +517,10 @@ final class DenStore {
             previousFocusedDeskID = nil
         }
         anchorJumpOriginBoardIDByDesk.removeValue(forKey: removedDeskID)
-        if overviewSelection?.deskID == removedDeskID {
-            overviewSelection = nil
-        }
+        onWindowEffect?(.deskRemoved(removedDeskID))
         if case .desk(let deskID) = activeDrag, deskID == removedDeskID {
             activeDrag = nil
         }
     }
 
-    private func endTemporaryContext(_ context: TemporaryContext, transitioningTo nextContext: TemporaryContext?) {
-        switch context {
-        case .openBoard:
-            openBoardPanelInitialURL = nil
-            if nextContext != .zmxSessions || !zmxSessionsReturnToOpenBoard {
-                openBoardAfterBoardID = nil
-                openBoardPanelMessage = nil
-            }
-        case .overview:
-            cancelOverviewBoardDrag()
-            overviewSelection = nil
-            overviewQuery = ""
-            overviewFilterPhase = .inactive
-        case .boardWidth:
-            boardWidthPanelMessage = nil
-        case .drawer:
-            drawerQuery = ""
-            drawerFilterPhase = .inactive
-        case .zmxDuplication:
-            zmxCommandTask?.cancel()
-            zmxCommandTask = nil
-            zmxDuplicationRootSessionName = nil
-        case .zmxSessions:
-            let wasReturningToOpenBoard = zmxSessionsReturnToOpenBoard
-            zmxSessionsReturnToOpenBoard = false
-            zmxSessions.stop()
-            if wasReturningToOpenBoard, nextContext != .openBoard {
-                openBoardAfterBoardID = nil
-                openBoardPanelMessage = nil
-            }
-        case .saveEssential:
-            saveEssentialDraft = nil
-        default:
-            break
-        }
-    }
-
-    private func resetTemporaryPresentationState() {
-        setTemporaryContext(nil)
-        dismissDeskFilter()
-        openBoardPanelInitialURL = nil
-        openBoardPanelInput = ""
-        openBoardAfterBoardID = nil
-        openBoardPanelMessage = nil
-        overviewSelection = nil
-        overviewQuery = ""
-        overviewFilterPhase = .inactive
-        drawerQuery = ""
-        drawerFilterPhase = .inactive
-        saveEssentialDraft = nil
-    }
 }

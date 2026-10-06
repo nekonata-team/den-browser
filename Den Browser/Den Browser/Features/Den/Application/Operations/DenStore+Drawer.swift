@@ -1,15 +1,6 @@
 import Foundation
 
 extension DenStore {
-    var filteredDrawerItems: [DrawerItem] {
-        state.drawerItems.filter(matchesDrawerFilter)
-    }
-
-    var selectedDrawerItem: DrawerItem? {
-        guard let selectedDrawerItemID else { return nil }
-        return state.drawerItems.first { $0.id == selectedDrawerItemID }
-    }
-
     @discardableResult
     func keepInDrawer(
         _ url: URL,
@@ -18,25 +9,15 @@ extension DenStore {
         selectsItem: Bool = true
     ) -> UUID? {
         guard WebURLPolicy.isSupported(url) else {
-            showToast("Only HTTP, HTTPS, and local file URLs are supported.", style: .warning)
+            reportFeedback("Only HTTP, HTTPS, and local file URLs are supported.", severity: .warning)
             return nil
         }
-        if selectsItem {
-            releaseDrawerPreview()
-            drawerQuery = ""
-            drawerFilterPhase = .inactive
-        }
+        if selectsItem { releaseDrawerPreview() }
         let item = DrawerItem(url: url, title: title)
         state.drawerItems.insert(item, at: 0)
-        if selectsItem {
-            selectedDrawerItemID = item.id
-            expandedDrawerItemID = item.id
-        }
-        if opensDrawer {
-            openDrawer()
-        }
+        onWindowEffect?(.drawerItemKept(item.id, opensDrawer: opensDrawer, selectsItem: selectsItem))
         save()
-        showToast("Kept in Drawer.", style: .success)
+        reportFeedback("Kept in Drawer.", severity: .success)
         return item.id
     }
 
@@ -50,124 +31,10 @@ extension DenStore {
         keepInDrawer(url, title: board.displayName, opensDrawer: false)
     }
 
-    func toggleDrawer() {
-        if isDrawerOpen {
-            closeDrawer()
-        } else {
-            openDrawer()
-        }
-    }
-
-    func toggleDrawerStyle() {
-        preferences.toggleDrawerStyle()
-    }
-
-    func openDrawer() {
-        setTemporaryContext(.drawer)
-        selectedDrawerItemID = selectedDrawerItemID ?? state.drawerItems.first?.id
-        if expandedDrawerItemID != nil {
-            isDenMode = false
-        }
-    }
-
-    func focusDrawerItem(_ itemID: UUID) {
-        guard state.drawerItems.contains(where: { $0.id == itemID }) else { return }
-        drawerQuery = ""
-        drawerFilterPhase = .inactive
-        releaseDrawerPreview()
-        selectedDrawerItemID = itemID
-        expandedDrawerItemID = itemID
-        setTemporaryContext(.drawer)
-        isDenMode = false
-    }
-
-    func closeDrawer() {
-        if temporaryContext == .drawer {
-            setTemporaryContext(nil)
-        }
-    }
-
-    func setDrawerQuery(_ query: String) {
-        drawerQuery = WebURLPolicy.stripNewlines(query)
-        updateDrawerSelectionForFilter()
-    }
-
-    func enterDrawerFilterMode() {
-        drawerFilterPhase = .filtering
-        updateDrawerSelectionForFilter()
-    }
-
-    func exitDrawerFilterMode() {
-        drawerFilterPhase = .inactive
-        drawerQuery = ""
-        updateDrawerSelectionForFilter()
-    }
-
-    func confirmDrawerFilterQuery() {
-        guard drawerFilterPhase == .filtering else { return }
-        drawerFilterPhase = .selecting
-    }
-
-    func confirmDrawerFilterSelection() {
-        guard
-            drawerFilterPhase == .selecting,
-            let selectedDrawerItemID,
-            filteredDrawerItems.contains(where: { $0.id == selectedDrawerItemID })
-        else { return }
-        drawerFilterPhase = .inactive
-        drawerQuery = ""
-        toggleDrawerItem(selectedDrawerItemID)
-    }
-
-    func clearDrawerQuery() {
-        drawerQuery = ""
-        updateDrawerSelectionForFilter()
-    }
-
-    func matchesDrawerFilter(_ item: DrawerItem) -> Bool {
-        guard !drawerQuery.isEmpty else { return true }
-        return item.displayName.localizedCaseInsensitiveContains(drawerQuery)
-            || item.url.absoluteString.localizedCaseInsensitiveContains(drawerQuery)
-    }
-
-    func toggleDrawerItem(_ itemID: UUID) {
-        guard state.drawerItems.contains(where: { $0.id == itemID }) else { return }
-        selectedDrawerItemID = itemID
-        if expandedDrawerItemID == itemID {
-            expandedDrawerItemID = nil
-            releaseDrawerPreview()
-        } else {
-            expandedDrawerItemID = itemID
-            isDenMode = false
-            releaseDrawerPreview()
-        }
-    }
-
-    func selectDrawerItem(by offset: Int) {
-        let items = filteredDrawerItems
-        guard
-            let targetID = DenSelectionNavigation.next(
-                selectedDrawerItemID,
-                among: items.map(\.id),
-                by: offset)
-        else { return }
-        guard selectedDrawerItemID != targetID else { return }
-        selectedDrawerItemID = targetID
-        if expandedDrawerItemID != nil {
-            expandedDrawerItemID = targetID
-            releaseDrawerPreview()
-        }
-    }
-
-    func toggleSelectedDrawerItem() {
-        guard let selectedDrawerItemID else { return }
-        toggleDrawerItem(selectedDrawerItemID)
-    }
-
     @discardableResult
-    func discardDrawerItem(_ itemID: UUID) -> Bool {
+    func discardDrawerItem(_ itemID: UUID, focusNext: Bool = true) -> Bool {
         guard state.drawerItems.contains(where: { $0.id == itemID }) else { return false }
-        discardDrawerItem(itemID, advancesPreview: true)
+        discardDrawerItem(itemID, advancesPreview: true, focusNext: focusNext)
         return true
     }
 
@@ -179,44 +46,31 @@ extension DenStore {
     ) {
         guard let index = state.drawerItems.firstIndex(where: { $0.id == itemID }) else { return }
         let item = state.drawerItems[index]
-        let presentations = storage.drawerPresentations.allObjects.map { presentation in
-            let shouldAdvance =
-                advancesPreview
-                && (presentation.selectedDrawerItemID == itemID || presentation.expandedDrawerItemID == itemID)
-            return (
-                store: presentation,
-                adjacentItemID: shouldAdvance
-                    ? presentation.adjacentDrawerItemID(after: itemID, focusNext: focusNext)
-                    : nil
-            )
-        }
+        let previousItems = state.drawerItems
 
         if recordsDiscardHistory {
             rememberDiscardedDrawerItems([item])
         }
         state.drawerItems.remove(at: index)
-        for presentation in presentations {
-            presentation.store.drawerItemWasRemoved(
-                itemID,
-                adjacentItemID: presentation.adjacentItemID)
+        for presentation in storage.drawerPresentations.allObjects {
+            if presentation.drawerPreviewRuntime?.id == itemID { presentation.releaseDrawerPreview() }
+            presentation.onWindowEffect?(
+                .drawerItemRemoved(
+                    itemID, previousItems: previousItems, advancesPreview: advancesPreview, focusNext: focusNext))
         }
         save()
     }
 
     func restoreRecentlyDiscardedDrawerItem() {
         guard let item = recentlyDiscardedDrawerItems.first else {
-            showToast("No discarded Drawer Item to restore.", style: .warning)
+            reportFeedback("No discarded Drawer Item to restore.", severity: .warning)
             return
         }
 
-        let wasDenMode = isDenMode
         releaseDrawerPreview()
         state.drawerItems.insert(item, at: 0)
-        selectedDrawerItemID = item.id
-        expandedDrawerItemID = item.id
         recentlyDiscardedDrawerItems.removeFirst()
-        openDrawer()
-        isDenMode = wasDenMode
+        onWindowEffect?(.drawerItemRestored(item.id))
         save()
     }
 
@@ -228,50 +82,23 @@ extension DenStore {
         }
     }
 
-    func discardSelectedDrawerItem(focusNext: Bool = true) {
-        guard let selectedDrawerItemID else { return }
-        discardDrawerItem(selectedDrawerItemID, advancesPreview: true, focusNext: focusNext)
-    }
-
     func requestDrawerClearConfirmation() {
         guard !state.drawerItems.isEmpty else { return }
-        pendingConfirmation = .clearDrawer(state.drawerItems.count)
-    }
-
-    func confirmDrawerClear() {
-        guard drawerPendingDeletionCount != nil else { return }
-        rememberDiscardedDrawerItems(state.drawerItems)
-        state.drawerItems = []
-        for presentation in storage.drawerPresentations.allObjects {
-            presentation.clearDrawerPresentation()
-        }
-        pendingConfirmation = nil
-        save()
-    }
-
-    func cancelDrawerClear() {
-        if drawerPendingDeletionCount != nil {
-            pendingConfirmation = nil
-        }
+        onWindowEffect?(.requestConfirmation(.clearDrawer(state.drawerItems.count)))
     }
 
     @discardableResult
-    func placeDrawerItemAsBoard(_ itemID: UUID) -> UUID? {
+    func placeDrawerItemAsBoard(_ itemID: UUID, preferredWidth: Double? = nil) -> UUID? {
         guard let item = state.drawerItems.first(where: { $0.id == itemID }) else { return nil }
         guard
             let boardID = createBoard(
                 urlString: item.url.absoluteString,
-                preferredWidth: focusedBoard?.width,
+                preferredWidth: preferredWidth ?? focusedBoard?.width,
                 recentItem: .url(WebURLPolicy.canonicalSheetURL(item.url)))
         else { return nil }
         discardDrawerItem(itemID, advancesPreview: false, recordsDiscardHistory: false)
-        closeDrawer()
+        onWindowEffect?(.dismissTemporaryPresentation)
         return boardID
-    }
-
-    func placeSelectedDrawerItemAsBoard() {
-        guard let selectedDrawerItemID else { return }
-        placeDrawerItemAsBoard(selectedDrawerItemID)
     }
 
     func drawerRuntime(for item: DrawerItem) -> DrawerPreviewRuntime {
@@ -300,28 +127,28 @@ extension DenStore {
                 self?.updateDrawerItem(itemID: itemID, url: url, title: title)
             },
             onCopyURLSucceeded: { [weak self] in
-                self?.showToast("Copied Current Sheet URL.", style: .success)
+                self?.reportFeedback("Copied Current Sheet URL.", severity: .success)
             },
             onCopyURLFailed: { [weak self] in
-                self?.showToast("Could not copy Current Sheet URL.", style: .error)
+                self?.reportFeedback("Could not copy Current Sheet URL.", severity: .error)
             },
             onCopyMarkdownLinkSucceeded: { [weak self] in
-                self?.showToast("Copied Current Sheet Markdown link.", style: .success)
+                self?.reportFeedback("Copied Current Sheet Markdown link.", severity: .success)
             },
             onCopyMarkdownLinkFailed: { [weak self] in
-                self?.showToast("Could not copy Current Sheet Markdown link.", style: .error)
+                self?.reportFeedback("Could not copy Current Sheet Markdown link.", severity: .error)
             },
             onPasteURLFailed: { [weak self] in
-                self?.showToast("Clipboard does not contain a supported URL.", style: .warning)
+                self?.reportFeedback("Clipboard does not contain a supported URL.", severity: .warning)
             },
             onDownloadActivity: { [weak self] event in
                 self?.handleDownloadActivity(event)
             },
             onDownloadFinished: { [weak self] filename in
-                self?.showToast("Downloaded '\(filename)'", style: .success)
+                self?.reportFeedback("Downloaded '\(filename)'", severity: .success)
             },
             onDownloadFailed: { [weak self] filename in
-                self?.showToast("Failed to download '\(filename)'", style: .warning)
+                self?.reportFeedback("Failed to download '\(filename)'", severity: .warning)
             }
         )
         webExtensionHost?.activate(webView: runtime.webView)
@@ -354,49 +181,13 @@ extension DenStore {
         }
     }
 
-    private func updateDrawerSelectionForFilter() {
-        let items = filteredDrawerItems
-        if let selectedDrawerItemID, items.contains(where: { $0.id == selectedDrawerItemID }) {
-            return
+    func clearDrawer() {
+        rememberDiscardedDrawerItems(state.drawerItems)
+        state.drawerItems = []
+        for presentation in storage.drawerPresentations.allObjects {
+            presentation.releaseDrawerPreview()
+            presentation.onWindowEffect?(.drawerCleared)
         }
-        selectedDrawerItemID = items.first?.id
-    }
-
-    private func drawerItemWasRemoved(_ itemID: UUID, adjacentItemID: UUID?) {
-        let wasSelected = selectedDrawerItemID == itemID
-        let wasExpanded = expandedDrawerItemID == itemID
-        if drawerPreviewRuntime?.id == itemID {
-            releaseDrawerPreview()
-        }
-        if wasExpanded {
-            expandedDrawerItemID = adjacentItemID
-            selectedDrawerItemID = adjacentItemID ?? filteredDrawerItems.first?.id
-        } else if wasSelected {
-            selectedDrawerItemID = adjacentItemID ?? filteredDrawerItems.first?.id
-        }
-        if state.drawerItems.isEmpty {
-            closeDrawer()
-        }
-    }
-
-    private func clearDrawerPresentation() {
-        releaseDrawerPreview()
-        selectedDrawerItemID = nil
-        expandedDrawerItemID = nil
-        drawerQuery = ""
-        drawerFilterPhase = .inactive
-        closeDrawer()
-    }
-
-    private func adjacentDrawerItemID(after itemID: UUID, focusNext: Bool) -> UUID? {
-        let items = filteredDrawerItems
-        guard let index = items.firstIndex(where: { $0.id == itemID }) else { return nil }
-        let preferredIndex = index + (focusNext ? 1 : -1)
-        if items.indices.contains(preferredIndex) {
-            return items[preferredIndex].id
-        }
-        let fallbackIndex = index + (focusNext ? -1 : 1)
-        guard items.indices.contains(fallbackIndex) else { return nil }
-        return items[fallbackIndex].id
+        save()
     }
 }

@@ -5,10 +5,11 @@ struct BoardRail: View {
     let profileColor: Color
 
     @Environment(DenStore.self) private var store
+    @Environment(DenViewModel.self) private var viewModel
 
     private var railDesk: DeskState? {
-        if store.isOverviewPresented,
-            let selectedDeskID = store.overviewSelectionDeskID,
+        if viewModel.isOverviewPresented,
+            let selectedDeskID = viewModel.overview.selectionDeskID,
             let desk = store.state.desks.first(where: { $0.id == selectedDeskID })
         {
             return desk
@@ -19,14 +20,14 @@ struct BoardRail: View {
     private var boardSelection: Binding<UUID?> {
         Binding(
             get: {
-                store.isOverviewPresented
-                    ? store.overviewSelectionBoardID
+                viewModel.isOverviewPresented
+                    ? viewModel.overview.selectionBoardID
                     : store.focusedDesk?.focusedBoardID
             },
             set: { boardID in
                 guard let boardID else { return }
-                if store.isOverviewPresented {
-                    store.selectBoardInOverview(boardID)
+                if viewModel.isOverviewPresented {
+                    viewModel.overview.selectBoard(boardID)
                 } else {
                     store.focusBoard(boardID)
                 }
@@ -72,7 +73,7 @@ struct BoardRail: View {
             VStack(alignment: .leading, spacing: 1) {
                 Text("Boards")
                     .font(.headline)
-                Text(store.isOverviewPresented ? "Overview Selection" : (railDesk?.label ?? "No Desk"))
+                Text(viewModel.isOverviewPresented ? "Overview Selection" : (railDesk?.label ?? "No Desk"))
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
@@ -87,19 +88,19 @@ struct BoardRail: View {
 
     private func openBoardAtEnd() {
         guard let desk = railDesk else { return }
-        if store.isOverviewPresented {
-            store.enterOverviewDesk(desk.id)
+        if viewModel.isOverviewPresented {
+            viewModel.overview.enterDesk(desk.id)
         }
-        store.showOpenBoardPanel(afterBoardID: desk.boards.last?.id)
+        viewModel.showOpenBoardPanel(afterBoardID: desk.boards.last?.id)
     }
 
     private func boardRow(_ board: BoardState) -> some View {
         let unreadNotificationCount = store.unreadNotificationCount(for: board.id)
-        let isFocused = !store.isOverviewPresented && board.id == railDesk?.focusedBoardID
+        let isFocused = !viewModel.isOverviewPresented && board.id == railDesk?.focusedBoardID
         let isOverviewSelected =
-            store.isOverviewPresented
-            && board.id == store.overviewSelectionBoardID
-            && railDesk?.id == store.overviewSelectionDeskID
+            viewModel.isOverviewPresented
+            && board.id == viewModel.overview.selectionBoardID
+            && railDesk?.id == viewModel.overview.selectionDeskID
         let isAnchor = railDesk?.anchorBoardID == board.id
 
         return HStack(spacing: 8) {
@@ -155,7 +156,7 @@ struct BoardRail: View {
 
         Button {
             store.focusBoard(board.id)
-            store.showRenameBoardPanel()
+            viewModel.showRenameBoardPanel()
         } label: {
             Label("Rename Board", systemSymbol: .pencil)
         }
@@ -204,7 +205,7 @@ struct BoardRail: View {
     @ViewBuilder
     private func boardIcon(for board: BoardState) -> some View {
         if board.isTutorial || board.isTerminal || board.isInspection {
-            Image(systemSymbol: board.systemSymbol)
+            Image(systemSymbol: boardSymbol(for: board.kind))
                 .foregroundStyle(.secondary)
                 .frame(width: 16, height: 16)
         } else if let runtime = store.webRuntimes[board.id] {

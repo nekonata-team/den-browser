@@ -613,9 +613,9 @@ private struct ProfilesSettingsView: View {
 
     private var newColorBinding: Binding<Color> {
         Binding {
-            newColor.color
+            profileDisplayColor(for: newColor)
         } set: { color in
-            if let profileColor = ProfileColor(color: color) {
+            if let profileColor = profileColor(from: color) {
                 newColor = profileColor
             }
         }
@@ -632,7 +632,7 @@ private struct ProfileColorPalette: View {
                     selection = preset
                 } label: {
                     Circle()
-                        .fill(preset.color)
+                        .fill(profileDisplayColor(for: preset))
                         .frame(width: 16, height: 16)
                         .overlay {
                             Circle()
@@ -643,7 +643,7 @@ private struct ProfileColorPalette: View {
                         .padding(2)
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel(preset.label)
+                .accessibilityLabel(profileColorLabel(for: preset))
                 .accessibilityAddTraits(selection == preset ? [.isSelected] : [])
             }
         }
@@ -714,9 +714,9 @@ private struct ProfileSettingsRow: View {
 
     private var colorBinding: Binding<Color> {
         Binding {
-            profileColorBinding.wrappedValue.color
+            profileDisplayColor(for: profileColorBinding.wrappedValue)
         } set: { color in
-            guard let profileColor = ProfileColor(color: color) else { return }
+            guard let profileColor = profileColor(from: color) else { return }
             _ = profileManager.updateProfile(profile.id, color: profileColor)
         }
     }

@@ -42,7 +42,10 @@ struct KeyboardShortcutTests {
     @Test func keyboardShortcutGuideForwardsTextInputAndKeepsEscapeToClose() throws {
         // Arrange
         let store = try makeStore(boards: [board("First")])
-        store.showKeyboardShortcuts()
+        let viewModel = DenViewModel(store: store)
+        viewModel.connect()
+        defer { viewModel.disconnect() }
+        viewModel.showKeyboardShortcuts()
         let letterA = try keyEvent(
             characters: "a", charactersIgnoringModifiers: "a", keyCode: 0)
         let commandA = try keyEvent(
@@ -55,11 +58,11 @@ struct KeyboardShortcutTests {
             characters: "\u{1B}", charactersIgnoringModifiers: "\u{1B}", keyCode: 53)
 
         // Act
-        let letterDecision = KeyboardController.decision(for: letterA, store: store)
-        let selectAllDecision = KeyboardController.decision(for: commandA, store: store)
-        let commandTDecision = KeyboardController.decision(for: commandT, store: store)
-        let questionDecision = KeyboardController.decision(for: questionMark, store: store)
-        let escapeDecision = KeyboardController.decision(for: escape, store: store)
+        let letterDecision = KeyboardController.decision(for: letterA, store: store, viewModel: viewModel)
+        let selectAllDecision = KeyboardController.decision(for: commandA, store: store, viewModel: viewModel)
+        let commandTDecision = KeyboardController.decision(for: commandT, store: store, viewModel: viewModel)
+        let questionDecision = KeyboardController.decision(for: questionMark, store: store, viewModel: viewModel)
+        let escapeDecision = KeyboardController.decision(for: escape, store: store, viewModel: viewModel)
 
         // Assert
         #expect(letterDecision == .forward(.filterTextInput))
@@ -186,6 +189,10 @@ struct KeyboardShortcutTests {
     }
 
     @Test func commandSTogglesBoardRailAndIgnoresKeyRepeat() throws {
+        let store = try makeStore(boards: [board("Board")])
+        let viewModel = DenViewModel(store: store)
+        viewModel.connect()
+        defer { viewModel.disconnect() }
         let toggle = try keyEvent(
             characters: "s",
             charactersIgnoringModifiers: "s",
@@ -201,13 +208,14 @@ struct KeyboardShortcutTests {
         )
 
         #expect(
-            KeyboardController.decision(for: toggle, store: try makeStore(boards: [board("Board")]))
+            KeyboardController.decision(for: toggle, store: store, viewModel: viewModel)
                 == .perform(.application(.toggleBoardRail))
         )
         #expect(
             KeyboardController.decision(
                 for: repeatToggle,
-                store: try makeStore(boards: [board("Board")])
+                store: store,
+                viewModel: viewModel
             ) == .consume(.ignoredRepeat)
         )
     }
@@ -220,8 +228,11 @@ struct KeyboardShortcutTests {
             boards: [movedBoard],
             focusedBoardID: movedBoard.id)
         let store = try makeStore(desks: [firstDesk, secondDesk])
+        let viewModel = DenViewModel(store: store)
+        viewModel.connect()
+        defer { viewModel.disconnect() }
         store.focusDesk(secondDesk.id)
-        store.isDenMode = true
+        viewModel.isDenMode = true
 
         let shiftOne = try keyEvent(
             characters: "!",
@@ -229,24 +240,27 @@ struct KeyboardShortcutTests {
             modifiers: [.shift],
             keyCode: 18)
 
-        #expect(KeyboardController.handle(shiftOne, store: store))
+        #expect(KeyboardController.handle(shiftOne, store: store, viewModel: viewModel))
         #expect(store.state.focusedDeskID == firstDesk.id)
         #expect(store.focusedDesk?.focusedBoardID == movedBoard.id)
         #expect(store.state.desks[0].boards.map(\.id) == [movedBoard.id])
-        #expect(!store.isDenMode)
+        #expect(!viewModel.isDenMode)
     }
 
     @Test func denModeEqualsWidensFocusedBoardWithOrWithoutShift() throws {
         for (characters, modifiers) in [("=", NSEvent.ModifierFlags()), ("+", NSEvent.ModifierFlags.shift)] {
             let store = try makeStore(boards: [board("Focused")])
-            store.isDenMode = true
+            let viewModel = DenViewModel(store: store)
+            viewModel.connect()
+            defer { viewModel.disconnect() }
+            viewModel.isDenMode = true
             let event = try keyEvent(
                 characters: characters,
                 charactersIgnoringModifiers: "=",
                 modifiers: modifiers,
                 keyCode: 24)
 
-            #expect(KeyboardController.handle(event, store: store))
+            #expect(KeyboardController.handle(event, store: store, viewModel: viewModel))
             #expect(store.focusedBoard?.width == 600)
         }
     }
@@ -255,15 +269,18 @@ struct KeyboardShortcutTests {
         let first = board("First")
         let second = board("Second")
         let store = try makeStore(boards: [first, second])
-        store.isDenMode = true
+        let viewModel = DenViewModel(store: store)
+        viewModel.connect()
+        defer { viewModel.disconnect() }
+        viewModel.isDenMode = true
         let right = try keyEvent(
             characters: ">",
             charactersIgnoringModifiers: ".",
             modifiers: [.shift],
             keyCode: 47)
 
-        #expect(KeyboardController.handle(right, store: store))
-        #expect(store.revealNextBoardRequest == 1)
+        #expect(KeyboardController.handle(right, store: store, viewModel: viewModel))
+        #expect(viewModel.revealNextBoardRequest == 1)
         #expect(store.focusedDesk?.focusedBoardID == first.id)
 
         let left = try keyEvent(
@@ -272,28 +289,34 @@ struct KeyboardShortcutTests {
             modifiers: [.shift],
             keyCode: 43)
 
-        #expect(KeyboardController.handle(left, store: store))
-        #expect(store.revealPreviousBoardRequest == 1)
+        #expect(KeyboardController.handle(left, store: store, viewModel: viewModel))
+        #expect(viewModel.revealPreviousBoardRequest == 1)
         #expect(store.focusedDesk?.focusedBoardID == first.id)
     }
 
     @Test func denModeControlSCopiesCurrentSheetScreenshot() throws {
         let store = try makeStore(boards: [board("First"), board("Second")])
-        store.isDenMode = true
+        let viewModel = DenViewModel(store: store)
+        viewModel.connect()
+        defer { viewModel.disconnect() }
+        viewModel.isDenMode = true
         let controlS = try keyEvent(
             characters: "s",
             charactersIgnoringModifiers: "s",
             modifiers: [.control],
             keyCode: 1)
         #expect(
-            KeyboardController.decision(for: controlS, store: store)
+            KeyboardController.decision(for: controlS, store: store, viewModel: viewModel)
                 == .perform(.board(.copySheetScreenshot)))
     }
 
     @Test func denModeYCopiesFocusedBoardLocationAndShiftYCopiesBoardID() throws {
         // Arrange
         let store = try makeStore(boards: [board("First")])
-        store.isDenMode = true
+        let viewModel = DenViewModel(store: store)
+        viewModel.connect()
+        defer { viewModel.disconnect() }
+        viewModel.isDenMode = true
         let locationEvent = try keyEvent(
             characters: "y",
             charactersIgnoringModifiers: "y",
@@ -305,8 +328,8 @@ struct KeyboardShortcutTests {
             keyCode: 16)
 
         // Act
-        let locationDecision = KeyboardController.decision(for: locationEvent, store: store)
-        let boardIDDecision = KeyboardController.decision(for: boardIDEvent, store: store)
+        let locationDecision = KeyboardController.decision(for: locationEvent, store: store, viewModel: viewModel)
+        let boardIDDecision = KeyboardController.decision(for: boardIDEvent, store: store, viewModel: viewModel)
 
         // Assert
         #expect(
@@ -323,6 +346,9 @@ struct KeyboardShortcutTests {
             boards: [movedBoard],
             focusedBoardID: movedBoard.id)
         let store = try makeStore(desks: [firstDesk, secondDesk])
+        let viewModel = DenViewModel(store: store)
+        viewModel.connect()
+        defer { viewModel.disconnect() }
         store.focusDesk(secondDesk.id)
         let preferences = store.preferences
         let commandOptionOne = try keyEvent(
@@ -336,15 +362,19 @@ struct KeyboardShortcutTests {
             modifiers: [.command],
             keyCode: 29)
 
-        #expect(KeyboardController.handle(commandOptionOne, store: store, preferences: preferences))
+        #expect(
+            KeyboardController.handle(commandOptionOne, store: store, viewModel: viewModel, preferences: preferences))
         #expect(store.state.focusedDeskID == firstDesk.id)
-        #expect(!store.isDenMode)
-        #expect(!KeyboardController.handle(commandZero, store: store, preferences: preferences))
+        #expect(!viewModel.isDenMode)
+        #expect(!KeyboardController.handle(commandZero, store: store, viewModel: viewModel, preferences: preferences))
         #expect(store.state.focusedDeskID == firstDesk.id)
     }
 
     @Test func contentSizeShortcutsRouteToTheFocusedBoardInEveryInputMode() throws {
         let store = try makeStore(boards: [board("Focused")])
+        let viewModel = DenViewModel(store: store)
+        viewModel.connect()
+        defer { viewModel.disconnect() }
         let increase = try keyEvent(
             characters: "=",
             charactersIgnoringModifiers: "=",
@@ -367,21 +397,21 @@ struct KeyboardShortcutTests {
             keyCode: 29)
 
         #expect(
-            KeyboardController.decision(for: increase, store: store)
+            KeyboardController.decision(for: increase, store: store, viewModel: viewModel)
                 == .perform(.board(.increaseSheetSize)))
         #expect(
-            KeyboardController.decision(for: plus, store: store)
+            KeyboardController.decision(for: plus, store: store, viewModel: viewModel)
                 == .perform(.board(.increaseSheetSize)))
         #expect(
-            KeyboardController.decision(for: decrease, store: store)
+            KeyboardController.decision(for: decrease, store: store, viewModel: viewModel)
                 == .perform(.board(.decreaseSheetSize)))
         #expect(
-            KeyboardController.decision(for: reset, store: store)
+            KeyboardController.decision(for: reset, store: store, viewModel: viewModel)
                 == .perform(.board(.resetSheetSize)))
 
-        store.isDenMode = true
+        viewModel.isDenMode = true
         #expect(
-            KeyboardController.decision(for: decrease, store: store)
+            KeyboardController.decision(for: decrease, store: store, viewModel: viewModel)
                 == .perform(.board(.decreaseSheetSize)))
     }
 
@@ -390,6 +420,9 @@ struct KeyboardShortcutTests {
         let secondDesk = DeskState(label: "Second", boards: [])
         let thirdDesk = DeskState(label: "Third", boards: [])
         let store = try makeStore(desks: [firstDesk, secondDesk, thirdDesk])
+        let viewModel = DenViewModel(store: store)
+        viewModel.connect()
+        defer { viewModel.disconnect() }
         let preferences = store.preferences
 
         let next = try keyEvent(
@@ -397,7 +430,7 @@ struct KeyboardShortcutTests {
             charactersIgnoringModifiers: "\t",
             modifiers: [.control],
             keyCode: 48)
-        #expect(KeyboardController.handle(next, store: store, preferences: preferences))
+        #expect(KeyboardController.handle(next, store: store, viewModel: viewModel, preferences: preferences))
         #expect(store.focusedDesk?.id == secondDesk.id)
 
         let previous = try keyEvent(
@@ -405,7 +438,7 @@ struct KeyboardShortcutTests {
             charactersIgnoringModifiers: "\t",
             modifiers: [.control, .shift],
             keyCode: 48)
-        #expect(KeyboardController.handle(previous, store: store, preferences: preferences))
+        #expect(KeyboardController.handle(previous, store: store, viewModel: viewModel, preferences: preferences))
         #expect(store.focusedDesk?.id == firstDesk.id)
 
         let returnToPrevious = try keyEvent(
@@ -416,27 +449,33 @@ struct KeyboardShortcutTests {
         #expect(
             KeyboardController.handle(
                 returnToPrevious,
-                store: store,
+                store: store, viewModel: viewModel,
                 preferences: preferences))
         #expect(store.focusedDesk?.id == secondDesk.id)
     }
 
     @Test func denModeIOpensNotifications() throws {
         let store = try makeStore(boards: [board("Terminal")])
-        store.isDenMode = true
+        let viewModel = DenViewModel(store: store)
+        viewModel.connect()
+        defer { viewModel.disconnect() }
+        viewModel.isDenMode = true
         let open = try keyEvent(
             characters: "i",
             charactersIgnoringModifiers: "i",
             keyCode: 34)
 
-        #expect(KeyboardController.handle(open, store: store))
-        #expect(store.isNotificationListPresented)
-        #expect(store.isDenMode)
+        #expect(KeyboardController.handle(open, store: store, viewModel: viewModel))
+        #expect(viewModel.isNotificationListPresented)
+        #expect(viewModel.isDenMode)
     }
 
     @Test func denModeVOpensBoardFromClipboard() throws {
         let store = try makeStore(boards: [board("First")])
-        store.isDenMode = true
+        let viewModel = DenViewModel(store: store)
+        viewModel.connect()
+        defer { viewModel.disconnect() }
+        viewModel.isDenMode = true
         store.pasteboard.clearContents()
         store.pasteboard.setString("https://example.com/test", forType: .string)
 
@@ -445,10 +484,10 @@ struct KeyboardShortcutTests {
             charactersIgnoringModifiers: "v",
             keyCode: 9)
 
-        #expect(KeyboardController.handle(vKey, store: store))
+        #expect(KeyboardController.handle(vKey, store: store, viewModel: viewModel))
         #expect(store.focusedDesk?.boards.count == 2)
         #expect(store.focusedBoard?.currentSheetURL == URL(string: "https://example.com/test"))
-        #expect(!store.isDenMode)
+        #expect(!viewModel.isDenMode)
     }
 
     @Test func denModeBKeyOpensSaveEssentialPanelForFocusedBoard() throws {
@@ -459,7 +498,10 @@ struct KeyboardShortcutTests {
         )
         let desk = DeskState(label: "Dev", boards: [board], focusedBoardID: board.id)
         let store = DenStore(state: DenState(desks: [desk], focusedDeskID: desk.id))
-        store.isDenMode = true
+        let viewModel = DenViewModel(store: store)
+        viewModel.connect()
+        defer { viewModel.disconnect() }
+        viewModel.isDenMode = true
 
         let bKey = try keyEvent(
             characters: "b",
@@ -467,17 +509,20 @@ struct KeyboardShortcutTests {
             keyCode: 11
         )
 
-        #expect(KeyboardController.handle(bKey, store: store))
-        #expect(store.isSaveEssentialPanelPresented)
-        #expect(store.saveEssentialDraft?.name == "Niri")
-        #expect(store.saveEssentialDraft?.input == "https://github.com/YaLTeR/niri")
+        #expect(KeyboardController.handle(bKey, store: store, viewModel: viewModel))
+        #expect(viewModel.isSaveEssentialPanelPresented)
+        #expect(viewModel.saveEssentialDraft?.name == "Niri")
+        #expect(viewModel.saveEssentialDraft?.input == "https://github.com/YaLTeR/niri")
     }
 
     @Test func denModeMKeyTogglesAnchorBoardAndShiftMJumps() throws {
         let first = board("First")
         let second = board("Second")
         let store = try makeStore(boards: [first, second])
-        store.isDenMode = true
+        let viewModel = DenViewModel(store: store)
+        viewModel.connect()
+        defer { viewModel.disconnect() }
+        viewModel.isDenMode = true
 
         let mKey = try keyEvent(
             characters: "m",
@@ -492,44 +537,47 @@ struct KeyboardShortcutTests {
         )
 
         // Focus is on first board. Press 'm' to set anchor.
-        #expect(KeyboardController.handle(mKey, store: store))
+        #expect(KeyboardController.handle(mKey, store: store, viewModel: viewModel))
         #expect(store.focusedDesk?.anchorBoardID == first.id)
-        #expect(store.toastMessage?.message == "Set Anchor Board")
+        #expect(store.latestFeedback?.message == "Set Anchor Board")
 
         // Move to second board.
         store.focusBoard(second.id)
         #expect(store.focusedBoard?.id == second.id)
 
         // Press 'Shift + m' to jump to anchor first board.
-        #expect(KeyboardController.handle(shiftMKey, store: store))
+        #expect(KeyboardController.handle(shiftMKey, store: store, viewModel: viewModel))
         #expect(store.focusedBoard?.id == first.id)
 
         // Press 'Shift + m' again to return to second board (A <-> B toggle).
-        #expect(KeyboardController.handle(shiftMKey, store: store))
+        #expect(KeyboardController.handle(shiftMKey, store: store, viewModel: viewModel))
         #expect(store.focusedBoard?.id == second.id)
 
         // Press 'm' on second board to move anchor.
-        #expect(KeyboardController.handle(mKey, store: store))
+        #expect(KeyboardController.handle(mKey, store: store, viewModel: viewModel))
         #expect(store.focusedDesk?.anchorBoardID == second.id)
 
         // Press 'm' again on second board to clear anchor.
-        #expect(KeyboardController.handle(mKey, store: store))
+        #expect(KeyboardController.handle(mKey, store: store, viewModel: viewModel))
         #expect(store.focusedDesk?.anchorBoardID == nil)
-        #expect(store.toastMessage?.message == "Cleared Anchor Board")
+        #expect(store.latestFeedback?.message == "Cleared Anchor Board")
 
         // Press 'Shift + m' with no anchor shows warning.
-        #expect(KeyboardController.handle(shiftMKey, store: store))
-        #expect(store.toastMessage?.message == "No Anchor Board in Desk")
-        #expect(store.toastMessage?.style == .warning)
+        #expect(KeyboardController.handle(shiftMKey, store: store, viewModel: viewModel))
+        #expect(store.latestFeedback?.message == "No Anchor Board in Desk")
+        #expect(store.latestFeedback?.severity == .warning)
     }
 
     @Test func notificationArrowsMoveSelectionAndReturnOpensIt() throws {
         let first = board("First")
         let second = board("Second")
         let store = try makeStore(boards: [first, second])
+        let viewModel = DenViewModel(store: store)
+        viewModel.connect()
+        defer { viewModel.disconnect() }
         store.recordNotification(title: "First", body: "Done", boardID: first.id)
         store.recordNotification(title: "Second", body: "Done", boardID: second.id)
-        store.isDenMode = true
+        viewModel.isDenMode = true
         let preferences = try makePreferences()
 
         let open = try keyEvent(
@@ -545,18 +593,21 @@ struct KeyboardShortcutTests {
             charactersIgnoringModifiers: "\r",
             keyCode: 36)
 
-        #expect(KeyboardController.handle(open, store: store, preferences: preferences))
-        #expect(store.selectedNotificationID == store.notifications[0].id)
-        #expect(KeyboardController.handle(down, store: store, preferences: preferences))
-        #expect(store.selectedNotificationID == store.notifications[1].id)
-        #expect(KeyboardController.handle(enter, store: store, preferences: preferences))
+        #expect(KeyboardController.handle(open, store: store, viewModel: viewModel, preferences: preferences))
+        #expect(viewModel.notificationList.selectedNotificationID == store.notifications[0].id)
+        #expect(KeyboardController.handle(down, store: store, viewModel: viewModel, preferences: preferences))
+        #expect(viewModel.notificationList.selectedNotificationID == store.notifications[1].id)
+        #expect(KeyboardController.handle(enter, store: store, viewModel: viewModel, preferences: preferences))
         #expect(store.focusedBoard?.id == first.id)
-        #expect(!store.isNotificationListPresented)
+        #expect(!viewModel.isNotificationListPresented)
     }
 
     @Test func customBindingsApplyImmediatelyAndCanBeUnassigned() throws {
         let preferences = try makePreferences()
         let store = try makeStore(boards: [board("First"), board("Second")])
+        let viewModel = DenViewModel(store: store)
+        viewModel.connect()
+        defer { viewModel.disconnect() }
         let toggle = try keyEvent(
             characters: ".", charactersIgnoringModifiers: ".", modifiers: [.control], keyCode: 47)
         let defaultToggle = try keyEvent(
@@ -566,80 +617,92 @@ struct KeyboardShortcutTests {
                 ShortcutBinding(key: .character("."), modifiers: [.control]),
                 for: .toggleDenMode) == nil)
 
-        #expect(!KeyboardController.handle(defaultToggle, store: store, preferences: preferences))
-        #expect(KeyboardController.handle(toggle, store: store, preferences: preferences))
-        #expect(store.isDenMode)
+        #expect(!KeyboardController.handle(defaultToggle, store: store, viewModel: viewModel, preferences: preferences))
+        #expect(KeyboardController.handle(toggle, store: store, viewModel: viewModel, preferences: preferences))
+        #expect(viewModel.isDenMode)
 
-        store.exitDenMode()
+        viewModel.exitDenMode()
         preferences.clearShortcut(for: .focusNextBoard)
         let right = try arrowEvent(.rightArrow, modifiers: [.command, .option])
-        #expect(!KeyboardController.handle(right, store: store, preferences: preferences))
+        #expect(!KeyboardController.handle(right, store: store, viewModel: viewModel, preferences: preferences))
         #expect(store.focusedDesk?.focusedBoardID == store.focusedDesk?.boards.first?.id)
     }
 
     @Test func customBindingsAreSuspendedByTemporaryContexts() throws {
         let preferences = try makePreferences()
         let store = try makeStore(boards: [board("First"), board("Second")])
+        let viewModel = DenViewModel(store: store)
+        viewModel.connect()
+        defer { viewModel.disconnect() }
         let next = try arrowEvent(.rightArrow, modifiers: [.command, .option])
 
-        store.showNewDeskPanel()
-        #expect(!KeyboardController.handle(next, store: store, preferences: preferences))
-        store.hideNewDeskPanel()
+        viewModel.showNewDeskPanel()
+        #expect(!KeyboardController.handle(next, store: store, viewModel: viewModel, preferences: preferences))
+        viewModel.hideNewDeskPanel()
 
-        store.showOverview()
+        viewModel.showOverview()
         let focusedBoardID = store.focusedDesk?.focusedBoardID
-        #expect(KeyboardController.handle(next, store: store, preferences: preferences))
+        #expect(KeyboardController.handle(next, store: store, viewModel: viewModel, preferences: preferences))
         #expect(store.focusedDesk?.focusedBoardID == focusedBoardID)
     }
 
     @Test func shiftEscapeTogglesBoardActivityAcrossInputContexts() throws {
         let store = try makeStore(boards: [board("First")])
+        let viewModel = DenViewModel(store: store)
+        viewModel.connect()
+        defer { viewModel.disconnect() }
         let shiftEscape = try keyEvent(
             characters: "\u{1B}",
             charactersIgnoringModifiers: "\u{1B}",
             modifiers: [.shift],
             keyCode: 53)
 
-        #expect(KeyboardController.handle(shiftEscape, store: store))
-        #expect(store.isBoardActivityPresented)
+        #expect(KeyboardController.handle(shiftEscape, store: store, viewModel: viewModel))
+        #expect(viewModel.isBoardActivityPresented)
 
-        #expect(KeyboardController.handle(shiftEscape, store: store))
-        #expect(!store.isBoardActivityPresented)
+        #expect(KeyboardController.handle(shiftEscape, store: store, viewModel: viewModel))
+        #expect(!viewModel.isBoardActivityPresented)
 
-        store.isDenMode = true
-        #expect(KeyboardController.handle(shiftEscape, store: store))
-        #expect(store.isBoardActivityPresented)
+        viewModel.isDenMode = true
+        #expect(KeyboardController.handle(shiftEscape, store: store, viewModel: viewModel))
+        #expect(viewModel.isBoardActivityPresented)
 
         let escape = try keyEvent(
             characters: "\u{1B}",
             charactersIgnoringModifiers: "\u{1B}",
             keyCode: 53)
-        #expect(KeyboardController.handle(escape, store: store))
-        #expect(!store.isBoardActivityPresented)
+        #expect(KeyboardController.handle(escape, store: store, viewModel: viewModel))
+        #expect(!viewModel.isBoardActivityPresented)
     }
 
     @Test func denModeToggleRemainsAvailableInDrawer() throws {
         let preferences = try makePreferences()
         let store = try makeStore(boards: [board("First")])
+        let viewModel = DenViewModel(store: store)
+        viewModel.connect()
+        defer { viewModel.disconnect() }
         store.keepInDrawer(try #require(URL(string: "https://example.com/")))
-        let previewID = store.expandedDrawerItemID
+        let previewID = viewModel.drawer.expandedItemID
         let toggle = try keyEvent(
             characters: ",", charactersIgnoringModifiers: ",", modifiers: [.control], keyCode: 43)
 
-        #expect(KeyboardController.handle(toggle, store: store, preferences: preferences))
-        #expect(store.isDenMode)
-        #expect(store.expandedDrawerItemID == previewID)
+        #expect(KeyboardController.handle(toggle, store: store, viewModel: viewModel, preferences: preferences))
+        #expect(viewModel.isDenMode)
+        #expect(viewModel.drawer.expandedItemID == previewID)
 
-        #expect(KeyboardController.handle(toggle, store: store, preferences: preferences))
-        #expect(!store.isDenMode)
-        #expect(store.expandedDrawerItemID == previewID)
+        #expect(KeyboardController.handle(toggle, store: store, viewModel: viewModel, preferences: preferences))
+        #expect(!viewModel.isDenMode)
+        #expect(viewModel.drawer.expandedItemID == previewID)
     }
 
     @Test func drawerCommandWDiscardsSelectedItemWithoutRemovingBoard() throws {
         let store = try makeStore(boards: [board("First")])
+        let viewModel = DenViewModel(store: store)
+        viewModel.connect()
+        defer { viewModel.disconnect() }
         store.keepInDrawer(try #require(URL(string: "https://first.example/")))
         store.keepInDrawer(try #require(URL(string: "https://second.example/")))
-        let selectedItemID = try #require(store.selectedDrawerItemID)
+        let selectedItemID = try #require(viewModel.drawer.selectedItemID)
         let commandW = try keyEvent(
             characters: "w",
             charactersIgnoringModifiers: "w",
@@ -647,13 +710,13 @@ struct KeyboardShortcutTests {
             keyCode: 13)
 
         #expect(
-            KeyboardController.decision(for: commandW, store: store)
+            KeyboardController.decision(for: commandW, store: store, viewModel: viewModel)
                 == .perform(.drawer(.discardSelectedItem(focusNext: true))))
-        #expect(KeyboardController.handle(commandW, store: store))
+        #expect(KeyboardController.handle(commandW, store: store, viewModel: viewModel))
         #expect(store.state.drawerItems.count == 1)
         #expect(!store.state.drawerItems.contains { $0.id == selectedItemID })
         #expect(store.focusedDesk?.boards.count == 1)
-        #expect(store.isDrawerOpen)
+        #expect(viewModel.isDrawerOpen)
 
         let repeatedCommandW = try keyEvent(
             characters: "w",
@@ -662,16 +725,19 @@ struct KeyboardShortcutTests {
             isARepeat: true,
             keyCode: 13)
         #expect(
-            KeyboardController.decision(for: repeatedCommandW, store: store)
+            KeyboardController.decision(for: repeatedCommandW, store: store, viewModel: viewModel)
                 == .consume(.ignoredRepeat))
-        #expect(KeyboardController.handle(repeatedCommandW, store: store))
+        #expect(KeyboardController.handle(repeatedCommandW, store: store, viewModel: viewModel))
         #expect(store.state.drawerItems.count == 1)
     }
 
     @Test func drawerControlEscapeClosesDrawerWithOrWithoutPreview() throws {
         let store = try makeStore(boards: [board("First")])
+        let viewModel = DenViewModel(store: store)
+        viewModel.connect()
+        defer { viewModel.disconnect() }
         store.keepInDrawer(try #require(URL(string: "https://preview.example/")))
-        let itemID = try #require(store.expandedDrawerItemID)
+        let itemID = try #require(viewModel.drawer.expandedItemID)
         let controlEscape = try keyEvent(
             characters: "\u{1B}",
             charactersIgnoringModifiers: "\u{1B}",
@@ -679,29 +745,32 @@ struct KeyboardShortcutTests {
             keyCode: 53)
 
         #expect(
-            KeyboardController.decision(for: controlEscape, store: store)
+            KeyboardController.decision(for: controlEscape, store: store, viewModel: viewModel)
                 == .perform(.drawer(.close)))
-        #expect(KeyboardController.handle(controlEscape, store: store))
-        #expect(!store.isDrawerOpen)
-        #expect(store.expandedDrawerItemID == itemID)
+        #expect(KeyboardController.handle(controlEscape, store: store, viewModel: viewModel))
+        #expect(!viewModel.isDrawerOpen)
+        #expect(viewModel.drawer.expandedItemID == itemID)
 
-        store.openDrawer()
-        store.toggleDrawerItem(itemID)
-        store.isDenMode = true
+        viewModel.openDrawer()
+        viewModel.drawer.toggleItem(itemID)
+        viewModel.isDenMode = true
 
-        #expect(KeyboardController.handle(controlEscape, store: store))
-        #expect(!store.isDrawerOpen)
+        #expect(KeyboardController.handle(controlEscape, store: store, viewModel: viewModel))
+        #expect(!viewModel.isDrawerOpen)
         #expect(store.state.drawerItems.count == 1)
     }
 
     @Test func drawerConsumesUnmappedKeysWhenPreviewIsNotFocused() throws {
         let store = try makeStore(boards: [board("First")])
+        let viewModel = DenViewModel(store: store)
+        viewModel.connect()
+        defer { viewModel.disconnect() }
         store.keepInDrawer(try #require(URL(string: "https://example.com/")))
-        let itemID = try #require(store.selectedDrawerItemID)
-        store.toggleDrawerItem(itemID)
-        #expect(!store.isDenMode)
-        #expect(store.isDrawerOpen)
-        #expect(store.expandedDrawerItemID == nil)
+        let itemID = try #require(viewModel.drawer.selectedItemID)
+        viewModel.drawer.toggleItem(itemID)
+        #expect(!viewModel.isDenMode)
+        #expect(viewModel.isDrawerOpen)
+        #expect(viewModel.drawer.expandedItemID == nil)
 
         let letterA = try keyEvent(
             characters: "a", charactersIgnoringModifiers: "a", keyCode: 0)
@@ -711,30 +780,33 @@ struct KeyboardShortcutTests {
             characters: "\t", charactersIgnoringModifiers: "\t", keyCode: 48)
 
         #expect(
-            KeyboardController.decision(for: letterA, store: store)
+            KeyboardController.decision(for: letterA, store: store, viewModel: viewModel)
                 == .consume(.exclusiveContext))
-        #expect(KeyboardController.handle(letterA, store: store))
+        #expect(KeyboardController.handle(letterA, store: store, viewModel: viewModel))
 
         #expect(
-            KeyboardController.decision(for: space, store: store)
+            KeyboardController.decision(for: space, store: store, viewModel: viewModel)
                 == .consume(.exclusiveContext))
-        #expect(KeyboardController.handle(space, store: store))
+        #expect(KeyboardController.handle(space, store: store, viewModel: viewModel))
 
         #expect(
-            KeyboardController.decision(for: tab, store: store)
+            KeyboardController.decision(for: tab, store: store, viewModel: viewModel)
                 == .consume(.exclusiveContext))
-        #expect(KeyboardController.handle(tab, store: store))
+        #expect(KeyboardController.handle(tab, store: store, viewModel: viewModel))
 
-        #expect(store.isDrawerOpen)
+        #expect(viewModel.isDrawerOpen)
         #expect(store.state.drawerItems.count == 1)
         #expect(store.focusedDesk?.boards.count == 1)
     }
 
     @Test func denModeShiftDRequestsDrawerClearConfirmation() throws {
         let store = try makeStore(boards: [board("First")])
+        let viewModel = DenViewModel(store: store)
+        viewModel.connect()
+        defer { viewModel.disconnect() }
         store.keepInDrawer(try #require(URL(string: "https://first.example/")))
         store.keepInDrawer(try #require(URL(string: "https://second.example/")))
-        store.isDenMode = true
+        viewModel.isDenMode = true
 
         let clear = try keyEvent(
             characters: "D",
@@ -742,16 +814,19 @@ struct KeyboardShortcutTests {
             modifiers: [.shift],
             keyCode: 2)
 
-        #expect(KeyboardController.handle(clear, store: store))
-        #expect(store.drawerPendingDeletionCount == 2)
+        #expect(KeyboardController.handle(clear, store: store, viewModel: viewModel))
+        #expect(viewModel.drawerPendingDeletionCount == 2)
         #expect(store.state.drawerItems.count == 2)
     }
 
     @Test func drawerFKeyTogglesPresentationStyle() throws {
         let store = try makeStore(boards: [board("First")])
+        let viewModel = DenViewModel(store: store)
+        viewModel.connect()
+        defer { viewModel.disconnect() }
         store.keepInDrawer(try #require(URL(string: "https://example.com/")))
-        store.openDrawer()
-        store.isDenMode = true
+        viewModel.openDrawer()
+        viewModel.isDenMode = true
 
         #expect(store.preferences.drawerStyle == .floating)
 
@@ -760,41 +835,47 @@ struct KeyboardShortcutTests {
             charactersIgnoringModifiers: "f",
             keyCode: 3
         )
-        #expect(KeyboardController.handle(fKey, store: store))
+        #expect(KeyboardController.handle(fKey, store: store, viewModel: viewModel))
         #expect(store.preferences.drawerStyle == .bottom)
 
-        #expect(KeyboardController.handle(fKey, store: store))
+        #expect(KeyboardController.handle(fKey, store: store, viewModel: viewModel))
         #expect(store.preferences.drawerStyle == .floating)
     }
 
     @Test func denModeShiftDDoesNothingInDrawerFilterModeOrOnRepeat() throws {
         let store = try makeStore(boards: [board("First")])
+        let viewModel = DenViewModel(store: store)
+        viewModel.connect()
+        defer { viewModel.disconnect() }
         store.keepInDrawer(try #require(URL(string: "https://example.com/")))
-        store.isDenMode = true
+        viewModel.isDenMode = true
 
         let clear = try keyEvent(
             characters: "D",
             charactersIgnoringModifiers: "d",
             modifiers: [.shift],
             keyCode: 2)
-        store.enterDrawerFilterMode()
-        #expect(!KeyboardController.handle(clear, store: store))
-        #expect(!store.hasPendingConfirmation)
+        viewModel.drawer.enterFilterMode()
+        #expect(!KeyboardController.handle(clear, store: store, viewModel: viewModel))
+        #expect(!viewModel.hasPendingConfirmation)
 
-        store.exitDrawerFilterMode()
+        viewModel.drawer.exitFilterMode()
         let repeatClear = try keyEvent(
             characters: "D",
             charactersIgnoringModifiers: "d",
             modifiers: [.shift],
             isARepeat: true,
             keyCode: 2)
-        #expect(KeyboardController.handle(repeatClear, store: store))
-        #expect(!store.hasPendingConfirmation)
+        #expect(KeyboardController.handle(repeatClear, store: store, viewModel: viewModel))
+        #expect(!viewModel.hasPendingConfirmation)
     }
 
     @Test func denModeEnterAndShiftEnterUseDistinctDuplicateActions() throws {
         let store = try makeStore(boards: [board("First")])
-        store.isDenMode = true
+        let viewModel = DenViewModel(store: store)
+        viewModel.connect()
+        defer { viewModel.disconnect() }
+        viewModel.isDenMode = true
         let returnKey = try keyEvent(
             characters: "\r", charactersIgnoringModifiers: "\r", keyCode: 36)
         let shiftReturn = try keyEvent(
@@ -804,38 +885,49 @@ struct KeyboardShortcutTests {
             keyCode: 36)
 
         #expect(
-            KeyboardController.decision(for: returnKey, store: store)
+            KeyboardController.decision(for: returnKey, store: store, viewModel: viewModel)
                 == .perform(.board(.duplicate)))
         #expect(
-            KeyboardController.decision(for: shiftReturn, store: store)
+            KeyboardController.decision(for: shiftReturn, store: store, viewModel: viewModel)
                 == .perform(.board(.duplicateFirstSheet)))
     }
 
     @Test func openProfilePanelForwardsKeyboardNavigationToItsTextField() throws {
         let store = try makeStore(boards: [board("First")])
-        store.isDenMode = true
-        store.enterDeskFilter()
-        store.isNotificationListPresented = true
-        store.setTemporaryContext(.profilePicker)
-        #expect(store.temporaryContext == .profilePicker)
-        #expect(store.deskFilterPhase == .inactive)
-        #expect(!store.isNotificationListPresented)
+        let viewModel = DenViewModel(store: store)
+        viewModel.connect()
+        defer { viewModel.disconnect() }
+        viewModel.isDenMode = true
+        viewModel.deskFilter.enter()
+        viewModel.isNotificationListPresented = true
+        viewModel.setTemporaryContext(.profilePicker)
+        #expect(viewModel.temporaryContext == .profilePicker)
+        #expect(viewModel.deskFilter.phase == .inactive)
+        #expect(!viewModel.isNotificationListPresented)
         let down = try arrowEvent(.downArrow, modifiers: [])
         let returnKey = try keyEvent(
             characters: "\r", charactersIgnoringModifiers: "\r", keyCode: 36)
         let escape = try keyEvent(
             characters: "\u{1B}", charactersIgnoringModifiers: "\u{1B}", keyCode: 53)
 
-        #expect(KeyboardController.decision(for: down, store: store) == .forward(.temporaryTextInput))
-        #expect(KeyboardController.decision(for: returnKey, store: store) == .forward(.temporaryTextInput))
-        #expect(KeyboardController.decision(for: escape, store: store) == .forward(.temporaryTextInput))
+        #expect(
+            KeyboardController.decision(for: down, store: store, viewModel: viewModel) == .forward(.temporaryTextInput))
+        #expect(
+            KeyboardController.decision(for: returnKey, store: store, viewModel: viewModel)
+                == .forward(.temporaryTextInput))
+        #expect(
+            KeyboardController.decision(for: escape, store: store, viewModel: viewModel)
+                == .forward(.temporaryTextInput))
     }
 
     @Test func drawerFilterPassesShiftedCharactersToTextInput() throws {
         let store = try makeStore(boards: [board("First")])
+        let viewModel = DenViewModel(store: store)
+        viewModel.connect()
+        defer { viewModel.disconnect() }
         store.keepInDrawer(try #require(URL(string: "https://example.com/")))
-        store.isDenMode = true
-        store.enterDrawerFilterMode()
+        viewModel.isDenMode = true
+        viewModel.drawer.enterFilterMode()
 
         let uppercase = try keyEvent(
             characters: "A",
@@ -843,15 +935,18 @@ struct KeyboardShortcutTests {
             modifiers: [.shift],
             keyCode: 0)
 
-        #expect(!KeyboardController.handle(uppercase, store: store))
-        #expect(store.isDrawerFilterInputActive)
+        #expect(!KeyboardController.handle(uppercase, store: store, viewModel: viewModel))
+        #expect(viewModel.drawer.isFilterInputActive)
     }
 
     @Test func drawerFilterPassesModifiedReturnAndControlEscapeClosesDrawer() throws {
         let store = try makeStore(boards: [board("First")])
+        let viewModel = DenViewModel(store: store)
+        viewModel.connect()
+        defer { viewModel.disconnect() }
         store.keepInDrawer(try #require(URL(string: "https://example.com/")))
-        store.isDenMode = true
-        store.enterDrawerFilterMode()
+        viewModel.isDenMode = true
+        viewModel.drawer.enterFilterMode()
 
         let modifiedReturn = try keyEvent(
             characters: "\r",
@@ -864,19 +959,22 @@ struct KeyboardShortcutTests {
             modifiers: [.control],
             keyCode: 53)
 
-        #expect(!KeyboardController.handle(modifiedReturn, store: store))
+        #expect(!KeyboardController.handle(modifiedReturn, store: store, viewModel: viewModel))
         #expect(
-            KeyboardController.decision(for: controlEscape, store: store)
+            KeyboardController.decision(for: controlEscape, store: store, viewModel: viewModel)
                 == .perform(.drawer(.close)))
-        #expect(KeyboardController.handle(controlEscape, store: store))
-        #expect(!store.isDrawerOpen)
+        #expect(KeyboardController.handle(controlEscape, store: store, viewModel: viewModel))
+        #expect(!viewModel.isDrawerOpen)
     }
 
     @Test func overviewFilterUsesTwoPhaseSelection() throws {
         let first = board("First")
         let second = board("Second")
         let store = try makeStore(boards: [first, second])
-        store.showOverview()
+        let viewModel = DenViewModel(store: store)
+        viewModel.connect()
+        defer { viewModel.disconnect() }
+        viewModel.showOverview()
 
         let slash = try keyEvent(
             characters: "/",
@@ -887,26 +985,29 @@ struct KeyboardShortcutTests {
             charactersIgnoringModifiers: "\r",
             keyCode: 36)
 
-        #expect(KeyboardController.handle(slash, store: store))
-        #expect(store.overviewFilterPhase == .filtering)
-        store.setOverviewQuery("Second")
-        #expect(store.overviewSelectionBoardID == second.id)
+        #expect(KeyboardController.handle(slash, store: store, viewModel: viewModel))
+        #expect(viewModel.overview.filterPhase == .filtering)
+        viewModel.overview.setQuery("Second")
+        #expect(viewModel.overview.selectionBoardID == second.id)
 
-        #expect(KeyboardController.handle(returnKey, store: store))
-        #expect(store.overviewFilterPhase == .selecting)
-        #expect(store.isOverviewPresented)
+        #expect(KeyboardController.handle(returnKey, store: store, viewModel: viewModel))
+        #expect(viewModel.overview.filterPhase == .selecting)
+        #expect(viewModel.isOverviewPresented)
 
-        #expect(KeyboardController.handle(returnKey, store: store))
-        #expect(store.overviewFilterPhase == .inactive)
-        #expect(!store.isOverviewPresented)
+        #expect(KeyboardController.handle(returnKey, store: store, viewModel: viewModel))
+        #expect(viewModel.overview.filterPhase == .inactive)
+        #expect(!viewModel.isOverviewPresented)
         #expect(store.focusedBoard?.id == second.id)
     }
 
     @Test func overviewEscapeRequestsBoardDragCancellation() throws {
         let first = board("First")
         let store = try makeStore(boards: [first])
-        store.showOverview()
-        #expect(store.beginOverviewBoardDrag(first.id))
+        let viewModel = DenViewModel(store: store)
+        viewModel.connect()
+        defer { viewModel.disconnect() }
+        viewModel.showOverview()
+        #expect(viewModel.beginOverviewBoardDrag(first.id))
 
         let escape = try keyEvent(
             characters: "\u{1B}",
@@ -914,37 +1015,43 @@ struct KeyboardShortcutTests {
             keyCode: 53)
 
         #expect(
-            KeyboardController.decision(for: escape, store: store)
+            KeyboardController.decision(for: escape, store: store, viewModel: viewModel)
                 == .perform(.board(.requestDragCancellation)))
-        #expect(KeyboardController.handle(escape, store: store))
-        #expect(store.boardDragCancellationRequest == 1)
-        #expect(store.isOverviewPresented)
+        #expect(KeyboardController.handle(escape, store: store, viewModel: viewModel))
+        #expect(viewModel.boardDragCancellationRequest == 1)
+        #expect(viewModel.isOverviewPresented)
     }
 
     @Test func denModeRemoveShortcutsChooseTheirFocusDirection() throws {
         let dBoards = [board("First"), board("Focused"), board("Last")]
         let dStore = try makeStore(boards: dBoards)
+        let dViewModel = DenViewModel(store: dStore)
+        dViewModel.connect()
+        defer { dViewModel.disconnect() }
         dStore.focusBoard(dBoards[1].id)
-        dStore.isDenMode = true
+        dViewModel.isDenMode = true
         let dEvent = try keyEvent(characters: "d", charactersIgnoringModifiers: "d", keyCode: 2)
 
         #expect(
-            KeyboardController.decision(for: dEvent, store: dStore)
+            KeyboardController.decision(for: dEvent, store: dStore, viewModel: dViewModel)
                 == .perform(.board(.removeAndFocusNext)))
-        #expect(KeyboardController.handle(dEvent, store: dStore))
+        #expect(KeyboardController.handle(dEvent, store: dStore, viewModel: dViewModel))
         #expect(dStore.focusedDesk?.boards.map(\.id) == [dBoards[0].id, dBoards[2].id])
         #expect(dStore.focusedDesk?.focusedBoardID == dBoards[2].id)
 
         let xBoards = [board("First"), board("Focused"), board("Last")]
         let xStore = try makeStore(boards: xBoards)
+        let xViewModel = DenViewModel(store: xStore)
+        xViewModel.connect()
+        defer { xViewModel.disconnect() }
         xStore.focusBoard(xBoards[1].id)
-        xStore.isDenMode = true
+        xViewModel.isDenMode = true
         let xEvent = try keyEvent(characters: "x", charactersIgnoringModifiers: "x", keyCode: 7)
 
         #expect(
-            KeyboardController.decision(for: xEvent, store: xStore)
+            KeyboardController.decision(for: xEvent, store: xStore, viewModel: xViewModel)
                 == .perform(.board(.remove)))
-        #expect(KeyboardController.handle(xEvent, store: xStore))
+        #expect(KeyboardController.handle(xEvent, store: xStore, viewModel: xViewModel))
         #expect(xStore.focusedDesk?.boards.map(\.id) == [xBoards[0].id, xBoards[2].id])
         #expect(xStore.focusedDesk?.focusedBoardID == xBoards[0].id)
     }
@@ -953,6 +1060,9 @@ struct KeyboardShortcutTests {
         let first = board("First")
         let second = board("Second")
         let store = try makeStore(boards: [first, second])
+        let viewModel = DenViewModel(store: store)
+        viewModel.connect()
+        defer { viewModel.disconnect() }
         let commands = [
             try keyEvent(
                 characters: "w", charactersIgnoringModifiers: "w", modifiers: [.command], keyCode: 13),
@@ -970,40 +1080,49 @@ struct KeyboardShortcutTests {
             keyCode: 13)
 
         for command in commands {
-            #expect(!KeyboardController.handle(command, store: store))
+            #expect(!KeyboardController.handle(command, store: store, viewModel: viewModel))
         }
-        #expect(!KeyboardController.handle(closeWindow, store: store))
+        #expect(!KeyboardController.handle(closeWindow, store: store, viewModel: viewModel))
         #expect(store.focusedDesk?.boards.map(\.id) == [first.id, second.id])
-        #expect(store.temporaryContext == nil)
+        #expect(viewModel.temporaryContext == nil)
     }
 
     @Test func denModeCommaPerformsSettingsWithoutForwarding() throws {
         let store = try makeStore(boards: [board("First")])
+        let viewModel = DenViewModel(store: store)
+        viewModel.connect()
+        defer { viewModel.disconnect() }
         let comma = try keyEvent(
             characters: ",", charactersIgnoringModifiers: ",", modifiers: [], keyCode: 43)
 
-        #expect(!KeyboardController.handle(comma, store: store))
+        #expect(!KeyboardController.handle(comma, store: store, viewModel: viewModel))
 
-        store.isDenMode = true
-        #expect(KeyboardController.decision(for: comma, store: store) == .perform(.application(.openSettings)))
+        viewModel.isDenMode = true
+        #expect(
+            KeyboardController.decision(for: comma, store: store, viewModel: viewModel)
+                == .perform(.application(.openSettings)))
         var didOpenSettings = false
         let handled = KeyboardController.handle(
             comma,
-            store: store,
+            store: store, viewModel: viewModel,
             openSettings: { didOpenSettings = true })
         #expect(handled)
         #expect(didOpenSettings)
 
-        store.showOverview()
-        #expect(KeyboardController.handle(comma, store: store))
-        #expect(KeyboardController.decision(for: comma, store: store) == .consume(.exclusiveContext))
+        viewModel.showOverview()
+        #expect(KeyboardController.handle(comma, store: store, viewModel: viewModel))
+        #expect(
+            KeyboardController.decision(for: comma, store: store, viewModel: viewModel) == .consume(.exclusiveContext))
     }
 
     @Test func denModeGPrefixLaunchesMatchingEssential() throws {
         let store = try makeStore(boards: [BoardState(label: "First", width: 720, currentSheetURL: nil)])
+        let viewModel = DenViewModel(store: store)
+        viewModel.connect()
+        defer { viewModel.disconnect() }
         let essential = Essential(name: "ChatGPT", key: "c", input: "https://chatgpt.com")
         #expect(store.preferences.setEssentials([essential]))
-        store.isDenMode = true
+        viewModel.isDenMode = true
 
         let prefix = try keyEvent(
             characters: "g", charactersIgnoringModifiers: "g", keyCode: 5)
@@ -1011,101 +1130,116 @@ struct KeyboardShortcutTests {
             characters: "c", charactersIgnoringModifiers: "c", keyCode: 8)
 
         #expect(
-            KeyboardController.decision(for: prefix, store: store)
+            KeyboardController.decision(for: prefix, store: store, viewModel: viewModel)
                 == .perform(.essentials(.enterPrefix)))
-        #expect(KeyboardController.handle(prefix, store: store))
-        #expect(store.temporaryContext == .essentialsPrefix)
+        #expect(KeyboardController.handle(prefix, store: store, viewModel: viewModel))
+        #expect(viewModel.temporaryContext == .essentialsPrefix)
         #expect(
-            KeyboardController.decision(for: key, store: store)
+            KeyboardController.decision(for: key, store: store, viewModel: viewModel)
                 == .perform(.essentials(.launch(essential.id))))
-        #expect(KeyboardController.handle(key, store: store))
-        #expect(store.temporaryContext == nil)
-        #expect(!store.isDenMode)
+        #expect(KeyboardController.handle(key, store: store, viewModel: viewModel))
+        #expect(viewModel.temporaryContext == nil)
+        #expect(!viewModel.isDenMode)
         #expect(store.focusedBoard?.currentSheetURL == URL(string: "https://chatgpt.com/"))
         #expect(store.focusedBoard?.width == 720)
     }
 
     @Test func sheetInputEssentialsPrefixLaunchesWithoutEnteringDenMode() throws {
         let store = try makeStore(boards: [board("First")])
+        let viewModel = DenViewModel(store: store)
+        viewModel.connect()
+        defer { viewModel.disconnect() }
         let essential = Essential(name: "ChatGPT", key: "c", input: "https://chatgpt.com")
         #expect(store.preferences.setEssentials([essential]))
-        store.showEssentialsPrefix()
+        viewModel.showEssentialsPrefix()
 
         let key = try keyEvent(
             characters: "c", charactersIgnoringModifiers: "c", keyCode: 8)
 
         #expect(
-            KeyboardController.decision(for: key, store: store)
+            KeyboardController.decision(for: key, store: store, viewModel: viewModel)
                 == .perform(.essentials(.launch(essential.id))))
-        #expect(KeyboardController.handle(key, store: store))
-        #expect(store.temporaryContext == nil)
-        #expect(!store.isDenMode)
+        #expect(KeyboardController.handle(key, store: store, viewModel: viewModel))
+        #expect(viewModel.temporaryContext == nil)
+        #expect(!viewModel.isDenMode)
         #expect(store.focusedBoard?.currentSheetURL == URL(string: "https://chatgpt.com/"))
     }
 
     @Test func essentialsPrefixSelectionWrapsBetweenFirstAndLast() throws {
         // Arrange
         let store = try makeStore(boards: [board("First")])
+        let viewModel = DenViewModel(store: store)
+        viewModel.connect()
+        defer { viewModel.disconnect() }
         let first = Essential(name: "First Essential", key: "a", input: "https://first.example")
         let second = Essential(name: "Second Essential", key: "b", input: "https://second.example")
         #expect(store.preferences.setEssentials([first, second]))
 
         // Act
-        store.showEssentialsPrefix()
-        store.moveEssentialSelection(by: -1)
+        viewModel.showEssentialsPrefix()
+        viewModel.moveEssentialSelection(by: -1)
 
         // Assert
-        #expect(store.selectedEssentialID == second.id)
+        #expect(viewModel.selectedEssentialID == second.id)
 
         // Act
-        store.moveEssentialSelection(by: 1)
+        viewModel.moveEssentialSelection(by: 1)
 
         // Assert
-        #expect(store.selectedEssentialID == first.id)
+        #expect(viewModel.selectedEssentialID == first.id)
     }
 
     @Test func essentialsPrefixOpeningResetsSelectionToFirst() throws {
         // Arrange
         let store = try makeStore(boards: [board("First")])
+        let viewModel = DenViewModel(store: store)
+        viewModel.connect()
+        defer { viewModel.disconnect() }
         let first = Essential(name: "First Essential", key: "a", input: "https://first.example")
         let second = Essential(name: "Second Essential", key: "b", input: "https://second.example")
         #expect(store.preferences.setEssentials([first, second]))
-        store.showEssentialsPrefix()
+        viewModel.showEssentialsPrefix()
 
         // Act
-        store.moveEssentialSelection(by: 1)
-        store.exitEssentialsPrefix()
-        store.showEssentialsPrefix()
+        viewModel.moveEssentialSelection(by: 1)
+        viewModel.exitEssentialsPrefix()
+        viewModel.showEssentialsPrefix()
 
         // Assert
-        #expect(store.selectedEssentialID == first.id)
+        #expect(viewModel.selectedEssentialID == first.id)
     }
 
     @Test func essentialsPrefixReturnLaunchesFocusedEssentialAndClosesPrefix() throws {
         // Arrange
         let store = try makeStore(boards: [board("First")])
+        let viewModel = DenViewModel(store: store)
+        viewModel.connect()
+        defer { viewModel.disconnect() }
         let first = Essential(name: "First Essential", key: "a", input: "https://first.example")
         let second = Essential(name: "Second Essential", key: "b", input: "https://second.example")
         #expect(store.preferences.setEssentials([first, second]))
-        store.showEssentialsPrefix()
+        viewModel.showEssentialsPrefix()
 
         // Act
-        store.moveEssentialSelection(by: 1)
-        store.launchSelectedEssential()
+        viewModel.moveEssentialSelection(by: 1)
+        viewModel.launchSelectedEssential()
 
         // Assert
-        #expect(store.temporaryContext == nil)
-        #expect(store.selectedEssentialID == nil)
+        #expect(viewModel.temporaryContext == nil)
+        #expect(viewModel.selectedEssentialID == nil)
         #expect(store.focusedBoard?.currentSheetURL == URL(string: "https://second.example/"))
     }
 
     @Test func essentialsPrefixRoutesArrowsReturnAndConfiguredJkKeys() throws {
         // Arrange
         let store = try makeStore(boards: [board("First")])
+        let viewModel = DenViewModel(store: store)
+        viewModel.connect()
+        defer { viewModel.disconnect() }
         let jEssential = Essential(name: "J Essential", key: "j", input: "https://j.example")
         let kEssential = Essential(name: "K Essential", key: "k", input: "https://k.example")
         #expect(store.preferences.setEssentials([jEssential, kEssential]))
-        store.showEssentialsPrefix()
+        viewModel.showEssentialsPrefix()
         let upArrow = try arrowEvent(.upArrow, modifiers: [])
         let down = try arrowEvent(.downArrow, modifiers: [])
         let returnKey = try keyEvent(
@@ -1117,7 +1251,7 @@ struct KeyboardShortcutTests {
         func route(_ event: NSEvent) -> InputDecision {
             KeyboardRouter.route(
                 event: KeyEvent(event),
-                context: InputContext(store: store, event: event),
+                context: InputContext(store: store, viewModel: viewModel, event: event),
                 shortcuts: ShortcutConfiguration(preferences: store.preferences))
         }
         let upDecision = route(upArrow)
@@ -1137,10 +1271,13 @@ struct KeyboardShortcutTests {
     @Test func essentialsPrefixAllowsRepeatedArrowMovementButSuppressesRepeatedLaunch() throws {
         // Arrange
         let store = try makeStore(boards: [board("First")])
+        let viewModel = DenViewModel(store: store)
+        viewModel.connect()
+        defer { viewModel.disconnect() }
         let essential = Essential(name: "Essential", key: "a", input: "https://essential.example")
         let nextEssential = Essential(name: "Next", key: "b", input: "https://next.example")
         #expect(store.preferences.setEssentials([essential, nextEssential]))
-        store.showEssentialsPrefix()
+        viewModel.showEssentialsPrefix()
         let repeatedUp = try arrowEvent(.upArrow, modifiers: [], isARepeat: true)
         let repeatedDown = try arrowEvent(.downArrow, modifiers: [], isARepeat: true)
         let repeatedReturn = try keyEvent(
@@ -1152,7 +1289,7 @@ struct KeyboardShortcutTests {
         func route(_ event: NSEvent) -> InputDecision {
             KeyboardRouter.route(
                 event: KeyEvent(event),
-                context: InputContext(store: store, event: event),
+                context: InputContext(store: store, viewModel: viewModel, event: event),
                 shortcuts: ShortcutConfiguration(preferences: store.preferences))
         }
 
@@ -1162,50 +1299,56 @@ struct KeyboardShortcutTests {
         let returnDecision = route(repeatedReturn)
         let keyDecision = route(repeatedKey)
         let escapeDecision = route(repeatedEscape)
-        #expect(KeyboardController.handle(repeatedDown, store: store))
-        #expect(KeyboardController.handle(repeatedReturn, store: store))
-        #expect(KeyboardController.handle(repeatedKey, store: store))
+        #expect(KeyboardController.handle(repeatedDown, store: store, viewModel: viewModel))
+        #expect(KeyboardController.handle(repeatedReturn, store: store, viewModel: viewModel))
+        #expect(KeyboardController.handle(repeatedKey, store: store, viewModel: viewModel))
 
         // Assert
         #expect(upDecision == .perform(.essentials(.moveSelection(-1))))
         #expect(movementDecision == .perform(.essentials(.moveSelection(1))))
-        #expect(store.selectedEssentialID == nextEssential.id)
+        #expect(viewModel.selectedEssentialID == nextEssential.id)
         #expect(returnDecision == .consume(.ignoredRepeat))
         #expect(keyDecision == .consume(.ignoredRepeat))
         #expect(escapeDecision == .consume(.ignoredRepeat))
         #expect(store.focusedDesk?.boards.count == 1)
     }
 
-    @Test func denModeGPrefixShowsToastForUnregisteredKeys() throws {
+    @Test func denModeGPrefixShowsFeedbackForUnregisteredKeys() throws {
         let store = try makeStore(boards: [board("First")])
+        let viewModel = DenViewModel(store: store)
+        viewModel.connect()
+        defer { viewModel.disconnect() }
         let essential = Essential(name: "ChatGPT", key: "c", input: "https://chatgpt.com")
         #expect(store.preferences.setEssentials([essential]))
-        store.isDenMode = true
+        viewModel.isDenMode = true
         let prefix = try keyEvent(
             characters: "g", charactersIgnoringModifiers: "g", keyCode: 5)
         let unknown = try keyEvent(
             characters: "x", charactersIgnoringModifiers: "x", keyCode: 7)
 
-        #expect(KeyboardController.handle(prefix, store: store))
+        #expect(KeyboardController.handle(prefix, store: store, viewModel: viewModel))
         #expect(
-            KeyboardController.decision(for: unknown, store: store)
+            KeyboardController.decision(for: unknown, store: store, viewModel: viewModel)
                 == .perform(.essentials(.showNotFound("x"))))
-        #expect(KeyboardController.handle(unknown, store: store))
-        #expect(store.temporaryContext == nil)
-        #expect(store.isDenMode)
+        #expect(KeyboardController.handle(unknown, store: store, viewModel: viewModel))
+        #expect(viewModel.temporaryContext == nil)
+        #expect(viewModel.isDenMode)
         #expect(store.focusedDesk?.boards.count == 1)
-        #expect(store.toastMessage?.message == "No Essential assigned to 'x'.")
-        #expect(store.toastMessage?.style == .warning)
+        #expect(store.latestFeedback?.message == "No Essential assigned to 'x'.")
+        #expect(store.latestFeedback?.severity == .warning)
 
     }
 
     @Test func denModeGPrefixCancelsQuietlyForEscapeAndModifiedKeys() throws {
         let store = try makeStore(boards: [board("First")])
+        let viewModel = DenViewModel(store: store)
+        viewModel.connect()
+        defer { viewModel.disconnect() }
         #expect(
             store.preferences.setEssentials([
                 Essential(name: "ChatGPT", key: "c", input: "https://chatgpt.com")
             ]))
-        store.isDenMode = true
+        viewModel.isDenMode = true
         let prefix = try keyEvent(
             characters: "g", charactersIgnoringModifiers: "g", keyCode: 5)
         let escape = try keyEvent(
@@ -1213,30 +1356,35 @@ struct KeyboardShortcutTests {
         let modified = try keyEvent(
             characters: "x", charactersIgnoringModifiers: "x", modifiers: [.command], keyCode: 7)
 
-        #expect(KeyboardController.handle(prefix, store: store))
-        #expect(KeyboardController.handle(escape, store: store))
-        #expect(store.temporaryContext == nil)
-        #expect(store.isDenMode)
+        #expect(KeyboardController.handle(prefix, store: store, viewModel: viewModel))
+        #expect(KeyboardController.handle(escape, store: store, viewModel: viewModel))
+        #expect(viewModel.temporaryContext == nil)
+        #expect(viewModel.isDenMode)
 
-        #expect(KeyboardController.handle(prefix, store: store))
-        #expect(KeyboardController.handle(modified, store: store))
-        #expect(store.temporaryContext == nil)
-        #expect(store.isDenMode)
-        #expect(store.toastMessage == nil)
+        #expect(KeyboardController.handle(prefix, store: store, viewModel: viewModel))
+        #expect(KeyboardController.handle(modified, store: store, viewModel: viewModel))
+        #expect(viewModel.temporaryContext == nil)
+        #expect(viewModel.isDenMode)
+        #expect(store.latestFeedback == nil)
     }
 
     @Test func zmxSessionsEscapeClosesPanel() throws {
         let store = try makeStore(boards: [board("First")])
+        let viewModel = DenViewModel(store: store)
+        viewModel.connect()
+        defer { viewModel.disconnect() }
         store.preferences.setZmxPath("/missing/zmx")
         let escape = try keyEvent(
             characters: "\u{1B}", charactersIgnoringModifiers: "\u{1B}", keyCode: 53)
 
-        store.showZmxSessions()
+        viewModel.showZmxSessions()
 
-        #expect(store.isZmxSessionsPresented)
-        #expect(KeyboardController.decision(for: escape, store: store) == .perform(.zmxSessions(.hide)))
-        #expect(KeyboardController.handle(escape, store: store))
-        #expect(!store.isZmxSessionsPresented)
+        #expect(viewModel.isZmxSessionsPresented)
+        #expect(
+            KeyboardController.decision(for: escape, store: store, viewModel: viewModel)
+                == .perform(.zmxSessions(.hide)))
+        #expect(KeyboardController.handle(escape, store: store, viewModel: viewModel))
+        #expect(!viewModel.isZmxSessionsPresented)
     }
 
     @Test func zmxSessionsArrowSelectionAndActionsUseTheFocusedSession() async throws {
@@ -1247,9 +1395,12 @@ struct KeyboardShortcutTests {
                         terminationStatus: 0,
                         standardOutput: "name=den\nname=den-vi\tden.root=den\n")
                 ]))
+        let viewModel = DenViewModel(store: store)
+        viewModel.connect()
+        defer { viewModel.disconnect() }
         store.preferences.setZmxPath("/opt/homebrew/bin/zmx")
-        store.showZmxSessions()
-        await waitForZmxSessionLoad(store)
+        viewModel.showZmxSessions()
+        await waitForZmxSessionLoad(viewModel)
 
         let down = try arrowEvent(.downArrow, modifiers: [])
         let upArrow = try arrowEvent(.upArrow, modifiers: [])
@@ -1269,78 +1420,81 @@ struct KeyboardShortcutTests {
         let escape = try keyEvent(
             characters: "\u{1B}", charactersIgnoringModifiers: "\u{1B}", keyCode: 53)
 
-        #expect(store.zmxSessions.selectedSessionName == "den")
+        #expect(viewModel.zmxSessions.selectedSessionName == "den")
         #expect(
-            KeyboardController.decision(for: down, store: store)
+            KeyboardController.decision(for: down, store: store, viewModel: viewModel)
                 == .perform(.zmxSessions(.moveSelection(1))))
-        #expect(KeyboardController.handle(down, store: store))
-        #expect(store.zmxSessions.selectedSessionName == "den-vi")
-        #expect(KeyboardController.handle(upArrow, store: store))
-        #expect(store.zmxSessions.selectedSessionName == "den")
+        #expect(KeyboardController.handle(down, store: store, viewModel: viewModel))
+        #expect(viewModel.zmxSessions.selectedSessionName == "den-vi")
+        #expect(KeyboardController.handle(upArrow, store: store, viewModel: viewModel))
+        #expect(viewModel.zmxSessions.selectedSessionName == "den")
         #expect(
-            KeyboardController.decision(for: jKey, store: store)
+            KeyboardController.decision(for: jKey, store: store, viewModel: viewModel)
                 == .perform(.zmxSessions(.moveSelection(1))))
-        #expect(KeyboardController.handle(jKey, store: store))
-        #expect(store.zmxSessions.selectedSessionName == "den-vi")
-        #expect(KeyboardController.handle(kKey, store: store))
-        #expect(store.zmxSessions.selectedSessionName == "den")
-        #expect(KeyboardController.handle(space, store: store))
-        #expect(store.zmxSessions.markedSessionNames == ["den"])
+        #expect(KeyboardController.handle(jKey, store: store, viewModel: viewModel))
+        #expect(viewModel.zmxSessions.selectedSessionName == "den-vi")
+        #expect(KeyboardController.handle(kKey, store: store, viewModel: viewModel))
+        #expect(viewModel.zmxSessions.selectedSessionName == "den")
+        #expect(KeyboardController.handle(space, store: store, viewModel: viewModel))
+        #expect(viewModel.zmxSessions.markedSessionNames == ["den"])
         #expect(
-            KeyboardController.decision(for: selectAll, store: store)
+            KeyboardController.decision(for: selectAll, store: store, viewModel: viewModel)
                 == .perform(.zmxSessions(.selectAll)))
-        #expect(KeyboardController.handle(selectAll, store: store))
-        #expect(store.zmxSessions.markedSessionNames == ["den", "den-vi"])
+        #expect(KeyboardController.handle(selectAll, store: store, viewModel: viewModel))
+        #expect(viewModel.zmxSessions.markedSessionNames == ["den", "den-vi"])
         #expect(
-            KeyboardController.decision(for: escape, store: store)
+            KeyboardController.decision(for: escape, store: store, viewModel: viewModel)
                 == .perform(.zmxSessions(.clearSelection)))
-        #expect(KeyboardController.handle(escape, store: store))
-        #expect(store.zmxSessions.markedSessionNames.isEmpty)
+        #expect(KeyboardController.handle(escape, store: store, viewModel: viewModel))
+        #expect(viewModel.zmxSessions.markedSessionNames.isEmpty)
         #expect(
-            KeyboardController.decision(for: returnKey, store: store)
+            KeyboardController.decision(for: returnKey, store: store, viewModel: viewModel)
                 == .perform(.zmxSessions(.openSelected)))
         #expect(
-            KeyboardController.decision(for: filter, store: store)
+            KeyboardController.decision(for: filter, store: store, viewModel: viewModel)
                 == .perform(.zmxSessions(.enterFilter)))
-        #expect(KeyboardController.handle(filter, store: store))
-        #expect(store.zmxSessions.isFilterInputActive)
+        #expect(KeyboardController.handle(filter, store: store, viewModel: viewModel))
+        #expect(viewModel.zmxSessions.isFilterInputActive)
         #expect(
-            KeyboardController.decision(for: selectAll, store: store)
+            KeyboardController.decision(for: selectAll, store: store, viewModel: viewModel)
                 == .perform(.zmxSessions(.selectAll)))
         #expect(
-            KeyboardController.decision(for: deleteKey, store: store)
+            KeyboardController.decision(for: deleteKey, store: store, viewModel: viewModel)
                 == .forward(.filterTextInput))
         #expect(
-            KeyboardController.decision(for: returnKey, store: store)
+            KeyboardController.decision(for: returnKey, store: store, viewModel: viewModel)
                 == .perform(.zmxSessions(.openSelected)))
-        #expect(KeyboardController.handle(escape, store: store))
-        #expect(!store.zmxSessions.isFilterInputActive)
-        #expect(store.zmxSessions.query.isEmpty)
+        #expect(KeyboardController.handle(escape, store: store, viewModel: viewModel))
+        #expect(!viewModel.zmxSessions.isFilterInputActive)
+        #expect(viewModel.zmxSessions.query.isEmpty)
         #expect(
-            KeyboardController.decision(for: escape, store: store)
+            KeyboardController.decision(for: escape, store: store, viewModel: viewModel)
                 == .perform(.zmxSessions(.hide)))
         #expect(
-            KeyboardController.decision(for: delete, store: store)
+            KeyboardController.decision(for: delete, store: store, viewModel: viewModel)
                 == .perform(.zmxSessions(.deleteSelected)))
         #expect(
-            KeyboardController.decision(for: deleteKey, store: store)
+            KeyboardController.decision(for: deleteKey, store: store, viewModel: viewModel)
                 == .perform(.zmxSessions(.deleteSelected)))
         #expect(
-            KeyboardController.decision(for: reload, store: store)
+            KeyboardController.decision(for: reload, store: store, viewModel: viewModel)
                 == .perform(.zmxSessions(.refresh)))
-        #expect(KeyboardController.handle(delete, store: store))
-        #expect(store.zmxSessions.pendingDeletion == ["den"])
+        #expect(KeyboardController.handle(delete, store: store, viewModel: viewModel))
+        #expect(viewModel.zmxSessions.pendingDeletion == ["den"])
         #expect(
-            KeyboardController.decision(for: returnKey, store: store)
+            KeyboardController.decision(for: returnKey, store: store, viewModel: viewModel)
                 == .forward(.temporaryTextInput))
     }
 
     @Test func denModeGPrefixPreservesEssentialKeyCase() throws {
         let store = try makeStore(boards: [board("First")])
+        let viewModel = DenViewModel(store: store)
+        viewModel.connect()
+        defer { viewModel.disconnect() }
         let lowercase = Essential(name: "Lowercase", key: "c", input: "https://example.com/lower")
         let uppercase = Essential(name: "Uppercase", key: "C", input: "https://example.com/upper")
         #expect(store.preferences.setEssentials([lowercase, uppercase]))
-        store.isDenMode = true
+        viewModel.isDenMode = true
 
         let prefix = try keyEvent(
             characters: "g", charactersIgnoringModifiers: "g", keyCode: 5)
@@ -1349,61 +1503,70 @@ struct KeyboardShortcutTests {
         let uppercaseKey = try keyEvent(
             characters: "C", charactersIgnoringModifiers: "c", modifiers: [.shift], keyCode: 8)
 
-        #expect(KeyboardController.handle(prefix, store: store))
+        #expect(KeyboardController.handle(prefix, store: store, viewModel: viewModel))
         #expect(
-            KeyboardController.decision(for: lowercaseKey, store: store)
+            KeyboardController.decision(for: lowercaseKey, store: store, viewModel: viewModel)
                 == .perform(.essentials(.launch(lowercase.id))))
         #expect(
-            KeyboardController.decision(for: uppercaseKey, store: store)
+            KeyboardController.decision(for: uppercaseKey, store: store, viewModel: viewModel)
                 == .perform(.essentials(.launch(uppercase.id))))
-        #expect(KeyboardController.handle(uppercaseKey, store: store))
+        #expect(KeyboardController.handle(uppercaseKey, store: store, viewModel: viewModel))
         #expect(store.focusedBoard?.currentSheetURL == URL(string: "https://example.com/upper"))
     }
 
     @Test func denModeGPrefixCanLaunchTerminalEssential() throws {
         let store = try makeStore(boards: [board("First")])
+        let viewModel = DenViewModel(store: store)
+        viewModel.connect()
+        defer { viewModel.disconnect() }
         let directory = FileManager.default.temporaryDirectory.standardizedFileURL.path
         #expect(
             store.preferences.setEssentials([
                 Essential(name: "Terminal", key: "t", input: ":terminal \(directory)")
             ]))
-        store.isDenMode = true
+        viewModel.isDenMode = true
 
         let prefix = try keyEvent(
             characters: "g", charactersIgnoringModifiers: "g", keyCode: 5)
         let key = try keyEvent(
             characters: "t", charactersIgnoringModifiers: "t", keyCode: 17)
 
-        #expect(KeyboardController.handle(prefix, store: store))
-        #expect(KeyboardController.handle(key, store: store))
+        #expect(KeyboardController.handle(prefix, store: store, viewModel: viewModel))
+        #expect(KeyboardController.handle(key, store: store, viewModel: viewModel))
         #expect(store.focusedBoard?.terminalWorkingDirectory == directory)
-        #expect(!store.isDenMode)
+        #expect(!viewModel.isDenMode)
     }
 
     @Test func commandShortcutRemainsOutsideEssentialsPrefix() throws {
         let preferences = try makePreferences()
         let store = try makeStore(boards: [board("First")])
+        let viewModel = DenViewModel(store: store)
+        viewModel.connect()
+        defer { viewModel.disconnect() }
         #expect(
             store.preferences.setEssentials([
                 Essential(name: "Terminal", key: "t", input: ":terminal")
             ]))
-        store.isDenMode = true
+        viewModel.isDenMode = true
         let commandT = try keyEvent(
             characters: "t", charactersIgnoringModifiers: "t", modifiers: [.command], keyCode: 17)
 
-        #expect(!KeyboardController.handle(commandT, store: store, preferences: preferences))
-        #expect(store.temporaryContext == nil)
-        #expect(store.isDenMode)
+        #expect(!KeyboardController.handle(commandT, store: store, viewModel: viewModel, preferences: preferences))
+        #expect(viewModel.temporaryContext == nil)
+        #expect(viewModel.isDenMode)
     }
 
     @Test func denModeUnmappedKeyIsConsumedByRouter() throws {
         let store = try makeStore(boards: [board("First")])
-        store.isDenMode = true
+        let viewModel = DenViewModel(store: store)
+        viewModel.connect()
+        defer { viewModel.disconnect() }
+        viewModel.isDenMode = true
         let unmapped = try keyEvent(
             characters: "q", charactersIgnoringModifiers: "q", modifiers: [], keyCode: 12)
 
         #expect(
-            KeyboardController.decision(for: unmapped, store: store)
+            KeyboardController.decision(for: unmapped, store: store, viewModel: viewModel)
                 == .consume(.denModeUnmapped))
     }
 
@@ -1411,13 +1574,16 @@ struct KeyboardShortcutTests {
         let first = board("First")
         let second = board("Second")
         let store = try makeStore(boards: [first, second])
+        let viewModel = DenViewModel(store: store)
+        viewModel.connect()
+        defer { viewModel.disconnect() }
         let reload = try keyEvent(
             characters: "R",
             charactersIgnoringModifiers: "r",
             modifiers: [.command, .shift],
             keyCode: 15)
 
-        #expect(KeyboardController.handle(reload, store: store))
+        #expect(KeyboardController.handle(reload, store: store, viewModel: viewModel))
         #expect(Set(store.webRuntimes.keys) == Set([first.id]))
         #expect(store.focusedDesk?.focusedBoardID == first.id)
     }
@@ -1438,13 +1604,16 @@ struct KeyboardShortcutTests {
             state: DenState(
                 desks: [firstDesk, secondDesk],
                 focusedDeskID: firstDesk.id))
+        let viewModel = DenViewModel(store: store)
+        viewModel.connect()
+        defer { viewModel.disconnect() }
         let reload = try keyEvent(
             characters: "R",
             charactersIgnoringModifiers: "r",
             modifiers: [.command, .option, .shift],
             keyCode: 15)
 
-        #expect(KeyboardController.handle(reload, store: store))
+        #expect(KeyboardController.handle(reload, store: store, viewModel: viewModel))
         #expect(Set(store.webRuntimes.keys) == Set([first.id, second.id]))
         #expect(store.focusedDesk?.id == firstDesk.id)
         #expect(store.state.desks.map(\.id) == [firstDesk.id, secondDesk.id])
@@ -1452,11 +1621,14 @@ struct KeyboardShortcutTests {
 
     @Test func denModeEOpensFocusedBoardLinkEditor() throws {
         let store = try makeStore(boards: [board("First")])
-        store.isDenMode = true
+        let viewModel = DenViewModel(store: store)
+        viewModel.connect()
+        defer { viewModel.disconnect() }
+        viewModel.isDenMode = true
         let editLink = try keyEvent(characters: "e", charactersIgnoringModifiers: "e", keyCode: 14)
 
-        #expect(KeyboardController.handle(editLink, store: store))
-        #expect(store.isEditBoardLinkPanelPresented)
+        #expect(KeyboardController.handle(editLink, store: store, viewModel: viewModel))
+        #expect(viewModel.isEditBoardLinkPanelPresented)
     }
 
     @Test func denModeShiftReturnCreatesBoardFromFirstSheet() throws {
@@ -1469,19 +1641,22 @@ struct KeyboardShortcutTests {
             firstSheetURL: firstSheetURL,
             customLabel: "Pinned")
         let store = try makeStore(boards: [source])
-        store.isDenMode = true
+        let viewModel = DenViewModel(store: store)
+        viewModel.connect()
+        defer { viewModel.disconnect() }
+        viewModel.isDenMode = true
         let shiftReturn = try keyEvent(
             characters: "\r",
             charactersIgnoringModifiers: "\r",
             modifiers: [.shift],
             keyCode: 36)
 
-        #expect(KeyboardController.handle(shiftReturn, store: store))
+        #expect(KeyboardController.handle(shiftReturn, store: store, viewModel: viewModel))
         #expect(store.focusedDesk?.boards.count == 2)
         #expect(store.focusedBoard?.currentSheetURL == firstSheetURL)
         #expect(store.focusedBoard?.firstSheetURL == firstSheetURL)
         #expect(store.focusedBoard?.customLabel == "Pinned")
-        #expect(!store.isDenMode)
+        #expect(!viewModel.isDenMode)
     }
 
     @Test func denModeShiftReturnDoesNothingWithoutFirstSheet() throws {
@@ -1492,16 +1667,19 @@ struct KeyboardShortcutTests {
             firstSheetURL: nil)
         source.firstSheetURL = nil
         let store = try makeStore(boards: [source])
-        store.isDenMode = true
+        let viewModel = DenViewModel(store: store)
+        viewModel.connect()
+        defer { viewModel.disconnect() }
+        viewModel.isDenMode = true
         let shiftReturn = try keyEvent(
             characters: "\r",
             charactersIgnoringModifiers: "\r",
             modifiers: [.shift],
             keyCode: 36)
 
-        #expect(KeyboardController.handle(shiftReturn, store: store))
+        #expect(KeyboardController.handle(shiftReturn, store: store, viewModel: viewModel))
         #expect(store.focusedDesk?.boards.count == 1)
-        #expect(store.isDenMode)
+        #expect(viewModel.isDenMode)
     }
 
     @Test func denModeTTogglesSheetNavigationPauseForFocusedBoard() throws {
@@ -1513,7 +1691,10 @@ struct KeyboardShortcutTests {
         let store = DenStore(
             state: DenState(desks: [desk], focusedDeskID: desk.id),
             sheetNavigation: sheetNavigation)
-        store.isDenMode = true
+        let viewModel = DenViewModel(store: store)
+        viewModel.connect()
+        defer { viewModel.disconnect() }
+        viewModel.isDenMode = true
         let toggle = try keyEvent(characters: "t", charactersIgnoringModifiers: "t", keyCode: 17)
         let repeatedToggle = try keyEvent(
             characters: "t",
@@ -1521,140 +1702,167 @@ struct KeyboardShortcutTests {
             isARepeat: true,
             keyCode: 17)
         #expect(store.focusedBoard?.sheetNavigationPaused == false)
-        #expect(KeyboardController.handle(toggle, store: store))
+        #expect(KeyboardController.handle(toggle, store: store, viewModel: viewModel))
         #expect(store.focusedBoard?.sheetNavigationPaused == true)
-        #expect(KeyboardController.handle(repeatedToggle, store: store))
+        #expect(KeyboardController.handle(repeatedToggle, store: store, viewModel: viewModel))
         #expect(store.focusedBoard?.sheetNavigationPaused == true)
-        #expect(KeyboardController.handle(toggle, store: store))
+        #expect(KeyboardController.handle(toggle, store: store, viewModel: viewModel))
         #expect(store.focusedBoard?.sheetNavigationPaused == false)
     }
 
     @Test func denModeAddsSpaceGuideAndZenViewWithoutPersistedStateChanges() throws {
         let preferences = try makePreferences()
         let store = try makeStore(boards: [board("First")])
-        store.isDenMode = true
+        let viewModel = DenViewModel(store: store)
+        viewModel.connect()
+        defer { viewModel.disconnect() }
+        viewModel.isDenMode = true
         let state = store.state
 
         let zen = try keyEvent(characters: "z", charactersIgnoringModifiers: "z", keyCode: 6)
-        #expect(KeyboardController.handle(zen, store: store, preferences: preferences))
-        #expect(store.isZenViewPresented)
+        #expect(KeyboardController.handle(zen, store: store, viewModel: viewModel, preferences: preferences))
+        #expect(viewModel.isZenViewPresented)
         let repeatedZen = try keyEvent(
             characters: "z", charactersIgnoringModifiers: "z", isARepeat: true, keyCode: 6)
-        #expect(KeyboardController.handle(repeatedZen, store: store, preferences: preferences))
-        #expect(store.isZenViewPresented)
+        #expect(KeyboardController.handle(repeatedZen, store: store, viewModel: viewModel, preferences: preferences))
+        #expect(viewModel.isZenViewPresented)
 
         let question = try keyEvent(
             characters: "?", charactersIgnoringModifiers: "/", modifiers: [.shift], keyCode: 44)
-        #expect(KeyboardController.handle(question, store: store, preferences: preferences))
-        #expect(store.isKeyboardShortcutsPresented)
+        #expect(KeyboardController.handle(question, store: store, viewModel: viewModel, preferences: preferences))
+        #expect(viewModel.isKeyboardShortcutsPresented)
         let movement = try keyEvent(characters: "h", charactersIgnoringModifiers: "h", keyCode: 4)
-        #expect(!KeyboardController.handle(movement, store: store, preferences: preferences))
-        #expect(store.isKeyboardShortcutsPresented)
-        #expect(!KeyboardController.handle(question, store: store, preferences: preferences))
-        #expect(store.isKeyboardShortcutsPresented)
+        #expect(!KeyboardController.handle(movement, store: store, viewModel: viewModel, preferences: preferences))
+        #expect(viewModel.isKeyboardShortcutsPresented)
+        #expect(!KeyboardController.handle(question, store: store, viewModel: viewModel, preferences: preferences))
+        #expect(viewModel.isKeyboardShortcutsPresented)
         let escape = try keyEvent(
             characters: "\u{1B}", charactersIgnoringModifiers: "\u{1B}", keyCode: 53)
-        #expect(KeyboardController.handle(escape, store: store, preferences: preferences))
-        #expect(!store.isKeyboardShortcutsPresented)
+        #expect(KeyboardController.handle(escape, store: store, viewModel: viewModel, preferences: preferences))
+        #expect(!viewModel.isKeyboardShortcutsPresented)
 
         let space = try keyEvent(characters: " ", charactersIgnoringModifiers: " ", keyCode: 49)
-        #expect(KeyboardController.handle(space, store: store, preferences: preferences))
-        #expect(store.isOpenBoardPanelPresented)
+        #expect(KeyboardController.handle(space, store: store, viewModel: viewModel, preferences: preferences))
+        #expect(viewModel.isOpenBoardPanelPresented)
         #expect(store.state == state)
     }
 
     @Test func denModeShiftBracketsHandleFirstAndLatestSheet() throws {
         let store = try makeStore(boards: [board("First")])
-        store.isDenMode = true
+        let viewModel = DenViewModel(store: store)
+        viewModel.connect()
+        defer { viewModel.disconnect() }
+        viewModel.isDenMode = true
         let first = try keyEvent(
             characters: "{", charactersIgnoringModifiers: "{", modifiers: [.shift], keyCode: 33)
         let latest = try keyEvent(
             characters: "}", charactersIgnoringModifiers: "}", modifiers: [.shift], keyCode: 30)
 
-        #expect(KeyboardController.handle(first, store: store))
-        #expect(KeyboardController.handle(latest, store: store))
-        #expect(store.isDenMode)
+        #expect(KeyboardController.handle(first, store: store, viewModel: viewModel))
+        #expect(KeyboardController.handle(latest, store: store, viewModel: viewModel))
+        #expect(viewModel.isDenMode)
     }
 
     @Test func denModePOpensDeskPresetPanelOnlyForDeskWithBoards() throws {
         let save = try keyEvent(characters: "p", charactersIgnoringModifiers: "p", keyCode: 35)
         let store = try makeStore(boards: [board("First")])
-        store.isDenMode = true
+        let viewModel = DenViewModel(store: store)
+        viewModel.connect()
+        defer { viewModel.disconnect() }
+        viewModel.isDenMode = true
 
-        #expect(KeyboardController.handle(save, store: store))
-        #expect(store.isSaveDeskPresetPanelPresented)
+        #expect(KeyboardController.handle(save, store: store, viewModel: viewModel))
+        #expect(viewModel.isSaveDeskPresetPanelPresented)
 
         let empty = try makeStore(boards: [])
-        empty.isDenMode = true
-        #expect(KeyboardController.handle(save, store: empty))
-        #expect(!empty.isSaveDeskPresetPanelPresented)
+        let emptyViewModel = DenViewModel(store: empty)
+        emptyViewModel.connect()
+        defer { emptyViewModel.disconnect() }
+        emptyViewModel.isDenMode = true
+        #expect(KeyboardController.handle(save, store: empty, viewModel: emptyViewModel))
+        #expect(!emptyViewModel.isSaveDeskPresetPanelPresented)
     }
 
     @Test func denModeShiftPOpensDeskReplacement() throws {
         let replace = try keyEvent(
             characters: "P", charactersIgnoringModifiers: "p", modifiers: [.shift], keyCode: 35)
         let store = try makeStore(boards: [])
-        store.isDenMode = true
+        let viewModel = DenViewModel(store: store)
+        viewModel.connect()
+        defer { viewModel.disconnect() }
+        viewModel.isDenMode = true
 
-        #expect(KeyboardController.handle(replace, store: store))
-        #expect(store.isReplaceDeskPanelPresented)
-        #expect(store.isNewDeskPanelPresented)
-        #expect(!store.isDeskPresetManagementPresented)
+        #expect(KeyboardController.handle(replace, store: store, viewModel: viewModel))
+        #expect(viewModel.isReplaceDeskPanelPresented)
+        #expect(viewModel.isNewDeskPanelPresented)
+        #expect(!viewModel.isDeskPresetManagementPresented)
     }
 
     @Test func denModeBHasNoPresetAction() throws {
         let legacy = try keyEvent(characters: "b", charactersIgnoringModifiers: "b", keyCode: 11)
         let store = try makeStore(boards: [board("First")])
-        store.isDenMode = true
+        let viewModel = DenViewModel(store: store)
+        viewModel.connect()
+        defer { viewModel.disconnect() }
+        viewModel.isDenMode = true
 
-        #expect(KeyboardController.handle(legacy, store: store))
-        #expect(!store.isSaveDeskPresetPanelPresented)
-        #expect(!store.isDeskPresetManagementPresented)
+        #expect(KeyboardController.handle(legacy, store: store, viewModel: viewModel))
+        #expect(!viewModel.isSaveDeskPresetPanelPresented)
+        #expect(!viewModel.isDeskPresetManagementPresented)
     }
 
     @Test func presetConfirmationsSuspendBoardRemovalShortcuts() throws {
         let commandW = try keyEvent(
             characters: "w", charactersIgnoringModifiers: "w", modifiers: [.command], keyCode: 13)
         let store = try makeStore(boards: [board("First")])
+        let viewModel = DenViewModel(store: store)
+        viewModel.connect()
+        defer { viewModel.disconnect() }
 
         #expect(store.saveFocusedDeskAsPreset(label: "Routine") == .created)
         #expect(store.saveFocusedDeskAsPreset(label: "Routine") == .replacementPending)
-        #expect(!KeyboardController.handle(commandW, store: store))
+        #expect(!KeyboardController.handle(commandW, store: store, viewModel: viewModel))
         #expect(store.focusedDesk?.boards.count == 1)
 
-        store.cancelDeskPresetReplacement()
+        viewModel.cancelDeskPresetReplacement()
         let presetID = try #require(store.deskPresets.first?.id)
         store.requestDeskPresetDeletion(presetID)
-        #expect(!KeyboardController.handle(commandW, store: store))
+        #expect(!KeyboardController.handle(commandW, store: store, viewModel: viewModel))
         #expect(store.focusedDesk?.boards.count == 1)
     }
 
     @Test func fullscreenBypassesAllShortcutsAndClearsDenMode() throws {
         let store = try makeStore(boards: [board("First")])
-        store.isDenMode = true
+        let viewModel = DenViewModel(store: store)
+        viewModel.connect()
+        defer { viewModel.disconnect() }
+        viewModel.isDenMode = true
 
         store.updateFullscreenStatus(boardID: UUID(), isFullscreen: true)
-        #expect(!store.isDenMode)
-        #expect(store.isFullscreenActive)
+        #expect(!viewModel.isDenMode)
+        #expect(viewModel.isFullscreenActive)
 
         let commandW = try keyEvent(
             characters: "w", charactersIgnoringModifiers: "w", modifiers: [.command], keyCode: 13)
-        #expect(!KeyboardController.handle(commandW, store: store))
+        #expect(!KeyboardController.handle(commandW, store: store, viewModel: viewModel))
     }
 
     @Test func denModeAKeepsFocusedSheetInDrawer() throws {
         let focused = board("Focused", url: "https://drawer.example/")
         let store = try makeStore(boards: [focused])
-        store.isDenMode = true
+        let viewModel = DenViewModel(store: store)
+        viewModel.connect()
+        defer { viewModel.disconnect() }
+        viewModel.isDenMode = true
 
         let keep = try keyEvent(
             characters: "a",
             charactersIgnoringModifiers: "a",
             keyCode: 0)
 
-        #expect(KeyboardController.handle(keep, store: store))
+        #expect(KeyboardController.handle(keep, store: store, viewModel: viewModel))
         #expect(store.state.drawerItems.first?.url == URL(string: "https://drawer.example/"))
-        #expect(!store.isDrawerOpen)
+        #expect(!viewModel.isDrawerOpen)
     }
 
     private func makePreferences() throws -> AppPreferences {
@@ -1728,8 +1936,8 @@ struct KeyboardShortcutTests {
         BoardState(label: label, width: 520, currentSheetURL: URL(string: url))
     }
 
-    private func waitForZmxSessionLoad(_ store: DenStore) async {
-        await store.zmxSessions.waitForRefresh()
+    private func waitForZmxSessionLoad(_ viewModel: DenViewModel) async {
+        await viewModel.zmxSessions.waitForRefresh()
     }
 }
 

@@ -26,8 +26,8 @@ extension DenStore {
         let desk = DeskState(label: trimmedLabel, boards: boards, focusedBoardID: focusedBoardID)
         state.desks.insert(desk, at: focusedDeskIndex + 1)
         setFocusedDesk(desk.id)
-        setTemporaryContext(nil)
-        isDenMode = false
+        onWindowEffect?(.dismissTemporaryPresentation)
+        onWindowEffect?(.exitDenMode)
         save()
         dispatchDenOperationEvent(.deskCreated)
     }
@@ -49,16 +49,8 @@ extension DenStore {
             focusedBoardIndex: preset.focusedBoardIndex)
     }
 
-    func confirmDeskReplacement() {
-        guard let replacement = deskPendingReplacement else { return }
-        pendingConfirmation = nil
+    func confirmDeskReplacement(_ replacement: PendingDeskReplacement) {
         applyDeskReplacement(replacement)
-    }
-
-    func cancelDeskReplacement() {
-        if deskPendingReplacement != nil {
-            pendingConfirmation = nil
-        }
     }
 
     private func requestFocusedDeskReplacement(
@@ -86,7 +78,7 @@ extension DenStore {
             applyDeskReplacement(replacement)
             return .applied
         }
-        pendingConfirmation = .replaceDesk(replacement)
+        onWindowEffect?(.requestConfirmation(.replaceDesk(replacement)))
         return .confirmationPending
     }
 
@@ -108,15 +100,15 @@ extension DenStore {
         state.desks[deskIndex].anchorBoardID = nil
         anchorJumpOriginBoardIDByDesk.removeValue(forKey: replacement.deskID)
         invalidateReferences(toRemovedBoardIDs: removedBoardIDs)
-        setTemporaryContext(nil)
-        isDenMode = false
+        onWindowEffect?(.dismissTemporaryPresentation)
+        onWindowEffect?(.exitDenMode)
         save()
-        showToast("Replaced Desk with Preset.", style: .success)
+        reportFeedback("Replaced Desk with Preset.", severity: .success)
     }
 
     func deleteFocusedDesk() {
         guard canDeleteFocusedDesk else {
-            showToast("The last desk cannot be deleted.", style: .warning)
+            reportFeedback("The last desk cannot be deleted.", severity: .warning)
             return
         }
         guard let focusedDesk else { return }
@@ -124,21 +116,11 @@ extension DenStore {
         if focusedDesk.boards.isEmpty {
             deleteDesk(focusedDesk.id)
         } else {
-            pendingConfirmation = .deleteDesk(focusedDesk)
+            onWindowEffect?(.requestConfirmation(.deleteDesk(focusedDesk)))
         }
     }
 
-    func confirmDeskDeletion() {
-        guard let deskID = deskPendingDeletion?.id else { return }
-        pendingConfirmation = nil
-        deleteDesk(deskID)
-    }
-
-    func cancelDeskDeletion() {
-        if deskPendingDeletion != nil {
-            pendingConfirmation = nil
-        }
-    }
+    func confirmDeskDeletion(_ deskID: UUID) { deleteDesk(deskID) }
 
     private func deleteDesk(_ deskID: UUID) {
         guard
@@ -161,14 +143,9 @@ extension DenStore {
         if presentedDeskID == deskID {
             setFocusedDesk(replacementDeskID)
         }
-        if isOverviewPresented {
-            overviewSelection = OverviewSelection(
-                deskID: presentedDeskID,
-                boardID: focusedDesk?.focusedBoardID)
-        }
         invalidateReferences(toRemovedBoardIDs: Set(desk.boards.map(\.id)))
         invalidateReferences(toRemovedDeskID: deskID)
-        isDenMode = false
+        onWindowEffect?(.exitDenMode)
         save()
     }
 
@@ -178,8 +155,8 @@ extension DenStore {
         if !trimmed.isEmpty {
             state.desks[deskIndex].label = trimmed
         }
-        setTemporaryContext(nil)
-        isDenMode = false
+        onWindowEffect?(.dismissTemporaryPresentation)
+        onWindowEffect?(.exitDenMode)
         save()
     }
 
@@ -202,6 +179,6 @@ extension DenStore {
         guard state.desks.contains(where: { $0.id == deskID }) else { return }
         pasteboard.clearContents()
         pasteboard.setString(deskID.uuidString.lowercased(), forType: .string)
-        showToast("Copied Desk ID.", style: .success)
+        reportFeedback("Copied Desk ID.", severity: .success)
     }
 }

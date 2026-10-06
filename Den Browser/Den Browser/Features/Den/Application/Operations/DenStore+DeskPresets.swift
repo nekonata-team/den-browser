@@ -27,45 +27,39 @@ extension DenStore {
         }
 
         if let existing = deskPresets.first(where: { samePresetLabel($0.label, label) }) {
-            pendingConfirmation = .replaceDeskPreset(
-                PersonalDeskPreset(id: existing.id, label: existing.label, desk: desk))
+            onWindowEffect?(
+                .requestConfirmation(
+                    .replaceDeskPreset(
+                        PersonalDeskPreset(id: existing.id, label: existing.label, desk: desk))))
             return .replacementPending
         }
 
         deskPresets.insert(PersonalDeskPreset(label: label, desk: desk), at: 0)
-        isDenMode = false
+        onWindowEffect?(.exitDenMode)
         if saveDeskPresets() {
-            showToast("Saved Desk Preset.", style: .success)
+            reportFeedback("Saved Desk Preset.", severity: .success)
         } else {
-            showToast("Could not save Desk Preset.", style: .error)
+            reportFeedback("Could not save Desk Preset.", severity: .error)
         }
         return .created
     }
 
-    func confirmDeskPresetReplacement() {
-        guard
-            let replacement = deskPresetPendingReplacement,
-            let index = deskPresets.firstIndex(where: { $0.id == replacement.id })
-        else { return }
+    @discardableResult
+    func replaceDeskPreset(_ replacement: PersonalDeskPreset) -> Bool {
+        guard let index = deskPresets.firstIndex(where: { $0.id == replacement.id }) else { return false }
         deskPresets[index] = replacement
-        pendingConfirmation = nil
-        isDenMode = false
+        onWindowEffect?(.exitDenMode)
         if saveDeskPresets() {
-            showToast("Saved Desk Preset.", style: .success)
+            reportFeedback("Saved Desk Preset.", severity: .success)
         } else {
-            showToast("Could not save Desk Preset.", style: .error)
+            reportFeedback("Could not save Desk Preset.", severity: .error)
         }
-    }
-
-    func cancelDeskPresetReplacement() {
-        if deskPresetPendingReplacement != nil {
-            pendingConfirmation = nil
-        }
+        return true
     }
 
     func requestDeskPresetDeletion(_ id: UUID) {
         guard let preset = deskPresets.first(where: { $0.id == id }) else { return }
-        pendingConfirmation = .deleteDeskPreset(preset)
+        onWindowEffect?(.requestConfirmation(.deleteDeskPreset(preset)))
     }
 
     func renameDeskPreset(_ id: UUID, to rawLabel: String) -> DeskPresetRenameResult {
@@ -82,23 +76,15 @@ extension DenStore {
 
         deskPresets[index].label = label
         if !saveDeskPresets() {
-            showToast("Could not rename Desk Preset.", style: .error)
+            reportFeedback("Could not rename Desk Preset.", severity: .error)
         }
         return .renamed
     }
 
-    func confirmDeskPresetDeletion() {
-        guard let id = deskPresetPendingDeletion?.id else { return }
-        pendingConfirmation = nil
+    func deleteDeskPreset(_ id: UUID) {
         deskPresets.removeAll { $0.id == id }
         if !saveDeskPresets() {
-            showToast("Could not delete Desk Preset.", style: .error)
-        }
-    }
-
-    func cancelDeskPresetDeletion() {
-        if deskPresetPendingDeletion != nil {
-            pendingConfirmation = nil
+            reportFeedback("Could not delete Desk Preset.", severity: .error)
         }
     }
 

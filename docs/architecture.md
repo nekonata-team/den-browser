@@ -14,18 +14,20 @@ The app and test targets support macOS 26.0 and later. Availability checks and f
 Den Browser/Den Browser/
   App/
     app entry, configuration, keyboard integration, and Settings composition
+  Design/
+    shared visual tokens, color palettes, layout metrics, motion, panel styling, and reusable controls
   Features/
     Den/
-      Domain/                 aggregate Den state, Essentials, and Notifications
-      Application/            shared storage, window store, and cross-domain operations
-      Presentation/           Den composition, Overview, panels, Toast, and visual design
-      Infrastructure/         state encoding and process-resource sampling
+      Domain/                 aggregate Den state
+      Application/            shared storage, window store, operations, and operation feedback
+      Presentation/           window ViewModel, Den composition, panels, Toast, and window layout
       Preferences/
     Desk/
       Domain/                 Desk state and Desk Presets
       Presentation/           switcher, panels, and preset UI
     Board/
-      Domain/                 identity, kind, grouping, and input resolution
+      Domain/                 identity, kind, and grouping
+      Application/            input interpretation and launch validation
       Presentation/           strip, rail, layout, surfaces, and common panels
       Web/                    Domain, Presentation, and Infrastructure
       Terminal/               Domain, Application, Presentation, and Infrastructure
@@ -35,6 +37,17 @@ Den Browser/Den Browser/
       Domain/
       Presentation/
       Infrastructure/
+    Essentials/
+      Domain/                 named reusable Board inputs
+      Presentation/           prefix panel and settings
+    Notifications/
+      Domain/                 transient Board messages
+      Presentation/           notification list and selection
+    Overview/
+      Presentation/           cross-Desk overview and selection
+    BoardActivity/
+      Presentation/           live Board resource usage
+      Infrastructure/         process-resource sampling
     Profiles/
       Domain/
       Application/
@@ -56,16 +69,19 @@ Den Browser/Den Browser/
   Resources/
 ```
 
-Features are source ownership groups inside one Swift target, not independently isolated modules or stores. Den owns aggregate state, the workflows joining Desks, Boards, and Drawer, and the composition of the Den window. Desk, Board, and Drawer own their data and presentation in sibling folders; Board kind-specific code stays under Board. Overview, Notifications, Essentials, Toast, and shared Den visual design stay in Den because they present or coordinate the complete Den.
+Features are source ownership groups inside one Swift target, not independently isolated modules or stores. Den owns aggregate state, the workflows joining Desks, Boards, and Drawer, and the composition of the Den window. Desk, Board, Drawer, Essentials, Notifications, Overview, and BoardActivity own their data or feature-specific presentation in sibling folders; Board kind-specific code stays under Board. Toast, Den backgrounds, confirmation dialogs, and window layout stay in Den because they present or coordinate the complete Den. Den retains the operations connecting Essentials and Notifications to Boards and the transitions between their panels and other window contexts.
+
+`Design` owns shared visual tokens, color palettes, fixed layout metrics, motion choices and presets, panel styling, and reusable controls. This includes normal, Den Mode, and Private Den background palettes; Den Presentation selects and renders them from the current window state. `LayoutMetrics.swift` defines Den, panel, and shortcut-guide dimensions without Feature state. Den Presentation retains Board width and height calculations using window geometry and Board constraints. Features and App may depend on Design; Design does not depend on Feature state, Stores, or workflows. Feature-specific geometry calculations and transitions stay in their owning Presentation code. Selection navigation and drag geometry are presentation behavior rather than design components and remain outside Design.
 
 The shared Web group contains code used by Web Boards, Drawer Preview, and Sheet Navigation. A Web Board's state, view, and runtime belong to `Board/Web`; shared URL policy, DOM execution, and the base WebKit runtime belong to `Web`. Sheet is not a Web-only implementation boundary, so there is no generic Sheet runtime folder or shared Sheet interface.
 
 ## Dependency direction
 
 - `App` assembles scenes, windows, commands, and dependencies. It does not acquire feature behavior merely because multiple Features use it.
-- `Domain` contains state and product rules. It does not depend on `DenStore`, SwiftUI, AppKit, WebKit, or live runtime objects. Domain groups may reference one another according to the product model: Den contains Desks, and Desks contain Boards.
-- `Application` owns operation sequencing, shared or window-local state, and lifecycle coordination. `DenStore` remains the shared operation entry point; its extensions live in `Den/Application/Operations`. No new per-domain store is introduced merely to match the folder tree.
-- `Presentation` owns views, geometry, visual tokens, and display-only extensions. Existing views may use `DenStore` across source groups. Native view adapters may use their concrete runtimes.
+- `Design` provides shared visual presentation without depending on Feature models or operations. Motion preference storage remains in AppPreferences; its visual choice type belongs to Design.
+- `Domain` contains state and product rules. It does not depend on `DenStore`, Application-owned operation events, SwiftUI, AppKit, WebKit, or live runtime objects. Domain groups may reference one another according to the product model: Den contains Desks, and Desks contain Boards.
+- `Application` owns operation sequencing, application state, and runtime lifecycle coordination. `DenStore` remains the operation entry point; its extensions live in `Den/Application/Operations`. No new per-domain store is introduced merely to match the folder tree.
+- `Presentation` owns views, window-local UI models, geometry, visual tokens, and display mappings as independent functions. Existing views may use `DenStore` across source groups. Native view adapters may use their concrete runtimes.
 - `Infrastructure` owns concrete WebKit, Terminal, persistence, and process integration. Application code can call these implementations directly; folder organization alone does not justify a protocol, repository, or coordinator.
 - `Platform` contains only feature-independent operating-system integration. Product URL rules and Den lifecycle remain with their owners.
 - IPC is an application adapter shared with the bundled CLI. Protocol definitions are compiled into both targets; socket transport does not own Board or Profile policy.
@@ -79,30 +95,82 @@ WebExtension integration uses the existing `WebExtensionHost` boundary. Board an
 
 Persisted Profile data remains separate from live Web and Terminal runtime objects.
 
-- `DenState` is the source of truth for Desk and Board identity, order, labels, widths, focus, Board kinds and their saved state, Drawer Items, and the expanded Drawer Item identity used to restore a Preview.
+- `DenState` is the source of truth for Desk and Board identity, order, labels, widths, focus, Board kinds and their saved state, and Drawer Items. Drawer selection and Preview expansion are window-local ViewModel state.
 - `DenStorage` also holds Profile-owned persisted Desk Presets and Recent Items. These are persisted alongside `DenState` but remain separate data collections.
 - `WebBoardRuntime` owns live WebKit state, including each Web Board's in-memory Sheet Stack.
 - `BoardState.kind` distinguishes Web, Inspection, Terminal, and Tutorial Boards and carries their kind-specific state. A Board presents Sheets; Web Boards have a Sheet Stack, while Terminal Boards present one Sheet backed by a live Terminal Session. Tutorial Boards and their progress are session-only and stay out of persisted DenState and Desk Presets. Terminal session choices (Shell, Zellij, and zmx) belong to Terminal Board state; URLs and Vim-style Sheet Navigation settings belong to Web Board state.
 - `TerminalRuntime` owns one libghostty surface and Shell, Zellij, or zmx process. One controller is used per Terminal Board.
-- Each Profile has one shared `DenStorage` for persisted data, Profile-shared transient state, and live runtime registries. Profile-shared transient state includes Notifications, active drag state, Recently Removed Boards, and discarded Drawer Item restoration history. Each Profile window has a `DenStore` for its presented Desk and window-local presentation state.
+- Each Profile has one shared `DenStorage` for persisted data, Profile-shared transient state, and live runtime registries. Profile-shared transient state includes Notifications, active drag state, Recently Removed Boards, and discarded Drawer Item restoration history. Each Profile window has a `DenStore` for its presented Desk and application resources, and a `DenViewModel` for presentation state.
+- `ProfileManager` retains each runtime's event-owner Store by Profile and Board while that runtime is active. `DenStorage` reports owner changes through a synchronous callback that captures ProfileManager weakly; it does not retain Stores. Runtime disposal removes the corresponding owner, and final Profile-window teardown releases the Profile's owners. Closing one window preserves detached runtime event delivery while other Profile windows remain.
 - `DenView` renders only the Desk assigned to its window. Shared runtime storage retains both runtime types across Desk and window changes; detached Terminal views stop rendering without ending their process. A detached TerminalRuntime also runs low-frequency app ticks until its surface is visible again or the runtime is disposed; this follows [ADR 0040](./adr/0040-tick-detached-terminal-runtimes.md).
-- Window-local state includes Den Mode, filters, panel presentation and workflows, layout metrics, Drawer Preview runtime, active download presentation, and Toast presentation. Each panel owns its transient draft values and `FocusState`; a draft that must survive panel replacement, such as Open Board input, remains in the window-local `DenStore`. Window-to-Desk assignment is managed by `ProfileManager` and is not persisted.
-- zmx session discovery is window-local. Each `DenStore` owns one `ZmxSessionsModel`, which owns session listing, filtering, selection, deletion, and their asynchronous Tasks. The model is stopped when the zmx Sessions context closes, so late command results cannot update a closed panel. `DenStore` supplies the current zmx client and coordinates opening a Board or returning to the Open Board panel.
+- `DenViewModel` owns Den Mode, filters, panel presentation and workflows, confirmation presentation, layout metrics, scroll and native-input requests, and Toast presentation. Each panel owns its local draft values and `FocusState`; drafts that survive panel replacement, such as Open Board input, belong to the ViewModel. Drawer Preview runtime and download operations remain in `DenStore`. Window-to-Desk assignment is managed by `ProfileManager` and is not persisted.
+- zmx session discovery is window-local. Each `DenViewModel` owns one `ZmxSessionsModel`, which owns session listing, filtering, selection, deletion, and their asynchronous Tasks. The model is stopped when the zmx Sessions context closes, so late command results cannot update a closed panel. `DenStore` supplies the current zmx client and opens Boards; the ViewModel coordinates the panel transition.
 - Persistence never serializes WebKit objects, terminal processes, terminal screens, or scrollback.
 
 This boundary follows [ADR 0008](./adr/0008-codable-den-state-webview-runtime.md).
 
 Terminal embedding and its security boundary follow [ADR 0032](./adr/0032-embed-terminal-boards-with-libghostty.md).
 
+## Window presentation model
+
+The Store and window presentation boundary follows [ADR 0057](./adr/0057-separate-window-presentation-from-den-store.md).
+
+Each mounted Den window owns one `DenViewModel` in Presentation. Views, menu commands, and keyboard
+routing use that same instance. The ViewModel references the window's `DenStore`; it does not copy
+shared Desk or Board state. Views may read observable application state directly without a separate
+ViewModel for every View.
+
+The window ViewModel owns temporary-context transitions, drafts for its remaining panels, confirmation
+display, Den/Zen/Focus modes, layout measurements, and pending scroll or native-input requests.
+`OverviewViewModel`, `DrawerViewModel`, `OpenBoardViewModel`, and `DeskFilterViewModel` own their
+contexts' drafts, queries, selections, local operations, and cancellable presentation Tasks.
+`NotificationListViewModel` owns selection and navigation within the notification list.
+The window creates and retains these models with the same Store and supplies them to their Views.
+It coordinates opening, closing, transitions between contexts, and window-dependent values such as
+Board width. Open Board retains its draft when returning from Zmx Sessions. Context models do not reference
+one another or copy domain state. Small panels may keep their drafts in View-local State.
+Models pass explicit values or identifiers to Store operations. Application-owned confirmation requests describe
+the operation to confirm; Presentation owns whether the confirmation is currently displayed.
+
+`DenStore` emits plain `DenWindowEffect` values through one synchronous callback. This preserves
+multiple effects from an operation and updates input context before the next keyboard event. CLI and
+IPC still call Store operations directly. Application does not depend on `DenViewModel` or its UI
+state types. The window connects and disconnects the callback through its lifecycle; constructing a
+ViewModel does not register callbacks.
+
+For Board mutations that must suppress animation, Store emits a plain window effect before changing
+state. The ViewModel records the request, and DenView applies the SwiftUI transaction to its rendered
+window content. Application does not construct SwiftUI transactions. Tutorial operation-event mappings
+also belong to Application; Tutorial Domain contains step requirements and progress state.
+
+`DenFeedback` contains a message, severity, and optional Board, Drawer Item, or Notification target,
+without SwiftUI styling or a presentation timer. The Store retains the latest operation feedback and
+emits it as an effect. The ViewModel owns Toast display, replacement, dismissal, and its timer. A
+Toast click passes the explicit target back to the Store's target-opening operation.
+
 ## Feature boundaries
 
 ### Den
 
-Owns Den aggregate state, shared and window-local storage, composition, and operations connecting Desks, Boards, Drawer, and Overview. `DenStore` remains one store split into focused operation extensions; it owns exclusive panel presentation and commit operations. `DenStorage` is a separate Application file containing Profile-shared data and runtime registries. Window-local workflow types are separate from the store implementation.
+Owns Den aggregate state, shared and window-local application resources, composition, and operations connecting Desks, Boards, and Drawer. `DenStore` remains one store split into focused operation extensions. `DenViewModel` owns window presentation workflows. `DenStorage` contains Profile-shared data and runtime registries. Application command payloads and Presentation workflow types are kept with their respective owners.
 
-Desk owns Desk state and preset data. Board owns shared Board state and grouping plus its Web, Terminal, Inspection, and Tutorial implementations. Drawer owns Drawer Items, its view, and Preview runtime. Their views may depend on Den's application operations without changing data ownership. `ZmxSessionsModel` stays in `Board/Terminal/Application` and owns session state and command Tasks, while Den coordinates Board creation, focus, and panel transitions.
+Desk owns Desk state and preset data. Board owns shared Board state and grouping plus its Web, Terminal, Inspection, and Tutorial implementations. Drawer owns Drawer Items, its view, and Preview runtime. Their views may depend on Den's application operations without changing data ownership. `ZmxSessionsModel` belongs to `Board/Terminal/Presentation` because its discovery Tasks, filtering, and selection serve the Sessions panel.
 
-Den also owns preferences for shared presentation behavior and the Den-wide Notification list. `IPC/Application` connects external CLI and MCP requests to active Profile windows through existing domain operations, following [ADR 0047](./adr/0047-integrate-den-cli.md) and [ADR 0055](./adr/0055-add-den-mcp-server.md).
+Den also owns preferences for shared presentation behavior. `IPC/Application` connects external CLI and MCP requests to active Profile windows through existing domain operations, following [ADR 0047](./adr/0047-integrate-den-cli.md) and [ADR 0055](./adr/0055-add-den-mcp-server.md).
+
+### Overview
+
+Overview owns its View and ViewModel under `Features/Overview/Presentation`. Its search and selection span Desks and Boards, but its selection is temporary presentation state. Den coordinates opening and closing Overview, transitions between window contexts, and the application operations that focus or rearrange Desks and Boards. Overview introduces no separate Domain layer or Store. Overview ViewModel tests belong under `Den Browser/Den BrowserTests/Overview`.
+
+### BoardActivity
+
+BoardActivity owns the resource-usage screen in Presentation and process sampling in Infrastructure. The screen reads shared Board state and runtimes through DenStore; Den coordinates opening, closing, and entering a Board from the screen. BoardActivity introduces no separate Domain layer, Store, or ViewModel. Sampling tests belong under `Den Browser/Den BrowserTests/BoardActivity`.
+
+### Essentials and Notifications
+
+Essentials owns the `Essential` model, the Prefix panel, and Essential settings. The collection remains app-wide in `AppPreferences`; the Settings scene assembles its feature-owned screen. Den coordinates Prefix presentation and opening an Essential as a Board.
+
+Notifications owns the `DenNotification` model, list UI, and list-local selection. Notification data remains Profile-shared, transient state in `DenStorage`. DenStore records messages, marks them read, clears them, and resolves their originating Board across Desks. DenViewModel coordinates opening and closing the list, confirmation display, and transitions to other window contexts. These ownership groups do not introduce separate stores or change persistence.
 
 ### Profiles
 
@@ -126,7 +194,7 @@ Settings is not a Feature. `App/Settings` owns the Settings scene and its naviga
 
 ### Platform
 
-Contains reusable operating-system integration rather than product concepts. Do not create a global Platform folder merely because code imports AppKit or WebKit. `TextInputComposition` is a feature-independent IME composition helper shared by Den, Sheet Navigation, and App settings. `SurfaceHost` is a generic native-view host shared by Board kind adapters and Drawer Preview; its API uses only AppKit views and generic request values. `WebBoardRuntime` and `BoardWebView` remain in `Board/Web` because they own Web Board lifecycle. `SheetNavigationManager` remains in SheetNavigation because its WebKit integration implements that Feature. `KeyboardController` remains in `App` while it routes app-wide commands into Den behavior. A component moves to `Platform` only when its API is feature-independent and no reverse dependency on a Feature is required.
+Contains reusable operating-system integration rather than product concepts. Do not create a global Platform folder merely because code imports AppKit or WebKit. `TextInputComposition` is a feature-independent IME composition helper shared by Den, Sheet Navigation, and App settings. `SurfaceHost` is a generic native-view host shared by Board kind adapters and Drawer Preview; its API uses only AppKit views and generic request values. `WebBoardRuntime` and `WebBoardSurface` remain in `Board/Web` because they own Web Board lifecycle. `SheetNavigationManager` remains in SheetNavigation because its WebKit integration implements that Feature. `KeyboardController` remains in `App` while it routes app-wide commands into Den behavior. A component moves to `Platform` only when its API is feature-independent and no reverse dependency on a Feature is required.
 
 ## Folder rules
 

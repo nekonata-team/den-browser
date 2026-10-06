@@ -54,36 +54,38 @@ struct InputContext {
     let mode: KeyboardMode
     let hasFocusedBoard: Bool
 
-    init(store: DenStore, event: NSEvent) {
-        isFullscreenActive = store.isFullscreenActive
-        hasPendingConfirmation = store.hasPendingConfirmation
+    init(store: DenStore, viewModel: DenViewModel, event: NSEvent) {
+        isFullscreenActive = viewModel.isFullscreenActive
+        hasPendingConfirmation = viewModel.hasPendingConfirmation
         activeDrag = store.activeDrag
-        mode = store.isDenMode ? .den : .sheet
-        if store.isNotificationListPresented {
+        mode = viewModel.isDenMode ? .den : .sheet
+        if viewModel.isNotificationListPresented {
             surface = .notifications
         } else {
             surface =
-                switch store.temporaryContext {
+                switch viewModel.temporaryContext {
                 case .keyboardShortcuts: .keyboardShortcuts
                 case .essentialsPrefix: .essentialsPrefix
                 case .boardWidth: .boardWidth
                 case .overview:
-                    .overview(filterPhase: store.overviewFilterPhase, hasQuery: !store.overviewQuery.isEmpty)
+                    .overview(
+                        filterPhase: viewModel.overview.filterPhase,
+                        hasQuery: !viewModel.overview.query.isEmpty)
                 case .boardActivity: .boardActivity
                 case .drawer:
                     .drawer(
-                        filterPhase: store.drawerFilterPhase,
+                        filterPhase: viewModel.drawer.filterPhase,
                         previewFirstResponder: Self.isDrawerPreviewFirstResponder(event, store: store))
                 case .zmxSessions:
                     .zmxSessions(
-                        filterPhase: store.zmxSessions.filterPhase,
-                        hasQuery: !store.zmxSessions.query.isEmpty,
-                        hasSelection: store.zmxSessions.hasMarkedSessions)
+                        filterPhase: viewModel.zmxSessions.filterPhase,
+                        hasQuery: !viewModel.zmxSessions.query.isEmpty,
+                        hasSelection: viewModel.zmxSessions.hasMarkedSessions)
                 case .openBoard, .zmxDuplication, .editBoardLink, .newDesk, .replaceDesk, .deskPresetManagement,
                     .saveDeskPreset, .renameBoard, .renameDesk, .saveEssential, .profilePicker:
                     .textInput
-                case nil where store.deskFilterPhase != .inactive:
-                    .deskFilter(phase: store.deskFilterPhase)
+                case nil where viewModel.deskFilter.phase != .inactive:
+                    .deskFilter(phase: viewModel.deskFilter.phase)
                 case nil: nil
                 }
         }

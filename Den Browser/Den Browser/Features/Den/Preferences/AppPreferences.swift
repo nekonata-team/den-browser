@@ -31,22 +31,6 @@ enum SearchEngine: String, CaseIterable, Identifiable {
     }
 }
 
-enum MotionPreference: String, CaseIterable, Identifiable {
-    case followSystem = "follow-system"
-    case standard
-    case reduced
-
-    var id: Self { self }
-
-    var label: String {
-        switch self {
-        case .followSystem: "Follow System"
-        case .standard: "Standard Motion"
-        case .reduced: "Reduced Motion"
-        }
-    }
-}
-
 enum ExternalLinkDestination: String, CaseIterable, Identifiable {
     case drawerPreview = "drawer-preview"
     case focusedBoard = "focused-board"

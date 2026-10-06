@@ -5,6 +5,7 @@ struct NewDeskPanel: View {
     let profileColor: Color
 
     @Environment(DenStore.self) private var store
+    @Environment(DenViewModel.self) private var viewModel
     @State private var selectedDeskPreset: DeskPresetSelection = .builtIn(.empty)
     @State private var query = ""
     @State private var isManagementPresented = false
@@ -18,9 +19,10 @@ struct NewDeskPanel: View {
     var body: some View {
         VStack(alignment: .leading, spacing: DenPanelLayout.contentSpacing) {
             DenPanelHeader(
-                systemSymbol: store.isReplaceDeskPanelPresented ? .rectangleStackBadgeMinus : .rectangleStackBadgePlus
+                systemSymbol: viewModel.isReplaceDeskPanelPresented
+                    ? .rectangleStackBadgeMinus : .rectangleStackBadgePlus
             ) {
-                Text(store.isReplaceDeskPanelPresented ? "Replace Desk" : "New Desk")
+                Text(viewModel.isReplaceDeskPanelPresented ? "Replace Desk" : "New Desk")
                     .font(.headline)
             }
 
@@ -30,7 +32,7 @@ struct NewDeskPanel: View {
                     initialSelection: selectedDeskPreset,
                     query: $query,
                     isManagementPresented: $isManagementPresented,
-                    allowsEmptyPreset: !store.isReplaceDeskPanelPresented,
+                    allowsEmptyPreset: !viewModel.isReplaceDeskPanelPresented,
                     isSearchFocused: $isSearchFocused,
                     onConfirm: confirmDeskPreset)
             } else {
@@ -82,13 +84,13 @@ struct NewDeskPanel: View {
                     }
                     Spacer()
                     Button(
-                        store.isReplaceDeskPanelPresented ? "Replace Desk" : "Create",
+                        viewModel.isReplaceDeskPanelPresented ? "Replace Desk" : "Create",
                         action: submitDeskPreset
                     )
                     .buttonStyle(.glassProminent)
                     .disabled(
                         trimmedNewDeskLabel.isEmpty
-                            || (!store.isReplaceDeskPanelPresented && !store.canCreateDesk))
+                            || (!viewModel.isReplaceDeskPanelPresented && !store.canCreateDesk))
                 }
                 .font(.caption)
             }
@@ -108,10 +110,10 @@ struct NewDeskPanel: View {
         }
         .onAppear {
             let initialPreset: DeskPresetSelection =
-                store.isReplaceDeskPanelPresented ? .builtIn(.chatGPT) : .builtIn(.empty)
+                viewModel.isReplaceDeskPanelPresented ? .builtIn(.chatGPT) : .builtIn(.empty)
             selectedDeskPreset = initialPreset
             newDeskLabel =
-                store.isReplaceDeskPanelPresented ? BuiltInDeskPreset.chatGPT.label : BuiltInDeskPreset.empty.label
+                viewModel.isReplaceDeskPanelPresented ? BuiltInDeskPreset.chatGPT.label : BuiltInDeskPreset.empty.label
             query = ""
             isManagementPresented = false
             isChoosing = true
@@ -124,7 +126,7 @@ struct NewDeskPanel: View {
         .onExitCommand {
             guard !isManagementPresented else { return }
             if isChoosing {
-                store.hideNewDeskPanel()
+                viewModel.hideNewDeskPanel()
             } else {
                 beginDeskPresetSelection()
             }
@@ -136,7 +138,7 @@ struct NewDeskPanel: View {
     }
 
     private var newDeskPanelDescription: String {
-        if store.isReplaceDeskPanelPresented {
+        if viewModel.isReplaceDeskPanelPresented {
             return store.focusedDesk?.boards.isEmpty == false
                 ? "Existing Boards will be removed after confirmation"
                 : "Applies this arrangement to the focused Desk"
@@ -174,7 +176,7 @@ struct NewDeskPanel: View {
         didAttemptAction = true
         guard !trimmedNewDeskLabel.isEmpty else { return }
 
-        if store.isReplaceDeskPanelPresented {
+        if viewModel.isReplaceDeskPanelPresented {
             let result: DeskReplacementResult?
             switch selectedDeskPreset {
             case .builtIn(let preset):
@@ -251,7 +253,7 @@ struct NewDeskPanel: View {
         else { return }
 
         let fallback: DeskPresetSelection =
-            store.isReplaceDeskPanelPresented ? .builtIn(.chatGPT) : .builtIn(.empty)
+            viewModel.isReplaceDeskPanelPresented ? .builtIn(.chatGPT) : .builtIn(.empty)
         selectedDeskPreset = fallback
         newDeskLabel = deskPresetLabel(for: fallback)
     }
@@ -259,6 +261,7 @@ struct NewDeskPanel: View {
 
 struct SaveDeskPresetPanel: View {
     @Environment(DenStore.self) private var store
+    @Environment(DenViewModel.self) private var viewModel
     @State private var label = ""
     @State private var message: String?
     @FocusState private var isFocused: Bool
@@ -298,13 +301,13 @@ struct SaveDeskPresetPanel: View {
             message = nil
             DispatchQueue.main.async { isFocused = true }
         }
-        .onExitCommand { store.hideSaveDeskPresetPanel() }
+        .onExitCommand { viewModel.hideSaveDeskPresetPanel() }
     }
 
     private func save() {
         switch store.saveFocusedDeskAsPreset(label: label) {
         case .created:
-            store.hideSaveDeskPresetPanel()
+            viewModel.hideSaveDeskPresetPanel()
         case .replacementPending:
             message = nil
         case .invalidLabel:
@@ -319,6 +322,7 @@ struct SaveDeskPresetPanel: View {
 
 struct RenameDeskPanel: View {
     @Environment(DenStore.self) private var store
+    @Environment(DenViewModel.self) private var viewModel
     @State private var text = ""
     @FocusState private var isFocused: Bool
 
@@ -346,6 +350,6 @@ struct RenameDeskPanel: View {
             text = store.focusedDesk?.label ?? ""
             DispatchQueue.main.async { isFocused = true }
         }
-        .onExitCommand { store.hideRenameDeskPanel() }
+        .onExitCommand { viewModel.hideRenameDeskPanel() }
     }
 }

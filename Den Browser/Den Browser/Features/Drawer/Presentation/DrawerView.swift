@@ -1,11 +1,11 @@
 import SFSafeSymbols
 import SwiftUI
-import WebKit
 
 struct DrawerView: View {
     @Environment(DenStore.self) private var store
+    @Environment(DenViewModel.self) private var viewModel
+    @Environment(DrawerViewModel.self) private var drawer
     @Environment(\.accessibilityReduceMotion) private var systemReduceMotion
-    @Environment(\.accessibilityDifferentiateWithoutColor) private var differentiateWithoutColor
 
     let availableHeight: CGFloat
     let availableWidth: CGFloat
@@ -14,7 +14,6 @@ struct DrawerView: View {
 
     @FocusState private var isSearchFocused: Bool
     @FocusState private var focusedDrawerItemID: UUID?
-    @State private var hoveredDiscardItemID: UUID?
 
     var body: some View {
         VStack(spacing: 0) {
@@ -30,138 +29,39 @@ struct DrawerView: View {
                 .strokeBorder(Color.primary.opacity(0.14))
         }
         .shadow(color: .black.opacity(isBottomStyle ? 0.4 : 0.35), radius: 28, y: shadowY)
-        .animation(DenMotion.feedback(reduceMotion: shouldReduceMotion), value: store.expandedDrawerItemID)
+        .animation(DenMotion.feedback(reduceMotion: shouldReduceMotion), value: drawer.expandedItemID)
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("drawer")
         .onAppear {
             restoreKeyboardFocus()
         }
-        .onChange(of: store.isDenMode) { _, _ in
+        .onChange(of: viewModel.isDenMode) { _, _ in
             restoreKeyboardFocus()
         }
-        .onChange(of: store.selectedDrawerItemID) { _, itemID in
-            if store.isDenMode, !store.isDrawerFilterInputActive {
+        .onChange(of: drawer.selectedItemID) { _, itemID in
+            if viewModel.isDenMode, !drawer.isFilterInputActive {
                 focusedDrawerItemID = itemID
             }
         }
-        .onChange(of: store.expandedDrawerItemID) { _, _ in
+        .onChange(of: drawer.expandedItemID) { _, _ in
             restoreKeyboardFocus()
         }
     }
 
     private var header: some View {
-        VStack(spacing: isSearchPresented ? 10 : 0) {
-            ZStack {
-                HStack(spacing: 6) {
-                    Text("Drawer")
-                        .font(.title3.bold())
-                    Text(itemCountLabel)
-                        .font(.caption.monospacedDigit())
-                        .foregroundStyle(.secondary)
-                }
-
-                HStack(spacing: 8) {
-                    Spacer()
-                    Button(role: .destructive) {
-                        store.requestDrawerClearConfirmation()
-                    } label: {
-                        Image(systemSymbol: .trash)
-                            .font(.system(size: 12, weight: .semibold))
-                            .frame(width: 30, height: 30)
-                    }
-                    .buttonStyle(.plain)
-                    .disabled(store.state.drawerItems.isEmpty)
-                    .accessibilityLabel("Discard All Drawer Items")
-                    .help("Discard All Drawer Items")
-
-                    Button {
-                        store.enterDrawerFilterMode()
-                    } label: {
-                        Image(systemSymbol: .magnifyingglass)
-                            .font(.system(size: 12, weight: .semibold))
-                            .frame(width: 30, height: 30)
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel("Search Drawer Items")
-                    .help("Search Drawer Items (/)")
-
-                    Button {
-                        store.toggleDrawerStyle()
-                    } label: {
-                        Image(
-                            systemSymbol: isBottomStyle
-                                ? .arrowDownRightAndArrowUpLeft
-                                : .arrowUpLeftAndArrowDownRight
-                        )
-                        .font(.system(size: 12, weight: .semibold))
-                        .frame(width: 30, height: 30)
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel(isBottomStyle ? "Contract Drawer (f)" : "Expand Drawer (f)")
-                    .help(isBottomStyle ? "Contract Drawer (f)" : "Expand Drawer (f)")
-
-                    DenCloseButton(label: "Close Drawer") {
-                        store.closeDrawer()
-                    }
-                }
-            }
-
-            HStack(spacing: 8) {
-                Image(systemSymbol: .magnifyingglass)
-                    .foregroundStyle(store.isDrawerFilterInputActive ? .primary : .secondary)
-                    .accessibilityHidden(true)
-                TextField(
-                    text: Binding(
-                        get: { store.drawerQuery },
-                        set: { store.setDrawerQuery($0) }
-                    ),
-                    prompt: Text("Search drawer items")
-                ) {
-                    Text("Search Drawer Items")
-                }
-                .labelsHidden()
-                .textFieldStyle(.plain)
-                .focused($isSearchFocused)
-                .disabled(!store.isDrawerFilterInputActive)
-                .accessibilityIdentifier("drawer-search")
-            }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
-            .frame(width: DenDrawerLayout.searchFieldWidth)
-            .background(
-                Color.primary.opacity(store.isDrawerFilterInputActive ? 0.08 : 0.04),
-                in: RoundedRectangle(cornerRadius: DenRadius.medium, style: .continuous)
-            )
-            .overlay {
-                RoundedRectangle(cornerRadius: DenRadius.medium, style: .continuous)
-                    .stroke(
-                        store.isDrawerFilterInputActive
-                            ? (differentiateWithoutColor ? Color.primary : profileColor.opacity(0.86))
-                            : Color.primary.opacity(0.10),
-                        lineWidth: store.isDrawerFilterInputActive ? 1.5 : 1
-                    )
-            }
-            .opacity(isSearchPresented ? 1 : 0)
-            .frame(height: isSearchPresented ? nil : 0)
-            .clipped()
-            .allowsHitTesting(isSearchPresented)
-            .accessibilityHidden(!isSearchPresented)
-            .onTapGesture {
-                if !store.isDrawerFilterInputActive {
-                    store.enterDrawerFilterMode()
-                }
-            }
-        }
-        .padding(.horizontal, DenDrawerLayout.headerHorizontalPadding)
-        .padding(.vertical, 12)
-        .onChange(of: store.isDrawerFilterInputActive) { _, newValue in
+        DrawerHeaderView(
+            isSearchFocused: $isSearchFocused,
+            profileColor: profileColor,
+            isBottomStyle: isBottomStyle
+        )
+        .onChange(of: drawer.isFilterInputActive) { _, newValue in
             if newValue {
                 isSearchFocused = true
             } else {
                 restoreKeyboardFocus()
             }
         }
-        .onChange(of: store.drawerQuery) { _, newValue in
+        .onChange(of: drawer.query) { _, newValue in
             if isSearchFocused {
                 TextInputComposition.syncActiveFieldEditor(to: newValue)
             }
@@ -177,13 +77,19 @@ struct DrawerView: View {
                         systemSymbol: .tray,
                         description: Text("Keep a Current Sheet here before its work context is settled.")
                     )
-                } else if store.filteredDrawerItems.isEmpty {
-                    ContentUnavailableView.search(text: store.drawerQuery)
+                } else if drawer.filteredItems.isEmpty {
+                    ContentUnavailableView.search(text: drawer.query)
                 } else {
                     ScrollView {
                         LazyVStack(spacing: 6) {
-                            ForEach(store.filteredDrawerItems) { item in
-                                drawerSection(item)
+                            ForEach(drawer.filteredItems) { item in
+                                DrawerItemView(
+                                    focusedDrawerItemID: $focusedDrawerItemID,
+                                    item: item,
+                                    profileColor: profileColor,
+                                    previewHeight: previewHeight
+                                )
+                                .id(drawerItemScrollID(for: item.id))
                             }
                         }
                         .padding(.horizontal, DenLayout.outerInset)
@@ -192,124 +98,14 @@ struct DrawerView: View {
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .onChange(of: store.expandedDrawerItemID) { _, itemID in
-                guard store.isDrawerOpen, let itemID else { return }
+            .onChange(of: drawer.expandedItemID) { _, itemID in
+                guard viewModel.isDrawerOpen, let itemID else { return }
                 schedulePreviewScroll(to: itemID, using: proxy)
             }
-            .onChange(of: store.isDrawerOpen) { _, isOpen in
-                guard isOpen, let itemID = store.expandedDrawerItemID else { return }
+            .onChange(of: viewModel.isDrawerOpen) { _, isOpen in
+                guard isOpen, let itemID = drawer.expandedItemID else { return }
                 schedulePreviewScroll(to: itemID, using: proxy)
             }
-        }
-    }
-
-    private func drawerSection(_ item: DrawerItem) -> some View {
-        VStack(spacing: 0) {
-            HStack(spacing: 0) {
-                Button {
-                    store.toggleDrawerItem(item.id)
-                } label: {
-                    HStack(spacing: 10) {
-                        Image(systemSymbol: .link)
-                            .foregroundStyle(.secondary)
-
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(item.displayName)
-                                .font(.callout)
-                                .lineLimit(1)
-
-                            Text(item.url.host(percentEncoded: false) ?? item.url.absoluteString)
-                                .font(.caption2)
-                                .foregroundStyle(.secondary)
-                                .lineLimit(1)
-                        }
-
-                        Spacer(minLength: 12)
-
-                        Image(
-                            systemSymbol: store.expandedDrawerItemID == item.id
-                                ? .chevronDown
-                                : .chevronRight
-                        )
-                        .font(.caption)
-                        .frame(width: 12)
-                    }
-                    .padding(.leading, 12)
-                    .padding(.trailing, 8)
-                    .frame(maxWidth: .infinity, minHeight: DenDrawerLayout.itemHeight)
-                    .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .focused($focusedDrawerItemID, equals: item.id)
-                .contextMenu {
-                    Button("Place as Board") {
-                        store.placeDrawerItemAsBoard(item.id)
-                    }
-                    Button("Discard", role: .destructive) {
-                        store.discardDrawerItem(item.id)
-                    }
-                }
-                .accessibilityAddTraits(store.selectedDrawerItemID == item.id ? .isSelected : [])
-
-                Button {
-                    store.placeDrawerItemAsBoard(item.id)
-                } label: {
-                    Image(systemSymbol: .rectangleStackBadgePlus)
-                        .foregroundStyle(.primary)
-                        .frame(
-                            width: DenDrawerLayout.itemButtonWidth,
-                            height: DenDrawerLayout.itemHeight)
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel("Place \(item.displayName) as Board")
-                .help("Place as Board")
-
-                Button(role: .destructive) {
-                    store.discardDrawerItem(item.id)
-                } label: {
-                    Image(systemSymbol: .trash)
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundStyle(hoveredDiscardItemID == item.id ? .red : .primary)
-                        .frame(
-                            width: DenDrawerLayout.itemButtonWidth,
-                            height: DenDrawerLayout.itemHeight)
-                }
-                .buttonStyle(.plain)
-                .onHover { isHovering in
-                    hoveredDiscardItemID = isHovering ? item.id : nil
-                }
-                .accessibilityLabel("Discard \(item.displayName)")
-                .help("Discard")
-            }
-
-            if store.isDrawerOpen, store.expandedDrawerItemID == item.id {
-                let runtime = store.drawerRuntime(for: item)
-                DrawerWebView(
-                    webView: runtime.webView,
-                    isFocused: !store.isDenMode
-                )
-                .id(item.id)
-                .frame(height: previewHeight)
-                .clipShape(RoundedRectangle(cornerRadius: DenRadius.small, style: .continuous))
-                .padding([.horizontal, .bottom], DenLayout.outerInset)
-            }
-        }
-        .id(drawerItemScrollID(for: item.id))
-        .background(
-            RoundedRectangle(cornerRadius: DenRadius.medium, style: .continuous)
-                .fill(
-                    store.selectedDrawerItemID == item.id
-                        ? (differentiateWithoutColor ? Color.primary : profileColor).opacity(0.18)
-                        : Color.primary.opacity(0.04)
-                )
-        )
-        .overlay {
-            RoundedRectangle(cornerRadius: DenRadius.medium, style: .continuous)
-                .stroke(
-                    store.selectedDrawerItemID == item.id
-                        ? (differentiateWithoutColor ? Color.primary : profileColor.opacity(0.38))
-                        : Color.primary.opacity(0.08)
-                )
         }
     }
 
@@ -317,7 +113,7 @@ struct DrawerView: View {
         let animation = DenMotion.spatial(reduceMotion: shouldReduceMotion)
         Task { @MainActor in
             await Task.yield()
-            guard store.isDrawerOpen, store.expandedDrawerItemID == itemID else { return }
+            guard viewModel.isDrawerOpen, drawer.expandedItemID == itemID else { return }
             withAnimation(animation) {
                 proxy.scrollTo(drawerItemScrollID(for: itemID), anchor: .top)
             }
@@ -363,7 +159,7 @@ struct DrawerView: View {
         let preferredHeight: CGFloat
         if store.state.drawerItems.isEmpty {
             preferredHeight = DenDrawerLayout.emptyHeight
-        } else if store.expandedDrawerItemID != nil {
+        } else if drawer.expandedItemID != nil {
             preferredHeight = DenDrawerLayout.floatingExpandedHeight
         } else {
             preferredHeight = DenDrawerLayout.floatingHeight
@@ -385,26 +181,16 @@ struct DrawerView: View {
         )
     }
 
-    private var isSearchPresented: Bool {
-        store.isDrawerFilterPresented || !store.drawerQuery.isEmpty
-    }
-
-    private var itemCountLabel: String {
-        let total = store.state.drawerItems.count
-        guard !store.drawerQuery.isEmpty else { return "\(total)" }
-        return "\(store.filteredDrawerItems.count) of \(total)"
-    }
-
     private func restoreKeyboardFocus() {
-        guard !store.isDrawerFilterInputActive else { return }
-        if !store.isDenMode, store.expandedDrawerItemID != nil {
+        guard !drawer.isFilterInputActive else { return }
+        if !viewModel.isDenMode, drawer.expandedItemID != nil {
             return
         }
-        focusedDrawerItemID = store.selectedDrawerItemID
+        focusedDrawerItemID = drawer.selectedItemID
     }
 }
 
-private enum DenDrawerLayout {
+enum DenDrawerLayout {
     static let headerHorizontalPadding: CGFloat = 16
     static let searchFieldWidth: CGFloat = 300
     static let itemHeight: CGFloat = 46
@@ -419,29 +205,5 @@ private enum DenDrawerLayout {
     static func windowClearance(shouldShowHeader: Bool) -> CGFloat {
         let topInset = shouldShowHeader ? DenLayout.denHeaderHeight : DenLayout.outerInset
         return topInset + DenLayout.boardHeaderHeight
-    }
-}
-
-private struct DrawerWebView: NSViewRepresentable {
-    let webView: WKWebView
-    let isFocused: Bool
-
-    func makeNSView(context: Context) -> SurfaceHost<Bool, WKWebView> {
-        let host = SurfaceHost<Bool, WKWebView>(content: webView)
-        update(host)
-        return host
-    }
-
-    func updateNSView(_ nsView: SurfaceHost<Bool, WKWebView>, context: Context) {
-        update(nsView)
-    }
-
-    private func update(_ host: SurfaceHost<Bool, WKWebView>) {
-        host.update(request: isFocused ? true : nil) { window in
-            guard needsFirstResponderActivation(window.firstResponder, target: webView) else {
-                return true
-            }
-            return window.makeFirstResponder(webView)
-        }
     }
 }

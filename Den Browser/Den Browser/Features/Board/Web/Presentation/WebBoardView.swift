@@ -3,6 +3,8 @@ import SwiftUI
 
 struct WebBoardView: View {
     @Environment(DenStore.self) private var store
+    @Environment(DenViewModel.self) private var viewModel
+    @Environment(DeskFilterViewModel.self) private var deskFilter
     @Environment(AppPreferences.self) private var preferences
     @Environment(\.accessibilityReduceMotion) private var systemReduceMotion
     @Environment(\.accessibilityDifferentiateWithoutColor) private var differentiateWithoutColor
@@ -28,10 +30,10 @@ struct WebBoardView: View {
         VStack(spacing: 0) {
             header
             ZStack(alignment: .top) {
-                BoardWebView(
+                WebBoardSurface(
                     webView: runtime.webView,
-                    isHidden: !isVisibleInViewport || store.isOverviewPresented
-                        || (store.isDrawerOpen && preferences.drawerStyle == .bottom),
+                    isHidden: !isVisibleInViewport || viewModel.isOverviewPresented
+                        || (viewModel.isDrawerOpen && preferences.drawerStyle == .bottom),
                     focusRequest: focusRequest,
                     onSurfaceReady: { window in
                         guard runtime.webView.fullscreenState == .notInFullscreen else {
@@ -114,11 +116,11 @@ struct WebBoardView: View {
     }
 
     private var isFocusModeDeemphasized: Bool {
-        store.isFocusModePresented && !isFocused && !store.isDeskFilterPresented
+        viewModel.isFocusModePresented && !isFocused && !deskFilter.isPresented
     }
 
     private var isFocusModeFocused: Bool {
-        store.isFocusModePresented && isFocused
+        viewModel.isFocusModePresented && isFocused
     }
 
     private var header: some View {
@@ -162,7 +164,7 @@ struct WebBoardView: View {
         }
         .padding(.horizontal, DenLayout.chromeHorizontalPadding)
         .frame(height: DenLayout.boardHeaderHeight)
-        .background(store.isDenMode && isFocused ? profileColor.opacity(0.12) : Color.clear)
+        .background(viewModel.isDenMode && isFocused ? profileColor.opacity(0.12) : Color.clear)
         .background(.regularMaterial)
         .modifier(
             BoardHeaderCenteringModifier(
@@ -201,7 +203,7 @@ struct WebBoardView: View {
 
         Button {
             store.focusBoard(board.id)
-            store.showSaveEssentialPanel(for: board)
+            viewModel.showSaveEssentialPanel(for: board)
         } label: {
             Label("Save as Essential…", systemSymbol: .sparkles)
         }
@@ -292,14 +294,14 @@ struct WebBoardView: View {
 
         Button {
             store.focusBoard(board.id)
-            store.toggleFocusedBoardMaximized()
+            viewModel.toggleFocusedBoardMaximized()
         } label: {
             Label(maximizationLabel, systemSymbol: maximizationSystemSymbol)
         }
 
         Button {
             store.focusBoard(board.id)
-            store.centerFocusedBoard()
+            viewModel.centerFocusedBoard()
         } label: {
             Label("Center Board", systemSymbol: .scope)
         }
@@ -447,7 +449,7 @@ struct WebBoardView: View {
     }
 
     private var isContextMenuEnabled: Bool {
-        isPointerFocusEnabled && !store.isBoardDragging
+        isPointerFocusEnabled && !viewModel.isBoardDragging
     }
 
     private var boardDeskID: UUID? {
@@ -455,11 +457,11 @@ struct WebBoardView: View {
     }
 
     private var maximizationLabel: String {
-        store.maximizedBoardID == board.id ? "Restore Board Size" : "Maximize Board"
+        viewModel.maximizedBoardID == board.id ? "Restore Board Size" : "Maximize Board"
     }
 
     private var maximizationSystemSymbol: SFSymbol {
-        store.maximizedBoardID == board.id
+        viewModel.maximizedBoardID == board.id
             ? .arrowDownRightAndArrowUpLeft
             : .arrowUpLeftAndArrowDownRight
     }
