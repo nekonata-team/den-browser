@@ -668,6 +668,10 @@ extension DenStore {
             duplicateFocusedZmxBoard(suffix: "")
             return
         }
+        if source.isTerminal {
+            duplicateFocusedBoard()
+            return
+        }
         guard let firstSheetURL = source.firstSheetURL else { return }
         duplicateBoard(
             source,

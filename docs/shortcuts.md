@@ -84,7 +84,7 @@ Toggle with `Control` + `,`. Press `Escape` to exit to Sheet Input.
 | `m` | Set / clear Anchor Board for Focused Desk |
 | `Shift` + `M` | Jump to Anchor Board / return to origin |
 | `Return` | Duplicate Focused Board (Web, Shell, Zellij, or zmx) |
-| `Shift` + `Return` | New Board from First Sheet (or duplicate zmx with numeric suffix) |
+| `Shift` + `Return` | Shell: start a fresh Terminal Session in the same Working Directory; Zellij: open another Board on the same Session; zmx: duplicate as before; Web: open from the First Sheet |
 | `e` | Edit Focused Board Link |
 | `r` | Rename Focused Board |
 | `b` | Save Focused Board as Essential |

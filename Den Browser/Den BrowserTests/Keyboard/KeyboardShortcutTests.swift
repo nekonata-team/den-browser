@@ -893,6 +893,61 @@ struct KeyboardShortcutTests {
                 == .perform(.board(.duplicateFirstSheet)))
     }
 
+    @Test func denModeShiftEnterDuplicatesTerminalInItsWorkingDirectory() throws {
+        let source = BoardState(
+            label: "Terminal",
+            width: 520,
+            workingDirectory: "/tmp/project",
+            customLabel: "Build")
+        let store = try makeStore(boards: [source])
+        let viewModel = DenViewModel(store: store)
+        viewModel.connect()
+        defer { viewModel.disconnect() }
+        viewModel.isDenMode = true
+        let shiftReturn = try keyEvent(
+            characters: "\r",
+            charactersIgnoringModifiers: "\r",
+            modifiers: [.shift],
+            keyCode: 36)
+
+        #expect(KeyboardController.handle(shiftReturn, store: store, viewModel: viewModel))
+        #expect(store.focusedDesk?.boards.count == 2)
+        #expect(store.focusedBoard?.id != source.id)
+        #expect(store.focusedBoard?.isTerminal == true)
+        #expect(store.focusedBoard?.terminalWorkingDirectory == "/tmp/project")
+        #expect(store.focusedBoard?.label == "Terminal")
+        #expect(store.focusedBoard?.width == 520)
+        #expect(store.focusedBoard?.customLabel == "Build")
+    }
+
+    @Test func denModeShiftEnterDuplicatesZellijSession() throws {
+        let source = BoardState(
+            label: "Zellij",
+            width: 520,
+            zellijSessionName: "dev",
+            customLabel: "Build")
+        let store = try makeStore(boards: [source])
+        let viewModel = DenViewModel(store: store)
+        viewModel.connect()
+        defer { viewModel.disconnect() }
+        viewModel.isDenMode = true
+        let shiftReturn = try keyEvent(
+            characters: "\r",
+            charactersIgnoringModifiers: "\r",
+            modifiers: [.shift],
+            keyCode: 36)
+
+        #expect(KeyboardController.handle(shiftReturn, store: store, viewModel: viewModel))
+        #expect(store.focusedDesk?.boards.count == 2)
+        let duplicate = try #require(store.focusedBoard)
+        #expect(duplicate.id != source.id)
+        #expect(duplicate.isZellij)
+        #expect(duplicate.zellijSessionName == "dev")
+        #expect(duplicate.label == "Zellij")
+        #expect(duplicate.width == 520)
+        #expect(duplicate.customLabel == "Build")
+    }
+
     @Test func openProfilePanelForwardsKeyboardNavigationToItsTextField() throws {
         let store = try makeStore(boards: [board("First")])
         let viewModel = DenViewModel(store: store)

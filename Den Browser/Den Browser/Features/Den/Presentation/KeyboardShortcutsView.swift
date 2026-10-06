@@ -106,7 +106,9 @@ struct KeyboardShortcutsView: View {
                     item(["y"], "Den Mode: Copy Focused Board URL / working directory / session"),
                     item(["⇧", "Y"], "Den Mode: Copy Focused Board ID"),
                     item(["Return"], "Den Mode: Duplicate Focused Board"),
-                    item(["Shift", "+", "Return"], "Den Mode: New Board from First Sheet; zmx duplicate"),
+                    item(
+                        ["Shift", "+", "Return"],
+                        "Den Mode: Duplicate Shell, Zellij, or zmx; Web starts from First Sheet"),
                     item(["r"], "Den Mode: Rename Board"),
                     item(["-", "/", "="], "Den Mode: Narrow / widen Board"),
                     item(["w", "then", "- / = / 1–9"], "Den Mode: Resize all Boards"),
