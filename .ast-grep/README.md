@@ -6,7 +6,7 @@ three package source roots: `DenDomain`, `DenDesign`, and `DenIPCProtocol`.
 `mise.toml` so parser changes are reviewed together with the rule fixtures.
 
 - Domain excludes SwiftUI, AppKit, WebKit, and GhosttyTerminal imports. This rule
-  scans app Domain files and every source under `Packages/DenDomain/Sources`.
+  scans every source under `Packages/DenDomain/Sources`.
 - `DenDesign` sources are included in formatting and architecture scans; SwiftUI is
   expected there because the package owns shared presentation components.
 - `DenIPCProtocol` may import Foundation only. Its wire DTOs do not depend on app,

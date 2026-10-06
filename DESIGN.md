@@ -27,7 +27,7 @@ Den controls feel like a calm desk laid over live web sheets. Web content remain
   text. Apply weight, design, and monospaced variants to a semantic style instead of specifying a point size.
 - Avoid `.system(size:)` for app-owned text. Fixed sizes remain appropriate for geometry-bound symbols and
   controls, or when a documented visual requirement cannot be expressed with a semantic text style.
-- Keep shared app-owned Den visual tokens, layout metrics, and motion definitions in `Features/Den/Presentation/Design/`. Keep
+- Keep shared Den visual tokens, layout metrics, and motion definitions in `Packages/DenDesign/Sources/DenDesign/`. Keep
   component-specific metrics close to their component, and introduce a private layout type only when values are
   reused or participate in a layout calculation.
 - Keep feature-specific layout algorithms with their owning component; for example, Board placement logic stays in

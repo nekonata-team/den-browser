@@ -4,7 +4,6 @@ severity: error
 message: Domain must not import UI frameworks or the Terminal runtime SDK.
 note: Keep product values and rules here; move UI and runtime integration to Presentation or Infrastructure.
 files:
-  - "Den Browser/Den Browser/Features/**/Domain/**/*.swift"
   - "Packages/DenDomain/Sources/DenDomain/**/*.swift"
 rule:
   kind: import_declaration

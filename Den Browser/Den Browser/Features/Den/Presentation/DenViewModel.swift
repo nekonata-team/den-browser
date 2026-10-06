@@ -51,7 +51,7 @@ final class DenViewModel {
         overview.onDismiss = { [weak self] in self?.hideOverview() }
         drawer.onPreviewExpanded = { [weak self] in self?.isDenMode = false }
         drawer.onClose = { [weak self] in self?.closeDrawer() }
-        deskFilter.onCenterFocusedBoard = { [weak self] in self?.centerFocusedBoardRequest += 1 }
+        deskFilter.onCenterFocusedBoard = { [weak self] in self?.centerFocusedBoardRequest &+= 1 }
         notificationList.onClose = { [weak self] in self?.closeNotificationList() }
     }
 
