@@ -998,18 +998,20 @@ final class DenIPCService {
             }
             let urlString = payload.url
             let store: DenStore
+            let desk: DeskState
             switch DenIPCTargetResolver.resolveStoreAndDesk(request: request, in: profileManager) {
             case .success(let target):
-                store = target.0
+                (store, desk) = target
             case .failure(let error):
                 return .failure(error.localizedDescription)
             }
             if let boardID = store.createBoard(
                 urlString: urlString,
                 preferredWidth: payload.width,
-                afterBoardID: newBoardInsertionAnchor(for: request, in: store),
+                afterBoardID: newBoardInsertionAnchor(for: request, in: store, deskID: desk.id),
                 focus: payload.focus,
-                origin: .cli
+                origin: .cli,
+                deskID: desk.id
             ), let board = store.board(for: boardID) {
                 _ = store.webRuntime(for: board)
                 return .success(boardId: boardID.uuidString)
@@ -1064,9 +1066,10 @@ final class DenIPCService {
         request: DenIPCRequest
     ) -> DenIPCResponse {
         let store: DenStore
+        let desk: DeskState
         switch DenIPCTargetResolver.resolveStoreAndDesk(request: request, in: profileManager) {
         case .success(let target):
-            store = target.0
+            (store, desk) = target
         case .failure(let error):
             return .failure(error.localizedDescription)
         }
@@ -1087,9 +1090,10 @@ final class DenIPCService {
             let boardID = store.createTerminalBoard(
                 workingDirectory: resolvedDir,
                 preferredWidth: payload.width,
-                afterBoardID: newBoardInsertionAnchor(for: request, in: store),
+                afterBoardID: newBoardInsertionAnchor(for: request, in: store, deskID: desk.id),
                 focus: payload.focus,
-                origin: .cli
+                origin: .cli,
+                deskID: desk.id
             )
         else {
             return .failure("Failed to create terminal board")
@@ -1103,11 +1107,19 @@ final class DenIPCService {
         return .success(boardId: boardID.uuidString)
     }
 
-    private func newBoardInsertionAnchor(for request: DenIPCRequest, in store: DenStore) -> UUID? {
-        request.callerBoardID
+    private func newBoardInsertionAnchor(
+        for request: DenIPCRequest,
+        in store: DenStore,
+        deskID: UUID
+    ) -> UUID? {
+        guard let deskIndex = store.state.desks.firstIndex(where: { $0.id == deskID }) else { return nil }
+        let callerAnchor = request.callerBoardID
             .flatMap(UUID.init)
-            .flatMap { store.board(for: $0)?.id }
-            ?? store.focusedBoard?.id
+            .flatMap { boardID -> UUID? in
+                guard store.boardIndices(for: boardID)?.desk == deskIndex else { return nil }
+                return boardID
+            }
+        return callerAnchor ?? store.state.desks[deskIndex].focusedBoardID
     }
 
     // MARK: - Desk Commands
@@ -1140,9 +1152,10 @@ final class DenIPCService {
 
     private func handleDrawerCommand(_ command: DenIPCCommand.Drawer, request: DenIPCRequest) -> DenIPCResponse {
         let store: DenStore
+        let desk: DeskState
         switch DenIPCTargetResolver.resolveStoreAndDesk(request: request, in: profileManager) {
         case .success(let target):
-            store = target.0
+            (store, desk) = target
         case .failure(let error):
             return .failure(error.localizedDescription)
         }
@@ -1186,7 +1199,7 @@ final class DenIPCService {
             guard let item = findDrawerItem(in: store, matching: idString) else {
                 return .failure("Drawer Item not found: \(idString)")
             }
-            if let boardID = store.placeDrawerItemAsBoard(item.id),
+            if let boardID = store.placeDrawerItemAsBoard(item.id, deskID: desk.id),
                 let board = store.board(for: boardID)
             {
                 _ = store.webRuntime(for: board)

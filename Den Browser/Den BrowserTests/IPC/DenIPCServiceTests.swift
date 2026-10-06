@@ -52,6 +52,56 @@ struct DenIPCServiceTests {
         #expect(store.board(for: boardID)?.width == 200)
     }
 
+    @Test func ipcBoardPlacementUsesResolvedDeskWhenNoWindowPresentsIt() async throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appending(path: "den-browser-ipc-target-desk-\(UUID().uuidString)", directoryHint: .isDirectory)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let suiteName = "IPCServiceTargetDeskPreferences-\(UUID().uuidString)"
+        let manager = ProfileManager(
+            directoryURL: directory,
+            sheetNavigation: SheetNavigationManager(
+                defaults: makeTestDefaults(suiteName: suiteName),
+                scriptSource: ""),
+            preferences: AppPreferences(defaults: makeTestDefaults(suiteName: suiteName)),
+            removeDataStore: { _ in },
+            websiteDataStore: { _ in .nonPersistent() })
+        let store = try #require(manager.store(for: manager.personalProfileID))
+        let visibleDeskID = store.presentedDeskID
+        let visibleBoardID = try #require(store.createBoard(urlString: "https://visible.example/"))
+        store.createDesk(label: "Target Desk", preset: .empty)
+        let targetDeskID = store.presentedDeskID
+        #expect(targetDeskID != visibleDeskID)
+        #expect(store.setFocusedDesk(visibleDeskID))
+        let targetDeskIndex = try #require(store.state.desks.firstIndex(where: { $0.id == targetDeskID }))
+        let drawerURL = try #require(URL(string: "https://drawer.example/"))
+        let itemID = try #require(store.keepInDrawerInBackground(drawerURL))
+        let service = DenIPCService(profileManager: manager)
+
+        let webResponse = await service.handleRequest(
+            DenIPCRequest(
+                command: .board(.web(.new(DenBoardWebNewPayload(url: "https://web.example/", focus: false)))),
+                deskID: targetDeskID.uuidString,
+                callerBoardID: visibleBoardID.uuidString))
+        let terminalResponse = await service.handleRequest(
+            DenIPCRequest(
+                command: .board(.terminal(.new(DenBoardTerminalNewPayload(path: nil, runCommand: nil, focus: false)))),
+                deskID: targetDeskID.uuidString))
+        let drawerResponse = await service.handleRequest(
+            DenIPCRequest(
+                command: .drawer(.place(id: itemID.uuidString)),
+                deskID: targetDeskID.uuidString))
+
+        let webBoardID = try #require(webResponse.boardId.flatMap(UUID.init(uuidString:)))
+        let terminalBoardID = try #require(terminalResponse.boardId.flatMap(UUID.init(uuidString:)))
+        let drawerBoardID = try #require(drawerResponse.boardId.flatMap(UUID.init(uuidString:)))
+        #expect(webResponse.isOk)
+        #expect(terminalResponse.isOk)
+        #expect(drawerResponse.isOk)
+        #expect(store.boardIndices(for: webBoardID)?.desk == targetDeskIndex)
+        #expect(store.boardIndices(for: terminalBoardID)?.desk == targetDeskIndex)
+        #expect(store.boardIndices(for: drawerBoardID)?.desk == targetDeskIndex)
+    }
+
     @Test func inspectionBoardCreationUsesExplicitTargetWithoutChangingFocus() async throws {
         // Arrange
         let directory = FileManager.default.temporaryDirectory

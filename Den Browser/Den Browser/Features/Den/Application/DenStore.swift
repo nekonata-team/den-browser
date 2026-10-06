@@ -507,18 +507,26 @@ final class DenStore {
     }
 
     func invalidateReferences(toRemovedBoardIDs removedBoardIDs: Set<UUID>) {
-        for boardID in removedBoardIDs { onWindowEffect?(.boardRemoved(boardID)) }
+        for presentation in storage.drawerPresentations.allObjects {
+            presentation.anchorJumpOriginBoardIDByDesk = presentation.anchorJumpOriginBoardIDByDesk
+                .filter { !removedBoardIDs.contains($0.value) }
+            for boardID in removedBoardIDs {
+                presentation.onWindowEffect?(.boardRemoved(boardID))
+            }
+        }
         if case .board(let boardID) = activeDrag, removedBoardIDs.contains(boardID) {
             activeDrag = nil
         }
     }
 
     func invalidateReferences(toRemovedDeskID removedDeskID: UUID) {
-        if previousFocusedDeskID == removedDeskID {
-            previousFocusedDeskID = nil
+        for presentation in storage.drawerPresentations.allObjects {
+            if presentation.previousFocusedDeskID == removedDeskID {
+                presentation.previousFocusedDeskID = nil
+            }
+            presentation.anchorJumpOriginBoardIDByDesk.removeValue(forKey: removedDeskID)
+            presentation.onWindowEffect?(.deskRemoved(removedDeskID))
         }
-        anchorJumpOriginBoardIDByDesk.removeValue(forKey: removedDeskID)
-        onWindowEffect?(.deskRemoved(removedDeskID))
         if case .desk(let deskID) = activeDrag, deskID == removedDeskID {
             activeDrag = nil
         }

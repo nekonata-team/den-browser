@@ -89,13 +89,18 @@ extension DenStore {
     }
 
     @discardableResult
-    func placeDrawerItemAsBoard(_ itemID: UUID, preferredWidth: Double? = nil) -> UUID? {
+    func placeDrawerItemAsBoard(
+        _ itemID: UUID,
+        preferredWidth: Double? = nil,
+        deskID: UUID? = nil
+    ) -> UUID? {
         guard let item = state.drawerItems.first(where: { $0.id == itemID }) else { return nil }
         guard
             let boardID = createBoard(
                 urlString: item.url.absoluteString,
                 preferredWidth: preferredWidth ?? focusedBoard?.width,
-                recentItem: .url(WebURLPolicy.canonicalSheetURL(item.url)))
+                recentItem: .url(WebURLPolicy.canonicalSheetURL(item.url)),
+                deskID: deskID)
         else { return nil }
         discardDrawerItem(itemID, advancesPreview: false, recordsDiscardHistory: false)
         onWindowEffect?(.dismissTemporaryPresentation)

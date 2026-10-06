@@ -214,7 +214,8 @@ extension DenStore {
         afterBoardID: UUID? = nil,
         focus: Bool = true,
         origin: BoardOperationOrigin = .interactive,
-        recentItem: RecentItem? = nil
+        recentItem: RecentItem? = nil,
+        deskID: UUID? = nil
     ) -> UUID? {
         guard let url = normalizedURL(from: urlString) else { return nil }
         let label = url.host(percentEncoded: false) ?? url.absoluteString
@@ -226,6 +227,7 @@ extension DenStore {
                 afterBoardID: afterBoardID,
                 focus: focus,
                 origin: origin,
+                deskID: deskID,
                 save: recentItem == nil)
         else { return nil }
         if let recentItem {
@@ -303,7 +305,8 @@ extension DenStore {
         afterBoardID: UUID? = nil,
         focus: Bool = true,
         origin: BoardOperationOrigin = .interactive,
-        recentItem: RecentItem? = nil
+        recentItem: RecentItem? = nil,
+        deskID: UUID? = nil
     ) -> UUID? {
         let dir = workingDirectory ?? FileManager.default.homeDirectoryForCurrentUser.path
         let board = BoardState(
@@ -316,6 +319,7 @@ extension DenStore {
                 afterBoardID: afterBoardID,
                 focus: focus,
                 origin: origin,
+                deskID: deskID,
                 save: recentItem == nil)
         else { return nil }
         if let recentItem {
@@ -330,18 +334,32 @@ extension DenStore {
         afterBoardID: UUID?,
         focus: Bool,
         origin: BoardOperationOrigin,
+        deskID: UUID? = nil,
         save: Bool = true
     ) -> Bool {
         let deskIndex: Int
-        if let afterBoardID {
+        if let deskID {
+            guard let index = state.desks.firstIndex(where: { $0.id == deskID }) else { return false }
+            deskIndex = index
+        } else if let afterBoardID {
             guard let indices = boardIndices(for: afterBoardID) else { return false }
             deskIndex = indices.desk
         } else {
             guard let focusedDeskIndex else { return false }
             deskIndex = focusedDeskIndex
         }
+        let insertionAfterBoardID: UUID?
+        if let afterBoardID,
+            let indices = boardIndices(for: afterBoardID),
+            indices.desk == deskIndex
+        {
+            insertionAfterBoardID = afterBoardID
+        } else {
+            guard deskID != nil || afterBoardID == nil else { return false }
+            insertionAfterBoardID = nil
+        }
         let boards = state.desks[deskIndex].boards
-        let anchorBoardID = afterBoardID ?? state.desks[deskIndex].focusedBoardID
+        let anchorBoardID = insertionAfterBoardID ?? state.desks[deskIndex].focusedBoardID
         let anchorIndex = anchorBoardID.flatMap { id in boards.firstIndex(where: { $0.id == id }) }
         let groupEndIndex = anchorBoardID.flatMap { id in
             BoardGroup.containing(id, in: boards)?.boards.last.flatMap { member in
@@ -350,13 +368,13 @@ extension DenStore {
         }
         let insertIndex = (groupEndIndex ?? anchorIndex).map { $0 + 1 } ?? boards.endIndex
 
-        if !focus, let afterBoardID {
+        if !focus, let afterBoardID = insertionAfterBoardID {
             _ = prepareBoardLinkFocus(afterBoardID, origin: origin)
         }
         let isCLIBackgroundInsertion =
             origin == .cli
             && !focus
-            && afterBoardID != nil
+            && insertionAfterBoardID != nil
         let insert = { [self] in
             state.desks[deskIndex].boards.insert(board, at: insertIndex)
             if focus {
