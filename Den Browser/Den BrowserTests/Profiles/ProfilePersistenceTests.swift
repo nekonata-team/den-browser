@@ -218,7 +218,7 @@ struct ProfilePersistenceTests {
         let desks = try #require(den["desks"] as? [NSDictionary])
         let encodedBoards = try #require(desks[0]["boards"] as? [NSDictionary])
         let encodedRole = try #require(encodedBoards[1]["role"] as? NSDictionary)
-        #expect(encodedRole["targetBoardID"] as? String == boards[0].id.uuidString)
+        #expect(encodedRole["targetBoardID"] as? String == boards[0].id.rawValue.uuidString)
         let webContent = try #require(encodedBoards[0]["content"] as? NSDictionary)
         #expect(webContent["kind"] as? String == "web")
         #expect(webContent["sheetNavigationPaused"] as? Bool == true)

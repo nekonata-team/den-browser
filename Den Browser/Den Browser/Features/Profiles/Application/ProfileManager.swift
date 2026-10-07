@@ -17,7 +17,7 @@ final class ProfileManager {
     @ObservationIgnored private var persistedProfiles: [UUID: PersistedProfile] = [:]
     var profileSaveCount: Int { persistence.profileSaveCount }
     @ObservationIgnored private var storages: [UUID: DenStorage] = [:]
-    @ObservationIgnored private var runtimeOwners: [UUID: [UUID: DenStore]] = [:]
+    @ObservationIgnored private var runtimeOwners: [UUID: [BoardID: DenStore]] = [:]
     @ObservationIgnored private let windowRegistry = ProfileWindowRegistry()
     @ObservationIgnored private var websiteDataStores: [UUID: WKWebsiteDataStore] = [:]
     @ObservationIgnored private let extensionCoordinator: ProfileExtensionCoordinator
@@ -306,7 +306,7 @@ final class ProfileManager {
     }
 
     func canOpenDeskInNewWindow(
-        _ deskID: UUID,
+        _ deskID: DeskID,
         profileID: UUID,
         sourceWindowID: UUID
     ) -> Bool {
@@ -322,7 +322,7 @@ final class ProfileManager {
     }
 
     func isDeskPresentedInAnotherWindow(
-        _ deskID: UUID,
+        _ deskID: DeskID,
         profileID: UUID,
         excludingWindowID: UUID
     ) -> Bool {
@@ -331,7 +331,7 @@ final class ProfileManager {
     }
 
     func routeForOpeningDesk(
-        _ deskID: UUID,
+        _ deskID: DeskID,
         profileID: UUID,
         sourceWindowID: UUID
     ) -> ProfileWindowRoute? {
@@ -412,7 +412,7 @@ final class ProfileManager {
         windowRegistry.stores(for: profileID)
     }
 
-    func store(for profileID: UUID, presentingDeskID: UUID?) -> DenStore? {
+    func store(for profileID: UUID, presentingDeskID: DeskID?) -> DenStore? {
         let profileStores = stores(for: profileID)
         if let presentingDeskID,
             let presentingStore = profileStores.first(where: { $0.presentedDeskID == presentingDeskID })
@@ -430,7 +430,7 @@ final class ProfileManager {
         windowRegistry.allStores()
     }
 
-    private func canPresent(_ deskID: UUID, profileID: UUID, excludingWindowID: UUID) -> Bool {
+    private func canPresent(_ deskID: DeskID, profileID: UUID, excludingWindowID: UUID) -> Bool {
         !windowRegistry.storeEntries().contains { entry in
             entry.windowID != excludingWindowID
                 && entry.profileID == profileID
@@ -438,7 +438,7 @@ final class ProfileManager {
         }
     }
 
-    private func requestDeskPresentation(_ deskID: UUID, profileID: UUID, windowID: UUID) -> Bool {
+    private func requestDeskPresentation(_ deskID: DeskID, profileID: UUID, windowID: UUID) -> Bool {
         guard
             let ownerWindowID = windowRegistry.storeEntries().first(where: { entry in
                 entry.windowID != windowID
@@ -451,10 +451,10 @@ final class ProfileManager {
     }
 
     private func availableDeskID(
-        preferred: UUID,
+        preferred: DeskID,
         profileID: UUID,
         excludingWindowID: UUID
-    ) -> UUID? {
+    ) -> DeskID? {
         guard let storage = storages[profileID] else { return nil }
         if storage.state.desks.contains(where: { $0.id == preferred }),
             canPresent(preferred, profileID: profileID, excludingWindowID: excludingWindowID)
@@ -467,10 +467,10 @@ final class ProfileManager {
     }
 
     private func availableReplacementDeskID(
-        for deskID: UUID,
+        for deskID: DeskID,
         profileID: UUID,
         excludingWindowID: UUID
-    ) -> UUID? {
+    ) -> DeskID? {
         guard let desks = storages[profileID]?.state.desks,
             let currentIndex = desks.firstIndex(where: { $0.id == deskID })
         else { return nil }
@@ -532,7 +532,7 @@ final class ProfileManager {
         closeWindows(for: profileID, excludingWindowID: excludingWindowID)
     }
 
-    private func setRuntimeOwner(_ store: DenStore?, boardID: UUID, profileID: UUID) {
+    private func setRuntimeOwner(_ store: DenStore?, boardID: BoardID, profileID: UUID) {
         if let store {
             runtimeOwners[profileID, default: [:]][boardID] = store
         } else {

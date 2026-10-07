@@ -114,7 +114,7 @@ struct DenStorePersistenceTests {
 
         // Act
         let store = DenStore(
-            state: DenState(desks: [], focusedDeskID: UUID()),
+            state: DenState(desks: [], focusedDeskID: DeskID()),
             onSave: { savedState = $0 })
 
         // Assert
@@ -231,7 +231,46 @@ struct DenStorePersistenceTests {
         #expect(cleared.desks[0].scrollOffsetX == nil)
     }
 
-    private func desk(_ label: String, boards: [BoardState] = [], focusedBoardID: UUID? = nil) -> DeskState {
+    @Test func boardAndDeskIDsKeepFoundationUUIDJSONShapeInPersistedDenState() throws {
+        // Arrange
+        let boardUUID = UUID()
+        let deskUUID = UUID()
+        let boardID = BoardID(boardUUID)
+        let deskID = DeskID(deskUUID)
+        let encoder = JSONEncoder()
+        let decoder = JSONDecoder()
+        let persistedBoard = BoardState(
+            id: boardID,
+            label: "Board",
+            width: 520,
+            currentSheetURL: nil)
+        let desk = DeskState(
+            id: deskID,
+            label: "Desk",
+            boards: [persistedBoard],
+            focusedBoardID: boardID,
+            anchorBoardID: boardID)
+        let state = DenState(desks: [desk], focusedDeskID: deskID)
+
+        // Act
+        let data = try encoder.encode(state)
+        let decoded = try decoder.decode(DenState.self, from: data)
+        let object = try #require(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        let encodedDesks = try #require(object["desks"] as? [[String: Any]])
+        let encodedDesk = try #require(encodedDesks.first)
+        let encodedBoards = try #require(encodedDesk["boards"] as? [[String: Any]])
+        let encodedBoard = try #require(encodedBoards.first)
+
+        // Assert
+        #expect(object["focusedDeskID"] as? String == deskUUID.uuidString)
+        #expect(encodedDesk["id"] as? String == deskUUID.uuidString)
+        #expect(encodedDesk["focusedBoardID"] as? String == boardUUID.uuidString)
+        #expect(encodedDesk["anchorBoardID"] as? String == boardUUID.uuidString)
+        #expect(encodedBoard["id"] as? String == boardUUID.uuidString)
+        #expect(decoded == state)
+    }
+
+    private func desk(_ label: String, boards: [BoardState] = [], focusedBoardID: BoardID? = nil) -> DeskState {
         DeskState(label: label, boards: boards, focusedBoardID: focusedBoardID)
     }
 

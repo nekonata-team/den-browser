@@ -1,3 +1,4 @@
+import DenDomain
 import Foundation
 
 @MainActor
@@ -10,7 +11,7 @@ extension DenViewModel {
         }
     }
 
-    func showOverview(deskID: UUID? = nil, boardID: UUID? = nil) {
+    func showOverview(deskID: DeskID? = nil, boardID: BoardID? = nil) {
         setTemporaryContext(.overview)
         overview.preparePresentation(deskID: deskID, boardID: boardID)
     }
@@ -19,7 +20,7 @@ extension DenViewModel {
         if temporaryContext == .overview { setTemporaryContext(nil) }
     }
 
-    func beginOverviewBoardDrag(_ boardID: UUID) -> Bool {
+    func beginOverviewBoardDrag(_ boardID: BoardID) -> Bool {
         guard temporaryContext == .overview else { return false }
         return overview.beginBoardDrag(boardID)
     }

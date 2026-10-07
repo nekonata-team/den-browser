@@ -103,7 +103,7 @@ public struct DeskPresetBoard: Codable, Equatable {
         }
     }
 
-    public func makeBoard(id: UUID = UUID()) -> BoardState? {
+    public func makeBoard(id: BoardID = BoardID()) -> BoardState? {
         switch kind {
         case .web(let initialSheetURL):
             return BoardState(
@@ -141,7 +141,7 @@ public struct DeskPresetBoard: Codable, Equatable {
     }
 
     public static func makeBoards(from presetBoards: [DeskPresetBoard]) -> [BoardState]? {
-        let boardIDs = presetBoards.map { _ in UUID() }
+        let boardIDs = presetBoards.map { _ in BoardID() }
         var boards: [BoardState] = []
         boards.reserveCapacity(presetBoards.count)
 

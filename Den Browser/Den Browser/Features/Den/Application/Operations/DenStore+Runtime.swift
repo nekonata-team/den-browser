@@ -234,7 +234,7 @@ extension DenStore {
             })
     }
 
-    func handleTerminalURL(_ rawURL: String, boardID: UUID) {
+    func handleTerminalURL(_ rawURL: String, boardID: BoardID) {
         guard
             let board = board(for: boardID),
             let link = TerminalLinkResolver.resolve(
@@ -322,7 +322,7 @@ extension DenStore {
         releaseDrawerPreview()
     }
 
-    func disposeRuntime(for boardID: UUID) {
+    func disposeRuntime(for boardID: BoardID) {
         storage.onRuntimeOwnerChange?(boardID, nil)
         webRuntimes.removeValue(forKey: boardID)?.dispose()
         terminalRuntimes.removeValue(forKey: boardID)?.dispose()
@@ -343,7 +343,7 @@ extension DenStore {
         return terminalRuntime(for: board)
     }
 
-    func updateBoard(boardID: UUID, url: URL?, title: String?) {
+    func updateBoard(boardID: BoardID, url: URL?, title: String?) {
         guard let indices = boardIndices(for: boardID) else { return }
         var changed = false
         if let url, WebURLPolicy.isSupported(url) {
@@ -362,7 +362,7 @@ extension DenStore {
     }
 
     private func updateTerminalBoard(
-        boardID: UUID,
+        boardID: BoardID,
         workingDirectory: String? = nil,
         title: String? = nil
     ) {

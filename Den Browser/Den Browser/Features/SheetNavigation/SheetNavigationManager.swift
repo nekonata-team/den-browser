@@ -62,7 +62,7 @@ final class SheetNavigationManager {
     @ObservationIgnored private let userContentControllers = NSHashTable<WKUserContentController>.weakObjects()
     @ObservationIgnored private var startupScript: WKUserScript?
     @ObservationIgnored private var actionsByWebView: [ObjectIdentifier: Actions] = [:]
-    @ObservationIgnored private var boardIDByWebView: [ObjectIdentifier: UUID] = [:]
+    @ObservationIgnored private var boardIDByWebView: [ObjectIdentifier: BoardID] = [:]
     @ObservationIgnored private var pausedByWebView: [ObjectIdentifier: Bool] = [:]
 
     init(
@@ -133,7 +133,7 @@ final class SheetNavigationManager {
 
     func didOpen(
         _ webView: WKWebView,
-        boardID: UUID? = nil,
+        boardID: BoardID? = nil,
         paused: Bool = false,
         actions: Actions
     ) {
@@ -175,7 +175,7 @@ final class SheetNavigationManager {
         applyConfiguration(to: webView)
     }
 
-    func setBoardPaused(_ paused: Bool, for boardID: UUID) {
+    func setBoardPaused(_ paused: Bool, for boardID: BoardID) {
         for webView in webViews.allObjects where boardIDByWebView[ObjectIdentifier(webView)] == boardID {
             let webViewID = ObjectIdentifier(webView)
             guard pausedByWebView[webViewID] != paused else { continue }

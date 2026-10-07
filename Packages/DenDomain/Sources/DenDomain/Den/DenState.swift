@@ -2,12 +2,12 @@ import Foundation
 
 public struct DenState: Codable, Equatable {
     public var desks: [DeskState]
-    public var focusedDeskID: UUID
+    public var focusedDeskID: DeskID
     public var drawerItems: [DrawerItem]
 
     public init(
         desks: [DeskState],
-        focusedDeskID: UUID,
+        focusedDeskID: DeskID,
         drawerItems: [DrawerItem] = []
     ) {
         self.desks = desks
@@ -22,7 +22,7 @@ public struct DenState: Codable, Equatable {
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         desks = try container.decode([DeskState].self, forKey: .desks)
-        focusedDeskID = try container.decode(UUID.self, forKey: .focusedDeskID)
+        focusedDeskID = try container.decode(DeskID.self, forKey: .focusedDeskID)
         drawerItems = try container.decodeIfPresent([DrawerItem].self, forKey: .drawerItems) ?? []
     }
 

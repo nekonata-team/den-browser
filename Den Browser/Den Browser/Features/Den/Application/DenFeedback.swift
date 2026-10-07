@@ -1,3 +1,4 @@
+import DenDomain
 import Foundation
 
 struct DenFeedback: Equatable, Identifiable {
@@ -33,7 +34,7 @@ struct DenFeedback: Equatable, Identifiable {
     }
 
     enum Target: Equatable {
-        case board(UUID)
+        case board(BoardID)
         case drawerItem(UUID)
         case notification(UUID)
     }

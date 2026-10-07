@@ -18,7 +18,7 @@ struct DenIPCTargetResolverTests {
         let terminalBoardID = try #require(store.createTerminalBoard(workingDirectory: "/tmp", focus: true))
         let explicitRequest = DenIPCRequest(
             command: .terminal(.text),
-            boardID: terminalBoardID.uuidString)
+            boardID: terminalBoardID.rawValue.uuidString)
 
         // Act
         let resolved = DenIPCTargetResolver.resolveTargetTerminalBoard(request: explicitRequest, in: manager)
@@ -54,7 +54,7 @@ struct DenIPCTargetResolverTests {
         let store = try #require(manager.store(for: manager.personalProfileID))
         let webBoardID = try #require(store.createBoard(urlString: "https://example.com/"))
         let inspectionBoardID = try #require(store.createInspectionBoard(targetBoardID: webBoardID))
-        let request = DenIPCRequest(command: .board(.focused), boardID: inspectionBoardID.uuidString)
+        let request = DenIPCRequest(command: .board(.focused), boardID: inspectionBoardID.rawValue.uuidString)
 
         // Act
         let resolved = try DenIPCTargetResolver.resolveTargetAnyBoardResult(request: request, in: manager).get()
@@ -72,7 +72,7 @@ struct DenIPCTargetResolverTests {
         let store = try #require(manager.store(for: manager.personalProfileID))
         let webBoardID = try #require(store.createBoard(urlString: "https://example.com/"))
         let inspectionBoardID = try #require(store.createInspectionBoard(targetBoardID: webBoardID))
-        let request = DenIPCRequest(command: .inspection(.read), boardID: inspectionBoardID.uuidString)
+        let request = DenIPCRequest(command: .inspection(.read), boardID: inspectionBoardID.rawValue.uuidString)
 
         // Act
         let resolved = try DenIPCTargetResolver.resolveTargetInspectionBoardResult(request: request, in: manager).get()
@@ -92,7 +92,7 @@ struct DenIPCTargetResolverTests {
         let webBoardID = try #require(store.createBoard(urlString: "https://example.com/"))
         let ambientRequest = DenIPCRequest(
             command: .terminal(.text),
-            callerBoardID: webBoardID.uuidString)
+            callerBoardID: webBoardID.rawValue.uuidString)
 
         // Act
         let resolved = DenIPCTargetResolver.resolveTargetTerminalBoard(request: ambientRequest, in: manager)
@@ -111,7 +111,7 @@ struct DenIPCTargetResolverTests {
         let terminalBoardID = try #require(store.createTerminalBoard(workingDirectory: "/tmp", focus: true))
         let selfRequest = DenIPCRequest(
             command: .terminal(.text),
-            callerBoardID: terminalBoardID.uuidString)
+            callerBoardID: terminalBoardID.rawValue.uuidString)
 
         // Act
         let resolved = DenIPCTargetResolver.resolveTargetTerminalBoard(request: selfRequest, in: manager)
@@ -129,7 +129,7 @@ struct DenIPCTargetResolverTests {
         let store = try #require(manager.store(for: manager.personalProfileID))
         _ = try #require(store.createTerminalBoard(workingDirectory: "/tmp", focus: true))
 
-        let nonExistentID = UUID().uuidString
+        let nonExistentID = BoardID().rawValue.uuidString
         let request = DenIPCRequest(command: .terminal(.kill(signal: "TERM")), boardID: nonExistentID)
 
         // Act
@@ -147,7 +147,7 @@ struct DenIPCTargetResolverTests {
         let store = try #require(manager.store(for: manager.personalProfileID))
         _ = try #require(store.createBoard(urlString: "https://example.com/"))
 
-        let nonExistentID = UUID().uuidString
+        let nonExistentID = BoardID().rawValue.uuidString
         let request = DenIPCRequest(
             command: .sheet(.eval(DenSheetEvalPayload(script: "document.title"))),
             boardID: nonExistentID
@@ -179,7 +179,7 @@ struct DenIPCTargetResolverTests {
         _ = store.setFocusedDesk(desk2.id)
         let terminalBoardID = try #require(store.createTerminalBoard(workingDirectory: "/tmp", focus: true))
 
-        let ambientRequest = DenIPCRequest(command: .sheet(.url), callerBoardID: terminalBoardID.uuidString)
+        let ambientRequest = DenIPCRequest(command: .sheet(.url), callerBoardID: terminalBoardID.rawValue.uuidString)
 
         // Act
         let resolved = DenIPCTargetResolver.resolveTargetWebBoard(request: ambientRequest, in: manager)
@@ -217,7 +217,7 @@ struct DenIPCTargetResolverTests {
         let boardID = try #require(store.createBoard(urlString: "https://example.com/"))
         let service = DenIPCService(profileManager: manager)
 
-        let nonExistentID = UUID().uuidString
+        let nonExistentID = BoardID().rawValue.uuidString
         let request = DenIPCRequest(command: .board(.close), boardID: nonExistentID)
 
         // Act
@@ -342,7 +342,7 @@ struct DenIPCTargetResolverTests {
 
         let request = DenIPCRequest(
             command: .sheet(.url),
-            boardID: board1ID.uuidString,
+            boardID: board1ID.rawValue.uuidString,
             profileID: profile2.id.uuidString
         )
 
@@ -352,7 +352,7 @@ struct DenIPCTargetResolverTests {
         // Assert
         switch result {
         case .failure(let error):
-            #expect(error == .boardNotFound(board1ID.uuidString))
+            #expect(error == .boardNotFound(board1ID.rawValue.uuidString))
         case .success:
             Issue.record("Expected failure when board is not in specified profile")
         }
@@ -370,7 +370,7 @@ struct DenIPCTargetResolverTests {
 
         let request = DenIPCRequest(
             command: .sheet(.url),
-            callerBoardID: terminalBoardID.uuidString,
+            callerBoardID: terminalBoardID.rawValue.uuidString,
             profileID: profile2.id.uuidString
         )
 
@@ -400,7 +400,7 @@ struct DenIPCTargetResolverTests {
         // Act: Close board2 with profile2
         let request = DenIPCRequest(
             command: .board(.close),
-            boardID: board2ID.uuidString,
+            boardID: board2ID.rawValue.uuidString,
             profileID: profile2.id.uuidString
         )
         let response = await service.handleRequest(request)
@@ -428,14 +428,14 @@ struct DenIPCTargetResolverTests {
         // Act: Attempt to close board1 scoping to profile2
         let request = DenIPCRequest(
             command: .board(.close),
-            boardID: board1ID.uuidString,
+            boardID: board1ID.rawValue.uuidString,
             profileID: profile2.id.uuidString
         )
         let response = await service.handleRequest(request)
 
         // Assert
         #expect(response.isOk == false)
-        #expect(response.error?.contains("Board not found: \(board1ID.uuidString)") == true)
+        #expect(response.error?.contains("Board not found: \(board1ID.rawValue.uuidString)") == true)
         #expect(store1.board(for: board1ID) != nil)
         #expect(store2.board(for: board2ID) != nil)
     }
@@ -451,7 +451,7 @@ struct DenIPCTargetResolverTests {
 
         let request = DenIPCRequest(
             command: .board(.close),
-            boardID: terminalBoardID.uuidString
+            boardID: terminalBoardID.rawValue.uuidString
         )
         let response = await service.handleRequest(request)
 
@@ -479,9 +479,9 @@ struct DenIPCTargetResolverTests {
 
     @Test func resolveTargetBoardWithDuplicateDeskIDsReturnsOwningStore() throws {
         // Arrange: Simulate legacy or imported persisted data where two profiles share identical Desk IDs
-        let duplicateDeskID = UUID()
-        let board1ID = UUID()
-        let board2ID = UUID()
+        let duplicateDeskID = DeskID()
+        let board1ID = BoardID()
+        let board2ID = BoardID()
 
         let den1 = DenState(
             desks: [
@@ -533,7 +533,7 @@ struct DenIPCTargetResolverTests {
         store2.state = den2
 
         // Act: Target board1 without explicit profileID
-        let request1 = DenIPCRequest(command: .sheet(.url), boardID: board1ID.uuidString)
+        let request1 = DenIPCRequest(command: .sheet(.url), boardID: board1ID.rawValue.uuidString)
         let result1 = DenIPCTargetResolver.resolveTargetWebBoardResult(request: request1, in: manager)
 
         // Assert: Resolved store must be store1 (which owns board1), NEVER store2
@@ -543,7 +543,7 @@ struct DenIPCTargetResolverTests {
         #expect(resolvedStore1.board(for: board1ID) != nil)
 
         // Act: Target board2 without explicit profileID
-        let request2 = DenIPCRequest(command: .sheet(.url), boardID: board2ID.uuidString)
+        let request2 = DenIPCRequest(command: .sheet(.url), boardID: board2ID.rawValue.uuidString)
         let result2 = DenIPCTargetResolver.resolveTargetWebBoardResult(request: request2, in: manager)
 
         // Assert: Resolved store must be store2 (which owns board2), NEVER store1
@@ -579,7 +579,7 @@ struct DenIPCTargetResolverTests {
         // Act 1: Resolve with explicit profileID
         let scopedRequest = DenIPCRequest(
             command: .sheet(.url),
-            boardID: board2ID.uuidString,
+            boardID: board2ID.rawValue.uuidString,
             profileID: profileID.uuidString
         )
         let scopedResult = DenIPCTargetResolver.resolveTargetWebBoardResult(request: scopedRequest, in: manager)
@@ -587,7 +587,7 @@ struct DenIPCTargetResolverTests {
         // Act 2: Resolve without profileID
         let unscopedRequest = DenIPCRequest(
             command: .sheet(.url),
-            boardID: board2ID.uuidString
+            boardID: board2ID.rawValue.uuidString
         )
         let unscopedResult = DenIPCTargetResolver.resolveTargetWebBoardResult(request: unscopedRequest, in: manager)
 
@@ -610,7 +610,7 @@ struct DenIPCTargetResolverTests {
         let store = try #require(manager.store(for: manager.personalProfileID))
         _ = try #require(store.createBoard(urlString: "https://example.com/"))
 
-        let nonExistentDeskID = UUID().uuidString
+        let nonExistentDeskID = DeskID().rawValue.uuidString
 
         // Act 1: Explicit non-existent deskID without profileID
         let request1 = DenIPCRequest(command: .desk(.list), deskID: nonExistentDeskID)

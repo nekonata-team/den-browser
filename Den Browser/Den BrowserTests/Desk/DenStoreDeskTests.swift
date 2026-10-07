@@ -299,7 +299,7 @@ struct DenStoreDeskTests {
             "Tutorial only",
             boards: [tutorialOnlyBoard],
             focusedBoardID: tutorialOnlyBoard.id)
-        let rawState = DenState(desks: [second, first, tutorialOnlyDesk], focusedDeskID: UUID())
+        let rawState = DenState(desks: [second, first, tutorialOnlyDesk], focusedDeskID: DeskID())
 
         let normalized = DenStore.normalizedPersistedState(rawState)
         #expect(normalized.focusedDeskID == second.id)
@@ -591,7 +591,7 @@ struct DenStoreDeskTests {
             let pasteboard = NSPasteboard.withUniqueName()
             store.copyDeskID(deskA.id, pasteboard: pasteboard)
 
-            #expect(pasteboard.string(forType: .string) == deskA.id.uuidString.lowercased())
+            #expect(pasteboard.string(forType: .string) == deskA.id.rawValue.uuidString.lowercased())
             #expect(store.latestFeedback?.message == "Copied Desk ID.")
             #expect(store.latestFeedback?.severity == .success)
         }
@@ -601,14 +601,14 @@ struct DenStoreDeskTests {
         let deskA = desk("Desk A")
         withStore(desks: [deskA]) { store in
             let pasteboard = NSPasteboard.withUniqueName()
-            store.copyDeskID(UUID(), pasteboard: pasteboard)
+            store.copyDeskID(DeskID(), pasteboard: pasteboard)
 
             #expect(pasteboard.string(forType: .string) == nil)
             #expect(store.latestFeedback == nil)
         }
     }
 
-    private func desk(_ label: String, boards: [BoardState] = [], focusedBoardID: UUID? = nil) -> DeskState {
+    private func desk(_ label: String, boards: [BoardState] = [], focusedBoardID: BoardID? = nil) -> DeskState {
         DeskState(label: label, boards: boards, focusedBoardID: focusedBoardID)
     }
 

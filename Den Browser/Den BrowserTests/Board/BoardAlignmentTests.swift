@@ -6,8 +6,8 @@ import Testing
 @MainActor
 struct BoardAlignmentTests {
     @Test func newerAlignmentRequestInvalidatesOlderCompletion() {
-        let deskID = UUID()
-        let boardID = UUID()
+        let deskID = DeskID()
+        let boardID = BoardID()
         let layoutKey = BoardStripLayoutKey(
             ids: [boardID],
             widths: [520],
@@ -29,14 +29,14 @@ struct BoardAlignmentTests {
         #expect(!PendingBoardAlignment.isCurrent(older, in: newer))
         #expect(PendingBoardAlignment.isCurrent(newer, in: newer))
         #expect(newer.isRelevant(to: deskID, boardIDs: Set([boardID]), layoutKey: layoutKey))
-        #expect(!newer.isRelevant(to: UUID(), boardIDs: Set([boardID]), layoutKey: layoutKey))
+        #expect(!newer.isRelevant(to: DeskID(), boardIDs: Set([boardID]), layoutKey: layoutKey))
         #expect(!newer.isRelevant(to: deskID, boardIDs: [], layoutKey: layoutKey))
     }
 
     @Test func pendingBoardAlignmentIsCancelledForDifferentDesk() {
-        let deskA = UUID()
-        let deskB = UUID()
-        let boardID = UUID()
+        let deskA = DeskID()
+        let deskB = DeskID()
+        let boardID = BoardID()
         let layoutKey = BoardStripLayoutKey(
             ids: [boardID],
             widths: [520],
@@ -86,9 +86,9 @@ struct BoardAlignmentTests {
     }
 
     @Test func insertedBoardWidthBeforeFocusedBoardIncludesItsSpacing() {
-        let leftBoard = UUID()
-        let focusedBoard = UUID()
-        let insertedBoard = UUID()
+        let leftBoard = BoardID()
+        let focusedBoard = BoardID()
+        let insertedBoard = BoardID()
         let previous = BoardStripLayoutKey(
             ids: [leftBoard, focusedBoard],
             widths: [400, 600],
@@ -106,9 +106,9 @@ struct BoardAlignmentTests {
     }
 
     @Test func removedBoardWidthBeforeFocusedBoardIncludesItsSpacing() {
-        let leftBoard = UUID()
-        let removedBoard = UUID()
-        let focusedBoard = UUID()
+        let leftBoard = BoardID()
+        let removedBoard = BoardID()
+        let focusedBoard = BoardID()
         let previous = BoardStripLayoutKey(
             ids: [leftBoard, removedBoard, focusedBoard],
             widths: [400, 320, 600],

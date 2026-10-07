@@ -24,7 +24,7 @@ final class DenViewModel {
     var zmxDuplicationRootSessionName: String?
     var zmxSessions = ZmxSessionsModel()
     var pendingConfirmation: DenConfirmationRequest?
-    var maximizedBoardID: UUID?
+    var maximizedBoardID: BoardID?
     var centerFocusedBoardRequest = 0
     var revealPreviousBoardRequest = 0
     var revealNextBoardRequest = 0

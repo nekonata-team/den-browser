@@ -92,8 +92,8 @@ extension DenStore {
     func placeDrawerItemAsBoard(
         _ itemID: UUID,
         preferredWidth: Double? = nil,
-        deskID: UUID? = nil
-    ) -> UUID? {
+        deskID: DeskID? = nil
+    ) -> BoardID? {
         guard let item = state.drawerItems.first(where: { $0.id == itemID }) else { return nil }
         guard
             let boardID = createBoard(

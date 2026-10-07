@@ -128,8 +128,8 @@ final class DenIPCService {
             }
             let ancestors = page.selectionConnected == true ? Array(page.treePath.dropLast()) : []
             let result = DenInspectionReadInfo(
-                boardID: inspection.id.uuidString,
-                targetBoardID: target.id.uuidString,
+                boardID: inspection.id.rawValue.uuidString,
+                targetBoardID: target.id.rawValue.uuidString,
                 url: runtime.webView.url?.absoluteString,
                 pageGeneration: generation,
                 documentID: documentID,
@@ -167,7 +167,7 @@ final class DenIPCService {
                         message: $0.message)
                 },
                 eventsDropped: page.eventsDropped ?? 0)
-            return .success(boardId: inspection.id.uuidString, inspection: result)
+            return .success(boardId: inspection.id.rawValue.uuidString, inspection: result)
         } catch {
             return .failure(error.localizedDescription)
         }
@@ -201,7 +201,7 @@ final class DenIPCService {
         }
         let desks = store.state.desks.map {
             DenDeskInfo(
-                id: $0.id.uuidString,
+                id: $0.id.rawValue.uuidString,
                 label: $0.label,
                 isActive: $0.id == desk.id,
                 boardCount: $0.boards.count
@@ -209,14 +209,14 @@ final class DenIPCService {
         }
         let boards = desk.boards.map {
             DenBoardInfo(
-                id: $0.id.uuidString,
+                id: $0.id.rawValue.uuidString,
                 type: $0.isInspection
                     ? "inspection"
                     : ($0.isTutorial ? "tutorial" : ($0.isTerminal ? "terminal" : "web")),
                 label: $0.displayName,
                 url: $0.currentSheetURL?.absoluteString,
                 sessionName: $0.zellijSessionName ?? $0.zmxSessionName,
-                targetBoardID: $0.sideBoardTargetBoardID?.uuidString,
+                targetBoardID: $0.sideBoardTargetBoardID?.rawValue.uuidString,
                 isFocused: $0.id == desk.focusedBoardID
             )
         }
@@ -228,7 +228,7 @@ final class DenIPCService {
             profile: DenSelectedProfileInfo(id: profile.id.uuidString, name: profile.name),
             profileID: profile.id.uuidString,
             activeDesk: activeDesk,
-            focusedBoardID: desk.focusedBoardID?.uuidString,
+            focusedBoardID: desk.focusedBoardID?.rawValue.uuidString,
             drawerItemCount: store.state.drawerItems.count
         )
     }
@@ -236,7 +236,7 @@ final class DenIPCService {
     private func targetContext(for request: DenIPCRequest) -> (profileID: String, boardID: String?)? {
         guard let profileManager else { return nil }
         let store: DenStore
-        let boardID: UUID?
+        let boardID: BoardID?
         switch request.command {
         case .sheet:
             guard
@@ -305,7 +305,7 @@ final class DenIPCService {
             return nil
         }
         guard let profileID = profileManager.profileID(for: store) else { return nil }
-        return (profileID.uuidString, boardID?.uuidString)
+        return (profileID.uuidString, boardID?.rawValue.uuidString)
     }
 
     // MARK: - Sheet Commands
@@ -357,7 +357,7 @@ final class DenIPCService {
         guard isSheetInteractTargetAvailable(target) else {
             response.isOk = false
             response.error =
-                "Command succeeded, but the target Web Board no longer exists: \(target.board.id.uuidString)"
+                "Command succeeded, but the target Web Board no longer exists: \(target.board.id.rawValue.uuidString)"
             return response
         }
 
@@ -369,7 +369,7 @@ final class DenIPCService {
             guard isSheetInteractTargetAvailable(target) else {
                 response.isOk = false
                 response.error =
-                    "Command succeeded, but the target Web Board no longer exists: \(target.board.id.uuidString)"
+                    "Command succeeded, but the target Web Board no longer exists: \(target.board.id.rawValue.uuidString)"
                 return response
             }
         } catch {
@@ -413,7 +413,7 @@ final class DenIPCService {
                     interactiveOnly: !payload.full,
                     within: payload.within
                 )
-                return .success(boardId: board.id.uuidString, url: currentURL, snapshot: snapshot)
+                return .success(boardId: board.id.rawValue.uuidString, url: currentURL, snapshot: snapshot)
 
             case .reload:
                 runtime.webView.reload()
@@ -634,7 +634,7 @@ final class DenIPCService {
                     _ = store.webRuntime(for: newBoard)
                     return .success(
                         message: "Opened \(description) in new Board",
-                        boardId: newBoardID.uuidString,
+                        boardId: newBoardID.rawValue.uuidString,
                         url: href
                     )
                 }
@@ -843,7 +843,7 @@ final class DenIPCService {
         var completedActions = 0
         func targetUnavailable(at index: Int) -> DenIPCResponse {
             .failure(
-                "Target Web Board no longer exists: \(target.board.id.uuidString)",
+                "Target Web Board no longer exists: \(target.board.id.rawValue.uuidString)",
                 completedActions: completedActions,
                 failedActionIndex: index
             )
@@ -955,14 +955,14 @@ final class DenIPCService {
             }
             let boards = desk.boards.map { currentBoard in
                 DenBoardInfo(
-                    id: currentBoard.id.uuidString,
+                    id: currentBoard.id.rawValue.uuidString,
                     type: currentBoard.isInspection
                         ? "inspection"
                         : (currentBoard.isTutorial ? "tutorial" : (currentBoard.isTerminal ? "terminal" : "web")),
                     label: currentBoard.displayName,
                     url: currentBoard.currentSheetURL?.absoluteString,
                     sessionName: currentBoard.zellijSessionName ?? currentBoard.zmxSessionName,
-                    targetBoardID: currentBoard.sideBoardTargetBoardID?.uuidString,
+                    targetBoardID: currentBoard.sideBoardTargetBoardID?.rawValue.uuidString,
                     isFocused: currentBoard.id == desk.focusedBoardID
                 )
             }
@@ -980,14 +980,14 @@ final class DenIPCService {
                 return .failure("No focused Board found")
             }
             let info = DenBoardInfo(
-                id: focusedBoard.id.uuidString,
+                id: focusedBoard.id.rawValue.uuidString,
                 type: focusedBoard.isInspection
                     ? "inspection"
                     : (focusedBoard.isTutorial ? "tutorial" : (focusedBoard.isTerminal ? "terminal" : "web")),
                 label: focusedBoard.displayName,
                 url: focusedBoard.currentSheetURL?.absoluteString,
                 sessionName: focusedBoard.zellijSessionName ?? focusedBoard.zmxSessionName,
-                targetBoardID: focusedBoard.sideBoardTargetBoardID?.uuidString,
+                targetBoardID: focusedBoard.sideBoardTargetBoardID?.rawValue.uuidString,
                 isFocused: true
             )
             return .success(boardId: info.id, board: info)
@@ -1014,7 +1014,7 @@ final class DenIPCService {
                 deskID: desk.id
             ), let board = store.board(for: boardID) {
                 _ = store.webRuntime(for: board)
-                return .success(boardId: boardID.uuidString)
+                return .success(boardId: boardID.rawValue.uuidString)
             }
             return .failure("Failed to open board with \(urlString)")
 
@@ -1022,9 +1022,10 @@ final class DenIPCService {
             return handleTerminalBoardNew(payload: payload, request: request)
 
         case .inspection(.new(let payload)):
-            guard let boardID = request.boardID, let targetBoardID = UUID(uuidString: boardID) else {
+            guard let boardID = request.boardID, let targetUUID = UUID(uuidString: boardID) else {
                 return .failure("Usage: den board inspection new --target <web-board-id>")
             }
+            let targetBoardID = BoardID(targetUUID)
             let store: DenStore
             let target: BoardState
             switch DenIPCTargetResolver.resolveTargetWebBoardResult(request: request, in: profileManager) {
@@ -1038,7 +1039,7 @@ final class DenIPCService {
             else {
                 return .failure("Could not create an Inspection Board for \(boardID)")
             }
-            return .success(boardId: inspectionID.uuidString)
+            return .success(boardId: inspectionID.rawValue.uuidString)
 
         case .close:
             let targetResult: Result<(DenStore, BoardState), DenIPCTargetResolver.TargetResolutionError>
@@ -1051,8 +1052,8 @@ final class DenIPCService {
             case .success(let (store, board)):
                 store.removeBoard(board.id, origin: .cli)
                 return .success(
-                    message: "Closed Board \(board.id.uuidString)",
-                    closedBoardId: board.id.uuidString
+                    message: "Closed Board \(board.id.rawValue.uuidString)",
+                    closedBoardId: board.id.rawValue.uuidString
                 )
             case .failure(let error):
                 return .failure(error.localizedDescription)
@@ -1104,18 +1105,18 @@ final class DenIPCService {
             runtime.runCommand(runCommand)
         }
 
-        return .success(boardId: boardID.uuidString)
+        return .success(boardId: boardID.rawValue.uuidString)
     }
 
     private func newBoardInsertionAnchor(
         for request: DenIPCRequest,
         in store: DenStore,
-        deskID: UUID
-    ) -> UUID? {
+        deskID: DeskID
+    ) -> BoardID? {
         guard let deskIndex = store.state.desks.firstIndex(where: { $0.id == deskID }) else { return nil }
         let callerAnchor = request.callerBoardID
-            .flatMap(UUID.init)
-            .flatMap { boardID -> UUID? in
+            .flatMap { UUID(uuidString: $0).map(BoardID.init) }
+            .flatMap { boardID -> BoardID? in
                 guard store.boardIndices(for: boardID)?.desk == deskIndex else { return nil }
                 return boardID
             }
@@ -1137,7 +1138,7 @@ final class DenIPCService {
             let presentedID = store.presentedDeskID
             let desks = store.state.desks.map { currentDesk in
                 DenDeskInfo(
-                    id: currentDesk.id.uuidString,
+                    id: currentDesk.id.rawValue.uuidString,
                     label: currentDesk.label,
                     isActive: currentDesk.id == presentedID,
                     boardCount: currentDesk.boards.count
@@ -1203,7 +1204,7 @@ final class DenIPCService {
                 let board = store.board(for: boardID)
             {
                 _ = store.webRuntime(for: board)
-                return .success(message: "Placed Drawer Item as Board", boardId: boardID.uuidString)
+                return .success(message: "Placed Drawer Item as Board", boardId: boardID.rawValue.uuidString)
             }
             return .failure("Failed to place Drawer Item as Board: \(idString)")
 
@@ -1266,7 +1267,7 @@ final class DenIPCService {
                 .replacingOccurrences(of: "\\t", with: "\t")
             let runtime = store.terminalRuntime(for: board)
             runtime.sendText(text)
-            return .success(message: "Sent text to Terminal Board \(board.id.uuidString)")
+            return .success(message: "Sent text to Terminal Board \(board.id.rawValue.uuidString)")
 
         case .run(let command):
             guard !command.isEmpty else {
@@ -1274,7 +1275,7 @@ final class DenIPCService {
             }
             let runtime = store.terminalRuntime(for: board)
             runtime.runCommand(command)
-            return .success(message: "Ran command in Terminal Board \(board.id.uuidString)")
+            return .success(message: "Ran command in Terminal Board \(board.id.rawValue.uuidString)")
 
         case .kill(let rawSignal):
             let signal = rawSignal.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -1287,7 +1288,8 @@ final class DenIPCService {
             }
             do {
                 let pid = try await store.sendSignal(parsed.number, to: board)
-                return .success(message: "Sent \(parsed.name) to process group \(pid) (Board \(board.id.uuidString))")
+                return .success(
+                    message: "Sent \(parsed.name) to process group \(pid) (Board \(board.id.rawValue.uuidString))")
             } catch {
                 return .failure(error.localizedDescription)
             }

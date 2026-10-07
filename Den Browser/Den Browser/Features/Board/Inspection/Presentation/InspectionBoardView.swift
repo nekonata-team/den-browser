@@ -18,7 +18,7 @@ struct InspectionBoardView: View {
     let width: Double
     let height: Double
     let isVisibleInViewport: Bool
-    let targetBoardID: UUID
+    let targetBoardID: BoardID
     let onFocus: () -> Void
     let onRemove: () -> Void
     let onDragChanged: (DragGesture.Value) -> Void

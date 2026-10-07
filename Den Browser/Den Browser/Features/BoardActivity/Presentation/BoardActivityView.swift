@@ -12,8 +12,8 @@ struct BoardActivityView: View {
     @Environment(DenViewModel.self) private var viewModel
     @State private var sampler = ProcessResourceSampler()
     @State private var webUsage: [pid_t: ProcessResourceUsage] = [:]
-    @State private var terminalUsage: [UUID: ProcessResourceUsage] = [:]
-    @State private var collapsedDeskIDs: Set<UUID> = []
+    @State private var terminalUsage: [BoardID: ProcessResourceUsage] = [:]
+    @State private var collapsedDeskIDs: Set<DeskID> = []
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -109,7 +109,7 @@ struct BoardActivityView: View {
         return terminalUsage[board.id]
     }
 
-    private func toggleDesk(_ deskID: UUID) {
+    private func toggleDesk(_ deskID: DeskID) {
         if !collapsedDeskIDs.insert(deskID).inserted {
             collapsedDeskIDs.remove(deskID)
         }
@@ -213,7 +213,7 @@ private struct BoardActivityRow: View {
             }
             .buttonStyle(.plain)
             .accessibilityHint("Open Board")
-            .accessibilityIdentifier("board-activity-board.\(board.id.uuidString.lowercased())")
+            .accessibilityIdentifier("board-activity-board.\(board.id.rawValue.uuidString.lowercased())")
 
             if let processIdentifier {
                 Button {
@@ -269,7 +269,7 @@ private struct BoardActivityRow: View {
 
     private var detail: String {
         if board.isInspection {
-            return board.sideBoardTargetBoardID.map { "Target Board \($0.uuidString.prefix(8))" }
+            return board.sideBoardTargetBoardID.map { "Target Board \($0.rawValue.uuidString.prefix(8))" }
                 ?? "Inspection Board"
         } else if board.isTutorial {
             return "Interactive tutorial"

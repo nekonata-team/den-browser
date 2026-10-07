@@ -36,8 +36,8 @@ final class WebBoardWKWebView: WKWebView {
 @MainActor
 final class WebBoardRuntime: BaseWebRuntime, ObservableObject {
     struct Events {
-        var onChange: (UUID, URL?, String?) -> Void
-        var onFullscreenChange: ((UUID, Bool) -> Void)?
+        var onChange: (BoardID, URL?, String?) -> Void
+        var onFullscreenChange: ((BoardID, Bool) -> Void)?
         var onCreatePopupBoard: (WKWebView, URL?, NSEvent.ModifierFlags) -> Bool = { _, _, _ in false }
         var onClosePopupBoard: () -> Void = {}
         var onLinkActivated: () -> Void = {}
@@ -64,6 +64,7 @@ final class WebBoardRuntime: BaseWebRuntime, ObservableObject {
     @Published private(set) var isInspectionActive = false
     @Published private(set) var isInspectionCollecting = false
     @Published private(set) var inspectionPageGeneration = 0
+    var boardID: BoardID { BoardID(id) }
     private var actionHighlightTask: Task<Void, Never>?
     private var inspectionHighlightColor: ProfileRGB?
     private var inspectionCollectionUserScript: WKUserScript?
@@ -118,10 +119,10 @@ final class WebBoardRuntime: BaseWebRuntime, ObservableObject {
         self.webExtensionWindow = webExtensionWindow
         self.sheetNavigationActions = sheetNavigationActions
         self.events = events
-        PerformanceTrace.mark("WebBoardRuntime.init (\(board.id.uuidString.prefix(8)))", category: "Board")
+        PerformanceTrace.mark("WebBoardRuntime.init (\(board.id.rawValue.uuidString.prefix(8)))", category: "Board")
 
         super.init(
-            id: board.id,
+            id: board.id.rawValue,
             initialURL: webExtensionHost != nil && webExtensionWindow != nil
                 ? nil
                 : board.currentSheetURL,
@@ -154,7 +155,7 @@ final class WebBoardRuntime: BaseWebRuntime, ObservableObject {
 
         sheetNavigation.didOpen(
             webView,
-            boardID: id,
+            boardID: boardID,
             paused: board.sheetNavigationPaused,
             actions: sheetNavigationActions
         )
@@ -189,7 +190,7 @@ final class WebBoardRuntime: BaseWebRuntime, ObservableObject {
                 let isFullscreen =
                     self.webView.fullscreenState == .inFullscreen
                     || self.webView.fullscreenState == .enteringFullscreen
-                self.events.onFullscreenChange?(self.id, isFullscreen)
+                self.events.onFullscreenChange?(self.boardID, isFullscreen)
             }
         }
 
@@ -304,7 +305,7 @@ final class WebBoardRuntime: BaseWebRuntime, ObservableObject {
     }
 
     override func handleURLOrTitleChange(url: URL?, title: String?) {
-        events.onChange(id, url, title)
+        events.onChange(boardID, url, title)
     }
 
     override func handleWebViewDidClose(_ webView: WKWebView) {
@@ -368,7 +369,9 @@ final class WebBoardRuntime: BaseWebRuntime, ObservableObject {
     }
 
     override func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
-        PerformanceTrace.mark("WebBoardRuntime.didFinish navigation (\(id.uuidString.prefix(8)))", category: "Board")
+        PerformanceTrace.mark(
+            "WebBoardRuntime.didFinish navigation (\(boardID.rawValue.uuidString.prefix(8)))",
+            category: "Board")
         traceWebProcessIdentifier()
         sheetNavigation.refreshConfiguration(for: webView)
         updateFavicon()
@@ -510,7 +513,9 @@ final class WebBoardRuntime: BaseWebRuntime, ObservableObject {
     }
 
     override func webView(_ webView: WKWebView, didCommit navigation: WKNavigation!) {
-        PerformanceTrace.mark("WebBoardRuntime.didCommit navigation (\(id.uuidString.prefix(8)))", category: "Board")
+        PerformanceTrace.mark(
+            "WebBoardRuntime.didCommit navigation (\(boardID.rawValue.uuidString.prefix(8)))",
+            category: "Board")
         traceWebProcessIdentifier()
         didTerminateContentProcess = false
         guard isShowingInitialLoadFallback else { return }
@@ -534,7 +539,7 @@ final class WebBoardRuntime: BaseWebRuntime, ObservableObject {
 
     override func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
         isShowingInitialLoadFallback = false
-        events.onChange(id, webView.url, webView.title)
+        events.onChange(boardID, webView.url, webView.title)
     }
 
     override func webView(
@@ -543,7 +548,7 @@ final class WebBoardRuntime: BaseWebRuntime, ObservableObject {
         withError error: Error
     ) {
         isShowingInitialLoadFallback = false
-        events.onChange(id, webView.url, webView.title)
+        events.onChange(boardID, webView.url, webView.title)
     }
 
     private func updateFavicon() {

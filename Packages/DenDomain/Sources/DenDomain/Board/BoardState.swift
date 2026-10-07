@@ -4,7 +4,7 @@ public struct BoardState: Codable, Equatable, Identifiable {
     public static let minimumWidth = 280.0
     public static let maximumWidth = 1_400.0
 
-    public var id: UUID
+    public var id: BoardID
     public var label: String
     public var width: Double
     public var kind: BoardKind
@@ -121,7 +121,7 @@ public struct BoardState: Codable, Equatable, Identifiable {
         return false
     }
 
-    public var sideBoardTargetBoardID: UUID? {
+    public var sideBoardTargetBoardID: BoardID? {
         guard case .sideBoard(let targetBoardID) = role else { return nil }
         return targetBoardID
     }
@@ -167,7 +167,7 @@ public struct BoardState: Codable, Equatable, Identifiable {
     }
 
     public init(
-        id: UUID = UUID(),
+        id: BoardID = BoardID(),
         label: String,
         width: Double,
         currentSheetURL: URL?,
@@ -188,7 +188,7 @@ public struct BoardState: Codable, Equatable, Identifiable {
     }
 
     public init(
-        id: UUID = UUID(),
+        id: BoardID = BoardID(),
         label: String = "Terminal",
         width: Double,
         workingDirectory: String,
@@ -203,7 +203,7 @@ public struct BoardState: Codable, Equatable, Identifiable {
     }
 
     public init(
-        id: UUID = UUID(),
+        id: BoardID = BoardID(),
         label: String = "Zellij",
         width: Double,
         zellijSessionName: String?,
@@ -218,7 +218,7 @@ public struct BoardState: Codable, Equatable, Identifiable {
     }
 
     public init(
-        id: UUID = UUID(),
+        id: BoardID = BoardID(),
         label: String = "zmx",
         width: Double,
         zmxSessionName: String,
@@ -239,7 +239,7 @@ public struct BoardState: Codable, Equatable, Identifiable {
         self.customLabel = customLabel
     }
 
-    public init(id: UUID = UUID(), label: String = "Inspection Board", width: Double, targetBoardID: UUID) {
+    public init(id: BoardID = BoardID(), label: String = "Inspection Board", width: Double, targetBoardID: BoardID) {
         self.id = id
         self.label = label
         self.width = width
@@ -249,7 +249,7 @@ public struct BoardState: Codable, Equatable, Identifiable {
     }
 
     public init(
-        id: UUID = UUID(),
+        id: BoardID = BoardID(),
         label: String = "Tutorial",
         width: Double,
         tutorial: TutorialBoardState = TutorialBoardState()
@@ -269,7 +269,7 @@ public struct BoardState: Codable, Equatable, Identifiable {
 
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
-        id = try container.decode(UUID.self, forKey: .id)
+        id = try container.decode(BoardID.self, forKey: .id)
         label = try container.decode(String.self, forKey: .label)
         width = try container.decode(Double.self, forKey: .width)
         customLabel = try container.decodeIfPresent(String.self, forKey: .customLabel)

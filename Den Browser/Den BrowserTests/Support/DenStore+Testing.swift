@@ -157,7 +157,7 @@ func withTestStore<T>(
     let preferences = AppPreferences(defaults: defaults)
     let pasteboard = NSPasteboard.withUniqueName()
     let storeDesks = desks ?? [DeskState(label: "Desk", boards: boards, focusedBoardID: boards.first?.id)]
-    let focusedDeskID = storeDesks.first?.id ?? UUID()
+    let focusedDeskID = storeDesks.first?.id ?? DeskID()
     let store = DenStore(
         state: DenState(desks: storeDesks, focusedDeskID: focusedDeskID),
         websiteDataStore: .nonPersistent(),
@@ -190,7 +190,7 @@ func withTestStore<T>(
     let preferences = AppPreferences(defaults: defaults)
     let pasteboard = NSPasteboard.withUniqueName()
     let storeDesks = desks ?? [DeskState(label: "Desk", boards: boards, focusedBoardID: boards.first?.id)]
-    let focusedDeskID = storeDesks.first?.id ?? UUID()
+    let focusedDeskID = storeDesks.first?.id ?? DeskID()
     let store = DenStore(
         state: DenState(desks: storeDesks, focusedDeskID: focusedDeskID),
         websiteDataStore: .nonPersistent(),

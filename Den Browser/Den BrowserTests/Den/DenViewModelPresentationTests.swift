@@ -963,7 +963,7 @@ struct DenViewModelPresentationTests {
                 characters: characters, charactersIgnoringModifiers: characters, isARepeat: false, keyCode: keyCode))
     }
 
-    private func desk(_ label: String, boards: [BoardState] = [], focusedBoardID: UUID? = nil) -> DeskState {
+    private func desk(_ label: String, boards: [BoardState] = [], focusedBoardID: BoardID? = nil) -> DeskState {
         DeskState(label: label, boards: boards, focusedBoardID: focusedBoardID)
     }
 

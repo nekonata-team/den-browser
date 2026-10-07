@@ -1,3 +1,4 @@
+import DenDomain
 import Foundation
 
 @MainActor
@@ -16,7 +17,7 @@ extension DenViewModel {
         }
     }
 
-    func enterBoardFromActivity(_ boardID: UUID) {
+    func enterBoardFromActivity(_ boardID: BoardID) {
         guard store.boardIndices(for: boardID) != nil else { return }
         setTemporaryContext(nil)
         store.focusBoard(boardID, exitsDenMode: true)

@@ -44,7 +44,7 @@ struct DenViewModelTests {
         let sheetNavigation = SheetNavigationManager(
             defaults: defaults, pasteboard: pasteboard, scriptSource: "")
         let preferences = AppPreferences(defaults: defaults)
-        func makeStore(presenting deskID: UUID) -> DenStore {
+        func makeStore(presenting deskID: DeskID) -> DenStore {
             DenStore(
                 storage: storage,
                 presentedDeskID: deskID,

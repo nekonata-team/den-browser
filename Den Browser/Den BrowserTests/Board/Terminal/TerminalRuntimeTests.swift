@@ -1,3 +1,4 @@
+import DenDomain
 import Foundation
 import GhosttyTerminal
 import Testing
@@ -135,7 +136,7 @@ struct TerminalRuntimeTests {
     }
 
     @Test func terminalRuntimeConfiguresEnvironmentVariables() {
-        let boardID = UUID()
+        let boardID = BoardID()
         let profileID = UUID()
         let socketPath = "/tmp/den-custom.sock"
         let runtime = TerminalRuntime(
@@ -154,7 +155,7 @@ struct TerminalRuntimeTests {
         )
 
         let envVars = runtime.terminalView.configuration.envVars
-        #expect(envVars["DEN_BOARD_ID"] == boardID.uuidString)
+        #expect(envVars["DEN_BOARD_ID"] == boardID.rawValue.uuidString)
         #expect(envVars["DEN_PROFILE"] == profileID.uuidString)
         #expect(envVars["DEN_SOCKET"] == socketPath)
         runtime.dispose()

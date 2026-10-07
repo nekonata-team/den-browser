@@ -776,7 +776,7 @@ struct DenStoreDrawerTests {
     private func desk(
         _ label: String,
         boards: [BoardState] = [],
-        focusedBoardID: UUID? = nil
+        focusedBoardID: BoardID? = nil
     ) -> DeskState {
         DeskState(label: label, boards: boards, focusedBoardID: focusedBoardID)
     }
@@ -799,7 +799,7 @@ struct DenStoreDrawerTests {
         let websiteDataStore = WKWebsiteDataStore.nonPersistent()
         let sheetNavigation = SheetNavigationManager(defaults: defaults, scriptSource: "")
         let preferences = AppPreferences(defaults: defaults)
-        let makeStore = { (deskID: UUID) -> DenStore in
+        let makeStore = { (deskID: DeskID) -> DenStore in
             DenStore(
                 storage: storage,
                 presentedDeskID: deskID,

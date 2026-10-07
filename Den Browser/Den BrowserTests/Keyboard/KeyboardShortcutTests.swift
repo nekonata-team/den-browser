@@ -1917,7 +1917,7 @@ struct KeyboardShortcutTests {
         defer { viewModel.disconnect() }
         viewModel.isDenMode = true
 
-        store.updateFullscreenStatus(boardID: UUID(), isFullscreen: true)
+        store.updateFullscreenStatus(boardID: BoardID(), isFullscreen: true)
         #expect(!viewModel.isDenMode)
         #expect(viewModel.isFullscreenActive)
 
@@ -1958,7 +1958,7 @@ struct KeyboardShortcutTests {
         let defaults = try #require(TestUserDefaults(suiteName: "KeyboardShortcutStore-\(UUID())"))
         let pasteboard = NSPasteboard.withUniqueName()
         return DenStore(
-            state: DenState(desks: storeDesks, focusedDeskID: storeDesks.first?.id ?? UUID()),
+            state: DenState(desks: storeDesks, focusedDeskID: storeDesks.first?.id ?? DeskID()),
             websiteDataStore: .nonPersistent(),
             sheetNavigation: SheetNavigationManager(
                 defaults: defaults,

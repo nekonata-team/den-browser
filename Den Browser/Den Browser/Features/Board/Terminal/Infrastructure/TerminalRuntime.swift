@@ -1,5 +1,6 @@
 import AppKit
 import Combine
+import DenDomain
 import GhosttyKit
 import GhosttyTerminal
 
@@ -48,7 +49,7 @@ final class TerminalRuntime: NSObject, ObservableObject {
     init(
         workingDirectory: String,
         command: String? = nil,
-        boardID: UUID? = nil,
+        boardID: BoardID? = nil,
         profileID: UUID? = nil,
         socketPath: String = DenSocketPath.resolve(),
         events: Events
@@ -66,7 +67,7 @@ final class TerminalRuntime: NSObject, ObservableObject {
 
         var envVars: [String: String] = [:]
         if let boardID {
-            envVars["DEN_BOARD_ID"] = boardID.uuidString
+            envVars["DEN_BOARD_ID"] = boardID.rawValue.uuidString
             envVars["DEN_SOCKET"] = socketPath
         }
         if let profileID {

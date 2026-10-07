@@ -4,8 +4,8 @@ import SFSafeSymbols
 import SwiftUI
 
 struct BoardFocusRequest: Equatable {
-    let deskID: UUID
-    let boardID: UUID
+    let deskID: DeskID
+    let boardID: BoardID
 }
 
 struct BoardHeaderTitle: View {
@@ -63,7 +63,7 @@ struct BoardHeaderTitle: View {
 }
 
 struct BoardSurfaceModifier: ViewModifier {
-    let boardID: UUID
+    let boardID: BoardID
     let isFocused: Bool
     let isDragging: Bool
     let profileColor: Color
@@ -78,7 +78,7 @@ struct BoardSurfaceModifier: ViewModifier {
         content
             .frame(width: width, height: height)
             .accessibilityElement(children: .contain)
-            .accessibilityIdentifier("board-surface.\(boardID.uuidString.lowercased())")
+            .accessibilityIdentifier("board-surface.\(boardID.rawValue.uuidString.lowercased())")
             .clipShape(RoundedRectangle(cornerRadius: DenRadius.large, style: .continuous))
             .overlay {
                 RoundedRectangle(cornerRadius: DenRadius.large, style: .continuous)
@@ -119,7 +119,7 @@ struct BoardHeaderCenteringModifier: ViewModifier {
     @Environment(DenStore.self) private var store
     @Environment(DenViewModel.self) private var viewModel
 
-    let boardID: UUID
+    let boardID: BoardID
     let isEnabled: Bool
 
     func body(content: Content) -> some View {
@@ -208,7 +208,7 @@ struct BoardDragHeader<LeadingContent: View>: View {
             "Drag to reorder this Board Group within the Focused Desk, or use Board movement actions"
         )
         .accessibilityElement(children: .combine)
-        .accessibilityIdentifier("board-header.\(board.id.uuidString.lowercased())")
+        .accessibilityIdentifier("board-header.\(board.id.rawValue.uuidString.lowercased())")
         .accessibilityAddTraits(isFocused ? .isSelected : [])
         .accessibilityAction(named: "Move Board Left", onMoveLeft)
         .accessibilityAction(named: "Move Board Right", onMoveRight)

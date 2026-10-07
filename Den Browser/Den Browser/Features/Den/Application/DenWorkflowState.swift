@@ -12,19 +12,19 @@ enum DenConfirmationRequest {
 }
 
 enum ActiveDrag: Equatable {
-    case board(UUID)
-    case desk(UUID)
+    case board(BoardID)
+    case desk(DeskID)
 }
 
 struct RecentlyRemovedBoard {
     let board: BoardState
     var sideBoard: BoardState?
-    let sourceDeskID: UUID
+    let sourceDeskID: DeskID
     let sourceBoardIndex: Int
 }
 
 struct PendingDeskReplacement {
-    let deskID: UUID
+    let deskID: DeskID
     let originalLabel: String
     let originalBoardCount: Int
     let presetLabel: String

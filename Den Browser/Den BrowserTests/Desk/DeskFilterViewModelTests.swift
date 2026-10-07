@@ -265,7 +265,7 @@ struct DeskFilterViewModelTests {
     private func desk(
         _ label: String,
         boards: [BoardState],
-        focusedBoardID: UUID?
+        focusedBoardID: BoardID?
     ) -> DeskState {
         DeskState(label: label, boards: boards, focusedBoardID: focusedBoardID)
     }

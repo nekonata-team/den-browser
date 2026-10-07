@@ -35,7 +35,7 @@ final class DenStore {
         notifications.lazy.filter { !$0.isRead }.count
     }
     var essentials: [Essential] { preferences.essentials }
-    private(set) var presentedDeskID: UUID
+    private(set) var presentedDeskID: DeskID
     private(set) var latestFeedback: DenFeedback?
     var activeDrag: ActiveDrag? {
         get { storage.activeDrag }
@@ -75,11 +75,11 @@ final class DenStore {
     private(set) var webExtensionHost: WebExtensionHost?
     private(set) var webExtensionWindow: MV3WebExtensionWindow?
 
-    var webRuntimes: [UUID: WebBoardRuntime] {
+    var webRuntimes: [BoardID: WebBoardRuntime] {
         get { storage.webRuntimes }
         set { storage.webRuntimes = newValue }
     }
-    var terminalRuntimes: [UUID: TerminalRuntime] {
+    var terminalRuntimes: [BoardID: TerminalRuntime] {
         get { storage.terminalRuntimes }
         set { storage.terminalRuntimes = newValue }
     }
@@ -87,12 +87,12 @@ final class DenStore {
     @ObservationIgnored var drawerPreviewRuntime: DrawerPreviewRuntime?
     @ObservationIgnored var zmxCommandTask: Task<Void, Never>?
     @ObservationIgnored var screenshotTask: Task<Void, Never>?
-    @ObservationIgnored var previousFocusedDeskID: UUID?
-    @ObservationIgnored var anchorJumpOriginBoardIDByDesk: [UUID: UUID] = [:]
+    @ObservationIgnored var previousFocusedDeskID: DeskID?
+    @ObservationIgnored var anchorJumpOriginBoardIDByDesk: [DeskID: BoardID] = [:]
     @ObservationIgnored private let terminalCommandRunner: any TerminalCommandRunning
     @ObservationIgnored private let requestWebExtensionContext: (() -> (WebExtensionHost, MV3WebExtensionWindow)?)?
-    @ObservationIgnored let canPresentDesk: ((UUID) -> Bool)?
-    @ObservationIgnored private let onDeskPresentationRequest: ((UUID) -> Bool)?
+    @ObservationIgnored let canPresentDesk: ((DeskID) -> Bool)?
+    @ObservationIgnored private let onDeskPresentationRequest: ((DeskID) -> Bool)?
     @ObservationIgnored private let onWillResetDen: (() -> Void)?
     var onRecentItemsSave: (([RecentItem]) -> Bool)? { storage.onRecentItemsSave }
 
@@ -200,7 +200,7 @@ final class DenStore {
 
     init(
         storage: DenStorage,
-        presentedDeskID: UUID?,
+        presentedDeskID: DeskID?,
         websiteDataStore: WKWebsiteDataStore,
         sheetNavigation: SheetNavigationManager,
         preferences: AppPreferences,
@@ -208,8 +208,8 @@ final class DenStore {
         webExtensionHost: WebExtensionHost? = nil,
         webExtensionWindow: MV3WebExtensionWindow? = nil,
         requestWebExtensionContext: (() -> (WebExtensionHost, MV3WebExtensionWindow)?)? = nil,
-        canPresentDesk: @escaping (UUID) -> Bool,
-        onDeskPresentationRequest: @escaping (UUID) -> Bool,
+        canPresentDesk: @escaping (DeskID) -> Bool,
+        onDeskPresentationRequest: @escaping (DeskID) -> Bool,
         onWillResetDen: @escaping () -> Void,
         terminalCommandRunner: any TerminalCommandRunning = SubprocessCommandRunner(),
         profileID: UUID? = nil,
@@ -294,7 +294,7 @@ final class DenStore {
 
     @discardableResult
     func prepareBoardLinkFocus(
-        _ boardID: UUID,
+        _ boardID: BoardID,
         origin: BoardOperationOrigin = .interactive
     ) -> BoardLinkFocusIntent {
         let intent = BoardLinkFocusIntent(boardID: boardID, origin: origin)
@@ -372,7 +372,7 @@ final class DenStore {
         state.desks.firstIndex { $0.id == presentedDeskID }
     }
 
-    func boardIndices(for boardID: UUID) -> (desk: Int, board: Int)? {
+    func boardIndices(for boardID: BoardID) -> (desk: Int, board: Int)? {
         for deskIndex in state.desks.indices {
             if let boardIndex = state.desks[deskIndex].boards.firstIndex(where: { $0.id == boardID }) {
                 return (deskIndex, boardIndex)
@@ -381,13 +381,13 @@ final class DenStore {
         return nil
     }
 
-    func board(for boardID: UUID) -> BoardState? {
+    func board(for boardID: BoardID) -> BoardState? {
         guard let indices = boardIndices(for: boardID) else { return nil }
         return state.desks[indices.desk].boards[indices.board]
     }
 
     @discardableResult
-    func setFocusedDesk(_ deskID: UUID, autoPIP: Bool = true) -> Bool {
+    func setFocusedDesk(_ deskID: DeskID, autoPIP: Bool = true) -> Bool {
         guard presentedDeskID != deskID else { return false }
         guard state.desks.contains(where: { $0.id == deskID }) else { return false }
         guard onDeskPresentationRequest?(deskID) ?? true else { return false }
@@ -415,7 +415,7 @@ final class DenStore {
         runtime.enterPictureInPictureIfPlaying()
     }
 
-    func canSelectDesk(_ deskID: UUID) -> Bool {
+    func canSelectDesk(_ deskID: DeskID) -> Bool {
         deskID == presentedDeskID || (canPresentDesk?(deskID) ?? true)
     }
 
@@ -445,7 +445,7 @@ final class DenStore {
         }
         guard state.desks[indices.desk].focusedBoardID == board.id else { return board }
 
-        let focusedBoardID: UUID?
+        let focusedBoardID: BoardID?
         if focusNext && indices.board < boards.count {
             focusedBoardID = boards[indices.board].id
         } else if indices.board > 0 {
@@ -491,7 +491,7 @@ final class DenStore {
         ((index % count) + count) % count
     }
 
-    func updateFullscreenStatus(boardID: UUID, isFullscreen: Bool) {
+    func updateFullscreenStatus(boardID: BoardID, isFullscreen: Bool) {
         if isFullscreen {
             onWindowEffect?(.exitDenMode)
             onWindowEffect?(.fullscreenChanged(true))
@@ -506,7 +506,7 @@ final class DenStore {
         }
     }
 
-    func invalidateReferences(toRemovedBoardIDs removedBoardIDs: Set<UUID>) {
+    func invalidateReferences(toRemovedBoardIDs removedBoardIDs: Set<BoardID>) {
         for presentation in storage.drawerPresentations.allObjects {
             presentation.anchorJumpOriginBoardIDByDesk = presentation.anchorJumpOriginBoardIDByDesk
                 .filter { !removedBoardIDs.contains($0.value) }
@@ -519,7 +519,7 @@ final class DenStore {
         }
     }
 
-    func invalidateReferences(toRemovedDeskID removedDeskID: UUID) {
+    func invalidateReferences(toRemovedDeskID removedDeskID: DeskID) {
         for presentation in storage.drawerPresentations.allObjects {
             if presentation.previousFocusedDeskID == removedDeskID {
                 presentation.previousFocusedDeskID = nil

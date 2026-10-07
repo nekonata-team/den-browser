@@ -113,7 +113,7 @@ enum DenIPCTargetResolver {
                 return .failure(.noActiveDesk)
             }
             for store in candidateStores {
-                guard let desk = store.state.desks.first(where: { $0.id == deskUUID }) else { continue }
+                guard let desk = store.state.desks.first(where: { $0.id == DeskID(deskUUID) }) else { continue }
                 let profileID = profileManager.profileID(for: store)
                 let targetStore =
                     profileID.flatMap { profileManager.store(for: $0, presentingDeskID: desk.id) } ?? store
@@ -123,7 +123,10 @@ enum DenIPCTargetResolver {
         }
 
         // 2. Caller board ID
-        if let callerBoardID = request.callerBoardID, let callerID = UUID(uuidString: callerBoardID) {
+        if let callerBoardID = request.callerBoardID,
+            let callerUUID = UUID(uuidString: callerBoardID)
+        {
+            let callerID = BoardID(callerUUID)
             for store in candidateStores {
                 guard let indices = store.boardIndices(for: callerID) else { continue }
                 let desk = store.state.desks[indices.desk]
@@ -231,9 +234,10 @@ enum DenIPCTargetResolver {
 
         // 1. Explicit board ID across stores (must not fall back if specified)
         if let idString = request.boardID {
-            guard let id = UUID(uuidString: idString) else {
+            guard let rawID = UUID(uuidString: idString) else {
                 return .failure(.invalidBoardID(idString))
             }
+            let id = BoardID(rawID)
             for store in candidateStores {
                 guard let indices = store.boardIndices(for: id) else { continue }
                 let desk = store.state.desks[indices.desk]
@@ -251,9 +255,10 @@ enum DenIPCTargetResolver {
 
         // 2. Caller board ID
         if let callerString = request.callerBoardID {
-            guard let callerID = UUID(uuidString: callerString) else {
+            guard let callerUUID = UUID(uuidString: callerString) else {
                 return .failure(.noTargetBoard(kindLabel))
             }
+            let callerID = BoardID(callerUUID)
             guard let owningStore = candidateStores.first(where: { $0.boardIndices(for: callerID) != nil }),
                 let indices = owningStore.boardIndices(for: callerID)
             else {

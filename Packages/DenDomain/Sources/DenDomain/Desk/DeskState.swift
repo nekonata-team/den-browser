@@ -1,10 +1,10 @@
 import Foundation
 
 public struct DeskState: Codable, Equatable, Identifiable {
-    public var id: UUID
+    public var id: DeskID
     public var label: String
     public var boards: [BoardState]
-    public var focusedBoardID: UUID? {
+    public var focusedBoardID: BoardID? {
         didSet {
             if focusedBoardID != oldValue {
                 scrollOffsetX = nil
@@ -12,15 +12,15 @@ public struct DeskState: Codable, Equatable, Identifiable {
         }
     }
     public var scrollOffsetX: Double?
-    public var anchorBoardID: UUID?
+    public var anchorBoardID: BoardID?
 
     public init(
-        id: UUID = UUID(),
+        id: DeskID = DeskID(),
         label: String,
         boards: [BoardState],
-        focusedBoardID: UUID? = nil,
+        focusedBoardID: BoardID? = nil,
         scrollOffsetX: Double? = nil,
-        anchorBoardID: UUID? = nil
+        anchorBoardID: BoardID? = nil
     ) {
         self.id = id
         self.label = label

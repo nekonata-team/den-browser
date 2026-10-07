@@ -55,7 +55,7 @@ extension DenStore {
         return canExportDeskLinks(for: focusedDesk.id)
     }
 
-    func canExportDeskLinks(for deskID: UUID) -> Bool {
+    func canExportDeskLinks(for deskID: DeskID) -> Bool {
         state.desks.first(where: { $0.id == deskID })?.boards.contains {
             $0.currentSheetURL != nil
         } == true
@@ -77,7 +77,7 @@ extension DenStore {
         copyDeskLinks(for: focusedDesk.id)
     }
 
-    func exportDeskLinks(for deskID: UUID) {
+    func exportDeskLinks(for deskID: DeskID) {
         guard
             let desk = state.desks.first(where: { $0.id == deskID }),
             let markdown = DeskLinkExport.markdown(for: desk)
@@ -103,7 +103,7 @@ extension DenStore {
         }
     }
 
-    func copyDeskLinks(for deskID: UUID) {
+    func copyDeskLinks(for deskID: DeskID) {
         guard
             let desk = state.desks.first(where: { $0.id == deskID }),
             let markdown = DeskLinkExport.markdown(for: desk)

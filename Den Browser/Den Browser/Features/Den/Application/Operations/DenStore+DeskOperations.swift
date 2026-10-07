@@ -121,9 +121,9 @@ extension DenStore {
         }
     }
 
-    func confirmDeskDeletion(_ deskID: UUID) { deleteDesk(deskID) }
+    func confirmDeskDeletion(_ deskID: DeskID) { deleteDesk(deskID) }
 
-    private func deleteDesk(_ deskID: UUID) {
+    private func deleteDesk(_ deskID: DeskID) {
         guard
             state.desks.count > 1,
             let deskIndex = state.desks.firstIndex(where: { $0.id == deskID })
@@ -161,12 +161,12 @@ extension DenStore {
         save()
     }
 
-    func deskScrollOffset(for deskID: UUID) -> CGFloat? {
+    func deskScrollOffset(for deskID: DeskID) -> CGFloat? {
         guard let desk = state.desks.first(where: { $0.id == deskID }) else { return nil }
         return desk.scrollOffsetX.map { CGFloat($0) }
     }
 
-    func saveDeskScrollOffset(_ offset: CGFloat?, for deskID: UUID) {
+    func saveDeskScrollOffset(_ offset: CGFloat?, for deskID: DeskID) {
         guard let deskIndex = state.desks.firstIndex(where: { $0.id == deskID }) else { return }
         let current = state.desks[deskIndex].scrollOffsetX
         let newDouble = offset.map { Double($0) }
@@ -175,11 +175,11 @@ extension DenStore {
         save()
     }
 
-    func copyDeskID(_ deskID: UUID, pasteboard: NSPasteboard? = nil) {
+    func copyDeskID(_ deskID: DeskID, pasteboard: NSPasteboard? = nil) {
         let pasteboard = pasteboard ?? self.pasteboard
         guard state.desks.contains(where: { $0.id == deskID }) else { return }
         pasteboard.clearContents()
-        pasteboard.setString(deskID.uuidString.lowercased(), forType: .string)
+        pasteboard.setString(deskID.rawValue.uuidString.lowercased(), forType: .string)
         reportFeedback("Copied Desk ID.", severity: .success)
     }
 }

@@ -30,10 +30,10 @@ extension DenOperationEvent {
 
 struct BoardLinkFocusIntent: Equatable {
     let id: UUID
-    let boardID: UUID
+    let boardID: BoardID
     let origin: BoardOperationOrigin
 
-    init(boardID: UUID, origin: BoardOperationOrigin = .interactive) {
+    init(boardID: BoardID, origin: BoardOperationOrigin = .interactive) {
         id = UUID()
         self.boardID = boardID
         self.origin = origin

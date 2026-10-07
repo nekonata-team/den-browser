@@ -47,7 +47,7 @@ struct DenIPCServiceTests {
         )
 
         // Assert
-        let boardID = try #require(response.boardId.flatMap(UUID.init(uuidString:)))
+        let boardID = BoardID(try #require(response.boardId.flatMap(UUID.init(uuidString:))))
         #expect(store.webRuntimes[boardID] != nil)
         #expect(store.board(for: boardID)?.width == 200)
     }
@@ -80,20 +80,20 @@ struct DenIPCServiceTests {
         let webResponse = await service.handleRequest(
             DenIPCRequest(
                 command: .board(.web(.new(DenBoardWebNewPayload(url: "https://web.example/", focus: false)))),
-                deskID: targetDeskID.uuidString,
-                callerBoardID: visibleBoardID.uuidString))
+                deskID: targetDeskID.rawValue.uuidString,
+                callerBoardID: visibleBoardID.rawValue.uuidString))
         let terminalResponse = await service.handleRequest(
             DenIPCRequest(
                 command: .board(.terminal(.new(DenBoardTerminalNewPayload(path: nil, runCommand: nil, focus: false)))),
-                deskID: targetDeskID.uuidString))
+                deskID: targetDeskID.rawValue.uuidString))
         let drawerResponse = await service.handleRequest(
             DenIPCRequest(
                 command: .drawer(.place(id: itemID.uuidString)),
-                deskID: targetDeskID.uuidString))
+                deskID: targetDeskID.rawValue.uuidString))
 
-        let webBoardID = try #require(webResponse.boardId.flatMap(UUID.init(uuidString:)))
-        let terminalBoardID = try #require(terminalResponse.boardId.flatMap(UUID.init(uuidString:)))
-        let drawerBoardID = try #require(drawerResponse.boardId.flatMap(UUID.init(uuidString:)))
+        let webBoardID = BoardID(try #require(webResponse.boardId.flatMap(UUID.init(uuidString:))))
+        let terminalBoardID = BoardID(try #require(terminalResponse.boardId.flatMap(UUID.init(uuidString:))))
+        let drawerBoardID = BoardID(try #require(drawerResponse.boardId.flatMap(UUID.init(uuidString:))))
         #expect(webResponse.isOk)
         #expect(terminalResponse.isOk)
         #expect(drawerResponse.isOk)
@@ -125,10 +125,10 @@ struct DenIPCServiceTests {
         let response = await service.handleRequest(
             DenIPCRequest(
                 command: .board(.inspection(.new(DenBoardInspectionNewPayload(focus: false)))),
-                boardID: targetBoardID.uuidString))
+                boardID: targetBoardID.rawValue.uuidString))
 
         // Assert
-        let inspectionBoardID = try #require(response.boardId.flatMap(UUID.init(uuidString:)))
+        let inspectionBoardID = BoardID(try #require(response.boardId.flatMap(UUID.init(uuidString:))))
         let inspectionBoard = try #require(store.board(for: inspectionBoardID))
         #expect(response.isOk)
         #expect(inspectionBoard.sideBoardTargetBoardID == targetBoardID)
@@ -165,7 +165,7 @@ struct DenIPCServiceTests {
                             ))))
             )
         )
-        let terminalID = try #require(response.boardId.flatMap(UUID.init(uuidString:)))
+        let terminalID = BoardID(try #require(response.boardId.flatMap(UUID.init(uuidString:))))
         #expect(store.board(for: terminalID)?.width == 1_500)
     }
 
@@ -185,7 +185,7 @@ struct DenIPCServiceTests {
             websiteDataStore: { _ in .nonPersistent() })
         let store = try #require(manager.store(for: manager.personalProfileID))
         let service = DenIPCService(profileManager: manager)
-        let staleBoardID = UUID().uuidString
+        let staleBoardID = BoardID().rawValue.uuidString
 
         // Act
         let webResponse = await service.handleRequest(
@@ -198,8 +198,8 @@ struct DenIPCServiceTests {
                 callerBoardID: staleBoardID))
 
         // Assert
-        let webBoardID = try #require(webResponse.boardId.flatMap(UUID.init(uuidString:)))
-        let terminalBoardID = try #require(terminalResponse.boardId.flatMap(UUID.init(uuidString:)))
+        let webBoardID = BoardID(try #require(webResponse.boardId.flatMap(UUID.init(uuidString:))))
+        let terminalBoardID = BoardID(try #require(terminalResponse.boardId.flatMap(UUID.init(uuidString:))))
         #expect(webResponse.isOk)
         #expect(terminalResponse.isOk)
         #expect(store.board(for: webBoardID)?.isWeb == true)
@@ -226,14 +226,14 @@ struct DenIPCServiceTests {
         let hostnameResponse = await service.handleRequest(
             DenIPCRequest(
                 command: .sheet(.open(DenSheetOpenPayload(url: "localhost:3000"))),
-                boardID: boardID.uuidString))
+                boardID: boardID.rawValue.uuidString))
         #expect(hostnameResponse.isOk)
         #expect(hostnameResponse.url == "https://localhost:3000/")
 
         let unsupportedResponse = await service.handleRequest(
             DenIPCRequest(
                 command: .sheet(.open(DenSheetOpenPayload(url: "mailto:user@example.com"))),
-                boardID: boardID.uuidString))
+                boardID: boardID.rawValue.uuidString))
         #expect(unsupportedResponse.isOk == false)
     }
 
@@ -293,7 +293,7 @@ struct DenIPCServiceTests {
         )
 
         // Assert
-        let boardID = try #require(response.boardId.flatMap(UUID.init(uuidString:)))
+        let boardID = BoardID(try #require(response.boardId.flatMap(UUID.init(uuidString:))))
         #expect(store.webRuntimes[boardID] != nil)
     }
 
@@ -509,7 +509,7 @@ struct DenIPCServiceTests {
         // Assert
         #expect(response.isOk)
         let boards = try #require(response.boards)
-        let matched = try #require(boards.first(where: { $0.id == boardID.uuidString }))
+        let matched = try #require(boards.first(where: { $0.id == boardID.rawValue.uuidString }))
         #expect(matched.isFocused == true)
     }
 
@@ -537,9 +537,9 @@ struct DenIPCServiceTests {
 
         // Assert
         #expect(response.isOk)
-        #expect(response.boardId == boardID.uuidString)
+        #expect(response.boardId == boardID.rawValue.uuidString)
         let board = try #require(response.board)
-        #expect(board.id == boardID.uuidString)
+        #expect(board.id == boardID.rawValue.uuidString)
         #expect(board.isFocused == true)
         #expect(board.type == "web")
     }
@@ -620,15 +620,15 @@ struct DenIPCServiceTests {
                         )
                     )
                 ),
-                boardID: boardID.uuidString
+                boardID: boardID.rawValue.uuidString
             )
         )
 
         // Assert
         #expect(response.isOk)
         let newBoardIDString = try #require(response.boardId)
-        let newBoardUUID = try #require(UUID(uuidString: newBoardIDString))
-        #expect(store.board(for: newBoardUUID) != nil)
+        let newBoardID = BoardID(try #require(UUID(uuidString: newBoardIDString)))
+        #expect(store.board(for: newBoardID) != nil)
         #expect(response.url == "https://example.com/subpage")
     }
 
@@ -665,7 +665,7 @@ struct DenIPCServiceTests {
         let response = await service.handleRequest(
             DenIPCRequest(
                 command: .sheet(.eval(DenSheetEvalPayload(script: script))),
-                boardID: boardID.uuidString,
+                boardID: boardID.rawValue.uuidString,
                 includeSnapshot: true))
 
         // Assert
@@ -817,7 +817,7 @@ struct DenIPCServiceTests {
                                             focus: false)))
                             ],
                             full: full))),
-                boardID: boardID.uuidString,
+                boardID: boardID.rawValue.uuidString,
                 includeSnapshot: includeSnapshot)
         }
 
@@ -926,7 +926,7 @@ struct DenIPCServiceTests {
             await service.handleRequest(
                 DenIPCRequest(
                     command: .sheet(.interact(payload)),
-                    boardID: firstBoardID.uuidString))
+                    boardID: firstBoardID.rawValue.uuidString))
         }
         var waitStarted = false
         for _ in 0..<100 {
@@ -945,7 +945,7 @@ struct DenIPCServiceTests {
 
         // Assert
         #expect(response.isOk == false)
-        #expect(response.error == "Target Web Board no longer exists: \(firstBoardID.uuidString)")
+        #expect(response.error == "Target Web Board no longer exists: \(firstBoardID.rawValue.uuidString)")
         #expect(response.completedActions == 1)
         #expect(response.failedActionIndex == 1)
     }

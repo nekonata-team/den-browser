@@ -8,7 +8,7 @@ final class DeskFilterViewModel {
     let store: DenStore
     var query = ""
     var phase: DenFilterPhase = .inactive
-    var selectionBoardID: UUID?
+    var selectionBoardID: BoardID?
 
     @ObservationIgnored private var centeringTask: Task<Void, Never>?
     @ObservationIgnored var onCenterFocusedBoard: (() -> Void)?
@@ -68,7 +68,7 @@ final class DeskFilterViewModel {
             by: offset)
     }
 
-    func confirmSelection(_ boardID: UUID? = nil) {
+    func confirmSelection(_ boardID: BoardID? = nil) {
         guard
             let boardID = boardID ?? selectionBoardID,
             filteredBoards.contains(where: { $0.id == boardID })

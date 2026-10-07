@@ -7,7 +7,7 @@ struct DenNotificationSource {
 }
 
 extension DenStore {
-    func unreadNotificationCount(for boardID: UUID) -> Int {
+    func unreadNotificationCount(for boardID: BoardID) -> Int {
         notifications.lazy.filter { $0.boardID == boardID && !$0.isRead }.count
     }
 
@@ -21,7 +21,7 @@ extension DenStore {
         clearLatestNotificationFeedback()
     }
 
-    func recordNotification(title: String?, body: String, boardID: UUID) {
+    func recordNotification(title: String?, body: String, boardID: BoardID) {
         guard title?.isEmpty == false || !body.isEmpty else { return }
         let notification = DenNotification(title: title, body: body, boardID: boardID)
         notifications.insert(notification, at: 0)
@@ -49,7 +49,7 @@ extension DenStore {
         notifications[index].isRead = true
     }
 
-    func markNotificationsRead(for boardID: UUID) {
+    func markNotificationsRead(for boardID: BoardID) {
         for index in notifications.indices {
             guard notifications[index].boardID == boardID, !notifications[index].isRead else { continue }
             notifications[index].isRead = true

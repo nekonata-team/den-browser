@@ -2,7 +2,7 @@ import DenDomain
 import Foundation
 
 extension DenStore {
-    func updateZmxRootSessionName(boardID: UUID, rootSessionName: String?) {
+    func updateZmxRootSessionName(boardID: BoardID, rootSessionName: String?) {
         guard
             let rootSessionName,
             let indices = boardIndices(for: boardID),
@@ -16,7 +16,7 @@ extension DenStore {
     func openBoard(
         input: String,
         preferredWidth: Double? = nil,
-        afterBoardID: UUID? = nil,
+        afterBoardID: BoardID? = nil,
         opensFromOpenBoardPanel: Bool = false,
         zmxRootSessionName: String? = nil
     ) -> Bool {
@@ -130,7 +130,7 @@ extension DenStore {
     }
 
     @discardableResult
-    func openTutorialBoard(preferredWidth: Double? = nil, afterBoardID: UUID? = nil) -> Bool {
+    func openTutorialBoard(preferredWidth: Double? = nil, afterBoardID: BoardID? = nil) -> Bool {
         if let tutorialBoard = state.desks.lazy.flatMap(\.boards).first(where: \.isTutorial) {
             focusBoard(tutorialBoard.id, exitsDenMode: true)
             onWindowEffect?(.dismissTemporaryPresentation)
@@ -187,7 +187,7 @@ extension DenStore {
         BoardInputResolver.resolveTerminalInput(input, homeDirectory: homeDirectory, fileManager: fileManager)
     }
 
-    func openBoard(recentItem: RecentItem, preferredWidth: Double? = nil, afterBoardID: UUID? = nil) {
+    func openBoard(recentItem: RecentItem, preferredWidth: Double? = nil, afterBoardID: BoardID? = nil) {
         openBoard(input: recentItem.displayText, preferredWidth: preferredWidth, afterBoardID: afterBoardID)
     }
 
@@ -211,12 +211,12 @@ extension DenStore {
     func createBoard(
         urlString: String,
         preferredWidth: Double? = nil,
-        afterBoardID: UUID? = nil,
+        afterBoardID: BoardID? = nil,
         focus: Bool = true,
         origin: BoardOperationOrigin = .interactive,
         recentItem: RecentItem? = nil,
-        deskID: UUID? = nil
-    ) -> UUID? {
+        deskID: DeskID? = nil
+    ) -> BoardID? {
         guard let url = normalizedURL(from: urlString) else { return nil }
         let label = url.host(percentEncoded: false) ?? url.absoluteString
         let width = preferredWidth ?? inheritedBoardWidth
@@ -237,7 +237,7 @@ extension DenStore {
     }
 
     @discardableResult
-    func createInspectionBoard(targetBoardID: UUID, focus: Bool = true) -> UUID? {
+    func createInspectionBoard(targetBoardID: BoardID, focus: Bool = true) -> BoardID? {
         guard let indices = boardIndices(for: targetBoardID) else { return nil }
         let targetBoard = state.desks[indices.desk].boards[indices.board]
         guard targetBoard.isWeb else { return nil }
@@ -265,7 +265,7 @@ extension DenStore {
     func createPopupBoard(
         _ popupWebView: WKWebView,
         requestedURL: URL?,
-        fromBoardID: UUID,
+        fromBoardID: BoardID,
         modifierFlags: NSEvent.ModifierFlags
     ) -> Bool {
         guard let sourceIndices = boardIndices(for: fromBoardID) else { return false }
@@ -302,12 +302,12 @@ extension DenStore {
     func createTerminalBoard(
         workingDirectory: String? = nil,
         preferredWidth: Double? = nil,
-        afterBoardID: UUID? = nil,
+        afterBoardID: BoardID? = nil,
         focus: Bool = true,
         origin: BoardOperationOrigin = .interactive,
         recentItem: RecentItem? = nil,
-        deskID: UUID? = nil
-    ) -> UUID? {
+        deskID: DeskID? = nil
+    ) -> BoardID? {
         let dir = workingDirectory ?? FileManager.default.homeDirectoryForCurrentUser.path
         let board = BoardState(
             width: preferredWidth ?? inheritedBoardWidth,
@@ -331,10 +331,10 @@ extension DenStore {
     @discardableResult
     private func insertBoard(
         _ board: BoardState,
-        afterBoardID: UUID?,
+        afterBoardID: BoardID?,
         focus: Bool,
         origin: BoardOperationOrigin,
-        deskID: UUID? = nil,
+        deskID: DeskID? = nil,
         save: Bool = true
     ) -> Bool {
         let deskIndex: Int
@@ -348,7 +348,7 @@ extension DenStore {
             guard let focusedDeskIndex else { return false }
             deskIndex = focusedDeskIndex
         }
-        let insertionAfterBoardID: UUID?
+        let insertionAfterBoardID: BoardID?
         if let afterBoardID,
             let indices = boardIndices(for: afterBoardID),
             indices.desk == deskIndex
@@ -427,7 +427,7 @@ extension DenStore {
     }
 
     func removeBoard(
-        _ boardID: UUID,
+        _ boardID: BoardID,
         focusNext: Bool = false,
         origin: BoardOperationOrigin = .interactive
     ) {
@@ -731,7 +731,7 @@ extension DenStore {
         runtime.load(firstSheetURL)
     }
 
-    func goToFirstSheetInBoard(_ boardID: UUID) {
+    func goToFirstSheetInBoard(_ boardID: BoardID) {
         guard boardIndices(for: boardID) != nil else { return }
         focusBoard(boardID)
         goToFirstSheetInFocusedBoard()
@@ -741,19 +741,19 @@ extension DenStore {
         focusedWebRuntime?.goToLatestSheet()
     }
 
-    func goToLatestSheetInBoard(_ boardID: UUID) {
+    func goToLatestSheetInBoard(_ boardID: BoardID) {
         guard boardIndices(for: boardID) != nil else { return }
         focusBoard(boardID)
         goToLatestSheetInFocusedBoard()
     }
 
-    func goBackInBoard(_ boardID: UUID) {
+    func goBackInBoard(_ boardID: BoardID) {
         guard boardIndices(for: boardID) != nil else { return }
         focusBoard(boardID)
         focusedWebRuntime?.goBack()
     }
 
-    func goForwardInBoard(_ boardID: UUID) {
+    func goForwardInBoard(_ boardID: BoardID) {
         guard boardIndices(for: boardID) != nil else { return }
         focusBoard(boardID)
         focusedWebRuntime?.goForward()

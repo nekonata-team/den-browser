@@ -4,7 +4,7 @@ public struct DenNotification: Equatable, Identifiable {
     public let id: UUID
     public let title: String?
     public let body: String
-    public let boardID: UUID
+    public let boardID: BoardID
     public let createdAt: Date
     public var isRead: Bool
 
@@ -12,7 +12,7 @@ public struct DenNotification: Equatable, Identifiable {
         id: UUID = UUID(),
         title: String?,
         body: String,
-        boardID: UUID,
+        boardID: BoardID,
         createdAt: Date = .now,
         isRead: Bool = false
     ) {

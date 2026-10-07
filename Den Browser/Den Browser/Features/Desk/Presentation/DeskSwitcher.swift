@@ -13,11 +13,11 @@ struct DeskSwitcher: View {
     @Environment(\.appearsActive) private var appearsActive
 
     let profileColor: Color
-    let canOpenInNewWindow: (UUID) -> Bool
-    let isPresentedInAnotherWindow: (UUID) -> Bool
-    let onOpenInNewWindow: (UUID) -> Void
-    @State private var scrollPosition = ScrollPosition(idType: UUID.self)
-    @State private var frames: [UUID: CGRect] = [:]
+    let canOpenInNewWindow: (DeskID) -> Bool
+    let isPresentedInAnotherWindow: (DeskID) -> Bool
+    let onOpenInNewWindow: (DeskID) -> Void
+    @State private var scrollPosition = ScrollPosition(idType: DeskID.self)
+    @State private var frames: [DeskID: CGRect] = [:]
     @State private var drag: DeskDragState?
     @State private var lastAutoScrollTime = 0.0
 
@@ -224,11 +224,11 @@ struct DeskSwitcher: View {
         .accessibilityAction(named: "Move Desk Right") {
             store.moveDesk(desk.id, by: 1)
         }
-        .accessibilityIdentifier("desk-switcher.\(desk.id.uuidString.lowercased())")
+        .accessibilityIdentifier("desk-switcher.\(desk.id.rawValue.uuidString.lowercased())")
         .id(desk.id)
     }
 
-    private func deskFrameBackground(for deskID: UUID) -> some View {
+    private func deskFrameBackground(for deskID: DeskID) -> some View {
         GeometryReader { proxy in
             Color.clear.preference(
                 key: DeskFramePreferenceKey.self,
@@ -347,8 +347,8 @@ private enum DeskSwitcherCoordinateSpace {
 }
 
 private struct DeskDragState {
-    let deskID: UUID
-    let originalOrder: [UUID]
+    let deskID: DeskID
+    let originalOrder: [DeskID]
     let startCenterX: CGFloat
     var translation: CGSize = .zero
     var offset: CGFloat = 0
@@ -359,9 +359,9 @@ private struct DeskDragState {
 }
 
 struct DeskFramePreferenceKey: PreferenceKey {
-    static let defaultValue: [UUID: CGRect] = [:]
+    static let defaultValue: [DeskID: CGRect] = [:]
 
-    static func reduce(value: inout [UUID: CGRect], nextValue: () -> [UUID: CGRect]) {
+    static func reduce(value: inout [DeskID: CGRect], nextValue: () -> [DeskID: CGRect]) {
         value.merge(nextValue(), uniquingKeysWith: { _, new in new })
     }
 }

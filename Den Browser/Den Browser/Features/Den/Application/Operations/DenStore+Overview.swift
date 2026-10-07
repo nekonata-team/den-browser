@@ -2,7 +2,7 @@ import DenDomain
 import Foundation
 
 extension DenStore {
-    func enterOverviewSelection(deskID: UUID, boardID: UUID?) {
+    func enterOverviewSelection(deskID: DeskID, boardID: BoardID?) {
         guard let deskIndex = state.desks.firstIndex(where: { $0.id == deskID }) else {
             onWindowEffect?(.dismissTemporaryPresentation)
             return
@@ -31,13 +31,13 @@ extension DenStore {
         }
     }
 
-    func beginOverviewBoardDrag(_ boardID: UUID) -> Bool {
+    func beginOverviewBoardDrag(_ boardID: BoardID) -> Bool {
         guard activeDrag == nil, boardIndices(for: boardID) != nil else { return false }
         activeDrag = .board(boardID)
         return true
     }
 
-    func finishOverviewBoardDrag(_ boardID: UUID, toDeskID deskID: UUID, at targetIndex: Int) {
+    func finishOverviewBoardDrag(_ boardID: BoardID, toDeskID deskID: DeskID, at targetIndex: Int) {
         guard
             case .board(let activeBoardID)? = activeDrag,
             activeBoardID == boardID,
@@ -65,7 +65,7 @@ extension DenStore {
         activeDrag = nil
     }
 
-    func moveOverviewBoardGroup(_ boardID: UUID, by delta: Int) {
+    func moveOverviewBoardGroup(_ boardID: BoardID, by delta: Int) {
         guard activeDrag == nil, let indices = boardIndices(for: boardID) else { return }
         let boards = state.desks[indices.desk].boards
         guard boards.count > 1,
@@ -81,7 +81,7 @@ extension DenStore {
         save()
     }
 
-    func moveOverviewBoardGroupToDesk(_ boardID: UUID, by delta: Int) {
+    func moveOverviewBoardGroupToDesk(_ boardID: BoardID, by delta: Int) {
         guard activeDrag == nil, state.desks.count > 1, let source = boardIndices(for: boardID) else { return }
         let targetDeskIndex = wrappedIndex(source.desk + delta, count: state.desks.count)
         let insertIndex: Int

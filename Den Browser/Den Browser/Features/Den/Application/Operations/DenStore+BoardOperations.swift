@@ -3,7 +3,7 @@ import DenDomain
 import Foundation
 
 extension DenStore {
-    func focusDesk(_ deskID: UUID) {
+    func focusDesk(_ deskID: DeskID) {
         let changedDesk = setFocusedDesk(deskID)
         guard changedDesk || presentedDeskID == deskID else { return }
         if !changedDesk, let boardID = focusedDesk?.focusedBoardID {
@@ -14,7 +14,7 @@ extension DenStore {
         if changedDesk { saveDeferredState() }
     }
 
-    func focusBoard(_ boardID: UUID, exitsDenMode: Bool = false) {
+    func focusBoard(_ boardID: BoardID, exitsDenMode: Bool = false) {
         guard let indices = boardIndices(for: boardID) else { return }
         let deskID = state.desks[indices.desk].id
         let changed = presentedDeskID != deskID || state.desks[indices.desk].focusedBoardID != boardID
@@ -53,7 +53,7 @@ extension DenStore {
         moveBoardFocus(by: 1)
     }
 
-    func focusFirstBoardInDesk(containing boardID: UUID) {
+    func focusFirstBoardInDesk(containing boardID: BoardID) {
         guard
             let deskIndex = boardIndices(for: boardID)?.desk,
             let firstBoardID = state.desks[deskIndex].boards.first?.id
@@ -61,7 +61,7 @@ extension DenStore {
         focusBoard(firstBoardID)
     }
 
-    func focusLastBoardInDesk(containing boardID: UUID) {
+    func focusLastBoardInDesk(containing boardID: BoardID) {
         guard
             let deskIndex = boardIndices(for: boardID)?.desk,
             let lastBoardID = state.desks[deskIndex].boards.last?.id
@@ -90,7 +90,7 @@ extension DenStore {
         toggleBoardSheetNavigationPause(focusedBoardID)
     }
 
-    func toggleBoardSheetNavigationPause(_ boardID: UUID) {
+    func toggleBoardSheetNavigationPause(_ boardID: BoardID) {
         guard
             let indices = boardIndices(for: boardID),
             state.desks[indices.desk].boards[indices.board].isWeb
@@ -144,7 +144,7 @@ extension DenStore {
         return state.desks[deskIndex].boards.firstIndex { $0.id == focusedBoardID }
     }
 
-    func canMoveBoard(_ boardID: UUID, by delta: Int) -> Bool {
+    func canMoveBoard(_ boardID: BoardID, by delta: Int) -> Bool {
         guard let indices = boardIndices(for: boardID), delta != 0 else { return false }
         let boards = state.desks[indices.desk].boards
         guard let group = BoardGroup.containing(boardID, in: boards),
@@ -156,7 +156,7 @@ extension DenStore {
         return delta < 0 ? firstIndex > 0 : lastIndex < boards.count - 1
     }
 
-    func transferBoardGroup(containing boardID: UUID, from sourceIndex: Int, to targetIndex: Int, at index: Int) {
+    func transferBoardGroup(containing boardID: BoardID, from sourceIndex: Int, to targetIndex: Int, at index: Int) {
         let sourceBoards = state.desks[sourceIndex].boards
         guard let group = BoardGroup.containing(boardID, in: sourceBoards) else { return }
         let groupBoards = group.boards
@@ -185,7 +185,7 @@ extension DenStore {
         state.desks[targetIndex].boards.insert(contentsOf: groupBoards, at: insertionIndex)
     }
 
-    func beginBoardDrag(_ boardID: UUID) -> Bool {
+    func beginBoardDrag(_ boardID: BoardID) -> Bool {
         guard
             activeDrag == nil,
             let indices = boardIndices(for: boardID),
@@ -201,7 +201,7 @@ extension DenStore {
         return true
     }
 
-    func previewBoardMove(_ boardID: UUID, to targetIndex: Int) {
+    func previewBoardMove(_ boardID: BoardID, to targetIndex: Int) {
         guard
             let deskIndex = focusedDeskIndex,
             (0..<state.desks[deskIndex].boards.count).contains(targetIndex)
@@ -211,7 +211,7 @@ extension DenStore {
         state.desks[deskIndex].focusedBoardID = boardID
     }
 
-    func reorderBoardGroup(containing boardID: UUID, to targetIndex: Int, in deskIndex: Int) {
+    func reorderBoardGroup(containing boardID: BoardID, to targetIndex: Int, in deskIndex: Int) {
         let boards = state.desks[deskIndex].boards
         guard let group = BoardGroup.containing(boardID, in: boards), boards.indices.contains(targetIndex) else {
             return
@@ -238,7 +238,7 @@ extension DenStore {
         state.desks[deskIndex].boards = remaining
     }
 
-    func restoreBoardOrder(_ boardIDs: [UUID], in deskID: UUID) {
+    func restoreBoardOrder(_ boardIDs: [BoardID], in deskID: DeskID) {
         guard let deskIndex = state.desks.firstIndex(where: { $0.id == deskID }) else { return }
         let order = Dictionary(uniqueKeysWithValues: boardIDs.enumerated().map { ($1, $0) })
         state.desks[deskIndex].boards.sort {
@@ -257,7 +257,7 @@ extension DenStore {
         onWindowEffect?(.cancelBoardDrag)
     }
 
-    func beginDeskDrag(_ deskID: UUID) -> Bool {
+    func beginDeskDrag(_ deskID: DeskID) -> Bool {
         guard
             activeDrag == nil,
             state.desks.contains(where: { $0.id == deskID })
@@ -269,7 +269,7 @@ extension DenStore {
         return true
     }
 
-    func previewDeskMove(_ deskID: UUID, to targetIndex: Int) {
+    func previewDeskMove(_ deskID: DeskID, to targetIndex: Int) {
         guard
             let sourceIndex = state.desks.firstIndex(where: { $0.id == deskID }),
             state.desks.indices.contains(targetIndex),
@@ -280,7 +280,7 @@ extension DenStore {
         state.desks.insert(desk, at: targetIndex)
     }
 
-    func restoreDeskOrder(_ deskIDs: [UUID]) {
+    func restoreDeskOrder(_ deskIDs: [DeskID]) {
         let order = Dictionary(uniqueKeysWithValues: deskIDs.enumerated().map { ($1, $0) })
         state.desks.sort {
             (order[$0.id] ?? Int.max) < (order[$1.id] ?? Int.max)
@@ -298,7 +298,7 @@ extension DenStore {
         onWindowEffect?(.cancelDeskDrag)
     }
 
-    func moveDesk(_ deskID: UUID, by delta: Int) {
+    func moveDesk(_ deskID: DeskID, by delta: Int) {
         guard
             activeDrag == nil,
             let deskIndex = state.desks.firstIndex(where: { $0.id == deskID }),
@@ -389,15 +389,15 @@ extension DenStore {
         save()
     }
 
-    func copyBoardID(_ boardID: UUID, pasteboard: NSPasteboard? = nil) {
+    func copyBoardID(_ boardID: BoardID, pasteboard: NSPasteboard? = nil) {
         let pasteboard = pasteboard ?? self.pasteboard
         guard state.desks.contains(where: { $0.boards.contains { $0.id == boardID } }) else { return }
         pasteboard.clearContents()
-        pasteboard.setString(boardID.uuidString.lowercased(), forType: .string)
+        pasteboard.setString(boardID.rawValue.uuidString.lowercased(), forType: .string)
         reportFeedback("Copied Board ID.", severity: .success)
     }
 
-    func copyBoardLocation(_ boardID: UUID? = nil, pasteboard: NSPasteboard? = nil) {
+    func copyBoardLocation(_ boardID: BoardID? = nil, pasteboard: NSPasteboard? = nil) {
         let pasteboard = pasteboard ?? self.pasteboard
         let board: BoardState?
         if let boardID {
@@ -417,7 +417,7 @@ extension DenStore {
             message = "Copied Current Sheet URL."
         case .inspection:
             guard let targetBoardID = board.sideBoardTargetBoardID else { return }
-            value = targetBoardID.uuidString.lowercased()
+            value = targetBoardID.rawValue.uuidString.lowercased()
             message = "Copied target Board ID."
         case .terminal(let terminal):
             switch terminal {
@@ -446,7 +446,7 @@ extension DenStore {
         toggleAnchorBoard(focusedBoardID, in: desk.id)
     }
 
-    func toggleAnchorBoard(_ boardID: UUID, in deskID: UUID) {
+    func toggleAnchorBoard(_ boardID: BoardID, in deskID: DeskID) {
         guard let deskIndex = state.desks.firstIndex(where: { $0.id == deskID }),
             state.desks[deskIndex].boards.contains(where: { $0.id == boardID })
         else { return }

@@ -3,8 +3,8 @@ import Foundation
 import Observation
 
 struct OverviewSelection: Equatable {
-    let deskID: UUID
-    let boardID: UUID?
+    let deskID: DeskID
+    let boardID: BoardID?
 }
 
 @MainActor
@@ -21,14 +21,14 @@ final class OverviewViewModel {
     var isFilterPresented: Bool { filterPhase != .inactive }
     var isFilterInputActive: Bool { filterPhase == .filtering }
     var isFilterSelecting: Bool { filterPhase == .selecting }
-    var selectionDeskID: UUID? { selection?.deskID }
-    var selectionBoardID: UUID? { selection?.boardID }
+    var selectionDeskID: DeskID? { selection?.deskID }
+    var selectionBoardID: BoardID? { selection?.boardID }
 
     init(store: DenStore) {
         self.store = store
     }
 
-    func preparePresentation(deskID: UUID? = nil, boardID: UUID? = nil) {
+    func preparePresentation(deskID: DeskID? = nil, boardID: BoardID? = nil) {
         query = ""
         filterPhase = .inactive
         selection = OverviewSelection(
@@ -106,33 +106,33 @@ final class OverviewViewModel {
         store.enterOverviewSelection(deskID: selection.deskID, boardID: selection.boardID)
     }
 
-    func selectBoard(_ boardID: UUID) {
+    func selectBoard(_ boardID: BoardID) {
         guard let indices = store.boardIndices(for: boardID) else { return }
         selection = OverviewSelection(deskID: store.state.desks[indices.desk].id, boardID: boardID)
     }
 
-    func enterBoard(_ boardID: UUID) {
+    func enterBoard(_ boardID: BoardID) {
         selectBoard(boardID)
         enterSelection()
     }
 
-    func selectDesk(_ deskID: UUID) {
+    func selectDesk(_ deskID: DeskID) {
         guard store.state.desks.contains(where: { $0.id == deskID }) else { return }
         selection = OverviewSelection(deskID: deskID, boardID: nil)
     }
 
-    func enterDesk(_ deskID: UUID) {
+    func enterDesk(_ deskID: DeskID) {
         selectDesk(deskID)
         enterSelection()
     }
 
-    func beginBoardDrag(_ boardID: UUID) -> Bool {
+    func beginBoardDrag(_ boardID: BoardID) -> Bool {
         guard query.isEmpty, filterPhase == .inactive, store.beginOverviewBoardDrag(boardID) else { return false }
         selectBoard(boardID)
         return true
     }
 
-    func finishBoardDrag(_ boardID: UUID, toDeskID deskID: UUID, at targetIndex: Int) {
+    func finishBoardDrag(_ boardID: BoardID, toDeskID deskID: DeskID, at targetIndex: Int) {
         guard case .board(let activeBoardID)? = store.activeDrag, activeBoardID == boardID else { return }
         store.finishOverviewBoardDrag(boardID, toDeskID: deskID, at: targetIndex)
         selection = OverviewSelection(deskID: deskID, boardID: boardID)
@@ -149,7 +149,7 @@ final class OverviewViewModel {
     func moveSelectionBoardToPreviousDesk() { moveSelectionBoardToDesk(by: -1) }
     func moveSelectionBoardToNextDesk() { moveSelectionBoardToDesk(by: 1) }
 
-    func removedBoard(boardID: UUID, deskID: UUID, oldIndex: Int) {
+    func removedBoard(boardID: BoardID, deskID: DeskID, oldIndex: Int) {
         guard selection?.boardID == boardID,
             let desk = store.state.desks.first(where: { $0.id == deskID })
         else { return }
@@ -162,12 +162,12 @@ final class OverviewViewModel {
         selection = OverviewSelection(deskID: deskID, boardID: nextBoardID)
     }
 
-    func invalidateBoard(_ boardID: UUID) {
+    func invalidateBoard(_ boardID: BoardID) {
         guard selection?.boardID == boardID else { return }
         selection = nil
     }
 
-    func invalidateDesk(_ deskID: UUID) {
+    func invalidateDesk(_ deskID: DeskID) {
         guard selection?.deskID == deskID else { return }
         selection = nil
     }

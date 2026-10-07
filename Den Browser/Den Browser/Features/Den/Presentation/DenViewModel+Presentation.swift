@@ -178,7 +178,7 @@ extension DenViewModel {
         if temporaryContext == .keyboardShortcuts { setTemporaryContext(nil) }
     }
 
-    func showOpenBoardPanel(initialURL: URL? = nil, afterBoardID: UUID? = nil) {
+    func showOpenBoardPanel(initialURL: URL? = nil, afterBoardID: BoardID? = nil) {
         openBoard.preparePresentation(initialURL: initialURL, afterBoardID: afterBoardID)
         setTemporaryContext(.openBoard)
     }

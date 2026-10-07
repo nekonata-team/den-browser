@@ -16,14 +16,14 @@ final class OpenBoardViewModel {
             }
         }
     }
-    var afterBoardID: UUID?
+    var afterBoardID: BoardID?
     var message: String?
 
     init(store: DenStore) {
         self.store = store
     }
 
-    func preparePresentation(initialURL: URL? = nil, afterBoardID: UUID? = nil) {
+    func preparePresentation(initialURL: URL? = nil, afterBoardID: BoardID? = nil) {
         self.initialURL = initialURL
         self.afterBoardID = afterBoardID
         if let initialURL { input = initialURL.absoluteString }
@@ -49,7 +49,7 @@ final class OpenBoardViewModel {
         message = nil
     }
 
-    func invalidateBoard(_ boardID: UUID) {
+    func invalidateBoard(_ boardID: BoardID) {
         if afterBoardID == boardID { afterBoardID = nil }
     }
 

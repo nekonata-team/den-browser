@@ -2,7 +2,7 @@ import DenDomain
 import Foundation
 
 extension DenStore {
-    func adjustBoardWidth(_ boardID: UUID, by delta: Double) {
+    func adjustBoardWidth(_ boardID: BoardID, by delta: Double) {
         guard let indices = boardIndices(for: boardID) else { return }
         let deskIndex = indices.desk
         let boardIndex = indices.board
@@ -13,7 +13,7 @@ extension DenStore {
         saveDeferredState()
     }
 
-    func adjustDeskBoardWidths(_ deskID: UUID, by delta: Double) {
+    func adjustDeskBoardWidths(_ deskID: DeskID, by delta: Double) {
         guard let deskIndex = state.desks.firstIndex(where: { $0.id == deskID }) else { return }
         var changed = false
         for boardIndex in state.desks[deskIndex].boards.indices {
@@ -26,7 +26,7 @@ extension DenStore {
     }
 
     @discardableResult
-    func resizeDeskBoards(_ deskID: UUID, to width: Double) -> Bool {
+    func resizeDeskBoards(_ deskID: DeskID, to width: Double) -> Bool {
         guard let deskIndex = state.desks.firstIndex(where: { $0.id == deskID }) else { return false }
 
         for boardIndex in state.desks[deskIndex].boards.indices {
@@ -39,12 +39,12 @@ extension DenStore {
         return true
     }
 
-    func resizeBoard(_ boardID: UUID, to width: Double) {
+    func resizeBoard(_ boardID: BoardID, to width: Double) {
         guard let indices = boardIndices(for: boardID) else { return }
         state.desks[indices.desk].boards[indices.board].width = BoardState.constrainedWidth(width)
     }
 
-    func resizeBoardPair(_ boardID: UUID, to width: Double) {
+    func resizeBoardPair(_ boardID: BoardID, to width: Double) {
         guard let indices = boardIndices(for: boardID) else { return }
         let nextBoardIndex = indices.board + 1
         guard state.desks[indices.desk].boards.indices.contains(nextBoardIndex) else { return }

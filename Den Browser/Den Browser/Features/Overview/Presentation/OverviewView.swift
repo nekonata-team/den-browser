@@ -21,7 +21,7 @@ struct OverviewView: View {
     @State private var overviewGeometry = OverviewGeometry()
     @State private var scrollSize = CGSize.zero
     @State private var lastAutoScrollTime = 0.0
-    @State private var hoveredBoardID: UUID?
+    @State private var hoveredBoardID: BoardID?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -174,7 +174,7 @@ struct OverviewView: View {
         }
     }
 
-    private func scrollToSelection(_ boardID: UUID?) {
+    private func scrollToSelection(_ boardID: BoardID?) {
         guard let boardID else { return }
         withAnimation(DenMotion.spatial(reduceMotion: shouldReduceMotion)) {
             scrollPosition.scrollTo(id: boardID, anchor: .center)
@@ -231,7 +231,7 @@ struct OverviewView: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .accessibilityElement(children: .contain)
-        .accessibilityIdentifier("overview-desk.\(desk.id.uuidString.lowercased())")
+        .accessibilityIdentifier("overview-desk.\(desk.id.rawValue.uuidString.lowercased())")
         .background {
             GeometryReader { proxy in
                 Color.clear.preference(
@@ -294,7 +294,7 @@ struct OverviewView: View {
         .accessibilityLabel(overviewBoardAccessibilityLabel(for: board, in: desk))
         .accessibilityValue(isSelected ? "Selected Board" : "")
         .accessibilityAddTraits(isSelected ? .isSelected : [])
-        .accessibilityIdentifier("overview-board.\(board.id.uuidString.lowercased())")
+        .accessibilityIdentifier("overview-board.\(board.id.rawValue.uuidString.lowercased())")
         .accessibilityHint("Drag to move this Board, or use Board movement actions")
         .accessibilityAction(named: "Enter Board") {
             overview.enterBoard(board.id)
@@ -419,7 +419,7 @@ struct OverviewView: View {
         }
     }
 
-    private func overviewInsertionTarget(at location: CGPoint) -> (deskID: UUID, index: Int)? {
+    private func overviewInsertionTarget(at location: CGPoint) -> (deskID: DeskID, index: Int)? {
         guard
             let drag = overviewDrag,
             scrollBounds.contains(location),
@@ -469,7 +469,7 @@ struct OverviewView: View {
         }
     }
 
-    private func nearestDeskID(to locationY: CGFloat, leading: Bool) -> UUID? {
+    private func nearestDeskID(to locationY: CGFloat, leading: Bool) -> DeskID? {
         let desks = store.state.desks
         guard
             let currentDeskID = OverviewDragGeometry.targetDeskID(
@@ -550,7 +550,7 @@ private enum DenOverviewColors {
 }
 
 private struct OverviewDragState {
-    let boardID: UUID
+    let boardID: BoardID
     var location: CGPoint
     let pointerToCenter: CGSize
 
@@ -562,9 +562,9 @@ private struct OverviewDragState {
 }
 
 private struct OverviewGeometry {
-    var boardFrames: [UUID: CGRect] = [:]
-    var deskFrames: [UUID: CGRect] = [:]
-    var emptyBoardFrames: [UUID: CGRect] = [:]
+    var boardFrames: [BoardID: CGRect] = [:]
+    var deskFrames: [DeskID: CGRect] = [:]
+    var emptyBoardFrames: [DeskID: CGRect] = [:]
 }
 
 private struct OverviewDropTarget {
@@ -578,25 +578,25 @@ private enum OverviewCoordinateSpace {
 }
 
 private struct OverviewBoardFramePreferenceKey: PreferenceKey {
-    static let defaultValue: [UUID: CGRect] = [:]
+    static let defaultValue: [BoardID: CGRect] = [:]
 
-    static func reduce(value: inout [UUID: CGRect], nextValue: () -> [UUID: CGRect]) {
+    static func reduce(value: inout [BoardID: CGRect], nextValue: () -> [BoardID: CGRect]) {
         value.merge(nextValue(), uniquingKeysWith: { $1 })
     }
 }
 
 private struct OverviewDeskFramePreferenceKey: PreferenceKey {
-    static let defaultValue: [UUID: CGRect] = [:]
+    static let defaultValue: [DeskID: CGRect] = [:]
 
-    static func reduce(value: inout [UUID: CGRect], nextValue: () -> [UUID: CGRect]) {
+    static func reduce(value: inout [DeskID: CGRect], nextValue: () -> [DeskID: CGRect]) {
         value.merge(nextValue(), uniquingKeysWith: { $1 })
     }
 }
 
 private struct OverviewEmptyBoardFramePreferenceKey: PreferenceKey {
-    static let defaultValue: [UUID: CGRect] = [:]
+    static let defaultValue: [DeskID: CGRect] = [:]
 
-    static func reduce(value: inout [UUID: CGRect], nextValue: () -> [UUID: CGRect]) {
+    static func reduce(value: inout [DeskID: CGRect], nextValue: () -> [DeskID: CGRect]) {
         value.merge(nextValue(), uniquingKeysWith: { $1 })
     }
 }

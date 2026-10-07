@@ -27,7 +27,7 @@ struct BoardLayout {
     struct Parameters {
         let centering: FocusedBoardCentering
         let boards: [BoardState]
-        let maximizedBoardID: UUID?
+        let maximizedBoardID: BoardID?
         let windowWidth: CGFloat
         let horizontalPadding: CGFloat
         let spacing: CGFloat

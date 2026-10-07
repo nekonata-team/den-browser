@@ -1,13 +1,14 @@
 import CoreGraphics
+import DenDomain
 import Testing
 
 @testable import Den_Browser
 
 @MainActor
 struct HorizontalDragGeometryTests {
-    private let first = UUID.fixture(1)
-    private let second = UUID.fixture(2)
-    private let third = UUID.fixture(3)
+    private let first = BoardID(UUID.fixture(1))
+    private let second = BoardID(UUID.fixture(2))
+    private let third = BoardID(UUID.fixture(3))
 
     @Test func insertionMovesOnlyAfterCrossingNeighborCenter() {
         let frames = horizontalFrames
@@ -42,7 +43,7 @@ struct HorizontalDragGeometryTests {
                 frames: [:]) == nil)
         #expect(
             HorizontalDragInsertion.targetIndex(
-                draggedID: UUID.fixture(99),
+                draggedID: BoardID(UUID.fixture(99)),
                 orderedIDs: [first, second, third],
                 desiredCenterX: 1_000,
                 frames: horizontalFrames) == nil)
@@ -82,10 +83,10 @@ struct HorizontalDragGeometryTests {
 
     @Test func groupedInsertionUsesWholeGroupCenterAndDoesNotReverse() throws {
         // Arrange
-        let dragged = UUID.fixture(20)
-        let primary = UUID.fixture(21)
-        let side = UUID.fixture(22)
-        let last = UUID.fixture(23)
+        let dragged = BoardID(UUID.fixture(20))
+        let primary = BoardID(UUID.fixture(21))
+        let side = BoardID(UUID.fixture(22))
+        let last = BoardID(UUID.fixture(23))
         let frames = [
             dragged: CGRect(x: 0, y: 0, width: 100, height: 100),
             primary: CGRect(x: 110, y: 0, width: 100, height: 100),
@@ -162,7 +163,7 @@ struct HorizontalDragGeometryTests {
         let missingID = HorizontalDragAutoScroll.decision(
             location: CGPoint(x: 10, y: 50),
             size: CGSize(width: 300, height: 100),
-            draggedID: UUID.fixture(99),
+            draggedID: BoardID(UUID.fixture(99)),
             orderedIDs: [first, second, third],
             edge: 40)
         #expect(missingID == nil)
@@ -194,8 +195,8 @@ struct HorizontalDragGeometryTests {
     }
 
     @Test func overviewInsertionUsesBoardHalvesAndSupportsEmptyDesk() {
-        let desk = UUID.fixture(10)
-        let emptyDesk = UUID.fixture(11)
+        let desk = DeskID(UUID.fixture(10))
+        let emptyDesk = DeskID(UUID.fixture(11))
         let frames = [
             first: CGRect(x: 0, y: 0, width: 100, height: 100),
             second: CGRect(x: 110, y: 0, width: 100, height: 100),
@@ -229,7 +230,7 @@ struct HorizontalDragGeometryTests {
                 frames: [emptyDesk: CGRect(x: 0, y: 300, width: 240, height: 120)]) == nil)
     }
 
-    private var horizontalFrames: [UUID: CGRect] {
+    private var horizontalFrames: [BoardID: CGRect] {
         [
             first: CGRect(x: 0, y: 0, width: 100, height: 100),
             second: CGRect(x: 110, y: 0, width: 100, height: 100),

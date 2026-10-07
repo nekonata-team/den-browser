@@ -42,7 +42,7 @@ extension DenViewModel {
     }
 
     @discardableResult
-    func placeDrawerItemAsBoard(_ itemID: UUID) -> UUID? {
+    func placeDrawerItemAsBoard(_ itemID: UUID) -> BoardID? {
         store.placeDrawerItemAsBoard(
             itemID, preferredWidth: store.focusedBoard?.width ?? boardWidth(toFit: 2))
     }

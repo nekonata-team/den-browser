@@ -508,9 +508,9 @@ struct ProfileManagerTests {
         let secondStore = try #require(manager.store(for: second.id))
         let firstBoard = board("First")
         let secondBoard = board("Second")
-        firstStore.state = DenState(desks: [desk("First", boards: [firstBoard])], focusedDeskID: UUID())
+        firstStore.state = DenState(desks: [desk("First", boards: [firstBoard])], focusedDeskID: DeskID())
         firstStore.focusDesk(firstStore.state.desks[0].id)
-        secondStore.state = DenState(desks: [desk("Second", boards: [secondBoard])], focusedDeskID: UUID())
+        secondStore.state = DenState(desks: [desk("Second", boards: [secondBoard])], focusedDeskID: DeskID())
         secondStore.focusDesk(secondStore.state.desks[0].id)
         let firstWebView = firstStore.webRuntime(for: firstBoard).webView
         let secondWebView = secondStore.webRuntime(for: secondBoard).webView
@@ -972,7 +972,7 @@ struct ProfileManagerTests {
         manager.register(window: window2, for: route2)
 
         let targetBoard = board("SharedBoard")
-        store1.state = DenState(desks: [desk("Main", boards: [targetBoard])], focusedDeskID: UUID())
+        store1.state = DenState(desks: [desk("Main", boards: [targetBoard])], focusedDeskID: DeskID())
         store1.focusDesk(store1.state.desks[0].id)
         let runtime = store1.webRuntime(for: targetBoard)
 
@@ -1062,7 +1062,7 @@ struct ProfileManagerTests {
         manager.register(window: window, for: route)
 
         let targetBoard = board("TargetBoard")
-        store.state = DenState(desks: [desk("Main", boards: [targetBoard])], focusedDeskID: UUID())
+        store.state = DenState(desks: [desk("Main", boards: [targetBoard])], focusedDeskID: DeskID())
         store.focusDesk(store.state.desks[0].id)
         let runtime = store.webRuntime(for: targetBoard)
 
@@ -1171,7 +1171,7 @@ struct ProfileManagerTests {
                 .appending(path: "Fixtures/MV3Extension", directoryHint: .isDirectory))
     }
 
-    private func desk(_ label: String, boards: [BoardState] = [], focusedBoardID: UUID? = nil) -> DeskState {
+    private func desk(_ label: String, boards: [BoardState] = [], focusedBoardID: BoardID? = nil) -> DeskState {
         DeskState(label: label, boards: boards, focusedBoardID: focusedBoardID)
     }
 

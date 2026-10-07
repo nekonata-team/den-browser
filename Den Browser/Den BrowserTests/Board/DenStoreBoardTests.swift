@@ -730,7 +730,7 @@ struct DenStoreBoardTests {
         let object = try #require(JSONSerialization.jsonObject(with: encoded) as? [String: Any])
         let role = try #require(object["role"] as? [String: Any])
         #expect(role["kind"] as? String == "sideBoard")
-        #expect(role["targetBoardID"] as? String == target.id.uuidString)
+        #expect(role["targetBoardID"] as? String == target.id.rawValue.uuidString)
         #expect(object["sideBoard"] == nil)
         #expect(try JSONDecoder().decode(BoardState.self, from: encoded) == side)
     }
@@ -1433,7 +1433,7 @@ struct DenStoreBoardTests {
         let store = DenStore(
             state: DenState(
                 desks: [desk("Desk", boards: [board], focusedBoardID: board.id)],
-                focusedDeskID: UUID()))
+                focusedDeskID: DeskID()))
         store.removeFocusedBoard()
 
         #expect(store.recentlyRemovedBoards.first?.board.sheetNavigationPaused == true)
@@ -1855,7 +1855,7 @@ struct DenStoreBoardTests {
                 characters: characters, charactersIgnoringModifiers: characters, isARepeat: false, keyCode: keyCode))
     }
 
-    private func desk(_ label: String, boards: [BoardState] = [], focusedBoardID: UUID? = nil) -> DeskState {
+    private func desk(_ label: String, boards: [BoardState] = [], focusedBoardID: BoardID? = nil) -> DeskState {
         DeskState(label: label, boards: boards, focusedBoardID: focusedBoardID)
     }
 
@@ -1957,7 +1957,7 @@ struct DenStoreBoardTests {
             let pasteboard = NSPasteboard.withUniqueName()
             store.copyBoardID(firstBoard.id, pasteboard: pasteboard)
 
-            #expect(pasteboard.string(forType: .string) == firstBoard.id.uuidString.lowercased())
+            #expect(pasteboard.string(forType: .string) == firstBoard.id.rawValue.uuidString.lowercased())
             #expect(store.latestFeedback?.message == "Copied Board ID.")
             #expect(store.latestFeedback?.severity == .success)
         }
@@ -1967,7 +1967,7 @@ struct DenStoreBoardTests {
         let source = desk("Desk", boards: [board("First")])
         withTestStore(desks: [source]) { store in
             let pasteboard = NSPasteboard.withUniqueName()
-            store.copyBoardID(UUID(), pasteboard: pasteboard)
+            store.copyBoardID(BoardID(), pasteboard: pasteboard)
 
             #expect(pasteboard.string(forType: .string) == nil)
             #expect(store.latestFeedback == nil)

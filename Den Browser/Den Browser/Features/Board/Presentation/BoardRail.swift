@@ -19,7 +19,7 @@ struct BoardRail: View {
         return store.focusedDesk
     }
 
-    private var boardSelection: Binding<UUID?> {
+    private var boardSelection: Binding<BoardID?> {
         Binding(
             get: {
                 viewModel.isOverviewPresented
@@ -134,7 +134,7 @@ struct BoardRail: View {
             )
         )
         .accessibilityAddTraits(isFocused || isOverviewSelected ? .isSelected : [])
-        .accessibilityIdentifier("board-rail-board.\(board.id.uuidString.lowercased())")
+        .accessibilityIdentifier("board-rail-board.\(board.id.rawValue.uuidString.lowercased())")
         .help(board.displayName)
         .contextMenu {
             if let desk = railDesk {

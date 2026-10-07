@@ -3,8 +3,8 @@ import Foundation
 
 enum DenWindowEffect {
     case feedback(DenFeedback?)
-    case presentOpenBoard(initialURL: URL?, afterBoardID: UUID?)
-    case presentOverview(deskID: UUID?, boardID: UUID?)
+    case presentOpenBoard(initialURL: URL?, afterBoardID: BoardID?)
+    case presentOverview(deskID: DeskID?, boardID: BoardID?)
     case presentEditBoardLink
     case presentEssentialsPrefix
     case presentZmxSessions(returnsToOpenBoard: Bool, selectedSessionName: String?)
@@ -24,7 +24,7 @@ enum DenWindowEffect {
     case cancelDeskDrag
     case dismissDeskFilter
     case clearMaximizedBoard
-    case runtimeFocusedBoard(UUID)
+    case runtimeFocusedBoard(BoardID)
     case drawerItemRemoved(UUID, previousItems: [DrawerItem], advancesPreview: Bool, focusNext: Bool)
     case drawerCleared
     case drawerItemKept(UUID, opensDrawer: Bool, selectsItem: Bool)
@@ -33,7 +33,7 @@ enum DenWindowEffect {
     case boardRemovalRequested(BoardRemovalIntent)
     case clearBoardInputRequests
     case suppressBoardMutationAnimation
-    case boardRemoved(UUID)
-    case deskRemoved(UUID)
-    case overviewBoardRemoved(boardID: UUID, deskID: UUID, oldIndex: Int)
+    case boardRemoved(BoardID)
+    case deskRemoved(DeskID)
+    case overviewBoardRemoved(boardID: BoardID, deskID: DeskID, oldIndex: Int)
 }

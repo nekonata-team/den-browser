@@ -1,4 +1,5 @@
 import AppKit
+import DenDomain
 import Testing
 import WebKit
 
@@ -37,7 +38,7 @@ struct SurfaceFocusTests {
             defer: false
         )
         let host = SurfaceHost<BoardFocusRequest, NSView>(content: NSView())
-        let request = BoardFocusRequest(deskID: UUID(), boardID: UUID())
+        let request = BoardFocusRequest(deskID: DeskID(), boardID: BoardID())
         var handlingCount = 0
         host.update(request: request) { _ in
             handlingCount += 1

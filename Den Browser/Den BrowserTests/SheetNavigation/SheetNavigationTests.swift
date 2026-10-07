@@ -190,7 +190,7 @@ struct SheetNavigationTests {
         let defaults = UserDefaults(suiteName: suiteName)!
         defer { defaults.removePersistentDomain(forName: suiteName) }
         let manager = SheetNavigationManager(defaults: defaults, scriptSource: source)
-        let boardID = UUID()
+        let boardID = BoardID()
         let webView = makeSheetNavigationWebView(manager: manager)
         let waiter = WebViewLoadWaiter()
         let baseURL = URL(string: "https://example.com/")!
@@ -1135,7 +1135,7 @@ struct SheetNavigationTests {
 
         // Assert
         #expect(store.latestFeedback?.message == "Copied Board ID.")
-        #expect(manager.pasteboard.string(forType: .string) == board.id.uuidString.lowercased())
+        #expect(manager.pasteboard.string(forType: .string) == board.id.rawValue.uuidString.lowercased())
     }
 
     @Test func sheetNavigationRoutesBoardBoundaryCommands() async throws {
@@ -1427,8 +1427,8 @@ struct SheetNavigationTests {
     }
 
     private func boardRuntimeEvents(
-        onChange: @escaping (UUID, URL?, String?) -> Void = { _, _, _ in },
-        onFullscreenChange: ((UUID, Bool) -> Void)? = nil,
+        onChange: @escaping (BoardID, URL?, String?) -> Void = { _, _, _ in },
+        onFullscreenChange: ((BoardID, Bool) -> Void)? = nil,
         onDownloadFinished: @escaping (String) -> Void = { _ in },
         onDownloadFailed: @escaping (String) -> Void = { _ in }
     ) -> WebBoardRuntime.Events {
@@ -1456,7 +1456,7 @@ struct SheetNavigationTests {
         return wasPrevented ?? false
     }
 
-    private func desk(_ label: String, boards: [BoardState] = [], focusedBoardID: UUID? = nil) -> DeskState {
+    private func desk(_ label: String, boards: [BoardState] = [], focusedBoardID: BoardID? = nil) -> DeskState {
         DeskState(label: label, boards: boards, focusedBoardID: focusedBoardID)
     }
 

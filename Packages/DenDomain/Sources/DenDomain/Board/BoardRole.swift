@@ -2,7 +2,7 @@ import Foundation
 
 public enum BoardRole: Codable, Equatable {
     case primary
-    case sideBoard(targetBoardID: UUID)
+    case sideBoard(targetBoardID: BoardID)
 
     private enum CodingKeys: String, CodingKey {
         case kind, targetBoardID
@@ -18,7 +18,7 @@ public enum BoardRole: Codable, Equatable {
         case .primary:
             self = .primary
         case .sideBoard:
-            self = .sideBoard(targetBoardID: try container.decode(UUID.self, forKey: .targetBoardID))
+            self = .sideBoard(targetBoardID: try container.decode(BoardID.self, forKey: .targetBoardID))
         }
     }
 

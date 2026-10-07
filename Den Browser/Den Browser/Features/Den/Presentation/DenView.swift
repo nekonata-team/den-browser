@@ -617,11 +617,11 @@ private struct BoardStripIndicator: View {
     private static let dotHeight: CGFloat = 6
 
     let boards: [BoardState]
-    let focusedBoardID: UUID?
-    let anchorBoardID: UUID?
+    let focusedBoardID: BoardID?
+    let anchorBoardID: BoardID?
     let profileColor: Color
     let reduceMotion: Bool
-    let onSelect: (UUID) -> Void
+    let onSelect: (BoardID) -> Void
 
     var body: some View {
         HStack(spacing: 8) {

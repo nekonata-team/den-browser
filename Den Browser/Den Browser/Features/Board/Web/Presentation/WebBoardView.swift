@@ -454,7 +454,7 @@ struct WebBoardView: View {
         isPointerFocusEnabled && !viewModel.isBoardDragging
     }
 
-    private var boardDeskID: UUID? {
+    private var boardDeskID: DeskID? {
         store.boardIndices(for: board.id).map { store.state.desks[$0.desk].id }
     }
 
