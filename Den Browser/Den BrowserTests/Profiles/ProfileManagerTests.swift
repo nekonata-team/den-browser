@@ -45,7 +45,7 @@ struct ProfileManagerTests {
             preferences: AppPreferences(defaults: makeTestDefaults()),
             initialProfile: PersistedProfile(
                 profile: ProfileState(
-                    id: UUID(),
+                    id: ProfileID(),
                     name: "Private Den",
                     color: .gray,
                     webProfileStore: .default),
@@ -84,7 +84,7 @@ struct ProfileManagerTests {
             desks: [desk],
             focusedDeskID: desk.id)
         let window = NSWindow()
-        let route = ProfileWindowRoute(windowID: profileID, profileID: profileID)
+        let route = ProfileWindowRoute(windowID: profileID.rawValue, profileID: profileID)
         defer { manager.unregister(window: window, for: route) }
 
         // Act
@@ -108,7 +108,7 @@ struct ProfileManagerTests {
             webExtensionDescriptors: [extensionFixtureDescriptor()])
         defer { manager.setUBOLiteEnabled(false) }
         let profileID = manager.personalProfileID
-        let firstRoute = ProfileWindowRoute(windowID: profileID, profileID: profileID)
+        let firstRoute = ProfileWindowRoute(windowID: profileID.rawValue, profileID: profileID)
         let first = try #require(manager.store(for: firstRoute))
         manager.setUBOLiteEnabled(true)
         let sourceDeskID = first.presentedDeskID
@@ -238,7 +238,7 @@ struct ProfileManagerTests {
         defer { try? FileManager.default.removeItem(at: directory) }
         let manager = makeProfileManager(directory: directory)
         let profileID = manager.personalProfileID
-        let sourceRoute = ProfileWindowRoute(windowID: profileID, profileID: profileID)
+        let sourceRoute = ProfileWindowRoute(windowID: profileID.rawValue, profileID: profileID)
         let source = try #require(manager.store(for: sourceRoute))
         source.createDesk(label: "Second", preset: .empty)
         let detachedDeskID = source.presentedDeskID
@@ -319,7 +319,7 @@ struct ProfileManagerTests {
         defer { try? FileManager.default.removeItem(at: directory) }
         let manager = makeProfileManager(directory: directory)
         let personalID = manager.personalProfileID
-        let missingID = UUID()
+        let missingID = ProfileID()
 
         // Act
         let resolvedPersonal = manager.resolvedProfileID(personalID)
@@ -437,7 +437,7 @@ struct ProfileManagerTests {
         defer { try? FileManager.default.removeItem(at: directory) }
         let manager = makeProfileManager(directory: directory)
         let work = try #require(manager.createProfile(name: "Work", color: .purple))
-        let mismatchedURL = profileURL(UUID(), in: directory)
+        let mismatchedURL = profileURL(ProfileID(), in: directory)
         try FileManager.default.moveItem(at: profileURL(work.id, in: directory), to: mismatchedURL)
 
         // Act
@@ -455,7 +455,7 @@ struct ProfileManagerTests {
         defer { try? FileManager.default.removeItem(at: directory) }
         let manager = makeProfileManager(directory: directory)
         let work = try #require(manager.createProfile(name: "Work", color: .purple))
-        let uppercaseURL = directory.appending(path: "\(work.id.uuidString.uppercased()).json")
+        let uppercaseURL = directory.appending(path: "\(work.id.rawValue.uuidString.uppercased()).json")
         try FileManager.default.moveItem(at: profileURL(work.id, in: directory), to: uppercaseURL)
 
         // Act
@@ -637,7 +637,10 @@ struct ProfileManagerTests {
         let indexURL = directory.appending(path: "profile-index.json")
         var object = try #require(
             JSONSerialization.jsonObject(with: Data(contentsOf: indexURL)) as? [String: Any])
-        object["profileIDs"] = [manager.personalProfileID.uuidString, manager.personalProfileID.uuidString]
+        object["profileIDs"] = [
+            manager.personalProfileID.rawValue.uuidString,
+            manager.personalProfileID.rawValue.uuidString,
+        ]
         try JSONSerialization.data(withJSONObject: object).write(to: indexURL)
 
         // Act
@@ -931,7 +934,7 @@ struct ProfileManagerTests {
         let firstDeskID = try #require(store.state.desks.first?.id)
         store.createDesk(label: "Second", preset: .empty)
         let writesBefore = manager.profileSaveCount
-        let profileURL = directory.appending(path: "\(profileID.uuidString.lowercased()).json")
+        let profileURL = directory.appending(path: "\(profileID.rawValue.uuidString.lowercased()).json")
         try FileManager.default.removeItem(at: profileURL)
         try FileManager.default.createDirectory(at: profileURL, withIntermediateDirectories: false)
 
@@ -1131,8 +1134,8 @@ struct ProfileManagerTests {
             .appending(path: "den-browser-profile-tests-\(UUID().uuidString)", directoryHint: .isDirectory)
     }
 
-    private func profileURL(_ id: UUID, in directory: URL) -> URL {
-        directory.appending(path: "\(id.uuidString.lowercased()).json")
+    private func profileURL(_ id: ProfileID, in directory: URL) -> URL {
+        directory.appending(path: "\(id.rawValue.uuidString.lowercased()).json")
     }
 
     private func makeProfileManager(

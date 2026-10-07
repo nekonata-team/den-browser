@@ -243,7 +243,7 @@ struct DenIPCTargetResolverTests {
 
         let request = DenIPCRequest(
             command: .sheet(.url),
-            profileID: profile2.id.uuidString
+            profileID: profile2.id.rawValue.uuidString
         )
 
         // Act
@@ -314,7 +314,7 @@ struct DenIPCTargetResolverTests {
         let profileWithoutWindow = try #require(manager.createProfile(name: "No Window", color: .gray))
         let request = DenIPCRequest(
             command: .sheet(.url),
-            profileID: profileWithoutWindow.id.uuidString
+            profileID: profileWithoutWindow.id.rawValue.uuidString
         )
 
         // Act
@@ -323,7 +323,7 @@ struct DenIPCTargetResolverTests {
         // Assert
         switch result {
         case .failure(let error):
-            #expect(error == .profileHasNoActiveWindow(profileWithoutWindow.id.uuidString))
+            #expect(error == .profileHasNoActiveWindow(profileWithoutWindow.id.rawValue.uuidString))
         case .success:
             Issue.record("Expected failure when profile has no active window")
         }
@@ -343,7 +343,7 @@ struct DenIPCTargetResolverTests {
         let request = DenIPCRequest(
             command: .sheet(.url),
             boardID: board1ID.rawValue.uuidString,
-            profileID: profile2.id.uuidString
+            profileID: profile2.id.rawValue.uuidString
         )
 
         // Act
@@ -371,7 +371,7 @@ struct DenIPCTargetResolverTests {
         let request = DenIPCRequest(
             command: .sheet(.url),
             callerBoardID: terminalBoardID.rawValue.uuidString,
-            profileID: profile2.id.uuidString
+            profileID: profile2.id.rawValue.uuidString
         )
 
         // Act
@@ -401,7 +401,7 @@ struct DenIPCTargetResolverTests {
         let request = DenIPCRequest(
             command: .board(.close),
             boardID: board2ID.rawValue.uuidString,
-            profileID: profile2.id.uuidString
+            profileID: profile2.id.rawValue.uuidString
         )
         let response = await service.handleRequest(request)
 
@@ -429,7 +429,7 @@ struct DenIPCTargetResolverTests {
         let request = DenIPCRequest(
             command: .board(.close),
             boardID: board1ID.rawValue.uuidString,
-            profileID: profile2.id.uuidString
+            profileID: profile2.id.rawValue.uuidString
         )
         let response = await service.handleRequest(request)
 
@@ -520,7 +520,7 @@ struct DenIPCTargetResolverTests {
 
         let directory = temporaryProfileDirectory()
         defer { try? FileManager.default.removeItem(at: directory) }
-        let profile1ID = UUID()
+        let profile1ID = ProfileID()
         let initialProfile = PersistedProfile(
             profile: ProfileState(id: profile1ID, name: "Profile 1", color: .blue, webProfileStore: .default),
             den: den1
@@ -580,7 +580,7 @@ struct DenIPCTargetResolverTests {
         let scopedRequest = DenIPCRequest(
             command: .sheet(.url),
             boardID: board2ID.rawValue.uuidString,
-            profileID: profileID.uuidString
+            profileID: profileID.rawValue.uuidString
         )
         let scopedResult = DenIPCTargetResolver.resolveTargetWebBoardResult(request: scopedRequest, in: manager)
 
@@ -628,7 +628,7 @@ struct DenIPCTargetResolverTests {
         let request2 = DenIPCRequest(
             command: .desk(.list),
             deskID: nonExistentDeskID,
-            profileID: manager.personalProfileID.uuidString
+            profileID: manager.personalProfileID.rawValue.uuidString
         )
         let result2 = DenIPCTargetResolver.resolveStoreAndDesk(request: request2, in: manager)
 

@@ -1,4 +1,5 @@
 import AppKit
+import DenDomain
 import Foundation
 import WebKit
 
@@ -95,7 +96,7 @@ final class MV3WebExtensionHost: NSObject, WKWebExtensionControllerDelegate, Web
     private var isDisposed = false
 
     init(
-        profileID: UUID,
+        profileID: ProfileID,
         websiteDataStore: WKWebsiteDataStore,
         userContentController: WKUserContentController,
         descriptors: [BundledWebExtensionDescriptor] = [],
@@ -111,7 +112,7 @@ final class MV3WebExtensionHost: NSObject, WKWebExtensionControllerDelegate, Web
         if isEphemeral {
             configuration = .nonPersistent()
         } else {
-            configuration = .init(identifier: profileID)
+            configuration = .init(identifier: profileID.rawValue)
         }
         configuration.defaultWebsiteDataStore = websiteDataStore
         let webViewConfiguration = WKWebViewConfiguration()

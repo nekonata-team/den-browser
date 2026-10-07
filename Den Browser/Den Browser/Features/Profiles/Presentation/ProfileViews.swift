@@ -85,7 +85,7 @@ struct ProfileWindowView: View {
 private struct ProfileDenWindow: View {
     let route: ProfileWindowRoute
     let profile: ProfileState
-    let activeProfileID: UUID
+    let activeProfileID: ProfileID
     let store: DenStore
     let isPrivateDen: Bool
     let registerKeyboardWindow: @MainActor (NSWindow, DenViewModel) -> Void
@@ -97,7 +97,7 @@ private struct ProfileDenWindow: View {
     init(
         route: ProfileWindowRoute,
         profile: ProfileState,
-        activeProfileID: UUID,
+        activeProfileID: ProfileID,
         store: DenStore,
         isPrivateDen: Bool,
         registerKeyboardWindow: @escaping @MainActor (NSWindow, DenViewModel) -> Void,
@@ -255,11 +255,11 @@ private struct WindowRegistration: NSViewRepresentable {
 struct OpenProfilePanel: View {
     let profiles: [ProfileState]
     let profileColor: Color
-    let onOpenProfile: (UUID) -> Void
+    let onOpenProfile: (ProfileID) -> Void
     let onClose: () -> Void
 
     @State private var query = ""
-    @State private var selectedProfileID: UUID?
+    @State private var selectedProfileID: ProfileID?
     @FocusState private var isFocused: Bool
 
     var body: some View {
@@ -333,7 +333,7 @@ struct OpenProfilePanel: View {
         openProfile(profileID)
     }
 
-    private func openProfile(_ profileID: UUID) {
+    private func openProfile(_ profileID: ProfileID) {
         onClose()
         onOpenProfile(profileID)
     }
@@ -352,7 +352,7 @@ struct DenViewModelFocusedValueKey: FocusedValueKey {
 }
 
 struct ProfileIDFocusedValueKey: FocusedValueKey {
-    typealias Value = UUID
+    typealias Value = ProfileID
 }
 
 struct ProfileWindowIDFocusedValueKey: FocusedValueKey {
@@ -370,7 +370,7 @@ extension FocusedValues {
         set { self[DenViewModelFocusedValueKey.self] = newValue }
     }
 
-    var profileID: UUID? {
+    var profileID: ProfileID? {
         get { self[ProfileIDFocusedValueKey.self] }
         set { self[ProfileIDFocusedValueKey.self] = newValue }
     }

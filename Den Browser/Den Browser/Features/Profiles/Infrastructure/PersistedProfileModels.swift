@@ -11,9 +11,9 @@ struct ProfileIndex: Codable, Equatable {
     static let currentSchemaVersion = 1
 
     var schemaVersion = currentSchemaVersion
-    var profileIDs: [UUID]
+    var profileIDs: [ProfileID]
 
-    init(profileIDs: [UUID]) {
+    init(profileIDs: [ProfileID]) {
         self.profileIDs = profileIDs
     }
 
@@ -23,7 +23,7 @@ struct ProfileIndex: Codable, Equatable {
         guard schemaVersion == Self.currentSchemaVersion else {
             throw ProfilePersistenceError.unsupportedProfileIndexSchema(schemaVersion)
         }
-        profileIDs = try container.decode([UUID].self, forKey: .profileIDs)
+        profileIDs = try container.decode([ProfileID].self, forKey: .profileIDs)
         guard Set(profileIDs).count == profileIDs.count else {
             throw ProfilePersistenceError.duplicateProfileIDs
         }

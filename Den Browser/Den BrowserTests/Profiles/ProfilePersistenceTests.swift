@@ -11,7 +11,7 @@ struct ProfilePersistenceTests {
     @Test func profileModelsRoundTrip() throws {
         // Arrange
         let profile = ProfileState(
-            id: UUID(), name: "Work", color: .purple, webProfileStore: .identified(UUID()))
+            id: ProfileID(), name: "Work", color: .purple, webProfileStore: .identified(UUID()))
         let persisted = PersistedProfile(profile: profile, den: .sample)
 
         // Act
@@ -80,7 +80,7 @@ struct ProfilePersistenceTests {
             sheetNavigationPaused: true)
         let desk = DeskState(label: "Desk", boards: [board], focusedBoardID: board.id)
         let profile = ProfileState(
-            id: UUID(), name: "Work", color: .purple, webProfileStore: .identified(UUID()))
+            id: ProfileID(), name: "Work", color: .purple, webProfileStore: .identified(UUID()))
         let persisted = PersistedProfile(
             profile: profile,
             den: DenState(desks: [desk], focusedDeskID: desk.id))
@@ -96,7 +96,7 @@ struct ProfilePersistenceTests {
     @Test func profileDocumentWithoutDeskPresetsLoadsEmptyList() throws {
         // Arrange
         let profile = ProfileState(
-            id: UUID(), name: "Work", color: .purple, webProfileStore: .identified(UUID()))
+            id: ProfileID(), name: "Work", color: .purple, webProfileStore: .identified(UUID()))
         let encoded = try JSONEncoder().encode(PersistedProfile(profile: profile, den: .sample))
         var object = try #require(JSONSerialization.jsonObject(with: encoded) as? [String: Any])
         #expect(object["deskPresets"] != nil)
@@ -114,7 +114,7 @@ struct ProfilePersistenceTests {
     @Test func profileDocumentWithoutRecentItemsLoadsEmptyList() throws {
         // Arrange
         let profile = ProfileState(
-            id: UUID(), name: "Work", color: .purple, webProfileStore: .identified(UUID()))
+            id: ProfileID(), name: "Work", color: .purple, webProfileStore: .identified(UUID()))
         let recentItems: [RecentItem] = [
             .url(URL(string: "https://example.com")!),
             .search("Swift"),

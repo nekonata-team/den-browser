@@ -9,17 +9,17 @@ import WebKit
 final class ProfileManager {
     private(set) var profiles: [ProfileState] = []
     private(set) var errorMessage: String?
-    var clearBrowsingDataProfileID: UUID?
+    var clearBrowsingDataProfileID: ProfileID?
     var clearBrowsingDataWindowID: UUID?
     private(set) var windowAssignmentRevision = 0
 
     @ObservationIgnored private let persistence: ProfilePersistence
-    @ObservationIgnored private var persistedProfiles: [UUID: PersistedProfile] = [:]
+    @ObservationIgnored private var persistedProfiles: [ProfileID: PersistedProfile] = [:]
     var profileSaveCount: Int { persistence.profileSaveCount }
-    @ObservationIgnored private var storages: [UUID: DenStorage] = [:]
-    @ObservationIgnored private var runtimeOwners: [UUID: [BoardID: DenStore]] = [:]
+    @ObservationIgnored private var storages: [ProfileID: DenStorage] = [:]
+    @ObservationIgnored private var runtimeOwners: [ProfileID: [BoardID: DenStore]] = [:]
     @ObservationIgnored private let windowRegistry = ProfileWindowRegistry()
-    @ObservationIgnored private var websiteDataStores: [UUID: WKWebsiteDataStore] = [:]
+    @ObservationIgnored private var websiteDataStores: [ProfileID: WKWebsiteDataStore] = [:]
     @ObservationIgnored private let extensionCoordinator: ProfileExtensionCoordinator
     @ObservationIgnored private let sheetNavigation: SheetNavigationManager
     @ObservationIgnored private let preferences: AppPreferences
@@ -32,10 +32,10 @@ final class ProfileManager {
 
     var uboliteInstaller: UBOLiteInstaller { extensionCoordinator.installer }
 
-    var personalProfileID: UUID {
+    var personalProfileID: ProfileID {
         profiles.first(where: { $0.webProfileStore == .default })?.id
             ?? profiles.first?.id
-            ?? UUID()
+            ?? ProfileID()
     }
 
     var isPrivateDen: Bool { isEphemeral }
@@ -76,16 +76,16 @@ final class ProfileManager {
         load()
     }
 
-    func profile(id: UUID) -> ProfileState? {
+    func profile(id: ProfileID) -> ProfileState? {
         profiles.first { $0.id == id }
     }
 
-    func resolvedProfileID(_ requestedID: UUID) -> UUID {
+    func resolvedProfileID(_ requestedID: ProfileID) -> ProfileID {
         profile(id: requestedID) == nil ? personalProfileID : requestedID
     }
 
-    func store(for profileID: UUID) -> DenStore? {
-        store(for: ProfileWindowRoute(windowID: profileID, profileID: profileID))
+    func store(for profileID: ProfileID) -> DenStore? {
+        store(for: ProfileWindowRoute(windowID: profileID.rawValue, profileID: profileID))
     }
 
     func store(for route: ProfileWindowRoute) -> DenStore? {
@@ -139,7 +139,7 @@ final class ProfileManager {
         let name = name.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !name.isEmpty else { return nil }
         let profile = ProfileState(
-            id: UUID(), name: name, color: color, webProfileStore: .identified(UUID()))
+            id: ProfileID(), name: name, color: color, webProfileStore: .identified(UUID()))
         let persisted = PersistedProfile(profile: profile, den: .sample)
         profiles.append(profile)
         persistedProfiles[profile.id] = persisted
@@ -156,7 +156,7 @@ final class ProfileManager {
         }
     }
 
-    func updateProfile(_ profileID: UUID, name: String? = nil, color: ProfileColor? = nil) -> Bool {
+    func updateProfile(_ profileID: ProfileID, name: String? = nil, color: ProfileColor? = nil) -> Bool {
         guard
             let index = profiles.firstIndex(where: { $0.id == profileID }),
             var original = persistedProfiles[profileID]
@@ -184,7 +184,7 @@ final class ProfileManager {
         }
     }
 
-    func deleteProfile(_ profileID: UUID) async -> Bool {
+    func deleteProfile(_ profileID: ProfileID) async -> Bool {
         guard
             let profile = profile(id: profileID),
             case .identified(let dataStoreID) = profile.webProfileStore
@@ -211,7 +211,7 @@ final class ProfileManager {
     }
 
     @discardableResult
-    func clearBrowsingData(categories: Set<BrowsingDataCategory>, profileID: UUID) async -> Bool {
+    func clearBrowsingData(categories: Set<BrowsingDataCategory>, profileID: ProfileID) async -> Bool {
         guard let profile = profile(id: profileID) else { return false }
         let types = categories.websiteDataTypes
         guard !types.isEmpty else { return true }
@@ -282,7 +282,7 @@ final class ProfileManager {
         return windowRegistry.store(for: window)
     }
 
-    func activateWindow(for profileID: UUID) -> Bool {
+    func activateWindow(for profileID: ProfileID) -> Bool {
         let profileID = resolvedProfileID(profileID)
         let window = windowRegistry.window(for: profileID)
         guard let window else { return false }
@@ -296,7 +296,7 @@ final class ProfileManager {
     }
 
     @discardableResult
-    func openWindow(for profileID: UUID) -> Bool {
+    func openWindow(for profileID: ProfileID) -> Bool {
         if activateWindow(for: profileID) {
             return true
         }
@@ -307,7 +307,7 @@ final class ProfileManager {
 
     func canOpenDeskInNewWindow(
         _ deskID: DeskID,
-        profileID: UUID,
+        profileID: ProfileID,
         sourceWindowID: UUID
     ) -> Bool {
         _ = windowAssignmentRevision
@@ -323,7 +323,7 @@ final class ProfileManager {
 
     func isDeskPresentedInAnotherWindow(
         _ deskID: DeskID,
-        profileID: UUID,
+        profileID: ProfileID,
         excludingWindowID: UUID
     ) -> Bool {
         _ = windowAssignmentRevision
@@ -332,7 +332,7 @@ final class ProfileManager {
 
     func routeForOpeningDesk(
         _ deskID: DeskID,
-        profileID: UUID,
+        profileID: ProfileID,
         sourceWindowID: UUID
     ) -> ProfileWindowRoute? {
         guard canOpenDeskInNewWindow(deskID, profileID: profileID, sourceWindowID: sourceWindowID),
@@ -352,7 +352,7 @@ final class ProfileManager {
         return route
     }
 
-    private func storage(for profileID: UUID) -> DenStorage? {
+    private func storage(for profileID: ProfileID) -> DenStorage? {
         if let storage = storages[profileID] { return storage }
         guard let persisted = persistedProfiles[profileID] else { return nil }
         let normalizedState = DenStore.normalizedPersistedState(persisted.den)
@@ -374,7 +374,7 @@ final class ProfileManager {
         return storage
     }
 
-    private func profileWebsiteDataStore(for profileID: UUID) -> WKWebsiteDataStore {
+    private func profileWebsiteDataStore(for profileID: ProfileID) -> WKWebsiteDataStore {
         if let store = websiteDataStores[profileID] { return store }
         let store = persistedProfiles[profileID].map { websiteDataStore($0.profile.webProfileStore) } ?? .default()
         websiteDataStores[profileID] = store
@@ -389,30 +389,30 @@ final class ProfileManager {
         windowRegistry.activeStore(preferredWindowID: extensionPresentationTarget()?.windowID)
     }
 
-    func activeProfileID() -> UUID? {
+    func activeProfileID() -> ProfileID? {
         windowRegistry.activeProfileID(preferredWindowID: extensionPresentationTarget()?.windowID)
     }
 
-    func store(forProfileID profileID: UUID) -> DenStore? {
+    func store(forProfileID profileID: ProfileID) -> DenStore? {
         windowRegistry.store(forProfileID: profileID, preferredWindowID: extensionPresentationTarget()?.windowID)
     }
 
-    func profileID(for storage: DenStorage) -> UUID? {
+    func profileID(for storage: DenStorage) -> ProfileID? {
         for (profileID, candidateStorage) in storages where candidateStorage === storage {
             return profileID
         }
         return nil
     }
 
-    func profileID(for store: DenStore) -> UUID? {
+    func profileID(for store: DenStore) -> ProfileID? {
         windowRegistry.profileID(for: store) ?? profileID(for: store.storage)
     }
 
-    func stores(for profileID: UUID) -> [DenStore] {
+    func stores(for profileID: ProfileID) -> [DenStore] {
         windowRegistry.stores(for: profileID)
     }
 
-    func store(for profileID: UUID, presentingDeskID: DeskID?) -> DenStore? {
+    func store(for profileID: ProfileID, presentingDeskID: DeskID?) -> DenStore? {
         let profileStores = stores(for: profileID)
         if let presentingDeskID,
             let presentingStore = profileStores.first(where: { $0.presentedDeskID == presentingDeskID })
@@ -422,7 +422,7 @@ final class ProfileManager {
         return store(forProfileID: profileID)
     }
 
-    func hasWindow(for profileID: UUID) -> Bool {
+    func hasWindow(for profileID: ProfileID) -> Bool {
         windowRegistry.hasStore(for: profileID)
     }
 
@@ -430,7 +430,7 @@ final class ProfileManager {
         windowRegistry.allStores()
     }
 
-    private func canPresent(_ deskID: DeskID, profileID: UUID, excludingWindowID: UUID) -> Bool {
+    private func canPresent(_ deskID: DeskID, profileID: ProfileID, excludingWindowID: UUID) -> Bool {
         !windowRegistry.storeEntries().contains { entry in
             entry.windowID != excludingWindowID
                 && entry.profileID == profileID
@@ -438,7 +438,7 @@ final class ProfileManager {
         }
     }
 
-    private func requestDeskPresentation(_ deskID: DeskID, profileID: UUID, windowID: UUID) -> Bool {
+    private func requestDeskPresentation(_ deskID: DeskID, profileID: ProfileID, windowID: UUID) -> Bool {
         guard
             let ownerWindowID = windowRegistry.storeEntries().first(where: { entry in
                 entry.windowID != windowID
@@ -452,7 +452,7 @@ final class ProfileManager {
 
     private func availableDeskID(
         preferred: DeskID,
-        profileID: UUID,
+        profileID: ProfileID,
         excludingWindowID: UUID
     ) -> DeskID? {
         guard let storage = storages[profileID] else { return nil }
@@ -468,7 +468,7 @@ final class ProfileManager {
 
     private func availableReplacementDeskID(
         for deskID: DeskID,
-        profileID: UUID,
+        profileID: ProfileID,
         excludingWindowID: UUID
     ) -> DeskID? {
         guard let desks = storages[profileID]?.state.desks,
@@ -486,7 +486,7 @@ final class ProfileManager {
         windowID: UUID,
         matchingWindow: NSWindow? = nil,
         closeNativeWindow: Bool = false
-    ) -> UUID? {
+    ) -> ProfileID? {
         guard windowRegistry.matches(windowID: windowID, matchingWindow: matchingWindow) else {
             return nil
         }
@@ -503,7 +503,7 @@ final class ProfileManager {
         return profileID
     }
 
-    private func releaseSharedResourcesIfUnused(for profileID: UUID) {
+    private func releaseSharedResourcesIfUnused(for profileID: ProfileID) {
         let profileID = resolvedProfileID(profileID)
         guard !windowRegistry.hasStore(for: profileID),
             !windowRegistry.hasWindow(for: profileID)
@@ -515,7 +515,7 @@ final class ProfileManager {
         extensionCoordinator.releaseProfile(profileID)
     }
 
-    private func closeWindows(for profileID: UUID, excludingWindowID: UUID? = nil) {
+    private func closeWindows(for profileID: ProfileID, excludingWindowID: UUID? = nil) {
         var targetWindowIDs = Set<UUID>()
         targetWindowIDs.formUnion(windowRegistry.windowIDs(for: profileID))
         targetWindowIDs.formUnion(windowRegistry.storeWindowIDs(for: profileID))
@@ -528,11 +528,11 @@ final class ProfileManager {
         releaseSharedResourcesIfUnused(for: profileID)
     }
 
-    private func closeOtherWindows(profileID: UUID, excludingWindowID: UUID) {
+    private func closeOtherWindows(profileID: ProfileID, excludingWindowID: UUID) {
         closeWindows(for: profileID, excludingWindowID: excludingWindowID)
     }
 
-    private func setRuntimeOwner(_ store: DenStore?, boardID: BoardID, profileID: UUID) {
+    private func setRuntimeOwner(_ store: DenStore?, boardID: BoardID, profileID: ProfileID) {
         if let store {
             runtimeOwners[profileID, default: [:]][boardID] = store
         } else {
@@ -543,7 +543,7 @@ final class ProfileManager {
         }
     }
 
-    private func releaseRuntimes(_ storage: DenStorage, profileID: UUID) {
+    private func releaseRuntimes(_ storage: DenStorage, profileID: ProfileID) {
         for runtime in storage.webRuntimes.values { runtime.dispose() }
         storage.webRuntimes.removeAll()
         for runtime in storage.terminalRuntimes.values { runtime.dispose() }
@@ -607,7 +607,7 @@ final class ProfileManager {
     }
 
     private func deduplicated(_ profiles: [PersistedProfile]) -> [PersistedProfile] {
-        var ids: Set<UUID> = []
+        var ids: Set<ProfileID> = []
         var hasDefault = false
         return profiles.filter {
             guard ids.insert($0.profile.id).inserted else { return false }
@@ -620,7 +620,7 @@ final class ProfileManager {
     }
 
     @discardableResult
-    private func saveDen(_ den: DenState, for profileID: UUID) -> Bool {
+    private func saveDen(_ den: DenState, for profileID: ProfileID) -> Bool {
         guard var persisted = persistedProfiles[profileID] else { return false }
         persisted.den = DenStore.normalizedPersistedState(den)
         if let storage = storages[profileID] {
@@ -639,7 +639,7 @@ final class ProfileManager {
     }
 
     @discardableResult
-    private func saveDeskPresets(_ deskPresets: [PersonalDeskPreset], for profileID: UUID) -> Bool {
+    private func saveDeskPresets(_ deskPresets: [PersonalDeskPreset], for profileID: ProfileID) -> Bool {
         guard var persisted = persistedProfiles[profileID] else { return false }
         refreshDenData(in: &persisted, for: profileID)
         persisted.deskPresets = deskPresets
@@ -655,7 +655,7 @@ final class ProfileManager {
     }
 
     @discardableResult
-    private func saveRecentItems(_ recentItems: [RecentItem], for profileID: UUID) -> Bool {
+    private func saveRecentItems(_ recentItems: [RecentItem], for profileID: ProfileID) -> Bool {
         guard var persisted = persistedProfiles[profileID] else { return false }
         refreshDenData(in: &persisted, for: profileID)
         persisted.recentItems = recentItems
@@ -691,7 +691,7 @@ final class ProfileManager {
         }
     }
 
-    private func scheduleDeferredSave(for profileID: UUID) {
+    private func scheduleDeferredSave(for profileID: ProfileID) {
         guard
             !isEphemeral,
             var persisted = persistedProfiles[profileID],
@@ -707,11 +707,11 @@ final class ProfileManager {
         }
     }
 
-    private func cancelPendingDeferredSave(for profileID: UUID) {
+    private func cancelPendingDeferredSave(for profileID: ProfileID) {
         persistence.cancelPendingDeferredSave(for: profileID)
     }
 
-    private func refreshDenData(in persisted: inout PersistedProfile, for profileID: UUID) {
+    private func refreshDenData(in persisted: inout PersistedProfile, for profileID: ProfileID) {
         persisted.den = DenStore.normalizedPersistedState(persisted.den)
         guard let storage = storages[profileID] else { return }
         if storage.activeDrag == nil {
@@ -727,7 +727,7 @@ final class ProfileManager {
 
     private static func personalProfile() -> PersistedProfile {
         PersistedProfile(
-            profile: ProfileState(id: UUID(), name: "Personal", color: .blue, webProfileStore: .default),
+            profile: ProfileState(id: ProfileID(), name: "Personal", color: .blue, webProfileStore: .default),
             den: .sample)
     }
 

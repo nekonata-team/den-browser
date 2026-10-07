@@ -9,7 +9,7 @@ final class DenIPCService {
     static let shared = DenIPCService()
 
     private struct SheetInteractTarget {
-        let profileID: UUID
+        let profileID: ProfileID
         let store: DenStore
         let board: BoardState
         let runtime: WebBoardRuntime
@@ -193,7 +193,7 @@ final class DenIPCService {
         let activeProfileID = profileManager.activeProfileID()
         let profiles = profileManager.profiles.map {
             DenProfileInfo(
-                id: $0.id.uuidString,
+                id: $0.id.rawValue.uuidString,
                 name: $0.name,
                 isActive: $0.id == activeProfileID,
                 hasWindow: profileManager.hasWindow(for: $0.id)
@@ -225,8 +225,8 @@ final class DenIPCService {
             boards: boards,
             desks: desks,
             profiles: profiles,
-            profile: DenSelectedProfileInfo(id: profile.id.uuidString, name: profile.name),
-            profileID: profile.id.uuidString,
+            profile: DenSelectedProfileInfo(id: profile.id.rawValue.uuidString, name: profile.name),
+            profileID: profile.id.rawValue.uuidString,
             activeDesk: activeDesk,
             focusedBoardID: desk.focusedBoardID?.rawValue.uuidString,
             drawerItemCount: store.state.drawerItems.count
@@ -298,14 +298,14 @@ final class DenIPCService {
             guard case .open(let profileID) = command,
                 let rawID = profileID ?? request.profileID,
                 let id = UUID(uuidString: rawID),
-                profileManager.profile(id: id) != nil
+                profileManager.profile(id: ProfileID(id)) != nil
             else { return nil }
             return (id.uuidString, nil)
         case .health:
             return nil
         }
         guard let profileID = profileManager.profileID(for: store) else { return nil }
-        return (profileID.uuidString, boardID?.rawValue.uuidString)
+        return (profileID.rawValue.uuidString, boardID?.rawValue.uuidString)
     }
 
     // MARK: - Sheet Commands
@@ -1308,7 +1308,7 @@ final class DenIPCService {
             let activeID = profileManager.activeProfileID()
             let profiles = profileManager.profiles.map { profile in
                 DenProfileInfo(
-                    id: profile.id.uuidString,
+                    id: profile.id.rawValue.uuidString,
                     name: profile.name,
                     isActive: profile.id == activeID,
                     hasWindow: profileManager.hasWindow(for: profile.id)
@@ -1323,7 +1323,7 @@ final class DenIPCService {
             guard let targetUUID = UUID(uuidString: targetIDString) else {
                 return .failure("Invalid profile ID: \(targetIDString)")
             }
-            guard let profile = profileManager.profile(id: targetUUID) else {
+            guard let profile = profileManager.profile(id: ProfileID(targetUUID)) else {
                 return .failure("Profile not found: \(targetIDString)")
             }
             let wasAlreadyOpen = profileManager.hasWindow(for: profile.id)

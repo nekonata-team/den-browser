@@ -1,3 +1,4 @@
+import DenDomain
 import Foundation
 import Testing
 import WebKit
@@ -8,8 +9,8 @@ import WebKit
 @Suite(.serialized)
 struct MV3WebExtensionHostTests {
     @Test func controllerConfigurationIsProfileScoped() {
-        let firstProfileID = UUID()
-        let secondProfileID = UUID()
+        let firstProfileID = ProfileID()
+        let secondProfileID = ProfileID()
         let first = MV3WebExtensionHost(
             profileID: firstProfileID,
             websiteDataStore: .nonPersistent(),
@@ -20,8 +21,8 @@ struct MV3WebExtensionHostTests {
             userContentController: WKUserContentController())
 
         #expect(first.controller !== second.controller)
-        #expect(first.controller.configuration.identifier == firstProfileID)
-        #expect(second.controller.configuration.identifier == secondProfileID)
+        #expect(first.controller.configuration.identifier == firstProfileID.rawValue)
+        #expect(second.controller.configuration.identifier == secondProfileID.rawValue)
         #expect(first.controller.configuration.isPersistent)
         #expect(second.controller.configuration.isPersistent)
 
@@ -32,7 +33,7 @@ struct MV3WebExtensionHostTests {
     @Test func privateDenUsesNonPersistentControllerConfiguration() {
         // Arrange
         let host = MV3WebExtensionHost(
-            profileID: UUID(),
+            profileID: ProfileID(),
             websiteDataStore: .nonPersistent(),
             userContentController: WKUserContentController(),
             isEphemeral: true)
@@ -48,7 +49,7 @@ struct MV3WebExtensionHostTests {
 
     @Test func registeringWebViewInAnotherWindowMovesItsTab() {
         let host = MV3WebExtensionHost(
-            profileID: UUID(),
+            profileID: ProfileID(),
             websiteDataStore: .nonPersistent(),
             userContentController: WKUserContentController())
         let webView = WKWebView(frame: .zero)

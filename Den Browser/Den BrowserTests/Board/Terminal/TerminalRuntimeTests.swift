@@ -137,7 +137,7 @@ struct TerminalRuntimeTests {
 
     @Test func terminalRuntimeConfiguresEnvironmentVariables() {
         let boardID = BoardID()
-        let profileID = UUID()
+        let profileID = ProfileID()
         let socketPath = "/tmp/den-custom.sock"
         let runtime = TerminalRuntime(
             workingDirectory: FileManager.default.homeDirectoryForCurrentUser.path,
@@ -156,7 +156,7 @@ struct TerminalRuntimeTests {
 
         let envVars = runtime.terminalView.configuration.envVars
         #expect(envVars["DEN_BOARD_ID"] == boardID.rawValue.uuidString)
-        #expect(envVars["DEN_PROFILE"] == profileID.uuidString)
+        #expect(envVars["DEN_PROFILE"] == profileID.rawValue.uuidString)
         #expect(envVars["DEN_SOCKET"] == socketPath)
         runtime.dispose()
     }

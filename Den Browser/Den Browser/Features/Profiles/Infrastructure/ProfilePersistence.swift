@@ -20,7 +20,7 @@ final class ProfilePersistence {
     private let directoryURL: URL
     private let isEphemeral: Bool
     private let quarantineFile: (URL, URL) throws -> Void
-    private var deferredSaves: [UUID: (id: UUID, task: Task<Void, Never>)] = [:]
+    private var deferredSaves: [ProfileID: (id: UUID, task: Task<Void, Never>)] = [:]
     private(set) var profileSaveCount = 0
 
     init(
@@ -37,11 +37,11 @@ final class ProfilePersistence {
         try FileManager.default.createDirectory(at: directoryURL, withIntermediateDirectories: true)
     }
 
-    func profileDocumentExists(for id: UUID) -> Bool {
+    func profileDocumentExists(for id: ProfileID) -> Bool {
         FileManager.default.fileExists(atPath: profileURL(for: id).path)
     }
 
-    func removeProfileDocument(for id: UUID) throws {
+    func removeProfileDocument(for id: ProfileID) throws {
         try FileManager.default.removeItem(at: profileURL(for: id))
     }
 
@@ -67,7 +67,7 @@ final class ProfilePersistence {
                     canRewriteIndex = false
                     issues.append("Multiple Profile documents use the same Profile ID; the first document was kept.")
                 }
-                var orderedIDs = Set<UUID>()
+                var orderedIDs = Set<ProfileID>()
                 profiles =
                     index.profileIDs.compactMap { profileID in
                         guard orderedIDs.insert(profileID).inserted else { return nil }
@@ -100,15 +100,15 @@ final class ProfilePersistence {
         try write(persisted, to: profileURL(for: persisted.profile.id))
     }
 
-    func saveIndex(profileIDs: [UUID]) throws {
+    func saveIndex(profileIDs: [ProfileID]) throws {
         guard !isEphemeral else { return }
         try write(ProfileIndex(profileIDs: profileIDs), to: directoryURL.appending(path: "profile-index.json"))
     }
 
-    var pendingDeferredSaveIDs: [UUID] { Array(deferredSaves.keys) }
+    var pendingDeferredSaveIDs: [ProfileID] { Array(deferredSaves.keys) }
 
     func scheduleDeferredSave(
-        for profileID: UUID,
+        for profileID: ProfileID,
         operation: @escaping () -> Bool
     ) {
         cancelPendingDeferredSave(for: profileID)
@@ -131,12 +131,12 @@ final class ProfilePersistence {
         deferredSaves[profileID] = (id, task)
     }
 
-    func cancelPendingDeferredSave(for profileID: UUID) {
+    func cancelPendingDeferredSave(for profileID: ProfileID) {
         deferredSaves.removeValue(forKey: profileID)?.task.cancel()
     }
 
-    private func profileURL(for id: UUID) -> URL {
-        directoryURL.appending(path: "\(id.uuidString.lowercased()).json")
+    private func profileURL(for id: ProfileID) -> URL {
+        directoryURL.appending(path: "\(id.rawValue.uuidString.lowercased()).json")
     }
 
     nonisolated static func defaultDirectoryURL() -> URL {
@@ -167,7 +167,7 @@ final class ProfilePersistence {
             switch decodePersistedProfile(from: url) {
             case .success(let profile):
                 let filename = url.deletingPathExtension().lastPathComponent
-                guard profile.profile.id.uuidString.caseInsensitiveCompare(filename) == .orderedSame else {
+                guard profile.profile.id.rawValue.uuidString.caseInsensitiveCompare(filename) == .orderedSame else {
                     if !quarantine(url, reason: "Profile filename and identity do not match", issues: &issues) {
                         canRewriteIndex = false
                     }
@@ -189,7 +189,7 @@ final class ProfilePersistence {
                 }
             }
         }
-        return profiles.sorted { $0.profile.id.uuidString < $1.profile.id.uuidString }
+        return profiles.sorted { $0.profile.id.rawValue.uuidString < $1.profile.id.rawValue.uuidString }
     }
 
     private func write<T: Encodable>(_ value: T, to url: URL) throws {

@@ -62,7 +62,7 @@ final class DenStore {
     let preferences: AppPreferences
     let pasteboard: NSPasteboard
     let websiteDataStore: WKWebsiteDataStore
-    let profileID: UUID?
+    let profileID: ProfileID?
     let ipcSocketPath: String
     var zellijClient: ZellijClient {
         ZellijClient(executablePath: preferences.zellijPath)
@@ -166,7 +166,7 @@ final class DenStore {
         onSave: ((DenState) -> Bool)? = nil,
         onDeskPresetsSave: (([PersonalDeskPreset]) -> Bool)? = nil,
         onRecentItemsSave: (([RecentItem]) -> Bool)? = nil,
-        profileID: UUID? = nil,
+        profileID: ProfileID? = nil,
         ipcSocketPath: String = DenSocketPath.resolve()
     ) {
         let normalizedState = Self.normalizedPersistedState(state)
@@ -212,7 +212,7 @@ final class DenStore {
         onDeskPresentationRequest: @escaping (DeskID) -> Bool,
         onWillResetDen: @escaping () -> Void,
         terminalCommandRunner: any TerminalCommandRunning = SubprocessCommandRunner(),
-        profileID: UUID? = nil,
+        profileID: ProfileID? = nil,
         ipcSocketPath: String = DenSocketPath.resolve()
     ) {
         self.storage = storage

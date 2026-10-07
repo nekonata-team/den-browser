@@ -323,9 +323,10 @@ struct DenIPCServiceTests {
         #expect(response.isOk)
         let profiles = try #require(response.profiles)
         #expect(profiles.count == 2)
-        let personal = try #require(profiles.first(where: { $0.id == manager.personalProfileID.uuidString }))
+        let personal = try #require(
+            profiles.first(where: { $0.id == manager.personalProfileID.rawValue.uuidString }))
         #expect(personal.hasWindow == true)
-        let work = try #require(profiles.first(where: { $0.id == profile2.id.uuidString }))
+        let work = try #require(profiles.first(where: { $0.id == profile2.id.rawValue.uuidString }))
         #expect(work.name == "Work")
         #expect(work.hasWindow == false)
     }
@@ -352,7 +353,7 @@ struct DenIPCServiceTests {
 
         // Act
         let response = await service.handleRequest(
-            DenIPCRequest(command: .desk(.list), profileID: profile2.id.uuidString))
+            DenIPCRequest(command: .desk(.list), profileID: profile2.id.rawValue.uuidString))
 
         // Assert
         #expect(response.isOk)
@@ -375,7 +376,7 @@ struct DenIPCServiceTests {
             removeDataStore: { _ in },
             websiteDataStore: { _ in .nonPersistent() })
         let profile2 = try #require(manager.createProfile(name: "Work", color: .blue))
-        var openedProfileID: UUID?
+        var openedProfileID: ProfileID?
         manager.openWindowAction = { route in
             openedProfileID = route.profileID
         }
@@ -384,7 +385,7 @@ struct DenIPCServiceTests {
         // Act
         let response = await service.handleRequest(
             DenIPCRequest(
-                command: .profile(.open(profileID: profile2.id.uuidString))
+                command: .profile(.open(profileID: profile2.id.rawValue.uuidString))
             )
         )
 
@@ -417,7 +418,7 @@ struct DenIPCServiceTests {
         // Act
         let response = await service.handleRequest(
             DenIPCRequest(
-                command: .profile(.open(profileID: manager.personalProfileID.uuidString))
+                command: .profile(.open(profileID: manager.personalProfileID.rawValue.uuidString))
             )
         )
 

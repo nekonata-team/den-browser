@@ -60,7 +60,7 @@ struct Den_BrowserApp: App {
             }
         } defaultValue: {
             ProfileWindowRoute(
-                windowID: profileManager.personalProfileID,
+                windowID: profileManager.personalProfileID.rawValue,
                 profileID: profileManager.personalProfileID)
         }
         .handlesExternalEvents(matching: ["*"])
@@ -397,7 +397,7 @@ private final class DenApplicationDelegate: NSObject, NSApplicationDelegate {
                 action: #selector(openProfile(_:)),
                 keyEquivalent: "")
             item.target = self
-            item.representedObject = profile.id.uuidString
+            item.representedObject = profile.id.rawValue.uuidString
             menu.addItem(item)
         }
         return menu
@@ -406,7 +406,7 @@ private final class DenApplicationDelegate: NSObject, NSApplicationDelegate {
     @objc private func openProfile(_ sender: NSMenuItem) {
         guard
             let rawProfileID = sender.representedObject as? String,
-            let profileID = UUID(uuidString: rawProfileID)
+            let profileID = UUID(uuidString: rawProfileID).map(ProfileID.init)
         else { return }
         _ = profileManager?.openWindow(for: profileID)
     }

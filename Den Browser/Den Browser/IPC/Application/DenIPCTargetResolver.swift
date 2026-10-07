@@ -84,18 +84,19 @@ enum DenIPCTargetResolver {
             return .failure(.noActiveDesk)
         }
 
-        let scopedProfileID: UUID?
+        let scopedProfileID: ProfileID?
         if let profileIDString = request.profileID {
             guard let profileUUID = UUID(uuidString: profileIDString) else {
                 return .failure(.invalidProfileID(profileIDString))
             }
-            guard profileManager.profile(id: profileUUID) != nil else {
+            let profileID = ProfileID(profileUUID)
+            guard profileManager.profile(id: profileID) != nil else {
                 return .failure(.profileNotFound(profileIDString))
             }
-            guard profileManager.hasWindow(for: profileUUID) else {
+            guard profileManager.hasWindow(for: profileID) else {
                 return .failure(.profileHasNoActiveWindow(profileIDString))
             }
-            scopedProfileID = profileUUID
+            scopedProfileID = profileID
         } else {
             scopedProfileID = nil
         }
@@ -209,18 +210,19 @@ enum DenIPCTargetResolver {
         }
 
         // Profile scoping check if specified
-        let scopedProfileID: UUID?
+        let scopedProfileID: ProfileID?
         if let profileIDString = request.profileID {
             guard let profileUUID = UUID(uuidString: profileIDString) else {
                 return .failure(.invalidProfileID(profileIDString))
             }
-            guard profileManager.profile(id: profileUUID) != nil else {
+            let profileID = ProfileID(profileUUID)
+            guard profileManager.profile(id: profileID) != nil else {
                 return .failure(.profileNotFound(profileIDString))
             }
-            guard profileManager.hasWindow(for: profileUUID) else {
+            guard profileManager.hasWindow(for: profileID) else {
                 return .failure(.profileHasNoActiveWindow(profileIDString))
             }
-            scopedProfileID = profileUUID
+            scopedProfileID = profileID
         } else {
             scopedProfileID = nil
         }

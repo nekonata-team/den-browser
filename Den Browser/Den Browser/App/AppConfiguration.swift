@@ -106,7 +106,7 @@ struct AppConfiguration {
     private static func privateDenProfile() -> PersistedProfile {
         PersistedProfile(
             profile: ProfileState(
-                id: UUID(),
+                id: ProfileID(),
                 name: "Private Den",
                 color: .gray,
                 webProfileStore: .default),

@@ -29,7 +29,7 @@ struct AppConfigurationTests {
     @Test func initialProfileCanBeLoadedFromSeedFile() throws {
         let expected = PersistedProfile(
             profile: ProfileState(
-                id: UUID(), name: "Seed", color: .blue, webProfileStore: .default),
+                id: ProfileID(), name: "Seed", color: .blue, webProfileStore: .default),
             den: .sample)
         let url = FileManager.default.temporaryDirectory
             .appending(path: "DenBrowserInitialProfile-\(UUID().uuidString).json")

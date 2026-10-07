@@ -244,7 +244,7 @@ struct DenStoreBoardTests {
             onSave: nil)
         let runtime = store.terminalRuntime(for: terminal)
         let host = MV3WebExtensionHost(
-            profileID: UUID(),
+            profileID: ProfileID(),
             websiteDataStore: .nonPersistent(),
             userContentController: WKUserContentController())
         let window = host.window(for: UUID())

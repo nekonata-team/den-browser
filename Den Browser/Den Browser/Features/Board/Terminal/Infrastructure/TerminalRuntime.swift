@@ -50,7 +50,7 @@ final class TerminalRuntime: NSObject, ObservableObject {
         workingDirectory: String,
         command: String? = nil,
         boardID: BoardID? = nil,
-        profileID: UUID? = nil,
+        profileID: ProfileID? = nil,
         socketPath: String = DenSocketPath.resolve(),
         events: Events
     ) {
@@ -71,7 +71,7 @@ final class TerminalRuntime: NSObject, ObservableObject {
             envVars["DEN_SOCKET"] = socketPath
         }
         if let profileID {
-            envVars["DEN_PROFILE"] = profileID.uuidString
+            envVars["DEN_PROFILE"] = profileID.rawValue.uuidString
         }
 
         terminalView.configuration = TerminalSurfaceOptions(
