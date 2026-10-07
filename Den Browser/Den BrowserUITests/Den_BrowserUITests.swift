@@ -153,6 +153,29 @@ final class Den_BrowserUITests: XCTestCase, BDD {
         }
     }
 
+    // Protects keyboard focus across the SwiftUI panel and AppKit key-view boundary.
+    @MainActor
+    func testOpenBoardPanelKeepsTextInputFocusedWhenTabIsPressed() throws {
+        let app = launchApp(boardCount: .one)
+        let openBoardInput = app.textFields["open-board-input"].firstMatch
+
+        given("Open Board is presented in Den Mode") {
+            enterDenMode(in: app)
+            app.typeKey("n", modifierFlags: [])
+            XCTAssertTrue(openBoardInput.waitForExistence(timeout: 5))
+            openBoardInput.click()
+        }
+
+        when("pressing Tab and typing into Open Board") {
+            app.typeKey(.tab, modifierFlags: [])
+            app.typeText("after-tab")
+        }
+
+        then("Open Board keeps focus and receives the text") {
+            XCTAssertEqual(openBoardInput.value as? String, "after-tab")
+        }
+    }
+
     // Protects the AppKit responder handoff between a WebKit Sheet and its Inspection Board.
     // A unit test cannot observe which mounted native surface receives real keyboard input.
     @MainActor

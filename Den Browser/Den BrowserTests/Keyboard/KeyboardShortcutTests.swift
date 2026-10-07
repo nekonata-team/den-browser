@@ -976,6 +976,29 @@ struct KeyboardShortcutTests {
                 == .forward(.temporaryTextInput))
     }
 
+    @Test func textInputPanelConsumesTabTraversal() throws {
+        let store = try makeStore(boards: [board("First")])
+        let viewModel = DenViewModel(store: store)
+        viewModel.showOpenBoardPanel()
+        let tab = try keyEvent(
+            characters: "\t",
+            charactersIgnoringModifiers: "\t",
+            keyCode: 48)
+        let shiftTab = try keyEvent(
+            characters: "\t",
+            charactersIgnoringModifiers: "\t",
+            modifiers: [.shift],
+            keyCode: 48)
+
+        #expect(viewModel.temporaryContext == .openBoard)
+        #expect(
+            KeyboardController.decision(for: tab, store: store, viewModel: viewModel)
+                == .consume(.exclusiveContext))
+        #expect(
+            KeyboardController.decision(for: shiftTab, store: store, viewModel: viewModel)
+                == .consume(.exclusiveContext))
+    }
+
     @Test func drawerFilterPassesShiftedCharactersToTextInput() throws {
         let store = try makeStore(boards: [board("First")])
         let viewModel = DenViewModel(store: store)

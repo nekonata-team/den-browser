@@ -46,12 +46,24 @@ struct DenView<Header: View>: View {
                 NavigationSplitView(columnVisibility: boardRailVisibility) {
                     BoardRail(profileColor: profileColor)
                         .navigationSplitViewColumnWidth(min: 192, ideal: 208, max: 224)
+                        .accessibilityHidden(viewModel.temporaryContext != nil)
+                        .overlay {
+                            if viewModel.temporaryContext != nil {
+                                panelDismissBlocker
+                            }
+                        }
                 } detail: {
                     VStack(spacing: 0) {
                         if shouldShowHeader {
                             header
                                 .frame(maxWidth: .infinity)
                                 .frame(height: DenLayout.denHeaderHeight)
+                                .accessibilityHidden(viewModel.temporaryContext != nil)
+                                .overlay {
+                                    if viewModel.temporaryContext != nil {
+                                        panelDismissBlocker
+                                    }
+                                }
                         }
 
                         GeometryReader { detailGeometry in
@@ -166,6 +178,12 @@ struct DenView<Header: View>: View {
                     .zIndex(DenOverlayLayer.deskFilter)
             }
 
+            if viewModel.temporaryContext != nil, viewModel.temporaryContext != .drawer {
+                panelDismissBlocker
+                    .frame(width: size.width, height: size.height)
+                    .zIndex(DenOverlayLayer.activePanel)
+            }
+
             activePanel(
                 newBoardWidth: newBoardWidth(in: size),
                 boardHeight: DenLayout.boardHeight(for: size, shouldShowHeader: false)
@@ -278,14 +296,70 @@ struct DenView<Header: View>: View {
     }
 
     private func panelOverlay<Content: View>(_ content: Content) -> some View {
-        content
-            .padding(
-                .top,
-                shouldShowHeader
-                    ? DenLayout.panelGap
-                    : DenLayout.outerInset
-            )
-            .transition(DenMotion.transition(reduceMotion: shouldReduceMotion, scale: 0.96))
+        VStack(spacing: 0) {
+            content
+                .padding(
+                    .top,
+                    shouldShowHeader
+                        ? DenLayout.panelGap
+                        : DenLayout.outerInset
+                )
+                .transition(DenMotion.transition(reduceMotion: shouldReduceMotion, scale: 0.96))
+
+            Spacer(minLength: 0)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+    }
+
+    private var panelDismissBlocker: some View {
+        Color.clear
+            .contentShape(Rectangle())
+            .onTapGesture(perform: dismissTemporaryPresentation)
+            .accessibilityHidden(true)
+    }
+
+    private func dismissTemporaryPresentation() {
+        switch viewModel.temporaryContext {
+        case .essentialsPrefix:
+            viewModel.exitEssentialsPrefix()
+        case .openBoard:
+            viewModel.hideOpenBoardPanel()
+            store.restoreFocusedFirstResponder()
+        case .zmxSessions:
+            viewModel.hideZmxSessions()
+        case .zmxDuplication:
+            viewModel.hideZmxDuplicationPanel()
+            store.restoreFocusedFirstResponder()
+        case .editBoardLink:
+            viewModel.hideEditBoardLinkPanel()
+            store.restoreFocusedFirstResponder()
+        case .newDesk, .replaceDesk:
+            viewModel.hideNewDeskPanel()
+        case .deskPresetManagement:
+            viewModel.hideNewDeskPanel(exitsDenMode: true)
+        case .overview:
+            viewModel.hideOverview()
+        case .boardActivity:
+            viewModel.hideBoardActivity()
+        case .keyboardShortcuts:
+            viewModel.hideKeyboardShortcuts()
+        case .boardWidth:
+            viewModel.hideBoardWidthPanel()
+        case .saveDeskPreset:
+            viewModel.hideSaveDeskPresetPanel()
+        case .renameBoard:
+            viewModel.hideRenameBoardPanel()
+        case .renameDesk:
+            viewModel.hideRenameDeskPanel()
+        case .drawer:
+            viewModel.closeDrawer()
+        case .saveEssential:
+            viewModel.hideSaveEssentialPanel()
+        case .profilePicker:
+            viewModel.setTemporaryContext(nil)
+        case nil:
+            break
+        }
     }
 
     private var newDeskPanel: some View {
