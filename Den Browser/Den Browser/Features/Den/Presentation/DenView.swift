@@ -49,7 +49,7 @@ struct DenView<Header: View>: View {
                         .accessibilityHidden(viewModel.temporaryContext != nil)
                         .overlay {
                             if viewModel.temporaryContext != nil {
-                                panelDismissBlocker
+                                dismissBlocker(onDismiss: dismissTemporaryPresentation)
                             }
                         }
                 } detail: {
@@ -61,7 +61,7 @@ struct DenView<Header: View>: View {
                                 .accessibilityHidden(viewModel.temporaryContext != nil)
                                 .overlay {
                                     if viewModel.temporaryContext != nil {
-                                        panelDismissBlocker
+                                        dismissBlocker(onDismiss: dismissTemporaryPresentation)
                                     }
                                 }
                         }
@@ -179,7 +179,7 @@ struct DenView<Header: View>: View {
             }
 
             if viewModel.temporaryContext != nil, viewModel.temporaryContext != .drawer {
-                panelDismissBlocker
+                dismissBlocker(onDismiss: dismissTemporaryPresentation)
                     .frame(width: size.width, height: size.height)
                     .zIndex(DenOverlayLayer.activePanel)
             }
@@ -311,10 +311,10 @@ struct DenView<Header: View>: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
     }
 
-    private var panelDismissBlocker: some View {
+    private func dismissBlocker(onDismiss: @escaping () -> Void) -> some View {
         Color.clear
             .contentShape(Rectangle())
-            .onTapGesture(perform: dismissTemporaryPresentation)
+            .onTapGesture(perform: onDismiss)
             .accessibilityHidden(true)
     }
 
@@ -394,11 +394,7 @@ struct DenView<Header: View>: View {
     @ViewBuilder
     private var notificationsOverlay: some View {
         if viewModel.isNotificationListPresented {
-            Rectangle()
-                .fill(.clear)
-                .contentShape(Rectangle())
-                .onTapGesture { viewModel.closeNotificationList() }
-                .accessibilityHidden(true)
+            dismissBlocker(onDismiss: viewModel.closeNotificationList)
                 .zIndex(DenOverlayLayer.notificationDismissArea)
 
             NotificationListView(
@@ -423,12 +419,7 @@ struct DenView<Header: View>: View {
 
         ZStack(alignment: isBottom ? .bottom : .center) {
             if viewModel.isDrawerOpen {
-                Color.clear
-                    .contentShape(Rectangle())
-                    .onTapGesture {
-                        viewModel.closeDrawer()
-                    }
-                    .accessibilityHidden(true)
+                dismissBlocker(onDismiss: viewModel.closeDrawer)
                     .transition(.opacity)
 
                 DrawerView(
