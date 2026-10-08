@@ -1,3 +1,4 @@
+import DenApplication
 import DenDomain
 import Foundation
 
@@ -15,7 +16,7 @@ extension DenStore {
         }
         if selectsItem { releaseDrawerPreview() }
         let item = DrawerItem(url: url, title: title)
-        state.drawerItems.insert(item, at: 0)
+        storage.state.drawerItems.insert(item, at: 0)
         onWindowEffect?(.drawerItemKept(item.id, opensDrawer: opensDrawer, selectsItem: selectsItem))
         save()
         reportFeedback("Kept in Drawer.", severity: .success)
@@ -52,7 +53,7 @@ extension DenStore {
         if recordsDiscardHistory {
             rememberDiscardedDrawerItems([item])
         }
-        state.drawerItems.remove(at: index)
+        storage.state.drawerItems.remove(at: index)
         for presentation in storage.drawerPresentations.allObjects {
             if presentation.drawerPreviewRuntime?.id == itemID { presentation.releaseDrawerPreview() }
             presentation.onWindowEffect?(
@@ -69,17 +70,17 @@ extension DenStore {
         }
 
         releaseDrawerPreview()
-        state.drawerItems.insert(item, at: 0)
-        recentlyDiscardedDrawerItems.removeFirst()
+        storage.state.drawerItems.insert(item, at: 0)
+        storage.recentlyDiscardedDrawerItems.removeFirst()
         onWindowEffect?(.drawerItemRestored(item.id))
         save()
     }
 
     private func rememberDiscardedDrawerItems(_ items: [DrawerItem]) {
-        recentlyDiscardedDrawerItems.insert(contentsOf: items, at: 0)
+        storage.recentlyDiscardedDrawerItems.insert(contentsOf: items, at: 0)
         let overflow = recentlyDiscardedDrawerItems.count - Self.maximumRecentlyDiscardedDrawerItemCount
         if overflow > 0 {
-            recentlyDiscardedDrawerItems.removeLast(overflow)
+            storage.recentlyDiscardedDrawerItems.removeLast(overflow)
         }
     }
 
@@ -175,11 +176,11 @@ extension DenStore {
         guard let index = state.drawerItems.firstIndex(where: { $0.id == itemID }) else { return }
         var changed = false
         if let url, WebURLPolicy.isSupported(url), state.drawerItems[index].url != url {
-            state.drawerItems[index].url = url
+            storage.state.drawerItems[index].url = url
             changed = true
         }
         if let title, !title.isEmpty, state.drawerItems[index].title != title {
-            state.drawerItems[index].title = title
+            storage.state.drawerItems[index].title = title
             changed = true
         }
         if changed {
@@ -189,7 +190,7 @@ extension DenStore {
 
     func clearDrawer() {
         rememberDiscardedDrawerItems(state.drawerItems)
-        state.drawerItems = []
+        storage.state.drawerItems = []
         for presentation in storage.drawerPresentations.allObjects {
             presentation.releaseDrawerPreview()
             presentation.onWindowEffect?(.drawerCleared)

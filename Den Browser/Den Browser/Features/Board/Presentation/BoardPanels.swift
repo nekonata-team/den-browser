@@ -1,5 +1,6 @@
 import DenDesign
 import DenDomain
+import DenPresentation
 import SFSafeSymbols
 import SwiftUI
 
@@ -7,8 +8,8 @@ struct OpenBoardPanel: View {
     private static let maximumVisibleRecentItemCount = 5
 
     @Environment(DenStore.self) private var store
-    @Environment(DenViewModel.self) private var viewModel
-    @Environment(OpenBoardViewModel.self) private var openBoard
+    @Environment(DenWindowModel.self) private var windowModel
+    @Environment(OpenBoardModel.self) private var openBoard
     @FocusState private var isFocused: Bool
     @State private var selectedRecentItemID: RecentItem?
 
@@ -131,7 +132,7 @@ struct OpenBoardPanel: View {
                                 "Essential: \(matchedEssential.name), key \(matchedEssential.displayKey)")
                         } else {
                             Button {
-                                viewModel.showSaveEssentialPanel(for: item)
+                                windowModel.showSaveEssentialPanel(for: item)
                             } label: {
                                 Image(systemSymbol: .sparkles)
                                     .font(.caption)
@@ -157,7 +158,7 @@ struct OpenBoardPanel: View {
                             .disabled(true)
                         } else {
                             Button {
-                                viewModel.showSaveEssentialPanel(for: item)
+                                windowModel.showSaveEssentialPanel(for: item)
                             } label: {
                                 Label("Save as Essential…", systemSymbol: .sparkles)
                             }
@@ -186,23 +187,23 @@ struct OpenBoardPanel: View {
             }
         }
         .onExitCommand {
-            viewModel.hideOpenBoardPanel()
+            windowModel.hideOpenBoardPanel()
             store.restoreFocusedFirstResponder()
         }
     }
 
     private func submitBoard() {
-        viewModel.submitOpenBoard(preferredWidth: newBoardWidth)
+        windowModel.submitOpenBoard(preferredWidth: newBoardWidth)
         finishOpeningBoardIfNeeded()
     }
 
     private func openRecent(_ item: RecentItem) {
-        viewModel.openRecentItem(item, preferredWidth: newBoardWidth)
+        windowModel.openRecentItem(item, preferredWidth: newBoardWidth)
         finishOpeningBoardIfNeeded()
     }
 
     private func finishOpeningBoardIfNeeded() {
-        guard !viewModel.isOpenBoardPanelPresented else { return }
+        guard !windowModel.isOpenBoardPanelPresented else { return }
         openBoard.clearDraft()
     }
 
@@ -213,7 +214,7 @@ struct OpenBoardPanel: View {
     }
 
     private func moveRecentSelection(by offset: Int) {
-        selectedRecentItemID = DenSelectionNavigation.next(
+        selectedRecentItemID = SelectionNavigation.next(
             selectedRecentItemID,
             among: filteredRecentItems.map(\.id),
             by: offset
@@ -223,7 +224,7 @@ struct OpenBoardPanel: View {
 
 struct EditBoardLinkPanel: View {
     @Environment(DenStore.self) private var store
-    @Environment(DenViewModel.self) private var viewModel
+    @Environment(DenWindowModel.self) private var windowModel
 
     @State private var text = ""
     @FocusState private var isFocused: Bool
@@ -259,7 +260,7 @@ struct EditBoardLinkPanel: View {
             DispatchQueue.main.async { isFocused = true }
         }
         .onExitCommand {
-            viewModel.hideEditBoardLinkPanel()
+            windowModel.hideEditBoardLinkPanel()
             store.restoreFocusedFirstResponder()
         }
     }
@@ -273,12 +274,12 @@ struct EditBoardLinkPanel: View {
 
 struct ZmxDuplicationPanel: View {
     @Environment(DenStore.self) private var store
-    @Environment(DenViewModel.self) private var viewModel
+    @Environment(DenWindowModel.self) private var windowModel
     @State private var text = ""
     @FocusState private var isFocused: Bool
 
     private var rootSessionName: String {
-        viewModel.zmxDuplicationRootSessionName
+        windowModel.zmxDuplicationRootSessionName
             ?? store.focusedBoard?.zmxSessionName
             ?? "zmx"
     }
@@ -320,7 +321,7 @@ struct ZmxDuplicationPanel: View {
             DispatchQueue.main.async { isFocused = true }
         }
         .onExitCommand {
-            viewModel.hideZmxDuplicationPanel()
+            windowModel.hideZmxDuplicationPanel()
             text = ""
             store.restoreFocusedFirstResponder()
         }
@@ -335,7 +336,7 @@ struct ZmxDuplicationPanel: View {
 
 struct RenameBoardPanel: View {
     @Environment(DenStore.self) private var store
-    @Environment(DenViewModel.self) private var viewModel
+    @Environment(DenWindowModel.self) private var windowModel
     @State private var text = ""
     @FocusState private var isFocused: Bool
 
@@ -363,26 +364,26 @@ struct RenameBoardPanel: View {
             if let board = store.focusedBoard { text = board.customLabel ?? board.label } else { text = "" }
             DispatchQueue.main.async { isFocused = true }
         }
-        .onExitCommand { viewModel.hideRenameBoardPanel() }
+        .onExitCommand { windowModel.hideRenameBoardPanel() }
     }
 }
 
 struct BoardWidthPanel: View {
     @Environment(DenStore.self) private var store
-    @Environment(DenViewModel.self) private var viewModel
+    @Environment(DenWindowModel.self) private var windowModel
 
     var body: some View {
         VStack(alignment: .leading, spacing: DenPanelLayout.contentSpacing) {
             DenPanelHeader(icon: Image(systemSymbol: .arrowLeftAndRight)) {
                 Text("Resize Boards to Fit").font(.headline)
                 Spacer()
-                DenCloseButton(label: "Close Board Width", action: viewModel.hideBoardWidthPanel)
+                DenCloseButton(label: "Close Board Width", action: windowModel.hideBoardWidthPanel)
             }
             LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 3), spacing: 8) {
                 ForEach(1...9, id: \.self) { count in
-                    let width = viewModel.boardWidth(toFit: count)
+                    let width = windowModel.boardWidth(toFit: count)
                     Button {
-                        viewModel.resizeFocusedDeskBoards(toFit: count)
+                        windowModel.resizeFocusedDeskBoards(toFit: count)
                     } label: {
                         VStack(spacing: 2) {
                             Text(count == 1 ? "1 Board" : "\(count) Boards")
@@ -392,24 +393,24 @@ struct BoardWidthPanel: View {
                         .frame(maxWidth: .infinity)
                     }
                     .buttonStyle(.glass)
-                    .disabled(!viewModel.canResizeFocusedDeskBoards(toFit: count))
+                    .disabled(!windowModel.canResizeFocusedDeskBoards(toFit: count))
                     .accessibilityHint("Applies to every Board in the Focused Desk")
                 }
             }
-            if let message = viewModel.boardWidthPanelMessage {
+            if let message = windowModel.boardWidthPanelMessage {
                 DenValidationMessage(message)
             } else {
                 DenPanelHint("Changes every Board in the Focused Desk. Press - / = or 1–9, then Escape.")
             }
         }
         .denPanel(width: DenPanelLayout.compactWidth)
-        .onExitCommand { viewModel.hideBoardWidthPanel() }
+        .onExitCommand { windowModel.hideBoardWidthPanel() }
     }
 }
 
 struct SaveEssentialPanel: View {
     @Environment(DenStore.self) private var store
-    @Environment(DenViewModel.self) private var viewModel
+    @Environment(DenWindowModel.self) private var windowModel
 
     @State private var name = ""
     @State private var key = ""
@@ -493,7 +494,7 @@ struct SaveEssentialPanel: View {
         }
         .denPanel(width: DenPanelLayout.narrowWidth)
         .onAppear {
-            if let draft = viewModel.saveEssentialDraft {
+            if let draft = windowModel.saveEssentialDraft {
                 name = draft.name
                 key = draft.key
                 input = draft.input
@@ -508,7 +509,7 @@ struct SaveEssentialPanel: View {
                 }
             }
         }
-        .onExitCommand { viewModel.hideSaveEssentialPanel() }
+        .onExitCommand { windowModel.hideSaveEssentialPanel() }
     }
 
     private var usedKeysString: String {
@@ -532,7 +533,7 @@ struct SaveEssentialPanel: View {
                 }
                 return
             }
-            if !viewModel.saveEssential(name: name, key: key, input: input) {
+            if !windowModel.saveEssential(name: name, key: key, input: input) {
                 errorMessage = "Could not save Essential."
             }
         }

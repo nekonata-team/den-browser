@@ -1,5 +1,6 @@
 import AppKit
 import DenDomain
+import DenPresentation
 import Foundation
 import Testing
 
@@ -12,11 +13,11 @@ struct DenStoreDeskPresetTests {
     @Test func selectionNavigationWrapsAndStartsAtTheDirectionalEdge() {
         let values = ["first", "middle", "last"]
 
-        #expect(DenSelectionNavigation.next("last", among: values, by: 1) == "first")
-        #expect(DenSelectionNavigation.next("first", among: values, by: -1) == "last")
-        #expect(DenSelectionNavigation.next(nil, among: values, by: 1) == "first")
-        #expect(DenSelectionNavigation.next(nil, among: values, by: -1) == "last")
-        #expect(DenSelectionNavigation.next(nil, among: [String](), by: 1) == nil)
+        #expect(SelectionNavigation.next("last", among: values, by: 1) == "first")
+        #expect(SelectionNavigation.next("first", among: values, by: -1) == "last")
+        #expect(SelectionNavigation.next(nil, among: values, by: 1) == "first")
+        #expect(SelectionNavigation.next(nil, among: values, by: -1) == "last")
+        #expect(SelectionNavigation.next(nil, among: [String](), by: 1) == nil)
     }
 
     @Test func deskPresetSearchRanksFuzzyLabelsBeforeBoardAndHostMatches() throws {
@@ -127,17 +128,18 @@ struct DenStoreDeskPresetTests {
         let second = board("Notes", width: 760, url: "")
         let source = desk("Morning", boards: [first, inspection, second], focusedBoardID: inspection.id)
         let store = DenStore(state: DenState(desks: [source], focusedDeskID: source.id))
-        let viewModel = DenViewModel(store: store)
-        viewModel.connect()
-        defer { viewModel.disconnect() }
-        viewModel.isDenMode = true
+        let composition = DenWindowComposition(store: store)
+        let windowModel = composition.model
+        composition.connect()
+        defer { composition.disconnect() }
+        windowModel.isDenMode = true
 
         // Act
         let saveResult = store.saveFocusedDeskAsPreset(label: "  Morning  ")
 
         // Assert - preset captured
         #expect(saveResult == .created)
-        #expect(!viewModel.isDenMode)
+        #expect(!windowModel.isDenMode)
         let preset = try #require(store.deskPresets.first)
         #expect(preset.label == "Morning")
         #expect(preset.boards.map(\.label) == ["Mail", "Inspection Board", "Notes"])
@@ -175,13 +177,14 @@ struct DenStoreDeskPresetTests {
         let store = DenStore(
             state: DenState(desks: [oldDesk], focusedDeskID: oldDesk.id),
             deskPresets: [preset])
-        let viewModel = DenViewModel(store: store)
-        viewModel.connect()
-        defer { viewModel.disconnect() }
+        let composition = DenWindowComposition(store: store)
+        let windowModel = composition.model
+        composition.connect()
+        defer { composition.disconnect() }
 
         // Act
         let result = store.replaceFocusedDesk(label: "Research Copy", personalPresetID: preset.id)
-        viewModel.confirmDeskReplacement()
+        windowModel.confirmDeskReplacement()
 
         // Assert
         #expect(result == .confirmationPending)
@@ -283,21 +286,22 @@ struct DenStoreDeskPresetTests {
         // Arrange
         let source = desk("Desk", boards: [board("First")])
         let store = DenStore(state: DenState(desks: [source], focusedDeskID: source.id))
-        let viewModel = DenViewModel(store: store)
-        viewModel.connect()
-        defer { viewModel.disconnect() }
+        let composition = DenWindowComposition(store: store)
+        let windowModel = composition.model
+        composition.connect()
+        defer { composition.disconnect() }
         #expect(store.saveFocusedDeskAsPreset(label: "Routine") == .created)
         let routineID = try #require(store.deskPresets.first?.id)
-        store.state.desks[0].boards[0].width = 900
-        viewModel.isDenMode = true
+        store.storage.state.desks[0].boards[0].width = 900
+        windowModel.isDenMode = true
 
         // Act
         let pending = store.saveFocusedDeskAsPreset(label: " routine ")
         #expect(pending == .replacementPending)
-        viewModel.confirmDeskPresetReplacement()
+        windowModel.confirmDeskPresetReplacement()
 
         // Assert
-        #expect(!viewModel.isDenMode)
+        #expect(!windowModel.isDenMode)
         #expect(store.deskPresets.first?.id == routineID)
         #expect(store.deskPresets.first?.boards[0].width == 900)
     }
@@ -309,13 +313,14 @@ struct DenStoreDeskPresetTests {
         #expect(store.saveFocusedDeskAsPreset(label: "Routine") == .created)
         #expect(store.saveFocusedDeskAsPreset(label: "Other") == .created)
         let routineID = try #require(store.deskPresets.last?.id)
-        let viewModel = DenViewModel(store: store)
-        viewModel.connect()
-        defer { viewModel.disconnect() }
+        let composition = DenWindowComposition(store: store)
+        let windowModel = composition.model
+        composition.connect()
+        defer { composition.disconnect() }
 
         // Act
         store.requestDeskPresetDeletion(routineID)
-        viewModel.confirmDeskPresetDeletion()
+        windowModel.confirmDeskPresetDeletion()
 
         // Assert
         #expect(store.deskPresets.map(\.label) == ["Other"])
@@ -351,18 +356,19 @@ struct DenStoreDeskPresetTests {
         // Arrange
         let source = desk("Desk", boards: [board("Board")])
         let store = DenStore(state: DenState(desks: [source], focusedDeskID: source.id))
-        let viewModel = DenViewModel(store: store)
-        viewModel.connect()
-        defer { viewModel.disconnect() }
-        viewModel.isDenMode = true
-        viewModel.showDeskPresetManagement()
+        let composition = DenWindowComposition(store: store)
+        let windowModel = composition.model
+        composition.connect()
+        defer { composition.disconnect() }
+        windowModel.isDenMode = true
+        windowModel.showDeskPresetManagement()
 
         // Act
-        viewModel.hideNewDeskPanel(exitsDenMode: true)
+        windowModel.hideNewDeskPanel(exitsDenMode: true)
 
         // Assert
-        #expect(viewModel.temporaryContext == nil)
-        #expect(!viewModel.isDenMode)
+        #expect(windowModel.temporaryContext == nil)
+        #expect(!windowModel.isDenMode)
     }
 
     @Test func emptyDeskCannotBecomePersonalPreset() {
@@ -383,12 +389,12 @@ struct DenStoreDeskPresetTests {
         // Arrange
         let empty = desk("Empty")
 
-        withTestViewModel(desks: [empty]) { viewModel in
+        withTestWindowModel(desks: [empty]) { windowModel in
             // Act
-            viewModel.showSaveDeskPresetPanel()
+            windowModel.showSaveDeskPresetPanel()
 
             // Assert
-            #expect(!viewModel.isSaveDeskPresetPanelPresented)
+            #expect(!windowModel.isSaveDeskPresetPanelPresented)
         }
     }
 

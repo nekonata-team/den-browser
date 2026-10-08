@@ -6,7 +6,7 @@ struct ZmxSessionsPanel: View {
     let profileColor: Color
 
     @Environment(DenStore.self) private var store
-    @Environment(DenViewModel.self) private var viewModel
+    @Environment(DenWindowModel.self) private var windowModel
     @Environment(\.accessibilityDifferentiateWithoutColor) private var differentiateWithoutColor
     @FocusState private var isSearchFocused: Bool
 
@@ -46,7 +46,7 @@ struct ZmxSessionsPanel: View {
         ) {
             Button(role: .destructive) {
                 let targets = model.pendingDeletion
-                viewModel.killZmxSessions(targets)
+                windowModel.killZmxSessions(targets)
             } label: {
                 Label(pendingDeletionActionLabel, systemSymbol: .xmarkCircle)
             }
@@ -55,13 +55,13 @@ struct ZmxSessionsPanel: View {
         } message: {
             Text(pendingDeletionMessage)
         }
-        .onExitCommand { viewModel.hideZmxSessions() }
+        .onExitCommand { windowModel.hideZmxSessions() }
         .onChange(of: model.isFilterInputActive) { _, isActive in
             isSearchFocused = isActive
         }
     }
 
-    private var model: ZmxSessionsModel { viewModel.zmxSessions }
+    private var model: ZmxSessionsModel { windowModel.zmxSessions }
 
     private var header: some View {
         HStack(spacing: DenPanelLayout.controlSpacing) {
@@ -77,13 +77,13 @@ struct ZmxSessionsPanel: View {
             Spacer()
             if model.hasMarkedSessions {
                 Button("End \(model.markedSessionCount)") {
-                    viewModel.requestZmxSessionDeletion()
+                    windowModel.requestZmxSessionDeletion()
                 }
                 .buttonStyle(.borderedProminent)
                 .tint(.red)
                 .help("End selected Sessions")
             }
-            Button(action: viewModel.refreshZmxSessions) {
+            Button(action: windowModel.refreshZmxSessions) {
                 Label("Refresh", systemSymbol: .arrowClockwise)
                     .labelStyle(.iconOnly)
                     .frame(width: 30, height: 30)
@@ -92,7 +92,7 @@ struct ZmxSessionsPanel: View {
             .foregroundStyle(.secondary)
             .help("Refresh zmx Sessions")
             .accessibilityLabel("Refresh zmx Sessions")
-            DenCloseButton(label: "Close zmx Sessions") { viewModel.hideZmxSessions() }
+            DenCloseButton(label: "Close zmx Sessions") { windowModel.hideZmxSessions() }
         }
     }
 
@@ -125,7 +125,7 @@ struct ZmxSessionsPanel: View {
             Color.primary.opacity(model.isFilterInputActive ? 0.08 : 0.04),
             in: RoundedRectangle(cornerRadius: DenRadius.medium, style: .continuous)
         )
-        .onTapGesture { viewModel.enterZmxSessionFilter() }
+        .onTapGesture { windowModel.enterZmxSessionFilter() }
     }
 
     private var sessionList: some View {
@@ -217,7 +217,7 @@ struct ZmxSessionsPanel: View {
                 HStack(spacing: 5) {
                     Text(detail ?? "Unknown process")
                     Text("·")
-                    if let location = viewModel.zmxBoardLocation(for: sessionName) {
+                    if let location = windowModel.zmxBoardLocation(for: sessionName) {
                         Text("Attached · \(location)")
                     } else {
                         Text("Not attached")
@@ -232,7 +232,7 @@ struct ZmxSessionsPanel: View {
             Spacer(minLength: 0)
 
             Button {
-                viewModel.openZmxSession(sessionName)
+                windowModel.openZmxSession(sessionName)
             } label: {
                 Label("Open", systemSymbol: .arrowUpRightSquare)
                     .labelStyle(.iconOnly)
@@ -244,7 +244,7 @@ struct ZmxSessionsPanel: View {
             .accessibilityLabel("Open \(sessionName)")
 
             Button(role: .destructive) {
-                viewModel.requestZmxSessionDeletion(sessionName)
+                windowModel.requestZmxSessionDeletion(sessionName)
             } label: {
                 Label("End", systemSymbol: .xmarkCircle)
                     .labelStyle(.iconOnly)
@@ -292,7 +292,7 @@ struct ZmxSessionsPanel: View {
     }
 
     private var pendingDeletionMessage: String {
-        let attachedCount = model.pendingDeletion.compactMap(viewModel.zmxBoardLocation(for:)).count
+        let attachedCount = model.pendingDeletion.compactMap(windowModel.zmxBoardLocation(for:)).count
         let boardMessage =
             attachedCount == 0
             ? "No attached Boards are affected."

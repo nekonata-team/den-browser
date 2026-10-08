@@ -1,0 +1,15 @@
+id: presentation-no-storage-access
+language: Swift
+severity: error
+message: Presentation reads shared state through the read-only Store API and requests Application operations.
+files:
+  - "Den Browser/Den Browser/Features/**/Presentation/**/*.swift"
+rule:
+  kind: navigation_expression
+  has:
+    field: suffix
+    kind: navigation_suffix
+    has:
+      kind: simple_identifier
+      regex: '^storage$'
+      stopBy: end

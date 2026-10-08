@@ -1,3 +1,4 @@
+import DenPresentation
 import Foundation
 import Observation
 
@@ -18,7 +19,7 @@ final class ZmxSessionsModel {
     private(set) var isLoading = false
     private(set) var selectedSessionName: String?
     private(set) var markedSessionNames: Set<String> = []
-    private(set) var filterPhase: DenFilterPhase = .inactive
+    private(set) var filterPhase: FilterPhase = .inactive
     private(set) var pendingDeletion: [String] = []
     private(set) var query = ""
 
@@ -161,7 +162,7 @@ final class ZmxSessionsModel {
     }
 
     func select(by offset: Int) {
-        selectedSessionName = DenSelectionNavigation.next(
+        selectedSessionName = SelectionNavigation.next(
             selectedSessionName,
             among: sessionNames,
             by: offset

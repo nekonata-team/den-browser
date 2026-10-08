@@ -1,5 +1,6 @@
 import DenDesign
 import DenDomain
+import DenPresentation
 import Foundation
 import SFSafeSymbols
 import SwiftUI
@@ -7,11 +8,11 @@ import SwiftUI
 struct NotificationListView: View {
     let profileColor: Color
 
-    @Environment(NotificationListViewModel.self) private var viewModel
+    @Environment(NotificationListModel.self) private var model
 
     var body: some View {
-        let items = viewModel.items
-        let unreadCount = viewModel.unreadCount
+        let items = model.items
+        let unreadCount = model.unreadCount
 
         VStack(alignment: .leading, spacing: DenPanelLayout.contentSpacing) {
             HStack {
@@ -26,7 +27,7 @@ struct NotificationListView: View {
                         .foregroundStyle(.secondary)
                 }
                 Button(role: .destructive) {
-                    viewModel.requestClear()
+                    model.requestClear()
                 } label: {
                     Image(systemSymbol: .trash)
                         .font(.system(size: 12, weight: .semibold))
@@ -36,7 +37,7 @@ struct NotificationListView: View {
                 .disabled(items.isEmpty)
                 .accessibilityLabel("Clear All Notifications")
                 .help("Clear All Notifications")
-                DenCloseButton(label: "Close Notifications", action: viewModel.close)
+                DenCloseButton(label: "Close Notifications", action: model.close)
             }
 
             if items.isEmpty {
@@ -50,14 +51,14 @@ struct NotificationListView: View {
                                 NotificationRow(
                                     item: item,
                                     profileColor: profileColor,
-                                    isSelected: item.id == viewModel.selectedNotificationID,
-                                    onOpen: { viewModel.open(item.notification) }
+                                    isSelected: item.id == model.selectedNotificationID,
+                                    onOpen: { model.open(item.notification) }
                                 )
                                 .id(item.id)
                             }
                         }
                     }
-                    .onChange(of: viewModel.selectedNotificationID) { _, selectedNotificationID in
+                    .onChange(of: model.selectedNotificationID) { _, selectedNotificationID in
                         guard let selectedNotificationID else { return }
                         proxy.scrollTo(selectedNotificationID, anchor: .center)
                     }

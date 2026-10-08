@@ -6,7 +6,7 @@ import SwiftUI
 
 struct DeskSwitcher: View {
     @Environment(DenStore.self) private var store
-    @Environment(DenViewModel.self) private var viewModel
+    @Environment(DenWindowModel.self) private var windowModel
     @Environment(AppPreferences.self) private var preferences
     @Environment(\.accessibilityReduceMotion) private var systemReduceMotion
     @Environment(\.accessibilityDifferentiateWithoutColor) private var differentiateWithoutColor
@@ -38,7 +38,7 @@ struct DeskSwitcher: View {
                         }
 
                         Button {
-                            viewModel.showNewDeskPanel()
+                            windowModel.showNewDeskPanel()
                         } label: {
                             Image(systemSymbol: .plus)
                                 .font(.system(size: 13, weight: .semibold))
@@ -75,8 +75,8 @@ struct DeskSwitcher: View {
             }
         }
         .frame(height: DenLayout.deskSwitcherHeight)
-        .onChange(of: viewModel.deskDragCancellationRequest) { _, _ in cancelDeskDrag() }
-        .onChange(of: viewModel.temporaryContext) { _, context in
+        .onChange(of: windowModel.deskDragCancellationRequest) { _, _ in cancelDeskDrag() }
+        .onChange(of: windowModel.temporaryContext) { _, context in
             if context != nil { cancelDeskDrag() }
         }
         .onChange(of: appearsActive) { _, isActive in
@@ -139,7 +139,7 @@ struct DeskSwitcher: View {
 
             Button {
                 store.focusDesk(desk.id)
-                viewModel.showRenameDeskPanel()
+                windowModel.showRenameDeskPanel()
             } label: {
                 Label("Rename Desk", systemSymbol: .pencil)
             }
@@ -157,7 +157,7 @@ struct DeskSwitcher: View {
 
             Button {
                 store.focusDesk(desk.id)
-                viewModel.showSaveDeskPresetPanel()
+                windowModel.showSaveDeskPresetPanel()
             } label: {
                 Label("Save Desk as Preset...", systemSymbol: .squareAndArrowDown)
             }
@@ -181,14 +181,14 @@ struct DeskSwitcher: View {
 
             Button {
                 store.focusDesk(desk.id)
-                viewModel.showReplaceDeskPanel()
+                windowModel.showReplaceDeskPanel()
             } label: {
                 Label("Replace Desk...", systemSymbol: .rectangleStackBadgeMinus)
             }
             .disabled(!store.canSelectDesk(desk.id))
 
             Button {
-                viewModel.showDeskPresetManagement()
+                windowModel.showDeskPresetManagement()
             } label: {
                 Label("Manage Presets...", systemSymbol: .sliderHorizontal3)
             }
@@ -196,7 +196,7 @@ struct DeskSwitcher: View {
             Divider()
 
             Button {
-                viewModel.showNewDeskPanel()
+                windowModel.showNewDeskPanel()
             } label: {
                 Label("New Desk...", systemSymbol: .plus)
             }
@@ -207,7 +207,7 @@ struct DeskSwitcher: View {
                 .onChanged { updateDeskDrag(desk, value: $0, in: size) }
                 .onEnded { finishDeskGesture(desk, value: $0, in: size) }
         )
-        .allowsHitTesting(!viewModel.isDeskDragging || drag?.deskID == desk.id)
+        .allowsHitTesting(!windowModel.isDeskDragging || drag?.deskID == desk.id)
         .help("Drag to reorder Desk")
         .accessibilityHint("Drag to reorder this Desk")
         .accessibilityLabel(

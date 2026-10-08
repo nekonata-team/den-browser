@@ -48,11 +48,11 @@ placement: for example, `DenStoreBoardTests` belongs under `Board` because it pr
 Do not mechanically reproduce the source's `Domain`, `Application`, and `Infrastructure` folders.
 Shared Swift test helpers belong under `Support`; test resource files remain under `Fixtures`.
 
-Test application operations and persistence directly through `DenStore`. Test window presentation
-transitions through `DenViewModel` and context-local state through the corresponding ViewModel,
+Test application operations and persistence directly through `DenStore`; test the shared-state source directly through `DenStateStore` and its write capability. Test window presentation
+transitions through `DenWindowModel` and context-local state through the corresponding Model,
 while asserting resulting domain changes on their shared Store when needed. Test delayed presentation
-by its observable result rather than the Task object used to produce it. Presentation suites use ViewModel names; moving UI state does not require routing unrelated
-Store tests through a ViewModel.
+by its observable result rather than the Task object used to produce it. Presentation suites use Model names; moving UI state does not require routing unrelated
+Store tests through a Model.
 
 Unit tests follow the Arrange-Act-Assert (AAA) pattern for consistency across the test suite, using explicit section comments (`// Arrange`, `// Act`, `// Assert`):
 
@@ -131,7 +131,8 @@ just check
 
 `just architecture-check` tests the ast-grep layer rules and scans the application plus
 `Packages/DenDomain/Sources`, `Packages/DenDesign/Sources`, and
-`Packages/DenIPCProtocol/Sources`. The checks reject UI/runtime SDK imports in Domain,
+`Packages/DenIPCProtocol/Sources`, `Packages/DenApplication/Sources`, and
+`Packages/DenPresentation/Sources`. The checks reject UI/runtime SDK imports in Domain,
 SwiftUI imports in Application, and non-Foundation imports in the IPC protocol package.
 The package compiler boundaries enforce dependencies for moved Domain, Design, and wire
 types; behavioral tests verify runtime event routing and shared-state consistency. The

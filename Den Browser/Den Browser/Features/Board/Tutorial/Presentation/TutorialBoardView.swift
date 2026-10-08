@@ -1,12 +1,13 @@
 import DenDesign
 import DenDomain
+import DenPresentation
 import SFSafeSymbols
 import SwiftUI
 
 struct TutorialBoardView: View {
     @Environment(DenStore.self) private var store
-    @Environment(DenViewModel.self) private var viewModel
-    @Environment(DeskFilterViewModel.self) private var deskFilter
+    @Environment(DenWindowModel.self) private var windowModel
+    @Environment(DeskFilterModel.self) private var deskFilter
     @Environment(AppPreferences.self) private var preferences
     @Environment(\.accessibilityReduceMotion) private var systemReduceMotion
     @Environment(\.accessibilityDifferentiateWithoutColor) private var differentiateWithoutColor
@@ -36,7 +37,7 @@ struct TutorialBoardView: View {
                                 .font(.callout)
                                 .foregroundStyle(.secondary)
                             Button {
-                                viewModel.showKeyboardShortcuts()
+                                windowModel.showKeyboardShortcuts()
                             } label: {
                                 Label("View all shortcuts", systemSymbol: .keyboard)
                             }
@@ -107,9 +108,9 @@ struct TutorialBoardView: View {
                 profileColor: profileColor,
                 width: width,
                 height: height,
-                isFocusModeDeemphasized: viewModel.isFocusModePresented && !isFocused
+                isFocusModeDeemphasized: windowModel.isFocusModePresented && !isFocused
                     && !deskFilter.isPresented,
-                isFocusModeFocused: viewModel.isFocusModePresented && isFocused,
+                isFocusModeFocused: windowModel.isFocusModePresented && isFocused,
                 differentiateWithoutColor: differentiateWithoutColor,
                 shouldReduceMotion: DenMotion.shouldReduceMotion(
                     preference: preferences.motionPreference,
@@ -153,7 +154,7 @@ struct TutorialBoardView: View {
         }
         .padding(.horizontal, DenLayout.chromeHorizontalPadding)
         .frame(height: DenLayout.boardHeaderHeight)
-        .background(viewModel.isDenMode && isFocused ? profileColor.opacity(0.12) : Color.clear)
+        .background(windowModel.isDenMode && isFocused ? profileColor.opacity(0.12) : Color.clear)
         .background(.regularMaterial)
         .modifier(BoardHeaderCenteringModifier(boardID: board.id, isEnabled: isPointerFocusEnabled))
     }
@@ -243,7 +244,7 @@ struct TutorialBoardView: View {
                     if let actionTitle {
                         Button(actionTitle) {
                             store.focusBoard(board.id)
-                            viewModel.showOpenBoardPanel(afterBoardID: board.id)
+                            windowModel.showOpenBoardPanel(afterBoardID: board.id)
                         }
                         .buttonStyle(.bordered)
                         .controlSize(.small)
@@ -268,7 +269,7 @@ struct TutorialBoardView: View {
     }
 
     private var openBoardShortcutTokens: [String] {
-        viewModel.isDenMode ? ["n", "/", "Space"] : ["⌘", "T"]
+        windowModel.isDenMode ? ["n", "/", "Space"] : ["⌘", "T"]
     }
 
     private func stepState(_ step: TutorialBoardStep) -> StepState {

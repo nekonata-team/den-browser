@@ -1,5 +1,6 @@
 import DenDesign
 import DenDomain
+import DenPresentation
 import SFSafeSymbols
 import SwiftUI
 
@@ -202,7 +203,7 @@ struct DeskPresetManagementPanel: View {
     }
 
     private func moveSelection(by offset: Int) {
-        selectedPresetID = DenSelectionNavigation.next(
+        selectedPresetID = SelectionNavigation.next(
             selectedPresetID,
             among: filteredPresets.map(\.id),
             by: offset

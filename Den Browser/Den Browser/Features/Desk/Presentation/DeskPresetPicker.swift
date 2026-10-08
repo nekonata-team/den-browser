@@ -1,5 +1,6 @@
 import DenDesign
 import DenDomain
+import DenPresentation
 import SFSafeSymbols
 import SwiftUI
 
@@ -233,7 +234,7 @@ struct DeskPresetPicker: View {
 
     private func moveSelection(by offset: Int) {
         guard
-            let nextSelection = DenSelectionNavigation.next(
+            let nextSelection = SelectionNavigation.next(
                 selection,
                 among: matchingChoices.map(\.selection),
                 by: offset

@@ -1,5 +1,7 @@
 import AppKit
+import DenApplication
 import DenDomain
+import DenPresentation
 import Foundation
 import Testing
 
@@ -10,15 +12,15 @@ import Testing
 struct DenStoreDeskTests {
 
     @Test func createsEmptyDeskAfterFocusedDesk() {
-        withTestViewModel(desks: [desk("First"), desk("Second")]) { viewModel in
-            let store = viewModel.store
-            viewModel.isDenMode = true
+        withTestWindowModel(desks: [desk("First"), desk("Second")]) { windowModel in
+            let store = windowModel.store
+            windowModel.isDenMode = true
             store.createDesk(label: "  Writing  ", preset: .empty)
 
             #expect(store.state.desks.map(\.label) == ["First", "Writing", "Second"])
             #expect(store.focusedDesk?.label == "Writing")
             #expect(store.focusedDesk?.boards.isEmpty == true)
-            #expect(!viewModel.isDenMode)
+            #expect(!windowModel.isDenMode)
         }
     }
 
@@ -85,31 +87,32 @@ struct DenStoreDeskTests {
         let store = DenStore(
             state: DenState(desks: [replacing, other], focusedDeskID: replacing.id),
             onSave: { savedState = $0 })
-        let viewModel = DenViewModel(store: store)
-        viewModel.connect()
-        defer { viewModel.disconnect() }
+        let composition = DenWindowComposition(store: store)
+        let windowModel = composition.model
+        composition.connect()
+        defer { composition.disconnect() }
         let runtime = store.webRuntime(for: oldBoards[0])
         let restorationCandidate = RecentlyRemovedBoard(
             board: board("Removed"),
             sourceDeskID: other.id,
             sourceBoardIndex: 0)
-        store.recentlyRemovedBoards = [restorationCandidate]
-        viewModel.toggleFocusedBoardMaximized()
-        viewModel.showReplaceDeskPanel()
+        store.storage.recentlyRemovedBoards = [restorationCandidate]
+        windowModel.toggleFocusedBoardMaximized()
+        windowModel.showReplaceDeskPanel()
 
         let result = store.replaceFocusedDesk(label: "  Morning  ", preset: .chatGPT)
 
         #expect(result == .confirmationPending)
         #expect(store.focusedDesk == replacing)
-        if case let .replaceDesk(replacement)? = viewModel.pendingConfirmation {
+        if case let .replaceDesk(replacement)? = windowModel.pendingConfirmation {
             #expect(replacement.presetLabel == BuiltInDeskPreset.chatGPT.label)
         } else {
             Issue.record("Expected a desk replacement confirmation")
         }
-        #expect(viewModel.isReplaceDeskPanelPresented)
+        #expect(windowModel.isReplaceDeskPanelPresented)
         #expect(savedState == nil)
 
-        viewModel.confirmDeskReplacement()
+        windowModel.confirmDeskReplacement()
 
         let replaced = try #require(store.focusedDesk)
         #expect(replaced.id == replacing.id)
@@ -122,10 +125,10 @@ struct DenStoreDeskTests {
         #expect(store.webRuntimes[oldBoards[0].id] == nil)
         #expect(runtime.webView.navigationDelegate == nil)
         #expect(runtime.webView.uiDelegate == nil)
-        #expect(viewModel.maximizedBoardID == nil)
+        #expect(windowModel.maximizedBoardID == nil)
         #expect(store.recentlyRemovedBoards.first?.board.id == restorationCandidate.board.id)
-        #expect(!viewModel.isReplaceDeskPanelPresented)
-        #expect(!viewModel.isDenMode)
+        #expect(!windowModel.isReplaceDeskPanelPresented)
+        #expect(!windowModel.isDenMode)
         #expect(savedState == store.state)
     }
 
@@ -140,11 +143,13 @@ struct DenStoreDeskTests {
         let store = DenStore(
             state: DenState(desks: [replacing, other], focusedDeskID: replacing.id))
 
-        let viewModel = DenViewModel(store: store)
-        viewModel.connect()
-        defer { viewModel.disconnect() }
+        let composition = DenWindowComposition(store: store)
+
+        let windowModel = composition.model
+        composition.connect()
+        defer { composition.disconnect() }
         _ = store.replaceFocusedDesk(label: "Morning", preset: .chatGPT)
-        viewModel.confirmDeskReplacement()
+        windowModel.confirmDeskReplacement()
 
         #expect(!store.state.desks.flatMap(\.boards).contains { $0.id == oldBoard.id })
     }
@@ -155,49 +160,50 @@ struct DenStoreDeskTests {
         var replacing = desk("Research", boards: oldBoards, focusedBoardID: oldBoards[1].id)
         replacing.anchorBoardID = oldBoards[0].id
         let store = DenStore(state: DenState(desks: [replacing], focusedDeskID: replacing.id))
-        let viewModel = DenViewModel(store: store)
-        viewModel.connect()
-        defer { viewModel.disconnect() }
+        let composition = DenWindowComposition(store: store)
+        let windowModel = composition.model
+        composition.connect()
+        defer { composition.disconnect() }
         store.anchorJumpOriginBoardIDByDesk[replacing.id] = oldBoards[1].id
         _ = store.prepareBoardLinkFocus(oldBoards[1].id)
-        viewModel.overview.selectBoard(oldBoards[1].id)
-        viewModel.showReplaceDeskPanel()
-        viewModel.openBoard.afterBoardID = oldBoards[0].id
+        windowModel.overview.selectBoard(oldBoards[1].id)
+        windowModel.showReplaceDeskPanel()
+        windowModel.openBoard.afterBoardID = oldBoards[0].id
         _ = store.replaceFocusedDesk(label: "Morning", preset: .chatGPT)
 
         // Act
-        viewModel.confirmDeskReplacement()
+        windowModel.confirmDeskReplacement()
 
         // Assert
         #expect(store.focusedDesk?.anchorBoardID == nil)
         #expect(store.anchorJumpOriginBoardIDByDesk[replacing.id] == nil)
-        #expect(viewModel.openBoard.afterBoardID == nil)
-        #expect(viewModel.pendingBoardLinkFocus == nil)
-        #expect(viewModel.overview.selectionDeskID == nil)
-        #expect(viewModel.overview.selectionBoardID == nil)
+        #expect(windowModel.openBoard.afterBoardID == nil)
+        #expect(windowModel.pendingBoardLinkFocus == nil)
+        #expect(windowModel.overview.selectionDeskID == nil)
+        #expect(windowModel.overview.selectionBoardID == nil)
     }
 
     @Test func cancellingDeskReplacementKeepsDeskAndPanel() {
         let existing = board("Existing")
         let original = desk("Original", boards: [existing])
-        withTestViewModel(desks: [original]) { viewModel in
-            let store = viewModel.store
-            viewModel.showReplaceDeskPanel()
+        withTestWindowModel(desks: [original]) { windowModel in
+            let store = windowModel.store
+            windowModel.showReplaceDeskPanel()
             #expect(store.replaceFocusedDesk(label: "AI", preset: .gemini) == .confirmationPending)
 
-            viewModel.cancelConfirmation()
+            windowModel.cancelConfirmation()
 
             #expect(store.focusedDesk == original)
-            #expect(viewModel.pendingConfirmation == nil)
-            #expect(viewModel.isReplaceDeskPanelPresented)
+            #expect(windowModel.pendingConfirmation == nil)
+            #expect(windowModel.isReplaceDeskPanelPresented)
         }
     }
 
     @Test func replacingEmptyDeskAppliesImmediatelyAndEmptyPresetIsUnavailable() {
         let empty = desk("Empty")
-        withTestViewModel(desks: [empty]) { viewModel in
-            let store = viewModel.store
-            viewModel.showReplaceDeskPanel()
+        withTestWindowModel(desks: [empty]) { windowModel in
+            let store = windowModel.store
+            windowModel.showReplaceDeskPanel()
 
             #expect(store.replaceFocusedDesk(label: "Still Empty", preset: .empty) == .unavailable)
             #expect(store.focusedDesk == empty)
@@ -206,7 +212,7 @@ struct DenStoreDeskTests {
             #expect(store.focusedDesk?.id == empty.id)
             #expect(store.focusedDesk?.label == "Gemini")
             #expect(store.focusedDesk?.boards.count == 3)
-            #expect(!viewModel.isReplaceDeskPanelPresented)
+            #expect(!windowModel.isReplaceDeskPanelPresented)
         }
     }
 
@@ -214,15 +220,15 @@ struct DenStoreDeskTests {
         let first = desk("First")
         let empty = desk("Empty")
         let third = desk("Third")
-        withTestViewModel(desks: [first, empty, third]) { viewModel in
-            let store = viewModel.store
+        withTestWindowModel(desks: [first, empty, third]) { windowModel in
+            let store = windowModel.store
             store.focusDesk(empty.id)
-            viewModel.isDenMode = true
+            windowModel.isDenMode = true
             store.deleteFocusedDesk()
 
             #expect(store.state.desks.map(\.id) == [first.id, third.id])
             #expect(store.focusedDesk?.id == first.id)
-            #expect(!viewModel.isDenMode)
+            #expect(!windowModel.isDenMode)
         }
     }
 
@@ -242,11 +248,11 @@ struct DenStoreDeskTests {
         let secondBoard = board("SecondBoard")
         let second = desk("Second", boards: [secondBoard])
         let third = desk("Third")
-        withTestViewModel(desks: [first, second, third]) { viewModel in
-            let store = viewModel.store
+        withTestWindowModel(desks: [first, second, third]) { windowModel in
+            let store = windowModel.store
             store.focusDesk(second.id)
             store.deleteFocusedDesk()
-            if case let .deleteDesk(pending)? = viewModel.pendingConfirmation {
+            if case let .deleteDesk(pending)? = windowModel.pendingConfirmation {
                 #expect(pending.id == second.id)
             } else {
                 Issue.record("Expected a desk deletion confirmation")
@@ -256,7 +262,7 @@ struct DenStoreDeskTests {
             store.focusDesk(third.id)
             #expect(store.previousFocusedDeskID == second.id)
 
-            viewModel.confirmDeskDeletion()
+            windowModel.confirmDeskDeletion()
             #expect(store.state.desks.map(\.id) == [first.id, third.id])
             #expect(store.previousFocusedDeskID == nil)
         }
@@ -315,14 +321,15 @@ struct DenStoreDeskTests {
         let first = desk("First")
         let second = desk("Second")
         let store = DenStore(state: DenState(desks: [first, second], focusedDeskID: first.id))
-        let viewModel = DenViewModel(store: store)
-        viewModel.connect()
-        defer { viewModel.disconnect() }
+        let composition = DenWindowComposition(store: store)
+        let windowModel = composition.model
+        composition.connect()
+        defer { composition.disconnect() }
 
-        viewModel.isDenMode = true
+        windowModel.isDenMode = true
         store.focusDesk(number: 2)
         #expect(store.focusedDesk?.id == second.id)
-        #expect(!viewModel.isDenMode)
+        #expect(!windowModel.isDenMode)
     }
 
     @Test func deskLinkExportPreservesBoardOrderAndSkipsEmptyBoards() throws {
@@ -434,50 +441,50 @@ struct DenStoreDeskTests {
         let board = board("Board")
         let populated = desk("Populated", boards: [board])
         let empty = desk("Empty")
-        withTestViewModel(desks: [populated, empty]) { viewModel in
-            let store = viewModel.store
+        withTestWindowModel(desks: [populated, empty]) { windowModel in
+            let store = windowModel.store
             store.deleteFocusedDesk()
 
             #expect(store.state.desks.count == 2)
-            if case let .deleteDesk(pending)? = viewModel.pendingConfirmation {
+            if case let .deleteDesk(pending)? = windowModel.pendingConfirmation {
                 #expect(pending.id == populated.id)
             } else {
                 Issue.record("Expected a desk deletion confirmation")
             }
 
             store.focusDesk(empty.id)
-            viewModel.confirmDeskDeletion()
+            windowModel.confirmDeskDeletion()
             #expect(store.state.desks.map(\.id) == [empty.id])
             #expect(store.focusedDesk?.id == empty.id)
-            #expect(viewModel.pendingConfirmation == nil)
+            #expect(windowModel.pendingConfirmation == nil)
         }
     }
 
     @Test func confirmingDeskDeletionExitsDenModeAfterSuccessfulDeletion() {
         let populated = desk("Populated", boards: [board("Board")])
         let empty = desk("Empty")
-        withTestViewModel(desks: [populated, empty]) { viewModel in
-            let store = viewModel.store
-            viewModel.isDenMode = true
+        withTestWindowModel(desks: [populated, empty]) { windowModel in
+            let store = windowModel.store
+            windowModel.isDenMode = true
             store.deleteFocusedDesk()
 
-            #expect(viewModel.isDenMode)
-            viewModel.confirmDeskDeletion()
+            #expect(windowModel.isDenMode)
+            windowModel.confirmDeskDeletion()
 
-            #expect(!viewModel.isDenMode)
+            #expect(!windowModel.isDenMode)
         }
     }
 
     @Test func cancellingDeskDeletionKeepsBoards() {
         let populated = desk("Populated", boards: [board("Board")])
         let empty = desk("Empty")
-        withTestViewModel(desks: [populated, empty]) { viewModel in
-            let store = viewModel.store
+        withTestWindowModel(desks: [populated, empty]) { windowModel in
+            let store = windowModel.store
             store.deleteFocusedDesk()
-            viewModel.cancelConfirmation()
+            windowModel.cancelConfirmation()
 
             #expect(store.state.desks.map(\.id) == [populated.id, empty.id])
-            #expect(viewModel.pendingConfirmation == nil)
+            #expect(windowModel.pendingConfirmation == nil)
         }
     }
 
@@ -485,12 +492,12 @@ struct DenStoreDeskTests {
         let board = board("Board")
         let populated = desk("Populated", boards: [board])
         let empty = desk("Empty")
-        withTestViewModel(desks: [populated, empty]) { viewModel in
-            let store = viewModel.store
+        withTestWindowModel(desks: [populated, empty]) { windowModel in
+            let store = windowModel.store
             let runtime = store.webRuntime(for: board)
             store.deleteFocusedDesk()
 
-            viewModel.confirmDeskDeletion()
+            windowModel.confirmDeskDeletion()
 
             #expect(store.webRuntimes[board.id] == nil)
             #expect(runtime.webView.navigationDelegate == nil)
@@ -508,24 +515,25 @@ struct DenStoreDeskTests {
         let empty = desk("Empty")
         let store = DenStore(
             state: DenState(desks: [populated, empty], focusedDeskID: populated.id))
-        let viewModel = DenViewModel(store: store)
-        viewModel.connect()
-        defer { viewModel.disconnect() }
+        let composition = DenWindowComposition(store: store)
+        let windowModel = composition.model
+        composition.connect()
+        defer { composition.disconnect() }
 
         store.deleteFocusedDesk()
-        viewModel.confirmDeskDeletion()
+        windowModel.confirmDeskDeletion()
 
         #expect(!store.state.desks.flatMap(\.boards).contains { $0.id == removedBoard.id })
     }
 
     @Test func lastDeskCannotBeDeleted() {
         let onlyDesk = desk("Only")
-        withTestViewModel(desks: [onlyDesk]) { viewModel in
-            let store = viewModel.store
+        withTestWindowModel(desks: [onlyDesk]) { windowModel in
+            let store = windowModel.store
             store.deleteFocusedDesk()
 
             #expect(store.state.desks.count == 1)
-            #expect(viewModel.pendingConfirmation == nil)
+            #expect(windowModel.pendingConfirmation == nil)
         }
     }
 
@@ -549,22 +557,22 @@ struct DenStoreDeskTests {
         let firstBoard = board("Google")
         let desk1 = desk("Main", boards: [firstBoard], focusedBoardID: firstBoard.id)
 
-        withTestViewModel(desks: [desk1]) { viewModel in
-            let store = viewModel.store
+        withTestWindowModel(desks: [desk1]) { windowModel in
+            let store = windowModel.store
             // 1. Enter Den Mode, show rename panel
-            viewModel.isDenMode = true
-            viewModel.showRenameDeskPanel()
-            #expect(viewModel.isRenameDeskPanelPresented)
+            windowModel.isDenMode = true
+            windowModel.showRenameDeskPanel()
+            #expect(windowModel.isRenameDeskPanelPresented)
 
             // 2. Rename the desk to a custom name
             store.renameFocusedDesk(to: "Web Search")
-            #expect(!viewModel.isRenameDeskPanelPresented)
+            #expect(!windowModel.isRenameDeskPanelPresented)
             #expect(store.focusedDesk?.label == "Web Search")
 
             // 3. Rename with empty name should be ignored (keep old name)
-            viewModel.showRenameDeskPanel()
+            windowModel.showRenameDeskPanel()
             store.renameFocusedDesk(to: "")
-            #expect(!viewModel.isRenameDeskPanelPresented)
+            #expect(!windowModel.isRenameDeskPanelPresented)
             #expect(store.focusedDesk?.label == "Web Search")
         }
     }

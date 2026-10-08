@@ -493,7 +493,7 @@ struct DenIPCTargetResolverTests {
 
         let profile2 = try #require(manager.createProfile(name: "Profile 2", color: .green))
         let store2 = try #require(manager.store(for: profile2.id))
-        store2.state = den2
+        store2.storage.state = den2
 
         // Act: Target board1 without explicit profileID
         let result1 = DenIPCTargetResolver.resolveBoard(

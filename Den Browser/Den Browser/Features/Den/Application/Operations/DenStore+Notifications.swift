@@ -1,10 +1,6 @@
+import DenApplication
 import DenDomain
 import Foundation
-
-struct DenNotificationSource {
-    let deskLabel: String
-    let boardLabel: String
-}
 
 extension DenStore {
     func unreadNotificationCount(for boardID: BoardID) -> Int {
@@ -17,16 +13,16 @@ extension DenStore {
     }
 
     func clearNotifications() {
-        notifications.removeAll()
+        storage.notifications.removeAll()
         clearLatestNotificationFeedback()
     }
 
     func recordNotification(title: String?, body: String, boardID: BoardID) {
         guard title?.isEmpty == false || !body.isEmpty else { return }
         let notification = DenNotification(title: title, body: body, boardID: boardID)
-        notifications.insert(notification, at: 0)
+        storage.notifications.insert(notification, at: 0)
         if notifications.count > Self.maximumNotificationCount {
-            notifications.removeLast(notifications.count - Self.maximumNotificationCount)
+            storage.notifications.removeLast(notifications.count - Self.maximumNotificationCount)
         }
         onWindowEffect?(.notificationAdded(notification.id))
         reportFeedback(title: title, body: body, target: .notification(notification.id))
@@ -46,20 +42,20 @@ extension DenStore {
 
     func markNotificationRead(_ notificationID: UUID) {
         guard let index = notifications.firstIndex(where: { $0.id == notificationID }) else { return }
-        notifications[index].isRead = true
+        storage.notifications[index].isRead = true
     }
 
     func markNotificationsRead(for boardID: BoardID) {
         for index in notifications.indices {
             guard notifications[index].boardID == boardID, !notifications[index].isRead else { continue }
-            notifications[index].isRead = true
+            storage.notifications[index].isRead = true
         }
     }
 
-    func notificationSource(for notification: DenNotification) -> DenNotificationSource? {
+    func notificationSource(for notification: DenNotification) -> (deskLabel: String, boardLabel: String)? {
         guard let indices = boardIndices(for: notification.boardID) else { return nil }
         let desk = state.desks[indices.desk]
         let board = desk.boards[indices.board]
-        return DenNotificationSource(deskLabel: desk.label, boardLabel: board.label)
+        return (deskLabel: desk.label, boardLabel: board.label)
     }
 }

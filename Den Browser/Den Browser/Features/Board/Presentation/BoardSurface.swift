@@ -117,7 +117,7 @@ struct BoardSurfaceModifier: ViewModifier {
 
 struct BoardHeaderCenteringModifier: ViewModifier {
     @Environment(DenStore.self) private var store
-    @Environment(DenViewModel.self) private var viewModel
+    @Environment(DenWindowModel.self) private var windowModel
 
     let boardID: BoardID
     let isEnabled: Bool
@@ -128,7 +128,7 @@ struct BoardHeaderCenteringModifier: ViewModifier {
                 .onEnded {
                     guard isEnabled else { return }
                     store.focusBoard(boardID, exitsDenMode: true)
-                    viewModel.centerFocusedBoard()
+                    windowModel.centerFocusedBoard()
                 }
         )
     }

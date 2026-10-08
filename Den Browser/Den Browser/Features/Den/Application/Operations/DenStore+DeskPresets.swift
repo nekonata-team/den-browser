@@ -1,3 +1,4 @@
+import DenApplication
 import DenDomain
 import Foundation
 
@@ -35,7 +36,7 @@ extension DenStore {
             return .replacementPending
         }
 
-        deskPresets.insert(PersonalDeskPreset(label: label, desk: desk), at: 0)
+        storage.deskPresets.insert(PersonalDeskPreset(label: label, desk: desk), at: 0)
         onWindowEffect?(.exitDenMode)
         if saveDeskPresets() {
             reportFeedback("Saved Desk Preset.", severity: .success)
@@ -48,7 +49,7 @@ extension DenStore {
     @discardableResult
     func replaceDeskPreset(_ replacement: PersonalDeskPreset) -> Bool {
         guard let index = deskPresets.firstIndex(where: { $0.id == replacement.id }) else { return false }
-        deskPresets[index] = replacement
+        storage.deskPresets[index] = replacement
         onWindowEffect?(.exitDenMode)
         if saveDeskPresets() {
             reportFeedback("Saved Desk Preset.", severity: .success)
@@ -75,7 +76,7 @@ extension DenStore {
         }
         guard deskPresets[index].label != label else { return .unchanged }
 
-        deskPresets[index].label = label
+        storage.deskPresets[index].label = label
         if !saveDeskPresets() {
             reportFeedback("Could not rename Desk Preset.", severity: .error)
         }
@@ -83,7 +84,7 @@ extension DenStore {
     }
 
     func deleteDeskPreset(_ id: UUID) {
-        deskPresets.removeAll { $0.id == id }
+        storage.deskPresets.removeAll { $0.id == id }
         if !saveDeskPresets() {
             reportFeedback("Could not delete Desk Preset.", severity: .error)
         }

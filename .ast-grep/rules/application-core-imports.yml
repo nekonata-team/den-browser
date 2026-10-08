@@ -1,0 +1,13 @@
+id: application-core-imports
+language: Swift
+severity: error
+message: Application core depends only on Foundation, Observation, and DenDomain.
+files:
+  - "Packages/DenApplication/Sources/DenApplication/**/*.swift"
+rule:
+  kind: import_declaration
+  has:
+    kind: identifier
+    not:
+      regex: '^(Foundation|Observation|DenDomain)(\.|$)'
+    stopBy: end

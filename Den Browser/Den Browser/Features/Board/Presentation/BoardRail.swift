@@ -1,5 +1,6 @@
 import DenDesign
 import DenDomain
+import DenPresentation
 import SFSafeSymbols
 import SwiftUI
 
@@ -7,11 +8,11 @@ struct BoardRail: View {
     let profileColor: Color
 
     @Environment(DenStore.self) private var store
-    @Environment(DenViewModel.self) private var viewModel
+    @Environment(DenWindowModel.self) private var windowModel
 
     private var railDesk: DeskState? {
-        if viewModel.isOverviewPresented,
-            let selectedDeskID = viewModel.overview.selectionDeskID,
+        if windowModel.isOverviewPresented,
+            let selectedDeskID = windowModel.overview.selectionDeskID,
             let desk = store.state.desks.first(where: { $0.id == selectedDeskID })
         {
             return desk
@@ -22,14 +23,14 @@ struct BoardRail: View {
     private var boardSelection: Binding<BoardID?> {
         Binding(
             get: {
-                viewModel.isOverviewPresented
-                    ? viewModel.overview.selectionBoardID
+                windowModel.isOverviewPresented
+                    ? windowModel.overview.selectionBoardID
                     : store.focusedDesk?.focusedBoardID
             },
             set: { boardID in
                 guard let boardID else { return }
-                if viewModel.isOverviewPresented {
-                    viewModel.overview.selectBoard(boardID)
+                if windowModel.isOverviewPresented {
+                    windowModel.overview.selectBoard(boardID)
                 } else {
                     store.focusBoard(boardID)
                 }
@@ -75,7 +76,7 @@ struct BoardRail: View {
             VStack(alignment: .leading, spacing: 1) {
                 Text("Boards")
                     .font(.headline)
-                Text(viewModel.isOverviewPresented ? "Overview Selection" : (railDesk?.label ?? "No Desk"))
+                Text(windowModel.isOverviewPresented ? "Overview Selection" : (railDesk?.label ?? "No Desk"))
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
@@ -90,19 +91,19 @@ struct BoardRail: View {
 
     private func openBoardAtEnd() {
         guard let desk = railDesk else { return }
-        if viewModel.isOverviewPresented {
-            viewModel.overview.enterDesk(desk.id)
+        if windowModel.isOverviewPresented {
+            windowModel.overview.enterDesk(desk.id)
         }
-        viewModel.showOpenBoardPanel(afterBoardID: desk.boards.last?.id)
+        windowModel.showOpenBoardPanel(afterBoardID: desk.boards.last?.id)
     }
 
     private func boardRow(_ board: BoardState) -> some View {
         let unreadNotificationCount = store.unreadNotificationCount(for: board.id)
-        let isFocused = !viewModel.isOverviewPresented && board.id == railDesk?.focusedBoardID
+        let isFocused = !windowModel.isOverviewPresented && board.id == railDesk?.focusedBoardID
         let isOverviewSelected =
-            viewModel.isOverviewPresented
-            && board.id == viewModel.overview.selectionBoardID
-            && railDesk?.id == viewModel.overview.selectionDeskID
+            windowModel.isOverviewPresented
+            && board.id == windowModel.overview.selectionBoardID
+            && railDesk?.id == windowModel.overview.selectionDeskID
         let isAnchor = railDesk?.anchorBoardID == board.id
 
         return HStack(spacing: 8) {
@@ -158,7 +159,7 @@ struct BoardRail: View {
 
         Button {
             store.focusBoard(board.id)
-            viewModel.showRenameBoardPanel()
+            windowModel.showRenameBoardPanel()
         } label: {
             Label("Rename Board", systemSymbol: .pencil)
         }

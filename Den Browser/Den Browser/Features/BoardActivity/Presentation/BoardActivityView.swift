@@ -9,7 +9,7 @@ struct BoardActivityView: View {
     let profileColor: Color
 
     @Environment(DenStore.self) private var store
-    @Environment(DenViewModel.self) private var viewModel
+    @Environment(DenWindowModel.self) private var windowModel
     @State private var sampler = ProcessResourceSampler()
     @State private var webUsage: [pid_t: ProcessResourceUsage] = [:]
     @State private var terminalUsage: [BoardID: ProcessResourceUsage] = [:]
@@ -70,7 +70,7 @@ struct BoardActivityView: View {
                                                 processIdentifier: processIdentifier(for: board),
                                                 sharedWebBoardCount: sharedWebBoardCount(for: board),
                                                 profileColor: profileColor,
-                                                onOpen: { viewModel.enterBoardFromActivity(board.id) },
+                                                onOpen: { windowModel.enterBoardFromActivity(board.id) },
                                                 onRemove: { store.removeBoard(board.id) })
                                         }
                                     }
@@ -86,12 +86,12 @@ struct BoardActivityView: View {
         .glassEffect(.regular, in: RoundedRectangle(cornerRadius: DenRadius.large, style: .continuous))
         .overlay(alignment: .topTrailing) {
             DenCloseButton(label: "Close Board Activity") {
-                viewModel.hideBoardActivity()
+                windowModel.hideBoardActivity()
             }
             .padding(14)
         }
         .onExitCommand {
-            viewModel.hideBoardActivity()
+            windowModel.hideBoardActivity()
         }
         .task {
             while !Task.isCancelled {

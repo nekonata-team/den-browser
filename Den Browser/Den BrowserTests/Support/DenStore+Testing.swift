@@ -222,47 +222,49 @@ func withStore<T>(
 }
 
 @MainActor
-func withTestViewModel<T>(
+func withTestWindowModel<T>(
     store: DenStore,
-    body: (DenViewModel) throws -> T
+    body: (DenWindowModel) throws -> T
 ) rethrows -> T {
-    let viewModel = DenViewModel(store: store)
-    viewModel.connect()
-    defer { viewModel.disconnect() }
-    return try body(viewModel)
+    let composition = DenWindowComposition(store: store)
+    let windowModel = composition.model
+    composition.connect()
+    defer { composition.disconnect() }
+    return try body(windowModel)
 }
 
 @MainActor
-func withTestViewModel<T>(
+func withTestWindowModel<T>(
     store: DenStore,
-    body: (DenViewModel) async throws -> T
+    body: (DenWindowModel) async throws -> T
 ) async rethrows -> T {
-    let viewModel = DenViewModel(store: store)
-    viewModel.connect()
-    defer { viewModel.disconnect() }
-    return try await body(viewModel)
+    let composition = DenWindowComposition(store: store)
+    let windowModel = composition.model
+    composition.connect()
+    defer { composition.disconnect() }
+    return try await body(windowModel)
 }
 
 @MainActor
-func withTestViewModel<T>(
+func withTestWindowModel<T>(
     desks: [DeskState],
     onSave: ((DenState) -> Bool)? = nil,
     terminalCommandRunner: any TerminalCommandRunning = SubprocessCommandRunner(),
-    body: (DenViewModel) throws -> T
+    body: (DenWindowModel) throws -> T
 ) rethrows -> T {
     try withTestStore(desks: desks, onSave: onSave, terminalCommandRunner: terminalCommandRunner) { store in
-        try withTestViewModel(store: store, body: body)
+        try withTestWindowModel(store: store, body: body)
     }
 }
 
 @MainActor
-func withTestViewModel<T>(
+func withTestWindowModel<T>(
     desks: [DeskState],
     onSave: ((DenState) -> Bool)? = nil,
     terminalCommandRunner: any TerminalCommandRunning = SubprocessCommandRunner(),
-    body: (DenViewModel) async throws -> T
+    body: (DenWindowModel) async throws -> T
 ) async rethrows -> T {
     try await withTestStore(desks: desks, onSave: onSave, terminalCommandRunner: terminalCommandRunner) { store in
-        try await withTestViewModel(store: store, body: body)
+        try await withTestWindowModel(store: store, body: body)
     }
 }

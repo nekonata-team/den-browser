@@ -1,5 +1,7 @@
 import AppKit
+import DenApplication
 import DenDomain
+import DenPresentation
 import Foundation
 import Testing
 import WebKit
@@ -80,7 +82,7 @@ struct ProfileManagerTests {
         #expect(store.webExtensionHost == nil)
         let terminal = BoardState(label: "Terminal", width: 520, workingDirectory: "/tmp")
         let desk = DeskState(label: "Terminal", boards: [terminal], focusedBoardID: terminal.id)
-        store.state = DenState(
+        store.storage.state = DenState(
             desks: [desk],
             focusedDeskID: desk.id)
         let window = NSWindow()
@@ -198,7 +200,7 @@ struct ProfileManagerTests {
         let store = try #require(manager.store(for: manager.personalProfileID))
         let board = BoardState(label: "Web", width: 520, currentSheetURL: nil)
         let desk = DeskState(label: "Desk", boards: [board], focusedBoardID: board.id)
-        store.state = DenState(desks: [desk], focusedDeskID: desk.id)
+        store.storage.state = DenState(desks: [desk], focusedDeskID: desk.id)
         _ = store.webRuntime(for: board)
         defer { manager.setUBOLiteEnabled(false) }
         #expect(store.webExtensionHost == nil)
@@ -508,9 +510,9 @@ struct ProfileManagerTests {
         let secondStore = try #require(manager.store(for: second.id))
         let firstBoard = board("First")
         let secondBoard = board("Second")
-        firstStore.state = DenState(desks: [desk("First", boards: [firstBoard])], focusedDeskID: DeskID())
+        firstStore.storage.state = DenState(desks: [desk("First", boards: [firstBoard])], focusedDeskID: DeskID())
         firstStore.focusDesk(firstStore.state.desks[0].id)
-        secondStore.state = DenState(desks: [desk("Second", boards: [secondBoard])], focusedDeskID: DeskID())
+        secondStore.storage.state = DenState(desks: [desk("Second", boards: [secondBoard])], focusedDeskID: DeskID())
         secondStore.focusDesk(secondStore.state.desks[0].id)
         let firstWebView = firstStore.webRuntime(for: firstBoard).webView
         let secondWebView = secondStore.webRuntime(for: secondBoard).webView
@@ -767,26 +769,27 @@ struct ProfileManagerTests {
         let manager = makeProfileManager(directory: directory)
         let profileID = manager.personalProfileID
         let store = try #require(manager.store(for: profileID))
-        let viewModel = DenViewModel(store: store)
-        viewModel.connect()
-        defer { viewModel.disconnect() }
+        let composition = DenWindowComposition(store: store)
+        let windowModel = composition.model
+        composition.connect()
+        defer { composition.disconnect() }
         let first = board("First", width: BoardState.maximumWidth)
         let second = board("Second", width: BoardState.maximumWidth)
-        store.state.desks[0].boards = [first, second]
-        store.state.desks[0].focusedBoardID = first.id
+        store.storage.state.desks[0].boards = [first, second]
+        store.storage.state.desks[0].focusedBoardID = first.id
         #expect(store.save())
         let writesBefore = manager.profileSaveCount
 
         // Act
-        viewModel.adjustFocusedDeskBoardWidths(by: 10)
+        windowModel.adjustFocusedDeskBoardWidths(by: 10)
         #expect(manager.profileSaveCount == writesBefore)
-        viewModel.maximizedBoardID = first.id
-        viewModel.adjustFocusedBoardWidth(by: 20)
-        #expect(viewModel.maximizedBoardID == nil)
+        windowModel.maximizedBoardID = first.id
+        windowModel.adjustFocusedBoardWidth(by: 20)
+        #expect(windowModel.maximizedBoardID == nil)
         #expect(manager.profileSaveCount == writesBefore)
-        viewModel.adjustFocusedBoardWidth(by: -20)
+        windowModel.adjustFocusedBoardWidth(by: -20)
         try await Task.sleep(for: .milliseconds(200))
-        viewModel.adjustFocusedDeskBoardWidths(by: 10)
+        windowModel.adjustFocusedDeskBoardWidths(by: 10)
         #expect(manager.profileSaveCount == writesBefore)
         try await Task.sleep(for: .milliseconds(350))
 
@@ -844,13 +847,13 @@ struct ProfileManagerTests {
         let manager = makeProfileManager(directory: directory)
         let profileID = manager.personalProfileID
         let store = try #require(manager.store(for: profileID))
-        let viewModel = DenViewModel(store: store)
-        viewModel.connect()
-        defer { viewModel.disconnect() }
+        let composition = DenWindowComposition(store: store)
+        composition.connect()
+        defer { composition.disconnect() }
         let firstBoard = board("First")
         let secondBoard = board("Second")
         let deskState = desk("Main", boards: [firstBoard, secondBoard], focusedBoardID: firstBoard.id)
-        store.state = DenState(desks: [deskState], focusedDeskID: deskState.id)
+        store.storage.state = DenState(desks: [deskState], focusedDeskID: deskState.id)
         #expect(store.save())
         let writesBefore = manager.profileSaveCount
 
@@ -877,7 +880,7 @@ struct ProfileManagerTests {
         let firstBoard = board("First")
         let secondBoard = board("Second")
         let deskState = desk("Main", boards: [firstBoard, secondBoard], focusedBoardID: firstBoard.id)
-        store.state = DenState(desks: [deskState], focusedDeskID: deskState.id)
+        store.storage.state = DenState(desks: [deskState], focusedDeskID: deskState.id)
         #expect(store.save())
 
         // Act
@@ -899,23 +902,24 @@ struct ProfileManagerTests {
         let manager = makeProfileManager(directory: directory)
         let profileID = manager.personalProfileID
         let store = try #require(manager.store(for: profileID))
-        let viewModel = DenViewModel(store: store)
-        viewModel.connect()
-        defer { viewModel.disconnect() }
+        let composition = DenWindowComposition(store: store)
+        let windowModel = composition.model
+        composition.connect()
+        defer { composition.disconnect() }
         let firstBoard = board("First")
         let secondBoard = board("Second")
         let deskState = desk("Main", boards: [firstBoard, secondBoard], focusedBoardID: firstBoard.id)
-        store.state = DenState(desks: [deskState], focusedDeskID: deskState.id)
+        store.storage.state = DenState(desks: [deskState], focusedDeskID: deskState.id)
         #expect(store.save())
         let writesBefore = manager.profileSaveCount
 
         // Act
         store.focusBoard(secondBoard.id)
-        viewModel.showOverview()
-        #expect(viewModel.beginOverviewBoardDrag(firstBoard.id))
+        windowModel.showOverview()
+        #expect(windowModel.beginOverviewBoardDrag(firstBoard.id))
         try await Task.sleep(for: .milliseconds(450))
         #expect(manager.profileSaveCount == writesBefore)
-        viewModel.overview.cancelBoardDrag()
+        windowModel.overview.cancelBoardDrag()
         try await Task.sleep(for: .milliseconds(450))
 
         // Assert
@@ -975,7 +979,7 @@ struct ProfileManagerTests {
         manager.register(window: window2, for: route2)
 
         let targetBoard = board("SharedBoard")
-        store1.state = DenState(desks: [desk("Main", boards: [targetBoard])], focusedDeskID: DeskID())
+        store1.storage.state = DenState(desks: [desk("Main", boards: [targetBoard])], focusedDeskID: DeskID())
         store1.focusDesk(store1.state.desks[0].id)
         let runtime = store1.webRuntime(for: targetBoard)
 
@@ -1011,8 +1015,8 @@ struct ProfileManagerTests {
 
         let targetBoard = BoardState(label: "Terminal", width: 520, workingDirectory: "/tmp")
         let firstDeskIndex = try #require(owner?.state.desks.firstIndex { $0.id == firstDeskID })
-        owner?.state.desks[firstDeskIndex].boards = [targetBoard]
-        owner?.state.desks[firstDeskIndex].focusedBoardID = targetBoard.id
+        owner?.storage.state.desks[firstDeskIndex].boards = [targetBoard]
+        owner?.storage.state.desks[firstDeskIndex].focusedBoardID = targetBoard.id
         owner?.focusDesk(firstDeskID)
         let runtime = try #require(owner?.terminalRuntime(for: targetBoard))
         let storage = try #require(owner?.storage)
@@ -1037,7 +1041,7 @@ struct ProfileManagerTests {
         var store: DenStore? = manager?.store(for: route)
         let targetBoard = board("TargetBoard")
         let targetDesk = desk("Main", boards: [targetBoard])
-        store?.state = DenState(desks: [targetDesk], focusedDeskID: targetDesk.id)
+        store?.storage.state = DenState(desks: [targetDesk], focusedDeskID: targetDesk.id)
         store?.focusDesk(targetDesk.id)
         let runtime = try #require(store?.webRuntime(for: targetBoard))
         let storage = try #require(store?.storage)
@@ -1065,7 +1069,7 @@ struct ProfileManagerTests {
         manager.register(window: window, for: route)
 
         let targetBoard = board("TargetBoard")
-        store.state = DenState(desks: [desk("Main", boards: [targetBoard])], focusedDeskID: DeskID())
+        store.storage.state = DenState(desks: [desk("Main", boards: [targetBoard])], focusedDeskID: DeskID())
         store.focusDesk(store.state.desks[0].id)
         let runtime = store.webRuntime(for: targetBoard)
 

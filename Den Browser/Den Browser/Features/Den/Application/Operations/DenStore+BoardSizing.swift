@@ -9,7 +9,7 @@ extension DenStore {
         let width = state.desks[deskIndex].boards[boardIndex].width + delta
         let constrainedWidth = BoardState.constrainedWidth(width)
         guard constrainedWidth != state.desks[deskIndex].boards[boardIndex].width else { return }
-        state.desks[deskIndex].boards[boardIndex].width = constrainedWidth
+        storage.state.desks[deskIndex].boards[boardIndex].width = constrainedWidth
         saveDeferredState()
     }
 
@@ -20,7 +20,7 @@ extension DenStore {
             let width = state.desks[deskIndex].boards[boardIndex].width + delta
             let constrainedWidth = BoardState.constrainedWidth(width)
             changed = changed || constrainedWidth != state.desks[deskIndex].boards[boardIndex].width
-            state.desks[deskIndex].boards[boardIndex].width = constrainedWidth
+            storage.state.desks[deskIndex].boards[boardIndex].width = constrainedWidth
         }
         if changed { saveDeferredState() }
     }
@@ -30,10 +30,10 @@ extension DenStore {
         guard let deskIndex = state.desks.firstIndex(where: { $0.id == deskID }) else { return false }
 
         for boardIndex in state.desks[deskIndex].boards.indices {
-            state.desks[deskIndex].boards[boardIndex].width = width
+            storage.state.desks[deskIndex].boards[boardIndex].width = width
         }
         if state.desks[deskIndex].focusedBoardID != nil {
-            state.desks[deskIndex].scrollOffsetX = nil
+            storage.state.desks[deskIndex].scrollOffsetX = nil
         }
         save()
         return true
@@ -41,7 +41,7 @@ extension DenStore {
 
     func resizeBoard(_ boardID: BoardID, to width: Double) {
         guard let indices = boardIndices(for: boardID) else { return }
-        state.desks[indices.desk].boards[indices.board].width = BoardState.constrainedWidth(width)
+        storage.state.desks[indices.desk].boards[indices.board].width = BoardState.constrainedWidth(width)
     }
 
     func resizeBoardPair(_ boardID: BoardID, to width: Double) {
@@ -55,8 +55,8 @@ extension DenStore {
         let maximumWidth = min(BoardState.maximumWidth, totalWidth - BoardState.minimumWidth)
         let resizedWidth = min(max(width, minimumWidth), maximumWidth)
 
-        state.desks[indices.desk].boards[indices.board].width = resizedWidth
-        state.desks[indices.desk].boards[nextBoardIndex].width = totalWidth - resizedWidth
+        storage.state.desks[indices.desk].boards[indices.board].width = resizedWidth
+        storage.state.desks[indices.desk].boards[nextBoardIndex].width = totalWidth - resizedWidth
     }
 
     func saveBoardWidths() {

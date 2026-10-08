@@ -4,14 +4,14 @@ import Foundation
 @MainActor
 final class KeyboardController {
     private var monitor: Any?
-    private var viewModels: [ObjectIdentifier: DenViewModel] = [:]
+    private var windowModels: [ObjectIdentifier: DenWindowModel] = [:]
 
-    func register(viewModel: DenViewModel, for window: NSWindow) {
-        viewModels[ObjectIdentifier(window)] = viewModel
+    func register(windowModel: DenWindowModel, for window: NSWindow) {
+        windowModels[ObjectIdentifier(window)] = windowModel
     }
 
     func unregister(window: NSWindow) {
-        viewModels.removeValue(forKey: ObjectIdentifier(window))
+        windowModels.removeValue(forKey: ObjectIdentifier(window))
     }
 
     func start(
@@ -26,13 +26,13 @@ final class KeyboardController {
             guard let self,
                 let store = profileManager?.store(for: event.window),
                 let window = event.window,
-                let viewModel = self.viewModels[ObjectIdentifier(window)],
+                let windowModel = self.windowModels[ObjectIdentifier(window)],
                 let preferences
             else { return event }
             return Self.handle(
                 event,
                 store: store,
-                viewModel: viewModel,
+                windowModel: windowModel,
                 preferences: preferences,
                 openSettings: openSettings) ? nil : event
         }
@@ -43,46 +43,47 @@ final class KeyboardController {
             NSEvent.removeMonitor(monitor)
         }
         self.monitor = nil
-        viewModels.removeAll()
+        windowModels.removeAll()
     }
 
     @discardableResult
     static func handle(
         _ event: NSEvent,
         store: DenStore,
-        viewModel: DenViewModel,
+        windowModel: DenWindowModel,
         preferences: AppPreferences? = nil,
         openSettings: @MainActor () -> Void = {}
     ) -> Bool {
         let decision = decision(
             for: event,
             store: store,
-            viewModel: viewModel,
+            windowModel: windowModel,
             preferences: preferences)
-        apply(decision, viewModel: viewModel, openSettings: openSettings)
+        apply(decision, store: store, windowModel: windowModel, openSettings: openSettings)
         return !decision.isForwarded
     }
 
     static func decision(
         for event: NSEvent,
         store: DenStore,
-        viewModel: DenViewModel,
+        windowModel: DenWindowModel,
         preferences: AppPreferences? = nil
     ) -> InputDecision {
         let preferences = preferences ?? store.preferences
         return KeyboardRouter.route(
             event: KeyEvent(event),
-            context: InputContext(store: store, viewModel: viewModel, event: event),
+            context: InputContext(store: store, windowModel: windowModel, event: event),
             shortcuts: ShortcutConfiguration(preferences: preferences))
     }
 
     private static func apply(
         _ decision: InputDecision,
-        viewModel: DenViewModel,
+        store: DenStore,
+        windowModel: DenWindowModel,
         openSettings: @MainActor () -> Void
     ) {
         guard case .perform(let action) = decision else { return }
-        AppActionHandler.perform(action, viewModel: viewModel, openSettings: openSettings)
+        AppActionHandler.perform(action, store: store, windowModel: windowModel, openSettings: openSettings)
     }
 }
 

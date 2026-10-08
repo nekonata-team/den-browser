@@ -1,10 +1,11 @@
 import DenDesign
 import DenDomain
+import DenPresentation
 import SFSafeSymbols
 import SwiftUI
 
 struct DrawerHeaderView: View {
-    @Environment(DrawerViewModel.self) private var drawer
+    @Environment(DrawerModel.self) private var drawer
     @Environment(\.accessibilityDifferentiateWithoutColor) private var differentiateWithoutColor
 
     @FocusState.Binding var isSearchFocused: Bool

@@ -1,3 +1,4 @@
+import DenApplication
 import DenDomain
 import Foundation
 
@@ -8,7 +9,7 @@ extension DenStore {
             let indices = boardIndices(for: boardID),
             state.desks[indices.desk].boards[indices.board].zmxRootSessionName != rootSessionName
         else { return }
-        state.desks[indices.desk].boards[indices.board].zmxRootSessionName = rootSessionName
+        storage.state.desks[indices.desk].boards[indices.board].zmxRootSessionName = rootSessionName
         save()
     }
 
@@ -168,7 +169,7 @@ extension DenStore {
         else { return }
 
         guard tutorial.record(step: step) else { return }
-        state.desks[indices.desk].boards[indices.board].kind = .tutorial(tutorial)
+        storage.state.desks[indices.desk].boards[indices.board].kind = .tutorial(tutorial)
     }
 
     static func resolveZellijInput(_ input: String) -> ZellijInput? {
@@ -201,9 +202,9 @@ extension DenStore {
     func clearRecent() {
         guard !recentItems.isEmpty else { return }
         let original = recentItems
-        recentItems = []
+        storage.recentItems = []
         if saveStateAndRecentItems() == false {
-            recentItems = original
+            storage.recentItems = original
         }
     }
 
@@ -376,15 +377,15 @@ extension DenStore {
             && !focus
             && insertionAfterBoardID != nil
         let insert = { [self] in
-            state.desks[deskIndex].boards.insert(board, at: insertIndex)
+            storage.state.desks[deskIndex].boards.insert(board, at: insertIndex)
             if focus {
                 onWindowEffect?(.clearBoardInputRequests)
-                state.desks[deskIndex].focusedBoardID = board.id
+                storage.state.desks[deskIndex].focusedBoardID = board.id
                 setFocusedDesk(state.desks[deskIndex].id)
                 onWindowEffect?(.dismissTemporaryPresentation)
                 onWindowEffect?(.exitDenMode)
             } else if state.desks[deskIndex].focusedBoardID == nil {
-                state.desks[deskIndex].focusedBoardID = board.id
+                storage.state.desks[deskIndex].focusedBoardID = board.id
             }
             if save { self.save() }
         }
@@ -413,7 +414,7 @@ extension DenStore {
         else { return false }
 
         let boardID = state.desks[deskIndex].boards[boardIndex].id
-        state.desks[deskIndex].boards[boardIndex].currentSheetURL = url
+        storage.state.desks[deskIndex].boards[boardIndex].currentSheetURL = url
         onWindowEffect?(.dismissTemporaryPresentation)
         onWindowEffect?(.exitDenMode)
         save()
@@ -453,7 +454,7 @@ extension DenStore {
                 else { continue }
                 _ = removeBoard(at: (desk: indices.desk, board: memberIndex), focusNext: focusNext)
             }
-            recentlyRemovedBoards.insert(
+            storage.recentlyRemovedBoards.insert(
                 RecentlyRemovedBoard(
                     board: board,
                     sideBoard: removed.first,
@@ -463,7 +464,7 @@ extension DenStore {
                 at: 0
             )
             if recentlyRemovedBoards.count > Self.maximumRecentlyRemovedBoardCount {
-                recentlyRemovedBoards.removeLast()
+                storage.recentlyRemovedBoards.removeLast()
             }
             for removedBoard in groupBoards {
                 if removedBoard.isInspection, let targetBoardID = removedBoard.sideBoardTargetBoardID {
@@ -492,7 +493,7 @@ extension DenStore {
         if recentlyRemovedBoard.board.isTutorial,
             let existingTutorialBoard = state.desks.lazy.flatMap(\.boards).first(where: \.isTutorial)
         {
-            recentlyRemovedBoards.removeFirst()
+            storage.recentlyRemovedBoards.removeFirst()
             focusBoard(existingTutorialBoard.id, exitsDenMode: true)
             reportFeedback("Tutorial Board is already open.", severity: .warning)
             return
@@ -543,14 +544,14 @@ extension DenStore {
 
         let board = recentlyRemovedBoard.board
         let restoredBoards = [board] + (recentlyRemovedBoard.sideBoard.map { [$0] } ?? [])
-        state.desks[deskIndex].boards.insert(contentsOf: restoredBoards, at: insertionIndex)
-        state.desks[deskIndex].focusedBoardID = board.id
+        storage.state.desks[deskIndex].boards.insert(contentsOf: restoredBoards, at: insertionIndex)
+        storage.state.desks[deskIndex].focusedBoardID = board.id
         let deskID = state.desks[deskIndex].id
         let changedDesk = setFocusedDesk(deskID)
         if !changedDesk && presentedDeskID == deskID {
             markNotificationsRead(for: board.id)
         }
-        recentlyRemovedBoards.removeFirst()
+        storage.recentlyRemovedBoards.removeFirst()
         save()
     }
 
@@ -704,9 +705,9 @@ extension DenStore {
 
         let trimmed = newLabel.trimmingCharacters(in: .whitespacesAndNewlines)
         if trimmed.isEmpty {
-            state.desks[deskIndex].boards[boardIndex].customLabel = nil
+            storage.state.desks[deskIndex].boards[boardIndex].customLabel = nil
         } else {
-            state.desks[deskIndex].boards[boardIndex].customLabel = trimmed
+            storage.state.desks[deskIndex].boards[boardIndex].customLabel = trimmed
         }
         onWindowEffect?(.dismissTemporaryPresentation)
         onWindowEffect?(.exitDenMode)
@@ -792,13 +793,13 @@ extension DenStore {
             itemToSave = item
         }
         let original = recentItems
-        recentItems.removeAll { $0 == itemToSave }
-        recentItems.insert(itemToSave, at: 0)
+        storage.recentItems.removeAll { $0 == itemToSave }
+        storage.recentItems.insert(itemToSave, at: 0)
         if recentItems.count > Self.maximumRecentItemCount {
-            recentItems.removeLast(recentItems.count - Self.maximumRecentItemCount)
+            storage.recentItems.removeLast(recentItems.count - Self.maximumRecentItemCount)
         }
         if saveStateAndRecentItems() == false {
-            recentItems = original
+            storage.recentItems = original
         }
     }
 }

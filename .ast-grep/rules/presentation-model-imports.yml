@@ -1,0 +1,13 @@
+id: presentation-model-imports
+language: Swift
+severity: error
+message: Presentation models depend only on Domain values and Observation, with operations supplied by composition.
+files:
+  - "Packages/DenPresentation/Sources/DenPresentation/**/*.swift"
+rule:
+  kind: import_declaration
+  has:
+    kind: identifier
+    not:
+      regex: '^(Foundation|Observation|DenDomain)(\.|$)'
+    stopBy: end

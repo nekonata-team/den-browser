@@ -1,18 +1,23 @@
 import DenDesign
 import DenDomain
+import DenPresentation
 import SFSafeSymbols
 import SwiftUI
 
 struct DrawerView: View {
-    @Environment(DenStore.self) private var store
-    @Environment(DenViewModel.self) private var viewModel
-    @Environment(DrawerViewModel.self) private var drawer
+    @Environment(DrawerModel.self) private var drawer
     @Environment(\.accessibilityReduceMotion) private var systemReduceMotion
 
     let availableHeight: CGFloat
     let availableWidth: CGFloat
     let profileColor: Color
     var shouldShowHeader: Bool = true
+    let isDenMode: () -> Bool
+    let isDrawerOpen: () -> Bool
+    let motionPreference: MotionPreference
+    let drawerRuntime: (DrawerItem) -> DrawerPreviewRuntime
+    let placeFromContextMenu: (UUID) -> Void
+    let placeAsBoard: (UUID) -> Void
 
     @FocusState private var isSearchFocused: Bool
     @FocusState private var focusedDrawerItemID: UUID?
@@ -37,11 +42,11 @@ struct DrawerView: View {
         .onAppear {
             restoreKeyboardFocus()
         }
-        .onChange(of: viewModel.isDenMode) { _, _ in
+        .onChange(of: isDenMode()) { _, _ in
             restoreKeyboardFocus()
         }
         .onChange(of: drawer.selectedItemID) { _, itemID in
-            if viewModel.isDenMode, !drawer.isFilterInputActive {
+            if isDenMode(), !drawer.isFilterInputActive {
                 focusedDrawerItemID = itemID
             }
         }
@@ -72,7 +77,7 @@ struct DrawerView: View {
     private var drawerContents: some View {
         ScrollViewReader { proxy in
             Group {
-                if store.state.drawerItems.isEmpty {
+                if drawer.items.isEmpty {
                     ContentUnavailableView(
                         "Drawer is empty",
                         systemSymbol: .tray,
@@ -84,22 +89,22 @@ struct DrawerView: View {
                     ScrollView {
                         LazyVStack(spacing: 6) {
                             ForEach(drawer.filteredItems) { item in
-                                let isPreviewFocused = !viewModel.isDenMode
+                                let isPreviewFocused = !isDenMode()
                                 DrawerItemView(
                                     focusedDrawerItemID: $focusedDrawerItemID,
                                     item: item,
                                     isSelected: drawer.selectedItemID == item.id,
                                     isExpanded: drawer.expandedItemID == item.id,
-                                    isPreviewVisible: viewModel.isDrawerOpen
+                                    isPreviewVisible: isDrawerOpen()
                                         && drawer.expandedItemID == item.id,
                                     profileColor: profileColor,
                                     previewHeight: previewHeight,
                                     onToggle: { drawer.toggleItem(item.id) },
-                                    onPlaceFromContextMenu: { store.placeDrawerItemAsBoard(item.id) },
-                                    onPlaceAsBoard: { viewModel.placeDrawerItemAsBoard(item.id) },
-                                    onDiscard: { store.discardDrawerItem(item.id) },
+                                    onPlaceFromContextMenu: { placeFromContextMenu(item.id) },
+                                    onPlaceAsBoard: { placeAsBoard(item.id) },
+                                    onDiscard: { drawer.discardItem(item.id) },
                                     preview: {
-                                        let runtime = store.drawerRuntime(for: item)
+                                        let runtime = drawerRuntime(item)
                                         DrawerWebSurface(
                                             webView: runtime.webView,
                                             isFocused: isPreviewFocused
@@ -116,10 +121,10 @@ struct DrawerView: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .onChange(of: drawer.expandedItemID) { _, itemID in
-                guard viewModel.isDrawerOpen, let itemID else { return }
+                guard isDrawerOpen(), let itemID else { return }
                 schedulePreviewScroll(to: itemID, using: proxy)
             }
-            .onChange(of: viewModel.isDrawerOpen) { _, isOpen in
+            .onChange(of: isDrawerOpen()) { _, isOpen in
                 guard isOpen, let itemID = drawer.expandedItemID else { return }
                 schedulePreviewScroll(to: itemID, using: proxy)
             }
@@ -130,7 +135,7 @@ struct DrawerView: View {
         let animation = DenMotion.spatial(reduceMotion: shouldReduceMotion)
         Task { @MainActor in
             await Task.yield()
-            guard viewModel.isDrawerOpen, drawer.expandedItemID == itemID else { return }
+            guard isDrawerOpen(), drawer.expandedItemID == itemID else { return }
             withAnimation(animation) {
                 proxy.scrollTo(drawerItemScrollID(for: itemID), anchor: .top)
             }
@@ -174,7 +179,7 @@ struct DrawerView: View {
             )
         }
         let preferredHeight: CGFloat
-        if store.state.drawerItems.isEmpty {
+        if drawer.items.isEmpty {
             preferredHeight = DenDrawerLayout.emptyHeight
         } else if drawer.expandedItemID != nil {
             preferredHeight = DenDrawerLayout.floatingExpandedHeight
@@ -193,14 +198,14 @@ struct DrawerView: View {
 
     private var shouldReduceMotion: Bool {
         DenMotion.shouldReduceMotion(
-            preference: store.preferences.motionPreference,
+            preference: motionPreference,
             systemReduceMotion: systemReduceMotion
         )
     }
 
     private func restoreKeyboardFocus() {
         guard !drawer.isFilterInputActive else { return }
-        if !viewModel.isDenMode, drawer.expandedItemID != nil {
+        if !isDenMode(), drawer.expandedItemID != nil {
             return
         }
         focusedDrawerItemID = drawer.selectedItemID

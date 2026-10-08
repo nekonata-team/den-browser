@@ -1,5 +1,7 @@
 import AppKit
+import DenApplication
 import DenDomain
+import DenPresentation
 import Sparkle
 import SwiftUI
 
@@ -40,8 +42,8 @@ struct Den_BrowserApp: App {
             ProfileWindowView(
                 route: route,
                 startUpdater: { updaterController.start() },
-                registerKeyboardWindow: { window, viewModel in
-                    keyboardController.register(viewModel: viewModel, for: window)
+                registerKeyboardWindow: { window, windowModel in
+                    keyboardController.register(windowModel: windowModel, for: window)
                 },
                 unregisterKeyboardWindow: { window in
                     keyboardController.unregister(window: window)
@@ -134,15 +136,14 @@ private struct DenCommands: Commands {
     let updaterController: UpdaterControllerCoordinator
     let openSettingsCoordinator: OpenSettingsCoordinator
 
-    @FocusedValue(\.denViewModel) private var viewModel
+    @FocusedValue(\.denWindowModel) private var windowModel
+    @FocusedValue(\.denStore) private var store
     @FocusedValue(\.profileID) private var profileID
     @FocusedValue(\.profileWindowID) private var profileWindowID
     @Environment(\.openWindow) private var openWindow
 
-    private var store: DenStore? { viewModel?.store }
-
     private func perform(_ action: AppAction) {
-        AppActionHandler.perform(action, viewModel: viewModel)
+        AppActionHandler.perform(action, store: store, windowModel: windowModel)
     }
 
     var body: some Commands {
@@ -163,7 +164,7 @@ private struct DenCommands: Commands {
                     NSApp.keyWindow?.performClose(nil)
                 }
                 .keyboardShortcut("w", modifiers: [.command, .shift])
-                .disabled(viewModel?.pendingConfirmation != nil)
+                .disabled(windowModel?.pendingConfirmation != nil)
             }
         }
 
@@ -172,8 +173,8 @@ private struct DenCommands: Commands {
                 .keyboardShortcut(.escape, modifiers: [.shift])
                 .disabled(
                     store == nil
-                        || viewModel?.pendingConfirmation != nil
-                        || viewModel?.isFullscreenActive == true)
+                        || windowModel?.pendingConfirmation != nil
+                        || windowModel?.isFullscreenActive == true)
         }
 
         CommandMenu("Profile") {
@@ -194,7 +195,7 @@ private struct DenCommands: Commands {
 
             Menu("Manage Profiles") {
                 Button("Open Profile…") {
-                    viewModel?.setTemporaryContext(.profilePicker)
+                    windowModel?.setTemporaryContext(.profilePicker)
                 }
                 .keyboardShortcut("p", modifiers: [.control, .command])
 
@@ -277,12 +278,12 @@ private struct DenCommands: Commands {
                     .keyboardShortcut("w", modifiers: [.command])
                     .disabled(
                         store?.focusedDesk?.focusedBoardID == nil
-                            || viewModel?.pendingConfirmation != nil)
+                            || windowModel?.pendingConfirmation != nil)
                 Button("Restore Removed Board") { perform(.board(.restore)) }
                     .disabled(store?.recentlyRemovedBoards.isEmpty ?? true)
             }
 
-            Button("zmx Sessions…") { viewModel?.showZmxSessions() }
+            Button("zmx Sessions…") { windowModel?.showZmxSessions() }
                 .disabled(store?.zmxClient.isConfigured != true)
 
             Menu("Drawer") {
@@ -316,7 +317,7 @@ private struct DenCommands: Commands {
                         Button(count == 1 ? "1 Board" : "\(count) Boards") {
                             perform(.desk(.resizeBoards(count)))
                         }
-                        .disabled(viewModel?.canResizeFocusedDeskBoards(toFit: count) != true)
+                        .disabled(windowModel?.canResizeFocusedDeskBoards(toFit: count) != true)
                     }
                 }
                 .disabled(store == nil)
@@ -334,20 +335,20 @@ private struct DenCommands: Commands {
             }
 
             Menu("Presentation") {
-                Button("Toggle Overview") { viewModel?.toggleOverview() }
+                Button("Toggle Overview") { windowModel?.toggleOverview() }
                     .disabled(store == nil)
                 Button("Toggle Zen View") { perform(.application(.toggleZenView)) }
                     .disabled(store == nil)
                 Toggle(
                     "Focus Mode",
                     isOn: Binding(
-                        get: { viewModel?.isFocusModePresented == true },
+                        get: { windowModel?.isFocusModePresented == true },
                         set: { isPresented in
-                            guard isPresented != (viewModel?.isFocusModePresented ?? false) else { return }
+                            guard isPresented != (windowModel?.isFocusModePresented ?? false) else { return }
                             perform(.application(.toggleFocusMode))
                         })
                 )
-                .disabled(store == nil || viewModel?.temporaryContext != nil)
+                .disabled(store == nil || windowModel?.temporaryContext != nil)
                 Button("Toggle Drawer") { perform(.drawer(.toggle)) }
                     .disabled(store == nil)
             }
@@ -357,15 +358,16 @@ private struct DenCommands: Commands {
             Button("Settings…") {
                 AppActionHandler.perform(
                     .application(.openSettings),
-                    viewModel: viewModel,
+                    store: store,
+                    windowModel: windowModel,
                     openSettings: { openSettingsCoordinator.open() })
             }
             .keyboardShortcut(",", modifiers: [])
-            .disabled(viewModel?.isDenMode != true || viewModel?.temporaryContext != nil)
+            .disabled(windowModel?.isDenMode != true || windowModel?.temporaryContext != nil)
 
             Divider()
-            Button("Reset Den") { viewModel?.requestResetDenConfirmation() }
-                .disabled(store == nil || viewModel?.pendingConfirmation != nil)
+            Button("Reset Den") { windowModel?.requestResetDenConfirmation() }
+                .disabled(store == nil || windowModel?.pendingConfirmation != nil)
         }
     }
 

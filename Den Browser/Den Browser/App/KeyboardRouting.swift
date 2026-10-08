@@ -1,4 +1,6 @@
+import DenApplication
 import DenDomain
+import DenPresentation
 import Foundation
 
 struct ShortcutConfiguration {
@@ -271,7 +273,7 @@ enum KeyboardRouter {
         return .perform(command.action)
     }
 
-    private static func routeDeskFilter(_ event: KeyEvent, phase: DenFilterPhase) -> InputDecision {
+    private static func routeDeskFilter(_ event: KeyEvent, phase: FilterPhase) -> InputDecision {
         let modifiers = event.modifiers
         if phase == .filtering {
             if event.hasMarkedText { return .forward(.filterTextInput) }
@@ -293,7 +295,7 @@ enum KeyboardRouter {
     private static func routeDrawer(
         _ event: KeyEvent,
         mode: KeyboardMode,
-        filterPhase: DenFilterPhase,
+        filterPhase: FilterPhase,
         previewFirstResponder: Bool
     ) -> InputDecision {
         let modifiers = event.modifiers
@@ -409,7 +411,7 @@ enum KeyboardRouter {
 
     private static func routeOverview(
         _ event: KeyEvent,
-        filterPhase: DenFilterPhase,
+        filterPhase: FilterPhase,
         hasQuery: Bool,
         activeDrag: ActiveDrag?
     ) -> InputDecision {
@@ -436,7 +438,7 @@ enum KeyboardRouter {
 
     private static func routeZmxSessions(
         _ event: KeyEvent,
-        filterPhase: DenFilterPhase,
+        filterPhase: FilterPhase,
         hasQuery: Bool,
         hasSelection: Bool
     ) -> InputDecision {

@@ -1,4 +1,5 @@
 import AppKit
+import DenApplication
 import DenDomain
 import Foundation
 import Observation
@@ -16,7 +17,7 @@ final class ProfileManager {
     @ObservationIgnored private let persistence: ProfilePersistence
     @ObservationIgnored private var persistedProfiles: [ProfileID: PersistedProfile] = [:]
     var profileSaveCount: Int { persistence.profileSaveCount }
-    @ObservationIgnored private var storages: [ProfileID: DenStorage] = [:]
+    @ObservationIgnored private var storages: [ProfileID: DenProfileResources] = [:]
     @ObservationIgnored private var runtimeOwners: [ProfileID: [BoardID: DenStore]] = [:]
     @ObservationIgnored private let windowRegistry = ProfileWindowRegistry()
     @ObservationIgnored private var websiteDataStores: [ProfileID: WKWebsiteDataStore] = [:]
@@ -352,11 +353,11 @@ final class ProfileManager {
         return route
     }
 
-    private func storage(for profileID: ProfileID) -> DenStorage? {
+    private func storage(for profileID: ProfileID) -> DenProfileResources? {
         if let storage = storages[profileID] { return storage }
         guard let persisted = persistedProfiles[profileID] else { return nil }
         let normalizedState = DenStore.normalizedPersistedState(persisted.den)
-        let storage = DenStorage(
+        let storage = DenProfileResources(
             state: normalizedState,
             deskPresets: persisted.deskPresets,
             recentItems: persisted.recentItems,
@@ -397,7 +398,7 @@ final class ProfileManager {
         windowRegistry.store(forProfileID: profileID, preferredWindowID: extensionPresentationTarget()?.windowID)
     }
 
-    func profileID(for storage: DenStorage) -> ProfileID? {
+    func profileID(for storage: DenProfileResources) -> ProfileID? {
         for (profileID, candidateStorage) in storages where candidateStorage === storage {
             return profileID
         }
@@ -543,7 +544,7 @@ final class ProfileManager {
         }
     }
 
-    private func releaseRuntimes(_ storage: DenStorage, profileID: ProfileID) {
+    private func releaseRuntimes(_ storage: DenProfileResources, profileID: ProfileID) {
         for runtime in storage.webRuntimes.values { runtime.dispose() }
         storage.webRuntimes.removeAll()
         for runtime in storage.terminalRuntimes.values { runtime.dispose() }
@@ -670,7 +671,7 @@ final class ProfileManager {
         }
     }
 
-    // The manager chooses each snapshot from DenStorage; persistence owns the timer and pending Task.
+    // The manager chooses each snapshot from DenProfileResources; persistence owns the timer and pending Task.
     func flushPendingDeferredSaves() {
         for profileID in persistence.pendingDeferredSaveIDs {
             guard let storage = storages[profileID] else {

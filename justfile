@@ -13,6 +13,8 @@ swift_sources := "Den Browser"
 domain_sources := "Packages/DenDomain/Sources"
 design_sources := "Packages/DenDesign/Sources"
 ipc_protocol_sources := "Packages/DenIPCProtocol/Sources"
+application_sources := "Packages/DenApplication/Sources"
+presentation_sources := "Packages/DenPresentation/Sources"
 
 # Web works.
 mod web
@@ -27,6 +29,8 @@ format:
     @{{swift_format}} format --in-place --recursive --parallel --configuration .swift-format "{{domain_sources}}"
     @{{swift_format}} format --in-place --recursive --parallel --configuration .swift-format "{{design_sources}}"
     @{{swift_format}} format --in-place --recursive --parallel --configuration .swift-format "{{ipc_protocol_sources}}"
+    @{{swift_format}} format --in-place --recursive --parallel --configuration .swift-format "{{application_sources}}"
+    @{{swift_format}} format --in-place --recursive --parallel --configuration .swift-format "{{presentation_sources}}"
 
 # Format staged Swift sources in place.
 [group("quality")]
@@ -41,6 +45,8 @@ format-check:
     @{{swift_format}} lint --strict --recursive --parallel --configuration .swift-format "{{domain_sources}}"
     @{{swift_format}} lint --strict --recursive --parallel --configuration .swift-format "{{design_sources}}"
     @{{swift_format}} lint --strict --recursive --parallel --configuration .swift-format "{{ipc_protocol_sources}}"
+    @{{swift_format}} lint --strict --recursive --parallel --configuration .swift-format "{{application_sources}}"
+    @{{swift_format}} lint --strict --recursive --parallel --configuration .swift-format "{{presentation_sources}}"
 
 # Fail on Swift style and safety findings.
 [group("quality")]
@@ -55,6 +61,8 @@ architecture-check:
     @ast-grep scan --config sgconfig.yml "{{domain_sources}}"
     @ast-grep scan --config sgconfig.yml "{{design_sources}}"
     @ast-grep scan --config sgconfig.yml "{{ipc_protocol_sources}}"
+    @ast-grep scan --config sgconfig.yml "{{application_sources}}"
+    @ast-grep scan --config sgconfig.yml "{{presentation_sources}}"
 
 # Build macOS app with development signing.
 [group("build")]

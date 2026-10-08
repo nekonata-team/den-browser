@@ -1,4 +1,6 @@
+import DenApplication
 import DenDomain
+import DenPresentation
 import Foundation
 
 enum AppAction: Equatable {
@@ -160,43 +162,43 @@ enum DrawerAction: Equatable {
 enum AppActionHandler {
     static func perform(
         _ action: AppAction,
-        viewModel: DenViewModel?,
+        store: DenStore?,
+        windowModel: DenWindowModel?,
         openSettings: () -> Void = {}
     ) {
         if action == .application(.openSettings) {
             openSettings()
             return
         }
-        guard let viewModel else { return }
-        let store = viewModel.store
+        guard let store, let windowModel else { return }
 
         switch action {
         case .application(let action):
             switch action {
             case .openSettings: break
-            case .toggleDenMode: viewModel.toggleDenMode()
-            case .toggleBoardRail: viewModel.toggleBoardRail()
-            case .exitDenMode: viewModel.exitDenMode()
-            case .showKeyboardShortcuts: viewModel.showKeyboardShortcuts()
-            case .hideKeyboardShortcuts: viewModel.hideKeyboardShortcuts()
-            case .toggleZenView: viewModel.toggleZenView()
-            case .toggleFocusMode: viewModel.toggleFocusMode()
+            case .toggleDenMode: windowModel.toggleDenMode()
+            case .toggleBoardRail: windowModel.toggleBoardRail()
+            case .exitDenMode: windowModel.exitDenMode()
+            case .showKeyboardShortcuts: windowModel.showKeyboardShortcuts()
+            case .hideKeyboardShortcuts: windowModel.hideKeyboardShortcuts()
+            case .toggleZenView: windowModel.toggleZenView()
+            case .toggleFocusMode: windowModel.toggleFocusMode()
             }
         case .notifications(let action):
             switch action {
-            case .toggle: viewModel.toggleNotificationList()
-            case .close: viewModel.closeNotificationList()
-            case .moveSelection(let offset): viewModel.notificationList.moveSelection(by: offset)
-            case .openSelected: viewModel.notificationList.openSelectedNotification()
+            case .toggle: windowModel.toggleNotificationList()
+            case .close: windowModel.closeNotificationList()
+            case .moveSelection(let offset): windowModel.notificationList.moveSelection(by: offset)
+            case .openSelected: windowModel.notificationList.openSelectedNotification()
             }
         case .essentials(let action):
             switch action {
-            case .enterPrefix: viewModel.enterEssentialsPrefix()
-            case .exitPrefix: viewModel.exitEssentialsPrefix()
-            case .moveSelection(let offset): viewModel.moveEssentialSelection(by: offset)
-            case .launchSelected: viewModel.launchSelectedEssential()
+            case .enterPrefix: windowModel.enterEssentialsPrefix()
+            case .exitPrefix: windowModel.exitEssentialsPrefix()
+            case .moveSelection(let offset): windowModel.moveEssentialSelection(by: offset)
+            case .launchSelected: windowModel.launchSelectedEssential()
             case .showNotFound(let key):
-                viewModel.exitEssentialsPrefix()
+                windowModel.exitEssentialsPrefix()
                 let label: String
                 switch key {
                 case " ": label = "Space"
@@ -206,8 +208,8 @@ enum AppActionHandler {
                 default: label = key
                 }
                 store.reportFeedback("No Essential assigned to '\(label)'.", severity: .warning)
-            case .launch(let id): viewModel.launchEssential(id: id)
-            case .saveFocusedBoardAsEssential: viewModel.saveFocusedBoardAsEssential()
+            case .launch(let id): windowModel.launchEssential(id: id)
+            case .saveFocusedBoardAsEssential: windowModel.saveFocusedBoardAsEssential()
             }
         case .desk(let action):
             switch action {
@@ -215,21 +217,21 @@ enum AppActionHandler {
             case .focusNext: store.focusNextDesk()
             case .returnToPrevious: store.returnToPreviousDesk()
             case .focus(let number): store.focusDesk(number: number)
-            case .showNewPanel: viewModel.showNewDeskPanel()
-            case .showSavePresetPanel: viewModel.showSaveDeskPresetPanel()
-            case .showReplacePanel: viewModel.showReplaceDeskPanel()
-            case .showPresetManager: viewModel.showDeskPresetManagement()
-            case .showRenamePanel: viewModel.showRenameDeskPanel()
+            case .showNewPanel: windowModel.showNewDeskPanel()
+            case .showSavePresetPanel: windowModel.showSaveDeskPresetPanel()
+            case .showReplacePanel: windowModel.showReplaceDeskPanel()
+            case .showPresetManager: windowModel.showDeskPresetManagement()
+            case .showRenamePanel: windowModel.showRenameDeskPanel()
             case .delete: store.deleteFocusedDesk()
-            case .adjustBoardWidths(let amount): viewModel.adjustFocusedDeskBoardWidths(by: amount)
-            case .resizeBoards(let count): viewModel.resizeFocusedDeskBoards(toFit: count)
+            case .adjustBoardWidths(let amount): windowModel.adjustFocusedDeskBoardWidths(by: amount)
+            case .resizeBoards(let count): windowModel.resizeFocusedDeskBoards(toFit: count)
             case .reloadSheets: store.reloadFocusedDeskSheets()
-            case .enterFilter: viewModel.deskFilter.enter()
-            case .dismissFilter: viewModel.deskFilter.dismiss()
-            case .confirmFilterQuery: viewModel.deskFilter.confirmQuery()
-            case .confirmFilterSelection: viewModel.deskFilter.confirmSelection()
-            case .selectFilterBoard(let offset): viewModel.deskFilter.selectBoard(by: offset)
-            case .requestDragCancellation: viewModel.requestDeskDragCancellation()
+            case .enterFilter: windowModel.deskFilter.enter()
+            case .dismissFilter: windowModel.deskFilter.dismiss()
+            case .confirmFilterQuery: windowModel.deskFilter.confirmQuery()
+            case .confirmFilterSelection: windowModel.deskFilter.confirmSelection()
+            case .selectFilterBoard(let offset): windowModel.deskFilter.selectBoard(by: offset)
+            case .requestDragCancellation: windowModel.requestDeskDragCancellation()
             }
         case .board(let action):
             switch action {
@@ -245,15 +247,15 @@ enum AppActionHandler {
             case .moveToPreviousDesk: store.moveFocusedBoardToPreviousDesk()
             case .moveToNextDesk: store.moveFocusedBoardToNextDesk()
             case .moveToDesk(let number): store.moveFocusedBoard(toDeskNumber: number)
-            case .showOpenPanel: viewModel.showOpenBoardPanel()
-            case .openFromClipboard: viewModel.openBoardFromClipboard()
-            case .showWidthPanel: viewModel.showBoardWidthPanel()
-            case .hideWidthPanel: viewModel.hideBoardWidthPanel()
-            case .adjustWidth(let amount): viewModel.adjustFocusedBoardWidth(by: amount)
-            case .toggleMaximized: viewModel.toggleFocusedBoardMaximized()
-            case .center: viewModel.centerFocusedBoard()
-            case .revealPrevious: viewModel.revealPreviousBoard()
-            case .revealNext: viewModel.revealNextBoard()
+            case .showOpenPanel: windowModel.showOpenBoardPanel()
+            case .openFromClipboard: windowModel.openBoardFromClipboard()
+            case .showWidthPanel: windowModel.showBoardWidthPanel()
+            case .hideWidthPanel: windowModel.hideBoardWidthPanel()
+            case .adjustWidth(let amount): windowModel.adjustFocusedBoardWidth(by: amount)
+            case .toggleMaximized: windowModel.toggleFocusedBoardMaximized()
+            case .center: windowModel.centerFocusedBoard()
+            case .revealPrevious: windowModel.revealPreviousBoard()
+            case .revealNext: windowModel.revealNextBoard()
             case .toggleSheetNavigationPause: store.toggleFocusedBoardSheetNavigationPause()
             case .reloadFromOrigin: store.reloadFocusedBoardFromOrigin()
             case .reload: store.reloadFocusedBoard()
@@ -272,61 +274,61 @@ enum AppActionHandler {
             case .remove: store.removeFocusedBoard()
             case .removeAndFocusNext: store.removeFocusedBoard(focusNext: true)
             case .restore: store.restoreRecentlyRemovedBoard()
-            case .showRenamePanel: viewModel.showRenameBoardPanel()
-            case .showEditLinkPanel: viewModel.showEditBoardLinkPanel()
+            case .showRenamePanel: windowModel.showRenameBoardPanel()
+            case .showEditLinkPanel: windowModel.showEditBoardLinkPanel()
             case .duplicate: store.duplicateFocusedBoard()
             case .duplicateFirstSheet: store.duplicateFocusedBoardFromFirstSheet()
-            case .requestDragCancellation: viewModel.requestBoardDragCancellation()
+            case .requestDragCancellation: windowModel.requestBoardDragCancellation()
             }
         case .zmxSessions(let action):
             switch action {
-            case .hide: viewModel.hideZmxSessions()
-            case .enterFilter: viewModel.enterZmxSessionFilter()
-            case .exitFilter: viewModel.exitZmxSessionFilter()
-            case .clearFilter: viewModel.clearZmxSessionFilter()
-            case .moveSelection(let offset): viewModel.selectZmxSession(by: offset)
-            case .toggleSelection: viewModel.toggleZmxSessionSelection()
-            case .selectAll: viewModel.selectAllZmxSessions()
-            case .clearSelection: viewModel.clearZmxSessionSelection()
-            case .openSelected: viewModel.openSelectedZmxSession()
-            case .deleteSelected: viewModel.requestZmxSessionDeletion()
-            case .refresh: viewModel.refreshZmxSessions()
+            case .hide: windowModel.hideZmxSessions()
+            case .enterFilter: windowModel.enterZmxSessionFilter()
+            case .exitFilter: windowModel.exitZmxSessionFilter()
+            case .clearFilter: windowModel.clearZmxSessionFilter()
+            case .moveSelection(let offset): windowModel.selectZmxSession(by: offset)
+            case .toggleSelection: windowModel.toggleZmxSessionSelection()
+            case .selectAll: windowModel.selectAllZmxSessions()
+            case .clearSelection: windowModel.clearZmxSessionSelection()
+            case .openSelected: windowModel.openSelectedZmxSession()
+            case .deleteSelected: windowModel.requestZmxSessionDeletion()
+            case .refresh: windowModel.refreshZmxSessions()
             }
         case .overview(let action):
             switch action {
-            case .show: viewModel.showOverview()
-            case .hide: viewModel.hideOverview()
-            case .toggleActivity: viewModel.toggleBoardActivity()
-            case .hideActivity: viewModel.hideBoardActivity()
-            case .enterSelection: viewModel.overview.enterSelection()
-            case .enterFilterMode: viewModel.overview.enterFilterMode()
-            case .exitFilterMode: viewModel.overview.exitFilterMode()
-            case .confirmFilterQuery: viewModel.overview.confirmFilterQuery()
-            case .clearQuery: viewModel.overview.clearQuery()
-            case .selectPreviousBoard: viewModel.overview.selectPreviousBoard()
-            case .selectNextBoard: viewModel.overview.selectNextBoard()
-            case .selectPreviousDesk: viewModel.overview.selectPreviousDesk()
-            case .selectNextDesk: viewModel.overview.selectNextDesk()
-            case .moveSelectionBoardLeft: viewModel.overview.moveSelectionBoardLeft()
-            case .moveSelectionBoardRight: viewModel.overview.moveSelectionBoardRight()
-            case .moveSelectionBoardToPreviousDesk: viewModel.overview.moveSelectionBoardToPreviousDesk()
-            case .moveSelectionBoardToNextDesk: viewModel.overview.moveSelectionBoardToNextDesk()
+            case .show: windowModel.showOverview()
+            case .hide: windowModel.hideOverview()
+            case .toggleActivity: windowModel.toggleBoardActivity()
+            case .hideActivity: windowModel.hideBoardActivity()
+            case .enterSelection: windowModel.overview.enterSelection()
+            case .enterFilterMode: windowModel.overview.enterFilterMode()
+            case .exitFilterMode: windowModel.overview.exitFilterMode()
+            case .confirmFilterQuery: windowModel.overview.confirmFilterQuery()
+            case .clearQuery: windowModel.overview.clearQuery()
+            case .selectPreviousBoard: windowModel.overview.selectPreviousBoard()
+            case .selectNextBoard: windowModel.overview.selectNextBoard()
+            case .selectPreviousDesk: windowModel.overview.selectPreviousDesk()
+            case .selectNextDesk: windowModel.overview.selectNextDesk()
+            case .moveSelectionBoardLeft: windowModel.overview.moveSelectionBoardLeft()
+            case .moveSelectionBoardRight: windowModel.overview.moveSelectionBoardRight()
+            case .moveSelectionBoardToPreviousDesk: windowModel.overview.moveSelectionBoardToPreviousDesk()
+            case .moveSelectionBoardToNextDesk: windowModel.overview.moveSelectionBoardToNextDesk()
             }
         case .drawer(let action):
             switch action {
-            case .toggle: viewModel.toggleDrawer()
-            case .toggleStyle: viewModel.drawer.toggleStyle()
-            case .close: viewModel.closeDrawer()
-            case .enterFilterMode: viewModel.drawer.enterFilterMode()
-            case .exitFilterMode: viewModel.drawer.exitFilterMode()
-            case .confirmFilterQuery: viewModel.drawer.confirmFilterQuery()
-            case .confirmFilterSelection: viewModel.drawer.confirmFilterSelection()
-            case .selectItem(let offset): viewModel.drawer.selectItem(by: offset)
-            case .toggleSelectedItem: viewModel.drawer.toggleSelectedItem()
+            case .toggle: windowModel.toggleDrawer()
+            case .toggleStyle: windowModel.drawer.toggleStyle()
+            case .close: windowModel.closeDrawer()
+            case .enterFilterMode: windowModel.drawer.enterFilterMode()
+            case .exitFilterMode: windowModel.drawer.exitFilterMode()
+            case .confirmFilterQuery: windowModel.drawer.confirmFilterQuery()
+            case .confirmFilterSelection: windowModel.drawer.confirmFilterSelection()
+            case .selectItem(let offset): windowModel.drawer.selectItem(by: offset)
+            case .toggleSelectedItem: windowModel.drawer.toggleSelectedItem()
             case .discardSelectedItem(let focusNext):
-                viewModel.drawer.discardSelectedItem(focusNext: focusNext)
+                windowModel.drawer.discardSelectedItem(focusNext: focusNext)
             case .restoreDiscardedItem: store.restoreRecentlyDiscardedDrawerItem()
-            case .placeSelectedItemAsBoard: viewModel.placeSelectedDrawerItemAsBoard()
+            case .placeSelectedItemAsBoard: windowModel.placeSelectedDrawerItemAsBoard()
             case .requestClearConfirmation: store.requestDrawerClearConfirmation()
             }
         }

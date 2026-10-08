@@ -1,0 +1,9 @@
+id: presentation-model-imports
+valid:
+  - import Foundation
+  - import Observation
+  - import DenDomain
+invalid:
+  - import DenApplication
+  - import WebKit
+  - import Den_Browser

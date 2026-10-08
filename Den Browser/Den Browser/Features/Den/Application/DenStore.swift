@@ -1,4 +1,5 @@
 import AppKit
+import DenApplication
 import DenDomain
 import Foundation
 import Observation
@@ -14,41 +15,20 @@ final class DenStore {
     static let maximumRecentlyDiscardedDrawerItemCount = 10
     static let maximumPersistedRecentInputLength = 2_048
 
-    let storage: DenStorage
-    var state: DenState {
-        get { storage.state }
-        set { storage.state = newValue }
-    }
-    var deskPresets: [PersonalDeskPreset] {
-        get { storage.deskPresets }
-        set { storage.deskPresets = newValue }
-    }
-    var recentItems: [RecentItem] {
-        get { storage.recentItems }
-        set { storage.recentItems = newValue }
-    }
-    var notifications: [DenNotification] {
-        get { storage.notifications }
-        set { storage.notifications = newValue }
-    }
+    let storage: DenProfileResources
+    var state: DenState { storage.state }
+    var deskPresets: [PersonalDeskPreset] { storage.deskPresets }
+    var recentItems: [RecentItem] { storage.recentItems }
+    var notifications: [DenNotification] { storage.notifications }
     var unreadNotificationCount: Int {
         notifications.lazy.filter { !$0.isRead }.count
     }
     var essentials: [Essential] { preferences.essentials }
     private(set) var presentedDeskID: DeskID
     private(set) var latestFeedback: DenFeedback?
-    var activeDrag: ActiveDrag? {
-        get { storage.activeDrag }
-        set { storage.activeDrag = newValue }
-    }
-    var recentlyRemovedBoards: [RecentlyRemovedBoard] {
-        get { storage.recentlyRemovedBoards }
-        set { storage.recentlyRemovedBoards = newValue }
-    }
-    var recentlyDiscardedDrawerItems: [DrawerItem] {
-        get { storage.recentlyDiscardedDrawerItems }
-        set { storage.recentlyDiscardedDrawerItems = newValue }
-    }
+    var activeDrag: ActiveDrag? { storage.activeDrag }
+    var recentlyRemovedBoards: [RecentlyRemovedBoard] { storage.recentlyRemovedBoards }
+    var recentlyDiscardedDrawerItems: [DrawerItem] { storage.recentlyDiscardedDrawerItems }
     var isBoardDragging: Bool {
         guard case .board? = activeDrag else { return false }
         return true
@@ -170,7 +150,7 @@ final class DenStore {
         ipcSocketPath: String = DenSocketPath.resolve()
     ) {
         let normalizedState = Self.normalizedPersistedState(state)
-        let storage = DenStorage(
+        let storage = DenProfileResources(
             state: normalizedState,
             deskPresets: deskPresets,
             recentItems: recentItems,
@@ -199,7 +179,7 @@ final class DenStore {
     }
 
     init(
-        storage: DenStorage,
+        storage: DenProfileResources,
         presentedDeskID: DeskID?,
         websiteDataStore: WKWebsiteDataStore,
         sheetNavigation: SheetNavigationManager,
@@ -277,14 +257,14 @@ final class DenStore {
         releaseWindowResources()
         if case .board? = activeDrag { onWindowEffect?(.cancelBoardDrag) }
         if case .desk? = activeDrag { onWindowEffect?(.cancelDeskDrag) }
-        state = .sample
+        storage.state = .sample
         presentedDeskID = state.focusedDeskID
         preferences.setBoardRailPresented(false)
-        activeDrag = nil
+        storage.activeDrag = nil
         onWindowEffect?(.clearBoardInputRequests)
-        recentlyRemovedBoards.removeAll()
-        recentlyDiscardedDrawerItems.removeAll()
-        notifications.removeAll()
+        storage.recentlyRemovedBoards.removeAll()
+        storage.recentlyDiscardedDrawerItems.removeAll()
+        storage.notifications.removeAll()
         previousFocusedDeskID = nil
         anchorJumpOriginBoardIDByDesk.removeAll()
         save()
@@ -396,7 +376,7 @@ final class DenStore {
         }
         previousFocusedDeskID = presentedDeskID
         presentedDeskID = deskID
-        state.focusedDeskID = deskID
+        storage.state.focusedDeskID = deskID
         onWindowEffect?(.clearBoardInputRequests)
         if let boardID = focusedDesk?.focusedBoardID {
             markNotificationsRead(for: boardID)
@@ -431,17 +411,17 @@ final class DenStore {
 
     @discardableResult
     func removeBoard(at indices: (desk: Int, board: Int), focusNext: Bool = false) -> BoardState {
-        let board = state.desks[indices.desk].boards.remove(at: indices.board)
+        let board = storage.state.desks[indices.desk].boards.remove(at: indices.board)
         let deskID = state.desks[indices.desk].id
         if state.desks[indices.desk].anchorBoardID == board.id {
-            state.desks[indices.desk].anchorBoardID = nil
+            storage.state.desks[indices.desk].anchorBoardID = nil
             anchorJumpOriginBoardIDByDesk.removeValue(forKey: deskID)
         } else if anchorJumpOriginBoardIDByDesk[deskID] == board.id {
             anchorJumpOriginBoardIDByDesk.removeValue(forKey: deskID)
         }
         let boards = state.desks[indices.desk].boards
         if boards.isEmpty {
-            state.desks[indices.desk].scrollOffsetX = nil
+            storage.state.desks[indices.desk].scrollOffsetX = nil
         }
         guard state.desks[indices.desk].focusedBoardID == board.id else { return board }
 
@@ -453,7 +433,7 @@ final class DenStore {
         } else {
             focusedBoardID = boards.first?.id
         }
-        state.desks[indices.desk].focusedBoardID = focusedBoardID
+        storage.state.desks[indices.desk].focusedBoardID = focusedBoardID
         return board
     }
 
@@ -515,7 +495,7 @@ final class DenStore {
             }
         }
         if case .board(let boardID) = activeDrag, removedBoardIDs.contains(boardID) {
-            activeDrag = nil
+            storage.activeDrag = nil
         }
     }
 
@@ -528,7 +508,7 @@ final class DenStore {
             presentation.onWindowEffect?(.deskRemoved(removedDeskID))
         }
         if case .desk(let deskID) = activeDrag, deskID == removedDeskID {
-            activeDrag = nil
+            storage.activeDrag = nil
         }
     }
 

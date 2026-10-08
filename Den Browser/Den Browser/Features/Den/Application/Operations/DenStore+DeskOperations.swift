@@ -1,4 +1,5 @@
 import AppKit
+import DenApplication
 import DenDomain
 import Foundation
 
@@ -25,7 +26,7 @@ extension DenStore {
         guard let boards = DeskPresetBoard.makeBoards(from: boards) else { return }
         let focusedBoardID = focusedBoardIndex.flatMap { boards.indices.contains($0) ? boards[$0].id : nil }
         let desk = DeskState(label: trimmedLabel, boards: boards, focusedBoardID: focusedBoardID)
-        state.desks.insert(desk, at: focusedDeskIndex + 1)
+        storage.state.desks.insert(desk, at: focusedDeskIndex + 1)
         setFocusedDesk(desk.id)
         onWindowEffect?(.dismissTemporaryPresentation)
         onWindowEffect?(.exitDenMode)
@@ -93,12 +94,12 @@ extension DenStore {
         for board in state.desks[deskIndex].boards {
             disposeRuntime(for: board.id)
         }
-        state.desks[deskIndex].label = replacement.label
-        state.desks[deskIndex].boards = boards
-        state.desks[deskIndex].focusedBoardID =
+        storage.state.desks[deskIndex].label = replacement.label
+        storage.state.desks[deskIndex].boards = boards
+        storage.state.desks[deskIndex].focusedBoardID =
             replacement.focusedBoardIndex.flatMap { boards.indices.contains($0) ? boards[$0].id : nil }
             ?? boards.first?.id
-        state.desks[deskIndex].anchorBoardID = nil
+        storage.state.desks[deskIndex].anchorBoardID = nil
         anchorJumpOriginBoardIDByDesk.removeValue(forKey: replacement.deskID)
         invalidateReferences(toRemovedBoardIDs: removedBoardIDs)
         onWindowEffect?(.dismissTemporaryPresentation)
@@ -140,7 +141,7 @@ extension DenStore {
             disposeRuntime(for: board.id)
         }
 
-        state.desks.remove(at: deskIndex)
+        storage.state.desks.remove(at: deskIndex)
         if presentedDeskID == deskID {
             setFocusedDesk(replacementDeskID)
         }
@@ -154,7 +155,7 @@ extension DenStore {
         guard let deskIndex = focusedDeskIndex else { return }
         let trimmed = newLabel.trimmingCharacters(in: .whitespacesAndNewlines)
         if !trimmed.isEmpty {
-            state.desks[deskIndex].label = trimmed
+            storage.state.desks[deskIndex].label = trimmed
         }
         onWindowEffect?(.dismissTemporaryPresentation)
         onWindowEffect?(.exitDenMode)
@@ -171,7 +172,7 @@ extension DenStore {
         let current = state.desks[deskIndex].scrollOffsetX
         let newDouble = offset.map { Double($0) }
         guard current != newDouble else { return }
-        state.desks[deskIndex].scrollOffsetX = newDouble
+        storage.state.desks[deskIndex].scrollOffsetX = newDouble
         save()
     }
 

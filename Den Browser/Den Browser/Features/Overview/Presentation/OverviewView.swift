@@ -1,5 +1,6 @@
 import DenDesign
 import DenDomain
+import DenPresentation
 import SFSafeSymbols
 import SwiftUI
 
@@ -8,8 +9,8 @@ struct OverviewView: View {
     let boardHeight: CGFloat
 
     @Environment(DenStore.self) private var store
-    @Environment(DenViewModel.self) private var viewModel
-    @Environment(OverviewViewModel.self) private var overview
+    @Environment(DenWindowModel.self) private var windowModel
+    @Environment(OverviewModel.self) private var overview
     @Environment(AppPreferences.self) private var preferences
     @Environment(\.accessibilityReduceMotion) private var systemReduceMotion
     @Environment(\.accessibilityDifferentiateWithoutColor) private var differentiateWithoutColor
@@ -107,10 +108,10 @@ struct OverviewView: View {
             .onPreferenceChange(OverviewEmptyBoardFramePreferenceKey.self) {
                 overviewGeometry.emptyBoardFrames = $0
             }
-            .onChange(of: viewModel.boardDragCancellationRequest) { _, _ in
+            .onChange(of: windowModel.boardDragCancellationRequest) { _, _ in
                 cancelOverviewBoardDrag()
             }
-            .onChange(of: viewModel.temporaryContext) { _, context in
+            .onChange(of: windowModel.temporaryContext) { _, context in
                 if context != .overview { cancelOverviewBoardDrag() }
             }
             .onChange(of: appearsActive) { _, isActive in
@@ -151,12 +152,12 @@ struct OverviewView: View {
         .glassEffect(.regular, in: RoundedRectangle(cornerRadius: DenRadius.large, style: .continuous))
         .overlay(alignment: .topTrailing) {
             DenCloseButton(label: "Close Overview") {
-                viewModel.hideOverview()
+                windowModel.hideOverview()
             }
             .padding(DenOverviewLayout.closeButtonInset)
         }
         .onExitCommand {
-            viewModel.hideOverview()
+            windowModel.hideOverview()
         }
         .onChange(of: overview.isFilterInputActive) { _, newValue in
             isSearchFocused = newValue
@@ -354,7 +355,7 @@ struct OverviewView: View {
         if overviewDrag == nil {
             guard
                 let frame = overviewGeometry.boardFrames[board.id],
-                viewModel.beginOverviewBoardDrag(board.id)
+                windowModel.beginOverviewBoardDrag(board.id)
             else { return }
             overviewDrag = OverviewDragState(
                 boardID: board.id,

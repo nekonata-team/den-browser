@@ -1,5 +1,6 @@
 import AppKit
 import Darwin
+import DenApplication
 import DenDomain
 import Foundation
 import WebKit
@@ -350,12 +351,12 @@ extension DenStore {
         if let url, WebURLPolicy.isSupported(url) {
             let canonicalURL = WebURLPolicy.canonicalSheetURL(url)
             if state.desks[indices.desk].boards[indices.board].currentSheetURL != canonicalURL {
-                state.desks[indices.desk].boards[indices.board].currentSheetURL = canonicalURL
+                storage.state.desks[indices.desk].boards[indices.board].currentSheetURL = canonicalURL
                 changed = true
             }
         }
         if let title, !title.isEmpty, state.desks[indices.desk].boards[indices.board].label != title {
-            state.desks[indices.desk].boards[indices.board].label = title
+            storage.state.desks[indices.desk].boards[indices.board].label = title
         }
         if let title = title?.trimmingCharacters(in: .whitespacesAndNewlines),
             !title.isEmpty,
@@ -374,9 +375,9 @@ extension DenStore {
             case .url(let recentURL, nil) = recentItems[index]
         else { return }
         let original = recentItems
-        recentItems[index] = .url(recentURL, title: title)
+        storage.recentItems[index] = .url(recentURL, title: title)
         if saveStateAndRecentItems() == false {
-            recentItems = original
+            storage.recentItems = original
         }
     }
 
@@ -392,13 +393,13 @@ extension DenStore {
         if let workingDirectory, !workingDirectory.isEmpty,
             state.desks[indices.desk].boards[indices.board].terminalWorkingDirectory != workingDirectory
         {
-            state.desks[indices.desk].boards[indices.board].terminalWorkingDirectory = workingDirectory
+            storage.state.desks[indices.desk].boards[indices.board].terminalWorkingDirectory = workingDirectory
             changed = true
         }
         if let title, !title.isEmpty,
             state.desks[indices.desk].boards[indices.board].label != title
         {
-            state.desks[indices.desk].boards[indices.board].label = title
+            storage.state.desks[indices.desk].boards[indices.board].label = title
         }
         if changed { save() }
     }

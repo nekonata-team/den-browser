@@ -1,4 +1,6 @@
 import AppKit
+import DenApplication
+import DenPresentation
 import Foundation
 
 struct KeyEvent {
@@ -35,14 +37,14 @@ enum KeyboardMode: Equatable {
 
 enum KeyboardSurface {
     case notifications
-    case deskFilter(phase: DenFilterPhase)
+    case deskFilter(phase: FilterPhase)
     case keyboardShortcuts
     case essentialsPrefix
     case boardWidth
-    case overview(filterPhase: DenFilterPhase, hasQuery: Bool)
+    case overview(filterPhase: FilterPhase, hasQuery: Bool)
     case boardActivity
-    case drawer(filterPhase: DenFilterPhase, previewFirstResponder: Bool)
-    case zmxSessions(filterPhase: DenFilterPhase, hasQuery: Bool, hasSelection: Bool)
+    case drawer(filterPhase: FilterPhase, previewFirstResponder: Bool)
+    case zmxSessions(filterPhase: FilterPhase, hasQuery: Bool, hasSelection: Bool)
     case textInput
 }
 
@@ -54,38 +56,38 @@ struct InputContext {
     let mode: KeyboardMode
     let hasFocusedBoard: Bool
 
-    init(store: DenStore, viewModel: DenViewModel, event: NSEvent) {
-        isFullscreenActive = viewModel.isFullscreenActive
-        hasPendingConfirmation = viewModel.hasPendingConfirmation
+    init(store: DenStore, windowModel: DenWindowModel, event: NSEvent) {
+        isFullscreenActive = windowModel.isFullscreenActive
+        hasPendingConfirmation = windowModel.hasPendingConfirmation
         activeDrag = store.activeDrag
-        mode = viewModel.isDenMode ? .den : .sheet
-        if viewModel.isNotificationListPresented {
+        mode = windowModel.isDenMode ? .den : .sheet
+        if windowModel.isNotificationListPresented {
             surface = .notifications
         } else {
             surface =
-                switch viewModel.temporaryContext {
+                switch windowModel.temporaryContext {
                 case .keyboardShortcuts: .keyboardShortcuts
                 case .essentialsPrefix: .essentialsPrefix
                 case .boardWidth: .boardWidth
                 case .overview:
                     .overview(
-                        filterPhase: viewModel.overview.filterPhase,
-                        hasQuery: !viewModel.overview.query.isEmpty)
+                        filterPhase: windowModel.overview.filterPhase,
+                        hasQuery: !windowModel.overview.query.isEmpty)
                 case .boardActivity: .boardActivity
                 case .drawer:
                     .drawer(
-                        filterPhase: viewModel.drawer.filterPhase,
+                        filterPhase: windowModel.drawer.filterPhase,
                         previewFirstResponder: Self.isDrawerPreviewFirstResponder(event, store: store))
                 case .zmxSessions:
                     .zmxSessions(
-                        filterPhase: viewModel.zmxSessions.filterPhase,
-                        hasQuery: !viewModel.zmxSessions.query.isEmpty,
-                        hasSelection: viewModel.zmxSessions.hasMarkedSessions)
+                        filterPhase: windowModel.zmxSessions.filterPhase,
+                        hasQuery: !windowModel.zmxSessions.query.isEmpty,
+                        hasSelection: windowModel.zmxSessions.hasMarkedSessions)
                 case .openBoard, .zmxDuplication, .editBoardLink, .newDesk, .replaceDesk, .deskPresetManagement,
                     .saveDeskPreset, .renameBoard, .renameDesk, .saveEssential, .profilePicker:
                     .textInput
-                case nil where viewModel.deskFilter.phase != .inactive:
-                    .deskFilter(phase: viewModel.deskFilter.phase)
+                case nil where windowModel.deskFilter.phase != .inactive:
+                    .deskFilter(phase: windowModel.deskFilter.phase)
                 case nil: nil
                 }
         }

@@ -1,4 +1,6 @@
+import DenApplication
 import DenDomain
+import DenPresentation
 import Foundation
 
 extension DenStore {
@@ -11,9 +13,9 @@ extension DenStore {
         let previousFocusedDeskID = state.focusedDeskID
         let previousFocusedBoardID = state.desks[deskIndex].focusedBoardID
         if let boardID, state.desks[deskIndex].boards.contains(where: { $0.id == boardID }) {
-            state.desks[deskIndex].focusedBoardID = boardID
+            storage.state.desks[deskIndex].focusedBoardID = boardID
         } else if state.desks[deskIndex].focusedBoardID == nil {
-            state.desks[deskIndex].focusedBoardID = state.desks[deskIndex].boards.first?.id
+            storage.state.desks[deskIndex].focusedBoardID = state.desks[deskIndex].boards.first?.id
         }
         let changedDesk = setFocusedDesk(deskID)
         if !changedDesk,
@@ -33,7 +35,7 @@ extension DenStore {
 
     func beginOverviewBoardDrag(_ boardID: BoardID) -> Bool {
         guard activeDrag == nil, boardIndices(for: boardID) != nil else { return false }
-        activeDrag = .board(boardID)
+        storage.activeDrag = .board(boardID)
         return true
     }
 
@@ -54,15 +56,15 @@ extension DenStore {
             transferBoardGroup(containing: boardID, from: source.desk, to: targetDeskIndex, at: targetIndex)
         }
         if keepsDeskFocus || state.desks[targetDeskIndex].focusedBoardID == nil {
-            state.desks[targetDeskIndex].focusedBoardID = boardID
+            storage.state.desks[targetDeskIndex].focusedBoardID = boardID
         }
-        activeDrag = nil
+        storage.activeDrag = nil
         save()
     }
 
     func cancelOverviewBoardDrag() {
         guard case .board? = activeDrag else { return }
-        activeDrag = nil
+        storage.activeDrag = nil
     }
 
     func moveOverviewBoardGroup(_ boardID: BoardID, by delta: Int) {
@@ -95,7 +97,7 @@ extension DenStore {
 
         transferBoardGroup(containing: boardID, from: source.desk, to: targetDeskIndex, at: insertIndex)
         if state.desks[targetDeskIndex].focusedBoardID == nil {
-            state.desks[targetDeskIndex].focusedBoardID = boardID
+            storage.state.desks[targetDeskIndex].focusedBoardID = boardID
         }
         save()
     }

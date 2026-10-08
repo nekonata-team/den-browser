@@ -1,0 +1,258 @@
+import DenDomain
+import Foundation
+import Observation
+
+public struct OverviewSelection: Equatable {
+    public let deskID: DeskID
+    public let boardID: BoardID?
+
+    public init(deskID: DeskID, boardID: BoardID?) {
+        self.deskID = deskID
+        self.boardID = boardID
+    }
+}
+
+@MainActor
+@Observable
+public final class OverviewModel {
+    public struct Actions {
+        public let enterSelection: (DeskID, BoardID?) -> Void
+        public let beginDrag: (BoardID) -> Bool
+        public let finishDrag: (BoardID, DeskID, Int) -> Void
+        public let cancelDrag: () -> Void
+        public let moveBoard: (BoardID, Int) -> Void
+        public let moveBoardToDesk: (BoardID, Int) -> Void
+
+        public init(
+            enterSelection: @escaping (DeskID, BoardID?) -> Void,
+            beginDrag: @escaping (BoardID) -> Bool,
+            finishDrag: @escaping (BoardID, DeskID, Int) -> Void,
+            cancelDrag: @escaping () -> Void,
+            moveBoard: @escaping (BoardID, Int) -> Void,
+            moveBoardToDesk: @escaping (BoardID, Int) -> Void
+        ) {
+            self.enterSelection = enterSelection
+            self.beginDrag = beginDrag
+            self.finishDrag = finishDrag
+            self.cancelDrag = cancelDrag
+            self.moveBoard = moveBoard
+            self.moveBoardToDesk = moveBoardToDesk
+        }
+    }
+
+    @ObservationIgnored private let desks: () -> [DeskState]
+    @ObservationIgnored private let presentedDeskID: () -> DeskID
+    @ObservationIgnored private let focusedDesk: () -> DeskState?
+    @ObservationIgnored private let activeBoardID: () -> BoardID?
+    @ObservationIgnored private let isDragging: () -> Bool
+    @ObservationIgnored private let actions: Actions
+
+    public var query = ""
+    public var filterPhase: FilterPhase = .inactive
+    public private(set) var selection: OverviewSelection?
+
+    @ObservationIgnored public var onDismiss: (() -> Void)?
+
+    public var isFilterPresented: Bool { filterPhase != .inactive }
+    public var isFilterInputActive: Bool { filterPhase == .filtering }
+    public var isFilterSelecting: Bool { filterPhase == .selecting }
+    public var selectionDeskID: DeskID? { selection?.deskID }
+    public var selectionBoardID: BoardID? { selection?.boardID }
+
+    public init(
+        desks: @escaping () -> [DeskState],
+        presentedDeskID: @escaping () -> DeskID,
+        focusedDesk: @escaping () -> DeskState?,
+        activeBoardID: @escaping () -> BoardID?,
+        isDragging: @escaping () -> Bool,
+        actions: Actions
+    ) {
+        self.desks = desks
+        self.presentedDeskID = presentedDeskID
+        self.focusedDesk = focusedDesk
+        self.activeBoardID = activeBoardID
+        self.isDragging = isDragging
+        self.actions = actions
+    }
+
+    public func preparePresentation(deskID: DeskID? = nil, boardID: BoardID? = nil) {
+        query = ""
+        filterPhase = .inactive
+        selection = OverviewSelection(
+            deskID: deskID ?? presentedDeskID(),
+            boardID: boardID ?? focusedDesk()?.focusedBoardID)
+    }
+
+    public func endPresentation() {
+        actions.cancelDrag()
+        query = ""
+        filterPhase = .inactive
+        selection = nil
+    }
+
+    public func setQuery(_ query: String) {
+        self.query = WebURLPolicy.stripNewlines(query)
+        updateSelectionForFilter()
+    }
+
+    public func enterFilterMode() {
+        filterPhase = .filtering
+        updateSelectionForFilter()
+    }
+
+    public func exitFilterMode() {
+        filterPhase = .inactive
+        query = ""
+    }
+
+    public func confirmFilterQuery() {
+        guard filterPhase == .filtering else { return }
+        filterPhase = .selecting
+    }
+
+    public func clearQuery() {
+        filterPhase = .inactive
+        query = ""
+        updateSelectionForFilter()
+    }
+
+    public func matchesFilter(_ board: BoardState, in desk: DeskState) -> Bool {
+        guard !query.isEmpty else { return true }
+        return board.displayName.localizedCaseInsensitiveContains(query)
+            || (board.currentSheetURL?.absoluteString.localizedCaseInsensitiveContains(query) ?? false)
+            || (board.terminalWorkingDirectory?.localizedCaseInsensitiveContains(query) ?? false)
+            || (board.zellijSessionName?.localizedCaseInsensitiveContains(query) ?? false)
+            || (board.zmxSessionName?.localizedCaseInsensitiveContains(query) ?? false)
+            || desk.label.localizedCaseInsensitiveContains(query)
+    }
+
+    public func updateSelectionForFilter() {
+        if let selection,
+            let boardID = selection.boardID,
+            let desk = desks().first(where: { $0.id == selection.deskID }),
+            let board = desk.boards.first(where: { $0.id == boardID }),
+            matchesFilter(board, in: desk)
+        {
+            return
+        }
+
+        for desk in desks() {
+            if let board = desk.boards.first(where: { matchesFilter($0, in: desk) }) {
+                selection = OverviewSelection(deskID: desk.id, boardID: board.id)
+                return
+            }
+        }
+        selection = nil
+    }
+
+    public func enterSelection() {
+        guard let selection else {
+            onDismiss?()
+            return
+        }
+        actions.enterSelection(selection.deskID, selection.boardID)
+    }
+
+    public func selectBoard(_ boardID: BoardID) {
+        guard let desk = desks().first(where: { $0.boards.contains(where: { $0.id == boardID }) }) else { return }
+        selection = OverviewSelection(deskID: desk.id, boardID: boardID)
+    }
+
+    public func enterBoard(_ boardID: BoardID) {
+        selectBoard(boardID)
+        enterSelection()
+    }
+
+    public func selectDesk(_ deskID: DeskID) {
+        guard desks().contains(where: { $0.id == deskID }) else { return }
+        selection = OverviewSelection(deskID: deskID, boardID: nil)
+    }
+
+    public func enterDesk(_ deskID: DeskID) {
+        selectDesk(deskID)
+        enterSelection()
+    }
+
+    public func beginBoardDrag(_ boardID: BoardID) -> Bool {
+        guard query.isEmpty, filterPhase == .inactive, actions.beginDrag(boardID) else { return false }
+        selectBoard(boardID)
+        return true
+    }
+
+    public func finishBoardDrag(_ boardID: BoardID, toDeskID deskID: DeskID, at targetIndex: Int) {
+        guard activeBoardID() == boardID else { return }
+        actions.finishDrag(boardID, deskID, targetIndex)
+        selection = OverviewSelection(deskID: deskID, boardID: boardID)
+    }
+
+    public func cancelBoardDrag() { actions.cancelDrag() }
+
+    public func selectPreviousBoard() { moveBoardSelection(by: -1) }
+    public func selectNextBoard() { moveBoardSelection(by: 1) }
+    public func selectPreviousDesk() { moveDeskSelection(by: -1) }
+    public func selectNextDesk() { moveDeskSelection(by: 1) }
+    public func moveSelectionBoardLeft() { moveSelectionBoard(by: -1) }
+    public func moveSelectionBoardRight() { moveSelectionBoard(by: 1) }
+    public func moveSelectionBoardToPreviousDesk() { moveSelectionBoardToDesk(by: -1) }
+    public func moveSelectionBoardToNextDesk() { moveSelectionBoardToDesk(by: 1) }
+
+    public func removedBoard(boardID: BoardID, deskID: DeskID, oldIndex: Int) {
+        guard selection?.boardID == boardID,
+            let desk = desks().first(where: { $0.id == deskID })
+        else { return }
+        let nextBoardID =
+            desk.boards.indices.contains(oldIndex)
+            ? desk.boards[oldIndex].id
+            : (oldIndex > 0 && desk.boards.indices.contains(oldIndex - 1)
+                ? desk.boards[oldIndex - 1].id
+                : nil)
+        selection = OverviewSelection(deskID: deskID, boardID: nextBoardID)
+    }
+
+    public func invalidateBoard(_ boardID: BoardID) {
+        guard selection?.boardID == boardID else { return }
+        selection = nil
+    }
+
+    public func invalidateDesk(_ deskID: DeskID) {
+        guard selection?.deskID == deskID else { return }
+        selection = nil
+    }
+
+    private func moveBoardSelection(by delta: Int) {
+        guard let selection,
+            let desk = desks().first(where: { $0.id == selection.deskID })
+        else { return }
+        let boards = desk.boards.filter { matchesFilter($0, in: desk) }
+        guard !boards.isEmpty else { return }
+        let index = selection.boardID.flatMap { id in boards.firstIndex { $0.id == id } } ?? 0
+        self.selection = OverviewSelection(
+            deskID: desk.id,
+            boardID: boards[(index + delta % boards.count + boards.count) % boards.count].id)
+    }
+
+    private func moveDeskSelection(by delta: Int) {
+        let desks = desks().filter { desk in
+            query.isEmpty || desk.boards.contains { matchesFilter($0, in: desk) }
+        }
+        guard !desks.isEmpty else { return }
+        let index = desks.firstIndex { $0.id == selection?.deskID } ?? 0
+        let desk = desks[(index + delta % desks.count + desks.count) % desks.count]
+        let boards = desk.boards.filter { matchesFilter($0, in: desk) }
+        selection = OverviewSelection(
+            deskID: desk.id,
+            boardID: boards.first(where: { $0.id == desk.focusedBoardID })?.id ?? boards.first?.id)
+    }
+
+    private func moveSelectionBoard(by delta: Int) {
+        guard !isDragging(), let boardID = selection?.boardID else { return }
+        actions.moveBoard(boardID, delta)
+        selectBoard(boardID)
+    }
+
+    private func moveSelectionBoardToDesk(by delta: Int) {
+        guard !isDragging(), let boardID = selection?.boardID else { return }
+        actions.moveBoardToDesk(boardID, delta)
+        selectBoard(boardID)
+    }
+}

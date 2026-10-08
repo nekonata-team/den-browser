@@ -1,0 +1,8 @@
+id: presentation-no-storage-access
+valid:
+  - let state = store.state
+  - store.discardDrawerItem(itemID)
+  - "let text = \"store.storage\""
+invalid:
+  - let state = store.storage.state
+  - model.store.storage.notifications.removeAll()

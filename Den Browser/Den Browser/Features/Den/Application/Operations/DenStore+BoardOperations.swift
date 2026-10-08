@@ -1,4 +1,5 @@
 import AppKit
+import DenApplication
 import DenDomain
 import Foundation
 
@@ -26,7 +27,7 @@ extension DenStore {
             return
         }
         onWindowEffect?(.clearBoardInputRequests)
-        state.desks[indices.desk].focusedBoardID = boardID
+        storage.state.desks[indices.desk].focusedBoardID = boardID
         let changedDesk = setFocusedDesk(deskID)
         if !changedDesk && presentedDeskID == deskID {
             markNotificationsRead(for: boardID)
@@ -96,7 +97,7 @@ extension DenStore {
             state.desks[indices.desk].boards[indices.board].isWeb
         else { return }
 
-        state.desks[indices.desk].boards[indices.board].sheetNavigationPaused.toggle()
+        storage.state.desks[indices.desk].boards[indices.board].sheetNavigationPaused.toggle()
         let paused = state.desks[indices.desk].boards[indices.board].sheetNavigationPaused
         sheetNavigation.setBoardPaused(paused, for: boardID)
         save()
@@ -105,7 +106,7 @@ extension DenStore {
     func centerFocusedBoard() {
         guard let focusedDeskIndex, focusedDesk?.focusedBoardID != nil else { return }
         if state.desks[focusedDeskIndex].scrollOffsetX != nil {
-            state.desks[focusedDeskIndex].scrollOffsetX = nil
+            storage.state.desks[focusedDeskIndex].scrollOffsetX = nil
             save()
         }
         onWindowEffect?(.centerFocusedBoard)
@@ -163,10 +164,10 @@ extension DenStore {
         let ids = Set(groupBoards.map(\.id))
         let removedIndex = sourceBoards.firstIndex { ids.contains($0.id) } ?? 0
         let sourceWasFocused = state.desks[sourceIndex].focusedBoardID.map(ids.contains) ?? false
-        state.desks[sourceIndex].boards.removeAll { ids.contains($0.id) }
+        storage.state.desks[sourceIndex].boards.removeAll { ids.contains($0.id) }
         if sourceWasFocused {
             let remaining = state.desks[sourceIndex].boards
-            state.desks[sourceIndex].focusedBoardID =
+            storage.state.desks[sourceIndex].focusedBoardID =
                 remaining.indices.contains(removedIndex)
                 ? remaining[removedIndex].id
                 : remaining.last?.id
@@ -182,7 +183,7 @@ extension DenStore {
                 insertionIndex = lastMemberIndex + 1
             }
         }
-        state.desks[targetIndex].boards.insert(contentsOf: groupBoards, at: insertionIndex)
+        storage.state.desks[targetIndex].boards.insert(contentsOf: groupBoards, at: insertionIndex)
     }
 
     func beginBoardDrag(_ boardID: BoardID) -> Bool {
@@ -193,10 +194,10 @@ extension DenStore {
         else {
             return false
         }
-        state.desks[indices.desk].focusedBoardID = boardID
+        storage.state.desks[indices.desk].focusedBoardID = boardID
         markNotificationsRead(for: boardID)
         onWindowEffect?(.clearMaximizedBoard)
-        activeDrag = .board(boardID)
+        storage.activeDrag = .board(boardID)
         save()
         return true
     }
@@ -208,7 +209,7 @@ extension DenStore {
         else { return }
 
         reorderBoardGroup(containing: boardID, to: targetIndex, in: deskIndex)
-        state.desks[deskIndex].focusedBoardID = boardID
+        storage.state.desks[deskIndex].focusedBoardID = boardID
     }
 
     func reorderBoardGroup(containing boardID: BoardID, to targetIndex: Int, in deskIndex: Int) {
@@ -235,20 +236,20 @@ extension DenStore {
             insertionIndex = remaining.endIndex
         }
         remaining.insert(contentsOf: group.boards, at: insertionIndex)
-        state.desks[deskIndex].boards = remaining
+        storage.state.desks[deskIndex].boards = remaining
     }
 
     func restoreBoardOrder(_ boardIDs: [BoardID], in deskID: DeskID) {
         guard let deskIndex = state.desks.firstIndex(where: { $0.id == deskID }) else { return }
         let order = Dictionary(uniqueKeysWithValues: boardIDs.enumerated().map { ($1, $0) })
-        state.desks[deskIndex].boards.sort {
+        storage.state.desks[deskIndex].boards.sort {
             (order[$0.id] ?? Int.max) < (order[$1.id] ?? Int.max)
         }
     }
 
     func finishBoardDrag() {
         guard case .board? = activeDrag else { return }
-        activeDrag = nil
+        storage.activeDrag = nil
         save()
     }
 
@@ -265,7 +266,7 @@ extension DenStore {
             return false
         }
 
-        activeDrag = .desk(deskID)
+        storage.activeDrag = .desk(deskID)
         return true
     }
 
@@ -276,20 +277,20 @@ extension DenStore {
             sourceIndex != targetIndex
         else { return }
 
-        let desk = state.desks.remove(at: sourceIndex)
-        state.desks.insert(desk, at: targetIndex)
+        let desk = storage.state.desks.remove(at: sourceIndex)
+        storage.state.desks.insert(desk, at: targetIndex)
     }
 
     func restoreDeskOrder(_ deskIDs: [DeskID]) {
         let order = Dictionary(uniqueKeysWithValues: deskIDs.enumerated().map { ($1, $0) })
-        state.desks.sort {
+        storage.state.desks.sort {
             (order[$0.id] ?? Int.max) < (order[$1.id] ?? Int.max)
         }
     }
 
     func finishDeskDrag() {
         guard case .desk? = activeDrag else { return }
-        activeDrag = nil
+        storage.activeDrag = nil
         save()
     }
 
@@ -305,7 +306,7 @@ extension DenStore {
             state.desks.indices.contains(deskIndex + delta)
         else { return }
 
-        state.desks.swapAt(deskIndex, deskIndex + delta)
+        storage.state.desks.swapAt(deskIndex, deskIndex + delta)
         save()
     }
 
@@ -331,7 +332,7 @@ extension DenStore {
         }
         let boardID = boards[nextIndex].id
         let changesFocus = state.desks[deskIndex].focusedBoardID != boardID
-        state.desks[deskIndex].focusedBoardID = boardID
+        storage.state.desks[deskIndex].focusedBoardID = boardID
         markNotificationsRead(for: boardID)
         guard changesFocus else { return }
         dispatchDenOperationEvent(.boardFocusMoved)
@@ -350,7 +351,7 @@ extension DenStore {
         let boundaryIndex = delta < 0 ? firstIndex - 1 : lastIndex + 1
         guard boards.indices.contains(boundaryIndex) else { return }
         reorderBoardGroup(containing: board.id, to: boundaryIndex, in: deskIndex)
-        state.desks[deskIndex].scrollOffsetX = nil
+        storage.state.desks[deskIndex].scrollOffsetX = nil
         centerFocusedBoard()
         save()
     }
@@ -383,7 +384,7 @@ extension DenStore {
         }
 
         transferBoardGroup(containing: boardID, from: sourceDeskIndex, to: targetDeskIndex, at: insertIndex)
-        state.desks[targetDeskIndex].focusedBoardID = boardID
+        storage.state.desks[targetDeskIndex].focusedBoardID = boardID
         setFocusedDesk(state.desks[targetDeskIndex].id, autoPIP: false)
         onWindowEffect?(.exitDenMode)
         save()
@@ -452,10 +453,10 @@ extension DenStore {
         else { return }
 
         if state.desks[deskIndex].anchorBoardID == boardID {
-            state.desks[deskIndex].anchorBoardID = nil
+            storage.state.desks[deskIndex].anchorBoardID = nil
             reportFeedback("Cleared Anchor Board")
         } else {
-            state.desks[deskIndex].anchorBoardID = boardID
+            storage.state.desks[deskIndex].anchorBoardID = boardID
             reportFeedback("Set Anchor Board")
         }
         save()

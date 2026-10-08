@@ -1,6 +1,7 @@
 import AppKit
 import Combine
 import DenDomain
+import DenPresentation
 import Foundation
 import Testing
 import WebKit
@@ -976,9 +977,10 @@ struct SheetNavigationTests {
             state: DenState(desks: [currentDesk], focusedDeskID: currentDesk.id),
             sheetNavigation: manager
         )
-        let viewModel = DenViewModel(store: store)
-        viewModel.connect()
-        defer { viewModel.disconnect() }
+        let composition = DenWindowComposition(store: store)
+        let windowModel = composition.model
+        composition.connect()
+        defer { composition.disconnect() }
         let sourceWebView = store.webRuntime(for: source).webView
         let destination = URL(string: "https://destination.example/path")!
 
@@ -989,7 +991,7 @@ struct SheetNavigationTests {
                     "url": destination.absoluteString,
                 ], from: sourceWebView))
         #expect(store.state.drawerItems.map(\.url) == [destination])
-        #expect(!viewModel.isDrawerOpen)
+        #expect(!windowModel.isDrawerOpen)
         #expect(store.focusedDesk?.focusedBoardID == source.id)
         #expect(store.focusedBoard?.currentSheetURL == source.currentSheetURL)
     }
@@ -1043,9 +1045,10 @@ struct SheetNavigationTests {
             state: DenState(desks: [desk], focusedDeskID: desk.id),
             sheetNavigation: manager
         )
-        let viewModel = DenViewModel(store: store)
-        viewModel.connect()
-        defer { viewModel.disconnect() }
+        let composition = DenWindowComposition(store: store)
+        let windowModel = composition.model
+        composition.connect()
+        defer { composition.disconnect() }
         let webView = store.webRuntime(for: board).webView
         let waiter = WebViewLoadWaiter()
         let url = URL(string: "https://source.example/current")!
@@ -1054,26 +1057,26 @@ struct SheetNavigationTests {
         await waiter.load("<html>Current Sheet</html>", baseURL: url, in: webView)
 
         #expect(manager.handleScriptMessage(["action": "editCurrentSheet"], from: webView))
-        #expect(viewModel.isEditBoardLinkPanelPresented)
+        #expect(windowModel.isEditBoardLinkPanelPresented)
 
-        viewModel.hideEditBoardLinkPanel()
+        windowModel.hideEditBoardLinkPanel()
         try await dispatchSheetKey("g", in: webView)
         try await dispatchSheetKey("Shift", shift: true, in: webView)
         try await dispatchSheetKey("E", shift: true, in: webView)
-        #expect(viewModel.isOpenBoardPanelPresented)
-        #expect(viewModel.openBoard.initialURL == url)
+        #expect(windowModel.isOpenBoardPanelPresented)
+        #expect(windowModel.openBoard.initialURL == url)
 
-        viewModel.hideOpenBoardPanel()
+        windowModel.hideOpenBoardPanel()
         try await dispatchSheetKey("t", in: webView)
-        #expect(viewModel.isOpenBoardPanelPresented)
+        #expect(windowModel.isOpenBoardPanelPresented)
 
-        viewModel.hideOpenBoardPanel()
+        windowModel.hideOpenBoardPanel()
         try await dispatchSheetKey("T", shift: true, in: webView)
-        #expect(viewModel.isOverviewPresented)
+        #expect(windowModel.isOverviewPresented)
 
-        viewModel.hideOverview()
+        windowModel.hideOverview()
         try await dispatchSheetKey("o", in: webView)
-        #expect(viewModel.temporaryContext == .essentialsPrefix)
+        #expect(windowModel.temporaryContext == .essentialsPrefix)
     }
 
     @Test func sheetNavigationDispatchesYmToCopyMarkdownLink() async throws {

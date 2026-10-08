@@ -7,7 +7,7 @@ struct DenHeader: View {
     let profile: ProfileState
     let windowID: UUID
 
-    @Environment(DenViewModel.self) private var viewModel
+    @Environment(DenWindowModel.self) private var windowModel
     @Environment(ProfileManager.self) private var profileManager
     @Environment(\.openWindow) private var openWindow
 
@@ -37,8 +37,8 @@ struct DenHeader: View {
             }
         )
         .frame(maxWidth: .infinity)
-        .allowsHitTesting(viewModel.temporaryContext == nil)
-        .accessibilityHidden(viewModel.temporaryContext != nil)
+        .allowsHitTesting(windowModel.temporaryContext == nil)
+        .accessibilityHidden(windowModel.temporaryContext != nil)
         .frame(height: DenLayout.denHeaderHeight)
     }
 }
@@ -48,18 +48,18 @@ struct DenHeaderControls: ToolbarContent {
     let windowID: UUID
 
     @Environment(DenStore.self) private var store
-    @Environment(DenViewModel.self) private var viewModel
+    @Environment(DenWindowModel.self) private var windowModel
 
     @ToolbarContentBuilder
     var body: some ToolbarContent {
-        if !viewModel.isOverviewPresented {
+        if !windowModel.isOverviewPresented {
             ToolbarSpacer(.flexible)
             ToolbarItemGroup(placement: .automatic) {
                 NotificationButton()
 
                 if store.focusedDesk?.boards.isEmpty == false {
                     SaveDeskPresetButton {
-                        viewModel.showSaveDeskPresetPanel()
+                        windowModel.showSaveDeskPresetPanel()
                     }
                 }
 
@@ -71,11 +71,11 @@ struct DenHeaderControls: ToolbarContent {
 
 private struct NotificationButton: View {
     @Environment(DenStore.self) private var store
-    @Environment(DenViewModel.self) private var viewModel
+    @Environment(DenWindowModel.self) private var windowModel
 
     var body: some View {
         Button {
-            viewModel.toggleNotificationList()
+            windowModel.toggleNotificationList()
         } label: {
             Label {
                 Text("Notifications")
@@ -85,7 +85,7 @@ private struct NotificationButton: View {
             }
         }
         .tint(.secondary)
-        .disabled(viewModel.temporaryContext != nil)
+        .disabled(windowModel.temporaryContext != nil)
         .accessibilityLabel("Notifications")
         .accessibilityValue(
             store.unreadNotificationCount > 0
@@ -120,7 +120,7 @@ private struct ProfileChip: View {
     let profile: ProfileState
     let windowID: UUID
 
-    @Environment(DenViewModel.self) private var viewModel
+    @Environment(DenWindowModel.self) private var windowModel
     @Environment(ProfileManager.self) private var profileManager
     @Environment(\.openWindow) private var openWindow
 
@@ -139,7 +139,7 @@ private struct ProfileChip: View {
             Divider()
 
             Button("Open Profile…") {
-                viewModel.setTemporaryContext(.profilePicker)
+                windowModel.setTemporaryContext(.profilePicker)
             }
             .keyboardShortcut("p", modifiers: [.control, .command])
 
