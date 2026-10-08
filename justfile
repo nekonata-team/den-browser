@@ -3,6 +3,7 @@ set positional-arguments := true
 
 project := "Den Browser/Den Browser.xcodeproj"
 scheme := "Den Browser"
+unit_test_scheme := "Den Browser UnitTests"
 derived_data := ".derived-data"
 ui_test_derived_data := ".derived-data-ui"
 unit_test_result := derived_data + "/TestResults.xcresult"
@@ -129,7 +130,7 @@ prepush:
 [group("test")]
 test:
     @rm -rf "{{unit_test_result}}"
-    @rtk test "xcodebuild test -project '{{project}}' -scheme '{{scheme}}' -destination 'platform=macOS,arch=arm64' -derivedDataPath '{{derived_data}}' -resultBundlePath '{{unit_test_result}}' -only-testing:'Den BrowserTests' -parallel-testing-enabled NO CODE_SIGNING_ALLOWED=NO" || { echo "✗ Unit tests failed."; echo '  Inspect: just test-results'; exit 1; }
+    @rtk test "xcodebuild test -project '{{project}}' -scheme '{{unit_test_scheme}}' -destination 'platform=macOS,arch=arm64' -derivedDataPath '{{derived_data}}' -resultBundlePath '{{unit_test_result}}' -only-testing:'Den BrowserTests' -parallel-testing-enabled NO CODE_SIGNING_ALLOWED=NO" || { echo "✗ Unit tests failed."; echo '  Inspect: just test-results'; exit 1; }
     echo "✓ Unit tests passed"
 
 # Run deterministic macOS UI interaction tests. Pass a target to run a specific class or case (e.g. just ui-test Den_BrowserUITests/testNewBoardIsCenteredAfterCreation).
