@@ -345,6 +345,7 @@ extension DenStore {
 
     func updateBoard(boardID: BoardID, url: URL?, title: String?) {
         guard let indices = boardIndices(for: boardID) else { return }
+        let board = state.desks[indices.desk].boards[indices.board]
         var changed = false
         if let url, WebURLPolicy.isSupported(url) {
             let canonicalURL = WebURLPolicy.canonicalSheetURL(url)
@@ -356,8 +357,26 @@ extension DenStore {
         if let title, !title.isEmpty, state.desks[indices.desk].boards[indices.board].label != title {
             state.desks[indices.desk].boards[indices.board].label = title
         }
+        if let title = title?.trimmingCharacters(in: .whitespacesAndNewlines),
+            !title.isEmpty,
+            let firstSheetURL = board.firstSheetURL
+        {
+            updateRecentItemTitle(for: firstSheetURL, title: title)
+        }
         if changed {
             save()
+        }
+    }
+
+    private func updateRecentItemTitle(for url: URL, title: String) {
+        guard
+            let index = recentItems.firstIndex(of: .url(url)),
+            case .url(let recentURL, nil) = recentItems[index]
+        else { return }
+        let original = recentItems
+        recentItems[index] = .url(recentURL, title: title)
+        if saveStateAndRecentItems() == false {
+            recentItems = original
         }
     }
 

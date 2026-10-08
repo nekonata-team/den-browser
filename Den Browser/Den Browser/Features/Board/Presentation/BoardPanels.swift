@@ -20,6 +20,7 @@ struct OpenBoardPanel: View {
         return Array(
             store.recentItems.lazy.filter {
                 query.isEmpty || $0.displayText.localizedCaseInsensitiveContains(query)
+                    || ($0.title?.localizedCaseInsensitiveContains(query) ?? false)
             }.prefix(Self.maximumVisibleRecentItemCount))
     }
 
@@ -98,9 +99,18 @@ struct OpenBoardPanel: View {
                         } label: {
                             HStack(spacing: DenPanelLayout.controlSpacing) {
                                 recentItemIcon(for: item)
-                                Text(item.displayText)
-                                    .lineLimit(1)
-                                    .truncationMode(.middle)
+                                VStack(alignment: .leading, spacing: 1) {
+                                    Text(item.title ?? item.displayText)
+                                        .lineLimit(1)
+                                        .truncationMode(item.title == nil ? .middle : .tail)
+                                    if item.title != nil, case .url(let url, _) = item {
+                                        Text(url.host ?? url.absoluteString)
+                                            .font(.caption2)
+                                            .foregroundStyle(.secondary)
+                                            .lineLimit(1)
+                                            .truncationMode(.middle)
+                                    }
+                                }
                                 Spacer(minLength: 0)
                             }
                             .contentShape(Rectangle())
@@ -136,7 +146,7 @@ struct OpenBoardPanel: View {
                     }
                     .padding(.horizontal, 8)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .frame(height: 30)
+                    .frame(height: item.title == nil ? 30 : 38)
                     .denSelectionHighlight(item.id == selectedRecentItemID, profileColor: profileColor)
                     .contextMenu {
                         if let matchedEssential {

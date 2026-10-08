@@ -1051,7 +1051,7 @@ final class DenIPCService {
                 let openInput = BoardInputResolver.resolveOpenBoardInput(
                     payload.url,
                     searchEngine: store.preferences.searchEngine),
-                case let .url(url) = openInput.item,
+                case let .url(url, _) = openInput.item,
                 WebURLPolicy.isSupported(url)
             else {
                 return .failure("Invalid or unsupported URL: \(payload.url)")

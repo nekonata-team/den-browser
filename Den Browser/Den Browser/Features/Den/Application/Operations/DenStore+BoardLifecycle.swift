@@ -783,9 +783,17 @@ extension DenStore {
     }
 
     private func saveRecentItem(_ item: RecentItem) {
+        let itemToSave: RecentItem
+        if case .url(let url, nil) = item,
+            let title = recentItems.first(where: { $0 == item })?.title
+        {
+            itemToSave = .url(url, title: title)
+        } else {
+            itemToSave = item
+        }
         let original = recentItems
-        recentItems.removeAll { $0 == item }
-        recentItems.insert(item, at: 0)
+        recentItems.removeAll { $0 == itemToSave }
+        recentItems.insert(itemToSave, at: 0)
         if recentItems.count > Self.maximumRecentItemCount {
             recentItems.removeLast(recentItems.count - Self.maximumRecentItemCount)
         }

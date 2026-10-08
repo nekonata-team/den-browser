@@ -1,14 +1,14 @@
 import Foundation
 
 public enum RecentItem: Codable, Equatable, Hashable, Identifiable {
-    case url(URL)
+    case url(URL, title: String? = nil)
     case search(String)
     case terminal(workingDirectory: String)
     case zellij(sessionName: String?)
     case zmx(sessionName: String)
 
     private enum CodingKeys: String, CodingKey {
-        case kind, url, query, workingDirectory, sessionName
+        case kind, url, title, query, workingDirectory, sessionName
     }
     private enum Kind: String, Codable { case url, search, terminal, zellij, zmx }
 
@@ -16,7 +16,7 @@ public enum RecentItem: Codable, Equatable, Hashable, Identifiable {
 
     public var displayText: String {
         switch self {
-        case .url(let url): return url.absoluteString
+        case .url(let url, _): return url.absoluteString
         case .search(let query): return query
         case .terminal(let workingDirectory):
             let homeDirectory = FileManager.default.homeDirectoryForCurrentUser.standardizedFileURL.path
@@ -28,9 +28,14 @@ public enum RecentItem: Codable, Equatable, Hashable, Identifiable {
         }
     }
 
+    public var title: String? {
+        guard case .url(_, let title) = self else { return nil }
+        return title
+    }
+
     public var defaultEssentialName: String {
         switch self {
-        case .url(let url):
+        case .url(let url, _):
             return url.host ?? url.absoluteString
         case .search(let query):
             return query
@@ -49,7 +54,7 @@ public enum RecentItem: Codable, Equatable, Hashable, Identifiable {
 
     public func matches(essential: Essential) -> Bool {
         if displayText == essential.input { return true }
-        if case .url(let itemURL) = self {
+        if case .url(let itemURL, _) = self {
             if let essentialURL = URL(string: essential.input) {
                 return itemURL.standardized == essentialURL.standardized
                     || itemURL.absoluteString.trimmingCharacters(in: ["/"])
@@ -61,7 +66,7 @@ public enum RecentItem: Codable, Equatable, Hashable, Identifiable {
 
     private var normalizedValue: String {
         switch self {
-        case .url(let url):
+        case .url(let url, _):
             guard var components = URLComponents(url: url, resolvingAgainstBaseURL: false) else {
                 return url.absoluteString
             }
@@ -109,7 +114,9 @@ public enum RecentItem: Codable, Equatable, Hashable, Identifiable {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         switch try container.decode(Kind.self, forKey: .kind) {
         case .url:
-            self = .url(try container.decode(URL.self, forKey: .url))
+            self = .url(
+                try container.decode(URL.self, forKey: .url),
+                title: try container.decodeIfPresent(String.self, forKey: .title))
         case .search:
             self = .search(try container.decode(String.self, forKey: .query))
         case .terminal:
@@ -125,9 +132,10 @@ public enum RecentItem: Codable, Equatable, Hashable, Identifiable {
     public func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
         switch self {
-        case .url(let url):
+        case .url(let url, let title):
             try container.encode(Kind.url, forKey: .kind)
             try container.encode(url, forKey: .url)
+            try container.encodeIfPresent(title, forKey: .title)
         case .search(let query):
             try container.encode(Kind.search, forKey: .kind)
             try container.encode(query, forKey: .query)

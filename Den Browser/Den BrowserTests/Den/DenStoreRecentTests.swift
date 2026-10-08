@@ -8,6 +8,48 @@ import WebKit
 @MainActor
 @Suite(.serialized)
 struct DenStoreRecentTests {
+    @Test func recentURLPageTitleIsOptionalAndBackwardCompatible() throws {
+        let url = try #require(URL(string: "https://example.com/"))
+        let legacyData = Data(#"{"kind":"url","url":"https://example.com/"}"#.utf8)
+        let legacyItem = try JSONDecoder().decode(RecentItem.self, from: legacyData)
+        let titledItem = RecentItem.url(url, title: "Example page")
+        let decodedTitledItem = try JSONDecoder().decode(
+            RecentItem.self,
+            from: JSONEncoder().encode(titledItem))
+
+        #expect(legacyItem == .url(url))
+        #expect(legacyItem.title == nil)
+        #expect(decodedTitledItem.title == "Example page")
+        #expect(titledItem == .url(url))
+    }
+
+    @Test func webPageTitleUpdatesItsRecentItemOnce() throws {
+        let url = try #require(URL(string: "https://example.com/"))
+        var savedItems: [RecentItem] = []
+        try withTestStore(
+            onRecentItemsSave: {
+                savedItems = $0
+                return true
+            },
+            body: { store in
+                store.openBoard(input: url.absoluteString)
+                let boardID = try #require(store.focusedDesk?.boards.first?.id)
+                store.updateBoard(boardID: boardID, url: url, title: "Example page")
+
+                #expect(store.recentItems.first?.title == "Example page")
+                #expect(savedItems == store.recentItems)
+
+                store.openBoard(input: url.absoluteString)
+                #expect(store.recentItems.first?.title == "Example page")
+
+                store.updateBoard(
+                    boardID: boardID,
+                    url: URL(string: "https://example.com/next"),
+                    title: "Next page")
+                #expect(store.recentItems.first?.title == "Example page")
+            })
+    }
+
     @Test func openBoardStoresAndReusesRecentItemsInMostRecentOrder() throws {
         var savedItems: [RecentItem] = []
         let expectedURL = try #require(URL(string: "https://EXAMPLE.com/"))
