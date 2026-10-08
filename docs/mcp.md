@@ -100,22 +100,24 @@ Tool-specific constraints:
 |---|---|---|---|
 | `create_web_board` | `url`, `[focus]`, `[profile_id]` | Create a Web Board on the active Desk and return its ID. Accept the CLI's supported URL, hostname, or search-query inputs. | `board web new` |
 | `create_inspection_board` | `target_board_id`, `[focus]`, `[profile_id]` | Create or reuse the Inspection Board associated with the specified Web Board and return its ID. The target must be a Web Board; focus defaults to false. | `board inspection new --target` |
-| `open_sheet` | `url`, `[board_id]`, `[profile_id]` | Navigate the target Web Board's Current Sheet. Accept the same inputs and validation as `sheet open`. | `sheet open` |
-| `inspect_sheet` | `[board_id]`, `[profile_id]`, `[full]`, `[within]` | Return the target Board ID, Current Sheet URL, and semantic snapshot. The default snapshot contains interactive elements and their semantic ancestor areas, short popup context, and compact text-control values except password inputs. | `sheet url`, `sheet snapshot` |
-| `read_inspection` | `board_id`, `[profile_id]` | Read inspection context from the specified Inspection Board and its target Web Board. Requires the Inspection Board ID explicitly; it does not change focus, selection, or page state. | `inspection read --board` |
-| `read_sheet_text` | `[board_id]`, `[profile_id]` | Read visible text (`innerText`) from the Current Sheet. | `sheet text` |
-| `query_sheet` | `selector`, `[visible]`, `[all]`, `[fields]`, `[board_id]`, `[profile_id]` | Return matching elements as structured data. `fields` is an array; defaults are `tag`, `role`, `name`, and `text`. | `sheet query` |
-| `read_sheet_element` | `target`, `field`, `[attribute]`, `[board_id]`, `[profile_id]` | Read text, value, an attribute, match count, or bounding box for a target. `attribute` is required when `field` is `attribute`. | `sheet get` |
-| `read_sheet_state` | `target`, `state`, `[board_id]`, `[profile_id]` | Check whether a target is visible, enabled, or checked. | `sheet is` |
-| `click_sheet_element` | `target` or `role` + `name`, `[exact]`, `[open_in_new_board]`, `[focus_new_board]`, `[board_id]`, `[profile_id]` | Click by snapshot ref, selector, or accessible role and name. Optionally open a clicked link in a new Web Board. | `sheet click` |
-| `fill_sheet_field` | `target`, `value`, `[board_id]`, `[profile_id]` | Fill an input, textarea, or editable element. An empty `value` clears it. | `sheet fill` |
-| `type_sheet_text` | `text`, `[target]`, `[board_id]`, `[profile_id]` | Type text into a target or the currently focused element. | `sheet type` |
-| `press_sheet_key` | `key`, `[board_id]`, `[profile_id]` | Dispatch a supported key to the active element. | `sheet press` |
-| `scroll_sheet` | `[direction]` or `[target]`, `[board_id]`, `[profile_id]` | Scroll by direction or bring a target into view. The default direction is `down`. | `sheet scroll` |
-| `wait_for_sheet` | Exactly one of `target`, `url`, `text`, or `load_state`; `[state]`, `[timeout_seconds]`, `[board_id]`, `[profile_id]` | Wait for a target state, URL, visible text, or supported load state. The default timeout is 10 seconds. | `sheet wait` |
-| `navigate_sheet_history` | `direction` (`back` or `forward`), `[board_id]`, `[profile_id]` | Navigate the Sheet Stack backward or forward. | `sheet back`, `sheet forward` |
-| `reload_sheet` | `[board_id]`, `[profile_id]` | Reload the Current Sheet. | `sheet reload` |
+| `open_sheet` | `url`, `[board_id]`, `[profile_id]` | Navigate the target Web Board's Current Sheet. Accept the same inputs and validation as `board web navigate`. | `board web navigate` |
+| `inspect_sheet` | `[board_id]`, `[profile_id]`, `[full]`, `[within]` | Return the target Board ID, Current Sheet URL, and semantic snapshot. A snapshot is always returned; `full` and `within` only control its detail. The default snapshot contains interactive elements and their semantic ancestor areas, short popup context, and compact text-control values except password inputs. | `board web url`, `board web snapshot` |
+| `read_inspection` | `board_id`, `[profile_id]` | Read inspection context from the specified Inspection Board and its target Web Board. Requires the Inspection Board ID explicitly; it does not change focus, selection, or page state. | `board inspection read --board` |
+| `read_sheet_text` | `[board_id]`, `[profile_id]` | Read visible text (`innerText`) from the Current Sheet. | `board web text` |
+| `query_sheet` | `selector`, `[visible]`, `[all]`, `[fields]`, `[board_id]`, `[profile_id]` | Return matching elements as structured data. `fields` is an array; defaults are `tag`, `role`, `name`, and `text`. | `board web query` |
+| `read_sheet_element` | `target`, `field`, `[attribute]`, `[board_id]`, `[profile_id]` | Read text, value, an attribute, match count, or bounding box for a target. `attribute` is required when `field` is `attribute`. | `board web get` |
+| `read_sheet_state` | `target`, `state`, `[board_id]`, `[profile_id]` | Check whether a target is visible, enabled, or checked. | `board web is` |
+| `click_sheet_element` | `target` or `role` + `name`, `[exact]`, `[open_in_new_board]`, `[focus_new_board]`, `[board_id]`, `[profile_id]` | Click by snapshot ref, selector, or accessible role and name. Optionally open a clicked link in a new Web Board. | `board web click` |
+| `fill_sheet_field` | `target`, `value`, `[board_id]`, `[profile_id]` | Fill an input, textarea, or editable element. An empty `value` clears it. | `board web fill` |
+| `type_sheet_text` | `text`, `[target]`, `[board_id]`, `[profile_id]` | Type text into a target or the currently focused element. | `board web type` |
+| `press_sheet_key` | `key`, `[board_id]`, `[profile_id]` | Dispatch a supported key to the active element. | `board web press` |
+| `scroll_sheet` | `[direction]` or `[target]`, `[board_id]`, `[profile_id]` | Scroll by direction or bring a target into view. The default direction is `down`. | `board web scroll` |
+| `wait_for_sheet` | Exactly one of `target`, `url`, `text`, or `load_state`; `[state]`, `[timeout_seconds]`, `[board_id]`, `[profile_id]` | Wait for a target state, URL, visible text, or supported load state. The default timeout is 10 seconds. | `board web wait` |
+| `navigate_sheet_history` | `direction` (`back` or `forward`), `[board_id]`, `[profile_id]` | Navigate the Sheet Stack backward or forward. | `board web back`, `board web forward` |
+| `reload_sheet` | `[board_id]`, `[profile_id]` | Reload the Current Sheet. | `board web reload` |
 | `close_board` | `board_id`, `[profile_id]` | Remove the specified Board from its Desk and end its live runtime. A Board ID is required. | `board close --board <id>` |
+
+MCP Sheet action tools do not include the CLI's optional `--snapshot` result. Call `inspect_sheet` separately when a snapshot is needed; it always returns one, while `full` and `within` only control its detail.
 
 Sheet references such as `@e1` are document-scoped. They remain usable across operations in the same document and are regenerated when navigation replaces the document. Use the `board_id` returned from `inspect_sheet` for subsequent Sheet calls.
 
@@ -135,8 +137,8 @@ Sheet references such as `@e1` are document-scoped. They remain usable across op
 | Tool | Arguments | Description | CLI equivalent |
 |---|---|---|---|
 | `create_terminal_board` | `[path]`, `[focus]`, `[profile_id]` | Create a Terminal Board at an optional working directory. Run a command afterward with `run_terminal_command`. | `board terminal new` |
-| `read_terminal_session` | `[board_id]`, `[profile_id]` | Read the visible Terminal Session buffer. | `terminal text` |
-| `run_terminal_command` | `command`, `[board_id]`, `[profile_id]` | Send a shell command and press Enter in the target Terminal Session. The call does not wait for the command to finish; use `read_terminal_session` to inspect output. | `terminal run` |
+| `read_terminal_session` | `[board_id]`, `[profile_id]` | Read the visible Terminal Session buffer. | `board terminal text` |
+| `run_terminal_command` | `command`, `[board_id]`, `[profile_id]` | Send a shell command and press Enter in the target Terminal Session. The call does not wait for the command to finish; use `read_terminal_session` to inspect output. | `board terminal run` |
 
 ## 5. Result and Error Contract
 
@@ -166,11 +168,11 @@ Inspection results describe the information available for the target page. Optio
 
 The first tool catalog focuses on common Den, Sheet, Drawer, and Terminal workflows. These CLI operations remain candidates for later MCP tools when a concrete use case calls for them:
 
-- Arbitrary JavaScript evaluation (`sheet eval`).
-- JavaScript-condition waits (`sheet wait --fn`).
+- Arbitrary JavaScript evaluation (`board web eval`).
+- JavaScript-condition waits (`board web wait --fn`).
 - Low-level pointer events, drag, double-click, and focus.
 - Screenshot capture.
-- Raw Terminal input and process signaling (`terminal send`, `terminal kill`).
+- Raw Terminal input and process signaling (`board terminal send`, `board terminal kill`).
 - Desk switching and creation, when those operations are available through the CLI.
 
 ## 7. Related decision

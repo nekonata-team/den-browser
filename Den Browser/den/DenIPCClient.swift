@@ -21,7 +21,7 @@ struct BoardTargetOptions: ParsableArguments {
     var boardID: String?
 }
 
-struct SheetTargetOptions: ParsableArguments {
+struct WebTargetOptions: ParsableArguments {
     @OptionGroup var target: BoardTargetOptions
 
     @Flag(name: .long, help: "Include a semantic snapshot with the command result")
@@ -347,8 +347,8 @@ enum DenIPCClient {
 
         let callerError: String?
         switch operation {
-        case .sheet(command: .open(_), target: .automatic),
-            .sheetWithSnapshot(command: .open(_), target: .automatic, snapshot: _):
+        case .sheet(command: .navigate(_), target: .automatic),
+            .sheetWithSnapshot(command: .navigate(_), target: .automatic, snapshot: _):
             callerError = "No Web Board found. Use 'den board web new <url>' to create a new board."
         case .sheet(_, .automatic),
             .sheetWithSnapshot(_, .automatic, _),

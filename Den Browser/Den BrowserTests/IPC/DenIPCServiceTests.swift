@@ -227,7 +227,7 @@ struct DenIPCServiceTests {
         #expect(store.board(for: terminalBoardID)?.isTerminal == true)
     }
 
-    @Test func sheetOpenUsesSharedInputResolution() async throws {
+    @Test func sheetNavigateUsesSharedInputResolution() async throws {
         let directory = FileManager.default.temporaryDirectory
             .appending(path: "den-browser-ipc-sheet-open-\(UUID().uuidString)", directoryHint: .isDirectory)
         defer { try? FileManager.default.removeItem(at: directory) }
@@ -247,7 +247,7 @@ struct DenIPCServiceTests {
         let hostnameResponse = await service.handleResult(
             ipcRequest(
                 .sheet(
-                    command: .open(DenSheetOpenPayload(url: "localhost:3000")),
+                    command: .navigate(DenSheetNavigatePayload(url: "localhost:3000")),
                     target: .explicit(boardID.rawValue)
                 ))
         )
@@ -257,7 +257,7 @@ struct DenIPCServiceTests {
         let unsupportedResponse = await service.handleResult(
             ipcRequest(
                 .sheet(
-                    command: .open(DenSheetOpenPayload(url: "mailto:user@example.com")),
+                    command: .navigate(DenSheetNavigatePayload(url: "mailto:user@example.com")),
                     target: .explicit(boardID.rawValue)
                 )))
         #expect(unsupportedResponse.isOk == false)

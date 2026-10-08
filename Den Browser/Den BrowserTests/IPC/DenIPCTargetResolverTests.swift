@@ -61,7 +61,7 @@ struct DenIPCTargetResolverTests {
         #expect(resolved.board.isInspection)
     }
 
-    @Test func inspectionReadResolvesOnlyTheExplicitInspectionBoard() throws {
+    @Test func readInspectionResolvesOnlyTheExplicitInspectionBoard() throws {
         // Arrange
         let directory = temporaryProfileDirectory()
         defer { try? FileManager.default.removeItem(at: directory) }

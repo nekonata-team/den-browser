@@ -4,8 +4,8 @@ import Testing
 
 @testable import Den_Browser
 
-struct DenSheetCommandTests {
-    @Test func sheetCommandForwardsOptionalSnapshotAlongsideResult() async throws {
+struct DenWebCommandTests {
+    @Test func webCommandForwardsOptionalSnapshotAlongsideResult() async throws {
         // Arrange
         let socketPath = FileManager.default.temporaryDirectory
             .appendingPathComponent("den-cli-\(UUID().uuidString).sock").path
@@ -111,7 +111,7 @@ struct DenSheetCommandTests {
                     DenSheetInteractStep(
                         line: 2,
                         text: "navigate https://example.com",
-                        command: .open(DenSheetOpenPayload(url: "https://example.com"))
+                        command: .navigate(DenSheetNavigatePayload(url: "https://example.com"))
                     ),
                     DenSheetInteractStep(
                         line: 3,

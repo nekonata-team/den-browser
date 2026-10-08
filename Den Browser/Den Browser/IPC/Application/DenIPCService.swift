@@ -8,7 +8,7 @@ import WebKit
 final class DenIPCService {
     static let shared = DenIPCService()
 
-    private struct SheetInteractTarget {
+    private struct WebBoardInteractionTarget {
         let profileID: ProfileID
         let store: DenStore
         let board: BoardState
@@ -63,11 +63,11 @@ final class DenIPCService {
         case .health:
             return DenIPCResponse(result: .success(), target: .none)
         case .sheet(let command, let target):
-            return await withSheetTarget(target: target, context: request.context, command: command) { resolved in
+            return await withWebBoardTarget(target: target, context: request.context, command: command) { resolved in
                 await self.performSheetCommand(command, target: resolved)
             }
         case .sheetWithSnapshot(let command, let target, let snapshot):
-            return await withSheetTarget(target: target, context: request.context, command: command) { resolved in
+            return await withWebBoardTarget(target: target, context: request.context, command: command) { resolved in
                 let result = await self.performSheetCommand(command, target: resolved)
                 return await self.appendRequestedSnapshot(
                     to: result, command: command, snapshot: snapshot, target: resolved)
@@ -161,27 +161,27 @@ final class DenIPCService {
         }
     }
 
-    private func withSheetTarget(
+    private func withWebBoardTarget(
         target: BoardTarget,
         context: DenIPCCallerContext,
         command: DenIPCCommand.Sheet,
-        perform: (SheetInteractTarget) async -> DenIPCOperationResult
+        perform: (WebBoardInteractionTarget) async -> DenIPCOperationResult
     ) async -> DenIPCResponse {
         switch DenIPCTargetResolver.resolveBoard(target: target, context: context, kind: .web, in: profileManager) {
         case .success(let resolved):
-            let sheetTarget = SheetInteractTarget(
+            let webBoardTarget = WebBoardInteractionTarget(
                 profileID: resolved.profileID,
                 store: resolved.store,
                 board: resolved.board,
                 runtime: resolved.store.webRuntime(for: resolved.board)
             )
-            let result = await perform(sheetTarget)
+            let result = await perform(webBoardTarget)
             return DenIPCResponse(
                 result: result,
                 target: .board(profileID: resolved.profileID.rawValue, boardID: resolved.board.id.rawValue)
             )
         case .failure(let error):
-            if case .open = command, error == .noTargetBoard("Web") {
+            if case .navigate = command, error == .noTargetBoard("Web") {
                 return DenIPCResponse(
                     result: .failure("No Web Board found. Use 'den board web new <url>' to create a new board."),
                     target: .none
@@ -317,7 +317,7 @@ final class DenIPCService {
         to result: DenIPCOperationResult,
         command: DenIPCCommand.Sheet,
         snapshot: DenSheetSnapshotPayload,
-        target: SheetInteractTarget
+        target: WebBoardInteractionTarget
     ) async -> DenIPCOperationResult {
         switch command {
         case .inspect, .snapshot:
@@ -353,7 +353,7 @@ final class DenIPCService {
             )
         }
 
-        guard isSheetInteractTargetAvailable(target) else {
+        guard isWebBoardInteractionTargetAvailable(target) else {
             return isInteract ? (result.isOk ? targetUnavailable() : result) : commandSucceededButTargetUnavailable()
         }
 
@@ -363,7 +363,7 @@ final class DenIPCService {
                 interactiveOnly: !snapshot.full,
                 within: snapshot.within
             )
-            guard isSheetInteractTargetAvailable(target) else {
+            guard isWebBoardInteractionTargetAvailable(target) else {
                 return isInteract
                     ? (result.isOk ? targetUnavailable() : result) : commandSucceededButTargetUnavailable()
             }
@@ -371,7 +371,7 @@ final class DenIPCService {
             result.snapshot = captured
             return result
         } catch {
-            guard isSheetInteractTargetAvailable(target) else {
+            guard isWebBoardInteractionTargetAvailable(target) else {
                 return isInteract
                     ? (result.isOk ? targetUnavailable() : result) : commandSucceededButTargetUnavailable()
             }
@@ -391,7 +391,7 @@ final class DenIPCService {
 
     private func performSheetCommand(
         _ command: DenIPCCommand.Sheet,
-        target: SheetInteractTarget
+        target: WebBoardInteractionTarget
     ) async -> DenIPCOperationResult {
         let store = target.store
         let board = target.board
@@ -399,7 +399,7 @@ final class DenIPCService {
 
         do {
             switch command {
-            case .open(let payload):
+            case .navigate(let payload):
                 guard !payload.url.isEmpty else {
                     return .failure("Usage: den board web navigate <url>")
                 }
@@ -835,7 +835,7 @@ final class DenIPCService {
 
     private func handleSheetInteract(
         payload: DenSheetInteractPayload,
-        target: SheetInteractTarget
+        target: WebBoardInteractionTarget
     ) async -> DenIPCOperationResult {
         guard !payload.steps.isEmpty else {
             return .failure("Usage: den board web interact <script-or-file>")
@@ -851,7 +851,7 @@ final class DenIPCService {
         }
 
         for (index, step) in payload.steps.enumerated() {
-            guard isSheetInteractTargetAvailable(target) else {
+            guard isWebBoardInteractionTargetAvailable(target) else {
                 return targetUnavailable(at: index)
             }
             if case .interact = step.command {
@@ -870,19 +870,19 @@ final class DenIPCService {
                     failedActionIndex: index
                 )
             }
-            guard isSheetInteractTargetAvailable(target) else {
+            guard isWebBoardInteractionTargetAvailable(target) else {
                 return targetUnavailable(at: index)
             }
             completedActions += 1
         }
 
-        guard isSheetInteractTargetAvailable(target) else {
+        guard isWebBoardInteractionTargetAvailable(target) else {
             return targetUnavailable(at: payload.steps.count - 1)
         }
         return .success(completedActions: completedActions)
     }
 
-    private func isSheetInteractTargetAvailable(_ target: SheetInteractTarget) -> Bool {
+    private func isWebBoardInteractionTargetAvailable(_ target: WebBoardInteractionTarget) -> Bool {
         guard let profileManager,
             profileManager.profile(id: target.profileID) != nil,
             profileManager.hasWindow(for: target.profileID)

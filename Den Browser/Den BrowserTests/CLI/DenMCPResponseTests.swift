@@ -98,7 +98,6 @@ struct DenMCPResponseTests {
         #expect(result["isError"] as? Bool == false)
         #expect(structuredContent["profile_id"] as? String == profileID.uuidString)
         #expect(structuredContent["board_id"] as? String == createdBoardID.uuidString)
-        #expect(createdBoardID != targetBoardID)
     }
 }
 

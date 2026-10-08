@@ -237,7 +237,7 @@ Web Boards include `url`; Zellij and zmx Terminal Boards include `session_name` 
 BOARD_ID=$(den board focused | jq -r .board_id)
 ```
 
-**Terminal Screen Buffer (`terminal text`)**:
+**Terminal Screen Buffer (`board terminal text`)**:
 ```json
 {"ok":true,"text":"$ npm test\nPASS ..."}
 ```
@@ -286,7 +286,7 @@ Element names use labels and visible content rather than form values, except for
 {"message":"Clicked @e1","ok":true}
 ```
 
-**Click in New Board (`sheet click --new-board`)**:
+**Click in New Board (`board web click --new-board`)**:
 ```json
 {"board_id":"8E192A0B-...","message":"Opened @e1 in new Board","ok":true,"url":"https://example.com/docs"}
 ```

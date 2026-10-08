@@ -105,7 +105,7 @@ public nonisolated struct DenSheetInteractPayload: Codable, Equatable, Sendable 
     }
 }
 
-public nonisolated struct DenSheetOpenPayload: Codable, Equatable, Sendable {
+public nonisolated struct DenSheetNavigatePayload: Codable, Equatable, Sendable {
     public var url: String
 
     public init(

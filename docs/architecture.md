@@ -74,6 +74,8 @@ Selected shared Domain values live in one `DenDomain` Swift package target. Its 
 
 `DenIPCProtocol` contains Foundation-only Codable command, operation, request, response, and payload DTOs shared by the app, bundled CLI, and unit tests. A `DenIPCRequest` wraps one `DenIPCOperation` and caller context; operations carry typed `BoardTarget` or `DeskTarget` values, with required IDs on operations that cannot use ambient resolution. `DenIPCResponse` carries a `DenIPCOperationResult` and the resolved target context. The package has no dependency on the app, UI, or `DenDomain`. The app owns request handling and target resolution, while the bundled CLI and MCP server parse their inputs and send operations over the socket. The app and CLI ship together and use these shared types directly, without a legacy flat-JSON adapter. This boundary follows [ADR 0060](./adr/0060-share-ipc-wire-types.md).
 
+The CLI groups commands by Board kind under [ADR 0051](./adr/0051-structure-den-cli-by-board-kind.md), while MCP exposes action-first tools with JSON Schema arguments under [ADR 0055](./adr/0055-add-den-mcp-server.md). Both adapters call the same typed IPC operations and keep product terms such as Sheet, even when their public names differ.
+
 The shared Web group contains code used by Web Boards, Drawer Preview, and Sheet Navigation. A Web Board's state, view, and runtime belong to `Board/Web`; shared URL policy, DOM execution, and the base WebKit runtime belong to `Web`. Sheet is not a Web-only implementation boundary, so there is no generic Sheet runtime folder or shared Sheet interface.
 
 ## Dependency direction

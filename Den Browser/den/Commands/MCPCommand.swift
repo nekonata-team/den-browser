@@ -498,7 +498,8 @@ private struct DenMCPToolRunner: Sendable {
                 )
             )
         case .openSheet:
-            return try sheetOperation(.open(DenSheetOpenPayload(url: try input.requiredString(.url))), input: input)
+            return try sheetOperation(
+                .navigate(DenSheetNavigatePayload(url: try input.requiredString(.url))), input: input)
         case .inspectSheet:
             return try sheetOperation(
                 .inspect(

@@ -24,7 +24,7 @@ public nonisolated enum DenSheetMouseCommand: Codable, Equatable, Sendable {
 
 public nonisolated enum DenIPCCommand {
     public indirect enum Sheet: Codable, Equatable, Sendable {
-        case open(DenSheetOpenPayload)
+        case navigate(DenSheetNavigatePayload)
         case inspect(DenSheetSnapshotPayload)
         case url
         case reload
