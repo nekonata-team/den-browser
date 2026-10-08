@@ -76,7 +76,7 @@ For `den board terminal` operations on an existing Board, the caller's Terminal 
 - Inspection commands require an explicit Board ID. `den board inspection read --board <id>` requires an Inspection Board; it does not infer one from ambient focus or choose another Board.
 
 ### Direct IPC Requests
-The bundled CLI communicates with Den Browser through newline-delimited Codable JSON on the Unix domain socket. Each `DenIPCRequest` contains one `DenIPCOperation` and caller context. Operations use typed `BoardTarget` and `DeskTarget` values to distinguish automatic resolution from an explicit UUID. Inspection operations and `openProfile` carry their required IDs directly. Snapshot capture is a distinct Sheet operation variant. `DenIPCResponse` carries a `DenIPCOperationResult` and the resolved target context; CLI JSON output contains only the operation result.
+The bundled CLI communicates with Den Browser through newline-delimited Codable JSON on the Unix domain socket. Each `DenIPCRequest` contains one `DenIPCOperation` and caller context. Operations use typed `BoardTarget` and `DeskTarget` values to distinguish automatic resolution from an explicit UUID. Inspection operations and `openProfile` carry their required IDs directly. Snapshot capture is a distinct Sheet operation variant. `DenIPCResponse` carries a typed `DenIPCOperationResult` and the resolved target context; CLI JSON serializes the result's flat public projection and omits target metadata.
 
 The app and bundled CLI must use matching versions and share these Swift types directly. This internal socket format has no legacy flat-JSON compatibility adapter. CLI arguments, MCP tool arguments, and public JSON responses remain specified separately in this document and [`mcp.md`](mcp.md).
 

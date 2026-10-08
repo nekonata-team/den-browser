@@ -41,12 +41,12 @@ struct DenIPCClientValidationTests {
 
         // Act
         let result = try runCLI(invocation.arguments, socketPath: socketPath)
-        let operationResult = try JSONDecoder().decode(DenIPCOperationResult.self, from: result.output)
+        let operationResult = try jsonResult(result.output)
 
         // Assert
         #expect(result.status != 0)
-        #expect(operationResult.isOk == false)
-        #expect(operationResult.error == invocation.expectedError)
+        #expect(operationResult["ok"] as? Bool == false)
+        #expect(operationResult["error"] as? String == invocation.expectedError)
     }
 
     @Test func profileOpenUsesCLIProfileFallback() throws {
@@ -62,7 +62,7 @@ struct DenIPCClientValidationTests {
                 request.operation == .openProfile(profileID: expectedProfileID)
                 && request.context.profileID == nil
             return encodedResponse(
-                .success(message: receivedFallback ? "profile fallback used" : "wrong request")
+                .success(.message(receivedFallback ? "profile fallback used" : "wrong request"))
             )
         }
         defer { server.stop() }
@@ -72,11 +72,11 @@ struct DenIPCClientValidationTests {
             ["profile", "open", "--profile", expectedProfileID.uuidString],
             socketPath: socketPath
         )
-        let operationResult = try JSONDecoder().decode(DenIPCOperationResult.self, from: result.output)
+        let operationResult = try jsonResult(result.output)
 
         // Assert
         #expect(result.status == 0)
-        #expect(operationResult.message == "profile fallback used")
+        #expect(operationResult["message"] as? String == "profile fallback used")
     }
 
     @Test(arguments: [["profile", "list"], ["health"]])
@@ -94,18 +94,18 @@ struct DenIPCClientValidationTests {
                 && request.context.profileID == nil
                 && request.context.callerBoardID == nil
             return encodedResponse(
-                .success(message: ignoredInvalidScope ? "unused scope ignored" : "wrong request")
+                .success(.message(ignoredInvalidScope ? "unused scope ignored" : "wrong request"))
             )
         }
         defer { server.stop() }
 
         // Act
         let result = try runCLI(arguments + ["--profile", "bad-profile"], socketPath: socketPath)
-        let operationResult = try JSONDecoder().decode(DenIPCOperationResult.self, from: result.output)
+        let operationResult = try jsonResult(result.output)
 
         // Assert
         #expect(result.status == 0)
-        #expect(operationResult.message == "unused scope ignored")
+        #expect(operationResult["message"] as? String == "unused scope ignored")
     }
 
     @Test func malformedAmbientCallerIsReportedForAutomaticTarget() throws {
@@ -118,11 +118,11 @@ struct DenIPCClientValidationTests {
             socketPath: socketPath,
             environmentOverrides: ["DEN_BOARD_ID": "bad-caller"]
         )
-        let operationResult = try JSONDecoder().decode(DenIPCOperationResult.self, from: result.output)
+        let operationResult = try jsonResult(result.output)
 
         // Assert
         #expect(result.status != 0)
-        #expect(operationResult.error == "No target Web Board found")
+        #expect(operationResult["error"] as? String == "No target Web Board found")
     }
 
     @Test func malformedAmbientCallerIsIgnoredForExplicitTarget() throws {
@@ -139,7 +139,7 @@ struct DenIPCClientValidationTests {
                 == .sheet(command: .url, target: .explicit(explicitBoardID))
                 && request.context.callerBoardID == nil
             return encodedResponse(
-                .success(message: ignoredMalformedCaller ? "caller ignored" : "wrong request")
+                .success(.message(ignoredMalformedCaller ? "caller ignored" : "wrong request"))
             )
         }
         defer { server.stop() }
@@ -150,11 +150,11 @@ struct DenIPCClientValidationTests {
             socketPath: socketPath,
             environmentOverrides: ["DEN_BOARD_ID": "bad-caller"]
         )
-        let operationResult = try JSONDecoder().decode(DenIPCOperationResult.self, from: result.output)
+        let operationResult = try jsonResult(result.output)
 
         // Assert
         #expect(result.status == 0)
-        #expect(operationResult.message == "caller ignored")
+        #expect(operationResult["message"] as? String == "caller ignored")
     }
 
     @Test func resolvedTargetContextDoesNotLeakIntoCLIJSON() throws {
@@ -170,7 +170,7 @@ struct DenIPCClientValidationTests {
                 return encodedResponse(.failure("Unexpected request"))
             }
             return encodedResponse(
-                .success(url: "https://example.com/"),
+                .success(.url("https://example.com/")),
                 target: .board(profileID: profileID, boardID: boardID)
             )
         }
@@ -181,12 +181,11 @@ struct DenIPCClientValidationTests {
             ["board", "web", "url", "--board", boardID.uuidString],
             socketPath: socketPath
         )
-        let operationResult = try JSONDecoder().decode(DenIPCOperationResult.self, from: result.output)
-        let output = try #require(JSONSerialization.jsonObject(with: result.output) as? [String: Any])
+        let output = try jsonResult(result.output)
 
         // Assert
         #expect(result.status == 0)
-        #expect(operationResult.url == "https://example.com/")
+        #expect(output["url"] as? String == "https://example.com/")
         #expect(output["profile_id"] == nil)
         #expect(output["target"] == nil)
     }
@@ -200,6 +199,10 @@ struct MalformedCLIInvocation: Sendable {
 private struct CLIResult {
     let status: Int32
     let output: Data
+}
+
+private func jsonResult(_ data: Data) throws -> [String: Any] {
+    try #require(JSONSerialization.jsonObject(with: data) as? [String: Any])
 }
 
 private func encodedResponse(

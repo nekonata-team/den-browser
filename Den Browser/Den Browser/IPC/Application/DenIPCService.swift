@@ -252,7 +252,7 @@ final class DenIPCService {
                         message: $0.message)
                 },
                 eventsDropped: page.eventsDropped ?? 0)
-            return .success(boardId: inspection.id.rawValue.uuidString, inspection: result)
+            return .success(.inspection(result))
         } catch {
             return .failure(error.localizedDescription)
         }
@@ -300,15 +300,17 @@ final class DenIPCService {
         }
         let activeDesk = desks.first { $0.isActive }
         return .success(
-            boards: boards,
-            desks: desks,
-            profiles: profiles,
-            profile: DenSelectedProfileInfo(id: profile.id.rawValue.uuidString, name: profile.name),
-            profileID: profile.id.rawValue.uuidString,
-            activeDesk: activeDesk,
-            focusedBoardID: desk.focusedBoardID?.rawValue.uuidString,
-            drawerItemCount: store.state.drawerItems.count
-        )
+            .denOverview(
+                DenIPCOverview(
+                    profiles: profiles,
+                    profile: DenSelectedProfileInfo(id: profile.id.rawValue.uuidString, name: profile.name),
+                    profileID: profile.id.rawValue.uuidString,
+                    desks: desks,
+                    activeDesk: activeDesk,
+                    boards: boards,
+                    focusedBoardID: desk.focusedBoardID?.rawValue.uuidString,
+                    drawerItemCount: store.state.drawerItems.count
+                )))
     }
 
     // MARK: - Sheet Commands
@@ -335,21 +337,22 @@ final class DenIPCService {
         guard result.isOk || (isInteract && result.completedActions != nil) else { return result }
 
         func commandSucceededButTargetUnavailable() -> DenIPCOperationResult {
-            var result = result
-            result.isOk = false
-            result.error =
-                "Command succeeded, but the target Web Board no longer exists: \(target.board.id.rawValue.uuidString)"
-            return result
+            result.failing(
+                with:
+                    "Command succeeded, but the target Web Board no longer exists: \(target.board.id.rawValue.uuidString)"
+            )
         }
 
         func targetUnavailable() -> DenIPCOperationResult {
             .failure(
                 "Target Web Board no longer exists: \(target.board.id.rawValue.uuidString)",
-                completedActions: result.completedActions,
-                failedActionIndex: {
-                    guard case .interact(let payload) = command else { return nil }
-                    return max(payload.steps.count - 1, 0)
-                }()
+                payload: .interaction(
+                    completedActions: result.completedActions ?? 0,
+                    failedActionIndex: {
+                        guard case .interact(let payload) = command else { return nil }
+                        return max(payload.steps.count - 1, 0)
+                    }()),
+                snapshot: result.snapshot
             )
         }
 
@@ -376,16 +379,10 @@ final class DenIPCService {
                     ? (result.isOk ? targetUnavailable() : result) : commandSucceededButTargetUnavailable()
             }
             guard isInteract else {
-                var result = result
-                result.isOk = false
-                result.error = "Command succeeded, but snapshot failed: \(error.localizedDescription)"
-                return result
+                return result.failing(with: "Command succeeded, but snapshot failed: \(error.localizedDescription)")
             }
             guard result.isOk else { return result }
-            var result = result
-            result.isOk = false
-            result.error = error.localizedDescription
-            return result
+            return result.failing(with: error.localizedDescription)
         }
     }
 
@@ -413,7 +410,7 @@ final class DenIPCService {
                 }
                 let url = WebURLPolicy.canonicalSheetURL(resolved.url)
                 runtime.load(url)
-                return .success(message: "Navigated to \(url.absoluteString)", url: url.absoluteString)
+                return .success(.navigation(message: "Navigated to \(url.absoluteString)", url: url.absoluteString))
 
             case .inspect(let payload):
                 let currentURL = runtime.webView.url?.absoluteString ?? board.currentSheetURL?.absoluteString ?? ""
@@ -422,15 +419,16 @@ final class DenIPCService {
                     interactiveOnly: !payload.full,
                     within: payload.within
                 )
-                return .success(boardId: board.id.rawValue.uuidString, url: currentURL, snapshot: snapshot)
+                return .success(
+                    .sheet(boardID: board.id.rawValue.uuidString, url: currentURL), snapshot: snapshot)
 
             case .reload:
                 runtime.webView.reload()
-                return .success(message: "Reloaded")
+                return .success(.message("Reloaded"))
 
             case .url:
                 let currentURL = runtime.webView.url?.absoluteString ?? board.currentSheetURL?.absoluteString ?? ""
-                return .success(url: currentURL)
+                return .success(.url(currentURL))
 
             case .eval(let payload):
                 guard !payload.script.isEmpty else {
@@ -439,27 +437,27 @@ final class DenIPCService {
                 let script = payload.script
                 let evalResult = try await runtime.webView.evaluateJavaScript(script)
                 if let evalResult {
-                    return .success(value: "\(evalResult)")
+                    return .success(.value("\(evalResult)"))
                 }
-                return .success(value: "undefined")
+                return .success(.value("undefined"))
 
             case .text:
                 let evalResult = try await runtime.webView.evaluateJavaScript("document.body.innerText")
-                return .success(text: "\(evalResult ?? "")")
+                return .success(.text("\(evalResult ?? "")"))
 
             case .back:
                 guard runtime.webView.canGoBack else {
                     return .failure("Cannot go back: no previous page in history")
                 }
                 runtime.webView.goBack()
-                return .success(message: "Navigated back")
+                return .success(.message("Navigated back"))
 
             case .forward:
                 guard runtime.webView.canGoForward else {
                     return .failure("Cannot go forward: no forward page in history")
                 }
                 runtime.webView.goForward()
-                return .success(message: "Navigated forward")
+                return .success(.message("Navigated forward"))
 
             case .interact(let payload):
                 return await handleSheetInteract(payload: payload, target: target)
@@ -470,12 +468,12 @@ final class DenIPCService {
                 }
                 let key = payload.key
                 try await SheetInteraction.press(key: key, in: runtime.webView)
-                return .success(message: "Pressed \(key)")
+                return .success(.message("Pressed \(key)"))
 
             case .scroll(let payload):
                 let direction = payload.directionOrTarget ?? "down"
                 let message = try await SheetInteraction.scroll(direction: direction, in: runtime.webView)
-                return .success(message: message)
+                return .success(.message(message))
 
             case .wait(let payload):
                 let target = payload.target
@@ -505,7 +503,7 @@ final class DenIPCService {
                         in: runtime.webView,
                         timeout: timeout
                     )
-                    return .success(message: "URL matched \(urlPattern)")
+                    return .success(.message("URL matched \(urlPattern)"))
                 }
 
                 if let textValue {
@@ -517,7 +515,7 @@ final class DenIPCService {
                         in: runtime.webView,
                         timeout: timeout
                     )
-                    return .success(message: "Text matched: \(textValue)")
+                    return .success(.message("Text matched: \(textValue)"))
                 }
 
                 if let loadValue {
@@ -529,7 +527,7 @@ final class DenIPCService {
                         in: runtime.webView,
                         timeout: timeout
                     )
-                    return .success(message: "Load state reached: \(loadState.rawValue)")
+                    return .success(.message("Load state reached: \(loadState.rawValue)"))
                 }
 
                 if let functionValue {
@@ -541,7 +539,7 @@ final class DenIPCService {
                         in: runtime.webView,
                         timeout: timeout
                     )
-                    return .success(message: "Condition matched")
+                    return .success(.message("Condition matched"))
                 }
 
                 guard let target else {
@@ -557,7 +555,7 @@ final class DenIPCService {
                     in: runtime.webView,
                     timeout: timeout
                 )
-                return .success(message: "Waited for \(stateValue): \(target)")
+                return .success(.message("Waited for \(stateValue): \(target)"))
 
             case .screenshot(let payload):
                 let image = try await ScreenshotCapture.visibleCurrentSheet(in: runtime.webView)
@@ -570,7 +568,7 @@ final class DenIPCService {
                     return FileManager.default.temporaryDirectory.appendingPathComponent(filename)
                 }()
                 try data.write(to: targetURL)
-                return .success(screenshotPath: targetURL.path)
+                return .success(.screenshotPath(targetURL.path))
 
             case .snapshot(let payload):
                 let interactiveOnly = !payload.full
@@ -580,7 +578,7 @@ final class DenIPCService {
                     interactiveOnly: interactiveOnly,
                     within: within
                 )
-                return .success(snapshot: snapshot)
+                return .success(.empty, snapshot: snapshot)
 
             case .query(let payload):
                 guard !payload.selector.isEmpty else {
@@ -596,7 +594,7 @@ final class DenIPCService {
                     fields: fields,
                     in: runtime.webView
                 )
-                return .success(elements: elements)
+                return .success(.elements(elements))
 
             case .click(let payload):
                 let target = payload.target
@@ -638,13 +636,13 @@ final class DenIPCService {
                     }
                     _ = store.webRuntime(for: newBoard)
                     return .success(
-                        message: "Opened \(description) in new Board",
-                        boardId: newBoardID.rawValue.uuidString,
-                        url: href
-                    )
+                        .createdBoard(
+                            id: newBoardID.rawValue.uuidString,
+                            message: "Opened \(description) in new Board",
+                            url: href))
                 }
 
-                return .success(message: "Clicked \(description)")
+                return .success(.message("Clicked \(description)"))
 
             case .dblclick(let payload):
                 guard !payload.target.isEmpty else {
@@ -653,7 +651,7 @@ final class DenIPCService {
                 let target = payload.target
                 let rect = try await SheetInteraction.dblclick(target: target, in: runtime.webView)
                 runtime.triggerActionHighlight(rect)
-                return .success(message: "Double-clicked \(target)")
+                return .success(.message("Double-clicked \(target)"))
 
             case .focus(let payload):
                 guard !payload.target.isEmpty else {
@@ -662,7 +660,7 @@ final class DenIPCService {
                 let target = payload.target
                 let rect = try await SheetInteraction.focus(target: target, in: runtime.webView)
                 runtime.triggerActionHighlight(rect)
-                return .success(message: "Focused \(target)")
+                return .success(.message("Focused \(target)"))
 
             case .fill(let payload):
                 guard !payload.target.isEmpty else {
@@ -672,7 +670,7 @@ final class DenIPCService {
                 let value = payload.value
                 let rect = try await SheetInteraction.fill(target: target, value: value, in: runtime.webView)
                 runtime.triggerActionHighlight(rect)
-                return .success(message: "Filled \(target)")
+                return .success(.message("Filled \(target)"))
 
             case .type(let payload):
                 guard !payload.text.isEmpty else {
@@ -683,7 +681,7 @@ final class DenIPCService {
                 let rect = try await SheetInteraction.type(target: target, text: text, in: runtime.webView)
                 runtime.triggerActionHighlight(rect)
                 let destination = target ?? "focused element"
-                return .success(message: "Typed into \(destination)")
+                return .success(.message("Typed into \(destination)"))
 
             case .drag(let payload):
                 guard !payload.source.isEmpty else {
@@ -710,19 +708,19 @@ final class DenIPCService {
                 )
                 runtime.triggerActionHighlight(rect)
                 let destination = target ?? "dx=\(deltaX ?? 0), dy=\(deltaY ?? 0)"
-                return .success(message: "Dragged \(source) to \(destination)")
+                return .success(.message("Dragged \(source) to \(destination)"))
 
             case .get(let command):
                 switch command {
                 case .text(let payload):
                     let target = payload.target
                     let text = try await SheetInteraction.text(target: target, in: runtime.webView)
-                    return .success(text: text)
+                    return .success(.text(text))
 
                 case .value(let payload):
                     let target = payload.target
                     let value = try await SheetInteraction.value(target: target, in: runtime.webView)
-                    return .success(value: value)
+                    return .success(.value(value))
 
                 case .attribute(let payload):
                     let value = try await SheetInteraction.attribute(
@@ -730,14 +728,14 @@ final class DenIPCService {
                         name: payload.attribute,
                         in: runtime.webView
                     )
-                    return .success(attribute: value)
+                    return .success(.attribute(value))
 
                 case .count(let payload):
                     let count = try await SheetInteraction.count(
                         selector: payload.target,
                         in: runtime.webView
                     )
-                    return .success(count: count)
+                    return .success(.count(count))
 
                 case .box(let payload):
                     let rect = try await SheetInteraction.box(target: payload.target, in: runtime.webView)
@@ -747,7 +745,7 @@ final class DenIPCService {
                         width: rect.size.width,
                         height: rect.size.height
                     )
-                    return .success(box: box)
+                    return .success(.box(box))
                 }
 
             case .isState(let state):
@@ -764,15 +762,15 @@ final class DenIPCService {
                 case .visible:
                     let target = input.target
                     let visible = try await SheetInteraction.isVisible(target: target, in: runtime.webView)
-                    return .success(visible: visible)
+                    return .success(.visible(visible))
                 case .enabled:
                     let target = input.target
                     let enabled = try await SheetInteraction.isEnabled(target: target, in: runtime.webView)
-                    return .success(enabled: enabled)
+                    return .success(.enabled(enabled))
                 case .checked:
                     let target = input.target
                     let checked = try await SheetInteraction.isChecked(target: target, in: runtime.webView)
-                    return .success(checked: checked)
+                    return .success(.checked(checked))
                 }
 
             case .mouse(let action):
@@ -789,17 +787,17 @@ final class DenIPCService {
                         return .failure("Usage: den board web mouse move <x> <y>")
                     }
                     try await SheetInteraction.mouseMove(coordX: coordX, coordY: coordY, in: runtime.webView)
-                    return .success(message: "Mouse moved to \(coordX), \(coordY)")
+                    return .success(.message("Mouse moved to \(coordX), \(coordY)"))
 
                 case .down(let payload):
                     let button = buttonCode(payload.button)
                     try await SheetInteraction.mouseDown(button: button, in: runtime.webView)
-                    return .success(message: "Mouse button \(button) down")
+                    return .success(.message("Mouse button \(button) down"))
 
                 case .release(let payload):
                     let button = buttonCode(payload.button)
                     try await SheetInteraction.mouseUp(button: button, in: runtime.webView)
-                    return .success(message: "Mouse button \(button) up")
+                    return .success(.message("Mouse button \(button) up"))
 
                 case .click(let payload):
                     guard let coordX = payload.coordX, let coordY = payload.coordY else {
@@ -816,7 +814,7 @@ final class DenIPCService {
                         in: runtime.webView
                     )
                     runtime.triggerActionHighlight(rect)
-                    return .success(message: "Mouse clicked at \(coordX), \(coordY)")
+                    return .success(.message("Mouse clicked at \(coordX), \(coordY)"))
 
                 case .wheel(let payload):
                     guard let deltaY = payload.deltaY else {
@@ -824,7 +822,7 @@ final class DenIPCService {
                     }
                     let deltaX = payload.deltaX ?? 0
                     try await SheetInteraction.mouseWheel(deltaX: deltaX, deltaY: deltaY, in: runtime.webView)
-                    return .success(message: "Mouse wheel scrolled dx: \(deltaX), dy: \(deltaY)")
+                    return .success(.message("Mouse wheel scrolled dx: \(deltaX), dy: \(deltaY)"))
                 }
 
             }
@@ -845,8 +843,7 @@ final class DenIPCService {
         func targetUnavailable(at index: Int) -> DenIPCOperationResult {
             .failure(
                 "Target Web Board no longer exists: \(target.board.id.rawValue.uuidString)",
-                completedActions: completedActions,
-                failedActionIndex: index
+                payload: .interaction(completedActions: completedActions, failedActionIndex: index)
             )
         }
 
@@ -857,8 +854,7 @@ final class DenIPCService {
             if case .interact = step.command {
                 return .failure(
                     "Line \(step.line): Nested interact is not supported",
-                    completedActions: completedActions,
-                    failedActionIndex: index
+                    payload: .interaction(completedActions: completedActions, failedActionIndex: index)
                 )
             }
             let actionResponse = await performSheetCommand(step.command, target: target)
@@ -866,8 +862,7 @@ final class DenIPCService {
                 let reason = actionResponse.error ?? "Interact action failed"
                 return .failure(
                     "Line \(step.line) (\(step.text)): \(reason)",
-                    completedActions: completedActions,
-                    failedActionIndex: index
+                    payload: .interaction(completedActions: completedActions, failedActionIndex: index)
                 )
             }
             guard isWebBoardInteractionTargetAvailable(target) else {
@@ -879,7 +874,7 @@ final class DenIPCService {
         guard isWebBoardInteractionTargetAvailable(target) else {
             return targetUnavailable(at: payload.steps.count - 1)
         }
-        return .success(completedActions: completedActions)
+        return .success(.interaction(completedActions: completedActions, failedActionIndex: nil))
     }
 
     private func isWebBoardInteractionTargetAvailable(_ target: WebBoardInteractionTarget) -> Bool {
@@ -896,7 +891,7 @@ final class DenIPCService {
 
     private func handleBoardList(target resolved: ResolvedDeskTarget) -> DenIPCOperationResult {
         let boards = resolved.desk.boards.map { boardInfo($0, focusedBoardID: resolved.desk.focusedBoardID) }
-        return .success(boards: boards)
+        return .success(.boards(boards))
     }
 
     private func handleBoardFocused(target resolved: ResolvedDeskTarget) -> DenIPCOperationResult {
@@ -904,7 +899,7 @@ final class DenIPCService {
             return .failure("No focused Board found")
         }
         let info = boardInfo(focusedBoard, focusedBoardID: focusedBoard.id)
-        return .success(boardId: info.id, board: info)
+        return .success(.board(info))
     }
 
     private func boardInfo(_ board: BoardState, focusedBoardID: BoardID?) -> DenBoardInfo {
@@ -939,7 +934,7 @@ final class DenIPCService {
             return .failure("Failed to open board with \(payload.url)")
         }
         _ = resolved.store.webRuntime(for: board)
-        return .success(boardId: boardID.rawValue.uuidString)
+        return .success(.createdBoard(id: boardID.rawValue.uuidString, message: nil, url: nil))
     }
 
     private func handleInspectionBoardNew(
@@ -952,15 +947,15 @@ final class DenIPCService {
         else {
             return .failure("Could not create an Inspection Board for \(resolved.board.id.rawValue.uuidString)")
         }
-        return .success(boardId: inspectionID.rawValue.uuidString)
+        return .success(.createdBoard(id: inspectionID.rawValue.uuidString, message: nil, url: nil))
     }
 
     private func handleBoardClose(target resolved: ResolvedBoardTarget) -> DenIPCOperationResult {
         resolved.store.removeBoard(resolved.board.id, origin: .cli)
         return .success(
-            message: "Closed Board \(resolved.board.id.rawValue.uuidString)",
-            closedBoardId: resolved.board.id.rawValue.uuidString
-        )
+            .closedBoard(
+                id: resolved.board.id.rawValue.uuidString,
+                message: "Closed Board \(resolved.board.id.rawValue.uuidString)"))
     }
 
     private func handleTerminalBoardNew(
@@ -998,7 +993,7 @@ final class DenIPCService {
             runtime.runCommand(runCommand)
         }
 
-        return .success(boardId: boardID.rawValue.uuidString)
+        return .success(.createdBoard(id: boardID.rawValue.uuidString, message: nil, url: nil))
     }
 
     private func newBoardInsertionAnchor(
@@ -1025,7 +1020,7 @@ final class DenIPCService {
                 boardCount: desk.boards.count
             )
         }
-        return .success(desks: desks)
+        return .success(.desks(desks))
     }
 
     // MARK: - Drawer Commands
@@ -1046,7 +1041,7 @@ final class DenIPCService {
                     title: item.title
                 )
             }
-            return .success(drawerItems: items)
+            return .success(.drawerItems(items))
 
         case .keep(let payload):
             guard !payload.url.isEmpty else {
@@ -1064,8 +1059,9 @@ final class DenIPCService {
             let canonicalURL = WebURLPolicy.canonicalSheetURL(url)
             if let itemID = store.keepInDrawerInBackground(canonicalURL, title: payload.title) {
                 return .success(
-                    message: "Kept in Drawer: \(canonicalURL.absoluteString)", drawerItemId: itemID.uuidString
-                )
+                    .drawerItem(
+                        id: itemID.uuidString,
+                        message: "Kept in Drawer: \(canonicalURL.absoluteString)"))
             }
             return .failure("Failed to keep in Drawer: \(canonicalURL.absoluteString)")
 
@@ -1081,8 +1077,10 @@ final class DenIPCService {
             {
                 _ = store.webRuntime(for: board)
                 return .success(
-                    message: "Placed Drawer Item as Board", boardId: boardID.rawValue.uuidString
-                )
+                    .createdBoard(
+                        id: boardID.rawValue.uuidString,
+                        message: "Placed Drawer Item as Board",
+                        url: nil))
             }
             return .failure("Failed to place Drawer Item as Board: \(idString)")
 
@@ -1094,7 +1092,7 @@ final class DenIPCService {
                 return .failure("Drawer Item not found: \(idString)")
             }
             if store.discardDrawerItem(item.id) {
-                return .success(message: "Discarded Drawer Item: \(item.displayName)")
+                return .success(.message("Discarded Drawer Item: \(item.displayName)"))
             }
             return .failure("Failed to discard Drawer Item: \(idString)")
 
@@ -1125,7 +1123,7 @@ final class DenIPCService {
             guard let text = runtime.readViewportText() else {
                 return .failure("Failed to read terminal screen")
             }
-            return .success(text: text)
+            return .success(.text(text))
 
         case .send(let rawText):
             guard !rawText.isEmpty else {
@@ -1138,7 +1136,7 @@ final class DenIPCService {
                 .replacingOccurrences(of: "\\t", with: "\t")
             let runtime = store.terminalRuntime(for: board)
             runtime.sendText(text)
-            return .success(message: "Sent text to Terminal Board \(board.id.rawValue.uuidString)")
+            return .success(.message("Sent text to Terminal Board \(board.id.rawValue.uuidString)"))
 
         case .run(let command):
             guard !command.isEmpty else {
@@ -1146,7 +1144,7 @@ final class DenIPCService {
             }
             let runtime = store.terminalRuntime(for: board)
             runtime.runCommand(command)
-            return .success(message: "Ran command in Terminal Board \(board.id.rawValue.uuidString)")
+            return .success(.message("Ran command in Terminal Board \(board.id.rawValue.uuidString)"))
 
         case .kill(let rawSignal):
             let signal = rawSignal.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -1160,8 +1158,7 @@ final class DenIPCService {
             do {
                 let pid = try await store.sendSignal(parsed.number, to: board)
                 return .success(
-                    message: "Sent \(parsed.name) to process group \(pid) (Board \(board.id.rawValue.uuidString))"
-                )
+                    .message("Sent \(parsed.name) to process group \(pid) (Board \(board.id.rawValue.uuidString))"))
             } catch {
                 return .failure(error.localizedDescription)
             }
@@ -1184,7 +1181,7 @@ final class DenIPCService {
                 hasWindow: profileManager.hasWindow(for: profile.id)
             )
         }
-        return .success(profiles: profiles)
+        return .success(.profiles(profiles))
     }
 
     private func handleProfileOpen(profile: ProfileState, in profileManager: ProfileManager) -> DenIPCOperationResult {
@@ -1196,7 +1193,7 @@ final class DenIPCService {
             wasAlreadyOpen
             ? "Activated window for profile '\(profile.name)'"
             : "Opened window for profile '\(profile.name)'"
-        return .success(message: message)
+        return .success(.message(message))
     }
 
     struct ParsedSignal: Equatable {

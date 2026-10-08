@@ -10,7 +10,6 @@ struct ResolvedDeskTarget {
 
 struct ResolvedBoardTarget {
     let store: DenStore
-    let desk: DeskState
     let board: BoardState
     let profileID: ProfileID
 }
@@ -237,7 +236,7 @@ enum DenIPCTargetResolver {
             return .failure(.targetProfileUnavailable)
         }
         return .success(
-            ResolvedBoardTarget(store: resolved.store, desk: desk, board: board, profileID: resolved.profileID))
+            ResolvedBoardTarget(store: resolved.store, board: board, profileID: resolved.profileID))
     }
 
     private static func resolvedStore(

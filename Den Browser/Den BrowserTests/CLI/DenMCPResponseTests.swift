@@ -23,7 +23,7 @@ struct DenMCPResponseTests {
                 return encodedReply(.failure("Unexpected request"))
             }
             return encodedReply(
-                .success(boardId: createdBoardID.uuidString),
+                .success(.createdBoard(id: createdBoardID.uuidString, message: nil, url: nil)),
                 target: .board(profileID: profileID, boardID: targetBoardID)
             )
         }

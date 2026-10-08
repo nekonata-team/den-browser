@@ -70,7 +70,10 @@ struct DenSocketServerTests {
 
         let response = try JSONDecoder().decode(DenIPCResponse.self, from: responseData)
         #expect(response.result.isOk == true)
-        #expect(response.result.message == nil)
+        if case .empty? = response.result.payload {
+        } else {
+            Issue.record("Expected empty health payload")
+        }
         if case .none = response.target {} else { Issue.record("Expected no target for health") }
     }
 

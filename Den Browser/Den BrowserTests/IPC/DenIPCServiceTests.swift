@@ -12,7 +12,11 @@ struct DenIPCServiceTests {
         let response = await service.handleResult(ipcRequest(.health))
 
         #expect(response.isOk)
-        #expect(response.message == nil)
+        #expect(response.payload != nil)
+        if case .empty = response.payload {
+        } else {
+            Issue.record("Expected empty health payload")
+        }
     }
 
     @Test func webBoardCreationUsesRequestedWidthAndStartsRuntime() async throws {
@@ -144,7 +148,11 @@ struct DenIPCServiceTests {
             Issue.record("Expected the source Web Board as the response target")
         }
         #expect(inspectionBoardID != targetBoardID)
-        #expect(result.boardId == inspectionBoardID.rawValue.uuidString)
+        if case .createdBoard(let id, _, _) = result.payload {
+            #expect(id == inspectionBoardID.rawValue.uuidString)
+        } else {
+            Issue.record("Expected created Inspection Board payload")
+        }
         #expect(inspectionBoard.sideBoardTargetBoardID == targetBoardID)
         #expect(store.state.desks.first?.focusedBoardID == focusedBoardID)
         #expect(store.webRuntimes[targetBoardID]?.isInspectionCollecting == true)
@@ -252,7 +260,11 @@ struct DenIPCServiceTests {
                 ))
         )
         #expect(hostnameResponse.isOk)
-        #expect(hostnameResponse.url == "https://localhost:3000/")
+        guard case .navigation(_, let url) = try #require(hostnameResponse.payload) else {
+            Issue.record("Expected navigation payload")
+            return
+        }
+        #expect(url == "https://localhost:3000/")
 
         let unsupportedResponse = await service.handleResult(
             ipcRequest(
@@ -345,7 +357,10 @@ struct DenIPCServiceTests {
 
         // Assert
         #expect(response.isOk)
-        let profiles = try #require(response.profiles)
+        guard case .profiles(let profiles) = try #require(response.payload) else {
+            Issue.record("Expected profile list payload")
+            return
+        }
         #expect(profiles.count == 2)
         let personal = try #require(profiles.first(where: { $0.id == manager.personalProfileID.rawValue.uuidString }))
         #expect(personal.hasWindow == true)
@@ -387,7 +402,10 @@ struct DenIPCServiceTests {
         } else {
             Issue.record("Expected the resolved Profile target")
         }
-        let desks = try #require(result.desks)
+        guard case .desks(let desks) = try #require(result.payload) else {
+            Issue.record("Expected Desk list payload")
+            return
+        }
         #expect(desks.contains(where: { $0.label == "Work Desk" }))
     }
 
@@ -423,7 +441,11 @@ struct DenIPCServiceTests {
         } else {
             Issue.record("Expected the opened Profile target")
         }
-        #expect(result.message?.contains("Opened window for profile 'Work'") == true)
+        guard case .message(let message) = result.payload else {
+            Issue.record("Expected profile-open message payload")
+            return
+        }
+        #expect(message.contains("Opened window for profile 'Work'"))
         #expect(openedProfileID == profile2.id)
     }
 
@@ -454,7 +476,11 @@ struct DenIPCServiceTests {
 
         // Assert
         #expect(response.isOk)
-        #expect(response.message?.contains("Activated window") == true)
+        guard case .message(let message) = try #require(response.payload) else {
+            Issue.record("Expected profile-open message payload")
+            return
+        }
+        #expect(message.contains("Activated window"))
         #expect(window.presentationRequests == 1)
     }
 
@@ -509,7 +535,10 @@ struct DenIPCServiceTests {
 
         // Assert
         #expect(response.isOk)
-        let boards = try #require(response.boards)
+        guard case .boards(let boards) = try #require(response.payload) else {
+            Issue.record("Expected Board list payload")
+            return
+        }
         let matched = try #require(boards.first(where: { $0.id == boardID.rawValue.uuidString }))
         #expect(matched.isFocused == true)
     }
@@ -538,8 +567,10 @@ struct DenIPCServiceTests {
 
         // Assert
         #expect(response.isOk)
-        #expect(response.boardId == boardID.rawValue.uuidString)
-        let board = try #require(response.board)
+        guard case .board(let board) = try #require(response.payload) else {
+            Issue.record("Expected Board payload")
+            return
+        }
         #expect(board.id == boardID.rawValue.uuidString)
         #expect(board.isFocused == true)
         #expect(board.type == "web")
@@ -625,10 +656,13 @@ struct DenIPCServiceTests {
 
         // Assert
         #expect(response.isOk)
-        let newBoardIDString = try #require(response.boardId)
+        guard case .createdBoard(let newBoardIDString, _, let url) = try #require(response.payload) else {
+            Issue.record("Expected created Board payload")
+            return
+        }
         let newBoardID = BoardID(try #require(UUID(uuidString: newBoardIDString)))
         #expect(store.board(for: newBoardID) != nil)
-        #expect(response.url == "https://example.com/subpage")
+        #expect(url == "https://example.com/subpage")
     }
 
     @Test func sheetCommandCanReturnSnapshotWithItsOriginalResult() async throws {
@@ -672,7 +706,11 @@ struct DenIPCServiceTests {
 
         // Assert
         #expect(result.isOk)
-        #expect(result.value == "eval-result")
+        if case .value(let value) = result.payload {
+            #expect(value == "eval-result")
+        } else {
+            Issue.record("Expected evaluated value payload")
+        }
         #expect(result.snapshot?.contains("After") == true)
         if case .board(let profileID, let resolvedBoardID) = response.target {
             #expect(profileID == manager.personalProfileID.rawValue)
@@ -1020,7 +1058,14 @@ struct DenIPCServiceTests {
     }
 
     private func responseBoardID(_ response: DenIPCOperationResult) throws -> BoardID {
-        BoardID(try #require(response.boardId.flatMap(UUID.init(uuidString:))))
+        let id: String
+        if case .createdBoard(let boardID, _, _) = response.payload {
+            id = boardID
+        } else {
+            Issue.record("Expected created Board payload")
+            id = ""
+        }
+        return BoardID(try #require(UUID(uuidString: id)))
     }
 }
 

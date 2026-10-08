@@ -77,14 +77,43 @@ enum DenIPCClient {
         showBoardIDs: Bool = false
     ) throws {
         try execute(
-            operation: try operation(),
+            operation: operation,
             options: options,
             output: CLIOutputOptions(isJSON: options.isJSON, showBoardIDs: showBoardIDs)
         )
     }
 
+    static func execute(
+        command: @autoclosure () throws -> DenIPCCommand.Sheet,
+        options: WebTargetOptions
+    ) throws {
+        try execute(
+            operation: sheetOperation(
+                command: try command(),
+                target: try boardTarget(options.target.boardID),
+                snapshot: options.snapshotPayload
+            ),
+            options: options.target.common
+        )
+    }
+
+    static func execute(
+        command: @autoclosure () throws -> DenIPCCommand.Sheet,
+        options: WebTargetOptions,
+        snapshot: DenSheetSnapshotPayload
+    ) throws {
+        try execute(
+            operation: sheetOperation(
+                command: try command(),
+                target: try boardTarget(options.target.boardID),
+                snapshot: snapshot
+            ),
+            options: options.target.common
+        )
+    }
+
     private static func execute(
-        operation buildOperation: @autoclosure () throws -> DenIPCOperation,
+        operation buildOperation: () throws -> DenIPCOperation,
         options: CLIOptions,
         output: CLIOutputOptions
     ) throws {
@@ -98,7 +127,7 @@ enum DenIPCClient {
             )
         } catch {
             let result = DenIPCOperationResult.failure(error.localizedDescription)
-            let responseData = (try? JSONEncoder().encode(result)) ?? Data()
+            let responseData = (try? JSONEncoder().encode(result.publicJSON)) ?? Data()
             try writeResult(result, data: responseData, output: output, isHealth: false)
             return
         }
@@ -112,7 +141,7 @@ enum DenIPCClient {
         }
 
         let result = response.result
-        let responseData = try JSONEncoder().encode(result)
+        let responseData = try JSONEncoder().encode(result.publicJSON)
         try writeResult(result, data: responseData, output: output, isHealth: operation == .health)
     }
 
@@ -129,104 +158,13 @@ enum DenIPCClient {
                 print(jsonString.trimmingCharacters(in: .whitespacesAndNewlines))
             }
         } else {
-            if result.isOk {
-                if isHealth {
-                    print("healthy")
-                } else if let board = result.board {
-                    let type = "[\(board.type)]"
-                    let boardIDPrefix = output.showBoardIDs ? "\(board.id) - " : ""
-                    let secondary = board.url ?? board.sessionName
-                    let secondarySuffix = secondary.map { " (\($0))" } ?? ""
-                    print("* \(type) \(boardIDPrefix)\(board.label)\(secondarySuffix)")
-                } else if let inspection = result.inspection {
-                    print("Inspection Board \(inspection.boardID) for Web Board \(inspection.targetBoardID)")
-                    print(inspection.url ?? "(no URL)")
-                    if let selection = inspection.selection {
-                        print("Selected <\(selection.tag)> \(selection.role) \"\(selection.text)\"")
-                    } else {
-                        print("No element selected")
-                    }
-                } else if let boardId = result.boardId {
-                    print(boardId)
-                } else if let boards = result.boards {
-
-                    let typeColumnWidth =
-                        boards
-                        .map { "[\($0.type)]".count }
-                        .max() ?? 0
-
-                    for currentBoard in boards {
-                        let mark = currentBoard.isFocused ? "*" : " "
-                        let type = "[\(currentBoard.type)]"
-                            .padding(toLength: typeColumnWidth, withPad: " ", startingAt: 0)
-                        let boardIDPrefix = output.showBoardIDs ? "\(currentBoard.id) - " : ""
-                        let secondary = currentBoard.url ?? currentBoard.sessionName
-                        let secondarySuffix = secondary.map { " (\($0))" } ?? ""
-                        print(
-                            "\(mark) \(type) \(boardIDPrefix)"
-                                + "\(currentBoard.label)\(secondarySuffix)"
-                        )
-                    }
-                } else if let profiles = result.profiles {
-                    let nameWidth = profiles.map(\.name.count).max() ?? 4
-                    let paddedNameHeader = "NAME".padding(toLength: max(nameWidth, 4), withPad: " ", startingAt: 0)
-                    print("  \(paddedNameHeader)  ID                                    ACTIVE  WINDOW")
-                    for profile in profiles {
-                        let mark = profile.isActive ? "*" : " "
-                        let paddedName = profile.name.padding(toLength: max(nameWidth, 4), withPad: " ", startingAt: 0)
-                        let activeStr = (profile.isActive ? "yes" : "no").padding(
-                            toLength: 6, withPad: " ", startingAt: 0)
-                        let windowStr = profile.hasWindow ? "yes" : "no"
-                        print("\(mark) \(paddedName)  \(profile.id)  \(activeStr)  \(windowStr)")
-                    }
-                } else if let desks = result.desks {
-                    for currentDesk in desks {
-                        let mark = currentDesk.isActive ? "*" : " "
-                        print("\(mark) \(currentDesk.id) - \(currentDesk.label) (\(currentDesk.boardCount) boards)")
-                    }
-                } else if let drawerItems = result.drawerItems {
-                    for item in drawerItems {
-                        let titleSuffix = item.title.map { " - \($0)" } ?? ""
-                        print("\(item.id)\(titleSuffix) (\(item.url))")
-                    }
-                } else if let drawerItemId = result.drawerItemId {
-                    print(drawerItemId)
-                } else if let elements = result.elements {
-                    for element in elements {
-                        var line = element.ref
-                        if let tag = element.tag {
-                            line += " <\(tag)>"
-                        }
-                        if let role = element.role {
-                            line += " [\(role)]"
-                        }
-                        if let text = element.text, !text.isEmpty {
-                            line += " \"\(text)\""
-                        }
-                        print(line)
-                    }
-                } else if let url = result.url {
-                    print(url)
-                } else if let text = result.text {
-                    print(text)
-                } else if let value = result.value {
-                    print(value)
-                } else if let checked = result.checked {
-                    print(checked ? "true" : "false")
-                } else if let attribute = result.attribute {
-                    print(attribute)
-                } else if let count = result.count {
-                    print(count)
-                } else if let visible = result.visible {
-                    print(visible ? "true" : "false")
-                } else if let enabled = result.enabled {
-                    print(enabled ? "true" : "false")
-                } else if let box = result.box {
-                    print("x: \(box.originX), y: \(box.originY), width: \(box.width), height: \(box.height)")
-                } else if let screenshotPath = result.screenshotPath {
-                    print(screenshotPath)
-                } else if let message = result.message {
-                    print(message)
+            if !result.isOk {
+                fputs("Error: \(result.error ?? "Unknown error")\n", stderr)
+            } else if isHealth {
+                print("healthy")
+            } else {
+                if let payload = result.payload {
+                    writeTextResult(payload, output: output)
                 }
                 if let completedActions = result.completedActions {
                     print("Completed \(completedActions) actions")
@@ -234,13 +172,107 @@ enum DenIPCClient {
                 if let snapshot = result.snapshot {
                     print(snapshot)
                 }
-            } else {
-                fputs("Error: \(result.error ?? "Unknown error")\n", stderr)
             }
         }
 
         if !result.isOk {
             throw ExitCode.failure
+        }
+    }
+
+    private static func writeTextResult(_ payload: DenIPCResultPayload, output: CLIOutputOptions) {
+        switch payload {
+        case .empty, .interaction:
+            break
+        case .message(let message), .closedBoard(_, let message):
+            print(message)
+        case .createdBoard(let id, _, _), .sheet(let id, _):
+            print(id)
+        case .board(let board):
+            writeBoard(board, showBoardIDs: output.showBoardIDs)
+        case .boards(let boards):
+            writeBoards(boards, showBoardIDs: output.showBoardIDs)
+        case .desks(let desks):
+            for desk in desks {
+                let mark = desk.isActive ? "*" : " "
+                print("\(mark) \(desk.id) - \(desk.label) (\(desk.boardCount) boards)")
+            }
+        case .drawerItems(let items):
+            for item in items {
+                let titleSuffix = item.title.map { " - \($0)" } ?? ""
+                print("\(item.id)\(titleSuffix) (\(item.url))")
+            }
+        case .drawerItem(let id, _):
+            print(id)
+        case .profiles(let profiles):
+            writeProfiles(profiles)
+        case .denOverview(let overview):
+            writeBoards(overview.boards, showBoardIDs: output.showBoardIDs)
+        case .navigation(_, let url), .url(let url):
+            print(url)
+        case .elements(let elements):
+            for element in elements {
+                var line = element.ref
+                if let tag = element.tag {
+                    line += " <\(tag)>"
+                }
+                if let role = element.role {
+                    line += " [\(role)]"
+                }
+                if let text = element.text, !text.isEmpty {
+                    line += " \"\(text)\""
+                }
+                print(line)
+            }
+        case .text(let text), .value(let text), .attribute(let text), .screenshotPath(let text):
+            print(text)
+        case .checked(let checked), .visible(let checked), .enabled(let checked):
+            print(checked ? "true" : "false")
+        case .count(let count):
+            print(count)
+        case .box(let box):
+            print("x: \(box.originX), y: \(box.originY), width: \(box.width), height: \(box.height)")
+        case .inspection(let details):
+            print("Inspection Board \(details.boardID) for Web Board \(details.targetBoardID)")
+            print(details.url ?? "(no URL)")
+            if let selection = details.selection {
+                print("Selected <\(selection.tag)> \(selection.role) \"\(selection.text)\"")
+            } else {
+                print("No element selected")
+            }
+        }
+    }
+
+    private static func writeBoard(_ board: DenBoardInfo, showBoardIDs: Bool) {
+        let type = "[\(board.type)]"
+        let boardIDPrefix = showBoardIDs ? "\(board.id) - " : ""
+        let secondary = board.url ?? board.sessionName
+        let secondarySuffix = secondary.map { " (\($0))" } ?? ""
+        print("* \(type) \(boardIDPrefix)\(board.label)\(secondarySuffix)")
+    }
+
+    private static func writeBoards(_ boards: [DenBoardInfo], showBoardIDs: Bool) {
+        let typeColumnWidth = boards.map { "[\($0.type)]".count }.max() ?? 0
+        for board in boards {
+            let mark = board.isFocused ? "*" : " "
+            let type = "[\(board.type)]".padding(toLength: typeColumnWidth, withPad: " ", startingAt: 0)
+            let boardIDPrefix = showBoardIDs ? "\(board.id) - " : ""
+            let secondary = board.url ?? board.sessionName
+            let secondarySuffix = secondary.map { " (\($0))" } ?? ""
+            print("\(mark) \(type) \(boardIDPrefix)\(board.label)\(secondarySuffix)")
+        }
+    }
+
+    private static func writeProfiles(_ profiles: [DenProfileInfo]) {
+        let nameWidth = profiles.map(\.name.count).max() ?? 4
+        let paddedNameHeader = "NAME".padding(toLength: max(nameWidth, 4), withPad: " ", startingAt: 0)
+        print("  \(paddedNameHeader)  ID                                    ACTIVE  WINDOW")
+        for profile in profiles {
+            let mark = profile.isActive ? "*" : " "
+            let paddedName = profile.name.padding(toLength: max(nameWidth, 4), withPad: " ", startingAt: 0)
+            let activeStr = (profile.isActive ? "yes" : "no").padding(toLength: 6, withPad: " ", startingAt: 0)
+            let windowStr = profile.hasWindow ? "yes" : "no"
+            print("\(mark) \(paddedName)  \(profile.id)  \(activeStr)  \(windowStr)")
         }
     }
 

@@ -217,40 +217,139 @@ public nonisolated struct DenBoundingBox: Codable, Equatable, Sendable {
     }
 }
 
-public nonisolated struct DenIPCOperationResult: Codable, Sendable {
-    public var isOk: Bool
-    public var error: String?
-    public var message: String?
-    public var boardId: String?
-    public var closedBoardId: String?
-    public var board: DenBoardInfo?
-    public var boards: [DenBoardInfo]?
-    public var desks: [DenDeskInfo]?
-    public var drawerItemId: String?
-    public var drawerItems: [DenDrawerItemInfo]?
-    public var profiles: [DenProfileInfo]?
-    public var profile: DenSelectedProfileInfo?
-    public var profileID: String?
-    public var activeDesk: DenDeskInfo?
-    public var focusedBoardID: String?
-    public var drawerItemCount: Int?
-    public var url: String?
-    public var snapshot: String?
-    public var elements: [DenSheetElementInfo]?
-    public var text: String?
-    public var value: String?
-    public var checked: Bool?
-    public var attribute: String?
-    public var count: Int?
-    public var visible: Bool?
-    public var enabled: Bool?
-    public var box: DenBoundingBox?
-    public var screenshotPath: String?
-    public var inspection: DenInspectionReadInfo?
-    public var completedActions: Int?
-    public var failedActionIndex: Int?
+public nonisolated enum DenIPCResultPayload: Codable, Sendable {
+    case empty
+    case message(String)
+    case createdBoard(id: String, message: String?, url: String?)
+    case navigation(message: String, url: String)
+    case closedBoard(id: String, message: String)
+    case board(DenBoardInfo)
+    case boards([DenBoardInfo])
+    case desks([DenDeskInfo])
+    case drawerItems([DenDrawerItemInfo])
+    case drawerItem(id: String, message: String)
+    case profiles([DenProfileInfo])
+    case denOverview(DenIPCOverview)
+    case sheet(boardID: String, url: String)
+    case url(String)
+    case elements([DenSheetElementInfo])
+    case text(String)
+    case value(String)
+    case checked(Bool)
+    case attribute(String)
+    case count(Int)
+    case visible(Bool)
+    case enabled(Bool)
+    case box(DenBoundingBox)
+    case screenshotPath(String)
+    case inspection(DenInspectionReadInfo)
+    case interaction(completedActions: Int, failedActionIndex: Int?)
+}
 
-    enum CodingKeys: String, CodingKey {
+public nonisolated struct DenIPCOverview: Codable, Sendable {
+    public var profiles: [DenProfileInfo]
+    public var profile: DenSelectedProfileInfo
+    public var profileID: String
+    public var desks: [DenDeskInfo]
+    public var activeDesk: DenDeskInfo?
+    public var boards: [DenBoardInfo]
+    public var focusedBoardID: String?
+    public var drawerItemCount: Int
+
+    public init(
+        profiles: [DenProfileInfo],
+        profile: DenSelectedProfileInfo,
+        profileID: String,
+        desks: [DenDeskInfo],
+        activeDesk: DenDeskInfo?,
+        boards: [DenBoardInfo],
+        focusedBoardID: String?,
+        drawerItemCount: Int
+    ) {
+        self.profiles = profiles
+        self.profile = profile
+        self.profileID = profileID
+        self.desks = desks
+        self.activeDesk = activeDesk
+        self.boards = boards
+        self.focusedBoardID = focusedBoardID
+        self.drawerItemCount = drawerItemCount
+    }
+}
+
+public nonisolated enum DenIPCOperationOutcome: Codable, Sendable {
+    case success(DenIPCResultPayload)
+    case failure(error: String, payload: DenIPCResultPayload?)
+}
+
+public nonisolated struct DenIPCOperationResult: Codable, Sendable {
+    public var outcome: DenIPCOperationOutcome
+    public var snapshot: String?
+
+    public var isOk: Bool {
+        if case .success = outcome { true } else { false }
+    }
+
+    public var error: String? {
+        guard case .failure(let error, _) = outcome else { return nil }
+        return error
+    }
+
+    public var payload: DenIPCResultPayload? {
+        switch outcome {
+        case .success(let payload): payload
+        case .failure(_, let payload): payload
+        }
+    }
+
+    public func failing(with error: String) -> DenIPCOperationResult {
+        .failure(error, payload: payload, snapshot: snapshot)
+    }
+
+    public var completedActions: Int? {
+        guard case .interaction(let completedActions, _) = payload else { return nil }
+        return completedActions
+    }
+
+    public var failedActionIndex: Int? {
+        guard case .interaction(_, let failedActionIndex) = payload else { return nil }
+        return failedActionIndex
+    }
+
+    public var publicJSON: DenIPCOperationResultJSON {
+        DenIPCOperationResultJSON(result: self)
+    }
+
+    public init(outcome: DenIPCOperationOutcome, snapshot: String? = nil) {
+        self.outcome = outcome
+        self.snapshot = snapshot
+    }
+
+    public static func success(
+        _ payload: DenIPCResultPayload = .empty,
+        snapshot: String? = nil
+    ) -> DenIPCOperationResult {
+        DenIPCOperationResult(outcome: .success(payload), snapshot: snapshot)
+    }
+
+    public static func failure(
+        _ error: String,
+        payload: DenIPCResultPayload? = nil,
+        snapshot: String? = nil
+    ) -> DenIPCOperationResult {
+        DenIPCOperationResult(outcome: .failure(error: error, payload: payload), snapshot: snapshot)
+    }
+}
+
+/// Encodes the typed result as the flat JSON object consumed by CLI and MCP.
+public nonisolated struct DenIPCOperationResultJSON: Encodable, Sendable {
+    private let result: DenIPCOperationResult
+
+    public init(result: DenIPCOperationResult) {
+        self.result = result
+    }
+
+    private enum CodingKeys: String, CodingKey {
         case isOk = "ok"
         case error
         case message
@@ -284,110 +383,83 @@ public nonisolated struct DenIPCOperationResult: Codable, Sendable {
         case failedActionIndex = "failed_action_index"
     }
 
-    public static func success(
-        message: String? = nil,
-        boardId: String? = nil,
-        closedBoardId: String? = nil,
-        board: DenBoardInfo? = nil,
-        boards: [DenBoardInfo]? = nil,
-        desks: [DenDeskInfo]? = nil,
-        drawerItemId: String? = nil,
-        drawerItems: [DenDrawerItemInfo]? = nil,
-        profiles: [DenProfileInfo]? = nil,
-        profile: DenSelectedProfileInfo? = nil,
-        profileID: String? = nil,
-        activeDesk: DenDeskInfo? = nil,
-        focusedBoardID: String? = nil,
-        drawerItemCount: Int? = nil,
-        url: String? = nil,
-        snapshot: String? = nil,
-        elements: [DenSheetElementInfo]? = nil,
-        text: String? = nil,
-        value: String? = nil,
-        checked: Bool? = nil,
-        attribute: String? = nil,
-        count: Int? = nil,
-        visible: Bool? = nil,
-        enabled: Bool? = nil,
-        box: DenBoundingBox? = nil,
-        screenshotPath: String? = nil,
-        inspection: DenInspectionReadInfo? = nil,
-        completedActions: Int? = nil,
-        failedActionIndex: Int? = nil
-    ) -> DenIPCOperationResult {
-        DenIPCOperationResult(
-            isOk: true,
-            error: nil,
-            message: message,
-            boardId: boardId,
-            closedBoardId: closedBoardId,
-            board: board,
-            boards: boards,
-            desks: desks,
-            drawerItemId: drawerItemId,
-            drawerItems: drawerItems,
-            profiles: profiles,
-            profile: profile,
-            profileID: profileID,
-            activeDesk: activeDesk,
-            focusedBoardID: focusedBoardID,
-            drawerItemCount: drawerItemCount,
-            url: url,
-            snapshot: snapshot,
-            elements: elements,
-            text: text,
-            value: value,
-            checked: checked,
-            attribute: attribute,
-            count: count,
-            visible: visible,
-            enabled: enabled,
-            box: box,
-            screenshotPath: screenshotPath,
-            inspection: inspection,
-            completedActions: completedActions,
-            failedActionIndex: failedActionIndex
-        )
-    }
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(result.isOk, forKey: .isOk)
+        try container.encodeIfPresent(result.error, forKey: .error)
+        try container.encodeIfPresent(result.snapshot, forKey: .snapshot)
 
-    public static func failure(
-        _ error: String,
-        snapshot: String? = nil,
-        completedActions: Int? = nil,
-        failedActionIndex: Int? = nil
-    ) -> DenIPCOperationResult {
-        DenIPCOperationResult(
-            isOk: false,
-            error: error,
-            message: nil,
-            boardId: nil,
-            closedBoardId: nil,
-            board: nil,
-            boards: nil,
-            desks: nil,
-            drawerItemId: nil,
-            drawerItems: nil,
-            profiles: nil,
-            profile: nil,
-            profileID: nil,
-            activeDesk: nil,
-            focusedBoardID: nil,
-            drawerItemCount: nil,
-            url: nil,
-            snapshot: snapshot,
-            elements: nil,
-            text: nil,
-            value: nil,
-            checked: nil,
-            attribute: nil,
-            count: nil,
-            visible: nil,
-            enabled: nil,
-            screenshotPath: nil,
-            inspection: nil,
-            completedActions: completedActions,
-            failedActionIndex: failedActionIndex
-        )
+        guard let payload = result.payload else { return }
+        switch payload {
+        case .empty:
+            break
+        case .message(let message):
+            try container.encode(message, forKey: .message)
+        case .createdBoard(let id, let message, let url):
+            try container.encode(id, forKey: .boardId)
+            try container.encodeIfPresent(message, forKey: .message)
+            try container.encodeIfPresent(url, forKey: .url)
+        case .navigation(let message, let url):
+            try container.encode(message, forKey: .message)
+            try container.encode(url, forKey: .url)
+        case .closedBoard(let id, let message):
+            try container.encode(id, forKey: .closedBoardId)
+            try container.encode(message, forKey: .message)
+        case .board(let board):
+            try container.encode(board.id, forKey: .boardId)
+            try container.encode(board, forKey: .board)
+        case .boards(let boards):
+            try container.encode(boards, forKey: .boards)
+        case .desks(let desks):
+            try container.encode(desks, forKey: .desks)
+        case .drawerItems(let items):
+            try container.encode(items, forKey: .drawerItems)
+        case .drawerItem(let id, let message):
+            try container.encode(id, forKey: .drawerItemId)
+            try container.encode(message, forKey: .message)
+        case .profiles(let profiles):
+            try container.encode(profiles, forKey: .profiles)
+        case .denOverview(let overview):
+            try container.encode(overview.profiles, forKey: .profiles)
+            try container.encode(overview.profile, forKey: .profile)
+            try container.encode(overview.profileID, forKey: .profileID)
+            try container.encode(overview.desks, forKey: .desks)
+            try container.encodeIfPresent(overview.activeDesk, forKey: .activeDesk)
+            try container.encode(overview.boards, forKey: .boards)
+            try container.encodeIfPresent(overview.focusedBoardID, forKey: .focusedBoardID)
+            try container.encode(overview.drawerItemCount, forKey: .drawerItemCount)
+        case .sheet(let boardID, let url):
+            try container.encode(boardID, forKey: .boardId)
+            try container.encode(url, forKey: .url)
+        case .url(let url):
+            try container.encode(url, forKey: .url)
+        case .elements(let elements):
+            try container.encode(elements, forKey: .elements)
+        case .text(let text):
+            try container.encode(text, forKey: .text)
+        case .value(let value):
+            try container.encode(value, forKey: .value)
+        case .checked(let checked):
+            try container.encode(checked, forKey: .checked)
+        case .attribute(let attribute):
+            try container.encode(attribute, forKey: .attribute)
+        case .count(let count):
+            try container.encode(count, forKey: .count)
+        case .visible(let visible):
+            try container.encode(visible, forKey: .visible)
+        case .enabled(let enabled):
+            try container.encode(enabled, forKey: .enabled)
+        case .box(let box):
+            try container.encode(box, forKey: .box)
+        case .screenshotPath(let path):
+            try container.encode(path, forKey: .screenshotPath)
+        case .inspection(let details):
+            try container.encode(details.boardID, forKey: .boardId)
+            try container.encode(details, forKey: .inspection)
+        case .interaction(let completedActions, let failedActionIndex):
+            try container.encode(completedActions, forKey: .completedActions)
+            try container.encodeIfPresent(failedActionIndex, forKey: .failedActionIndex)
+        }
     }
 }
 

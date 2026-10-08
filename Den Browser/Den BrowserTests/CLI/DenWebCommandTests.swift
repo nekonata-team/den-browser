@@ -16,7 +16,7 @@ struct DenWebCommandTests {
                 let includesSnapshot = requestSnapshotPayload(request) != nil
                 return try encodeResponse(
                     DenIPCOperationResult.success(
-                        url: includesSnapshot ? "https://example.com/" : nil,
+                        includesSnapshot ? .url("https://example.com/") : .empty,
                         snapshot: includesSnapshot ? "@e1 button \"Continue\"" : nil
                     ))
             } catch {
@@ -39,13 +39,12 @@ struct DenWebCommandTests {
                 continuation.resume(throwing: error)
             }
         }
-        let operationResult = try JSONDecoder().decode(
-            DenIPCOperationResult.self, from: output.fileHandleForReading.readDataToEndOfFile())
+        let operationResult = try jsonResult(output.fileHandleForReading.readDataToEndOfFile())
 
         // Assert
         #expect(process.terminationStatus == 0)
-        #expect(operationResult.url == "https://example.com/")
-        #expect(operationResult.snapshot == "@e1 button \"Continue\"")
+        #expect(operationResult["url"] as? String == "https://example.com/")
+        #expect(operationResult["snapshot"] as? String == "@e1 button \"Continue\"")
     }
 
     @Test(arguments: [false, true])
@@ -64,7 +63,10 @@ struct DenWebCommandTests {
                         target: .automatic
                     )
                 return try encodeResponse(
-                    DenIPCOperationResult.success(snapshot: isExpected ? (full ? "full" : "interactive") : "unexpected")
+                    DenIPCOperationResult.success(
+                        .empty,
+                        snapshot: isExpected ? (full ? "full" : "interactive") : "unexpected"
+                    )
                 )
             } catch {
                 return Data()
@@ -86,12 +88,11 @@ struct DenWebCommandTests {
                 continuation.resume(throwing: error)
             }
         }
-        let operationResult = try JSONDecoder().decode(
-            DenIPCOperationResult.self, from: output.fileHandleForReading.readDataToEndOfFile())
+        let operationResult = try jsonResult(output.fileHandleForReading.readDataToEndOfFile())
 
         // Assert
         #expect(process.terminationStatus == 0)
-        #expect(operationResult.snapshot == (full ? "full" : "interactive"))
+        #expect(operationResult["snapshot"] as? String == (full ? "full" : "interactive"))
     }
 
     @Test func interactForwardsActionsAndSnapshotMode() async throws {
@@ -126,7 +127,7 @@ struct DenWebCommandTests {
                     isExpected = false
                 }
                 return try encodeResponse(
-                    DenIPCOperationResult.success(snapshot: isExpected ? "full" : "unexpected")
+                    DenIPCOperationResult.success(.empty, snapshot: isExpected ? "full" : "unexpected")
                 )
             } catch {
                 return Data()
@@ -150,14 +151,11 @@ struct DenWebCommandTests {
                 continuation.resume(throwing: error)
             }
         }
-        let operationResult = try JSONDecoder().decode(
-            DenIPCOperationResult.self,
-            from: output.fileHandleForReading.readDataToEndOfFile()
-        )
+        let operationResult = try jsonResult(output.fileHandleForReading.readDataToEndOfFile())
 
         // Assert
         #expect(process.terminationStatus == 0)
-        #expect(operationResult.snapshot == "full")
+        #expect(operationResult["snapshot"] as? String == "full")
     }
 
     @Test func interactDefaultsToNoSnapshot() async throws {
@@ -172,8 +170,8 @@ struct DenWebCommandTests {
                 includeSnapshot = requestSnapshotPayload(request) != nil
                 return try encodeResponse(
                     DenIPCOperationResult.success(
+                        includeSnapshot ? .empty : .interaction(completedActions: 1, failedActionIndex: nil),
                         snapshot: includeSnapshot ? "unexpected" : nil,
-                        completedActions: includeSnapshot ? nil : 1
                     ))
             } catch {
                 return Data()
@@ -195,15 +193,12 @@ struct DenWebCommandTests {
                 continuation.resume(throwing: error)
             }
         }
-        let operationResult = try JSONDecoder().decode(
-            DenIPCOperationResult.self,
-            from: output.fileHandleForReading.readDataToEndOfFile()
-        )
+        let operationResult = try jsonResult(output.fileHandleForReading.readDataToEndOfFile())
 
         // Assert
         #expect(process.terminationStatus == 0)
-        #expect(operationResult.snapshot == nil)
-        #expect(operationResult.completedActions == 1)
+        #expect(operationResult["snapshot"] == nil)
+        #expect(operationResult["completed_actions"] as? Int == 1)
     }
 
     @Test func interactHandlesCommentsSemicolonsAndQuotes() async throws {
@@ -268,7 +263,7 @@ struct DenWebCommandTests {
                     isExpected = false
                 }
                 return try encodeResponse(
-                    DenIPCOperationResult.success(snapshot: isExpected ? "script-ok" : "unexpected")
+                    DenIPCOperationResult.success(.empty, snapshot: isExpected ? "script-ok" : "unexpected")
                 )
             } catch {
                 return Data()
@@ -291,14 +286,11 @@ struct DenWebCommandTests {
                 continuation.resume(throwing: error)
             }
         }
-        let operationResult = try JSONDecoder().decode(
-            DenIPCOperationResult.self,
-            from: output.fileHandleForReading.readDataToEndOfFile()
-        )
+        let operationResult = try jsonResult(output.fileHandleForReading.readDataToEndOfFile())
 
         // Assert
         #expect(process.terminationStatus == 0)
-        #expect(operationResult.snapshot == "script-ok")
+        #expect(operationResult["snapshot"] as? String == "script-ok")
     }
 
     @Test func interactReadsFromStandardInputWithHyphenArgument() async throws {
@@ -328,7 +320,7 @@ struct DenWebCommandTests {
                     isExpected = false
                 }
                 return try encodeResponse(
-                    DenIPCOperationResult.success(snapshot: isExpected ? "stdin-ok" : "unexpected")
+                    DenIPCOperationResult.success(.empty, snapshot: isExpected ? "stdin-ok" : "unexpected")
                 )
             } catch {
                 return Data()
@@ -355,14 +347,11 @@ struct DenWebCommandTests {
                 continuation.resume(throwing: error)
             }
         }
-        let operationResult = try JSONDecoder().decode(
-            DenIPCOperationResult.self,
-            from: outputPipe.fileHandleForReading.readDataToEndOfFile()
-        )
+        let operationResult = try jsonResult(outputPipe.fileHandleForReading.readDataToEndOfFile())
 
         // Assert
         #expect(process.terminationStatus == 0)
-        #expect(operationResult.snapshot == "stdin-ok")
+        #expect(operationResult["snapshot"] as? String == "stdin-ok")
     }
 
     @Test func clickForwardsNewBoardAndFocusFlags() async throws {
@@ -389,7 +378,9 @@ struct DenWebCommandTests {
                         target: .automatic
                     )
                 return try encodeResponse(
-                    DenIPCOperationResult.success(boardId: isExpected ? "created-board-id" : "unexpected")
+                    DenIPCOperationResult.success(
+                        .createdBoard(id: isExpected ? "created-board-id" : "unexpected", message: nil, url: nil)
+                    )
                 )
             } catch {
                 return Data()
@@ -412,14 +403,11 @@ struct DenWebCommandTests {
                 continuation.resume(throwing: error)
             }
         }
-        let operationResult = try JSONDecoder().decode(
-            DenIPCOperationResult.self,
-            from: output.fileHandleForReading.readDataToEndOfFile()
-        )
+        let operationResult = try jsonResult(output.fileHandleForReading.readDataToEndOfFile())
 
         // Assert
         #expect(process.terminationStatus == 0)
-        #expect(operationResult.boardId == "created-board-id")
+        #expect(operationResult["board_id"] as? String == "created-board-id")
     }
 }
 
@@ -430,4 +418,8 @@ private func requestSnapshotPayload(_ request: DenIPCRequest) -> DenSheetSnapsho
 
 private func encodeResponse(_ result: DenIPCOperationResult) throws -> Data {
     try JSONEncoder().encode(DenIPCResponse(result: result, target: .none))
+}
+
+private func jsonResult(_ data: Data) throws -> [String: Any] {
+    try #require(JSONSerialization.jsonObject(with: data) as? [String: Any])
 }

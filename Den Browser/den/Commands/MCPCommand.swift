@@ -676,7 +676,8 @@ private struct DenMCPToolRunner: Sendable {
     }
 
     private static func success(_ response: DenIPCResponse) throws -> CallTool.Result {
-        guard case .object(var output) = try Value(response.result) else {
+        let resultData = try JSONEncoder().encode(response.result.publicJSON)
+        guard case .object(var output) = try JSONDecoder().decode(Value.self, from: resultData) else {
             return error("Den Browser returned an invalid result")
         }
         output.removeValue(forKey: "ok")

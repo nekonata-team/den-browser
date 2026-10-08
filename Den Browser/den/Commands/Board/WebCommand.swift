@@ -12,12 +12,8 @@ struct WebNavigateCommand: ParsableCommand {
 
     func run() throws {
         try DenIPCClient.execute(
-            operation: DenIPCClient.sheetOperation(
-                command: .navigate(DenSheetNavigatePayload(url: url)),
-                target: try DenIPCClient.boardTarget(target.target.boardID),
-                snapshot: target.snapshotPayload
-            ),
-            options: target.target.common
+            command: .navigate(DenSheetNavigatePayload(url: url)),
+            options: target
         )
     }
 }
@@ -31,12 +27,8 @@ struct WebURLCommand: ParsableCommand {
 
     func run() throws {
         try DenIPCClient.execute(
-            operation: DenIPCClient.sheetOperation(
-                command: .url,
-                target: try DenIPCClient.boardTarget(target.target.boardID),
-                snapshot: target.snapshotPayload
-            ),
-            options: target.target.common
+            command: .url,
+            options: target
         )
     }
 }
@@ -50,12 +42,8 @@ struct WebReloadCommand: ParsableCommand {
 
     func run() throws {
         try DenIPCClient.execute(
-            operation: DenIPCClient.sheetOperation(
-                command: .reload,
-                target: try DenIPCClient.boardTarget(target.target.boardID),
-                snapshot: target.snapshotPayload
-            ),
-            options: target.target.common
+            command: .reload,
+            options: target
         )
     }
 }
@@ -74,12 +62,8 @@ struct WebEvalCommand: ParsableCommand {
             throw ValidationError("Please provide JavaScript code to evaluate")
         }
         try DenIPCClient.execute(
-            operation: DenIPCClient.sheetOperation(
-                command: .eval(DenSheetEvalPayload(script: script)),
-                target: try DenIPCClient.boardTarget(target.target.boardID),
-                snapshot: target.snapshotPayload
-            ),
-            options: target.target.common
+            command: .eval(DenSheetEvalPayload(script: script)),
+            options: target
         )
     }
 }
@@ -93,12 +77,8 @@ struct WebTextCommand: ParsableCommand {
 
     func run() throws {
         try DenIPCClient.execute(
-            operation: DenIPCClient.sheetOperation(
-                command: .text,
-                target: try DenIPCClient.boardTarget(target.target.boardID),
-                snapshot: target.snapshotPayload
-            ),
-            options: target.target.common
+            command: .text,
+            options: target
         )
     }
 }
@@ -147,19 +127,15 @@ struct WebQueryCommand: ParsableCommand {
 
     func run() throws {
         try DenIPCClient.execute(
-            operation: DenIPCClient.sheetOperation(
-                command: .query(
-                    DenSheetQueryPayload(
-                        selector: selector,
-                        visible: visible,
-                        all: all,
-                        fields: fields
-                    )
-                ),
-                target: try DenIPCClient.boardTarget(target.target.boardID),
-                snapshot: target.snapshotPayload
+            command: .query(
+                DenSheetQueryPayload(
+                    selector: selector,
+                    visible: visible,
+                    all: all,
+                    fields: fields
+                )
             ),
-            options: target.target.common
+            options: target
         )
     }
 }
@@ -185,21 +161,17 @@ struct WebClickCommand: ParsableCommand {
 
     func run() throws {
         try DenIPCClient.execute(
-            operation: DenIPCClient.sheetOperation(
-                command: .click(
-                    DenSheetClickPayload(
-                        target: targetElement,
-                        role: role,
-                        name: name,
-                        exact: exact,
-                        newBoard: newBoard,
-                        focus: focus
-                    )
-                ),
-                target: try DenIPCClient.boardTarget(target.target.boardID),
-                snapshot: target.snapshotPayload
+            command: .click(
+                DenSheetClickPayload(
+                    target: targetElement,
+                    role: role,
+                    name: name,
+                    exact: exact,
+                    newBoard: newBoard,
+                    focus: focus
+                )
             ),
-            options: target.target.common
+            options: target
         )
     }
 }
@@ -216,12 +188,8 @@ struct WebDblclickCommand: ParsableCommand {
 
     func run() throws {
         try DenIPCClient.execute(
-            operation: DenIPCClient.sheetOperation(
-                command: .dblclick(DenSheetElementTargetPayload(target: targetElement)),
-                target: try DenIPCClient.boardTarget(target.target.boardID),
-                snapshot: target.snapshotPayload
-            ),
-            options: target.target.common
+            command: .dblclick(DenSheetElementTargetPayload(target: targetElement)),
+            options: target
         )
     }
 }
@@ -238,12 +206,8 @@ struct WebFocusCommand: ParsableCommand {
 
     func run() throws {
         try DenIPCClient.execute(
-            operation: DenIPCClient.sheetOperation(
-                command: .focus(DenSheetElementTargetPayload(target: targetElement)),
-                target: try DenIPCClient.boardTarget(target.target.boardID),
-                snapshot: target.snapshotPayload
-            ),
-            options: target.target.common
+            command: .focus(DenSheetElementTargetPayload(target: targetElement)),
+            options: target
         )
     }
 }
@@ -265,12 +229,8 @@ struct WebFillCommand: ParsableCommand {
         }
         let value = valueParts.joined(separator: " ")
         try DenIPCClient.execute(
-            operation: DenIPCClient.sheetOperation(
-                command: .fill(DenSheetFillPayload(target: targetElement, value: value)),
-                target: try DenIPCClient.boardTarget(target.target.boardID),
-                snapshot: target.snapshotPayload
-            ),
-            options: target.target.common
+            command: .fill(DenSheetFillPayload(target: targetElement, value: value)),
+            options: target
         )
     }
 }
@@ -295,12 +255,8 @@ struct WebTypeCommand: ParsableCommand {
             payload = DenSheetTypePayload(target: firstArg, text: remainingParts.joined(separator: " "))
         }
         try DenIPCClient.execute(
-            operation: DenIPCClient.sheetOperation(
-                command: .type(payload),
-                target: try DenIPCClient.boardTarget(target.target.boardID),
-                snapshot: target.snapshotPayload
-            ),
-            options: target.target.common
+            command: .type(payload),
+            options: target
         )
     }
 }
@@ -331,20 +287,16 @@ struct WebDragCommand: ParsableCommand {
 
     func run() throws {
         try DenIPCClient.execute(
-            operation: DenIPCClient.sheetOperation(
-                command: .drag(
-                    DenSheetDragPayload(
-                        source: source,
-                        destination: destination,
-                        deltaX: deltaX,
-                        deltaY: deltaY,
-                        steps: steps
-                    )
-                ),
-                target: try DenIPCClient.boardTarget(target.target.boardID),
-                snapshot: target.snapshotPayload
+            command: .drag(
+                DenSheetDragPayload(
+                    source: source,
+                    destination: destination,
+                    deltaX: deltaX,
+                    deltaY: deltaY,
+                    steps: steps
+                )
             ),
-            options: target.target.common
+            options: target
         )
     }
 }
@@ -375,12 +327,8 @@ struct WebMouseMoveCommand: ParsableCommand {
 
     func run() throws {
         try DenIPCClient.execute(
-            operation: DenIPCClient.sheetOperation(
-                command: .mouse(.move(DenSheetMousePayload(coordX: coordX, coordY: coordY))),
-                target: try DenIPCClient.boardTarget(target.target.boardID),
-                snapshot: target.snapshotPayload
-            ),
-            options: target.target.common
+            command: .mouse(.move(DenSheetMousePayload(coordX: coordX, coordY: coordY))),
+            options: target
         )
     }
 }
@@ -397,12 +345,8 @@ struct WebMouseDownCommand: ParsableCommand {
 
     func run() throws {
         try DenIPCClient.execute(
-            operation: DenIPCClient.sheetOperation(
-                command: .mouse(.down(DenSheetMousePayload(button: button))),
-                target: try DenIPCClient.boardTarget(target.target.boardID),
-                snapshot: target.snapshotPayload
-            ),
-            options: target.target.common
+            command: .mouse(.down(DenSheetMousePayload(button: button))),
+            options: target
         )
     }
 }
@@ -419,12 +363,8 @@ struct WebMouseUpCommand: ParsableCommand {
 
     func run() throws {
         try DenIPCClient.execute(
-            operation: DenIPCClient.sheetOperation(
-                command: .mouse(.release(DenSheetMousePayload(button: button))),
-                target: try DenIPCClient.boardTarget(target.target.boardID),
-                snapshot: target.snapshotPayload
-            ),
-            options: target.target.common
+            command: .mouse(.release(DenSheetMousePayload(button: button))),
+            options: target
         )
     }
 }
@@ -445,20 +385,16 @@ struct WebMouseClickCommand: ParsableCommand {
 
     func run() throws {
         try DenIPCClient.execute(
-            operation: DenIPCClient.sheetOperation(
-                command: .mouse(
-                    .click(
-                        DenSheetMousePayload(
-                            coordX: coordX,
-                            coordY: coordY,
-                            button: button,
-                            count: count
-                        ))
-                ),
-                target: try DenIPCClient.boardTarget(target.target.boardID),
-                snapshot: target.snapshotPayload
+            command: .mouse(
+                .click(
+                    DenSheetMousePayload(
+                        coordX: coordX,
+                        coordY: coordY,
+                        button: button,
+                        count: count
+                    ))
             ),
-            options: target.target.common
+            options: target
         )
     }
 }
@@ -476,12 +412,8 @@ struct WebMouseWheelCommand: ParsableCommand {
 
     func run() throws {
         try DenIPCClient.execute(
-            operation: DenIPCClient.sheetOperation(
-                command: .mouse(.wheel(DenSheetMousePayload(deltaX: deltaX, deltaY: deltaY))),
-                target: try DenIPCClient.boardTarget(target.target.boardID),
-                snapshot: target.snapshotPayload
-            ),
-            options: target.target.common
+            command: .mouse(.wheel(DenSheetMousePayload(deltaX: deltaX, deltaY: deltaY))),
+            options: target
         )
     }
 }
@@ -539,14 +471,15 @@ struct WebInteractCommand: ParsableCommand {
             throw ValidationError("Script contains no valid actions")
         }
         let payload = DenSheetInteractPayload(steps: steps)
-        try DenIPCClient.execute(
-            operation: DenIPCClient.sheetOperation(
+        if target.snapshot {
+            try DenIPCClient.execute(
                 command: .interact(payload),
-                target: try DenIPCClient.boardTarget(target.target.boardID),
-                snapshot: target.snapshot ? DenSheetSnapshotPayload(full: full) : nil
-            ),
-            options: target.target.common
-        )
+                options: target,
+                snapshot: DenSheetSnapshotPayload(full: full)
+            )
+        } else {
+            try DenIPCClient.execute(command: .interact(payload), options: target)
+        }
     }
 
     private func readScript() throws -> String {
@@ -1135,12 +1068,8 @@ struct WebGetBoxCommand: ParsableCommand {
 
     func run() throws {
         try DenIPCClient.execute(
-            operation: DenIPCClient.sheetOperation(
-                command: .get(.box(try DenSheetGetTargetPayload(target: targetElement))),
-                target: try DenIPCClient.boardTarget(target.target.boardID),
-                snapshot: target.snapshotPayload
-            ),
-            options: target.target.common
+            command: .get(.box(try DenSheetGetTargetPayload(target: targetElement))),
+            options: target
         )
     }
 }
@@ -1156,12 +1085,8 @@ struct WebGetTextCommand: ParsableCommand {
 
     func run() throws {
         try DenIPCClient.execute(
-            operation: DenIPCClient.sheetOperation(
-                command: .get(.text(try DenSheetGetTargetPayload(target: targetElement))),
-                target: try DenIPCClient.boardTarget(target.target.boardID),
-                snapshot: target.snapshotPayload
-            ),
-            options: target.target.common
+            command: .get(.text(try DenSheetGetTargetPayload(target: targetElement))),
+            options: target
         )
     }
 }
@@ -1176,12 +1101,8 @@ struct WebGetValueCommand: ParsableCommand {
     var targetElement: String
     func run() throws {
         try DenIPCClient.execute(
-            operation: DenIPCClient.sheetOperation(
-                command: .get(.value(try DenSheetGetTargetPayload(target: targetElement))),
-                target: try DenIPCClient.boardTarget(target.target.boardID),
-                snapshot: target.snapshotPayload
-            ),
-            options: target.target.common
+            command: .get(.value(try DenSheetGetTargetPayload(target: targetElement))),
+            options: target
         )
     }
 }
@@ -1199,14 +1120,10 @@ struct WebGetAttributeCommand: ParsableCommand {
 
     func run() throws {
         try DenIPCClient.execute(
-            operation: DenIPCClient.sheetOperation(
-                command: .get(
-                    .attribute(try DenSheetGetAttributePayload(target: targetElement, attribute: attribute))
-                ),
-                target: try DenIPCClient.boardTarget(target.target.boardID),
-                snapshot: target.snapshotPayload
+            command: .get(
+                .attribute(try DenSheetGetAttributePayload(target: targetElement, attribute: attribute))
             ),
-            options: target.target.common
+            options: target
         )
     }
 }
@@ -1222,12 +1139,8 @@ struct WebGetCountCommand: ParsableCommand {
 
     func run() throws {
         try DenIPCClient.execute(
-            operation: DenIPCClient.sheetOperation(
-                command: .get(.count(try DenSheetGetTargetPayload(target: selector))),
-                target: try DenIPCClient.boardTarget(target.target.boardID),
-                snapshot: target.snapshotPayload
-            ),
-            options: target.target.common
+            command: .get(.count(try DenSheetGetTargetPayload(target: selector))),
+            options: target
         )
     }
 }
@@ -1255,12 +1168,8 @@ struct WebIsVisibleCommand: ParsableCommand {
 
     func run() throws {
         try DenIPCClient.execute(
-            operation: DenIPCClient.sheetOperation(
-                command: .isState(.visible(try DenSheetStatePayload(target: targetElement))),
-                target: try DenIPCClient.boardTarget(target.target.boardID),
-                snapshot: target.snapshotPayload
-            ),
-            options: target.target.common
+            command: .isState(.visible(try DenSheetStatePayload(target: targetElement))),
+            options: target
         )
     }
 }
@@ -1276,12 +1185,8 @@ struct WebIsEnabledCommand: ParsableCommand {
 
     func run() throws {
         try DenIPCClient.execute(
-            operation: DenIPCClient.sheetOperation(
-                command: .isState(.enabled(try DenSheetStatePayload(target: targetElement))),
-                target: try DenIPCClient.boardTarget(target.target.boardID),
-                snapshot: target.snapshotPayload
-            ),
-            options: target.target.common
+            command: .isState(.enabled(try DenSheetStatePayload(target: targetElement))),
+            options: target
         )
     }
 }
@@ -1297,12 +1202,8 @@ struct WebIsCheckedCommand: ParsableCommand {
 
     func run() throws {
         try DenIPCClient.execute(
-            operation: DenIPCClient.sheetOperation(
-                command: .isState(.checked(try DenSheetStatePayload(target: targetElement))),
-                target: try DenIPCClient.boardTarget(target.target.boardID),
-                snapshot: target.snapshotPayload
-            ),
-            options: target.target.common
+            command: .isState(.checked(try DenSheetStatePayload(target: targetElement))),
+            options: target
         )
     }
 }
@@ -1318,12 +1219,8 @@ struct WebScreenshotCommand: ParsableCommand {
 
     func run() throws {
         try DenIPCClient.execute(
-            operation: DenIPCClient.sheetOperation(
-                command: .screenshot(DenSheetScreenshotPayload(outputPath: outputPath)),
-                target: try DenIPCClient.boardTarget(target.target.boardID),
-                snapshot: target.snapshotPayload
-            ),
-            options: target.target.common
+            command: .screenshot(DenSheetScreenshotPayload(outputPath: outputPath)),
+            options: target
         )
     }
 }
@@ -1337,12 +1234,8 @@ struct WebBackCommand: ParsableCommand {
 
     func run() throws {
         try DenIPCClient.execute(
-            operation: DenIPCClient.sheetOperation(
-                command: .back,
-                target: try DenIPCClient.boardTarget(target.target.boardID),
-                snapshot: target.snapshotPayload
-            ),
-            options: target.target.common
+            command: .back,
+            options: target
         )
     }
 }
@@ -1356,12 +1249,8 @@ struct WebForwardCommand: ParsableCommand {
 
     func run() throws {
         try DenIPCClient.execute(
-            operation: DenIPCClient.sheetOperation(
-                command: .forward,
-                target: try DenIPCClient.boardTarget(target.target.boardID),
-                snapshot: target.snapshotPayload
-            ),
-            options: target.target.common
+            command: .forward,
+            options: target
         )
     }
 }
@@ -1377,12 +1266,8 @@ struct WebPressCommand: ParsableCommand {
 
     func run() throws {
         try DenIPCClient.execute(
-            operation: DenIPCClient.sheetOperation(
-                command: .press(DenSheetPressPayload(key: key)),
-                target: try DenIPCClient.boardTarget(target.target.boardID),
-                snapshot: target.snapshotPayload
-            ),
-            options: target.target.common
+            command: .press(DenSheetPressPayload(key: key)),
+            options: target
         )
     }
 }
@@ -1398,12 +1283,8 @@ struct WebScrollCommand: ParsableCommand {
 
     func run() throws {
         try DenIPCClient.execute(
-            operation: DenIPCClient.sheetOperation(
-                command: .scroll(DenSheetScrollPayload(directionOrTarget: directionOrTarget)),
-                target: try DenIPCClient.boardTarget(target.target.boardID),
-                snapshot: target.snapshotPayload
-            ),
-            options: target.target.common
+            command: .scroll(DenSheetScrollPayload(directionOrTarget: directionOrTarget)),
+            options: target
         )
     }
 }
@@ -1459,22 +1340,18 @@ struct WebWaitCommand: ParsableCommand {
         }
 
         try DenIPCClient.execute(
-            operation: DenIPCClient.sheetOperation(
-                command: .wait(
-                    DenSheetWaitPayload(
-                        target: targetValue,
-                        state: state,
-                        url: url,
-                        text: text,
-                        loadState: loadState,
-                        function: function,
-                        timeout: timeout
-                    )
-                ),
-                target: try DenIPCClient.boardTarget(target.target.boardID),
-                snapshot: target.snapshotPayload
+            command: .wait(
+                DenSheetWaitPayload(
+                    target: targetValue,
+                    state: state,
+                    url: url,
+                    text: text,
+                    loadState: loadState,
+                    function: function,
+                    timeout: timeout
+                )
             ),
-            options: target.target.common
+            options: target
         )
     }
 }
