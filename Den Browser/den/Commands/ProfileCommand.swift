@@ -22,7 +22,7 @@ struct ProfileListCommand: ParsableCommand {
     @OptionGroup var options: CLIOptions
 
     func run() throws {
-        try DenIPCClient.execute(command: .profile(.list), options: options)
+        try DenIPCClient.execute(operation: .profileList, options: options)
     }
 }
 
@@ -39,7 +39,7 @@ struct ProfileOpenCommand: ParsableCommand {
 
     func run() throws {
         try DenIPCClient.execute(
-            command: .profile(.open(profileID: profileID)),
+            operation: .openProfile(profileID: try DenIPCClient.profileToOpen(profileID, options: options)),
             options: options
         )
     }

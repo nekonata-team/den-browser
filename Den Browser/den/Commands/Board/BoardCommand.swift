@@ -46,9 +46,15 @@ struct BoardInspectionNewCommand: ParsableCommand {
 
     func run() throws {
         try DenIPCClient.execute(
-            command: .board(.inspection(.new(DenBoardInspectionNewPayload(focus: focus)))),
+            operation: .createInspectionBoard(
+                targetBoardID: try DenIPCClient.requiredBoardID(
+                    targetBoardID,
+                    invalidMessage: "Usage: den board inspection new --target <web-board-id>"
+                ),
+                payload: DenBoardInspectionNewPayload(focus: focus)
+            ),
             options: common,
-            boardID: targetBoardID)
+        )
     }
 }
 
@@ -61,7 +67,7 @@ struct BoardListCommand: ParsableCommand {
 
     func run() throws {
         try DenIPCClient.execute(
-            command: .board(.list),
+            operation: .boardList(target: .automatic),
             options: options.common,
             showBoardIDs: options.showBoardIDs)
     }
@@ -85,7 +91,7 @@ struct BoardFocusedCommand: ParsableCommand {
 
     func run() throws {
         try DenIPCClient.execute(
-            command: .board(.focused),
+            operation: .boardFocused(target: .automatic),
             options: options.common,
             showBoardIDs: options.showBoardIDs)
     }
@@ -150,7 +156,10 @@ struct BoardWebNewCommand: ParsableCommand {
 
     func run() throws {
         try DenIPCClient.execute(
-            command: .board(.web(.new(DenBoardWebNewPayload(url: url, focus: focus, width: width)))),
+            operation: .createWebBoard(
+                payload: DenBoardWebNewPayload(url: url, focus: focus, width: width),
+                destination: .automatic
+            ),
             options: options
         )
     }
@@ -188,16 +197,14 @@ struct BoardTerminalNewCommand: ParsableCommand {
     func run() throws {
         let resolvedPath = path.map { URL(fileURLWithPath: $0).standardizedFileURL.path }
         try DenIPCClient.execute(
-            command: .board(
-                .terminal(
-                    .new(
-                        DenBoardTerminalNewPayload(
-                            path: resolvedPath,
-                            runCommand: runCommand,
-                            focus: focus,
-                            width: width
-                        ))
-                )
+            operation: .createTerminalBoard(
+                payload: DenBoardTerminalNewPayload(
+                    path: resolvedPath,
+                    runCommand: runCommand,
+                    focus: focus,
+                    width: width
+                ),
+                destination: .automatic
             ),
             options: options
         )
@@ -212,6 +219,9 @@ struct BoardCloseCommand: ParsableCommand {
     @OptionGroup var options: BoardTargetOptions
 
     func run() throws {
-        try DenIPCClient.execute(command: .board(.close), options: options)
+        try DenIPCClient.execute(
+            operation: .boardClose(target: try DenIPCClient.boardTarget(options.boardID)),
+            options: options.common
+        )
     }
 }

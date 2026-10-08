@@ -9,7 +9,7 @@ import Testing
 struct DenIPCServiceTests {
     @Test func healthCommandReturnsHealthyWithoutAnActiveProfile() async {
         let service = DenIPCService()
-        let response = await service.handleRequest(DenIPCRequest(command: .health))
+        let response = await service.handleResult(ipcRequest(.health))
 
         #expect(response.isOk)
         #expect(response.message == nil)
@@ -33,21 +33,21 @@ struct DenIPCServiceTests {
         let service = DenIPCService(profileManager: manager)
 
         // Act
-        let response = await service.handleRequest(
-            DenIPCRequest(
-                command: .board(
-                    .web(
-                        .new(
-                            DenBoardWebNewPayload(
-                                url: "https://example.com/",
-                                focus: false,
-                                width: 200
-                            ))))
+        let response = await service.handleResult(
+            ipcRequest(
+                .createWebBoard(
+                    payload: DenBoardWebNewPayload(
+                        url: "https://example.com/",
+                        focus: false,
+                        width: 200
+                    ),
+                    destination: .automatic
+                )
             )
         )
 
         // Assert
-        let boardID = BoardID(try #require(response.boardId.flatMap(UUID.init(uuidString:))))
+        let boardID = try responseBoardID(response)
         #expect(store.webRuntimes[boardID] != nil)
         #expect(store.board(for: boardID)?.width == 200)
     }
@@ -77,23 +77,26 @@ struct DenIPCServiceTests {
         let itemID = try #require(store.keepInDrawerInBackground(drawerURL))
         let service = DenIPCService(profileManager: manager)
 
-        let webResponse = await service.handleRequest(
-            DenIPCRequest(
-                command: .board(.web(.new(DenBoardWebNewPayload(url: "https://web.example/", focus: false)))),
-                deskID: targetDeskID.rawValue.uuidString,
-                callerBoardID: visibleBoardID.rawValue.uuidString))
-        let terminalResponse = await service.handleRequest(
-            DenIPCRequest(
-                command: .board(.terminal(.new(DenBoardTerminalNewPayload(path: nil, runCommand: nil, focus: false)))),
-                deskID: targetDeskID.rawValue.uuidString))
-        let drawerResponse = await service.handleRequest(
-            DenIPCRequest(
-                command: .drawer(.place(id: itemID.uuidString)),
-                deskID: targetDeskID.rawValue.uuidString))
+        let webResponse = await service.handleResult(
+            ipcRequest(
+                .createWebBoard(
+                    payload: DenBoardWebNewPayload(url: "https://web.example/", focus: false),
+                    destination: .explicit(targetDeskID.rawValue)
+                ),
+                callerBoardID: visibleBoardID.rawValue
+            ))
+        let terminalResponse = await service.handleResult(
+            ipcRequest(
+                .createTerminalBoard(
+                    payload: DenBoardTerminalNewPayload(path: nil, runCommand: nil, focus: false),
+                    destination: .explicit(targetDeskID.rawValue)
+                )))
+        let drawerResponse = await service.handleResult(
+            ipcRequest(.drawer(command: .place(id: itemID.uuidString), target: .explicit(targetDeskID.rawValue))))
 
-        let webBoardID = BoardID(try #require(webResponse.boardId.flatMap(UUID.init(uuidString:))))
-        let terminalBoardID = BoardID(try #require(terminalResponse.boardId.flatMap(UUID.init(uuidString:))))
-        let drawerBoardID = BoardID(try #require(drawerResponse.boardId.flatMap(UUID.init(uuidString:))))
+        let webBoardID = try responseBoardID(webResponse)
+        let terminalBoardID = try responseBoardID(terminalResponse)
+        let drawerBoardID = try responseBoardID(drawerResponse)
         #expect(webResponse.isOk)
         #expect(terminalResponse.isOk)
         #expect(drawerResponse.isOk)
@@ -123,14 +126,25 @@ struct DenIPCServiceTests {
 
         // Act
         let response = await service.handleRequest(
-            DenIPCRequest(
-                command: .board(.inspection(.new(DenBoardInspectionNewPayload(focus: false)))),
-                boardID: targetBoardID.rawValue.uuidString))
+            ipcRequest(
+                .createInspectionBoard(
+                    targetBoardID: targetBoardID.rawValue,
+                    payload: DenBoardInspectionNewPayload(focus: false)
+                )))
+        let result = response.result
 
         // Assert
-        let inspectionBoardID = BoardID(try #require(response.boardId.flatMap(UUID.init(uuidString:))))
+        let inspectionBoardID = try responseBoardID(result)
         let inspectionBoard = try #require(store.board(for: inspectionBoardID))
-        #expect(response.isOk)
+        #expect(result.isOk)
+        if case .board(let profileID, let resolvedBoardID) = response.target {
+            #expect(profileID == manager.personalProfileID.rawValue)
+            #expect(resolvedBoardID == targetBoardID.rawValue)
+        } else {
+            Issue.record("Expected the source Web Board as the response target")
+        }
+        #expect(inspectionBoardID != targetBoardID)
+        #expect(result.boardId == inspectionBoardID.rawValue.uuidString)
         #expect(inspectionBoard.sideBoardTargetBoardID == targetBoardID)
         #expect(store.state.desks.first?.focusedBoardID == focusedBoardID)
         #expect(store.webRuntimes[targetBoardID]?.isInspectionCollecting == true)
@@ -152,20 +166,19 @@ struct DenIPCServiceTests {
         let store = try #require(manager.store(for: manager.personalProfileID))
         let service = DenIPCService(profileManager: manager)
 
-        let response = await service.handleRequest(
-            DenIPCRequest(
-                command: .board(
-                    .terminal(
-                        .new(
-                            DenBoardTerminalNewPayload(
-                                path: nil,
-                                runCommand: nil,
-                                focus: false,
-                                width: 1_500
-                            ))))
-            )
+        let response = await service.handleResult(
+            ipcRequest(
+                .createTerminalBoard(
+                    payload: DenBoardTerminalNewPayload(
+                        path: nil,
+                        runCommand: nil,
+                        focus: false,
+                        width: 1_500
+                    ),
+                    destination: .automatic
+                ))
         )
-        let terminalID = BoardID(try #require(response.boardId.flatMap(UUID.init(uuidString:))))
+        let terminalID = try responseBoardID(response)
         #expect(store.board(for: terminalID)?.width == 1_500)
     }
 
@@ -185,21 +198,29 @@ struct DenIPCServiceTests {
             websiteDataStore: { _ in .nonPersistent() })
         let store = try #require(manager.store(for: manager.personalProfileID))
         let service = DenIPCService(profileManager: manager)
-        let staleBoardID = BoardID().rawValue.uuidString
+        let staleBoardID = UUID()
 
         // Act
-        let webResponse = await service.handleRequest(
-            DenIPCRequest(
-                command: .board(.web(.new(DenBoardWebNewPayload(url: "https://example.com/", focus: false)))),
-                callerBoardID: staleBoardID))
-        let terminalResponse = await service.handleRequest(
-            DenIPCRequest(
-                command: .board(.terminal(.new(DenBoardTerminalNewPayload(path: nil, runCommand: nil, focus: false)))),
-                callerBoardID: staleBoardID))
+        let webResponse = await service.handleResult(
+            ipcRequest(
+                .createWebBoard(
+                    payload: DenBoardWebNewPayload(url: "https://example.com/", focus: false),
+                    destination: .automatic
+                ),
+                callerBoardID: staleBoardID
+            ))
+        let terminalResponse = await service.handleResult(
+            ipcRequest(
+                .createTerminalBoard(
+                    payload: DenBoardTerminalNewPayload(path: nil, runCommand: nil, focus: false),
+                    destination: .automatic
+                ),
+                callerBoardID: staleBoardID
+            ))
 
         // Assert
-        let webBoardID = BoardID(try #require(webResponse.boardId.flatMap(UUID.init(uuidString:))))
-        let terminalBoardID = BoardID(try #require(terminalResponse.boardId.flatMap(UUID.init(uuidString:))))
+        let webBoardID = try responseBoardID(webResponse)
+        let terminalBoardID = try responseBoardID(terminalResponse)
         #expect(webResponse.isOk)
         #expect(terminalResponse.isOk)
         #expect(store.board(for: webBoardID)?.isWeb == true)
@@ -223,17 +244,22 @@ struct DenIPCServiceTests {
         let boardID = try #require(store.createBoard(urlString: "https://example.com/"))
         let service = DenIPCService(profileManager: manager)
 
-        let hostnameResponse = await service.handleRequest(
-            DenIPCRequest(
-                command: .sheet(.open(DenSheetOpenPayload(url: "localhost:3000"))),
-                boardID: boardID.rawValue.uuidString))
+        let hostnameResponse = await service.handleResult(
+            ipcRequest(
+                .sheet(
+                    command: .open(DenSheetOpenPayload(url: "localhost:3000")),
+                    target: .explicit(boardID.rawValue)
+                ))
+        )
         #expect(hostnameResponse.isOk)
         #expect(hostnameResponse.url == "https://localhost:3000/")
 
-        let unsupportedResponse = await service.handleRequest(
-            DenIPCRequest(
-                command: .sheet(.open(DenSheetOpenPayload(url: "mailto:user@example.com"))),
-                boardID: boardID.rawValue.uuidString))
+        let unsupportedResponse = await service.handleResult(
+            ipcRequest(
+                .sheet(
+                    command: .open(DenSheetOpenPayload(url: "mailto:user@example.com")),
+                    target: .explicit(boardID.rawValue)
+                )))
         #expect(unsupportedResponse.isOk == false)
     }
 
@@ -253,15 +279,15 @@ struct DenIPCServiceTests {
         let store = try #require(manager.store(for: manager.personalProfileID))
         let service = DenIPCService(profileManager: manager)
 
-        let response = await service.handleRequest(
-            DenIPCRequest(
-                command: .drawer(.keep(DenDrawerKeepPayload(url: "example.com", title: nil)))))
+        let response = await service.handleResult(
+            ipcRequest(
+                .drawer(command: .keep(DenDrawerKeepPayload(url: "example.com", title: nil)), target: .automatic)))
         #expect(response.isOk)
         #expect(store.state.drawerItems.first?.url == URL(string: "https://example.com/"))
 
-        let searchResponse = await service.handleRequest(
-            DenIPCRequest(
-                command: .drawer(.keep(DenDrawerKeepPayload(url: "search phrase", title: nil)))))
+        let searchResponse = await service.handleResult(
+            ipcRequest(
+                .drawer(command: .keep(DenDrawerKeepPayload(url: "search phrase", title: nil)), target: .automatic)))
         #expect(searchResponse.isOk == false)
         #expect(store.state.drawerItems.count == 1)
     }
@@ -286,14 +312,12 @@ struct DenIPCServiceTests {
         let service = DenIPCService(profileManager: manager)
 
         // Act
-        let response = await service.handleRequest(
-            DenIPCRequest(
-                command: .drawer(.place(id: itemID.uuidString))
-            )
+        let response = await service.handleResult(
+            ipcRequest(.drawer(command: .place(id: itemID.uuidString), target: .automatic))
         )
 
         // Assert
-        let boardID = BoardID(try #require(response.boardId.flatMap(UUID.init(uuidString:))))
+        let boardID = try responseBoardID(response)
         #expect(store.webRuntimes[boardID] != nil)
     }
 
@@ -316,15 +340,14 @@ struct DenIPCServiceTests {
         let service = DenIPCService(profileManager: manager)
 
         // Act
-        let response = await service.handleRequest(
-            DenIPCRequest(command: .profile(.list)))
+        let response = await service.handleResult(
+            ipcRequest(.profileList))
 
         // Assert
         #expect(response.isOk)
         let profiles = try #require(response.profiles)
         #expect(profiles.count == 2)
-        let personal = try #require(
-            profiles.first(where: { $0.id == manager.personalProfileID.rawValue.uuidString }))
+        let personal = try #require(profiles.first(where: { $0.id == manager.personalProfileID.rawValue.uuidString }))
         #expect(personal.hasWindow == true)
         let work = try #require(profiles.first(where: { $0.id == profile2.id.rawValue.uuidString }))
         #expect(work.name == "Work")
@@ -353,11 +376,18 @@ struct DenIPCServiceTests {
 
         // Act
         let response = await service.handleRequest(
-            DenIPCRequest(command: .desk(.list), profileID: profile2.id.rawValue.uuidString))
+            ipcRequest(
+                .deskList(target: .automatic), profileID: profile2.id.rawValue))
+        let result = response.result
 
         // Assert
-        #expect(response.isOk)
-        let desks = try #require(response.desks)
+        #expect(result.isOk)
+        if case .profile(let profileID) = response.target {
+            #expect(profileID == profile2.id.rawValue)
+        } else {
+            Issue.record("Expected the resolved Profile target")
+        }
+        let desks = try #require(result.desks)
         #expect(desks.contains(where: { $0.label == "Work Desk" }))
     }
 
@@ -383,15 +413,17 @@ struct DenIPCServiceTests {
         let service = DenIPCService(profileManager: manager)
 
         // Act
-        let response = await service.handleRequest(
-            DenIPCRequest(
-                command: .profile(.open(profileID: profile2.id.rawValue.uuidString))
-            )
-        )
+        let response = await service.handleRequest(ipcRequest(.openProfile(profileID: profile2.id.rawValue)))
+        let result = response.result
 
         // Assert
-        #expect(response.isOk)
-        #expect(response.message?.contains("Opened window for profile 'Work'") == true)
+        #expect(result.isOk)
+        if case .profile(let profileID) = response.target {
+            #expect(profileID == profile2.id.rawValue)
+        } else {
+            Issue.record("Expected the opened Profile target")
+        }
+        #expect(result.message?.contains("Opened window for profile 'Work'") == true)
         #expect(openedProfileID == profile2.id)
     }
 
@@ -416,44 +448,14 @@ struct DenIPCServiceTests {
         let service = DenIPCService(profileManager: manager)
 
         // Act
-        let response = await service.handleRequest(
-            DenIPCRequest(
-                command: .profile(.open(profileID: manager.personalProfileID.rawValue.uuidString))
-            )
+        let response = await service.handleResult(
+            ipcRequest(.openProfile(profileID: manager.personalProfileID.rawValue))
         )
 
         // Assert
         #expect(response.isOk)
         #expect(response.message?.contains("Activated window") == true)
         #expect(window.presentationRequests == 1)
-    }
-
-    @Test func profileOpenCommandRejectsInvalidProfileID() async throws {
-        // Arrange
-        let directory = FileManager.default.temporaryDirectory
-            .appending(path: "den-browser-ipc-profile-invalid-\(UUID().uuidString)", directoryHint: .isDirectory)
-        defer { try? FileManager.default.removeItem(at: directory) }
-        let suiteName = "IPCServiceProfileInvalidPreferences-\(UUID().uuidString)"
-        let manager = ProfileManager(
-            directoryURL: directory,
-            sheetNavigation: SheetNavigationManager(
-                defaults: makeTestDefaults(suiteName: suiteName),
-                scriptSource: ""),
-            preferences: AppPreferences(defaults: makeTestDefaults(suiteName: suiteName)),
-            removeDataStore: { _ in },
-            websiteDataStore: { _ in .nonPersistent() })
-        let service = DenIPCService(profileManager: manager)
-
-        // Act
-        let response = await service.handleRequest(
-            DenIPCRequest(
-                command: .profile(.open(profileID: "not-a-valid-uuid"))
-            )
-        )
-
-        // Assert
-        #expect(response.isOk == false)
-        #expect(response.error?.contains("Invalid profile ID") == true)
     }
 
     @Test func profileOpenCommandFailsForUnknownProfileID() async throws {
@@ -471,13 +473,11 @@ struct DenIPCServiceTests {
             removeDataStore: { _ in },
             websiteDataStore: { _ in .nonPersistent() })
         let service = DenIPCService(profileManager: manager)
-        let unknownUUID = UUID().uuidString
+        let unknownUUID = UUID()
 
         // Act
-        let response = await service.handleRequest(
-            DenIPCRequest(
-                command: .profile(.open(profileID: unknownUUID))
-            )
+        let response = await service.handleResult(
+            ipcRequest(.openProfile(profileID: unknownUUID))
         )
 
         // Assert
@@ -505,7 +505,7 @@ struct DenIPCServiceTests {
         let service = DenIPCService(profileManager: manager)
 
         // Act
-        let response = await service.handleRequest(DenIPCRequest(command: .board(.list)))
+        let response = await service.handleResult(ipcRequest(.boardList(target: .automatic)))
 
         // Assert
         #expect(response.isOk)
@@ -534,7 +534,7 @@ struct DenIPCServiceTests {
         let service = DenIPCService(profileManager: manager)
 
         // Act
-        let response = await service.handleRequest(DenIPCRequest(command: .board(.focused)))
+        let response = await service.handleResult(ipcRequest(.boardFocused(target: .automatic)))
 
         // Assert
         #expect(response.isOk)
@@ -567,7 +567,7 @@ struct DenIPCServiceTests {
         let service = DenIPCService(profileManager: manager)
 
         // Act
-        let response = await service.handleRequest(DenIPCRequest(command: .board(.focused)))
+        let response = await service.handleResult(ipcRequest(.boardFocused(target: .automatic)))
 
         // Assert
         #expect(response.isOk == false)
@@ -607,10 +607,10 @@ struct DenIPCServiceTests {
         let service = DenIPCService(profileManager: manager)
 
         // Act
-        let response = await service.handleRequest(
-            DenIPCRequest(
-                command: .sheet(
-                    .click(
+        let response = await service.handleResult(
+            ipcRequest(
+                .sheet(
+                    command: .click(
                         DenSheetClickPayload(
                             target: "#test-link",
                             role: nil,
@@ -618,11 +618,9 @@ struct DenIPCServiceTests {
                             exact: false,
                             newBoard: true,
                             focus: false
-                        )
-                    )
-                ),
-                boardID: boardID.rawValue.uuidString
-            )
+                        )),
+                    target: .explicit(boardID.rawValue)
+                ))
         )
 
         // Assert
@@ -664,15 +662,24 @@ struct DenIPCServiceTests {
         // Act
         let script = "document.querySelector('button').textContent = 'After'; 'eval-result'"
         let response = await service.handleRequest(
-            DenIPCRequest(
-                command: .sheet(.eval(DenSheetEvalPayload(script: script))),
-                boardID: boardID.rawValue.uuidString,
-                includeSnapshot: true))
+            ipcRequest(
+                .sheetWithSnapshot(
+                    command: .eval(DenSheetEvalPayload(script: script)),
+                    target: .explicit(boardID.rawValue),
+                    snapshot: DenSheetSnapshotPayload(full: false)
+                )))
+        let result = response.result
 
         // Assert
-        #expect(response.isOk)
-        #expect(response.value == "eval-result")
-        #expect(response.snapshot?.contains("After") == true)
+        #expect(result.isOk)
+        #expect(result.value == "eval-result")
+        #expect(result.snapshot?.contains("After") == true)
+        if case .board(let profileID, let resolvedBoardID) = response.target {
+            #expect(profileID == manager.personalProfileID.rawValue)
+            #expect(resolvedBoardID == boardID.rawValue)
+        } else {
+            Issue.record("Expected the Sheet Board as the response target")
+        }
     }
 
     @Test func sheetInteractKeepsInitialBoardWhenFocusChangesDuringWait() async throws {
@@ -744,15 +751,17 @@ struct DenIPCServiceTests {
                             newBoard: false,
                             focus: false,
                         ))),
-            ],
-            full: false)
+            ])
 
         // Act
         let interactTask = Task {
-            await service.handleRequest(
-                DenIPCRequest(
-                    command: .sheet(.interact(payload)),
-                    includeSnapshot: true))
+            await service.handleResult(
+                ipcRequest(
+                    .sheetWithSnapshot(
+                        command: .interact(payload),
+                        target: .automatic,
+                        snapshot: DenSheetSnapshotPayload(full: false)
+                    )))
         }
         var waitStarted = false
         for _ in 0..<100 {
@@ -794,41 +803,50 @@ struct DenIPCServiceTests {
         let webView = store.webRuntime(for: board).webView
         let waiter = SheetInteractionWebViewLoadWaiter()
         await waiter.load(
-            "<!doctype html><body><button id=\"continue\">Continue</button></body>",
+            "<!doctype html><body><button id=\"continue\">Continue</button><h2>Static detail</h2></body>",
             baseURL: URL(string: "https://interact.example/")!,
             in: webView)
         let service = DenIPCService(profileManager: manager)
 
-        func request(target: String, includeSnapshot: Bool, full: Bool = false) -> DenIPCRequest {
-            DenIPCRequest(
-                command: .sheet(
-                    .interact(
-                        DenSheetInteractPayload(
-                            steps: [
-                                DenSheetInteractStep(
-                                    line: 1,
-                                    text: "click \(target)",
-                                    command: .click(
-                                        DenSheetClickPayload(
-                                            target: target,
-                                            role: nil,
-                                            name: nil,
-                                            exact: false,
-                                            newBoard: false,
-                                            focus: false)))
-                            ],
-                            full: full))),
-                boardID: boardID.rawValue.uuidString,
-                includeSnapshot: includeSnapshot)
+        func request(target: String, snapshot: DenSheetSnapshotPayload? = nil) -> DenIPCRequest {
+            let command = DenIPCCommand.Sheet.interact(
+                DenSheetInteractPayload(
+                    steps: [
+                        DenSheetInteractStep(
+                            line: 1,
+                            text: "click \(target)",
+                            command: .click(
+                                DenSheetClickPayload(
+                                    target: target,
+                                    role: nil,
+                                    name: nil,
+                                    exact: false,
+                                    newBoard: false,
+                                    focus: false)))
+                    ]))
+            let operation: DenIPCOperation
+            if let snapshot {
+                operation = .sheetWithSnapshot(
+                    command: command,
+                    target: .explicit(boardID.rawValue),
+                    snapshot: snapshot
+                )
+            } else {
+                operation = .sheet(command: command, target: .explicit(boardID.rawValue))
+            }
+            return ipcRequest(operation)
         }
 
         // Act
-        let success = await service.handleRequest(request(target: "#continue", includeSnapshot: false))
-        let failure = await service.handleRequest(request(target: "#missing", includeSnapshot: false))
-        let successWithSnapshot = await service.handleRequest(request(target: "#continue", includeSnapshot: true))
-        let failureWithSnapshot = await service.handleRequest(request(target: "#missing", includeSnapshot: true))
-        let fullWithoutSnapshot = await service.handleRequest(
-            request(target: "#continue", includeSnapshot: false, full: true))
+        let success = await service.handleResult(request(target: "#continue"))
+        let failure = await service.handleResult(request(target: "#missing"))
+        let successWithSnapshot = await service.handleResult(
+            request(target: "#continue", snapshot: DenSheetSnapshotPayload(full: false)))
+        let failureWithSnapshotReply = await service.handleRequest(
+            request(target: "#missing", snapshot: DenSheetSnapshotPayload(full: false)))
+        let failureWithSnapshot = failureWithSnapshotReply.result
+        let fullSnapshot = await service.handleResult(
+            request(target: "#continue", snapshot: DenSheetSnapshotPayload(full: true)))
 
         // Assert
         #expect(success.isOk)
@@ -840,14 +858,20 @@ struct DenIPCServiceTests {
         #expect(failure.failedActionIndex == 0)
         #expect(successWithSnapshot.isOk)
         #expect(successWithSnapshot.snapshot?.contains("Continue") == true)
+        #expect(successWithSnapshot.snapshot?.contains("Static detail") == false)
         #expect(successWithSnapshot.completedActions == 1)
         #expect(failureWithSnapshot.isOk == false)
         #expect(failureWithSnapshot.snapshot?.contains("Continue") == true)
         #expect(failureWithSnapshot.completedActions == 0)
         #expect(failureWithSnapshot.failedActionIndex == 0)
-        #expect(fullWithoutSnapshot.isOk == false)
-        #expect(fullWithoutSnapshot.error == "--full requires --snapshot")
-        #expect(fullWithoutSnapshot.completedActions == nil)
+        if case .board(let profileID, let targetBoardID) = failureWithSnapshotReply.target {
+            #expect(profileID == manager.personalProfileID.rawValue)
+            #expect(targetBoardID == boardID.rawValue)
+        } else {
+            Issue.record("Expected the failed Sheet action's resolved Board target")
+        }
+        #expect(fullSnapshot.isOk)
+        #expect(fullSnapshot.snapshot?.contains("Static detail") == true)
     }
 
     @Test func sheetInteractFailsWhenInitialBoardDisappearsDuringWait() async throws {
@@ -919,15 +943,14 @@ struct DenIPCServiceTests {
                             newBoard: false,
                             focus: false,
                         ))),
-            ],
-            full: false)
+            ])
 
         // Act
         let interactTask = Task {
-            await service.handleRequest(
-                DenIPCRequest(
-                    command: .sheet(.interact(payload)),
-                    boardID: firstBoardID.rawValue.uuidString))
+            await service.handleResult(
+                ipcRequest(
+                    .sheet(
+                        command: .interact(payload), target: .explicit(firstBoardID.rawValue))))
         }
         var waitStarted = false
         for _ in 0..<100 {
@@ -949,5 +972,60 @@ struct DenIPCServiceTests {
         #expect(response.error == "Target Web Board no longer exists: \(firstBoardID.rawValue.uuidString)")
         #expect(response.completedActions == 1)
         #expect(response.failedActionIndex == 1)
+    }
+
+    @Test func boardCloseReturnsContextFromTheClosedBoard() async throws {
+        // Arrange
+        let directory = FileManager.default.temporaryDirectory
+            .appending(path: "den-browser-ipc-close-context-\(UUID().uuidString)", directoryHint: .isDirectory)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let suiteName = "IPCServiceCloseContextPreferences-\(UUID().uuidString)"
+        let manager = ProfileManager(
+            directoryURL: directory,
+            sheetNavigation: SheetNavigationManager(
+                defaults: makeTestDefaults(suiteName: suiteName),
+                scriptSource: ""),
+            preferences: AppPreferences(defaults: makeTestDefaults(suiteName: suiteName)),
+            removeDataStore: { _ in },
+            websiteDataStore: { _ in .nonPersistent() })
+        let store = try #require(manager.store(for: manager.personalProfileID))
+        let boardID = try #require(store.createBoard(urlString: "https://example.com/"))
+        let service = DenIPCService(profileManager: manager)
+
+        // Act
+        let response = await service.handleRequest(
+            ipcRequest(.boardClose(target: .explicit(boardID.rawValue))))
+        let result = response.result
+
+        // Assert
+        #expect(result.isOk)
+        #expect(store.board(for: boardID) == nil)
+        if case .board(let profileID, let targetBoardID) = response.target {
+            #expect(profileID == manager.personalProfileID.rawValue)
+            #expect(targetBoardID == boardID.rawValue)
+        } else {
+            Issue.record("Expected the closed Board as the response target")
+        }
+    }
+
+    private func ipcRequest(
+        _ operation: DenIPCOperation,
+        profileID: UUID? = nil,
+        callerBoardID: UUID? = nil
+    ) -> DenIPCRequest {
+        DenIPCRequest(
+            operation: operation,
+            context: DenIPCCallerContext(profileID: profileID, callerBoardID: callerBoardID)
+        )
+    }
+
+    private func responseBoardID(_ response: DenIPCOperationResult) throws -> BoardID {
+        BoardID(try #require(response.boardId.flatMap(UUID.init(uuidString:))))
+    }
+}
+
+private extension DenIPCService {
+    func handleResult(_ request: DenIPCRequest) async -> DenIPCOperationResult {
+        await handleRequest(request).result
     }
 }

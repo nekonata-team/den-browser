@@ -8,7 +8,8 @@ let package = Package(
         .library(name: "DenIPCProtocol", targets: ["DenIPCProtocol"])
     ],
     targets: [
-        .target(name: "DenIPCProtocol")
+        .target(name: "DenIPCProtocol"),
+        .testTarget(name: "DenIPCProtocolTests", dependencies: ["DenIPCProtocol"]),
     ],
     swiftLanguageModes: [.v6]
 )

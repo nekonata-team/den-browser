@@ -13,14 +13,16 @@ struct DenSocketServerTests {
         let server = DenSocketServer(socketPath: tempSocketPath)
         try server.start { incomingData in
             guard let request = try? JSONDecoder().decode(DenIPCRequest.self, from: incomingData) else {
-                return (try? JSONEncoder().encode(DenIPCResponse.failure("decode error"))) ?? Data()
+                return (try? JSONEncoder().encode(DenIPCResponse(result: .failure("decode error"), target: .none)))
+                    ?? Data()
             }
-            if request.command == .health {
-                var responseData = (try? JSONEncoder().encode(DenIPCResponse.success())) ?? Data()
+            if request.operation == .health {
+                var responseData =
+                    (try? JSONEncoder().encode(DenIPCResponse(result: .success(), target: .none))) ?? Data()
                 responseData.append(UInt8(ascii: "\n"))
                 return responseData
             }
-            return (try? JSONEncoder().encode(DenIPCResponse.failure("unknown"))) ?? Data()
+            return (try? JSONEncoder().encode(DenIPCResponse(result: .failure("unknown"), target: .none))) ?? Data()
         }
         defer { server.stop() }
 
@@ -47,7 +49,7 @@ struct DenSocketServerTests {
         }
         #expect(connectResult == 0)
 
-        var requestData = try JSONEncoder().encode(DenIPCRequest(command: .health))
+        var requestData = try JSONEncoder().encode(DenIPCRequest(operation: .health))
         requestData.append(UInt8(ascii: "\n"))
 
         requestData.withUnsafeBytes { rawBuffer in
@@ -67,8 +69,9 @@ struct DenSocketServerTests {
         }
 
         let response = try JSONDecoder().decode(DenIPCResponse.self, from: responseData)
-        #expect(response.isOk == true)
-        #expect(response.message == nil)
+        #expect(response.result.isOk == true)
+        #expect(response.result.message == nil)
+        if case .none = response.target {} else { Issue.record("Expected no target for health") }
     }
 
     @Test func stopCanBeCalledRepeatedlyWithoutClosingReusedFD() throws {
@@ -109,11 +112,11 @@ struct DenSocketServerTests {
         let server = DenSocketServer(socketPath: tempSocketPath)
         let healthHandler: @Sendable (Data) async -> Data = { incomingData in
             guard let request = try? JSONDecoder().decode(DenIPCRequest.self, from: incomingData),
-                request.command == .health
+                request.operation == .health
             else {
-                return (try? JSONEncoder().encode(DenIPCResponse.failure("unknown"))) ?? Data()
+                return (try? JSONEncoder().encode(DenIPCResponse(result: .failure("unknown"), target: .none))) ?? Data()
             }
-            var responseData = (try? JSONEncoder().encode(DenIPCResponse.success())) ?? Data()
+            var responseData = (try? JSONEncoder().encode(DenIPCResponse(result: .success(), target: .none))) ?? Data()
             responseData.append(UInt8(ascii: "\n"))
             return responseData
         }
@@ -142,7 +145,7 @@ struct DenSocketServerTests {
         let server = DenSocketServer(socketPath: tempSocketPath)
         try server.start { _ in
             try? await Task.sleep(for: .milliseconds(50))
-            var responseData = (try? JSONEncoder().encode(DenIPCResponse.success())) ?? Data()
+            var responseData = (try? JSONEncoder().encode(DenIPCResponse(result: .success(), target: .none))) ?? Data()
             responseData.append(UInt8(ascii: "\n"))
             return responseData
         }
@@ -151,7 +154,7 @@ struct DenSocketServerTests {
 
         // Connect and send valid request, then immediately close FD before server replies
         let clientFD = try #require(connectClient(to: tempSocketPath))
-        let requestData = (try? JSONEncoder().encode(DenIPCRequest(command: .health))) ?? Data()
+        let requestData = (try? JSONEncoder().encode(DenIPCRequest(operation: .health))) ?? Data()
         var packet = requestData
         packet.append(UInt8(ascii: "\n"))
         _ = packet.withUnsafeBytes { raw in
@@ -175,7 +178,7 @@ struct DenSocketServerTests {
 
         let server = DenSocketServer(socketPath: tempSocketPath)
         try server.start { _ in
-            var responseData = (try? JSONEncoder().encode(DenIPCResponse.success())) ?? Data()
+            var responseData = (try? JSONEncoder().encode(DenIPCResponse(result: .success(), target: .none))) ?? Data()
             responseData.append(UInt8(ascii: "\n"))
             return responseData
         }
@@ -231,7 +234,7 @@ struct DenSocketServerTests {
         guard let socketDescriptor = connectClient(to: socketPath) else { return false }
         defer { close(socketDescriptor) }
 
-        guard var requestData = try? JSONEncoder().encode(DenIPCRequest(command: .health)) else { return false }
+        guard var requestData = try? JSONEncoder().encode(DenIPCRequest(operation: .health)) else { return false }
         requestData.append(UInt8(ascii: "\n"))
 
         let writeSuccess = requestData.withUnsafeBytes { rawBuffer -> Bool in
@@ -252,7 +255,7 @@ struct DenSocketServerTests {
         }
 
         guard let response = try? JSONDecoder().decode(DenIPCResponse.self, from: responseData) else { return false }
-        return response.isOk
+        return response.result.isOk
     }
 
     private func temporarySocketPath() -> String {

@@ -99,14 +99,9 @@ public nonisolated struct DenSheetStatePayload: Codable, Equatable, Sendable {
 
 public nonisolated struct DenSheetInteractPayload: Codable, Equatable, Sendable {
     public var steps: [DenSheetInteractStep]
-    public var full: Bool
 
-    public init(
-        steps: [DenSheetInteractStep],
-        full: Bool
-    ) {
+    public init(steps: [DenSheetInteractStep]) {
         self.steps = steps
-        self.full = full
     }
 }
 

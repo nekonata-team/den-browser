@@ -217,7 +217,7 @@ public nonisolated struct DenBoundingBox: Codable, Equatable, Sendable {
     }
 }
 
-public nonisolated struct DenIPCResponse: Codable, Sendable {
+public nonisolated struct DenIPCOperationResult: Codable, Sendable {
     public var isOk: Bool
     public var error: String?
     public var message: String?
@@ -314,8 +314,8 @@ public nonisolated struct DenIPCResponse: Codable, Sendable {
         inspection: DenInspectionReadInfo? = nil,
         completedActions: Int? = nil,
         failedActionIndex: Int? = nil
-    ) -> DenIPCResponse {
-        DenIPCResponse(
+    ) -> DenIPCOperationResult {
+        DenIPCOperationResult(
             isOk: true,
             error: nil,
             message: message,
@@ -355,8 +355,8 @@ public nonisolated struct DenIPCResponse: Codable, Sendable {
         snapshot: String? = nil,
         completedActions: Int? = nil,
         failedActionIndex: Int? = nil
-    ) -> DenIPCResponse {
-        DenIPCResponse(
+    ) -> DenIPCOperationResult {
+        DenIPCOperationResult(
             isOk: false,
             error: error,
             message: nil,
@@ -388,5 +388,21 @@ public nonisolated struct DenIPCResponse: Codable, Sendable {
             completedActions: completedActions,
             failedActionIndex: failedActionIndex
         )
+    }
+}
+
+public nonisolated enum DenIPCTargetContext: Codable, Equatable, Sendable {
+    case none
+    case profile(profileID: UUID)
+    case board(profileID: UUID, boardID: UUID)
+}
+
+public nonisolated struct DenIPCResponse: Codable, Sendable {
+    public var result: DenIPCOperationResult
+    public var target: DenIPCTargetContext
+
+    public init(result: DenIPCOperationResult, target: DenIPCTargetContext) {
+        self.result = result
+        self.target = target
     }
 }

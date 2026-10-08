@@ -7,22 +7,32 @@ import Testing
 struct DenIPCRequestParsingTests {
     @Test func sheetGetPayloadRoundTripsThroughRequest() throws {
         let payload = try DenSheetGetAttributePayload(target: "#link", attribute: "href")
-        let request = DenIPCRequest(command: .sheet(.get(.attribute(payload))))
+        let request = DenIPCRequest(
+            operation: .sheet(
+                command: .get(.attribute(payload)),
+                target: .automatic
+            ),
+            context: DenIPCCallerContext(profileID: UUID(), callerBoardID: UUID())
+        )
         let data = try JSONEncoder().encode(request)
         let decoded = try JSONDecoder().decode(DenIPCRequest.self, from: data)
 
-        #expect(decoded.command == request.command)
+        #expect(decoded == request)
     }
 
     @Test func sheetStatePayloadRoundTripsThroughRequest() throws {
         let payload = try DenSheetStatePayload(target: "input[type=checkbox]")
         let request = DenIPCRequest(
-            command: .sheet(.isState(.checked(payload)))
+            operation: .sheetWithSnapshot(
+                command: .isState(.checked(payload)),
+                target: .explicit(UUID()),
+                snapshot: DenSheetSnapshotPayload(full: true, within: "#main")
+            )
         )
         let data = try JSONEncoder().encode(request)
         let decoded = try JSONDecoder().decode(DenIPCRequest.self, from: data)
 
-        #expect(decoded.command == request.command)
+        #expect(decoded == request)
     }
 
     @Test func sheetGetPayloadRejectsEmptyTarget() {

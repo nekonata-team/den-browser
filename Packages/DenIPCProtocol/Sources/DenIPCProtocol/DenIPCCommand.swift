@@ -22,19 +22,7 @@ public nonisolated enum DenSheetMouseCommand: Codable, Equatable, Sendable {
     case wheel(DenSheetMousePayload)
 }
 
-public nonisolated enum DenBoardWebCommand: Codable, Equatable, Sendable {
-    case new(DenBoardWebNewPayload)
-}
-
-public nonisolated enum DenBoardTerminalCommand: Codable, Equatable, Sendable {
-    case new(DenBoardTerminalNewPayload)
-}
-
-public nonisolated enum DenBoardInspectionCommand: Codable, Equatable, Sendable {
-    case new(DenBoardInspectionNewPayload)
-}
-
-public nonisolated enum DenIPCCommand: Codable, Equatable, Sendable {
+public nonisolated enum DenIPCCommand {
     public indirect enum Sheet: Codable, Equatable, Sendable {
         case open(DenSheetOpenPayload)
         case inspect(DenSheetSnapshotPayload)
@@ -62,19 +50,6 @@ public nonisolated enum DenIPCCommand: Codable, Equatable, Sendable {
         case interact(DenSheetInteractPayload)
     }
 
-    public enum Board: Codable, Equatable, Sendable {
-        case list
-        case focused
-        case close
-        case web(DenBoardWebCommand)
-        case terminal(DenBoardTerminalCommand)
-        case inspection(DenBoardInspectionCommand)
-    }
-
-    public enum Desk: Codable, Equatable, Sendable {
-        case list
-    }
-
     public enum Drawer: Codable, Equatable, Sendable {
         case list
         case keep(DenDrawerKeepPayload)
@@ -89,22 +64,4 @@ public nonisolated enum DenIPCCommand: Codable, Equatable, Sendable {
         case kill(signal: String)
     }
 
-    public enum Inspection: Codable, Equatable, Sendable {
-        case read
-    }
-
-    public enum Profile: Codable, Equatable, Sendable {
-        case list
-        case open(profileID: String?)
-    }
-
-    case sheet(Sheet)
-    case board(Board)
-    case desk(Desk)
-    case drawer(Drawer)
-    case terminal(Terminal)
-    case inspection(Inspection)
-    case profile(Profile)
-    case inspectDen
-    case health
 }

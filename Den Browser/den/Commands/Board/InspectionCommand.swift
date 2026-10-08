@@ -13,6 +13,14 @@ struct BoardInspectionReadCommand: ParsableCommand {
     var boardID: String
 
     func run() throws {
-        try DenIPCClient.execute(command: .inspection(.read), options: options, boardID: boardID)
+        try DenIPCClient.execute(
+            operation: .readInspection(
+                boardID: try DenIPCClient.requiredBoardID(
+                    boardID,
+                    invalidMessage: "Usage: den board inspection read --board <inspection-board-id>"
+                )
+            ),
+            options: options
+        )
     }
 }

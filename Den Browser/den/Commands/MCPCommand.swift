@@ -450,17 +450,14 @@ private struct DenMCPToolRunner: Sendable {
 
         do {
             let input = try DenMCPToolInput(params.arguments ?? [:], definition: definition)
-            let command = try makeCommand(input, name: name)
-            let (response, _) = try DenIPCClient.sendRequest(
-                command: command,
-                socketPath: socketPath,
-                profileID: try input.string(.profileID) ?? profileID,
-                boardID: try input.string(.boardID)
-                    ?? (name == .createInspectionBoard ? try input.string(.targetBoardID) : nil),
-                includeTargetContext: true
+            let operation = try makeOperation(input, name: name)
+            let request = try DenIPCClient.makeRequest(
+                operation: operation,
+                profileID: try input.string(.profileID) ?? profileID
             )
-            guard response.isOk else {
-                return Self.error(response.error ?? "Den Browser request failed")
+            let response = try DenIPCClient.sendRequest(request: request, socketPath: socketPath)
+            guard response.result.isOk else {
+                return Self.error(response.result.error ?? "Den Browser request failed")
             }
             return try Self.success(response)
         } catch {
@@ -468,71 +465,87 @@ private struct DenMCPToolRunner: Sendable {
         }
     }
 
-    private func makeCommand(_ input: DenMCPToolInput, name: DenMCPToolName) throws -> DenIPCCommand {
+    private func makeOperation(_ input: DenMCPToolInput, name: DenMCPToolName) throws -> DenIPCOperation {
         switch name {
         case .inspectDen:
-            return .inspectDen
+            return .inspectDen(target: .automatic)
         case .openProfile:
-            return .profile(.open(profileID: try input.requiredString(.profileID)))
+            return .openProfile(
+                profileID: try DenIPCClient.profileToOpen(try input.requiredString(.profileID), options: CLIOptions())
+            )
         case .createWebBoard:
-            return .board(
-                .web(
-                    .new(
-                        DenBoardWebNewPayload(
-                            url: try input.requiredString(.url),
-                            focus: try input.boolean(.focus),
-                            width: try input.boardWidth()
-                        )))
+            return .createWebBoard(
+                payload: DenBoardWebNewPayload(
+                    url: try input.requiredString(.url),
+                    focus: try input.boolean(.focus),
+                    width: try input.boardWidth()
+                ),
+                destination: .automatic
             )
         case .createInspectionBoard:
-            return .board(
-                .inspection(.new(DenBoardInspectionNewPayload(focus: try input.boolean(.focus))))
+            return .createInspectionBoard(
+                targetBoardID: try DenIPCClient.requiredBoardID(
+                    input.requiredString(.targetBoardID),
+                    invalidMessage: "Usage: den board inspection new --target <web-board-id>"
+                ),
+                payload: DenBoardInspectionNewPayload(focus: try input.boolean(.focus))
             )
         case .readInspection:
-            return .inspection(.read)
+            return .readInspection(
+                boardID: try DenIPCClient.requiredBoardID(
+                    input.requiredString(.boardID),
+                    invalidMessage: "Usage: den board inspection read --board <inspection-board-id>"
+                )
+            )
         case .openSheet:
-            return .sheet(.open(DenSheetOpenPayload(url: try input.requiredString(.url))))
+            return try sheetOperation(.open(DenSheetOpenPayload(url: try input.requiredString(.url))), input: input)
         case .inspectSheet:
-            return .sheet(
+            return try sheetOperation(
                 .inspect(
-                    DenSheetSnapshotPayload(full: try input.boolean(.full), within: try input.string(.within)))
+                    DenSheetSnapshotPayload(full: try input.boolean(.full), within: try input.string(.within))),
+                input: input
             )
         case .readSheetText:
-            return .sheet(.text)
+            return try sheetOperation(.text, input: input)
         case .querySheet:
             let fields = try input.strings(.fields)
-            return .sheet(
+            return try sheetOperation(
                 .query(
                     DenSheetQueryPayload(
                         selector: try input.requiredString(.selector),
                         visible: try input.boolean(.visible),
                         all: try input.boolean(.all),
                         fields: fields.isEmpty ? nil : fields.joined(separator: ",")
-                    ))
+                    )),
+                input: input
             )
         case .readSheetElement:
             let target = try input.requiredString(.target)
             switch try input.requiredEnum(.field, as: DenMCPReadSheetElementField.self) {
-            case .text: return .sheet(.get(.text(try DenSheetGetTargetPayload(target: target))))
-            case .value: return .sheet(.get(.value(try DenSheetGetTargetPayload(target: target))))
+            case .text:
+                return try sheetOperation(.get(.text(try DenSheetGetTargetPayload(target: target))), input: input)
+            case .value:
+                return try sheetOperation(.get(.value(try DenSheetGetTargetPayload(target: target))), input: input)
             case .attribute:
-                return .sheet(
+                return try sheetOperation(
                     .get(
                         .attribute(
                             try DenSheetGetAttributePayload(
                                 target: target,
                                 attribute: try input.requiredString(.attribute)
-                            )))
+                            ))),
+                    input: input
                 )
-            case .count: return .sheet(.get(.count(try DenSheetGetTargetPayload(target: target))))
-            case .box: return .sheet(.get(.box(try DenSheetGetTargetPayload(target: target))))
+            case .count:
+                return try sheetOperation(.get(.count(try DenSheetGetTargetPayload(target: target))), input: input)
+            case .box: return try sheetOperation(.get(.box(try DenSheetGetTargetPayload(target: target))), input: input)
             }
         case .readSheetState:
             let target = try DenSheetStatePayload(target: input.requiredString(.target))
             switch try input.requiredEnum(.state, as: DenMCPReadSheetState.self) {
-            case .visible: return .sheet(.isState(.visible(target)))
-            case .enabled: return .sheet(.isState(.enabled(target)))
-            case .checked: return .sheet(.isState(.checked(target)))
+            case .visible: return try sheetOperation(.isState(.visible(target)), input: input)
+            case .enabled: return try sheetOperation(.isState(.enabled(target)), input: input)
+            case .checked: return try sheetOperation(.isState(.checked(target)), input: input)
             }
         case .clickSheetElement:
             let target = try input.string(.target)
@@ -546,7 +559,7 @@ private struct DenMCPToolRunner: Sendable {
             guard !focusNewBoard || openInNewBoard else {
                 throw input.invalid(.focusNewBoard, "requires open_in_new_board")
             }
-            return .sheet(
+            return try sheetOperation(
                 .click(
                     DenSheetClickPayload(
                         target: target,
@@ -555,32 +568,36 @@ private struct DenMCPToolRunner: Sendable {
                         exact: try input.boolean(.exact),
                         newBoard: openInNewBoard,
                         focus: focusNewBoard
-                    ))
+                    )),
+                input: input
             )
         case .fillSheetField:
-            return .sheet(
+            return try sheetOperation(
                 .fill(
                     DenSheetFillPayload(
                         target: try input.requiredString(.target), value: try input.requiredString(.value)
-                    ))
+                    )),
+                input: input
             )
         case .typeSheetText:
-            return .sheet(
+            return try sheetOperation(
                 .type(
-                    DenSheetTypePayload(target: try input.string(.target), text: try input.requiredString(.text)))
+                    DenSheetTypePayload(target: try input.string(.target), text: try input.requiredString(.text))),
+                input: input
             )
         case .pressSheetKey:
-            return .sheet(.press(DenSheetPressPayload(key: try input.requiredString(.key))))
+            return try sheetOperation(.press(DenSheetPressPayload(key: try input.requiredString(.key))), input: input)
         case .scrollSheet:
             let direction = try input.enumValue(.direction, as: DenMCPScrollDirection.self)
             let target = try input.string(.target)
             guard direction == nil || target == nil else {
                 throw input.invalid(.direction, "provide direction or target")
             }
-            return .sheet(
+            return try sheetOperation(
                 .scroll(
                     DenSheetScrollPayload(
-                        directionOrTarget: direction?.rawValue ?? target ?? DenMCPScrollDirection.down.rawValue))
+                        directionOrTarget: direction?.rawValue ?? target ?? DenMCPScrollDirection.down.rawValue)),
+                input: input
             )
         case .waitForSheet:
             let target = try input.string(.target)
@@ -595,7 +612,7 @@ private struct DenMCPToolRunner: Sendable {
             guard target != nil || state == nil else {
                 throw input.invalid(.state, "requires target")
             }
-            return .sheet(
+            return try sheetOperation(
                 .wait(
                     DenSheetWaitPayload(
                         target: target,
@@ -605,52 +622,76 @@ private struct DenMCPToolRunner: Sendable {
                         loadState: loadState?.rawValue,
                         function: nil,
                         timeout: try input.number(.timeoutSeconds, default: 10)
-                    ))
+                    )),
+                input: input
             )
         case .navigateSheetHistory:
             switch try input.requiredEnum(.direction, as: DenMCPHistoryDirection.self) {
-            case .back: return .sheet(.back)
-            case .forward: return .sheet(.forward)
+            case .back: return try sheetOperation(.back, input: input)
+            case .forward: return try sheetOperation(.forward, input: input)
             }
         case .reloadSheet:
-            return .sheet(.reload)
+            return try sheetOperation(.reload, input: input)
         case .closeBoard:
-            return .board(.close)
+            return .boardClose(target: try DenIPCClient.boardTarget(input.requiredString(.boardID)))
         case .listDrawerItems:
-            return .drawer(.list)
+            return .drawer(command: .list, target: .automatic)
         case .saveURLToDrawer:
             return .drawer(
-                .keep(DenDrawerKeepPayload(url: try input.requiredString(.url), title: try input.string(.title)))
+                command: .keep(
+                    DenDrawerKeepPayload(url: try input.requiredString(.url), title: try input.string(.title))),
+                target: .automatic
             )
         case .placeDrawerItem:
-            return .drawer(.place(id: try input.requiredString(.itemID)))
+            return .drawer(command: .place(id: try input.requiredString(.itemID)), target: .automatic)
         case .discardDrawerItem:
-            return .drawer(.discard(id: try input.requiredString(.itemID)))
+            return .drawer(command: .discard(id: try input.requiredString(.itemID)), target: .automatic)
         case .createTerminalBoard:
             let path = try input.string(.path).map { URL(fileURLWithPath: $0).standardizedFileURL.path }
-            return .board(
-                .terminal(
-                    .new(
-                        DenBoardTerminalNewPayload(
-                            path: path,
-                            runCommand: nil,
-                            focus: try input.boolean(.focus),
-                            width: try input.boardWidth()
-                        )))
+            return .createTerminalBoard(
+                payload: DenBoardTerminalNewPayload(
+                    path: path,
+                    runCommand: nil,
+                    focus: try input.boolean(.focus),
+                    width: try input.boardWidth()
+                ),
+                destination: .automatic
             )
         case .readTerminalSession:
-            return .terminal(.text)
+            return .terminal(
+                command: .text,
+                target: try DenIPCClient.boardTarget(input.string(.boardID))
+            )
         case .runTerminalCommand:
-            return .terminal(.run(command: try input.requiredString(.command)))
+            return .terminal(
+                command: .run(command: try input.requiredString(.command)),
+                target: try DenIPCClient.boardTarget(input.string(.boardID))
+            )
         }
     }
 
+    private func sheetOperation(_ command: DenIPCCommand.Sheet, input: DenMCPToolInput) throws -> DenIPCOperation {
+        .sheet(command: command, target: try DenIPCClient.boardTarget(input.string(.boardID)))
+    }
+
     private static func success(_ response: DenIPCResponse) throws -> CallTool.Result {
-        guard case .object(var output) = try Value(response) else {
+        guard case .object(var output) = try Value(response.result) else {
             return error("Den Browser returned an invalid result")
         }
         output.removeValue(forKey: "ok")
         output.removeValue(forKey: "error")
+
+        switch response.target {
+        case .none:
+            break
+        case .profile(let profileID):
+            output[DenMCPOutputField.profileID.rawValue] = .string(profileID.uuidString)
+        case .board(let profileID, let boardID):
+            output[DenMCPOutputField.profileID.rawValue] = .string(profileID.uuidString)
+            output[DenMCPOutputField.boardID.rawValue] =
+                output[DenMCPOutputField.boardID.rawValue] ?? .string(boardID.uuidString)
+        }
+
         let value = Value.object(output)
         let data = try JSONEncoder().encode(value)
         guard let text = String(data: data, encoding: .utf8) else {

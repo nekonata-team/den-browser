@@ -23,7 +23,7 @@ struct DrawerListCommand: ParsableCommand {
     @OptionGroup var options: CLIOptions
 
     func run() throws {
-        try DenIPCClient.execute(command: .drawer(.list), options: options)
+        try DenIPCClient.execute(operation: .drawer(command: .list, target: .automatic), options: options)
     }
 }
 
@@ -38,7 +38,8 @@ struct DrawerKeepCommand: ParsableCommand {
 
     func run() throws {
         try DenIPCClient.execute(
-            command: .drawer(.keep(DenDrawerKeepPayload(url: url, title: title))),
+            operation: .drawer(
+                command: .keep(DenDrawerKeepPayload(url: url, title: title)), target: .automatic),
             options: options
         )
     }
@@ -54,7 +55,7 @@ struct DrawerPlaceCommand: ParsableCommand {
 
     func run() throws {
         try DenIPCClient.execute(
-            command: .drawer(.place(id: itemID)),
+            operation: .drawer(command: .place(id: itemID), target: .automatic),
             options: options
         )
     }
@@ -70,7 +71,7 @@ struct DrawerDiscardCommand: ParsableCommand {
 
     func run() throws {
         try DenIPCClient.execute(
-            command: .drawer(.discard(id: itemID)),
+            operation: .drawer(command: .discard(id: itemID), target: .automatic),
             options: options
         )
     }
