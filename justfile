@@ -23,10 +23,10 @@ mod release
 # Format all Swift sources in place.
 [group("quality")]
 format:
-    {{swift_format}} format --in-place --recursive --parallel --configuration .swift-format "{{swift_sources}}"
-    {{swift_format}} format --in-place --recursive --parallel --configuration .swift-format "{{domain_sources}}"
-    {{swift_format}} format --in-place --recursive --parallel --configuration .swift-format "{{design_sources}}"
-    {{swift_format}} format --in-place --recursive --parallel --configuration .swift-format "{{ipc_protocol_sources}}"
+    @{{swift_format}} format --in-place --recursive --parallel --configuration .swift-format "{{swift_sources}}"
+    @{{swift_format}} format --in-place --recursive --parallel --configuration .swift-format "{{domain_sources}}"
+    @{{swift_format}} format --in-place --recursive --parallel --configuration .swift-format "{{design_sources}}"
+    @{{swift_format}} format --in-place --recursive --parallel --configuration .swift-format "{{ipc_protocol_sources}}"
 
 # Format staged Swift sources in place.
 [group("quality")]
@@ -34,23 +34,27 @@ format:
 format-staged +files:
     {{swift_format}} format --in-place --parallel --configuration .swift-format "$@"
 
+# Check Swift formatting without modifying files.
+[group("quality")]
+format-check:
+    @{{swift_format}} lint --strict --recursive --parallel --configuration .swift-format "{{swift_sources}}"
+    @{{swift_format}} lint --strict --recursive --parallel --configuration .swift-format "{{domain_sources}}"
+    @{{swift_format}} lint --strict --recursive --parallel --configuration .swift-format "{{design_sources}}"
+    @{{swift_format}} lint --strict --recursive --parallel --configuration .swift-format "{{ipc_protocol_sources}}"
+
 # Fail on Swift style and safety findings.
 [group("quality")]
-lint: architecture-check
-    {{swift_format}} lint --strict --recursive --parallel --configuration .swift-format "{{swift_sources}}"
-    {{swift_format}} lint --strict --recursive --parallel --configuration .swift-format "{{domain_sources}}"
-    {{swift_format}} lint --strict --recursive --parallel --configuration .swift-format "{{design_sources}}"
-    {{swift_format}} lint --strict --recursive --parallel --configuration .swift-format "{{ipc_protocol_sources}}"
-    swiftlint lint --quiet --strict
+lint: architecture-check format-check
+    @swiftlint lint --quiet --strict
 
 # Check Swift layer import rules and their fixtures.
 [group("quality")]
 architecture-check:
-    ast-grep test --config sgconfig.yml --skip-snapshot-tests
-    ast-grep scan --config sgconfig.yml "{{swift_sources}}/Den Browser"
-    ast-grep scan --config sgconfig.yml "{{domain_sources}}"
-    ast-grep scan --config sgconfig.yml "{{design_sources}}"
-    ast-grep scan --config sgconfig.yml "{{ipc_protocol_sources}}"
+    @ast-grep test --config sgconfig.yml --skip-snapshot-tests
+    @ast-grep scan --config sgconfig.yml "{{swift_sources}}/Den Browser"
+    @ast-grep scan --config sgconfig.yml "{{domain_sources}}"
+    @ast-grep scan --config sgconfig.yml "{{design_sources}}"
+    @ast-grep scan --config sgconfig.yml "{{ipc_protocol_sources}}"
 
 # Build macOS app with development signing.
 [group("build")]
@@ -60,7 +64,7 @@ build:
 # Type-check embedded JavaScript sources.
 [group("quality")]
 embedded-js-typecheck:
-    pnpm --dir scripts/embedded-js typecheck
+    @pnpm --dir scripts/embedded-js typecheck
 
 # Bind SourceKit-LSP to this Xcode project.
 [group("development")]
