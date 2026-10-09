@@ -20,7 +20,7 @@ extension DenWindowModel {
 
     func confirmResetDen() {
         guard isResetDenPending else { return }
-        store.resetDen()
+        _ = onConfirmOperation(.resetDen)
         pendingConfirmation = nil
     }
 
@@ -30,14 +30,14 @@ extension DenWindowModel {
     }
 
     func confirmDeskDeletion() {
-        guard case .deleteDesk(let desk)? = pendingConfirmation else { return }
-        store.confirmDeskDeletion(desk.id)
+        guard let request = pendingConfirmation, case .deleteDesk = request else { return }
+        _ = onConfirmOperation(request)
         pendingConfirmation = nil
     }
 
     func confirmDeskReplacement() {
-        guard case .replaceDesk(let replacement)? = pendingConfirmation else { return }
-        store.confirmDeskReplacement(replacement)
+        guard let request = pendingConfirmation, case .replaceDesk = request else { return }
+        _ = onConfirmOperation(request)
         pendingConfirmation = nil
     }
 

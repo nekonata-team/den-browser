@@ -1,7 +1,16 @@
+import DenApplication
 import DenDomain
 import Foundation
 
 extension DenController {
+    func launchEssential(id: UUID, preferredWidth: Double? = nil) {
+        guard let essential = essentials.first(where: { $0.id == id }) else { return }
+        onWindowEffect?(.openBoardResult(nil))
+        if case .rejected(let message) = requestOpenBoard(input: essential.input, preferredWidth: preferredWidth) {
+            reportFeedback(message ?? "Could not open Essential '\(essential.name)'.", severity: .warning)
+        }
+    }
+
     @discardableResult
     func saveEssential(name: String, key: String, input: String) -> Bool {
         let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)

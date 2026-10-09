@@ -194,10 +194,25 @@ struct DenControllerRecentTests {
         let expectedURL = try #require(URL(string: essential.input))
         withTestController { store in
             #expect(store.preferences.setEssentials([essential]))
-            withTestWindowModel(store: store) { windowModel in
-                windowModel.launchEssential(id: essential.id)
-                #expect(store.recentItems == [.url(expectedURL)])
-            }
+            store.launchEssential(id: essential.id)
+            #expect(store.recentItems == [.url(expectedURL)])
+        }
+    }
+
+    @Test func essentialLaunchReportsConfigurationFailure() {
+        // Arrange
+        let essential = Essential(name: "Project", key: "p", input: ":zmx project")
+        withTestController { store in
+            #expect(store.preferences.setEssentials([essential]))
+            let initialBoardCount = store.focusedDesk?.boards.count
+
+            // Act
+            store.launchEssential(id: essential.id)
+
+            // Assert
+            #expect(store.focusedDesk?.boards.count == initialBoardCount)
+            #expect(store.latestFeedback?.message == "Set an absolute zmx executable path in Settings > Terminal.")
+            #expect(store.latestFeedback?.severity == .warning)
         }
     }
 

@@ -126,16 +126,8 @@ extension DenWindowModel {
     }
 
     func launchEssential(id: UUID) {
-        guard let essential = store.essentials.first(where: { $0.id == id }) else {
-            exitEssentialsPrefix()
-            return
-        }
         exitEssentialsPrefix()
-        openBoard.message = nil
-        guard !store.openBoard(input: essential.input, preferredWidth: defaultBoardWidth) else { return }
-        let message = openBoard.message ?? "Could not open Essential '\(essential.name)'."
-        openBoard.message = nil
-        store.reportFeedback(message, severity: .warning)
+        onLaunchEssential(id, defaultBoardWidth)
     }
 
     func exitEssentialsPrefix() {
@@ -292,7 +284,7 @@ extension DenWindowModel {
 
     @discardableResult
     func saveEssential(name: String, key: String, input: String) -> Bool {
-        guard store.saveEssential(name: name, key: key, input: input) else { return false }
+        guard onSaveEssential(name, key, input) else { return false }
         hideSaveEssentialPanel()
         return true
     }

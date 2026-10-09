@@ -77,6 +77,9 @@ final class DenWindowComposition {
             deskFilter: deskFilter,
             notificationList: notificationList,
             zmxSessions: zmxSessions,
+            onLaunchEssential: { store.launchEssential(id: $0, preferredWidth: $1) },
+            onSaveEssential: { store.saveEssential(name: $0, key: $1, input: $2) },
+            onConfirmOperation: { store.performConfirmedOperation($0) },
             feedbackDuration: feedbackDuration)
         self.model = model
         overview.onDismiss = { [weak model] in model?.hideOverview() }

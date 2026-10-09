@@ -32,8 +32,8 @@ extension DenWindowModel {
     }
 
     func confirmNotificationClear() {
-        guard notificationPendingDeletionCount != nil else { return }
-        store.clearNotifications()
+        guard let request = pendingConfirmation, case .clearNotifications = request else { return }
+        _ = onConfirmOperation(request)
         closeNotificationList()
         pendingConfirmation = nil
     }

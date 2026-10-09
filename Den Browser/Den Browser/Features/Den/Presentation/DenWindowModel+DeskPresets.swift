@@ -15,8 +15,8 @@ extension DenWindowModel {
     }
 
     func confirmDeskPresetReplacement() {
-        guard let replacement = deskPresetPendingReplacement,
-            store.replaceDeskPreset(replacement)
+        guard let request = pendingConfirmation, case .replaceDeskPreset = request,
+            onConfirmOperation(request)
         else { return }
         pendingConfirmation = nil
     }
@@ -26,9 +26,9 @@ extension DenWindowModel {
     }
 
     func confirmDeskPresetDeletion() {
-        guard let preset = deskPresetPendingDeletion else { return }
+        guard let request = pendingConfirmation, case .deleteDeskPreset = request else { return }
         pendingConfirmation = nil
-        store.deleteDeskPreset(preset.id)
+        _ = onConfirmOperation(request)
     }
 
     func cancelDeskPresetDeletion() {

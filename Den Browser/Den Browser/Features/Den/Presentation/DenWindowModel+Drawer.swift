@@ -34,8 +34,8 @@ extension DenWindowModel {
     }
 
     func confirmDrawerClear() {
-        guard drawerPendingDeletionCount != nil else { return }
-        store.clearDrawer()
+        guard let request = pendingConfirmation, case .clearDrawer = request else { return }
+        _ = onConfirmOperation(request)
         pendingConfirmation = nil
     }
 

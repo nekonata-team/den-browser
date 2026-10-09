@@ -39,6 +39,9 @@ final class DenWindowModel {
     private(set) var displayedFeedback: DenFeedback?
 
     @ObservationIgnored private let feedbackDuration: Duration
+    @ObservationIgnored let onLaunchEssential: (UUID, Double?) -> Void
+    @ObservationIgnored let onSaveEssential: (String, String, String) -> Bool
+    @ObservationIgnored let onConfirmOperation: (DenConfirmationRequest) -> Bool
     @ObservationIgnored private var feedbackTask: Task<Void, Never>?
     @ObservationIgnored private var lastReceivedFeedbackID: UUID?
 
@@ -50,6 +53,9 @@ final class DenWindowModel {
         deskFilter: DeskFilterModel,
         notificationList: NotificationListModel,
         zmxSessions: ZmxSessionsModel,
+        onLaunchEssential: @escaping (UUID, Double?) -> Void,
+        onSaveEssential: @escaping (String, String, String) -> Bool,
+        onConfirmOperation: @escaping (DenConfirmationRequest) -> Bool,
         feedbackDuration: Duration = .seconds(5)
     ) {
         self.store = store
@@ -59,6 +65,9 @@ final class DenWindowModel {
         self.deskFilter = deskFilter
         self.notificationList = notificationList
         self.zmxSessions = zmxSessions
+        self.onLaunchEssential = onLaunchEssential
+        self.onSaveEssential = onSaveEssential
+        self.onConfirmOperation = onConfirmOperation
         self.feedbackDuration = feedbackDuration
     }
 
