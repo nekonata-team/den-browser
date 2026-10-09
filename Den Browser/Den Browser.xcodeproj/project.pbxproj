@@ -886,16 +886,16 @@
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/sparkle-project/Sparkle.git";
 			requirement = {
-				kind = exactVersion;
-				version = 2.9.6;
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.9.6;
 			};
 		};
 		53A10002301A000000000001 /* XCRemoteSwiftPackageReference "libghostty-spm" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/Lakr233/libghostty-spm.git";
 			requirement = {
-				kind = exactVersion;
-				version = 1.6.20260909;
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.6.20260909;
 			};
 		};
 		55A10002301A000000000001 /* XCRemoteSwiftPackageReference "SFSafeSymbols" */ = {
@@ -910,8 +910,8 @@
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/swiftlang/swift-subprocess.git";
 			requirement = {
-				kind = exactVersion;
-				version = 1.0.0;
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.0.0;
 			};
 		};
 		57C0A1E03000000000000001 /* XCRemoteSwiftPackageReference "swift-sdk" */ = {
