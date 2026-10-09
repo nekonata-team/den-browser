@@ -80,6 +80,18 @@ final class DenWindowComposition {
             onLaunchEssential: { controller.launchEssential(id: $0, preferredWidth: $1) },
             onSaveEssential: { controller.saveEssential(name: $0, key: $1, input: $2) },
             onConfirmOperation: { controller.performConfirmedOperation($0) },
+            focusedDesk: { controller.focusedDesk },
+            focusedBoard: { controller.focusedBoard },
+            board: { controller.board(for: $0) },
+            boardActions: DenWindowModel.BoardActions(
+                adjustBoardWidth: { controller.adjustBoardWidth($0, by: $1) },
+                adjustDeskBoardWidths: { controller.adjustDeskBoardWidths($0, by: $1) },
+                resizeDeskBoards: { controller.resizeDeskBoards($0, to: $1) },
+                placeDrawerItem: { controller.placeDrawerItemAsBoard($0, preferredWidth: $1) },
+                focusBoard: { controller.focusBoard($0, exitsDenMode: $1) },
+                centerFocusedBoard: { controller.centerFocusedBoard() },
+                cancelBoardDrag: { controller.requestBoardDragCancellation() },
+                cancelDeskDrag: { controller.requestDeskDragCancellation() }),
             feedbackDuration: feedbackDuration)
         self.model = model
         overview.onDismiss = { [weak model] in model?.hideOverview() }

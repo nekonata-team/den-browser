@@ -7,6 +7,17 @@ import SwiftUI
 @MainActor
 @Observable
 final class DenWindowModel {
+    struct BoardActions {
+        let adjustBoardWidth: (BoardID, Double) -> Void
+        let adjustDeskBoardWidths: (DeskID, Double) -> Void
+        let resizeDeskBoards: (DeskID, Double) -> Bool
+        let placeDrawerItem: (UUID, Double?) -> BoardID?
+        let focusBoard: (BoardID, Bool) -> Void
+        let centerFocusedBoard: () -> Void
+        let cancelBoardDrag: () -> Void
+        let cancelDeskDrag: () -> Void
+    }
+
     let controller: DenController
     let overview: OverviewModel
     let drawer: DrawerModel
@@ -42,6 +53,10 @@ final class DenWindowModel {
     @ObservationIgnored let onLaunchEssential: (UUID, Double?) -> Void
     @ObservationIgnored let onSaveEssential: (String, String, String) -> Bool
     @ObservationIgnored let onConfirmOperation: (DenConfirmationRequest) -> Bool
+    @ObservationIgnored let focusedDesk: () -> DeskState?
+    @ObservationIgnored let focusedBoard: () -> BoardState?
+    @ObservationIgnored let board: (BoardID) -> BoardState?
+    @ObservationIgnored let boardActions: BoardActions
     @ObservationIgnored private var feedbackTask: Task<Void, Never>?
     @ObservationIgnored private var lastReceivedFeedbackID: UUID?
 
@@ -56,6 +71,10 @@ final class DenWindowModel {
         onLaunchEssential: @escaping (UUID, Double?) -> Void,
         onSaveEssential: @escaping (String, String, String) -> Bool,
         onConfirmOperation: @escaping (DenConfirmationRequest) -> Bool,
+        focusedDesk: @escaping () -> DeskState?,
+        focusedBoard: @escaping () -> BoardState?,
+        board: @escaping (BoardID) -> BoardState?,
+        boardActions: BoardActions,
         feedbackDuration: Duration = .seconds(5)
     ) {
         self.controller = controller
@@ -68,6 +87,10 @@ final class DenWindowModel {
         self.onLaunchEssential = onLaunchEssential
         self.onSaveEssential = onSaveEssential
         self.onConfirmOperation = onConfirmOperation
+        self.focusedDesk = focusedDesk
+        self.focusedBoard = focusedBoard
+        self.board = board
+        self.boardActions = boardActions
         self.feedbackDuration = feedbackDuration
     }
 
@@ -130,8 +153,8 @@ final class DenWindowModel {
             maximizedBoardID = nil
         case .runtimeFocusedBoard(let boardID):
             guard !isDenMode, temporaryContext == nil else { return }
-            if controller.board(for: boardID)?.isTerminal == true, controller.focusedBoard?.id != boardID { return }
-            controller.focusBoard(boardID, exitsDenMode: true)
+            if board(boardID)?.isTerminal == true, focusedBoard()?.id != boardID { return }
+            boardActions.focusBoard(boardID, true)
         case .drawerItemRemoved(let itemID, let previousItems, let advancesPreview, let focusNext):
             drawer.itemWasRemoved(
                 itemID,

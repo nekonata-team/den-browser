@@ -45,8 +45,7 @@ extension DenWindowModel {
 
     @discardableResult
     func placeDrawerItemAsBoard(_ itemID: UUID) -> BoardID? {
-        controller.placeDrawerItemAsBoard(
-            itemID, preferredWidth: controller.focusedBoard?.width ?? boardWidth(toFit: 2))
+        boardActions.placeDrawerItem(itemID, focusedBoard()?.width ?? boardWidth(toFit: 2))
     }
 
     func placeSelectedDrawerItemAsBoard() {

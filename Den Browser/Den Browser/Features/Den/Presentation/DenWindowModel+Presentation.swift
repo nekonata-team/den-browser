@@ -202,7 +202,7 @@ extension DenWindowModel {
     }
 
     func showEditBoardLinkPanel() {
-        guard controller.focusedBoard?.isWeb == true else {
+        guard focusedBoard()?.isWeb == true else {
             controller.reportFeedback("No focused Web Board.", severity: .warning)
             return
         }
@@ -222,7 +222,7 @@ extension DenWindowModel {
     }
 
     func showReplaceDeskPanel() {
-        guard controller.focusedDesk != nil else { return }
+        guard focusedDesk() != nil else { return }
         setTemporaryContext(.replaceDesk)
     }
 
@@ -238,7 +238,7 @@ extension DenWindowModel {
     }
 
     func showSaveDeskPresetPanel() {
-        guard controller.focusedDesk?.boards.isEmpty == false else {
+        guard focusedDesk()?.boards.isEmpty == false else {
             controller.reportFeedback("Desk has no boards to save as a preset.", severity: .warning)
             return
         }
@@ -250,7 +250,7 @@ extension DenWindowModel {
     }
 
     func showRenameBoardPanel() {
-        guard controller.focusedDesk?.focusedBoardID != nil else { return }
+        guard focusedDesk()?.focusedBoardID != nil else { return }
         setTemporaryContext(.renameBoard)
     }
 
@@ -259,7 +259,7 @@ extension DenWindowModel {
     }
 
     func showRenameDeskPanel() {
-        guard controller.focusedDesk != nil else { return }
+        guard focusedDesk() != nil else { return }
         setTemporaryContext(.renameDesk)
     }
 
@@ -274,7 +274,7 @@ extension DenWindowModel {
 
     func showSaveEssentialPanel(for board: BoardState) {
         guard let input = board.essentialInput else { return }
-        controller.focusBoard(board.id)
+        boardActions.focusBoard(board.id, false)
         showSaveEssentialPanel(name: board.defaultEssentialName, key: "", input: input)
     }
 
@@ -294,7 +294,7 @@ extension DenWindowModel {
     }
 
     func saveFocusedBoardAsEssential() {
-        guard let board = controller.focusedBoard else {
+        guard let board = focusedBoard() else {
             controller.reportFeedback("No focused board.", severity: .warning)
             return
         }

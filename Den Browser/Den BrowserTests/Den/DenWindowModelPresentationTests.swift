@@ -3,6 +3,8 @@ import DenApplication
 import DenDomain
 import DenPresentation
 import Foundation
+import Observation
+import Synchronization
 import Testing
 
 @testable import Den_Browser
@@ -10,6 +12,26 @@ import Testing
 @MainActor
 @Suite(.serialized)
 struct DenWindowModelPresentationTests {
+    @Test func boardWidthKeepsSharedUpdatesObservable() {
+        // Arrange
+        let target = board("Board")
+        let source = desk("Desk", boards: [target], focusedBoardID: target.id)
+        withTestWindowModel(desks: [source]) { windowModel in
+            let changed = Mutex(false)
+            withObservationTracking {
+                _ = windowModel.defaultBoardWidth
+            } onChange: {
+                changed.withLock { $0 = true }
+            }
+
+            // Act
+            windowModel.controller.adjustBoardWidth(target.id, by: 80)
+
+            // Assert
+            #expect(changed.withLock { $0 })
+            #expect(windowModel.defaultBoardWidth == target.width + 80)
+        }
+    }
 
     @Test func resetDenClearsRuntimePresentationAndPersistsFreshState() {
         // Arrange
