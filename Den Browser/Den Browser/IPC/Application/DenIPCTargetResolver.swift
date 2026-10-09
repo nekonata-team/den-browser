@@ -3,13 +3,13 @@ import DenIPCProtocol
 import Foundation
 
 struct ResolvedDeskTarget {
-    let store: DenController
+    let controller: DenController
     let desk: DeskState
     let profileID: ProfileID
 }
 
 struct ResolvedBoardTarget {
-    let store: DenController
+    let controller: DenController
     let board: BoardState
     let profileID: ProfileID
 }
@@ -77,8 +77,8 @@ enum DenIPCTargetResolver {
         }
     }
 
-    private struct StoreScope {
-        let stores: [DenController]
+    private struct ControllerScope {
+        let controllers: [DenController]
         let profileID: ProfileID?
     }
 
@@ -88,8 +88,8 @@ enum DenIPCTargetResolver {
         in profileManager: ProfileManager?
     ) -> Result<ResolvedDeskTarget, TargetResolutionError> {
         guard let profileManager else { return .failure(.noActiveDesk) }
-        let scope: StoreScope
-        switch storeScope(context: context, in: profileManager) {
+        let scope: ControllerScope
+        switch controllerScope(context: context, in: profileManager) {
         case .success(let resolved): scope = resolved
         case .failure(let error): return .failure(error)
         }
@@ -97,34 +97,34 @@ enum DenIPCTargetResolver {
         switch target {
         case .explicit(let deskID):
             let deskID = DeskID(deskID)
-            for store in scope.stores {
-                guard let desk = store.state.desks.first(where: { $0.id == deskID }) else { continue }
-                return resolvedDesk(store: store, desk: desk, in: profileManager)
+            for controller in scope.controllers {
+                guard let desk = controller.state.desks.first(where: { $0.id == deskID }) else { continue }
+                return resolvedDesk(controller: controller, desk: desk, in: profileManager)
             }
             return .failure(.noActiveDesk)
 
         case .automatic:
             if let callerBoardID = context.callerBoardID.map(BoardID.init) {
-                for store in scope.stores {
-                    guard let indices = store.boardIndices(for: callerBoardID) else { continue }
-                    let desk = store.state.desks[indices.desk]
-                    return resolvedDesk(store: store, desk: desk, in: profileManager)
+                for controller in scope.controllers {
+                    guard let indices = controller.boardIndices(for: callerBoardID) else { continue }
+                    let desk = controller.state.desks[indices.desk]
+                    return resolvedDesk(controller: controller, desk: desk, in: profileManager)
                 }
             }
 
-            let baseStore: DenController?
+            let baseController: DenController?
             if let profileID = scope.profileID {
-                baseStore = profileManager.store(forProfileID: profileID)
+                baseController = profileManager.controller(forProfileID: profileID)
             } else {
-                baseStore = profileManager.activeStore()
+                baseController = profileManager.activeController()
             }
-            guard let store = baseStore,
-                let desk = store.state.desks.first(where: { $0.id == store.presentedDeskID })
-                    ?? store.state.desks.first
+            guard let controller = baseController,
+                let desk = controller.state.desks.first(where: { $0.id == controller.presentedDeskID })
+                    ?? controller.state.desks.first
             else {
                 return .failure(.noActiveDesk)
             }
-            return resolvedDesk(store: store, desk: desk, in: profileManager)
+            return resolvedDesk(controller: controller, desk: desk, in: profileManager)
         }
     }
 
@@ -135,8 +135,8 @@ enum DenIPCTargetResolver {
         in profileManager: ProfileManager?
     ) -> Result<ResolvedBoardTarget, TargetResolutionError> {
         guard let profileManager else { return .failure(.noTargetBoard(kind.label)) }
-        let scope: StoreScope
-        switch storeScope(context: context, in: profileManager) {
+        let scope: ControllerScope
+        switch controllerScope(context: context, in: profileManager) {
         case .success(let resolved): scope = resolved
         case .failure(let error): return .failure(error)
         }
@@ -144,25 +144,27 @@ enum DenIPCTargetResolver {
         switch target {
         case .explicit(let boardID):
             let boardID = BoardID(boardID)
-            for store in scope.stores {
-                guard let indices = store.boardIndices(for: boardID) else { continue }
-                let desk = store.state.desks[indices.desk]
+            for controller in scope.controllers {
+                guard let indices = controller.boardIndices(for: boardID) else { continue }
+                let desk = controller.state.desks[indices.desk]
                 let board = desk.boards[indices.board]
                 guard kind.matchesExplicit(board) else {
                     return .failure(.boardNotMatchingKind(boardID.rawValue.uuidString, kind.label))
                 }
-                return resolvedBoard(store: store, desk: desk, board: board, in: profileManager)
+                return resolvedBoard(controller: controller, desk: desk, board: board, in: profileManager)
             }
             return .failure(.boardNotFound(boardID.rawValue.uuidString))
 
         case .automatic:
             if let callerBoardID = context.callerBoardID.map(BoardID.init) {
-                guard let owningStore = scope.stores.first(where: { $0.boardIndices(for: callerBoardID) != nil }),
-                    let indices = owningStore.boardIndices(for: callerBoardID)
+                guard
+                    let owningController = scope.controllers.first(where: { $0.boardIndices(for: callerBoardID) != nil }
+                    ),
+                    let indices = owningController.boardIndices(for: callerBoardID)
                 else {
                     return .failure(.noTargetBoard(kind.label))
                 }
-                let desk = owningStore.state.desks[indices.desk]
+                let desk = owningController.state.desks[indices.desk]
                 let callerBoard = desk.boards[indices.board]
                 let target: BoardState?
                 if kind.matches(callerBoard) {
@@ -173,18 +175,18 @@ enum DenIPCTargetResolver {
                         ?? desk.boards.prefix(indices.board).reversed().first(where: kind.matches)
                 }
                 guard let target else { return .failure(.noTargetBoard(kind.label)) }
-                return resolvedBoard(store: owningStore, desk: desk, board: target, in: profileManager)
+                return resolvedBoard(controller: owningController, desk: desk, board: target, in: profileManager)
             }
 
-            let baseStore: DenController?
+            let baseController: DenController?
             if let profileID = scope.profileID {
-                baseStore = profileManager.store(forProfileID: profileID)
+                baseController = profileManager.controller(forProfileID: profileID)
             } else {
-                baseStore = profileManager.activeStore()
+                baseController = profileManager.activeController()
             }
-            guard let store = baseStore,
-                let desk = store.state.desks.first(where: { $0.id == store.presentedDeskID })
-                    ?? store.state.desks.first
+            guard let controller = baseController,
+                let desk = controller.state.desks.first(where: { $0.id == controller.presentedDeskID })
+                    ?? controller.state.desks.first
             else {
                 return .failure(.noTargetBoard(kind.label))
             }
@@ -194,16 +196,16 @@ enum DenIPCTargetResolver {
             guard let board = focused ?? desk.boards.first(where: kind.matches) else {
                 return .failure(.noTargetBoard(kind.label))
             }
-            return resolvedBoard(store: store, desk: desk, board: board, in: profileManager)
+            return resolvedBoard(controller: controller, desk: desk, board: board, in: profileManager)
         }
     }
 
-    private static func storeScope(
+    private static func controllerScope(
         context: DenIPCCallerContext,
         in profileManager: ProfileManager
-    ) -> Result<StoreScope, TargetResolutionError> {
+    ) -> Result<ControllerScope, TargetResolutionError> {
         guard let rawProfileID = context.profileID else {
-            return .success(StoreScope(stores: profileManager.allStores, profileID: nil))
+            return .success(ControllerScope(controllers: profileManager.allControllers, profileID: nil))
         }
         let profileID = ProfileID(rawProfileID)
         guard profileManager.profile(id: profileID) != nil else {
@@ -212,40 +214,40 @@ enum DenIPCTargetResolver {
         guard profileManager.hasWindow(for: profileID) else {
             return .failure(.profileHasNoActiveWindow(rawProfileID.uuidString))
         }
-        return .success(StoreScope(stores: profileManager.stores(for: profileID), profileID: profileID))
+        return .success(ControllerScope(controllers: profileManager.controllers(for: profileID), profileID: profileID))
     }
 
     private static func resolvedDesk(
-        store: DenController,
+        controller: DenController,
         desk: DeskState,
         in profileManager: ProfileManager
     ) -> Result<ResolvedDeskTarget, TargetResolutionError> {
-        guard let resolved = resolvedStore(for: store, deskID: desk.id, in: profileManager) else {
+        guard let resolved = resolvedController(for: controller, deskID: desk.id, in: profileManager) else {
             return .failure(.targetProfileUnavailable)
         }
-        return .success(ResolvedDeskTarget(store: resolved.store, desk: desk, profileID: resolved.profileID))
+        return .success(ResolvedDeskTarget(controller: resolved.controller, desk: desk, profileID: resolved.profileID))
     }
 
     private static func resolvedBoard(
-        store: DenController,
+        controller: DenController,
         desk: DeskState,
         board: BoardState,
         in profileManager: ProfileManager
     ) -> Result<ResolvedBoardTarget, TargetResolutionError> {
-        guard let resolved = resolvedStore(for: store, deskID: desk.id, in: profileManager) else {
+        guard let resolved = resolvedController(for: controller, deskID: desk.id, in: profileManager) else {
             return .failure(.targetProfileUnavailable)
         }
         return .success(
-            ResolvedBoardTarget(store: resolved.store, board: board, profileID: resolved.profileID))
+            ResolvedBoardTarget(controller: resolved.controller, board: board, profileID: resolved.profileID))
     }
 
-    private static func resolvedStore(
-        for store: DenController,
+    private static func resolvedController(
+        for controller: DenController,
         deskID: DeskID,
         in profileManager: ProfileManager
-    ) -> (store: DenController, profileID: ProfileID)? {
-        guard let profileID = profileManager.profileID(for: store) else { return nil }
-        let targetStore = profileManager.store(for: profileID, presentingDeskID: deskID) ?? store
-        return (targetStore, profileID)
+    ) -> (controller: DenController, profileID: ProfileID)? {
+        guard let profileID = profileManager.profileID(for: controller) else { return nil }
+        let targetController = profileManager.controller(for: profileID, presentingDeskID: deskID) ?? controller
+        return (targetController, profileID)
     }
 }

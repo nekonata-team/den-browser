@@ -7,7 +7,7 @@ import SwiftUI
 @MainActor
 @Observable
 final class DenWindowModel {
-    let store: DenController
+    let controller: DenController
     let overview: OverviewModel
     let drawer: DrawerModel
     let openBoard: OpenBoardModel
@@ -46,7 +46,7 @@ final class DenWindowModel {
     @ObservationIgnored private var lastReceivedFeedbackID: UUID?
 
     init(
-        store: DenController,
+        controller: DenController,
         overview: OverviewModel,
         drawer: DrawerModel,
         openBoard: OpenBoardModel,
@@ -58,7 +58,7 @@ final class DenWindowModel {
         onConfirmOperation: @escaping (DenConfirmationRequest) -> Bool,
         feedbackDuration: Duration = .seconds(5)
     ) {
-        self.store = store
+        self.controller = controller
         self.overview = overview
         self.drawer = drawer
         self.openBoard = openBoard
@@ -130,15 +130,15 @@ final class DenWindowModel {
             maximizedBoardID = nil
         case .runtimeFocusedBoard(let boardID):
             guard !isDenMode, temporaryContext == nil else { return }
-            if store.board(for: boardID)?.isTerminal == true, store.focusedBoard?.id != boardID { return }
-            store.focusBoard(boardID, exitsDenMode: true)
+            if controller.board(for: boardID)?.isTerminal == true, controller.focusedBoard?.id != boardID { return }
+            controller.focusBoard(boardID, exitsDenMode: true)
         case .drawerItemRemoved(let itemID, let previousItems, let advancesPreview, let focusNext):
             drawer.itemWasRemoved(
                 itemID,
                 previousItems: previousItems,
                 advancesPreview: advancesPreview,
                 focusNext: focusNext)
-            if store.state.drawerItems.isEmpty { closeDrawer() }
+            if controller.state.drawerItems.isEmpty { closeDrawer() }
         case .drawerCleared:
             drawer.resetPresentation()
             closeDrawer()
@@ -201,7 +201,7 @@ final class DenWindowModel {
 
     func handleTap(on feedback: DenFeedback) {
         guard displayedFeedback?.id == feedback.id else { return }
-        store.openFeedbackTarget(feedback.target)
+        controller.openFeedbackTarget(feedback.target)
         dismissFeedback(id: feedback.id)
     }
 

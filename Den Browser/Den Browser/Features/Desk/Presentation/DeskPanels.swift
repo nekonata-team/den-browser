@@ -6,7 +6,7 @@ import SwiftUI
 struct NewDeskPanel: View {
     let profileColor: Color
 
-    @Environment(DenController.self) private var store
+    @Environment(DenController.self) private var controller
     @Environment(DenWindowModel.self) private var windowModel
     @State private var selectedDeskPreset: DeskPresetSelection = .builtIn(.empty)
     @State private var query = ""
@@ -92,7 +92,7 @@ struct NewDeskPanel: View {
                     .buttonStyle(.glassProminent)
                     .disabled(
                         trimmedNewDeskLabel.isEmpty
-                            || (!windowModel.isReplaceDeskPanelPresented && !store.canCreateDesk))
+                            || (!windowModel.isReplaceDeskPanelPresented && !controller.canCreateDesk))
                 }
                 .font(.caption)
             }
@@ -123,7 +123,7 @@ struct NewDeskPanel: View {
             didAttemptAction = false
             DispatchQueue.main.async { isSearchFocused = true }
         }
-        .onChange(of: store.deskPresets.map(\.id)) { _, _ in
+        .onChange(of: controller.deskPresets.map(\.id)) { _, _ in
             ensureSelectedPresetExists()
         }
         .onExitCommand {
@@ -142,11 +142,11 @@ struct NewDeskPanel: View {
 
     private var newDeskPanelDescription: String {
         if windowModel.isReplaceDeskPanelPresented {
-            return store.focusedDesk?.boards.isEmpty == false
+            return controller.focusedDesk?.boards.isEmpty == false
                 ? "Existing Boards will be removed after confirmation"
                 : "Applies this arrangement to the focused Desk"
         }
-        return store.canCreateDesk ? "New desk opens after the focused desk" : "A Den can contain up to 10 desks"
+        return controller.canCreateDesk ? "New desk opens after the focused desk" : "A Den can contain up to 10 desks"
     }
 
     private var selectedDeskPresetBoards: [DeskPresetBoard] {
@@ -154,7 +154,7 @@ struct NewDeskPanel: View {
         case .builtIn(let preset):
             preset.boards
         case .personal(let id):
-            store.deskPresets.first(where: { $0.id == id })?.boards ?? []
+            controller.deskPresets.first(where: { $0.id == id })?.boards ?? []
         case .newDesk:
             []
         }
@@ -165,7 +165,7 @@ struct NewDeskPanel: View {
         case .builtIn(let preset):
             preset.label
         case .personal(let id):
-            store.deskPresets.first(where: { $0.id == id })?.label ?? BuiltInDeskPreset.empty.label
+            controller.deskPresets.first(where: { $0.id == id })?.label ?? BuiltInDeskPreset.empty.label
         case .newDesk(let label):
             label
         }
@@ -183,9 +183,9 @@ struct NewDeskPanel: View {
             let result: DeskReplacementResult?
             switch selectedDeskPreset {
             case .builtIn(let preset):
-                result = store.replaceFocusedDesk(label: newDeskLabel, preset: preset)
+                result = controller.replaceFocusedDesk(label: newDeskLabel, preset: preset)
             case .personal(let id):
-                result = store.replaceFocusedDesk(label: newDeskLabel, personalPresetID: id)
+                result = controller.replaceFocusedDesk(label: newDeskLabel, personalPresetID: id)
             case .newDesk:
                 result = .unavailable
             }
@@ -197,11 +197,11 @@ struct NewDeskPanel: View {
 
         switch selectedDeskPreset {
         case .builtIn(let preset):
-            store.createDesk(label: newDeskLabel, preset: preset)
+            controller.createDesk(label: newDeskLabel, preset: preset)
         case .personal(let id):
-            store.createDesk(label: newDeskLabel, personalPresetID: id)
+            controller.createDesk(label: newDeskLabel, personalPresetID: id)
         case .newDesk:
-            store.createDesk(label: newDeskLabel, preset: .empty)
+            controller.createDesk(label: newDeskLabel, preset: .empty)
         }
         resetDeskPresetPanel()
     }
@@ -214,11 +214,11 @@ struct NewDeskPanel: View {
 
     private func confirmDeskPreset(_ selection: DeskPresetSelection) {
         if case .newDesk(let label) = selection {
-            guard store.canCreateDesk else {
+            guard controller.canCreateDesk else {
                 presentDeskDetails(for: selection, label: label)
                 return
             }
-            store.createDesk(label: label, preset: .empty)
+            controller.createDesk(label: label, preset: .empty)
             resetDeskPresetPanel()
             return
         }
@@ -244,7 +244,7 @@ struct NewDeskPanel: View {
         case .builtIn(let preset):
             preset.label
         case .personal(let id):
-            store.deskPresets.first(where: { $0.id == id })?.label ?? BuiltInDeskPreset.empty.label
+            controller.deskPresets.first(where: { $0.id == id })?.label ?? BuiltInDeskPreset.empty.label
         case .newDesk(let label):
             label
         }
@@ -252,7 +252,7 @@ struct NewDeskPanel: View {
 
     private func ensureSelectedPresetExists() {
         guard case .personal(let id) = selectedDeskPreset,
-            !store.deskPresets.contains(where: { $0.id == id })
+            !controller.deskPresets.contains(where: { $0.id == id })
         else { return }
 
         let fallback: DeskPresetSelection =
@@ -263,7 +263,7 @@ struct NewDeskPanel: View {
 }
 
 struct SaveDeskPresetPanel: View {
-    @Environment(DenController.self) private var store
+    @Environment(DenController.self) private var controller
     @Environment(DenWindowModel.self) private var windowModel
     @State private var label = ""
     @State private var message: String?
@@ -285,7 +285,7 @@ struct SaveDeskPresetPanel: View {
             .focused($isFocused)
             .onSubmit { TextInputComposition.performUnlessActive(save) }
             DeskPresetPreview(
-                boards: DeskPresetBoard.capture(from: store.focusedDesk?.boards ?? []))
+                boards: DeskPresetBoard.capture(from: controller.focusedDesk?.boards ?? []))
             HStack {
                 if let message {
                     DenValidationMessage(message)
@@ -300,7 +300,7 @@ struct SaveDeskPresetPanel: View {
         }
         .denPanel()
         .onAppear {
-            label = store.focusedDesk?.label ?? ""
+            label = controller.focusedDesk?.label ?? ""
             message = nil
             DispatchQueue.main.async { isFocused = true }
         }
@@ -308,7 +308,7 @@ struct SaveDeskPresetPanel: View {
     }
 
     private func save() {
-        switch store.saveFocusedDeskAsPreset(label: label) {
+        switch controller.saveFocusedDeskAsPreset(label: label) {
         case .created:
             windowModel.hideSaveDeskPresetPanel()
         case .replacementPending:
@@ -324,7 +324,7 @@ struct SaveDeskPresetPanel: View {
 }
 
 struct RenameDeskPanel: View {
-    @Environment(DenController.self) private var store
+    @Environment(DenController.self) private var controller
     @Environment(DenWindowModel.self) private var windowModel
     @State private var text = ""
     @FocusState private var isFocused: Bool
@@ -342,7 +342,7 @@ struct RenameDeskPanel: View {
                 .focused($isFocused)
                 .onSubmit {
                     TextInputComposition.performUnlessActive {
-                        store.renameFocusedDesk(to: text)
+                        controller.renameFocusedDesk(to: text)
                     }
                 }
             }
@@ -350,7 +350,7 @@ struct RenameDeskPanel: View {
         }
         .denPanel()
         .onAppear {
-            text = store.focusedDesk?.label ?? ""
+            text = controller.focusedDesk?.label ?? ""
             DispatchQueue.main.async { isFocused = true }
         }
         .onExitCommand { windowModel.hideRenameDeskPanel() }

@@ -6,7 +6,7 @@ import SFSafeSymbols
 import SwiftUI
 
 struct TerminalBoardView: View {
-    @Environment(DenController.self) private var store
+    @Environment(DenController.self) private var controller
     @Environment(DenWindowModel.self) private var windowModel
     @Environment(DeskFilterModel.self) private var deskFilter
     @Environment(AppPreferences.self) private var preferences
@@ -116,12 +116,12 @@ struct TerminalBoardView: View {
                 onDragChanged: onDragChanged,
                 onDragEnded: onDragEnded,
                 onMoveLeft: {
-                    store.focusBoard(board.id)
-                    store.moveFocusedBoardLeft()
+                    controller.focusBoard(board.id)
+                    controller.moveFocusedBoardLeft()
                 },
                 onMoveRight: {
-                    store.focusBoard(board.id)
-                    store.moveFocusedBoardRight()
+                    controller.focusBoard(board.id)
+                    controller.moveFocusedBoardRight()
                 },
                 leadingContent: {
                     Image(systemSymbol: boardSymbol(for: board.kind))
@@ -154,8 +154,8 @@ struct TerminalBoardView: View {
     @ViewBuilder
     private var boardContextMenu: some View {
         Button {
-            store.focusBoard(board.id)
-            store.duplicateFocusedBoard()
+            controller.focusBoard(board.id)
+            controller.duplicateFocusedBoard()
         } label: {
             Label(
                 board.isZellij
@@ -164,18 +164,18 @@ struct TerminalBoardView: View {
                 systemSymbol: .plusSquareOnSquare)
         }
         Button {
-            store.focusBoard(board.id)
+            controller.focusBoard(board.id)
             windowModel.showSaveEssentialPanel(for: board)
         } label: {
             Label("Save as Essential…", systemSymbol: .sparkles)
         }
         Button {
-            store.copyBoardID(board.id)
+            controller.copyBoardID(board.id)
         } label: {
             Label("Copy Board ID", systemSymbol: .documentOnDocument)
         }
         Button {
-            store.focusBoard(board.id)
+            controller.focusBoard(board.id)
             windowModel.toggleFocusedBoardMaximized()
         } label: {
             Label(
@@ -184,14 +184,14 @@ struct TerminalBoardView: View {
                     ? .arrowDownRightAndArrowUpLeft : .arrowUpLeftAndArrowDownRight)
         }
         Button {
-            store.focusBoard(board.id)
+            controller.focusBoard(board.id)
             windowModel.centerFocusedBoard()
         } label: {
             Label("Center Board", systemSymbol: .scope)
         }
         if board.isZmx {
             Button {
-                store.focusBoard(board.id)
+                controller.focusBoard(board.id)
                 windowModel.showZmxSessions(selectedSessionName: board.zmxSessionName)
             } label: {
                 Label {
@@ -203,45 +203,45 @@ struct TerminalBoardView: View {
         }
         Divider()
         Button {
-            store.focusBoard(board.id)
-            store.adjustFocusedSheetSize(by: 1)
+            controller.focusBoard(board.id)
+            controller.adjustFocusedSheetSize(by: 1)
         } label: {
             Label("Increase Font Size", systemSymbol: .plus)
         }
         Button {
-            store.focusBoard(board.id)
-            store.adjustFocusedSheetSize(by: -1)
+            controller.focusBoard(board.id)
+            controller.adjustFocusedSheetSize(by: -1)
         } label: {
             Label("Decrease Font Size", systemSymbol: .minus)
         }
         Button {
-            store.focusBoard(board.id)
-            store.resetFocusedSheetSize()
+            controller.focusBoard(board.id)
+            controller.resetFocusedSheetSize()
         } label: {
             Label("Reset Font Size", systemSymbol: .arrowCounterclockwise)
         }
         Divider()
         Button {
-            store.focusBoard(board.id)
-            store.moveFocusedBoardLeft()
+            controller.focusBoard(board.id)
+            controller.moveFocusedBoardLeft()
         } label: {
             Label("Move Board Left", systemSymbol: .arrowLeft)
         }
-        .disabled(!store.canMoveBoard(board.id, by: -1))
+        .disabled(!controller.canMoveBoard(board.id, by: -1))
         Button {
-            store.focusBoard(board.id)
-            store.moveFocusedBoardRight()
+            controller.focusBoard(board.id)
+            controller.moveFocusedBoardRight()
         } label: {
             Label("Move Board Right", systemSymbol: .arrowRight)
         }
-        .disabled(!store.canMoveBoard(board.id, by: 1))
-        if store.state.desks.count > 1 {
+        .disabled(!controller.canMoveBoard(board.id, by: 1))
+        if controller.state.desks.count > 1 {
             Menu {
-                ForEach(Array(store.state.desks.enumerated()), id: \.element.id) { entry in
+                ForEach(Array(controller.state.desks.enumerated()), id: \.element.id) { entry in
                     if entry.element.id != boardDeskID {
                         Button("\(entry.offset + 1). \(entry.element.label)") {
-                            store.focusBoard(board.id)
-                            store.moveFocusedBoard(toDeskNumber: entry.offset + 1)
+                            controller.focusBoard(board.id)
+                            controller.moveFocusedBoard(toDeskNumber: entry.offset + 1)
                         }
                     }
                 }
@@ -251,14 +251,14 @@ struct TerminalBoardView: View {
         }
         Divider()
         Button(role: .destructive) {
-            store.removeBoard(board.id)
+            controller.removeBoard(board.id)
         } label: {
             Label("Remove Board", systemSymbol: .xmark)
         }
     }
 
     private var boardDeskID: DeskID? {
-        store.boardIndices(for: board.id).map { store.state.desks[$0.desk].id }
+        controller.boardIndices(for: board.id).map { controller.state.desks[$0.desk].id }
     }
 
     private var shouldReduceMotion: Bool {

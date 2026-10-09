@@ -17,52 +17,52 @@ struct DenWindowModelPresentationTests {
         let populated = desk("Populated", boards: [board])
         let empty = desk("Empty")
         var savedState: DenState?
-        let store = DenController(
+        let controller = DenController(
             state: DenState(desks: [populated, empty], focusedDeskID: populated.id),
             onSave: { savedState = $0 })
-        let composition = DenWindowComposition(store: store)
+        let composition = DenWindowComposition(controller: controller)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
-        let runtime = store.webRuntime(for: board)
-        store.deleteFocusedDesk()
+        let runtime = controller.webRuntime(for: board)
+        controller.deleteFocusedDesk()
         windowModel.maximizedBoardID = board.id
         windowModel.isBoardRailPresented = true
-        #expect(store.beginBoardDrag(board.id))
-        store.storage.recentlyRemovedBoards = [
+        #expect(controller.beginBoardDrag(board.id))
+        controller.storage.recentlyRemovedBoards = [
             RecentlyRemovedBoard(board: board, sourceDeskID: populated.id, sourceBoardIndex: 0)
         ]
-        store.storage.recentlyDiscardedDrawerItems = [
+        controller.storage.recentlyDiscardedDrawerItems = [
             DrawerItem(url: URL(string: "https://discarded.example/")!)
         ]
         windowModel.setTemporaryContext(.zmxSessions)
         windowModel.openBoard.input = "unfinished search"
         windowModel.openBoard.afterBoardID = board.id
-        store.previousFocusedDeskID = empty.id
-        store.anchorJumpOriginBoardIDByDesk[populated.id] = board.id
+        controller.previousFocusedDeskID = empty.id
+        controller.anchorJumpOriginBoardIDByDesk[populated.id] = board.id
 
         // Act
-        store.resetDen()
+        controller.resetDen()
 
         // Assert
-        #expect(store.state.desks.count == 1)
+        #expect(controller.state.desks.count == 1)
         #expect(windowModel.pendingConfirmation == nil)
         #expect(windowModel.maximizedBoardID == nil)
         #expect(!windowModel.isFocusModePresented)
         #expect(!windowModel.isBoardRailPresented)
-        #expect(!store.isBoardDragging)
+        #expect(!controller.isBoardDragging)
         #expect(windowModel.temporaryContext == nil)
-        #expect(savedState == store.state)
-        #expect(store.latestFeedback?.message == "Reset Den completed.")
-        #expect(store.latestFeedback?.severity == .success)
-        #expect(store.webRuntimes.isEmpty)
-        #expect(store.recentlyRemovedBoards.isEmpty)
-        #expect(store.recentlyDiscardedDrawerItems.isEmpty)
-        #expect(store.notifications.isEmpty)
+        #expect(savedState == controller.state)
+        #expect(controller.latestFeedback?.message == "Reset Den completed.")
+        #expect(controller.latestFeedback?.severity == .success)
+        #expect(controller.webRuntimes.isEmpty)
+        #expect(controller.recentlyRemovedBoards.isEmpty)
+        #expect(controller.recentlyDiscardedDrawerItems.isEmpty)
+        #expect(controller.notifications.isEmpty)
         #expect(windowModel.openBoard.input.isEmpty)
         #expect(windowModel.openBoard.afterBoardID == nil)
-        #expect(store.previousFocusedDeskID == nil)
-        #expect(store.anchorJumpOriginBoardIDByDesk.isEmpty)
+        #expect(controller.previousFocusedDeskID == nil)
+        #expect(controller.anchorJumpOriginBoardIDByDesk.isEmpty)
         #expect(runtime.webView.navigationDelegate == nil)
         #expect(runtime.webView.uiDelegate == nil)
     }
@@ -72,67 +72,67 @@ struct DenWindowModelPresentationTests {
         let first = board("First")
         let second = board("Second")
         let focusedDesk = desk("Desk", boards: [first, second], focusedBoardID: first.id)
-        let store = DenController(
+        let controller = DenController(
             state: DenState(desks: [focusedDesk], focusedDeskID: focusedDesk.id)
         )
-        let composition = DenWindowComposition(store: store)
+        let composition = DenWindowComposition(controller: controller)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
 
         // Act
         windowModel.toggleBoardRail()
-        store.focusBoard(second.id)
+        controller.focusBoard(second.id)
         windowModel.showOpenBoardPanel()
 
         // Assert
-        #expect(store.focusedBoard?.id == second.id)
+        #expect(controller.focusedBoard?.id == second.id)
         #expect(windowModel.isOpenBoardPanelPresented)
         #expect(windowModel.isBoardRailPresented)
     }
 
     @Test func restoreRecentlyRemovedBoardReportsFeedbackWhenNoneExists() {
-        let store = DenController(state: .sample)
-        store.restoreRecentlyRemovedBoard()
-        #expect(store.latestFeedback?.message == "No removed board to restore.")
-        #expect(store.latestFeedback?.severity == .warning)
+        let controller = DenController(state: .sample)
+        controller.restoreRecentlyRemovedBoard()
+        #expect(controller.latestFeedback?.message == "No removed board to restore.")
+        #expect(controller.latestFeedback?.severity == .warning)
     }
 
     @Test func invalidDeskNumberReportsFeedback() {
-        let store = DenController(state: .sample)
-        store.focusDesk(number: 5)
-        #expect(store.latestFeedback?.message == "Desk 5 does not exist.")
-        #expect(store.latestFeedback?.severity == .warning)
+        let controller = DenController(state: .sample)
+        controller.focusDesk(number: 5)
+        #expect(controller.latestFeedback?.message == "Desk 5 does not exist.")
+        #expect(controller.latestFeedback?.severity == .warning)
     }
 
     @Test func reportFeedbackSetsLatestFeedbackWithSeverity() {
-        let store = DenController(state: .sample)
-        #expect(store.latestFeedback == nil)
+        let controller = DenController(state: .sample)
+        #expect(controller.latestFeedback == nil)
 
-        store.reportFeedback("Test Toast", severity: .warning)
+        controller.reportFeedback("Test Toast", severity: .warning)
 
-        #expect(store.latestFeedback?.message == "Test Toast")
-        #expect(store.latestFeedback?.severity == .warning)
+        #expect(controller.latestFeedback?.message == "Test Toast")
+        #expect(controller.latestFeedback?.severity == .warning)
     }
 
     @Test func reportFeedbackPreservesTitleAndBody() {
-        let store = DenController(state: .sample)
+        let controller = DenController(state: .sample)
 
-        store.reportFeedback(title: "Build", body: "Finished")
+        controller.reportFeedback(title: "Build", body: "Finished")
 
-        #expect(store.latestFeedback?.title == "Build")
-        #expect(store.latestFeedback?.body == "Finished")
-        #expect(store.latestFeedback?.message == "Build: Finished")
+        #expect(controller.latestFeedback?.title == "Build")
+        #expect(controller.latestFeedback?.body == "Finished")
+        #expect(controller.latestFeedback?.message == "Build: Finished")
     }
 
     @Test func openBoardPanelRetainsDraftAndClearsOneShotStateAcrossTransitions() throws {
         let board = board("Insert After")
         let focusedDesk = desk("Desk", boards: [board], focusedBoardID: board.id)
-        let store = DenController(
+        let controller = DenController(
             state: DenState(
                 desks: [focusedDesk],
                 focusedDeskID: focusedDesk.id))
-        let composition = DenWindowComposition(store: store)
+        let composition = DenWindowComposition(controller: controller)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
@@ -179,7 +179,7 @@ struct DenWindowModelPresentationTests {
             #expect(windowModel.isOpenBoardPanelPresented)
             #expect(windowModel.openBoard.input == ":zmx project")
             #expect(windowModel.openBoard.message == "Set an absolute zmx executable path in Settings > Terminal.")
-            #expect(windowModel.store.focusedDesk?.boards.isEmpty == true)
+            #expect(windowModel.controller.focusedDesk?.boards.isEmpty == true)
         }
     }
 
@@ -196,11 +196,11 @@ struct DenWindowModelPresentationTests {
             windowModel.openBoard.submit(item.displayText, preferredWidth: 640)
 
             // Assert
-            let opened = try #require(windowModel.store.focusedBoard)
+            let opened = try #require(windowModel.controller.focusedBoard)
             #expect(opened.currentSheetURL == URL(string: item.displayText))
             #expect(opened.width == 640)
-            #expect(windowModel.store.focusedDesk?.boards.map(\.id) == [first.id, opened.id, second.id])
-            #expect(windowModel.store.recentItems.first == item)
+            #expect(windowModel.controller.focusedDesk?.boards.map(\.id) == [first.id, opened.id, second.id])
+            #expect(windowModel.controller.recentItems.first == item)
             #expect(!windowModel.isOpenBoardPanelPresented)
             #expect(windowModel.openBoard.message == nil)
         }
@@ -209,16 +209,16 @@ struct DenWindowModelPresentationTests {
     @Test func recordingNotificationAddsUnreadHistoryAndTargetedFeedback() {
         let target = board("Terminal")
         let desk = desk("Desk", boards: [target], focusedBoardID: target.id)
-        let store = DenController(state: DenState(desks: [desk], focusedDeskID: desk.id))
+        let controller = DenController(state: DenState(desks: [desk], focusedDeskID: desk.id))
 
-        store.recordNotification(title: "Build", body: "Finished", boardID: target.id)
+        controller.recordNotification(title: "Build", body: "Finished", boardID: target.id)
 
-        #expect(store.notifications.count == 1)
-        #expect(store.notifications[0].title == "Build")
-        #expect(store.notifications[0].body == "Finished")
-        #expect(store.notifications[0].boardID == target.id)
-        #expect(store.unreadNotificationCount == 1)
-        #expect(store.latestFeedback?.target == .notification(store.notifications[0].id))
+        #expect(controller.notifications.count == 1)
+        #expect(controller.notifications[0].title == "Build")
+        #expect(controller.notifications[0].body == "Finished")
+        #expect(controller.notifications[0].boardID == target.id)
+        #expect(controller.unreadNotificationCount == 1)
+        #expect(controller.latestFeedback?.target == .notification(controller.notifications[0].id))
     }
 
     @Test func unreadNotificationCountIsScopedToBoard() {
@@ -226,17 +226,17 @@ struct DenWindowModelPresentationTests {
         let firstBoard = board("First")
         let secondBoard = board("Second")
         let desk = desk("Desk", boards: [firstBoard, secondBoard], focusedBoardID: firstBoard.id)
-        let store = DenController(state: DenState(desks: [desk], focusedDeskID: desk.id))
+        let controller = DenController(state: DenState(desks: [desk], focusedDeskID: desk.id))
 
-        store.recordNotification(title: "First build", body: "Finished", boardID: firstBoard.id)
-        let readNotificationID = store.notifications[0].id
-        store.recordNotification(title: "Second build", body: "Finished", boardID: firstBoard.id)
-        store.recordNotification(title: "Other build", body: "Finished", boardID: secondBoard.id)
-        store.markNotificationRead(readNotificationID)
+        controller.recordNotification(title: "First build", body: "Finished", boardID: firstBoard.id)
+        let readNotificationID = controller.notifications[0].id
+        controller.recordNotification(title: "Second build", body: "Finished", boardID: firstBoard.id)
+        controller.recordNotification(title: "Other build", body: "Finished", boardID: secondBoard.id)
+        controller.markNotificationRead(readNotificationID)
 
         // Act
-        let firstCount = store.unreadNotificationCount(for: firstBoard.id)
-        let secondCount = store.unreadNotificationCount(for: secondBoard.id)
+        let firstCount = controller.unreadNotificationCount(for: firstBoard.id)
+        let secondCount = controller.unreadNotificationCount(for: secondBoard.id)
 
         // Assert
         #expect(firstCount == 1)
@@ -248,19 +248,19 @@ struct DenWindowModelPresentationTests {
         let currentBoard = board("Current")
         let targetBoard = board("Target")
         let desk = desk("Desk", boards: [currentBoard, targetBoard], focusedBoardID: currentBoard.id)
-        let store = DenController(state: DenState(desks: [desk], focusedDeskID: desk.id))
-        store.recordNotification(title: "First", body: "Finished", boardID: targetBoard.id)
-        store.recordNotification(title: "Second", body: "Finished", boardID: targetBoard.id)
-        store.recordNotification(title: "Other", body: "Finished", boardID: currentBoard.id)
+        let controller = DenController(state: DenState(desks: [desk], focusedDeskID: desk.id))
+        controller.recordNotification(title: "First", body: "Finished", boardID: targetBoard.id)
+        controller.recordNotification(title: "Second", body: "Finished", boardID: targetBoard.id)
+        controller.recordNotification(title: "Other", body: "Finished", boardID: currentBoard.id)
 
         // Act
-        store.focusBoard(targetBoard.id)
+        controller.focusBoard(targetBoard.id)
 
         // Assert
-        #expect(store.focusedBoard?.id == targetBoard.id)
-        #expect(store.unreadNotificationCount(for: targetBoard.id) == 0)
-        #expect(store.unreadNotificationCount(for: currentBoard.id) == 1)
-        #expect(store.unreadNotificationCount == 1)
+        #expect(controller.focusedBoard?.id == targetBoard.id)
+        #expect(controller.unreadNotificationCount(for: targetBoard.id) == 0)
+        #expect(controller.unreadNotificationCount(for: currentBoard.id) == 1)
+        #expect(controller.unreadNotificationCount == 1)
     }
 
     @Test func focusingDeskMarksItsFocusedBoardNotificationsRead() {
@@ -269,60 +269,60 @@ struct DenWindowModelPresentationTests {
         let targetBoard = board("Target")
         let currentDesk = desk("Current", boards: [currentBoard], focusedBoardID: currentBoard.id)
         let targetDesk = desk("Target", boards: [targetBoard], focusedBoardID: targetBoard.id)
-        let store = DenController(
+        let controller = DenController(
             state: DenState(desks: [currentDesk, targetDesk], focusedDeskID: currentDesk.id))
-        store.recordNotification(title: "Build", body: "Finished", boardID: targetBoard.id)
+        controller.recordNotification(title: "Build", body: "Finished", boardID: targetBoard.id)
 
         // Act
-        store.focusDesk(targetDesk.id)
+        controller.focusDesk(targetDesk.id)
 
         // Assert
-        #expect(store.unreadNotificationCount(for: targetBoard.id) == 0)
-        #expect(store.unreadNotificationCount == 0)
+        #expect(controller.unreadNotificationCount(for: targetBoard.id) == 0)
+        #expect(controller.unreadNotificationCount == 0)
     }
 
     @Test func clearingNotificationsRemovesSessionHistoryAfterConfirmation() {
         let target = board("Terminal")
         let desk = desk("Desk", boards: [target], focusedBoardID: target.id)
-        let store = DenController(state: DenState(desks: [desk], focusedDeskID: desk.id))
-        let composition = DenWindowComposition(store: store)
+        let controller = DenController(state: DenState(desks: [desk], focusedDeskID: desk.id))
+        let composition = DenWindowComposition(controller: controller)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
 
-        store.recordNotification(title: "Build", body: "Finished", boardID: target.id)
+        controller.recordNotification(title: "Build", body: "Finished", boardID: target.id)
         windowModel.toggleNotificationList()
-        store.requestNotificationClearConfirmation()
+        controller.requestNotificationClearConfirmation()
 
         #expect(windowModel.notificationPendingDeletionCount == 1)
         windowModel.confirmNotificationClear()
 
-        #expect(store.notifications.isEmpty)
-        #expect(store.unreadNotificationCount == 0)
+        #expect(controller.notifications.isEmpty)
+        #expect(controller.unreadNotificationCount == 0)
         #expect(!windowModel.isNotificationListPresented)
         #expect(windowModel.notificationPendingDeletionCount == nil)
-        #expect(store.latestFeedback == nil)
+        #expect(controller.latestFeedback == nil)
     }
 
     @Test func openingNotificationFocusesItsBoardAcrossDesksAndMarksItRead() {
         let target = board("Terminal")
         let first = desk("First")
         let second = desk("Second", boards: [target], focusedBoardID: target.id)
-        let store = DenController(state: DenState(desks: [first, second], focusedDeskID: first.id))
-        let composition = DenWindowComposition(store: store)
+        let controller = DenController(state: DenState(desks: [first, second], focusedDeskID: first.id))
+        let composition = DenWindowComposition(controller: controller)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
 
-        store.recordNotification(title: "Build", body: "Finished", boardID: target.id)
-        let notification = store.notifications[0]
+        controller.recordNotification(title: "Build", body: "Finished", boardID: target.id)
+        let notification = controller.notifications[0]
         windowModel.toggleNotificationList()
-        store.openNotification(notification)
+        controller.openNotification(notification)
 
-        #expect(store.presentedDeskID == second.id)
-        #expect(store.focusedBoard?.id == target.id)
-        #expect(store.notifications[0].isRead)
-        #expect(store.unreadNotificationCount == 0)
+        #expect(controller.presentedDeskID == second.id)
+        #expect(controller.focusedBoard?.id == target.id)
+        #expect(controller.notifications[0].isRead)
+        #expect(controller.unreadNotificationCount == 0)
         #expect(!windowModel.isNotificationListPresented)
     }
 
@@ -330,19 +330,19 @@ struct DenWindowModelPresentationTests {
         let target = board("Terminal")
         let first = desk("First")
         let second = desk("Second", boards: [target], focusedBoardID: target.id)
-        let store = DenController(state: DenState(desks: [first, second], focusedDeskID: first.id))
-        let composition = DenWindowComposition(store: store)
+        let controller = DenController(state: DenState(desks: [first, second], focusedDeskID: first.id))
+        let composition = DenWindowComposition(controller: controller)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
 
-        store.recordNotification(title: "Build", body: "Finished", boardID: target.id)
+        controller.recordNotification(title: "Build", body: "Finished", boardID: target.id)
         windowModel.toggleNotificationList()
-        store.openFeedbackTarget(store.latestFeedback?.target)
+        controller.openFeedbackTarget(controller.latestFeedback?.target)
 
-        #expect(store.presentedDeskID == second.id)
-        #expect(store.focusedBoard?.id == target.id)
-        #expect(store.notifications[0].isRead)
+        #expect(controller.presentedDeskID == second.id)
+        #expect(controller.focusedBoard?.id == target.id)
+        #expect(controller.notifications[0].isRead)
         #expect(!windowModel.isNotificationListPresented)
     }
 
@@ -350,42 +350,42 @@ struct DenWindowModelPresentationTests {
         let target = board("Target")
         let first = desk("First")
         let second = desk("Second", boards: [target])
-        let store = DenController(
+        let controller = DenController(
             state: DenState(desks: [first, second], focusedDeskID: first.id)
         )
-        let composition = DenWindowComposition(store: store)
+        let composition = DenWindowComposition(controller: controller)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
 
         windowModel.setTemporaryContext(.drawer)
-        store.reportFeedback(title: "Build", body: "Finished", target: .board(target.id))
-        store.openFeedbackTarget(store.latestFeedback?.target)
+        controller.reportFeedback(title: "Build", body: "Finished", target: .board(target.id))
+        controller.openFeedbackTarget(controller.latestFeedback?.target)
 
-        #expect(store.presentedDeskID == second.id)
-        #expect(store.focusedBoard?.id == target.id)
+        #expect(controller.presentedDeskID == second.id)
+        #expect(controller.focusedBoard?.id == target.id)
         #expect(windowModel.temporaryContext == nil)
     }
 
     @Test func openingDrawerFeedbackTargetOpensAndExpandsItem() throws {
         let item = DrawerItem(url: try #require(URL(string: "https://example.com/")))
         let drawerDesk = desk("Desk")
-        let store = DenController(
+        let controller = DenController(
             state: DenState(
                 desks: [drawerDesk],
                 focusedDeskID: drawerDesk.id,
                 drawerItems: [item])
         )
-        let composition = DenWindowComposition(store: store)
+        let composition = DenWindowComposition(controller: controller)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
 
-        store.reportFeedback(
+        controller.reportFeedback(
             title: nil,
             body: "Open item",
             target: DenFeedback.Target.drawerItem(item.id))
-        store.openFeedbackTarget(store.latestFeedback?.target)
+        controller.openFeedbackTarget(controller.latestFeedback?.target)
 
         #expect(windowModel.isDrawerOpen)
         #expect(windowModel.drawer.selectedItemID == item.id)
@@ -396,25 +396,25 @@ struct DenWindowModelPresentationTests {
         let board = board("Board")
         let populated = desk("Populated", boards: [board])
         var savedState: DenState?
-        let store = DenController(
+        let controller = DenController(
             state: DenState(desks: [populated], focusedDeskID: populated.id),
             onSave: { savedState = $0 })
-        let composition = DenWindowComposition(store: store)
+        let composition = DenWindowComposition(controller: controller)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
-        let originalState = store.state
+        let originalState = controller.state
 
         windowModel.requestResetDenConfirmation()
 
         #expect(windowModel.isResetDenPending)
-        #expect(store.state == originalState)
+        #expect(controller.state == originalState)
         #expect(savedState == nil)
 
         windowModel.cancelResetDen()
 
         #expect(!windowModel.isResetDenPending)
-        #expect(store.state == originalState)
+        #expect(controller.state == originalState)
         #expect(savedState == nil)
     }
 
@@ -422,14 +422,14 @@ struct DenWindowModelPresentationTests {
         let board = board("Board")
         let populated = desk("Populated", boards: [board])
         let empty = desk("Empty")
-        let store = DenController(
+        let controller = DenController(
             state: DenState(desks: [populated, empty], focusedDeskID: populated.id))
-        let composition = DenWindowComposition(store: store)
+        let composition = DenWindowComposition(controller: controller)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
 
-        store.deleteFocusedDesk()
+        controller.deleteFocusedDesk()
         if case let .deleteDesk(pending)? = windowModel.pendingConfirmation {
             #expect(pending.id == populated.id)
         } else {
@@ -447,10 +447,10 @@ struct DenWindowModelPresentationTests {
         let board = board("Board")
         let populated = desk("Populated", boards: [board])
         var savedState: DenState?
-        let store = DenController(
+        let controller = DenController(
             state: DenState(desks: [populated], focusedDeskID: populated.id),
             onSave: { savedState = $0 })
-        let composition = DenWindowComposition(store: store)
+        let composition = DenWindowComposition(controller: controller)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
@@ -459,16 +459,16 @@ struct DenWindowModelPresentationTests {
         windowModel.confirmResetDen()
 
         #expect(!windowModel.isResetDenPending)
-        #expect(store.state.desks.count == 1)
-        #expect(store.state.desks.first?.label == "Main")
-        #expect(store.state.desks.first?.boards.isEmpty == true)
-        #expect(store.state.focusedDeskID == store.state.desks.first?.id)
-        #expect(savedState == store.state)
+        #expect(controller.state.desks.count == 1)
+        #expect(controller.state.desks.first?.label == "Main")
+        #expect(controller.state.desks.first?.boards.isEmpty == true)
+        #expect(controller.state.focusedDeskID == controller.state.desks.first?.id)
+        #expect(savedState == controller.state)
     }
 
     @Test func escapePassesThroughToSheetInput() throws {
         try withTestWindowModel(desks: [desk("Desk")]) { windowModel in
-            let store = windowModel.store
+            let controller = windowModel.controller
             let event = try #require(
                 NSEvent.keyEvent(
                     with: .keyDown,
@@ -483,14 +483,14 @@ struct DenWindowModelPresentationTests {
                     keyCode: 53
                 ))
 
-            #expect(!KeyboardController.handle(event, store: store, windowModel: windowModel))
+            #expect(!KeyboardController.handle(event, controller: controller, windowModel: windowModel))
             #expect(!windowModel.isDenMode)
         }
     }
 
     @Test func escapeExitsDenMode() throws {
         try withTestWindowModel(desks: [desk("Desk")]) { windowModel in
-            let store = windowModel.store
+            let controller = windowModel.controller
             windowModel.isDenMode = true
             let event = try #require(
                 NSEvent.keyEvent(
@@ -506,7 +506,7 @@ struct DenWindowModelPresentationTests {
                     keyCode: 53
                 ))
 
-            #expect(KeyboardController.handle(event, store: store, windowModel: windowModel))
+            #expect(KeyboardController.handle(event, controller: controller, windowModel: windowModel))
             #expect(!windowModel.isDenMode)
         }
     }
@@ -516,38 +516,38 @@ struct DenWindowModelPresentationTests {
         let second = desk("Second")
         let third = desk("Third")
         withTestWindowModel(desks: [first, second, third]) { windowModel in
-            let store = windowModel.store
+            let controller = windowModel.controller
             // 1. focusDesk(number:) exits DenMode on actual switch
             windowModel.isDenMode = true
-            store.focusDesk(number: 2)
+            controller.focusDesk(number: 2)
             #expect(!windowModel.isDenMode)
-            #expect(store.focusedDesk?.id == second.id)
+            #expect(controller.focusedDesk?.id == second.id)
 
             // focusDesk(number:) exits even when the target is already focused
             windowModel.isDenMode = true
-            store.focusDesk(number: 2)
+            controller.focusDesk(number: 2)
             #expect(!windowModel.isDenMode)
 
             // 2. focusDesk(_:) is direct selection
-            store.focusDesk(third.id)
+            controller.focusDesk(third.id)
             #expect(!windowModel.isDenMode)
-            #expect(store.focusedDesk?.id == third.id)
+            #expect(controller.focusedDesk?.id == third.id)
 
             // focusDesk(_:) exits even when the target is already focused
             windowModel.isDenMode = true
-            store.focusDesk(third.id)
+            controller.focusDesk(third.id)
             #expect(!windowModel.isDenMode)
 
             // 3. Relative Desk Navigation keeps Den Mode active
             windowModel.isDenMode = true
-            store.focusPreviousDesk()
+            controller.focusPreviousDesk()
             #expect(windowModel.isDenMode)
-            #expect(store.focusedDesk?.id == second.id)
+            #expect(controller.focusedDesk?.id == second.id)
 
             windowModel.isDenMode = true
-            store.focusNextDesk()
+            controller.focusNextDesk()
             #expect(windowModel.isDenMode)
-            #expect(store.focusedDesk?.id == third.id)
+            #expect(controller.focusedDesk?.id == third.id)
 
             // 4. Overview confirmation exits even on the same Desk
             windowModel.showOverview()
@@ -555,7 +555,7 @@ struct DenWindowModelPresentationTests {
             windowModel.overview.selectDesk(first.id)
             windowModel.overview.enterSelection()
             #expect(!windowModel.isDenMode)
-            #expect(store.focusedDesk?.id == first.id)
+            #expect(controller.focusedDesk?.id == first.id)
 
             // Entering the selected Desk exits even when the target is already focused.
             windowModel.showOverview()
@@ -569,43 +569,43 @@ struct DenWindowModelPresentationTests {
     @Test func boardRenamingAndCustomLabelStickiness() {
         let googleBoard = board("Google", url: "https://google.com")
         withTestWindowModel(desks: [desk("Main", boards: [googleBoard])]) { windowModel in
-            let store = windowModel.store
+            let controller = windowModel.controller
             // 1. Initially, customLabel is nil, displayName returns page title
             let boardID = googleBoard.id
             guard
-                let deskIndex = store.focusedDeskIndex,
-                let boardIndex = store.focusedBoardIndex(in: deskIndex)
+                let deskIndex = controller.focusedDeskIndex,
+                let boardIndex = controller.focusedBoardIndex(in: deskIndex)
             else {
                 Issue.record("Failed to find focused board indices")
                 return
             }
-            #expect(store.state.desks[deskIndex].boards[boardIndex].customLabel == nil)
-            #expect(store.state.desks[deskIndex].boards[boardIndex].displayName == "Google")
+            #expect(controller.state.desks[deskIndex].boards[boardIndex].customLabel == nil)
+            #expect(controller.state.desks[deskIndex].boards[boardIndex].displayName == "Google")
 
             // 2. Rename the board to a custom name
-            store.renameFocusedBoard(to: "Search Tasks")
-            #expect(store.state.desks[deskIndex].boards[boardIndex].customLabel == "Search Tasks")
-            #expect(store.state.desks[deskIndex].boards[boardIndex].displayName == "Search Tasks")
+            controller.renameFocusedBoard(to: "Search Tasks")
+            #expect(controller.state.desks[deskIndex].boards[boardIndex].customLabel == "Search Tasks")
+            #expect(controller.state.desks[deskIndex].boards[boardIndex].displayName == "Search Tasks")
             #expect(!windowModel.isDenMode)
 
             // 3. Navigation doesn't overwrite customLabel, but updates label
-            store.updateBoard(
+            controller.updateBoard(
                 boardID: boardID,
                 url: URL(string: "https://google.com/search"),
                 title: "Google Search Result"
             )
             // Original label is updated in the background
-            #expect(store.state.desks[deskIndex].boards[boardIndex].label == "Google Search Result")
+            #expect(controller.state.desks[deskIndex].boards[boardIndex].label == "Google Search Result")
             // customLabel is untouched
-            #expect(store.state.desks[deskIndex].boards[boardIndex].customLabel == "Search Tasks")
+            #expect(controller.state.desks[deskIndex].boards[boardIndex].customLabel == "Search Tasks")
             // displayName still shows custom label
-            #expect(store.state.desks[deskIndex].boards[boardIndex].displayName == "Search Tasks")
+            #expect(controller.state.desks[deskIndex].boards[boardIndex].displayName == "Search Tasks")
 
             // 4. Duplicate the board (duplicate should copy customLabel)
-            store.toggleBoardSheetNavigationPause(boardID)
+            controller.toggleBoardSheetNavigationPause(boardID)
             windowModel.isDenMode = true
-            store.duplicateFocusedBoard()
-            let boards = store.focusedDesk?.boards ?? []
+            controller.duplicateFocusedBoard()
+            let boards = controller.focusedDesk?.boards ?? []
             #expect(boards.count == 2)
             #expect(boards[1].customLabel == "Search Tasks")
             #expect(boards[1].displayName == "Search Tasks")
@@ -613,18 +613,18 @@ struct DenWindowModelPresentationTests {
             #expect(boards[1].sheetNavigationPaused)
 
             // 5. Focus original board and clear the label
-            store.focusBoard(boardID)
-            store.renameFocusedBoard(to: "")
-            store.toggleBoardSheetNavigationPause(boardID)
-            #expect(store.state.desks[deskIndex].boards[boardIndex].customLabel == nil)
-            #expect(store.state.desks[deskIndex].boards[boardIndex].displayName == "Google Search Result")
-            #expect(!store.state.desks[deskIndex].boards[boardIndex].sheetNavigationPaused)
+            controller.focusBoard(boardID)
+            controller.renameFocusedBoard(to: "")
+            controller.toggleBoardSheetNavigationPause(boardID)
+            #expect(controller.state.desks[deskIndex].boards[boardIndex].customLabel == nil)
+            #expect(controller.state.desks[deskIndex].boards[boardIndex].displayName == "Google Search Result")
+            #expect(!controller.state.desks[deskIndex].boards[boardIndex].sheetNavigationPaused)
         }
     }
 
     @Test func controlCommaTogglesDenMode() throws {
         try withTestWindowModel(desks: [desk("Desk")]) { windowModel in
-            let store = windowModel.store
+            let controller = windowModel.controller
             let event = try #require(
                 NSEvent.keyEvent(
                     with: .keyDown,
@@ -639,16 +639,16 @@ struct DenWindowModelPresentationTests {
                     keyCode: 43
                 ))
 
-            #expect(KeyboardController.handle(event, store: store, windowModel: windowModel))
+            #expect(KeyboardController.handle(event, controller: controller, windowModel: windowModel))
             #expect(windowModel.isDenMode)
-            #expect(KeyboardController.handle(event, store: store, windowModel: windowModel))
+            #expect(KeyboardController.handle(event, controller: controller, windowModel: windowModel))
             #expect(!windowModel.isDenMode)
         }
     }
 
     @Test func controlPeriodPassesThroughToSheetInput() throws {
         try withTestWindowModel(desks: [desk("Desk")]) { windowModel in
-            let store = windowModel.store
+            let controller = windowModel.controller
             let event = try #require(
                 NSEvent.keyEvent(
                     with: .keyDown,
@@ -663,7 +663,7 @@ struct DenWindowModelPresentationTests {
                     keyCode: 47
                 ))
 
-            #expect(!KeyboardController.handle(event, store: store, windowModel: windowModel))
+            #expect(!KeyboardController.handle(event, controller: controller, windowModel: windowModel))
             #expect(!windowModel.isDenMode)
         }
     }
@@ -671,16 +671,16 @@ struct DenWindowModelPresentationTests {
     @Test func commandOptionArrowsNavigateBoardsWithoutEnteringDenMode() throws {
         let boards = [board("First"), board("Second")]
         try withTestWindowModel(desks: [desk("Desk", boards: boards, focusedBoardID: boards[0].id)]) { windowModel in
-            let store = windowModel.store
+            let controller = windowModel.controller
             let right = try arrowEvent(.rightArrow, modifiers: [.command, .option])
             let left = try arrowEvent(.leftArrow, modifiers: [.command, .option])
 
-            #expect(KeyboardController.handle(right, store: store, windowModel: windowModel))
-            #expect(store.focusedDesk?.focusedBoardID == boards[1].id)
+            #expect(KeyboardController.handle(right, controller: controller, windowModel: windowModel))
+            #expect(controller.focusedDesk?.focusedBoardID == boards[1].id)
             #expect(!windowModel.isDenMode)
 
-            #expect(KeyboardController.handle(left, store: store, windowModel: windowModel))
-            #expect(store.focusedDesk?.focusedBoardID == boards[0].id)
+            #expect(KeyboardController.handle(left, controller: controller, windowModel: windowModel))
+            #expect(controller.focusedDesk?.focusedBoardID == boards[0].id)
             #expect(!windowModel.isDenMode)
         }
     }
@@ -688,23 +688,23 @@ struct DenWindowModelPresentationTests {
     @Test func shiftCommandOptionArrowsMoveFocusedBoardWithoutEnteringDenMode() throws {
         let boards = [board("First"), board("Second")]
         try withTestWindowModel(desks: [desk("Desk", boards: boards, focusedBoardID: boards[0].id)]) { windowModel in
-            let store = windowModel.store
+            let controller = windowModel.controller
             let right = try arrowEvent(.rightArrow, modifiers: [.command, .option, .shift])
             let left = try arrowEvent(.leftArrow, modifiers: [.command, .option, .shift])
 
-            #expect(KeyboardController.handle(right, store: store, windowModel: windowModel))
-            #expect(store.focusedDesk?.boards.map(\.id) == [boards[1].id, boards[0].id])
+            #expect(KeyboardController.handle(right, controller: controller, windowModel: windowModel))
+            #expect(controller.focusedDesk?.boards.map(\.id) == [boards[1].id, boards[0].id])
             #expect(!windowModel.isDenMode)
 
-            #expect(KeyboardController.handle(left, store: store, windowModel: windowModel))
-            #expect(store.focusedDesk?.boards.map(\.id) == boards.map(\.id))
+            #expect(KeyboardController.handle(left, controller: controller, windowModel: windowModel))
+            #expect(controller.focusedDesk?.boards.map(\.id) == boards.map(\.id))
             #expect(!windowModel.isDenMode)
         }
     }
 
     @Test func commandQPassesThroughFromDenMode() throws {
         try withTestWindowModel(desks: [desk("Desk")]) { windowModel in
-            let store = windowModel.store
+            let controller = windowModel.controller
             windowModel.isDenMode = true
             let event = try #require(
                 NSEvent.keyEvent(
@@ -720,7 +720,7 @@ struct DenWindowModelPresentationTests {
                     keyCode: 12
                 ))
 
-            #expect(!KeyboardController.handle(event, store: store, windowModel: windowModel))
+            #expect(!KeyboardController.handle(event, controller: controller, windowModel: windowModel))
             #expect(windowModel.isDenMode)
         }
     }
@@ -728,9 +728,9 @@ struct DenWindowModelPresentationTests {
     @Test func denModeMaximizesAndCentersFocusedBoardWithoutChangingDenState() throws {
         let current = board("Current", width: 520)
         try withTestWindowModel(desks: [desk("Desk", boards: [current])]) { windowModel in
-            let store = windowModel.store
+            let controller = windowModel.controller
             windowModel.isDenMode = true
-            let stateBeforeCommands = store.state
+            let stateBeforeCommands = controller.state
             let maximize = try #require(
                 NSEvent.keyEvent(
                     with: .keyDown,
@@ -758,14 +758,14 @@ struct DenWindowModelPresentationTests {
                     keyCode: 8
                 ))
 
-            #expect(KeyboardController.handle(maximize, store: store, windowModel: windowModel))
+            #expect(KeyboardController.handle(maximize, controller: controller, windowModel: windowModel))
             #expect(windowModel.maximizedBoardID == current.id)
             let requestAfterMaximize = windowModel.centerFocusedBoardRequest
-            #expect(KeyboardController.handle(center, store: store, windowModel: windowModel))
+            #expect(KeyboardController.handle(center, controller: controller, windowModel: windowModel))
             #expect(windowModel.centerFocusedBoardRequest == requestAfterMaximize + 1)
-            #expect(KeyboardController.handle(maximize, store: store, windowModel: windowModel))
+            #expect(KeyboardController.handle(maximize, controller: controller, windowModel: windowModel))
             #expect(windowModel.maximizedBoardID == nil)
-            #expect(store.state == stateBeforeCommands)
+            #expect(controller.state == stateBeforeCommands)
         }
     }
 
@@ -774,14 +774,14 @@ struct DenWindowModelPresentationTests {
         let second = board("Second")
         let deskState = desk("Desk", boards: [first, second], focusedBoardID: first.id)
         var savedState: DenState?
-        let store = DenController(
+        let controller = DenController(
             state: DenState(desks: [deskState], focusedDeskID: deskState.id),
             onSave: { savedState = $0 })
-        let composition = DenWindowComposition(store: store)
+        let composition = DenWindowComposition(controller: controller)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
-        let stateBeforeToggle = store.state
+        let stateBeforeToggle = controller.state
         windowModel.isDenMode = true
 
         let toggle = try #require(
@@ -809,24 +809,24 @@ struct DenWindowModelPresentationTests {
                 isARepeat: true,
                 keyCode: 3))
 
-        #expect(KeyboardController.handle(toggle, store: store, windowModel: windowModel))
+        #expect(KeyboardController.handle(toggle, controller: controller, windowModel: windowModel))
         #expect(windowModel.isFocusModePresented)
-        #expect(store.state == stateBeforeToggle)
+        #expect(controller.state == stateBeforeToggle)
         #expect(savedState == nil)
-        #expect(KeyboardController.handle(repeatedToggle, store: store, windowModel: windowModel))
+        #expect(KeyboardController.handle(repeatedToggle, controller: controller, windowModel: windowModel))
         #expect(windowModel.isFocusModePresented)
 
         windowModel.exitDenMode()
 
         #expect(windowModel.isFocusModePresented)
-        #expect(store.state == stateBeforeToggle)
+        #expect(controller.state == stateBeforeToggle)
         #expect(savedState == nil)
     }
 
     @Test func denModeBoardWidthPanelAdjustsAllBoardsAndAcceptsFitSelectionKeys() throws {
         let boards = [board("First"), board("Second")]
         try withTestWindowModel(desks: [desk("Desk", boards: boards)]) { windowModel in
-            let store = windowModel.store
+            let controller = windowModel.controller
             windowModel.isDenMode = true
             windowModel.updateBoardLayout(availableWidth: 1_180, spacing: 10)
             let open = try #require(
@@ -883,21 +883,21 @@ struct DenWindowModelPresentationTests {
                     keyCode: 20
                 ))
 
-            #expect(KeyboardController.handle(open, store: store, windowModel: windowModel))
+            #expect(KeyboardController.handle(open, controller: controller, windowModel: windowModel))
             #expect(windowModel.isBoardWidthPanelPresented)
-            #expect(KeyboardController.handle(ignoredMovement, store: store, windowModel: windowModel))
-            #expect(store.focusedDesk?.focusedBoardID == boards[0].id)
-            #expect(KeyboardController.handle(narrow, store: store, windowModel: windowModel))
-            #expect(store.focusedDesk?.boards.map(\.width) == [440, 440])
+            #expect(KeyboardController.handle(ignoredMovement, controller: controller, windowModel: windowModel))
+            #expect(controller.focusedDesk?.focusedBoardID == boards[0].id)
+            #expect(KeyboardController.handle(narrow, controller: controller, windowModel: windowModel))
+            #expect(controller.focusedDesk?.boards.map(\.width) == [440, 440])
             #expect(windowModel.isBoardWidthPanelPresented)
-            #expect(KeyboardController.handle(widen, store: store, windowModel: windowModel))
-            #expect(store.focusedDesk?.boards.map(\.width) == [520, 520])
+            #expect(KeyboardController.handle(widen, controller: controller, windowModel: windowModel))
+            #expect(controller.focusedDesk?.boards.map(\.width) == [520, 520])
             #expect(windowModel.isBoardWidthPanelPresented)
-            #expect(KeyboardController.handle(select, store: store, windowModel: windowModel))
+            #expect(KeyboardController.handle(select, controller: controller, windowModel: windowModel))
             #expect(!windowModel.isBoardWidthPanelPresented)
             #expect(windowModel.isDenMode)
             #expect(
-                store.focusedDesk?.boards.allSatisfy {
+                controller.focusedDesk?.boards.allSatisfy {
                     abs($0.width - 386.666_666_666_666_7) < 0.001
                 } == true)
         }
@@ -910,8 +910,8 @@ struct DenWindowModelPresentationTests {
             currentSheetURL: URL(string: "https://docs.example.com/api")
         )
         let desk = DeskState(label: "Work", boards: [board], focusedBoardID: board.id)
-        let store = DenController(state: DenState(desks: [desk], focusedDeskID: desk.id))
-        let composition = DenWindowComposition(store: store)
+        let controller = DenController(state: DenState(desks: [desk], focusedDeskID: desk.id))
+        let composition = DenWindowComposition(controller: controller)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
@@ -939,8 +939,8 @@ struct DenWindowModelPresentationTests {
             workingDirectory: "/Users/test/projects/demo"
         )
         let desk = DeskState(label: "Terminal", boards: [terminalBoard], focusedBoardID: terminalBoard.id)
-        let store = DenController(state: DenState(desks: [desk], focusedDeskID: desk.id))
-        let composition = DenWindowComposition(store: store)
+        let controller = DenController(state: DenState(desks: [desk], focusedDeskID: desk.id))
+        let composition = DenWindowComposition(controller: controller)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
@@ -953,8 +953,8 @@ struct DenWindowModelPresentationTests {
     }
 
     @Test func showSaveEssentialPanelForRecentItemPopulatesDraft() {
-        let store = DenController(state: .sample)
-        let composition = DenWindowComposition(store: store)
+        let controller = DenController(state: .sample)
+        let composition = DenWindowComposition(controller: controller)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
@@ -968,8 +968,8 @@ struct DenWindowModelPresentationTests {
     }
 
     @Test func saveEssentialValidatesInputAndUpdatesPreferences() {
-        withTestController { store in
-            withTestWindowModel(store: store) { windowModel in
+        withTestController { controller in
+            withTestWindowModel(controller: controller) { windowModel in
                 windowModel.showSaveEssentialPanel(name: "Test", key: "", input: "https://test.com")
                 #expect(windowModel.isSaveEssentialPanelPresented)
 
@@ -983,9 +983,9 @@ struct DenWindowModelPresentationTests {
                 // Valid save
                 #expect(windowModel.saveEssential(name: "Test", key: "t", input: "https://test.com"))
                 #expect(!windowModel.isSaveEssentialPanelPresented)
-                #expect(store.essentials.contains { $0.key == "t" && $0.name == "Test" })
-                #expect(store.latestFeedback?.message == "Saved Essential 'Test'.")
-                #expect(store.latestFeedback?.severity == .success)
+                #expect(controller.essentials.contains { $0.key == "t" && $0.name == "Test" })
+                #expect(controller.latestFeedback?.message == "Saved Essential 'Test'.")
+                #expect(controller.latestFeedback?.severity == .success)
 
                 // Duplicate key conflict rejected
                 windowModel.showSaveEssentialPanel(name: "Another", key: "t", input: "https://another.com")
@@ -997,11 +997,11 @@ struct DenWindowModelPresentationTests {
 
     @Test func saveFocusedBoardAsEssentialShowsToastWhenNoBoardFocused() {
         withTestWindowModel(desks: [desk("Empty")]) { windowModel in
-            let store = windowModel.store
+            let controller = windowModel.controller
             windowModel.saveFocusedBoardAsEssential()
             #expect(!windowModel.isSaveEssentialPanelPresented)
-            #expect(store.latestFeedback?.message == "No focused board.")
-            #expect(store.latestFeedback?.severity == .warning)
+            #expect(controller.latestFeedback?.message == "No focused board.")
+            #expect(controller.latestFeedback?.severity == .warning)
         }
     }
 

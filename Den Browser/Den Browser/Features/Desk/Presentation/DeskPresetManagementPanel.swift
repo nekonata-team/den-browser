@@ -9,7 +9,7 @@ struct DeskPresetManagementPanel: View {
     let profileColor: Color
     let onClose: () -> Void
 
-    @Environment(DenController.self) private var store
+    @Environment(DenController.self) private var controller
     @State private var query = ""
     @State private var selectedPresetID: UUID?
     @State private var editingPresetID: UUID?
@@ -21,8 +21,8 @@ struct DeskPresetManagementPanel: View {
     @FocusState private var focusedEditingID: UUID?
 
     private var filteredPresets: [PersonalDeskPreset] {
-        guard !query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return store.deskPresets }
-        return store.deskPresets.filter {
+        guard !query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return controller.deskPresets }
+        return controller.deskPresets.filter {
             $0.id == editingPresetID || DeskPresetSearch.score(query: query, label: $0.label, boards: $0.boards) != nil
         }
     }
@@ -95,8 +95,8 @@ struct DeskPresetManagementPanel: View {
             DispatchQueue.main.async { isSearchFocused = true }
         }
         .onChange(of: query) { _, _ in ensureSelectedPreset() }
-        .onChange(of: store.deskPresets.map(\.id)) { _, _ in
-            if let editingPresetID, !store.deskPresets.contains(where: { $0.id == editingPresetID }) {
+        .onChange(of: controller.deskPresets.map(\.id)) { _, _ in
+            if let editingPresetID, !controller.deskPresets.contains(where: { $0.id == editingPresetID }) {
                 cancelEdit()
             }
             ensureSelectedPreset()
@@ -185,7 +185,7 @@ struct DeskPresetManagementPanel: View {
                     .accessibilityLabel("Rename \(preset.label)")
                 }
                 Button(role: .destructive) {
-                    store.requestDeskPresetDeletion(preset.id)
+                    controller.requestDeskPresetDeletion(preset.id)
                 } label: {
                     Image(systemSymbol: .trash)
                         .frame(width: 30, height: 30)
@@ -243,7 +243,7 @@ struct DeskPresetManagementPanel: View {
 
     private func saveEdit() {
         guard let editingPresetID else { return }
-        switch store.renameDeskPreset(editingPresetID, to: editingLabel) {
+        switch controller.renameDeskPreset(editingPresetID, to: editingLabel) {
         case .renamed, .unchanged:
             cancelEdit()
         case .invalidLabel:

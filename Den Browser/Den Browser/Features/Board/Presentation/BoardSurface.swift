@@ -116,7 +116,7 @@ struct BoardSurfaceModifier: ViewModifier {
 }
 
 struct BoardHeaderCenteringModifier: ViewModifier {
-    @Environment(DenController.self) private var store
+    @Environment(DenController.self) private var controller
     @Environment(DenWindowModel.self) private var windowModel
 
     let boardID: BoardID
@@ -127,7 +127,7 @@ struct BoardHeaderCenteringModifier: ViewModifier {
             TapGesture(count: 2)
                 .onEnded {
                     guard isEnabled else { return }
-                    store.focusBoard(boardID, exitsDenMode: true)
+                    controller.focusBoard(boardID, exitsDenMode: true)
                     windowModel.centerFocusedBoard()
                 }
         )
@@ -135,7 +135,7 @@ struct BoardHeaderCenteringModifier: ViewModifier {
 }
 
 struct BoardDragHeader<LeadingContent: View>: View {
-    @Environment(DenController.self) private var store
+    @Environment(DenController.self) private var controller
     let board: BoardState
     let isFocused: Bool
     let isDragging: Bool
@@ -180,7 +180,7 @@ struct BoardDragHeader<LeadingContent: View>: View {
             BoardHeaderTitle(
                 board: board,
                 isFocused: isFocused,
-                isAnchor: store.focusedDesk?.anchorBoardID == board.id
+                isAnchor: controller.focusedDesk?.anchorBoardID == board.id
             )
 
             Spacer(minLength: 8)

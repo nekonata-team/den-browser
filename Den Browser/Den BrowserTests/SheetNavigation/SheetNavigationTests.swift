@@ -746,11 +746,11 @@ struct SheetNavigationTests {
         let source = board("Source", url: "https://source.example/")
         let focused = board("Focused", url: "https://focused.example/")
         let currentDesk = desk("Desk", boards: [source, focused], focusedBoardID: focused.id)
-        let store = DenController(
+        let controller = DenController(
             state: DenState(desks: [currentDesk], focusedDeskID: currentDesk.id),
             sheetNavigation: manager
         )
-        let sourceWebView = store.webRuntime(for: source).webView
+        let sourceWebView = controller.webRuntime(for: source).webView
         manager.setEnabled(true)
 
         #expect(
@@ -760,22 +760,22 @@ struct SheetNavigationTests {
                     "url": "https://destination.example/path",
                 ], from: sourceWebView))
         #expect(
-            store.focusedDesk?.boards.map(\.currentSheetURL) == [
+            controller.focusedDesk?.boards.map(\.currentSheetURL) == [
                 URL(string: "https://source.example/"),
                 URL(string: "https://destination.example/path"),
                 URL(string: "https://focused.example/"),
             ])
-        #expect(store.focusedDesk?.focusedBoardID == store.focusedDesk?.boards[1].id)
+        #expect(controller.focusedDesk?.focusedBoardID == controller.focusedDesk?.boards[1].id)
     }
 
     @Test func sheetNavigationCanOpenAndKeepLocalFileLinks() throws {
         let manager = makeTestSheetNavigationManager(scriptSource: "")
         let source = board("Source", url: "https://source.example/")
         let currentDesk = desk("Desk", boards: [source], focusedBoardID: source.id)
-        let store = DenController(
+        let controller = DenController(
             state: DenState(desks: [currentDesk], focusedDeskID: currentDesk.id),
             sheetNavigation: manager)
-        let sourceWebView = store.webRuntime(for: source).webView
+        let sourceWebView = controller.webRuntime(for: source).webView
         let fileURL = try #require(URL(string: "file:///tmp/Den%20Browser/reference.html"))
         manager.setEnabled(true)
 
@@ -783,24 +783,24 @@ struct SheetNavigationTests {
             manager.handleScriptMessage(
                 ["action": "openBoard", "url": fileURL.absoluteString],
                 from: sourceWebView))
-        #expect(store.focusedBoard?.currentSheetURL == fileURL)
+        #expect(controller.focusedBoard?.currentSheetURL == fileURL)
 
         #expect(
             manager.handleScriptMessage(
                 ["action": "keepInDrawer", "url": fileURL.absoluteString],
                 from: sourceWebView))
-        #expect(store.state.drawerItems.first?.url == fileURL)
+        #expect(controller.state.drawerItems.first?.url == fileURL)
     }
 
     @Test func sheetNavigationShowsFeedbackForCopyAndInvalidPaste() async throws {
         let manager = makeTestSheetNavigationManager(scriptSource: "")
         let source = board("Source", url: "https://source.example/")
         let currentDesk = desk("Desk", boards: [source], focusedBoardID: source.id)
-        let store = DenController(
+        let controller = DenController(
             state: DenState(desks: [currentDesk], focusedDeskID: currentDesk.id),
             sheetNavigation: manager
         )
-        let webView = store.webRuntime(for: source).webView
+        let webView = controller.webRuntime(for: source).webView
         let waiter = WebViewLoadWaiter()
 
         manager.setEnabled(true)
@@ -808,13 +808,13 @@ struct SheetNavigationTests {
         defer { manager.pasteboard.clearContents() }
 
         #expect(manager.handleScriptMessage(["action": "copyURL"], from: webView))
-        #expect(store.latestFeedback?.message == "Copied Current Sheet URL.")
+        #expect(controller.latestFeedback?.message == "Copied Current Sheet URL.")
 
         #expect(
             manager.handleScriptMessage(
                 ["action": "copyMarkdownLink", "title": "Example [Page]\n Title "],
                 from: webView))
-        #expect(store.latestFeedback?.message == "Copied Current Sheet Markdown link.")
+        #expect(controller.latestFeedback?.message == "Copied Current Sheet Markdown link.")
         #expect(
             manager.pasteboard.string(forType: .string)
                 == "[Example \\[Page\\] Title](https://source.example/)")
@@ -825,7 +825,7 @@ struct SheetNavigationTests {
                 "https://pasted.example/long-\npath",
                 forType: .string))
         #expect(manager.handleScriptMessage(["action": "pasteURL"], from: webView))
-        #expect(store.focusedBoard?.currentSheetURL == URL(string: "https://pasted.example/long-path"))
+        #expect(controller.focusedBoard?.currentSheetURL == URL(string: "https://pasted.example/long-path"))
 
         manager.pasteboard.clearContents()
         #expect(
@@ -833,13 +833,13 @@ struct SheetNavigationTests {
                 "https://pasted.example/new-\nboard",
                 forType: .string))
         #expect(manager.handleScriptMessage(["action": "pasteURLInNewBoard"], from: webView))
-        #expect(store.focusedDesk?.boards.count == 2)
-        #expect(store.focusedBoard?.currentSheetURL == URL(string: "https://pasted.example/new-board"))
+        #expect(controller.focusedDesk?.boards.count == 2)
+        #expect(controller.focusedBoard?.currentSheetURL == URL(string: "https://pasted.example/new-board"))
 
         manager.pasteboard.clearContents()
         for action in ["pasteURL", "pasteURLInNewBoard"] {
             #expect(!manager.handleScriptMessage(["action": action], from: webView))
-            #expect(store.latestFeedback?.message == "Clipboard does not contain a supported URL.")
+            #expect(controller.latestFeedback?.message == "Clipboard does not contain a supported URL.")
         }
     }
 
@@ -847,30 +847,30 @@ struct SheetNavigationTests {
         let manager = makeTestSheetNavigationManager(scriptSource: "")
         let item = DrawerItem(url: try #require(URL(string: "https://drawer.example/")))
         let desk = DeskState(label: "Desk", boards: [])
-        let store = DenController(
+        let controller = DenController(
             state: DenState(
                 desks: [desk],
                 focusedDeskID: desk.id,
                 drawerItems: [item]),
             sheetNavigation: manager)
-        let runtime = store.drawerRuntime(for: item)
+        let runtime = controller.drawerRuntime(for: item)
         let waiter = WebViewLoadWaiter()
 
         manager.setEnabled(true)
         await waiter.load("<html>Drawer Preview</html>", baseURL: item.url, in: runtime.webView)
         defer {
-            store.releaseDrawerPreview()
+            controller.releaseDrawerPreview()
             manager.pasteboard.clearContents()
         }
 
         #expect(manager.handleScriptMessage(["action": "copyURL"], from: runtime.webView))
-        #expect(store.latestFeedback?.message == "Copied Current Sheet URL.")
+        #expect(controller.latestFeedback?.message == "Copied Current Sheet URL.")
 
         #expect(
             manager.handleScriptMessage(
                 ["action": "copyMarkdownLink", "title": "Drawer Preview"],
                 from: runtime.webView))
-        #expect(store.latestFeedback?.message == "Copied Current Sheet Markdown link.")
+        #expect(controller.latestFeedback?.message == "Copied Current Sheet Markdown link.")
         #expect(
             manager.pasteboard.string(forType: .string)
                 == "[Drawer Preview](https://drawer.example/)")
@@ -878,7 +878,7 @@ struct SheetNavigationTests {
         manager.pasteboard.clearContents()
         for action in ["pasteURL", "pasteURLInNewBoard"] {
             #expect(!manager.handleScriptMessage(["action": action], from: runtime.webView))
-            #expect(store.latestFeedback?.message == "Clipboard does not contain a supported URL.")
+            #expect(controller.latestFeedback?.message == "Clipboard does not contain a supported URL.")
         }
     }
 
@@ -934,11 +934,11 @@ struct SheetNavigationTests {
         let manager = makeTestSheetNavigationManager(scriptSource: "")
         let source = board("Source", url: "https://source.example/")
         let currentDesk = desk("Desk", boards: [source], focusedBoardID: source.id)
-        let store = DenController(
+        let controller = DenController(
             state: DenState(desks: [currentDesk], focusedDeskID: currentDesk.id),
             sheetNavigation: manager
         )
-        let sourceWebView = store.webRuntime(for: source).webView
+        let sourceWebView = controller.webRuntime(for: source).webView
 
         #expect(
             manager.handleScriptMessage(
@@ -947,11 +947,11 @@ struct SheetNavigationTests {
                     "url": "https://destination.example/path",
                 ], from: sourceWebView))
         #expect(
-            store.focusedDesk?.boards.map(\.currentSheetURL) == [
+            controller.focusedDesk?.boards.map(\.currentSheetURL) == [
                 URL(string: "https://source.example/"),
                 URL(string: "https://destination.example/path"),
             ])
-        #expect(store.focusedDesk?.focusedBoardID == source.id)
+        #expect(controller.focusedDesk?.focusedBoardID == source.id)
 
         #expect(
             manager.handleScriptMessage(
@@ -961,27 +961,27 @@ struct SheetNavigationTests {
                     "focused": true,
                 ], from: sourceWebView))
         #expect(
-            store.focusedDesk?.boards.map(\.currentSheetURL) == [
+            controller.focusedDesk?.boards.map(\.currentSheetURL) == [
                 URL(string: "https://source.example/"),
                 URL(string: "https://focused.example/path"),
                 URL(string: "https://destination.example/path"),
             ])
-        #expect(store.focusedDesk?.focusedBoardID == store.focusedDesk?.boards[1].id)
+        #expect(controller.focusedDesk?.focusedBoardID == controller.focusedDesk?.boards[1].id)
     }
 
     @Test func optionClickKeepsLinkInDrawerWithoutOpeningIt() {
         let manager = makeTestSheetNavigationManager(scriptSource: "")
         let source = board("Source", url: "https://source.example/")
         let currentDesk = desk("Desk", boards: [source], focusedBoardID: source.id)
-        let store = DenController(
+        let controller = DenController(
             state: DenState(desks: [currentDesk], focusedDeskID: currentDesk.id),
             sheetNavigation: manager
         )
-        let composition = DenWindowComposition(store: store)
+        let composition = DenWindowComposition(controller: controller)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
-        let sourceWebView = store.webRuntime(for: source).webView
+        let sourceWebView = controller.webRuntime(for: source).webView
         let destination = URL(string: "https://destination.example/path")!
 
         #expect(
@@ -990,10 +990,10 @@ struct SheetNavigationTests {
                     "action": "keepInDrawer",
                     "url": destination.absoluteString,
                 ], from: sourceWebView))
-        #expect(store.state.drawerItems.map(\.url) == [destination])
+        #expect(controller.state.drawerItems.map(\.url) == [destination])
         #expect(!windowModel.isDrawerOpen)
-        #expect(store.focusedDesk?.focusedBoardID == source.id)
-        #expect(store.focusedBoard?.currentSheetURL == source.currentSheetURL)
+        #expect(controller.focusedDesk?.focusedBoardID == source.id)
+        #expect(controller.focusedBoard?.currentSheetURL == source.currentSheetURL)
     }
 
     @Test func sheetNavigationRoutesRemoveAndRestoreBoardActions() {
@@ -1001,20 +1001,20 @@ struct SheetNavigationTests {
         let source = board("First", url: "https://first.example/")
         let second = board("Second", url: "https://second.example/")
         let currentDesk = desk("Desk", boards: [source, second], focusedBoardID: source.id)
-        let store = DenController(
+        let controller = DenController(
             state: DenState(desks: [currentDesk], focusedDeskID: currentDesk.id),
             sheetNavigation: manager
         )
-        let sourceWebView = store.webRuntime(for: source).webView
-        let secondWebView = store.webRuntime(for: second).webView
+        let sourceWebView = controller.webRuntime(for: source).webView
+        let secondWebView = controller.webRuntime(for: second).webView
         manager.setEnabled(true)
 
-        #expect(store.focusedDesk?.boards.count == 2)
+        #expect(controller.focusedDesk?.boards.count == 2)
         #expect(manager.handleScriptMessage(["action": "removeBoard"], from: sourceWebView))
-        #expect(store.focusedDesk?.boards.count == 1)
+        #expect(controller.focusedDesk?.boards.count == 1)
 
         #expect(manager.handleScriptMessage(["action": "restoreBoard"], from: secondWebView))
-        #expect(store.focusedDesk?.boards.count == 2)
+        #expect(controller.focusedDesk?.boards.count == 2)
     }
 
     @Test func sheetNavigationRejectsUnsupportedMessages() {
@@ -1041,15 +1041,15 @@ struct SheetNavigationTests {
         let manager = makeTestSheetNavigationManager(scriptSource: source)
         let board = board("Source", url: "https://source.example/")
         let desk = desk("Desk", boards: [board], focusedBoardID: board.id)
-        let store = DenController(
+        let controller = DenController(
             state: DenState(desks: [desk], focusedDeskID: desk.id),
             sheetNavigation: manager
         )
-        let composition = DenWindowComposition(store: store)
+        let composition = DenWindowComposition(controller: controller)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
-        let webView = store.webRuntime(for: board).webView
+        let webView = controller.webRuntime(for: board).webView
         let waiter = WebViewLoadWaiter()
         let url = URL(string: "https://source.example/current")!
 
@@ -1087,11 +1087,11 @@ struct SheetNavigationTests {
         let manager = makeTestSheetNavigationManager(scriptSource: source)
         let board = board("Source", url: "https://source.example/")
         let desk = desk("Desk", boards: [board], focusedBoardID: board.id)
-        let store = DenController(
+        let controller = DenController(
             state: DenState(desks: [desk], focusedDeskID: desk.id),
             sheetNavigation: manager
         )
-        let webView = store.webRuntime(for: board).webView
+        let webView = controller.webRuntime(for: board).webView
         let waiter = WebViewLoadWaiter()
 
         manager.setEnabled(true)
@@ -1105,7 +1105,7 @@ struct SheetNavigationTests {
         try await dispatchSheetKey("y", in: webView)
         try await dispatchSheetKey("m", in: webView)
 
-        #expect(store.latestFeedback?.message == "Copied Current Sheet Markdown link.")
+        #expect(controller.latestFeedback?.message == "Copied Current Sheet Markdown link.")
         #expect(manager.pasteboard.string(forType: .string) == "[My Sheet](https://source.example/sheet)")
     }
 
@@ -1117,11 +1117,11 @@ struct SheetNavigationTests {
         let manager = makeTestSheetNavigationManager(scriptSource: source)
         let board = board("Source", url: "https://source.example/")
         let desk = desk("Desk", boards: [board], focusedBoardID: board.id)
-        let store = DenController(
+        let controller = DenController(
             state: DenState(desks: [desk], focusedDeskID: desk.id),
             sheetNavigation: manager
         )
-        let webView = store.webRuntime(for: board).webView
+        let webView = controller.webRuntime(for: board).webView
         let waiter = WebViewLoadWaiter()
 
         manager.setEnabled(true)
@@ -1137,7 +1137,7 @@ struct SheetNavigationTests {
         try await dispatchSheetKey("b", in: webView)
 
         // Assert
-        #expect(store.latestFeedback?.message == "Copied Board ID.")
+        #expect(controller.latestFeedback?.message == "Copied Board ID.")
         #expect(manager.pasteboard.string(forType: .string) == board.id.rawValue.uuidString.lowercased())
     }
 
@@ -1149,11 +1149,11 @@ struct SheetNavigationTests {
         let manager = makeTestSheetNavigationManager(scriptSource: source)
         let boards = [board("First"), board("Middle"), board("Last")]
         let currentDesk = desk("Desk", boards: boards, focusedBoardID: boards[1].id)
-        let store = DenController(
+        let controller = DenController(
             state: DenState(desks: [currentDesk], focusedDeskID: currentDesk.id),
             sheetNavigation: manager
         )
-        let webView = store.webRuntime(for: boards[1]).webView
+        let webView = controller.webRuntime(for: boards[1]).webView
         let waiter = WebViewLoadWaiter()
 
         manager.setEnabled(true)
@@ -1161,19 +1161,19 @@ struct SheetNavigationTests {
 
         try await dispatchSheetKey("g", in: webView)
         try await dispatchSheetKey("T", shift: true, in: webView)
-        #expect(store.focusedDesk?.focusedBoardID == boards[0].id)
+        #expect(controller.focusedDesk?.focusedBoardID == boards[0].id)
 
         try await dispatchSheetKey("g", in: webView)
         try await dispatchSheetKey("t", in: webView)
-        #expect(store.focusedDesk?.focusedBoardID == boards[2].id)
+        #expect(controller.focusedDesk?.focusedBoardID == boards[2].id)
 
         try await dispatchSheetKey("g", in: webView)
         try await dispatchSheetKey("0", in: webView)
-        #expect(store.focusedDesk?.focusedBoardID == boards[0].id)
+        #expect(controller.focusedDesk?.focusedBoardID == boards[0].id)
 
         try await dispatchSheetKey("g", in: webView)
         try await dispatchSheetKey("$", shift: true, in: webView)
-        #expect(store.focusedDesk?.focusedBoardID == boards[2].id)
+        #expect(controller.focusedDesk?.focusedBoardID == boards[2].id)
 
         #expect(manager.handleScriptMessage(["action": "goToFirstSheet"], from: webView))
         #expect(manager.handleScriptMessage(["action": "goToLatestSheet"], from: webView))
@@ -1187,11 +1187,11 @@ struct SheetNavigationTests {
         let manager = makeTestSheetNavigationManager(scriptSource: source)
         let boards = [board("First"), board("Middle"), board("Last")]
         let currentDesk = desk("Desk", boards: boards, focusedBoardID: boards[1].id)
-        let store = DenController(
+        let controller = DenController(
             state: DenState(desks: [currentDesk], focusedDeskID: currentDesk.id),
             sheetNavigation: manager
         )
-        let webView = store.webRuntime(for: boards[1]).webView
+        let webView = controller.webRuntime(for: boards[1]).webView
         let waiter = WebViewLoadWaiter()
 
         manager.setEnabled(true)
@@ -1200,8 +1200,8 @@ struct SheetNavigationTests {
         try await dispatchSheetKey("g", in: webView)
         try await dispatchSheetKey("x", in: webView)
 
-        #expect(store.focusedDesk?.boards.map(\.id) == [boards[0].id, boards[2].id])
-        #expect(store.focusedDesk?.focusedBoardID == boards[2].id)
+        #expect(controller.focusedDesk?.boards.map(\.id) == [boards[0].id, boards[2].id])
+        #expect(controller.focusedDesk?.focusedBoardID == boards[2].id)
     }
 
     @Test func boardRuntimeObservesUrlAndTitleChanges() async throws {

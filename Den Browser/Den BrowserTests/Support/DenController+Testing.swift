@@ -156,10 +156,10 @@ func withTestController<T>(
     defer { defaults.removePersistentDomain(forName: suiteName) }
     let preferences = AppPreferences(defaults: defaults)
     let pasteboard = NSPasteboard.withUniqueName()
-    let storeDesks = desks ?? [DeskState(label: "Desk", boards: boards, focusedBoardID: boards.first?.id)]
-    let focusedDeskID = storeDesks.first?.id ?? DeskID()
-    let store = DenController(
-        state: DenState(desks: storeDesks, focusedDeskID: focusedDeskID),
+    let controllerDesks = desks ?? [DeskState(label: "Desk", boards: boards, focusedBoardID: boards.first?.id)]
+    let focusedDeskID = controllerDesks.first?.id ?? DeskID()
+    let controller = DenController(
+        state: DenState(desks: controllerDesks, focusedDeskID: focusedDeskID),
         websiteDataStore: .nonPersistent(),
         sheetNavigation: SheetNavigationManager(defaults: defaults, pasteboard: pasteboard, scriptSource: ""),
         preferences: preferences,
@@ -169,7 +169,7 @@ func withTestController<T>(
         onSave: onSave,
         onRecentItemsSave: onRecentItemsSave
     )
-    return try body(store)
+    return try body(controller)
 }
 
 @MainActor
@@ -189,10 +189,10 @@ func withTestController<T>(
     defer { defaults.removePersistentDomain(forName: suiteName) }
     let preferences = AppPreferences(defaults: defaults)
     let pasteboard = NSPasteboard.withUniqueName()
-    let storeDesks = desks ?? [DeskState(label: "Desk", boards: boards, focusedBoardID: boards.first?.id)]
-    let focusedDeskID = storeDesks.first?.id ?? DeskID()
-    let store = DenController(
-        state: DenState(desks: storeDesks, focusedDeskID: focusedDeskID),
+    let controllerDesks = desks ?? [DeskState(label: "Desk", boards: boards, focusedBoardID: boards.first?.id)]
+    let focusedDeskID = controllerDesks.first?.id ?? DeskID()
+    let controller = DenController(
+        state: DenState(desks: controllerDesks, focusedDeskID: focusedDeskID),
         websiteDataStore: .nonPersistent(),
         sheetNavigation: SheetNavigationManager(defaults: defaults, pasteboard: pasteboard, scriptSource: ""),
         preferences: preferences,
@@ -202,11 +202,11 @@ func withTestController<T>(
         onSave: onSave,
         onRecentItemsSave: onRecentItemsSave
     )
-    return try await body(store)
+    return try await body(controller)
 }
 
 @MainActor
-func withStore<T>(
+func withController<T>(
     desks: [DeskState],
     body: (DenController) throws -> T
 ) rethrows -> T {
@@ -214,7 +214,7 @@ func withStore<T>(
 }
 
 @MainActor
-func withStore<T>(
+func withController<T>(
     desks: [DeskState],
     body: (DenController) async throws -> T
 ) async rethrows -> T {
@@ -223,10 +223,10 @@ func withStore<T>(
 
 @MainActor
 func withTestWindowModel<T>(
-    store: DenController,
+    controller: DenController,
     body: (DenWindowModel) throws -> T
 ) rethrows -> T {
-    let composition = DenWindowComposition(store: store)
+    let composition = DenWindowComposition(controller: controller)
     let windowModel = composition.model
     composition.connect()
     defer { composition.disconnect() }
@@ -235,10 +235,10 @@ func withTestWindowModel<T>(
 
 @MainActor
 func withTestWindowModel<T>(
-    store: DenController,
+    controller: DenController,
     body: (DenWindowModel) async throws -> T
 ) async rethrows -> T {
-    let composition = DenWindowComposition(store: store)
+    let composition = DenWindowComposition(controller: controller)
     let windowModel = composition.model
     composition.connect()
     defer { composition.disconnect() }
@@ -252,8 +252,8 @@ func withTestWindowModel<T>(
     terminalCommandRunner: any TerminalCommandRunning = SubprocessCommandRunner(),
     body: (DenWindowModel) throws -> T
 ) rethrows -> T {
-    try withTestController(desks: desks, onSave: onSave, terminalCommandRunner: terminalCommandRunner) { store in
-        try withTestWindowModel(store: store, body: body)
+    try withTestController(desks: desks, onSave: onSave, terminalCommandRunner: terminalCommandRunner) { controller in
+        try withTestWindowModel(controller: controller, body: body)
     }
 }
 
@@ -264,7 +264,8 @@ func withTestWindowModel<T>(
     terminalCommandRunner: any TerminalCommandRunning = SubprocessCommandRunner(),
     body: (DenWindowModel) async throws -> T
 ) async rethrows -> T {
-    try await withTestController(desks: desks, onSave: onSave, terminalCommandRunner: terminalCommandRunner) { store in
-        try await withTestWindowModel(store: store, body: body)
+    try await withTestController(desks: desks, onSave: onSave, terminalCommandRunner: terminalCommandRunner) {
+        controller in
+        try await withTestWindowModel(controller: controller, body: body)
     }
 }

@@ -5,7 +5,7 @@ import SFSafeSymbols
 import SwiftUI
 
 struct DeskSwitcher: View {
-    @Environment(DenController.self) private var store
+    @Environment(DenController.self) private var controller
     @Environment(DenWindowModel.self) private var windowModel
     @Environment(AppPreferences.self) private var preferences
     @Environment(\.accessibilityReduceMotion) private var systemReduceMotion
@@ -33,7 +33,7 @@ struct DeskSwitcher: View {
             ScrollView(.horizontal) {
                 GlassEffectContainer(spacing: 4) {
                     HStack(spacing: 4) {
-                        ForEach(Array(store.state.desks.enumerated()), id: \.element.id) { index, desk in
+                        ForEach(Array(controller.state.desks.enumerated()), id: \.element.id) { index, desk in
                             deskSwitcherItem(desk, number: index + 1, in: geometry.size)
                         }
 
@@ -47,7 +47,7 @@ struct DeskSwitcher: View {
                         .buttonStyle(.borderless)
                         .tint(.secondary)
                         .fixedSize()
-                        .disabled(!store.canCreateDesk)
+                        .disabled(!controller.canCreateDesk)
                         .accessibilityLabel("New Desk")
                         .help("New Desk")
                     }
@@ -57,13 +57,13 @@ struct DeskSwitcher: View {
                 .padding(.horizontal, DenLayout.chromeHorizontalPadding)
                 .animation(
                     DenMotion.spatial(reduceMotion: shouldReduceMotion),
-                    value: store.state.desks.map(\.id)
+                    value: controller.state.desks.map(\.id)
                 )
             }
             .scrollPosition($scrollPosition, anchor: .center)
             .coordinateSpace(name: DeskSwitcherCoordinateSpace.name)
             .scrollIndicators(.never)
-            .onChange(of: store.presentedDeskID) { _, deskID in
+            .onChange(of: controller.presentedDeskID) { _, deskID in
                 cancelDeskDrag()
                 withAnimation(DenMotion.spatial(reduceMotion: shouldReduceMotion)) {
                     scrollPosition.scrollTo(id: deskID, anchor: .center)
@@ -110,12 +110,12 @@ struct DeskSwitcher: View {
         .padding(.horizontal, 8)
         .frame(height: DenLayout.deskButtonHeight)
         .background {
-            if desk.id == store.presentedDeskID {
+            if desk.id == controller.presentedDeskID {
                 Capsule().fill(profileColor.opacity(0.35))
             }
         }
         .overlay {
-            if desk.id == store.presentedDeskID, differentiateWithoutColor {
+            if desk.id == controller.presentedDeskID, differentiateWithoutColor {
                 Capsule().stroke(Color.primary, lineWidth: 1)
             }
         }
@@ -130,7 +130,7 @@ struct DeskSwitcher: View {
             .disabled(!canOpenInNewWindow(desk.id))
 
             Button {
-                store.copyDeskID(desk.id)
+                controller.copyDeskID(desk.id)
             } label: {
                 Label("Copy Desk ID", systemSymbol: .documentOnDocument)
             }
@@ -138,54 +138,54 @@ struct DeskSwitcher: View {
             Divider()
 
             Button {
-                store.focusDesk(desk.id)
+                controller.focusDesk(desk.id)
                 windowModel.showRenameDeskPanel()
             } label: {
                 Label("Rename Desk", systemSymbol: .pencil)
             }
-            .disabled(!store.canSelectDesk(desk.id))
+            .disabled(!controller.canSelectDesk(desk.id))
 
             Button(role: .destructive) {
-                store.focusDesk(desk.id)
-                store.deleteFocusedDesk()
+                controller.focusDesk(desk.id)
+                controller.deleteFocusedDesk()
             } label: {
                 Label("Delete Desk", systemSymbol: .trash)
             }
-            .disabled(!store.canSelectDesk(desk.id) || !store.canDeleteFocusedDesk)
+            .disabled(!controller.canSelectDesk(desk.id) || !controller.canDeleteFocusedDesk)
 
             Divider()
 
             Button {
-                store.focusDesk(desk.id)
+                controller.focusDesk(desk.id)
                 windowModel.showSaveDeskPresetPanel()
             } label: {
                 Label("Save Desk as Preset...", systemSymbol: .squareAndArrowDown)
             }
-            .disabled(!store.canSelectDesk(desk.id) || desk.boards.isEmpty)
+            .disabled(!controller.canSelectDesk(desk.id) || desk.boards.isEmpty)
 
             Menu("Export") {
                 Button {
-                    store.exportDeskLinks(for: desk.id)
+                    controller.exportDeskLinks(for: desk.id)
                 } label: {
                     Label("Save Desk Links as Markdown...", systemSymbol: .arrowDownDocument)
                 }
-                .disabled(!store.canExportDeskLinks(for: desk.id))
+                .disabled(!controller.canExportDeskLinks(for: desk.id))
 
                 Button {
-                    store.copyDeskLinks(for: desk.id)
+                    controller.copyDeskLinks(for: desk.id)
                 } label: {
                     Label("Copy Desk Links as Markdown", systemSymbol: .documentOnDocument)
                 }
-                .disabled(!store.canExportDeskLinks(for: desk.id))
+                .disabled(!controller.canExportDeskLinks(for: desk.id))
             }
 
             Button {
-                store.focusDesk(desk.id)
+                controller.focusDesk(desk.id)
                 windowModel.showReplaceDeskPanel()
             } label: {
                 Label("Replace Desk...", systemSymbol: .rectangleStackBadgeMinus)
             }
-            .disabled(!store.canSelectDesk(desk.id))
+            .disabled(!controller.canSelectDesk(desk.id))
 
             Button {
                 windowModel.showDeskPresetManagement()
@@ -200,7 +200,7 @@ struct DeskSwitcher: View {
             } label: {
                 Label("New Desk...", systemSymbol: .plus)
             }
-            .disabled(!store.canCreateDesk)
+            .disabled(!controller.canCreateDesk)
         }
         .gesture(
             DragGesture(minimumDistance: 0, coordinateSpace: .named(DeskSwitcherCoordinateSpace.name))
@@ -215,14 +215,14 @@ struct DeskSwitcher: View {
                 + (isPresentedElsewhere ? ", open in another window" : "")
         )
         .accessibilityAddTraits(.isButton)
-        .accessibilityAddTraits(desk.id == store.presentedDeskID ? .isSelected : [])
-        .accessibilityValue(desk.id == store.presentedDeskID ? "Presented Desk" : "")
-        .accessibilityAction { store.focusDesk(desk.id) }
+        .accessibilityAddTraits(desk.id == controller.presentedDeskID ? .isSelected : [])
+        .accessibilityValue(desk.id == controller.presentedDeskID ? "Presented Desk" : "")
+        .accessibilityAction { controller.focusDesk(desk.id) }
         .accessibilityAction(named: "Move Desk Left") {
-            store.moveDesk(desk.id, by: -1)
+            controller.moveDesk(desk.id, by: -1)
         }
         .accessibilityAction(named: "Move Desk Right") {
-            store.moveDesk(desk.id, by: 1)
+            controller.moveDesk(desk.id, by: 1)
         }
         .accessibilityIdentifier("desk-switcher.\(desk.id.rawValue.uuidString.lowercased())")
         .id(desk.id)
@@ -240,11 +240,11 @@ struct DeskSwitcher: View {
     private func updateDeskDrag(_ desk: DeskState, value: DragGesture.Value, in size: CGSize) {
         if drag == nil {
             guard hypot(value.translation.width, value.translation.height) >= 4,
-                let frame = frames[desk.id], store.beginDeskDrag(desk.id)
+                let frame = frames[desk.id], controller.beginDeskDrag(desk.id)
             else { return }
             drag = DeskDragState(
                 deskID: desk.id,
-                originalOrder: store.state.desks.map(\.id),
+                originalOrder: controller.state.desks.map(\.id),
                 startCenterX: frame.midX
             )
         }
@@ -263,21 +263,21 @@ struct DeskSwitcher: View {
         if drag?.deskID == desk.id {
             finishDeskDrag(value: value, in: size)
         } else if hypot(value.translation.width, value.translation.height) < 4 {
-            store.focusDesk(desk.id)
+            controller.focusDesk(desk.id)
         }
     }
 
     private func updateDeskInsertion() {
         guard var current = drag else { return }
-        while let index = store.state.desks.firstIndex(where: { $0.id == current.deskID }),
+        while let index = controller.state.desks.firstIndex(where: { $0.id == current.deskID }),
             let targetIndex = HorizontalDragInsertion.targetIndex(
                 draggedID: current.deskID,
-                orderedIDs: store.state.desks.map(\.id),
+                orderedIDs: controller.state.desks.map(\.id),
                 desiredCenterX: current.desiredCenterX,
                 frames: frames)
         {
-            let crossedDesk = store.state.desks[targetIndex]
-            store.previewDeskMove(current.deskID, to: targetIndex)
+            let crossedDesk = controller.state.desks[targetIndex]
+            controller.previewDeskMove(current.deskID, to: targetIndex)
             let direction = targetIndex > index ? -1.0 : 1.0
             current.offset += direction * ((frames[crossedDesk.id]?.width ?? 0) + 8)
             drag = current
@@ -299,7 +299,7 @@ struct DeskSwitcher: View {
                 location: location,
                 size: size,
                 draggedID: current.deskID,
-                orderedIDs: store.state.desks.map(\.id),
+                orderedIDs: controller.state.desks.map(\.id),
                 edge: 40
             )
         else { return }
@@ -318,7 +318,7 @@ struct DeskSwitcher: View {
             value.location.x >= 0 && value.location.x <= size.width
             && value.location.y >= 0 && value.location.y <= size.height
         if isInside {
-            store.finishDeskDrag()
+            controller.finishDeskDrag()
             drag = nil
         } else {
             cancelDeskDrag()
@@ -328,8 +328,8 @@ struct DeskSwitcher: View {
     private func cancelDeskDrag() {
         guard let current = drag else { return }
         let restore = {
-            store.restoreDeskOrder(current.originalOrder)
-            store.finishDeskDrag()
+            controller.restoreDeskOrder(current.originalOrder)
+            controller.finishDeskDrag()
             drag = nil
         }
         if shouldReduceMotion {

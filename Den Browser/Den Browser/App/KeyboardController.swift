@@ -24,14 +24,14 @@ final class KeyboardController {
         monitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) {
             [weak self, weak profileManager, weak preferences] event in
             guard let self,
-                let store = profileManager?.store(for: event.window),
+                let controller = profileManager?.controller(for: event.window),
                 let window = event.window,
                 let windowModel = self.windowModels[ObjectIdentifier(window)],
                 let preferences
             else { return event }
             return Self.handle(
                 event,
-                store: store,
+                controller: controller,
                 windowModel: windowModel,
                 preferences: preferences,
                 openSettings: openSettings) ? nil : event
@@ -49,41 +49,41 @@ final class KeyboardController {
     @discardableResult
     static func handle(
         _ event: NSEvent,
-        store: DenController,
+        controller: DenController,
         windowModel: DenWindowModel,
         preferences: AppPreferences? = nil,
         openSettings: @MainActor () -> Void = {}
     ) -> Bool {
         let decision = decision(
             for: event,
-            store: store,
+            controller: controller,
             windowModel: windowModel,
             preferences: preferences)
-        apply(decision, store: store, windowModel: windowModel, openSettings: openSettings)
+        apply(decision, controller: controller, windowModel: windowModel, openSettings: openSettings)
         return !decision.isForwarded
     }
 
     static func decision(
         for event: NSEvent,
-        store: DenController,
+        controller: DenController,
         windowModel: DenWindowModel,
         preferences: AppPreferences? = nil
     ) -> InputDecision {
-        let preferences = preferences ?? store.preferences
+        let preferences = preferences ?? controller.preferences
         return KeyboardRouter.route(
             event: KeyEvent(event),
-            context: InputContext(store: store, windowModel: windowModel, event: event),
+            context: InputContext(controller: controller, windowModel: windowModel, event: event),
             shortcuts: ShortcutConfiguration(preferences: preferences))
     }
 
     private static func apply(
         _ decision: InputDecision,
-        store: DenController,
+        controller: DenController,
         windowModel: DenWindowModel,
         openSettings: @MainActor () -> Void
     ) {
         guard case .perform(let action) = decision else { return }
-        AppActionHandler.perform(action, store: store, windowModel: windowModel, openSettings: openSettings)
+        AppActionHandler.perform(action, controller: controller, windowModel: windowModel, openSettings: openSettings)
     }
 }
 

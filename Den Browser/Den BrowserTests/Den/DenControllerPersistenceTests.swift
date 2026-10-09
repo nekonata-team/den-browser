@@ -20,13 +20,13 @@ struct DenControllerPersistenceTests {
         let sheetNavigation = SheetNavigationManager(defaults: defaults)
         let board = board("Board")
         let source = desk("Desk", boards: [board], focusedBoardID: board.id)
-        let store = DenController(
+        let controller = DenController(
             state: DenState(desks: [source], focusedDeskID: source.id),
             sheetNavigation: sheetNavigation,
             preferences: preferences)
 
         // Act
-        let runtime = store.webRuntime(for: board)
+        let runtime = controller.webRuntime(for: board)
 
         // Assert
         #expect(runtime.webView.pageZoom == 0.8)
@@ -42,16 +42,16 @@ struct DenControllerPersistenceTests {
         let sheetNavigation = SheetNavigationManager(defaults: defaults)
         let board = board("Board")
         let source = desk("Desk", boards: [board], focusedBoardID: board.id)
-        let store = DenController(
+        let controller = DenController(
             state: DenState(desks: [source], focusedDeskID: source.id),
             sheetNavigation: sheetNavigation,
             preferences: preferences)
-        let runtime = store.webRuntime(for: board)
+        let runtime = controller.webRuntime(for: board)
         runtime.webView.magnification = 1.2
         preferences.setSheetScale(90)
 
         // Act
-        store.applySheetScale(preferences.sheetScale)
+        controller.applySheetScale(preferences.sheetScale)
 
         // Assert
         #expect(runtime.webView.pageZoom == 0.9)
@@ -67,20 +67,20 @@ struct DenControllerPersistenceTests {
         let sheetNavigation = SheetNavigationManager(defaults: defaults)
         let board = board("Board")
         let source = desk("Desk", boards: [board], focusedBoardID: board.id)
-        let store = DenController(
+        let controller = DenController(
             state: DenState(desks: [source], focusedDeskID: source.id),
             sheetNavigation: sheetNavigation,
             preferences: preferences)
-        let runtime = store.webRuntime(for: board)
+        let runtime = controller.webRuntime(for: board)
         runtime.webView.magnification = 1.2
 
         // Act
-        store.adjustFocusedSheetSize(by: 1)
+        controller.adjustFocusedSheetSize(by: 1)
 
         // Assert
         #expect(runtime.webView.pageZoom == 1.1)
         #expect(runtime.webView.magnification == 1)
-        #expect(store.state.desks[0].boards[0] == board)
+        #expect(controller.state.desks[0].boards[0] == board)
     }
 
     @Test func focusedBoardContentSizeResetReturnsToGlobalScale() throws {
@@ -93,16 +93,16 @@ struct DenControllerPersistenceTests {
         let sheetNavigation = SheetNavigationManager(defaults: defaults)
         let board = board("Board")
         let source = desk("Desk", boards: [board], focusedBoardID: board.id)
-        let store = DenController(
+        let controller = DenController(
             state: DenState(desks: [source], focusedDeskID: source.id),
             sheetNavigation: sheetNavigation,
             preferences: preferences)
-        let runtime = store.webRuntime(for: board)
+        let runtime = controller.webRuntime(for: board)
         runtime.webView.pageZoom = 1.4
         runtime.webView.magnification = 1.2
 
         // Act
-        store.resetFocusedSheetSize()
+        controller.resetFocusedSheetSize()
 
         // Assert
         #expect(runtime.webView.pageZoom == 0.8)
@@ -114,21 +114,21 @@ struct DenControllerPersistenceTests {
         var savedState: DenState?
 
         // Act
-        let store = DenController(
+        let controller = DenController(
             state: DenState(desks: [], focusedDeskID: DeskID()),
             onSave: { savedState = $0 })
 
         // Assert
-        #expect(store.state.desks.count == 1)
-        #expect(store.focusedDesk != nil)
-        #expect(savedState == store.state)
+        #expect(controller.state.desks.count == 1)
+        #expect(controller.focusedDesk != nil)
+        #expect(savedState == controller.state)
     }
 
     @Test func tutorialBoardAndProgressStayInMemory() throws {
         // Arrange
         var savedState: DenState?
         var saveCount = 0
-        let store = DenController(
+        let controller = DenController(
             state: .sample,
             onSave: { state in
                 savedState = state
@@ -136,16 +136,16 @@ struct DenControllerPersistenceTests {
             })
 
         // Act
-        #expect(store.openTutorialBoard())
+        #expect(controller.openTutorialBoard())
         let saveCountAfterOpening = saveCount
-        store.dispatchDenOperationEvent(.webBoardOpened)
+        controller.dispatchDenOperationEvent(.webBoardOpened)
 
         // Assert
-        #expect(store.state.desks[0].boards.first?.isTutorial == true)
+        #expect(controller.state.desks[0].boards.first?.isTutorial == true)
         #expect(
-            store.state.desks[0].boards.first?.tutorialCompletedSteps?.contains(.openBoard) == true)
+            controller.state.desks[0].boards.first?.tutorialCompletedSteps?.contains(.openBoard) == true)
         #expect(saveCount == saveCountAfterOpening)
-        #expect(store.save())
+        #expect(controller.save())
         #expect(savedState?.desks[0].boards.isEmpty == true)
 
         let encodedContent = try JSONEncoder().encode(

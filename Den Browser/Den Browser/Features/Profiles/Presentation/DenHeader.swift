@@ -47,7 +47,7 @@ struct DenHeaderControls: ToolbarContent {
     let profile: ProfileState
     let windowID: UUID
 
-    @Environment(DenController.self) private var store
+    @Environment(DenController.self) private var controller
     @Environment(DenWindowModel.self) private var windowModel
 
     @ToolbarContentBuilder
@@ -57,7 +57,7 @@ struct DenHeaderControls: ToolbarContent {
             ToolbarItemGroup(placement: .automatic) {
                 NotificationButton()
 
-                if store.focusedDesk?.boards.isEmpty == false {
+                if controller.focusedDesk?.boards.isEmpty == false {
                     SaveDeskPresetButton {
                         windowModel.showSaveDeskPresetPanel()
                     }
@@ -70,7 +70,7 @@ struct DenHeaderControls: ToolbarContent {
 }
 
 private struct NotificationButton: View {
-    @Environment(DenController.self) private var store
+    @Environment(DenController.self) private var controller
     @Environment(DenWindowModel.self) private var windowModel
 
     var body: some View {
@@ -80,7 +80,7 @@ private struct NotificationButton: View {
             Label {
                 Text("Notifications")
             } icon: {
-                Image(systemSymbol: store.unreadNotificationCount > 0 ? .bellBadge : .bell)
+                Image(systemSymbol: controller.unreadNotificationCount > 0 ? .bellBadge : .bell)
                     .font(.system(size: 13, weight: .semibold))
             }
         }
@@ -88,8 +88,8 @@ private struct NotificationButton: View {
         .disabled(windowModel.temporaryContext != nil)
         .accessibilityLabel("Notifications")
         .accessibilityValue(
-            store.unreadNotificationCount > 0
-                ? "\(store.unreadNotificationCount) unread"
+            controller.unreadNotificationCount > 0
+                ? "\(controller.unreadNotificationCount) unread"
                 : "No unread notifications"
         )
         .help("Notifications")

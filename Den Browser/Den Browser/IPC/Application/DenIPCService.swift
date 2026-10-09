@@ -10,7 +10,7 @@ final class DenIPCService {
 
     private struct WebBoardInteractionTarget {
         let profileID: ProfileID
-        let store: DenController
+        let controller: DenController
         let board: BoardState
         let runtime: WebBoardRuntime
     }
@@ -171,9 +171,9 @@ final class DenIPCService {
         case .success(let resolved):
             let webBoardTarget = WebBoardInteractionTarget(
                 profileID: resolved.profileID,
-                store: resolved.store,
+                controller: resolved.controller,
                 board: resolved.board,
-                runtime: resolved.store.webRuntime(for: resolved.board)
+                runtime: resolved.controller.webRuntime(for: resolved.board)
             )
             let result = await perform(webBoardTarget)
             return DenIPCResponse(
@@ -192,14 +192,14 @@ final class DenIPCService {
     }
 
     private func handleInspectionRead(target: ResolvedBoardTarget) async -> DenIPCOperationResult {
-        let store = target.store
+        let controller = target.controller
         let inspection = target.board
         guard let targetBoardID = inspection.sideBoardTargetBoardID,
-            let targetBoard = store.board(for: targetBoardID), targetBoard.isWeb
+            let targetBoard = controller.board(for: targetBoardID), targetBoard.isWeb
         else {
             return .failure("Inspection Board target Web Board is unavailable")
         }
-        guard let runtime = store.webRuntimes[targetBoard.id] else {
+        guard let runtime = controller.webRuntimes[targetBoard.id] else {
             return .failure("Inspection collection is unavailable for the target Web Board")
         }
         let generation = runtime.inspectionPageGeneration
@@ -262,7 +262,7 @@ final class DenIPCService {
         guard let profileManager else {
             return .failure("Profile manager unavailable")
         }
-        let store = resolved.store
+        let controller = resolved.controller
         let desk = resolved.desk
         guard let profile = profileManager.profile(id: resolved.profileID)
         else {
@@ -277,7 +277,7 @@ final class DenIPCService {
                 hasWindow: profileManager.hasWindow(for: $0.id)
             )
         }
-        let desks = store.state.desks.map {
+        let desks = controller.state.desks.map {
             DenDeskInfo(
                 id: $0.id.rawValue.uuidString,
                 label: $0.label,
@@ -309,7 +309,7 @@ final class DenIPCService {
                     activeDesk: activeDesk,
                     boards: boards,
                     focusedBoardID: desk.focusedBoardID?.rawValue.uuidString,
-                    drawerItemCount: store.state.drawerItems.count
+                    drawerItemCount: controller.state.drawerItems.count
                 )))
     }
 
@@ -390,7 +390,7 @@ final class DenIPCService {
         _ command: DenIPCCommand.Sheet,
         target: WebBoardInteractionTarget
     ) async -> DenIPCOperationResult {
-        let store = target.store
+        let controller = target.controller
         let board = target.board
         let runtime = target.runtime
 
@@ -403,7 +403,7 @@ final class DenIPCService {
                 guard
                     let resolved = BoardInputResolver.resolveOpenBoardInput(
                         payload.url,
-                        searchEngine: store.preferences.searchEngine),
+                        searchEngine: controller.preferences.searchEngine),
                     WebURLPolicy.isSupported(resolved.url)
                 else {
                     return .failure("Invalid or unsupported URL: \(payload.url)")
@@ -625,16 +625,16 @@ final class DenIPCService {
                         return .failure("Element is not a link with an href: \(description)")
                     }
                     guard
-                        let newBoardID = store.createBoard(
+                        let newBoardID = controller.createBoard(
                             urlString: href,
                             afterBoardID: board.id,
                             focus: shouldFocus,
                             origin: .cli
-                        ), let newBoard = store.board(for: newBoardID)
+                        ), let newBoard = controller.board(for: newBoardID)
                     else {
                         return .failure("Failed to create new Web Board for \(href)")
                     }
-                    _ = store.webRuntime(for: newBoard)
+                    _ = controller.webRuntime(for: newBoard)
                     return .success(
                         .createdBoard(
                             id: newBoardID.rawValue.uuidString,
@@ -884,7 +884,7 @@ final class DenIPCService {
         else {
             return false
         }
-        return target.store.board(for: target.board.id) != nil
+        return target.controller.board(for: target.board.id) != nil
     }
 
     // MARK: - Board Commands
@@ -922,18 +922,19 @@ final class DenIPCService {
         context: DenIPCCallerContext
     ) -> DenIPCOperationResult {
         guard
-            let boardID = resolved.store.createBoard(
+            let boardID = resolved.controller.createBoard(
                 urlString: payload.url,
                 preferredWidth: payload.width,
-                afterBoardID: newBoardInsertionAnchor(context: context, in: resolved.store, deskID: resolved.desk.id),
+                afterBoardID: newBoardInsertionAnchor(
+                    context: context, in: resolved.controller, deskID: resolved.desk.id),
                 focus: payload.focus,
                 origin: .cli,
                 deskID: resolved.desk.id
-            ), let board = resolved.store.board(for: boardID)
+            ), let board = resolved.controller.board(for: boardID)
         else {
             return .failure("Failed to open board with \(payload.url)")
         }
-        _ = resolved.store.webRuntime(for: board)
+        _ = resolved.controller.webRuntime(for: board)
         return .success(.createdBoard(id: boardID.rawValue.uuidString, message: nil, url: nil))
     }
 
@@ -942,7 +943,7 @@ final class DenIPCService {
         target resolved: ResolvedBoardTarget
     ) -> DenIPCOperationResult {
         guard
-            let inspectionID = resolved.store.createInspectionBoard(
+            let inspectionID = resolved.controller.createInspectionBoard(
                 targetBoardID: resolved.board.id, focus: payload.focus)
         else {
             return .failure("Could not create an Inspection Board for \(resolved.board.id.rawValue.uuidString)")
@@ -951,7 +952,7 @@ final class DenIPCService {
     }
 
     private func handleBoardClose(target resolved: ResolvedBoardTarget) -> DenIPCOperationResult {
-        resolved.store.removeBoard(resolved.board.id, origin: .cli)
+        resolved.controller.removeBoard(resolved.board.id, origin: .cli)
         return .success(
             .closedBoard(
                 id: resolved.board.id.rawValue.uuidString,
@@ -976,10 +977,11 @@ final class DenIPCService {
         }
 
         guard
-            let boardID = resolved.store.createTerminalBoard(
+            let boardID = resolved.controller.createTerminalBoard(
                 workingDirectory: resolvedDir,
                 preferredWidth: payload.width,
-                afterBoardID: newBoardInsertionAnchor(context: context, in: resolved.store, deskID: resolved.desk.id),
+                afterBoardID: newBoardInsertionAnchor(
+                    context: context, in: resolved.controller, deskID: resolved.desk.id),
                 focus: payload.focus,
                 origin: .cli,
                 deskID: resolved.desk.id
@@ -988,8 +990,8 @@ final class DenIPCService {
             return .failure("Failed to create terminal board")
         }
 
-        if let runCommand = payload.runCommand, let board = resolved.store.board(for: boardID) {
-            let runtime = resolved.store.terminalRuntime(for: board)
+        if let runCommand = payload.runCommand, let board = resolved.controller.board(for: boardID) {
+            let runtime = resolved.controller.terminalRuntime(for: board)
             runtime.runCommand(runCommand)
         }
 
@@ -998,25 +1000,25 @@ final class DenIPCService {
 
     private func newBoardInsertionAnchor(
         context: DenIPCCallerContext,
-        in store: DenController,
+        in controller: DenController,
         deskID: DeskID
     ) -> BoardID? {
-        guard let deskIndex = store.state.desks.firstIndex(where: { $0.id == deskID }) else { return nil }
+        guard let deskIndex = controller.state.desks.firstIndex(where: { $0.id == deskID }) else { return nil }
         let callerAnchor = context.callerBoardID.map(BoardID.init).flatMap { boardID -> BoardID? in
-            guard store.boardIndices(for: boardID)?.desk == deskIndex else { return nil }
+            guard controller.boardIndices(for: boardID)?.desk == deskIndex else { return nil }
             return boardID
         }
-        return callerAnchor ?? store.state.desks[deskIndex].focusedBoardID
+        return callerAnchor ?? controller.state.desks[deskIndex].focusedBoardID
     }
 
     // MARK: - Desk Commands
 
     private func handleDeskList(target resolved: ResolvedDeskTarget) -> DenIPCOperationResult {
-        let desks = resolved.store.state.desks.map { desk in
+        let desks = resolved.controller.state.desks.map { desk in
             DenDeskInfo(
                 id: desk.id.rawValue.uuidString,
                 label: desk.label,
-                isActive: desk.id == resolved.store.presentedDeskID,
+                isActive: desk.id == resolved.controller.presentedDeskID,
                 boardCount: desk.boards.count
             )
         }
@@ -1029,12 +1031,12 @@ final class DenIPCService {
         _ command: DenIPCCommand.Drawer,
         target resolved: ResolvedDeskTarget
     ) -> DenIPCOperationResult {
-        let store = resolved.store
+        let controller = resolved.controller
         let desk = resolved.desk
 
         switch command {
         case .list:
-            let items = store.state.drawerItems.map { item in
+            let items = controller.state.drawerItems.map { item in
                 DenDrawerItemInfo(
                     id: item.id.uuidString,
                     url: item.url.absoluteString,
@@ -1050,14 +1052,14 @@ final class DenIPCService {
             guard
                 let openInput = BoardInputResolver.resolveOpenBoardInput(
                     payload.url,
-                    searchEngine: store.preferences.searchEngine),
+                    searchEngine: controller.preferences.searchEngine),
                 case let .url(url, _) = openInput.item,
                 WebURLPolicy.isSupported(url)
             else {
                 return .failure("Invalid or unsupported URL: \(payload.url)")
             }
             let canonicalURL = WebURLPolicy.canonicalSheetURL(url)
-            if let itemID = store.keepInDrawerInBackground(canonicalURL, title: payload.title) {
+            if let itemID = controller.keepInDrawerInBackground(canonicalURL, title: payload.title) {
                 return .success(
                     .drawerItem(
                         id: itemID.uuidString,
@@ -1069,13 +1071,13 @@ final class DenIPCService {
             guard !idString.isEmpty else {
                 return .failure("Usage: den drawer place <id>")
             }
-            guard let item = findDrawerItem(in: store, matching: idString) else {
+            guard let item = findDrawerItem(in: controller, matching: idString) else {
                 return .failure("Drawer Item not found: \(idString)")
             }
-            if let boardID = store.placeDrawerItemAsBoard(item.id, deskID: desk.id),
-                let board = store.board(for: boardID)
+            if let boardID = controller.placeDrawerItemAsBoard(item.id, deskID: desk.id),
+                let board = controller.board(for: boardID)
             {
-                _ = store.webRuntime(for: board)
+                _ = controller.webRuntime(for: board)
                 return .success(
                     .createdBoard(
                         id: boardID.rawValue.uuidString,
@@ -1088,10 +1090,10 @@ final class DenIPCService {
             guard !idString.isEmpty else {
                 return .failure("Usage: den drawer discard <id>")
             }
-            guard let item = findDrawerItem(in: store, matching: idString) else {
+            guard let item = findDrawerItem(in: controller, matching: idString) else {
                 return .failure("Drawer Item not found: \(idString)")
             }
-            if store.discardDrawerItem(item.id) {
+            if controller.discardDrawerItem(item.id) {
                 return .success(.message("Discarded Drawer Item: \(item.displayName)"))
             }
             return .failure("Failed to discard Drawer Item: \(idString)")
@@ -1099,12 +1101,12 @@ final class DenIPCService {
         }
     }
 
-    private func findDrawerItem(in store: DenController, matching idString: String) -> DrawerItem? {
+    private func findDrawerItem(in controller: DenController, matching idString: String) -> DrawerItem? {
         if let exactID = UUID(uuidString: idString) {
-            return store.state.drawerItems.first { $0.id == exactID }
+            return controller.state.drawerItems.first { $0.id == exactID }
         }
         let lower = idString.lowercased()
-        let matches = store.state.drawerItems.filter { $0.id.uuidString.lowercased().hasPrefix(lower) }
+        let matches = controller.state.drawerItems.filter { $0.id.uuidString.lowercased().hasPrefix(lower) }
         return matches.count == 1 ? matches.first : nil
     }
 
@@ -1114,12 +1116,12 @@ final class DenIPCService {
         _ command: DenIPCCommand.Terminal,
         target resolved: ResolvedBoardTarget
     ) async -> DenIPCOperationResult {
-        let store = resolved.store
+        let controller = resolved.controller
         let board = resolved.board
 
         switch command {
         case .text:
-            let runtime = store.terminalRuntime(for: board)
+            let runtime = controller.terminalRuntime(for: board)
             guard let text = runtime.readViewportText() else {
                 return .failure("Failed to read terminal screen")
             }
@@ -1134,7 +1136,7 @@ final class DenIPCService {
                 .replacingOccurrences(of: "\\n", with: "\n")
                 .replacingOccurrences(of: "\\r", with: "\r")
                 .replacingOccurrences(of: "\\t", with: "\t")
-            let runtime = store.terminalRuntime(for: board)
+            let runtime = controller.terminalRuntime(for: board)
             runtime.sendText(text)
             return .success(.message("Sent text to Terminal Board \(board.id.rawValue.uuidString)"))
 
@@ -1142,7 +1144,7 @@ final class DenIPCService {
             guard !command.isEmpty else {
                 return .failure("Usage: den board terminal run <command> [--board <id>]")
             }
-            let runtime = store.terminalRuntime(for: board)
+            let runtime = controller.terminalRuntime(for: board)
             runtime.runCommand(command)
             return .success(.message("Ran command in Terminal Board \(board.id.rawValue.uuidString)"))
 
@@ -1156,7 +1158,7 @@ final class DenIPCService {
                 return .failure("Unknown signal: \(signalName)")
             }
             do {
-                let pid = try await store.sendSignal(parsed.number, to: board)
+                let pid = try await controller.sendSignal(parsed.number, to: board)
                 return .success(
                     .message("Sent \(parsed.name) to process group \(pid) (Board \(board.id.rawValue.uuidString))"))
             } catch {

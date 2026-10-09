@@ -6,7 +6,7 @@ import SFSafeSymbols
 import SwiftUI
 
 struct InspectionBoardView: View {
-    @Environment(DenController.self) private var store
+    @Environment(DenController.self) private var controller
     @Environment(DenWindowModel.self) private var windowModel
 
     let board: BoardState
@@ -31,8 +31,8 @@ struct InspectionBoardView: View {
     @State private var observedInspectionPageGeneration = 0
     @Environment(\.accessibilityDifferentiateWithoutColor) private var differentiateWithoutColor
 
-    private var targetBoard: BoardState? { store.board(for: targetBoardID) }
-    private var targetRuntime: WebBoardRuntime? { store.webRuntimes[targetBoardID] }
+    private var targetBoard: BoardState? { controller.board(for: targetBoardID) }
+    private var targetRuntime: WebBoardRuntime? { controller.webRuntimes[targetBoardID] }
     private var inspectionHighlightColor: ProfileRGB? { profileRGB(from: profileColor) }
 
     var body: some View {
@@ -117,12 +117,12 @@ struct InspectionBoardView: View {
                 onDragChanged: onDragChanged,
                 onDragEnded: onDragEnded,
                 onMoveLeft: {
-                    store.focusBoard(board.id)
-                    store.moveFocusedBoardLeft()
+                    controller.focusBoard(board.id)
+                    controller.moveFocusedBoardLeft()
                 },
                 onMoveRight: {
-                    store.focusBoard(board.id)
-                    store.moveFocusedBoardRight()
+                    controller.focusBoard(board.id)
+                    controller.moveFocusedBoardRight()
                 },
                 leadingContent: {
                     Image(systemSymbol: .magnifyingglass)
@@ -143,9 +143,9 @@ struct InspectionBoardView: View {
         .background(.regularMaterial)
         .contextMenu {
             if targetBoard != nil {
-                Button("Focus Target Web Board") { store.focusBoard(targetBoardID, exitsDenMode: true) }
+                Button("Focus Target Web Board") { controller.focusBoard(targetBoardID, exitsDenMode: true) }
             }
-            Button("Copy Board ID") { store.copyBoardID(board.id) }
+            Button("Copy Board ID") { controller.copyBoardID(board.id) }
             Divider()
             Button("Remove Inspection Board", role: .destructive, action: onRemove)
         }
@@ -159,7 +159,7 @@ struct InspectionBoardView: View {
                     Label("Target: \(targetBoard.displayName)", systemSymbol: .globe)
                         .lineLimit(1)
                     Spacer()
-                    Button("Focus") { store.focusBoard(targetBoardID, exitsDenMode: true) }
+                    Button("Focus") { controller.focusBoard(targetBoardID, exitsDenMode: true) }
                         .buttonStyle(.borderless)
                 }
                 .font(.caption)

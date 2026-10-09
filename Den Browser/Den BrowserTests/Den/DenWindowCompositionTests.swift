@@ -8,45 +8,45 @@ import Testing
 struct DenWindowCompositionTests {
     @Test func constructionDoesNotConnectWindowEffects() {
         // Arrange
-        let store = DenController(state: .sample)
-        store.reportFeedback("Ready")
+        let controller = DenController(state: .sample)
+        controller.reportFeedback("Ready")
 
         // Act
-        let composition = DenWindowComposition(store: store)
+        let composition = DenWindowComposition(controller: controller)
 
         // Assert
-        #expect(store.onWindowEffect == nil)
+        #expect(controller.onWindowEffect == nil)
         #expect(composition.model.displayedFeedback == nil)
     }
 
     @Test func connectingDeliversCurrentFeedbackAndSynchronousWindowEffects() {
         // Arrange
-        let store = DenController(state: .sample)
-        store.reportFeedback("Ready")
-        let composition = DenWindowComposition(store: store)
+        let controller = DenController(state: .sample)
+        controller.reportFeedback("Ready")
+        let composition = DenWindowComposition(controller: controller)
         defer { composition.disconnect() }
 
         // Act
         composition.connect()
-        store.onWindowEffect?(.presentOpenBoard(initialURL: nil, afterBoardID: nil))
+        controller.onWindowEffect?(.presentOpenBoard(initialURL: nil, afterBoardID: nil))
 
         // Assert
-        #expect(composition.model.displayedFeedback?.id == store.latestFeedback?.id)
+        #expect(composition.model.displayedFeedback?.id == controller.latestFeedback?.id)
         #expect(composition.model.isOpenBoardPanelPresented)
     }
 
     @Test func disconnectingRemovesWindowEffectsAndEndsFeedbackPresentation() {
         // Arrange
-        let store = DenController(state: .sample)
-        let composition = DenWindowComposition(store: store)
+        let controller = DenController(state: .sample)
+        let composition = DenWindowComposition(controller: controller)
         composition.connect()
-        store.reportFeedback("Ready")
+        controller.reportFeedback("Ready")
 
         // Act
         composition.disconnect()
 
         // Assert
-        #expect(store.onWindowEffect == nil)
+        #expect(controller.onWindowEffect == nil)
         #expect(composition.model.displayedFeedback == nil)
     }
 }

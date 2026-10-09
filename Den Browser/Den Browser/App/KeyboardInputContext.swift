@@ -56,10 +56,10 @@ struct InputContext {
     let mode: KeyboardMode
     let hasFocusedBoard: Bool
 
-    init(store: DenController, windowModel: DenWindowModel, event: NSEvent) {
+    init(controller: DenController, windowModel: DenWindowModel, event: NSEvent) {
         isFullscreenActive = windowModel.isFullscreenActive
         hasPendingConfirmation = windowModel.hasPendingConfirmation
-        activeDrag = store.activeDrag
+        activeDrag = controller.activeDrag
         mode = windowModel.isDenMode ? .den : .sheet
         if windowModel.isNotificationListPresented {
             surface = .notifications
@@ -77,7 +77,7 @@ struct InputContext {
                 case .drawer:
                     .drawer(
                         filterPhase: windowModel.drawer.filterPhase,
-                        previewFirstResponder: Self.isDrawerPreviewFirstResponder(event, store: store))
+                        previewFirstResponder: Self.isDrawerPreviewFirstResponder(event, controller: controller))
                 case .zmxSessions:
                     .zmxSessions(
                         filterPhase: windowModel.zmxSessions.filterPhase,
@@ -91,12 +91,12 @@ struct InputContext {
                 case nil: nil
                 }
         }
-        hasFocusedBoard = store.focusedBoard != nil
+        hasFocusedBoard = controller.focusedBoard != nil
     }
 
-    private static func isDrawerPreviewFirstResponder(_ event: NSEvent, store: DenController) -> Bool {
+    private static func isDrawerPreviewFirstResponder(_ event: NSEvent, controller: DenController) -> Bool {
         guard
-            let webView = store.drawerPreviewRuntime?.webView,
+            let webView = controller.drawerPreviewRuntime?.webView,
             var view = event.window?.firstResponder as? NSView
         else { return false }
 

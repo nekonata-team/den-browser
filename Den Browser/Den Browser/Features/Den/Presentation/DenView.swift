@@ -20,7 +20,7 @@ struct DenView<Header: View>: View {
     private let shouldShowHeader: Bool
     private let header: Header
 
-    @Environment(DenController.self) private var store
+    @Environment(DenController.self) private var controller
     @Environment(DenWindowModel.self) private var windowModel
     @Environment(ProfileManager.self) private var profileManager
     @Environment(AppPreferences.self) private var preferences
@@ -89,13 +89,13 @@ struct DenView<Header: View>: View {
                     .zIndex(DenOverlayLayer.toast)
             }
             .onChange(of: preferences.sheetScale) { _, scale in
-                store.applySheetScale(scale)
+                controller.applySheetScale(scale)
             }
             .onAppear {
-                store.sheetNavigation.setReduceMotion(shouldReduceMotion)
+                controller.sheetNavigation.setReduceMotion(shouldReduceMotion)
             }
             .onChange(of: shouldReduceMotion) { _, reduceMotion in
-                store.sheetNavigation.setReduceMotion(reduceMotion)
+                controller.sheetNavigation.setReduceMotion(reduceMotion)
             }
             .animation(DenMotion.feedback(reduceMotion: shouldReduceMotion), value: windowModel.temporaryContext)
             .animation(DenMotion.feedback(reduceMotion: shouldReduceMotion), value: deskFilter.isPresented)
@@ -148,17 +148,17 @@ struct DenView<Header: View>: View {
         ZStack(alignment: .top) {
             boardStrip(in: size)
                 .allowsHitTesting(
-                    windowModel.temporaryContext == nil && store.focusedDesk?.boards.isEmpty == false
+                    windowModel.temporaryContext == nil && controller.focusedDesk?.boards.isEmpty == false
                 )
                 .accessibilityHidden(
-                    windowModel.temporaryContext != nil || store.focusedDesk?.boards.isEmpty != false
+                    windowModel.temporaryContext != nil || controller.focusedDesk?.boards.isEmpty != false
                 )
 
-            if store.focusedDesk?.boards.isEmpty != false {
+            if controller.focusedDesk?.boards.isEmpty != false {
                 EmptyDenView(
                     openBoard: { windowModel.showOpenBoardPanel() },
                     openTutorial: {
-                        store.openTutorialBoard(preferredWidth: newBoardWidth(in: size))
+                        controller.openTutorialBoard(preferredWidth: newBoardWidth(in: size))
                     },
                     showKeyboardShortcuts: windowModel.showKeyboardShortcuts
                 )
@@ -215,7 +215,7 @@ struct DenView<Header: View>: View {
 
     private var titlebarTitle: String {
         let profileTitle = profileName ?? "Den"
-        guard windowModel.temporaryContext == nil, store.focusedBoard != nil else {
+        guard windowModel.temporaryContext == nil, controller.focusedBoard != nil else {
             return profileTitle
         }
         return "\(profileTitle) · \(windowModel.isDenMode ? "DEN MODE" : "SHEET INPUT")"
@@ -228,7 +228,7 @@ struct DenView<Header: View>: View {
             panelOverlay(
                 EssentialsPrefixPanel(
                     profileColor: profileColor,
-                    essentials: store.essentials,
+                    essentials: controller.essentials,
                     selectedEssentialID: windowModel.selectedEssentialID,
                     onSelect: { windowModel.selectEssential($0) }
                 )
@@ -325,15 +325,15 @@ struct DenView<Header: View>: View {
             windowModel.exitEssentialsPrefix()
         case .openBoard:
             windowModel.hideOpenBoardPanel()
-            store.restoreFocusedFirstResponder()
+            controller.restoreFocusedFirstResponder()
         case .zmxSessions:
             windowModel.hideZmxSessions()
         case .zmxDuplication:
             windowModel.hideZmxDuplicationPanel()
-            store.restoreFocusedFirstResponder()
+            controller.restoreFocusedFirstResponder()
         case .editBoardLink:
             windowModel.hideEditBoardLinkPanel()
-            store.restoreFocusedFirstResponder()
+            controller.restoreFocusedFirstResponder()
         case .newDesk, .replaceDesk:
             windowModel.hideNewDeskPanel()
         case .deskPresetManagement:
@@ -368,7 +368,7 @@ struct DenView<Header: View>: View {
     }
 
     private func newBoardWidth(in size: CGSize) -> Double {
-        DenLayout.newBoardWidth(in: size, focusedBoardWidth: store.focusedBoard?.width)
+        DenLayout.newBoardWidth(in: size, focusedBoardWidth: controller.focusedBoard?.width)
     }
 
     private var saveEssentialPanel: some View {
@@ -431,8 +431,8 @@ struct DenView<Header: View>: View {
                     isDenMode: { windowModel.isDenMode },
                     isDrawerOpen: { windowModel.isDrawerOpen },
                     motionPreference: preferences.motionPreference,
-                    drawerRuntime: { store.drawerRuntime(for: $0) },
-                    placeFromContextMenu: { _ = store.placeDrawerItemAsBoard($0) },
+                    drawerRuntime: { controller.drawerRuntime(for: $0) },
+                    placeFromContextMenu: { _ = controller.placeDrawerItemAsBoard($0) },
                     placeAsBoard: { _ = windowModel.placeDrawerItemAsBoard($0) }
                 )
                 .padding(.horizontal, isBottom ? DenLayout.outerInset : 0)
@@ -451,7 +451,7 @@ struct DenView<Header: View>: View {
     @ViewBuilder
     private var feedbackOverlay: some View {
         VStack(alignment: .trailing, spacing: 8) {
-            ForEach(store.activeDownloads) { activity in
+            ForEach(controller.activeDownloads) { activity in
                 DownloadActivityView(activity: activity, tint: profileColor)
                     .transition(feedbackTransition)
             }
@@ -468,7 +468,7 @@ struct DenView<Header: View>: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
         .animation(
             DenMotion.feedback(reduceMotion: shouldReduceMotion),
-            value: store.activeDownloads.map(\.id)
+            value: controller.activeDownloads.map(\.id)
         )
         .zIndex(DenOverlayLayer.toast)
     }
@@ -494,26 +494,26 @@ struct DenView<Header: View>: View {
     private var shouldShowBoardIndicator: Bool {
         !windowModel.isZenViewPresented
             && windowModel.temporaryContext == nil
-            && (store.focusedDesk?.boards.count ?? 0) > 1
+            && (controller.focusedDesk?.boards.count ?? 0) > 1
     }
 
     private var boardIndicator: some View {
         let boards =
             deskFilter.isPresented
             ? deskFilter.filteredBoards
-            : store.focusedDesk?.boards ?? []
+            : controller.focusedDesk?.boards ?? []
         let focusedBoardID =
             deskFilter.isPresented
             ? deskFilter.selectionBoardID
-            : store.focusedDesk?.focusedBoardID
+            : controller.focusedDesk?.focusedBoardID
 
         return BoardStripIndicator(
             boards: boards,
             focusedBoardID: focusedBoardID,
-            anchorBoardID: store.focusedDesk?.anchorBoardID,
+            anchorBoardID: controller.focusedDesk?.anchorBoardID,
             profileColor: profileColor,
             reduceMotion: shouldReduceMotion,
-            onSelect: { store.focusBoard($0) }
+            onSelect: { controller.focusBoard($0) }
         )
     }
 
@@ -606,15 +606,15 @@ private struct DeskFilterOverlay: View {
     let defaults = UserDefaults(suiteName: "dev.nekonata.denbrowser.preview") ?? .standard
     let preferences = AppPreferences(defaults: defaults)
     let sheetNavigation = SheetNavigationManager(defaults: defaults)
-    let store = DenController(
+    let controller = DenController(
         state: .sample,
         websiteDataStore: .nonPersistent(),
         sheetNavigation: sheetNavigation,
         preferences: preferences)
-    let composition = DenWindowComposition(store: store)
+    let composition = DenWindowComposition(controller: controller)
     let windowModel = composition.model
     DenView()
-        .environment(store)
+        .environment(controller)
         .environment(windowModel)
         .environment(preferences)
         .onAppear { composition.connect() }

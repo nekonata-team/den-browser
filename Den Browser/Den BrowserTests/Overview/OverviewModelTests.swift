@@ -17,16 +17,16 @@ struct OverviewModelTests {
         let second = board("Second")
         try withTestWindowModel(desks: [desk("Desk", boards: [first, second], focusedBoardID: first.id)]) {
             windowModel in
-            let store = windowModel.store
+            let controller = windowModel.controller
             windowModel.showOverview()
             let openBoard = try #require(keyEvent("t", keyCode: 17))
             let editLink = try #require(keyEvent("l", keyCode: 37))
             let removeBoard = try #require(keyEvent("w", keyCode: 13))
 
             // Act
-            let openHandled = KeyboardController.handle(openBoard, store: store, windowModel: windowModel)
-            let editHandled = KeyboardController.handle(editLink, store: store, windowModel: windowModel)
-            let removeHandled = KeyboardController.handle(removeBoard, store: store, windowModel: windowModel)
+            let openHandled = KeyboardController.handle(openBoard, controller: controller, windowModel: windowModel)
+            let editHandled = KeyboardController.handle(editLink, controller: controller, windowModel: windowModel)
+            let removeHandled = KeyboardController.handle(removeBoard, controller: controller, windowModel: windowModel)
 
             // Assert
             #expect(openHandled)
@@ -35,7 +35,7 @@ struct OverviewModelTests {
             #expect(windowModel.isOverviewPresented)
             #expect(!windowModel.isOpenBoardPanelPresented)
             #expect(!windowModel.isEditBoardLinkPanelPresented)
-            #expect(store.focusedDesk?.boards.map(\.id) == [first.id, second.id])
+            #expect(controller.focusedDesk?.boards.map(\.id) == [first.id, second.id])
         }
     }
 
@@ -202,10 +202,10 @@ struct OverviewModelTests {
         let main = desk("Main", boards: [first, second], focusedBoardID: first.id)
         let other = desk("Other", boards: [third], focusedBoardID: third.id)
         var saveCount = 0
-        let store = DenController(
+        let controller = DenController(
             state: DenState(desks: [main, other], focusedDeskID: main.id),
             onSave: { _ in saveCount += 1 })
-        let composition = DenWindowComposition(store: store)
+        let composition = DenWindowComposition(controller: controller)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
@@ -216,14 +216,14 @@ struct OverviewModelTests {
 
         // Assert - drag begun without mutating order yet
         #expect(dragBegun)
-        #expect(store.state.desks[0].boards.map(\.id) == [first.id, second.id])
+        #expect(controller.state.desks[0].boards.map(\.id) == [first.id, second.id])
 
         // Act - finish drag into target desk
         windowModel.overview.finishBoardDrag(second.id, toDeskID: other.id, at: 0)
 
         // Assert - order committed
-        #expect(store.state.desks[0].boards.map(\.id) == [first.id])
-        #expect(store.state.desks[1].boards.map(\.id) == [second.id, third.id])
+        #expect(controller.state.desks[0].boards.map(\.id) == [first.id])
+        #expect(controller.state.desks[1].boards.map(\.id) == [second.id, third.id])
         #expect(windowModel.overview.selectionBoardID == second.id)
         #expect(saveCount == 1)
     }
@@ -234,8 +234,8 @@ struct OverviewModelTests {
         let second = board("Second")
         let main = desk("Main", boards: [first, second], focusedBoardID: first.id)
         let empty = desk("Empty")
-        let store = DenController(state: DenState(desks: [main, empty], focusedDeskID: main.id))
-        let composition = DenWindowComposition(store: store)
+        let controller = DenController(state: DenState(desks: [main, empty], focusedDeskID: main.id))
+        let composition = DenWindowComposition(controller: controller)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
@@ -246,9 +246,9 @@ struct OverviewModelTests {
         windowModel.overview.finishBoardDrag(second.id, toDeskID: empty.id, at: 0)
 
         // Assert
-        #expect(store.state.desks[0].boards.map(\.id) == [first.id])
-        #expect(store.state.desks[1].boards.map(\.id) == [second.id])
-        #expect(store.state.desks[1].focusedBoardID == second.id)
+        #expect(controller.state.desks[0].boards.map(\.id) == [first.id])
+        #expect(controller.state.desks[1].boards.map(\.id) == [second.id])
+        #expect(controller.state.desks[1].focusedBoardID == second.id)
         #expect(windowModel.overview.selectionBoardID == second.id)
     }
 
@@ -258,8 +258,8 @@ struct OverviewModelTests {
         let second = board("Second")
         let main = desk("Main", boards: [first, second], focusedBoardID: first.id)
         let empty = desk("Empty")
-        let store = DenController(state: DenState(desks: [main, empty], focusedDeskID: main.id))
-        let composition = DenWindowComposition(store: store)
+        let controller = DenController(state: DenState(desks: [main, empty], focusedDeskID: main.id))
+        let composition = DenWindowComposition(controller: controller)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
@@ -270,9 +270,9 @@ struct OverviewModelTests {
         windowModel.overview.moveSelectionBoardToNextDesk()
 
         // Assert
-        #expect(store.state.desks[0].boards.map(\.id) == [first.id])
-        #expect(store.state.desks[1].boards.map(\.id) == [second.id])
-        #expect(store.state.desks[1].focusedBoardID == second.id)
+        #expect(controller.state.desks[0].boards.map(\.id) == [first.id])
+        #expect(controller.state.desks[1].boards.map(\.id) == [second.id])
+        #expect(controller.state.desks[1].focusedBoardID == second.id)
         #expect(windowModel.overview.selectionDeskID == empty.id)
         #expect(windowModel.overview.selectionBoardID == second.id)
     }
@@ -282,8 +282,8 @@ struct OverviewModelTests {
         let side = BoardState(width: 390, targetBoardID: target.id)
         let source = desk("Source", boards: [target, side], focusedBoardID: target.id)
         let destination = desk("Destination")
-        let store = DenController(state: DenState(desks: [source, destination], focusedDeskID: source.id))
-        let composition = DenWindowComposition(store: store)
+        let controller = DenController(state: DenState(desks: [source, destination], focusedDeskID: source.id))
+        let composition = DenWindowComposition(controller: controller)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
@@ -292,8 +292,8 @@ struct OverviewModelTests {
 
         windowModel.overview.moveSelectionBoardToNextDesk()
 
-        #expect(store.state.desks[0].boards.isEmpty)
-        #expect(store.state.desks[1].boards.map(\.id) == [target.id, side.id])
+        #expect(controller.state.desks[0].boards.isEmpty)
+        #expect(controller.state.desks[1].boards.map(\.id) == [target.id, side.id])
         #expect(windowModel.overview.selectionBoardID == side.id)
     }
 
@@ -302,8 +302,8 @@ struct OverviewModelTests {
         let side = BoardState(width: 390, targetBoardID: target.id)
         let source = desk("Source", boards: [target, side], focusedBoardID: target.id)
         let destination = desk("Destination")
-        let store = DenController(state: DenState(desks: [source, destination], focusedDeskID: source.id))
-        let composition = DenWindowComposition(store: store)
+        let controller = DenController(state: DenState(desks: [source, destination], focusedDeskID: source.id))
+        let composition = DenWindowComposition(controller: controller)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
@@ -312,8 +312,8 @@ struct OverviewModelTests {
         #expect(windowModel.beginOverviewBoardDrag(side.id))
         windowModel.overview.finishBoardDrag(side.id, toDeskID: destination.id, at: 0)
 
-        #expect(store.state.desks[0].boards.isEmpty)
-        #expect(store.state.desks[1].boards.map(\.id) == [target.id, side.id])
+        #expect(controller.state.desks[0].boards.isEmpty)
+        #expect(controller.state.desks[1].boards.map(\.id) == [target.id, side.id])
         #expect(windowModel.overview.selectionBoardID == side.id)
     }
 
@@ -323,8 +323,8 @@ struct OverviewModelTests {
         let side = BoardState(width: 390, targetBoardID: target.id)
         let after = board("After")
         let source = desk("Desk", boards: [before, target, side, after])
-        let store = DenController(state: DenState(desks: [source], focusedDeskID: source.id))
-        let composition = DenWindowComposition(store: store)
+        let controller = DenController(state: DenState(desks: [source], focusedDeskID: source.id))
+        let composition = DenWindowComposition(controller: controller)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
@@ -333,7 +333,7 @@ struct OverviewModelTests {
 
         windowModel.overview.moveSelectionBoardLeft()
 
-        #expect(store.state.desks[0].boards.map(\.id) == [target.id, side.id, before.id, after.id])
+        #expect(controller.state.desks[0].boards.map(\.id) == [target.id, side.id, before.id, after.id])
         #expect(windowModel.overview.selectionBoardID == side.id)
     }
 
@@ -345,10 +345,10 @@ struct OverviewModelTests {
         let main = desk("Main", boards: [first, second], focusedBoardID: first.id)
         let other = desk("Other", boards: [third], focusedBoardID: third.id)
         var saveCount = 0
-        let store = DenController(
+        let controller = DenController(
             state: DenState(desks: [main, other], focusedDeskID: main.id),
             onSave: { _ in saveCount += 1 })
-        let composition = DenWindowComposition(store: store)
+        let composition = DenWindowComposition(controller: controller)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
@@ -360,9 +360,9 @@ struct OverviewModelTests {
         windowModel.overview.cancelBoardDrag()
 
         // Assert
-        #expect(store.state.desks[0].boards.map(\.id) == [first.id, second.id])
-        #expect(store.state.desks[1].boards.map(\.id) == [third.id])
-        #expect(store.activeDrag == nil)
+        #expect(controller.state.desks[0].boards.map(\.id) == [first.id, second.id])
+        #expect(controller.state.desks[1].boards.map(\.id) == [third.id])
+        #expect(controller.activeDrag == nil)
         #expect(saveCount == 0)
     }
 
@@ -373,10 +373,10 @@ struct OverviewModelTests {
         let third = board("Third")
         let main = desk("Main", boards: [first, second, third], focusedBoardID: first.id)
         var saveCount = 0
-        let store = DenController(
+        let controller = DenController(
             state: DenState(desks: [main], focusedDeskID: main.id),
             onSave: { _ in saveCount += 1 })
-        let composition = DenWindowComposition(store: store)
+        let composition = DenWindowComposition(controller: controller)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
@@ -389,7 +389,7 @@ struct OverviewModelTests {
         windowModel.overview.moveSelectionBoardRight()
 
         // Assert
-        #expect(store.state.desks[0].boards.map(\.id) == [first.id, second.id, third.id])
+        #expect(controller.state.desks[0].boards.map(\.id) == [first.id, second.id, third.id])
         #expect(saveCount == 0)
     }
 
@@ -397,8 +397,8 @@ struct OverviewModelTests {
         // Arrange
         let first = board("First")
         let desk = desk("Desk", boards: [first], focusedBoardID: first.id)
-        let store = DenController(state: DenState(desks: [desk], focusedDeskID: desk.id))
-        let composition = DenWindowComposition(store: store)
+        let controller = DenController(state: DenState(desks: [desk], focusedDeskID: desk.id))
+        let composition = DenWindowComposition(controller: controller)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
@@ -410,7 +410,7 @@ struct OverviewModelTests {
 
         // Assert
         #expect(!begun)
-        #expect(store.activeDrag == nil)
+        #expect(controller.activeDrag == nil)
     }
 
     @Test func overviewMovementActionsMoveSelectedBoardWithinAndAcrossDesks() {
@@ -420,8 +420,8 @@ struct OverviewModelTests {
         let third = board("Third")
         let main = desk("Main", boards: [first, second], focusedBoardID: first.id)
         let other = desk("Other", boards: [third], focusedBoardID: third.id)
-        let store = DenController(state: DenState(desks: [main, other], focusedDeskID: main.id))
-        let composition = DenWindowComposition(store: store)
+        let controller = DenController(state: DenState(desks: [main, other], focusedDeskID: main.id))
+        let composition = DenWindowComposition(controller: controller)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
@@ -432,15 +432,15 @@ struct OverviewModelTests {
         windowModel.overview.moveSelectionBoardLeft()
 
         // Assert
-        #expect(store.state.desks[0].boards.map(\.id) == [second.id, first.id])
+        #expect(controller.state.desks[0].boards.map(\.id) == [second.id, first.id])
         #expect(windowModel.overview.selectionBoardID == second.id)
 
         // Act - move to next desk
         windowModel.overview.moveSelectionBoardToNextDesk()
 
         // Assert
-        #expect(store.state.desks[0].boards.map(\.id) == [first.id])
-        #expect(store.state.desks[1].boards.map(\.id) == [third.id, second.id])
+        #expect(controller.state.desks[0].boards.map(\.id) == [first.id])
+        #expect(controller.state.desks[1].boards.map(\.id) == [third.id, second.id])
         #expect(windowModel.overview.selectionDeskID == other.id)
         #expect(windowModel.overview.selectionBoardID == second.id)
     }
@@ -450,9 +450,9 @@ struct OverviewModelTests {
         let board = board("Board")
         let main = desk("Main", boards: [board], focusedBoardID: board.id)
         let empty = desk("Empty")
-        let store = DenController(
+        let controller = DenController(
             state: DenState(desks: [main, empty], focusedDeskID: main.id))
-        let composition = DenWindowComposition(store: store)
+        let composition = DenWindowComposition(controller: controller)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
@@ -462,9 +462,9 @@ struct OverviewModelTests {
         windowModel.overview.enterDesk(empty.id)
 
         // Assert
-        #expect(store.presentedDeskID == empty.id)
-        #expect(store.focusedDesk?.id == empty.id)
-        #expect(store.focusedBoard == nil)
+        #expect(controller.presentedDeskID == empty.id)
+        #expect(controller.focusedDesk?.id == empty.id)
+        #expect(controller.focusedBoard == nil)
         #expect(!windowModel.isOverviewPresented)
         #expect(!windowModel.isDenMode)
     }
@@ -475,8 +475,8 @@ struct OverviewModelTests {
         let second = board("Second")
         let third = board("Third")
         let main = desk("Main", boards: [first, second, third], focusedBoardID: second.id)
-        let store = DenController(state: DenState(desks: [main], focusedDeskID: main.id))
-        let composition = DenWindowComposition(store: store)
+        let controller = DenController(state: DenState(desks: [main], focusedDeskID: main.id))
+        let composition = DenWindowComposition(controller: controller)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
@@ -484,10 +484,10 @@ struct OverviewModelTests {
         #expect(windowModel.overview.selectionBoardID == second.id)
 
         // Act
-        store.removeBoard(second.id)
+        controller.removeBoard(second.id)
 
         // Assert
-        #expect(store.state.desks[0].boards.map(\.id) == [first.id, third.id])
+        #expect(controller.state.desks[0].boards.map(\.id) == [first.id, third.id])
         #expect(windowModel.overview.selectionDeskID == main.id)
         #expect(windowModel.overview.selectionBoardID == third.id)
         #expect(windowModel.isOverviewPresented)
@@ -497,8 +497,8 @@ struct OverviewModelTests {
         // Arrange
         let onlyBoard = board("Only")
         let main = desk("Main", boards: [onlyBoard], focusedBoardID: onlyBoard.id)
-        let store = DenController(state: DenState(desks: [main], focusedDeskID: main.id))
-        let composition = DenWindowComposition(store: store)
+        let controller = DenController(state: DenState(desks: [main], focusedDeskID: main.id))
+        let composition = DenWindowComposition(controller: controller)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
@@ -506,10 +506,10 @@ struct OverviewModelTests {
         #expect(windowModel.overview.selectionBoardID == onlyBoard.id)
 
         // Act
-        store.removeBoard(onlyBoard.id)
+        controller.removeBoard(onlyBoard.id)
 
         // Assert
-        #expect(store.state.desks[0].boards.isEmpty)
+        #expect(controller.state.desks[0].boards.isEmpty)
         #expect(windowModel.overview.selectionDeskID == main.id)
         #expect(windowModel.overview.selectionBoardID == nil)
         #expect(windowModel.isOverviewPresented)
@@ -519,8 +519,8 @@ struct OverviewModelTests {
         let board1 = board("Board1")
         let first = desk("First", boards: [board1], focusedBoardID: board1.id)
         let empty = desk("Empty")
-        let store = DenController(state: DenState(desks: [first, empty], focusedDeskID: first.id))
-        let composition = DenWindowComposition(store: store)
+        let controller = DenController(state: DenState(desks: [first, empty], focusedDeskID: first.id))
+        let composition = DenWindowComposition(controller: controller)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }

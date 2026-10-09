@@ -7,19 +7,19 @@ import Testing
 @Suite(.serialized)
 struct DenControllerDownloadTests {
     @Test func concurrentDownloadsUpdateAndEndIndependently() {
-        withTestController { store in
+        withTestController { controller in
             // Arrange
             let first = DownloadActivity(filename: "first.zip")
             let second = DownloadActivity(filename: "second.zip")
-            store.handleDownloadActivity(.started(first))
-            store.handleDownloadActivity(.started(second))
+            controller.handleDownloadActivity(.started(first))
+            controller.handleDownloadActivity(.started(second))
 
             // Act
-            store.handleDownloadActivity(.progressed(id: first.id, fractionCompleted: 0.5))
-            store.handleDownloadActivity(.ended(id: first.id))
+            controller.handleDownloadActivity(.progressed(id: first.id, fractionCompleted: 0.5))
+            controller.handleDownloadActivity(.ended(id: first.id))
 
             // Assert
-            #expect(store.activeDownloads == [second])
+            #expect(controller.activeDownloads == [second])
         }
     }
 }

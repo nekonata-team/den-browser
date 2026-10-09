@@ -127,20 +127,20 @@ struct DenControllerDeskPresetTests {
         let inspection = BoardState(width: 360, targetBoardID: first.id)
         let second = board("Notes", width: 760, url: "")
         let source = desk("Morning", boards: [first, inspection, second], focusedBoardID: inspection.id)
-        let store = DenController(state: DenState(desks: [source], focusedDeskID: source.id))
-        let composition = DenWindowComposition(store: store)
+        let controller = DenController(state: DenState(desks: [source], focusedDeskID: source.id))
+        let composition = DenWindowComposition(controller: controller)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
         windowModel.isDenMode = true
 
         // Act
-        let saveResult = store.saveFocusedDeskAsPreset(label: "  Morning  ")
+        let saveResult = controller.saveFocusedDeskAsPreset(label: "  Morning  ")
 
         // Assert - preset captured
         #expect(saveResult == .created)
         #expect(!windowModel.isDenMode)
-        let preset = try #require(store.deskPresets.first)
+        let preset = try #require(controller.deskPresets.first)
         #expect(preset.label == "Morning")
         #expect(preset.boards.map(\.label) == ["Mail", "Inspection Board", "Notes"])
         #expect(preset.boards.map(\.width) == [420, 360, 760])
@@ -153,10 +153,10 @@ struct DenControllerDeskPresetTests {
         #expect(preset.focusedBoardIndex == 1)
 
         // Act - instantiate new desk from preset
-        store.createDesk(label: "Copy", personalPresetID: preset.id)
+        controller.createDesk(label: "Copy", personalPresetID: preset.id)
 
         // Assert - independent desk created
-        let copy = try #require(store.focusedDesk)
+        let copy = try #require(controller.focusedDesk)
         #expect(Set(copy.boards.map(\.id)).isDisjoint(with: source.boards.map(\.id)))
         #expect(copy.boards.map(\.label) == source.boards.map(\.label))
         #expect(copy.boards.map(\.firstSheetURL) == preset.boards.map(\.initialSheetURL))
@@ -174,21 +174,21 @@ struct DenControllerDeskPresetTests {
         let preset = PersonalDeskPreset(label: "Research", desk: presetSource)
         let oldBoard = board("Old")
         let oldDesk = desk("Old Desk", boards: [oldBoard], focusedBoardID: oldBoard.id)
-        let store = DenController(
+        let controller = DenController(
             state: DenState(desks: [oldDesk], focusedDeskID: oldDesk.id),
             deskPresets: [preset])
-        let composition = DenWindowComposition(store: store)
+        let composition = DenWindowComposition(controller: controller)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
 
         // Act
-        let result = store.replaceFocusedDesk(label: "Research Copy", personalPresetID: preset.id)
+        let result = controller.replaceFocusedDesk(label: "Research Copy", personalPresetID: preset.id)
         windowModel.confirmDeskReplacement()
 
         // Assert
         #expect(result == .confirmationPending)
-        let replaced = try #require(store.focusedDesk)
+        let replaced = try #require(controller.focusedDesk)
         #expect(replaced.id == oldDesk.id)
         #expect(replaced.boards.map(\.width) == [620, 360])
         #expect(Set(replaced.boards.map(\.id)).isDisjoint(with: [target.id, inspection.id, oldBoard.id]))
@@ -201,39 +201,39 @@ struct DenControllerDeskPresetTests {
         // Arrange
         let terminal = BoardState(width: 700, workingDirectory: "/tmp", customLabel: "Build")
         let source = desk("Development", boards: [terminal], focusedBoardID: terminal.id)
-        let store = DenController(state: DenState(desks: [source], focusedDeskID: source.id))
+        let controller = DenController(state: DenState(desks: [source], focusedDeskID: source.id))
 
         // Act
-        let saveResult = store.saveFocusedDeskAsPreset(label: "Terminal")
-        let preset = try #require(store.deskPresets.first)
-        store.createDesk(label: "Copy", personalPresetID: preset.id)
+        let saveResult = controller.saveFocusedDeskAsPreset(label: "Terminal")
+        let preset = try #require(controller.deskPresets.first)
+        controller.createDesk(label: "Copy", personalPresetID: preset.id)
 
         // Assert
         #expect(saveResult == .created)
         #expect(preset.boards.first?.kind == .terminal(.shell(workingDirectory: "/tmp")))
-        #expect(store.focusedBoard?.id != terminal.id)
-        #expect(store.focusedBoard?.terminalWorkingDirectory == "/tmp")
-        #expect(store.focusedBoard?.customLabel == "Build")
+        #expect(controller.focusedBoard?.id != terminal.id)
+        #expect(controller.focusedBoard?.terminalWorkingDirectory == "/tmp")
+        #expect(controller.focusedBoard?.customLabel == "Build")
     }
 
     @Test func personalPresetRestoresZellijBoardSession() throws {
         // Arrange
         let zellij = BoardState(width: 700, zellijSessionName: "project-a", customLabel: "Project")
         let source = desk("Development", boards: [zellij], focusedBoardID: zellij.id)
-        let store = DenController(state: DenState(desks: [source], focusedDeskID: source.id))
+        let controller = DenController(state: DenState(desks: [source], focusedDeskID: source.id))
 
         // Act
-        let saveResult = store.saveFocusedDeskAsPreset(label: "Zellij")
-        let preset = try #require(store.deskPresets.first)
-        store.createDesk(label: "Copy", personalPresetID: preset.id)
+        let saveResult = controller.saveFocusedDeskAsPreset(label: "Zellij")
+        let preset = try #require(controller.deskPresets.first)
+        controller.createDesk(label: "Copy", personalPresetID: preset.id)
 
         // Assert
         #expect(saveResult == .created)
         #expect(preset.boards.first?.kind == .terminal(.zellij(sessionName: "project-a")))
-        #expect(store.focusedBoard?.id != zellij.id)
-        #expect(store.focusedBoard?.isZellij == true)
-        #expect(store.focusedBoard?.zellijSessionName == "project-a")
-        #expect(store.focusedBoard?.customLabel == "Project")
+        #expect(controller.focusedBoard?.id != zellij.id)
+        #expect(controller.focusedBoard?.isZellij == true)
+        #expect(controller.focusedBoard?.zellijSessionName == "project-a")
+        #expect(controller.focusedBoard?.customLabel == "Project")
     }
 
     @Test func personalPresetRestoresZmxBoardSession() throws {
@@ -244,103 +244,103 @@ struct DenControllerDeskPresetTests {
             rootSessionName: "project",
             customLabel: "Project")
         let source = desk("Development", boards: [zmx], focusedBoardID: zmx.id)
-        let store = DenController(state: DenState(desks: [source], focusedDeskID: source.id))
+        let controller = DenController(state: DenState(desks: [source], focusedDeskID: source.id))
 
         // Act
-        let saveResult = store.saveFocusedDeskAsPreset(label: "zmx")
-        let preset = try #require(store.deskPresets.first)
+        let saveResult = controller.saveFocusedDeskAsPreset(label: "zmx")
+        let preset = try #require(controller.deskPresets.first)
         let restoredPreset = try JSONDecoder().decode(PersonalDeskPreset.self, from: JSONEncoder().encode(preset))
-        let restoredStore = DenController(
+        let recontrollerdController = DenController(
             state: DenState(desks: [source], focusedDeskID: source.id),
             deskPresets: [restoredPreset])
-        restoredStore.createDesk(label: "Copy", personalPresetID: restoredPreset.id)
+        recontrollerdController.createDesk(label: "Copy", personalPresetID: restoredPreset.id)
 
         // Assert
         #expect(saveResult == .created)
         #expect(
             restoredPreset.boards.first?.kind
                 == .terminal(.zmx(sessionName: "project-a", rootSessionName: "project")))
-        #expect(restoredStore.focusedBoard?.id != zmx.id)
-        #expect(restoredStore.focusedBoard?.isZmx == true)
-        #expect(restoredStore.focusedBoard?.zmxSessionName == "project-a")
-        #expect(restoredStore.focusedBoard?.zmxRootSessionName == "project")
-        #expect(restoredStore.focusedBoard?.customLabel == "Project")
+        #expect(recontrollerdController.focusedBoard?.id != zmx.id)
+        #expect(recontrollerdController.focusedBoard?.isZmx == true)
+        #expect(recontrollerdController.focusedBoard?.zmxSessionName == "project-a")
+        #expect(recontrollerdController.focusedBoard?.zmxRootSessionName == "project")
+        #expect(recontrollerdController.focusedBoard?.customLabel == "Project")
     }
 
     @Test func personalPresetRejectsReservedLabels() {
         // Arrange
         let source = desk("Desk", boards: [board("First")])
-        let store = DenController(state: DenState(desks: [source], focusedDeskID: source.id))
+        let controller = DenController(state: DenState(desks: [source], focusedDeskID: source.id))
 
         // Act
-        let emptyResult = store.saveFocusedDeskAsPreset(label: "Empty")
-        let chatGPTResult = store.saveFocusedDeskAsPreset(label: "ChatGPT")
+        let emptyResult = controller.saveFocusedDeskAsPreset(label: "Empty")
+        let chatGPTResult = controller.saveFocusedDeskAsPreset(label: "ChatGPT")
 
         // Assert
         #expect(emptyResult == .reservedLabel)
         #expect(chatGPTResult == .reservedLabel)
-        #expect(store.deskPresets.isEmpty)
+        #expect(controller.deskPresets.isEmpty)
     }
 
     @Test func personalPresetReplacementUpdatesExistingPreset() throws {
         // Arrange
         let source = desk("Desk", boards: [board("First")])
-        let store = DenController(state: DenState(desks: [source], focusedDeskID: source.id))
-        let composition = DenWindowComposition(store: store)
+        let controller = DenController(state: DenState(desks: [source], focusedDeskID: source.id))
+        let composition = DenWindowComposition(controller: controller)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
-        #expect(store.saveFocusedDeskAsPreset(label: "Routine") == .created)
-        let routineID = try #require(store.deskPresets.first?.id)
-        store.storage.state.desks[0].boards[0].width = 900
+        #expect(controller.saveFocusedDeskAsPreset(label: "Routine") == .created)
+        let routineID = try #require(controller.deskPresets.first?.id)
+        controller.storage.state.desks[0].boards[0].width = 900
         windowModel.isDenMode = true
 
         // Act
-        let pending = store.saveFocusedDeskAsPreset(label: " routine ")
+        let pending = controller.saveFocusedDeskAsPreset(label: " routine ")
         #expect(pending == .replacementPending)
         windowModel.confirmDeskPresetReplacement()
 
         // Assert
         #expect(!windowModel.isDenMode)
-        #expect(store.deskPresets.first?.id == routineID)
-        #expect(store.deskPresets.first?.boards[0].width == 900)
+        #expect(controller.deskPresets.first?.id == routineID)
+        #expect(controller.deskPresets.first?.boards[0].width == 900)
     }
 
     @Test func personalPresetDeletionRemovesPreset() throws {
         // Arrange
         let source = desk("Desk", boards: [board("First")])
-        let store = DenController(state: DenState(desks: [source], focusedDeskID: source.id))
-        #expect(store.saveFocusedDeskAsPreset(label: "Routine") == .created)
-        #expect(store.saveFocusedDeskAsPreset(label: "Other") == .created)
-        let routineID = try #require(store.deskPresets.last?.id)
-        let composition = DenWindowComposition(store: store)
+        let controller = DenController(state: DenState(desks: [source], focusedDeskID: source.id))
+        #expect(controller.saveFocusedDeskAsPreset(label: "Routine") == .created)
+        #expect(controller.saveFocusedDeskAsPreset(label: "Other") == .created)
+        let routineID = try #require(controller.deskPresets.last?.id)
+        let composition = DenWindowComposition(controller: controller)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
 
         // Act
-        store.requestDeskPresetDeletion(routineID)
+        controller.requestDeskPresetDeletion(routineID)
         windowModel.confirmDeskPresetDeletion()
 
         // Assert
-        #expect(store.deskPresets.map(\.label) == ["Other"])
+        #expect(controller.deskPresets.map(\.label) == ["Other"])
     }
 
     @Test func renamingPersonalPresetPreservesCapturedStateAndRejectsReservedOrDuplicateLabels() throws {
         // Arrange
         let source = desk("Desk", boards: [board("First")])
-        let store = DenController(state: DenState(desks: [source], focusedDeskID: source.id))
-        #expect(store.saveFocusedDeskAsPreset(label: "Routine") == .created)
-        #expect(store.saveFocusedDeskAsPreset(label: "Other") == .created)
-        let presetID = try #require(store.deskPresets.last?.id)
-        let originalBoards = try #require(store.deskPresets.last?.boards)
+        let controller = DenController(state: DenState(desks: [source], focusedDeskID: source.id))
+        #expect(controller.saveFocusedDeskAsPreset(label: "Routine") == .created)
+        #expect(controller.saveFocusedDeskAsPreset(label: "Other") == .created)
+        let presetID = try #require(controller.deskPresets.last?.id)
+        let originalBoards = try #require(controller.deskPresets.last?.boards)
 
         // Act
-        let renamed = store.renameDeskPreset(presetID, to: "  Daily  ")
-        let duplicate = store.renameDeskPreset(presetID, to: "ＯＴＨＥＲ")
-        let reserved = store.renameDeskPreset(presetID, to: "ChatGPT")
-        let empty = store.renameDeskPreset(presetID, to: "   ")
-        let preset = try #require(store.deskPresets.last)
+        let renamed = controller.renameDeskPreset(presetID, to: "  Daily  ")
+        let duplicate = controller.renameDeskPreset(presetID, to: "ＯＴＨＥＲ")
+        let reserved = controller.renameDeskPreset(presetID, to: "ChatGPT")
+        let empty = controller.renameDeskPreset(presetID, to: "   ")
+        let preset = try #require(controller.deskPresets.last)
 
         // Assert
         #expect(renamed == .renamed)
@@ -355,8 +355,8 @@ struct DenControllerDeskPresetTests {
     @Test func finishingPresetManagementExitsDenMode() {
         // Arrange
         let source = desk("Desk", boards: [board("Board")])
-        let store = DenController(state: DenState(desks: [source], focusedDeskID: source.id))
-        let composition = DenWindowComposition(store: store)
+        let controller = DenController(state: DenState(desks: [source], focusedDeskID: source.id))
+        let composition = DenWindowComposition(controller: controller)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
@@ -375,13 +375,13 @@ struct DenControllerDeskPresetTests {
         // Arrange
         let empty = desk("Empty")
 
-        withStore(desks: [empty]) { store in
+        withController(desks: [empty]) { controller in
             // Act
-            let result = store.saveFocusedDeskAsPreset(label: "Saved")
+            let result = controller.saveFocusedDeskAsPreset(label: "Saved")
 
             // Assert
             #expect(result == .emptyDesk)
-            #expect(store.deskPresets.isEmpty)
+            #expect(controller.deskPresets.isEmpty)
         }
     }
 
@@ -402,7 +402,7 @@ struct DenControllerDeskPresetTests {
         // Arrange
         let deskState = desk("Desk", boards: [board("Board")])
         var saveCallCount = 0
-        let store = DenController(
+        let controller = DenController(
             state: DenState(desks: [deskState], focusedDeskID: deskState.id),
             deskPresets: [],
             onDeskPresetsSave: { _ in
@@ -412,20 +412,20 @@ struct DenControllerDeskPresetTests {
         )
 
         // Act
-        let result = store.saveFocusedDeskAsPreset(label: "Test Preset")
+        let result = controller.saveFocusedDeskAsPreset(label: "Test Preset")
 
         // Assert
         #expect(result == .created)
         #expect(saveCallCount == 1)
-        #expect(store.latestFeedback?.message == "Could not save Desk Preset.")
-        #expect(store.latestFeedback?.severity == DenFeedback.Severity.error)
+        #expect(controller.latestFeedback?.message == "Could not save Desk Preset.")
+        #expect(controller.latestFeedback?.severity == DenFeedback.Severity.error)
     }
 
     @Test func saveDeskPresetShowsSuccessFeedbackWhenPersistenceSucceeds() {
         // Arrange
         let deskState = desk("Desk", boards: [board("Board")])
         var saveCallCount = 0
-        let store = DenController(
+        let controller = DenController(
             state: DenState(desks: [deskState], focusedDeskID: deskState.id),
             deskPresets: [],
             onDeskPresetsSave: { _ in
@@ -435,13 +435,13 @@ struct DenControllerDeskPresetTests {
         )
 
         // Act
-        let result = store.saveFocusedDeskAsPreset(label: "Test Preset")
+        let result = controller.saveFocusedDeskAsPreset(label: "Test Preset")
 
         // Assert
         #expect(result == .created)
         #expect(saveCallCount == 1)
-        #expect(store.latestFeedback?.message == "Saved Desk Preset.")
-        #expect(store.latestFeedback?.severity == DenFeedback.Severity.success)
+        #expect(controller.latestFeedback?.message == "Saved Desk Preset.")
+        #expect(controller.latestFeedback?.severity == DenFeedback.Severity.success)
     }
 
     private static func sampleChoices() -> [DeskPresetChoice] {

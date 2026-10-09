@@ -14,11 +14,11 @@ struct DenControllerBoardActivityTests {
         let second = BoardState(label: "Second", width: 520, currentSheetURL: nil)
         let firstDesk = DeskState(label: "First Desk", boards: [first], focusedBoardID: first.id)
         let secondDesk = DeskState(label: "Second Desk", boards: [second], focusedBoardID: second.id)
-        let store = DenController(
+        let controller = DenController(
             state: DenState(
                 desks: [firstDesk, secondDesk],
                 focusedDeskID: firstDesk.id))
-        let composition = DenWindowComposition(store: store)
+        let composition = DenWindowComposition(controller: controller)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
@@ -29,8 +29,8 @@ struct DenControllerBoardActivityTests {
 
         // Assert
         #expect(!windowModel.isBoardActivityPresented)
-        #expect(store.focusedDesk?.id == secondDesk.id)
-        #expect(store.focusedBoard?.id == second.id)
+        #expect(controller.focusedDesk?.id == secondDesk.id)
+        #expect(controller.focusedBoard?.id == second.id)
         #expect(!windowModel.isDenMode)
     }
 }

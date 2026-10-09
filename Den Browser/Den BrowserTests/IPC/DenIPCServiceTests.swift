@@ -34,7 +34,7 @@ struct DenIPCServiceTests {
             preferences: AppPreferences(defaults: makeTestDefaults(suiteName: suiteName)),
             removeDataStore: { _ in },
             websiteDataStore: { _ in .nonPersistent() })
-        let store = try #require(manager.store(for: manager.personalProfileID))
+        let controller = try #require(manager.controller(for: manager.personalProfileID))
         let service = DenIPCService(profileManager: manager)
 
         // Act
@@ -53,8 +53,8 @@ struct DenIPCServiceTests {
 
         // Assert
         let boardID = try responseBoardID(response)
-        #expect(store.webRuntimes[boardID] != nil)
-        #expect(store.board(for: boardID)?.width == 200)
+        #expect(controller.webRuntimes[boardID] != nil)
+        #expect(controller.board(for: boardID)?.width == 200)
     }
 
     @Test func ipcBoardPlacementUsesResolvedDeskWhenNoWindowPresentsIt() async throws {
@@ -70,16 +70,16 @@ struct DenIPCServiceTests {
             preferences: AppPreferences(defaults: makeTestDefaults(suiteName: suiteName)),
             removeDataStore: { _ in },
             websiteDataStore: { _ in .nonPersistent() })
-        let store = try #require(manager.store(for: manager.personalProfileID))
-        let visibleDeskID = store.presentedDeskID
-        let visibleBoardID = try #require(store.createBoard(urlString: "https://visible.example/"))
-        store.createDesk(label: "Target Desk", preset: .empty)
-        let targetDeskID = store.presentedDeskID
+        let controller = try #require(manager.controller(for: manager.personalProfileID))
+        let visibleDeskID = controller.presentedDeskID
+        let visibleBoardID = try #require(controller.createBoard(urlString: "https://visible.example/"))
+        controller.createDesk(label: "Target Desk", preset: .empty)
+        let targetDeskID = controller.presentedDeskID
         #expect(targetDeskID != visibleDeskID)
-        #expect(store.setFocusedDesk(visibleDeskID))
-        let targetDeskIndex = try #require(store.state.desks.firstIndex(where: { $0.id == targetDeskID }))
+        #expect(controller.setFocusedDesk(visibleDeskID))
+        let targetDeskIndex = try #require(controller.state.desks.firstIndex(where: { $0.id == targetDeskID }))
         let drawerURL = try #require(URL(string: "https://drawer.example/"))
-        let itemID = try #require(store.keepInDrawerInBackground(drawerURL))
+        let itemID = try #require(controller.keepInDrawerInBackground(drawerURL))
         let service = DenIPCService(profileManager: manager)
 
         let webResponse = await service.handleResult(
@@ -105,9 +105,9 @@ struct DenIPCServiceTests {
         #expect(webResponse.isOk)
         #expect(terminalResponse.isOk)
         #expect(drawerResponse.isOk)
-        #expect(store.boardIndices(for: webBoardID)?.desk == targetDeskIndex)
-        #expect(store.boardIndices(for: terminalBoardID)?.desk == targetDeskIndex)
-        #expect(store.boardIndices(for: drawerBoardID)?.desk == targetDeskIndex)
+        #expect(controller.boardIndices(for: webBoardID)?.desk == targetDeskIndex)
+        #expect(controller.boardIndices(for: terminalBoardID)?.desk == targetDeskIndex)
+        #expect(controller.boardIndices(for: drawerBoardID)?.desk == targetDeskIndex)
     }
 
     @Test func inspectionBoardCreationUsesExplicitTargetWithoutChangingFocus() async throws {
@@ -124,9 +124,9 @@ struct DenIPCServiceTests {
             preferences: AppPreferences(defaults: makeTestDefaults(suiteName: suiteName)),
             removeDataStore: { _ in },
             websiteDataStore: { _ in .nonPersistent() })
-        let store = try #require(manager.store(for: manager.personalProfileID))
-        let targetBoardID = try #require(store.createBoard(urlString: "https://example.com/"))
-        let focusedBoardID = store.state.desks.first?.focusedBoardID
+        let controller = try #require(manager.controller(for: manager.personalProfileID))
+        let targetBoardID = try #require(controller.createBoard(urlString: "https://example.com/"))
+        let focusedBoardID = controller.state.desks.first?.focusedBoardID
         let service = DenIPCService(profileManager: manager)
 
         // Act
@@ -140,7 +140,7 @@ struct DenIPCServiceTests {
 
         // Assert
         let inspectionBoardID = try responseBoardID(result)
-        let inspectionBoard = try #require(store.board(for: inspectionBoardID))
+        let inspectionBoard = try #require(controller.board(for: inspectionBoardID))
         #expect(result.isOk)
         if case .board(let profileID, let resolvedBoardID) = response.target {
             #expect(profileID == manager.personalProfileID.rawValue)
@@ -155,8 +155,8 @@ struct DenIPCServiceTests {
             Issue.record("Expected created Inspection Board payload")
         }
         #expect(inspectionBoard.sideBoardTargetBoardID == targetBoardID)
-        #expect(store.state.desks.first?.focusedBoardID == focusedBoardID)
-        #expect(store.webRuntimes[targetBoardID]?.isInspectionCollecting == true)
+        #expect(controller.state.desks.first?.focusedBoardID == focusedBoardID)
+        #expect(controller.webRuntimes[targetBoardID]?.isInspectionCollecting == true)
     }
 
     @Test func terminalBoardCreationUsesRequestedWidth() async throws {
@@ -172,7 +172,7 @@ struct DenIPCServiceTests {
             preferences: AppPreferences(defaults: makeTestDefaults(suiteName: suiteName)),
             removeDataStore: { _ in },
             websiteDataStore: { _ in .nonPersistent() })
-        let store = try #require(manager.store(for: manager.personalProfileID))
+        let controller = try #require(manager.controller(for: manager.personalProfileID))
         let service = DenIPCService(profileManager: manager)
 
         let response = await service.handleResult(
@@ -188,7 +188,7 @@ struct DenIPCServiceTests {
                 ))
         )
         let terminalID = try responseBoardID(response)
-        #expect(store.board(for: terminalID)?.width == 1_500)
+        #expect(controller.board(for: terminalID)?.width == 1_500)
     }
 
     @Test func boardCreationFallsBackWhenAmbientBoardIDIsStale() async throws {
@@ -205,7 +205,7 @@ struct DenIPCServiceTests {
             preferences: AppPreferences(defaults: makeTestDefaults(suiteName: suiteName)),
             removeDataStore: { _ in },
             websiteDataStore: { _ in .nonPersistent() })
-        let store = try #require(manager.store(for: manager.personalProfileID))
+        let controller = try #require(manager.controller(for: manager.personalProfileID))
         let service = DenIPCService(profileManager: manager)
         let staleBoardID = UUID()
 
@@ -232,8 +232,8 @@ struct DenIPCServiceTests {
         let terminalBoardID = try responseBoardID(terminalResponse)
         #expect(webResponse.isOk)
         #expect(terminalResponse.isOk)
-        #expect(store.board(for: webBoardID)?.isWeb == true)
-        #expect(store.board(for: terminalBoardID)?.isTerminal == true)
+        #expect(controller.board(for: webBoardID)?.isWeb == true)
+        #expect(controller.board(for: terminalBoardID)?.isTerminal == true)
     }
 
     @Test func sheetNavigateUsesSharedInputResolution() async throws {
@@ -249,8 +249,8 @@ struct DenIPCServiceTests {
             preferences: AppPreferences(defaults: makeTestDefaults(suiteName: suiteName)),
             removeDataStore: { _ in },
             websiteDataStore: { _ in .nonPersistent() })
-        let store = try #require(manager.store(for: manager.personalProfileID))
-        let boardID = try #require(store.createBoard(urlString: "https://example.com/"))
+        let controller = try #require(manager.controller(for: manager.personalProfileID))
+        let boardID = try #require(controller.createBoard(urlString: "https://example.com/"))
         let service = DenIPCService(profileManager: manager)
 
         let hostnameResponse = await service.handleResult(
@@ -289,20 +289,20 @@ struct DenIPCServiceTests {
             preferences: AppPreferences(defaults: makeTestDefaults(suiteName: suiteName)),
             removeDataStore: { _ in },
             websiteDataStore: { _ in .nonPersistent() })
-        let store = try #require(manager.store(for: manager.personalProfileID))
+        let controller = try #require(manager.controller(for: manager.personalProfileID))
         let service = DenIPCService(profileManager: manager)
 
         let response = await service.handleResult(
             ipcRequest(
                 .drawer(command: .keep(DenDrawerKeepPayload(url: "example.com", title: nil)), target: .automatic)))
         #expect(response.isOk)
-        #expect(store.state.drawerItems.first?.url == URL(string: "https://example.com/"))
+        #expect(controller.state.drawerItems.first?.url == URL(string: "https://example.com/"))
 
         let searchResponse = await service.handleResult(
             ipcRequest(
                 .drawer(command: .keep(DenDrawerKeepPayload(url: "search phrase", title: nil)), target: .automatic)))
         #expect(searchResponse.isOk == false)
-        #expect(store.state.drawerItems.count == 1)
+        #expect(controller.state.drawerItems.count == 1)
     }
 
     @Test func drawerPlacementStartsWebRuntime() async throws {
@@ -319,9 +319,9 @@ struct DenIPCServiceTests {
             preferences: AppPreferences(defaults: makeTestDefaults(suiteName: suiteName)),
             removeDataStore: { _ in },
             websiteDataStore: { _ in .nonPersistent() })
-        let store = try #require(manager.store(for: manager.personalProfileID))
+        let controller = try #require(manager.controller(for: manager.personalProfileID))
         let itemID = try #require(
-            store.keepInDrawerInBackground(URL(string: "https://example.com/drawer")!))
+            controller.keepInDrawerInBackground(URL(string: "https://example.com/drawer")!))
         let service = DenIPCService(profileManager: manager)
 
         // Act
@@ -331,7 +331,7 @@ struct DenIPCServiceTests {
 
         // Assert
         let boardID = try responseBoardID(response)
-        #expect(store.webRuntimes[boardID] != nil)
+        #expect(controller.webRuntimes[boardID] != nil)
     }
 
     @Test func profileListCommandReturnsAllProfiles() async throws {
@@ -348,7 +348,7 @@ struct DenIPCServiceTests {
             preferences: AppPreferences(defaults: makeTestDefaults(suiteName: suiteName)),
             removeDataStore: { _ in },
             websiteDataStore: { _ in .nonPersistent() })
-        _ = try #require(manager.store(for: manager.personalProfileID))
+        _ = try #require(manager.controller(for: manager.personalProfileID))
         let profile2 = try #require(manager.createProfile(name: "Work", color: .blue))
         let service = DenIPCService(profileManager: manager)
 
@@ -384,10 +384,10 @@ struct DenIPCServiceTests {
             preferences: AppPreferences(defaults: makeTestDefaults(suiteName: suiteName)),
             removeDataStore: { _ in },
             websiteDataStore: { _ in .nonPersistent() })
-        _ = try #require(manager.store(for: manager.personalProfileID))
+        _ = try #require(manager.controller(for: manager.personalProfileID))
         let profile2 = try #require(manager.createProfile(name: "Work", color: .blue))
-        let store2 = try #require(manager.store(for: profile2.id))
-        store2.createDesk(label: "Work Desk", preset: .empty)
+        let controller2 = try #require(manager.controller(for: profile2.id))
+        controller2.createDesk(label: "Work Desk", preset: .empty)
         let service = DenIPCService(profileManager: manager)
 
         // Act
@@ -465,7 +465,7 @@ struct DenIPCServiceTests {
             removeDataStore: { _ in },
             websiteDataStore: { _ in .nonPersistent() })
         let route = ProfileWindowRoute(profileID: manager.personalProfileID)
-        _ = try #require(manager.store(for: route))
+        _ = try #require(manager.controller(for: route))
         let window = TestWindow()
         manager.register(window: window, for: route)
         let service = DenIPCService(profileManager: manager)
@@ -526,9 +526,9 @@ struct DenIPCServiceTests {
             preferences: AppPreferences(defaults: makeTestDefaults(suiteName: suiteName)),
             removeDataStore: { _ in },
             websiteDataStore: { _ in .nonPersistent() })
-        let store = try #require(manager.store(for: manager.personalProfileID))
-        let boardID = try #require(store.createBoard(urlString: "https://example.com/"))
-        store.focusBoard(boardID)
+        let controller = try #require(manager.controller(for: manager.personalProfileID))
+        let boardID = try #require(controller.createBoard(urlString: "https://example.com/"))
+        controller.focusBoard(boardID)
         let service = DenIPCService(profileManager: manager)
 
         // Act
@@ -558,9 +558,9 @@ struct DenIPCServiceTests {
             preferences: AppPreferences(defaults: makeTestDefaults(suiteName: suiteName)),
             removeDataStore: { _ in },
             websiteDataStore: { _ in .nonPersistent() })
-        let store = try #require(manager.store(for: manager.personalProfileID))
-        let boardID = try #require(store.createBoard(urlString: "https://example.com/"))
-        store.focusBoard(boardID)
+        let controller = try #require(manager.controller(for: manager.personalProfileID))
+        let boardID = try #require(controller.createBoard(urlString: "https://example.com/"))
+        controller.focusBoard(boardID)
         let service = DenIPCService(profileManager: manager)
 
         // Act
@@ -591,10 +591,10 @@ struct DenIPCServiceTests {
             preferences: AppPreferences(defaults: makeTestDefaults(suiteName: suiteName)),
             removeDataStore: { _ in },
             websiteDataStore: { _ in .nonPersistent() })
-        let store = try #require(manager.store(for: manager.personalProfileID))
+        let controller = try #require(manager.controller(for: manager.personalProfileID))
         // Remove existing default boards if any
-        if let focused = store.focusedBoard {
-            store.removeBoard(focused.id)
+        if let focused = controller.focusedBoard {
+            controller.removeBoard(focused.id)
         }
         let service = DenIPCService(profileManager: manager)
 
@@ -620,10 +620,10 @@ struct DenIPCServiceTests {
             preferences: AppPreferences(defaults: makeTestDefaults(suiteName: suiteName)),
             removeDataStore: { _ in },
             websiteDataStore: { _ in .nonPersistent() })
-        let store = try #require(manager.store(for: manager.personalProfileID))
-        let boardID = try #require(store.createBoard(urlString: "https://example.com/"))
-        let board = try #require(store.board(for: boardID))
-        let runtime = store.webRuntime(for: board)
+        let controller = try #require(manager.controller(for: manager.personalProfileID))
+        let boardID = try #require(controller.createBoard(urlString: "https://example.com/"))
+        let board = try #require(controller.board(for: boardID))
+        let runtime = controller.webRuntime(for: board)
 
         let waiter = SheetInteractionWebViewLoadWaiter()
         let html = """
@@ -662,7 +662,7 @@ struct DenIPCServiceTests {
             return
         }
         let newBoardID = BoardID(try #require(UUID(uuidString: newBoardIDString)))
-        #expect(store.board(for: newBoardID) != nil)
+        #expect(controller.board(for: newBoardID) != nil)
         #expect(url == "https://example.com/subpage")
     }
 
@@ -680,10 +680,10 @@ struct DenIPCServiceTests {
             preferences: AppPreferences(defaults: makeTestDefaults(suiteName: suiteName)),
             removeDataStore: { _ in },
             websiteDataStore: { _ in .nonPersistent() })
-        let store = try #require(manager.store(for: manager.personalProfileID))
-        let boardID = try #require(store.createBoard(urlString: "https://snapshot.example/"))
-        let board = try #require(store.board(for: boardID))
-        let runtime = store.webRuntime(for: board)
+        let controller = try #require(manager.controller(for: manager.personalProfileID))
+        let boardID = try #require(controller.createBoard(urlString: "https://snapshot.example/"))
+        let board = try #require(controller.board(for: boardID))
+        let runtime = controller.webRuntime(for: board)
         let waiter = SheetInteractionWebViewLoadWaiter()
         await waiter.load(
             """
@@ -735,14 +735,14 @@ struct DenIPCServiceTests {
             preferences: AppPreferences(defaults: makeTestDefaults(suiteName: suiteName)),
             removeDataStore: { _ in },
             websiteDataStore: { _ in .nonPersistent() })
-        let store = try #require(manager.store(for: manager.personalProfileID))
-        let firstBoardID = try #require(store.createBoard(urlString: "https://first.example/"))
-        let secondBoardID = try #require(store.createBoard(urlString: "https://second.example/"))
-        store.focusBoard(firstBoardID)
-        let firstBoard = try #require(store.board(for: firstBoardID))
-        let secondBoard = try #require(store.board(for: secondBoardID))
-        let firstRuntime = store.webRuntime(for: firstBoard)
-        let secondRuntime = store.webRuntime(for: secondBoard)
+        let controller = try #require(manager.controller(for: manager.personalProfileID))
+        let firstBoardID = try #require(controller.createBoard(urlString: "https://first.example/"))
+        let secondBoardID = try #require(controller.createBoard(urlString: "https://second.example/"))
+        controller.focusBoard(firstBoardID)
+        let firstBoard = try #require(controller.board(for: firstBoardID))
+        let secondBoard = try #require(controller.board(for: secondBoardID))
+        let firstRuntime = controller.webRuntime(for: firstBoard)
+        let secondRuntime = controller.webRuntime(for: secondBoard)
         let firstWaiter = SheetInteractionWebViewLoadWaiter()
         let secondWaiter = SheetInteractionWebViewLoadWaiter()
         await firstWaiter.load(
@@ -811,7 +811,7 @@ struct DenIPCServiceTests {
             await Task.yield()
         }
         #expect(waitStarted)
-        store.focusBoard(secondBoardID)
+        controller.focusBoard(secondBoardID)
         _ = try await firstRuntime.webView.evaluateJavaScript(
             "window.targetReady = '\(readyToken)'")
         let response = await interactTask.value
@@ -836,10 +836,10 @@ struct DenIPCServiceTests {
             preferences: AppPreferences(defaults: makeTestDefaults(suiteName: suiteName)),
             removeDataStore: { _ in },
             websiteDataStore: { _ in .nonPersistent() })
-        let store = try #require(manager.store(for: manager.personalProfileID))
-        let boardID = try #require(store.createBoard(urlString: "https://interact.example/"))
-        let board = try #require(store.board(for: boardID))
-        let webView = store.webRuntime(for: board).webView
+        let controller = try #require(manager.controller(for: manager.personalProfileID))
+        let boardID = try #require(controller.createBoard(urlString: "https://interact.example/"))
+        let board = try #require(controller.board(for: boardID))
+        let webView = controller.webRuntime(for: board).webView
         let waiter = SheetInteractionWebViewLoadWaiter()
         await waiter.load(
             "<!doctype html><body><button id=\"continue\">Continue</button><h2>Static detail</h2></body>",
@@ -927,14 +927,14 @@ struct DenIPCServiceTests {
             preferences: AppPreferences(defaults: makeTestDefaults(suiteName: suiteName)),
             removeDataStore: { _ in },
             websiteDataStore: { _ in .nonPersistent() })
-        let store = try #require(manager.store(for: manager.personalProfileID))
-        let firstBoardID = try #require(store.createBoard(urlString: "https://first.example/"))
-        let secondBoardID = try #require(store.createBoard(urlString: "https://second.example/"))
-        store.focusBoard(firstBoardID)
-        let firstBoard = try #require(store.board(for: firstBoardID))
-        let secondBoard = try #require(store.board(for: secondBoardID))
-        let firstRuntime = store.webRuntime(for: firstBoard)
-        let secondRuntime = store.webRuntime(for: secondBoard)
+        let controller = try #require(manager.controller(for: manager.personalProfileID))
+        let firstBoardID = try #require(controller.createBoard(urlString: "https://first.example/"))
+        let secondBoardID = try #require(controller.createBoard(urlString: "https://second.example/"))
+        controller.focusBoard(firstBoardID)
+        let firstBoard = try #require(controller.board(for: firstBoardID))
+        let secondBoard = try #require(controller.board(for: secondBoardID))
+        let firstRuntime = controller.webRuntime(for: firstBoard)
+        let secondRuntime = controller.webRuntime(for: secondBoard)
         let firstWaiter = SheetInteractionWebViewLoadWaiter()
         let secondWaiter = SheetInteractionWebViewLoadWaiter()
         await firstWaiter.load(
@@ -1000,8 +1000,8 @@ struct DenIPCServiceTests {
             await Task.yield()
         }
         #expect(waitStarted)
-        store.removeBoard(firstBoardID)
-        store.focusBoard(secondBoardID)
+        controller.removeBoard(firstBoardID)
+        controller.focusBoard(secondBoardID)
         _ = try await firstRuntime.webView.evaluateJavaScript(
             "window.targetReady = '\(readyToken)'")
         let response = await interactTask.value
@@ -1027,8 +1027,8 @@ struct DenIPCServiceTests {
             preferences: AppPreferences(defaults: makeTestDefaults(suiteName: suiteName)),
             removeDataStore: { _ in },
             websiteDataStore: { _ in .nonPersistent() })
-        let store = try #require(manager.store(for: manager.personalProfileID))
-        let boardID = try #require(store.createBoard(urlString: "https://example.com/"))
+        let controller = try #require(manager.controller(for: manager.personalProfileID))
+        let boardID = try #require(controller.createBoard(urlString: "https://example.com/"))
         let service = DenIPCService(profileManager: manager)
 
         // Act
@@ -1038,7 +1038,7 @@ struct DenIPCServiceTests {
 
         // Assert
         #expect(result.isOk)
-        #expect(store.board(for: boardID) == nil)
+        #expect(controller.board(for: boardID) == nil)
         if case .board(let profileID, let targetBoardID) = response.target {
             #expect(profileID == manager.personalProfileID.rawValue)
             #expect(targetBoardID == boardID.rawValue)

@@ -19,8 +19,8 @@ extension DenWindowModel {
     }
 
     func enterBoardFromActivity(_ boardID: BoardID) {
-        guard store.boardIndices(for: boardID) != nil else { return }
+        guard controller.boardIndices(for: boardID) != nil else { return }
         setTemporaryContext(nil)
-        store.focusBoard(boardID, exitsDenMode: true)
+        controller.focusBoard(boardID, exitsDenMode: true)
     }
 }

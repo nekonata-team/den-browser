@@ -43,9 +43,10 @@ final class ProfileExtensionCoordinator {
         return host
     }
 
-    func setEnabled(_ enabled: Bool, stores: [(windowID: UUID, profileID: ProfileID?, store: DenController)]) {
+    func setEnabled(_ enabled: Bool, controllers: [(windowID: UUID, profileID: ProfileID?, controller: DenController)])
+    {
         preferences.setUBOLiteEnabled(enabled)
-        updateStores(stores)
+        updateControllers(controllers)
         if !enabled { disposeAllHosts() }
     }
 
@@ -81,11 +82,12 @@ final class ProfileExtensionCoordinator {
         hosts.removeValue(forKey: profileID)?.dispose()
     }
 
-    func updateUBOLite(stores: [(windowID: UUID, profileID: ProfileID?, store: DenController)]) async -> Bool {
+    func updateUBOLite(controllers: [(windowID: UUID, profileID: ProfileID?, controller: DenController)]) async -> Bool
+    {
         let success = await installer.install()
         guard success, preferences.uBOLiteEnabled else { return success }
         disposeAllHosts()
-        updateStores(stores)
+        updateControllers(controllers)
         return true
     }
 
@@ -94,15 +96,16 @@ final class ProfileExtensionCoordinator {
         return installer.descriptor.map { [$0] } ?? []
     }
 
-    private func updateStores(_ stores: [(windowID: UUID, profileID: ProfileID?, store: DenController)]) {
-        for (windowID, profileID, store) in stores {
+    private func updateControllers(_ controllers: [(windowID: UUID, profileID: ProfileID?, controller: DenController)])
+    {
+        for (windowID, profileID, controller) in controllers {
             let host: MV3WebExtensionHost?
-            if store.hasWebExtensionDemand, let profileID {
-                host = self.host(for: profileID, websiteDataStore: store.websiteDataStore)
+            if controller.hasWebExtensionDemand, let profileID {
+                host = self.host(for: profileID, websiteDataStore: controller.websiteDataStore)
             } else {
                 host = nil
             }
-            store.updateWebExtensionHost(host, window: host?.window(for: windowID))
+            controller.updateWebExtensionHost(host, window: host?.window(for: windowID))
         }
     }
 

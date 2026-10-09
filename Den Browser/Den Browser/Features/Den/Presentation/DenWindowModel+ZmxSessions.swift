@@ -4,7 +4,7 @@ import Foundation
 
 extension DenWindowModel {
     func refreshZmxSessions() {
-        zmxSessions.refresh(using: store.zmxClient)
+        zmxSessions.refresh(using: controller.zmxClient)
     }
 
     func selectZmxSession(by offset: Int) {
@@ -23,17 +23,18 @@ extension DenWindowModel {
     func clearZmxSessionFilter() { zmxSessions.clearFilter() }
 
     func openZmxSession(_ sessionName: String) {
-        if let board = store.state.desks.lazy.flatMap(\.boards).first(where: { $0.zmxSessionName == sessionName }) {
-            store.updateZmxRootSessionName(
+        if let board = controller.state.desks.lazy.flatMap(\.boards).first(where: { $0.zmxSessionName == sessionName })
+        {
+            controller.updateZmxRootSessionName(
                 boardID: board.id,
                 rootSessionName: zmxSessions.rootSessionName(for: sessionName))
-            store.focusBoard(board.id, exitsDenMode: true)
+            controller.focusBoard(board.id, exitsDenMode: true)
             hideZmxSessions(returnToSource: false)
             return
         }
         let trimmed = sessionName.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
-        store.openBoard(
+        controller.openBoard(
             input: ":zmx \(trimmed)",
             preferredWidth: defaultBoardWidth,
             opensFromOpenBoardPanel: zmxSessionsReturnToOpenBoard,
@@ -54,11 +55,11 @@ extension DenWindowModel {
     }
 
     func killZmxSessions(_ sessionNames: [String]) {
-        zmxSessions.kill(sessionNames, using: store.zmxClient)
+        zmxSessions.kill(sessionNames, using: controller.zmxClient)
     }
 
     func zmxBoardLocation(for sessionName: String) -> String? {
-        for desk in store.state.desks {
+        for desk in controller.state.desks {
             if let board = desk.boards.first(where: { $0.zmxSessionName == sessionName }) {
                 return "\(desk.label) · \(board.displayName)"
             }

@@ -8,7 +8,7 @@ import SwiftUI
 struct BoardActivityView: View {
     let profileColor: Color
 
-    @Environment(DenController.self) private var store
+    @Environment(DenController.self) private var controller
     @Environment(DenWindowModel.self) private var windowModel
     @State private var sampler = ProcessResourceSampler()
     @State private var webUsage: [pid_t: ProcessResourceUsage] = [:]
@@ -22,7 +22,7 @@ struct BoardActivityView: View {
                 .frame(maxWidth: .infinity)
 
             ScrollView {
-                if store.state.desks.allSatisfy({ $0.boards.isEmpty }) {
+                if controller.state.desks.allSatisfy({ $0.boards.isEmpty }) {
                     ContentUnavailableView(
                         "No Boards",
                         systemSymbol: .rectangleStack,
@@ -33,7 +33,7 @@ struct BoardActivityView: View {
                     LazyVStack(alignment: .leading, spacing: 12) {
                         BoardActivityTableHeader()
 
-                        ForEach(store.state.desks) { desk in
+                        ForEach(controller.state.desks) { desk in
                             if !desk.boards.isEmpty {
                                 VStack(alignment: .leading, spacing: 8) {
                                     Button {
@@ -63,15 +63,15 @@ struct BoardActivityView: View {
                                         ForEach(desk.boards) { board in
                                             BoardActivityRow(
                                                 board: board,
-                                                webRuntime: store.webRuntimes[board.id],
-                                                terminalRuntime: store.terminalRuntimes[board.id],
+                                                webRuntime: controller.webRuntimes[board.id],
+                                                terminalRuntime: controller.terminalRuntimes[board.id],
                                                 usage: usage(for: board),
                                                 processLabel: processLabel(for: board),
                                                 processIdentifier: processIdentifier(for: board),
                                                 sharedWebBoardCount: sharedWebBoardCount(for: board),
                                                 profileColor: profileColor,
                                                 onOpen: { windowModel.enterBoardFromActivity(board.id) },
-                                                onRemove: { store.removeBoard(board.id) })
+                                                onRemove: { controller.removeBoard(board.id) })
                                         }
                                     }
                                 }
@@ -103,7 +103,7 @@ struct BoardActivityView: View {
     }
 
     private func usage(for board: BoardState) -> ProcessResourceUsage? {
-        if let processID = store.webRuntimes[board.id]?.webProcessIdentifier {
+        if let processID = controller.webRuntimes[board.id]?.webProcessIdentifier {
             return webUsage[processID]
         }
         return terminalUsage[board.id]
@@ -116,28 +116,28 @@ struct BoardActivityView: View {
     }
 
     private func sharedWebBoardCount(for board: BoardState) -> Int {
-        guard let processID = store.webRuntimes[board.id]?.webProcessIdentifier else { return 0 }
-        return store.webRuntimes.values.count { $0.webProcessIdentifier == processID }
+        guard let processID = controller.webRuntimes[board.id]?.webProcessIdentifier else { return 0 }
+        return controller.webRuntimes.values.count { $0.webProcessIdentifier == processID }
     }
 
     private func processLabel(for board: BoardState) -> String? {
-        if let processID = store.webRuntimes[board.id]?.webProcessIdentifier {
+        if let processID = controller.webRuntimes[board.id]?.webProcessIdentifier {
             return "Web PID \(processID)"
         }
-        if let processGroupID = store.terminalRuntimes[board.id]?.foregroundProcessGroupID {
+        if let processGroupID = controller.terminalRuntimes[board.id]?.foregroundProcessGroupID {
             return "Terminal PGID \(processGroupID)"
         }
         return nil
     }
 
     private func processIdentifier(for board: BoardState) -> pid_t? {
-        store.webRuntimes[board.id]?.webProcessIdentifier
-            ?? store.terminalRuntimes[board.id]?.foregroundProcessGroupID
+        controller.webRuntimes[board.id]?.webProcessIdentifier
+            ?? controller.terminalRuntimes[board.id]?.foregroundProcessGroupID
     }
 
     private func refreshResourceUsage() {
         var activeSamplerKeys = Set<String>()
-        let webProcessIDs = Set(store.webRuntimes.values.compactMap(\.webProcessIdentifier))
+        let webProcessIDs = Set(controller.webRuntimes.values.compactMap(\.webProcessIdentifier))
         webUsage = Dictionary(
             uniqueKeysWithValues: webProcessIDs.compactMap { processID in
                 let key = "web:\(processID)"
@@ -146,7 +146,7 @@ struct BoardActivityView: View {
             })
 
         terminalUsage = Dictionary(
-            uniqueKeysWithValues: store.terminalRuntimes.compactMap { boardID, runtime in
+            uniqueKeysWithValues: controller.terminalRuntimes.compactMap { boardID, runtime in
                 guard let processGroupID = runtime.foregroundProcessGroupID else { return nil }
                 let pids = ProcessResourceSampler.processGroupPIDs(processGroupID)
                 let key = "terminal:\(boardID)"

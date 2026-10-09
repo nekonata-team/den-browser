@@ -43,8 +43,8 @@ private final class TestUserDefaults: UserDefaults {
 struct KeyboardShortcutTests {
     @Test func keyboardShortcutGuideForwardsTextInputAndKeepsEscapeToClose() throws {
         // Arrange
-        let store = try makeStore(boards: [board("First")])
-        let composition = DenWindowComposition(store: store)
+        let controller = try makeController(boards: [board("First")])
+        let composition = DenWindowComposition(controller: controller)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
@@ -61,11 +61,14 @@ struct KeyboardShortcutTests {
             characters: "\u{1B}", charactersIgnoringModifiers: "\u{1B}", keyCode: 53)
 
         // Act
-        let letterDecision = KeyboardController.decision(for: letterA, store: store, windowModel: windowModel)
-        let selectAllDecision = KeyboardController.decision(for: commandA, store: store, windowModel: windowModel)
-        let commandTDecision = KeyboardController.decision(for: commandT, store: store, windowModel: windowModel)
-        let questionDecision = KeyboardController.decision(for: questionMark, store: store, windowModel: windowModel)
-        let escapeDecision = KeyboardController.decision(for: escape, store: store, windowModel: windowModel)
+        let letterDecision = KeyboardController.decision(for: letterA, controller: controller, windowModel: windowModel)
+        let selectAllDecision = KeyboardController.decision(
+            for: commandA, controller: controller, windowModel: windowModel)
+        let commandTDecision = KeyboardController.decision(
+            for: commandT, controller: controller, windowModel: windowModel)
+        let questionDecision = KeyboardController.decision(
+            for: questionMark, controller: controller, windowModel: windowModel)
+        let escapeDecision = KeyboardController.decision(for: escape, controller: controller, windowModel: windowModel)
 
         // Assert
         #expect(letterDecision == .forward(.filterTextInput))
@@ -192,8 +195,8 @@ struct KeyboardShortcutTests {
     }
 
     @Test func commandSTogglesBoardRailAndIgnoresKeyRepeat() throws {
-        let store = try makeStore(boards: [board("Board")])
-        let composition = DenWindowComposition(store: store)
+        let controller = try makeController(boards: [board("Board")])
+        let composition = DenWindowComposition(controller: controller)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
@@ -212,13 +215,13 @@ struct KeyboardShortcutTests {
         )
 
         #expect(
-            KeyboardController.decision(for: toggle, store: store, windowModel: windowModel)
+            KeyboardController.decision(for: toggle, controller: controller, windowModel: windowModel)
                 == .perform(.application(.toggleBoardRail))
         )
         #expect(
             KeyboardController.decision(
                 for: repeatToggle,
-                store: store,
+                controller: controller,
                 windowModel: windowModel
             ) == .consume(.ignoredRepeat)
         )
@@ -231,12 +234,12 @@ struct KeyboardShortcutTests {
             label: "Second",
             boards: [movedBoard],
             focusedBoardID: movedBoard.id)
-        let store = try makeStore(desks: [firstDesk, secondDesk])
-        let composition = DenWindowComposition(store: store)
+        let controller = try makeController(desks: [firstDesk, secondDesk])
+        let composition = DenWindowComposition(controller: controller)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
-        store.focusDesk(secondDesk.id)
+        controller.focusDesk(secondDesk.id)
         windowModel.isDenMode = true
 
         let shiftOne = try keyEvent(
@@ -245,17 +248,17 @@ struct KeyboardShortcutTests {
             modifiers: [.shift],
             keyCode: 18)
 
-        #expect(KeyboardController.handle(shiftOne, store: store, windowModel: windowModel))
-        #expect(store.state.focusedDeskID == firstDesk.id)
-        #expect(store.focusedDesk?.focusedBoardID == movedBoard.id)
-        #expect(store.state.desks[0].boards.map(\.id) == [movedBoard.id])
+        #expect(KeyboardController.handle(shiftOne, controller: controller, windowModel: windowModel))
+        #expect(controller.state.focusedDeskID == firstDesk.id)
+        #expect(controller.focusedDesk?.focusedBoardID == movedBoard.id)
+        #expect(controller.state.desks[0].boards.map(\.id) == [movedBoard.id])
         #expect(!windowModel.isDenMode)
     }
 
     @Test func denModeEqualsWidensFocusedBoardWithOrWithoutShift() throws {
         for (characters, modifiers) in [("=", NSEvent.ModifierFlags()), ("+", NSEvent.ModifierFlags.shift)] {
-            let store = try makeStore(boards: [board("Focused")])
-            let composition = DenWindowComposition(store: store)
+            let controller = try makeController(boards: [board("Focused")])
+            let composition = DenWindowComposition(controller: controller)
             let windowModel = composition.model
             composition.connect()
             defer { composition.disconnect() }
@@ -266,16 +269,16 @@ struct KeyboardShortcutTests {
                 modifiers: modifiers,
                 keyCode: 24)
 
-            #expect(KeyboardController.handle(event, store: store, windowModel: windowModel))
-            #expect(store.focusedBoard?.width == 600)
+            #expect(KeyboardController.handle(event, controller: controller, windowModel: windowModel))
+            #expect(controller.focusedBoard?.width == 600)
         }
     }
 
     @Test func denModeAngleBracketsBrowseBoardsWithoutChangingFocus() throws {
         let first = board("First")
         let second = board("Second")
-        let store = try makeStore(boards: [first, second])
-        let composition = DenWindowComposition(store: store)
+        let controller = try makeController(boards: [first, second])
+        let composition = DenWindowComposition(controller: controller)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
@@ -286,9 +289,9 @@ struct KeyboardShortcutTests {
             modifiers: [.shift],
             keyCode: 47)
 
-        #expect(KeyboardController.handle(right, store: store, windowModel: windowModel))
+        #expect(KeyboardController.handle(right, controller: controller, windowModel: windowModel))
         #expect(windowModel.revealNextBoardRequest == 1)
-        #expect(store.focusedDesk?.focusedBoardID == first.id)
+        #expect(controller.focusedDesk?.focusedBoardID == first.id)
 
         let left = try keyEvent(
             characters: "<",
@@ -296,14 +299,14 @@ struct KeyboardShortcutTests {
             modifiers: [.shift],
             keyCode: 43)
 
-        #expect(KeyboardController.handle(left, store: store, windowModel: windowModel))
+        #expect(KeyboardController.handle(left, controller: controller, windowModel: windowModel))
         #expect(windowModel.revealPreviousBoardRequest == 1)
-        #expect(store.focusedDesk?.focusedBoardID == first.id)
+        #expect(controller.focusedDesk?.focusedBoardID == first.id)
     }
 
     @Test func denModeControlSCopiesCurrentSheetScreenshot() throws {
-        let store = try makeStore(boards: [board("First"), board("Second")])
-        let composition = DenWindowComposition(store: store)
+        let controller = try makeController(boards: [board("First"), board("Second")])
+        let composition = DenWindowComposition(controller: controller)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
@@ -314,14 +317,14 @@ struct KeyboardShortcutTests {
             modifiers: [.control],
             keyCode: 1)
         #expect(
-            KeyboardController.decision(for: controlS, store: store, windowModel: windowModel)
+            KeyboardController.decision(for: controlS, controller: controller, windowModel: windowModel)
                 == .perform(.board(.copySheetScreenshot)))
     }
 
     @Test func denModeYCopiesFocusedBoardLocationAndShiftYCopiesBoardID() throws {
         // Arrange
-        let store = try makeStore(boards: [board("First")])
-        let composition = DenWindowComposition(store: store)
+        let controller = try makeController(boards: [board("First")])
+        let composition = DenWindowComposition(controller: controller)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
@@ -337,8 +340,10 @@ struct KeyboardShortcutTests {
             keyCode: 16)
 
         // Act
-        let locationDecision = KeyboardController.decision(for: locationEvent, store: store, windowModel: windowModel)
-        let boardIDDecision = KeyboardController.decision(for: boardIDEvent, store: store, windowModel: windowModel)
+        let locationDecision = KeyboardController.decision(
+            for: locationEvent, controller: controller, windowModel: windowModel)
+        let boardIDDecision = KeyboardController.decision(
+            for: boardIDEvent, controller: controller, windowModel: windowModel)
 
         // Assert
         #expect(
@@ -354,13 +359,13 @@ struct KeyboardShortcutTests {
             label: "Second",
             boards: [movedBoard],
             focusedBoardID: movedBoard.id)
-        let store = try makeStore(desks: [firstDesk, secondDesk])
-        let composition = DenWindowComposition(store: store)
+        let controller = try makeController(desks: [firstDesk, secondDesk])
+        let composition = DenWindowComposition(controller: controller)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
-        store.focusDesk(secondDesk.id)
-        let preferences = store.preferences
+        controller.focusDesk(secondDesk.id)
+        let preferences = controller.preferences
         let commandOptionOne = try keyEvent(
             characters: "1",
             charactersIgnoringModifiers: "1",
@@ -374,17 +379,18 @@ struct KeyboardShortcutTests {
 
         #expect(
             KeyboardController.handle(
-                commandOptionOne, store: store, windowModel: windowModel, preferences: preferences))
-        #expect(store.state.focusedDeskID == firstDesk.id)
+                commandOptionOne, controller: controller, windowModel: windowModel, preferences: preferences))
+        #expect(controller.state.focusedDeskID == firstDesk.id)
         #expect(!windowModel.isDenMode)
         #expect(
-            !KeyboardController.handle(commandZero, store: store, windowModel: windowModel, preferences: preferences))
-        #expect(store.state.focusedDeskID == firstDesk.id)
+            !KeyboardController.handle(
+                commandZero, controller: controller, windowModel: windowModel, preferences: preferences))
+        #expect(controller.state.focusedDeskID == firstDesk.id)
     }
 
     @Test func contentSizeShortcutsRouteToTheFocusedBoardInEveryInputMode() throws {
-        let store = try makeStore(boards: [board("Focused")])
-        let composition = DenWindowComposition(store: store)
+        let controller = try makeController(boards: [board("Focused")])
+        let composition = DenWindowComposition(controller: controller)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
@@ -410,21 +416,21 @@ struct KeyboardShortcutTests {
             keyCode: 29)
 
         #expect(
-            KeyboardController.decision(for: increase, store: store, windowModel: windowModel)
+            KeyboardController.decision(for: increase, controller: controller, windowModel: windowModel)
                 == .perform(.board(.increaseSheetSize)))
         #expect(
-            KeyboardController.decision(for: plus, store: store, windowModel: windowModel)
+            KeyboardController.decision(for: plus, controller: controller, windowModel: windowModel)
                 == .perform(.board(.increaseSheetSize)))
         #expect(
-            KeyboardController.decision(for: decrease, store: store, windowModel: windowModel)
+            KeyboardController.decision(for: decrease, controller: controller, windowModel: windowModel)
                 == .perform(.board(.decreaseSheetSize)))
         #expect(
-            KeyboardController.decision(for: reset, store: store, windowModel: windowModel)
+            KeyboardController.decision(for: reset, controller: controller, windowModel: windowModel)
                 == .perform(.board(.resetSheetSize)))
 
         windowModel.isDenMode = true
         #expect(
-            KeyboardController.decision(for: decrease, store: store, windowModel: windowModel)
+            KeyboardController.decision(for: decrease, controller: controller, windowModel: windowModel)
                 == .perform(.board(.decreaseSheetSize)))
     }
 
@@ -432,28 +438,31 @@ struct KeyboardShortcutTests {
         let firstDesk = DeskState(label: "First", boards: [])
         let secondDesk = DeskState(label: "Second", boards: [])
         let thirdDesk = DeskState(label: "Third", boards: [])
-        let store = try makeStore(desks: [firstDesk, secondDesk, thirdDesk])
-        let composition = DenWindowComposition(store: store)
+        let controller = try makeController(desks: [firstDesk, secondDesk, thirdDesk])
+        let composition = DenWindowComposition(controller: controller)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
-        let preferences = store.preferences
+        let preferences = controller.preferences
 
         let next = try keyEvent(
             characters: "\t",
             charactersIgnoringModifiers: "\t",
             modifiers: [.control],
             keyCode: 48)
-        #expect(KeyboardController.handle(next, store: store, windowModel: windowModel, preferences: preferences))
-        #expect(store.focusedDesk?.id == secondDesk.id)
+        #expect(
+            KeyboardController.handle(next, controller: controller, windowModel: windowModel, preferences: preferences))
+        #expect(controller.focusedDesk?.id == secondDesk.id)
 
         let previous = try keyEvent(
             characters: "\t",
             charactersIgnoringModifiers: "\t",
             modifiers: [.control, .shift],
             keyCode: 48)
-        #expect(KeyboardController.handle(previous, store: store, windowModel: windowModel, preferences: preferences))
-        #expect(store.focusedDesk?.id == firstDesk.id)
+        #expect(
+            KeyboardController.handle(
+                previous, controller: controller, windowModel: windowModel, preferences: preferences))
+        #expect(controller.focusedDesk?.id == firstDesk.id)
 
         let returnToPrevious = try keyEvent(
             characters: "\t",
@@ -463,14 +472,14 @@ struct KeyboardShortcutTests {
         #expect(
             KeyboardController.handle(
                 returnToPrevious,
-                store: store, windowModel: windowModel,
+                controller: controller, windowModel: windowModel,
                 preferences: preferences))
-        #expect(store.focusedDesk?.id == secondDesk.id)
+        #expect(controller.focusedDesk?.id == secondDesk.id)
     }
 
     @Test func denModeIOpensNotifications() throws {
-        let store = try makeStore(boards: [board("Terminal")])
-        let composition = DenWindowComposition(store: store)
+        let controller = try makeController(boards: [board("Terminal")])
+        let composition = DenWindowComposition(controller: controller)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
@@ -480,29 +489,29 @@ struct KeyboardShortcutTests {
             charactersIgnoringModifiers: "i",
             keyCode: 34)
 
-        #expect(KeyboardController.handle(open, store: store, windowModel: windowModel))
+        #expect(KeyboardController.handle(open, controller: controller, windowModel: windowModel))
         #expect(windowModel.isNotificationListPresented)
         #expect(windowModel.isDenMode)
     }
 
     @Test func denModeVOpensBoardFromClipboard() throws {
-        let store = try makeStore(boards: [board("First")])
-        let composition = DenWindowComposition(store: store)
+        let controller = try makeController(boards: [board("First")])
+        let composition = DenWindowComposition(controller: controller)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
         windowModel.isDenMode = true
-        store.pasteboard.clearContents()
-        store.pasteboard.setString("https://example.com/test", forType: .string)
+        controller.pasteboard.clearContents()
+        controller.pasteboard.setString("https://example.com/test", forType: .string)
 
         let vKey = try keyEvent(
             characters: "v",
             charactersIgnoringModifiers: "v",
             keyCode: 9)
 
-        #expect(KeyboardController.handle(vKey, store: store, windowModel: windowModel))
-        #expect(store.focusedDesk?.boards.count == 2)
-        #expect(store.focusedBoard?.currentSheetURL == URL(string: "https://example.com/test"))
+        #expect(KeyboardController.handle(vKey, controller: controller, windowModel: windowModel))
+        #expect(controller.focusedDesk?.boards.count == 2)
+        #expect(controller.focusedBoard?.currentSheetURL == URL(string: "https://example.com/test"))
         #expect(!windowModel.isDenMode)
     }
 
@@ -513,8 +522,8 @@ struct KeyboardShortcutTests {
             currentSheetURL: URL(string: "https://github.com/YaLTeR/niri")
         )
         let desk = DeskState(label: "Dev", boards: [board], focusedBoardID: board.id)
-        let store = DenController(state: DenState(desks: [desk], focusedDeskID: desk.id))
-        let composition = DenWindowComposition(store: store)
+        let controller = DenController(state: DenState(desks: [desk], focusedDeskID: desk.id))
+        let composition = DenWindowComposition(controller: controller)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
@@ -526,7 +535,7 @@ struct KeyboardShortcutTests {
             keyCode: 11
         )
 
-        #expect(KeyboardController.handle(bKey, store: store, windowModel: windowModel))
+        #expect(KeyboardController.handle(bKey, controller: controller, windowModel: windowModel))
         #expect(windowModel.isSaveEssentialPanelPresented)
         #expect(windowModel.saveEssentialDraft?.name == "Niri")
         #expect(windowModel.saveEssentialDraft?.input == "https://github.com/YaLTeR/niri")
@@ -535,8 +544,8 @@ struct KeyboardShortcutTests {
     @Test func denModeMKeyTogglesAnchorBoardAndShiftMJumps() throws {
         let first = board("First")
         let second = board("Second")
-        let store = try makeStore(boards: [first, second])
-        let composition = DenWindowComposition(store: store)
+        let controller = try makeController(boards: [first, second])
+        let composition = DenWindowComposition(controller: controller)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
@@ -555,47 +564,47 @@ struct KeyboardShortcutTests {
         )
 
         // Focus is on first board. Press 'm' to set anchor.
-        #expect(KeyboardController.handle(mKey, store: store, windowModel: windowModel))
-        #expect(store.focusedDesk?.anchorBoardID == first.id)
-        #expect(store.latestFeedback?.message == "Set Anchor Board")
+        #expect(KeyboardController.handle(mKey, controller: controller, windowModel: windowModel))
+        #expect(controller.focusedDesk?.anchorBoardID == first.id)
+        #expect(controller.latestFeedback?.message == "Set Anchor Board")
 
         // Move to second board.
-        store.focusBoard(second.id)
-        #expect(store.focusedBoard?.id == second.id)
+        controller.focusBoard(second.id)
+        #expect(controller.focusedBoard?.id == second.id)
 
         // Press 'Shift + m' to jump to anchor first board.
-        #expect(KeyboardController.handle(shiftMKey, store: store, windowModel: windowModel))
-        #expect(store.focusedBoard?.id == first.id)
+        #expect(KeyboardController.handle(shiftMKey, controller: controller, windowModel: windowModel))
+        #expect(controller.focusedBoard?.id == first.id)
 
         // Press 'Shift + m' again to return to second board (A <-> B toggle).
-        #expect(KeyboardController.handle(shiftMKey, store: store, windowModel: windowModel))
-        #expect(store.focusedBoard?.id == second.id)
+        #expect(KeyboardController.handle(shiftMKey, controller: controller, windowModel: windowModel))
+        #expect(controller.focusedBoard?.id == second.id)
 
         // Press 'm' on second board to move anchor.
-        #expect(KeyboardController.handle(mKey, store: store, windowModel: windowModel))
-        #expect(store.focusedDesk?.anchorBoardID == second.id)
+        #expect(KeyboardController.handle(mKey, controller: controller, windowModel: windowModel))
+        #expect(controller.focusedDesk?.anchorBoardID == second.id)
 
         // Press 'm' again on second board to clear anchor.
-        #expect(KeyboardController.handle(mKey, store: store, windowModel: windowModel))
-        #expect(store.focusedDesk?.anchorBoardID == nil)
-        #expect(store.latestFeedback?.message == "Cleared Anchor Board")
+        #expect(KeyboardController.handle(mKey, controller: controller, windowModel: windowModel))
+        #expect(controller.focusedDesk?.anchorBoardID == nil)
+        #expect(controller.latestFeedback?.message == "Cleared Anchor Board")
 
         // Press 'Shift + m' with no anchor shows warning.
-        #expect(KeyboardController.handle(shiftMKey, store: store, windowModel: windowModel))
-        #expect(store.latestFeedback?.message == "No Anchor Board in Desk")
-        #expect(store.latestFeedback?.severity == .warning)
+        #expect(KeyboardController.handle(shiftMKey, controller: controller, windowModel: windowModel))
+        #expect(controller.latestFeedback?.message == "No Anchor Board in Desk")
+        #expect(controller.latestFeedback?.severity == .warning)
     }
 
     @Test func notificationArrowsMoveSelectionAndReturnOpensIt() throws {
         let first = board("First")
         let second = board("Second")
-        let store = try makeStore(boards: [first, second])
-        let composition = DenWindowComposition(store: store)
+        let controller = try makeController(boards: [first, second])
+        let composition = DenWindowComposition(controller: controller)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
-        store.recordNotification(title: "First", body: "Done", boardID: first.id)
-        store.recordNotification(title: "Second", body: "Done", boardID: second.id)
+        controller.recordNotification(title: "First", body: "Done", boardID: first.id)
+        controller.recordNotification(title: "Second", body: "Done", boardID: second.id)
         windowModel.isDenMode = true
         let preferences = try makePreferences()
 
@@ -612,19 +621,23 @@ struct KeyboardShortcutTests {
             charactersIgnoringModifiers: "\r",
             keyCode: 36)
 
-        #expect(KeyboardController.handle(open, store: store, windowModel: windowModel, preferences: preferences))
-        #expect(windowModel.notificationList.selectedNotificationID == store.notifications[0].id)
-        #expect(KeyboardController.handle(down, store: store, windowModel: windowModel, preferences: preferences))
-        #expect(windowModel.notificationList.selectedNotificationID == store.notifications[1].id)
-        #expect(KeyboardController.handle(enter, store: store, windowModel: windowModel, preferences: preferences))
-        #expect(store.focusedBoard?.id == first.id)
+        #expect(
+            KeyboardController.handle(open, controller: controller, windowModel: windowModel, preferences: preferences))
+        #expect(windowModel.notificationList.selectedNotificationID == controller.notifications[0].id)
+        #expect(
+            KeyboardController.handle(down, controller: controller, windowModel: windowModel, preferences: preferences))
+        #expect(windowModel.notificationList.selectedNotificationID == controller.notifications[1].id)
+        #expect(
+            KeyboardController.handle(enter, controller: controller, windowModel: windowModel, preferences: preferences)
+        )
+        #expect(controller.focusedBoard?.id == first.id)
         #expect(!windowModel.isNotificationListPresented)
     }
 
     @Test func customBindingsApplyImmediatelyAndCanBeUnassigned() throws {
         let preferences = try makePreferences()
-        let store = try makeStore(boards: [board("First"), board("Second")])
-        let composition = DenWindowComposition(store: store)
+        let controller = try makeController(boards: [board("First"), board("Second")])
+        let composition = DenWindowComposition(controller: controller)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
@@ -638,39 +651,47 @@ struct KeyboardShortcutTests {
                 for: .toggleDenMode) == nil)
 
         #expect(
-            !KeyboardController.handle(defaultToggle, store: store, windowModel: windowModel, preferences: preferences))
-        #expect(KeyboardController.handle(toggle, store: store, windowModel: windowModel, preferences: preferences))
+            !KeyboardController.handle(
+                defaultToggle, controller: controller, windowModel: windowModel, preferences: preferences))
+        #expect(
+            KeyboardController.handle(
+                toggle, controller: controller, windowModel: windowModel, preferences: preferences))
         #expect(windowModel.isDenMode)
 
         windowModel.exitDenMode()
         preferences.clearShortcut(for: .focusNextBoard)
         let right = try arrowEvent(.rightArrow, modifiers: [.command, .option])
-        #expect(!KeyboardController.handle(right, store: store, windowModel: windowModel, preferences: preferences))
-        #expect(store.focusedDesk?.focusedBoardID == store.focusedDesk?.boards.first?.id)
+        #expect(
+            !KeyboardController.handle(
+                right, controller: controller, windowModel: windowModel, preferences: preferences))
+        #expect(controller.focusedDesk?.focusedBoardID == controller.focusedDesk?.boards.first?.id)
     }
 
     @Test func customBindingsAreSuspendedByTemporaryContexts() throws {
         let preferences = try makePreferences()
-        let store = try makeStore(boards: [board("First"), board("Second")])
-        let composition = DenWindowComposition(store: store)
+        let controller = try makeController(boards: [board("First"), board("Second")])
+        let composition = DenWindowComposition(controller: controller)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
         let next = try arrowEvent(.rightArrow, modifiers: [.command, .option])
 
         windowModel.showNewDeskPanel()
-        #expect(!KeyboardController.handle(next, store: store, windowModel: windowModel, preferences: preferences))
+        #expect(
+            !KeyboardController.handle(next, controller: controller, windowModel: windowModel, preferences: preferences)
+        )
         windowModel.hideNewDeskPanel()
 
         windowModel.showOverview()
-        let focusedBoardID = store.focusedDesk?.focusedBoardID
-        #expect(KeyboardController.handle(next, store: store, windowModel: windowModel, preferences: preferences))
-        #expect(store.focusedDesk?.focusedBoardID == focusedBoardID)
+        let focusedBoardID = controller.focusedDesk?.focusedBoardID
+        #expect(
+            KeyboardController.handle(next, controller: controller, windowModel: windowModel, preferences: preferences))
+        #expect(controller.focusedDesk?.focusedBoardID == focusedBoardID)
     }
 
     @Test func shiftEscapeTogglesBoardActivityAcrossInputContexts() throws {
-        let store = try makeStore(boards: [board("First")])
-        let composition = DenWindowComposition(store: store)
+        let controller = try makeController(boards: [board("First")])
+        let composition = DenWindowComposition(controller: controller)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
@@ -680,53 +701,57 @@ struct KeyboardShortcutTests {
             modifiers: [.shift],
             keyCode: 53)
 
-        #expect(KeyboardController.handle(shiftEscape, store: store, windowModel: windowModel))
+        #expect(KeyboardController.handle(shiftEscape, controller: controller, windowModel: windowModel))
         #expect(windowModel.isBoardActivityPresented)
 
-        #expect(KeyboardController.handle(shiftEscape, store: store, windowModel: windowModel))
+        #expect(KeyboardController.handle(shiftEscape, controller: controller, windowModel: windowModel))
         #expect(!windowModel.isBoardActivityPresented)
 
         windowModel.isDenMode = true
-        #expect(KeyboardController.handle(shiftEscape, store: store, windowModel: windowModel))
+        #expect(KeyboardController.handle(shiftEscape, controller: controller, windowModel: windowModel))
         #expect(windowModel.isBoardActivityPresented)
 
         let escape = try keyEvent(
             characters: "\u{1B}",
             charactersIgnoringModifiers: "\u{1B}",
             keyCode: 53)
-        #expect(KeyboardController.handle(escape, store: store, windowModel: windowModel))
+        #expect(KeyboardController.handle(escape, controller: controller, windowModel: windowModel))
         #expect(!windowModel.isBoardActivityPresented)
     }
 
     @Test func denModeToggleRemainsAvailableInDrawer() throws {
         let preferences = try makePreferences()
-        let store = try makeStore(boards: [board("First")])
-        let composition = DenWindowComposition(store: store)
+        let controller = try makeController(boards: [board("First")])
+        let composition = DenWindowComposition(controller: controller)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
-        store.keepInDrawer(try #require(URL(string: "https://example.com/")))
+        controller.keepInDrawer(try #require(URL(string: "https://example.com/")))
         let previewID = windowModel.drawer.expandedItemID
         let toggle = try keyEvent(
             characters: ",", charactersIgnoringModifiers: ",", modifiers: [.control], keyCode: 43)
 
-        #expect(KeyboardController.handle(toggle, store: store, windowModel: windowModel, preferences: preferences))
+        #expect(
+            KeyboardController.handle(
+                toggle, controller: controller, windowModel: windowModel, preferences: preferences))
         #expect(windowModel.isDenMode)
         #expect(windowModel.drawer.expandedItemID == previewID)
 
-        #expect(KeyboardController.handle(toggle, store: store, windowModel: windowModel, preferences: preferences))
+        #expect(
+            KeyboardController.handle(
+                toggle, controller: controller, windowModel: windowModel, preferences: preferences))
         #expect(!windowModel.isDenMode)
         #expect(windowModel.drawer.expandedItemID == previewID)
     }
 
     @Test func drawerCommandWDiscardsSelectedItemWithoutRemovingBoard() throws {
-        let store = try makeStore(boards: [board("First")])
-        let composition = DenWindowComposition(store: store)
+        let controller = try makeController(boards: [board("First")])
+        let composition = DenWindowComposition(controller: controller)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
-        store.keepInDrawer(try #require(URL(string: "https://first.example/")))
-        store.keepInDrawer(try #require(URL(string: "https://second.example/")))
+        controller.keepInDrawer(try #require(URL(string: "https://first.example/")))
+        controller.keepInDrawer(try #require(URL(string: "https://second.example/")))
         let selectedItemID = try #require(windowModel.drawer.selectedItemID)
         let commandW = try keyEvent(
             characters: "w",
@@ -735,12 +760,12 @@ struct KeyboardShortcutTests {
             keyCode: 13)
 
         #expect(
-            KeyboardController.decision(for: commandW, store: store, windowModel: windowModel)
+            KeyboardController.decision(for: commandW, controller: controller, windowModel: windowModel)
                 == .perform(.drawer(.discardSelectedItem(focusNext: true))))
-        #expect(KeyboardController.handle(commandW, store: store, windowModel: windowModel))
-        #expect(store.state.drawerItems.count == 1)
-        #expect(!store.state.drawerItems.contains { $0.id == selectedItemID })
-        #expect(store.focusedDesk?.boards.count == 1)
+        #expect(KeyboardController.handle(commandW, controller: controller, windowModel: windowModel))
+        #expect(controller.state.drawerItems.count == 1)
+        #expect(!controller.state.drawerItems.contains { $0.id == selectedItemID })
+        #expect(controller.focusedDesk?.boards.count == 1)
         #expect(windowModel.isDrawerOpen)
 
         let repeatedCommandW = try keyEvent(
@@ -750,19 +775,19 @@ struct KeyboardShortcutTests {
             isARepeat: true,
             keyCode: 13)
         #expect(
-            KeyboardController.decision(for: repeatedCommandW, store: store, windowModel: windowModel)
+            KeyboardController.decision(for: repeatedCommandW, controller: controller, windowModel: windowModel)
                 == .consume(.ignoredRepeat))
-        #expect(KeyboardController.handle(repeatedCommandW, store: store, windowModel: windowModel))
-        #expect(store.state.drawerItems.count == 1)
+        #expect(KeyboardController.handle(repeatedCommandW, controller: controller, windowModel: windowModel))
+        #expect(controller.state.drawerItems.count == 1)
     }
 
     @Test func drawerControlEscapeClosesDrawerWithOrWithoutPreview() throws {
-        let store = try makeStore(boards: [board("First")])
-        let composition = DenWindowComposition(store: store)
+        let controller = try makeController(boards: [board("First")])
+        let composition = DenWindowComposition(controller: controller)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
-        store.keepInDrawer(try #require(URL(string: "https://preview.example/")))
+        controller.keepInDrawer(try #require(URL(string: "https://preview.example/")))
         let itemID = try #require(windowModel.drawer.expandedItemID)
         let controlEscape = try keyEvent(
             characters: "\u{1B}",
@@ -771,9 +796,9 @@ struct KeyboardShortcutTests {
             keyCode: 53)
 
         #expect(
-            KeyboardController.decision(for: controlEscape, store: store, windowModel: windowModel)
+            KeyboardController.decision(for: controlEscape, controller: controller, windowModel: windowModel)
                 == .perform(.drawer(.close)))
-        #expect(KeyboardController.handle(controlEscape, store: store, windowModel: windowModel))
+        #expect(KeyboardController.handle(controlEscape, controller: controller, windowModel: windowModel))
         #expect(!windowModel.isDrawerOpen)
         #expect(windowModel.drawer.expandedItemID == itemID)
 
@@ -781,18 +806,18 @@ struct KeyboardShortcutTests {
         windowModel.drawer.toggleItem(itemID)
         windowModel.isDenMode = true
 
-        #expect(KeyboardController.handle(controlEscape, store: store, windowModel: windowModel))
+        #expect(KeyboardController.handle(controlEscape, controller: controller, windowModel: windowModel))
         #expect(!windowModel.isDrawerOpen)
-        #expect(store.state.drawerItems.count == 1)
+        #expect(controller.state.drawerItems.count == 1)
     }
 
     @Test func drawerConsumesUnmappedKeysWhenPreviewIsNotFocused() throws {
-        let store = try makeStore(boards: [board("First")])
-        let composition = DenWindowComposition(store: store)
+        let controller = try makeController(boards: [board("First")])
+        let composition = DenWindowComposition(controller: controller)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
-        store.keepInDrawer(try #require(URL(string: "https://example.com/")))
+        controller.keepInDrawer(try #require(URL(string: "https://example.com/")))
         let itemID = try #require(windowModel.drawer.selectedItemID)
         windowModel.drawer.toggleItem(itemID)
         #expect(!windowModel.isDenMode)
@@ -807,33 +832,33 @@ struct KeyboardShortcutTests {
             characters: "\t", charactersIgnoringModifiers: "\t", keyCode: 48)
 
         #expect(
-            KeyboardController.decision(for: letterA, store: store, windowModel: windowModel)
+            KeyboardController.decision(for: letterA, controller: controller, windowModel: windowModel)
                 == .consume(.exclusiveContext))
-        #expect(KeyboardController.handle(letterA, store: store, windowModel: windowModel))
+        #expect(KeyboardController.handle(letterA, controller: controller, windowModel: windowModel))
 
         #expect(
-            KeyboardController.decision(for: space, store: store, windowModel: windowModel)
+            KeyboardController.decision(for: space, controller: controller, windowModel: windowModel)
                 == .consume(.exclusiveContext))
-        #expect(KeyboardController.handle(space, store: store, windowModel: windowModel))
+        #expect(KeyboardController.handle(space, controller: controller, windowModel: windowModel))
 
         #expect(
-            KeyboardController.decision(for: tab, store: store, windowModel: windowModel)
+            KeyboardController.decision(for: tab, controller: controller, windowModel: windowModel)
                 == .consume(.exclusiveContext))
-        #expect(KeyboardController.handle(tab, store: store, windowModel: windowModel))
+        #expect(KeyboardController.handle(tab, controller: controller, windowModel: windowModel))
 
         #expect(windowModel.isDrawerOpen)
-        #expect(store.state.drawerItems.count == 1)
-        #expect(store.focusedDesk?.boards.count == 1)
+        #expect(controller.state.drawerItems.count == 1)
+        #expect(controller.focusedDesk?.boards.count == 1)
     }
 
     @Test func denModeShiftDRequestsDrawerClearConfirmation() throws {
-        let store = try makeStore(boards: [board("First")])
-        let composition = DenWindowComposition(store: store)
+        let controller = try makeController(boards: [board("First")])
+        let composition = DenWindowComposition(controller: controller)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
-        store.keepInDrawer(try #require(URL(string: "https://first.example/")))
-        store.keepInDrawer(try #require(URL(string: "https://second.example/")))
+        controller.keepInDrawer(try #require(URL(string: "https://first.example/")))
+        controller.keepInDrawer(try #require(URL(string: "https://second.example/")))
         windowModel.isDenMode = true
 
         let clear = try keyEvent(
@@ -842,42 +867,42 @@ struct KeyboardShortcutTests {
             modifiers: [.shift],
             keyCode: 2)
 
-        #expect(KeyboardController.handle(clear, store: store, windowModel: windowModel))
+        #expect(KeyboardController.handle(clear, controller: controller, windowModel: windowModel))
         #expect(windowModel.drawerPendingDeletionCount == 2)
-        #expect(store.state.drawerItems.count == 2)
+        #expect(controller.state.drawerItems.count == 2)
     }
 
     @Test func drawerFKeyTogglesPresentationStyle() throws {
-        let store = try makeStore(boards: [board("First")])
-        let composition = DenWindowComposition(store: store)
+        let controller = try makeController(boards: [board("First")])
+        let composition = DenWindowComposition(controller: controller)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
-        store.keepInDrawer(try #require(URL(string: "https://example.com/")))
+        controller.keepInDrawer(try #require(URL(string: "https://example.com/")))
         windowModel.openDrawer()
         windowModel.isDenMode = true
 
-        #expect(store.preferences.drawerStyle == .floating)
+        #expect(controller.preferences.drawerStyle == .floating)
 
         let fKey = try keyEvent(
             characters: "f",
             charactersIgnoringModifiers: "f",
             keyCode: 3
         )
-        #expect(KeyboardController.handle(fKey, store: store, windowModel: windowModel))
-        #expect(store.preferences.drawerStyle == .bottom)
+        #expect(KeyboardController.handle(fKey, controller: controller, windowModel: windowModel))
+        #expect(controller.preferences.drawerStyle == .bottom)
 
-        #expect(KeyboardController.handle(fKey, store: store, windowModel: windowModel))
-        #expect(store.preferences.drawerStyle == .floating)
+        #expect(KeyboardController.handle(fKey, controller: controller, windowModel: windowModel))
+        #expect(controller.preferences.drawerStyle == .floating)
     }
 
     @Test func denModeShiftDDoesNothingInDrawerFilterModeOrOnRepeat() throws {
-        let store = try makeStore(boards: [board("First")])
-        let composition = DenWindowComposition(store: store)
+        let controller = try makeController(boards: [board("First")])
+        let composition = DenWindowComposition(controller: controller)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
-        store.keepInDrawer(try #require(URL(string: "https://example.com/")))
+        controller.keepInDrawer(try #require(URL(string: "https://example.com/")))
         windowModel.isDenMode = true
 
         let clear = try keyEvent(
@@ -886,7 +911,7 @@ struct KeyboardShortcutTests {
             modifiers: [.shift],
             keyCode: 2)
         windowModel.drawer.enterFilterMode()
-        #expect(!KeyboardController.handle(clear, store: store, windowModel: windowModel))
+        #expect(!KeyboardController.handle(clear, controller: controller, windowModel: windowModel))
         #expect(!windowModel.hasPendingConfirmation)
 
         windowModel.drawer.exitFilterMode()
@@ -896,13 +921,13 @@ struct KeyboardShortcutTests {
             modifiers: [.shift],
             isARepeat: true,
             keyCode: 2)
-        #expect(KeyboardController.handle(repeatClear, store: store, windowModel: windowModel))
+        #expect(KeyboardController.handle(repeatClear, controller: controller, windowModel: windowModel))
         #expect(!windowModel.hasPendingConfirmation)
     }
 
     @Test func denModeEnterAndShiftEnterUseDistinctDuplicateActions() throws {
-        let store = try makeStore(boards: [board("First")])
-        let composition = DenWindowComposition(store: store)
+        let controller = try makeController(boards: [board("First")])
+        let composition = DenWindowComposition(controller: controller)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
@@ -916,10 +941,10 @@ struct KeyboardShortcutTests {
             keyCode: 36)
 
         #expect(
-            KeyboardController.decision(for: returnKey, store: store, windowModel: windowModel)
+            KeyboardController.decision(for: returnKey, controller: controller, windowModel: windowModel)
                 == .perform(.board(.duplicate)))
         #expect(
-            KeyboardController.decision(for: shiftReturn, store: store, windowModel: windowModel)
+            KeyboardController.decision(for: shiftReturn, controller: controller, windowModel: windowModel)
                 == .perform(.board(.duplicateFirstSheet)))
     }
 
@@ -929,8 +954,8 @@ struct KeyboardShortcutTests {
             width: 520,
             workingDirectory: "/tmp/project",
             customLabel: "Build")
-        let store = try makeStore(boards: [source])
-        let composition = DenWindowComposition(store: store)
+        let controller = try makeController(boards: [source])
+        let composition = DenWindowComposition(controller: controller)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
@@ -941,14 +966,14 @@ struct KeyboardShortcutTests {
             modifiers: [.shift],
             keyCode: 36)
 
-        #expect(KeyboardController.handle(shiftReturn, store: store, windowModel: windowModel))
-        #expect(store.focusedDesk?.boards.count == 2)
-        #expect(store.focusedBoard?.id != source.id)
-        #expect(store.focusedBoard?.isTerminal == true)
-        #expect(store.focusedBoard?.terminalWorkingDirectory == "/tmp/project")
-        #expect(store.focusedBoard?.label == "Terminal")
-        #expect(store.focusedBoard?.width == 520)
-        #expect(store.focusedBoard?.customLabel == "Build")
+        #expect(KeyboardController.handle(shiftReturn, controller: controller, windowModel: windowModel))
+        #expect(controller.focusedDesk?.boards.count == 2)
+        #expect(controller.focusedBoard?.id != source.id)
+        #expect(controller.focusedBoard?.isTerminal == true)
+        #expect(controller.focusedBoard?.terminalWorkingDirectory == "/tmp/project")
+        #expect(controller.focusedBoard?.label == "Terminal")
+        #expect(controller.focusedBoard?.width == 520)
+        #expect(controller.focusedBoard?.customLabel == "Build")
     }
 
     @Test func denModeShiftEnterDuplicatesZellijSession() throws {
@@ -957,8 +982,8 @@ struct KeyboardShortcutTests {
             width: 520,
             zellijSessionName: "dev",
             customLabel: "Build")
-        let store = try makeStore(boards: [source])
-        let composition = DenWindowComposition(store: store)
+        let controller = try makeController(boards: [source])
+        let composition = DenWindowComposition(controller: controller)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
@@ -969,9 +994,9 @@ struct KeyboardShortcutTests {
             modifiers: [.shift],
             keyCode: 36)
 
-        #expect(KeyboardController.handle(shiftReturn, store: store, windowModel: windowModel))
-        #expect(store.focusedDesk?.boards.count == 2)
-        let duplicate = try #require(store.focusedBoard)
+        #expect(KeyboardController.handle(shiftReturn, controller: controller, windowModel: windowModel))
+        #expect(controller.focusedDesk?.boards.count == 2)
+        let duplicate = try #require(controller.focusedBoard)
         #expect(duplicate.id != source.id)
         #expect(duplicate.isZellij)
         #expect(duplicate.zellijSessionName == "dev")
@@ -981,8 +1006,8 @@ struct KeyboardShortcutTests {
     }
 
     @Test func openProfilePanelForwardsKeyboardNavigationToItsTextField() throws {
-        let store = try makeStore(boards: [board("First")])
-        let composition = DenWindowComposition(store: store)
+        let controller = try makeController(boards: [board("First")])
+        let composition = DenWindowComposition(controller: controller)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
@@ -1000,19 +1025,19 @@ struct KeyboardShortcutTests {
             characters: "\u{1B}", charactersIgnoringModifiers: "\u{1B}", keyCode: 53)
 
         #expect(
-            KeyboardController.decision(for: down, store: store, windowModel: windowModel)
+            KeyboardController.decision(for: down, controller: controller, windowModel: windowModel)
                 == .forward(.temporaryTextInput))
         #expect(
-            KeyboardController.decision(for: returnKey, store: store, windowModel: windowModel)
+            KeyboardController.decision(for: returnKey, controller: controller, windowModel: windowModel)
                 == .forward(.temporaryTextInput))
         #expect(
-            KeyboardController.decision(for: escape, store: store, windowModel: windowModel)
+            KeyboardController.decision(for: escape, controller: controller, windowModel: windowModel)
                 == .forward(.temporaryTextInput))
     }
 
     @Test func textInputPanelConsumesTabTraversal() throws {
-        let store = try makeStore(boards: [board("First")])
-        let composition = DenWindowComposition(store: store)
+        let controller = try makeController(boards: [board("First")])
+        let composition = DenWindowComposition(controller: controller)
         let windowModel = composition.model
         windowModel.showOpenBoardPanel()
         let tab = try keyEvent(
@@ -1027,20 +1052,20 @@ struct KeyboardShortcutTests {
 
         #expect(windowModel.temporaryContext == .openBoard)
         #expect(
-            KeyboardController.decision(for: tab, store: store, windowModel: windowModel)
+            KeyboardController.decision(for: tab, controller: controller, windowModel: windowModel)
                 == .consume(.exclusiveContext))
         #expect(
-            KeyboardController.decision(for: shiftTab, store: store, windowModel: windowModel)
+            KeyboardController.decision(for: shiftTab, controller: controller, windowModel: windowModel)
                 == .consume(.exclusiveContext))
     }
 
     @Test func drawerFilterPassesShiftedCharactersToTextInput() throws {
-        let store = try makeStore(boards: [board("First")])
-        let composition = DenWindowComposition(store: store)
+        let controller = try makeController(boards: [board("First")])
+        let composition = DenWindowComposition(controller: controller)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
-        store.keepInDrawer(try #require(URL(string: "https://example.com/")))
+        controller.keepInDrawer(try #require(URL(string: "https://example.com/")))
         windowModel.isDenMode = true
         windowModel.drawer.enterFilterMode()
 
@@ -1050,17 +1075,17 @@ struct KeyboardShortcutTests {
             modifiers: [.shift],
             keyCode: 0)
 
-        #expect(!KeyboardController.handle(uppercase, store: store, windowModel: windowModel))
+        #expect(!KeyboardController.handle(uppercase, controller: controller, windowModel: windowModel))
         #expect(windowModel.drawer.isFilterInputActive)
     }
 
     @Test func drawerFilterPassesModifiedReturnAndControlEscapeClosesDrawer() throws {
-        let store = try makeStore(boards: [board("First")])
-        let composition = DenWindowComposition(store: store)
+        let controller = try makeController(boards: [board("First")])
+        let composition = DenWindowComposition(controller: controller)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
-        store.keepInDrawer(try #require(URL(string: "https://example.com/")))
+        controller.keepInDrawer(try #require(URL(string: "https://example.com/")))
         windowModel.isDenMode = true
         windowModel.drawer.enterFilterMode()
 
@@ -1075,19 +1100,19 @@ struct KeyboardShortcutTests {
             modifiers: [.control],
             keyCode: 53)
 
-        #expect(!KeyboardController.handle(modifiedReturn, store: store, windowModel: windowModel))
+        #expect(!KeyboardController.handle(modifiedReturn, controller: controller, windowModel: windowModel))
         #expect(
-            KeyboardController.decision(for: controlEscape, store: store, windowModel: windowModel)
+            KeyboardController.decision(for: controlEscape, controller: controller, windowModel: windowModel)
                 == .perform(.drawer(.close)))
-        #expect(KeyboardController.handle(controlEscape, store: store, windowModel: windowModel))
+        #expect(KeyboardController.handle(controlEscape, controller: controller, windowModel: windowModel))
         #expect(!windowModel.isDrawerOpen)
     }
 
     @Test func overviewFilterUsesTwoPhaseSelection() throws {
         let first = board("First")
         let second = board("Second")
-        let store = try makeStore(boards: [first, second])
-        let composition = DenWindowComposition(store: store)
+        let controller = try makeController(boards: [first, second])
+        let composition = DenWindowComposition(controller: controller)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
@@ -1102,25 +1127,25 @@ struct KeyboardShortcutTests {
             charactersIgnoringModifiers: "\r",
             keyCode: 36)
 
-        #expect(KeyboardController.handle(slash, store: store, windowModel: windowModel))
+        #expect(KeyboardController.handle(slash, controller: controller, windowModel: windowModel))
         #expect(windowModel.overview.filterPhase == .filtering)
         windowModel.overview.setQuery("Second")
         #expect(windowModel.overview.selectionBoardID == second.id)
 
-        #expect(KeyboardController.handle(returnKey, store: store, windowModel: windowModel))
+        #expect(KeyboardController.handle(returnKey, controller: controller, windowModel: windowModel))
         #expect(windowModel.overview.filterPhase == .selecting)
         #expect(windowModel.isOverviewPresented)
 
-        #expect(KeyboardController.handle(returnKey, store: store, windowModel: windowModel))
+        #expect(KeyboardController.handle(returnKey, controller: controller, windowModel: windowModel))
         #expect(windowModel.overview.filterPhase == .inactive)
         #expect(!windowModel.isOverviewPresented)
-        #expect(store.focusedBoard?.id == second.id)
+        #expect(controller.focusedBoard?.id == second.id)
     }
 
     @Test func overviewEscapeRequestsBoardDragCancellation() throws {
         let first = board("First")
-        let store = try makeStore(boards: [first])
-        let composition = DenWindowComposition(store: store)
+        let controller = try makeController(boards: [first])
+        let composition = DenWindowComposition(controller: controller)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
@@ -1133,54 +1158,54 @@ struct KeyboardShortcutTests {
             keyCode: 53)
 
         #expect(
-            KeyboardController.decision(for: escape, store: store, windowModel: windowModel)
+            KeyboardController.decision(for: escape, controller: controller, windowModel: windowModel)
                 == .perform(.board(.requestDragCancellation)))
-        #expect(KeyboardController.handle(escape, store: store, windowModel: windowModel))
+        #expect(KeyboardController.handle(escape, controller: controller, windowModel: windowModel))
         #expect(windowModel.boardDragCancellationRequest == 1)
         #expect(windowModel.isOverviewPresented)
     }
 
     @Test func denModeRemoveShortcutsChooseTheirFocusDirection() throws {
         let dBoards = [board("First"), board("Focused"), board("Last")]
-        let dStore = try makeStore(boards: dBoards)
-        let dComposition = DenWindowComposition(store: dStore)
+        let dController = try makeController(boards: dBoards)
+        let dComposition = DenWindowComposition(controller: dController)
         let dWindowModel = dComposition.model
         dComposition.connect()
         defer { dComposition.disconnect() }
-        dStore.focusBoard(dBoards[1].id)
+        dController.focusBoard(dBoards[1].id)
         dWindowModel.isDenMode = true
         let dEvent = try keyEvent(characters: "d", charactersIgnoringModifiers: "d", keyCode: 2)
 
         #expect(
-            KeyboardController.decision(for: dEvent, store: dStore, windowModel: dWindowModel)
+            KeyboardController.decision(for: dEvent, controller: dController, windowModel: dWindowModel)
                 == .perform(.board(.removeAndFocusNext)))
-        #expect(KeyboardController.handle(dEvent, store: dStore, windowModel: dWindowModel))
-        #expect(dStore.focusedDesk?.boards.map(\.id) == [dBoards[0].id, dBoards[2].id])
-        #expect(dStore.focusedDesk?.focusedBoardID == dBoards[2].id)
+        #expect(KeyboardController.handle(dEvent, controller: dController, windowModel: dWindowModel))
+        #expect(dController.focusedDesk?.boards.map(\.id) == [dBoards[0].id, dBoards[2].id])
+        #expect(dController.focusedDesk?.focusedBoardID == dBoards[2].id)
 
         let xBoards = [board("First"), board("Focused"), board("Last")]
-        let xStore = try makeStore(boards: xBoards)
-        let xComposition = DenWindowComposition(store: xStore)
+        let xController = try makeController(boards: xBoards)
+        let xComposition = DenWindowComposition(controller: xController)
         let xWindowModel = xComposition.model
         xComposition.connect()
         defer { xComposition.disconnect() }
-        xStore.focusBoard(xBoards[1].id)
+        xController.focusBoard(xBoards[1].id)
         xWindowModel.isDenMode = true
         let xEvent = try keyEvent(characters: "x", charactersIgnoringModifiers: "x", keyCode: 7)
 
         #expect(
-            KeyboardController.decision(for: xEvent, store: xStore, windowModel: xWindowModel)
+            KeyboardController.decision(for: xEvent, controller: xController, windowModel: xWindowModel)
                 == .perform(.board(.remove)))
-        #expect(KeyboardController.handle(xEvent, store: xStore, windowModel: xWindowModel))
-        #expect(xStore.focusedDesk?.boards.map(\.id) == [xBoards[0].id, xBoards[2].id])
-        #expect(xStore.focusedDesk?.focusedBoardID == xBoards[0].id)
+        #expect(KeyboardController.handle(xEvent, controller: xController, windowModel: xWindowModel))
+        #expect(xController.focusedDesk?.boards.map(\.id) == [xBoards[0].id, xBoards[2].id])
+        #expect(xController.focusedDesk?.focusedBoardID == xBoards[0].id)
     }
 
     @Test func nativeCommandShortcutsPassThroughWithoutExecuting() throws {
         let first = board("First")
         let second = board("Second")
-        let store = try makeStore(boards: [first, second])
-        let composition = DenWindowComposition(store: store)
+        let controller = try makeController(boards: [first, second])
+        let composition = DenWindowComposition(controller: controller)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
@@ -1201,51 +1226,51 @@ struct KeyboardShortcutTests {
             keyCode: 13)
 
         for command in commands {
-            #expect(!KeyboardController.handle(command, store: store, windowModel: windowModel))
+            #expect(!KeyboardController.handle(command, controller: controller, windowModel: windowModel))
         }
-        #expect(!KeyboardController.handle(closeWindow, store: store, windowModel: windowModel))
-        #expect(store.focusedDesk?.boards.map(\.id) == [first.id, second.id])
+        #expect(!KeyboardController.handle(closeWindow, controller: controller, windowModel: windowModel))
+        #expect(controller.focusedDesk?.boards.map(\.id) == [first.id, second.id])
         #expect(windowModel.temporaryContext == nil)
     }
 
     @Test func denModeCommaPerformsSettingsWithoutForwarding() throws {
-        let store = try makeStore(boards: [board("First")])
-        let composition = DenWindowComposition(store: store)
+        let controller = try makeController(boards: [board("First")])
+        let composition = DenWindowComposition(controller: controller)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
         let comma = try keyEvent(
             characters: ",", charactersIgnoringModifiers: ",", modifiers: [], keyCode: 43)
 
-        #expect(!KeyboardController.handle(comma, store: store, windowModel: windowModel))
+        #expect(!KeyboardController.handle(comma, controller: controller, windowModel: windowModel))
 
         windowModel.isDenMode = true
         #expect(
-            KeyboardController.decision(for: comma, store: store, windowModel: windowModel)
+            KeyboardController.decision(for: comma, controller: controller, windowModel: windowModel)
                 == .perform(.application(.openSettings)))
         var didOpenSettings = false
         let handled = KeyboardController.handle(
             comma,
-            store: store, windowModel: windowModel,
+            controller: controller, windowModel: windowModel,
             openSettings: { didOpenSettings = true })
         #expect(handled)
         #expect(didOpenSettings)
 
         windowModel.showOverview()
-        #expect(KeyboardController.handle(comma, store: store, windowModel: windowModel))
+        #expect(KeyboardController.handle(comma, controller: controller, windowModel: windowModel))
         #expect(
-            KeyboardController.decision(for: comma, store: store, windowModel: windowModel)
+            KeyboardController.decision(for: comma, controller: controller, windowModel: windowModel)
                 == .consume(.exclusiveContext))
     }
 
     @Test func denModeGPrefixLaunchesMatchingEssential() throws {
-        let store = try makeStore(boards: [BoardState(label: "First", width: 720, currentSheetURL: nil)])
-        let composition = DenWindowComposition(store: store)
+        let controller = try makeController(boards: [BoardState(label: "First", width: 720, currentSheetURL: nil)])
+        let composition = DenWindowComposition(controller: controller)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
         let essential = Essential(name: "ChatGPT", key: "c", input: "https://chatgpt.com")
-        #expect(store.preferences.setEssentials([essential]))
+        #expect(controller.preferences.setEssentials([essential]))
         windowModel.isDenMode = true
 
         let prefix = try keyEvent(
@@ -1254,52 +1279,52 @@ struct KeyboardShortcutTests {
             characters: "c", charactersIgnoringModifiers: "c", keyCode: 8)
 
         #expect(
-            KeyboardController.decision(for: prefix, store: store, windowModel: windowModel)
+            KeyboardController.decision(for: prefix, controller: controller, windowModel: windowModel)
                 == .perform(.essentials(.enterPrefix)))
-        #expect(KeyboardController.handle(prefix, store: store, windowModel: windowModel))
+        #expect(KeyboardController.handle(prefix, controller: controller, windowModel: windowModel))
         #expect(windowModel.temporaryContext == .essentialsPrefix)
         #expect(
-            KeyboardController.decision(for: key, store: store, windowModel: windowModel)
+            KeyboardController.decision(for: key, controller: controller, windowModel: windowModel)
                 == .perform(.essentials(.launch(essential.id))))
-        #expect(KeyboardController.handle(key, store: store, windowModel: windowModel))
+        #expect(KeyboardController.handle(key, controller: controller, windowModel: windowModel))
         #expect(windowModel.temporaryContext == nil)
         #expect(!windowModel.isDenMode)
-        #expect(store.focusedBoard?.currentSheetURL == URL(string: "https://chatgpt.com/"))
-        #expect(store.focusedBoard?.width == 720)
+        #expect(controller.focusedBoard?.currentSheetURL == URL(string: "https://chatgpt.com/"))
+        #expect(controller.focusedBoard?.width == 720)
     }
 
     @Test func sheetInputEssentialsPrefixLaunchesWithoutEnteringDenMode() throws {
-        let store = try makeStore(boards: [board("First")])
-        let composition = DenWindowComposition(store: store)
+        let controller = try makeController(boards: [board("First")])
+        let composition = DenWindowComposition(controller: controller)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
         let essential = Essential(name: "ChatGPT", key: "c", input: "https://chatgpt.com")
-        #expect(store.preferences.setEssentials([essential]))
+        #expect(controller.preferences.setEssentials([essential]))
         windowModel.showEssentialsPrefix()
 
         let key = try keyEvent(
             characters: "c", charactersIgnoringModifiers: "c", keyCode: 8)
 
         #expect(
-            KeyboardController.decision(for: key, store: store, windowModel: windowModel)
+            KeyboardController.decision(for: key, controller: controller, windowModel: windowModel)
                 == .perform(.essentials(.launch(essential.id))))
-        #expect(KeyboardController.handle(key, store: store, windowModel: windowModel))
+        #expect(KeyboardController.handle(key, controller: controller, windowModel: windowModel))
         #expect(windowModel.temporaryContext == nil)
         #expect(!windowModel.isDenMode)
-        #expect(store.focusedBoard?.currentSheetURL == URL(string: "https://chatgpt.com/"))
+        #expect(controller.focusedBoard?.currentSheetURL == URL(string: "https://chatgpt.com/"))
     }
 
     @Test func essentialsPrefixSelectionWrapsBetweenFirstAndLast() throws {
         // Arrange
-        let store = try makeStore(boards: [board("First")])
-        let composition = DenWindowComposition(store: store)
+        let controller = try makeController(boards: [board("First")])
+        let composition = DenWindowComposition(controller: controller)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
         let first = Essential(name: "First Essential", key: "a", input: "https://first.example")
         let second = Essential(name: "Second Essential", key: "b", input: "https://second.example")
-        #expect(store.preferences.setEssentials([first, second]))
+        #expect(controller.preferences.setEssentials([first, second]))
 
         // Act
         windowModel.showEssentialsPrefix()
@@ -1317,14 +1342,14 @@ struct KeyboardShortcutTests {
 
     @Test func essentialsPrefixOpeningResetsSelectionToFirst() throws {
         // Arrange
-        let store = try makeStore(boards: [board("First")])
-        let composition = DenWindowComposition(store: store)
+        let controller = try makeController(boards: [board("First")])
+        let composition = DenWindowComposition(controller: controller)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
         let first = Essential(name: "First Essential", key: "a", input: "https://first.example")
         let second = Essential(name: "Second Essential", key: "b", input: "https://second.example")
-        #expect(store.preferences.setEssentials([first, second]))
+        #expect(controller.preferences.setEssentials([first, second]))
         windowModel.showEssentialsPrefix()
 
         // Act
@@ -1338,14 +1363,14 @@ struct KeyboardShortcutTests {
 
     @Test func essentialsPrefixReturnLaunchesFocusedEssentialAndClosesPrefix() throws {
         // Arrange
-        let store = try makeStore(boards: [board("First")])
-        let composition = DenWindowComposition(store: store)
+        let controller = try makeController(boards: [board("First")])
+        let composition = DenWindowComposition(controller: controller)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
         let first = Essential(name: "First Essential", key: "a", input: "https://first.example")
         let second = Essential(name: "Second Essential", key: "b", input: "https://second.example")
-        #expect(store.preferences.setEssentials([first, second]))
+        #expect(controller.preferences.setEssentials([first, second]))
         windowModel.showEssentialsPrefix()
 
         // Act
@@ -1355,19 +1380,19 @@ struct KeyboardShortcutTests {
         // Assert
         #expect(windowModel.temporaryContext == nil)
         #expect(windowModel.selectedEssentialID == nil)
-        #expect(store.focusedBoard?.currentSheetURL == URL(string: "https://second.example/"))
+        #expect(controller.focusedBoard?.currentSheetURL == URL(string: "https://second.example/"))
     }
 
     @Test func essentialsPrefixRoutesArrowsReturnAndConfiguredJkKeys() throws {
         // Arrange
-        let store = try makeStore(boards: [board("First")])
-        let composition = DenWindowComposition(store: store)
+        let controller = try makeController(boards: [board("First")])
+        let composition = DenWindowComposition(controller: controller)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
         let jEssential = Essential(name: "J Essential", key: "j", input: "https://j.example")
         let kEssential = Essential(name: "K Essential", key: "k", input: "https://k.example")
-        #expect(store.preferences.setEssentials([jEssential, kEssential]))
+        #expect(controller.preferences.setEssentials([jEssential, kEssential]))
         windowModel.showEssentialsPrefix()
         let upArrow = try arrowEvent(.upArrow, modifiers: [])
         let down = try arrowEvent(.downArrow, modifiers: [])
@@ -1380,8 +1405,8 @@ struct KeyboardShortcutTests {
         func route(_ event: NSEvent) -> InputDecision {
             KeyboardRouter.route(
                 event: KeyEvent(event),
-                context: InputContext(store: store, windowModel: windowModel, event: event),
-                shortcuts: ShortcutConfiguration(preferences: store.preferences))
+                context: InputContext(controller: controller, windowModel: windowModel, event: event),
+                shortcuts: ShortcutConfiguration(preferences: controller.preferences))
         }
         let upDecision = route(upArrow)
         let downDecision = route(down)
@@ -1399,14 +1424,14 @@ struct KeyboardShortcutTests {
 
     @Test func essentialsPrefixAllowsRepeatedArrowMovementButSuppressesRepeatedLaunch() throws {
         // Arrange
-        let store = try makeStore(boards: [board("First")])
-        let composition = DenWindowComposition(store: store)
+        let controller = try makeController(boards: [board("First")])
+        let composition = DenWindowComposition(controller: controller)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
         let essential = Essential(name: "Essential", key: "a", input: "https://essential.example")
         let nextEssential = Essential(name: "Next", key: "b", input: "https://next.example")
-        #expect(store.preferences.setEssentials([essential, nextEssential]))
+        #expect(controller.preferences.setEssentials([essential, nextEssential]))
         windowModel.showEssentialsPrefix()
         let repeatedUp = try arrowEvent(.upArrow, modifiers: [], isARepeat: true)
         let repeatedDown = try arrowEvent(.downArrow, modifiers: [], isARepeat: true)
@@ -1419,8 +1444,8 @@ struct KeyboardShortcutTests {
         func route(_ event: NSEvent) -> InputDecision {
             KeyboardRouter.route(
                 event: KeyEvent(event),
-                context: InputContext(store: store, windowModel: windowModel, event: event),
-                shortcuts: ShortcutConfiguration(preferences: store.preferences))
+                context: InputContext(controller: controller, windowModel: windowModel, event: event),
+                shortcuts: ShortcutConfiguration(preferences: controller.preferences))
         }
 
         // Act
@@ -1429,9 +1454,9 @@ struct KeyboardShortcutTests {
         let returnDecision = route(repeatedReturn)
         let keyDecision = route(repeatedKey)
         let escapeDecision = route(repeatedEscape)
-        #expect(KeyboardController.handle(repeatedDown, store: store, windowModel: windowModel))
-        #expect(KeyboardController.handle(repeatedReturn, store: store, windowModel: windowModel))
-        #expect(KeyboardController.handle(repeatedKey, store: store, windowModel: windowModel))
+        #expect(KeyboardController.handle(repeatedDown, controller: controller, windowModel: windowModel))
+        #expect(KeyboardController.handle(repeatedReturn, controller: controller, windowModel: windowModel))
+        #expect(KeyboardController.handle(repeatedKey, controller: controller, windowModel: windowModel))
 
         // Assert
         #expect(upDecision == .perform(.essentials(.moveSelection(-1))))
@@ -1440,44 +1465,44 @@ struct KeyboardShortcutTests {
         #expect(returnDecision == .consume(.ignoredRepeat))
         #expect(keyDecision == .consume(.ignoredRepeat))
         #expect(escapeDecision == .consume(.ignoredRepeat))
-        #expect(store.focusedDesk?.boards.count == 1)
+        #expect(controller.focusedDesk?.boards.count == 1)
     }
 
     @Test func denModeGPrefixShowsFeedbackForUnregisteredKeys() throws {
-        let store = try makeStore(boards: [board("First")])
-        let composition = DenWindowComposition(store: store)
+        let controller = try makeController(boards: [board("First")])
+        let composition = DenWindowComposition(controller: controller)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
         let essential = Essential(name: "ChatGPT", key: "c", input: "https://chatgpt.com")
-        #expect(store.preferences.setEssentials([essential]))
+        #expect(controller.preferences.setEssentials([essential]))
         windowModel.isDenMode = true
         let prefix = try keyEvent(
             characters: "g", charactersIgnoringModifiers: "g", keyCode: 5)
         let unknown = try keyEvent(
             characters: "x", charactersIgnoringModifiers: "x", keyCode: 7)
 
-        #expect(KeyboardController.handle(prefix, store: store, windowModel: windowModel))
+        #expect(KeyboardController.handle(prefix, controller: controller, windowModel: windowModel))
         #expect(
-            KeyboardController.decision(for: unknown, store: store, windowModel: windowModel)
+            KeyboardController.decision(for: unknown, controller: controller, windowModel: windowModel)
                 == .perform(.essentials(.showNotFound("x"))))
-        #expect(KeyboardController.handle(unknown, store: store, windowModel: windowModel))
+        #expect(KeyboardController.handle(unknown, controller: controller, windowModel: windowModel))
         #expect(windowModel.temporaryContext == nil)
         #expect(windowModel.isDenMode)
-        #expect(store.focusedDesk?.boards.count == 1)
-        #expect(store.latestFeedback?.message == "No Essential assigned to 'x'.")
-        #expect(store.latestFeedback?.severity == .warning)
+        #expect(controller.focusedDesk?.boards.count == 1)
+        #expect(controller.latestFeedback?.message == "No Essential assigned to 'x'.")
+        #expect(controller.latestFeedback?.severity == .warning)
 
     }
 
     @Test func denModeGPrefixCancelsQuietlyForEscapeAndModifiedKeys() throws {
-        let store = try makeStore(boards: [board("First")])
-        let composition = DenWindowComposition(store: store)
+        let controller = try makeController(boards: [board("First")])
+        let composition = DenWindowComposition(controller: controller)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
         #expect(
-            store.preferences.setEssentials([
+            controller.preferences.setEssentials([
                 Essential(name: "ChatGPT", key: "c", input: "https://chatgpt.com")
             ]))
         windowModel.isDenMode = true
@@ -1488,25 +1513,25 @@ struct KeyboardShortcutTests {
         let modified = try keyEvent(
             characters: "x", charactersIgnoringModifiers: "x", modifiers: [.command], keyCode: 7)
 
-        #expect(KeyboardController.handle(prefix, store: store, windowModel: windowModel))
-        #expect(KeyboardController.handle(escape, store: store, windowModel: windowModel))
+        #expect(KeyboardController.handle(prefix, controller: controller, windowModel: windowModel))
+        #expect(KeyboardController.handle(escape, controller: controller, windowModel: windowModel))
         #expect(windowModel.temporaryContext == nil)
         #expect(windowModel.isDenMode)
 
-        #expect(KeyboardController.handle(prefix, store: store, windowModel: windowModel))
-        #expect(KeyboardController.handle(modified, store: store, windowModel: windowModel))
+        #expect(KeyboardController.handle(prefix, controller: controller, windowModel: windowModel))
+        #expect(KeyboardController.handle(modified, controller: controller, windowModel: windowModel))
         #expect(windowModel.temporaryContext == nil)
         #expect(windowModel.isDenMode)
-        #expect(store.latestFeedback == nil)
+        #expect(controller.latestFeedback == nil)
     }
 
     @Test func zmxSessionsEscapeClosesPanel() throws {
-        let store = try makeStore(boards: [board("First")])
-        let composition = DenWindowComposition(store: store)
+        let controller = try makeController(boards: [board("First")])
+        let composition = DenWindowComposition(controller: controller)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
-        store.preferences.setZmxPath("/missing/zmx")
+        controller.preferences.setZmxPath("/missing/zmx")
         let escape = try keyEvent(
             characters: "\u{1B}", charactersIgnoringModifiers: "\u{1B}", keyCode: 53)
 
@@ -1514,25 +1539,25 @@ struct KeyboardShortcutTests {
 
         #expect(windowModel.isZmxSessionsPresented)
         #expect(
-            KeyboardController.decision(for: escape, store: store, windowModel: windowModel)
+            KeyboardController.decision(for: escape, controller: controller, windowModel: windowModel)
                 == .perform(.zmxSessions(.hide)))
-        #expect(KeyboardController.handle(escape, store: store, windowModel: windowModel))
+        #expect(KeyboardController.handle(escape, controller: controller, windowModel: windowModel))
         #expect(!windowModel.isZmxSessionsPresented)
     }
 
     @Test func zmxSessionsArrowSelectionAndActionsUseTheFocusedSession() async throws {
-        let store = try makeStore(
+        let controller = try makeController(
             terminalCommandRunner: ZmxKeyboardCommandRunner(
                 responses: [
                     ["list"]: TerminalCommandResult(
                         terminationStatus: 0,
                         standardOutput: "name=den\nname=den-vi\tden.root=den\n")
                 ]))
-        let composition = DenWindowComposition(store: store)
+        let composition = DenWindowComposition(controller: controller)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
-        store.preferences.setZmxPath("/opt/homebrew/bin/zmx")
+        controller.preferences.setZmxPath("/opt/homebrew/bin/zmx")
         windowModel.showZmxSessions()
         await waitForZmxSessionLoad(windowModel)
 
@@ -1556,79 +1581,79 @@ struct KeyboardShortcutTests {
 
         #expect(windowModel.zmxSessions.selectedSessionName == "den")
         #expect(
-            KeyboardController.decision(for: down, store: store, windowModel: windowModel)
+            KeyboardController.decision(for: down, controller: controller, windowModel: windowModel)
                 == .perform(.zmxSessions(.moveSelection(1))))
-        #expect(KeyboardController.handle(down, store: store, windowModel: windowModel))
+        #expect(KeyboardController.handle(down, controller: controller, windowModel: windowModel))
         #expect(windowModel.zmxSessions.selectedSessionName == "den-vi")
-        #expect(KeyboardController.handle(upArrow, store: store, windowModel: windowModel))
+        #expect(KeyboardController.handle(upArrow, controller: controller, windowModel: windowModel))
         #expect(windowModel.zmxSessions.selectedSessionName == "den")
         #expect(
-            KeyboardController.decision(for: jKey, store: store, windowModel: windowModel)
+            KeyboardController.decision(for: jKey, controller: controller, windowModel: windowModel)
                 == .perform(.zmxSessions(.moveSelection(1))))
-        #expect(KeyboardController.handle(jKey, store: store, windowModel: windowModel))
+        #expect(KeyboardController.handle(jKey, controller: controller, windowModel: windowModel))
         #expect(windowModel.zmxSessions.selectedSessionName == "den-vi")
-        #expect(KeyboardController.handle(kKey, store: store, windowModel: windowModel))
+        #expect(KeyboardController.handle(kKey, controller: controller, windowModel: windowModel))
         #expect(windowModel.zmxSessions.selectedSessionName == "den")
-        #expect(KeyboardController.handle(space, store: store, windowModel: windowModel))
+        #expect(KeyboardController.handle(space, controller: controller, windowModel: windowModel))
         #expect(windowModel.zmxSessions.markedSessionNames == ["den"])
         #expect(
-            KeyboardController.decision(for: selectAll, store: store, windowModel: windowModel)
+            KeyboardController.decision(for: selectAll, controller: controller, windowModel: windowModel)
                 == .perform(.zmxSessions(.selectAll)))
-        #expect(KeyboardController.handle(selectAll, store: store, windowModel: windowModel))
+        #expect(KeyboardController.handle(selectAll, controller: controller, windowModel: windowModel))
         #expect(windowModel.zmxSessions.markedSessionNames == ["den", "den-vi"])
         #expect(
-            KeyboardController.decision(for: escape, store: store, windowModel: windowModel)
+            KeyboardController.decision(for: escape, controller: controller, windowModel: windowModel)
                 == .perform(.zmxSessions(.clearSelection)))
-        #expect(KeyboardController.handle(escape, store: store, windowModel: windowModel))
+        #expect(KeyboardController.handle(escape, controller: controller, windowModel: windowModel))
         #expect(windowModel.zmxSessions.markedSessionNames.isEmpty)
         #expect(
-            KeyboardController.decision(for: returnKey, store: store, windowModel: windowModel)
+            KeyboardController.decision(for: returnKey, controller: controller, windowModel: windowModel)
                 == .perform(.zmxSessions(.openSelected)))
         #expect(
-            KeyboardController.decision(for: filter, store: store, windowModel: windowModel)
+            KeyboardController.decision(for: filter, controller: controller, windowModel: windowModel)
                 == .perform(.zmxSessions(.enterFilter)))
-        #expect(KeyboardController.handle(filter, store: store, windowModel: windowModel))
+        #expect(KeyboardController.handle(filter, controller: controller, windowModel: windowModel))
         #expect(windowModel.zmxSessions.isFilterInputActive)
         #expect(
-            KeyboardController.decision(for: selectAll, store: store, windowModel: windowModel)
+            KeyboardController.decision(for: selectAll, controller: controller, windowModel: windowModel)
                 == .perform(.zmxSessions(.selectAll)))
         #expect(
-            KeyboardController.decision(for: deleteKey, store: store, windowModel: windowModel)
+            KeyboardController.decision(for: deleteKey, controller: controller, windowModel: windowModel)
                 == .forward(.filterTextInput))
         #expect(
-            KeyboardController.decision(for: returnKey, store: store, windowModel: windowModel)
+            KeyboardController.decision(for: returnKey, controller: controller, windowModel: windowModel)
                 == .perform(.zmxSessions(.openSelected)))
-        #expect(KeyboardController.handle(escape, store: store, windowModel: windowModel))
+        #expect(KeyboardController.handle(escape, controller: controller, windowModel: windowModel))
         #expect(!windowModel.zmxSessions.isFilterInputActive)
         #expect(windowModel.zmxSessions.query.isEmpty)
         #expect(
-            KeyboardController.decision(for: escape, store: store, windowModel: windowModel)
+            KeyboardController.decision(for: escape, controller: controller, windowModel: windowModel)
                 == .perform(.zmxSessions(.hide)))
         #expect(
-            KeyboardController.decision(for: delete, store: store, windowModel: windowModel)
+            KeyboardController.decision(for: delete, controller: controller, windowModel: windowModel)
                 == .perform(.zmxSessions(.deleteSelected)))
         #expect(
-            KeyboardController.decision(for: deleteKey, store: store, windowModel: windowModel)
+            KeyboardController.decision(for: deleteKey, controller: controller, windowModel: windowModel)
                 == .perform(.zmxSessions(.deleteSelected)))
         #expect(
-            KeyboardController.decision(for: reload, store: store, windowModel: windowModel)
+            KeyboardController.decision(for: reload, controller: controller, windowModel: windowModel)
                 == .perform(.zmxSessions(.refresh)))
-        #expect(KeyboardController.handle(delete, store: store, windowModel: windowModel))
+        #expect(KeyboardController.handle(delete, controller: controller, windowModel: windowModel))
         #expect(windowModel.zmxSessions.pendingDeletion == ["den"])
         #expect(
-            KeyboardController.decision(for: returnKey, store: store, windowModel: windowModel)
+            KeyboardController.decision(for: returnKey, controller: controller, windowModel: windowModel)
                 == .forward(.temporaryTextInput))
     }
 
     @Test func denModeGPrefixPreservesEssentialKeyCase() throws {
-        let store = try makeStore(boards: [board("First")])
-        let composition = DenWindowComposition(store: store)
+        let controller = try makeController(boards: [board("First")])
+        let composition = DenWindowComposition(controller: controller)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
         let lowercase = Essential(name: "Lowercase", key: "c", input: "https://example.com/lower")
         let uppercase = Essential(name: "Uppercase", key: "C", input: "https://example.com/upper")
-        #expect(store.preferences.setEssentials([lowercase, uppercase]))
+        #expect(controller.preferences.setEssentials([lowercase, uppercase]))
         windowModel.isDenMode = true
 
         let prefix = try keyEvent(
@@ -1638,26 +1663,26 @@ struct KeyboardShortcutTests {
         let uppercaseKey = try keyEvent(
             characters: "C", charactersIgnoringModifiers: "c", modifiers: [.shift], keyCode: 8)
 
-        #expect(KeyboardController.handle(prefix, store: store, windowModel: windowModel))
+        #expect(KeyboardController.handle(prefix, controller: controller, windowModel: windowModel))
         #expect(
-            KeyboardController.decision(for: lowercaseKey, store: store, windowModel: windowModel)
+            KeyboardController.decision(for: lowercaseKey, controller: controller, windowModel: windowModel)
                 == .perform(.essentials(.launch(lowercase.id))))
         #expect(
-            KeyboardController.decision(for: uppercaseKey, store: store, windowModel: windowModel)
+            KeyboardController.decision(for: uppercaseKey, controller: controller, windowModel: windowModel)
                 == .perform(.essentials(.launch(uppercase.id))))
-        #expect(KeyboardController.handle(uppercaseKey, store: store, windowModel: windowModel))
-        #expect(store.focusedBoard?.currentSheetURL == URL(string: "https://example.com/upper"))
+        #expect(KeyboardController.handle(uppercaseKey, controller: controller, windowModel: windowModel))
+        #expect(controller.focusedBoard?.currentSheetURL == URL(string: "https://example.com/upper"))
     }
 
     @Test func denModeGPrefixCanLaunchTerminalEssential() throws {
-        let store = try makeStore(boards: [board("First")])
-        let composition = DenWindowComposition(store: store)
+        let controller = try makeController(boards: [board("First")])
+        let composition = DenWindowComposition(controller: controller)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
         let directory = FileManager.default.temporaryDirectory.standardizedFileURL.path
         #expect(
-            store.preferences.setEssentials([
+            controller.preferences.setEssentials([
                 Essential(name: "Terminal", key: "t", input: ":terminal \(directory)")
             ]))
         windowModel.isDenMode = true
@@ -1667,35 +1692,37 @@ struct KeyboardShortcutTests {
         let key = try keyEvent(
             characters: "t", charactersIgnoringModifiers: "t", keyCode: 17)
 
-        #expect(KeyboardController.handle(prefix, store: store, windowModel: windowModel))
-        #expect(KeyboardController.handle(key, store: store, windowModel: windowModel))
-        #expect(store.focusedBoard?.terminalWorkingDirectory == directory)
+        #expect(KeyboardController.handle(prefix, controller: controller, windowModel: windowModel))
+        #expect(KeyboardController.handle(key, controller: controller, windowModel: windowModel))
+        #expect(controller.focusedBoard?.terminalWorkingDirectory == directory)
         #expect(!windowModel.isDenMode)
     }
 
     @Test func commandShortcutRemainsOutsideEssentialsPrefix() throws {
         let preferences = try makePreferences()
-        let store = try makeStore(boards: [board("First")])
-        let composition = DenWindowComposition(store: store)
+        let controller = try makeController(boards: [board("First")])
+        let composition = DenWindowComposition(controller: controller)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
         #expect(
-            store.preferences.setEssentials([
+            controller.preferences.setEssentials([
                 Essential(name: "Terminal", key: "t", input: ":terminal")
             ]))
         windowModel.isDenMode = true
         let commandT = try keyEvent(
             characters: "t", charactersIgnoringModifiers: "t", modifiers: [.command], keyCode: 17)
 
-        #expect(!KeyboardController.handle(commandT, store: store, windowModel: windowModel, preferences: preferences))
+        #expect(
+            !KeyboardController.handle(
+                commandT, controller: controller, windowModel: windowModel, preferences: preferences))
         #expect(windowModel.temporaryContext == nil)
         #expect(windowModel.isDenMode)
     }
 
     @Test func denModeUnmappedKeyIsConsumedByRouter() throws {
-        let store = try makeStore(boards: [board("First")])
-        let composition = DenWindowComposition(store: store)
+        let controller = try makeController(boards: [board("First")])
+        let composition = DenWindowComposition(controller: controller)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
@@ -1704,15 +1731,15 @@ struct KeyboardShortcutTests {
             characters: "q", charactersIgnoringModifiers: "q", modifiers: [], keyCode: 12)
 
         #expect(
-            KeyboardController.decision(for: unmapped, store: store, windowModel: windowModel)
+            KeyboardController.decision(for: unmapped, controller: controller, windowModel: windowModel)
                 == .consume(.denModeUnmapped))
     }
 
     @Test func hardReloadCurrentSheetShortcutReloadsOnlyFocusedBoard() throws {
         let first = board("First")
         let second = board("Second")
-        let store = try makeStore(boards: [first, second])
-        let composition = DenWindowComposition(store: store)
+        let controller = try makeController(boards: [first, second])
+        let composition = DenWindowComposition(controller: controller)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
@@ -1722,9 +1749,9 @@ struct KeyboardShortcutTests {
             modifiers: [.command, .shift],
             keyCode: 15)
 
-        #expect(KeyboardController.handle(reload, store: store, windowModel: windowModel))
-        #expect(Set(store.webRuntimes.keys) == Set([first.id]))
-        #expect(store.focusedDesk?.focusedBoardID == first.id)
+        #expect(KeyboardController.handle(reload, controller: controller, windowModel: windowModel))
+        #expect(Set(controller.webRuntimes.keys) == Set([first.id]))
+        #expect(controller.focusedDesk?.focusedBoardID == first.id)
     }
 
     @Test func reloadFocusedDeskSheetsShortcutReloadsOnlyFocusedDesk() throws {
@@ -1739,11 +1766,11 @@ struct KeyboardShortcutTests {
             label: "Second Desk",
             boards: [other],
             focusedBoardID: other.id)
-        let store = DenController(
+        let controller = DenController(
             state: DenState(
                 desks: [firstDesk, secondDesk],
                 focusedDeskID: firstDesk.id))
-        let composition = DenWindowComposition(store: store)
+        let composition = DenWindowComposition(controller: controller)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
@@ -1753,22 +1780,22 @@ struct KeyboardShortcutTests {
             modifiers: [.command, .option, .shift],
             keyCode: 15)
 
-        #expect(KeyboardController.handle(reload, store: store, windowModel: windowModel))
-        #expect(Set(store.webRuntimes.keys) == Set([first.id, second.id]))
-        #expect(store.focusedDesk?.id == firstDesk.id)
-        #expect(store.state.desks.map(\.id) == [firstDesk.id, secondDesk.id])
+        #expect(KeyboardController.handle(reload, controller: controller, windowModel: windowModel))
+        #expect(Set(controller.webRuntimes.keys) == Set([first.id, second.id]))
+        #expect(controller.focusedDesk?.id == firstDesk.id)
+        #expect(controller.state.desks.map(\.id) == [firstDesk.id, secondDesk.id])
     }
 
     @Test func denModeEOpensFocusedBoardLinkEditor() throws {
-        let store = try makeStore(boards: [board("First")])
-        let composition = DenWindowComposition(store: store)
+        let controller = try makeController(boards: [board("First")])
+        let composition = DenWindowComposition(controller: controller)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
         windowModel.isDenMode = true
         let editLink = try keyEvent(characters: "e", charactersIgnoringModifiers: "e", keyCode: 14)
 
-        #expect(KeyboardController.handle(editLink, store: store, windowModel: windowModel))
+        #expect(KeyboardController.handle(editLink, controller: controller, windowModel: windowModel))
         #expect(windowModel.isEditBoardLinkPanelPresented)
     }
 
@@ -1781,8 +1808,8 @@ struct KeyboardShortcutTests {
             currentSheetURL: currentSheetURL,
             firstSheetURL: firstSheetURL,
             customLabel: "Pinned")
-        let store = try makeStore(boards: [source])
-        let composition = DenWindowComposition(store: store)
+        let controller = try makeController(boards: [source])
+        let composition = DenWindowComposition(controller: controller)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
@@ -1793,11 +1820,11 @@ struct KeyboardShortcutTests {
             modifiers: [.shift],
             keyCode: 36)
 
-        #expect(KeyboardController.handle(shiftReturn, store: store, windowModel: windowModel))
-        #expect(store.focusedDesk?.boards.count == 2)
-        #expect(store.focusedBoard?.currentSheetURL == firstSheetURL)
-        #expect(store.focusedBoard?.firstSheetURL == firstSheetURL)
-        #expect(store.focusedBoard?.customLabel == "Pinned")
+        #expect(KeyboardController.handle(shiftReturn, controller: controller, windowModel: windowModel))
+        #expect(controller.focusedDesk?.boards.count == 2)
+        #expect(controller.focusedBoard?.currentSheetURL == firstSheetURL)
+        #expect(controller.focusedBoard?.firstSheetURL == firstSheetURL)
+        #expect(controller.focusedBoard?.customLabel == "Pinned")
         #expect(!windowModel.isDenMode)
     }
 
@@ -1808,8 +1835,8 @@ struct KeyboardShortcutTests {
             currentSheetURL: URL(string: "https://example.com/current"),
             firstSheetURL: nil)
         source.firstSheetURL = nil
-        let store = try makeStore(boards: [source])
-        let composition = DenWindowComposition(store: store)
+        let controller = try makeController(boards: [source])
+        let composition = DenWindowComposition(controller: controller)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
@@ -1820,8 +1847,8 @@ struct KeyboardShortcutTests {
             modifiers: [.shift],
             keyCode: 36)
 
-        #expect(KeyboardController.handle(shiftReturn, store: store, windowModel: windowModel))
-        #expect(store.focusedDesk?.boards.count == 1)
+        #expect(KeyboardController.handle(shiftReturn, controller: controller, windowModel: windowModel))
+        #expect(controller.focusedDesk?.boards.count == 1)
         #expect(windowModel.isDenMode)
     }
 
@@ -1831,10 +1858,10 @@ struct KeyboardShortcutTests {
         defer { defaults.removePersistentDomain(forName: suiteName) }
         let sheetNavigation = SheetNavigationManager(defaults: defaults, scriptSource: "")
         let desk = DeskState(label: "Desk", boards: [board("First")])
-        let store = DenController(
+        let controller = DenController(
             state: DenState(desks: [desk], focusedDeskID: desk.id),
             sheetNavigation: sheetNavigation)
-        let composition = DenWindowComposition(store: store)
+        let composition = DenWindowComposition(controller: controller)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
@@ -1845,57 +1872,69 @@ struct KeyboardShortcutTests {
             charactersIgnoringModifiers: "t",
             isARepeat: true,
             keyCode: 17)
-        #expect(store.focusedBoard?.sheetNavigationPaused == false)
-        #expect(KeyboardController.handle(toggle, store: store, windowModel: windowModel))
-        #expect(store.focusedBoard?.sheetNavigationPaused == true)
-        #expect(KeyboardController.handle(repeatedToggle, store: store, windowModel: windowModel))
-        #expect(store.focusedBoard?.sheetNavigationPaused == true)
-        #expect(KeyboardController.handle(toggle, store: store, windowModel: windowModel))
-        #expect(store.focusedBoard?.sheetNavigationPaused == false)
+        #expect(controller.focusedBoard?.sheetNavigationPaused == false)
+        #expect(KeyboardController.handle(toggle, controller: controller, windowModel: windowModel))
+        #expect(controller.focusedBoard?.sheetNavigationPaused == true)
+        #expect(KeyboardController.handle(repeatedToggle, controller: controller, windowModel: windowModel))
+        #expect(controller.focusedBoard?.sheetNavigationPaused == true)
+        #expect(KeyboardController.handle(toggle, controller: controller, windowModel: windowModel))
+        #expect(controller.focusedBoard?.sheetNavigationPaused == false)
     }
 
     @Test func denModeAddsSpaceGuideAndZenViewWithoutPersistedStateChanges() throws {
         let preferences = try makePreferences()
-        let store = try makeStore(boards: [board("First")])
-        let composition = DenWindowComposition(store: store)
+        let controller = try makeController(boards: [board("First")])
+        let composition = DenWindowComposition(controller: controller)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
         windowModel.isDenMode = true
-        let state = store.state
+        let state = controller.state
 
         let zen = try keyEvent(characters: "z", charactersIgnoringModifiers: "z", keyCode: 6)
-        #expect(KeyboardController.handle(zen, store: store, windowModel: windowModel, preferences: preferences))
+        #expect(
+            KeyboardController.handle(zen, controller: controller, windowModel: windowModel, preferences: preferences))
         #expect(windowModel.isZenViewPresented)
         let repeatedZen = try keyEvent(
             characters: "z", charactersIgnoringModifiers: "z", isARepeat: true, keyCode: 6)
         #expect(
-            KeyboardController.handle(repeatedZen, store: store, windowModel: windowModel, preferences: preferences))
+            KeyboardController.handle(
+                repeatedZen, controller: controller, windowModel: windowModel, preferences: preferences))
         #expect(windowModel.isZenViewPresented)
 
         let question = try keyEvent(
             characters: "?", charactersIgnoringModifiers: "/", modifiers: [.shift], keyCode: 44)
-        #expect(KeyboardController.handle(question, store: store, windowModel: windowModel, preferences: preferences))
+        #expect(
+            KeyboardController.handle(
+                question, controller: controller, windowModel: windowModel, preferences: preferences))
         #expect(windowModel.isKeyboardShortcutsPresented)
         let movement = try keyEvent(characters: "h", charactersIgnoringModifiers: "h", keyCode: 4)
-        #expect(!KeyboardController.handle(movement, store: store, windowModel: windowModel, preferences: preferences))
+        #expect(
+            !KeyboardController.handle(
+                movement, controller: controller, windowModel: windowModel, preferences: preferences))
         #expect(windowModel.isKeyboardShortcutsPresented)
-        #expect(!KeyboardController.handle(question, store: store, windowModel: windowModel, preferences: preferences))
+        #expect(
+            !KeyboardController.handle(
+                question, controller: controller, windowModel: windowModel, preferences: preferences))
         #expect(windowModel.isKeyboardShortcutsPresented)
         let escape = try keyEvent(
             characters: "\u{1B}", charactersIgnoringModifiers: "\u{1B}", keyCode: 53)
-        #expect(KeyboardController.handle(escape, store: store, windowModel: windowModel, preferences: preferences))
+        #expect(
+            KeyboardController.handle(
+                escape, controller: controller, windowModel: windowModel, preferences: preferences))
         #expect(!windowModel.isKeyboardShortcutsPresented)
 
         let space = try keyEvent(characters: " ", charactersIgnoringModifiers: " ", keyCode: 49)
-        #expect(KeyboardController.handle(space, store: store, windowModel: windowModel, preferences: preferences))
+        #expect(
+            KeyboardController.handle(space, controller: controller, windowModel: windowModel, preferences: preferences)
+        )
         #expect(windowModel.isOpenBoardPanelPresented)
-        #expect(store.state == state)
+        #expect(controller.state == state)
     }
 
     @Test func denModeShiftBracketsHandleFirstAndLatestSheet() throws {
-        let store = try makeStore(boards: [board("First")])
-        let composition = DenWindowComposition(store: store)
+        let controller = try makeController(boards: [board("First")])
+        let composition = DenWindowComposition(controller: controller)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
@@ -1905,44 +1944,44 @@ struct KeyboardShortcutTests {
         let latest = try keyEvent(
             characters: "}", charactersIgnoringModifiers: "}", modifiers: [.shift], keyCode: 30)
 
-        #expect(KeyboardController.handle(first, store: store, windowModel: windowModel))
-        #expect(KeyboardController.handle(latest, store: store, windowModel: windowModel))
+        #expect(KeyboardController.handle(first, controller: controller, windowModel: windowModel))
+        #expect(KeyboardController.handle(latest, controller: controller, windowModel: windowModel))
         #expect(windowModel.isDenMode)
     }
 
     @Test func denModePOpensDeskPresetPanelOnlyForDeskWithBoards() throws {
         let save = try keyEvent(characters: "p", charactersIgnoringModifiers: "p", keyCode: 35)
-        let store = try makeStore(boards: [board("First")])
-        let composition = DenWindowComposition(store: store)
+        let controller = try makeController(boards: [board("First")])
+        let composition = DenWindowComposition(controller: controller)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
         windowModel.isDenMode = true
 
-        #expect(KeyboardController.handle(save, store: store, windowModel: windowModel))
+        #expect(KeyboardController.handle(save, controller: controller, windowModel: windowModel))
         #expect(windowModel.isSaveDeskPresetPanelPresented)
 
-        let empty = try makeStore(boards: [])
-        let emptyComposition = DenWindowComposition(store: empty)
+        let empty = try makeController(boards: [])
+        let emptyComposition = DenWindowComposition(controller: empty)
         let emptyWindowModel = emptyComposition.model
         emptyComposition.connect()
         defer { emptyComposition.disconnect() }
         emptyWindowModel.isDenMode = true
-        #expect(KeyboardController.handle(save, store: empty, windowModel: emptyWindowModel))
+        #expect(KeyboardController.handle(save, controller: empty, windowModel: emptyWindowModel))
         #expect(!emptyWindowModel.isSaveDeskPresetPanelPresented)
     }
 
     @Test func denModeShiftPOpensDeskReplacement() throws {
         let replace = try keyEvent(
             characters: "P", charactersIgnoringModifiers: "p", modifiers: [.shift], keyCode: 35)
-        let store = try makeStore(boards: [])
-        let composition = DenWindowComposition(store: store)
+        let controller = try makeController(boards: [])
+        let composition = DenWindowComposition(controller: controller)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
         windowModel.isDenMode = true
 
-        #expect(KeyboardController.handle(replace, store: store, windowModel: windowModel))
+        #expect(KeyboardController.handle(replace, controller: controller, windowModel: windowModel))
         #expect(windowModel.isReplaceDeskPanelPresented)
         #expect(windowModel.isNewDeskPanelPresented)
         #expect(!windowModel.isDeskPresetManagementPresented)
@@ -1950,14 +1989,14 @@ struct KeyboardShortcutTests {
 
     @Test func denModeBHasNoPresetAction() throws {
         let legacy = try keyEvent(characters: "b", charactersIgnoringModifiers: "b", keyCode: 11)
-        let store = try makeStore(boards: [board("First")])
-        let composition = DenWindowComposition(store: store)
+        let controller = try makeController(boards: [board("First")])
+        let composition = DenWindowComposition(controller: controller)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
         windowModel.isDenMode = true
 
-        #expect(KeyboardController.handle(legacy, store: store, windowModel: windowModel))
+        #expect(KeyboardController.handle(legacy, controller: controller, windowModel: windowModel))
         #expect(!windowModel.isSaveDeskPresetPanelPresented)
         #expect(!windowModel.isDeskPresetManagementPresented)
     }
@@ -1965,45 +2004,45 @@ struct KeyboardShortcutTests {
     @Test func presetConfirmationsSuspendBoardRemovalShortcuts() throws {
         let commandW = try keyEvent(
             characters: "w", charactersIgnoringModifiers: "w", modifiers: [.command], keyCode: 13)
-        let store = try makeStore(boards: [board("First")])
-        let composition = DenWindowComposition(store: store)
+        let controller = try makeController(boards: [board("First")])
+        let composition = DenWindowComposition(controller: controller)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
 
-        #expect(store.saveFocusedDeskAsPreset(label: "Routine") == .created)
-        #expect(store.saveFocusedDeskAsPreset(label: "Routine") == .replacementPending)
-        #expect(!KeyboardController.handle(commandW, store: store, windowModel: windowModel))
-        #expect(store.focusedDesk?.boards.count == 1)
+        #expect(controller.saveFocusedDeskAsPreset(label: "Routine") == .created)
+        #expect(controller.saveFocusedDeskAsPreset(label: "Routine") == .replacementPending)
+        #expect(!KeyboardController.handle(commandW, controller: controller, windowModel: windowModel))
+        #expect(controller.focusedDesk?.boards.count == 1)
 
         windowModel.cancelDeskPresetReplacement()
-        let presetID = try #require(store.deskPresets.first?.id)
-        store.requestDeskPresetDeletion(presetID)
-        #expect(!KeyboardController.handle(commandW, store: store, windowModel: windowModel))
-        #expect(store.focusedDesk?.boards.count == 1)
+        let presetID = try #require(controller.deskPresets.first?.id)
+        controller.requestDeskPresetDeletion(presetID)
+        #expect(!KeyboardController.handle(commandW, controller: controller, windowModel: windowModel))
+        #expect(controller.focusedDesk?.boards.count == 1)
     }
 
     @Test func fullscreenBypassesAllShortcutsAndClearsDenMode() throws {
-        let store = try makeStore(boards: [board("First")])
-        let composition = DenWindowComposition(store: store)
+        let controller = try makeController(boards: [board("First")])
+        let composition = DenWindowComposition(controller: controller)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
         windowModel.isDenMode = true
 
-        store.updateFullscreenStatus(boardID: BoardID(), isFullscreen: true)
+        controller.updateFullscreenStatus(boardID: BoardID(), isFullscreen: true)
         #expect(!windowModel.isDenMode)
         #expect(windowModel.isFullscreenActive)
 
         let commandW = try keyEvent(
             characters: "w", charactersIgnoringModifiers: "w", modifiers: [.command], keyCode: 13)
-        #expect(!KeyboardController.handle(commandW, store: store, windowModel: windowModel))
+        #expect(!KeyboardController.handle(commandW, controller: controller, windowModel: windowModel))
     }
 
     @Test func denModeAKeepsFocusedSheetInDrawer() throws {
         let focused = board("Focused", url: "https://drawer.example/")
-        let store = try makeStore(boards: [focused])
-        let composition = DenWindowComposition(store: store)
+        let controller = try makeController(boards: [focused])
+        let composition = DenWindowComposition(controller: controller)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
@@ -2014,8 +2053,8 @@ struct KeyboardShortcutTests {
             charactersIgnoringModifiers: "a",
             keyCode: 0)
 
-        #expect(KeyboardController.handle(keep, store: store, windowModel: windowModel))
-        #expect(store.state.drawerItems.first?.url == URL(string: "https://drawer.example/"))
+        #expect(KeyboardController.handle(keep, controller: controller, windowModel: windowModel))
+        #expect(controller.state.drawerItems.first?.url == URL(string: "https://drawer.example/"))
         #expect(!windowModel.isDrawerOpen)
     }
 
@@ -2024,16 +2063,16 @@ struct KeyboardShortcutTests {
         return AppPreferences(defaults: defaults)
     }
 
-    private func makeStore(
+    private func makeController(
         desks: [DeskState]? = nil,
         boards: [BoardState] = [],
         terminalCommandRunner: any TerminalCommandRunning = SubprocessCommandRunner()
     ) throws -> DenController {
-        let storeDesks = desks ?? [DeskState(label: "Desk", boards: boards, focusedBoardID: boards.first?.id)]
+        let controllerDesks = desks ?? [DeskState(label: "Desk", boards: boards, focusedBoardID: boards.first?.id)]
         let defaults = try #require(TestUserDefaults(suiteName: "KeyboardShortcutStore-\(UUID())"))
         let pasteboard = NSPasteboard.withUniqueName()
         return DenController(
-            state: DenState(desks: storeDesks, focusedDeskID: storeDesks.first?.id ?? DeskID()),
+            state: DenState(desks: controllerDesks, focusedDeskID: controllerDesks.first?.id ?? DeskID()),
             websiteDataStore: .nonPersistent(),
             sheetNavigation: SheetNavigationManager(
                 defaults: defaults,

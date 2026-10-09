@@ -8,7 +8,7 @@ struct OverviewView: View {
     let profileColor: Color
     let boardHeight: CGFloat
 
-    @Environment(DenController.self) private var store
+    @Environment(DenController.self) private var controller
     @Environment(DenWindowModel.self) private var windowModel
     @Environment(OverviewModel.self) private var overview
     @Environment(AppPreferences.self) private var preferences
@@ -75,7 +75,7 @@ struct OverviewView: View {
 
             ScrollView([.horizontal, .vertical]) {
                 VStack(alignment: .leading, spacing: 18) {
-                    ForEach(store.state.desks) { desk in
+                    ForEach(controller.state.desks) { desk in
                         let filtered = desk.boards.filter { board in
                             overview.matchesFilter(board, in: desk)
                         }
@@ -90,7 +90,7 @@ struct OverviewView: View {
                 .padding(2)
                 .animation(
                     DenMotion.spatial(reduceMotion: shouldReduceMotion),
-                    value: store.state.desks.map { $0.boards.map(\.id) })
+                    value: controller.state.desks.map { $0.boards.map(\.id) })
             }
             .scrollPosition($scrollPosition, anchor: .center)
             .coordinateSpace(name: OverviewCoordinateSpace.name)
@@ -184,7 +184,7 @@ struct OverviewView: View {
 
     private var hasOverviewMatches: Bool {
         overview.query.isEmpty
-            || store.state.desks.contains { desk in
+            || controller.state.desks.contains { desk in
                 desk.boards.contains { overview.matchesFilter($0, in: desk) }
             }
     }
@@ -262,7 +262,7 @@ struct OverviewView: View {
 
             if hoveredBoardID == board.id && overviewDrag == nil {
                 OverviewBoardCloseButton(boardName: board.displayName) {
-                    store.removeBoard(board.id)
+                    controller.removeBoard(board.id)
                 }
                 .padding(DenOverviewLayout.boardCloseButtonPadding)
             }
@@ -301,7 +301,7 @@ struct OverviewView: View {
             overview.enterBoard(board.id)
         }
         .accessibilityAction(named: "Remove Board") {
-            store.removeBoard(board.id)
+            controller.removeBoard(board.id)
         }
         .accessibilityAction(named: "Move Board Left") {
             overview.selectBoard(board.id)
@@ -392,7 +392,7 @@ struct OverviewView: View {
         guard
             let drag = overviewDrag,
             let target = overviewInsertionTarget(at: drag.location),
-            let desk = store.state.desks.first(where: { $0.id == target.deskID })
+            let desk = controller.state.desks.first(where: { $0.id == target.deskID })
         else {
             return nil
         }
@@ -427,7 +427,7 @@ struct OverviewView: View {
             let deskID = OverviewDragGeometry.targetDeskID(
                 at: location,
                 frames: overviewGeometry.deskFrames),
-            let desk = store.state.desks.first(where: { $0.id == deskID }),
+            let desk = controller.state.desks.first(where: { $0.id == deskID }),
             let index = OverviewDragGeometry.targetIndex(
                 draggedID: drag.boardID,
                 orderedIDs: desk.boards.map(\.id),
@@ -457,7 +457,7 @@ struct OverviewView: View {
             let deskID = OverviewDragGeometry.targetDeskID(
                 at: location,
                 frames: overviewGeometry.deskFrames),
-            let desk = store.state.desks.first(where: { $0.id == deskID }),
+            let desk = controller.state.desks.first(where: { $0.id == deskID }),
             let boardID = (isLeading ? desk.boards.first : desk.boards.last)?.id
         {
             withAnimation(.linear(duration: shouldReduceMotion ? 0 : 0.14)) {
@@ -471,7 +471,7 @@ struct OverviewView: View {
     }
 
     private func nearestDeskID(to locationY: CGFloat, leading: Bool) -> DeskID? {
-        let desks = store.state.desks
+        let desks = controller.state.desks
         guard
             let currentDeskID = OverviewDragGeometry.targetDeskID(
                 at: CGPoint(x: 0, y: locationY),
@@ -489,7 +489,7 @@ struct OverviewView: View {
 
     private var draggedOverviewBoard: BoardState? {
         guard let boardID = overviewDrag?.boardID else { return nil }
-        return store.state.desks.lazy.compactMap { desk in
+        return controller.state.desks.lazy.compactMap { desk in
             desk.boards.first(where: { $0.id == boardID })
         }.first
     }

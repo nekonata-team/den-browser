@@ -7,17 +7,17 @@ import SwiftUI
 struct BoardRail: View {
     let profileColor: Color
 
-    @Environment(DenController.self) private var store
+    @Environment(DenController.self) private var controller
     @Environment(DenWindowModel.self) private var windowModel
 
     private var railDesk: DeskState? {
         if windowModel.isOverviewPresented,
             let selectedDeskID = windowModel.overview.selectionDeskID,
-            let desk = store.state.desks.first(where: { $0.id == selectedDeskID })
+            let desk = controller.state.desks.first(where: { $0.id == selectedDeskID })
         {
             return desk
         }
-        return store.focusedDesk
+        return controller.focusedDesk
     }
 
     private var boardSelection: Binding<BoardID?> {
@@ -25,14 +25,14 @@ struct BoardRail: View {
             get: {
                 windowModel.isOverviewPresented
                     ? windowModel.overview.selectionBoardID
-                    : store.focusedDesk?.focusedBoardID
+                    : controller.focusedDesk?.focusedBoardID
             },
             set: { boardID in
                 guard let boardID else { return }
                 if windowModel.isOverviewPresented {
                     windowModel.overview.selectBoard(boardID)
                 } else {
-                    store.focusBoard(boardID)
+                    controller.focusBoard(boardID)
                 }
             }
         )
@@ -98,7 +98,7 @@ struct BoardRail: View {
     }
 
     private func boardRow(_ board: BoardState) -> some View {
-        let unreadNotificationCount = store.unreadNotificationCount(for: board.id)
+        let unreadNotificationCount = controller.unreadNotificationCount(for: board.id)
         let isFocused = !windowModel.isOverviewPresented && board.id == railDesk?.focusedBoardID
         let isOverviewSelected =
             windowModel.isOverviewPresented
@@ -147,7 +147,7 @@ struct BoardRail: View {
     @ViewBuilder
     private func boardContextMenu(_ board: BoardState, in desk: DeskState) -> some View {
         Button {
-            store.toggleAnchorBoard(board.id, in: desk.id)
+            controller.toggleAnchorBoard(board.id, in: desk.id)
         } label: {
             Label(
                 desk.anchorBoardID == board.id ? "Clear Anchor Board" : "Set Anchor Board",
@@ -158,27 +158,27 @@ struct BoardRail: View {
         Divider()
 
         Button {
-            store.focusBoard(board.id)
+            controller.focusBoard(board.id)
             windowModel.showRenameBoardPanel()
         } label: {
             Label("Rename Board", systemSymbol: .pencil)
         }
 
         Button {
-            store.focusBoard(board.id)
-            store.duplicateFocusedBoard()
+            controller.focusBoard(board.id)
+            controller.duplicateFocusedBoard()
         } label: {
             Label("Duplicate Board", systemSymbol: .plusSquareOnSquare)
         }
         .disabled(board.isSideBoard)
 
-        if store.state.desks.count > 1 {
+        if controller.state.desks.count > 1 {
             Menu {
-                ForEach(Array(store.state.desks.enumerated()), id: \.element.id) { entry in
+                ForEach(Array(controller.state.desks.enumerated()), id: \.element.id) { entry in
                     if entry.element.id != desk.id {
                         Button("\(entry.offset + 1). \(entry.element.label)") {
-                            store.focusBoard(board.id)
-                            store.moveFocusedBoard(toDeskNumber: entry.offset + 1)
+                            controller.focusBoard(board.id)
+                            controller.moveFocusedBoard(toDeskNumber: entry.offset + 1)
                         }
                     }
                 }
@@ -189,7 +189,7 @@ struct BoardRail: View {
 
         if board.isWeb {
             Button {
-                store.copyBoardLocation(board.id)
+                controller.copyBoardLocation(board.id)
             } label: {
                 Label("Copy Current Sheet URL", systemSymbol: .documentOnDocument)
             }
@@ -199,7 +199,7 @@ struct BoardRail: View {
         Divider()
 
         Button(role: .destructive) {
-            store.removeBoard(board.id)
+            controller.removeBoard(board.id)
         } label: {
             Label("Remove Board", systemSymbol: .xmark)
         }
@@ -211,7 +211,7 @@ struct BoardRail: View {
             Image(systemSymbol: boardSymbol(for: board.kind))
                 .foregroundStyle(.secondary)
                 .frame(width: 16, height: 16)
-        } else if let runtime = store.webRuntimes[board.id] {
+        } else if let runtime = controller.webRuntimes[board.id] {
             BoardRailFavicon(runtime: runtime)
         } else {
             Image(systemSymbol: .globe)

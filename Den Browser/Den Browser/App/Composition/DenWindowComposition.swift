@@ -5,36 +5,36 @@ import Foundation
 
 @MainActor
 final class DenWindowComposition {
-    let store: DenController
+    let controller: DenController
     let model: DenWindowModel
 
-    init(store: DenController, feedbackDuration: Duration = .seconds(5)) {
-        self.store = store
+    init(controller: DenController, feedbackDuration: Duration = .seconds(5)) {
+        self.controller = controller
         let overview = OverviewModel(
-            desks: { store.state.desks },
-            presentedDeskID: { store.presentedDeskID },
-            focusedDesk: { store.focusedDesk },
+            desks: { controller.state.desks },
+            presentedDeskID: { controller.presentedDeskID },
+            focusedDesk: { controller.focusedDesk },
             activeBoardID: {
-                guard case .board(let id)? = store.activeDrag else { return nil }
+                guard case .board(let id)? = controller.activeDrag else { return nil }
                 return id
             },
-            isDragging: { store.activeDrag != nil },
+            isDragging: { controller.activeDrag != nil },
             actions: OverviewModel.Actions(
-                enterSelection: { store.enterOverviewSelection(deskID: $0, boardID: $1) },
-                beginDrag: { store.beginOverviewBoardDrag($0) },
-                finishDrag: { store.finishOverviewBoardDrag($0, toDeskID: $1, at: $2) },
-                cancelDrag: { store.cancelOverviewBoardDrag() },
-                moveBoard: { store.moveOverviewBoardGroup($0, by: $1) },
-                moveBoardToDesk: { store.moveOverviewBoardGroupToDesk($0, by: $1) }))
+                enterSelection: { controller.enterOverviewSelection(deskID: $0, boardID: $1) },
+                beginDrag: { controller.beginOverviewBoardDrag($0) },
+                finishDrag: { controller.finishOverviewBoardDrag($0, toDeskID: $1, at: $2) },
+                cancelDrag: { controller.cancelOverviewBoardDrag() },
+                moveBoard: { controller.moveOverviewBoardGroup($0, by: $1) },
+                moveBoardToDesk: { controller.moveOverviewBoardGroupToDesk($0, by: $1) }))
         let drawer = DrawerModel(
-            items: { store.state.drawerItems },
-            isBottomStyle: { store.preferences.drawerStyle == .bottom },
-            releasePreview: { store.releaseDrawerPreview() },
+            items: { controller.state.drawerItems },
+            isBottomStyle: { controller.preferences.drawerStyle == .bottom },
+            releasePreview: { controller.releaseDrawerPreview() },
             discardItem: { itemID, focusNext in
-                _ = store.discardDrawerItem(itemID, focusNext: focusNext)
+                _ = controller.discardDrawerItem(itemID, focusNext: focusNext)
             },
-            toggleStyle: { store.preferences.toggleDrawerStyle() },
-            requestClearConfirmation: { store.requestDrawerClearConfirmation() })
+            toggleStyle: { controller.preferences.toggleDrawerStyle() },
+            requestClearConfirmation: { controller.requestDrawerClearConfirmation() })
         let zmxSessions = ZmxSessionsModel()
         let openBoard = OpenBoardModel { input, width, afterBoardID in
             let rootSessionName: String?
@@ -43,7 +43,7 @@ final class DenWindowComposition {
             } else {
                 rootSessionName = nil
             }
-            switch store.requestOpenBoard(
+            switch controller.requestOpenBoard(
                 input: input,
                 preferredWidth: width,
                 afterBoardID: afterBoardID,
@@ -55,31 +55,31 @@ final class DenWindowComposition {
             }
         }
         let deskFilter = DeskFilterModel(
-            focusedDesk: { store.focusedDesk },
-            focusBoard: { store.focusBoard($0, exitsDenMode: true) })
+            focusedDesk: { controller.focusedDesk },
+            focusBoard: { controller.focusBoard($0, exitsDenMode: true) })
         let notificationList = NotificationListModel(
             items: {
-                store.notifications.map { notification in
+                controller.notifications.map { notification in
                     NotificationListItem(
                         notification: notification,
-                        source: store.notificationSource(for: notification).map {
+                        source: controller.notificationSource(for: notification).map {
                             NotificationListItem.Source(deskLabel: $0.deskLabel, boardLabel: $0.boardLabel)
                         })
                 }
             },
-            openNotification: { store.openNotification($0) },
-            requestClearConfirmation: { store.requestNotificationClearConfirmation() })
+            openNotification: { controller.openNotification($0) },
+            requestClearConfirmation: { controller.requestNotificationClearConfirmation() })
         let model = DenWindowModel(
-            store: store,
+            controller: controller,
             overview: overview,
             drawer: drawer,
             openBoard: openBoard,
             deskFilter: deskFilter,
             notificationList: notificationList,
             zmxSessions: zmxSessions,
-            onLaunchEssential: { store.launchEssential(id: $0, preferredWidth: $1) },
-            onSaveEssential: { store.saveEssential(name: $0, key: $1, input: $2) },
-            onConfirmOperation: { store.performConfirmedOperation($0) },
+            onLaunchEssential: { controller.launchEssential(id: $0, preferredWidth: $1) },
+            onSaveEssential: { controller.saveEssential(name: $0, key: $1, input: $2) },
+            onConfirmOperation: { controller.performConfirmedOperation($0) },
             feedbackDuration: feedbackDuration)
         self.model = model
         overview.onDismiss = { [weak model] in model?.hideOverview() }
@@ -90,14 +90,14 @@ final class DenWindowComposition {
     }
 
     func connect() {
-        store.onWindowEffect = { [weak model] effect in
+        controller.onWindowEffect = { [weak model] effect in
             model?.receive(effect)
         }
-        model.receive(.feedback(store.latestFeedback))
+        model.receive(.feedback(controller.latestFeedback))
     }
 
     func disconnect() {
-        store.onWindowEffect = nil
+        controller.onWindowEffect = nil
         model.endWindowPresentation()
     }
 }

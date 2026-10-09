@@ -20,10 +20,10 @@ struct DenWindowModelTests {
         // Arrange
         let board = BoardState(label: "Board", width: 520, currentSheetURL: URL(string: "https://board.example/"))
         let desk = DeskState(label: "Desk", boards: [board], focusedBoardID: board.id)
-        let store = DenController(state: DenState(desks: [desk], focusedDeskID: desk.id))
-        store.recordNotification(title: "Build", body: "Finished", boardID: board.id)
-        let notificationID = try #require(store.notifications.first?.id)
-        let composition = DenWindowComposition(store: store)
+        let controller = DenController(state: DenState(desks: [desk], focusedDeskID: desk.id))
+        controller.recordNotification(title: "Build", body: "Finished", boardID: board.id)
+        let notificationID = try #require(controller.notifications.first?.id)
+        let composition = DenWindowComposition(controller: controller)
         let windowModel = composition.model
         let changed = Mutex(false)
         withObservationTracking {
@@ -36,13 +36,13 @@ struct DenWindowModelTests {
         // Act
         switch update {
         case .added:
-            store.recordNotification(title: "Another build", body: "Finished", boardID: board.id)
+            controller.recordNotification(title: "Another build", body: "Finished", boardID: board.id)
         case .read:
-            store.markNotificationRead(notificationID)
+            controller.markNotificationRead(notificationID)
         case .sourceTitleChanged:
-            store.updateBoard(boardID: board.id, url: nil, title: "Updated title")
+            controller.updateBoard(boardID: board.id, url: nil, title: "Updated title")
         case .sourceRemoved:
-            store.removeBoard(board.id)
+            controller.removeBoard(board.id)
         }
 
         // Assert
@@ -71,16 +71,16 @@ struct DenWindowModelTests {
             ? BoardState(label: "Terminal", width: 520, workingDirectory: "/tmp")
             : BoardState(label: "Web", width: 520, currentSheetURL: URL(string: "https://target.example/"))
         let desk = DeskState(label: "Desk", boards: [current, target], focusedBoardID: current.id)
-        let store = DenController(state: DenState(desks: [desk], focusedDeskID: desk.id))
-        let composition = DenWindowComposition(store: store)
+        let controller = DenController(state: DenState(desks: [desk], focusedDeskID: desk.id))
+        let composition = DenWindowComposition(controller: controller)
         composition.connect()
         defer { composition.disconnect() }
 
         // Act
-        store.onWindowEffect?(.runtimeFocusedBoard(target.id))
+        controller.onWindowEffect?(.runtimeFocusedBoard(target.id))
 
         // Assert
-        #expect(store.focusedBoard?.id == (isTerminal ? current.id : target.id))
+        #expect(controller.focusedBoard?.id == (isTerminal ? current.id : target.id))
     }
 
     @Test func deletionInAnotherWindowInvalidatesSelectionAndInsertionReferences() {
@@ -98,7 +98,7 @@ struct DenWindowModelTests {
         let sheetNavigation = SheetNavigationManager(
             defaults: defaults, pasteboard: pasteboard, scriptSource: "")
         let preferences = AppPreferences(defaults: defaults)
-        func makeStore(presenting deskID: DeskID) -> DenController {
+        func makeController(presenting deskID: DeskID) -> DenController {
             DenController(
                 storage: storage,
                 presentedDeskID: deskID,
@@ -110,8 +110,8 @@ struct DenWindowModelTests {
                 onDeskPresentationRequest: { _ in true },
                 onWillResetDen: {})
         }
-        let deletingStore = makeStore(presenting: mainDesk.id)
-        let otherWindowComposition = DenWindowComposition(store: makeStore(presenting: otherDesk.id))
+        let deletingController = makeController(presenting: mainDesk.id)
+        let otherWindowComposition = DenWindowComposition(controller: makeController(presenting: otherDesk.id))
         let otherWindow = otherWindowComposition.model
         otherWindowComposition.connect()
         defer { otherWindowComposition.disconnect() }
@@ -119,7 +119,7 @@ struct DenWindowModelTests {
         otherWindow.openBoard.preparePresentation(afterBoardID: board.id)
 
         // Act - another window removes the Board.
-        deletingStore.removeBoard(board.id)
+        deletingController.removeBoard(board.id)
 
         // Assert
         #expect(otherWindow.overview.selectionBoardID == nil)
@@ -127,7 +127,7 @@ struct DenWindowModelTests {
 
         // Act - another window removes the Desk currently selected in Overview.
         otherWindow.overview.preparePresentation(deskID: selectedDesk.id, boardID: selectedBoard.id)
-        deletingStore.confirmDeskDeletion(selectedDesk.id)
+        deletingController.confirmDeskDeletion(selectedDesk.id)
 
         // Assert
         #expect(otherWindow.overview.selectionDeskID == nil)
@@ -136,16 +136,16 @@ struct DenWindowModelTests {
 
     @Test func latestFeedbackIsDisplayedAndPreviousTimerCannotDismissReplacement() async {
         // Arrange
-        let store = DenController(state: .sample)
-        let composition = DenWindowComposition(store: store, feedbackDuration: .milliseconds(150))
+        let controller = DenController(state: .sample)
+        let composition = DenWindowComposition(controller: controller, feedbackDuration: .milliseconds(150))
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
 
         // Act
-        store.reportFeedback("First")
+        controller.reportFeedback("First")
         try? await Task.sleep(for: .milliseconds(100))
-        store.reportFeedback("Latest")
+        controller.reportFeedback("Latest")
         try? await Task.sleep(for: .milliseconds(70))
 
         // Assert
@@ -157,8 +157,8 @@ struct DenWindowModelTests {
 
     @Test func receivingSameFeedbackAgainDoesNotRedisplayAfterDismissal() {
         // Arrange
-        let store = DenController(state: .sample)
-        let composition = DenWindowComposition(store: store)
+        let controller = DenController(state: .sample)
+        let composition = DenWindowComposition(controller: controller)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
@@ -178,34 +178,34 @@ struct DenWindowModelTests {
         let board = BoardState(label: "Target", width: 520, currentSheetURL: URL(string: "https://example.com/"))
         let first = DeskState(label: "Empty", boards: [])
         let desk = DeskState(label: "Desk", boards: [board], focusedBoardID: board.id)
-        let store = DenController(
+        let controller = DenController(
             state: DenState(desks: [first, desk], focusedDeskID: first.id))
-        let composition = DenWindowComposition(store: store)
+        let composition = DenWindowComposition(controller: controller)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
 
-        store.reportFeedback(title: "Build", body: "Finished", target: .board(board.id))
+        controller.reportFeedback(title: "Build", body: "Finished", target: .board(board.id))
         let feedback = try #require(windowModel.displayedFeedback)
 
         // Act
         windowModel.handleTap(on: feedback)
 
         // Assert
-        #expect(store.focusedBoard?.id == board.id)
+        #expect(controller.focusedBoard?.id == board.id)
         #expect(windowModel.temporaryContext == nil)
         #expect(windowModel.displayedFeedback == nil)
     }
 
     @Test func tappingUntargetedFeedbackDismissesItWithoutChangingState() throws {
         // Arrange
-        let store = DenController(state: .sample)
-        let initialState = store.state
-        let composition = DenWindowComposition(store: store)
+        let controller = DenController(state: .sample)
+        let initialState = controller.state
+        let composition = DenWindowComposition(controller: controller)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
-        store.reportFeedback("Saved")
+        controller.reportFeedback("Saved")
         let feedback = try #require(windowModel.displayedFeedback)
 
         // Act
@@ -213,6 +213,6 @@ struct DenWindowModelTests {
 
         // Assert
         #expect(windowModel.displayedFeedback == nil)
-        #expect(store.state == initialState)
+        #expect(controller.state == initialState)
     }
 }

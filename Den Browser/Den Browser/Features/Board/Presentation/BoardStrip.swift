@@ -45,7 +45,7 @@ struct BoardStripLayoutKey: Equatable {
 }
 
 struct BoardStrip: View {
-    @Environment(DenController.self) private var store
+    @Environment(DenController.self) private var controller
     @Environment(DenWindowModel.self) private var windowModel
     @Environment(DeskFilterModel.self) private var deskFilter
     @Environment(AppPreferences.self) private var preferences
@@ -82,7 +82,7 @@ struct BoardStrip: View {
 
     private var layoutKey: BoardStripLayoutKey {
         let boards =
-            deskFilter.isPresented ? deskFilter.filteredBoards : store.focusedDesk?.boards ?? []
+            deskFilter.isPresented ? deskFilter.filteredBoards : controller.focusedDesk?.boards ?? []
         return BoardStripLayoutKey(
             ids: boards.map(\.id),
             widths: boards.map(\.width),
@@ -106,7 +106,7 @@ struct BoardStrip: View {
             !windowModel.isDenMode,
             !deskFilter.isPresented,
             windowModel.temporaryContext == nil,
-            let desk = store.focusedDesk,
+            let desk = controller.focusedDesk,
             let boardID = desk.focusedBoardID
         else { return nil }
         return BoardFocusRequest(deskID: desk.id, boardID: boardID)
@@ -116,7 +116,7 @@ struct BoardStrip: View {
         let boards =
             deskFilter.isPresented
             ? deskFilter.filteredBoards
-            : store.focusedDesk?.boards ?? []
+            : controller.focusedDesk?.boards ?? []
         let draggedBoardIDs = draggedGroupBoardIDs
         let shouldShowIndicator = !windowModel.isZenViewPresented && boards.count > 1
         let topInset = shouldShowHeader ? DenLayout.denHeaderHeight : DenLayout.outerInset
@@ -140,10 +140,10 @@ struct BoardStrip: View {
         let shouldCenterFocusedBoard = BoardLayout.shouldCenterFocusedBoard(for: layoutParams)
         let restingScrollX = BoardLayout.restingScrollX(for: layoutParams)
         let alignmentTarget = BoardStripAlignmentTarget(
-            deskID: store.presentedDeskID,
+            deskID: controller.presentedDeskID,
             boardID: deskFilter.isPresented
                 ? deskFilter.selectionBoardID
-                : store.focusedDesk?.focusedBoardID,
+                : controller.focusedDesk?.focusedBoardID,
             centering: preferences.boardCentering,
             centersFocusedBoard: shouldCenterFocusedBoard,
             restingScrollX: restingScrollX,
@@ -156,10 +156,10 @@ struct BoardStrip: View {
         return ScrollView(.horizontal) {
             HStack(alignment: .top, spacing: boardSpacing) {
                 ForEach(boards) { board in
-                    let isFocused = store.focusedDesk?.focusedBoardID == board.id
+                    let isFocused = controller.focusedDesk?.focusedBoardID == board.id
                     let isVisible = visibleBoardIDs.contains(board.id) || isFocused
                     let isActivated = activatedBoardIDs.contains(board.id) || isVisible
-                    let needsRuntime = isActivated && board.isWeb && store.webRuntimes[board.id] == nil
+                    let needsRuntime = isActivated && board.isWeb && controller.webRuntimes[board.id] == nil
                     let isDragging = draggedBoardIDs.contains(board.id)
 
                     boardView(
@@ -174,11 +174,11 @@ struct BoardStrip: View {
                     )
                     .task(id: needsRuntime) {
                         guard needsRuntime else { return }
-                        _ = store.webRuntime(for: board)
+                        _ = controller.webRuntime(for: board)
                     }
                     .onScrollVisibilityChange(threshold: 0.05) { visible in
                         if visible {
-                            guard alignedBoardDeskID == store.presentedDeskID else { return }
+                            guard alignedBoardDeskID == controller.presentedDeskID else { return }
                             visibleBoardIDs.insert(board.id)
                             activatedBoardIDs.insert(board.id)
                         } else {
@@ -229,13 +229,13 @@ struct BoardStrip: View {
                                 },
                                 onResize: { width, resizeWithNextBoard in
                                     if resizeWithNextBoard {
-                                        store.resizeBoardPair(board.id, to: width)
+                                        controller.resizeBoardPair(board.id, to: width)
                                     } else {
-                                        store.resizeBoard(board.id, to: width)
+                                        controller.resizeBoard(board.id, to: width)
                                     }
                                 },
                                 onResizeEnd: {
-                                    store.saveBoardWidths()
+                                    controller.saveBoardWidths()
                                     resizingBoardID = nil
                                 }
                             )
@@ -280,7 +280,7 @@ struct BoardStrip: View {
                     transaction.disablesAnimations = true
                 }
             }
-            .transaction(value: store.presentedDeskID) { transaction in
+            .transaction(value: controller.presentedDeskID) { transaction in
                 transaction.animation = nil
                 transaction.disablesAnimations = true
             }
@@ -314,20 +314,20 @@ struct BoardStrip: View {
             guard !deskFilter.isPresented else { return }
             let wasUserScrolling = oldPhase == .interacting || oldPhase == .decelerating || oldPhase == .tracking
             if wasUserScrolling && newPhase == .idle {
-                if let boardID = store.focusedDesk?.focusedBoardID,
+                if let boardID = controller.focusedDesk?.focusedBoardID,
                     let centered = centeredBoardScrollX(for: boardID),
                     abs(scrollGeometry.offsetX - centered) < 2.0
                 {
-                    store.saveDeskScrollOffset(nil, for: store.presentedDeskID)
+                    controller.saveDeskScrollOffset(nil, for: controller.presentedDeskID)
                 } else if scrollGeometry.containerWidth > 0 && scrollGeometry.contentWidth > 0 {
-                    store.saveDeskScrollOffset(scrollGeometry.offsetX, for: store.presentedDeskID)
+                    controller.saveDeskScrollOffset(scrollGeometry.offsetX, for: controller.presentedDeskID)
                 }
             }
         }
         .coordinateSpace(name: BoardStripCoordinateSpace.name)
         .scrollIndicators(.never)
         .accessibilityIdentifier("board-strip")
-        .onChange(of: store.presentedDeskID) { _, deskID in
+        .onChange(of: controller.presentedDeskID) { _, deskID in
             alignedBoardDeskID = nil
             pendingBoardActivationAlignment = nil
             activatedBoardIDs.removeAll()
@@ -343,14 +343,14 @@ struct BoardStrip: View {
         }
         .onAppear {
             updateBoardLayout(for: size)
-            guard alignedBoardDeskID != store.presentedDeskID else { return }
+            guard alignedBoardDeskID != controller.presentedDeskID else { return }
             pendingBoardActivationAlignment = nil
-            let boardID = store.focusedDesk?.focusedBoardID ?? alignmentBoards.first?.id
+            let boardID = controller.focusedDesk?.focusedBoardID ?? alignmentBoards.first?.id
             guard let boardID else {
-                alignedBoardDeskID = store.presentedDeskID
+                alignedBoardDeskID = controller.presentedDeskID
                 return
             }
-            if let savedOffset = store.deskScrollOffset(for: store.presentedDeskID) {
+            if let savedOffset = controller.deskScrollOffset(for: controller.presentedDeskID) {
                 deferBoardAlignment(
                     .resting(savedOffset),
                     boardID,
@@ -485,7 +485,7 @@ struct BoardStrip: View {
                 return
             }
 
-            if let deskID = current.deskID, let savedOffset = store.deskScrollOffset(for: deskID) {
+            if let deskID = current.deskID, let savedOffset = controller.deskScrollOffset(for: deskID) {
                 if deskChanged || (layoutChanged && !focusChanged) {
                     if let boardID = current.boardID {
                         deferBoardAlignment(
@@ -544,7 +544,7 @@ struct BoardStrip: View {
         }
         .onChange(of: windowModel.centerFocusedBoardRequest) { _, _ in
             revealBoardID = nil
-            guard let boardID = store.focusedDesk?.focusedBoardID else {
+            guard let boardID = controller.focusedDesk?.focusedBoardID else {
                 cancelPendingBoardAlignment()
                 return
             }
@@ -561,7 +561,7 @@ struct BoardStrip: View {
         }
         .onChange(of: size.width) { _, _ in updateBoardLayout(for: size) }
         .onChange(of: windowModel.boardDragCancellationRequest) { _, _ in cancelBoardDrag() }
-        .onChange(of: store.presentedDeskID) { _, deskID in
+        .onChange(of: controller.presentedDeskID) { _, deskID in
             if boardDrag?.deskID != deskID { cancelBoardDrag() }
         }
         .onChange(of: windowModel.temporaryContext) { _, context in
@@ -584,14 +584,14 @@ struct BoardStrip: View {
         let focused =
             deskFilter.isPresented
             ? board.id == deskFilter.selectionBoardID
-            : board.id == store.focusedDesk?.focusedBoardID
+            : board.id == controller.focusedDesk?.focusedBoardID
         let pointerFocusEnabled = !deskFilter.isPresented && isPointerFocusEnabled(for: board.id)
         let boardFocusRequest = focusedBoardFocusRequest?.boardID == board.id ? focusedBoardFocusRequest : nil
         let focus = {
             if deskFilter.isPresented {
                 deskFilter.confirmSelection(board.id)
             } else {
-                store.focusBoard(board.id, exitsDenMode: true)
+                controller.focusBoard(board.id, exitsDenMode: true)
             }
         }
 
@@ -605,7 +605,7 @@ struct BoardStrip: View {
                 height: size.height,
                 isPointerFocusEnabled: pointerFocusEnabled,
                 onFocus: focus,
-                onRemove: { store.removeBoard(board.id) },
+                onRemove: { controller.removeBoard(board.id) },
                 onDragChanged: { updateBoardDrag(board, value: $0, in: containerSize) },
                 onDragEnded: { finishBoardDrag(value: $0, in: containerSize) })
         } else {
@@ -624,7 +624,7 @@ struct BoardStrip: View {
                         isVisibleInViewport: isVisible,
                         targetBoardID: targetBoardID,
                         onFocus: focus,
-                        onRemove: { store.removeBoard(board.id) },
+                        onRemove: { controller.removeBoard(board.id) },
                         onDragChanged: { updateBoardDrag(board, value: $0, in: containerSize) },
                         onDragEnded: { finishBoardDrag(value: $0, in: containerSize) }
                     )
@@ -641,7 +641,7 @@ struct BoardStrip: View {
                     height: size.height,
                     isPointerFocusEnabled: pointerFocusEnabled,
                     onFocus: focus,
-                    onRemove: { store.removeBoard(board.id) },
+                    onRemove: { controller.removeBoard(board.id) },
                     onDragChanged: { updateBoardDrag(board, value: $0, in: containerSize) },
                     onDragEnded: { finishBoardDrag(value: $0, in: containerSize) })
             case .terminal:
@@ -650,18 +650,18 @@ struct BoardStrip: View {
                     isFocused: focused,
                     focusRequest: boardFocusRequest,
                     isDragging: isDragging,
-                    runtime: store.terminalRuntime(for: board),
+                    runtime: controller.terminalRuntime(for: board),
                     profileColor: profileColor,
                     width: size.width,
                     height: size.height,
                     isPointerFocusEnabled: pointerFocusEnabled,
                     isVisibleInViewport: isVisible,
                     onFocus: focus,
-                    onRemove: { store.removeBoard(board.id) },
+                    onRemove: { controller.removeBoard(board.id) },
                     onDragChanged: { updateBoardDrag(board, value: $0, in: containerSize) },
                     onDragEnded: { finishBoardDrag(value: $0, in: containerSize) })
             case .web:
-                if let runtime = store.webRuntimes[board.id] {
+                if let runtime = controller.webRuntimes[board.id] {
                     WebBoardView(
                         board: board,
                         isFocused: focused,
@@ -674,10 +674,10 @@ struct BoardStrip: View {
                         isPointerFocusEnabled: pointerFocusEnabled,
                         isVisibleInViewport: isVisible,
                         onFocus: focus,
-                        onGoToFirst: { store.goToFirstSheetInBoard(board.id) },
-                        onGoBack: { store.goBackInBoard(board.id) },
-                        onGoForward: { store.goForwardInBoard(board.id) },
-                        onRemove: { store.removeBoard(board.id) },
+                        onGoToFirst: { controller.goToFirstSheetInBoard(board.id) },
+                        onGoBack: { controller.goBackInBoard(board.id) },
+                        onGoForward: { controller.goForwardInBoard(board.id) },
+                        onRemove: { controller.removeBoard(board.id) },
                         onDragChanged: { updateBoardDrag(board, value: $0, in: containerSize) },
                         onDragEnded: { finishBoardDrag(value: $0, in: containerSize) })
                 } else {
@@ -696,7 +696,7 @@ struct BoardStrip: View {
 
     private var draggedGroupBoardIDs: Set<BoardID> {
         guard let drag = boardDrag,
-            let boards = store.focusedDesk?.boards,
+            let boards = controller.focusedDesk?.boards,
             let group = BoardGroup.containing(drag.boardID, in: boards)
         else { return [] }
         return Set(group.boards.map(\.id))
@@ -709,9 +709,9 @@ struct BoardStrip: View {
     ) {
         if boardDrag == nil {
             guard
-                let desk = store.focusedDesk,
+                let desk = controller.focusedDesk,
                 let frame = boardFrames[board.id],
-                store.beginBoardDrag(board.id)
+                controller.beginBoardDrag(board.id)
             else { return }
             boardDrag = BoardDragState(
                 boardID: board.id,
@@ -733,9 +733,9 @@ struct BoardStrip: View {
     }
 
     private func updateBoardInsertion() {
-        guard var drag = boardDrag, store.focusedDesk?.id == drag.deskID else { return }
+        guard var drag = boardDrag, controller.focusedDesk?.id == drag.deskID else { return }
 
-        while let boards = store.focusedDesk?.boards,
+        while let boards = controller.focusedDesk?.boards,
             let index = boards.firstIndex(where: { $0.id == drag.boardID }),
             BoardGroup.containing(drag.boardID, in: boards) != nil
         {
@@ -752,8 +752,8 @@ struct BoardStrip: View {
 
             let crossedGroup = targetGroup.boards
             let previousOrder = boards.map(\.id)
-            store.previewBoardMove(drag.boardID, to: targetIndex)
-            guard store.focusedDesk?.boards.map(\.id) != previousOrder else { break }
+            controller.previewBoardMove(drag.boardID, to: targetIndex)
+            guard controller.focusedDesk?.boards.map(\.id) != previousOrder else { break }
 
             let direction = targetIndex > index ? -1.0 : 1.0
             let crossedWidth =
@@ -783,7 +783,7 @@ struct BoardStrip: View {
     }
 
     private func autoScrollBoardStrip(at location: CGPoint, in size: CGSize) {
-        guard let drag = boardDrag, let boards = store.focusedDesk?.boards else { return }
+        guard let drag = boardDrag, let boards = controller.focusedDesk?.boards else { return }
         let groupIDs = Set(BoardGroup.containing(drag.boardID, in: boards)?.boards.map(\.id) ?? [drag.boardID])
         guard
             let decision = HorizontalDragAutoScroll.decision(
@@ -810,7 +810,7 @@ struct BoardStrip: View {
             value.location.x >= 0 && value.location.x <= size.width
             && value.location.y >= 0 && value.location.y <= size.height
         if isInside {
-            store.finishBoardDrag()
+            controller.finishBoardDrag()
             boardDrag = nil
         } else {
             cancelBoardDrag()
@@ -820,8 +820,8 @@ struct BoardStrip: View {
     private func cancelBoardDrag() {
         guard let drag = boardDrag else { return }
         let restore = {
-            store.restoreBoardOrder(drag.originalOrder, in: drag.deskID)
-            store.finishBoardDrag()
+            controller.restoreBoardOrder(drag.originalOrder, in: drag.deskID)
+            controller.finishBoardDrag()
             boardDrag = nil
         }
         if shouldReduceMotion {
@@ -838,7 +838,7 @@ struct BoardStrip: View {
         animated: Bool = true
     ) {
         if centersFocusedBoard {
-            centerBoard(boardID ?? store.focusedDesk?.focusedBoardID, animated: animated)
+            centerBoard(boardID ?? controller.focusedDesk?.focusedBoardID, animated: animated)
         } else {
             resetBoardStripPosition(to: restingScrollX, animated: animated)
         }
@@ -881,7 +881,7 @@ struct BoardStrip: View {
         else {
             setPendingBoardAlignment(
                 PendingBoardAlignment(
-                    deskID: store.presentedDeskID,
+                    deskID: controller.presentedDeskID,
                     boardID: boardID,
                     kind: .center,
                     animated: animated,
@@ -907,7 +907,7 @@ struct BoardStrip: View {
         else {
             setPendingBoardAlignment(
                 PendingBoardAlignment(
-                    deskID: store.presentedDeskID,
+                    deskID: controller.presentedDeskID,
                     boardID: boardID,
                     kind: .visible,
                     animated: animated,
@@ -937,7 +937,7 @@ struct BoardStrip: View {
         }
         setPendingBoardAlignment(
             PendingBoardAlignment(
-                deskID: store.presentedDeskID,
+                deskID: controller.presentedDeskID,
                 boardID: boardID,
                 kind: kind,
                 animated: animated,
@@ -999,18 +999,18 @@ struct BoardStrip: View {
         cancelPendingBoardAlignment()
         switch pending.kind {
         case .center:
-            store.saveDeskScrollOffset(nil, for: pending.deskID)
+            controller.saveDeskScrollOffset(nil, for: pending.deskID)
             performBoardCentering(pending.boardID, animated: pending.animated)
         case .visible:
             if let targetOffsetX = revealScrollX(for: pending.boardID) {
-                store.saveDeskScrollOffset(nil, for: pending.deskID)
+                controller.saveDeskScrollOffset(nil, for: pending.deskID)
                 performBoardVisibility(targetOffsetX, animated: pending.animated)
             }
         case .resting(let targetOffsetX):
             resetBoardStripPosition(to: targetOffsetX, animated: pending.animated)
         case .preserveFocusedBoard(let targetOffsetX):
             let targetOffsetX = clampedScrollX(targetOffsetX)
-            store.saveDeskScrollOffset(targetOffsetX, for: pending.deskID)
+            controller.saveDeskScrollOffset(targetOffsetX, for: pending.deskID)
             resetBoardStripPosition(to: targetOffsetX, animated: false)
         }
         completePendingBoardActivationAlignment(using: scrollGeometry)
@@ -1030,7 +1030,7 @@ struct BoardStrip: View {
     private func completePendingBoardActivationAlignment(using geometry: BoardStripScrollGeometry) {
         guard
             let pending = pendingBoardActivationAlignment,
-            pending.deskID == store.presentedDeskID,
+            pending.deskID == controller.presentedDeskID,
             pending.layoutKey == nil || pending.layoutKey == layoutKey
         else { return }
         guard abs(geometry.offsetX - pending.offsetX) <= 1 else { return }
@@ -1079,7 +1079,7 @@ struct BoardStrip: View {
     private func pendingBoardAlignmentIsRelevant(_ pending: PendingBoardAlignment) -> Bool {
         PendingBoardAlignment.isCurrent(pending, in: pendingBoardAlignment)
             && pending.isRelevant(
-                to: store.presentedDeskID,
+                to: controller.presentedDeskID,
                 boardIDs: Set(alignmentBoards.map(\.id)),
                 layoutKey: layoutKey)
     }
@@ -1149,8 +1149,8 @@ struct BoardStrip: View {
     private func revealBoard(by delta: Int, edge: BoardScrollEdge) {
         guard
             !deskFilter.isPresented,
-            let boards = store.focusedDesk?.boards,
-            let focusedBoardID = store.focusedDesk?.focusedBoardID
+            let boards = controller.focusedDesk?.boards,
+            let focusedBoardID = controller.focusedDesk?.focusedBoardID
         else { return }
 
         let anchorBoardID = revealBoardID ?? focusedBoardID
@@ -1168,7 +1168,7 @@ struct BoardStrip: View {
 
     private func boardEdgeScrollX(for boardID: BoardID, edge: BoardScrollEdge) -> CGFloat? {
         guard
-            let boards = store.focusedDesk?.boards,
+            let boards = controller.focusedDesk?.boards,
             let boardIndex = boards.firstIndex(where: { $0.id == boardID }),
             let boardRange = BoardLayout.boardContentRange(
                 for: boardIndex,
@@ -1206,12 +1206,12 @@ struct BoardStrip: View {
     }
 
     private var alignmentBoards: [BoardState] {
-        deskFilter.isPresented ? deskFilter.filteredBoards : store.focusedDesk?.boards ?? []
+        deskFilter.isPresented ? deskFilter.filteredBoards : controller.focusedDesk?.boards ?? []
     }
 
     private func scrollBoardStrip(to targetOffsetX: CGFloat) {
         cancelPendingBoardAlignment()
-        store.saveDeskScrollOffset(targetOffsetX, for: store.presentedDeskID)
+        controller.saveDeskScrollOffset(targetOffsetX, for: controller.presentedDeskID)
         withAnimation(DenMotion.spatial(reduceMotion: shouldReduceMotion)) {
             scrollPosition.scrollTo(x: targetOffsetX)
         }
@@ -1397,7 +1397,7 @@ struct BoardResizeHandle: View {
 }
 
 private struct UnactivatedBoardView: View {
-    @Environment(DenController.self) private var store
+    @Environment(DenController.self) private var controller
     @Environment(DenWindowModel.self) private var windowModel
     let board: BoardState
     let isFocused: Bool
@@ -1461,7 +1461,7 @@ private struct UnactivatedBoardView: View {
             BoardHeaderTitle(
                 board: board,
                 isFocused: isFocused,
-                isAnchor: store.focusedDesk?.anchorBoardID == board.id
+                isAnchor: controller.focusedDesk?.anchorBoardID == board.id
             )
             Spacer(minLength: 8)
         }
@@ -1484,13 +1484,13 @@ private struct UnactivatedBoardView: View {
     let defaults = UserDefaults(suiteName: "dev.nekonata.denbrowser.preview") ?? .standard
     let preferences = AppPreferences(defaults: defaults)
     let sheetNavigation = SheetNavigationManager(defaults: defaults)
-    let store = DenController(
+    let controller = DenController(
         state: .sample,
         websiteDataStore: .nonPersistent(),
         sheetNavigation: sheetNavigation,
         preferences: preferences)
     let board = BoardState(label: "Example Board", width: 520, currentSheetURL: nil)
-    let composition = DenWindowComposition(store: store)
+    let composition = DenWindowComposition(controller: controller)
     let windowModel = composition.model
 
     ZStack {
@@ -1510,7 +1510,7 @@ private struct UnactivatedBoardView: View {
             onDragEnded: { _ in }
         )
     }
-    .environment(store)
+    .environment(controller)
     .environment(windowModel)
     .environment(windowModel.deskFilter)
     .environment(preferences)

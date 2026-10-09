@@ -5,7 +5,7 @@ import SFSafeSymbols
 import SwiftUI
 
 struct TutorialBoardView: View {
-    @Environment(DenController.self) private var store
+    @Environment(DenController.self) private var controller
     @Environment(DenWindowModel.self) private var windowModel
     @Environment(DeskFilterModel.self) private var deskFilter
     @Environment(AppPreferences.self) private var preferences
@@ -131,12 +131,12 @@ struct TutorialBoardView: View {
                 onDragChanged: onDragChanged,
                 onDragEnded: onDragEnded,
                 onMoveLeft: {
-                    store.focusBoard(board.id)
-                    store.moveFocusedBoardLeft()
+                    controller.focusBoard(board.id)
+                    controller.moveFocusedBoardLeft()
                 },
                 onMoveRight: {
-                    store.focusBoard(board.id)
-                    store.moveFocusedBoardRight()
+                    controller.focusBoard(board.id)
+                    controller.moveFocusedBoardRight()
                 },
                 leadingContent: {
                     Image(systemSymbol: .checklist)
@@ -243,7 +243,7 @@ struct TutorialBoardView: View {
                     }
                     if let actionTitle {
                         Button(actionTitle) {
-                            store.focusBoard(board.id)
+                            controller.focusBoard(board.id)
                             windowModel.showOpenBoardPanel(afterBoardID: board.id)
                         }
                         .buttonStyle(.bordered)

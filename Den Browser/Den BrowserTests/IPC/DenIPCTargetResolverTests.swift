@@ -15,8 +15,8 @@ struct DenIPCTargetResolverTests {
         let directory = temporaryProfileDirectory()
         defer { try? FileManager.default.removeItem(at: directory) }
         let manager = makeProfileManager(directory: directory)
-        let store = try #require(manager.store(for: manager.personalProfileID))
-        let terminalBoardID = try #require(store.createTerminalBoard(workingDirectory: "/tmp", focus: true))
+        let controller = try #require(manager.controller(for: manager.personalProfileID))
+        let terminalBoardID = try #require(controller.createTerminalBoard(workingDirectory: "/tmp", focus: true))
         // Act
         let resolved = try DenIPCTargetResolver.resolveBoard(
             target: .explicit(terminalBoardID.rawValue), context: DenIPCCallerContext(), kind: .terminal, in: manager
@@ -31,9 +31,9 @@ struct DenIPCTargetResolverTests {
         let directory = temporaryProfileDirectory()
         defer { try? FileManager.default.removeItem(at: directory) }
         let manager = makeProfileManager(directory: directory)
-        let store = try #require(manager.store(for: manager.personalProfileID))
-        let webBoardID = try #require(store.createBoard(urlString: "https://example.com/"))
-        _ = try #require(store.createInspectionBoard(targetBoardID: webBoardID))
+        let controller = try #require(manager.controller(for: manager.personalProfileID))
+        let webBoardID = try #require(controller.createBoard(urlString: "https://example.com/"))
+        _ = try #require(controller.createInspectionBoard(targetBoardID: webBoardID))
         // Act
         let resolved = try DenIPCTargetResolver.resolveBoard(
             target: .automatic, context: DenIPCCallerContext(), kind: .any, in: manager
@@ -49,9 +49,9 @@ struct DenIPCTargetResolverTests {
         let directory = temporaryProfileDirectory()
         defer { try? FileManager.default.removeItem(at: directory) }
         let manager = makeProfileManager(directory: directory)
-        let store = try #require(manager.store(for: manager.personalProfileID))
-        let webBoardID = try #require(store.createBoard(urlString: "https://example.com/"))
-        let inspectionBoardID = try #require(store.createInspectionBoard(targetBoardID: webBoardID))
+        let controller = try #require(manager.controller(for: manager.personalProfileID))
+        let webBoardID = try #require(controller.createBoard(urlString: "https://example.com/"))
+        let inspectionBoardID = try #require(controller.createInspectionBoard(targetBoardID: webBoardID))
         // Act
         let resolved = try DenIPCTargetResolver.resolveBoard(
             target: .explicit(inspectionBoardID.rawValue), context: DenIPCCallerContext(), kind: .any, in: manager
@@ -67,9 +67,9 @@ struct DenIPCTargetResolverTests {
         let directory = temporaryProfileDirectory()
         defer { try? FileManager.default.removeItem(at: directory) }
         let manager = makeProfileManager(directory: directory)
-        let store = try #require(manager.store(for: manager.personalProfileID))
-        let webBoardID = try #require(store.createBoard(urlString: "https://example.com/"))
-        let inspectionBoardID = try #require(store.createInspectionBoard(targetBoardID: webBoardID))
+        let controller = try #require(manager.controller(for: manager.personalProfileID))
+        let webBoardID = try #require(controller.createBoard(urlString: "https://example.com/"))
+        let inspectionBoardID = try #require(controller.createInspectionBoard(targetBoardID: webBoardID))
         // Act
         let resolved = try DenIPCTargetResolver.resolveBoard(
             target: .explicit(inspectionBoardID.rawValue), context: DenIPCCallerContext(), kind: .inspection,
@@ -86,9 +86,9 @@ struct DenIPCTargetResolverTests {
         let directory = temporaryProfileDirectory()
         defer { try? FileManager.default.removeItem(at: directory) }
         let manager = makeProfileManager(directory: directory)
-        let store = try #require(manager.store(for: manager.personalProfileID))
-        let terminalBoardID = try #require(store.createTerminalBoard(workingDirectory: "/tmp", focus: true))
-        let webBoardID = try #require(store.createBoard(urlString: "https://example.com/"))
+        let controller = try #require(manager.controller(for: manager.personalProfileID))
+        let terminalBoardID = try #require(controller.createTerminalBoard(workingDirectory: "/tmp", focus: true))
+        let webBoardID = try #require(controller.createBoard(urlString: "https://example.com/"))
         // Act
         let resolved = try DenIPCTargetResolver.resolveBoard(
             target: .automatic,
@@ -106,8 +106,8 @@ struct DenIPCTargetResolverTests {
         let directory = temporaryProfileDirectory()
         defer { try? FileManager.default.removeItem(at: directory) }
         let manager = makeProfileManager(directory: directory)
-        let store = try #require(manager.store(for: manager.personalProfileID))
-        let terminalBoardID = try #require(store.createTerminalBoard(workingDirectory: "/tmp", focus: true))
+        let controller = try #require(manager.controller(for: manager.personalProfileID))
+        let terminalBoardID = try #require(controller.createTerminalBoard(workingDirectory: "/tmp", focus: true))
         // Act
         let resolved = try DenIPCTargetResolver.resolveBoard(
             target: .automatic,
@@ -125,8 +125,8 @@ struct DenIPCTargetResolverTests {
         let directory = temporaryProfileDirectory()
         defer { try? FileManager.default.removeItem(at: directory) }
         let manager = makeProfileManager(directory: directory)
-        let store = try #require(manager.store(for: manager.personalProfileID))
-        _ = try #require(store.createTerminalBoard(workingDirectory: "/tmp", focus: true))
+        let controller = try #require(manager.controller(for: manager.personalProfileID))
+        _ = try #require(controller.createTerminalBoard(workingDirectory: "/tmp", focus: true))
 
         let nonExistentID = UUID()
 
@@ -148,8 +148,8 @@ struct DenIPCTargetResolverTests {
         let directory = temporaryProfileDirectory()
         defer { try? FileManager.default.removeItem(at: directory) }
         let manager = makeProfileManager(directory: directory)
-        let store = try #require(manager.store(for: manager.personalProfileID))
-        _ = try #require(store.createBoard(urlString: "https://example.com/"))
+        let controller = try #require(manager.controller(for: manager.personalProfileID))
+        _ = try #require(controller.createBoard(urlString: "https://example.com/"))
 
         let nonExistentID = UUID()
 
@@ -171,19 +171,19 @@ struct DenIPCTargetResolverTests {
         let directory = temporaryProfileDirectory()
         defer { try? FileManager.default.removeItem(at: directory) }
         let manager = makeProfileManager(directory: directory)
-        let store = try #require(manager.store(for: manager.personalProfileID))
+        let controller = try #require(manager.controller(for: manager.personalProfileID))
 
         // Desk 1 has a web board
-        _ = try #require(store.createBoard(urlString: "https://example.com/"))
+        _ = try #require(controller.createBoard(urlString: "https://example.com/"))
 
         // Create Desk 2 with only a terminal board
-        store.createDesk(label: "Terminal Only", preset: .empty)
-        guard let desk2 = store.state.desks.last else {
+        controller.createDesk(label: "Terminal Only", preset: .empty)
+        guard let desk2 = controller.state.desks.last else {
             Issue.record("Desk 2 missing")
             return
         }
-        _ = store.setFocusedDesk(desk2.id)
-        let terminalBoardID = try #require(store.createTerminalBoard(workingDirectory: "/tmp", focus: true))
+        _ = controller.setFocusedDesk(desk2.id)
+        let terminalBoardID = try #require(controller.createTerminalBoard(workingDirectory: "/tmp", focus: true))
 
         // Act
         let resolved = DenIPCTargetResolver.resolveBoard(
@@ -206,8 +206,8 @@ struct DenIPCTargetResolverTests {
         let directory = temporaryProfileDirectory()
         defer { try? FileManager.default.removeItem(at: directory) }
         let manager = makeProfileManager(directory: directory)
-        let store = try #require(manager.store(for: manager.personalProfileID))
-        let boardID = try #require(store.createBoard(urlString: "https://example.com/"))
+        let controller = try #require(manager.controller(for: manager.personalProfileID))
+        let boardID = try #require(controller.createBoard(urlString: "https://example.com/"))
         let service = DenIPCService(profileManager: manager)
 
         let nonExistentID = UUID()
@@ -219,7 +219,7 @@ struct DenIPCTargetResolverTests {
         // Assert: Must return failure and active board must still exist
         #expect(response.isOk == false)
         #expect(response.error?.contains("Board not found") == true)
-        #expect(store.board(for: boardID) != nil)
+        #expect(controller.board(for: boardID) != nil)
     }
 
     @Test func resolveTargetWebBoardWithExplicitProfileFindsBoardInThatProfile() throws {
@@ -227,12 +227,12 @@ struct DenIPCTargetResolverTests {
         let directory = temporaryProfileDirectory()
         defer { try? FileManager.default.removeItem(at: directory) }
         let manager = makeProfileManager(directory: directory)
-        let store1 = try #require(manager.store(for: manager.personalProfileID))
-        _ = try #require(store1.createBoard(urlString: "https://profile1.example.com/"))
+        let controller1 = try #require(manager.controller(for: manager.personalProfileID))
+        _ = try #require(controller1.createBoard(urlString: "https://profile1.example.com/"))
 
         let profile2 = try #require(manager.createProfile(name: "Work", color: .purple))
-        let store2 = try #require(manager.store(for: profile2.id))
-        let board2ID = try #require(store2.createBoard(urlString: "https://profile2.example.com/"))
+        let controller2 = try #require(manager.controller(for: profile2.id))
+        let board2ID = try #require(controller2.createBoard(urlString: "https://profile2.example.com/"))
 
         // Act
         let result = DenIPCTargetResolver.resolveBoard(
@@ -245,7 +245,7 @@ struct DenIPCTargetResolverTests {
         // Assert
         let resolved = try result.get()
         #expect(resolved.board.id == board2ID)
-        #expect(resolved.store === store2)
+        #expect(resolved.controller === controller2)
     }
 
     @Test func resolveTargetWebBoardFailsOnUnknownProfileUUID() throws {
@@ -253,7 +253,7 @@ struct DenIPCTargetResolverTests {
         let directory = temporaryProfileDirectory()
         defer { try? FileManager.default.removeItem(at: directory) }
         let manager = makeProfileManager(directory: directory)
-        _ = try #require(manager.store(for: manager.personalProfileID))
+        _ = try #require(manager.controller(for: manager.personalProfileID))
 
         let unknownProfileID = UUID()
 
@@ -279,7 +279,7 @@ struct DenIPCTargetResolverTests {
         let directory = temporaryProfileDirectory()
         defer { try? FileManager.default.removeItem(at: directory) }
         let manager = makeProfileManager(directory: directory)
-        _ = try #require(manager.store(for: manager.personalProfileID))
+        _ = try #require(manager.controller(for: manager.personalProfileID))
 
         let profileWithoutWindow = try #require(manager.createProfile(name: "No Window", color: .gray))
         // Act
@@ -304,11 +304,11 @@ struct DenIPCTargetResolverTests {
         let directory = temporaryProfileDirectory()
         defer { try? FileManager.default.removeItem(at: directory) }
         let manager = makeProfileManager(directory: directory)
-        let store1 = try #require(manager.store(for: manager.personalProfileID))
-        let board1ID = try #require(store1.createBoard(urlString: "https://profile1.example.com/"))
+        let controller1 = try #require(manager.controller(for: manager.personalProfileID))
+        let board1ID = try #require(controller1.createBoard(urlString: "https://profile1.example.com/"))
 
         let profile2 = try #require(manager.createProfile(name: "Work", color: .purple))
-        _ = try #require(manager.store(for: profile2.id))
+        _ = try #require(manager.controller(for: profile2.id))
 
         // Act
         let result = DenIPCTargetResolver.resolveBoard(
@@ -333,9 +333,9 @@ struct DenIPCTargetResolverTests {
         defer { try? FileManager.default.removeItem(at: directory) }
         let manager = makeProfileManager(directory: directory)
         let profile2 = try #require(manager.createProfile(name: "Work", color: .purple))
-        let store2 = try #require(manager.store(for: profile2.id))
-        let terminalBoardID = try #require(store2.createTerminalBoard(workingDirectory: "/tmp", focus: true))
-        let webBoardID = try #require(store2.createBoard(urlString: "https://profile2.example.com/"))
+        let controller2 = try #require(manager.controller(for: profile2.id))
+        let terminalBoardID = try #require(controller2.createTerminalBoard(workingDirectory: "/tmp", focus: true))
+        let webBoardID = try #require(controller2.createBoard(urlString: "https://profile2.example.com/"))
 
         // Act
         let result = DenIPCTargetResolver.resolveBoard(
@@ -349,7 +349,7 @@ struct DenIPCTargetResolverTests {
         // Assert
         let resolved = try result.get()
         #expect(resolved.board.id == webBoardID)
-        #expect(resolved.store === store2)
+        #expect(resolved.controller === controller2)
     }
 
     @Test func boardCloseWithProfileIDClosesBoardInTargetProfile() async throws {
@@ -357,12 +357,12 @@ struct DenIPCTargetResolverTests {
         let directory = temporaryProfileDirectory()
         defer { try? FileManager.default.removeItem(at: directory) }
         let manager = makeProfileManager(directory: directory)
-        let store1 = try #require(manager.store(for: manager.personalProfileID))
-        let board1ID = try #require(store1.createBoard(urlString: "https://profile1.example.com/"))
+        let controller1 = try #require(manager.controller(for: manager.personalProfileID))
+        let board1ID = try #require(controller1.createBoard(urlString: "https://profile1.example.com/"))
 
         let profile2 = try #require(manager.createProfile(name: "Work", color: .purple))
-        let store2 = try #require(manager.store(for: profile2.id))
-        let board2ID = try #require(store2.createBoard(urlString: "https://profile2.example.com/"))
+        let controller2 = try #require(manager.controller(for: profile2.id))
+        let board2ID = try #require(controller2.createBoard(urlString: "https://profile2.example.com/"))
 
         let service = DenIPCService(profileManager: manager)
 
@@ -375,8 +375,8 @@ struct DenIPCTargetResolverTests {
 
         // Assert
         #expect(response.isOk == true)
-        #expect(store2.board(for: board2ID) == nil)
-        #expect(store1.board(for: board1ID) != nil)
+        #expect(controller2.board(for: board2ID) == nil)
+        #expect(controller1.board(for: board1ID) != nil)
     }
 
     @Test func boardCloseWithProfileIDRejectsBoardInDifferentProfile() async throws {
@@ -384,12 +384,12 @@ struct DenIPCTargetResolverTests {
         let directory = temporaryProfileDirectory()
         defer { try? FileManager.default.removeItem(at: directory) }
         let manager = makeProfileManager(directory: directory)
-        let store1 = try #require(manager.store(for: manager.personalProfileID))
-        let board1ID = try #require(store1.createBoard(urlString: "https://profile1.example.com/"))
+        let controller1 = try #require(manager.controller(for: manager.personalProfileID))
+        let board1ID = try #require(controller1.createBoard(urlString: "https://profile1.example.com/"))
 
         let profile2 = try #require(manager.createProfile(name: "Work", color: .purple))
-        let store2 = try #require(manager.store(for: profile2.id))
-        let board2ID = try #require(store2.createBoard(urlString: "https://profile2.example.com/"))
+        let controller2 = try #require(manager.controller(for: profile2.id))
+        let board2ID = try #require(controller2.createBoard(urlString: "https://profile2.example.com/"))
 
         let service = DenIPCService(profileManager: manager)
 
@@ -403,8 +403,8 @@ struct DenIPCTargetResolverTests {
         // Assert
         #expect(response.isOk == false)
         #expect(response.error?.contains("Board not found: \(board1ID.rawValue.uuidString)") == true)
-        #expect(store1.board(for: board1ID) != nil)
-        #expect(store2.board(for: board2ID) != nil)
+        #expect(controller1.board(for: board1ID) != nil)
+        #expect(controller2.board(for: board2ID) != nil)
     }
 
     @Test func boardCloseClosesTerminalBoardWhenBoardIDSpecified() async throws {
@@ -412,8 +412,8 @@ struct DenIPCTargetResolverTests {
         let directory = temporaryProfileDirectory()
         defer { try? FileManager.default.removeItem(at: directory) }
         let manager = makeProfileManager(directory: directory)
-        let store = try #require(manager.store(for: manager.personalProfileID))
-        let terminalBoardID = try #require(store.createTerminalBoard(workingDirectory: "/tmp", focus: true))
+        let controller = try #require(manager.controller(for: manager.personalProfileID))
+        let terminalBoardID = try #require(controller.createTerminalBoard(workingDirectory: "/tmp", focus: true))
         let service = DenIPCService(profileManager: manager)
 
         let request = DenIPCRequest(operation: .boardClose(target: .explicit(terminalBoardID.rawValue)))
@@ -421,7 +421,7 @@ struct DenIPCTargetResolverTests {
 
         // Assert
         #expect(response.isOk == true)
-        #expect(store.board(for: terminalBoardID) == nil)
+        #expect(controller.board(for: terminalBoardID) == nil)
     }
 
     @Test func multipleProfilesGenerateUniqueInitialDeskIDs() throws {
@@ -431,13 +431,13 @@ struct DenIPCTargetResolverTests {
         let manager = makeProfileManager(directory: directory)
 
         // Act
-        let store1 = try #require(manager.store(for: manager.personalProfileID))
+        let controller1 = try #require(manager.controller(for: manager.personalProfileID))
         let profile2 = try #require(manager.createProfile(name: "Work", color: .purple))
-        let store2 = try #require(manager.store(for: profile2.id))
+        let controller2 = try #require(manager.controller(for: profile2.id))
 
         // Assert
-        let desk1ID = try #require(store1.state.desks.first?.id)
-        let desk2ID = try #require(store2.state.desks.first?.id)
+        let desk1ID = try #require(controller1.state.desks.first?.id)
+        let desk2ID = try #require(controller2.state.desks.first?.id)
         #expect(desk1ID != desk2ID)
     }
 
@@ -490,31 +490,31 @@ struct DenIPCTargetResolverTests {
             den: den1
         )
         let manager = makeProfileManager(directory: directory, initialProfile: initialProfile)
-        let store1 = try #require(manager.store(for: profile1ID))
+        let controller1 = try #require(manager.controller(for: profile1ID))
 
         let profile2 = try #require(manager.createProfile(name: "Profile 2", color: .green))
-        let store2 = try #require(manager.store(for: profile2.id))
-        store2.storage.state = den2
+        let controller2 = try #require(manager.controller(for: profile2.id))
+        controller2.storage.state = den2
 
         // Act: Target board1 without explicit profileID
         let result1 = DenIPCTargetResolver.resolveBoard(
             target: .explicit(board1ID.rawValue), context: DenIPCCallerContext(), kind: .web, in: manager)
 
-        // Assert: Resolved store must be store1 (which owns board1), NEVER store2
+        // Assert: Resolved controller must be controller1 (which owns board1), NEVER controller2
         let resolved1 = try #require(try? result1.get())
         #expect(resolved1.board.id == board1ID)
-        #expect(resolved1.store === store1)
-        #expect(resolved1.store.board(for: board1ID) != nil)
+        #expect(resolved1.controller === controller1)
+        #expect(resolved1.controller.board(for: board1ID) != nil)
 
         // Act: Target board2 without explicit profileID
         let result2 = DenIPCTargetResolver.resolveBoard(
             target: .explicit(board2ID.rawValue), context: DenIPCCallerContext(), kind: .web, in: manager)
 
-        // Assert: Resolved store must be store2 (which owns board2), NEVER store1
+        // Assert: Resolved controller must be controller2 (which owns board2), NEVER controller1
         let resolved2 = try #require(try? result2.get())
         #expect(resolved2.board.id == board2ID)
-        #expect(resolved2.store === store2)
-        #expect(resolved2.store.board(for: board2ID) != nil)
+        #expect(resolved2.controller === controller2)
+        #expect(resolved2.controller.board(for: board2ID) != nil)
     }
 
     @Test func resolveTargetBoardReturnsSameStoreRegardlessOfProfileScoping() throws {
@@ -527,18 +527,18 @@ struct DenIPCTargetResolverTests {
         let window1ID = UUID()
         let window2ID = UUID()
 
-        let storeWindow1 = try #require(
-            manager.store(for: ProfileWindowRoute(windowID: window1ID, profileID: profileID)))
-        let desk1ID = storeWindow1.presentedDeskID
+        let controllerWindow1 = try #require(
+            manager.controller(for: ProfileWindowRoute(windowID: window1ID, profileID: profileID)))
+        let desk1ID = controllerWindow1.presentedDeskID
 
-        storeWindow1.createDesk(label: "Desk 2", preset: .empty)
-        let desk2 = try #require(storeWindow1.state.desks.first(where: { $0.id != desk1ID }))
+        controllerWindow1.createDesk(label: "Desk 2", preset: .empty)
+        let desk2 = try #require(controllerWindow1.state.desks.first(where: { $0.id != desk1ID }))
         let desk2ID = desk2.id
-        storeWindow1.setFocusedDesk(desk1ID)
+        controllerWindow1.setFocusedDesk(desk1ID)
 
-        let storeWindow2 = try #require(
-            manager.store(for: ProfileWindowRoute(windowID: window2ID, profileID: profileID, deskID: desk2ID)))
-        let board2ID = try #require(storeWindow2.createBoard(urlString: "https://window2.example.com/"))
+        let controllerWindow2 = try #require(
+            manager.controller(for: ProfileWindowRoute(windowID: window2ID, profileID: profileID, deskID: desk2ID)))
+        let board2ID = try #require(controllerWindow2.createBoard(urlString: "https://window2.example.com/"))
 
         // Act 1: Resolve with explicit profileID
         let scopedResult = DenIPCTargetResolver.resolveBoard(
@@ -552,15 +552,15 @@ struct DenIPCTargetResolverTests {
         let unscopedResult = DenIPCTargetResolver.resolveBoard(
             target: .explicit(board2ID.rawValue), context: DenIPCCallerContext(), kind: .web, in: manager)
 
-        // Assert: Both must return the exact same store (storeWindow2 presenting desk2)
+        // Assert: Both must return the exact same controller (controllerWindow2 presenting desk2)
         let scoped = try #require(try? scopedResult.get())
         let unscoped = try #require(try? unscopedResult.get())
 
         #expect(scoped.board.id == board2ID)
         #expect(unscoped.board.id == board2ID)
-        #expect(scoped.store === unscoped.store)
-        #expect(scoped.store === storeWindow2)
-        #expect(scoped.store.presentedDeskID == desk2ID)
+        #expect(scoped.controller === unscoped.controller)
+        #expect(scoped.controller === controllerWindow2)
+        #expect(scoped.controller.presentedDeskID == desk2ID)
     }
 
     @Test func resolveStoreAndDeskWithExplicitNonExistentDeskIDDoesNotFallback() throws {
@@ -568,8 +568,8 @@ struct DenIPCTargetResolverTests {
         let directory = temporaryProfileDirectory()
         defer { try? FileManager.default.removeItem(at: directory) }
         let manager = makeProfileManager(directory: directory)
-        let store = try #require(manager.store(for: manager.personalProfileID))
-        _ = try #require(store.createBoard(urlString: "https://example.com/"))
+        let controller = try #require(manager.controller(for: manager.personalProfileID))
+        _ = try #require(controller.createBoard(urlString: "https://example.com/"))
 
         let nonExistentDeskID = UUID()
 

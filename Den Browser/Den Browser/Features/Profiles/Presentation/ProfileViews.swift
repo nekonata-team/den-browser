@@ -38,18 +38,18 @@ struct ProfileWindowView: View {
     private var content: some View {
         let activeProfileID = profileManager.resolvedProfileID(route.profileID)
         if let profile = profileManager.profile(id: activeProfileID),
-            let store = profileManager.store(for: route)
+            let controller = profileManager.controller(for: route)
         {
             ProfileDenWindow(
                 route: route,
                 profile: profile,
                 activeProfileID: activeProfileID,
-                store: store,
+                controller: controller,
                 isPrivateDen: profileManager.isPrivateDen,
                 registerKeyboardWindow: registerKeyboardWindow,
                 unregisterKeyboardWindow: unregisterKeyboardWindow
             )
-            .id(ObjectIdentifier(store))
+            .id(ObjectIdentifier(controller))
             .sheet(
                 isPresented: Binding(
                     get: {
@@ -88,7 +88,7 @@ private struct ProfileDenWindow: View {
     let route: ProfileWindowRoute
     let profile: ProfileState
     let activeProfileID: ProfileID
-    let store: DenController
+    let controller: DenController
     let isPrivateDen: Bool
     let registerKeyboardWindow: @MainActor (NSWindow, DenWindowModel) -> Void
     let unregisterKeyboardWindow: @MainActor (NSWindow) -> Void
@@ -102,7 +102,7 @@ private struct ProfileDenWindow: View {
         route: ProfileWindowRoute,
         profile: ProfileState,
         activeProfileID: ProfileID,
-        store: DenController,
+        controller: DenController,
         isPrivateDen: Bool,
         registerKeyboardWindow: @escaping @MainActor (NSWindow, DenWindowModel) -> Void,
         unregisterKeyboardWindow: @escaping @MainActor (NSWindow) -> Void
@@ -110,11 +110,11 @@ private struct ProfileDenWindow: View {
         self.route = route
         self.profile = profile
         self.activeProfileID = activeProfileID
-        self.store = store
+        self.controller = controller
         self.isPrivateDen = isPrivateDen
         self.registerKeyboardWindow = registerKeyboardWindow
         self.unregisterKeyboardWindow = unregisterKeyboardWindow
-        _composition = State(initialValue: DenWindowComposition(store: store))
+        _composition = State(initialValue: DenWindowComposition(controller: controller))
     }
 
     var body: some View {
@@ -127,7 +127,7 @@ private struct ProfileDenWindow: View {
             DenHeader(profile: profile, windowID: route.windowID)
         }
         .tint(profileDisplayColor(for: profile.color))
-        .focusedSceneValue(\.denController, store)
+        .focusedSceneValue(\.denController, controller)
         .focusedSceneValue(\.denWindowModel, windowModel)
         .focusedSceneValue(\.profileID, activeProfileID)
         .focusedSceneValue(\.profileWindowID, route.windowID)
@@ -141,13 +141,13 @@ private struct ProfileDenWindow: View {
         .toolbar {
             DenHeaderControls(profile: profile, windowID: route.windowID)
         }
-        .environment(store)
+        .environment(controller)
         .environment(windowModel)
         .toolbarVisibility(windowModel.isZenViewPresented ? .hidden : .visible, for: .windowToolbar)
         .toolbarBackgroundVisibility(.hidden, for: .windowToolbar)
         .ignoresSafeArea(.container, edges: windowModel.isZenViewPresented ? .top : [])
         .onOpenURL { url in
-            store.handleExternalURL(url)
+            controller.handleExternalURL(url)
         }
         .onAppear {
             PerformanceTrace.mark("ProfileWindowView.onAppear (window content presented)", category: "Launch")

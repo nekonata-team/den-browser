@@ -5,19 +5,19 @@ import Foundation
 
 extension DenWindowModel {
     var defaultBoardWidth: Double {
-        store.focusedBoard?.width ?? boardWidth(toFit: 2) ?? BuiltInDeskPreset.boardWidth
+        controller.focusedBoard?.width ?? boardWidth(toFit: 2) ?? BuiltInDeskPreset.boardWidth
     }
 
     func adjustFocusedBoardWidth(by delta: Double) {
-        guard let boardID = store.focusedBoard?.id else { return }
+        guard let boardID = controller.focusedBoard?.id else { return }
         maximizedBoardID = nil
-        store.adjustBoardWidth(boardID, by: delta)
+        controller.adjustBoardWidth(boardID, by: delta)
     }
 
     func adjustFocusedDeskBoardWidths(by delta: Double) {
-        guard let deskID = store.focusedDesk?.id else { return }
+        guard let deskID = controller.focusedDesk?.id else { return }
         maximizedBoardID = nil
-        store.adjustDeskBoardWidths(deskID, by: delta)
+        controller.adjustDeskBoardWidths(deskID, by: delta)
     }
 
     func updateBoardLayout(availableWidth: Double, spacing: Double) {
@@ -37,11 +37,11 @@ extension DenWindowModel {
     }
 
     func canResizeFocusedDeskBoards(toFit count: Int) -> Bool {
-        store.focusedDesk?.boards.isEmpty == false && boardWidth(toFit: count) != nil
+        controller.focusedDesk?.boards.isEmpty == false && boardWidth(toFit: count) != nil
     }
 
     func showBoardWidthPanel() {
-        guard store.focusedDesk?.boards.isEmpty == false else { return }
+        guard controller.focusedDesk?.boards.isEmpty == false else { return }
         boardWidthPanelMessage = nil
         setTemporaryContext(.boardWidth)
     }
@@ -52,11 +52,11 @@ extension DenWindowModel {
 
     @discardableResult
     func resizeFocusedDeskBoards(toFit count: Int) -> Bool {
-        guard let deskID = store.focusedDesk?.id, let width = boardWidth(toFit: count) else {
+        guard let deskID = controller.focusedDesk?.id, let width = boardWidth(toFit: count) else {
             boardWidthPanelMessage = "\(count) Boards cannot fit at this window width"
             return false
         }
-        guard store.resizeDeskBoards(deskID, to: width) else { return false }
+        guard controller.resizeDeskBoards(deskID, to: width) else { return false }
         maximizedBoardID = nil
         hideBoardWidthPanel()
         centerFocusedBoard()

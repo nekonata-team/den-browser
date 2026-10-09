@@ -86,16 +86,16 @@ final class ProfileManager {
         profile(id: requestedID) == nil ? personalProfileID : requestedID
     }
 
-    func store(for profileID: ProfileID) -> DenController? {
-        store(for: ProfileWindowRoute(windowID: profileID.rawValue, profileID: profileID))
+    func controller(for profileID: ProfileID) -> DenController? {
+        controller(for: ProfileWindowRoute(windowID: profileID.rawValue, profileID: profileID))
     }
 
-    func store(for route: ProfileWindowRoute) -> DenController? {
+    func controller(for route: ProfileWindowRoute) -> DenController? {
         let profileID = resolvedProfileID(route.profileID)
-        if let store = windowRegistry.store(for: route.windowID),
+        if let controller = windowRegistry.controller(for: route.windowID),
             windowRegistry.profileID(for: route.windowID) == profileID
         {
-            return store
+            return controller
         }
         guard let storage = storage(for: profileID) else { return nil }
         let requestedDeskID = route.deskID ?? storage.state.focusedDeskID
@@ -104,7 +104,7 @@ final class ProfileManager {
             profileID: profileID,
             excludingWindowID: route.windowID)
         guard let presentedDeskID else { return nil }
-        let store = DenController(
+        let controller = DenController(
             storage: storage,
             presentedDeskID: presentedDeskID,
             websiteDataStore: profileWebsiteDataStore(for: profileID),
@@ -132,8 +132,8 @@ final class ProfileManager {
             },
             profileID: profileID,
             ipcSocketPath: ipcSocketPath)
-        windowRegistry.setStore(store, windowID: route.windowID, profileID: profileID)
-        return store
+        windowRegistry.setController(controller, windowID: route.windowID, profileID: profileID)
+        return controller
     }
 
     @discardableResult
@@ -231,7 +231,7 @@ final class ProfileManager {
     func clearError() { errorMessage = nil }
 
     func setUBOLiteEnabled(_ enabled: Bool) {
-        extensionCoordinator.setEnabled(enabled, stores: windowRegistry.storeEntries())
+        extensionCoordinator.setEnabled(enabled, controllers: windowRegistry.controllerEntries())
     }
 
     func focusWebExtensionWindow(for route: ProfileWindowRoute) {
@@ -262,7 +262,7 @@ final class ProfileManager {
 
     @discardableResult
     func updateUBOLite() async -> Bool {
-        await extensionCoordinator.updateUBOLite(stores: windowRegistry.storeEntries())
+        await extensionCoordinator.updateUBOLite(controllers: windowRegistry.controllerEntries())
     }
 
     func register(window: NSWindow, for route: ProfileWindowRoute) {
@@ -279,9 +279,9 @@ final class ProfileManager {
         releaseSharedResourcesIfUnused(for: profileID)
     }
 
-    func store(for window: NSWindow?) -> DenController? {
+    func controller(for window: NSWindow?) -> DenController? {
         guard let window else { return nil }
-        return windowRegistry.store(for: window)
+        return windowRegistry.controller(for: window)
     }
 
     func activateWindow(for profileID: ProfileID) -> Bool {
@@ -314,7 +314,7 @@ final class ProfileManager {
     ) -> Bool {
         _ = windowAssignmentRevision
         guard canPresent(deskID, profileID: profileID, excludingWindowID: sourceWindowID),
-            let source = windowRegistry.store(for: sourceWindowID)
+            let source = windowRegistry.controller(for: sourceWindowID)
         else { return false }
         return source.presentedDeskID != deskID
             || availableReplacementDeskID(
@@ -338,7 +338,7 @@ final class ProfileManager {
         sourceWindowID: UUID
     ) -> ProfileWindowRoute? {
         guard canOpenDeskInNewWindow(deskID, profileID: profileID, sourceWindowID: sourceWindowID),
-            let source = windowRegistry.store(for: sourceWindowID)
+            let source = windowRegistry.controller(for: sourceWindowID)
         else { return nil }
         if source.presentedDeskID == deskID {
             guard
@@ -350,7 +350,7 @@ final class ProfileManager {
             source.focusDesk(replacementDeskID)
         }
         let route = ProfileWindowRoute(profileID: profileID, deskID: deskID)
-        guard store(for: route)?.presentedDeskID == deskID else { return nil }
+        guard controller(for: route)?.presentedDeskID == deskID else { return nil }
         return route
     }
 
@@ -366,8 +366,8 @@ final class ProfileManager {
             onDeferredSave: { [weak self] in self?.scheduleDeferredSave(for: profileID) },
             onDeskPresetsSave: { [weak self] presets in self?.saveDeskPresets(presets, for: profileID) ?? false },
             onRecentItemsSave: { [weak self] items in self?.saveRecentItems(items, for: profileID) ?? false },
-            onRuntimeOwnerChange: { [weak self] boardID, store in
-                self?.setRuntimeOwner(store, boardID: boardID, profileID: profileID)
+            onRuntimeOwnerChange: { [weak self] boardID, controller in
+                self?.setRuntimeOwner(controller, boardID: boardID, profileID: profileID)
             })
         storages[profileID] = storage
         if normalizedState != persisted.den {
@@ -387,16 +387,16 @@ final class ProfileManager {
         windowRegistry.presentationTarget()
     }
 
-    func activeStore() -> DenController? {
-        windowRegistry.activeStore(preferredWindowID: extensionPresentationTarget()?.windowID)
+    func activeController() -> DenController? {
+        windowRegistry.activeController(preferredWindowID: extensionPresentationTarget()?.windowID)
     }
 
     func activeProfileID() -> ProfileID? {
         windowRegistry.activeProfileID(preferredWindowID: extensionPresentationTarget()?.windowID)
     }
 
-    func store(forProfileID profileID: ProfileID) -> DenController? {
-        windowRegistry.store(forProfileID: profileID, preferredWindowID: extensionPresentationTarget()?.windowID)
+    func controller(forProfileID profileID: ProfileID) -> DenController? {
+        windowRegistry.controller(forProfileID: profileID, preferredWindowID: extensionPresentationTarget()?.windowID)
     }
 
     func profileID(for storage: DenProfileResources) -> ProfileID? {
@@ -406,46 +406,46 @@ final class ProfileManager {
         return nil
     }
 
-    func profileID(for store: DenController) -> ProfileID? {
-        windowRegistry.profileID(for: store) ?? profileID(for: store.storage)
+    func profileID(for controller: DenController) -> ProfileID? {
+        windowRegistry.profileID(for: controller) ?? profileID(for: controller.storage)
     }
 
-    func stores(for profileID: ProfileID) -> [DenController] {
-        windowRegistry.stores(for: profileID)
+    func controllers(for profileID: ProfileID) -> [DenController] {
+        windowRegistry.controllers(for: profileID)
     }
 
-    func store(for profileID: ProfileID, presentingDeskID: DeskID?) -> DenController? {
-        let profileStores = stores(for: profileID)
+    func controller(for profileID: ProfileID, presentingDeskID: DeskID?) -> DenController? {
+        let profileControllers = controllers(for: profileID)
         if let presentingDeskID,
-            let presentingStore = profileStores.first(where: { $0.presentedDeskID == presentingDeskID })
+            let presentingController = profileControllers.first(where: { $0.presentedDeskID == presentingDeskID })
         {
-            return presentingStore
+            return presentingController
         }
-        return store(forProfileID: profileID)
+        return controller(forProfileID: profileID)
     }
 
     func hasWindow(for profileID: ProfileID) -> Bool {
-        windowRegistry.hasStore(for: profileID)
+        windowRegistry.hasController(for: profileID)
     }
 
-    var allStores: [DenController] {
-        windowRegistry.allStores()
+    var allControllers: [DenController] {
+        windowRegistry.allControllers()
     }
 
     private func canPresent(_ deskID: DeskID, profileID: ProfileID, excludingWindowID: UUID) -> Bool {
-        !windowRegistry.storeEntries().contains { entry in
+        !windowRegistry.controllerEntries().contains { entry in
             entry.windowID != excludingWindowID
                 && entry.profileID == profileID
-                && entry.store.presentedDeskID == deskID
+                && entry.controller.presentedDeskID == deskID
         }
     }
 
     private func requestDeskPresentation(_ deskID: DeskID, profileID: ProfileID, windowID: UUID) -> Bool {
         guard
-            let ownerWindowID = windowRegistry.storeEntries().first(where: { entry in
+            let ownerWindowID = windowRegistry.controllerEntries().first(where: { entry in
                 entry.windowID != windowID
                     && entry.profileID == profileID
-                    && entry.store.presentedDeskID == deskID
+                    && entry.controller.presentedDeskID == deskID
             })?.windowID
         else { return true }
         windowRegistry.registeredWindow(for: ownerWindowID)?.makeKeyAndOrderFront(nil)
@@ -493,7 +493,7 @@ final class ProfileManager {
             return nil
         }
         let removedWindow = windowRegistry.removeWindow(windowID: windowID)
-        removedWindow.store?.releaseWindowResources()
+        removedWindow.controller?.releaseWindowResources()
         let profileID = removedWindow.profileID
         if let profileID {
             extensionCoordinator.closeWindow(profileID: profileID, windowID: windowID)
@@ -507,7 +507,7 @@ final class ProfileManager {
 
     private func releaseSharedResourcesIfUnused(for profileID: ProfileID) {
         let profileID = resolvedProfileID(profileID)
-        guard !windowRegistry.hasStore(for: profileID),
+        guard !windowRegistry.hasController(for: profileID),
             !windowRegistry.hasWindow(for: profileID)
         else { return }
         if let storage = storages.removeValue(forKey: profileID) {
@@ -520,7 +520,7 @@ final class ProfileManager {
     private func closeWindows(for profileID: ProfileID, excludingWindowID: UUID? = nil) {
         var targetWindowIDs = Set<UUID>()
         targetWindowIDs.formUnion(windowRegistry.windowIDs(for: profileID))
-        targetWindowIDs.formUnion(windowRegistry.storeWindowIDs(for: profileID))
+        targetWindowIDs.formUnion(windowRegistry.controllerWindowIDs(for: profileID))
         if let excludingWindowID {
             targetWindowIDs.remove(excludingWindowID)
         }
@@ -534,9 +534,9 @@ final class ProfileManager {
         closeWindows(for: profileID, excludingWindowID: excludingWindowID)
     }
 
-    private func setRuntimeOwner(_ store: DenController?, boardID: BoardID, profileID: ProfileID) {
-        if let store {
-            runtimeOwners[profileID, default: [:]][boardID] = store
+    private func setRuntimeOwner(_ controller: DenController?, boardID: BoardID, profileID: ProfileID) {
+        if let controller {
+            runtimeOwners[profileID, default: [:]][boardID] = controller
         } else {
             runtimeOwners[profileID]?.removeValue(forKey: boardID)
             if runtimeOwners[profileID]?.isEmpty == true {

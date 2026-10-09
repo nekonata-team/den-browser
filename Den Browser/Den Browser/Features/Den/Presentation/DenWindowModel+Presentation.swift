@@ -24,16 +24,16 @@ extension DenWindowModel {
     var isRenameDeskPanelPresented: Bool { temporaryContext == .renameDesk }
     var isSaveEssentialPanelPresented: Bool { temporaryContext == .saveEssential }
     var isBoardRailPresented: Bool {
-        get { store.preferences.isBoardRailPresented }
-        set { store.preferences.setBoardRailPresented(newValue) }
+        get { controller.preferences.isBoardRailPresented }
+        set { controller.preferences.setBoardRailPresented(newValue) }
     }
 
     var isBoardDragging: Bool {
-        guard case .board? = store.activeDrag else { return false }
+        guard case .board? = controller.activeDrag else { return false }
         return true
     }
     var isDeskDragging: Bool {
-        guard case .desk? = store.activeDrag else { return false }
+        guard case .desk? = controller.activeDrag else { return false }
         return true
     }
 
@@ -60,7 +60,7 @@ extension DenWindowModel {
         case .drawer:
             drawer.endPresentation()
         case .zmxDuplication:
-            store.cancelZmxDuplicationRequest()
+            controller.cancelZmxDuplicationRequest()
             zmxDuplicationRootSessionName = nil
         case .zmxSessions:
             let wasReturningToOpenBoard = zmxSessionsReturnToOpenBoard
@@ -100,20 +100,20 @@ extension DenWindowModel {
 
     func showEssentialsPrefix() {
         guard temporaryContext == nil else { return }
-        selectedEssentialID = store.essentials.first?.id
+        selectedEssentialID = controller.essentials.first?.id
         setTemporaryContext(.essentialsPrefix)
     }
 
     func moveEssentialSelection(by offset: Int) {
         selectedEssentialID = SelectionNavigation.next(
             selectedEssentialID,
-            among: store.essentials.map(\.id),
+            among: controller.essentials.map(\.id),
             by: offset
         )
     }
 
     func selectEssential(_ id: UUID) {
-        guard store.essentials.contains(where: { $0.id == id }) else { return }
+        guard controller.essentials.contains(where: { $0.id == id }) else { return }
         selectedEssentialID = id
     }
 
@@ -140,7 +140,7 @@ extension DenWindowModel {
         guard temporaryContext == nil || temporaryContext == .drawer else { return }
         isDenMode.toggle()
         if isDenMode {
-            store.dispatchDenOperationEvent(.denModeEntered)
+            controller.dispatchDenOperationEvent(.denModeEntered)
         } else {
             deskFilter.dismiss()
         }
@@ -156,7 +156,7 @@ extension DenWindowModel {
 
     func setBoardRailPresented(_ isPresented: Bool) {
         guard !isZenViewPresented else { return }
-        store.preferences.setBoardRailPresented(isPresented)
+        controller.preferences.setBoardRailPresented(isPresented)
     }
 
     func toggleBoardRail() { setBoardRailPresented(!isBoardRailPresented) }
@@ -164,7 +164,7 @@ extension DenWindowModel {
 
     func showKeyboardShortcuts() {
         setTemporaryContext(.keyboardShortcuts)
-        if isDenMode { store.dispatchDenOperationEvent(.keyboardShortcutsShown) }
+        if isDenMode { controller.dispatchDenOperationEvent(.keyboardShortcutsShown) }
     }
 
     func hideKeyboardShortcuts() {
@@ -181,12 +181,12 @@ extension DenWindowModel {
     }
 
     func showZmxSessions(selectedSessionName: String? = nil, returnsToOpenBoard: Bool = false) {
-        guard store.zmxClient.isConfigured else {
-            store.reportFeedback("Set an absolute zmx executable path in Settings > Terminal.", severity: .warning)
+        guard controller.zmxClient.isConfigured else {
+            controller.reportFeedback("Set an absolute zmx executable path in Settings > Terminal.", severity: .warning)
             return
         }
         zmxSessionsReturnToOpenBoard = returnsToOpenBoard
-        zmxSessions.start(client: store.zmxClient, selectedSessionName: selectedSessionName)
+        zmxSessions.start(client: controller.zmxClient, selectedSessionName: selectedSessionName)
         setTemporaryContext(.zmxSessions)
     }
 
@@ -202,8 +202,8 @@ extension DenWindowModel {
     }
 
     func showEditBoardLinkPanel() {
-        guard store.focusedBoard?.isWeb == true else {
-            store.reportFeedback("No focused Web Board.", severity: .warning)
+        guard controller.focusedBoard?.isWeb == true else {
+            controller.reportFeedback("No focused Web Board.", severity: .warning)
             return
         }
         setTemporaryContext(.editBoardLink)
@@ -214,15 +214,15 @@ extension DenWindowModel {
     }
 
     func showNewDeskPanel() {
-        guard store.canCreateDesk else {
-            store.reportFeedback("Desks are limited to 10.", severity: .warning)
+        guard controller.canCreateDesk else {
+            controller.reportFeedback("Desks are limited to 10.", severity: .warning)
             return
         }
         setTemporaryContext(.newDesk)
     }
 
     func showReplaceDeskPanel() {
-        guard store.focusedDesk != nil else { return }
+        guard controller.focusedDesk != nil else { return }
         setTemporaryContext(.replaceDesk)
     }
 
@@ -238,8 +238,8 @@ extension DenWindowModel {
     }
 
     func showSaveDeskPresetPanel() {
-        guard store.focusedDesk?.boards.isEmpty == false else {
-            store.reportFeedback("Desk has no boards to save as a preset.", severity: .warning)
+        guard controller.focusedDesk?.boards.isEmpty == false else {
+            controller.reportFeedback("Desk has no boards to save as a preset.", severity: .warning)
             return
         }
         setTemporaryContext(.saveDeskPreset)
@@ -250,7 +250,7 @@ extension DenWindowModel {
     }
 
     func showRenameBoardPanel() {
-        guard store.focusedDesk?.focusedBoardID != nil else { return }
+        guard controller.focusedDesk?.focusedBoardID != nil else { return }
         setTemporaryContext(.renameBoard)
     }
 
@@ -259,7 +259,7 @@ extension DenWindowModel {
     }
 
     func showRenameDeskPanel() {
-        guard store.focusedDesk != nil else { return }
+        guard controller.focusedDesk != nil else { return }
         setTemporaryContext(.renameDesk)
     }
 
@@ -274,7 +274,7 @@ extension DenWindowModel {
 
     func showSaveEssentialPanel(for board: BoardState) {
         guard let input = board.essentialInput else { return }
-        store.focusBoard(board.id)
+        controller.focusBoard(board.id)
         showSaveEssentialPanel(name: board.defaultEssentialName, key: "", input: input)
     }
 
@@ -294,8 +294,8 @@ extension DenWindowModel {
     }
 
     func saveFocusedBoardAsEssential() {
-        guard let board = store.focusedBoard else {
-            store.reportFeedback("No focused board.", severity: .warning)
+        guard let board = controller.focusedBoard else {
+            controller.reportFeedback("No focused board.", severity: .warning)
             return
         }
         showSaveEssentialPanel(for: board)

@@ -7,7 +7,7 @@ import SwiftUI
 struct OpenBoardPanel: View {
     private static let maximumVisibleRecentItemCount = 5
 
-    @Environment(DenController.self) private var store
+    @Environment(DenController.self) private var controller
     @Environment(DenWindowModel.self) private var windowModel
     @Environment(OpenBoardModel.self) private var openBoard
     @FocusState private var isFocused: Bool
@@ -19,7 +19,7 @@ struct OpenBoardPanel: View {
     private var filteredRecentItems: [RecentItem] {
         let query = openBoard.input.trimmingCharacters(in: .whitespacesAndNewlines)
         return Array(
-            store.recentItems.lazy.filter {
+            controller.recentItems.lazy.filter {
                 query.isEmpty || $0.displayText.localizedCaseInsensitiveContains(query)
                     || ($0.title?.localizedCaseInsensitiveContains(query) ?? false)
             }.prefix(Self.maximumVisibleRecentItemCount))
@@ -85,7 +85,7 @@ struct OpenBoardPanel: View {
                         .font(.caption.weight(.semibold))
                         .foregroundStyle(.secondary)
                     Spacer()
-                    Button("Clear", action: store.clearRecent)
+                    Button("Clear", action: controller.clearRecent)
                         .buttonStyle(.plain)
                         .font(.caption)
                         .foregroundStyle(.secondary)
@@ -93,7 +93,7 @@ struct OpenBoardPanel: View {
                 }
 
                 ForEach(filteredRecentItems) { item in
-                    let matchedEssential = store.essentials.first { item.matches(essential: $0) }
+                    let matchedEssential = controller.essentials.first { item.matches(essential: $0) }
                     HStack(spacing: DenPanelLayout.controlSpacing) {
                         Button {
                             openRecent(item)
@@ -188,7 +188,7 @@ struct OpenBoardPanel: View {
         }
         .onExitCommand {
             windowModel.hideOpenBoardPanel()
-            store.restoreFocusedFirstResponder()
+            controller.restoreFocusedFirstResponder()
         }
     }
 
@@ -223,7 +223,7 @@ struct OpenBoardPanel: View {
 }
 
 struct EditBoardLinkPanel: View {
-    @Environment(DenController.self) private var store
+    @Environment(DenController.self) private var controller
     @Environment(DenWindowModel.self) private var windowModel
 
     @State private var text = ""
@@ -256,31 +256,31 @@ struct EditBoardLinkPanel: View {
         }
         .denPanel()
         .onAppear {
-            text = store.focusedBoard?.currentSheetURL?.absoluteString ?? ""
+            text = controller.focusedBoard?.currentSheetURL?.absoluteString ?? ""
             DispatchQueue.main.async { isFocused = true }
         }
         .onExitCommand {
             windowModel.hideEditBoardLinkPanel()
-            store.restoreFocusedFirstResponder()
+            controller.restoreFocusedFirstResponder()
         }
     }
 
     private func submit() {
-        if store.navigateFocusedBoard(urlString: text) {
+        if controller.navigateFocusedBoard(urlString: text) {
             text = ""
         }
     }
 }
 
 struct ZmxDuplicationPanel: View {
-    @Environment(DenController.self) private var store
+    @Environment(DenController.self) private var controller
     @Environment(DenWindowModel.self) private var windowModel
     @State private var text = ""
     @FocusState private var isFocused: Bool
 
     private var rootSessionName: String {
         windowModel.zmxDuplicationRootSessionName
-            ?? store.focusedBoard?.zmxSessionName
+            ?? controller.focusedBoard?.zmxSessionName
             ?? "zmx"
     }
 
@@ -323,19 +323,19 @@ struct ZmxDuplicationPanel: View {
         .onExitCommand {
             windowModel.hideZmxDuplicationPanel()
             text = ""
-            store.restoreFocusedFirstResponder()
+            controller.restoreFocusedFirstResponder()
         }
     }
 
     private func submit() {
-        store.duplicateFocusedZmxBoard(suffix: text)
+        controller.duplicateFocusedZmxBoard(suffix: text)
         text = ""
-        store.restoreFocusedFirstResponder()
+        controller.restoreFocusedFirstResponder()
     }
 }
 
 struct RenameBoardPanel: View {
-    @Environment(DenController.self) private var store
+    @Environment(DenController.self) private var controller
     @Environment(DenWindowModel.self) private var windowModel
     @State private var text = ""
     @FocusState private var isFocused: Bool
@@ -353,7 +353,7 @@ struct RenameBoardPanel: View {
                 .focused($isFocused)
                 .onSubmit {
                     TextInputComposition.performUnlessActive {
-                        store.renameFocusedBoard(to: text)
+                        controller.renameFocusedBoard(to: text)
                     }
                 }
             }
@@ -361,7 +361,7 @@ struct RenameBoardPanel: View {
         }
         .denPanel()
         .onAppear {
-            if let board = store.focusedBoard { text = board.customLabel ?? board.label } else { text = "" }
+            if let board = controller.focusedBoard { text = board.customLabel ?? board.label } else { text = "" }
             DispatchQueue.main.async { isFocused = true }
         }
         .onExitCommand { windowModel.hideRenameBoardPanel() }
@@ -369,7 +369,7 @@ struct RenameBoardPanel: View {
 }
 
 struct BoardWidthPanel: View {
-    @Environment(DenController.self) private var store
+    @Environment(DenController.self) private var controller
     @Environment(DenWindowModel.self) private var windowModel
 
     var body: some View {
@@ -409,7 +409,7 @@ struct BoardWidthPanel: View {
 }
 
 struct SaveEssentialPanel: View {
-    @Environment(DenController.self) private var store
+    @Environment(DenController.self) private var controller
     @Environment(DenWindowModel.self) private var windowModel
 
     @State private var name = ""
@@ -425,7 +425,7 @@ struct SaveEssentialPanel: View {
     private var conflictingEssential: Essential? {
         let trimmedKey = key == " " ? key : key.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedKey.isEmpty else { return nil }
-        return store.essentials.first { $0.key == trimmedKey }
+        return controller.essentials.first { $0.key == trimmedKey }
     }
 
     var body: some View {
@@ -463,7 +463,7 @@ struct SaveEssentialPanel: View {
                             .font(.caption)
                             .foregroundStyle(.red)
                             .lineLimit(1)
-                    } else if !store.essentials.isEmpty {
+                    } else if !controller.essentials.isEmpty {
                         Text("Existing keys: \(usedKeysString)")
                             .font(.caption)
                             .foregroundStyle(.secondary)
@@ -513,7 +513,7 @@ struct SaveEssentialPanel: View {
     }
 
     private var usedKeysString: String {
-        store.essentials.map(\.displayKey).joined(separator: ", ")
+        controller.essentials.map(\.displayKey).joined(separator: ", ")
     }
 
     private var canSave: Bool {

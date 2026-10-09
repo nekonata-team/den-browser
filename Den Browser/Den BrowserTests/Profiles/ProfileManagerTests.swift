@@ -28,8 +28,8 @@ struct ProfileManagerTests {
         #expect(personal.webProfileStore == .default)
         #expect(!manager.isPrivateDen)
 
-        let personalStore = try #require(manager.store(for: personal.id))
-        #expect(manager.profileID(for: personalStore) == personal.id)
+        let personalController = try #require(manager.controller(for: personal.id))
+        #expect(manager.profileID(for: personalController) == personal.id)
         #expect(
             ProfileColor.presets.allSatisfy {
                 let rgb = profileRGB(for: $0)
@@ -56,14 +56,14 @@ struct ProfileManagerTests {
             isEphemeral: true,
             websiteDataStore: { _ in .nonPersistent() })
         let profile = try #require(manager.profiles.first)
-        let store = try #require(manager.store(for: profile.id))
+        let controller = try #require(manager.controller(for: profile.id))
 
-        _ = store.createBoard(urlString: "https://example.com/private")
+        _ = controller.createBoard(urlString: "https://example.com/private")
 
         #expect(profile.name == "Private Den")
         #expect(manager.isPrivateDen)
-        #expect(store.focusedDesk?.boards.count == 1)
-        #expect(store.save())
+        #expect(controller.focusedDesk?.boards.count == 1)
+        #expect(controller.save())
         #expect(manager.profileSaveCount == 0)
         #expect(!FileManager.default.fileExists(atPath: directory.path))
     }
@@ -79,11 +79,11 @@ struct ProfileManagerTests {
             uBOLiteEnabled: true)
         defer { manager.setUBOLiteEnabled(false) }
         let profileID = manager.personalProfileID
-        let store = try #require(manager.store(for: profileID))
-        #expect(store.webExtensionHost == nil)
+        let controller = try #require(manager.controller(for: profileID))
+        #expect(controller.webExtensionHost == nil)
         let terminal = BoardState(label: "Terminal", width: 520, workingDirectory: "/tmp")
         let desk = DeskState(label: "Terminal", boards: [terminal], focusedBoardID: terminal.id)
-        store.storage.state = DenState(
+        controller.storage.state = DenState(
             desks: [desk],
             focusedDeskID: desk.id)
         let window = NSWindow()
@@ -97,8 +97,8 @@ struct ProfileManagerTests {
         manager.setUBOLiteEnabled(true)
 
         // Assert
-        #expect(store.webExtensionHost == nil)
-        #expect(store.webExtensionWindow == nil)
+        #expect(controller.webExtensionHost == nil)
+        #expect(controller.webExtensionWindow == nil)
     }
 
     @Test func firstWebRuntimeLoadsOneSharedHostAcrossProfileWindows() throws {
@@ -112,7 +112,7 @@ struct ProfileManagerTests {
         defer { manager.setUBOLiteEnabled(false) }
         let profileID = manager.personalProfileID
         let firstRoute = ProfileWindowRoute(windowID: profileID.rawValue, profileID: profileID)
-        let first = try #require(manager.store(for: firstRoute))
+        let first = try #require(manager.controller(for: firstRoute))
         manager.setUBOLiteEnabled(true)
         let sourceDeskID = first.presentedDeskID
         let boardID = try #require(
@@ -125,7 +125,7 @@ struct ProfileManagerTests {
                 sourceDeskID,
                 profileID: profileID,
                 sourceWindowID: firstRoute.windowID))
-        let second = try #require(manager.store(for: secondRoute))
+        let second = try #require(manager.controller(for: secondRoute))
 
         #expect(first.webExtensionHost != nil)
         #expect(second.webExtensionHost == nil)
@@ -150,19 +150,19 @@ struct ProfileManagerTests {
             isEphemeral: true,
             webExtensionDescriptors: [extensionFixtureDescriptor()])
         let profileID = manager.personalProfileID
-        let store = try #require(manager.store(for: profileID))
+        let controller = try #require(manager.controller(for: profileID))
         let fileURL = URL(fileURLWithPath: #filePath)
-        let itemID = try #require(store.keepInDrawer(fileURL, opensDrawer: false))
-        let item = try #require(store.state.drawerItems.first { $0.id == itemID })
+        let itemID = try #require(controller.keepInDrawer(fileURL, opensDrawer: false))
+        let item = try #require(controller.state.drawerItems.first { $0.id == itemID })
         manager.setUBOLiteEnabled(true)
         defer { manager.setUBOLiteEnabled(false) }
 
         // Act
-        let firstPreview = store.drawerRuntime(for: item)
+        let firstPreview = controller.drawerRuntime(for: item)
 
         // Assert
-        #expect(store.webExtensionHost != nil)
-        #expect(store.webExtensionWindow?.tabs.count == 1)
+        #expect(controller.webExtensionHost != nil)
+        #expect(controller.webExtensionWindow?.tabs.count == 1)
         #expect(firstPreview.id == item.id)
     }
 
@@ -174,19 +174,19 @@ struct ProfileManagerTests {
             directory: directory,
             isEphemeral: true,
             webExtensionDescriptors: [extensionFixtureDescriptor()])
-        let store = try #require(manager.store(for: manager.personalProfileID))
-        let itemID = try #require(store.keepInDrawer(URL(fileURLWithPath: #filePath), opensDrawer: false))
-        let item = try #require(store.state.drawerItems.first { $0.id == itemID })
+        let controller = try #require(manager.controller(for: manager.personalProfileID))
+        let itemID = try #require(controller.keepInDrawer(URL(fileURLWithPath: #filePath), opensDrawer: false))
+        let item = try #require(controller.state.drawerItems.first { $0.id == itemID })
         manager.setUBOLiteEnabled(true)
-        let preview = store.drawerRuntime(for: item)
+        let preview = controller.drawerRuntime(for: item)
         defer { manager.setUBOLiteEnabled(false) }
 
         // Act
         manager.setUBOLiteEnabled(false)
 
         // Assert
-        #expect(store.drawerPreviewRuntime == nil)
-        #expect(store.webExtensionHost == nil)
+        #expect(controller.drawerPreviewRuntime == nil)
+        #expect(controller.webExtensionHost == nil)
         #expect(preview.webView.navigationDelegate == nil)
     }
 
@@ -198,21 +198,21 @@ struct ProfileManagerTests {
             directory: directory,
             isEphemeral: true,
             webExtensionDescriptors: [extensionFixtureDescriptor()])
-        let store = try #require(manager.store(for: manager.personalProfileID))
+        let controller = try #require(manager.controller(for: manager.personalProfileID))
         let board = BoardState(label: "Web", width: 520, currentSheetURL: nil)
         let desk = DeskState(label: "Desk", boards: [board], focusedBoardID: board.id)
-        store.storage.state = DenState(desks: [desk], focusedDeskID: desk.id)
-        _ = store.webRuntime(for: board)
+        controller.storage.state = DenState(desks: [desk], focusedDeskID: desk.id)
+        _ = controller.webRuntime(for: board)
         defer { manager.setUBOLiteEnabled(false) }
-        #expect(store.webExtensionHost == nil)
+        #expect(controller.webExtensionHost == nil)
 
         // Act
         manager.setUBOLiteEnabled(true)
-        _ = store.webRuntime(for: board)
+        _ = controller.webRuntime(for: board)
 
         // Assert
-        #expect(store.webExtensionHost != nil)
-        #expect(store.webExtensionWindow?.tabs.count == 1)
+        #expect(controller.webExtensionHost != nil)
+        #expect(controller.webExtensionWindow?.tabs.count == 1)
     }
 
     @Test func profileManagerPersistsProfileOrderAndUpdates() throws {
@@ -225,14 +225,14 @@ struct ProfileManagerTests {
 
         // Act
         let updated = manager.updateProfile(work.id, name: "Office", color: .yellow)
-        let workStore = try #require(manager.store(for: work.id))
-        workStore.createDesk(label: "Restored", preset: .empty)
+        let workController = try #require(manager.controller(for: work.id))
+        workController.createDesk(label: "Restored", preset: .empty)
         let restored = makeProfileManager(directory: directory)
 
         // Assert
         #expect(updated)
         #expect(restored.profiles.map(\.name) == ["Personal", "Office", "Work"])
-        #expect(restored.store(for: work.id)?.focusedDesk?.label == "Restored")
+        #expect(restored.controller(for: work.id)?.focusedDesk?.label == "Restored")
     }
 
     @Test func profileWindowsShareDenAndPresentDistinctDesks() throws {
@@ -242,7 +242,7 @@ struct ProfileManagerTests {
         let manager = makeProfileManager(directory: directory)
         let profileID = manager.personalProfileID
         let sourceRoute = ProfileWindowRoute(windowID: profileID.rawValue, profileID: profileID)
-        let source = try #require(manager.store(for: sourceRoute))
+        let source = try #require(manager.controller(for: sourceRoute))
         source.createDesk(label: "Second", preset: .empty)
         let detachedDeskID = source.presentedDeskID
 
@@ -252,7 +252,7 @@ struct ProfileManagerTests {
                 detachedDeskID,
                 profileID: profileID,
                 sourceWindowID: sourceRoute.windowID))
-        let detached = try #require(manager.store(for: detachedRoute))
+        let detached = try #require(manager.controller(for: detachedRoute))
 
         // Assert - shared storage, distinct presented desk
         #expect(source.storage === detached.storage)
@@ -338,20 +338,20 @@ struct ProfileManagerTests {
         let directory = temporaryProfileDirectory()
         defer { try? FileManager.default.removeItem(at: directory) }
         let manager = makeProfileManager(directory: directory)
-        let personalStore = try #require(manager.store(for: manager.personalProfileID))
+        let personalController = try #require(manager.controller(for: manager.personalProfileID))
         let work = try #require(manager.createProfile(name: "Work", color: .green))
-        let workStore = try #require(manager.store(for: work.id))
+        let workController = try #require(manager.controller(for: work.id))
 
         // Act
-        _ = personalStore.createBoard(urlString: "https://example.com/bookmark?one=1")
-        let saveResult = personalStore.saveFocusedDeskAsPreset(label: "Reading")
+        _ = personalController.createBoard(urlString: "https://example.com/bookmark?one=1")
+        let saveResult = personalController.saveFocusedDeskAsPreset(label: "Reading")
         let restored = makeProfileManager(directory: directory)
 
         // Assert
         #expect(saveResult == .created)
-        #expect(restored.store(for: manager.personalProfileID)?.deskPresets.map(\.label) == ["Reading"])
-        #expect(restored.store(for: work.id)?.deskPresets.isEmpty == true)
-        #expect(workStore.deskPresets.isEmpty)
+        #expect(restored.controller(for: manager.personalProfileID)?.deskPresets.map(\.label) == ["Reading"])
+        #expect(restored.controller(for: work.id)?.deskPresets.isEmpty == true)
+        #expect(workController.deskPresets.isEmpty)
     }
 
     @Test func personalCannotBeDeletedAndAdditionalProfileCan() async throws {
@@ -394,7 +394,7 @@ struct ProfileManagerTests {
         // Assert
         #expect(!deleted)
         #expect(manager.profile(id: work.id) != nil)
-        #expect(manager.store(for: work.id) != nil)
+        #expect(manager.controller(for: work.id) != nil)
         #expect(FileManager.default.fileExists(atPath: profileURL(work.id, in: directory).path))
         #expect(makeProfileManager(directory: directory).profile(id: work.id) != nil)
     }
@@ -476,18 +476,18 @@ struct ProfileManagerTests {
         defer { try? FileManager.default.removeItem(at: directory) }
         let manager = makeProfileManager(directory: directory)
         let personalID = manager.personalProfileID
-        let store = try #require(manager.store(for: personalID))
-        _ = store.createBoard(urlString: "https://example.com")
-        let boardID = try #require(store.focusedDesk?.focusedBoardID)
+        let controller = try #require(manager.controller(for: personalID))
+        _ = controller.createBoard(urlString: "https://example.com")
+        let boardID = try #require(controller.focusedDesk?.focusedBoardID)
 
         // Act
-        store.removeFocusedBoard()
+        controller.removeFocusedBoard()
         let restored = makeProfileManager(directory: directory)
 
         // Assert
-        #expect(store.recentlyRemovedBoards.first?.board.id == boardID)
-        #expect(restored.store(for: personalID)?.focusedDesk?.boards.contains { $0.id == boardID } == false)
-        #expect(restored.store(for: personalID)?.recentlyRemovedBoards.isEmpty == true)
+        #expect(controller.recentlyRemovedBoards.first?.board.id == boardID)
+        #expect(restored.controller(for: personalID)?.focusedDesk?.boards.contains { $0.id == boardID } == false)
+        #expect(restored.controller(for: personalID)?.recentlyRemovedBoards.isEmpty == true)
     }
 
     @Test func profileStoresUseSeparateWebKitStoresAndCallbacks() throws {
@@ -507,16 +507,17 @@ struct ProfileManagerTests {
             removeDataStore: { _ in },
             websiteDataStore: { _ in .nonPersistent() })
         let second = try #require(manager.createProfile(name: "Second", color: .pink))
-        let firstStore = try #require(manager.store(for: manager.personalProfileID))
-        let secondStore = try #require(manager.store(for: second.id))
+        let firstController = try #require(manager.controller(for: manager.personalProfileID))
+        let secondController = try #require(manager.controller(for: second.id))
         let firstBoard = board("First")
         let secondBoard = board("Second")
-        firstStore.storage.state = DenState(desks: [desk("First", boards: [firstBoard])], focusedDeskID: DeskID())
-        firstStore.focusDesk(firstStore.state.desks[0].id)
-        secondStore.storage.state = DenState(desks: [desk("Second", boards: [secondBoard])], focusedDeskID: DeskID())
-        secondStore.focusDesk(secondStore.state.desks[0].id)
-        let firstWebView = firstStore.webRuntime(for: firstBoard).webView
-        let secondWebView = secondStore.webRuntime(for: secondBoard).webView
+        firstController.storage.state = DenState(desks: [desk("First", boards: [firstBoard])], focusedDeskID: DeskID())
+        firstController.focusDesk(firstController.state.desks[0].id)
+        secondController.storage.state = DenState(
+            desks: [desk("Second", boards: [secondBoard])], focusedDeskID: DeskID())
+        secondController.focusDesk(secondController.state.desks[0].id)
+        let firstWebView = firstController.webRuntime(for: firstBoard).webView
+        let secondWebView = secondController.webRuntime(for: secondBoard).webView
 
         // Act
         let firstHandled = navigation.handleScriptMessage(
@@ -529,15 +530,15 @@ struct ProfileManagerTests {
         #expect(firstHandled)
         #expect(secondHandled)
         #expect(
-            firstStore.focusedDesk?.boards.contains {
+            firstController.focusedDesk?.boards.contains {
                 $0.currentSheetURL == URL(string: "https://first.example/")
             } == true)
         #expect(
-            secondStore.focusedDesk?.boards.contains {
+            secondController.focusedDesk?.boards.contains {
                 $0.currentSheetURL == URL(string: "https://second.example/")
             } == true)
         #expect(
-            firstStore.focusedDesk?.boards.contains {
+            firstController.focusedDesk?.boards.contains {
                 $0.currentSheetURL == URL(string: "https://second.example/")
             } == false)
     }
@@ -698,39 +699,39 @@ struct ProfileManagerTests {
             try? FileManager.default.removeItem(at: directory)
         }
         let manager = makeProfileManager(directory: directory)
-        let store = try #require(manager.store(for: manager.personalProfileID))
+        let controller = try #require(manager.controller(for: manager.personalProfileID))
         let targetURL = URL(string: "https://example.com/updated")
 
         // Act
         try FileManager.default.setAttributes([.posixPermissions: 0o500], ofItemAtPath: directory.path)
-        _ = store.createBoard(urlString: "https://example.com/updated")
+        _ = controller.createBoard(urlString: "https://example.com/updated")
         #expect(manager.errorMessage != nil)
 
         try FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: directory.path)
-        #expect(store.saveDeskPresets())
+        #expect(controller.saveDeskPresets())
 
         // Assert
         let restored = makeProfileManager(directory: directory)
-        let restoredStore = try #require(restored.store(for: manager.personalProfileID))
-        #expect(restoredStore.focusedDesk?.boards.contains { $0.currentSheetURL == targetURL } == true)
+        let recontrollerdController = try #require(restored.controller(for: manager.personalProfileID))
+        #expect(recontrollerdController.focusedDesk?.boards.contains { $0.currentSheetURL == targetURL } == true)
     }
 
     @Test func boardAndRecentArePersistedInOneProfileWrite() throws {
         let directory = temporaryProfileDirectory()
         defer { try? FileManager.default.removeItem(at: directory) }
         let manager = makeProfileManager(directory: directory)
-        let store = try #require(manager.store(for: manager.personalProfileID))
+        let controller = try #require(manager.controller(for: manager.personalProfileID))
         let url = try #require(URL(string: "https://example.com/aggregated"))
 
         let writesBefore = manager.profileSaveCount
-        _ = store.createBoard(urlString: url.absoluteString, recentItem: .url(url))
+        _ = controller.createBoard(urlString: url.absoluteString, recentItem: .url(url))
 
         #expect(manager.profileSaveCount == writesBefore + 1)
 
         let restored = makeProfileManager(directory: directory)
-        let restoredStore = try #require(restored.store(for: manager.personalProfileID))
-        #expect(restoredStore.focusedDesk?.boards.contains { $0.currentSheetURL == url } == true)
-        #expect(restoredStore.recentItems == [.url(url)])
+        let recontrollerdController = try #require(restored.controller(for: manager.personalProfileID))
+        #expect(recontrollerdController.focusedDesk?.boards.contains { $0.currentSheetURL == url } == true)
+        #expect(recontrollerdController.recentItems == [.url(url)])
     }
 
     @Test func deferredSaveWaitsUntilChangesAreQuietAndWritesLatestStateOnce() async throws {
@@ -738,16 +739,16 @@ struct ProfileManagerTests {
         let directory = temporaryProfileDirectory()
         defer { try? FileManager.default.removeItem(at: directory) }
         let manager = makeProfileManager(directory: directory)
-        let store = try #require(manager.store(for: manager.personalProfileID))
-        let firstDeskID = try #require(store.state.desks.first?.id)
-        store.createDesk(label: "Second", preset: .empty)
-        let secondDeskID = try #require(store.state.desks.last?.id)
+        let controller = try #require(manager.controller(for: manager.personalProfileID))
+        let firstDeskID = try #require(controller.state.desks.first?.id)
+        controller.createDesk(label: "Second", preset: .empty)
+        let secondDeskID = try #require(controller.state.desks.last?.id)
         let writesBefore = manager.profileSaveCount
 
         // Act
-        store.focusDesk(firstDeskID)
+        controller.focusDesk(firstDeskID)
         try await Task.sleep(for: .milliseconds(200))
-        store.focusDesk(secondDeskID)
+        controller.focusDesk(secondDeskID)
         #expect(manager.profileSaveCount == writesBefore)
         try await Task.sleep(for: .milliseconds(200))
         #expect(manager.profileSaveCount == writesBefore)
@@ -760,7 +761,7 @@ struct ProfileManagerTests {
         // Assert
         #expect(manager.profileSaveCount == writesBefore + 1)
         let restored = makeProfileManager(directory: directory)
-        #expect(restored.store(for: manager.personalProfileID)?.state.focusedDeskID == secondDeskID)
+        #expect(restored.controller(for: manager.personalProfileID)?.state.focusedDeskID == secondDeskID)
     }
 
     @Test func boardWidthAdjustmentsShareDeferredSaveAndSkipUnchangedWidths() async throws {
@@ -769,16 +770,16 @@ struct ProfileManagerTests {
         defer { try? FileManager.default.removeItem(at: directory) }
         let manager = makeProfileManager(directory: directory)
         let profileID = manager.personalProfileID
-        let store = try #require(manager.store(for: profileID))
-        let composition = DenWindowComposition(store: store)
+        let controller = try #require(manager.controller(for: profileID))
+        let composition = DenWindowComposition(controller: controller)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
         let first = board("First", width: BoardState.maximumWidth)
         let second = board("Second", width: BoardState.maximumWidth)
-        store.storage.state.desks[0].boards = [first, second]
-        store.storage.state.desks[0].focusedBoardID = first.id
-        #expect(store.save())
+        controller.storage.state.desks[0].boards = [first, second]
+        controller.storage.state.desks[0].focusedBoardID = first.id
+        #expect(controller.save())
         let writesBefore = manager.profileSaveCount
 
         // Act
@@ -796,7 +797,7 @@ struct ProfileManagerTests {
 
         // Assert
         #expect(manager.profileSaveCount == writesBefore + 1)
-        let restored = try #require(makeProfileManager(directory: directory).store(for: profileID))
+        let restored = try #require(makeProfileManager(directory: directory).controller(for: profileID))
         #expect(restored.state.desks[0].boards.map(\.width) == [BoardState.maximumWidth - 10, BoardState.maximumWidth])
     }
 
@@ -805,20 +806,20 @@ struct ProfileManagerTests {
         let directory = temporaryProfileDirectory()
         defer { try? FileManager.default.removeItem(at: directory) }
         let manager = makeProfileManager(directory: directory)
-        let store = try #require(manager.store(for: manager.personalProfileID))
-        let firstDeskID = try #require(store.state.desks.first?.id)
-        store.createDesk(label: "Second", preset: .empty)
+        let controller = try #require(manager.controller(for: manager.personalProfileID))
+        let firstDeskID = try #require(controller.state.desks.first?.id)
+        controller.createDesk(label: "Second", preset: .empty)
         let writesBefore = manager.profileSaveCount
 
         // Act
-        store.focusDesk(firstDeskID)
-        #expect(store.saveDeskPresets())
+        controller.focusDesk(firstDeskID)
+        #expect(controller.saveDeskPresets())
         try await Task.sleep(for: .milliseconds(350))
 
         // Assert
         #expect(manager.profileSaveCount == writesBefore + 1)
         let restored = makeProfileManager(directory: directory)
-        #expect(restored.store(for: manager.personalProfileID)?.state.focusedDeskID == firstDeskID)
+        #expect(restored.controller(for: manager.personalProfileID)?.state.focusedDeskID == firstDeskID)
     }
 
     @Test func flushPendingDeferredSavesWritesBeforeReturning() throws {
@@ -826,19 +827,19 @@ struct ProfileManagerTests {
         let directory = temporaryProfileDirectory()
         defer { try? FileManager.default.removeItem(at: directory) }
         let manager = makeProfileManager(directory: directory)
-        let store = try #require(manager.store(for: manager.personalProfileID))
-        let firstDeskID = try #require(store.state.desks.first?.id)
-        store.createDesk(label: "Second", preset: .empty)
+        let controller = try #require(manager.controller(for: manager.personalProfileID))
+        let firstDeskID = try #require(controller.state.desks.first?.id)
+        controller.createDesk(label: "Second", preset: .empty)
         let writesBefore = manager.profileSaveCount
 
         // Act
-        store.focusDesk(firstDeskID)
+        controller.focusDesk(firstDeskID)
         manager.flushPendingDeferredSaves()
 
         // Assert
         #expect(manager.profileSaveCount == writesBefore + 1)
         let restored = makeProfileManager(directory: directory)
-        #expect(restored.store(for: manager.personalProfileID)?.state.focusedDeskID == firstDeskID)
+        #expect(restored.controller(for: manager.personalProfileID)?.state.focusedDeskID == firstDeskID)
     }
 
     @Test func flushDuringBoardDragWritesTheLastStableProfileSnapshot() throws {
@@ -847,26 +848,26 @@ struct ProfileManagerTests {
         defer { try? FileManager.default.removeItem(at: directory) }
         let manager = makeProfileManager(directory: directory)
         let profileID = manager.personalProfileID
-        let store = try #require(manager.store(for: profileID))
-        let composition = DenWindowComposition(store: store)
+        let controller = try #require(manager.controller(for: profileID))
+        let composition = DenWindowComposition(controller: controller)
         composition.connect()
         defer { composition.disconnect() }
         let firstBoard = board("First")
         let secondBoard = board("Second")
         let deskState = desk("Main", boards: [firstBoard, secondBoard], focusedBoardID: firstBoard.id)
-        store.storage.state = DenState(desks: [deskState], focusedDeskID: deskState.id)
-        #expect(store.save())
+        controller.storage.state = DenState(desks: [deskState], focusedDeskID: deskState.id)
+        #expect(controller.save())
         let writesBefore = manager.profileSaveCount
 
         // Act
-        store.focusBoard(secondBoard.id)
-        #expect(store.beginBoardDrag(firstBoard.id))
-        store.previewBoardMove(secondBoard.id, to: 0)
+        controller.focusBoard(secondBoard.id)
+        #expect(controller.beginBoardDrag(firstBoard.id))
+        controller.previewBoardMove(secondBoard.id, to: 0)
         manager.flushPendingDeferredSaves()
 
         // Assert
         #expect(manager.profileSaveCount == writesBefore + 1)
-        let restored = try #require(makeProfileManager(directory: directory).store(for: profileID))
+        let restored = try #require(makeProfileManager(directory: directory).controller(for: profileID))
         #expect(restored.focusedDesk?.focusedBoardID == secondBoard.id)
         #expect(restored.focusedDesk?.boards.map(\.id) == [firstBoard.id, secondBoard.id])
     }
@@ -877,21 +878,21 @@ struct ProfileManagerTests {
         defer { try? FileManager.default.removeItem(at: directory) }
         let manager = makeProfileManager(directory: directory)
         let profileID = manager.personalProfileID
-        let store = try #require(manager.store(for: profileID))
+        let controller = try #require(manager.controller(for: profileID))
         let firstBoard = board("First")
         let secondBoard = board("Second")
         let deskState = desk("Main", boards: [firstBoard, secondBoard], focusedBoardID: firstBoard.id)
-        store.storage.state = DenState(desks: [deskState], focusedDeskID: deskState.id)
-        #expect(store.save())
+        controller.storage.state = DenState(desks: [deskState], focusedDeskID: deskState.id)
+        #expect(controller.save())
 
         // Act
-        store.focusBoard(secondBoard.id)
-        #expect(store.beginBoardDrag(firstBoard.id))
-        store.previewBoardMove(secondBoard.id, to: 0)
-        #expect(store.saveDeskPresets())
+        controller.focusBoard(secondBoard.id)
+        #expect(controller.beginBoardDrag(firstBoard.id))
+        controller.previewBoardMove(secondBoard.id, to: 0)
+        #expect(controller.saveDeskPresets())
 
         // Assert
-        let restored = try #require(makeProfileManager(directory: directory).store(for: profileID))
+        let restored = try #require(makeProfileManager(directory: directory).controller(for: profileID))
         #expect(restored.focusedDesk?.focusedBoardID == secondBoard.id)
         #expect(restored.focusedDesk?.boards.map(\.id) == [firstBoard.id, secondBoard.id])
     }
@@ -902,20 +903,20 @@ struct ProfileManagerTests {
         defer { try? FileManager.default.removeItem(at: directory) }
         let manager = makeProfileManager(directory: directory)
         let profileID = manager.personalProfileID
-        let store = try #require(manager.store(for: profileID))
-        let composition = DenWindowComposition(store: store)
+        let controller = try #require(manager.controller(for: profileID))
+        let composition = DenWindowComposition(controller: controller)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
         let firstBoard = board("First")
         let secondBoard = board("Second")
         let deskState = desk("Main", boards: [firstBoard, secondBoard], focusedBoardID: firstBoard.id)
-        store.storage.state = DenState(desks: [deskState], focusedDeskID: deskState.id)
-        #expect(store.save())
+        controller.storage.state = DenState(desks: [deskState], focusedDeskID: deskState.id)
+        #expect(controller.save())
         let writesBefore = manager.profileSaveCount
 
         // Act
-        store.focusBoard(secondBoard.id)
+        controller.focusBoard(secondBoard.id)
         windowModel.showOverview()
         #expect(windowModel.beginOverviewBoardDrag(firstBoard.id))
         try await Task.sleep(for: .milliseconds(450))
@@ -925,7 +926,7 @@ struct ProfileManagerTests {
 
         // Assert
         #expect(manager.profileSaveCount == writesBefore + 1)
-        let restored = try #require(makeProfileManager(directory: directory).store(for: profileID))
+        let restored = try #require(makeProfileManager(directory: directory).controller(for: profileID))
         #expect(restored.focusedDesk?.focusedBoardID == secondBoard.id)
     }
 
@@ -935,17 +936,17 @@ struct ProfileManagerTests {
         defer { try? FileManager.default.removeItem(at: directory) }
         let manager = makeProfileManager(directory: directory)
         let profileID = manager.personalProfileID
-        let store = try #require(manager.store(for: profileID))
-        let firstDeskID = try #require(store.state.desks.first?.id)
-        store.createDesk(label: "Second", preset: .empty)
+        let controller = try #require(manager.controller(for: profileID))
+        let firstDeskID = try #require(controller.state.desks.first?.id)
+        controller.createDesk(label: "Second", preset: .empty)
         let writesBefore = manager.profileSaveCount
         let profileURL = directory.appending(path: "\(profileID.rawValue.uuidString.lowercased()).json")
         try FileManager.default.removeItem(at: profileURL)
         try FileManager.default.createDirectory(at: profileURL, withIntermediateDirectories: false)
 
         // Act
-        store.focusDesk(firstDeskID)
-        #expect(!store.saveDeskPresets())
+        controller.focusDesk(firstDeskID)
+        #expect(!controller.saveDeskPresets())
         #expect(manager.errorMessage != nil)
         try FileManager.default.removeItem(at: profileURL)
         try await Task.sleep(for: .milliseconds(350))
@@ -953,7 +954,7 @@ struct ProfileManagerTests {
         // Assert
         #expect(manager.profileSaveCount == writesBefore + 2)
         let restored = makeProfileManager(directory: directory)
-        #expect(restored.store(for: profileID)?.state.focusedDeskID == firstDeskID)
+        #expect(restored.controller(for: profileID)?.state.focusedDeskID == firstDeskID)
     }
 
     @Test func multipleWindowsRetainSharedRuntimesWhenNonFinalWindowCloses() throws {
@@ -966,30 +967,30 @@ struct ProfileManagerTests {
         let window1 = NSWindow()
         let window2 = NSWindow()
 
-        let store1 = try #require(manager.store(for: route1))
+        let controller1 = try #require(manager.controller(for: route1))
         manager.register(window: window1, for: route1)
-        store1.createDesk(label: "SecondDesk", preset: .empty)
-        let secondDeskID = store1.presentedDeskID
+        controller1.createDesk(label: "SecondDesk", preset: .empty)
+        let secondDeskID = controller1.presentedDeskID
 
         let route2 = try #require(
             manager.routeForOpeningDesk(
                 secondDeskID,
                 profileID: profileID,
                 sourceWindowID: route1.windowID))
-        let store2 = try #require(manager.store(for: route2))
+        let controller2 = try #require(manager.controller(for: route2))
         manager.register(window: window2, for: route2)
 
         let targetBoard = board("SharedBoard")
-        store1.storage.state = DenState(desks: [desk("Main", boards: [targetBoard])], focusedDeskID: DeskID())
-        store1.focusDesk(store1.state.desks[0].id)
-        let runtime = store1.webRuntime(for: targetBoard)
+        controller1.storage.state = DenState(desks: [desk("Main", boards: [targetBoard])], focusedDeskID: DeskID())
+        controller1.focusDesk(controller1.state.desks[0].id)
+        let runtime = controller1.webRuntime(for: targetBoard)
 
         // Act
         manager.unregister(window: window1, for: route1)
 
         // Assert
         #expect(runtime.webView.navigationDelegate != nil)
-        #expect(store2.storage.webRuntimes[targetBoard.id] === runtime)
+        #expect(controller2.storage.webRuntimes[targetBoard.id] === runtime)
     }
 
     @Test func sharedRuntimeDeliversEventsAfterItsOwnerWindowCloses() throws {
@@ -1001,7 +1002,7 @@ struct ProfileManagerTests {
         let route1 = ProfileWindowRoute(windowID: UUID(), profileID: profileID)
         let window1 = NSWindow()
         let window2 = NSWindow()
-        var owner: DenController? = manager.store(for: route1)
+        var owner: DenController? = manager.controller(for: route1)
         manager.register(window: window1, for: route1)
         let firstDeskID = try #require(owner?.presentedDeskID)
         owner?.createDesk(label: "SecondDesk", preset: .empty)
@@ -1011,7 +1012,7 @@ struct ProfileManagerTests {
                 secondDeskID,
                 profileID: profileID,
                 sourceWindowID: route1.windowID))
-        let otherWindowStore = try #require(manager.store(for: route2))
+        let otherWindowController = try #require(manager.controller(for: route2))
         manager.register(window: window2, for: route2)
 
         let targetBoard = BoardState(label: "Terminal", width: 520, workingDirectory: "/tmp")
@@ -1029,7 +1030,7 @@ struct ProfileManagerTests {
 
         // Assert
         #expect(storage.state.desks.first { $0.id == firstDeskID }?.boards.first?.label == "Updated after close")
-        #expect(otherWindowStore.storage === storage)
+        #expect(otherWindowController.storage === storage)
     }
 
     @Test func retainedStorageAndRuntimeDoNotKeepStoreAliveAfterProfileManagerDeallocates() throws {
@@ -1039,21 +1040,21 @@ struct ProfileManagerTests {
         var manager: ProfileManager? = makeProfileManager(directory: directory)
         let profileID = try #require(manager?.personalProfileID)
         let route = ProfileWindowRoute(windowID: UUID(), profileID: profileID)
-        var store: DenController? = manager?.store(for: route)
+        var controller: DenController? = manager?.controller(for: route)
         let targetBoard = board("TargetBoard")
         let targetDesk = desk("Main", boards: [targetBoard])
-        store?.storage.state = DenState(desks: [targetDesk], focusedDeskID: targetDesk.id)
-        store?.focusDesk(targetDesk.id)
-        let runtime = try #require(store?.webRuntime(for: targetBoard))
-        let storage = try #require(store?.storage)
-        weak let weakStore = store
+        controller?.storage.state = DenState(desks: [targetDesk], focusedDeskID: targetDesk.id)
+        controller?.focusDesk(targetDesk.id)
+        let runtime = try #require(controller?.webRuntime(for: targetBoard))
+        let storage = try #require(controller?.storage)
+        weak let weakController = controller
 
         // Act
-        store = nil
+        controller = nil
         manager = nil
 
         // Assert
-        #expect(weakStore == nil)
+        #expect(weakController == nil)
         #expect(storage.webRuntimes[targetBoard.id] === runtime)
     }
 
@@ -1066,13 +1067,13 @@ struct ProfileManagerTests {
         let route = ProfileWindowRoute(windowID: UUID(), profileID: profileID)
         let window = NSWindow()
 
-        let store = try #require(manager.store(for: route))
+        let controller = try #require(manager.controller(for: route))
         manager.register(window: window, for: route)
 
         let targetBoard = board("TargetBoard")
-        store.storage.state = DenState(desks: [desk("Main", boards: [targetBoard])], focusedDeskID: DeskID())
-        store.focusDesk(store.state.desks[0].id)
-        let runtime = store.webRuntime(for: targetBoard)
+        controller.storage.state = DenState(desks: [desk("Main", boards: [targetBoard])], focusedDeskID: DeskID())
+        controller.focusDesk(controller.state.desks[0].id)
+        let runtime = controller.webRuntime(for: targetBoard)
 
         // Act
         manager.unregister(window: window, for: route)
@@ -1096,8 +1097,8 @@ struct ProfileManagerTests {
             websiteDataStore: { _ in .nonPersistent() })
 
         let profile = try #require(manager.createProfile(name: "TestProfile", color: .green))
-        let store = try #require(manager.store(for: profile.id))
-        _ = store.createBoard(urlString: "https://example.com")
+        let controller = try #require(manager.controller(for: profile.id))
+        _ = controller.createBoard(urlString: "https://example.com")
 
         // Act
         let deleted = await manager.deleteProfile(profile.id)
@@ -1123,15 +1124,15 @@ struct ProfileManagerTests {
             websiteDataStore: { _ in .nonPersistent() })
 
         let profile = try #require(manager.createProfile(name: "TestProfile", color: .green))
-        let store = try #require(manager.store(for: profile.id))
-        _ = store.createBoard(urlString: "https://example.com")
+        let controller = try #require(manager.controller(for: profile.id))
+        _ = controller.createBoard(urlString: "https://example.com")
         _ = await manager.deleteProfile(profile.id)
 
         // Act
-        let recoveredStore = manager.store(for: profile.id)
+        let recoveredController = manager.controller(for: profile.id)
 
         // Assert
-        #expect(recoveredStore != nil)
+        #expect(recoveredController != nil)
     }
 
     private func temporaryProfileDirectory() -> URL {

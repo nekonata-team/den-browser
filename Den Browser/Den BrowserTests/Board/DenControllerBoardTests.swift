@@ -49,11 +49,11 @@ struct DenControllerBoardTests {
 
     @Test func zellijBoardsPersistOptionalSessionNames() throws {
         let source = desk("Desk")
-        try withTestController(desks: [source]) { store in
-            store.preferences.setZellijPath("/opt/homebrew/bin/zellij")
+        try withTestController(desks: [source]) { controller in
+            controller.preferences.setZellijPath("/opt/homebrew/bin/zellij")
 
-            store.openBoard(input: ":zellij project-a")
-            let named = try #require(store.focusedBoard)
+            controller.openBoard(input: ":zellij project-a")
+            let named = try #require(controller.focusedBoard)
             #expect(named.isTerminal)
             #expect(named.isZellij)
             #expect(named.zellijSessionName == "project-a")
@@ -69,8 +69,8 @@ struct DenControllerBoardTests {
                 restoredNamed.kind
                     == .terminal(.zellij(ZellijBoardState(sessionName: "project-a"))))
 
-            store.openBoard(input: ":zellij")
-            let welcome = try #require(store.focusedBoard)
+            controller.openBoard(input: ":zellij")
+            let welcome = try #require(controller.focusedBoard)
             #expect(welcome.isZellij)
             #expect(welcome.zellijSessionName == nil)
             #expect(
@@ -90,13 +90,13 @@ struct DenControllerBoardTests {
     @Test func zellijBoardRequiresConfiguredAbsoluteExecutablePath() {
         let source = desk("Desk")
         withTestWindowModel(desks: [source]) { windowModel in
-            let store = windowModel.store
+            let controller = windowModel.controller
             windowModel.showOpenBoardPanel()
-            store.openBoard(input: ":zellij")
+            controller.openBoard(input: ":zellij")
 
-            #expect(store.focusedBoard?.isZellij != true)
+            #expect(controller.focusedBoard?.isZellij != true)
             #expect(windowModel.openBoard.message?.contains("absolute Zellij executable path") == true)
-            #expect(store.recentItems.isEmpty)
+            #expect(controller.recentItems.isEmpty)
         }
     }
 
@@ -107,11 +107,11 @@ struct DenControllerBoardTests {
         ])
         try await withTestWindowModel(desks: [source], terminalCommandRunner: runner) {
             windowModel in
-            let store = windowModel.store
-            store.preferences.setZmxPath("/opt/homebrew/bin/zmx")
+            let controller = windowModel.controller
+            controller.preferences.setZmxPath("/opt/homebrew/bin/zmx")
 
-            store.openBoard(input: ":zmx project-a")
-            let board = try #require(store.focusedBoard)
+            controller.openBoard(input: ":zmx project-a")
+            let board = try #require(controller.focusedBoard)
             #expect(board.isTerminal)
             #expect(board.isZmx)
             #expect(board.zmxSessionName == "project-a")
@@ -131,15 +131,15 @@ struct DenControllerBoardTests {
                                 sessionName: "project-a",
                                 workingDirectory: FileManager.default.homeDirectoryForCurrentUser.path))))
 
-            store.openBoard(input: ":zmx")
+            controller.openBoard(input: ":zmx")
             await waitForZmxSessionLoad(windowModel)
-            #expect(store.focusedDesk?.boards.count == 1)
+            #expect(controller.focusedDesk?.boards.count == 1)
             #expect(windowModel.isZmxSessionsPresented)
-            #expect(store.recentItems.first == .zmx(sessionName: "project-a"))
+            #expect(controller.recentItems.first == .zmx(sessionName: "project-a"))
             #expect(RecentItem.zmx(sessionName: "").displayText == ":zmx")
 
             windowModel.hideZmxSessions()
-            store.openBoard(recentItem: .zmx(sessionName: ""))
+            controller.openBoard(recentItem: .zmx(sessionName: ""))
             await waitForZmxSessionLoad(windowModel)
             #expect(windowModel.isZmxSessionsPresented)
 
@@ -166,8 +166,8 @@ struct DenControllerBoardTests {
         await withTestWindowModel(
             desks: [source], terminalCommandRunner: commandRunner
         ) { windowModel in
-            let store = windowModel.store
-            store.preferences.setZmxPath("/opt/homebrew/bin/zmx")
+            let controller = windowModel.controller
+            controller.preferences.setZmxPath("/opt/homebrew/bin/zmx")
 
             windowModel.showZmxSessions(selectedSessionName: "den-vi")
             await waitForZmxSessionLoad(windowModel)
@@ -189,15 +189,15 @@ struct DenControllerBoardTests {
             windowModel.clearZmxSessionFilter()
 
             windowModel.openZmxSession("den-vi")
-            #expect(store.focusedBoard?.zmxSessionName == "den-vi")
-            #expect(store.focusedBoard?.zmxRootSessionName == "den")
-            #expect(store.recentItems.first == .zmx(sessionName: "den-vi"))
+            #expect(controller.focusedBoard?.zmxSessionName == "den-vi")
+            #expect(controller.focusedBoard?.zmxRootSessionName == "den")
+            #expect(controller.recentItems.first == .zmx(sessionName: "den-vi"))
             #expect(!windowModel.isZmxSessionsPresented)
 
             windowModel.showZmxSessions()
             await waitForZmxSessionLoad(windowModel)
             windowModel.openZmxSession("den-vi")
-            #expect(store.focusedDesk?.boards.count == 1)
+            #expect(controller.focusedDesk?.boards.count == 1)
 
             windowModel.showZmxSessions()
             await waitForZmxSessionLoad(windowModel)
@@ -220,8 +220,8 @@ struct DenControllerBoardTests {
             desks: [desk("Desk", boards: [existing], focusedBoardID: existing.id)],
             terminalCommandRunner: commandRunner
         ) { windowModel in
-            let store = windowModel.store
-            store.preferences.setZmxPath("/opt/homebrew/bin/zmx")
+            let controller = windowModel.controller
+            controller.preferences.setZmxPath("/opt/homebrew/bin/zmx")
             windowModel.showZmxSessions(selectedSessionName: "den-vi")
             await waitForZmxSessionLoad(windowModel)
 
@@ -229,35 +229,35 @@ struct DenControllerBoardTests {
             windowModel.openZmxSession("den-vi")
 
             // Assert
-            #expect(store.focusedDesk?.boards.count == 1)
-            #expect(store.focusedBoard?.id == existing.id)
-            #expect(store.focusedBoard?.zmxRootSessionName == "den")
+            #expect(controller.focusedDesk?.boards.count == 1)
+            #expect(controller.focusedBoard?.id == existing.id)
+            #expect(controller.focusedBoard?.zmxRootSessionName == "den")
         }
     }
 
     @Test func changingWebExtensionHostKeepsTerminalRuntimeAlive() {
         let terminal = BoardState(width: 520, zmxSessionName: "project-a", workingDirectory: "/tmp")
         let source = desk("Desk", boards: [terminal], focusedBoardID: terminal.id)
-        let store = DenController(
+        let controller = DenController(
             state: DenState(desks: [source], focusedDeskID: source.id),
             websiteDataStore: .nonPersistent(),
             sheetNavigation: makeTestSheetNavigationManager(),
             preferences: AppPreferences(defaults: makeTestDefaults()),
             onSave: nil)
-        let runtime = store.terminalRuntime(for: terminal)
+        let runtime = controller.terminalRuntime(for: terminal)
         let host = MV3WebExtensionHost(
             profileID: ProfileID(),
             websiteDataStore: .nonPersistent(),
             userContentController: WKUserContentController())
         let window = host.window(for: UUID())
         defer {
-            store.releaseRuntimes()
+            controller.releaseRuntimes()
             host.dispose()
         }
 
-        store.updateWebExtensionHost(host, window: window)
+        controller.updateWebExtensionHost(host, window: window)
 
-        #expect(store.terminalRuntimes[terminal.id] === runtime)
+        #expect(controller.terminalRuntimes[terminal.id] === runtime)
     }
 
     @Test func zmxBoardDuplicationCreatesRootedIndependentSessions() async throws {
@@ -274,28 +274,28 @@ struct DenControllerBoardTests {
             ])
         try await withTestWindowModel(desks: [source], terminalCommandRunner: runner) {
             windowModel in
-            let store = windowModel.store
-            store.preferences.setZmxPath("/usr/bin/zmx")
+            let controller = windowModel.controller
+            controller.preferences.setZmxPath("/usr/bin/zmx")
 
-            store.duplicateFocusedBoardFromFirstSheet()
-            await store.waitForZmxCommand()
-            let automaticChild = try #require(store.focusedBoard)
-            #expect(store.focusedDesk?.boards.count == 2)
+            controller.duplicateFocusedBoardFromFirstSheet()
+            await controller.waitForZmxCommand()
+            let automaticChild = try #require(controller.focusedBoard)
+            #expect(controller.focusedDesk?.boards.count == 2)
             #expect(automaticChild.zmxSessionName == "den-2")
             #expect(automaticChild.zmxRootSessionName == "den")
             #expect(automaticChild.terminalWorkingDirectory == "/tmp/project")
             #expect(windowModel.temporaryContext == nil)
-            #expect(store.recentItems.isEmpty)
+            #expect(controller.recentItems.isEmpty)
 
-            store.focusBoard(sourceBoard.id)
-            store.duplicateFocusedBoard()
-            await store.waitForZmxCommand()
+            controller.focusBoard(sourceBoard.id)
+            controller.duplicateFocusedBoard()
+            await controller.waitForZmxCommand()
             #expect(windowModel.temporaryContext == .zmxDuplication)
-            #expect(store.focusedDesk?.boards.count == 2)
+            #expect(controller.focusedDesk?.boards.count == 2)
 
-            store.duplicateFocusedZmxBoard(suffix: "vi")
-            await store.waitForZmxCommand()
-            let firstChild = try #require(store.focusedBoard)
+            controller.duplicateFocusedZmxBoard(suffix: "vi")
+            await controller.waitForZmxCommand()
+            let firstChild = try #require(controller.focusedBoard)
             #expect(firstChild.zmxSessionName == "den-vi")
             #expect(firstChild.zmxRootSessionName == "den")
             #expect(firstChild.terminalWorkingDirectory == "/tmp/project")
@@ -311,19 +311,19 @@ struct DenControllerBoardTests {
                                 workingDirectory: "/tmp/project",
                                 rootSessionName: "den"))))
 
-            store.duplicateFocusedBoard()
-            await store.waitForZmxCommand()
-            store.duplicateFocusedZmxBoard(suffix: "nvim")
-            await store.waitForZmxCommand()
-            #expect(store.focusedBoard?.zmxSessionName == "den-nvim")
-            #expect(store.focusedBoard?.zmxRootSessionName == "den")
+            controller.duplicateFocusedBoard()
+            await controller.waitForZmxCommand()
+            controller.duplicateFocusedZmxBoard(suffix: "nvim")
+            await controller.waitForZmxCommand()
+            #expect(controller.focusedBoard?.zmxSessionName == "den-nvim")
+            #expect(controller.focusedBoard?.zmxRootSessionName == "den")
 
-            store.focusBoard(firstChild.id)
-            store.duplicateFocusedBoard()
-            await store.waitForZmxCommand()
-            store.duplicateFocusedZmxBoard(suffix: "vi")
-            await store.waitForZmxCommand()
-            #expect(store.focusedBoard?.zmxSessionName == "den-vi-2")
+            controller.focusBoard(firstChild.id)
+            controller.duplicateFocusedBoard()
+            await controller.waitForZmxCommand()
+            controller.duplicateFocusedZmxBoard(suffix: "vi")
+            await controller.waitForZmxCommand()
+            #expect(controller.focusedBoard?.zmxSessionName == "den-vi-2")
         }
     }
 
@@ -345,131 +345,131 @@ struct DenControllerBoardTests {
         await withTestWindowModel(
             desks: [source], terminalCommandRunner: commandRunner
         ) { windowModel in
-            let store = windowModel.store
-            store.preferences.setZmxPath("/usr/bin/zmx")
+            let controller = windowModel.controller
+            controller.preferences.setZmxPath("/usr/bin/zmx")
 
-            store.duplicateFocusedBoard()
-            await store.waitForZmxCommand()
+            controller.duplicateFocusedBoard()
+            await controller.waitForZmxCommand()
             #expect(windowModel.zmxDuplicationRootSessionName == "den")
-            store.duplicateFocusedZmxBoard(suffix: "nvim")
-            await store.waitForZmxCommand()
-            #expect(store.focusedBoard?.zmxSessionName == "den-nvim")
-            #expect(store.focusedBoard?.zmxRootSessionName == "den")
+            controller.duplicateFocusedZmxBoard(suffix: "nvim")
+            await controller.waitForZmxCommand()
+            #expect(controller.focusedBoard?.zmxSessionName == "den-nvim")
+            #expect(controller.focusedBoard?.zmxRootSessionName == "den")
         }
     }
 
     @Test func invalidTerminalInputDoesNotCreateRecentItem() {
         let source = desk("Desk")
-        let store = DenController(state: DenState(desks: [source], focusedDeskID: source.id))
+        let controller = DenController(state: DenState(desks: [source], focusedDeskID: source.id))
 
-        store.openBoard(input: ":terminal /missing/den-browser-\(UUID().uuidString)")
+        controller.openBoard(input: ":terminal /missing/den-browser-\(UUID().uuidString)")
 
-        #expect(store.focusedDesk?.boards.isEmpty == true)
-        #expect(store.recentItems.isEmpty)
+        #expect(controller.focusedDesk?.boards.isEmpty == true)
+        #expect(controller.recentItems.isEmpty)
     }
 
     @Test func popupBoardKeepsItsOpenerRequestAndUsesTheProvidedWebView() throws {
         // Arrange
         let sourceBoard = BoardState(label: "Source", width: 520, currentSheetURL: nil)
-        let store = popupStore(for: sourceBoard)
-        defer { store.releaseRuntimes() }
+        let controller = popupController(for: sourceBoard)
+        defer { controller.releaseRuntimes() }
 
         let popupURL = try #require(URL(string: "https://login.example/authorize"))
         let backgroundPopup = WebBoardWKWebView(frame: .zero, configuration: WKWebViewConfiguration())
 
         // Act
         #expect(
-            store.createPopupBoard(
+            controller.createPopupBoard(
                 backgroundPopup,
                 requestedURL: popupURL,
                 fromBoardID: sourceBoard.id,
                 modifierFlags: .command))
-        let backgroundBoard = try #require(store.state.desks[0].boards.first { $0.id != sourceBoard.id })
+        let backgroundBoard = try #require(controller.state.desks[0].boards.first { $0.id != sourceBoard.id })
 
         // Assert
-        #expect(store.focusedBoard?.id == sourceBoard.id)
+        #expect(controller.focusedBoard?.id == sourceBoard.id)
         #expect(backgroundBoard.currentSheetURL == popupURL)
         #expect(backgroundBoard.firstSheetURL == popupURL)
-        #expect(store.webRuntimes[backgroundBoard.id]?.webView === backgroundPopup)
+        #expect(controller.webRuntimes[backgroundBoard.id]?.webView === backgroundPopup)
         #expect(backgroundPopup.url == nil)
     }
 
     @Test func commandShiftPopupFocusesItsBoard() throws {
         // Arrange
         let sourceBoard = BoardState(label: "Source", width: 520, currentSheetURL: nil)
-        let store = popupStore(for: sourceBoard)
-        defer { store.releaseRuntimes() }
+        let controller = popupController(for: sourceBoard)
+        defer { controller.releaseRuntimes() }
         let popup = WebBoardWKWebView(frame: .zero, configuration: WKWebViewConfiguration())
 
         // Act
         #expect(
-            store.createPopupBoard(
+            controller.createPopupBoard(
                 popup,
                 requestedURL: nil,
                 fromBoardID: sourceBoard.id,
                 modifierFlags: [.command, .shift]))
 
         // Assert
-        let focusedBoard = try #require(store.focusedBoard)
+        let focusedBoard = try #require(controller.focusedBoard)
         #expect(focusedBoard.id != sourceBoard.id)
         #expect(focusedBoard.currentSheetURL == nil)
-        #expect(store.webRuntimes[focusedBoard.id]?.webView === popup)
+        #expect(controller.webRuntimes[focusedBoard.id]?.webView === popup)
         #expect(popup.url == nil)
     }
 
     @Test func popupBoardFocusesByDefault() throws {
         // Arrange
         let sourceBoard = BoardState(label: "Source", width: 520, currentSheetURL: nil)
-        let store = popupStore(for: sourceBoard)
-        defer { store.releaseRuntimes() }
+        let controller = popupController(for: sourceBoard)
+        defer { controller.releaseRuntimes() }
         let popup = WebBoardWKWebView(frame: .zero, configuration: WKWebViewConfiguration())
 
         // Act
         #expect(
-            store.createPopupBoard(
+            controller.createPopupBoard(
                 popup,
                 requestedURL: nil,
                 fromBoardID: sourceBoard.id,
                 modifierFlags: []))
 
         // Assert
-        let focusedBoard = try #require(store.focusedBoard)
+        let focusedBoard = try #require(controller.focusedBoard)
         #expect(focusedBoard.id != sourceBoard.id)
-        #expect(store.webRuntimes[focusedBoard.id]?.webView === popup)
+        #expect(controller.webRuntimes[focusedBoard.id]?.webView === popup)
     }
 
     @Test func closingPopupWebViewRemovesItsBoard() throws {
         // Arrange
         let sourceBoard = BoardState(label: "Source", width: 520, currentSheetURL: nil)
-        let store = popupStore(for: sourceBoard)
-        defer { store.releaseRuntimes() }
+        let controller = popupController(for: sourceBoard)
+        defer { controller.releaseRuntimes() }
         let popup = WebBoardWKWebView(frame: .zero, configuration: WKWebViewConfiguration())
         #expect(
-            store.createPopupBoard(
+            controller.createPopupBoard(
                 popup,
                 requestedURL: nil,
                 fromBoardID: sourceBoard.id,
                 modifierFlags: []))
-        let popupBoard = try #require(store.focusedBoard)
+        let popupBoard = try #require(controller.focusedBoard)
 
         // Act
-        store.webRuntimes[popupBoard.id]?.webViewDidClose(popup)
+        controller.webRuntimes[popupBoard.id]?.webViewDidClose(popup)
 
         // Assert
-        #expect(store.board(for: popupBoard.id) == nil)
-        #expect(store.webRuntimes[popupBoard.id] == nil)
+        #expect(controller.board(for: popupBoard.id) == nil)
+        #expect(controller.webRuntimes[popupBoard.id] == nil)
     }
 
     @Test func windowOpenPopupPreservesOpenerPostMessage() async throws {
         // Arrange
         let sourceBoard = BoardState(label: "Source", width: 520, currentSheetURL: nil)
-        let store = popupStore(for: sourceBoard)
-        defer { store.releaseRuntimes() }
+        let controller = popupController(for: sourceBoard)
+        defer { controller.releaseRuntimes() }
         let configuration = WKWebViewConfiguration()
-        configuration.websiteDataStore = store.websiteDataStore
-        configuration.userContentController = store.sheetNavigation.userContentController
+        configuration.websiteDataStore = controller.websiteDataStore
+        configuration.userContentController = controller.sheetNavigation.userContentController
         let sourceWebView = WebBoardWKWebView(frame: .zero, configuration: configuration)
-        let sourceRuntime = store.webRuntime(for: sourceBoard, popupWebView: sourceWebView)
+        let sourceRuntime = controller.webRuntime(for: sourceBoard, popupWebView: sourceWebView)
         let waiter = SheetInteractionWebViewLoadWaiter()
         await waiter.load(
             """
@@ -488,8 +488,8 @@ struct DenControllerBoardTests {
         // Act
         _ = try await sourceRuntime.webView.evaluateJavaScript(
             "window.open('about:blank', '_blank'); true")
-        let popupBoard = try #require(store.state.desks[0].boards.first { $0.id != sourceBoard.id })
-        let popupRuntime = try #require(store.webRuntimes[popupBoard.id])
+        let popupBoard = try #require(controller.state.desks[0].boards.first { $0.id != sourceBoard.id })
+        let popupRuntime = try #require(controller.webRuntimes[popupBoard.id])
         _ = try await popupRuntime.webView.evaluateJavaScript(
             "window.opener.postMessage('popup-message', '*')")
         try await SheetInteraction.waitForFunction(
@@ -506,9 +506,9 @@ struct DenControllerBoardTests {
     @Test func timerTriggeredJavaScriptPopupCreatesBoard() async throws {
         // Arrange
         let sourceBoard = BoardState(label: "Source", width: 520, currentSheetURL: nil)
-        let store = popupStore(for: sourceBoard)
-        defer { store.releaseRuntimes() }
-        let sourceRuntime = store.webRuntime(for: sourceBoard)
+        let controller = popupController(for: sourceBoard)
+        defer { controller.releaseRuntimes() }
+        let sourceRuntime = controller.webRuntime(for: sourceBoard)
         let waiter = SheetInteractionWebViewLoadWaiter()
         await waiter.load(
             """
@@ -532,48 +532,48 @@ struct DenControllerBoardTests {
             timeout: 5)
 
         // Assert
-        #expect(store.state.desks[0].boards.count == 2)
-        #expect(store.state.desks[0].boards[1].id != sourceBoard.id)
+        #expect(controller.state.desks[0].boards.count == 2)
+        #expect(controller.state.desks[0].boards[1].id != sourceBoard.id)
     }
 
     @Test func terminalBoardsCreateDuplicateRemoveAndRestoreWithRecentItems() throws {
         let source = desk("Desk")
-        let store = DenController(state: DenState(desks: [source], focusedDeskID: source.id))
+        let controller = DenController(state: DenState(desks: [source], focusedDeskID: source.id))
         let directory = FileManager.default.temporaryDirectory.standardizedFileURL.path
 
-        store.openBoard(input: ":terminal \(directory)", preferredWidth: 640)
+        controller.openBoard(input: ":terminal \(directory)", preferredWidth: 640)
 
-        let original = try #require(store.focusedBoard)
+        let original = try #require(controller.focusedBoard)
         #expect(original.isTerminal)
         #expect(original.terminalWorkingDirectory == directory)
         #expect(original.width == 640)
-        #expect(store.recentItems == [.terminal(workingDirectory: directory)])
+        #expect(controller.recentItems == [.terminal(workingDirectory: directory)])
 
-        store.duplicateFocusedBoard()
-        let duplicate = try #require(store.focusedBoard)
+        controller.duplicateFocusedBoard()
+        let duplicate = try #require(controller.focusedBoard)
         #expect(duplicate.id != original.id)
         #expect(duplicate.terminalWorkingDirectory == directory)
 
-        store.removeFocusedBoard()
-        store.restoreRecentlyRemovedBoard()
-        #expect(store.focusedBoard?.id == duplicate.id)
-        #expect(store.focusedBoard?.terminalWorkingDirectory == directory)
+        controller.removeFocusedBoard()
+        controller.restoreRecentlyRemovedBoard()
+        #expect(controller.focusedBoard?.id == duplicate.id)
+        #expect(controller.focusedBoard?.terminalWorkingDirectory == directory)
     }
 
     @Test func terminalFocusNotificationDoesNotExitDenMode() {
         let terminal = BoardState(width: 520, workingDirectory: "/tmp")
         let source = desk("Desk", boards: [terminal], focusedBoardID: terminal.id)
-        let store = DenController(state: DenState(desks: [source], focusedDeskID: source.id))
-        let composition = DenWindowComposition(store: store)
+        let controller = DenController(state: DenState(desks: [source], focusedDeskID: source.id))
+        let composition = DenWindowComposition(controller: controller)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
         windowModel.isDenMode = true
 
-        store.terminalRuntime(for: terminal).terminalDidChangeFocus(true)
+        controller.terminalRuntime(for: terminal).terminalDidChangeFocus(true)
 
         #expect(windowModel.isDenMode)
-        #expect(store.focusedBoard?.id == terminal.id)
+        #expect(controller.focusedBoard?.id == terminal.id)
     }
 
     @Test func boardLinkFocusIntentDoesNotConsumeNewerIntent() {
@@ -581,12 +581,12 @@ struct DenControllerBoardTests {
         let secondBoard = BoardState(label: "Second", width: 520, currentSheetURL: nil)
         let source = desk("Desk", boards: [firstBoard, secondBoard], focusedBoardID: firstBoard.id)
         withTestWindowModel(desks: [source]) { windowModel in
-            let store = windowModel.store
-            store.prepareBoardLinkFocus(firstBoard.id)
+            let controller = windowModel.controller
+            controller.prepareBoardLinkFocus(firstBoard.id)
             #expect(windowModel.pendingBoardLinkFocus != nil)
             guard let firstIntent = windowModel.pendingBoardLinkFocus else { return }
             #expect(firstIntent.origin == .interactive)
-            store.prepareBoardLinkFocus(secondBoard.id)
+            controller.prepareBoardLinkFocus(secondBoard.id)
             #expect(windowModel.pendingBoardLinkFocus != nil)
             guard let secondIntent = windowModel.pendingBoardLinkFocus else { return }
 
@@ -602,33 +602,33 @@ struct DenControllerBoardTests {
         let source = BoardState(label: "Source", width: 520, currentSheetURL: nil)
         let desk = desk("Desk", boards: [source], focusedBoardID: source.id)
         withTestWindowModel(desks: [desk]) { windowModel in
-            let store = windowModel.store
-            store.prepareBoardLinkFocus(source.id)
-            #expect(store.createBoard(urlString: "https://focused.example", afterBoardID: source.id) != nil)
+            let controller = windowModel.controller
+            controller.prepareBoardLinkFocus(source.id)
+            #expect(controller.createBoard(urlString: "https://focused.example", afterBoardID: source.id) != nil)
 
             #expect(windowModel.pendingBoardLinkFocus == nil)
-            #expect(store.focusedBoard?.currentSheetURL?.host == "focused.example")
+            #expect(controller.focusedBoard?.currentSheetURL?.host == "focused.example")
         }
     }
 
     @Test func inspectionBoardLinksToWebBoardAndReusesIt() throws {
         let target = BoardState(label: "Target", width: 520, currentSheetURL: URL(string: "https://example.com"))
         let sourceDesk = desk("Desk", boards: [target], focusedBoardID: target.id)
-        let store = DenController(state: DenState(desks: [sourceDesk], focusedDeskID: sourceDesk.id))
+        let controller = DenController(state: DenState(desks: [sourceDesk], focusedDeskID: sourceDesk.id))
 
-        let inspectionID = try #require(store.createInspectionBoard(targetBoardID: target.id))
-        let inspection = try #require(store.board(for: inspectionID))
+        let inspectionID = try #require(controller.createInspectionBoard(targetBoardID: target.id))
+        let inspection = try #require(controller.board(for: inspectionID))
 
-        #expect(store.state.desks[0].boards.map(\.id) == [target.id, inspectionID])
-        #expect(store.focusedBoard?.id == inspectionID)
+        #expect(controller.state.desks[0].boards.map(\.id) == [target.id, inspectionID])
+        #expect(controller.focusedBoard?.id == inspectionID)
         #expect(inspection.isInspection)
         #expect(!inspection.isWeb)
         #expect(!inspection.isTerminal)
         #expect(inspection.isSideBoard)
         #expect(inspection.sideBoardTargetBoardID == target.id)
         #expect(try JSONDecoder().decode(BoardState.self, from: JSONEncoder().encode(inspection)) == inspection)
-        #expect(store.createInspectionBoard(targetBoardID: target.id) == inspectionID)
-        #expect(store.state.desks[0].boards.count == 2)
+        #expect(controller.createInspectionBoard(targetBoardID: target.id) == inspectionID)
+        #expect(controller.state.desks[0].boards.count == 2)
     }
 
     @Test(arguments: [false, true], [false, true])
@@ -644,18 +644,18 @@ struct DenControllerBoardTests {
             side.role = .sideBoard(targetBoardID: target.id)
         }
         let sourceDesk = desk("Desk", boards: [target, side], focusedBoardID: side.id)
-        let store = DenController(state: DenState(desks: [sourceDesk], focusedDeskID: sourceDesk.id))
+        let controller = DenController(state: DenState(desks: [sourceDesk], focusedDeskID: sourceDesk.id))
 
         // Act
         if fromFirstSheet {
-            store.duplicateFocusedBoardFromFirstSheet()
+            controller.duplicateFocusedBoardFromFirstSheet()
         } else {
-            store.duplicateFocusedBoard()
+            controller.duplicateFocusedBoard()
         }
 
         // Assert
-        #expect(store.state.desks[0].boards.map(\.id) == [target.id, side.id])
-        #expect(store.focusedBoard?.id == side.id)
+        #expect(controller.state.desks[0].boards.map(\.id) == [target.id, side.id])
+        #expect(controller.focusedBoard?.id == side.id)
     }
 
     @Test(arguments: [0, 1])
@@ -669,13 +669,13 @@ struct DenControllerBoardTests {
             "Desk",
             boards: [target, side, following],
             focusedBoardID: [target.id, side.id][focusedIndex])
-        let store = DenController(state: DenState(desks: [sourceDesk], focusedDeskID: sourceDesk.id))
+        let controller = DenController(state: DenState(desks: [sourceDesk], focusedDeskID: sourceDesk.id))
 
         // Act
-        let insertedID = try #require(store.createBoard(urlString: "https://new.example"))
+        let insertedID = try #require(controller.createBoard(urlString: "https://new.example"))
 
         // Assert
-        #expect(store.state.desks[0].boards.map(\.id) == [target.id, side.id, insertedID, following.id])
+        #expect(controller.state.desks[0].boards.map(\.id) == [target.id, side.id, insertedID, following.id])
     }
 
     @Test(arguments: await [BoardState.minimumWidth, BuiltInDeskPreset.boardWidth, BoardState.maximumWidth])
@@ -684,11 +684,11 @@ struct DenControllerBoardTests {
         let target = BoardState(
             label: "Target", width: targetWidth, currentSheetURL: URL(string: "https://example.com"))
         let sourceDesk = desk("Desk", boards: [target], focusedBoardID: target.id)
-        let store = DenController(state: DenState(desks: [sourceDesk], focusedDeskID: sourceDesk.id))
+        let controller = DenController(state: DenState(desks: [sourceDesk], focusedDeskID: sourceDesk.id))
 
         // Act
-        let inspectionID = try #require(store.createInspectionBoard(targetBoardID: target.id))
-        let inspection = try #require(store.board(for: inspectionID))
+        let inspectionID = try #require(controller.createInspectionBoard(targetBoardID: target.id))
+        let inspection = try #require(controller.board(for: inspectionID))
 
         // Assert
         #expect(inspection.width == 360)
@@ -743,17 +743,17 @@ struct DenControllerBoardTests {
         let other = BoardState(label: "Other", width: 520, currentSheetURL: nil)
         let desk = desk("Desk", boards: [source, other], focusedBoardID: source.id)
         try withTestWindowModel(desks: [desk]) { windowModel in
-            let store = windowModel.store
+            let controller = windowModel.controller
             #expect(
-                store.createBoard(
+                controller.createBoard(
                     urlString: "https://background.example",
                     afterBoardID: source.id,
                     focus: false) != nil)
             let intent = try #require(windowModel.pendingBoardLinkFocus)
             #expect(intent.origin == .interactive)
-            #expect(store.focusedBoard?.id == source.id)
+            #expect(controller.focusedBoard?.id == source.id)
 
-            store.focusBoard(other.id)
+            controller.focusBoard(other.id)
 
             #expect(windowModel.pendingBoardLinkFocus == nil)
             windowModel.consumeBoardLinkFocus(intent)
@@ -766,9 +766,9 @@ struct DenControllerBoardTests {
         let other = BoardState(label: "Other", width: 520, currentSheetURL: nil)
         let desk = desk("Desk", boards: [source, other], focusedBoardID: source.id)
         try withTestWindowModel(desks: [desk]) { windowModel in
-            let store = windowModel.store
+            let controller = windowModel.controller
             #expect(
-                store.createBoard(
+                controller.createBoard(
                     urlString: "https://cli.example",
                     afterBoardID: source.id,
                     focus: false,
@@ -784,12 +784,12 @@ struct DenControllerBoardTests {
         let focused = BoardState(label: "Focused", width: 520, currentSheetURL: nil)
         let source = desk("Desk", boards: [left, focused], focusedBoardID: focused.id)
         try withTestWindowModel(desks: [source]) { windowModel in
-            let store = windowModel.store
-            store.removeBoard(left.id, origin: .cli)
+            let controller = windowModel.controller
+            controller.removeBoard(left.id, origin: .cli)
 
             let intent = try #require(windowModel.pendingBoardRemoval)
             #expect(intent.origin == .cli)
-            #expect(store.focusedBoard?.id == focused.id)
+            #expect(controller.focusedBoard?.id == focused.id)
         }
     }
 
@@ -797,159 +797,159 @@ struct DenControllerBoardTests {
         // Arrange
         let terminal = BoardState(width: 520, workingDirectory: "/tmp")
         let source = desk("Desk", boards: [terminal], focusedBoardID: terminal.id)
-        let store = DenController(state: DenState(desks: [source], focusedDeskID: source.id))
+        let controller = DenController(state: DenState(desks: [source], focusedDeskID: source.id))
         let url = try #require(URL(string: "https://terminal-link.example/path"))
-        defer { store.releaseRuntimes() }
+        defer { controller.releaseRuntimes() }
 
         // Act
-        store.terminalRuntime(for: terminal).terminalDidRequestOpenURL(url.absoluteString, kind: .text)
+        controller.terminalRuntime(for: terminal).terminalDidRequestOpenURL(url.absoluteString, kind: .text)
 
         // Assert
-        let createdBoard = try #require(store.focusedDesk?.boards.last)
+        let createdBoard = try #require(controller.focusedDesk?.boards.last)
         #expect(createdBoard.currentSheetURL == url)
-        #expect(store.focusedDesk?.focusedBoardID == createdBoard.id)
-        #expect(store.state.drawerItems.isEmpty)
-        #expect(store.recentItems == [.url(url)])
+        #expect(controller.focusedDesk?.focusedBoardID == createdBoard.id)
+        #expect(controller.state.drawerItems.isEmpty)
+        #expect(controller.recentItems == [.url(url)])
     }
 
     @Test func searchesUseCurrentEngineAndPreserveQueryAndExplicitURLs() throws {
-        try withTestController { store in
+        try withTestController { controller in
             let query = "日本語 & C++ # Swift?"
             for engine in SearchEngine.allCases {
-                store.preferences.setSearchEngine(engine)
-                store.openBoard(recentItem: .search(query))
-                let url = try #require(store.focusedBoard?.currentSheetURL)
+                controller.preferences.setSearchEngine(engine)
+                controller.openBoard(recentItem: .search(query))
+                let url = try #require(controller.focusedBoard?.currentSheetURL)
                 let components = try #require(URLComponents(url: url, resolvingAgainstBaseURL: false))
                 #expect(components.host == URL(string: engine.searchURL)?.host)
                 #expect(components.path == URL(string: engine.searchURL)?.path)
                 let queryParameter = engine == .yahooJapan ? "p" : "q"
                 #expect(components.queryItems == [URLQueryItem(name: queryParameter, value: query)])
                 #expect(components.fragment == nil)
-                #expect(store.recentItems.first == .search(query))
+                #expect(controller.recentItems.first == .search(query))
             }
-            let existingURL = store.focusedBoard?.currentSheetURL
-            store.preferences.setSearchEngine(.duckDuckGo)
-            #expect(store.focusedBoard?.currentSheetURL == existingURL)
-            #expect(store.navigateFocusedBoard(urlString: "example.com/path?q=literal"))
-            #expect(store.focusedBoard?.currentSheetURL == URL(string: "https://example.com/path?q=literal"))
-            #expect(store.navigateFocusedBoard(urlString: query))
-            #expect(store.focusedBoard?.currentSheetURL?.host == "duckduckgo.com")
+            let existingURL = controller.focusedBoard?.currentSheetURL
+            controller.preferences.setSearchEngine(.duckDuckGo)
+            #expect(controller.focusedBoard?.currentSheetURL == existingURL)
+            #expect(controller.navigateFocusedBoard(urlString: "example.com/path?q=literal"))
+            #expect(controller.focusedBoard?.currentSheetURL == URL(string: "https://example.com/path?q=literal"))
+            #expect(controller.navigateFocusedBoard(urlString: query))
+            #expect(controller.focusedBoard?.currentSheetURL?.host == "duckduckgo.com")
         }
     }
 
     @Test func openBoardAcceptsWebHostsAndRejectsInvalidURLs() throws {
-        try withTestController { store in
+        try withTestController { controller in
 
-            _ = store.createBoard(urlString: "localhost:3000")
-            let localURL = try #require(store.focusedDesk?.boards.last?.currentSheetURL)
+            _ = controller.createBoard(urlString: "localhost:3000")
+            let localURL = try #require(controller.focusedDesk?.boards.last?.currentSheetURL)
             #expect(localURL.scheme == "https")
             #expect(localURL.host == "localhost")
             #expect(localURL.port == 3000)
 
-            _ = store.createBoard(urlString: "swift: concurrency")
+            _ = controller.createBoard(urlString: "swift: concurrency")
             let searchURL = try #require(
-                store.focusedDesk?.boards.last?.currentSheetURL
+                controller.focusedDesk?.boards.last?.currentSheetURL
                     .flatMap { URLComponents(url: $0, resolvingAgainstBaseURL: false) })
             #expect(searchURL.host == "www.google.com")
             #expect(searchURL.queryItems == [URLQueryItem(name: "q", value: "swift: concurrency")])
 
-            let boardCount = try #require(store.focusedDesk?.boards.count)
-            #expect(store.createBoard(urlString: "https://") == nil)
-            #expect(store.createBoard(urlString: "ftp://example.com") == nil)
-            #expect(store.focusedDesk?.boards.count == boardCount)
+            let boardCount = try #require(controller.focusedDesk?.boards.count)
+            #expect(controller.createBoard(urlString: "https://") == nil)
+            #expect(controller.createBoard(urlString: "ftp://example.com") == nil)
+            #expect(controller.focusedDesk?.boards.count == boardCount)
         }
     }
 
     @Test func localFileURLParticipatesInBoardRecentDrawerAndPresetWorkflows() throws {
         let source = desk("Desk")
-        let store = DenController(state: DenState(desks: [source], focusedDeskID: source.id))
+        let controller = DenController(state: DenState(desks: [source], focusedDeskID: source.id))
         let fileURL = try #require(URL(string: "file:///tmp/Den%20Browser/index.html#notes"))
 
-        store.openBoard(input: fileURL.absoluteString)
+        controller.openBoard(input: fileURL.absoluteString)
 
-        #expect(store.focusedBoard?.currentSheetURL == fileURL)
-        #expect(store.focusedBoard?.firstSheetURL == fileURL)
-        #expect(store.recentItems.first == .url(fileURL))
+        #expect(controller.focusedBoard?.currentSheetURL == fileURL)
+        #expect(controller.focusedBoard?.firstSheetURL == fileURL)
+        #expect(controller.recentItems.first == .url(fileURL))
 
-        store.keepFocusedSheetInDrawer()
-        #expect(store.state.drawerItems.first?.url == fileURL)
+        controller.keepFocusedSheetInDrawer()
+        #expect(controller.state.drawerItems.first?.url == fileURL)
 
-        #expect(store.saveFocusedDeskAsPreset(label: "Local Files") == .created)
-        #expect(store.deskPresets.first?.boards.first?.initialSheetURL == fileURL)
+        #expect(controller.saveFocusedDeskAsPreset(label: "Local Files") == .created)
+        #expect(controller.deskPresets.first?.boards.first?.initialSheetURL == fileURL)
     }
 
     @Test func editingFocusedBoardLinkReplacesCurrentSheet() throws {
         let board = board("Board", url: "https://before.example/")
         let source = desk("Desk", boards: [board], focusedBoardID: board.id)
-        let store = DenController(state: DenState(desks: [source], focusedDeskID: source.id))
-        let composition = DenWindowComposition(store: store)
+        let controller = DenController(state: DenState(desks: [source], focusedDeskID: source.id))
+        let composition = DenWindowComposition(controller: controller)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
 
         windowModel.showEditBoardLinkPanel()
 
-        #expect(store.navigateFocusedBoard(urlString: "after.example/path"))
-        #expect(store.focusedBoard?.currentSheetURL == URL(string: "https://after.example/path"))
-        #expect(store.focusedBoard?.firstSheetURL == URL(string: "https://before.example/"))
+        #expect(controller.navigateFocusedBoard(urlString: "after.example/path"))
+        #expect(controller.focusedBoard?.currentSheetURL == URL(string: "https://after.example/path"))
+        #expect(controller.focusedBoard?.firstSheetURL == URL(string: "https://before.example/"))
         #expect(windowModel.temporaryContext == nil)
         #expect(!windowModel.isDenMode)
     }
 
     @Test func newBoardKeepsFirstSheetWhenCurrentSheetChanges() throws {
         let source = desk("Desk")
-        let store = DenController(state: DenState(desks: [source], focusedDeskID: source.id))
+        let controller = DenController(state: DenState(desks: [source], focusedDeskID: source.id))
 
-        _ = store.createBoard(urlString: "https://start.example/")
-        let firstSheetURL = try #require(store.focusedBoard?.firstSheetURL)
+        _ = controller.createBoard(urlString: "https://start.example/")
+        let firstSheetURL = try #require(controller.focusedBoard?.firstSheetURL)
 
-        #expect(store.navigateFocusedBoard(urlString: "https://later.example/"))
-        #expect(store.focusedBoard?.currentSheetURL == URL(string: "https://later.example/"))
-        #expect(store.focusedBoard?.firstSheetURL == firstSheetURL)
+        #expect(controller.navigateFocusedBoard(urlString: "https://later.example/"))
+        #expect(controller.focusedBoard?.currentSheetURL == URL(string: "https://later.example/"))
+        #expect(controller.focusedBoard?.firstSheetURL == firstSheetURL)
     }
 
     @Test func openBoardCanInsertAfterSpecifiedBoard() {
         let boards = [board("First"), board("Focused"), board("Last")]
         let source = desk("Desk", boards: boards, focusedBoardID: boards[1].id)
-        let store = DenController(state: DenState(desks: [source], focusedDeskID: source.id))
+        let controller = DenController(state: DenState(desks: [source], focusedDeskID: source.id))
 
-        store.openBoard(input: "example.com", afterBoardID: boards.last?.id)
+        controller.openBoard(input: "example.com", afterBoardID: boards.last?.id)
 
-        #expect(store.focusedDesk?.boards.map(\.label) == ["First", "Focused", "Last", "example.com"])
-        #expect(store.focusedDesk?.focusedBoardID == store.focusedDesk?.boards.last?.id)
+        #expect(controller.focusedDesk?.boards.map(\.label) == ["First", "Focused", "Last", "example.com"])
+        #expect(controller.focusedDesk?.focusedBoardID == controller.focusedDesk?.boards.last?.id)
     }
 
     @Test func newBoardKeepsPreferredWidthBeyondManualResizeLimit() {
         for width in [BoardState.minimumWidth, BoardState.maximumWidth, 2_480] {
             let source = desk("Desk")
-            let store = DenController(state: DenState(desks: [source], focusedDeskID: source.id))
+            let controller = DenController(state: DenState(desks: [source], focusedDeskID: source.id))
 
-            _ = store.createBoard(urlString: "https://example.com", preferredWidth: width)
+            _ = controller.createBoard(urlString: "https://example.com", preferredWidth: width)
 
-            #expect(store.focusedBoard?.width == width)
+            #expect(controller.focusedBoard?.width == width)
         }
     }
 
     @Test func newBoardInheritsFocusedWidthWhenPreferredWidthIsUnset() {
         let source = board("Source", width: 760)
         let focusedDesk = desk("Focused", boards: [source], focusedBoardID: source.id)
-        let focusedStore = DenController(state: DenState(desks: [focusedDesk], focusedDeskID: focusedDesk.id))
-        _ = focusedStore.createBoard(urlString: "https://example.com")
-        #expect(focusedStore.focusedBoard?.width == 760)
+        let focusedController = DenController(state: DenState(desks: [focusedDesk], focusedDeskID: focusedDesk.id))
+        _ = focusedController.createBoard(urlString: "https://example.com")
+        #expect(focusedController.focusedBoard?.width == 760)
     }
 
     @Test func emptyDeskUsesTwoBoardFitWidthAsDefault() {
         let emptyDesk = desk("Empty")
         withTestWindowModel(desks: [emptyDesk]) { windowModel in
-            let store = windowModel.store
+            let controller = windowModel.controller
 
-            #expect(store.inheritedBoardWidth == BuiltInDeskPreset.boardWidth)
+            #expect(controller.inheritedBoardWidth == BuiltInDeskPreset.boardWidth)
 
             windowModel.updateBoardLayout(availableWidth: 1376, spacing: 12)
             #expect(windowModel.defaultBoardWidth == 682)
 
-            _ = store.createBoard(urlString: "https://example.com", preferredWidth: windowModel.defaultBoardWidth)
-            #expect(store.focusedBoard?.width == 682)
+            _ = controller.createBoard(urlString: "https://example.com", preferredWidth: windowModel.defaultBoardWidth)
+            #expect(controller.focusedBoard?.width == 682)
         }
     }
 
@@ -957,59 +957,59 @@ struct DenControllerBoardTests {
         let emptyDesk = desk("Empty")
         let essential = Essential(name: "Search", key: "s", input: "https://example.com")
         withTestWindowModel(desks: [emptyDesk]) { windowModel in
-            let store = windowModel.store
-            #expect(store.preferences.setEssentials([essential]))
+            let controller = windowModel.controller
+            #expect(controller.preferences.setEssentials([essential]))
             windowModel.updateBoardLayout(availableWidth: 1000, spacing: 12)
 
             windowModel.launchEssential(id: essential.id)
-            #expect(store.focusedBoard?.width == 494)
+            #expect(controller.focusedBoard?.width == 494)
 
-            store.storage.state.desks[0].boards.removeAll()
+            controller.storage.state.desks[0].boards.removeAll()
             let pasteboard = NSPasteboard.withUniqueName()
             pasteboard.clearContents()
             pasteboard.setString("https://clipboard.example.com", forType: .string)
-            store.openBoardFromClipboard(pasteboard: pasteboard, preferredWidth: windowModel.defaultBoardWidth)
-            #expect(store.focusedBoard?.width == 494)
+            controller.openBoardFromClipboard(pasteboard: pasteboard, preferredWidth: windowModel.defaultBoardWidth)
+            #expect(controller.focusedBoard?.width == 494)
         }
     }
 
     @Test func emptyDeskReceivesFocusedBoardIDWhenAddingBoardInBackground() {
         let firstDesk = desk("First", boards: [board("Main")], focusedBoardID: nil)
         let emptyDesk = desk("Empty")
-        let store = DenController(state: DenState(desks: [firstDesk, emptyDesk], focusedDeskID: firstDesk.id))
+        let controller = DenController(state: DenState(desks: [firstDesk, emptyDesk], focusedDeskID: firstDesk.id))
 
         // Open board on emptyDesk without focus
-        _ = store.createBoard(
+        _ = controller.createBoard(
             urlString: "https://example.com",
             focus: false)
-        #expect(store.state.desks[0].boards.count == 2)
+        #expect(controller.state.desks[0].boards.count == 2)
 
         // Focus empty desk and open in background
-        store.focusDesk(emptyDesk.id)
-        #expect(store.state.desks[1].focusedBoardID == nil)
-        _ = store.createBoard(
+        controller.focusDesk(emptyDesk.id)
+        #expect(controller.state.desks[1].focusedBoardID == nil)
+        _ = controller.createBoard(
             urlString: "https://example.com",
             focus: false)
 
-        #expect(store.state.desks[1].boards.count == 1)
-        #expect(store.state.desks[1].focusedBoardID == store.state.desks[1].boards[0].id)
+        #expect(controller.state.desks[1].boards.count == 1)
+        #expect(controller.state.desks[1].focusedBoardID == controller.state.desks[1].boards[0].id)
     }
 
     @Test func updateBoardKeepsCurrentSheetForUnsupportedURL() throws {
         let board = board("Board", url: "https://before.example/")
         let source = desk("Desk", boards: [board], focusedBoardID: board.id)
         var savedState: DenState?
-        let store = DenController(
+        let controller = DenController(
             state: DenState(desks: [source], focusedDeskID: source.id),
             onSave: { savedState = $0 })
 
-        store.updateBoard(
+        controller.updateBoard(
             boardID: board.id,
             url: URL(string: "mailto:user@example.com"),
             title: "Updated title")
 
-        #expect(store.focusedBoard?.currentSheetURL == URL(string: "https://before.example/"))
-        #expect(store.focusedBoard?.label == "Updated title")
+        #expect(controller.focusedBoard?.currentSheetURL == URL(string: "https://before.example/"))
+        #expect(controller.focusedBoard?.label == "Updated title")
         #expect(savedState == nil)
     }
 
@@ -1017,31 +1017,31 @@ struct DenControllerBoardTests {
         let board = board("Board", url: "https://example.com/")
         let source = desk("Desk", boards: [board], focusedBoardID: board.id)
         var saveCount = 0
-        let store = DenController(
+        let controller = DenController(
             state: DenState(desks: [source], focusedDeskID: source.id),
             onSave: { _ in saveCount += 1 })
 
-        store.updateBoard(boardID: board.id, url: nil, title: "New Title")
-        #expect(store.focusedBoard?.label == "New Title")
+        controller.updateBoard(boardID: board.id, url: nil, title: "New Title")
+        #expect(controller.focusedBoard?.label == "New Title")
         #expect(saveCount == 0)
 
-        store.updateBoard(boardID: board.id, url: URL(string: "https://example.com/updated"), title: nil)
-        #expect(store.focusedBoard?.currentSheetURL == URL(string: "https://example.com/updated"))
+        controller.updateBoard(boardID: board.id, url: URL(string: "https://example.com/updated"), title: nil)
+        #expect(controller.focusedBoard?.currentSheetURL == URL(string: "https://example.com/updated"))
         #expect(saveCount == 1)
     }
 
     @Test func boardFocusMovesAndWrapsAtBothEdges() {
         let boards = [board("A"), board("B"), board("C")]
-        withStore(desks: [desk("Desk", boards: boards, focusedBoardID: boards[0].id)]) { store in
-            store.focusNextBoard()
-            #expect(store.focusedDesk?.focusedBoardID == boards[1].id)
+        withController(desks: [desk("Desk", boards: boards, focusedBoardID: boards[0].id)]) { controller in
+            controller.focusNextBoard()
+            #expect(controller.focusedDesk?.focusedBoardID == boards[1].id)
 
-            store.focusPreviousBoard()
-            store.focusPreviousBoard()
-            #expect(store.focusedDesk?.focusedBoardID == boards[2].id)
+            controller.focusPreviousBoard()
+            controller.focusPreviousBoard()
+            #expect(controller.focusedDesk?.focusedBoardID == boards[2].id)
 
-            store.focusNextBoard()
-            #expect(store.focusedDesk?.focusedBoardID == boards[0].id)
+            controller.focusNextBoard()
+            #expect(controller.focusedDesk?.focusedBoardID == boards[0].id)
         }
     }
 
@@ -1049,20 +1049,20 @@ struct DenControllerBoardTests {
     func movingBoardFocusCompletesTutorialNavigationStep(inDenMode: Bool) {
         // Arrange
         let sourceDesk = desk("Desk")
-        let store = DenController(state: DenState(desks: [sourceDesk], focusedDeskID: sourceDesk.id))
-        withTestWindowModel(store: store) { windowModel in
+        let controller = DenController(state: DenState(desks: [sourceDesk], focusedDeskID: sourceDesk.id))
+        withTestWindowModel(controller: controller) { windowModel in
 
-            #expect(store.openTutorialBoard())
-            #expect(store.openBoard(input: "https://one.example/"))
-            #expect(store.focusedDesk?.boards.count == 2)
+            #expect(controller.openTutorialBoard())
+            #expect(controller.openBoard(input: "https://one.example/"))
+            #expect(controller.focusedDesk?.boards.count == 2)
             if inDenMode { windowModel.toggleDenMode() }
 
             // Act
-            store.focusNextBoard()
+            controller.focusNextBoard()
 
             // Assert
             #expect(
-                store.focusedDesk?.boards.contains {
+                controller.focusedDesk?.boards.contains {
                     $0.tutorialCompletedSteps?.contains(.navigateBoards) == true
                 } == true)
         }
@@ -1070,16 +1070,16 @@ struct DenControllerBoardTests {
 
     @Test(arguments: [false, true])
     func showingKeyboardShortcutsCompletesOptionalTutorialStepOnlyInDenMode(inDenMode: Bool) {
-        let store = DenController(state: .sample)
-        withTestWindowModel(store: store) { windowModel in
-            #expect(store.openTutorialBoard())
+        let controller = DenController(state: .sample)
+        withTestWindowModel(controller: controller) { windowModel in
+            #expect(controller.openTutorialBoard())
             if inDenMode { windowModel.toggleDenMode() }
 
             windowModel.showKeyboardShortcuts()
 
             #expect(windowModel.isKeyboardShortcutsPresented)
             #expect(
-                store.state.desks[0].boards.first?.tutorialCompletedSteps?.contains(.keyboardShortcuts)
+                controller.state.desks[0].boards.first?.tutorialCompletedSteps?.contains(.keyboardShortcuts)
                     == inDenMode)
         }
     }
@@ -1094,14 +1094,14 @@ struct DenControllerBoardTests {
                 saveCount += 1
                 return true
             },
-            body: { store in
-                store.focusNextDesk()
-                store.focusPreviousDesk()
-                store.focusNextBoard()
-                store.focusPreviousBoard()
+            body: { controller in
+                controller.focusNextDesk()
+                controller.focusPreviousDesk()
+                controller.focusNextBoard()
+                controller.focusPreviousBoard()
 
-                #expect(store.presentedDeskID == onlyDesk.id)
-                #expect(store.focusedDesk?.focusedBoardID == board.id)
+                #expect(controller.presentedDeskID == onlyDesk.id)
+                #expect(controller.focusedDesk?.focusedBoardID == board.id)
                 #expect(saveCount == 0)
             })
     }
@@ -1118,18 +1118,18 @@ struct DenControllerBoardTests {
                 return true
             },
             body: { windowModel in
-                let store = windowModel.store
+                let controller = windowModel.controller
                 windowModel.deskFilter.enter()
                 windowModel.deskFilter.setQuery("board")
                 windowModel.isDenMode = true
-                store.recordNotification(title: "Build", body: "Finished", boardID: board.id)
+                controller.recordNotification(title: "Build", body: "Finished", boardID: board.id)
 
-                store.focusDesk(onlyDesk.id)
+                controller.focusDesk(onlyDesk.id)
 
                 #expect(!windowModel.deskFilter.isPresented)
                 #expect(windowModel.deskFilter.query.isEmpty)
                 #expect(!windowModel.isDenMode)
-                #expect(store.unreadNotificationCount == 0)
+                #expect(controller.unreadNotificationCount == 0)
                 #expect(saveCount == 0)
             })
     }
@@ -1137,67 +1137,67 @@ struct DenControllerBoardTests {
     @Test func boardFocusRecoversWhenNoBoardIsFocused() {
         let boards = [board("A"), board("B"), board("C")]
         let deskState = desk("Desk", boards: boards)
-        let store = DenController(state: DenState(desks: [deskState], focusedDeskID: deskState.id))
-        store.storage.state.desks[0].focusedBoardID = nil
-        #expect(store.focusedDesk?.focusedBoardID == nil)
+        let controller = DenController(state: DenState(desks: [deskState], focusedDeskID: deskState.id))
+        controller.storage.state.desks[0].focusedBoardID = nil
+        #expect(controller.focusedDesk?.focusedBoardID == nil)
 
-        store.focusNextBoard()
-        #expect(store.focusedDesk?.focusedBoardID == boards[0].id)
+        controller.focusNextBoard()
+        #expect(controller.focusedDesk?.focusedBoardID == boards[0].id)
 
-        store.storage.state.desks[0].focusedBoardID = nil
-        store.focusPreviousBoard()
-        #expect(store.focusedDesk?.focusedBoardID == boards[2].id)
+        controller.storage.state.desks[0].focusedBoardID = nil
+        controller.focusPreviousBoard()
+        #expect(controller.focusedDesk?.focusedBoardID == boards[2].id)
     }
 
     @Test func boardBoundaryFocusStaysWithinSourceDesk() {
         let boards = [board("A"), board("B"), board("C")]
         let sourceDesk = desk("Source", boards: boards, focusedBoardID: boards[1].id)
         let otherDesk = desk("Other", boards: [board("Other Board")])
-        let store = DenController(
+        let controller = DenController(
             state: DenState(desks: [sourceDesk, otherDesk], focusedDeskID: sourceDesk.id))
 
-        store.focusFirstBoardInDesk(containing: boards[1].id)
-        #expect(store.focusedDesk?.id == sourceDesk.id)
-        #expect(store.focusedDesk?.focusedBoardID == boards[0].id)
+        controller.focusFirstBoardInDesk(containing: boards[1].id)
+        #expect(controller.focusedDesk?.id == sourceDesk.id)
+        #expect(controller.focusedDesk?.focusedBoardID == boards[0].id)
 
-        store.focusLastBoardInDesk(containing: boards[1].id)
-        #expect(store.focusedDesk?.focusedBoardID == boards[2].id)
+        controller.focusLastBoardInDesk(containing: boards[1].id)
+        #expect(controller.focusedDesk?.focusedBoardID == boards[2].id)
     }
 
     @Test func focusingAlreadyFocusedBoardDoesNotSaveAgain() {
         let board = board("Focused")
         let source = desk("Desk", boards: [board], focusedBoardID: board.id)
         var saveCount = 0
-        let store = DenController(state: DenState(desks: [source], focusedDeskID: source.id)) { _ in
+        let controller = DenController(state: DenState(desks: [source], focusedDeskID: source.id)) { _ in
             saveCount += 1
         }
 
-        store.focusBoard(board.id)
+        controller.focusBoard(board.id)
 
         #expect(saveCount == 0)
     }
 
     @Test func boardMovementAvailabilityStopsAtDeskEdges() {
         let boards = [board("A"), board("B"), board("C")]
-        withStore(desks: [desk("Desk", boards: boards)]) { store in
-            #expect(!store.canMoveBoard(boards[0].id, by: -1))
-            #expect(store.canMoveBoard(boards[0].id, by: 1))
-            #expect(store.canMoveBoard(boards[1].id, by: -1))
-            #expect(store.canMoveBoard(boards[1].id, by: 1))
-            #expect(store.canMoveBoard(boards[2].id, by: -1))
-            #expect(!store.canMoveBoard(boards[2].id, by: 1))
+        withController(desks: [desk("Desk", boards: boards)]) { controller in
+            #expect(!controller.canMoveBoard(boards[0].id, by: -1))
+            #expect(controller.canMoveBoard(boards[0].id, by: 1))
+            #expect(controller.canMoveBoard(boards[1].id, by: -1))
+            #expect(controller.canMoveBoard(boards[1].id, by: 1))
+            #expect(controller.canMoveBoard(boards[2].id, by: -1))
+            #expect(!controller.canMoveBoard(boards[2].id, by: 1))
         }
     }
 
     @Test func reorderingBoardKeepsItFocusedAndStopsAtDeskEdge() {
         let boards = [board("A"), board("B"), board("C")]
         withTestWindowModel(desks: [desk("Desk", boards: boards, focusedBoardID: boards[1].id)]) { windowModel in
-            let store = windowModel.store
-            store.moveFocusedBoardLeft()
-            store.moveFocusedBoardLeft()
+            let controller = windowModel.controller
+            controller.moveFocusedBoardLeft()
+            controller.moveFocusedBoardLeft()
 
-            #expect(store.focusedDesk?.boards.map(\.id) == [boards[1].id, boards[0].id, boards[2].id])
-            #expect(store.focusedDesk?.focusedBoardID == boards[1].id)
+            #expect(controller.focusedDesk?.boards.map(\.id) == [boards[1].id, boards[0].id, boards[2].id])
+            #expect(controller.focusedDesk?.focusedBoardID == boards[1].id)
             #expect(windowModel.centerFocusedBoardRequest == 1)
         }
     }
@@ -1206,30 +1206,30 @@ struct DenControllerBoardTests {
         let target = board("Target")
         let side = BoardState(width: 390, targetBoardID: target.id)
         let after = board("After")
-        withStore(desks: [desk("Desk", boards: [target, side, after], focusedBoardID: target.id)]) { store in
-            store.moveFocusedBoardRight()
-            #expect(store.focusedDesk?.boards.map(\.id) == [after.id, target.id, side.id])
-            #expect(!store.canMoveBoard(side.id, by: 1))
+        withController(desks: [desk("Desk", boards: [target, side, after], focusedBoardID: target.id)]) { controller in
+            controller.moveFocusedBoardRight()
+            #expect(controller.focusedDesk?.boards.map(\.id) == [after.id, target.id, side.id])
+            #expect(!controller.canMoveBoard(side.id, by: 1))
 
-            store.removeBoard(target.id)
-            #expect(store.focusedDesk?.boards.map(\.id) == [after.id])
-            #expect(store.recentlyRemovedBoards.first?.sideBoard?.id == side.id)
+            controller.removeBoard(target.id)
+            #expect(controller.focusedDesk?.boards.map(\.id) == [after.id])
+            #expect(controller.recentlyRemovedBoards.first?.sideBoard?.id == side.id)
 
-            store.restoreRecentlyRemovedBoard()
-            #expect(store.focusedDesk?.boards.map(\.id) == [after.id, target.id, side.id])
-            #expect(store.focusedDesk?.focusedBoardID == target.id)
+            controller.restoreRecentlyRemovedBoard()
+            #expect(controller.focusedDesk?.boards.map(\.id) == [after.id, target.id, side.id])
+            #expect(controller.focusedDesk?.focusedBoardID == target.id)
         }
     }
 
     @Test func removingSideBoardLeavesItsTarget() {
         let target = board("Target")
         let side = BoardState(width: 390, targetBoardID: target.id)
-        withStore(desks: [desk("Desk", boards: [target, side], focusedBoardID: side.id)]) { store in
-            store.removeFocusedBoard()
+        withController(desks: [desk("Desk", boards: [target, side], focusedBoardID: side.id)]) { controller in
+            controller.removeFocusedBoard()
 
-            #expect(store.focusedDesk?.boards.map(\.id) == [target.id])
-            #expect(store.recentlyRemovedBoards.first?.board.id == side.id)
-            #expect(store.recentlyRemovedBoards.first?.sideBoard == nil)
+            #expect(controller.focusedDesk?.boards.map(\.id) == [target.id])
+            #expect(controller.recentlyRemovedBoards.first?.board.id == side.id)
+            #expect(controller.recentlyRemovedBoards.first?.sideBoard == nil)
         }
     }
 
@@ -1238,16 +1238,16 @@ struct DenControllerBoardTests {
         let side = BoardState(width: 390, targetBoardID: target.id)
         let source = desk("Source", boards: [target, side], focusedBoardID: side.id)
         let destination = desk("Destination")
-        withStore(desks: [source, destination]) { store in
-            store.removeBoard(side.id)
-            store.focusBoard(target.id)
-            store.moveFocusedBoardToNextDesk()
+        withController(desks: [source, destination]) { controller in
+            controller.removeBoard(side.id)
+            controller.focusBoard(target.id)
+            controller.moveFocusedBoardToNextDesk()
 
-            store.restoreRecentlyRemovedBoard()
+            controller.restoreRecentlyRemovedBoard()
 
-            #expect(store.state.desks[0].boards.isEmpty)
-            #expect(store.state.desks[1].boards.map(\.id) == [target.id, side.id])
-            #expect(store.focusedDesk?.focusedBoardID == side.id)
+            #expect(controller.state.desks[0].boards.isEmpty)
+            #expect(controller.state.desks[1].boards.map(\.id) == [target.id, side.id])
+            #expect(controller.focusedDesk?.focusedBoardID == side.id)
         }
     }
 
@@ -1257,13 +1257,15 @@ struct DenControllerBoardTests {
         let secondTarget = board("Second")
         let secondSide = BoardState(width: 410, targetBoardID: secondTarget.id)
         let boards = [firstTarget, firstSide, secondTarget, secondSide]
-        withStore(desks: [desk("Desk", boards: boards, focusedBoardID: firstTarget.id)]) { store in
-            store.moveFocusedBoardRight()
+        withController(desks: [desk("Desk", boards: boards, focusedBoardID: firstTarget.id)]) { controller in
+            controller.moveFocusedBoardRight()
 
             #expect(
-                store.focusedDesk?.boards.map(\.id) == [secondTarget.id, secondSide.id, firstTarget.id, firstSide.id])
-            #expect(store.focusedDesk?.boards[1].sideBoardTargetBoardID == secondTarget.id)
-            #expect(store.focusedDesk?.boards[3].sideBoardTargetBoardID == firstTarget.id)
+                controller.focusedDesk?.boards.map(\.id) == [
+                    secondTarget.id, secondSide.id, firstTarget.id, firstSide.id,
+                ])
+            #expect(controller.focusedDesk?.boards[1].sideBoardTargetBoardID == secondTarget.id)
+            #expect(controller.focusedDesk?.boards[3].sideBoardTargetBoardID == firstTarget.id)
         }
     }
 
@@ -1273,13 +1275,13 @@ struct DenControllerBoardTests {
         let source = desk("Source", boards: [target, side], focusedBoardID: side.id)
         let destinationBoard = board("Destination")
         let destination = desk("Destination", boards: [destinationBoard], focusedBoardID: destinationBoard.id)
-        withStore(desks: [source, destination]) { store in
-            store.moveFocusedBoardToNextDesk()
+        withController(desks: [source, destination]) { controller in
+            controller.moveFocusedBoardToNextDesk()
 
-            #expect(store.state.desks[0].boards.isEmpty)
-            #expect(store.state.desks[1].boards.map(\.id) == [destinationBoard.id, target.id, side.id])
-            #expect(store.focusedDesk?.focusedBoardID == side.id)
-            #expect(store.focusedBoard?.width == 390)
+            #expect(controller.state.desks[0].boards.isEmpty)
+            #expect(controller.state.desks[1].boards.map(\.id) == [destinationBoard.id, target.id, side.id])
+            #expect(controller.focusedDesk?.focusedBoardID == side.id)
+            #expect(controller.focusedBoard?.width == 390)
         }
     }
 
@@ -1296,11 +1298,11 @@ struct DenControllerBoardTests {
                 return true
             },
             body: { windowModel in
-                let store = windowModel.store
-                store.moveFocusedBoardRight()
+                let controller = windowModel.controller
+                controller.moveFocusedBoardRight()
 
-                #expect(store.focusedDesk?.boards.map(\.id) == [boards[1].id, boards[0].id])
-                #expect(store.state.desks[0].scrollOffsetX == nil)
+                #expect(controller.focusedDesk?.boards.map(\.id) == [boards[1].id, boards[0].id])
+                #expect(controller.state.desks[0].scrollOffsetX == nil)
                 #expect(windowModel.centerFocusedBoardRequest == 1)
                 #expect(saveCount == 1)
             })
@@ -1309,20 +1311,23 @@ struct DenControllerBoardTests {
     @Test func rapidBoardReorderingKeepsFocusAndRequestsCentering() {
         let boards = [board("A"), board("B"), board("C"), board("D")]
         withTestWindowModel(desks: [desk("Desk", boards: boards, focusedBoardID: boards[0].id)]) { windowModel in
-            let store = windowModel.store
-            store.moveFocusedBoardRight()
-            #expect(store.focusedDesk?.focusedBoardID == boards[0].id)
-            #expect(store.focusedDesk?.boards.map(\.id) == [boards[1].id, boards[0].id, boards[2].id, boards[3].id])
+            let controller = windowModel.controller
+            controller.moveFocusedBoardRight()
+            #expect(controller.focusedDesk?.focusedBoardID == boards[0].id)
+            #expect(
+                controller.focusedDesk?.boards.map(\.id) == [boards[1].id, boards[0].id, boards[2].id, boards[3].id])
             #expect(windowModel.centerFocusedBoardRequest == 1)
 
-            store.moveFocusedBoardRight()
-            #expect(store.focusedDesk?.focusedBoardID == boards[0].id)
-            #expect(store.focusedDesk?.boards.map(\.id) == [boards[1].id, boards[2].id, boards[0].id, boards[3].id])
+            controller.moveFocusedBoardRight()
+            #expect(controller.focusedDesk?.focusedBoardID == boards[0].id)
+            #expect(
+                controller.focusedDesk?.boards.map(\.id) == [boards[1].id, boards[2].id, boards[0].id, boards[3].id])
             #expect(windowModel.centerFocusedBoardRequest == 2)
 
-            store.moveFocusedBoardRight()
-            #expect(store.focusedDesk?.focusedBoardID == boards[0].id)
-            #expect(store.focusedDesk?.boards.map(\.id) == [boards[1].id, boards[2].id, boards[3].id, boards[0].id])
+            controller.moveFocusedBoardRight()
+            #expect(controller.focusedDesk?.focusedBoardID == boards[0].id)
+            #expect(
+                controller.focusedDesk?.boards.map(\.id) == [boards[1].id, boards[2].id, boards[3].id, boards[0].id])
             #expect(windowModel.centerFocusedBoardRequest == 3)
         }
     }
@@ -1331,15 +1336,15 @@ struct DenControllerBoardTests {
         let boards = [board("A"), board("B"), board("C")]
         let source = desk("Desk", boards: boards, focusedBoardID: boards[0].id)
         var savedStates: [DenState] = []
-        let store = DenController(state: DenState(desks: [source], focusedDeskID: source.id)) {
+        let controller = DenController(state: DenState(desks: [source], focusedDeskID: source.id)) {
             savedStates.append($0)
         }
 
-        #expect(store.beginBoardDrag(boards[0].id))
-        store.previewBoardMove(boards[0].id, to: 2)
+        #expect(controller.beginBoardDrag(boards[0].id))
+        controller.previewBoardMove(boards[0].id, to: 2)
         #expect(savedStates.isEmpty)
 
-        store.finishBoardDrag()
+        controller.finishBoardDrag()
         #expect(savedStates.count == 1)
         #expect(savedStates[0].desks[0].boards.map(\.id) == [boards[1].id, boards[2].id, boards[0].id])
     }
@@ -1351,50 +1356,50 @@ struct DenControllerBoardTests {
         let last = board("Last")
         let boards = [target, side, middle, last]
         let source = desk("Desk", boards: boards)
-        let store = DenController(state: DenState(desks: [source], focusedDeskID: source.id))
+        let controller = DenController(state: DenState(desks: [source], focusedDeskID: source.id))
 
-        #expect(store.beginBoardDrag(target.id))
-        store.previewBoardMove(target.id, to: 3)
+        #expect(controller.beginBoardDrag(target.id))
+        controller.previewBoardMove(target.id, to: 3)
 
-        #expect(store.focusedDesk?.boards.map(\.id) == [middle.id, last.id, target.id, side.id])
-        store.finishBoardDrag()
+        #expect(controller.focusedDesk?.boards.map(\.id) == [middle.id, last.id, target.id, side.id])
+        controller.finishBoardDrag()
     }
 
     @Test func boardAndDeskDragAreMutuallyExclusive() {
         let board = board("Board")
         let first = desk("First", boards: [board], focusedBoardID: board.id)
         let second = desk("Second")
-        let store = DenController(
+        let controller = DenController(
             state: DenState(desks: [first, second], focusedDeskID: first.id))
 
-        #expect(store.beginDeskDrag(second.id))
-        #expect(store.activeDrag == .desk(second.id))
-        #expect(!store.beginBoardDrag(board.id))
-        #expect(!store.isBoardDragging)
-        #expect(store.isDeskDragging)
+        #expect(controller.beginDeskDrag(second.id))
+        #expect(controller.activeDrag == .desk(second.id))
+        #expect(!controller.beginBoardDrag(board.id))
+        #expect(!controller.isBoardDragging)
+        #expect(controller.isDeskDragging)
 
-        store.finishDeskDrag()
-        #expect(store.beginBoardDrag(board.id))
-        #expect(store.activeDrag == .board(board.id))
-        #expect(!store.beginDeskDrag(second.id))
-        #expect(store.isBoardDragging)
-        #expect(!store.isDeskDragging)
+        controller.finishDeskDrag()
+        #expect(controller.beginBoardDrag(board.id))
+        #expect(controller.activeDrag == .board(board.id))
+        #expect(!controller.beginDeskDrag(second.id))
+        #expect(controller.isBoardDragging)
+        #expect(!controller.isDeskDragging)
     }
 
     @Test func cancelledBoardDragRestoresAndPersistsOriginalOrder() {
         let boards = [board("A"), board("B"), board("C")]
         let source = desk("Desk", boards: boards, focusedBoardID: boards[0].id)
         var persistedState: DenState?
-        let store = DenController(state: DenState(desks: [source], focusedDeskID: source.id)) {
+        let controller = DenController(state: DenState(desks: [source], focusedDeskID: source.id)) {
             persistedState = $0
         }
 
-        #expect(store.beginBoardDrag(boards[0].id))
-        store.previewBoardMove(boards[0].id, to: 2)
-        store.restoreBoardOrder(boards.map(\.id), in: source.id)
-        store.finishBoardDrag()
+        #expect(controller.beginBoardDrag(boards[0].id))
+        controller.previewBoardMove(boards[0].id, to: 2)
+        controller.restoreBoardOrder(boards.map(\.id), in: source.id)
+        controller.finishBoardDrag()
 
-        #expect(store.focusedDesk?.boards.map(\.id) == boards.map(\.id))
+        #expect(controller.focusedDesk?.boards.map(\.id) == boards.map(\.id))
         #expect(persistedState?.desks[0].boards.map(\.id) == boards.map(\.id))
     }
 
@@ -1403,28 +1408,28 @@ struct DenControllerBoardTests {
         let targetBoards = [board("Before"), board("Target"), board("After")]
         let source = desk("Source", boards: [moved])
         let target = desk("Target", boards: targetBoards, focusedBoardID: targetBoards[1].id)
-        withStore(desks: [source, target]) { store in
-            store.moveFocusedBoardToNextDesk()
+        withController(desks: [source, target]) { controller in
+            controller.moveFocusedBoardToNextDesk()
 
-            #expect(store.state.desks[0].boards.isEmpty)
-            #expect(store.state.desks[0].focusedBoardID == nil)
+            #expect(controller.state.desks[0].boards.isEmpty)
+            #expect(controller.state.desks[0].focusedBoardID == nil)
             #expect(
-                store.state.desks[1].boards.map(\.id) == [
+                controller.state.desks[1].boards.map(\.id) == [
                     targetBoards[0].id, targetBoards[1].id, moved.id, targetBoards[2].id,
                 ])
-            #expect(store.focusedDesk?.id == target.id)
-            #expect(store.focusedDesk?.focusedBoardID == moved.id)
+            #expect(controller.focusedDesk?.id == target.id)
+            #expect(controller.focusedDesk?.focusedBoardID == moved.id)
         }
     }
 
     @Test func removingBoardFocusesPreviousBoard() {
         let boards = [board("A"), board("B"), board("C")]
-        withStore(desks: [desk("Desk", boards: boards, focusedBoardID: boards[1].id)]) { store in
-            store.removeFocusedBoard()
+        withController(desks: [desk("Desk", boards: boards, focusedBoardID: boards[1].id)]) { controller in
+            controller.removeFocusedBoard()
 
-            #expect(store.focusedDesk?.boards.map(\.id) == [boards[0].id, boards[2].id])
-            #expect(store.focusedDesk?.focusedBoardID == boards[0].id)
-            #expect(store.recentlyRemovedBoards.first?.board.id == boards[1].id)
+            #expect(controller.focusedDesk?.boards.map(\.id) == [boards[0].id, boards[2].id])
+            #expect(controller.focusedDesk?.focusedBoardID == boards[0].id)
+            #expect(controller.recentlyRemovedBoards.first?.board.id == boards[1].id)
         }
     }
 
@@ -1434,62 +1439,62 @@ struct DenControllerBoardTests {
             width: 520,
             currentSheetURL: URL(string: "https://example.com/"),
             sheetNavigationPaused: true)
-        let store = DenController(
+        let controller = DenController(
             state: DenState(
                 desks: [desk("Desk", boards: [board], focusedBoardID: board.id)],
                 focusedDeskID: DeskID()))
-        store.removeFocusedBoard()
+        controller.removeFocusedBoard()
 
-        #expect(store.recentlyRemovedBoards.first?.board.sheetNavigationPaused == true)
+        #expect(controller.recentlyRemovedBoards.first?.board.sheetNavigationPaused == true)
 
-        store.restoreRecentlyRemovedBoard()
+        controller.restoreRecentlyRemovedBoard()
 
-        #expect(store.focusedBoard?.sheetNavigationPaused == true)
+        #expect(controller.focusedBoard?.sheetNavigationPaused == true)
     }
 
     @Test func removingFirstBoardFocusesNextBoard() {
         let boards = [board("A"), board("B"), board("C")]
-        withStore(desks: [desk("Desk", boards: boards, focusedBoardID: boards[0].id)]) { store in
-            store.removeFocusedBoard()
+        withController(desks: [desk("Desk", boards: boards, focusedBoardID: boards[0].id)]) { controller in
+            controller.removeFocusedBoard()
 
-            #expect(store.focusedDesk?.boards.map(\.id) == [boards[1].id, boards[2].id])
-            #expect(store.focusedDesk?.focusedBoardID == boards[1].id)
+            #expect(controller.focusedDesk?.boards.map(\.id) == [boards[1].id, boards[2].id])
+            #expect(controller.focusedDesk?.focusedBoardID == boards[1].id)
         }
     }
 
     @Test func removingLastBoardFocusesPreviousBoard() {
         let boards = [board("A"), board("B")]
-        withStore(desks: [desk("Desk", boards: boards, focusedBoardID: boards[1].id)]) { store in
-            store.removeFocusedBoard()
+        withController(desks: [desk("Desk", boards: boards, focusedBoardID: boards[1].id)]) { controller in
+            controller.removeFocusedBoard()
 
-            #expect(store.focusedDesk?.focusedBoardID == boards[0].id)
+            #expect(controller.focusedDesk?.focusedBoardID == boards[0].id)
         }
     }
 
     @Test func removingBoardCanPreferNextBoard() {
         let boards = [board("A"), board("B"), board("C")]
-        withStore(desks: [desk("Desk", boards: boards, focusedBoardID: boards[1].id)]) { store in
-            store.removeBoard(boards[1].id, focusNext: true)
+        withController(desks: [desk("Desk", boards: boards, focusedBoardID: boards[1].id)]) { controller in
+            controller.removeBoard(boards[1].id, focusNext: true)
 
-            #expect(store.focusedDesk?.boards.map(\.id) == [boards[0].id, boards[2].id])
-            #expect(store.focusedDesk?.focusedBoardID == boards[2].id)
+            #expect(controller.focusedDesk?.boards.map(\.id) == [boards[0].id, boards[2].id])
+            #expect(controller.focusedDesk?.focusedBoardID == boards[2].id)
         }
 
         let lastBoards = [board("A"), board("B")]
-        withStore(desks: [desk("Desk", boards: lastBoards, focusedBoardID: lastBoards[1].id)]) { store in
-            store.removeBoard(lastBoards[1].id, focusNext: true)
+        withController(desks: [desk("Desk", boards: lastBoards, focusedBoardID: lastBoards[1].id)]) { controller in
+            controller.removeBoard(lastBoards[1].id, focusNext: true)
 
-            #expect(store.focusedDesk?.focusedBoardID == lastBoards[0].id)
+            #expect(controller.focusedDesk?.focusedBoardID == lastBoards[0].id)
         }
     }
 
     @Test func removingUnfocusedBoardKeepsFocus() {
         let boards = [board("A"), board("B"), board("C")]
-        withStore(desks: [desk("Desk", boards: boards, focusedBoardID: boards[1].id)]) { store in
-            store.removeBoard(boards[0].id)
+        withController(desks: [desk("Desk", boards: boards, focusedBoardID: boards[1].id)]) { controller in
+            controller.removeBoard(boards[0].id)
 
-            #expect(store.focusedDesk?.boards.map(\.id) == [boards[1].id, boards[2].id])
-            #expect(store.focusedDesk?.focusedBoardID == boards[1].id)
+            #expect(controller.focusedDesk?.boards.map(\.id) == [boards[1].id, boards[2].id])
+            #expect(controller.focusedDesk?.focusedBoardID == boards[1].id)
         }
     }
 
@@ -1497,12 +1502,12 @@ struct DenControllerBoardTests {
         let onlyBoard = board("Only")
         var deskState = desk("Desk", boards: [onlyBoard], focusedBoardID: onlyBoard.id)
         deskState.scrollOffsetX = 250.0
-        let store = DenController(state: DenState(desks: [deskState], focusedDeskID: deskState.id))
-        #expect(store.state.desks[0].scrollOffsetX == 250.0)
+        let controller = DenController(state: DenState(desks: [deskState], focusedDeskID: deskState.id))
+        #expect(controller.state.desks[0].scrollOffsetX == 250.0)
 
-        store.removeBoard(onlyBoard.id)
-        #expect(store.state.desks[0].boards.isEmpty)
-        #expect(store.state.desks[0].scrollOffsetX == nil)
+        controller.removeBoard(onlyBoard.id)
+        #expect(controller.state.desks[0].boards.isEmpty)
+        #expect(controller.state.desks[0].scrollOffsetX == nil)
     }
 
     @Test func removingFocusedBoardClearsScrollOffsetX() {
@@ -1510,12 +1515,12 @@ struct DenControllerBoardTests {
         let boardB = board("B")
         var deskState = desk("Desk", boards: [boardA, boardB], focusedBoardID: boardB.id)
         deskState.scrollOffsetX = 350.0
-        let store = DenController(state: DenState(desks: [deskState], focusedDeskID: deskState.id))
-        #expect(store.state.desks[0].scrollOffsetX == 350.0)
+        let controller = DenController(state: DenState(desks: [deskState], focusedDeskID: deskState.id))
+        #expect(controller.state.desks[0].scrollOffsetX == 350.0)
 
-        store.removeBoard(boardB.id)
-        #expect(store.state.desks[0].focusedBoardID == boardA.id)
-        #expect(store.state.desks[0].scrollOffsetX == nil)
+        controller.removeBoard(boardB.id)
+        #expect(controller.state.desks[0].focusedBoardID == boardA.id)
+        #expect(controller.state.desks[0].scrollOffsetX == nil)
     }
 
     @Test func duplicatingFocusedBoardClearsScrollOffsetX() {
@@ -1523,23 +1528,23 @@ struct DenControllerBoardTests {
         let boardB = board("B")
         var deskState = desk("Desk", boards: [boardA, boardB], focusedBoardID: boardB.id)
         deskState.scrollOffsetX = 350.0
-        let store = DenController(state: DenState(desks: [deskState], focusedDeskID: deskState.id))
-        #expect(store.state.desks[0].scrollOffsetX == 350.0)
+        let controller = DenController(state: DenState(desks: [deskState], focusedDeskID: deskState.id))
+        #expect(controller.state.desks[0].scrollOffsetX == 350.0)
 
-        store.duplicateFocusedBoard()
-        #expect(store.state.desks[0].boards.count == 3)
-        #expect(store.state.desks[0].scrollOffsetX == nil)
+        controller.duplicateFocusedBoard()
+        #expect(controller.state.desks[0].boards.count == 3)
+        #expect(controller.state.desks[0].scrollOffsetX == nil)
     }
 
     @Test func insertingFocusedBoardClearsScrollOffsetX() {
         let boardA = board("A")
         var deskState = desk("Desk", boards: [boardA], focusedBoardID: boardA.id)
         deskState.scrollOffsetX = 200.0
-        let store = DenController(state: DenState(desks: [deskState], focusedDeskID: deskState.id))
-        #expect(store.state.desks[0].scrollOffsetX == 200.0)
+        let controller = DenController(state: DenState(desks: [deskState], focusedDeskID: deskState.id))
+        #expect(controller.state.desks[0].scrollOffsetX == 200.0)
 
-        _ = store.createBoard(urlString: "https://example.com", focus: true)
-        #expect(store.state.desks[0].scrollOffsetX == nil)
+        _ = controller.createBoard(urlString: "https://example.com", focus: true)
+        #expect(controller.state.desks[0].scrollOffsetX == nil)
     }
 
     @Test func deskStateFocusedBoardIDChangeClearsScrollOffsetX() {
@@ -1563,50 +1568,50 @@ struct DenControllerBoardTests {
         let boards = [board("First"), board("Second")]
         let source = desk("Source", boards: boards, focusedBoardID: boards[0].id)
         var persistedState: DenState?
-        let store = DenController(state: DenState(desks: [source], focusedDeskID: source.id)) {
+        let controller = DenController(state: DenState(desks: [source], focusedDeskID: source.id)) {
             persistedState = $0
         }
 
-        store.removeFocusedBoard()
-        store.removeFocusedBoard()
+        controller.removeFocusedBoard()
+        controller.removeFocusedBoard()
         let persisted = try #require(persistedState)
 
-        #expect(store.recentlyRemovedBoards.map { $0.board.id } == [boards[1].id, boards[0].id])
+        #expect(controller.recentlyRemovedBoards.map { $0.board.id } == [boards[1].id, boards[0].id])
         #expect(persisted.desks[0].boards.isEmpty)
         #expect(DenController(state: persisted).recentlyRemovedBoards.isEmpty)
     }
 
     @Test func removalHistoryKeepsAtMostTenBoardsAndRestoresNewestFirst() {
         let boards = (0..<12).map { board("Board \($0)") }
-        withStore(desks: [desk("Desk", boards: boards, focusedBoardID: boards[0].id)]) { store in
+        withController(desks: [desk("Desk", boards: boards, focusedBoardID: boards[0].id)]) { controller in
             for _ in 0..<11 {
-                store.removeFocusedBoard()
+                controller.removeFocusedBoard()
             }
 
-            #expect(store.recentlyRemovedBoards.count == DenController.maximumRecentlyRemovedBoardCount)
+            #expect(controller.recentlyRemovedBoards.count == DenController.maximumRecentlyRemovedBoardCount)
             #expect(
-                store.recentlyRemovedBoards.map { $0.board.id }
+                controller.recentlyRemovedBoards.map { $0.board.id }
                     == Array((1...10).reversed()).map { boards[$0].id })
 
             for _ in 0..<DenController.maximumRecentlyRemovedBoardCount {
-                store.restoreRecentlyRemovedBoard()
+                controller.restoreRecentlyRemovedBoard()
             }
 
-            #expect(store.recentlyRemovedBoards.isEmpty)
-            #expect(store.focusedDesk?.boards.map(\.id) == Array(1...11).map { boards[$0].id })
+            #expect(controller.recentlyRemovedBoards.isEmpty)
+            #expect(controller.focusedDesk?.boards.map(\.id) == Array(1...11).map { boards[$0].id })
         }
     }
 
     @Test func restorationUsesOriginalDeskIndexAndBoardIdentity() {
         let boards = [board("First"), board("Restored", width: 760), board("Last")]
         let source = desk("Source", boards: boards, focusedBoardID: boards[1].id)
-        withStore(desks: [source]) { store in
-            store.removeFocusedBoard()
-            store.restoreRecentlyRemovedBoard()
+        withController(desks: [source]) { controller in
+            controller.removeFocusedBoard()
+            controller.restoreRecentlyRemovedBoard()
 
-            #expect(store.focusedDesk?.boards == boards)
-            #expect(store.focusedDesk?.focusedBoardID == boards[1].id)
-            #expect(store.recentlyRemovedBoards.isEmpty)
+            #expect(controller.focusedDesk?.boards == boards)
+            #expect(controller.focusedDesk?.focusedBoardID == boards[1].id)
+            #expect(controller.recentlyRemovedBoards.isEmpty)
         }
     }
 
@@ -1616,15 +1621,15 @@ struct DenControllerBoardTests {
         let removed = board("Removed")
         let following = board("Following")
         let source = desk("Desk", boards: [target, removed, following], focusedBoardID: removed.id)
-        try withStore(desks: [source]) { store in
-            store.removeBoard(removed.id)
-            let sideID = try #require(store.createInspectionBoard(targetBoardID: target.id))
+        try withController(desks: [source]) { controller in
+            controller.removeBoard(removed.id)
+            let sideID = try #require(controller.createInspectionBoard(targetBoardID: target.id))
 
             // Act
-            store.restoreRecentlyRemovedBoard()
+            controller.restoreRecentlyRemovedBoard()
 
             // Assert
-            let boards = try #require(store.focusedDesk?.boards)
+            let boards = try #require(controller.focusedDesk?.boards)
             #expect(boards.map(\.id) == [target.id, sideID, removed.id, following.id])
             #expect(BoardGroup.containing(target.id, in: boards)?.boards.map(\.id) == [target.id, sideID])
         }
@@ -1637,15 +1642,15 @@ struct DenControllerBoardTests {
         let target = board("Target")
         let side = BoardState(width: 360, targetBoardID: target.id)
         let destination = desk("Destination", boards: [target, side], focusedBoardID: target.id)
-        try withStore(desks: [source, destination]) { store in
-            store.removeBoard(removed.id)
-            store.deleteFocusedDesk()
+        try withController(desks: [source, destination]) { controller in
+            controller.removeBoard(removed.id)
+            controller.deleteFocusedDesk()
 
             // Act
-            store.restoreRecentlyRemovedBoard()
+            controller.restoreRecentlyRemovedBoard()
 
             // Assert
-            let boards = try #require(store.focusedDesk?.boards)
+            let boards = try #require(controller.focusedDesk?.boards)
             #expect(boards.map(\.id) == [target.id, side.id, removed.id])
             #expect(BoardGroup.containing(target.id, in: boards)?.boards.map(\.id) == [target.id, side.id])
         }
@@ -1653,27 +1658,27 @@ struct DenControllerBoardTests {
 
     @Test func restorationCreatesANewBoardRuntime() throws {
         let removed = board("Removed")
-        try withStore(desks: [desk("Desk", boards: [removed])]) { store in
-            let originalRuntime = store.webRuntime(for: removed)
+        try withController(desks: [desk("Desk", boards: [removed])]) { controller in
+            let originalRuntime = controller.webRuntime(for: removed)
 
-            store.removeFocusedBoard()
-            #expect(store.webRuntimes[removed.id] == nil)
+            controller.removeFocusedBoard()
+            #expect(controller.webRuntimes[removed.id] == nil)
 
-            store.restoreRecentlyRemovedBoard()
-            let restoredBoard = try #require(store.focusedDesk?.boards.first)
-            let restoredRuntime = store.webRuntime(for: restoredBoard)
+            controller.restoreRecentlyRemovedBoard()
+            let restoredBoard = try #require(controller.focusedDesk?.boards.first)
+            let restoredRuntime = controller.webRuntime(for: restoredBoard)
             #expect(restoredRuntime !== originalRuntime)
         }
     }
 
     @Test func removingBoardDisposesItsRuntime() {
         let removed = board("Removed")
-        withStore(desks: [desk("Desk", boards: [removed])]) { store in
-            let runtime = store.webRuntime(for: removed)
+        withController(desks: [desk("Desk", boards: [removed])]) { controller in
+            let runtime = controller.webRuntime(for: removed)
 
-            store.removeFocusedBoard()
+            controller.removeFocusedBoard()
 
-            #expect(store.webRuntimes[removed.id] == nil)
+            #expect(controller.webRuntimes[removed.id] == nil)
             #expect(runtime.webView.navigationDelegate == nil)
             #expect(runtime.webView.uiDelegate == nil)
         }
@@ -1684,60 +1689,60 @@ struct DenControllerBoardTests {
         let source = desk("Source", boards: [removed])
         let targetBoards = [board("Before"), board("Focused"), board("After")]
         let target = desk("Target", boards: targetBoards, focusedBoardID: targetBoards[1].id)
-        withStore(desks: [source, target]) { store in
-            store.removeFocusedBoard()
-            store.deleteFocusedDesk()
-            store.restoreRecentlyRemovedBoard()
+        withController(desks: [source, target]) { controller in
+            controller.removeFocusedBoard()
+            controller.deleteFocusedDesk()
+            controller.restoreRecentlyRemovedBoard()
 
-            #expect(store.focusedDesk?.id == target.id)
+            #expect(controller.focusedDesk?.id == target.id)
             #expect(
-                store.focusedDesk?.boards.map(\.id) == [
+                controller.focusedDesk?.boards.map(\.id) == [
                     targetBoards[0].id, targetBoards[1].id, removed.id, targetBoards[2].id,
                 ])
-            #expect(store.focusedDesk?.focusedBoardID == removed.id)
+            #expect(controller.focusedDesk?.focusedBoardID == removed.id)
         }
     }
 
     @Test func mouseResizeChangesTargetBoardWidthWithinBounds() {
         let boards = [board("First"), board("Second")]
-        withStore(desks: [desk("Desk", boards: boards)]) { store in
-            store.resizeBoard(boards[1].id, to: 760)
-            #expect(store.focusedDesk?.boards.map(\.width) == [520, 760])
+        withController(desks: [desk("Desk", boards: boards)]) { controller in
+            controller.resizeBoard(boards[1].id, to: 760)
+            #expect(controller.focusedDesk?.boards.map(\.width) == [520, 760])
 
-            store.resizeBoard(boards[1].id, to: 100)
-            #expect(store.focusedDesk?.boards[1].width == 280)
+            controller.resizeBoard(boards[1].id, to: 100)
+            #expect(controller.focusedDesk?.boards[1].width == 280)
 
-            store.resizeBoard(boards[1].id, to: 2_000)
-            #expect(store.focusedDesk?.boards[1].width == 1400)
+            controller.resizeBoard(boards[1].id, to: 2_000)
+            #expect(controller.focusedDesk?.boards[1].width == 1400)
         }
     }
 
     @Test func pairedMouseResizeKeepsOuterEdgesFixed() {
         let boards = [board("First", width: 520), board("Second", width: 760)]
-        withStore(desks: [desk("Desk", boards: boards)]) { store in
+        withController(desks: [desk("Desk", boards: boards)]) { controller in
             // Arrange
             let totalWidth = boards.map(\.width).reduce(0, +)
 
             // Act
-            store.resizeBoardPair(boards[0].id, to: 700)
+            controller.resizeBoardPair(boards[0].id, to: 700)
 
             // Assert
-            #expect(store.focusedDesk?.boards.map(\.width) == [700, 580])
-            #expect(store.focusedDesk?.boards.map(\.width).reduce(0, +) == totalWidth)
+            #expect(controller.focusedDesk?.boards.map(\.width) == [700, 580])
+            #expect(controller.focusedDesk?.boards.map(\.width).reduce(0, +) == totalWidth)
         }
     }
 
     @Test func pairedMouseResizeRespectsBothBoardMinimumWidths() {
         let boards = [board("First", width: 520), board("Second", width: 760)]
-        withStore(desks: [desk("Desk", boards: boards)]) { store in
+        withController(desks: [desk("Desk", boards: boards)]) { controller in
             // Arrange
             let expectedMinimumPairWidth = BoardState.minimumWidth
 
             // Act
-            store.resizeBoardPair(boards[0].id, to: 2_000)
+            controller.resizeBoardPair(boards[0].id, to: 2_000)
 
             // Assert
-            #expect(store.focusedDesk?.boards.map(\.width) == [1_000, expectedMinimumPairWidth])
+            #expect(controller.focusedDesk?.boards.map(\.width) == [1_000, expectedMinimumPairWidth])
         }
     }
 
@@ -1747,16 +1752,16 @@ struct DenControllerBoardTests {
         let firstDesk = desk("First", boards: boards, focusedBoardID: boards[0].id)
         let secondDesk = desk("Second", boards: [otherBoard])
         withTestWindowModel(desks: [firstDesk, secondDesk]) { windowModel in
-            let store = windowModel.store
+            let controller = windowModel.controller
             windowModel.toggleFocusedBoardMaximized()
 
             windowModel.adjustFocusedDeskBoardWidths(by: -80)
-            #expect(store.focusedDesk?.boards.map(\.width) == [280, 1_320])
-            #expect(store.state.desks[1].boards.map(\.width) == [760])
+            #expect(controller.focusedDesk?.boards.map(\.width) == [280, 1_320])
+            #expect(controller.state.desks[1].boards.map(\.width) == [760])
             #expect(windowModel.maximizedBoardID == nil)
 
             windowModel.adjustFocusedDeskBoardWidths(by: 160)
-            #expect(store.focusedDesk?.boards.map(\.width) == [440, 1_400])
+            #expect(controller.focusedDesk?.boards.map(\.width) == [440, 1_400])
         }
     }
 
@@ -1773,20 +1778,20 @@ struct DenControllerBoardTests {
                 return true
             },
             body: { windowModel in
-                let store = windowModel.store
+                let controller = windowModel.controller
                 windowModel.updateBoardLayout(availableWidth: 1_180, spacing: 10)
                 windowModel.toggleFocusedBoardMaximized()
-                store.storage.state.desks[0].scrollOffsetX = 180
+                controller.storage.state.desks[0].scrollOffsetX = 180
                 let centerRequest = windowModel.centerFocusedBoardRequest
                 let saveCountBeforeResize = saveCount
 
                 #expect(windowModel.resizeFocusedDeskBoards(toFit: 3))
                 #expect(
-                    store.focusedDesk?.boards.allSatisfy {
+                    controller.focusedDesk?.boards.allSatisfy {
                         abs($0.width - 386.666_666_666_666_7) < 0.001
                     } == true)
-                #expect(store.state.desks[1].boards[0].width == 980)
-                #expect(store.state.desks[0].scrollOffsetX == nil)
+                #expect(controller.state.desks[1].boards[0].width == 980)
+                #expect(controller.state.desks[0].scrollOffsetX == nil)
                 #expect(windowModel.maximizedBoardID == nil)
                 #expect(windowModel.centerFocusedBoardRequest == centerRequest + 1)
                 #expect(saveCount == saveCountBeforeResize + 1)
@@ -1796,7 +1801,7 @@ struct DenControllerBoardTests {
     @Test func rejectsBoardFitCountsOutsideCurrentWidth() {
         let boards = [board("First"), board("Second")]
         withTestWindowModel(desks: [desk("Desk", boards: boards)]) { windowModel in
-            let store = windowModel.store
+            let controller = windowModel.controller
             #expect(windowModel.boardLayoutMetrics == nil)
             #expect(windowModel.boardWidth(toFit: 3) == nil)
 
@@ -1808,38 +1813,38 @@ struct DenControllerBoardTests {
             #expect(windowModel.boardWidth(toFit: 3) != nil)
             #expect(windowModel.boardWidth(toFit: 4) == nil)
             #expect(!windowModel.resizeFocusedDeskBoards(toFit: 4))
-            #expect(store.focusedDesk?.boards.map(\.width) == [520, 520])
+            #expect(controller.focusedDesk?.boards.map(\.width) == [520, 520])
         }
     }
 
     @Test func oneBoardFitUsesFullWindowBeyondManualResizeLimit() {
         withTestWindowModel(desks: [desk("Desk", boards: [board("Wide")])]) { windowModel in
-            let store = windowModel.store
+            let controller = windowModel.controller
             windowModel.updateBoardLayout(availableWidth: 2_480, spacing: 10)
 
             #expect(windowModel.resizeFocusedDeskBoards(toFit: 1))
-            #expect(store.focusedDesk?.boards[0].width == 2_480)
+            #expect(controller.focusedDesk?.boards[0].width == 2_480)
         }
     }
 
     @Test func reloadingFocusedBoardDoesNotChangeDenState() {
         let current = board("Current", url: "https://example.com/path")
-        withStore(desks: [desk("Desk", boards: [current])]) { store in
-            let stateBeforeReload = store.state
+        withController(desks: [desk("Desk", boards: [current])]) { controller in
+            let stateBeforeReload = controller.state
 
-            store.reloadFocusedBoard()
+            controller.reloadFocusedBoard()
 
-            #expect(store.state == stateBeforeReload)
+            #expect(controller.state == stateBeforeReload)
         }
     }
 
     @Test func navigatingAnotherBoardFocusesIt() {
         let first = board("First")
         let second = board("Second")
-        withStore(desks: [desk("Desk", boards: [first, second], focusedBoardID: first.id)]) { store in
-            store.goBackInBoard(second.id)
+        withController(desks: [desk("Desk", boards: [first, second], focusedBoardID: first.id)]) { controller in
+            controller.goBackInBoard(second.id)
 
-            #expect(store.focusedDesk?.focusedBoardID == second.id)
+            #expect(controller.focusedDesk?.focusedBoardID == second.id)
         }
     }
 
@@ -1863,7 +1868,7 @@ struct DenControllerBoardTests {
         DeskState(label: label, boards: boards, focusedBoardID: focusedBoardID)
     }
 
-    private func popupStore(for sourceBoard: BoardState) -> DenController {
+    private func popupController(for sourceBoard: BoardState) -> DenController {
         let sourceDesk = desk("Desk", boards: [sourceBoard], focusedBoardID: sourceBoard.id)
         return DenController(
             state: DenState(desks: [sourceDesk], focusedDeskID: sourceDesk.id),
@@ -1882,71 +1887,71 @@ struct DenControllerBoardTests {
 
     @Test func openBoardFromClipboardOpensBoardToRightAndExitsDenMode() {
         let source = desk("Desk", boards: [board("First")])
-        let store = DenController(state: DenState(desks: [source], focusedDeskID: source.id))
-        let composition = DenWindowComposition(store: store)
+        let controller = DenController(state: DenState(desks: [source], focusedDeskID: source.id))
+        let composition = DenWindowComposition(controller: controller)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
         windowModel.isDenMode = true
         #expect(windowModel.isDenMode)
-        #expect(store.focusedDesk?.boards.count == 1)
+        #expect(controller.focusedDesk?.boards.count == 1)
 
         let pasteboard = NSPasteboard.withUniqueName()
         pasteboard.clearContents()
         pasteboard.setString("https://example.com/clipboard", forType: .string)
 
-        store.openBoardFromClipboard(pasteboard: pasteboard, preferredWidth: windowModel.defaultBoardWidth)
+        controller.openBoardFromClipboard(pasteboard: pasteboard, preferredWidth: windowModel.defaultBoardWidth)
 
-        #expect(store.focusedDesk?.boards.count == 2)
-        #expect(store.focusedBoard?.currentSheetURL == URL(string: "https://example.com/clipboard"))
+        #expect(controller.focusedDesk?.boards.count == 2)
+        #expect(controller.focusedBoard?.currentSheetURL == URL(string: "https://example.com/clipboard"))
         #expect(!windowModel.isDenMode)
-        #expect(store.latestFeedback == nil)
+        #expect(controller.latestFeedback == nil)
     }
 
     @Test func openBoardFromClipboardShowsWarningFeedbackWhenEmpty() {
         let source = desk("Desk", boards: [board("First")])
-        let store = DenController(state: DenState(desks: [source], focusedDeskID: source.id))
-        let composition = DenWindowComposition(store: store)
+        let controller = DenController(state: DenState(desks: [source], focusedDeskID: source.id))
+        let composition = DenWindowComposition(controller: controller)
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
         windowModel.isDenMode = true
-        let initialCount = store.focusedDesk?.boards.count ?? 0
+        let initialCount = controller.focusedDesk?.boards.count ?? 0
 
         let pasteboard = NSPasteboard.withUniqueName()
         pasteboard.clearContents()
 
-        store.openBoardFromClipboard(pasteboard: pasteboard, preferredWidth: windowModel.defaultBoardWidth)
+        controller.openBoardFromClipboard(pasteboard: pasteboard, preferredWidth: windowModel.defaultBoardWidth)
 
-        #expect(store.focusedDesk?.boards.count == initialCount)
-        #expect(store.latestFeedback?.message == "Clipboard is empty.")
+        #expect(controller.focusedDesk?.boards.count == initialCount)
+        #expect(controller.latestFeedback?.message == "Clipboard is empty.")
     }
 
     @Test func openBoardFromClipboardReportsConfigurationFailure() {
         // Arrange
         let source = desk("Desk")
-        let store = DenController(state: DenState(desks: [source], focusedDeskID: source.id))
+        let controller = DenController(state: DenState(desks: [source], focusedDeskID: source.id))
         let pasteboard = NSPasteboard.withUniqueName()
         pasteboard.setString(":zmx test-session", forType: .string)
 
         // Act
-        store.openBoardFromClipboard(pasteboard: pasteboard)
+        controller.openBoardFromClipboard(pasteboard: pasteboard)
 
         // Assert
-        #expect(store.focusedDesk?.boards.isEmpty == true)
-        #expect(store.latestFeedback?.message == "Set an absolute zmx executable path in Settings > Terminal.")
+        #expect(controller.focusedDesk?.boards.isEmpty == true)
+        #expect(controller.latestFeedback?.message == "Set an absolute zmx executable path in Settings > Terminal.")
     }
 
     @Test func createTerminalBoardAddsBoardToActiveDeskAndFocuses() throws {
         let source = desk("Desk", boards: [board("First")])
-        try withTestController(desks: [source]) { store in
+        try withTestController(desks: [source]) { controller in
             let dir = FileManager.default.temporaryDirectory.path
-            let boardID = try #require(store.createTerminalBoard(workingDirectory: dir, focus: true))
+            let boardID = try #require(controller.createTerminalBoard(workingDirectory: dir, focus: true))
 
-            let createdBoard = try #require(store.board(for: boardID))
+            let createdBoard = try #require(controller.board(for: boardID))
             #expect(createdBoard.isTerminal)
             #expect(createdBoard.terminalWorkingDirectory == dir)
-            #expect(store.focusedBoard?.id == boardID)
+            #expect(controller.focusedBoard?.id == boardID)
         }
     }
 
@@ -1955,43 +1960,43 @@ struct DenControllerBoardTests {
         let terminalBoard = BoardState(width: 520, workingDirectory: dir)
         let source = desk("Desk", boards: [terminalBoard], focusedBoardID: terminalBoard.id)
         var saveCount = 0
-        let store = DenController(
+        let controller = DenController(
             state: DenState(desks: [source], focusedDeskID: source.id),
             onSave: { _ in saveCount += 1 })
 
-        let runtime = store.terminalRuntime(for: terminalBoard)
+        let runtime = controller.terminalRuntime(for: terminalBoard)
         defer { runtime.dispose() }
 
         runtime.terminalDidChangeTitle("codex: thinking...")
-        #expect(store.focusedBoard?.label == "codex: thinking...")
+        #expect(controller.focusedBoard?.label == "codex: thinking...")
         #expect(saveCount == 0)
 
         runtime.terminalDidChangeWorkingDirectory("/tmp/new-working-dir")
-        #expect(store.focusedBoard?.terminalWorkingDirectory == "/tmp/new-working-dir")
+        #expect(controller.focusedBoard?.terminalWorkingDirectory == "/tmp/new-working-dir")
         #expect(saveCount == 1)
     }
 
     @Test func copyBoardIDCopiesLowercasedUUIDToPasteboardAndShowsFeedback() {
         let firstBoard = board("First")
         let source = desk("Desk", boards: [firstBoard])
-        withTestController(desks: [source]) { store in
+        withTestController(desks: [source]) { controller in
             let pasteboard = NSPasteboard.withUniqueName()
-            store.copyBoardID(firstBoard.id, pasteboard: pasteboard)
+            controller.copyBoardID(firstBoard.id, pasteboard: pasteboard)
 
             #expect(pasteboard.string(forType: .string) == firstBoard.id.rawValue.uuidString.lowercased())
-            #expect(store.latestFeedback?.message == "Copied Board ID.")
-            #expect(store.latestFeedback?.severity == .success)
+            #expect(controller.latestFeedback?.message == "Copied Board ID.")
+            #expect(controller.latestFeedback?.severity == .success)
         }
     }
 
     @Test func copyBoardIDIgnoresUnknownBoardID() {
         let source = desk("Desk", boards: [board("First")])
-        withTestController(desks: [source]) { store in
+        withTestController(desks: [source]) { controller in
             let pasteboard = NSPasteboard.withUniqueName()
-            store.copyBoardID(BoardID(), pasteboard: pasteboard)
+            controller.copyBoardID(BoardID(), pasteboard: pasteboard)
 
             #expect(pasteboard.string(forType: .string) == nil)
-            #expect(store.latestFeedback == nil)
+            #expect(controller.latestFeedback == nil)
         }
     }
 
@@ -2023,14 +2028,14 @@ struct DenControllerBoardTests {
             // Arrange
             let source = desk("Desk", boards: [board], focusedBoardID: board.id)
             let pasteboard = NSPasteboard.withUniqueName()
-            withTestController(desks: [source]) { store in
+            withTestController(desks: [source]) { controller in
                 // Act
-                store.copyBoardLocation(pasteboard: pasteboard)
+                controller.copyBoardLocation(pasteboard: pasteboard)
 
                 // Assert
                 #expect(pasteboard.string(forType: .string) == expectedValue)
-                #expect(store.latestFeedback?.message == expectedFeedback)
-                #expect(store.latestFeedback?.severity == .success)
+                #expect(controller.latestFeedback?.message == expectedFeedback)
+                #expect(controller.latestFeedback?.severity == .success)
             }
         }
     }
@@ -2039,21 +2044,21 @@ struct DenControllerBoardTests {
         let firstBoard = board("First")
         let secondBoard = board("Second")
         let source = desk("Desk", boards: [firstBoard, secondBoard])
-        withTestController(desks: [source]) { store in
-            store.focusBoard(firstBoard.id)
+        withTestController(desks: [source]) { controller in
+            controller.focusBoard(firstBoard.id)
 
-            store.toggleAnchorBoard()
-            #expect(store.focusedDesk?.anchorBoardID == firstBoard.id)
-            #expect(store.latestFeedback?.message == "Set Anchor Board")
+            controller.toggleAnchorBoard()
+            #expect(controller.focusedDesk?.anchorBoardID == firstBoard.id)
+            #expect(controller.latestFeedback?.message == "Set Anchor Board")
 
-            store.toggleAnchorBoard()
-            #expect(store.focusedDesk?.anchorBoardID == nil)
-            #expect(store.latestFeedback?.message == "Cleared Anchor Board")
+            controller.toggleAnchorBoard()
+            #expect(controller.focusedDesk?.anchorBoardID == nil)
+            #expect(controller.latestFeedback?.message == "Cleared Anchor Board")
 
-            store.focusBoard(secondBoard.id)
-            store.toggleAnchorBoard()
-            #expect(store.focusedDesk?.anchorBoardID == secondBoard.id)
-            #expect(store.latestFeedback?.message == "Set Anchor Board")
+            controller.focusBoard(secondBoard.id)
+            controller.toggleAnchorBoard()
+            #expect(controller.focusedDesk?.anchorBoardID == secondBoard.id)
+            #expect(controller.latestFeedback?.message == "Set Anchor Board")
         }
     }
 
@@ -2063,18 +2068,18 @@ struct DenControllerBoardTests {
         let focusedDesk = desk("Current", boards: [focusedBoard], focusedBoardID: focusedBoard.id)
         let targetDesk = desk("Overview", boards: [targetBoard])
 
-        withTestController(desks: [focusedDesk, targetDesk]) { store in
-            store.focusBoard(focusedBoard.id)
+        withTestController(desks: [focusedDesk, targetDesk]) { controller in
+            controller.focusBoard(focusedBoard.id)
 
-            store.toggleAnchorBoard(targetBoard.id, in: targetDesk.id)
-            #expect(store.state.desks.first(where: { $0.id == targetDesk.id })?.anchorBoardID == targetBoard.id)
-            #expect(store.focusedDesk?.id == focusedDesk.id)
-            #expect(store.focusedBoard?.id == focusedBoard.id)
+            controller.toggleAnchorBoard(targetBoard.id, in: targetDesk.id)
+            #expect(controller.state.desks.first(where: { $0.id == targetDesk.id })?.anchorBoardID == targetBoard.id)
+            #expect(controller.focusedDesk?.id == focusedDesk.id)
+            #expect(controller.focusedBoard?.id == focusedBoard.id)
 
-            store.toggleAnchorBoard(targetBoard.id, in: targetDesk.id)
-            #expect(store.state.desks.first(where: { $0.id == targetDesk.id })?.anchorBoardID == nil)
-            #expect(store.focusedDesk?.id == focusedDesk.id)
-            #expect(store.focusedBoard?.id == focusedBoard.id)
+            controller.toggleAnchorBoard(targetBoard.id, in: targetDesk.id)
+            #expect(controller.state.desks.first(where: { $0.id == targetDesk.id })?.anchorBoardID == nil)
+            #expect(controller.focusedDesk?.id == focusedDesk.id)
+            #expect(controller.focusedBoard?.id == focusedBoard.id)
         }
     }
 
@@ -2082,27 +2087,27 @@ struct DenControllerBoardTests {
         let firstBoard = board("First")
         let secondBoard = board("Second")
         let source = desk("Desk", boards: [firstBoard, secondBoard])
-        withTestController(desks: [source]) { store in
-            store.focusBoard(firstBoard.id)
-            store.toggleAnchorBoard()
+        withTestController(desks: [source]) { controller in
+            controller.focusBoard(firstBoard.id)
+            controller.toggleAnchorBoard()
 
-            store.focusBoard(secondBoard.id)
-            #expect(store.focusedBoard?.id == secondBoard.id)
+            controller.focusBoard(secondBoard.id)
+            #expect(controller.focusedBoard?.id == secondBoard.id)
 
-            store.jumpToAnchorBoard()
-            #expect(store.focusedBoard?.id == firstBoard.id)
+            controller.jumpToAnchorBoard()
+            #expect(controller.focusedBoard?.id == firstBoard.id)
 
-            store.jumpToAnchorBoard()
-            #expect(store.focusedBoard?.id == secondBoard.id)
+            controller.jumpToAnchorBoard()
+            #expect(controller.focusedBoard?.id == secondBoard.id)
         }
     }
 
     @Test func jumpToAnchorBoardShowsWarningWhenNoAnchor() {
         let source = desk("Desk", boards: [board("First")])
-        withTestController(desks: [source]) { store in
-            store.jumpToAnchorBoard()
-            #expect(store.latestFeedback?.message == "No Anchor Board in Desk")
-            #expect(store.latestFeedback?.severity == .warning)
+        withTestController(desks: [source]) { controller in
+            controller.jumpToAnchorBoard()
+            #expect(controller.latestFeedback?.message == "No Anchor Board in Desk")
+            #expect(controller.latestFeedback?.severity == .warning)
         }
     }
 
@@ -2110,17 +2115,17 @@ struct DenControllerBoardTests {
         let firstBoard = board("First")
         let secondBoard = board("Second")
         let source = desk("Desk", boards: [firstBoard, secondBoard])
-        withTestController(desks: [source]) { store in
-            store.focusBoard(firstBoard.id)
-            store.toggleAnchorBoard()
-            #expect(store.focusedDesk?.anchorBoardID == firstBoard.id)
-            store.focusBoard(secondBoard.id)
-            store.jumpToAnchorBoard()
-            #expect(store.anchorJumpOriginBoardIDByDesk[source.id] == secondBoard.id)
+        withTestController(desks: [source]) { controller in
+            controller.focusBoard(firstBoard.id)
+            controller.toggleAnchorBoard()
+            #expect(controller.focusedDesk?.anchorBoardID == firstBoard.id)
+            controller.focusBoard(secondBoard.id)
+            controller.jumpToAnchorBoard()
+            #expect(controller.anchorJumpOriginBoardIDByDesk[source.id] == secondBoard.id)
 
-            store.removeBoard(firstBoard.id)
-            #expect(store.focusedDesk?.anchorBoardID == nil)
-            #expect(store.anchorJumpOriginBoardIDByDesk[source.id] == nil)
+            controller.removeBoard(firstBoard.id)
+            #expect(controller.focusedDesk?.anchorBoardID == nil)
+            #expect(controller.anchorJumpOriginBoardIDByDesk[source.id] == nil)
         }
     }
 
@@ -2129,35 +2134,35 @@ struct DenControllerBoardTests {
         let second = board("Second")
         let source = desk("Desk", boards: [first, second], focusedBoardID: first.id)
         withTestWindowModel(desks: [source]) { windowModel in
-            let store = windowModel.store
+            let controller = windowModel.controller
             windowModel.setTemporaryContext(.openBoard)
-            store.duplicateFocusedBoard()
+            controller.duplicateFocusedBoard()
 
             #expect(windowModel.temporaryContext == nil)
             #expect(windowModel.isDenMode == false)
-            let boards = store.focusedDesk?.boards ?? []
+            let boards = controller.focusedDesk?.boards ?? []
             #expect(boards.count == 3)
             #expect(boards[0].id == first.id)
             #expect(boards[1].id != first.id)
             #expect(boards[1].terminalWorkingDirectory == "/tmp")
             #expect(boards[2].id == second.id)
-            #expect(store.focusedBoard?.id == boards[1].id)
+            #expect(controller.focusedBoard?.id == boards[1].id)
         }
     }
 
     @Test func openBoardRecentItemDelegatesToOpenBoardInput() {
         let source = desk("Desk")
-        withTestController(desks: [source]) { store in
-            store.preferences.setZmxPath("/usr/bin/zmx")
-            store.preferences.setZellijPath("/usr/bin/zellij")
+        withTestController(desks: [source]) { controller in
+            controller.preferences.setZmxPath("/usr/bin/zmx")
+            controller.preferences.setZellijPath("/usr/bin/zellij")
 
-            store.openBoard(recentItem: .zellij(sessionName: "my-session"))
-            #expect(store.focusedBoard?.zellijSessionName == "my-session")
-            #expect(store.recentItems.first == .zellij(sessionName: "my-session"))
+            controller.openBoard(recentItem: .zellij(sessionName: "my-session"))
+            #expect(controller.focusedBoard?.zellijSessionName == "my-session")
+            #expect(controller.recentItems.first == .zellij(sessionName: "my-session"))
 
-            store.openBoard(recentItem: .zmx(sessionName: "zmx-session"))
-            #expect(store.focusedBoard?.zmxSessionName == "zmx-session")
-            #expect(store.recentItems.first == .zmx(sessionName: "zmx-session"))
+            controller.openBoard(recentItem: .zmx(sessionName: "zmx-session"))
+            #expect(controller.focusedBoard?.zmxSessionName == "zmx-session")
+            #expect(controller.recentItems.first == .zmx(sessionName: "zmx-session"))
         }
     }
 }

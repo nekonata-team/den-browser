@@ -32,22 +32,22 @@ struct DenControllerRecentTests {
                 savedItems = $0
                 return true
             },
-            body: { store in
-                store.openBoard(input: url.absoluteString)
-                let boardID = try #require(store.focusedDesk?.boards.first?.id)
-                store.updateBoard(boardID: boardID, url: url, title: "Example page")
+            body: { controller in
+                controller.openBoard(input: url.absoluteString)
+                let boardID = try #require(controller.focusedDesk?.boards.first?.id)
+                controller.updateBoard(boardID: boardID, url: url, title: "Example page")
 
-                #expect(store.recentItems.first?.title == "Example page")
-                #expect(savedItems == store.recentItems)
+                #expect(controller.recentItems.first?.title == "Example page")
+                #expect(savedItems == controller.recentItems)
 
-                store.openBoard(input: url.absoluteString)
-                #expect(store.recentItems.first?.title == "Example page")
+                controller.openBoard(input: url.absoluteString)
+                #expect(controller.recentItems.first?.title == "Example page")
 
-                store.updateBoard(
+                controller.updateBoard(
                     boardID: boardID,
                     url: URL(string: "https://example.com/next"),
                     title: "Next page")
-                #expect(store.recentItems.first?.title == "Example page")
+                #expect(controller.recentItems.first?.title == "Example page")
             })
     }
 
@@ -59,51 +59,52 @@ struct DenControllerRecentTests {
                 savedItems = $0
                 return true
             },
-            body: { store in
-                store.openBoard(input: "example.com")
-                store.openBoard(input: "Swift Observation")
-                store.openBoard(input: "https://EXAMPLE.com/")
+            body: { controller in
+                controller.openBoard(input: "example.com")
+                controller.openBoard(input: "Swift Observation")
+                controller.openBoard(input: "https://EXAMPLE.com/")
 
                 #expect(
-                    store.recentItems == [
+                    controller.recentItems == [
                         .url(expectedURL),
                         .search("Swift Observation"),
                     ])
-                #expect(savedItems == store.recentItems)
+                #expect(savedItems == controller.recentItems)
             })
     }
 
     @Test func recentSearchDeduplicationIgnoresCaseAndRepeatedWhitespace() {
         withTestController(
             onRecentItemsSave: { _ in true },
-            body: { store in
-                store.openBoard(input: "Swift   Observation")
-                store.openBoard(input: "swift observation")
+            body: { controller in
+                controller.openBoard(input: "Swift   Observation")
+                controller.openBoard(input: "swift observation")
 
-                #expect(store.recentItems == [.search("swift observation")])
+                #expect(controller.recentItems == [.search("swift observation")])
             })
     }
 
     @Test func pastedLineBreaksDoNotBreakURLOrSearchInput() throws {
         try withTestController(
             onRecentItemsSave: { _ in true },
-            body: { store in
-                store.openBoard(input: "https://example.com/long-\npath")
-                store.openBoard(input: "Swift\nObservation")
+            body: { controller in
+                controller.openBoard(input: "https://example.com/long-\npath")
+                controller.openBoard(input: "Swift\nObservation")
 
                 #expect(
-                    store.focusedDesk?.boards.first?.currentSheetURL == URL(string: "https://example.com/long-path"))
+                    controller.focusedDesk?.boards.first?.currentSheetURL
+                        == URL(string: "https://example.com/long-path"))
                 let searchURL = try #require(
-                    store.focusedDesk?.boards.last?.currentSheetURL
+                    controller.focusedDesk?.boards.last?.currentSheetURL
                         .flatMap { URLComponents(url: $0, resolvingAgainstBaseURL: false) })
                 #expect(searchURL.queryItems == [URLQueryItem(name: "q", value: "Swift Observation")])
                 #expect(
-                    store.recentItems == [
+                    controller.recentItems == [
                         .search("Swift Observation"),
                         .url(URL(string: "https://example.com/long-path")!),
                     ])
 
-                let composition = DenWindowComposition(store: store)
+                let composition = DenWindowComposition(controller: controller)
 
                 let windowModel = composition.model
                 composition.connect()
@@ -136,17 +137,17 @@ struct DenControllerRecentTests {
                 savedItems = $0
                 return true
             },
-            body: { store in
-                store.openBoard(input: "https://example.com/500")
+            body: { controller in
+                controller.openBoard(input: "https://example.com/500")
 
-                #expect(store.recentItems.count == 500)
-                #expect(store.recentItems.first == .url(URL(string: "https://example.com/500")!))
-                #expect(store.recentItems.last == .url(URL(string: "https://example.com/1")!))
-                #expect(!store.recentItems.contains(.url(URL(string: "https://example.com/0")!)))
+                #expect(controller.recentItems.count == 500)
+                #expect(controller.recentItems.first == .url(URL(string: "https://example.com/500")!))
+                #expect(controller.recentItems.last == .url(URL(string: "https://example.com/1")!))
+                #expect(!controller.recentItems.contains(.url(URL(string: "https://example.com/0")!)))
 
-                store.clearRecent()
+                controller.clearRecent()
 
-                #expect(store.recentItems.isEmpty)
+                #expect(controller.recentItems.isEmpty)
                 #expect(savedItems.isEmpty)
             })
     }
@@ -156,30 +157,30 @@ struct DenControllerRecentTests {
         withTestController(
             recentItems: original,
             onRecentItemsSave: { _ in false },
-            body: { store in
-                store.openBoard(input: "new search")
+            body: { controller in
+                controller.openBoard(input: "new search")
 
-                #expect(store.recentItems == original)
-                #expect(store.focusedDesk?.boards.count == 1)
+                #expect(controller.recentItems == original)
+                #expect(controller.focusedDesk?.boards.count == 1)
             })
     }
 
     @Test func terminalAndZellijInputsBecomeRecentItems() {
-        withTestController { store in
-            store.preferences.setZellijPath("/opt/homebrew/bin/zellij")
-            store.preferences.setZmxPath("/opt/homebrew/bin/zmx")
+        withTestController { controller in
+            controller.preferences.setZellijPath("/opt/homebrew/bin/zellij")
+            controller.preferences.setZmxPath("/opt/homebrew/bin/zmx")
             let home = FileManager.default.homeDirectoryForCurrentUser.standardizedFileURL.path
             let directory = FileManager.default.temporaryDirectory.standardizedFileURL.path
 
-            store.openBoard(input: ":terminal")
-            store.openBoard(input: ":terminal ~")
-            store.openBoard(input: ":terminal \(directory)")
-            store.openBoard(input: ":zellij")
-            store.openBoard(input: ":zellij project-a")
-            store.openBoard(input: ":zmx project-a")
+            controller.openBoard(input: ":terminal")
+            controller.openBoard(input: ":terminal ~")
+            controller.openBoard(input: ":terminal \(directory)")
+            controller.openBoard(input: ":zellij")
+            controller.openBoard(input: ":zellij project-a")
+            controller.openBoard(input: ":zmx project-a")
 
             #expect(
-                store.recentItems == [
+                controller.recentItems == [
                     .zmx(sessionName: "project-a"),
                     .zellij(sessionName: "project-a"),
                     .zellij(sessionName: nil),
@@ -192,37 +193,37 @@ struct DenControllerRecentTests {
     @Test func essentialLaunchBecomesRecentItem() throws {
         let essential = Essential(name: "Docs", key: "d", input: "https://docs.example/")
         let expectedURL = try #require(URL(string: essential.input))
-        withTestController { store in
-            #expect(store.preferences.setEssentials([essential]))
-            store.launchEssential(id: essential.id)
-            #expect(store.recentItems == [.url(expectedURL)])
+        withTestController { controller in
+            #expect(controller.preferences.setEssentials([essential]))
+            controller.launchEssential(id: essential.id)
+            #expect(controller.recentItems == [.url(expectedURL)])
         }
     }
 
     @Test func essentialLaunchReportsConfigurationFailure() {
         // Arrange
         let essential = Essential(name: "Project", key: "p", input: ":zmx project")
-        withTestController { store in
-            #expect(store.preferences.setEssentials([essential]))
-            let initialBoardCount = store.focusedDesk?.boards.count
+        withTestController { controller in
+            #expect(controller.preferences.setEssentials([essential]))
+            let initialBoardCount = controller.focusedDesk?.boards.count
 
             // Act
-            store.launchEssential(id: essential.id)
+            controller.launchEssential(id: essential.id)
 
             // Assert
-            #expect(store.focusedDesk?.boards.count == initialBoardCount)
-            #expect(store.latestFeedback?.message == "Set an absolute zmx executable path in Settings > Terminal.")
-            #expect(store.latestFeedback?.severity == .warning)
+            #expect(controller.focusedDesk?.boards.count == initialBoardCount)
+            #expect(controller.latestFeedback?.message == "Set an absolute zmx executable path in Settings > Terminal.")
+            #expect(controller.latestFeedback?.severity == .warning)
         }
     }
 
     @Test func openingZmxSessionsPickerDoesNotCreateRecentItem() {
-        withTestController { store in
-            store.preferences.setZmxPath("/opt/homebrew/bin/zmx")
+        withTestController { controller in
+            controller.preferences.setZmxPath("/opt/homebrew/bin/zmx")
 
-            store.openBoard(input: ":zmx")
+            controller.openBoard(input: ":zmx")
 
-            #expect(store.recentItems.isEmpty)
+            #expect(controller.recentItems.isEmpty)
         }
     }
 
@@ -232,11 +233,11 @@ struct DenControllerRecentTests {
         withTestController(
             recentItems: [.search("existing"), item],
             onRecentItemsSave: { _ in true },
-            body: { store in
-                store.openBoard(recentItem: item)
+            body: { controller in
+                controller.openBoard(recentItem: item)
 
-                #expect(store.focusedBoard?.terminalWorkingDirectory == directory)
-                #expect(store.recentItems.first == item)
+                #expect(controller.focusedBoard?.terminalWorkingDirectory == directory)
+                #expect(controller.recentItems.first == item)
             })
     }
 
@@ -246,13 +247,13 @@ struct DenControllerRecentTests {
         withTestController(
             recentItems: [item],
             onRecentItemsSave: { _ in true },
-            body: { store in
-                withTestWindowModel(store: store) { windowModel in
-                    store.openBoard(recentItem: item)
+            body: { controller in
+                withTestWindowModel(controller: controller) { windowModel in
+                    controller.openBoard(recentItem: item)
 
-                    #expect(store.focusedDesk?.boards.isEmpty == true)
+                    #expect(controller.focusedDesk?.boards.isEmpty == true)
                     #expect(windowModel.openBoard.message?.contains("does not exist") == true)
-                    #expect(store.recentItems == [item])
+                    #expect(controller.recentItems == [item])
                 }
             })
     }
@@ -262,13 +263,13 @@ struct DenControllerRecentTests {
         withTestController(
             recentItems: [.search("existing"), item],
             onRecentItemsSave: { _ in true },
-            body: { store in
-                store.preferences.setZellijPath("/opt/homebrew/bin/zellij")
-                store.openBoard(recentItem: item)
+            body: { controller in
+                controller.preferences.setZellijPath("/opt/homebrew/bin/zellij")
+                controller.openBoard(recentItem: item)
 
-                #expect(store.focusedBoard?.isZellij == true)
-                #expect(store.focusedBoard?.zellijSessionName == "project-a")
-                #expect(store.recentItems.first == item)
+                #expect(controller.focusedBoard?.isZellij == true)
+                #expect(controller.focusedBoard?.zellijSessionName == "project-a")
+                #expect(controller.recentItems.first == item)
             })
     }
 
@@ -277,13 +278,13 @@ struct DenControllerRecentTests {
         withTestController(
             recentItems: [.search("existing"), item],
             onRecentItemsSave: { _ in true },
-            body: { store in
-                store.preferences.setZmxPath("/opt/homebrew/bin/zmx")
-                store.openBoard(recentItem: item)
+            body: { controller in
+                controller.preferences.setZmxPath("/opt/homebrew/bin/zmx")
+                controller.openBoard(recentItem: item)
 
-                #expect(store.focusedBoard?.isZmx == true)
-                #expect(store.focusedBoard?.zmxSessionName == "project-a")
-                #expect(store.recentItems.first == item)
+                #expect(controller.focusedBoard?.isZmx == true)
+                #expect(controller.focusedBoard?.zmxSessionName == "project-a")
+                #expect(controller.recentItems.first == item)
             })
     }
 
@@ -292,13 +293,13 @@ struct DenControllerRecentTests {
         withTestController(
             recentItems: [item],
             onRecentItemsSave: { _ in true },
-            body: { store in
-                withTestWindowModel(store: store) { windowModel in
-                    store.openBoard(recentItem: item)
+            body: { controller in
+                withTestWindowModel(controller: controller) { windowModel in
+                    controller.openBoard(recentItem: item)
 
-                    #expect(store.focusedDesk?.boards.isEmpty == true)
+                    #expect(controller.focusedDesk?.boards.isEmpty == true)
                     #expect(windowModel.openBoard.message?.contains("absolute Zellij executable path") == true)
-                    #expect(store.recentItems == [item])
+                    #expect(controller.recentItems == [item])
                 }
             })
     }
@@ -308,13 +309,13 @@ struct DenControllerRecentTests {
         withTestController(
             recentItems: [item],
             onRecentItemsSave: { _ in true },
-            body: { store in
-                withTestWindowModel(store: store) { windowModel in
-                    store.openBoard(recentItem: item)
+            body: { controller in
+                withTestWindowModel(controller: controller) { windowModel in
+                    controller.openBoard(recentItem: item)
 
-                    #expect(store.focusedDesk?.boards.isEmpty == true)
+                    #expect(controller.focusedDesk?.boards.isEmpty == true)
                     #expect(windowModel.openBoard.message?.contains("absolute zmx executable path") == true)
-                    #expect(store.recentItems == [item])
+                    #expect(controller.recentItems == [item])
                 }
             })
     }

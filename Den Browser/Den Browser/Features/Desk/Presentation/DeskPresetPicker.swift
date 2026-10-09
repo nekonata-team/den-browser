@@ -19,7 +19,7 @@ struct DeskPresetPicker: View {
     let isSearchFocused: FocusState<Bool>.Binding
     let onConfirm: (DeskPresetSelection) -> Void
 
-    @Environment(DenController.self) private var store
+    @Environment(DenController.self) private var controller
     @State private var scrollPosition = ScrollPosition()
     @State private var selection: DeskPresetSelection
     @State private var preservesSelectionAfterManagement = false
@@ -76,7 +76,7 @@ struct DeskPresetPicker: View {
                             .frame(width: 30, height: 30)
                     }
                     .buttonStyle(.plain)
-                    .disabled(store.deskPresets.isEmpty)
+                    .disabled(controller.deskPresets.isEmpty)
                     .accessibilityLabel("Manage Presets")
                     .help("Manage Personal Desk Presets")
                 }
@@ -92,7 +92,7 @@ struct DeskPresetPicker: View {
             DeskPresetPreview(boards: selectedBoards)
 
         }
-        .onChange(of: store.deskPresets.map(\.id)) { _, ids in
+        .onChange(of: controller.deskPresets.map(\.id)) { _, ids in
             if case .personal(let id) = selection, !ids.contains(id) {
                 preservesSelectionAfterManagement = false
                 let fallback = matchingChoices.first?.selection ?? .builtIn(.empty)
@@ -196,7 +196,7 @@ struct DeskPresetPicker: View {
     }
 
     private var personalChoices: [DeskPresetChoice] {
-        store.deskPresets.map {
+        controller.deskPresets.map {
             DeskPresetChoice(
                 selection: .personal($0.id), label: $0.label, boards: $0.boards, sourceLabel: "My Preset")
         }
@@ -224,7 +224,7 @@ struct DeskPresetPicker: View {
     private var selectedBoards: [DeskPresetBoard] {
         switch selection {
         case .personal(let id):
-            store.deskPresets.first(where: { $0.id == id })?.boards ?? []
+            controller.deskPresets.first(where: { $0.id == id })?.boards ?? []
         case .builtIn(let preset):
             preset.boards
         case .newDesk:

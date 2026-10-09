@@ -162,7 +162,7 @@ enum DrawerAction: Equatable {
 enum AppActionHandler {
     static func perform(
         _ action: AppAction,
-        store: DenController?,
+        controller: DenController?,
         windowModel: DenWindowModel?,
         openSettings: () -> Void = {}
     ) {
@@ -170,7 +170,7 @@ enum AppActionHandler {
             openSettings()
             return
         }
-        guard let store, let windowModel else { return }
+        guard let controller, let windowModel else { return }
 
         switch action {
         case .application(let action):
@@ -207,25 +207,25 @@ enum AppActionHandler {
                 case "\u{8}", "\u{7F}": label = "Delete"
                 default: label = key
                 }
-                store.reportFeedback("No Essential assigned to '\(label)'.", severity: .warning)
+                controller.reportFeedback("No Essential assigned to '\(label)'.", severity: .warning)
             case .launch(let id): windowModel.launchEssential(id: id)
             case .saveFocusedBoardAsEssential: windowModel.saveFocusedBoardAsEssential()
             }
         case .desk(let action):
             switch action {
-            case .focusPrevious: store.focusPreviousDesk()
-            case .focusNext: store.focusNextDesk()
-            case .returnToPrevious: store.returnToPreviousDesk()
-            case .focus(let number): store.focusDesk(number: number)
+            case .focusPrevious: controller.focusPreviousDesk()
+            case .focusNext: controller.focusNextDesk()
+            case .returnToPrevious: controller.returnToPreviousDesk()
+            case .focus(let number): controller.focusDesk(number: number)
             case .showNewPanel: windowModel.showNewDeskPanel()
             case .showSavePresetPanel: windowModel.showSaveDeskPresetPanel()
             case .showReplacePanel: windowModel.showReplaceDeskPanel()
             case .showPresetManager: windowModel.showDeskPresetManagement()
             case .showRenamePanel: windowModel.showRenameDeskPanel()
-            case .delete: store.deleteFocusedDesk()
+            case .delete: controller.deleteFocusedDesk()
             case .adjustBoardWidths(let amount): windowModel.adjustFocusedDeskBoardWidths(by: amount)
             case .resizeBoards(let count): windowModel.resizeFocusedDeskBoards(toFit: count)
-            case .reloadSheets: store.reloadFocusedDeskSheets()
+            case .reloadSheets: controller.reloadFocusedDeskSheets()
             case .enterFilter: windowModel.deskFilter.enter()
             case .dismissFilter: windowModel.deskFilter.dismiss()
             case .confirmFilterQuery: windowModel.deskFilter.confirmQuery()
@@ -235,20 +235,20 @@ enum AppActionHandler {
             }
         case .board(let action):
             switch action {
-            case .focusPrevious: store.focusPreviousBoard()
-            case .focusNext: store.focusNextBoard()
-            case .moveLeft: store.moveFocusedBoardLeft()
-            case .moveRight: store.moveFocusedBoardRight()
-            case .increaseSheetSize: store.adjustFocusedSheetSize(by: 1)
-            case .decreaseSheetSize: store.adjustFocusedSheetSize(by: -1)
-            case .resetSheetSize: store.resetFocusedSheetSize()
-            case .toggleAnchor: store.toggleAnchorBoard()
-            case .jumpToAnchor: store.jumpToAnchorBoard()
-            case .moveToPreviousDesk: store.moveFocusedBoardToPreviousDesk()
-            case .moveToNextDesk: store.moveFocusedBoardToNextDesk()
-            case .moveToDesk(let number): store.moveFocusedBoard(toDeskNumber: number)
+            case .focusPrevious: controller.focusPreviousBoard()
+            case .focusNext: controller.focusNextBoard()
+            case .moveLeft: controller.moveFocusedBoardLeft()
+            case .moveRight: controller.moveFocusedBoardRight()
+            case .increaseSheetSize: controller.adjustFocusedSheetSize(by: 1)
+            case .decreaseSheetSize: controller.adjustFocusedSheetSize(by: -1)
+            case .resetSheetSize: controller.resetFocusedSheetSize()
+            case .toggleAnchor: controller.toggleAnchorBoard()
+            case .jumpToAnchor: controller.jumpToAnchorBoard()
+            case .moveToPreviousDesk: controller.moveFocusedBoardToPreviousDesk()
+            case .moveToNextDesk: controller.moveFocusedBoardToNextDesk()
+            case .moveToDesk(let number): controller.moveFocusedBoard(toDeskNumber: number)
             case .showOpenPanel: windowModel.showOpenBoardPanel()
-            case .openFromClipboard: store.openBoardFromClipboard(preferredWidth: windowModel.defaultBoardWidth)
+            case .openFromClipboard: controller.openBoardFromClipboard(preferredWidth: windowModel.defaultBoardWidth)
             case .showWidthPanel: windowModel.showBoardWidthPanel()
             case .hideWidthPanel: windowModel.hideBoardWidthPanel()
             case .adjustWidth(let amount): windowModel.adjustFocusedBoardWidth(by: amount)
@@ -256,28 +256,28 @@ enum AppActionHandler {
             case .center: windowModel.centerFocusedBoard()
             case .revealPrevious: windowModel.revealPreviousBoard()
             case .revealNext: windowModel.revealNextBoard()
-            case .toggleSheetNavigationPause: store.toggleFocusedBoardSheetNavigationPause()
-            case .reloadFromOrigin: store.reloadFocusedBoardFromOrigin()
-            case .reload: store.reloadFocusedBoard()
-            case .goBack: store.goBackInFocusedBoard()
-            case .goForward: store.goForwardInFocusedBoard()
-            case .goToFirstSheet: store.goToFirstSheetInFocusedBoard()
-            case .goToLatestSheet: store.goToLatestSheetInFocusedBoard()
-            case .captureSheet: store.captureFocusedSheetScreenshot()
-            case .copySheetScreenshot: store.copyFocusedSheetScreenshot()
-            case .copyLocation: store.copyBoardLocation()
+            case .toggleSheetNavigationPause: controller.toggleFocusedBoardSheetNavigationPause()
+            case .reloadFromOrigin: controller.reloadFocusedBoardFromOrigin()
+            case .reload: controller.reloadFocusedBoard()
+            case .goBack: controller.goBackInFocusedBoard()
+            case .goForward: controller.goForwardInFocusedBoard()
+            case .goToFirstSheet: controller.goToFirstSheetInFocusedBoard()
+            case .goToLatestSheet: controller.goToLatestSheetInFocusedBoard()
+            case .captureSheet: controller.captureFocusedSheetScreenshot()
+            case .copySheetScreenshot: controller.copyFocusedSheetScreenshot()
+            case .copyLocation: controller.copyBoardLocation()
             case .copyID:
-                if let boardID = store.focusedBoard?.id {
-                    store.copyBoardID(boardID)
+                if let boardID = controller.focusedBoard?.id {
+                    controller.copyBoardID(boardID)
                 }
-            case .keepSheetInDrawer: store.keepFocusedSheetInDrawer()
-            case .remove: store.removeFocusedBoard()
-            case .removeAndFocusNext: store.removeFocusedBoard(focusNext: true)
-            case .restore: store.restoreRecentlyRemovedBoard()
+            case .keepSheetInDrawer: controller.keepFocusedSheetInDrawer()
+            case .remove: controller.removeFocusedBoard()
+            case .removeAndFocusNext: controller.removeFocusedBoard(focusNext: true)
+            case .restore: controller.restoreRecentlyRemovedBoard()
             case .showRenamePanel: windowModel.showRenameBoardPanel()
             case .showEditLinkPanel: windowModel.showEditBoardLinkPanel()
-            case .duplicate: store.duplicateFocusedBoard()
-            case .duplicateFirstSheet: store.duplicateFocusedBoardFromFirstSheet()
+            case .duplicate: controller.duplicateFocusedBoard()
+            case .duplicateFirstSheet: controller.duplicateFocusedBoardFromFirstSheet()
             case .requestDragCancellation: windowModel.requestBoardDragCancellation()
             }
         case .zmxSessions(let action):
@@ -327,9 +327,9 @@ enum AppActionHandler {
             case .toggleSelectedItem: windowModel.drawer.toggleSelectedItem()
             case .discardSelectedItem(let focusNext):
                 windowModel.drawer.discardSelectedItem(focusNext: focusNext)
-            case .restoreDiscardedItem: store.restoreRecentlyDiscardedDrawerItem()
+            case .restoreDiscardedItem: controller.restoreRecentlyDiscardedDrawerItem()
             case .placeSelectedItemAsBoard: windowModel.placeSelectedDrawerItemAsBoard()
-            case .requestClearConfirmation: store.requestDrawerClearConfirmation()
+            case .requestClearConfirmation: controller.requestDrawerClearConfirmation()
             }
         }
     }

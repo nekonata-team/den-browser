@@ -4,8 +4,8 @@ import DenDomain
 @MainActor
 final class ProfileWindowRegistry {
     private var windows: [UUID: RegisteredWindow] = [:]
-    private var stores: [UUID: DenController] = [:]
-    private var storeProfileIDs: [UUID: ProfileID] = [:]
+    private var controllers: [UUID: DenController] = [:]
+    private var controllerProfileIDs: [UUID: ProfileID] = [:]
     var openWindowAction: ((ProfileWindowRoute) -> Void)?
 
     func register(window: NSWindow, profileID: ProfileID, windowID: UUID) {
@@ -19,87 +19,87 @@ final class ProfileWindowRegistry {
 
     func removeWindow(windowID: UUID) -> RemovedProfileWindow {
         let registration = windows.removeValue(forKey: windowID)
-        let store = stores.removeValue(forKey: windowID)
-        let profileID = storeProfileIDs.removeValue(forKey: windowID) ?? registration?.profileID
-        return RemovedProfileWindow(registration: registration, store: store, profileID: profileID)
+        let controller = controllers.removeValue(forKey: windowID)
+        let profileID = controllerProfileIDs.removeValue(forKey: windowID) ?? registration?.profileID
+        return RemovedProfileWindow(registration: registration, controller: controller, profileID: profileID)
     }
 
-    func setStore(_ store: DenController, windowID: UUID, profileID: ProfileID) {
-        stores[windowID] = store
-        storeProfileIDs[windowID] = profileID
+    func setController(_ controller: DenController, windowID: UUID, profileID: ProfileID) {
+        controllers[windowID] = controller
+        controllerProfileIDs[windowID] = profileID
     }
 
-    func store(for windowID: UUID) -> DenController? {
-        stores[windowID]
+    func controller(for windowID: UUID) -> DenController? {
+        controllers[windowID]
     }
 
     func profileID(for windowID: UUID) -> ProfileID? {
-        storeProfileIDs[windowID]
+        controllerProfileIDs[windowID]
     }
 
-    func store(for window: NSWindow) -> DenController? {
-        windowID(for: window).flatMap { stores[$0] }
+    func controller(for window: NSWindow) -> DenController? {
+        windowID(for: window).flatMap { controllers[$0] }
     }
 
-    func storeEntries() -> [(windowID: UUID, profileID: ProfileID?, store: DenController)] {
-        stores.map { windowID, store in
-            (windowID, storeProfileIDs[windowID], store)
+    func controllerEntries() -> [(windowID: UUID, profileID: ProfileID?, controller: DenController)] {
+        controllers.map { windowID, controller in
+            (windowID, controllerProfileIDs[windowID], controller)
         }
     }
 
-    func activeStore(preferredWindowID: UUID?) -> DenController? {
+    func activeController(preferredWindowID: UUID?) -> DenController? {
         if let preferredWindowID {
-            return stores[preferredWindowID]
+            return controllers[preferredWindowID]
         }
-        return stores.values.first
+        return controllers.values.first
     }
 
     func activeProfileID(preferredWindowID: UUID?) -> ProfileID? {
         if let preferredWindowID {
-            return storeProfileIDs[preferredWindowID]
+            return controllerProfileIDs[preferredWindowID]
         }
-        return stores.keys.first.flatMap { storeProfileIDs[$0] }
+        return controllers.keys.first.flatMap { controllerProfileIDs[$0] }
     }
 
-    func store(forProfileID profileID: ProfileID, preferredWindowID: UUID?) -> DenController? {
+    func controller(forProfileID profileID: ProfileID, preferredWindowID: UUID?) -> DenController? {
         if let preferredWindowID,
-            storeProfileIDs[preferredWindowID] == profileID,
-            let store = stores[preferredWindowID]
+            controllerProfileIDs[preferredWindowID] == profileID,
+            let controller = controllers[preferredWindowID]
         {
-            return store
+            return controller
         }
-        for (windowID, candidateProfileID) in storeProfileIDs where candidateProfileID == profileID {
-            if let store = stores[windowID] {
-                return store
+        for (windowID, candidateProfileID) in controllerProfileIDs where candidateProfileID == profileID {
+            if let controller = controllers[windowID] {
+                return controller
             }
         }
         return nil
     }
 
-    func profileID(for store: DenController) -> ProfileID? {
-        for (windowID, candidateStore) in stores where candidateStore === store {
-            return storeProfileIDs[windowID]
+    func profileID(for controller: DenController) -> ProfileID? {
+        for (windowID, candidateController) in controllers where candidateController === controller {
+            return controllerProfileIDs[windowID]
         }
         return nil
     }
 
-    func stores(for profileID: ProfileID) -> [DenController] {
-        storeProfileIDs.compactMap { windowID, candidateProfileID in
-            candidateProfileID == profileID ? stores[windowID] : nil
+    func controllers(for profileID: ProfileID) -> [DenController] {
+        controllerProfileIDs.compactMap { windowID, candidateProfileID in
+            candidateProfileID == profileID ? controllers[windowID] : nil
         }
     }
 
-    func allStores() -> [DenController] {
-        Array(stores.values)
+    func allControllers() -> [DenController] {
+        Array(controllers.values)
     }
 
-    func hasStore(for profileID: ProfileID) -> Bool {
-        storeProfileIDs.values.contains(profileID)
+    func hasController(for profileID: ProfileID) -> Bool {
+        controllerProfileIDs.values.contains(profileID)
     }
 
-    func storeWindowIDs(for profileID: ProfileID) -> Set<UUID> {
+    func controllerWindowIDs(for profileID: ProfileID) -> Set<UUID> {
         Set(
-            storeProfileIDs.compactMap { windowID, candidateProfileID in
+            controllerProfileIDs.compactMap { windowID, candidateProfileID in
                 candidateProfileID == profileID ? windowID : nil
             })
     }
@@ -146,7 +146,7 @@ final class ProfileWindowRegistry {
 
 struct RemovedProfileWindow {
     let registration: RegisteredWindow?
-    let store: DenController?
+    let controller: DenController?
     let profileID: ProfileID?
 }
 

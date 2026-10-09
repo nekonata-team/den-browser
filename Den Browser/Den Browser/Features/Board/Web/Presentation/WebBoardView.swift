@@ -5,7 +5,7 @@ import SFSafeSymbols
 import SwiftUI
 
 struct WebBoardView: View {
-    @Environment(DenController.self) private var store
+    @Environment(DenController.self) private var controller
     @Environment(DenWindowModel.self) private var windowModel
     @Environment(DeskFilterModel.self) private var deskFilter
     @Environment(AppPreferences.self) private var preferences
@@ -88,7 +88,7 @@ struct WebBoardView: View {
             )
         )
         .onAppear {
-            store.sheetNavigation.refreshConfiguration(for: runtime.webView)
+            controller.sheetNavigation.refreshConfiguration(for: runtime.webView)
         }
         .onChange(of: isFocused, initial: true) { _, isFocused in
             guard isFocused else { return }
@@ -146,12 +146,12 @@ struct WebBoardView: View {
                 onDragChanged: onDragChanged,
                 onDragEnded: onDragEnded,
                 onMoveLeft: {
-                    store.focusBoard(board.id)
-                    store.moveFocusedBoardLeft()
+                    controller.focusBoard(board.id)
+                    controller.moveFocusedBoardLeft()
                 },
                 onMoveRight: {
-                    store.focusBoard(board.id)
-                    store.moveFocusedBoardRight()
+                    controller.focusBoard(board.id)
+                    controller.moveFocusedBoardRight()
                 },
                 leadingContent: {
                     AsyncImage(url: runtime.faviconURL) { image in
@@ -180,7 +180,7 @@ struct WebBoardView: View {
     @ViewBuilder
     private var boardContextMenu: some View {
         Button {
-            store.createInspectionBoard(targetBoardID: board.id)
+            controller.createInspectionBoard(targetBoardID: board.id)
         } label: {
             Label("Inspect Current Sheet", systemSymbol: .magnifyingglass)
         }
@@ -188,37 +188,37 @@ struct WebBoardView: View {
         Divider()
 
         Button {
-            store.focusBoard(board.id)
-            store.duplicateFocusedBoard()
+            controller.focusBoard(board.id)
+            controller.duplicateFocusedBoard()
         } label: {
             Label("Duplicate Current Sheet", systemSymbol: .plusSquareOnSquare)
         }
         .onAppear {
-            store.focusBoard(board.id)
+            controller.focusBoard(board.id)
         }
 
         Button {
-            store.focusBoard(board.id)
-            store.keepFocusedSheetInDrawer()
+            controller.focusBoard(board.id)
+            controller.keepFocusedSheetInDrawer()
         } label: {
             Label("Keep Current Sheet in Drawer", systemSymbol: .trayAndArrowDown)
         }
 
         Button {
-            store.focusBoard(board.id)
+            controller.focusBoard(board.id)
             windowModel.showSaveEssentialPanel(for: board)
         } label: {
             Label("Save as Essential…", systemSymbol: .sparkles)
         }
 
         Button {
-            store.copyBoardID(board.id)
+            controller.copyBoardID(board.id)
         } label: {
             Label("Copy Board ID", systemSymbol: .documentOnDocument)
         }
 
         Button {
-            store.copyBoardLocation(board.id)
+            controller.copyBoardLocation(board.id)
         } label: {
             Label("Copy Current Sheet URL", systemSymbol: .documentOnDocument)
         }
@@ -237,16 +237,16 @@ struct WebBoardView: View {
         }
 
         Button {
-            store.focusBoard(board.id)
-            store.goToFirstSheetInFocusedBoard()
+            controller.focusBoard(board.id)
+            controller.goToFirstSheetInFocusedBoard()
         } label: {
             Label("Return to First Sheet", systemSymbol: .backwardEnd)
         }
         .disabled(!canReturnToFirstSheet)
 
-        if store.sheetNavigation.isEnabled {
+        if controller.sheetNavigation.isEnabled {
             Button {
-                store.toggleBoardSheetNavigationPause(board.id)
+                controller.toggleBoardSheetNavigationPause(board.id)
             } label: {
                 Label(
                     board.sheetNavigationPaused
@@ -258,8 +258,8 @@ struct WebBoardView: View {
         }
 
         Button {
-            store.focusBoard(board.id)
-            store.captureFocusedSheetScreenshot()
+            controller.focusBoard(board.id)
+            controller.captureFocusedSheetScreenshot()
         } label: {
             Label("Capture Current Sheet Screenshot...", systemSymbol: .camera)
         }
@@ -273,22 +273,22 @@ struct WebBoardView: View {
         Divider()
 
         Button {
-            store.focusBoard(board.id)
-            store.adjustFocusedSheetSize(by: 1)
+            controller.focusBoard(board.id)
+            controller.adjustFocusedSheetSize(by: 1)
         } label: {
             Label("Increase Sheet Scale", systemSymbol: .plus)
         }
 
         Button {
-            store.focusBoard(board.id)
-            store.adjustFocusedSheetSize(by: -1)
+            controller.focusBoard(board.id)
+            controller.adjustFocusedSheetSize(by: -1)
         } label: {
             Label("Decrease Sheet Scale", systemSymbol: .minus)
         }
 
         Button {
-            store.focusBoard(board.id)
-            store.resetFocusedSheetSize()
+            controller.focusBoard(board.id)
+            controller.resetFocusedSheetSize()
         } label: {
             Label("Reset Sheet Scale", systemSymbol: .arrowCounterclockwise)
         }
@@ -296,14 +296,14 @@ struct WebBoardView: View {
         Divider()
 
         Button {
-            store.focusBoard(board.id)
+            controller.focusBoard(board.id)
             windowModel.toggleFocusedBoardMaximized()
         } label: {
             Label(maximizationLabel, systemSymbol: maximizationSystemSymbol)
         }
 
         Button {
-            store.focusBoard(board.id)
+            controller.focusBoard(board.id)
             windowModel.centerFocusedBoard()
         } label: {
             Label("Center Board", systemSymbol: .scope)
@@ -312,28 +312,28 @@ struct WebBoardView: View {
         Divider()
 
         Button {
-            store.focusBoard(board.id)
-            store.moveFocusedBoardLeft()
+            controller.focusBoard(board.id)
+            controller.moveFocusedBoardLeft()
         } label: {
             Label("Move Board Left", systemSymbol: .arrowLeft)
         }
-        .disabled(!store.canMoveBoard(board.id, by: -1))
+        .disabled(!controller.canMoveBoard(board.id, by: -1))
 
         Button {
-            store.focusBoard(board.id)
-            store.moveFocusedBoardRight()
+            controller.focusBoard(board.id)
+            controller.moveFocusedBoardRight()
         } label: {
             Label("Move Board Right", systemSymbol: .arrowRight)
         }
-        .disabled(!store.canMoveBoard(board.id, by: 1))
+        .disabled(!controller.canMoveBoard(board.id, by: 1))
 
-        if store.state.desks.count > 1 {
+        if controller.state.desks.count > 1 {
             Menu {
-                ForEach(Array(store.state.desks.enumerated()), id: \.element.id) { entry in
+                ForEach(Array(controller.state.desks.enumerated()), id: \.element.id) { entry in
                     if entry.element.id != boardDeskID {
                         Button("\(entry.offset + 1). \(entry.element.label)") {
-                            store.focusBoard(board.id)
-                            store.moveFocusedBoard(toDeskNumber: entry.offset + 1)
+                            controller.focusBoard(board.id)
+                            controller.moveFocusedBoard(toDeskNumber: entry.offset + 1)
                         }
                     }
                 }
@@ -345,7 +345,7 @@ struct WebBoardView: View {
         Divider()
 
         Button(role: .destructive) {
-            store.removeBoard(board.id)
+            controller.removeBoard(board.id)
         } label: {
             Label("Remove Board", systemSymbol: .xmark)
         }
@@ -353,9 +353,9 @@ struct WebBoardView: View {
 
     private var navigationButtons: some View {
         HStack(spacing: 2) {
-            if store.sheetNavigation.isEnabled {
+            if controller.sheetNavigation.isEnabled {
                 Button {
-                    store.toggleBoardSheetNavigationPause(board.id)
+                    controller.toggleBoardSheetNavigationPause(board.id)
                 } label: {
                     Image(
                         systemSymbol: board.sheetNavigationPaused ? .pauseCircleFill : .keyboard
@@ -456,7 +456,7 @@ struct WebBoardView: View {
     }
 
     private var boardDeskID: DeskID? {
-        store.boardIndices(for: board.id).map { store.state.desks[$0.desk].id }
+        controller.boardIndices(for: board.id).map { controller.state.desks[$0.desk].id }
     }
 
     private var maximizationLabel: String {
