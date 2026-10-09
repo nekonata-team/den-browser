@@ -35,13 +35,24 @@ final class DenWindowComposition {
             },
             toggleStyle: { store.preferences.toggleDrawerStyle() },
             requestClearConfirmation: { store.requestDrawerClearConfirmation() })
-        let openBoard = OpenBoardModel { input, width, afterBoardID, rootSessionName in
-            _ = store.openBoard(
+        let zmxSessions = ZmxSessionsModel()
+        let openBoard = OpenBoardModel { input, width, afterBoardID in
+            let rootSessionName: String?
+            if case .session(let sessionName)? = DenController.resolveZmxInput(input) {
+                rootSessionName = zmxSessions.rootSessionName(for: sessionName)
+            } else {
+                rootSessionName = nil
+            }
+            switch store.requestOpenBoard(
                 input: input,
                 preferredWidth: width,
                 afterBoardID: afterBoardID,
                 opensFromOpenBoardPanel: true,
                 zmxRootSessionName: rootSessionName)
+            {
+            case .accepted: return nil
+            case .rejected(let message): return message
+            }
         }
         let deskFilter = DeskFilterModel(
             focusedDesk: { store.focusedDesk },
@@ -65,6 +76,7 @@ final class DenWindowComposition {
             openBoard: openBoard,
             deskFilter: deskFilter,
             notificationList: notificationList,
+            zmxSessions: zmxSessions,
             feedbackDuration: feedbackDuration)
         self.model = model
         overview.onDismiss = { [weak model] in model?.hideOverview() }

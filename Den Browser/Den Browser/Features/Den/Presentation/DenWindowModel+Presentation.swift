@@ -188,24 +188,6 @@ extension DenWindowModel {
         if temporaryContext == .openBoard { setTemporaryContext(nil) }
     }
 
-    func submitOpenBoard(_ input: String? = nil, preferredWidth: Double? = nil) {
-        let input = input ?? openBoard.input
-        let rootSessionName: String?
-        if case .session(let sessionName)? = DenController.resolveZmxInput(input) {
-            rootSessionName = zmxSessions.rootSessionName(for: sessionName)
-        } else {
-            rootSessionName = nil
-        }
-        openBoard.submit(
-            input,
-            preferredWidth: preferredWidth ?? defaultBoardWidth,
-            zmxRootSessionName: rootSessionName)
-    }
-
-    func openRecentItem(_ item: RecentItem, preferredWidth: Double? = nil) {
-        submitOpenBoard(item.displayText, preferredWidth: preferredWidth)
-    }
-
     func showZmxSessions(selectedSessionName: String? = nil, returnsToOpenBoard: Bool = false) {
         guard store.zmxClient.isConfigured else {
             store.reportFeedback("Set an absolute zmx executable path in Settings > Terminal.", severity: .warning)

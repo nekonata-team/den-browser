@@ -145,7 +145,7 @@ struct DenControllerBoardTests {
 
             windowModel.hideZmxSessions()
             windowModel.showOpenBoardPanel()
-            windowModel.submitOpenBoard(":zmx")
+            windowModel.openBoard.submit(":zmx", preferredWidth: windowModel.defaultBoardWidth)
             await waitForZmxSessionLoad(windowModel)
             windowModel.hideZmxSessions()
             #expect(windowModel.isOpenBoardPanelPresented)

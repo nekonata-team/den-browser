@@ -24,7 +24,7 @@ final class DenWindowModel {
     var boardWidthPanelMessage: String?
     var zmxSessionsReturnToOpenBoard = false
     var zmxDuplicationRootSessionName: String?
-    var zmxSessions = ZmxSessionsModel()
+    let zmxSessions: ZmxSessionsModel
     var pendingConfirmation: DenConfirmationRequest?
     var maximizedBoardID: BoardID?
     var centerFocusedBoardRequest = 0
@@ -49,6 +49,7 @@ final class DenWindowModel {
         openBoard: OpenBoardModel,
         deskFilter: DeskFilterModel,
         notificationList: NotificationListModel,
+        zmxSessions: ZmxSessionsModel,
         feedbackDuration: Duration = .seconds(5)
     ) {
         self.store = store
@@ -57,6 +58,7 @@ final class DenWindowModel {
         self.openBoard = openBoard
         self.deskFilter = deskFilter
         self.notificationList = notificationList
+        self.zmxSessions = zmxSessions
         self.feedbackDuration = feedbackDuration
     }
 

@@ -5,7 +5,7 @@ import Observation
 @MainActor
 @Observable
 public final class OpenBoardModel {
-    @ObservationIgnored private let openBoard: (String, Double?, BoardID?, String?) -> Void
+    @ObservationIgnored private let openBoard: (String, Double?, BoardID?) -> String?
 
     public var initialURL: URL?
     public var input = "" {
@@ -19,7 +19,7 @@ public final class OpenBoardModel {
     public var afterBoardID: BoardID?
     public var message: String?
 
-    public init(openBoard: @escaping (String, Double?, BoardID?, String?) -> Void) {
+    public init(openBoard: @escaping (String, Double?, BoardID?) -> String?) {
         self.openBoard = openBoard
     }
 
@@ -55,10 +55,9 @@ public final class OpenBoardModel {
 
     public func submit(
         _ input: String? = nil,
-        preferredWidth: Double? = nil,
-        zmxRootSessionName: String? = nil
+        preferredWidth: Double? = nil
     ) {
         message = nil
-        openBoard(input ?? self.input, preferredWidth, afterBoardID, zmxRootSessionName)
+        message = openBoard(input ?? self.input, preferredWidth, afterBoardID)
     }
 }

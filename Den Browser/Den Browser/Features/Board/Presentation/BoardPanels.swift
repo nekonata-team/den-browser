@@ -193,12 +193,12 @@ struct OpenBoardPanel: View {
     }
 
     private func submitBoard() {
-        windowModel.submitOpenBoard(preferredWidth: newBoardWidth)
+        openBoard.submit(preferredWidth: newBoardWidth)
         finishOpeningBoardIfNeeded()
     }
 
     private func openRecent(_ item: RecentItem) {
-        windowModel.openRecentItem(item, preferredWidth: newBoardWidth)
+        openBoard.submit(item.displayText, preferredWidth: newBoardWidth)
         finishOpeningBoardIfNeeded()
     }
 

@@ -165,6 +165,47 @@ struct DenWindowModelPresentationTests {
         #expect(windowModel.openBoard.afterBoardID == nil)
     }
 
+    @Test func openBoardPanelKeepsDraftAndShowsConfigurationFailure() {
+        // Arrange
+        let source = desk("Desk")
+        withTestWindowModel(desks: [source]) { windowModel in
+            windowModel.showOpenBoardPanel()
+            windowModel.openBoard.input = ":zmx project"
+
+            // Act
+            windowModel.openBoard.submit(preferredWidth: windowModel.defaultBoardWidth)
+
+            // Assert
+            #expect(windowModel.isOpenBoardPanelPresented)
+            #expect(windowModel.openBoard.input == ":zmx project")
+            #expect(windowModel.openBoard.message == "Set an absolute zmx executable path in Settings > Terminal.")
+            #expect(windowModel.store.focusedDesk?.boards.isEmpty == true)
+        }
+    }
+
+    @Test func openBoardPanelOpensRecentItemAtRequestedPositionAndWidth() throws {
+        // Arrange
+        let first = board("First")
+        let second = board("Second")
+        let source = desk("Desk", boards: [first, second], focusedBoardID: second.id)
+        try withTestWindowModel(desks: [source]) { windowModel in
+            let item = RecentItem.url(URL(string: "https://example.com/recent")!)
+            windowModel.showOpenBoardPanel(afterBoardID: first.id)
+
+            // Act
+            windowModel.openBoard.submit(item.displayText, preferredWidth: 640)
+
+            // Assert
+            let opened = try #require(windowModel.store.focusedBoard)
+            #expect(opened.currentSheetURL == URL(string: item.displayText))
+            #expect(opened.width == 640)
+            #expect(windowModel.store.focusedDesk?.boards.map(\.id) == [first.id, opened.id, second.id])
+            #expect(windowModel.store.recentItems.first == item)
+            #expect(!windowModel.isOpenBoardPanelPresented)
+            #expect(windowModel.openBoard.message == nil)
+        }
+    }
+
     @Test func recordingNotificationAddsUnreadHistoryAndTargetedFeedback() {
         let target = board("Terminal")
         let desk = desk("Desk", boards: [target], focusedBoardID: target.id)
