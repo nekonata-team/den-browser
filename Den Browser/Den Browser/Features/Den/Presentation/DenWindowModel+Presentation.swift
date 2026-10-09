@@ -1,4 +1,3 @@
-import AppKit
 import DenApplication
 import DenDomain
 import DenPresentation
@@ -201,28 +200,6 @@ extension DenWindowModel {
             input,
             preferredWidth: preferredWidth ?? defaultBoardWidth,
             zmxRootSessionName: rootSessionName)
-    }
-
-    func openBoardFromClipboard(pasteboard: NSPasteboard? = nil, preferredWidth: Double? = nil) {
-        let pasteboard = pasteboard ?? store.pasteboard
-        guard
-            let input = pasteboard.string(forType: .string)?.trimmingCharacters(in: .whitespacesAndNewlines),
-            !input.isEmpty
-        else {
-            store.reportFeedback("Clipboard is empty.", severity: .warning)
-            return
-        }
-
-        openBoard.message = nil
-        guard
-            !store.openBoard(
-                input: input,
-                preferredWidth: preferredWidth ?? defaultBoardWidth,
-                afterBoardID: store.focusedBoard?.id)
-        else { return }
-        let message = openBoard.message ?? "Could not open board from clipboard."
-        openBoard.message = nil
-        store.reportFeedback(message, severity: .warning)
     }
 
     func openRecentItem(_ item: RecentItem, preferredWidth: Double? = nil) {

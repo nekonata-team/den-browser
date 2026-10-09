@@ -21,21 +21,44 @@ extension DenController {
         opensFromOpenBoardPanel: Bool = false,
         zmxRootSessionName: String? = nil
     ) -> Bool {
+        switch requestOpenBoard(
+            input: input,
+            preferredWidth: preferredWidth,
+            afterBoardID: afterBoardID,
+            opensFromOpenBoardPanel: opensFromOpenBoardPanel,
+            zmxRootSessionName: zmxRootSessionName)
+        {
+        case .accepted:
+            return true
+        case .rejected(let message):
+            if let message { onWindowEffect?(.openBoardResult(message)) }
+            return false
+        }
+    }
+
+    @discardableResult
+    func requestOpenBoard(
+        input: String,
+        preferredWidth: Double? = nil,
+        afterBoardID: BoardID? = nil,
+        opensFromOpenBoardPanel: Bool = false,
+        zmxRootSessionName: String? = nil
+    ) -> BoardOpenResult {
         if input.trimmingCharacters(in: .whitespacesAndNewlines) == ":tutorial" {
             return openTutorialBoard(preferredWidth: preferredWidth, afterBoardID: afterBoardID)
+                ? .accepted : .rejected(nil)
         }
 
         if let zmx = Self.resolveZmxInput(input) {
             guard zmxClient.isConfigured else {
-                onWindowEffect?(.openBoardResult("Set an absolute zmx executable path in Settings > Terminal."))
-                return false
+                return .rejected("Set an absolute zmx executable path in Settings > Terminal.")
             }
             guard case .session(let sessionName) = zmx else {
                 onWindowEffect?(
                     .presentZmxSessions(
                         returnsToOpenBoard: opensFromOpenBoardPanel,
                         selectedSessionName: nil))
-                return true
+                return .accepted
             }
             let board = BoardState(
                 width: preferredWidth ?? inheritedBoardWidth,
@@ -52,18 +75,17 @@ extension DenController {
                     focus: true,
                     origin: .interactive,
                     save: recentItem == nil)
-            else { return false }
+            else { return .rejected(nil) }
             if let recentItem {
                 saveRecentItem(recentItem)
             }
             onWindowEffect?(.openBoardResult(nil))
-            return true
+            return .accepted
         }
 
         if let zellij = Self.resolveZellijInput(input) {
             guard zellijClient.isConfigured else {
-                onWindowEffect?(.openBoardResult("Set an absolute Zellij executable path in Settings > Terminal."))
-                return false
+                return .rejected("Set an absolute Zellij executable path in Settings > Terminal.")
             }
             let sessionName: String?
             switch zellij {
@@ -86,12 +108,12 @@ extension DenController {
                     focus: true,
                     origin: .interactive,
                     save: recentItem == nil)
-            else { return false }
+            else { return .rejected(nil) }
             if let recentItem {
                 saveRecentItem(recentItem)
             }
             onWindowEffect?(.openBoardResult(nil))
-            return true
+            return .accepted
         }
 
         if let terminal = Self.resolveTerminalInput(input) {
@@ -107,15 +129,14 @@ extension DenController {
                         preferredWidth: preferredWidth,
                         afterBoardID: afterBoardID,
                         recentItem: recentItem) != nil
-                else { return false }
+                else { return .rejected(nil) }
                 onWindowEffect?(.openBoardResult(nil))
-                return true
+                return .accepted
             case .failure(let error):
-                onWindowEffect?(.openBoardResult(error.message))
-                return false
+                return .rejected(error.message)
             }
         }
-        guard let resolution = resolveOpenBoardInput(input) else { return false }
+        guard let resolution = resolveOpenBoardInput(input) else { return .rejected(nil) }
         let recentItem = input.count <= Self.maximumPersistedRecentInputLength ? resolution.item : nil
         guard
             createBoard(
@@ -124,10 +145,10 @@ extension DenController {
                 afterBoardID: afterBoardID,
                 recentItem: recentItem) != nil
         else {
-            return false
+            return .rejected(nil)
         }
         onWindowEffect?(.openBoardResult(nil))
-        return true
+        return .accepted
     }
 
     @discardableResult

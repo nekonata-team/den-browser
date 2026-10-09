@@ -248,7 +248,7 @@ enum AppActionHandler {
             case .moveToNextDesk: store.moveFocusedBoardToNextDesk()
             case .moveToDesk(let number): store.moveFocusedBoard(toDeskNumber: number)
             case .showOpenPanel: windowModel.showOpenBoardPanel()
-            case .openFromClipboard: windowModel.openBoardFromClipboard()
+            case .openFromClipboard: store.openBoardFromClipboard(preferredWidth: windowModel.defaultBoardWidth)
             case .showWidthPanel: windowModel.showBoardWidthPanel()
             case .hideWidthPanel: windowModel.hideBoardWidthPanel()
             case .adjustWidth(let amount): windowModel.adjustFocusedBoardWidth(by: amount)

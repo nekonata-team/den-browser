@@ -968,7 +968,7 @@ struct DenControllerBoardTests {
             let pasteboard = NSPasteboard.withUniqueName()
             pasteboard.clearContents()
             pasteboard.setString("https://clipboard.example.com", forType: .string)
-            windowModel.openBoardFromClipboard(pasteboard: pasteboard)
+            store.openBoardFromClipboard(pasteboard: pasteboard, preferredWidth: windowModel.defaultBoardWidth)
             #expect(store.focusedBoard?.width == 494)
         }
     }
@@ -1895,7 +1895,7 @@ struct DenControllerBoardTests {
         pasteboard.clearContents()
         pasteboard.setString("https://example.com/clipboard", forType: .string)
 
-        windowModel.openBoardFromClipboard(pasteboard: pasteboard)
+        store.openBoardFromClipboard(pasteboard: pasteboard, preferredWidth: windowModel.defaultBoardWidth)
 
         #expect(store.focusedDesk?.boards.count == 2)
         #expect(store.focusedBoard?.currentSheetURL == URL(string: "https://example.com/clipboard"))
@@ -1916,10 +1916,25 @@ struct DenControllerBoardTests {
         let pasteboard = NSPasteboard.withUniqueName()
         pasteboard.clearContents()
 
-        windowModel.openBoardFromClipboard(pasteboard: pasteboard)
+        store.openBoardFromClipboard(pasteboard: pasteboard, preferredWidth: windowModel.defaultBoardWidth)
 
         #expect(store.focusedDesk?.boards.count == initialCount)
         #expect(store.latestFeedback?.message == "Clipboard is empty.")
+    }
+
+    @Test func openBoardFromClipboardReportsConfigurationFailure() {
+        // Arrange
+        let source = desk("Desk")
+        let store = DenController(state: DenState(desks: [source], focusedDeskID: source.id))
+        let pasteboard = NSPasteboard.withUniqueName()
+        pasteboard.setString(":zmx test-session", forType: .string)
+
+        // Act
+        store.openBoardFromClipboard(pasteboard: pasteboard)
+
+        // Assert
+        #expect(store.focusedDesk?.boards.isEmpty == true)
+        #expect(store.latestFeedback?.message == "Set an absolute zmx executable path in Settings > Terminal.")
     }
 
     @Test func createTerminalBoardAddsBoardToActiveDeskAndFocuses() throws {
