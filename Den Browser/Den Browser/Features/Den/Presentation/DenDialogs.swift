@@ -3,7 +3,7 @@ import DenDomain
 import SwiftUI
 
 struct DenDialogs: ViewModifier {
-    @Environment(DenStore.self) private var store
+    @Environment(DenController.self) private var store
     @Environment(DenWindowModel.self) private var windowModel
 
     private var pendingDeskDeletion: DeskState? {

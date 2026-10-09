@@ -56,7 +56,7 @@ struct InputContext {
     let mode: KeyboardMode
     let hasFocusedBoard: Bool
 
-    init(store: DenStore, windowModel: DenWindowModel, event: NSEvent) {
+    init(store: DenController, windowModel: DenWindowModel, event: NSEvent) {
         isFullscreenActive = windowModel.isFullscreenActive
         hasPendingConfirmation = windowModel.hasPendingConfirmation
         activeDrag = store.activeDrag
@@ -94,7 +94,7 @@ struct InputContext {
         hasFocusedBoard = store.focusedBoard != nil
     }
 
-    private static func isDrawerPreviewFirstResponder(_ event: NSEvent, store: DenStore) -> Bool {
+    private static func isDrawerPreviewFirstResponder(_ event: NSEvent, store: DenController) -> Bool {
         guard
             let webView = store.drawerPreviewRuntime?.webView,
             var view = event.window?.firstResponder as? NSView

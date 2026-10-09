@@ -10,7 +10,7 @@ final class DenIPCService {
 
     private struct WebBoardInteractionTarget {
         let profileID: ProfileID
-        let store: DenStore
+        let store: DenController
         let board: BoardState
         let runtime: WebBoardRuntime
     }
@@ -998,7 +998,7 @@ final class DenIPCService {
 
     private func newBoardInsertionAnchor(
         context: DenIPCCallerContext,
-        in store: DenStore,
+        in store: DenController,
         deskID: DeskID
     ) -> BoardID? {
         guard let deskIndex = store.state.desks.firstIndex(where: { $0.id == deskID }) else { return nil }
@@ -1099,7 +1099,7 @@ final class DenIPCService {
         }
     }
 
-    private func findDrawerItem(in store: DenStore, matching idString: String) -> DrawerItem? {
+    private func findDrawerItem(in store: DenController, matching idString: String) -> DrawerItem? {
         if let exactID = UUID(uuidString: idString) {
             return store.state.drawerItems.first { $0.id == exactID }
         }

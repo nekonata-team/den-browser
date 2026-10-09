@@ -746,7 +746,7 @@ struct SheetNavigationTests {
         let source = board("Source", url: "https://source.example/")
         let focused = board("Focused", url: "https://focused.example/")
         let currentDesk = desk("Desk", boards: [source, focused], focusedBoardID: focused.id)
-        let store = DenStore(
+        let store = DenController(
             state: DenState(desks: [currentDesk], focusedDeskID: currentDesk.id),
             sheetNavigation: manager
         )
@@ -772,7 +772,7 @@ struct SheetNavigationTests {
         let manager = makeTestSheetNavigationManager(scriptSource: "")
         let source = board("Source", url: "https://source.example/")
         let currentDesk = desk("Desk", boards: [source], focusedBoardID: source.id)
-        let store = DenStore(
+        let store = DenController(
             state: DenState(desks: [currentDesk], focusedDeskID: currentDesk.id),
             sheetNavigation: manager)
         let sourceWebView = store.webRuntime(for: source).webView
@@ -796,7 +796,7 @@ struct SheetNavigationTests {
         let manager = makeTestSheetNavigationManager(scriptSource: "")
         let source = board("Source", url: "https://source.example/")
         let currentDesk = desk("Desk", boards: [source], focusedBoardID: source.id)
-        let store = DenStore(
+        let store = DenController(
             state: DenState(desks: [currentDesk], focusedDeskID: currentDesk.id),
             sheetNavigation: manager
         )
@@ -847,7 +847,7 @@ struct SheetNavigationTests {
         let manager = makeTestSheetNavigationManager(scriptSource: "")
         let item = DrawerItem(url: try #require(URL(string: "https://drawer.example/")))
         let desk = DeskState(label: "Desk", boards: [])
-        let store = DenStore(
+        let store = DenController(
             state: DenState(
                 desks: [desk],
                 focusedDeskID: desk.id,
@@ -934,7 +934,7 @@ struct SheetNavigationTests {
         let manager = makeTestSheetNavigationManager(scriptSource: "")
         let source = board("Source", url: "https://source.example/")
         let currentDesk = desk("Desk", boards: [source], focusedBoardID: source.id)
-        let store = DenStore(
+        let store = DenController(
             state: DenState(desks: [currentDesk], focusedDeskID: currentDesk.id),
             sheetNavigation: manager
         )
@@ -973,7 +973,7 @@ struct SheetNavigationTests {
         let manager = makeTestSheetNavigationManager(scriptSource: "")
         let source = board("Source", url: "https://source.example/")
         let currentDesk = desk("Desk", boards: [source], focusedBoardID: source.id)
-        let store = DenStore(
+        let store = DenController(
             state: DenState(desks: [currentDesk], focusedDeskID: currentDesk.id),
             sheetNavigation: manager
         )
@@ -1001,7 +1001,7 @@ struct SheetNavigationTests {
         let source = board("First", url: "https://first.example/")
         let second = board("Second", url: "https://second.example/")
         let currentDesk = desk("Desk", boards: [source, second], focusedBoardID: source.id)
-        let store = DenStore(
+        let store = DenController(
             state: DenState(desks: [currentDesk], focusedDeskID: currentDesk.id),
             sheetNavigation: manager
         )
@@ -1041,7 +1041,7 @@ struct SheetNavigationTests {
         let manager = makeTestSheetNavigationManager(scriptSource: source)
         let board = board("Source", url: "https://source.example/")
         let desk = desk("Desk", boards: [board], focusedBoardID: board.id)
-        let store = DenStore(
+        let store = DenController(
             state: DenState(desks: [desk], focusedDeskID: desk.id),
             sheetNavigation: manager
         )
@@ -1087,7 +1087,7 @@ struct SheetNavigationTests {
         let manager = makeTestSheetNavigationManager(scriptSource: source)
         let board = board("Source", url: "https://source.example/")
         let desk = desk("Desk", boards: [board], focusedBoardID: board.id)
-        let store = DenStore(
+        let store = DenController(
             state: DenState(desks: [desk], focusedDeskID: desk.id),
             sheetNavigation: manager
         )
@@ -1117,7 +1117,7 @@ struct SheetNavigationTests {
         let manager = makeTestSheetNavigationManager(scriptSource: source)
         let board = board("Source", url: "https://source.example/")
         let desk = desk("Desk", boards: [board], focusedBoardID: board.id)
-        let store = DenStore(
+        let store = DenController(
             state: DenState(desks: [desk], focusedDeskID: desk.id),
             sheetNavigation: manager
         )
@@ -1149,7 +1149,7 @@ struct SheetNavigationTests {
         let manager = makeTestSheetNavigationManager(scriptSource: source)
         let boards = [board("First"), board("Middle"), board("Last")]
         let currentDesk = desk("Desk", boards: boards, focusedBoardID: boards[1].id)
-        let store = DenStore(
+        let store = DenController(
             state: DenState(desks: [currentDesk], focusedDeskID: currentDesk.id),
             sheetNavigation: manager
         )
@@ -1187,7 +1187,7 @@ struct SheetNavigationTests {
         let manager = makeTestSheetNavigationManager(scriptSource: source)
         let boards = [board("First"), board("Middle"), board("Last")]
         let currentDesk = desk("Desk", boards: boards, focusedBoardID: boards[1].id)
-        let store = DenStore(
+        let store = DenController(
             state: DenState(desks: [currentDesk], focusedDeskID: currentDesk.id),
             sheetNavigation: manager
         )

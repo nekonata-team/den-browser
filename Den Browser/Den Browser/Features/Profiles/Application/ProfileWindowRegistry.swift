@@ -4,7 +4,7 @@ import DenDomain
 @MainActor
 final class ProfileWindowRegistry {
     private var windows: [UUID: RegisteredWindow] = [:]
-    private var stores: [UUID: DenStore] = [:]
+    private var stores: [UUID: DenController] = [:]
     private var storeProfileIDs: [UUID: ProfileID] = [:]
     var openWindowAction: ((ProfileWindowRoute) -> Void)?
 
@@ -24,12 +24,12 @@ final class ProfileWindowRegistry {
         return RemovedProfileWindow(registration: registration, store: store, profileID: profileID)
     }
 
-    func setStore(_ store: DenStore, windowID: UUID, profileID: ProfileID) {
+    func setStore(_ store: DenController, windowID: UUID, profileID: ProfileID) {
         stores[windowID] = store
         storeProfileIDs[windowID] = profileID
     }
 
-    func store(for windowID: UUID) -> DenStore? {
+    func store(for windowID: UUID) -> DenController? {
         stores[windowID]
     }
 
@@ -37,17 +37,17 @@ final class ProfileWindowRegistry {
         storeProfileIDs[windowID]
     }
 
-    func store(for window: NSWindow) -> DenStore? {
+    func store(for window: NSWindow) -> DenController? {
         windowID(for: window).flatMap { stores[$0] }
     }
 
-    func storeEntries() -> [(windowID: UUID, profileID: ProfileID?, store: DenStore)] {
+    func storeEntries() -> [(windowID: UUID, profileID: ProfileID?, store: DenController)] {
         stores.map { windowID, store in
             (windowID, storeProfileIDs[windowID], store)
         }
     }
 
-    func activeStore(preferredWindowID: UUID?) -> DenStore? {
+    func activeStore(preferredWindowID: UUID?) -> DenController? {
         if let preferredWindowID {
             return stores[preferredWindowID]
         }
@@ -61,7 +61,7 @@ final class ProfileWindowRegistry {
         return stores.keys.first.flatMap { storeProfileIDs[$0] }
     }
 
-    func store(forProfileID profileID: ProfileID, preferredWindowID: UUID?) -> DenStore? {
+    func store(forProfileID profileID: ProfileID, preferredWindowID: UUID?) -> DenController? {
         if let preferredWindowID,
             storeProfileIDs[preferredWindowID] == profileID,
             let store = stores[preferredWindowID]
@@ -76,20 +76,20 @@ final class ProfileWindowRegistry {
         return nil
     }
 
-    func profileID(for store: DenStore) -> ProfileID? {
+    func profileID(for store: DenController) -> ProfileID? {
         for (windowID, candidateStore) in stores where candidateStore === store {
             return storeProfileIDs[windowID]
         }
         return nil
     }
 
-    func stores(for profileID: ProfileID) -> [DenStore] {
+    func stores(for profileID: ProfileID) -> [DenController] {
         storeProfileIDs.compactMap { windowID, candidateProfileID in
             candidateProfileID == profileID ? stores[windowID] : nil
         }
     }
 
-    func allStores() -> [DenStore] {
+    func allStores() -> [DenController] {
         Array(stores.values)
     }
 
@@ -146,7 +146,7 @@ final class ProfileWindowRegistry {
 
 struct RemovedProfileWindow {
     let registration: RegisteredWindow?
-    let store: DenStore?
+    let store: DenController?
     let profileID: ProfileID?
 }
 

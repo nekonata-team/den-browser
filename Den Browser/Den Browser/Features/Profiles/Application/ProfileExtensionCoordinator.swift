@@ -43,7 +43,7 @@ final class ProfileExtensionCoordinator {
         return host
     }
 
-    func setEnabled(_ enabled: Bool, stores: [(windowID: UUID, profileID: ProfileID?, store: DenStore)]) {
+    func setEnabled(_ enabled: Bool, stores: [(windowID: UUID, profileID: ProfileID?, store: DenController)]) {
         preferences.setUBOLiteEnabled(enabled)
         updateStores(stores)
         if !enabled { disposeAllHosts() }
@@ -81,7 +81,7 @@ final class ProfileExtensionCoordinator {
         hosts.removeValue(forKey: profileID)?.dispose()
     }
 
-    func updateUBOLite(stores: [(windowID: UUID, profileID: ProfileID?, store: DenStore)]) async -> Bool {
+    func updateUBOLite(stores: [(windowID: UUID, profileID: ProfileID?, store: DenController)]) async -> Bool {
         let success = await installer.install()
         guard success, preferences.uBOLiteEnabled else { return success }
         disposeAllHosts()
@@ -94,7 +94,7 @@ final class ProfileExtensionCoordinator {
         return installer.descriptor.map { [$0] } ?? []
     }
 
-    private func updateStores(_ stores: [(windowID: UUID, profileID: ProfileID?, store: DenStore)]) {
+    private func updateStores(_ stores: [(windowID: UUID, profileID: ProfileID?, store: DenController)]) {
         for (windowID, profileID, store) in stores {
             let host: MV3WebExtensionHost?
             if store.hasWebExtensionDemand, let profileID {

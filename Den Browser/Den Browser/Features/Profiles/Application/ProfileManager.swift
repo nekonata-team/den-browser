@@ -1,6 +1,7 @@
 import AppKit
 import DenApplication
 import DenDomain
+import DenInfrastructure
 import Foundation
 import Observation
 import WebKit
@@ -18,7 +19,7 @@ final class ProfileManager {
     @ObservationIgnored private var persistedProfiles: [ProfileID: PersistedProfile] = [:]
     var profileSaveCount: Int { persistence.profileSaveCount }
     @ObservationIgnored private var storages: [ProfileID: DenProfileResources] = [:]
-    @ObservationIgnored private var runtimeOwners: [ProfileID: [BoardID: DenStore]] = [:]
+    @ObservationIgnored private var runtimeOwners: [ProfileID: [BoardID: DenController]] = [:]
     @ObservationIgnored private let windowRegistry = ProfileWindowRegistry()
     @ObservationIgnored private var websiteDataStores: [ProfileID: WKWebsiteDataStore] = [:]
     @ObservationIgnored private let extensionCoordinator: ProfileExtensionCoordinator
@@ -85,11 +86,11 @@ final class ProfileManager {
         profile(id: requestedID) == nil ? personalProfileID : requestedID
     }
 
-    func store(for profileID: ProfileID) -> DenStore? {
+    func store(for profileID: ProfileID) -> DenController? {
         store(for: ProfileWindowRoute(windowID: profileID.rawValue, profileID: profileID))
     }
 
-    func store(for route: ProfileWindowRoute) -> DenStore? {
+    func store(for route: ProfileWindowRoute) -> DenController? {
         let profileID = resolvedProfileID(route.profileID)
         if let store = windowRegistry.store(for: route.windowID),
             windowRegistry.profileID(for: route.windowID) == profileID
@@ -103,7 +104,7 @@ final class ProfileManager {
             profileID: profileID,
             excludingWindowID: route.windowID)
         guard let presentedDeskID else { return nil }
-        let store = DenStore(
+        let store = DenController(
             storage: storage,
             presentedDeskID: presentedDeskID,
             websiteDataStore: profileWebsiteDataStore(for: profileID),
@@ -278,7 +279,7 @@ final class ProfileManager {
         releaseSharedResourcesIfUnused(for: profileID)
     }
 
-    func store(for window: NSWindow?) -> DenStore? {
+    func store(for window: NSWindow?) -> DenController? {
         guard let window else { return nil }
         return windowRegistry.store(for: window)
     }
@@ -356,7 +357,7 @@ final class ProfileManager {
     private func storage(for profileID: ProfileID) -> DenProfileResources? {
         if let storage = storages[profileID] { return storage }
         guard let persisted = persistedProfiles[profileID] else { return nil }
-        let normalizedState = DenStore.normalizedPersistedState(persisted.den)
+        let normalizedState = DenController.normalizedPersistedState(persisted.den)
         let storage = DenProfileResources(
             state: normalizedState,
             deskPresets: persisted.deskPresets,
@@ -386,7 +387,7 @@ final class ProfileManager {
         windowRegistry.presentationTarget()
     }
 
-    func activeStore() -> DenStore? {
+    func activeStore() -> DenController? {
         windowRegistry.activeStore(preferredWindowID: extensionPresentationTarget()?.windowID)
     }
 
@@ -394,7 +395,7 @@ final class ProfileManager {
         windowRegistry.activeProfileID(preferredWindowID: extensionPresentationTarget()?.windowID)
     }
 
-    func store(forProfileID profileID: ProfileID) -> DenStore? {
+    func store(forProfileID profileID: ProfileID) -> DenController? {
         windowRegistry.store(forProfileID: profileID, preferredWindowID: extensionPresentationTarget()?.windowID)
     }
 
@@ -405,15 +406,15 @@ final class ProfileManager {
         return nil
     }
 
-    func profileID(for store: DenStore) -> ProfileID? {
+    func profileID(for store: DenController) -> ProfileID? {
         windowRegistry.profileID(for: store) ?? profileID(for: store.storage)
     }
 
-    func stores(for profileID: ProfileID) -> [DenStore] {
+    func stores(for profileID: ProfileID) -> [DenController] {
         windowRegistry.stores(for: profileID)
     }
 
-    func store(for profileID: ProfileID, presentingDeskID: DeskID?) -> DenStore? {
+    func store(for profileID: ProfileID, presentingDeskID: DeskID?) -> DenController? {
         let profileStores = stores(for: profileID)
         if let presentingDeskID,
             let presentingStore = profileStores.first(where: { $0.presentedDeskID == presentingDeskID })
@@ -427,7 +428,7 @@ final class ProfileManager {
         windowRegistry.hasStore(for: profileID)
     }
 
-    var allStores: [DenStore] {
+    var allStores: [DenController] {
         windowRegistry.allStores()
     }
 
@@ -533,7 +534,7 @@ final class ProfileManager {
         closeWindows(for: profileID, excludingWindowID: excludingWindowID)
     }
 
-    private func setRuntimeOwner(_ store: DenStore?, boardID: BoardID, profileID: ProfileID) {
+    private func setRuntimeOwner(_ store: DenController?, boardID: BoardID, profileID: ProfileID) {
         if let store {
             runtimeOwners[profileID, default: [:]][boardID] = store
         } else {
@@ -623,7 +624,7 @@ final class ProfileManager {
     @discardableResult
     private func saveDen(_ den: DenState, for profileID: ProfileID) -> Bool {
         guard var persisted = persistedProfiles[profileID] else { return false }
-        persisted.den = DenStore.normalizedPersistedState(den)
+        persisted.den = DenController.normalizedPersistedState(den)
         if let storage = storages[profileID] {
             persisted.deskPresets = storage.deskPresets
             persisted.recentItems = storage.recentItems
@@ -713,10 +714,10 @@ final class ProfileManager {
     }
 
     private func refreshDenData(in persisted: inout PersistedProfile, for profileID: ProfileID) {
-        persisted.den = DenStore.normalizedPersistedState(persisted.den)
+        persisted.den = DenController.normalizedPersistedState(persisted.den)
         guard let storage = storages[profileID] else { return }
         if storage.activeDrag == nil {
-            persisted.den = DenStore.normalizedPersistedState(storage.state)
+            persisted.den = DenController.normalizedPersistedState(storage.state)
         }
         persisted.deskPresets = storage.deskPresets
         persisted.recentItems = storage.recentItems

@@ -7,7 +7,7 @@ import SwiftUI
 struct BoardRail: View {
     let profileColor: Color
 
-    @Environment(DenStore.self) private var store
+    @Environment(DenController.self) private var store
     @Environment(DenWindowModel.self) private var windowModel
 
     private var railDesk: DeskState? {

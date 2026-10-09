@@ -6,7 +6,7 @@ import SwiftUI
 struct NewDeskPanel: View {
     let profileColor: Color
 
-    @Environment(DenStore.self) private var store
+    @Environment(DenController.self) private var store
     @Environment(DenWindowModel.self) private var windowModel
     @State private var selectedDeskPreset: DeskPresetSelection = .builtIn(.empty)
     @State private var query = ""
@@ -263,7 +263,7 @@ struct NewDeskPanel: View {
 }
 
 struct SaveDeskPresetPanel: View {
-    @Environment(DenStore.self) private var store
+    @Environment(DenController.self) private var store
     @Environment(DenWindowModel.self) private var windowModel
     @State private var label = ""
     @State private var message: String?
@@ -324,7 +324,7 @@ struct SaveDeskPresetPanel: View {
 }
 
 struct RenameDeskPanel: View {
-    @Environment(DenStore.self) private var store
+    @Environment(DenController.self) private var store
     @Environment(DenWindowModel.self) private var windowModel
     @State private var text = ""
     @FocusState private var isFocused: Bool

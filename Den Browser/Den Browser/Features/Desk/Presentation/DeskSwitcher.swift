@@ -5,7 +5,7 @@ import SFSafeSymbols
 import SwiftUI
 
 struct DeskSwitcher: View {
-    @Environment(DenStore.self) private var store
+    @Environment(DenController.self) private var store
     @Environment(DenWindowModel.self) private var windowModel
     @Environment(AppPreferences.self) private var preferences
     @Environment(\.accessibilityReduceMotion) private var systemReduceMotion

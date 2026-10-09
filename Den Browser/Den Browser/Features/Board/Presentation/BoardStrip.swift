@@ -45,7 +45,7 @@ struct BoardStripLayoutKey: Equatable {
 }
 
 struct BoardStrip: View {
-    @Environment(DenStore.self) private var store
+    @Environment(DenController.self) private var store
     @Environment(DenWindowModel.self) private var windowModel
     @Environment(DeskFilterModel.self) private var deskFilter
     @Environment(AppPreferences.self) private var preferences
@@ -1397,7 +1397,7 @@ struct BoardResizeHandle: View {
 }
 
 private struct UnactivatedBoardView: View {
-    @Environment(DenStore.self) private var store
+    @Environment(DenController.self) private var store
     @Environment(DenWindowModel.self) private var windowModel
     let board: BoardState
     let isFocused: Bool
@@ -1484,7 +1484,7 @@ private struct UnactivatedBoardView: View {
     let defaults = UserDefaults(suiteName: "dev.nekonata.denbrowser.preview") ?? .standard
     let preferences = AppPreferences(defaults: defaults)
     let sheetNavigation = SheetNavigationManager(defaults: defaults)
-    let store = DenStore(
+    let store = DenController(
         state: .sample,
         websiteDataStore: .nonPersistent(),
         sheetNavigation: sheetNavigation,

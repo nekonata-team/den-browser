@@ -5,7 +5,7 @@ import SFSafeSymbols
 import SwiftUI
 
 struct TutorialBoardView: View {
-    @Environment(DenStore.self) private var store
+    @Environment(DenController.self) private var store
     @Environment(DenWindowModel.self) private var windowModel
     @Environment(DeskFilterModel.self) private var deskFilter
     @Environment(AppPreferences.self) private var preferences

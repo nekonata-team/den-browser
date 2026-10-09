@@ -5,10 +5,10 @@ import Foundation
 
 @MainActor
 final class DenWindowComposition {
-    let store: DenStore
+    let store: DenController
     let model: DenWindowModel
 
-    init(store: DenStore, feedbackDuration: Duration = .seconds(5)) {
+    init(store: DenController, feedbackDuration: Duration = .seconds(5)) {
         self.store = store
         let overview = OverviewModel(
             desks: { store.state.desks },

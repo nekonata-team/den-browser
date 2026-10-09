@@ -20,7 +20,7 @@ struct DenView<Header: View>: View {
     private let shouldShowHeader: Bool
     private let header: Header
 
-    @Environment(DenStore.self) private var store
+    @Environment(DenController.self) private var store
     @Environment(DenWindowModel.self) private var windowModel
     @Environment(ProfileManager.self) private var profileManager
     @Environment(AppPreferences.self) private var preferences
@@ -606,7 +606,7 @@ private struct DeskFilterOverlay: View {
     let defaults = UserDefaults(suiteName: "dev.nekonata.denbrowser.preview") ?? .standard
     let preferences = AppPreferences(defaults: defaults)
     let sheetNavigation = SheetNavigationManager(defaults: defaults)
-    let store = DenStore(
+    let store = DenController(
         state: .sample,
         websiteDataStore: .nonPersistent(),
         sheetNavigation: sheetNavigation,

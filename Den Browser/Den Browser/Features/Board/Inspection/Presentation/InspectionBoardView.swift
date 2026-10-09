@@ -6,7 +6,7 @@ import SFSafeSymbols
 import SwiftUI
 
 struct InspectionBoardView: View {
-    @Environment(DenStore.self) private var store
+    @Environment(DenController.self) private var store
     @Environment(DenWindowModel.self) private var windowModel
 
     let board: BoardState

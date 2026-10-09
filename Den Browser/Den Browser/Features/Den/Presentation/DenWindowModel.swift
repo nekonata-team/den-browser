@@ -7,7 +7,7 @@ import SwiftUI
 @MainActor
 @Observable
 final class DenWindowModel {
-    let store: DenStore
+    let store: DenController
     let overview: OverviewModel
     let drawer: DrawerModel
     let openBoard: OpenBoardModel
@@ -43,7 +43,7 @@ final class DenWindowModel {
     @ObservationIgnored private var lastReceivedFeedbackID: UUID?
 
     init(
-        store: DenStore,
+        store: DenController,
         overview: OverviewModel,
         drawer: DrawerModel,
         openBoard: OpenBoardModel,

@@ -3,13 +3,13 @@ import DenIPCProtocol
 import Foundation
 
 struct ResolvedDeskTarget {
-    let store: DenStore
+    let store: DenController
     let desk: DeskState
     let profileID: ProfileID
 }
 
 struct ResolvedBoardTarget {
-    let store: DenStore
+    let store: DenController
     let board: BoardState
     let profileID: ProfileID
 }
@@ -78,7 +78,7 @@ enum DenIPCTargetResolver {
     }
 
     private struct StoreScope {
-        let stores: [DenStore]
+        let stores: [DenController]
         let profileID: ProfileID?
     }
 
@@ -112,7 +112,7 @@ enum DenIPCTargetResolver {
                 }
             }
 
-            let baseStore: DenStore?
+            let baseStore: DenController?
             if let profileID = scope.profileID {
                 baseStore = profileManager.store(forProfileID: profileID)
             } else {
@@ -176,7 +176,7 @@ enum DenIPCTargetResolver {
                 return resolvedBoard(store: owningStore, desk: desk, board: target, in: profileManager)
             }
 
-            let baseStore: DenStore?
+            let baseStore: DenController?
             if let profileID = scope.profileID {
                 baseStore = profileManager.store(forProfileID: profileID)
             } else {
@@ -216,7 +216,7 @@ enum DenIPCTargetResolver {
     }
 
     private static func resolvedDesk(
-        store: DenStore,
+        store: DenController,
         desk: DeskState,
         in profileManager: ProfileManager
     ) -> Result<ResolvedDeskTarget, TargetResolutionError> {
@@ -227,7 +227,7 @@ enum DenIPCTargetResolver {
     }
 
     private static func resolvedBoard(
-        store: DenStore,
+        store: DenController,
         desk: DeskState,
         board: BoardState,
         in profileManager: ProfileManager
@@ -240,10 +240,10 @@ enum DenIPCTargetResolver {
     }
 
     private static func resolvedStore(
-        for store: DenStore,
+        for store: DenController,
         deskID: DeskID,
         in profileManager: ProfileManager
-    ) -> (store: DenStore, profileID: ProfileID)? {
+    ) -> (store: DenController, profileID: ProfileID)? {
         guard let profileID = profileManager.profileID(for: store) else { return nil }
         let targetStore = profileManager.store(for: profileID, presentingDeskID: deskID) ?? store
         return (targetStore, profileID)

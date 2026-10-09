@@ -7,7 +7,7 @@ import SwiftUI
 struct OpenBoardPanel: View {
     private static let maximumVisibleRecentItemCount = 5
 
-    @Environment(DenStore.self) private var store
+    @Environment(DenController.self) private var store
     @Environment(DenWindowModel.self) private var windowModel
     @Environment(OpenBoardModel.self) private var openBoard
     @FocusState private var isFocused: Bool
@@ -223,7 +223,7 @@ struct OpenBoardPanel: View {
 }
 
 struct EditBoardLinkPanel: View {
-    @Environment(DenStore.self) private var store
+    @Environment(DenController.self) private var store
     @Environment(DenWindowModel.self) private var windowModel
 
     @State private var text = ""
@@ -273,7 +273,7 @@ struct EditBoardLinkPanel: View {
 }
 
 struct ZmxDuplicationPanel: View {
-    @Environment(DenStore.self) private var store
+    @Environment(DenController.self) private var store
     @Environment(DenWindowModel.self) private var windowModel
     @State private var text = ""
     @FocusState private var isFocused: Bool
@@ -335,7 +335,7 @@ struct ZmxDuplicationPanel: View {
 }
 
 struct RenameBoardPanel: View {
-    @Environment(DenStore.self) private var store
+    @Environment(DenController.self) private var store
     @Environment(DenWindowModel.self) private var windowModel
     @State private var text = ""
     @FocusState private var isFocused: Bool
@@ -369,7 +369,7 @@ struct RenameBoardPanel: View {
 }
 
 struct BoardWidthPanel: View {
-    @Environment(DenStore.self) private var store
+    @Environment(DenController.self) private var store
     @Environment(DenWindowModel.self) private var windowModel
 
     var body: some View {
@@ -409,7 +409,7 @@ struct BoardWidthPanel: View {
 }
 
 struct SaveEssentialPanel: View {
-    @Environment(DenStore.self) private var store
+    @Environment(DenController.self) private var store
     @Environment(DenWindowModel.self) private var windowModel
 
     @State private var name = ""

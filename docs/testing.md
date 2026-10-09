@@ -20,7 +20,7 @@ for a Terminal Board).
 
 For this boundary, a UI test qualifies only when it sends input after a pointer click, Den Mode
 toggle, Desk switch, or Overview confirmation and observes a target-specific result. Board selection,
-`DenStore` focus state, window titles, and routing decisions do not by themselves justify a UI test.
+`DenController` focus state, window titles, and routing decisions do not by themselves justify a UI test.
 Unit tests cover the focus state machine; UI tests cover actual input delivery through the mounted
 native surface.
 
@@ -44,11 +44,11 @@ Unit tests must never read or write shared user defaults (`UserDefaults.standard
 Test files under `Den Browser/Den BrowserTests` are grouped by the responsibility they verify,
 such as `Den`, `Desk`, `Board`, `Drawer`, `Profiles`, `Web`, `IPC`, and `CLI`. Board-kind-specific
 tests belong under `Board/Web`, `Board/Terminal`, or `Board/Inspection`. Class names do not determine
-placement: for example, `DenStoreBoardTests` belongs under `Board` because it protects Board operations.
+placement: for example, `DenControllerBoardTests` belongs under `Board` because it protects Board operations.
 Do not mechanically reproduce the source's `Domain`, `Application`, and `Infrastructure` folders.
 Shared Swift test helpers belong under `Support`; test resource files remain under `Fixtures`.
 
-Test application operations and persistence directly through `DenStore`; test the shared-state source directly through `DenStateStore` and its write capability. Test window presentation
+Test application operations and persistence directly through `DenController`; test the shared-state source directly through `DenStateStore` and its write capability. Test window presentation
 transitions through `DenWindowModel` and context-local state through the corresponding Model,
 while asserting resulting domain changes on their shared Store when needed. Test delayed presentation
 by its observable result rather than the Task object used to produce it. Presentation suites use Model names; moving UI state does not require routing unrelated
@@ -132,7 +132,7 @@ just check
 `just architecture-check` tests the ast-grep layer rules and scans the application plus
 `Packages/DenDomain/Sources`, `Packages/DenDesign/Sources`, and
 `Packages/DenIPCProtocol/Sources`, `Packages/DenApplication/Sources`, and
-`Packages/DenPresentation/Sources`. The checks reject UI/runtime SDK imports in Domain,
+`Packages/DenPresentation/Sources`, and `Packages/DenInfrastructure/Sources`. The checks reject UI/runtime SDK imports in Domain,
 SwiftUI imports in Application, and non-Foundation imports in the IPC protocol package.
 The package compiler boundaries enforce dependencies for moved Domain, Design, and wire
 types; behavioral tests verify runtime event routing and shared-state consistency. The

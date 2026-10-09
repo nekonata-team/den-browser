@@ -1,5 +1,6 @@
 import DenDomain
 import DenIPCProtocol
+import DenInfrastructure
 import Foundation
 import Testing
 

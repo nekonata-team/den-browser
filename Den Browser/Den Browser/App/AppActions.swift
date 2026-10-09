@@ -162,7 +162,7 @@ enum DrawerAction: Equatable {
 enum AppActionHandler {
     static func perform(
         _ action: AppAction,
-        store: DenStore?,
+        store: DenController?,
         windowModel: DenWindowModel?,
         openSettings: () -> Void = {}
     ) {

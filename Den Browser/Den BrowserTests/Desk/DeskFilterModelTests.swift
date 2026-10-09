@@ -14,7 +14,7 @@ struct DeskFilterModelTests {
         let bravo = board("Bravo", url: "https://github.com/example/repository")
         let charlie = board("Charlie", url: "https://docs.example/")
         let source = desk("Desk", boards: [alpha, bravo, charlie], focusedBoardID: bravo.id)
-        let store = DenStore(state: DenState(desks: [source], focusedDeskID: source.id))
+        let store = DenController(state: DenState(desks: [source], focusedDeskID: source.id))
         let composition = DenWindowComposition(store: store)
         let windowModel = composition.model
         composition.connect()
@@ -39,7 +39,7 @@ struct DeskFilterModelTests {
         let bravo = board("Bravo")
         let charlie = board("Charlie")
         let source = desk("Desk", boards: [alpha, bravo, charlie], focusedBoardID: alpha.id)
-        let store = DenStore(state: DenState(desks: [source], focusedDeskID: source.id))
+        let store = DenController(state: DenState(desks: [source], focusedDeskID: source.id))
         let composition = DenWindowComposition(store: store)
         let windowModel = composition.model
         composition.connect()
@@ -86,7 +86,7 @@ struct DeskFilterModelTests {
         let bravo = board("Bravo")
         let charlie = board("Charlie")
         let source = desk("Desk", boards: [alpha, bravo, charlie], focusedBoardID: alpha.id)
-        let store = DenStore(state: DenState(desks: [source], focusedDeskID: source.id))
+        let store = DenController(state: DenState(desks: [source], focusedDeskID: source.id))
         let composition = DenWindowComposition(store: store)
         let windowModel = composition.model
         composition.connect()
@@ -104,7 +104,7 @@ struct DeskFilterModelTests {
         let alpha = board("Alpha")
         let bravo = board("Bravo")
         let source = desk("Desk", boards: [alpha, bravo], focusedBoardID: alpha.id)
-        let store = DenStore(state: DenState(desks: [source], focusedDeskID: source.id))
+        let store = DenController(state: DenState(desks: [source], focusedDeskID: source.id))
         let composition = DenWindowComposition(store: store)
         let windowModel = composition.model
         composition.connect()
@@ -123,7 +123,7 @@ struct DeskFilterModelTests {
     @Test func deskFilterPassesShiftedCharactersToTextInput() throws {
         let alpha = board("Alpha")
         let source = desk("Desk", boards: [alpha], focusedBoardID: alpha.id)
-        let store = DenStore(state: DenState(desks: [source], focusedDeskID: source.id))
+        let store = DenController(state: DenState(desks: [source], focusedDeskID: source.id))
         let composition = DenWindowComposition(store: store)
         let windowModel = composition.model
         composition.connect()
@@ -144,7 +144,7 @@ struct DeskFilterModelTests {
     @Test func deskFilterPassesModifiedReturnAndEscapeToTextInput() throws {
         let alpha = board("Alpha")
         let source = desk("Desk", boards: [alpha], focusedBoardID: alpha.id)
-        let store = DenStore(state: DenState(desks: [source], focusedDeskID: source.id))
+        let store = DenController(state: DenState(desks: [source], focusedDeskID: source.id))
         let composition = DenWindowComposition(store: store)
         let windowModel = composition.model
         composition.connect()
@@ -172,7 +172,7 @@ struct DeskFilterModelTests {
         let alpha = board("Alpha")
         let bravo = board("Bravo")
         let source = desk("Desk", boards: [alpha, bravo], focusedBoardID: alpha.id)
-        let store = DenStore(state: DenState(desks: [source], focusedDeskID: source.id))
+        let store = DenController(state: DenState(desks: [source], focusedDeskID: source.id))
         let composition = DenWindowComposition(store: store)
         let windowModel = composition.model
         composition.connect()
@@ -195,7 +195,7 @@ struct DeskFilterModelTests {
     @Test func markedTextKeepsFilterInputActiveUntilIMECommits() throws {
         let alpha = board("Alpha")
         let source = desk("Desk", boards: [alpha], focusedBoardID: alpha.id)
-        let store = DenStore(state: DenState(desks: [source], focusedDeskID: source.id))
+        let store = DenController(state: DenState(desks: [source], focusedDeskID: source.id))
         let composition = DenWindowComposition(store: store)
         let windowModel = composition.model
         composition.connect()

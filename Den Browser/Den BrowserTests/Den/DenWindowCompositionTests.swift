@@ -8,7 +8,7 @@ import Testing
 struct DenWindowCompositionTests {
     @Test func constructionDoesNotConnectWindowEffects() {
         // Arrange
-        let store = DenStore(state: .sample)
+        let store = DenController(state: .sample)
         store.reportFeedback("Ready")
 
         // Act
@@ -21,7 +21,7 @@ struct DenWindowCompositionTests {
 
     @Test func connectingDeliversCurrentFeedbackAndSynchronousWindowEffects() {
         // Arrange
-        let store = DenStore(state: .sample)
+        let store = DenController(state: .sample)
         store.reportFeedback("Ready")
         let composition = DenWindowComposition(store: store)
         defer { composition.disconnect() }
@@ -37,7 +37,7 @@ struct DenWindowCompositionTests {
 
     @Test func disconnectingRemovesWindowEffectsAndEndsFeedbackPresentation() {
         // Arrange
-        let store = DenStore(state: .sample)
+        let store = DenController(state: .sample)
         let composition = DenWindowComposition(store: store)
         composition.connect()
         store.reportFeedback("Ready")

@@ -1,6 +1,7 @@
 import AppKit
 import DenApplication
 import DenDomain
+import DenInfrastructure
 import DenPresentation
 import Foundation
 import Testing
@@ -1000,7 +1001,7 @@ struct ProfileManagerTests {
         let route1 = ProfileWindowRoute(windowID: UUID(), profileID: profileID)
         let window1 = NSWindow()
         let window2 = NSWindow()
-        var owner: DenStore? = manager.store(for: route1)
+        var owner: DenController? = manager.store(for: route1)
         manager.register(window: window1, for: route1)
         let firstDeskID = try #require(owner?.presentedDeskID)
         owner?.createDesk(label: "SecondDesk", preset: .empty)
@@ -1038,7 +1039,7 @@ struct ProfileManagerTests {
         var manager: ProfileManager? = makeProfileManager(directory: directory)
         let profileID = try #require(manager?.personalProfileID)
         let route = ProfileWindowRoute(windowID: UUID(), profileID: profileID)
-        var store: DenStore? = manager?.store(for: route)
+        var store: DenController? = manager?.store(for: route)
         let targetBoard = board("TargetBoard")
         let targetDesk = desk("Main", boards: [targetBoard])
         store?.storage.state = DenState(desks: [targetDesk], focusedDeskID: targetDesk.id)

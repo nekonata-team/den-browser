@@ -192,7 +192,7 @@ extension DenWindowModel {
     func submitOpenBoard(_ input: String? = nil, preferredWidth: Double? = nil) {
         let input = input ?? openBoard.input
         let rootSessionName: String?
-        if case .session(let sessionName)? = DenStore.resolveZmxInput(input) {
+        if case .session(let sessionName)? = DenController.resolveZmxInput(input) {
             rootSessionName = zmxSessions.rootSessionName(for: sessionName)
         } else {
             rootSessionName = nil

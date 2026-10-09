@@ -5,7 +5,7 @@ import Testing
 
 @MainActor
 struct ZmxSessionsModelTests {
-    @Test func loadsFiltersAndSelectsSessionsWithoutDenStore() async {
+    @Test func loadsFiltersAndSelectsSessionsWithoutDenController() async {
         let model = ZmxSessionsModel(
             client: ZmxClient(
                 executablePath: "/opt/homebrew/bin/zmx",

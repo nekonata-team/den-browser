@@ -5,7 +5,7 @@ import SwiftUI
 struct ZmxSessionsPanel: View {
     let profileColor: Color
 
-    @Environment(DenStore.self) private var store
+    @Environment(DenController.self) private var store
     @Environment(DenWindowModel.self) private var windowModel
     @Environment(\.accessibilityDifferentiateWithoutColor) private var differentiateWithoutColor
     @FocusState private var isSearchFocused: Bool

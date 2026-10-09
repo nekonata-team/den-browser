@@ -9,7 +9,7 @@ struct DeskPresetManagementPanel: View {
     let profileColor: Color
     let onClose: () -> Void
 
-    @Environment(DenStore.self) private var store
+    @Environment(DenController.self) private var store
     @State private var query = ""
     @State private var selectedPresetID: UUID?
     @State private var editingPresetID: UUID?

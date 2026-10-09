@@ -1,6 +1,7 @@
 import AppKit
 import DenApplication
 import DenDomain
+import DenInfrastructure
 import DenPresentation
 import Sparkle
 import SwiftUI
@@ -137,7 +138,7 @@ private struct DenCommands: Commands {
     let openSettingsCoordinator: OpenSettingsCoordinator
 
     @FocusedValue(\.denWindowModel) private var windowModel
-    @FocusedValue(\.denStore) private var store
+    @FocusedValue(\.denController) private var store
     @FocusedValue(\.profileID) private var profileID
     @FocusedValue(\.profileWindowID) private var profileWindowID
     @Environment(\.openWindow) private var openWindow

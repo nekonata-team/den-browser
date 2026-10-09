@@ -20,7 +20,7 @@ struct DenWindowModelTests {
         // Arrange
         let board = BoardState(label: "Board", width: 520, currentSheetURL: URL(string: "https://board.example/"))
         let desk = DeskState(label: "Desk", boards: [board], focusedBoardID: board.id)
-        let store = DenStore(state: DenState(desks: [desk], focusedDeskID: desk.id))
+        let store = DenController(state: DenState(desks: [desk], focusedDeskID: desk.id))
         store.recordNotification(title: "Build", body: "Finished", boardID: board.id)
         let notificationID = try #require(store.notifications.first?.id)
         let composition = DenWindowComposition(store: store)
@@ -71,7 +71,7 @@ struct DenWindowModelTests {
             ? BoardState(label: "Terminal", width: 520, workingDirectory: "/tmp")
             : BoardState(label: "Web", width: 520, currentSheetURL: URL(string: "https://target.example/"))
         let desk = DeskState(label: "Desk", boards: [current, target], focusedBoardID: current.id)
-        let store = DenStore(state: DenState(desks: [desk], focusedDeskID: desk.id))
+        let store = DenController(state: DenState(desks: [desk], focusedDeskID: desk.id))
         let composition = DenWindowComposition(store: store)
         composition.connect()
         defer { composition.disconnect() }
@@ -98,8 +98,8 @@ struct DenWindowModelTests {
         let sheetNavigation = SheetNavigationManager(
             defaults: defaults, pasteboard: pasteboard, scriptSource: "")
         let preferences = AppPreferences(defaults: defaults)
-        func makeStore(presenting deskID: DeskID) -> DenStore {
-            DenStore(
+        func makeStore(presenting deskID: DeskID) -> DenController {
+            DenController(
                 storage: storage,
                 presentedDeskID: deskID,
                 websiteDataStore: .nonPersistent(),
@@ -136,7 +136,7 @@ struct DenWindowModelTests {
 
     @Test func latestFeedbackIsDisplayedAndPreviousTimerCannotDismissReplacement() async {
         // Arrange
-        let store = DenStore(state: .sample)
+        let store = DenController(state: .sample)
         let composition = DenWindowComposition(store: store, feedbackDuration: .milliseconds(150))
         let windowModel = composition.model
         composition.connect()
@@ -157,7 +157,7 @@ struct DenWindowModelTests {
 
     @Test func receivingSameFeedbackAgainDoesNotRedisplayAfterDismissal() {
         // Arrange
-        let store = DenStore(state: .sample)
+        let store = DenController(state: .sample)
         let composition = DenWindowComposition(store: store)
         let windowModel = composition.model
         composition.connect()
@@ -178,7 +178,7 @@ struct DenWindowModelTests {
         let board = BoardState(label: "Target", width: 520, currentSheetURL: URL(string: "https://example.com/"))
         let first = DeskState(label: "Empty", boards: [])
         let desk = DeskState(label: "Desk", boards: [board], focusedBoardID: board.id)
-        let store = DenStore(
+        let store = DenController(
             state: DenState(desks: [first, desk], focusedDeskID: first.id))
         let composition = DenWindowComposition(store: store)
         let windowModel = composition.model
@@ -199,7 +199,7 @@ struct DenWindowModelTests {
 
     @Test func tappingUntargetedFeedbackDismissesItWithoutChangingState() throws {
         // Arrange
-        let store = DenStore(state: .sample)
+        let store = DenController(state: .sample)
         let initialState = store.state
         let composition = DenWindowComposition(store: store)
         let windowModel = composition.model

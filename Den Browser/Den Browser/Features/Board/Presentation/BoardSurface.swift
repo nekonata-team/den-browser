@@ -116,7 +116,7 @@ struct BoardSurfaceModifier: ViewModifier {
 }
 
 struct BoardHeaderCenteringModifier: ViewModifier {
-    @Environment(DenStore.self) private var store
+    @Environment(DenController.self) private var store
     @Environment(DenWindowModel.self) private var windowModel
 
     let boardID: BoardID
@@ -135,7 +135,7 @@ struct BoardHeaderCenteringModifier: ViewModifier {
 }
 
 struct BoardDragHeader<LeadingContent: View>: View {
-    @Environment(DenStore.self) private var store
+    @Environment(DenController.self) private var store
     let board: BoardState
     let isFocused: Bool
     let isDragging: Bool

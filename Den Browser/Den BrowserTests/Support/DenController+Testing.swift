@@ -1,0 +1,270 @@
+import AppKit
+import DenDomain
+import Foundation
+import Testing
+import WebKit
+
+@testable import Den_Browser
+
+@MainActor
+func makeTestDefaults(suiteName: String = "DenBrowserTests-\(UUID().uuidString)") -> UserDefaults {
+    guard let defaults = UserDefaults(suiteName: suiteName) else {
+        preconditionFailure("Failed to create isolated test defaults")
+    }
+    return defaults
+}
+
+@MainActor
+final class TestWindow: NSWindow {
+    private(set) var presentationRequests = 0
+    private(set) var closeRequests = 0
+
+    init() {
+        super.init(
+            contentRect: .init(x: 0, y: 0, width: 720, height: 640),
+            styleMask: [.titled, .closable, .resizable],
+            backing: .buffered,
+            defer: false)
+    }
+
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    override func makeKeyAndOrderFront(_ sender: Any?) {
+        presentationRequests += 1
+    }
+
+    override func close() {
+        closeRequests += 1
+        super.close()
+    }
+}
+
+@MainActor
+func makeTestSheetNavigationManager(
+    defaults: UserDefaults? = nil,
+    scriptSource: String? = nil
+) -> SheetNavigationManager {
+    SheetNavigationManager(
+        defaults: defaults ?? makeTestDefaults(),
+        pasteboard: .withUniqueName(),
+        scriptSource: scriptSource)
+}
+
+@MainActor
+private func makeTestDenDependencies() -> (
+    navigation: SheetNavigationManager,
+    preferences: AppPreferences,
+    pasteboard: NSPasteboard
+) {
+    let defaults = makeTestDefaults()
+    let pasteboard = NSPasteboard.withUniqueName()
+    return (
+        SheetNavigationManager(defaults: defaults, pasteboard: pasteboard, scriptSource: ""),
+        AppPreferences(defaults: defaults),
+        pasteboard
+    )
+}
+
+extension DenController {
+    convenience init() {
+        self.init(state: .sample)
+    }
+
+    convenience init(state: DenState) {
+        let dependencies = makeTestDenDependencies()
+        self.init(
+            state: state,
+            websiteDataStore: .nonPersistent(),
+            sheetNavigation: dependencies.navigation,
+            preferences: dependencies.preferences,
+            pasteboard: dependencies.pasteboard)
+    }
+
+    convenience init(
+        state: DenState,
+        sheetNavigation: SheetNavigationManager,
+        preferences: AppPreferences? = nil,
+        terminalCommandRunner: any TerminalCommandRunning = SubprocessCommandRunner()
+    ) {
+        self.init(
+            state: state,
+            websiteDataStore: .nonPersistent(),
+            sheetNavigation: sheetNavigation,
+            preferences: preferences ?? AppPreferences(defaults: makeTestDefaults()),
+            pasteboard: sheetNavigation.pasteboard,
+            terminalCommandRunner: terminalCommandRunner)
+    }
+
+    convenience init(state: DenState, onSave: @escaping (DenState) -> Void) {
+        let dependencies = makeTestDenDependencies()
+        self.init(
+            state: state,
+            websiteDataStore: .nonPersistent(),
+            sheetNavigation: dependencies.navigation,
+            preferences: dependencies.preferences,
+            pasteboard: dependencies.pasteboard,
+            onSave: { state in
+                onSave(state)
+                return true
+            })
+    }
+
+    convenience init(state: DenState, onSaveReturningBool onSave: @escaping (DenState) -> Bool) {
+        let dependencies = makeTestDenDependencies()
+        self.init(
+            state: state,
+            websiteDataStore: .nonPersistent(),
+            sheetNavigation: dependencies.navigation,
+            preferences: dependencies.preferences,
+            pasteboard: dependencies.pasteboard,
+            onSave: onSave)
+    }
+
+    convenience init(
+        state: DenState,
+        deskPresets: [PersonalDeskPreset],
+        onDeskPresetsSave: (([PersonalDeskPreset]) -> Bool)? = nil
+    ) {
+        let dependencies = makeTestDenDependencies()
+        self.init(
+            state: state,
+            websiteDataStore: .nonPersistent(),
+            sheetNavigation: dependencies.navigation,
+            preferences: dependencies.preferences,
+            pasteboard: dependencies.pasteboard,
+            deskPresets: deskPresets,
+            onDeskPresetsSave: onDeskPresetsSave)
+    }
+}
+
+@MainActor
+func withTestController<T>(
+    desks: [DeskState]? = nil,
+    boards: [BoardState] = [],
+    recentItems: [RecentItem] = [],
+    onRecentItemsSave: (([RecentItem]) -> Bool)? = nil,
+    onSave: ((DenState) -> Bool)? = nil,
+    terminalCommandRunner: any TerminalCommandRunning = SubprocessCommandRunner(),
+    body: (DenController) throws -> T
+) rethrows -> T {
+    let suiteName = "DenControllerTest-\(UUID().uuidString)"
+    guard let defaults = UserDefaults(suiteName: suiteName) else {
+        preconditionFailure("Failed to create isolated test UserDefaults")
+    }
+    defer { defaults.removePersistentDomain(forName: suiteName) }
+    let preferences = AppPreferences(defaults: defaults)
+    let pasteboard = NSPasteboard.withUniqueName()
+    let storeDesks = desks ?? [DeskState(label: "Desk", boards: boards, focusedBoardID: boards.first?.id)]
+    let focusedDeskID = storeDesks.first?.id ?? DeskID()
+    let store = DenController(
+        state: DenState(desks: storeDesks, focusedDeskID: focusedDeskID),
+        websiteDataStore: .nonPersistent(),
+        sheetNavigation: SheetNavigationManager(defaults: defaults, pasteboard: pasteboard, scriptSource: ""),
+        preferences: preferences,
+        pasteboard: pasteboard,
+        terminalCommandRunner: terminalCommandRunner,
+        recentItems: recentItems,
+        onSave: onSave,
+        onRecentItemsSave: onRecentItemsSave
+    )
+    return try body(store)
+}
+
+@MainActor
+func withTestController<T>(
+    desks: [DeskState]? = nil,
+    boards: [BoardState] = [],
+    recentItems: [RecentItem] = [],
+    onRecentItemsSave: (([RecentItem]) -> Bool)? = nil,
+    onSave: ((DenState) -> Bool)? = nil,
+    terminalCommandRunner: any TerminalCommandRunning = SubprocessCommandRunner(),
+    body: (DenController) async throws -> T
+) async rethrows -> T {
+    let suiteName = "DenControllerTest-\(UUID().uuidString)"
+    guard let defaults = UserDefaults(suiteName: suiteName) else {
+        preconditionFailure("Failed to create isolated test UserDefaults")
+    }
+    defer { defaults.removePersistentDomain(forName: suiteName) }
+    let preferences = AppPreferences(defaults: defaults)
+    let pasteboard = NSPasteboard.withUniqueName()
+    let storeDesks = desks ?? [DeskState(label: "Desk", boards: boards, focusedBoardID: boards.first?.id)]
+    let focusedDeskID = storeDesks.first?.id ?? DeskID()
+    let store = DenController(
+        state: DenState(desks: storeDesks, focusedDeskID: focusedDeskID),
+        websiteDataStore: .nonPersistent(),
+        sheetNavigation: SheetNavigationManager(defaults: defaults, pasteboard: pasteboard, scriptSource: ""),
+        preferences: preferences,
+        pasteboard: pasteboard,
+        terminalCommandRunner: terminalCommandRunner,
+        recentItems: recentItems,
+        onSave: onSave,
+        onRecentItemsSave: onRecentItemsSave
+    )
+    return try await body(store)
+}
+
+@MainActor
+func withStore<T>(
+    desks: [DeskState],
+    body: (DenController) throws -> T
+) rethrows -> T {
+    try withTestController(desks: desks, body: body)
+}
+
+@MainActor
+func withStore<T>(
+    desks: [DeskState],
+    body: (DenController) async throws -> T
+) async rethrows -> T {
+    try await withTestController(desks: desks, body: body)
+}
+
+@MainActor
+func withTestWindowModel<T>(
+    store: DenController,
+    body: (DenWindowModel) throws -> T
+) rethrows -> T {
+    let composition = DenWindowComposition(store: store)
+    let windowModel = composition.model
+    composition.connect()
+    defer { composition.disconnect() }
+    return try body(windowModel)
+}
+
+@MainActor
+func withTestWindowModel<T>(
+    store: DenController,
+    body: (DenWindowModel) async throws -> T
+) async rethrows -> T {
+    let composition = DenWindowComposition(store: store)
+    let windowModel = composition.model
+    composition.connect()
+    defer { composition.disconnect() }
+    return try await body(windowModel)
+}
+
+@MainActor
+func withTestWindowModel<T>(
+    desks: [DeskState],
+    onSave: ((DenState) -> Bool)? = nil,
+    terminalCommandRunner: any TerminalCommandRunning = SubprocessCommandRunner(),
+    body: (DenWindowModel) throws -> T
+) rethrows -> T {
+    try withTestController(desks: desks, onSave: onSave, terminalCommandRunner: terminalCommandRunner) { store in
+        try withTestWindowModel(store: store, body: body)
+    }
+}
+
+@MainActor
+func withTestWindowModel<T>(
+    desks: [DeskState],
+    onSave: ((DenState) -> Bool)? = nil,
+    terminalCommandRunner: any TerminalCommandRunning = SubprocessCommandRunner(),
+    body: (DenWindowModel) async throws -> T
+) async rethrows -> T {
+    try await withTestController(desks: desks, onSave: onSave, terminalCommandRunner: terminalCommandRunner) { store in
+        try await withTestWindowModel(store: store, body: body)
+    }
+}

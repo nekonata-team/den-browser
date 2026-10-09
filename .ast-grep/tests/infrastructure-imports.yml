@@ -1,0 +1,9 @@
+id: infrastructure-imports
+valid:
+  - import Foundation
+  - import DenDomain
+  - import os
+invalid:
+  - import Den_Browser
+  - import DenPresentation
+  - import SwiftUI

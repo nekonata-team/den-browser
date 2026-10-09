@@ -8,7 +8,7 @@ struct OverviewView: View {
     let profileColor: Color
     let boardHeight: CGFloat
 
-    @Environment(DenStore.self) private var store
+    @Environment(DenController.self) private var store
     @Environment(DenWindowModel.self) private var windowModel
     @Environment(OverviewModel.self) private var overview
     @Environment(AppPreferences.self) private var preferences

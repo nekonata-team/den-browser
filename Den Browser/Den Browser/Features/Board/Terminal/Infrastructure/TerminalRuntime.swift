@@ -1,6 +1,7 @@
 import AppKit
 import Combine
 import DenDomain
+import DenInfrastructure
 import GhosttyKit
 import GhosttyTerminal
 

@@ -17,7 +17,7 @@ struct DenWindowModelPresentationTests {
         let populated = desk("Populated", boards: [board])
         let empty = desk("Empty")
         var savedState: DenState?
-        let store = DenStore(
+        let store = DenController(
             state: DenState(desks: [populated, empty], focusedDeskID: populated.id),
             onSave: { savedState = $0 })
         let composition = DenWindowComposition(store: store)
@@ -72,7 +72,7 @@ struct DenWindowModelPresentationTests {
         let first = board("First")
         let second = board("Second")
         let focusedDesk = desk("Desk", boards: [first, second], focusedBoardID: first.id)
-        let store = DenStore(
+        let store = DenController(
             state: DenState(desks: [focusedDesk], focusedDeskID: focusedDesk.id)
         )
         let composition = DenWindowComposition(store: store)
@@ -92,21 +92,21 @@ struct DenWindowModelPresentationTests {
     }
 
     @Test func restoreRecentlyRemovedBoardReportsFeedbackWhenNoneExists() {
-        let store = DenStore(state: .sample)
+        let store = DenController(state: .sample)
         store.restoreRecentlyRemovedBoard()
         #expect(store.latestFeedback?.message == "No removed board to restore.")
         #expect(store.latestFeedback?.severity == .warning)
     }
 
     @Test func invalidDeskNumberReportsFeedback() {
-        let store = DenStore(state: .sample)
+        let store = DenController(state: .sample)
         store.focusDesk(number: 5)
         #expect(store.latestFeedback?.message == "Desk 5 does not exist.")
         #expect(store.latestFeedback?.severity == .warning)
     }
 
     @Test func reportFeedbackSetsLatestFeedbackWithSeverity() {
-        let store = DenStore(state: .sample)
+        let store = DenController(state: .sample)
         #expect(store.latestFeedback == nil)
 
         store.reportFeedback("Test Toast", severity: .warning)
@@ -116,7 +116,7 @@ struct DenWindowModelPresentationTests {
     }
 
     @Test func reportFeedbackPreservesTitleAndBody() {
-        let store = DenStore(state: .sample)
+        let store = DenController(state: .sample)
 
         store.reportFeedback(title: "Build", body: "Finished")
 
@@ -128,7 +128,7 @@ struct DenWindowModelPresentationTests {
     @Test func openBoardPanelRetainsDraftAndClearsOneShotStateAcrossTransitions() throws {
         let board = board("Insert After")
         let focusedDesk = desk("Desk", boards: [board], focusedBoardID: board.id)
-        let store = DenStore(
+        let store = DenController(
             state: DenState(
                 desks: [focusedDesk],
                 focusedDeskID: focusedDesk.id))
@@ -168,7 +168,7 @@ struct DenWindowModelPresentationTests {
     @Test func recordingNotificationAddsUnreadHistoryAndTargetedFeedback() {
         let target = board("Terminal")
         let desk = desk("Desk", boards: [target], focusedBoardID: target.id)
-        let store = DenStore(state: DenState(desks: [desk], focusedDeskID: desk.id))
+        let store = DenController(state: DenState(desks: [desk], focusedDeskID: desk.id))
 
         store.recordNotification(title: "Build", body: "Finished", boardID: target.id)
 
@@ -185,7 +185,7 @@ struct DenWindowModelPresentationTests {
         let firstBoard = board("First")
         let secondBoard = board("Second")
         let desk = desk("Desk", boards: [firstBoard, secondBoard], focusedBoardID: firstBoard.id)
-        let store = DenStore(state: DenState(desks: [desk], focusedDeskID: desk.id))
+        let store = DenController(state: DenState(desks: [desk], focusedDeskID: desk.id))
 
         store.recordNotification(title: "First build", body: "Finished", boardID: firstBoard.id)
         let readNotificationID = store.notifications[0].id
@@ -207,7 +207,7 @@ struct DenWindowModelPresentationTests {
         let currentBoard = board("Current")
         let targetBoard = board("Target")
         let desk = desk("Desk", boards: [currentBoard, targetBoard], focusedBoardID: currentBoard.id)
-        let store = DenStore(state: DenState(desks: [desk], focusedDeskID: desk.id))
+        let store = DenController(state: DenState(desks: [desk], focusedDeskID: desk.id))
         store.recordNotification(title: "First", body: "Finished", boardID: targetBoard.id)
         store.recordNotification(title: "Second", body: "Finished", boardID: targetBoard.id)
         store.recordNotification(title: "Other", body: "Finished", boardID: currentBoard.id)
@@ -228,7 +228,7 @@ struct DenWindowModelPresentationTests {
         let targetBoard = board("Target")
         let currentDesk = desk("Current", boards: [currentBoard], focusedBoardID: currentBoard.id)
         let targetDesk = desk("Target", boards: [targetBoard], focusedBoardID: targetBoard.id)
-        let store = DenStore(
+        let store = DenController(
             state: DenState(desks: [currentDesk, targetDesk], focusedDeskID: currentDesk.id))
         store.recordNotification(title: "Build", body: "Finished", boardID: targetBoard.id)
 
@@ -243,7 +243,7 @@ struct DenWindowModelPresentationTests {
     @Test func clearingNotificationsRemovesSessionHistoryAfterConfirmation() {
         let target = board("Terminal")
         let desk = desk("Desk", boards: [target], focusedBoardID: target.id)
-        let store = DenStore(state: DenState(desks: [desk], focusedDeskID: desk.id))
+        let store = DenController(state: DenState(desks: [desk], focusedDeskID: desk.id))
         let composition = DenWindowComposition(store: store)
         let windowModel = composition.model
         composition.connect()
@@ -267,7 +267,7 @@ struct DenWindowModelPresentationTests {
         let target = board("Terminal")
         let first = desk("First")
         let second = desk("Second", boards: [target], focusedBoardID: target.id)
-        let store = DenStore(state: DenState(desks: [first, second], focusedDeskID: first.id))
+        let store = DenController(state: DenState(desks: [first, second], focusedDeskID: first.id))
         let composition = DenWindowComposition(store: store)
         let windowModel = composition.model
         composition.connect()
@@ -289,7 +289,7 @@ struct DenWindowModelPresentationTests {
         let target = board("Terminal")
         let first = desk("First")
         let second = desk("Second", boards: [target], focusedBoardID: target.id)
-        let store = DenStore(state: DenState(desks: [first, second], focusedDeskID: first.id))
+        let store = DenController(state: DenState(desks: [first, second], focusedDeskID: first.id))
         let composition = DenWindowComposition(store: store)
         let windowModel = composition.model
         composition.connect()
@@ -309,7 +309,7 @@ struct DenWindowModelPresentationTests {
         let target = board("Target")
         let first = desk("First")
         let second = desk("Second", boards: [target])
-        let store = DenStore(
+        let store = DenController(
             state: DenState(desks: [first, second], focusedDeskID: first.id)
         )
         let composition = DenWindowComposition(store: store)
@@ -329,7 +329,7 @@ struct DenWindowModelPresentationTests {
     @Test func openingDrawerFeedbackTargetOpensAndExpandsItem() throws {
         let item = DrawerItem(url: try #require(URL(string: "https://example.com/")))
         let drawerDesk = desk("Desk")
-        let store = DenStore(
+        let store = DenController(
             state: DenState(
                 desks: [drawerDesk],
                 focusedDeskID: drawerDesk.id,
@@ -355,7 +355,7 @@ struct DenWindowModelPresentationTests {
         let board = board("Board")
         let populated = desk("Populated", boards: [board])
         var savedState: DenState?
-        let store = DenStore(
+        let store = DenController(
             state: DenState(desks: [populated], focusedDeskID: populated.id),
             onSave: { savedState = $0 })
         let composition = DenWindowComposition(store: store)
@@ -381,7 +381,7 @@ struct DenWindowModelPresentationTests {
         let board = board("Board")
         let populated = desk("Populated", boards: [board])
         let empty = desk("Empty")
-        let store = DenStore(
+        let store = DenController(
             state: DenState(desks: [populated, empty], focusedDeskID: populated.id))
         let composition = DenWindowComposition(store: store)
         let windowModel = composition.model
@@ -406,7 +406,7 @@ struct DenWindowModelPresentationTests {
         let board = board("Board")
         let populated = desk("Populated", boards: [board])
         var savedState: DenState?
-        let store = DenStore(
+        let store = DenController(
             state: DenState(desks: [populated], focusedDeskID: populated.id),
             onSave: { savedState = $0 })
         let composition = DenWindowComposition(store: store)
@@ -733,7 +733,7 @@ struct DenWindowModelPresentationTests {
         let second = board("Second")
         let deskState = desk("Desk", boards: [first, second], focusedBoardID: first.id)
         var savedState: DenState?
-        let store = DenStore(
+        let store = DenController(
             state: DenState(desks: [deskState], focusedDeskID: deskState.id),
             onSave: { savedState = $0 })
         let composition = DenWindowComposition(store: store)
@@ -869,7 +869,7 @@ struct DenWindowModelPresentationTests {
             currentSheetURL: URL(string: "https://docs.example.com/api")
         )
         let desk = DeskState(label: "Work", boards: [board], focusedBoardID: board.id)
-        let store = DenStore(state: DenState(desks: [desk], focusedDeskID: desk.id))
+        let store = DenController(state: DenState(desks: [desk], focusedDeskID: desk.id))
         let composition = DenWindowComposition(store: store)
         let windowModel = composition.model
         composition.connect()
@@ -898,7 +898,7 @@ struct DenWindowModelPresentationTests {
             workingDirectory: "/Users/test/projects/demo"
         )
         let desk = DeskState(label: "Terminal", boards: [terminalBoard], focusedBoardID: terminalBoard.id)
-        let store = DenStore(state: DenState(desks: [desk], focusedDeskID: desk.id))
+        let store = DenController(state: DenState(desks: [desk], focusedDeskID: desk.id))
         let composition = DenWindowComposition(store: store)
         let windowModel = composition.model
         composition.connect()
@@ -912,7 +912,7 @@ struct DenWindowModelPresentationTests {
     }
 
     @Test func showSaveEssentialPanelForRecentItemPopulatesDraft() {
-        let store = DenStore(state: .sample)
+        let store = DenController(state: .sample)
         let composition = DenWindowComposition(store: store)
         let windowModel = composition.model
         composition.connect()
@@ -927,7 +927,7 @@ struct DenWindowModelPresentationTests {
     }
 
     @Test func saveEssentialValidatesInputAndUpdatesPreferences() {
-        withTestStore { store in
+        withTestController { store in
             withTestWindowModel(store: store) { windowModel in
                 windowModel.showSaveEssentialPanel(name: "Test", key: "", input: "https://test.com")
                 #expect(windowModel.isSaveEssentialPanelPresented)

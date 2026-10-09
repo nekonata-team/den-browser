@@ -202,7 +202,7 @@ struct OverviewModelTests {
         let main = desk("Main", boards: [first, second], focusedBoardID: first.id)
         let other = desk("Other", boards: [third], focusedBoardID: third.id)
         var saveCount = 0
-        let store = DenStore(
+        let store = DenController(
             state: DenState(desks: [main, other], focusedDeskID: main.id),
             onSave: { _ in saveCount += 1 })
         let composition = DenWindowComposition(store: store)
@@ -234,7 +234,7 @@ struct OverviewModelTests {
         let second = board("Second")
         let main = desk("Main", boards: [first, second], focusedBoardID: first.id)
         let empty = desk("Empty")
-        let store = DenStore(state: DenState(desks: [main, empty], focusedDeskID: main.id))
+        let store = DenController(state: DenState(desks: [main, empty], focusedDeskID: main.id))
         let composition = DenWindowComposition(store: store)
         let windowModel = composition.model
         composition.connect()
@@ -258,7 +258,7 @@ struct OverviewModelTests {
         let second = board("Second")
         let main = desk("Main", boards: [first, second], focusedBoardID: first.id)
         let empty = desk("Empty")
-        let store = DenStore(state: DenState(desks: [main, empty], focusedDeskID: main.id))
+        let store = DenController(state: DenState(desks: [main, empty], focusedDeskID: main.id))
         let composition = DenWindowComposition(store: store)
         let windowModel = composition.model
         composition.connect()
@@ -282,7 +282,7 @@ struct OverviewModelTests {
         let side = BoardState(width: 390, targetBoardID: target.id)
         let source = desk("Source", boards: [target, side], focusedBoardID: target.id)
         let destination = desk("Destination")
-        let store = DenStore(state: DenState(desks: [source, destination], focusedDeskID: source.id))
+        let store = DenController(state: DenState(desks: [source, destination], focusedDeskID: source.id))
         let composition = DenWindowComposition(store: store)
         let windowModel = composition.model
         composition.connect()
@@ -302,7 +302,7 @@ struct OverviewModelTests {
         let side = BoardState(width: 390, targetBoardID: target.id)
         let source = desk("Source", boards: [target, side], focusedBoardID: target.id)
         let destination = desk("Destination")
-        let store = DenStore(state: DenState(desks: [source, destination], focusedDeskID: source.id))
+        let store = DenController(state: DenState(desks: [source, destination], focusedDeskID: source.id))
         let composition = DenWindowComposition(store: store)
         let windowModel = composition.model
         composition.connect()
@@ -323,7 +323,7 @@ struct OverviewModelTests {
         let side = BoardState(width: 390, targetBoardID: target.id)
         let after = board("After")
         let source = desk("Desk", boards: [before, target, side, after])
-        let store = DenStore(state: DenState(desks: [source], focusedDeskID: source.id))
+        let store = DenController(state: DenState(desks: [source], focusedDeskID: source.id))
         let composition = DenWindowComposition(store: store)
         let windowModel = composition.model
         composition.connect()
@@ -345,7 +345,7 @@ struct OverviewModelTests {
         let main = desk("Main", boards: [first, second], focusedBoardID: first.id)
         let other = desk("Other", boards: [third], focusedBoardID: third.id)
         var saveCount = 0
-        let store = DenStore(
+        let store = DenController(
             state: DenState(desks: [main, other], focusedDeskID: main.id),
             onSave: { _ in saveCount += 1 })
         let composition = DenWindowComposition(store: store)
@@ -373,7 +373,7 @@ struct OverviewModelTests {
         let third = board("Third")
         let main = desk("Main", boards: [first, second, third], focusedBoardID: first.id)
         var saveCount = 0
-        let store = DenStore(
+        let store = DenController(
             state: DenState(desks: [main], focusedDeskID: main.id),
             onSave: { _ in saveCount += 1 })
         let composition = DenWindowComposition(store: store)
@@ -397,7 +397,7 @@ struct OverviewModelTests {
         // Arrange
         let first = board("First")
         let desk = desk("Desk", boards: [first], focusedBoardID: first.id)
-        let store = DenStore(state: DenState(desks: [desk], focusedDeskID: desk.id))
+        let store = DenController(state: DenState(desks: [desk], focusedDeskID: desk.id))
         let composition = DenWindowComposition(store: store)
         let windowModel = composition.model
         composition.connect()
@@ -420,7 +420,7 @@ struct OverviewModelTests {
         let third = board("Third")
         let main = desk("Main", boards: [first, second], focusedBoardID: first.id)
         let other = desk("Other", boards: [third], focusedBoardID: third.id)
-        let store = DenStore(state: DenState(desks: [main, other], focusedDeskID: main.id))
+        let store = DenController(state: DenState(desks: [main, other], focusedDeskID: main.id))
         let composition = DenWindowComposition(store: store)
         let windowModel = composition.model
         composition.connect()
@@ -450,7 +450,7 @@ struct OverviewModelTests {
         let board = board("Board")
         let main = desk("Main", boards: [board], focusedBoardID: board.id)
         let empty = desk("Empty")
-        let store = DenStore(
+        let store = DenController(
             state: DenState(desks: [main, empty], focusedDeskID: main.id))
         let composition = DenWindowComposition(store: store)
         let windowModel = composition.model
@@ -475,7 +475,7 @@ struct OverviewModelTests {
         let second = board("Second")
         let third = board("Third")
         let main = desk("Main", boards: [first, second, third], focusedBoardID: second.id)
-        let store = DenStore(state: DenState(desks: [main], focusedDeskID: main.id))
+        let store = DenController(state: DenState(desks: [main], focusedDeskID: main.id))
         let composition = DenWindowComposition(store: store)
         let windowModel = composition.model
         composition.connect()
@@ -497,7 +497,7 @@ struct OverviewModelTests {
         // Arrange
         let onlyBoard = board("Only")
         let main = desk("Main", boards: [onlyBoard], focusedBoardID: onlyBoard.id)
-        let store = DenStore(state: DenState(desks: [main], focusedDeskID: main.id))
+        let store = DenController(state: DenState(desks: [main], focusedDeskID: main.id))
         let composition = DenWindowComposition(store: store)
         let windowModel = composition.model
         composition.connect()
@@ -519,7 +519,7 @@ struct OverviewModelTests {
         let board1 = board("Board1")
         let first = desk("First", boards: [board1], focusedBoardID: board1.id)
         let empty = desk("Empty")
-        let store = DenStore(state: DenState(desks: [first, empty], focusedDeskID: first.id))
+        let store = DenController(state: DenState(desks: [first, empty], focusedDeskID: first.id))
         let composition = DenWindowComposition(store: store)
         let windowModel = composition.model
         composition.connect()

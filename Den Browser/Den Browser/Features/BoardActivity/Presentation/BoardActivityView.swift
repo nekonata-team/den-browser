@@ -8,7 +8,7 @@ import SwiftUI
 struct BoardActivityView: View {
     let profileColor: Color
 
-    @Environment(DenStore.self) private var store
+    @Environment(DenController.self) private var store
     @Environment(DenWindowModel.self) private var windowModel
     @State private var sampler = ProcessResourceSampler()
     @State private var webUsage: [pid_t: ProcessResourceUsage] = [:]

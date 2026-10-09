@@ -49,7 +49,7 @@ final class KeyboardController {
     @discardableResult
     static func handle(
         _ event: NSEvent,
-        store: DenStore,
+        store: DenController,
         windowModel: DenWindowModel,
         preferences: AppPreferences? = nil,
         openSettings: @MainActor () -> Void = {}
@@ -65,7 +65,7 @@ final class KeyboardController {
 
     static func decision(
         for event: NSEvent,
-        store: DenStore,
+        store: DenController,
         windowModel: DenWindowModel,
         preferences: AppPreferences? = nil
     ) -> InputDecision {
@@ -78,7 +78,7 @@ final class KeyboardController {
 
     private static func apply(
         _ decision: InputDecision,
-        store: DenStore,
+        store: DenController,
         windowModel: DenWindowModel,
         openSettings: @MainActor () -> Void
     ) {

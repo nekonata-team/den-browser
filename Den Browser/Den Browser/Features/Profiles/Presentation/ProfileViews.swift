@@ -1,6 +1,7 @@
 import AppKit
 import DenDesign
 import DenDomain
+import DenInfrastructure
 import DenPresentation
 import SFSafeSymbols
 import SwiftUI
@@ -87,7 +88,7 @@ private struct ProfileDenWindow: View {
     let route: ProfileWindowRoute
     let profile: ProfileState
     let activeProfileID: ProfileID
-    let store: DenStore
+    let store: DenController
     let isPrivateDen: Bool
     let registerKeyboardWindow: @MainActor (NSWindow, DenWindowModel) -> Void
     let unregisterKeyboardWindow: @MainActor (NSWindow) -> Void
@@ -101,7 +102,7 @@ private struct ProfileDenWindow: View {
         route: ProfileWindowRoute,
         profile: ProfileState,
         activeProfileID: ProfileID,
-        store: DenStore,
+        store: DenController,
         isPrivateDen: Bool,
         registerKeyboardWindow: @escaping @MainActor (NSWindow, DenWindowModel) -> Void,
         unregisterKeyboardWindow: @escaping @MainActor (NSWindow) -> Void
@@ -126,7 +127,7 @@ private struct ProfileDenWindow: View {
             DenHeader(profile: profile, windowID: route.windowID)
         }
         .tint(profileDisplayColor(for: profile.color))
-        .focusedSceneValue(\.denStore, store)
+        .focusedSceneValue(\.denController, store)
         .focusedSceneValue(\.denWindowModel, windowModel)
         .focusedSceneValue(\.profileID, activeProfileID)
         .focusedSceneValue(\.profileWindowID, route.windowID)
@@ -346,8 +347,8 @@ struct OpenProfilePanel: View {
     }
 }
 
-struct DenStoreFocusedValueKey: FocusedValueKey {
-    typealias Value = DenStore
+struct DenControllerFocusedValueKey: FocusedValueKey {
+    typealias Value = DenController
 }
 
 struct DenWindowModelFocusedValueKey: FocusedValueKey {
@@ -363,9 +364,9 @@ struct ProfileWindowIDFocusedValueKey: FocusedValueKey {
 }
 
 extension FocusedValues {
-    var denStore: DenStore? {
-        get { self[DenStoreFocusedValueKey.self] }
-        set { self[DenStoreFocusedValueKey.self] = newValue }
+    var denController: DenController? {
+        get { self[DenControllerFocusedValueKey.self] }
+        set { self[DenControllerFocusedValueKey.self] = newValue }
     }
 
     var denWindowModel: DenWindowModel? {

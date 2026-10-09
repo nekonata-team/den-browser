@@ -47,7 +47,7 @@ struct DenHeaderControls: ToolbarContent {
     let profile: ProfileState
     let windowID: UUID
 
-    @Environment(DenStore.self) private var store
+    @Environment(DenController.self) private var store
     @Environment(DenWindowModel.self) private var windowModel
 
     @ToolbarContentBuilder
@@ -70,7 +70,7 @@ struct DenHeaderControls: ToolbarContent {
 }
 
 private struct NotificationButton: View {
-    @Environment(DenStore.self) private var store
+    @Environment(DenController.self) private var store
     @Environment(DenWindowModel.self) private var windowModel
 
     var body: some View {

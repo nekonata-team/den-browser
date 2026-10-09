@@ -19,7 +19,7 @@ struct DeskPresetPicker: View {
     let isSearchFocused: FocusState<Bool>.Binding
     let onConfirm: (DeskPresetSelection) -> Void
 
-    @Environment(DenStore.self) private var store
+    @Environment(DenController.self) private var store
     @State private var scrollPosition = ScrollPosition()
     @State private var selection: DeskPresetSelection
     @State private var preservesSelectionAfterManagement = false

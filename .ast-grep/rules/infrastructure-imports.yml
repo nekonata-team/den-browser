@@ -1,0 +1,13 @@
+id: infrastructure-imports
+language: Swift
+severity: error
+message: Infrastructure must not depend on app or Presentation implementations.
+files:
+  - "Packages/DenInfrastructure/Sources/DenInfrastructure/**/*.swift"
+rule:
+  kind: import_declaration
+  has:
+    kind: identifier
+    not:
+      regex: '^(Foundation|DenDomain|os)(\.|$)'
+    stopBy: end

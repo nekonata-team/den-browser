@@ -1,7 +1,7 @@
 # Swift import checks
 
 Run `just architecture-check` to test the rules and scan the application and all
-five package source roots: `DenDomain`, `DenDesign`, `DenIPCProtocol`, `DenApplication`, and `DenPresentation`.
+six package source roots: `DenDomain`, `DenDesign`, `DenIPCProtocol`, `DenApplication`, `DenPresentation`, and `DenInfrastructure`.
 `just lint` and `just check` also run this check. The ast-grep version is pinned in
 `mise.toml` so parser changes are reviewed together with the rule fixtures.
 
@@ -29,5 +29,7 @@ the contract, so the recipe uses `ast-grep test --skip-snapshot-tests`.
 `DenApplication` allows Foundation, Observation, and DenDomain only; native/UI frameworks
 and Presentation dependencies are excluded. `DenPresentation` allows Foundation, Observation, and DenDomain only. Package
 manifests enforce the same dependency direction. App Presentation cannot access the mutable
-`storage` adapter; the DenStore shared-data facade is read-only at compile time. Native operations
+`storage` adapter; the DenController shared-data facade is read-only at compile time. Native operations
 remaining in the app target are still protected only by layer checks, not a separate module.
+
+`DenInfrastructure` currently allows DenDomain, Foundation, and OS diagnostics only. Persistence and diagnostics cannot import app or Presentation code.

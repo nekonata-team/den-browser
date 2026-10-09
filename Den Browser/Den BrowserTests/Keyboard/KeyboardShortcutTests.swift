@@ -513,7 +513,7 @@ struct KeyboardShortcutTests {
             currentSheetURL: URL(string: "https://github.com/YaLTeR/niri")
         )
         let desk = DeskState(label: "Dev", boards: [board], focusedBoardID: board.id)
-        let store = DenStore(state: DenState(desks: [desk], focusedDeskID: desk.id))
+        let store = DenController(state: DenState(desks: [desk], focusedDeskID: desk.id))
         let composition = DenWindowComposition(store: store)
         let windowModel = composition.model
         composition.connect()
@@ -1739,7 +1739,7 @@ struct KeyboardShortcutTests {
             label: "Second Desk",
             boards: [other],
             focusedBoardID: other.id)
-        let store = DenStore(
+        let store = DenController(
             state: DenState(
                 desks: [firstDesk, secondDesk],
                 focusedDeskID: firstDesk.id))
@@ -1831,7 +1831,7 @@ struct KeyboardShortcutTests {
         defer { defaults.removePersistentDomain(forName: suiteName) }
         let sheetNavigation = SheetNavigationManager(defaults: defaults, scriptSource: "")
         let desk = DeskState(label: "Desk", boards: [board("First")])
-        let store = DenStore(
+        let store = DenController(
             state: DenState(desks: [desk], focusedDeskID: desk.id),
             sheetNavigation: sheetNavigation)
         let composition = DenWindowComposition(store: store)
@@ -2028,11 +2028,11 @@ struct KeyboardShortcutTests {
         desks: [DeskState]? = nil,
         boards: [BoardState] = [],
         terminalCommandRunner: any TerminalCommandRunning = SubprocessCommandRunner()
-    ) throws -> DenStore {
+    ) throws -> DenController {
         let storeDesks = desks ?? [DeskState(label: "Desk", boards: boards, focusedBoardID: boards.first?.id)]
         let defaults = try #require(TestUserDefaults(suiteName: "KeyboardShortcutStore-\(UUID())"))
         let pasteboard = NSPasteboard.withUniqueName()
-        return DenStore(
+        return DenController(
             state: DenState(desks: storeDesks, focusedDeskID: storeDesks.first?.id ?? DeskID()),
             websiteDataStore: .nonPersistent(),
             sheetNavigation: SheetNavigationManager(
