@@ -10,7 +10,7 @@ import WebKit
 @MainActor
 @Observable
 final class DenController {
-    static let maximumDeskCount = 10
+    static let maximumDeskCount = DeskCreation.maximumDeskCount
     static let maximumRecentItemCount = 500
     static let maximumNotificationCount = 200
     static let maximumRecentlyRemovedBoardCount = 10

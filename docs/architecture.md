@@ -142,6 +142,13 @@ is outside Application. The Controller owns confirmation, Runtime disposal, shar
 presented-Desk selection, reference invalidation, and persistence. No available replacement means
 the deletion is rejected.
 
+`DeskCreation` owns the Desk-count limit, label trimming, Preset materialization, and insertion
+after the presented Desk. `DeskReplacement` returns an updated Desk with the same identity, newly
+materialized Boards, restored Preset focus, and a cleared anchor. Both use Domain's Preset-to-Board
+conversion and fall back to the first Board when the saved focus index is unusable. The Controller
+keeps confirmation data in Presentation, passes only the accepted replacement values to Application,
+and handles Runtime disposal, presented-Desk selection, reference cleanup, and persistence.
+
 Preference value types follow their meaning: `ExternalLinkDestination` belongs to Domain because
 it selects link-opening behavior, while `DrawerStyle` belongs to DenPresentationModels/Drawer because
 it selects a Feature's display form. Their small fixed labels stay in the enum declarations.

@@ -21,14 +21,13 @@ extension DenController {
     }
 
     private func createDesk(label: String, boards: [DeskPresetBoard], focusedBoardIndex: Int?) {
-        let trimmedLabel = label.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmedLabel.isEmpty, canCreateDesk, let focusedDeskIndex else { return }
-
-        guard let boards = DeskPresetBoard.makeBoards(from: boards) else { return }
-        let focusedBoardID = focusedBoardIndex.flatMap { boards.indices.contains($0) ? boards[$0].id : nil }
-        let desk = DeskState(label: trimmedLabel, boards: boards, focusedBoardID: focusedBoardID)
-        storage.state.desks.insert(desk, at: focusedDeskIndex + 1)
-        setFocusedDesk(desk.id)
+        guard
+            let creation = DeskCreation.create(
+                label: label, presetBoards: boards, focusedBoardIndex: focusedBoardIndex,
+                in: state.desks, presentedDeskID: presentedDeskID)
+        else { return }
+        storage.state.desks = creation.desks
+        setFocusedDesk(creation.createdDesk.id)
         onWindowEffect?(.dismissTemporaryPresentation)
         onWindowEffect?(.exitDenMode)
         save()
@@ -87,20 +86,16 @@ extension DenController {
 
     private func applyDeskReplacement(_ replacement: PendingDeskReplacement) {
         guard
-            let deskIndex = state.desks.firstIndex(where: { $0.id == replacement.deskID }),
-            let boards = DeskPresetBoard.makeBoards(from: replacement.boards)
+            let result = DeskReplacement.replace(
+                replacement.deskID, label: replacement.label, presetBoards: replacement.boards,
+                focusedBoardIndex: replacement.focusedBoardIndex, in: state.desks)
         else { return }
 
-        let removedBoardIDs = Set(state.desks[deskIndex].boards.map(\.id))
-        for board in state.desks[deskIndex].boards {
+        let removedBoardIDs = Set(result.removedBoards.map(\.id))
+        for board in result.removedBoards {
             disposeRuntime(for: board.id)
         }
-        storage.state.desks[deskIndex].label = replacement.label
-        storage.state.desks[deskIndex].boards = boards
-        storage.state.desks[deskIndex].focusedBoardID =
-            replacement.focusedBoardIndex.flatMap { boards.indices.contains($0) ? boards[$0].id : nil }
-            ?? boards.first?.id
-        storage.state.desks[deskIndex].anchorBoardID = nil
+        storage.state.desks[result.deskIndex] = result.desk
         anchorJumpOriginBoardIDByDesk.removeValue(forKey: replacement.deskID)
         invalidateReferences(toRemovedBoardIDs: removedBoardIDs)
         onWindowEffect?(.dismissTemporaryPresentation)
