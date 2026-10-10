@@ -439,10 +439,12 @@ struct DeskPresetPreview: View {
         guard case .inspection = board.kind else {
             return board.initialSheetURL?.host(percentEncoded: false) ?? "Empty Board"
         }
-        guard let targetBoardIndex = board.targetBoardIndex, boards.indices.contains(targetBoardIndex) else {
+        guard let targetBoardOffset = board.targetBoardIndex?.rawValue,
+            boards.indices.contains(targetBoardOffset)
+        else {
             return "Inspection Board"
         }
-        let targetBoard = boards[targetBoardIndex]
+        let targetBoard = boards[targetBoardOffset]
         return "Inspection of \(targetBoard.customLabel ?? targetBoard.label)"
     }
 }

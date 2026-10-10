@@ -55,8 +55,8 @@ extension DenController {
 
     func notificationSource(for notification: DenNotification) -> (deskLabel: String, boardLabel: String)? {
         guard let indices = boardIndices(for: notification.boardID) else { return nil }
-        let desk = state.desks[indices.desk]
-        let board = desk.boards[indices.board]
+        let desk = state.desks[indices.deskOffset]
+        let board = desk.boards[indices.boardOffset]
         return (deskLabel: desk.label, boardLabel: board.label)
     }
 }

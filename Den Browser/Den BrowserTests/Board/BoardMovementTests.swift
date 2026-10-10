@@ -18,7 +18,7 @@ struct BoardMovementTests {
         let selected = movesRight ? (selectsSide ? firstSide : first) : (selectsSide ? secondSide : second)
 
         // Act
-        movement.reorder(selected.id, to: movesRight ? 3 : 0, in: desk.id)
+        movement.reorder(selected.id, to: BoardIndex(rawValue: movesRight ? 3 : 0), in: desk.id)
 
         // Assert
         #expect(
@@ -48,7 +48,7 @@ struct BoardMovementTests {
         let movement = BoardMovement(state: shared.store, writer: shared.writer)
 
         // Act
-        movement.transfer(movedSide.id, from: source.id, to: target.id, at: 1)
+        movement.transfer(movedSide.id, from: source.id, to: target.id, at: BoardIndex(rawValue: 1))
 
         // Assert
         let desks = shared.store.snapshot.den.desks

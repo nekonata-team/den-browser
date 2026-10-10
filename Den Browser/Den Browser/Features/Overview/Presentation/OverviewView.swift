@@ -378,7 +378,8 @@ struct OverviewView: View {
             overviewDrag = nil
             return
         }
-        overview.finishBoardDrag(drag.boardID, toDeskID: target.deskID, at: target.index)
+        overview.finishBoardDrag(
+            drag.boardID, toDeskID: target.deskID, at: target.index)
         overviewDrag = nil
     }
 
@@ -398,12 +399,12 @@ struct OverviewView: View {
         }
 
         let orderedBoardIDs = desk.boards.map(\.id).filter { $0 != drag.boardID }
-        if let referenceID = orderedBoardIDs.indices.contains(target.index)
-            ? orderedBoardIDs[target.index]
+        if let referenceID = orderedBoardIDs.indices.contains(target.index.rawValue)
+            ? orderedBoardIDs[target.index.rawValue]
             : orderedBoardIDs.last,
             let frame = overviewGeometry.boardFrames[referenceID]
         {
-            let isBeforeReference = target.index < orderedBoardIDs.count
+            let isBeforeReference = target.index.rawValue < orderedBoardIDs.count
             return OverviewDropTarget(
                 lineX: isBeforeReference
                     ? frame.minX - DenOverviewLayout.boardSpacing / 2
@@ -420,7 +421,7 @@ struct OverviewView: View {
         }
     }
 
-    private func overviewInsertionTarget(at location: CGPoint) -> (deskID: DeskID, index: Int)? {
+    private func overviewInsertionTarget(at location: CGPoint) -> (deskID: DeskID, index: BoardIndex)? {
         guard
             let drag = overviewDrag,
             scrollBounds.contains(location),
@@ -434,7 +435,7 @@ struct OverviewView: View {
                 locationX: location.x,
                 frames: overviewGeometry.boardFrames)
         else { return nil }
-        return (deskID, index)
+        return (deskID, BoardIndex(rawValue: index))
     }
 
     private func autoScrollOverview(at location: CGPoint) {

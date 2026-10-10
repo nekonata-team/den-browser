@@ -8,9 +8,9 @@ extension DenController {
         guard
             let rootSessionName,
             let indices = boardIndices(for: boardID),
-            state.desks[indices.desk].boards[indices.board].zmxRootSessionName != rootSessionName
+            state.desks[indices.deskOffset].boards[indices.boardOffset].zmxRootSessionName != rootSessionName
         else { return }
-        storage.state.desks[indices.desk].boards[indices.board].zmxRootSessionName = rootSessionName
+        storage.state.desks[indices.deskOffset].boards[indices.boardOffset].zmxRootSessionName = rootSessionName
         save()
     }
 
@@ -104,10 +104,10 @@ extension DenController {
             origin: .interactive)
     }
 
-    private func tutorialBoardIndices() -> (desk: Int, board: Int)? {
+    private func tutorialBoardIndices() -> BoardIndices? {
         for deskIndex in state.desks.indices {
             if let boardIndex = state.desks[deskIndex].boards.firstIndex(where: \.isTutorial) {
-                return (deskIndex, boardIndex)
+                return BoardIndices(desk: DeskIndex(rawValue: deskIndex), board: BoardIndex(rawValue: boardIndex))
             }
         }
         return nil
@@ -121,11 +121,11 @@ extension DenController {
     private func advanceTutorial(for event: DenOperationEvent) {
         guard let step = event.tutorialStep else { return }
         guard let indices = tutorialBoardIndices(),
-            case .tutorial(var tutorial) = state.desks[indices.desk].boards[indices.board].kind
+            case .tutorial(var tutorial) = state.desks[indices.deskOffset].boards[indices.boardOffset].kind
         else { return }
 
         guard tutorial.record(step: step) else { return }
-        storage.state.desks[indices.desk].boards[indices.board].kind = .tutorial(tutorial)
+        storage.state.desks[indices.deskOffset].boards[indices.boardOffset].kind = .tutorial(tutorial)
     }
 
     static func resolveTerminalInput(
@@ -196,9 +196,9 @@ extension DenController {
     @discardableResult
     func createInspectionBoard(targetBoardID: BoardID, focus: Bool = true) -> BoardID? {
         guard let indices = boardIndices(for: targetBoardID) else { return nil }
-        let targetBoard = state.desks[indices.desk].boards[indices.board]
+        let targetBoard = state.desks[indices.deskOffset].boards[indices.boardOffset]
         guard targetBoard.isWeb else { return nil }
-        if let existingSideBoard = state.desks[indices.desk].boards.first(where: {
+        if let existingSideBoard = state.desks[indices.deskOffset].boards.first(where: {
             $0.sideBoardTargetBoardID == targetBoardID
         }) {
             guard existingSideBoard.isInspection else { return nil }
@@ -226,7 +226,7 @@ extension DenController {
         modifierFlags: NSEvent.ModifierFlags
     ) -> Bool {
         guard let sourceIndices = boardIndices(for: fromBoardID) else { return false }
-        let sourceBoard = state.desks[sourceIndices.desk].boards[sourceIndices.board]
+        let sourceBoard = state.desks[sourceIndices.deskOffset].boards[sourceIndices.boardOffset]
         guard sourceBoard.isWeb
         else { return false }
 
@@ -301,7 +301,7 @@ extension DenController {
                 deskID: deskID,
                 afterBoardID: afterBoardID, focus: focus)
         else { return false }
-        let deskIndex = insertion.deskIndex
+        let deskIndex = insertion.deskIndex.rawValue
         let insertionAfterBoardID = insertion.afterBoardID
 
         if !focus, let afterBoardID = insertionAfterBoardID {
@@ -345,8 +345,8 @@ extension DenController {
             let boardIndex = focusedBoardIndex(in: deskIndex)
         else { return false }
 
-        let boardID = state.desks[deskIndex].boards[boardIndex].id
-        storage.state.desks[deskIndex].boards[boardIndex].currentSheetURL = url
+        let boardID = state.desks[deskIndex.rawValue].boards[boardIndex.rawValue].id
+        storage.state.desks[deskIndex.rawValue].boards[boardIndex.rawValue].currentSheetURL = url
         onWindowEffect?(.dismissTemporaryPresentation)
         onWindowEffect?(.exitDenMode)
         save()
@@ -367,16 +367,16 @@ extension DenController {
         guard let indices = boardIndices(for: boardID) else { return }
         let isCLIBackgroundRemoval =
             origin == .cli
-            && state.desks[indices.desk].id == presentedDeskID
-            && state.desks[indices.desk].focusedBoardID != boardID
+            && state.desks[indices.deskOffset].id == presentedDeskID
+            && state.desks[indices.deskOffset].focusedBoardID != boardID
         let remove = { [self] in
             if isCLIBackgroundRemoval {
                 _ = prepareBoardRemoval(origin: origin)
             }
-            let sourceDesk = state.desks[indices.desk]
+            let sourceDesk = state.desks[indices.deskOffset]
             guard let removal = BoardRemoval.remove(boardID, from: sourceDesk, focusNext: focusNext) else { return }
             let removedIDs = Set(removal.removedBoards.map(\.id))
-            storage.state.desks[indices.desk] = removal.desk
+            storage.state.desks[indices.deskOffset] = removal.desk
             if sourceDesk.anchorBoardID.map({ removedIDs.contains($0) }) == true
                 || anchorJumpOriginBoardIDByDesk[sourceDesk.id].map({ removedIDs.contains($0) }) == true
             {
@@ -411,7 +411,7 @@ extension DenController {
             return
         }
 
-        let deskIndex: Int
+        let deskIndex: DeskIndex
         let restoredDesk: DeskState
         switch BoardRestoration.restore(
             recentlyRemovedBoard, in: state.desks, presentedDeskID: presentedDeskID)
@@ -437,8 +437,8 @@ extension DenController {
         }
 
         let board = recentlyRemovedBoard.board
-        storage.state.desks[deskIndex] = restoredDesk
-        let deskID = state.desks[deskIndex].id
+        storage.state.desks[deskIndex.rawValue] = restoredDesk
+        let deskID = state.desks[deskIndex.rawValue].id
         let changedDesk = setFocusedDesk(deskID)
         if !changedDesk && presentedDeskID == deskID {
             markNotificationsRead(for: board.id)
@@ -597,9 +597,9 @@ extension DenController {
 
         let trimmed = newLabel.trimmingCharacters(in: .whitespacesAndNewlines)
         if trimmed.isEmpty {
-            storage.state.desks[deskIndex].boards[boardIndex].customLabel = nil
+            storage.state.desks[deskIndex.rawValue].boards[boardIndex.rawValue].customLabel = nil
         } else {
-            storage.state.desks[deskIndex].boards[boardIndex].customLabel = trimmed
+            storage.state.desks[deskIndex.rawValue].boards[boardIndex.rawValue].customLabel = trimmed
         }
         onWindowEffect?(.dismissTemporaryPresentation)
         onWindowEffect?(.exitDenMode)

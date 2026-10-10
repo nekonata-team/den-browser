@@ -258,7 +258,7 @@ struct TerminalBoardView: View {
     }
 
     private var boardDeskID: DeskID? {
-        controller.boardIndices(for: board.id).map { controller.state.desks[$0.desk].id }
+        controller.boardIndices(for: board.id).map { controller.state.desks[$0.deskOffset].id }
     }
 
     private var shouldReduceMotion: Bool {

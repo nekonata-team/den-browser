@@ -1005,7 +1005,7 @@ final class DenIPCService {
     ) -> BoardID? {
         guard let deskIndex = controller.state.desks.firstIndex(where: { $0.id == deskID }) else { return nil }
         let callerAnchor = context.callerBoardID.map(BoardID.init).flatMap { boardID -> BoardID? in
-            guard controller.boardIndices(for: boardID)?.desk == deskIndex else { return nil }
+            guard controller.boardIndices(for: boardID)?.deskOffset == deskIndex else { return nil }
             return boardID
         }
         return callerAnchor ?? controller.state.desks[deskIndex].focusedBoardID

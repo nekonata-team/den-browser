@@ -864,7 +864,7 @@ struct ProfileManagerTests {
         // Act
         controller.focusBoard(secondBoard.id)
         #expect(controller.beginBoardDrag(firstBoard.id))
-        controller.previewBoardMove(secondBoard.id, to: 0)
+        controller.previewBoardMove(secondBoard.id, to: BoardIndex(rawValue: 0))
         manager.flushPendingDeferredSaves()
 
         // Assert
@@ -890,7 +890,7 @@ struct ProfileManagerTests {
         // Act
         controller.focusBoard(secondBoard.id)
         #expect(controller.beginBoardDrag(firstBoard.id))
-        controller.previewBoardMove(secondBoard.id, to: 0)
+        controller.previewBoardMove(secondBoard.id, to: BoardIndex(rawValue: 0))
         #expect(controller.saveDeskPresets())
 
         // Assert

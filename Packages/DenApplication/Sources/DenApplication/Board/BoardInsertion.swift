@@ -2,7 +2,7 @@ import DenDomain
 
 public enum BoardInsertion {
     public struct Result {
-        public let deskIndex: Int
+        public let deskIndex: DeskIndex
         public let desk: DeskState
         /// The validated explicit anchor, excluding any implicit focused-Board fallback.
         public let afterBoardID: BoardID?
@@ -52,6 +52,6 @@ public enum BoardInsertion {
         if focus || desk.focusedBoardID == nil {
             desk.focusedBoardID = board.id
         }
-        return Result(deskIndex: deskIndex, desk: desk, afterBoardID: explicitAnchor)
+        return Result(deskIndex: DeskIndex(rawValue: deskIndex), desk: desk, afterBoardID: explicitAnchor)
     }
 }

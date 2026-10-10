@@ -76,7 +76,8 @@ struct DenWindowModelPresentationTests {
         windowModel.isBoardRailPresented = true
         #expect(controller.beginBoardDrag(board.id))
         controller.storage.recentlyRemovedBoards = [
-            RecentlyRemovedBoard(board: board, sourceDeskID: populated.id, sourceBoardIndex: 0)
+            RecentlyRemovedBoard(
+                board: board, sourceDeskID: populated.id, sourceBoardIndex: BoardIndex(rawValue: 0))
         ]
         controller.storage.recentlyDiscardedDrawerItems = [
             DrawerItem(url: URL(string: "https://discarded.example/")!)
@@ -621,13 +622,15 @@ struct DenWindowModelPresentationTests {
                 Issue.record("Failed to find focused board indices")
                 return
             }
-            #expect(controller.state.desks[deskIndex].boards[boardIndex].customLabel == nil)
-            #expect(controller.state.desks[deskIndex].boards[boardIndex].displayName == "Google")
+            let deskOffset = deskIndex.rawValue
+            let boardOffset = boardIndex.rawValue
+            #expect(controller.state.desks[deskOffset].boards[boardOffset].customLabel == nil)
+            #expect(controller.state.desks[deskOffset].boards[boardOffset].displayName == "Google")
 
             // 2. Rename the board to a custom name
             controller.renameFocusedBoard(to: "Search Tasks")
-            #expect(controller.state.desks[deskIndex].boards[boardIndex].customLabel == "Search Tasks")
-            #expect(controller.state.desks[deskIndex].boards[boardIndex].displayName == "Search Tasks")
+            #expect(controller.state.desks[deskOffset].boards[boardOffset].customLabel == "Search Tasks")
+            #expect(controller.state.desks[deskOffset].boards[boardOffset].displayName == "Search Tasks")
             #expect(!windowModel.isDenMode)
 
             // 3. Navigation doesn't overwrite customLabel, but updates label
@@ -637,11 +640,11 @@ struct DenWindowModelPresentationTests {
                 title: "Google Search Result"
             )
             // Original label is updated in the background
-            #expect(controller.state.desks[deskIndex].boards[boardIndex].label == "Google Search Result")
+            #expect(controller.state.desks[deskOffset].boards[boardOffset].label == "Google Search Result")
             // customLabel is untouched
-            #expect(controller.state.desks[deskIndex].boards[boardIndex].customLabel == "Search Tasks")
+            #expect(controller.state.desks[deskOffset].boards[boardOffset].customLabel == "Search Tasks")
             // displayName still shows custom label
-            #expect(controller.state.desks[deskIndex].boards[boardIndex].displayName == "Search Tasks")
+            #expect(controller.state.desks[deskOffset].boards[boardOffset].displayName == "Search Tasks")
 
             // 4. Duplicate the board (duplicate should copy customLabel)
             controller.toggleBoardSheetNavigationPause(boardID)
@@ -658,9 +661,9 @@ struct DenWindowModelPresentationTests {
             controller.focusBoard(boardID)
             controller.renameFocusedBoard(to: "")
             controller.toggleBoardSheetNavigationPause(boardID)
-            #expect(controller.state.desks[deskIndex].boards[boardIndex].customLabel == nil)
-            #expect(controller.state.desks[deskIndex].boards[boardIndex].displayName == "Google Search Result")
-            #expect(!controller.state.desks[deskIndex].boards[boardIndex].sheetNavigationPaused)
+            #expect(controller.state.desks[deskOffset].boards[boardOffset].customLabel == nil)
+            #expect(controller.state.desks[deskOffset].boards[boardOffset].displayName == "Google Search Result")
+            #expect(!controller.state.desks[deskOffset].boards[boardOffset].sheetNavigationPaused)
         }
     }
 

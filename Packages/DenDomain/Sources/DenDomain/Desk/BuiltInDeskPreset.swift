@@ -40,5 +40,5 @@ public enum BuiltInDeskPreset: String, CaseIterable, Identifiable {
         }
     }
 
-    public var focusedBoardIndex: Int? { boards.isEmpty ? nil : 0 }
+    public var focusedBoardIndex: BoardIndex? { boards.isEmpty ? nil : BoardIndex(rawValue: 0) }
 }

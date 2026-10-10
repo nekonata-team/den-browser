@@ -2,7 +2,7 @@ import DenDomain
 
 public enum DeskReplacement {
     public struct Result {
-        public let deskIndex: Int
+        public let deskIndex: DeskIndex
         public let desk: DeskState
         public let removedBoards: [BoardState]
     }
@@ -11,7 +11,7 @@ public enum DeskReplacement {
         _ deskID: DeskID,
         label: String,
         presetBoards: [DeskPresetBoard],
-        focusedBoardIndex: Int?,
+        focusedBoardIndex: BoardIndex?,
         in desks: [DeskState]
     ) -> Result? {
         guard
@@ -23,9 +23,11 @@ public enum DeskReplacement {
         desk.label = label
         desk.boards = boards
         desk.focusedBoardID =
-            focusedBoardIndex.flatMap { boards.indices.contains($0) ? boards[$0].id : nil }
+            focusedBoardIndex.flatMap { index in
+                boards.indices.contains(index.rawValue) ? boards[index.rawValue].id : nil
+            }
             ?? boards.first?.id
         desk.anchorBoardID = nil
-        return Result(deskIndex: deskIndex, desk: desk, removedBoards: removedBoards)
+        return Result(deskIndex: DeskIndex(rawValue: deskIndex), desk: desk, removedBoards: removedBoards)
     }
 }

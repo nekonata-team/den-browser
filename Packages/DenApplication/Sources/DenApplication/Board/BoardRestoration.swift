@@ -8,7 +8,7 @@ public enum BoardRestoration {
     }
 
     public enum Outcome {
-        case restored(deskIndex: Int, desk: DeskState)
+        case restored(deskIndex: DeskIndex, desk: DeskState)
         case focusExistingTutorial(BoardID)
         case rejected(Failure)
     }
@@ -24,52 +24,52 @@ public enum BoardRestoration {
             return .focusExistingTutorial(existing.id)
         }
 
-        let deskIndex: Int
-        let insertIndex: Int
+        let deskOffset: Int
+        let insertOffset: Int
         if let targetBoardID = removed.board.sideBoardTargetBoardID,
-            let targetDeskIndex = desks.firstIndex(where: { $0.boards.contains { $0.id == targetBoardID } }),
-            let targetBoardIndex = desks[targetDeskIndex].boards.firstIndex(where: { $0.id == targetBoardID })
+            let targetDeskOffset = desks.firstIndex(where: { $0.boards.contains { $0.id == targetBoardID } }),
+            let targetBoardOffset = desks[targetDeskOffset].boards.firstIndex(where: { $0.id == targetBoardID })
         {
-            let targetBoards = desks[targetDeskIndex].boards
+            let targetBoards = desks[targetDeskOffset].boards
             guard !targetBoards.contains(where: { $0.sideBoardTargetBoardID == targetBoardID }) else {
                 return .rejected(.sideBoardAlreadyExists)
             }
-            deskIndex = targetDeskIndex
-            insertIndex =
+            deskOffset = targetDeskOffset
+            insertOffset =
                 BoardGroup.containing(targetBoardID, in: targetBoards)?.boards.last.flatMap { member in
                     targetBoards.firstIndex(where: { $0.id == member.id }).map { $0 + 1 }
-                } ?? targetBoardIndex + 1
+                } ?? targetBoardOffset + 1
         } else if removed.board.isSideBoard {
             return .rejected(.targetBoardMissing)
-        } else if let sourceDeskIndex = desks.firstIndex(where: { $0.id == removed.sourceDeskID }) {
-            deskIndex = sourceDeskIndex
-            insertIndex = min(removed.sourceBoardIndex, desks[deskIndex].boards.endIndex)
+        } else if let sourceDeskOffset = desks.firstIndex(where: { $0.id == removed.sourceDeskID }) {
+            deskOffset = sourceDeskOffset
+            insertOffset = min(removed.sourceBoardIndex.rawValue, desks[sourceDeskOffset].boards.endIndex)
         } else {
             guard let index = desks.firstIndex(where: { $0.id == presentedDeskID }) else {
                 return .rejected(.destinationDeskMissing)
             }
-            deskIndex = index
-            let focusedBoardIndex = desks[index].focusedBoardID.flatMap { id in
+            deskOffset = index
+            let focusedBoardOffset = desks[index].focusedBoardID.flatMap { id in
                 desks[index].boards.firstIndex(where: { $0.id == id })
             }
-            insertIndex = focusedBoardIndex.map { $0 + 1 } ?? desks[index].boards.endIndex
+            insertOffset = focusedBoardOffset.map { $0 + 1 } ?? desks[index].boards.endIndex
         }
 
-        let boards = desks[deskIndex].boards
-        var insertionIndex = min(max(insertIndex, 0), boards.count)
-        if insertionIndex > 0, insertionIndex < boards.count {
-            let precedingGroup = BoardGroup.containing(boards[insertionIndex - 1].id, in: boards)
+        let boards = desks[deskOffset].boards
+        var insertionOffset = min(max(insertOffset, 0), boards.count)
+        if insertionOffset > 0, insertionOffset < boards.count {
+            let precedingGroup = BoardGroup.containing(boards[insertionOffset - 1].id, in: boards)
             if let lastMember = precedingGroup?.boards.last,
                 let lastMemberIndex = boards.lastIndex(where: { $0.id == lastMember.id }),
-                insertionIndex <= lastMemberIndex
+                insertionOffset <= lastMemberIndex
             {
-                insertionIndex = lastMemberIndex + 1
+                insertionOffset = lastMemberIndex + 1
             }
         }
-        var desk = desks[deskIndex]
+        var desk = desks[deskOffset]
         let restoredBoards = [removed.board] + (removed.sideBoard.map { [$0] } ?? [])
-        desk.boards.insert(contentsOf: restoredBoards, at: insertionIndex)
+        desk.boards.insert(contentsOf: restoredBoards, at: insertionOffset)
         desk.focusedBoardID = removed.board.id
-        return .restored(deskIndex: deskIndex, desk: desk)
+        return .restored(deskIndex: DeskIndex(rawValue: deskOffset), desk: desk)
     }
 }

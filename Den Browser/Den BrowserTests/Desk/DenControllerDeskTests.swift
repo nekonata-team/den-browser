@@ -93,7 +93,7 @@ struct DenControllerDeskTests {
         let restorationCandidate = RecentlyRemovedBoard(
             board: board("Removed"),
             sourceDeskID: other.id,
-            sourceBoardIndex: 0)
+            sourceBoardIndex: BoardIndex(rawValue: 0))
         controller.storage.recentlyRemovedBoards = [restorationCandidate]
         windowModel.toggleFocusedBoardMaximized()
         windowModel.showReplaceDeskPanel()
@@ -360,7 +360,7 @@ struct DenControllerDeskTests {
             onSave: { savedState = $0 })
 
         #expect(controller.beginDeskDrag(second.id))
-        controller.previewDeskMove(second.id, to: 2)
+        controller.previewDeskMove(second.id, to: DeskIndex(rawValue: 2))
         controller.updateBoard(
             boardID: secondBoard.id,
             url: URL(string: "https://updated.example/"),
@@ -378,7 +378,7 @@ struct DenControllerDeskTests {
         #expect(controller.state.desks[2].boards[0].label == "Updated title")
         #expect(savedState == controller.state)
 
-        controller.previewDeskMove(second.id, to: 2)
+        controller.previewDeskMove(second.id, to: DeskIndex(rawValue: 2))
         #expect(controller.state.desks.map(\.id) == [first.id, third.id, second.id])
     }
 
@@ -415,7 +415,7 @@ struct DenControllerDeskTests {
             onSave: { savedState = $0 })
 
         #expect(controller.beginDeskDrag(second.id))
-        controller.previewDeskMove(second.id, to: 2)
+        controller.previewDeskMove(second.id, to: DeskIndex(rawValue: 2))
         controller.updateBoard(
             boardID: secondBoard.id,
             url: URL(string: "https://updated.example/"),

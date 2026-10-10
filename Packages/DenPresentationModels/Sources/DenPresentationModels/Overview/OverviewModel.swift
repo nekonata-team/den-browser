@@ -18,7 +18,7 @@ public final class OverviewModel {
     public struct Actions {
         public let enterSelection: (DeskID, BoardID?) -> Void
         public let beginDrag: (BoardID) -> Bool
-        public let finishDrag: (BoardID, DeskID, Int) -> Void
+        public let finishDrag: (BoardID, DeskID, BoardIndex) -> Void
         public let cancelDrag: () -> Void
         public let moveBoard: (BoardID, Int) -> Void
         public let moveBoardToDesk: (BoardID, Int) -> Void
@@ -26,7 +26,7 @@ public final class OverviewModel {
         public init(
             enterSelection: @escaping (DeskID, BoardID?) -> Void,
             beginDrag: @escaping (BoardID) -> Bool,
-            finishDrag: @escaping (BoardID, DeskID, Int) -> Void,
+            finishDrag: @escaping (BoardID, DeskID, BoardIndex) -> Void,
             cancelDrag: @escaping () -> Void,
             moveBoard: @escaping (BoardID, Int) -> Void,
             moveBoardToDesk: @escaping (BoardID, Int) -> Void
@@ -179,7 +179,7 @@ public final class OverviewModel {
         return true
     }
 
-    public func finishBoardDrag(_ boardID: BoardID, toDeskID deskID: DeskID, at targetIndex: Int) {
+    public func finishBoardDrag(_ boardID: BoardID, toDeskID deskID: DeskID, at targetIndex: BoardIndex) {
         guard activeBoardID() == boardID else { return }
         actions.finishDrag(boardID, deskID, targetIndex)
         selection = OverviewSelection(deskID: deskID, boardID: boardID)
@@ -196,15 +196,16 @@ public final class OverviewModel {
     public func moveSelectionBoardToPreviousDesk() { moveSelectionBoardToDesk(by: -1) }
     public func moveSelectionBoardToNextDesk() { moveSelectionBoardToDesk(by: 1) }
 
-    public func removedBoard(boardID: BoardID, deskID: DeskID, oldIndex: Int) {
+    public func removedBoard(boardID: BoardID, deskID: DeskID, oldIndex: BoardIndex) {
         guard selection?.boardID == boardID,
             let desk = desks().first(where: { $0.id == deskID })
         else { return }
+        let oldOffset = oldIndex.rawValue
         let nextBoardID =
-            desk.boards.indices.contains(oldIndex)
-            ? desk.boards[oldIndex].id
-            : (oldIndex > 0 && desk.boards.indices.contains(oldIndex - 1)
-                ? desk.boards[oldIndex - 1].id
+            desk.boards.indices.contains(oldOffset)
+            ? desk.boards[oldOffset].id
+            : (oldOffset > 0 && desk.boards.indices.contains(oldOffset - 1)
+                ? desk.boards[oldOffset - 1].id
                 : nil)
         selection = OverviewSelection(deskID: deskID, boardID: nextBoardID)
     }

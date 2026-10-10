@@ -12,16 +12,16 @@ public enum BoardRemoval {
         from source: DeskState,
         focusNext: Bool = false
     ) -> Result? {
-        guard let boardIndex = source.boards.firstIndex(where: { $0.id == boardID }) else { return nil }
-        let board = source.boards[boardIndex]
+        guard let boardOffset = source.boards.firstIndex(where: { $0.id == boardID }) else { return nil }
+        let board = source.boards[boardOffset]
         let removedBoards =
             board.isSideBoard
             ? [board]
             : (BoardGroup.containing(board.id, in: source.boards)?.boards ?? [board])
         var desk = source
         for member in removedBoards.reversed() {
-            guard let index = desk.boards.firstIndex(where: { $0.id == member.id }) else { continue }
-            desk.boards.remove(at: index)
+            guard let boardOffset = desk.boards.firstIndex(where: { $0.id == member.id }) else { continue }
+            desk.boards.remove(at: boardOffset)
             if desk.anchorBoardID == member.id {
                 desk.anchorBoardID = nil
             }
@@ -29,10 +29,10 @@ public enum BoardRemoval {
                 desk.scrollOffsetX = nil
             }
             guard desk.focusedBoardID == member.id else { continue }
-            if focusNext && index < desk.boards.count {
-                desk.focusedBoardID = desk.boards[index].id
-            } else if index > 0 {
-                desk.focusedBoardID = desk.boards[index - 1].id
+            if focusNext && boardOffset < desk.boards.count {
+                desk.focusedBoardID = desk.boards[boardOffset].id
+            } else if boardOffset > 0 {
+                desk.focusedBoardID = desk.boards[boardOffset - 1].id
             } else {
                 desk.focusedBoardID = desk.boards.first?.id
             }
@@ -44,6 +44,6 @@ public enum BoardRemoval {
                 board: board,
                 sideBoard: removedBoards.first(where: { $0.id != board.id }),
                 sourceDeskID: source.id,
-                sourceBoardIndex: boardIndex))
+                sourceBoardIndex: BoardIndex(rawValue: boardOffset)))
     }
 }

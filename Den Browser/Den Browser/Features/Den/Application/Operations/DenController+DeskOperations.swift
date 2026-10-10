@@ -20,7 +20,7 @@ extension DenController {
         createDesk(label: label, boards: preset.boards, focusedBoardIndex: preset.focusedBoardIndex)
     }
 
-    private func createDesk(label: String, boards: [DeskPresetBoard], focusedBoardIndex: Int?) {
+    private func createDesk(label: String, boards: [DeskPresetBoard], focusedBoardIndex: BoardIndex?) {
         guard
             let creation = DeskCreation.create(
                 label: label, presetBoards: boards, focusedBoardIndex: focusedBoardIndex,
@@ -59,7 +59,7 @@ extension DenController {
         label: String,
         presetLabel: String,
         boards: [DeskPresetBoard],
-        focusedBoardIndex: Int?
+        focusedBoardIndex: BoardIndex?
     ) -> DeskReplacementResult {
         let label = label.trimmingCharacters(in: .whitespacesAndNewlines)
         guard
@@ -95,7 +95,7 @@ extension DenController {
         for board in result.removedBoards {
             disposeRuntime(for: board.id)
         }
-        storage.state.desks[result.deskIndex] = result.desk
+        storage.state.desks[result.deskIndex.rawValue] = result.desk
         anchorJumpOriginBoardIDByDesk.removeValue(forKey: replacement.deskID)
         invalidateReferences(toRemovedBoardIDs: removedBoardIDs)
         onWindowEffect?(.dismissTemporaryPresentation)
@@ -145,7 +145,7 @@ extension DenController {
         guard let deskIndex = focusedDeskIndex else { return }
         let trimmed = newLabel.trimmingCharacters(in: .whitespacesAndNewlines)
         if !trimmed.isEmpty {
-            storage.state.desks[deskIndex].label = trimmed
+            storage.state.desks[deskIndex.rawValue].label = trimmed
         }
         onWindowEffect?(.dismissTemporaryPresentation)
         onWindowEffect?(.exitDenMode)

@@ -334,17 +334,17 @@ extension DenController {
 
     func updateBoard(boardID: BoardID, url: URL?, title: String?) {
         guard let indices = boardIndices(for: boardID) else { return }
-        let board = state.desks[indices.desk].boards[indices.board]
+        let board = state.desks[indices.deskOffset].boards[indices.boardOffset]
         var changed = false
         if let url, WebURLPolicy.isSupported(url) {
             let canonicalURL = WebURLPolicy.canonicalSheetURL(url)
-            if state.desks[indices.desk].boards[indices.board].currentSheetURL != canonicalURL {
-                storage.state.desks[indices.desk].boards[indices.board].currentSheetURL = canonicalURL
+            if state.desks[indices.deskOffset].boards[indices.boardOffset].currentSheetURL != canonicalURL {
+                storage.state.desks[indices.deskOffset].boards[indices.boardOffset].currentSheetURL = canonicalURL
                 changed = true
             }
         }
-        if let title, !title.isEmpty, state.desks[indices.desk].boards[indices.board].label != title {
-            storage.state.desks[indices.desk].boards[indices.board].label = title
+        if let title, !title.isEmpty, state.desks[indices.deskOffset].boards[indices.boardOffset].label != title {
+            storage.state.desks[indices.deskOffset].boards[indices.boardOffset].label = title
         }
         if let title = title?.trimmingCharacters(in: .whitespacesAndNewlines),
             !title.isEmpty,
@@ -375,19 +375,21 @@ extension DenController {
         title: String? = nil
     ) {
         guard let indices = boardIndices(for: boardID),
-            state.desks[indices.desk].boards[indices.board].isTerminal
+            state.desks[indices.deskOffset].boards[indices.boardOffset].isTerminal
         else { return }
         var changed = false
         if let workingDirectory, !workingDirectory.isEmpty,
-            state.desks[indices.desk].boards[indices.board].terminalWorkingDirectory != workingDirectory
+            state.desks[indices.deskOffset].boards[indices.boardOffset].terminalWorkingDirectory
+                != workingDirectory
         {
-            storage.state.desks[indices.desk].boards[indices.board].terminalWorkingDirectory = workingDirectory
+            storage.state.desks[indices.deskOffset].boards[indices.boardOffset]
+                .terminalWorkingDirectory = workingDirectory
             changed = true
         }
         if let title, !title.isEmpty,
-            state.desks[indices.desk].boards[indices.board].label != title
+            state.desks[indices.deskOffset].boards[indices.boardOffset].label != title
         {
-            storage.state.desks[indices.desk].boards[indices.board].label = title
+            storage.state.desks[indices.deskOffset].boards[indices.boardOffset].label = title
         }
         if changed { save() }
     }

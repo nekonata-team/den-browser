@@ -7,6 +7,14 @@ import Foundation
 import Observation
 import WebKit
 
+struct BoardIndices {
+    let desk: DeskIndex
+    let board: BoardIndex
+
+    var deskOffset: Int { desk.rawValue }
+    var boardOffset: Int { board.rawValue }
+}
+
 @MainActor
 @Observable
 final class DenController {
@@ -113,7 +121,7 @@ final class DenController {
             let deskIndex = focusedDeskIndex,
             let boardIndex = focusedBoardIndex(in: deskIndex)
         else { return nil }
-        return state.desks[deskIndex].boards[boardIndex]
+        return state.desks[deskIndex.rawValue].boards[boardIndex.rawValue]
     }
 
     func updateWebExtensionHost(
@@ -363,14 +371,16 @@ final class DenController {
         }
     }
 
-    var focusedDeskIndex: Int? {
-        state.desks.firstIndex { $0.id == presentedDeskID }
+    var focusedDeskIndex: DeskIndex? {
+        state.desks.firstIndex { $0.id == presentedDeskID }.map { DeskIndex(rawValue: $0) }
     }
 
-    func boardIndices(for boardID: BoardID) -> (desk: Int, board: Int)? {
+    func boardIndices(for boardID: BoardID) -> BoardIndices? {
         for deskIndex in state.desks.indices {
             if let boardIndex = state.desks[deskIndex].boards.firstIndex(where: { $0.id == boardID }) {
-                return (deskIndex, boardIndex)
+                return BoardIndices(
+                    desk: DeskIndex(rawValue: deskIndex),
+                    board: BoardIndex(rawValue: boardIndex))
             }
         }
         return nil
@@ -378,7 +388,7 @@ final class DenController {
 
     func board(for boardID: BoardID) -> BoardState? {
         guard let indices = boardIndices(for: boardID) else { return nil }
-        return state.desks[indices.desk].boards[indices.board]
+        return state.desks[indices.deskOffset].boards[indices.boardOffset]
     }
 
     @discardableResult

@@ -202,7 +202,7 @@ struct ProfilePersistenceTests {
         #expect(boards[3].zellijSessionName == "project")
         #expect(boards[4].zmxSessionName == "project-zmx")
         #expect(boards[4].terminalWorkingDirectory == "/work/zmx")
-        #expect(persisted.deskPresets[0].boards.map(\.targetBoardIndex) == [nil, 0, nil, nil, nil])
+        #expect(persisted.deskPresets[0].boards.map { $0.targetBoardIndex?.rawValue } == [nil, 0, nil, nil, nil])
         #expect(persisted.deskPresets[0].boards[1].kind == .inspection)
         #expect(persisted.deskPresets[0].boards[2].terminalWorkingDirectory == "/preset")
         #expect(persisted.deskPresets[0].boards[3].zellijSessionName == "preset-zellij")

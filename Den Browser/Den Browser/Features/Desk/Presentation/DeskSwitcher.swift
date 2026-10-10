@@ -278,7 +278,7 @@ struct DeskSwitcher: View {
                 frames: frames)
         {
             let crossedDesk = controller.state.desks[targetIndex]
-            controller.previewDeskMove(current.deskID, to: targetIndex)
+            controller.previewDeskMove(current.deskID, to: DeskIndex(rawValue: targetIndex))
             let direction = targetIndex > index ? -1.0 : 1.0
             current.offset += direction * ((frames[crossedDesk.id]?.width ?? 0) + 8)
             drag = current

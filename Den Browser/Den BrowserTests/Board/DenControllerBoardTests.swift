@@ -1308,7 +1308,7 @@ struct DenControllerBoardTests {
         }
 
         #expect(controller.beginBoardDrag(boards[0].id))
-        controller.previewBoardMove(boards[0].id, to: 2)
+        controller.previewBoardMove(boards[0].id, to: BoardIndex(rawValue: 2))
         #expect(savedStates.isEmpty)
 
         controller.finishBoardDrag()
@@ -1326,7 +1326,7 @@ struct DenControllerBoardTests {
         let controller = DenController(state: DenState(desks: [source], focusedDeskID: source.id))
 
         #expect(controller.beginBoardDrag(target.id))
-        controller.previewBoardMove(target.id, to: 3)
+        controller.previewBoardMove(target.id, to: BoardIndex(rawValue: 3))
 
         #expect(controller.focusedDesk?.boards.map(\.id) == [middle.id, last.id, target.id, side.id])
         controller.finishBoardDrag()
@@ -1362,7 +1362,7 @@ struct DenControllerBoardTests {
         }
 
         #expect(controller.beginBoardDrag(boards[0].id))
-        controller.previewBoardMove(boards[0].id, to: 2)
+        controller.previewBoardMove(boards[0].id, to: BoardIndex(rawValue: 2))
         controller.restoreBoardOrder(boards.map(\.id), in: source.id)
         controller.finishBoardDrag()
 

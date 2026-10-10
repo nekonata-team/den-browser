@@ -217,7 +217,7 @@ struct OverviewModelTests {
         #expect(controller.state.desks[0].boards.map(\.id) == [first.id, second.id])
 
         // Act - finish drag into target desk
-        windowModel.overview.finishBoardDrag(second.id, toDeskID: other.id, at: 0)
+        windowModel.overview.finishBoardDrag(second.id, toDeskID: other.id, at: BoardIndex(rawValue: 0))
 
         // Assert - order committed
         #expect(controller.state.desks[0].boards.map(\.id) == [first.id])
@@ -241,7 +241,7 @@ struct OverviewModelTests {
 
         // Act
         #expect(windowModel.beginOverviewBoardDrag(second.id))
-        windowModel.overview.finishBoardDrag(second.id, toDeskID: empty.id, at: 0)
+        windowModel.overview.finishBoardDrag(second.id, toDeskID: empty.id, at: BoardIndex(rawValue: 0))
 
         // Assert
         #expect(controller.state.desks[0].boards.map(\.id) == [first.id])
@@ -308,7 +308,8 @@ struct OverviewModelTests {
         windowModel.showOverview()
 
         #expect(windowModel.beginOverviewBoardDrag(side.id))
-        windowModel.overview.finishBoardDrag(side.id, toDeskID: destination.id, at: 0)
+        windowModel.overview.finishBoardDrag(
+            side.id, toDeskID: destination.id, at: BoardIndex(rawValue: 0))
 
         #expect(controller.state.desks[0].boards.isEmpty)
         #expect(controller.state.desks[1].boards.map(\.id) == [target.id, side.id])

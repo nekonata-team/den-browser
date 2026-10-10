@@ -4,8 +4,8 @@ import Foundation
 extension DenController {
     func adjustBoardWidth(_ boardID: BoardID, by delta: Double) {
         guard let indices = boardIndices(for: boardID) else { return }
-        let deskIndex = indices.desk
-        let boardIndex = indices.board
+        let deskIndex = indices.deskOffset
+        let boardIndex = indices.boardOffset
         let width = state.desks[deskIndex].boards[boardIndex].width + delta
         let constrainedWidth = BoardState.constrainedWidth(width)
         guard constrainedWidth != state.desks[deskIndex].boards[boardIndex].width else { return }
@@ -41,22 +41,22 @@ extension DenController {
 
     func resizeBoard(_ boardID: BoardID, to width: Double) {
         guard let indices = boardIndices(for: boardID) else { return }
-        storage.state.desks[indices.desk].boards[indices.board].width = BoardState.constrainedWidth(width)
+        storage.state.desks[indices.deskOffset].boards[indices.boardOffset].width = BoardState.constrainedWidth(width)
     }
 
     func resizeBoardPair(_ boardID: BoardID, to width: Double) {
         guard let indices = boardIndices(for: boardID) else { return }
-        let nextBoardIndex = indices.board + 1
-        guard state.desks[indices.desk].boards.indices.contains(nextBoardIndex) else { return }
+        let nextBoardIndex = indices.boardOffset + 1
+        guard state.desks[indices.deskOffset].boards.indices.contains(nextBoardIndex) else { return }
 
-        let boards = state.desks[indices.desk].boards
-        let totalWidth = boards[indices.board].width + boards[nextBoardIndex].width
+        let boards = state.desks[indices.deskOffset].boards
+        let totalWidth = boards[indices.boardOffset].width + boards[nextBoardIndex].width
         let minimumWidth = max(BoardState.minimumWidth, totalWidth - BoardState.maximumWidth)
         let maximumWidth = min(BoardState.maximumWidth, totalWidth - BoardState.minimumWidth)
         let resizedWidth = min(max(width, minimumWidth), maximumWidth)
 
-        storage.state.desks[indices.desk].boards[indices.board].width = resizedWidth
-        storage.state.desks[indices.desk].boards[nextBoardIndex].width = totalWidth - resizedWidth
+        storage.state.desks[indices.deskOffset].boards[indices.boardOffset].width = resizedWidth
+        storage.state.desks[indices.deskOffset].boards[nextBoardIndex].width = totalWidth - resizedWidth
     }
 
     func saveBoardWidths() {

@@ -18,7 +18,7 @@ public struct PendingDeskReplacement {
     public let presetLabel: String
     public let label: String
     public let boards: [DeskPresetBoard]
-    public let focusedBoardIndex: Int?
+    public let focusedBoardIndex: BoardIndex?
 
     public init(
         deskID: DeskID,
@@ -27,7 +27,7 @@ public struct PendingDeskReplacement {
         presetLabel: String,
         label: String,
         boards: [DeskPresetBoard],
-        focusedBoardIndex: Int?
+        focusedBoardIndex: BoardIndex?
     ) {
         self.deskID = deskID
         self.originalLabel = originalLabel

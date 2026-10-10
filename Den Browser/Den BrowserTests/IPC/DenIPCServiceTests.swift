@@ -106,9 +106,9 @@ struct DenIPCServiceTests {
         #expect(webResponse.isOk)
         #expect(terminalResponse.isOk)
         #expect(drawerResponse.isOk)
-        #expect(controller.boardIndices(for: webBoardID)?.desk == targetDeskIndex)
-        #expect(controller.boardIndices(for: terminalBoardID)?.desk == targetDeskIndex)
-        #expect(controller.boardIndices(for: drawerBoardID)?.desk == targetDeskIndex)
+        #expect(controller.boardIndices(for: webBoardID)?.deskOffset == targetDeskIndex)
+        #expect(controller.boardIndices(for: terminalBoardID)?.deskOffset == targetDeskIndex)
+        #expect(controller.boardIndices(for: drawerBoardID)?.deskOffset == targetDeskIndex)
     }
 
     @Test func inspectionBoardCreationUsesExplicitTargetWithoutChangingFocus() async throws {

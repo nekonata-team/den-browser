@@ -29,7 +29,7 @@ struct BoardRemovalTests {
         #expect(removal.historyEntry.board == selected)
         #expect(removal.historyEntry.sideBoard == (removesSide ? nil : side))
         #expect(removal.historyEntry.sourceDeskID == desk.id)
-        #expect(removal.historyEntry.sourceBoardIndex == (removesSide ? 2 : 1))
+        #expect(removal.historyEntry.sourceBoardIndex.rawValue == (removesSide ? 2 : 1))
     }
 
     @Test(arguments: [false, true])

@@ -20,7 +20,7 @@ struct BoardInsertionTests {
             BoardInsertion.insert(inserted, in: [desk], presentedDeskID: desk.id, afterBoardID: anchorID))
 
         // Assert
-        #expect(destination.deskIndex == 0)
+        #expect(destination.deskIndex.rawValue == 0)
         #expect(destination.desk.boards.map(\.id) == [primary.id, side.id, inserted.id, tail.id])
         #expect(destination.afterBoardID == anchorID)
     }
@@ -39,7 +39,7 @@ struct BoardInsertionTests {
             BoardInsertion.insert(inserted, in: [other, presented], presentedDeskID: presented.id))
 
         // Assert
-        #expect(destination.deskIndex == 1)
+        #expect(destination.deskIndex.rawValue == 1)
         #expect(destination.desk.boards.map(\.id) == [focused.id, inserted.id, tail.id])
         #expect(destination.afterBoardID == nil)
     }
@@ -58,7 +58,7 @@ struct BoardInsertionTests {
                 inserted, in: [presented, owning], presentedDeskID: presented.id, afterBoardID: anchor.id))
 
         // Assert
-        #expect(destination.deskIndex == 1)
+        #expect(destination.deskIndex.rawValue == 1)
         #expect(destination.desk.boards.map(\.id) == [anchor.id, inserted.id])
         #expect(destination.afterBoardID == anchor.id)
     }
@@ -81,7 +81,7 @@ struct BoardInsertionTests {
                 afterBoardID: missingAnchor ? BoardID() : outside.id))
 
         // Assert
-        #expect(destination.deskIndex == 1)
+        #expect(destination.deskIndex.rawValue == 1)
         #expect(destination.desk.boards.map(\.id) == [focused.id, inserted.id, tail.id])
         #expect(destination.afterBoardID == nil)
     }

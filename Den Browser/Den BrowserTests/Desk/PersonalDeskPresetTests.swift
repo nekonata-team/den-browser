@@ -23,13 +23,14 @@ struct PersonalDeskPresetTests {
         #expect(preset.boards.map(\.label) == [other.label, target.label, inspection.label])
         #expect(preset.boards.map(\.width) == [other.width, target.width, inspection.width])
         #expect(preset.boards[2].kind == .inspection)
-        #expect(preset.boards[2].targetBoardIndex == 1)
-        #expect(preset.focusedBoardIndex == (focusInspection ? 2 : 1))
+        #expect(preset.boards[2].targetBoardIndex?.rawValue == 1)
+        #expect(preset.focusedBoardIndex?.rawValue == (focusInspection ? 2 : 1))
 
         let encoded = try JSONEncoder().encode(preset)
         let object = try #require(JSONSerialization.jsonObject(with: encoded) as? [String: Any])
         let boards = try #require(object["boards"] as? [[String: Any]])
         let inspectionContent = try #require(boards[2]["content"] as? [String: Any])
+        #expect(object["focusedBoardIndex"] as? Int == (focusInspection ? 2 : 1))
         #expect(boards[2]["targetBoardIndex"] as? Int == 1)
         #expect(inspectionContent["kind"] as? String == "inspection")
         #expect(inspectionContent.count == 1)
@@ -56,8 +57,8 @@ struct PersonalDeskPresetTests {
         // Assert
         #expect(preset.boards.map(\.label) == [target.label, inspection.label])
         let savedInspection = try #require(preset.boards.last)
-        #expect(savedInspection.targetBoardIndex == 0)
-        #expect(preset.focusedBoardIndex == (focusTutorial ? nil : 1))
+        #expect(savedInspection.targetBoardIndex?.rawValue == 0)
+        #expect(preset.focusedBoardIndex?.rawValue == (focusTutorial ? nil : 1))
     }
 
     @Test func decodesPreviouslySavedPresetWithoutInspectionMetadata() throws {
@@ -72,7 +73,7 @@ struct PersonalDeskPresetTests {
 
         // Assert
         #expect(preset.label == "Old")
-        #expect(preset.focusedBoardIndex == 0)
+        #expect(preset.focusedBoardIndex?.rawValue == 0)
         #expect(preset.boards.count == 1)
         #expect(preset.boards[0].initialSheetURL == URL(string: "https://example.com/"))
         #expect(preset.boards[0].targetBoardIndex == nil)

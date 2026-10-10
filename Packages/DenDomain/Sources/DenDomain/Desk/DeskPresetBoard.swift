@@ -5,7 +5,7 @@ public struct DeskPresetBoard: Codable, Equatable {
     public var width: Double
     public var kind: DeskPresetBoardKind
     public var customLabel: String?
-    public var targetBoardIndex: Int?
+    public var targetBoardIndex: BoardIndex?
 
     public var initialSheetURL: URL? {
         guard case .web(let url) = kind else { return nil }
@@ -60,7 +60,7 @@ public struct DeskPresetBoard: Codable, Equatable {
         width: Double,
         kind: DeskPresetBoardKind,
         customLabel: String? = nil,
-        targetBoardIndex: Int? = nil
+        targetBoardIndex: BoardIndex? = nil
     ) {
         self.label = label
         self.width = width
@@ -69,7 +69,7 @@ public struct DeskPresetBoard: Codable, Equatable {
         self.targetBoardIndex = targetBoardIndex
     }
 
-    public nonisolated init?(board: BoardState, targetBoardIndex: Int? = nil) {
+    public nonisolated init?(board: BoardState, targetBoardIndex: BoardIndex? = nil) {
         let kind: DeskPresetBoardKind
         switch board.kind {
         case .web(let web):
@@ -97,7 +97,7 @@ public struct DeskPresetBoard: Codable, Equatable {
         let presetBoards = boards.filter { !$0.isTutorial }
         return presetBoards.compactMap { board in
             let targetBoardIndex = board.sideBoardTargetBoardID.flatMap { targetBoardID in
-                presetBoards.firstIndex { $0.id == targetBoardID }
+                presetBoards.firstIndex { $0.id == targetBoardID }.map { BoardIndex(rawValue: $0) }
             }
             return DeskPresetBoard(board: board, targetBoardIndex: targetBoardIndex)
         }
@@ -148,7 +148,7 @@ public struct DeskPresetBoard: Codable, Equatable {
         for (index, presetBoard) in presetBoards.enumerated() {
             if case .inspection = presetBoard.kind {
                 guard
-                    let targetBoardIndex = presetBoard.targetBoardIndex,
+                    let targetBoardIndex = presetBoard.targetBoardIndex?.rawValue,
                     presetBoards.indices.contains(targetBoardIndex),
                     case .web = presetBoards[targetBoardIndex].kind
                 else { return nil }
@@ -176,7 +176,7 @@ public struct DeskPresetBoard: Codable, Equatable {
         label = try container.decode(String.self, forKey: .label)
         width = try container.decode(Double.self, forKey: .width)
         customLabel = try container.decodeIfPresent(String.self, forKey: .customLabel)
-        targetBoardIndex = try container.decodeIfPresent(Int.self, forKey: .targetBoardIndex)
+        targetBoardIndex = try container.decodeIfPresent(BoardIndex.self, forKey: .targetBoardIndex)
         kind = try container.decode(DeskPresetBoardKind.self, forKey: .kind)
     }
 

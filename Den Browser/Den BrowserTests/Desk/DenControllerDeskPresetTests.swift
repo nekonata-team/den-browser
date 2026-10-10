@@ -147,9 +147,9 @@ struct DenControllerDeskPresetTests {
             preset.boards[0].initialSheetURL
                 == URL(string: "https://mail.example.com/inbox?label=work#today"))
         #expect(preset.boards[1].kind == .inspection)
-        #expect(preset.boards[1].targetBoardIndex == 0)
+        #expect(preset.boards[1].targetBoardIndex?.rawValue == 0)
         #expect(preset.boards[2].initialSheetURL == nil)
-        #expect(preset.focusedBoardIndex == 1)
+        #expect(preset.focusedBoardIndex?.rawValue == 1)
 
         // Act - instantiate new desk from preset
         controller.createDesk(label: "Copy", personalPresetID: preset.id)

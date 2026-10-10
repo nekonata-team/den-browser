@@ -35,5 +35,5 @@ public enum DenWindowEffect {
     case suppressBoardMutationAnimation
     case boardRemoved(BoardID)
     case deskRemoved(DeskID)
-    case overviewBoardRemoved(boardID: BoardID, deskID: DeskID, oldIndex: Int)
+    case overviewBoardRemoved(boardID: BoardID, deskID: DeskID, oldIndex: BoardIndex)
 }

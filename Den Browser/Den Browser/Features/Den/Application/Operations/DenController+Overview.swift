@@ -39,24 +39,29 @@ extension DenController {
         return true
     }
 
-    func finishOverviewBoardDrag(_ boardID: BoardID, toDeskID deskID: DeskID, at targetIndex: Int) {
+    func finishOverviewBoardDrag(_ boardID: BoardID, toDeskID deskID: DeskID, at targetIndex: BoardIndex) {
         guard
             case .board(let activeBoardID)? = activeDrag,
             activeBoardID == boardID,
             let source = boardIndices(for: boardID),
-            let targetDeskIndex = state.desks.firstIndex(where: { $0.id == deskID })
+            let targetDeskOffset = state.desks.firstIndex(where: { $0.id == deskID })
         else { return }
 
+        let targetDeskIndex = DeskIndex(rawValue: targetDeskOffset)
         let keepsDeskFocus =
             source.desk == targetDeskIndex
-            && state.desks[source.desk].focusedBoardID == boardID
+            && state.desks[source.deskOffset].focusedBoardID == boardID
         if source.desk == targetDeskIndex {
-            reorderBoardGroup(containing: boardID, to: targetIndex, in: source.desk)
+            reorderBoardGroup(
+                containing: boardID,
+                to: targetIndex,
+                in: source.desk)
         } else {
-            transferBoardGroup(containing: boardID, from: source.desk, to: targetDeskIndex, at: targetIndex)
+            transferBoardGroup(
+                containing: boardID, from: source.desk, to: targetDeskIndex, at: targetIndex)
         }
-        if keepsDeskFocus || state.desks[targetDeskIndex].focusedBoardID == nil {
-            storage.state.desks[targetDeskIndex].focusedBoardID = boardID
+        if keepsDeskFocus || state.desks[targetDeskOffset].focusedBoardID == nil {
+            storage.state.desks[targetDeskOffset].focusedBoardID = boardID
         }
         storage.activeDrag = nil
         save()
@@ -69,7 +74,7 @@ extension DenController {
 
     func moveOverviewBoardGroup(_ boardID: BoardID, by delta: Int) {
         guard activeDrag == nil, let indices = boardIndices(for: boardID) else { return }
-        let boards = state.desks[indices.desk].boards
+        let boards = state.desks[indices.deskOffset].boards
         guard boards.count > 1,
             let group = BoardGroup.containing(boardID, in: boards),
             let first = group.boards.first,
@@ -79,25 +84,31 @@ extension DenController {
         else { return }
         let targetIndex = delta < 0 ? firstIndex - 1 : lastIndex + 1
         guard boards.indices.contains(targetIndex) else { return }
-        reorderBoardGroup(containing: boardID, to: targetIndex, in: indices.desk)
+        reorderBoardGroup(
+            containing: boardID,
+            to: BoardIndex(rawValue: targetIndex),
+            in: indices.desk)
         save()
     }
 
     func moveOverviewBoardGroupToDesk(_ boardID: BoardID, by delta: Int) {
         guard activeDrag == nil, state.desks.count > 1, let source = boardIndices(for: boardID) else { return }
-        let targetDeskIndex = wrappedIndex(source.desk + delta, count: state.desks.count)
-        let insertIndex: Int
-        if let focusedBoardID = state.desks[targetDeskIndex].focusedBoardID,
-            let focusedIndex = state.desks[targetDeskIndex].boards.firstIndex(where: { $0.id == focusedBoardID })
+        let targetDeskIndex = DeskIndex(
+            rawValue: wrappedIndex(source.desk.rawValue + delta, count: state.desks.count))
+        let targetDeskOffset = targetDeskIndex.rawValue
+        let insertIndex: BoardIndex
+        if let focusedBoardID = state.desks[targetDeskOffset].focusedBoardID,
+            let focusedIndex = state.desks[targetDeskOffset].boards.firstIndex(where: { $0.id == focusedBoardID })
         {
-            insertIndex = focusedIndex + 1
+            insertIndex = BoardIndex(rawValue: focusedIndex + 1)
         } else {
-            insertIndex = state.desks[targetDeskIndex].boards.endIndex
+            insertIndex = BoardIndex(rawValue: state.desks[targetDeskOffset].boards.endIndex)
         }
 
-        transferBoardGroup(containing: boardID, from: source.desk, to: targetDeskIndex, at: insertIndex)
-        if state.desks[targetDeskIndex].focusedBoardID == nil {
-            storage.state.desks[targetDeskIndex].focusedBoardID = boardID
+        transferBoardGroup(
+            containing: boardID, from: source.desk, to: targetDeskIndex, at: insertIndex)
+        if state.desks[targetDeskOffset].focusedBoardID == nil {
+            storage.state.desks[targetDeskOffset].focusedBoardID = boardID
         }
         save()
     }

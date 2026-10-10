@@ -12,13 +12,15 @@ struct DeskPresetOperationsTests {
         let last = DeskState(label: "Last", boards: [])
         let preset = [
             DeskPresetBoard(label: "Primary", width: 520, initialSheetURL: nil),
-            DeskPresetBoard(label: "Side", width: 390, kind: .inspection, targetBoardIndex: 0),
+            DeskPresetBoard(
+                label: "Side", width: 390, kind: .inspection, targetBoardIndex: BoardIndex(rawValue: 0)),
         ]
 
         // Act
         let creation = try #require(
             DeskCreation.create(
-                label: "  Research\n", presetBoards: preset, focusedBoardIndex: focusIndex,
+                label: "  Research\n", presetBoards: preset,
+                focusedBoardIndex: BoardIndex(rawValue: focusIndex),
                 in: [first, presented, last], presentedDeskID: presented.id))
 
         // Assert
@@ -63,18 +65,20 @@ struct DeskPresetOperationsTests {
         let other = DeskState(label: "Other", boards: [])
         let preset = [
             DeskPresetBoard(label: "Primary", width: 520, initialSheetURL: nil),
-            DeskPresetBoard(label: "Side", width: 390, kind: .inspection, targetBoardIndex: 0),
+            DeskPresetBoard(
+                label: "Side", width: 390, kind: .inspection, targetBoardIndex: BoardIndex(rawValue: 0)),
         ]
 
         // Act
         let replacement = try #require(
             DeskReplacement.replace(
-                source.id, label: "Replaced", presetBoards: preset, focusedBoardIndex: focusIndex,
+                source.id, label: "Replaced", presetBoards: preset,
+                focusedBoardIndex: BoardIndex(rawValue: focusIndex),
                 in: [other, source]))
 
         // Assert
         let replaced = replacement.desk
-        #expect(replacement.deskIndex == 1)
+        #expect(replacement.deskIndex.rawValue == 1)
         #expect(replacement.removedBoards == [old])
         #expect(replaced.id == source.id)
         #expect(replaced.label == "Replaced")

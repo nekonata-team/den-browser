@@ -10,9 +10,14 @@ public struct RecentlyRemovedBoard: Equatable {
     public let board: BoardState
     public var sideBoard: BoardState?
     public let sourceDeskID: DeskID
-    public let sourceBoardIndex: Int
+    public let sourceBoardIndex: BoardIndex
 
-    public init(board: BoardState, sideBoard: BoardState? = nil, sourceDeskID: DeskID, sourceBoardIndex: Int) {
+    public init(
+        board: BoardState,
+        sideBoard: BoardState? = nil,
+        sourceDeskID: DeskID,
+        sourceBoardIndex: BoardIndex
+    ) {
         self.board = board
         self.sideBoard = sideBoard
         self.sourceDeskID = sourceDeskID

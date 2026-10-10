@@ -107,7 +107,7 @@ enum DenIPCTargetResolver {
             if let callerBoardID = context.callerBoardID.map(BoardID.init) {
                 for controller in scope.controllers {
                     guard let indices = controller.boardIndices(for: callerBoardID) else { continue }
-                    let desk = controller.state.desks[indices.desk]
+                    let desk = controller.state.desks[indices.deskOffset]
                     return resolvedDesk(controller: controller, desk: desk, in: profileManager)
                 }
             }
@@ -146,8 +146,8 @@ enum DenIPCTargetResolver {
             let boardID = BoardID(boardID)
             for controller in scope.controllers {
                 guard let indices = controller.boardIndices(for: boardID) else { continue }
-                let desk = controller.state.desks[indices.desk]
-                let board = desk.boards[indices.board]
+                let desk = controller.state.desks[indices.deskOffset]
+                let board = desk.boards[indices.boardOffset]
                 guard kind.matchesExplicit(board) else {
                     return .failure(.boardNotMatchingKind(boardID.rawValue.uuidString, kind.label))
                 }
@@ -164,15 +164,15 @@ enum DenIPCTargetResolver {
                 else {
                     return .failure(.noTargetBoard(kind.label))
                 }
-                let desk = owningController.state.desks[indices.desk]
-                let callerBoard = desk.boards[indices.board]
+                let desk = owningController.state.desks[indices.deskOffset]
+                let callerBoard = desk.boards[indices.boardOffset]
                 let target: BoardState?
                 if kind.matches(callerBoard) {
                     target = callerBoard
                 } else {
                     target =
-                        desk.boards.dropFirst(indices.board + 1).first(where: kind.matches)
-                        ?? desk.boards.prefix(indices.board).reversed().first(where: kind.matches)
+                        desk.boards.dropFirst(indices.boardOffset + 1).first(where: kind.matches)
+                        ?? desk.boards.prefix(indices.boardOffset).reversed().first(where: kind.matches)
                 }
                 guard let target else { return .failure(.noTargetBoard(kind.label)) }
                 return resolvedBoard(controller: owningController, desk: desk, board: target, in: profileManager)

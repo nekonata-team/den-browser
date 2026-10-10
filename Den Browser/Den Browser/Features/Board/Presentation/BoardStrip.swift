@@ -751,7 +751,7 @@ struct BoardStrip: View {
 
             let crossedGroup = targetGroup.boards
             let previousOrder = boards.map(\.id)
-            controller.previewBoardMove(drag.boardID, to: targetIndex)
+            controller.previewBoardMove(drag.boardID, to: BoardIndex(rawValue: targetIndex))
             guard controller.focusedDesk?.boards.map(\.id) != previousOrder else { break }
 
             let direction = targetIndex > index ? -1.0 : 1.0
