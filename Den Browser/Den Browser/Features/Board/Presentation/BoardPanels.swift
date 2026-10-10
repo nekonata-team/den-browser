@@ -12,6 +12,7 @@ struct OpenBoardPanel: View {
     @Environment(OpenBoardModel.self) private var openBoard
     @FocusState private var isFocused: Bool
     @State private var selectedRecentItemID: RecentItem?
+    @State private var isClearRecentConfirmationPresented = false
 
     let profileColor: Color
     let newBoardWidth: Double
@@ -85,11 +86,13 @@ struct OpenBoardPanel: View {
                         .font(.caption.weight(.semibold))
                         .foregroundStyle(.secondary)
                     Spacer()
-                    Button("Clear", action: controller.clearRecent)
-                        .buttonStyle(.plain)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .accessibilityLabel("Clear Recent")
+                    Button("Clear") {
+                        isClearRecentConfirmationPresented = true
+                    }
+                    .buttonStyle(.plain)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .accessibilityLabel("Clear Recent")
                 }
 
                 ForEach(filteredRecentItems) { item in
@@ -194,6 +197,16 @@ struct OpenBoardPanel: View {
             }
         }
         .denPanel()
+        .confirmationDialog(
+            "Clear all Recent Items?",
+            isPresented: $isClearRecentConfirmationPresented,
+            titleVisibility: .visible
+        ) {
+            Button("Clear Recent", role: .destructive, action: controller.clearRecent)
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("This removes all Recent Items from this Profile. Existing Boards and Essentials are kept.")
+        }
         .onAppear {
             if let initialURL = openBoard.initialURL {
                 openBoard.input = initialURL.absoluteString
