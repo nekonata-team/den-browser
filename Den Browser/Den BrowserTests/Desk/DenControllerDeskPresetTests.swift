@@ -9,7 +9,6 @@ import Testing
 @MainActor
 @Suite(.serialized)
 struct DenControllerDeskPresetTests {
-
     @Test func selectionNavigationWrapsAndStartsAtTheDirectionalEdge() {
         let values = ["first", "middle", "last"]
 

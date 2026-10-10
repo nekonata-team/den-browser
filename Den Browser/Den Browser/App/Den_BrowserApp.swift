@@ -371,7 +371,6 @@ private struct DenCommands: Commands {
                 .disabled(controller == nil || windowModel?.pendingConfirmation != nil)
         }
     }
-
 }
 
 @MainActor

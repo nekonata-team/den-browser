@@ -8,7 +8,6 @@ import Testing
 @MainActor
 @Suite(.serialized)
 struct DenControllerBoardActivityTests {
-
     @Test func enteringBoardFromActivityFocusesItsDeskAndClosesActivity() {
         // Arrange
         let first = BoardState(label: "First", width: 520, currentSheetURL: nil)

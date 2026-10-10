@@ -8,7 +8,6 @@ import Testing
 @MainActor
 @Suite(.serialized)
 struct ProfilePersistenceTests {
-
     @Test func profileModelsRoundTrip() throws {
         // Arrange
         let profile = ProfileState(

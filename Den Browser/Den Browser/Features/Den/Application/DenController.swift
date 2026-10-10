@@ -498,5 +498,4 @@ final class DenController {
             storage.activeDrag = nil
         }
     }
-
 }

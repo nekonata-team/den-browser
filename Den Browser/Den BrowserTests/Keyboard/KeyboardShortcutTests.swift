@@ -1492,7 +1492,6 @@ struct KeyboardShortcutTests {
         #expect(controller.focusedDesk?.boards.count == 1)
         #expect(controller.latestFeedback?.message == "No Essential assigned to 'x'.")
         #expect(controller.latestFeedback?.severity == .warning)
-
     }
 
     @Test func denModeGPrefixCancelsQuietlyForEscapeAndModifiedKeys() throws {

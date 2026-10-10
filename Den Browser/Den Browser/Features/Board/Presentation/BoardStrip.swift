@@ -266,7 +266,6 @@ struct BoardStrip: View {
                     .help("Open Board at End of Desk")
                     .accessibilityLabel("Open Board at End of Desk")
                 }
-
             }
             .scrollTargetLayout()
             .padding(.leading, paddings.leading)

@@ -483,7 +483,6 @@ struct BoardRuntimeWebUITests {
         runtime.dispose()
         #expect(!FileManager.default.fileExists(atPath: abandonedTempURL.path))
     }
-
 }
 
 @MainActor

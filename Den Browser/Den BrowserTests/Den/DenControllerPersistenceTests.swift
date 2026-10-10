@@ -9,7 +9,6 @@ import Testing
 @MainActor
 @Suite(.serialized)
 struct DenControllerPersistenceTests {
-
     @Test func sheetScaleAndContentSizeAdjustmentsApplyToWebRuntime() throws {
         // Arrange
         let suiteName = "SheetScaleAndContentSizeTests-\(UUID())"

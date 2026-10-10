@@ -527,7 +527,6 @@ struct DenView<Header: View>: View {
             systemReduceMotion: systemReduceMotion
         )
     }
-
 }
 
 extension DenView where Header == EmptyView {

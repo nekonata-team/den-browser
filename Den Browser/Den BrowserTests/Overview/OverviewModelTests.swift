@@ -10,14 +10,12 @@ import Testing
 @MainActor
 @Suite(.serialized)
 struct OverviewModelTests {
-
     @Test func denCommandsAreSuspendedByOverview() throws {
         // Arrange
         let first = board("First")
         let second = board("Second")
         try withTestWindowModel(desks: [desk("Desk", boards: [first, second], focusedBoardID: first.id)]) {
             windowModel, controller in
-
             windowModel.showOverview()
             let openBoard = try #require(keyEvent("t", keyCode: 17))
             let editLink = try #require(keyEvent("l", keyCode: 37))

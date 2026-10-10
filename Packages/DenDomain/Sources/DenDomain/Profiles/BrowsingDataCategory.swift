@@ -6,5 +6,4 @@ public enum BrowsingDataCategory: String, CaseIterable, Identifiable, Hashable, 
     case localData
 
     public var id: Self { self }
-
 }

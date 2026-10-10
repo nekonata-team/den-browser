@@ -90,7 +90,6 @@ struct DeskPresetPicker: View {
             .deskPresetArrowNavigation { moveSelection(by: $0) }
 
             DeskPresetPreview(boards: selectedBoards)
-
         }
         .onChange(of: controller.deskPresets.map(\.id)) { _, ids in
             if case .personal(let id) = selection, !ids.contains(id) {

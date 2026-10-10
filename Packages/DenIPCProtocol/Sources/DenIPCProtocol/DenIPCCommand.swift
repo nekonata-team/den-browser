@@ -63,5 +63,4 @@ public nonisolated enum DenIPCCommand {
         case run(command: String)
         case kill(signal: String)
     }
-
 }

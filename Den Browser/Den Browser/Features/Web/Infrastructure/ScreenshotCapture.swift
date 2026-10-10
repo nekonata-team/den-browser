@@ -30,7 +30,6 @@ enum ScreenshotCapture {
             }
         }
     }
-
 }
 
 @MainActor

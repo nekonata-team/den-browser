@@ -134,5 +134,4 @@ struct AppConfiguration {
         }
         return arguments[index + 1]
     }
-
 }

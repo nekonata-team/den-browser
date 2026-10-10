@@ -9,7 +9,6 @@ import Testing
 @MainActor
 @Suite(.serialized)
 struct AppPreferencesTests {
-
     @Test func automaticPictureInPictureDefaultsToDisabled() throws {
         // Arrange
         let suiteName = "AutomaticPictureInPictureDefaultsTests-\(UUID().uuidString)"

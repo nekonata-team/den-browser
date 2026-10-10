@@ -242,7 +242,6 @@ struct BoardRail: View {
         .compactMap { $0 }
         .joined(separator: ", ")
     }
-
 }
 
 private struct BoardRailFavicon: View {

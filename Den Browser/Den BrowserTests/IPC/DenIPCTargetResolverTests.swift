@@ -9,7 +9,6 @@ import Testing
 @MainActor
 @Suite(.serialized)
 struct DenIPCTargetResolverTests {
-
     @Test func resolveTargetTerminalBoardFindsExplicitBoard() throws {
         // Arrange
         let directory = temporaryProfileDirectory()

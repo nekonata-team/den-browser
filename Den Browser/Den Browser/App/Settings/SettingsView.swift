@@ -222,7 +222,6 @@ private struct WebSettingsView: View {
                             }
                         }
                         .disabled(profileManager.uboliteInstaller.isBusy)
-
                     }
                 }
 
@@ -745,5 +744,4 @@ private struct ProfileSettingsRow: View {
         }
         name = profileManager.profile(id: profile.id)?.name ?? name
     }
-
 }

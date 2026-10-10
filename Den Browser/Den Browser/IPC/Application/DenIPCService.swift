@@ -825,7 +825,6 @@ final class DenIPCService {
                     try await SheetInteraction.mouseWheel(deltaX: deltaX, deltaY: deltaY, in: runtime.webView)
                     return .success(.message("Mouse wheel scrolled dx: \(deltaX), dy: \(deltaY)"))
                 }
-
             }
         } catch {
             return .failure(error.localizedDescription)
@@ -1098,7 +1097,6 @@ final class DenIPCService {
                 return .success(.message("Discarded Drawer Item: \(item.displayName)"))
             }
             return .failure("Failed to discard Drawer Item: \(idString)")
-
         }
     }
 
@@ -1165,7 +1163,6 @@ final class DenIPCService {
             } catch {
                 return .failure(error.localizedDescription)
             }
-
         }
     }
 

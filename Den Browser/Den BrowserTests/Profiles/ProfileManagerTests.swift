@@ -12,7 +12,6 @@ import WebKit
 @MainActor
 @Suite(.serialized)
 struct ProfileManagerTests {
-
     @Test func profileManagerCreatesPersonalProfileByDefault() throws {
         // Arrange
         let directory = temporaryProfileDirectory()
