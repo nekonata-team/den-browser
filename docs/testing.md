@@ -132,7 +132,7 @@ just check
 `just architecture-check` tests the ast-grep layer rules and scans the application plus
 `Packages/DenDomain/Sources`, `Packages/DenDesign/Sources`, and
 `Packages/DenIPCProtocol/Sources`, `Packages/DenApplication/Sources`, and
-`Packages/DenPresentation/Sources`, and `Packages/DenInfrastructure/Sources`. The checks reject UI/runtime SDK imports in Domain,
+`Packages/DenPresentationModels/Sources`, and `Packages/DenInfrastructure/Sources`. The checks reject UI/runtime SDK imports in Domain,
 SwiftUI imports in Application, and non-Foundation imports in the IPC protocol package.
 The package compiler boundaries enforce dependencies for moved Domain, Design, and wire
 types; behavioral tests verify runtime event routing and shared-state consistency. The

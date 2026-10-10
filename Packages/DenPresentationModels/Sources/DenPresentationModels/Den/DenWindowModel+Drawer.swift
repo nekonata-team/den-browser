@@ -1,9 +1,7 @@
-import DenApplication
 import DenDomain
-import DenPresentation
 import Foundation
 
-extension DenWindowModel {
+public extension DenWindowModel {
     var drawerPendingDeletionCount: Int? {
         guard case .clearDrawer(let count)? = pendingConfirmation else { return nil }
         return count

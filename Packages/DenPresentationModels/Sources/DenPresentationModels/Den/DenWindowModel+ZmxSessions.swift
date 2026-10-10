@@ -1,9 +1,7 @@
-import DenApplication
 import DenDomain
-import DenPresentation
 import Foundation
 
-extension DenWindowModel {
+public extension DenWindowModel {
     func refreshZmxSessions() {
         zmxSessions.refresh()
     }

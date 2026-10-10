@@ -1,7 +1,7 @@
 import AppKit
 import Combine
 import DenDomain
-import DenPresentation
+import DenPresentationModels
 import Foundation
 import Testing
 import WebKit

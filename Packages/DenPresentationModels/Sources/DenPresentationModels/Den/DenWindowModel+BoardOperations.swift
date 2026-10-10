@@ -1,9 +1,8 @@
 import DenDomain
-import DenPresentation
 import Foundation
 
 @MainActor
-extension DenWindowModel {
+public extension DenWindowModel {
     func toggleFocusedBoardMaximized() {
         guard let focusedBoardID = inputs.focusedDesk()?.focusedBoardID else { return }
         maximizedBoardID = maximizedBoardID == focusedBoardID ? nil : focusedBoardID

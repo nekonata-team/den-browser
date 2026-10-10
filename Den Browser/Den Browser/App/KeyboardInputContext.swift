@@ -1,6 +1,6 @@
 import AppKit
 import DenApplication
-import DenPresentation
+import DenPresentationModels
 import Foundation
 
 struct KeyEvent {

@@ -1,8 +1,7 @@
-import DenApplication
 import DenDomain
 import Foundation
 
-enum DenWindowEffect {
+public enum DenWindowEffect {
     case feedback(DenFeedback?)
     case presentOpenBoard(initialURL: URL?, afterBoardID: BoardID?)
     case presentOverview(deskID: DeskID?, boardID: BoardID?)

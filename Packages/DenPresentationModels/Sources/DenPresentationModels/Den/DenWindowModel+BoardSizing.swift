@@ -1,9 +1,7 @@
-import DenDesign
 import DenDomain
-import DenPresentation
 import Foundation
 
-extension DenWindowModel {
+public extension DenWindowModel {
     var defaultBoardWidth: Double {
         inputs.focusedBoard()?.width ?? boardWidth(toFit: 2) ?? BuiltInDeskPreset.boardWidth
     }
@@ -29,11 +27,7 @@ extension DenWindowModel {
 
     func boardWidth(toFit count: Int) -> Double? {
         guard let boardLayoutMetrics else { return nil }
-        return DenLayout.boardWidth(
-            toFit: count,
-            in: boardLayoutMetrics.availableWidth,
-            spacing: boardLayoutMetrics.spacing
-        )
+        return boardLayoutMetrics.boardWidth(toFit: count)
     }
 
     func canResizeFocusedDeskBoards(toFit count: Int) -> Bool {

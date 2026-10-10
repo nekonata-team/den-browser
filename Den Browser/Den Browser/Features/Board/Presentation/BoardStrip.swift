@@ -1,7 +1,7 @@
 import AppKit
 import DenDesign
 import DenDomain
-import DenPresentation
+import DenPresentationModels
 import SFSafeSymbols
 import SwiftUI
 

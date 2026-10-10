@@ -1,10 +1,8 @@
-import DenApplication
 import DenDomain
-import DenPresentation
 import Foundation
 
 @MainActor
-extension DenWindowModel {
+public extension DenWindowModel {
     var isResetDenPending: Bool {
         if case .resetDen? = pendingConfirmation { return true }
         return false

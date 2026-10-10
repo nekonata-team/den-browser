@@ -1,6 +1,6 @@
 import DenApplication
 import DenDomain
-import DenPresentation
+import DenPresentationModels
 import Foundation
 
 struct ShortcutConfiguration {

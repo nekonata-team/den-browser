@@ -4,6 +4,8 @@ valid:
   - import Observation
   - import DenDomain
 invalid:
+  - import SwiftUI
+  - import DenDesign
   - import DenApplication
   - import WebKit
   - import Den_Browser

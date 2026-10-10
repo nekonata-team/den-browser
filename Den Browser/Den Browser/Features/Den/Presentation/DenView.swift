@@ -1,6 +1,6 @@
 import DenDesign
 import DenDomain
-import DenPresentation
+import DenPresentationModels
 import SFSafeSymbols
 import SwiftUI
 
@@ -466,6 +466,10 @@ struct DenView<Header: View>: View {
         .padding(.trailing, 20)
         .padding(.bottom, 20)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
+        .animation(
+            windowModel.displayedFeedback == nil ? .easeIn(duration: 0.15) : .easeOut(duration: 0.15),
+            value: windowModel.displayedFeedback?.id
+        )
         .animation(
             DenMotion.feedback(reduceMotion: shouldReduceMotion),
             value: controller.activeDownloads.map(\.id)

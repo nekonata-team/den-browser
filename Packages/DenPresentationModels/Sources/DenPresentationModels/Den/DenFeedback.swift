@@ -1,20 +1,20 @@
 import DenDomain
 import Foundation
 
-struct DenFeedback: Equatable, Identifiable {
-    let id = UUID()
-    let title: String?
-    let body: String
-    let severity: Severity
-    let target: Target?
+public struct DenFeedback: Equatable, Identifiable {
+    public let id = UUID()
+    public let title: String?
+    public let body: String
+    public let severity: Severity
+    public let target: Target?
 
-    var message: String {
+    public var message: String {
         [title, body.isEmpty ? nil : body]
             .compactMap { $0 }
             .joined(separator: ": ")
     }
 
-    init(
+    public init(
         title: String? = nil,
         body: String,
         severity: Severity = .info,
@@ -26,14 +26,14 @@ struct DenFeedback: Equatable, Identifiable {
         self.target = target
     }
 
-    enum Severity: Equatable {
+    public enum Severity: Equatable {
         case success
         case info
         case warning
         case error
     }
 
-    enum Target: Equatable {
+    public enum Target: Equatable {
         case board(BoardID)
         case drawerItem(UUID)
         case notification(UUID)

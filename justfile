@@ -14,7 +14,7 @@ domain_sources := "Packages/DenDomain/Sources"
 design_sources := "Packages/DenDesign/Sources"
 ipc_protocol_sources := "Packages/DenIPCProtocol/Sources"
 application_sources := "Packages/DenApplication/Sources"
-presentation_sources := "Packages/DenPresentation/Sources"
+presentation_sources := "Packages/DenPresentationModels/Sources"
 infrastructure_sources := "Packages/DenInfrastructure/Sources"
 
 # Web works.

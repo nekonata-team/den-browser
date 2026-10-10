@@ -2,6 +2,7 @@ import AppKit
 import Darwin
 import DenApplication
 import DenDomain
+import DenPresentationModels
 import Foundation
 import WebKit
 

@@ -8,4 +8,4 @@ invalid:
   - import SwiftUI
   - import AppKit
   - import WebKit
-  - import DenPresentation
+  - import DenPresentationModels

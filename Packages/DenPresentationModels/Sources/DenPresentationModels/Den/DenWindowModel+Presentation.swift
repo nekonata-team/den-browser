@@ -1,9 +1,7 @@
-import DenApplication
 import DenDomain
-import DenPresentation
 import Foundation
 
-extension DenWindowModel {
+public extension DenWindowModel {
     var isDrawerOpen: Bool { temporaryContext == .drawer }
     var isOpenBoardPanelPresented: Bool { temporaryContext == .openBoard }
     var isZmxSessionsPresented: Bool { temporaryContext == .zmxSessions }

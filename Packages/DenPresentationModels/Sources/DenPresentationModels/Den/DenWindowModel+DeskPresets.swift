@@ -1,9 +1,7 @@
-import DenApplication
 import DenDomain
-import DenPresentation
 import Foundation
 
-extension DenWindowModel {
+public extension DenWindowModel {
     var deskPresetPendingReplacement: PersonalDeskPreset? {
         guard case .replaceDeskPreset(let replacement)? = pendingConfirmation else { return nil }
         return replacement

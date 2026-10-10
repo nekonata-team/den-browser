@@ -1,9 +1,8 @@
 import DenDomain
-import DenPresentation
 import Foundation
 
 @MainActor
-extension DenWindowModel {
+public extension DenWindowModel {
     func toggleBoardActivity() {
         if isBoardActivityPresented {
             hideBoardActivity()

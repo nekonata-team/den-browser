@@ -1,5 +1,6 @@
 import DenApplication
 import DenDomain
+import DenPresentationModels
 
 extension DenController {
     @discardableResult

@@ -3,7 +3,7 @@ language: Swift
 severity: error
 message: Presentation models depend only on Domain values and Observation, with operations supplied by composition.
 files:
-  - "Packages/DenPresentation/Sources/DenPresentation/**/*.swift"
+  - "Packages/DenPresentationModels/Sources/DenPresentationModels/**/*.swift"
 rule:
   kind: import_declaration
   has:

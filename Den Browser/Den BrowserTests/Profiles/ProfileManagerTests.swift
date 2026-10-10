@@ -2,7 +2,7 @@ import AppKit
 import DenApplication
 import DenDomain
 import DenInfrastructure
-import DenPresentation
+import DenPresentationModels
 import Foundation
 import Testing
 import WebKit

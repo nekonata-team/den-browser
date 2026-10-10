@@ -1,5 +1,6 @@
 import AppKit
 import DenDomain
+import DenPresentationModels
 import Foundation
 import Testing
 import WebKit

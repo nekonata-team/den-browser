@@ -1,5 +1,6 @@
 import AppKit
 import DenDomain
+import DenPresentationModels
 
 private enum ScreenshotDestination {
     case save(scope: String, window: NSWindow?)

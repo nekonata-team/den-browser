@@ -1,11 +1,6 @@
 import DenDomain
 import Foundation
 
-enum BoardOperationOrigin: Equatable {
-    case interactive
-    case cli
-}
-
 enum DenOperationEvent: Equatable {
     case webBoardOpened
     case terminalBoardOpened
@@ -25,27 +20,5 @@ extension DenOperationEvent {
         case .keyboardShortcutsShown: .keyboardShortcuts
         case .denModeEntered: nil
         }
-    }
-}
-
-struct BoardLinkFocusIntent: Equatable {
-    let id: UUID
-    let boardID: BoardID
-    let origin: BoardOperationOrigin
-
-    init(boardID: BoardID, origin: BoardOperationOrigin = .interactive) {
-        id = UUID()
-        self.boardID = boardID
-        self.origin = origin
-    }
-}
-
-struct BoardRemovalIntent: Equatable {
-    let id: UUID
-    let origin: BoardOperationOrigin
-
-    init(origin: BoardOperationOrigin) {
-        id = UUID()
-        self.origin = origin
     }
 }

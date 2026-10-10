@@ -1,6 +1,7 @@
 import AppKit
 import DenApplication
 import DenDomain
+import DenPresentationModels
 import Foundation
 
 enum DeskReplacementResult: Equatable {

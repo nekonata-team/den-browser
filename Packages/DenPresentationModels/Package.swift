@@ -2,15 +2,15 @@
 import PackageDescription
 
 let package = Package(
-    name: "DenPresentation",
+    name: "DenPresentationModels",
     platforms: [.macOS(.v26)],
     products: [
-        .library(name: "DenPresentation", targets: ["DenPresentation"])
+        .library(name: "DenPresentationModels", targets: ["DenPresentationModels"])
     ],
     dependencies: [.package(path: "../DenDomain")],
     targets: [
         .target(
-            name: "DenPresentation",
+            name: "DenPresentationModels",
             dependencies: ["DenDomain"],
             swiftSettings: [
                 .defaultIsolation(MainActor.self),

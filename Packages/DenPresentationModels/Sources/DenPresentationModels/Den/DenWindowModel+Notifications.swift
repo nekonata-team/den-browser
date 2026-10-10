@@ -1,9 +1,7 @@
-import DenApplication
-import DenPresentation
 import Foundation
 
 @MainActor
-extension DenWindowModel {
+public extension DenWindowModel {
     var notificationPendingDeletionCount: Int? {
         guard case .clearNotifications(let count)? = pendingConfirmation else { return nil }
         return count

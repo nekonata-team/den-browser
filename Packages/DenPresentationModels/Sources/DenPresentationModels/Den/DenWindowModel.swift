@@ -1,78 +1,142 @@
-import DenApplication
 import DenDomain
-import DenPresentation
+import Foundation
 import Observation
-import SwiftUI
 
 @MainActor
 @Observable
-final class DenWindowModel {
-    struct Inputs {
-        let focusedDesk: () -> DeskState?
-        let focusedBoard: () -> BoardState?
-        let board: (BoardID) -> BoardState?
-        let essentials: () -> [Essential]
-        let isBoardRailPresented: () -> Bool
-        let isBoardDragging: () -> Bool
-        let isDeskDragging: () -> Bool
-        let canCreateDesk: () -> Bool
+public final class DenWindowModel {
+    public struct Inputs {
+        public let focusedDesk: () -> DeskState?
+        public let focusedBoard: () -> BoardState?
+        public let board: (BoardID) -> BoardState?
+        public let essentials: () -> [Essential]
+        public let isBoardRailPresented: () -> Bool
+        public let isBoardDragging: () -> Bool
+        public let isDeskDragging: () -> Bool
+        public let canCreateDesk: () -> Bool
+
+        public init(
+            focusedDesk: @escaping () -> DeskState?,
+            focusedBoard: @escaping () -> BoardState?,
+            board: @escaping (BoardID) -> BoardState?,
+            essentials: @escaping () -> [Essential],
+            isBoardRailPresented: @escaping () -> Bool,
+            isBoardDragging: @escaping () -> Bool,
+            isDeskDragging: @escaping () -> Bool,
+            canCreateDesk: @escaping () -> Bool
+        ) {
+            self.focusedDesk = focusedDesk
+            self.focusedBoard = focusedBoard
+            self.board = board
+            self.essentials = essentials
+            self.isBoardRailPresented = isBoardRailPresented
+            self.isBoardDragging = isBoardDragging
+            self.isDeskDragging = isDeskDragging
+            self.canCreateDesk = canCreateDesk
+        }
     }
 
-    struct WindowActions {
-        let setBoardRailPresented: (Bool) -> Void
-        let openFeedbackTarget: (DenFeedback.Target?) -> Void
-        let reportWarning: (String) -> Void
-        let didEnterDenMode: () -> Void
-        let didShowKeyboardShortcuts: () -> Void
+    public struct WindowActions {
+        public let setBoardRailPresented: (Bool) -> Void
+        public let openFeedbackTarget: (DenFeedback.Target?) -> Void
+        public let reportWarning: (String) -> Void
+        public let didEnterDenMode: () -> Void
+        public let didShowKeyboardShortcuts: () -> Void
+
+        public init(
+            setBoardRailPresented: @escaping (Bool) -> Void,
+            openFeedbackTarget: @escaping (DenFeedback.Target?) -> Void,
+            reportWarning: @escaping (String) -> Void,
+            didEnterDenMode: @escaping () -> Void,
+            didShowKeyboardShortcuts: @escaping () -> Void
+        ) {
+            self.setBoardRailPresented = setBoardRailPresented
+            self.openFeedbackTarget = openFeedbackTarget
+            self.reportWarning = reportWarning
+            self.didEnterDenMode = didEnterDenMode
+            self.didShowKeyboardShortcuts = didShowKeyboardShortcuts
+        }
     }
 
-    struct BoardActions {
-        let adjustBoardWidth: (BoardID, Double) -> Void
-        let adjustDeskBoardWidths: (DeskID, Double) -> Void
-        let resizeDeskBoards: (DeskID, Double) -> Bool
-        let placeDrawerItem: (UUID, Double?) -> BoardID?
-        let focusBoard: (BoardID, Bool) -> Void
-        let centerFocusedBoard: () -> Void
-        let cancelBoardDrag: () -> Void
-        let cancelDeskDrag: () -> Void
+    public struct BoardActions {
+        public let adjustBoardWidth: (BoardID, Double) -> Void
+        public let adjustDeskBoardWidths: (DeskID, Double) -> Void
+        public let resizeDeskBoards: (DeskID, Double) -> Bool
+        public let placeDrawerItem: (UUID, Double?) -> BoardID?
+        public let focusBoard: (BoardID, Bool) -> Void
+        public let centerFocusedBoard: () -> Void
+        public let cancelBoardDrag: () -> Void
+        public let cancelDeskDrag: () -> Void
+
+        public init(
+            adjustBoardWidth: @escaping (BoardID, Double) -> Void,
+            adjustDeskBoardWidths: @escaping (DeskID, Double) -> Void,
+            resizeDeskBoards: @escaping (DeskID, Double) -> Bool,
+            placeDrawerItem: @escaping (UUID, Double?) -> BoardID?,
+            focusBoard: @escaping (BoardID, Bool) -> Void,
+            centerFocusedBoard: @escaping () -> Void,
+            cancelBoardDrag: @escaping () -> Void,
+            cancelDeskDrag: @escaping () -> Void
+        ) {
+            self.adjustBoardWidth = adjustBoardWidth
+            self.adjustDeskBoardWidths = adjustDeskBoardWidths
+            self.resizeDeskBoards = resizeDeskBoards
+            self.placeDrawerItem = placeDrawerItem
+            self.focusBoard = focusBoard
+            self.centerFocusedBoard = centerFocusedBoard
+            self.cancelBoardDrag = cancelBoardDrag
+            self.cancelDeskDrag = cancelDeskDrag
+        }
     }
 
-    struct ZmxActions {
-        let canPresentSessions: () -> Bool
-        let openSession: (String, Double?, Bool) -> ZmxSessionOpenResult
-        let boardLocation: (String) -> String?
-        let cancelDuplication: () -> Void
+    public struct ZmxActions {
+        public let canPresentSessions: () -> Bool
+        public let openSession: (String, Double?, Bool) -> ZmxSessionOpenResult
+        public let boardLocation: (String) -> String?
+        public let cancelDuplication: () -> Void
+
+        public init(
+            canPresentSessions: @escaping () -> Bool,
+            openSession: @escaping (String, Double?, Bool) -> ZmxSessionOpenResult,
+            boardLocation: @escaping (String) -> String?,
+            cancelDuplication: @escaping () -> Void
+        ) {
+            self.canPresentSessions = canPresentSessions
+            self.openSession = openSession
+            self.boardLocation = boardLocation
+            self.cancelDuplication = cancelDuplication
+        }
     }
 
-    let overview: OverviewModel
-    let drawer: DrawerModel
-    let openBoard: OpenBoardModel
-    let deskFilter: DeskFilterModel
-    let notificationList: NotificationListModel
-    var temporaryContext: TemporaryContext?
-    var selectedEssentialID: UUID?
-    var saveEssentialDraft: SaveEssentialDraft?
-    var isZenViewPresented = false
-    var isFocusModePresented = false
-    var isDenMode = false
-    var isFullscreenActive = false
-    var isNotificationListPresented = false
-    var boardWidthPanelMessage: String?
-    var zmxSessionsReturnToOpenBoard = false
-    var zmxDuplicationRootSessionName: String?
-    let zmxSessions: ZmxSessionsModel
-    var pendingConfirmation: DenConfirmationRequest?
-    var maximizedBoardID: BoardID?
-    var centerFocusedBoardRequest = 0
-    var revealPreviousBoardRequest = 0
-    var revealNextBoardRequest = 0
-    var boardDragCancellationRequest = 0
-    var deskDragCancellationRequest = 0
-    var boardLayoutMetrics: BoardLayoutMetrics?
-    var pendingBoardLinkFocus: BoardLinkFocusIntent?
-    var pendingBoardRemoval: BoardRemovalIntent?
-    var boardMutationAnimationSuppressionRequest = 0
-    private(set) var displayedFeedback: DenFeedback?
+    public let overview: OverviewModel
+    public let drawer: DrawerModel
+    public let openBoard: OpenBoardModel
+    public let deskFilter: DeskFilterModel
+    public let notificationList: NotificationListModel
+    public var temporaryContext: TemporaryContext?
+    public var selectedEssentialID: UUID?
+    public var saveEssentialDraft: SaveEssentialDraft?
+    public var isZenViewPresented = false
+    public var isFocusModePresented = false
+    public var isDenMode = false
+    public var isFullscreenActive = false
+    public var isNotificationListPresented = false
+    public var boardWidthPanelMessage: String?
+    public var zmxSessionsReturnToOpenBoard = false
+    public var zmxDuplicationRootSessionName: String?
+    public let zmxSessions: ZmxSessionsModel
+    public var pendingConfirmation: DenConfirmationRequest?
+    public var maximizedBoardID: BoardID?
+    public var centerFocusedBoardRequest = 0
+    public var revealPreviousBoardRequest = 0
+    public var revealNextBoardRequest = 0
+    public var boardDragCancellationRequest = 0
+    public var deskDragCancellationRequest = 0
+    public var boardLayoutMetrics: BoardLayoutMetrics?
+    public var pendingBoardLinkFocus: BoardLinkFocusIntent?
+    public var pendingBoardRemoval: BoardRemovalIntent?
+    public var boardMutationAnimationSuppressionRequest = 0
+    public private(set) var displayedFeedback: DenFeedback?
 
     @ObservationIgnored private let feedbackDuration: Duration
     @ObservationIgnored let onLaunchEssential: (UUID, Double?) -> Void
@@ -85,7 +149,7 @@ final class DenWindowModel {
     @ObservationIgnored private var feedbackTask: Task<Void, Never>?
     @ObservationIgnored private var lastReceivedFeedbackID: UUID?
 
-    init(
+    public init(
         overview: OverviewModel,
         drawer: DrawerModel,
         openBoard: OpenBoardModel,
@@ -121,13 +185,13 @@ final class DenWindowModel {
         feedbackTask?.cancel()
     }
 
-    func endWindowPresentation() {
+    public func endWindowPresentation() {
         dismissFeedback()
         deskFilter.cancelCentering()
         zmxSessions.stop()
     }
 
-    func receive(_ effect: DenWindowEffect) {
+    public func receive(_ effect: DenWindowEffect) {
         switch effect {
         case .feedback(let feedback):
             showFeedback(feedback)
@@ -232,9 +296,7 @@ final class DenWindowModel {
 
         lastReceivedFeedbackID = feedback.id
         feedbackTask?.cancel()
-        withAnimation(.easeOut(duration: 0.15)) {
-            displayedFeedback = feedback
-        }
+        displayedFeedback = feedback
 
         let feedbackID = feedback.id
         let duration = feedbackDuration
@@ -245,28 +307,26 @@ final class DenWindowModel {
         }
     }
 
-    func handleTap(on feedback: DenFeedback) {
+    public func handleTap(on feedback: DenFeedback) {
         guard displayedFeedback?.id == feedback.id else { return }
         windowActions.openFeedbackTarget(feedback.target)
         dismissFeedback(id: feedback.id)
     }
 
-    func consumeBoardLinkFocus(_ intent: BoardLinkFocusIntent) {
+    public func consumeBoardLinkFocus(_ intent: BoardLinkFocusIntent) {
         guard pendingBoardLinkFocus == intent else { return }
         pendingBoardLinkFocus = nil
     }
 
-    func consumeBoardRemoval(_ intent: BoardRemovalIntent) {
+    public func consumeBoardRemoval(_ intent: BoardRemovalIntent) {
         guard pendingBoardRemoval == intent else { return }
         pendingBoardRemoval = nil
     }
 
-    func dismissFeedback(id: UUID? = nil) {
+    public func dismissFeedback(id: UUID? = nil) {
         guard id == nil || displayedFeedback?.id == id else { return }
         feedbackTask?.cancel()
         feedbackTask = nil
-        withAnimation(.easeIn(duration: 0.15)) {
-            displayedFeedback = nil
-        }
+        displayedFeedback = nil
     }
 }

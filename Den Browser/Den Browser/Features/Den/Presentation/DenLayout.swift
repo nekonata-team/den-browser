@@ -1,6 +1,7 @@
 import CoreGraphics
 import DenDesign
 import DenDomain
+import DenPresentationModels
 
 extension DenLayout {
     static func boardWidth(
@@ -8,10 +9,7 @@ extension DenLayout {
         in availableWidth: Double,
         spacing: Double = outerInset
     ) -> Double? {
-        guard (1...9).contains(count), availableWidth > 0 else { return nil }
-        let width = (availableWidth - spacing * Double(count - 1)) / Double(count)
-        guard width >= BoardState.minimumWidth else { return nil }
-        return width
+        BoardLayoutMetrics(availableWidth: availableWidth, spacing: spacing).boardWidth(toFit: count)
     }
 
     static func newBoardWidth(in size: CGSize, focusedBoardWidth: Double?) -> Double {

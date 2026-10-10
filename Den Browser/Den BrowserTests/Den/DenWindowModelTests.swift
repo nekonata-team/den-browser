@@ -1,5 +1,5 @@
 import DenDomain
-import DenPresentation
+import DenPresentationModels
 import Foundation
 import Observation
 import Synchronization

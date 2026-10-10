@@ -2,7 +2,7 @@ import AppKit
 import DenApplication
 import DenDomain
 import DenInfrastructure
-import DenPresentation
+import DenPresentationModels
 import Sparkle
 import SwiftUI
 
