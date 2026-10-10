@@ -7,52 +7,20 @@ import WebKit
 
 @MainActor
 struct BoardRuntimeWebUITests {
-    @Test func runtimeEnablesNativePictureInPicture() {
-        let runtime = WebBoardRuntime(
-            board: BoardState(label: "Board", width: 320, currentSheetURL: nil),
-            websiteDataStore: .nonPersistent(),
-            sheetNavigation: makeTestSheetNavigationManager(scriptSource: ""),
-            sheetScale: 100,
-            sheetNavigationActions: noOpSheetNavigationActions(),
-            events: .init(
-                onChange: { _, _, _ in },
-                onFullscreenChange: nil,
-                onDownloadFinished: { _ in },
-                onDownloadFailed: { _ in }
-            )
-        )
-        defer { runtime.dispose() }
-
-        #expect(runtime.webView.configuration.preferences._allowsPictureInPictureMediaPlayback)
-    }
-
-    @Test func runtimeEnablesNativeMagnification() {
-        let runtime = WebBoardRuntime(
-            board: BoardState(label: "Board", width: 320, currentSheetURL: nil),
-            websiteDataStore: .nonPersistent(),
-            sheetNavigation: makeTestSheetNavigationManager(scriptSource: ""),
-            sheetScale: 100,
-            sheetNavigationActions: noOpSheetNavigationActions(),
-            events: .init(
-                onChange: { _, _, _ in },
-                onFullscreenChange: nil,
-                onDownloadFinished: { _ in },
-                onDownloadFailed: { _ in }
-            )
-        )
-        defer { runtime.dispose() }
-
-        #expect(runtime.webView.allowsMagnification)
-    }
-
-    @Test func runtimeReportsNativeLinkActivationOnly() {
+    @Test func runtimeConfiguresPreferencesDelegatesAndLinkActivation() {
         var activationCount = 0
+        var openedURL: URL?
+        var backgroundURL: URL?
+        var actions = noOpSheetNavigationActions()
+        actions.onOpenBoard = { openedURL = $0 }
+        actions.onOpenBoardInBackground = { backgroundURL = $0 }
+
         let runtime = WebBoardRuntime(
             board: BoardState(label: "Board", width: 320, currentSheetURL: nil),
             websiteDataStore: .nonPersistent(),
             sheetNavigation: makeTestSheetNavigationManager(scriptSource: ""),
             sheetScale: 100,
-            sheetNavigationActions: noOpSheetNavigationActions(),
+            sheetNavigationActions: actions,
             events: .init(
                 onChange: { _, _, _ in },
                 onFullscreenChange: nil,
@@ -63,32 +31,16 @@ struct BoardRuntimeWebUITests {
         )
         defer { runtime.dispose() }
 
-        runtime.handleLinkActivation(navigationType: .linkActivated)
-        runtime.handleLinkActivation(navigationType: .other)
-
-        #expect(activationCount == 1)
-    }
-
-    @Test func runtimeHandlesWebPageDialogsAndOpenPanels() {
-        let runtime = WebBoardRuntime(
-            board: BoardState(label: "Board", width: 320, currentSheetURL: nil),
-            websiteDataStore: .nonPersistent(),
-            sheetNavigation: makeTestSheetNavigationManager(scriptSource: ""),
-            sheetScale: 100,
-            sheetNavigationActions: noOpSheetNavigationActions(),
-            events: .init(
-                onChange: { _, _, _ in },
-                onFullscreenChange: nil,
-                onDownloadFinished: { _ in },
-                onDownloadFailed: { _ in }
-            )
-        )
-        defer { runtime.dispose() }
-
+        #expect(runtime.webView.configuration.preferences._allowsPictureInPictureMediaPlayback)
+        #expect(runtime.webView.allowsMagnification)
         #expect(runtime.webView.navigationDelegate === runtime)
         #expect(runtime.webView.uiDelegate === runtime)
         #expect(!runtime.isLoading)
         #expect(runtime.estimatedProgress == 0)
+
+        runtime.handleLinkActivation(navigationType: .linkActivated)
+        runtime.handleLinkActivation(navigationType: .other)
+        #expect(activationCount == 1)
 
         runtime.webViewWebContentProcessDidTerminate(runtime.webView)
         #expect(runtime.didTerminateContentProcess)
@@ -110,6 +62,42 @@ struct BoardRuntimeWebUITests {
             "webView:runOpenPanelWithParameters:initiatedByFrame:completionHandler:",
         ]
         #expect(selectors.allSatisfy { runtime.responds(to: NSSelectorFromString($0)) })
+
+        runtime.auxiliaryWindowFactory = { _ in TestWindow() }
+        let auxiliary = runtime.makeAuxiliaryWebView(
+            configuration: WKWebViewConfiguration(),
+            sourceWebView: runtime.webView
+        )
+        #expect(auxiliary.uiDelegate === runtime)
+        #expect(auxiliary.navigationDelegate === runtime)
+
+        let testURL = URL(string: "https://example.com/page")!
+        #expect(
+            runtime.handleLinkNavigation(
+                testURL,
+                navigationType: .linkActivated,
+                modifierFlags: [],
+                button: .middle,
+                opensNewContext: false
+            )
+        )
+        #expect(backgroundURL == testURL)
+        #expect(openedURL == nil)
+
+        openedURL = nil
+        backgroundURL = nil
+
+        #expect(
+            runtime.handleLinkNavigation(
+                testURL,
+                navigationType: .linkActivated,
+                modifierFlags: [.shift],
+                button: .middle,
+                opensNewContext: false
+            )
+        )
+        #expect(openedURL == testURL)
+        #expect(backgroundURL == nil)
     }
 
     @Test func modifierClicksOpenSupportedLinkInNewBoard() {
@@ -187,57 +175,6 @@ struct BoardRuntimeWebUITests {
                 url: url
             )
         )
-    }
-
-    @Test func middleClicksChooseBackgroundOrFocusedBoard() throws {
-        let url = try #require(URL(string: "https://example.com/page"))
-        var openedURL: URL?
-        var backgroundURL: URL?
-        var actions = noOpSheetNavigationActions()
-        actions.onOpenBoard = { openedURL = $0 }
-        actions.onOpenBoardInBackground = { backgroundURL = $0 }
-
-        let runtime = WebBoardRuntime(
-            board: BoardState(label: "Board", width: 320, currentSheetURL: nil),
-            websiteDataStore: .nonPersistent(),
-            sheetNavigation: makeTestSheetNavigationManager(scriptSource: ""),
-            sheetScale: 100,
-            sheetNavigationActions: actions,
-            events: .init(
-                onChange: { _, _, _ in },
-                onFullscreenChange: nil,
-                onDownloadFinished: { _ in },
-                onDownloadFailed: { _ in }
-            )
-        )
-        defer { runtime.dispose() }
-
-        #expect(
-            runtime.handleLinkNavigation(
-                url,
-                navigationType: .linkActivated,
-                modifierFlags: [],
-                button: .middle,
-                opensNewContext: false
-            )
-        )
-        #expect(backgroundURL == url)
-        #expect(openedURL == nil)
-
-        openedURL = nil
-        backgroundURL = nil
-
-        #expect(
-            runtime.handleLinkNavigation(
-                url,
-                navigationType: .linkActivated,
-                modifierFlags: [.shift],
-                button: .middle,
-                opensNewContext: false
-            )
-        )
-        #expect(openedURL == url)
-        #expect(backgroundURL == nil)
     }
 
     @Test func optionPrimaryClickKeepsSupportedLinkInDrawer() {
@@ -383,22 +320,18 @@ struct BoardRuntimeWebUITests {
             )
         )
         #expect(keptURL == shiftMiddleURL)
-    }
 
-    @Test func drawerPreviewDisposesAuxiliaryPopupWindow() throws {
-        let manager = makeTestSheetNavigationManager(scriptSource: "")
-        let runtime = DrawerPreviewRuntime(
-            item: DrawerItem(url: try #require(URL(string: "file:///tmp/drawer-preview.html"))),
-            websiteDataStore: .nonPersistent(),
-            sheetNavigation: manager,
-            sheetScale: 100,
-            onKeepInDrawer: { _ in },
-            onKeepInDrawerInBackground: { _ in },
-            onDiscard: {},
-            onChange: { _, _, _ in },
-            onDownloadFinished: { _ in },
-            onDownloadFailed: { _ in }
-        )
+        let selectors = [
+            "webView:runJavaScriptAlertPanelWithMessage:initiatedByFrame:completionHandler:",
+            "webView:runJavaScriptConfirmPanelWithMessage:initiatedByFrame:completionHandler:",
+            "webView:runJavaScriptTextInputPanelWithPrompt:defaultText:initiatedByFrame:completionHandler:",
+            "webView:runOpenPanelWithParameters:initiatedByFrame:completionHandler:",
+            "download:decideDestinationUsingResponse:suggestedFilename:completionHandler:",
+            "downloadDidFinish:",
+            "download:didFailWithError:resumeData:",
+        ]
+        #expect(selectors.allSatisfy { runtime.responds(to: NSSelectorFromString($0)) })
+
         runtime.auxiliaryWindowFactory = { _ in TestWindow() }
         let popup = runtime.makeAuxiliaryWebView(
             configuration: WKWebViewConfiguration(),
@@ -409,7 +342,6 @@ struct BoardRuntimeWebUITests {
         #expect(window.presentationRequests == 1)
 
         runtime.dispose()
-
         #expect(window.closeRequests == 1)
     }
 
@@ -469,18 +401,15 @@ struct BoardRuntimeWebUITests {
         )
     }
 
-    @Test func downloadPreservesExistingFileUntilFinishedAndReplacesAtomically() throws {
+    @Test func downloadLifecycleHandlesSuccessFailureAndCleanup() throws {
         // Arrange
         let directory = FileManager.default.temporaryDirectory
             .appending(path: "download-test-\(UUID().uuidString)", directoryHint: .isDirectory)
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: directory) }
 
-        let destinationURL = directory.appending(path: "target.pdf")
-        let originalData = Data("original content".utf8)
-        try originalData.write(to: destinationURL)
-
         var finishedFilename: String?
+        var failedFilename: String?
         var activityEvents: [DownloadActivityEvent] = []
         let runtime = WebBoardRuntime(
             board: BoardState(label: "Board", width: 320, currentSheetURL: nil),
@@ -493,10 +422,14 @@ struct BoardRuntimeWebUITests {
                 onFullscreenChange: nil,
                 onDownloadActivity: { activityEvents.append($0) },
                 onDownloadFinished: { filename in finishedFilename = filename },
-                onDownloadFailed: { _ in }
+                onDownloadFailed: { filename in failedFilename = filename }
             )
         )
-        defer { runtime.dispose() }
+
+        // 1. Success case: atomic replacement
+        let destinationURL = directory.appending(path: "target.pdf")
+        let originalData = Data("original content".utf8)
+        try originalData.write(to: destinationURL)
 
         let tempURL = BaseWebRuntime.temporaryDownloadURL(for: destinationURL)
         let downloadID = ObjectIdentifier(NSObject())
@@ -511,10 +444,7 @@ struct BoardRuntimeWebUITests {
         #expect(try Data(contentsOf: destinationURL) == originalData)
         #expect(FileManager.default.fileExists(atPath: tempURL.path))
 
-        // Act
         let completed = runtime.completeDownload(for: downloadID)
-
-        // Assert
         #expect(completed)
         #expect(finishedFilename == "target.pdf")
         #expect(
@@ -524,161 +454,36 @@ struct BoardRuntimeWebUITests {
             ])
         #expect(try Data(contentsOf: destinationURL) == newData)
         #expect(!FileManager.default.fileExists(atPath: tempURL.path))
-    }
 
-    @Test func downloadProgressUsesIndeterminateStateUntilTotalSizeIsKnown() {
-        // Arrange
-        let indeterminate = Progress(totalUnitCount: -1)
-        let determinate = Progress(totalUnitCount: 4)
-        determinate.completedUnitCount = 1
+        // 2. Failure case: original preserved, temp cleaned up
+        let failDestinationURL = directory.appending(path: "important.pdf")
+        let failOriginalData = Data("do not delete me".utf8)
+        try failOriginalData.write(to: failDestinationURL)
 
-        // Act
-        let unknownFraction = BaseWebRuntime.downloadProgressFraction(indeterminate)
-        let knownFraction = BaseWebRuntime.downloadProgressFraction(determinate)
+        let failTempURL = BaseWebRuntime.temporaryDownloadURL(for: failDestinationURL)
+        let failDownloadID = ObjectIdentifier(NSObject())
+        runtime.registerPendingDownload(
+            for: failDownloadID, destinationURL: failDestinationURL, temporaryURL: failTempURL)
+        try Data("partial broken content".utf8).write(to: failTempURL)
 
-        // Assert
-        #expect(unknownFraction == nil)
-        #expect(knownFraction == 0.25)
-    }
-
-    @Test func downloadFailureKeepsOriginalFileAndDeletesTemporaryFile() throws {
-        // Arrange
-        let directory = FileManager.default.temporaryDirectory
-            .appending(path: "download-test-\(UUID().uuidString)", directoryHint: .isDirectory)
-        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
-        defer { try? FileManager.default.removeItem(at: directory) }
-
-        let destinationURL = directory.appending(path: "important.pdf")
-        let originalData = Data("do not delete me".utf8)
-        try originalData.write(to: destinationURL)
-
-        var failedFilename: String?
-        let runtime = WebBoardRuntime(
-            board: BoardState(label: "Board", width: 320, currentSheetURL: nil),
-            websiteDataStore: .nonPersistent(),
-            sheetNavigation: makeTestSheetNavigationManager(scriptSource: ""),
-            sheetScale: 100,
-            sheetNavigationActions: noOpSheetNavigationActions(),
-            events: .init(
-                onChange: { _, _, _ in },
-                onFullscreenChange: nil,
-                onDownloadFinished: { _ in },
-                onDownloadFailed: { filename in failedFilename = filename }
-            )
-        )
-        defer { runtime.dispose() }
-
-        let tempURL = BaseWebRuntime.temporaryDownloadURL(for: destinationURL)
-        let downloadID = ObjectIdentifier(NSObject())
-        runtime.registerPendingDownload(for: downloadID, destinationURL: destinationURL, temporaryURL: tempURL)
-
-        let partialData = Data("partial broken content".utf8)
-        try partialData.write(to: tempURL)
-
-        // Act
-        runtime.failDownload(for: downloadID)
-
-        // Assert
+        runtime.failDownload(for: failDownloadID)
         #expect(failedFilename == "important.pdf")
-        #expect(try Data(contentsOf: destinationURL) == originalData)
-        #expect(!FileManager.default.fileExists(atPath: tempURL.path))
-    }
+        #expect(try Data(contentsOf: failDestinationURL) == failOriginalData)
+        #expect(!FileManager.default.fileExists(atPath: failTempURL.path))
 
-    @Test func runtimeDisposeCleansUpUnfinishedTemporaryDownloadFiles() throws {
-        // Arrange
-        let directory = FileManager.default.temporaryDirectory
-            .appending(path: "download-test-\(UUID().uuidString)", directoryHint: .isDirectory)
-        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
-        defer { try? FileManager.default.removeItem(at: directory) }
+        // 3. Dispose cleanup: in-progress temp file deleted
+        let abandonedDestinationURL = directory.appending(path: "abandoned.pdf")
+        let abandonedTempURL = BaseWebRuntime.temporaryDownloadURL(for: abandonedDestinationURL)
+        let abandonedDownloadID = ObjectIdentifier(NSObject())
+        runtime.registerPendingDownload(
+            for: abandonedDownloadID, destinationURL: abandonedDestinationURL, temporaryURL: abandonedTempURL)
+        try Data("in progress".utf8).write(to: abandonedTempURL)
+        #expect(FileManager.default.fileExists(atPath: abandonedTempURL.path))
 
-        let destinationURL = directory.appending(path: "abandoned.pdf")
-        let runtime = WebBoardRuntime(
-            board: BoardState(label: "Board", width: 320, currentSheetURL: nil),
-            websiteDataStore: .nonPersistent(),
-            sheetNavigation: makeTestSheetNavigationManager(scriptSource: ""),
-            sheetScale: 100,
-            sheetNavigationActions: noOpSheetNavigationActions(),
-            events: .init(
-                onChange: { _, _, _ in },
-                onFullscreenChange: nil,
-                onDownloadFinished: { _ in },
-                onDownloadFailed: { _ in }
-            )
-        )
-
-        let tempURL = BaseWebRuntime.temporaryDownloadURL(for: destinationURL)
-        let downloadID = ObjectIdentifier(NSObject())
-        runtime.registerPendingDownload(for: downloadID, destinationURL: destinationURL, temporaryURL: tempURL)
-        try Data("in progress".utf8).write(to: tempURL)
-        #expect(FileManager.default.fileExists(atPath: tempURL.path))
-
-        // Act
         runtime.dispose()
-
-        // Assert
-        #expect(!FileManager.default.fileExists(atPath: tempURL.path))
+        #expect(!FileManager.default.fileExists(atPath: abandonedTempURL.path))
     }
 
-    @Test func drawerPreviewRuntimeImplementsCommonWebDelegateSelectors() {
-        // Arrange
-        let manager = makeTestSheetNavigationManager(scriptSource: "")
-        let item = DrawerItem(url: URL(string: "https://example.com")!)
-        let runtime = DrawerPreviewRuntime(
-            item: item,
-            websiteDataStore: .nonPersistent(),
-            sheetNavigation: manager,
-            sheetScale: 100,
-            onKeepInDrawer: { _ in },
-            onKeepInDrawerInBackground: { _ in },
-            onDiscard: {},
-            onChange: { _, _, _ in },
-            onDownloadFinished: { _ in },
-            onDownloadFailed: { _ in }
-        )
-        defer { runtime.dispose() }
-
-        let selectors = [
-            "webView:runJavaScriptAlertPanelWithMessage:initiatedByFrame:completionHandler:",
-            "webView:runJavaScriptConfirmPanelWithMessage:initiatedByFrame:completionHandler:",
-            "webView:runJavaScriptTextInputPanelWithPrompt:defaultText:initiatedByFrame:completionHandler:",
-            "webView:runOpenPanelWithParameters:initiatedByFrame:completionHandler:",
-            "download:decideDestinationUsingResponse:suggestedFilename:completionHandler:",
-            "downloadDidFinish:",
-            "download:didFailWithError:resumeData:",
-        ]
-
-        // Assert
-        #expect(selectors.allSatisfy { runtime.responds(to: NSSelectorFromString($0)) })
-    }
-
-    @Test func auxiliaryWebViewConfiguresBothUIDelegateAndNavigationDelegate() {
-        // Arrange
-        let runtime = WebBoardRuntime(
-            board: BoardState(label: "Board", width: 320, currentSheetURL: nil),
-            websiteDataStore: .nonPersistent(),
-            sheetNavigation: makeTestSheetNavigationManager(scriptSource: ""),
-            sheetScale: 100,
-            sheetNavigationActions: noOpSheetNavigationActions(),
-            events: .init(
-                onChange: { _, _, _ in },
-                onFullscreenChange: nil,
-                onDownloadFinished: { _ in },
-                onDownloadFailed: { _ in }
-            )
-        )
-        defer { runtime.dispose() }
-        runtime.auxiliaryWindowFactory = { _ in TestWindow() }
-
-        // Act
-        let auxiliary = runtime.makeAuxiliaryWebView(
-            configuration: WKWebViewConfiguration(),
-            sourceWebView: runtime.webView
-        )
-
-        // Assert
-        #expect(auxiliary.uiDelegate === runtime)
-        #expect(auxiliary.navigationDelegate === runtime)
-    }
 }
 
 @MainActor

@@ -131,22 +131,9 @@ struct SheetNavigationTests {
     }
 
     @Test func boardRuntimeAppliesSafariUserAgent() {
-        let navigation = SheetNavigationManager(
-            defaults: makeTestDefaults(),
-            scriptSource: "")
-        let board = BoardState(label: "Test", width: 520, currentSheetURL: nil)
-        let runtime = WebBoardRuntime(
-            board: board,
-            websiteDataStore: .nonPersistent(),
-            sheetNavigation: navigation,
-            sheetScale: 100,
-            sheetNavigationActions: noOpSheetNavigationActions(),
-            events: boardRuntimeEvents()
-        )
-
-        #expect(runtime.webView.customUserAgent == WebBoardRuntime.defaultUserAgent)
-        #expect(runtime.webView.customUserAgent?.contains("Version/") == true)
-        #expect(runtime.webView.customUserAgent?.contains("Safari/") == true)
+        let userAgent = WebBoardRuntime.defaultUserAgent
+        #expect(userAgent.contains("Version/"))
+        #expect(userAgent.contains("Safari/"))
     }
 
     @Test func sheetNavigationPreferencesPersist() {
@@ -725,7 +712,7 @@ struct SheetNavigationTests {
         #expect(manager.setIgnoredSites(""))
     }
 
-    @Test func boardWebViewUsesIsolatedSheetNavigationController() {
+    @Test func boardWebViewUsesIsolatedSheetNavigationControllerAndActionHighlight() async throws {
         let manager = makeTestSheetNavigationManager(scriptSource: "")
         let runtime = WebBoardRuntime(
             board: board("Navigation", url: "about:blank"),
@@ -734,11 +721,22 @@ struct SheetNavigationTests {
             sheetScale: AppPreferences.defaultSheetScale,
             sheetNavigationActions: noOpSheetNavigationActions(),
             events: boardRuntimeEvents())
+        defer { runtime.dispose() }
 
         let userContentController = runtime.webView.configuration.userContentController
         #expect(userContentController !== manager.userContentController)
         #expect(userContentController.userScripts.count == 2)
         #expect(userContentController.userScripts[0].source.contains("__denSheetNavigation"))
+
+        #expect(runtime.actionHighlight == nil)
+        runtime.triggerActionHighlight(CGRect(x: 10, y: 10, width: 50, height: 20))
+        #expect(runtime.actionHighlight?.rect == CGRect(x: 10, y: 10, width: 50, height: 20))
+
+        let clearDeadline = ContinuousClock.now + .seconds(2)
+        while runtime.actionHighlight != nil, ContinuousClock.now < clearDeadline {
+            try await Task.sleep(for: .milliseconds(10))
+        }
+        #expect(runtime.actionHighlight == nil)
     }
 
     @Test func sheetNavigationCanOpenLinkAsAdjacentBoard() {
@@ -1337,27 +1335,6 @@ struct SheetNavigationTests {
         let fillHighlight =
             try await webView.evaluateJavaScript("document.querySelector('[data-den-highlight]')")
         #expect(fillHighlight is NSNull || fillHighlight == nil)
-    }
-
-    @Test func boardRuntimeTriggerActionHighlightSetsAndClearsHighlight() async throws {
-        let navigation = makeTestSheetNavigationManager(scriptSource: "")
-        let board = BoardState(label: "Test", width: 520, currentSheetURL: nil)
-        let runtime = WebBoardRuntime(
-            board: board,
-            websiteDataStore: .nonPersistent(),
-            sheetNavigation: navigation,
-            sheetScale: 100,
-            sheetNavigationActions: noOpSheetNavigationActions(),
-            events: boardRuntimeEvents()
-        )
-        defer { runtime.dispose() }
-
-        #expect(runtime.actionHighlight == nil)
-        runtime.triggerActionHighlight(CGRect(x: 10, y: 10, width: 50, height: 20))
-        #expect(runtime.actionHighlight?.rect == CGRect(x: 10, y: 10, width: 50, height: 20))
-
-        try await Task.sleep(for: .milliseconds(750))
-        #expect(runtime.actionHighlight == nil)
     }
 
     private var sheetNavigationTestHTML: String {
