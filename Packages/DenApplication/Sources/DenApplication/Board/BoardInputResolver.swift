@@ -84,6 +84,12 @@ public enum BoardInputResolver {
         let trimmed = WebURLPolicy.normalizePastedText(text, joiningLineBreaksWith: " ")
         guard !trimmed.isEmpty else { return nil }
 
+        if trimmed.hasPrefix("/") || trimmed.hasPrefix("~/") {
+            let path = (trimmed as NSString).expandingTildeInPath
+            let url = URL(fileURLWithPath: path)
+            return (url, .url(url))
+        }
+
         let urlText = WebURLPolicy.normalizePastedText(text, joiningLineBreaksWith: "")
         if let url = URL(string: urlText), WebURLPolicy.isSupported(url) {
             return (url, .url(url))

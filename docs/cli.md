@@ -186,7 +186,7 @@ Commands operating on the Den-wide Drawer for web material whose Desk context is
 | `den drawer place` | `<id>` | Place a Drawer Item onto the active Desk as a Web Board, start its Web runtime immediately, and remove the item from the Drawer. | `den drawer place 4F72344C-...` |
 | `den drawer discard` | `<id>` | Discard a Drawer Item without placing it onto a Desk. | `den drawer discard 4F72344C-...` |
 
-Web URL inputs use the same resolution policy across these commands. Explicit `http://`, `https://`, and absolute local `file://` URLs are accepted; a bare hostname such as `example.com` or `localhost:3000` is completed with `https://`. `den board web navigate` and `den board web new` also accept search queries, using the configured Search Engine. `den drawer keep` accepts only URL input, so search queries and unsupported schemes such as `ftp://` or `mailto:` fail before any state change. Accepted URLs are canonicalized after validation.
+Web URL inputs use the same resolution policy across these commands. Explicit `http://`, `https://`, and absolute local `file://` URLs are accepted. Local paths starting with `/` or `~/` are converted to `file://` URLs, preserving spaces and filename characters such as `#` and `%`; `~/` expands to the user's home directory. A bare hostname such as `example.com` or `localhost:3000` is completed with `https://`. `den board web navigate` and `den board web new` also accept search queries, using the configured Search Engine. `den drawer keep` accepts only URL input, so search queries and unsupported schemes such as `ftp://` or `mailto:` fail before any state change. Accepted URLs are canonicalized after validation.
 
 ### 3.8 `den profile` (Profiles)
 

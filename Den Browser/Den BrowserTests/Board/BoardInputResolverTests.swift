@@ -61,6 +61,24 @@ struct BoardInputResolverTests {
         #expect(BoardInputResolver.resolveOpenBoardInput("https://", searchEngine: .google) == nil)
     }
 
+    @Test(arguments: ["/tmp/index.html", "/tmp/Den Browser/report #1%.html", "~/Documents/index.html"])
+    func resolvesFilePathsAsLocalURLs(input: String) throws {
+        // Arrange
+        let expected = URL(fileURLWithPath: (input as NSString).expandingTildeInPath)
+
+        // Act
+        let resolved = try #require(BoardInputResolver.resolveOpenBoardInput(input, searchEngine: .google))
+        let normalized = BoardInputResolver.normalizedURL(from: input, searchEngine: .google)
+
+        // Assert
+        #expect(resolved.url.isFileURL)
+        #expect(resolved.url == expected)
+        #expect(resolved.item == .url(expected))
+        #expect(normalized == expected)
+        #expect(resolved.url.query == nil)
+        #expect(resolved.url.fragment == nil)
+    }
+
     @Test func stripsNewlinesWithoutChangingOtherCharacters() {
         #expect(
             WebURLPolicy.stripNewlines("https://example.com/long-\npath/to/\r\npage")

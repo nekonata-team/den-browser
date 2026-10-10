@@ -10,6 +10,8 @@ The nine primary navigation shortcuts (toggling Den Mode and Board Rail, desk sw
 
 ## App and Sheet Input
 
+Open Board and the Current Sheet URL field accept local paths starting with `/` or `~/` and open them as `file://` URLs. Spaces and filename characters are preserved; `~/` expands to the user's home directory.
+
 Available globally or while focused in a Sheet.
 
 When the Profile panel is open, type to filter Profiles, use `Up` / `Down` to select one, press `Return` to open it, or press `Escape` to close the panel.
