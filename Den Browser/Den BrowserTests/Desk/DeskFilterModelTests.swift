@@ -116,7 +116,7 @@ struct DeskFilterModelTests {
 
         // Act
         windowModel.showOverview()
-        try await Task.sleep(for: .seconds(1))
+        try await Task.sleep(for: .milliseconds(70))
 
         // Assert
         #expect(windowModel.centerFocusedBoardRequest == 0)

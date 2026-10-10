@@ -790,10 +790,13 @@ struct ProfileManagerTests {
         #expect(windowModel.maximizedBoardID == nil)
         #expect(manager.profileSaveCount == writesBefore)
         windowModel.adjustFocusedBoardWidth(by: -20)
-        try await Task.sleep(for: .milliseconds(200))
+        try await Task.sleep(for: .milliseconds(100))
         windowModel.adjustFocusedDeskBoardWidths(by: 10)
         #expect(manager.profileSaveCount == writesBefore)
-        try await Task.sleep(for: .milliseconds(350))
+        let saveDeadline = ContinuousClock.now + .seconds(2)
+        while manager.profileSaveCount == writesBefore, ContinuousClock.now < saveDeadline {
+            try await Task.sleep(for: .milliseconds(10))
+        }
 
         // Assert
         #expect(manager.profileSaveCount == writesBefore + 1)
@@ -814,7 +817,7 @@ struct ProfileManagerTests {
         // Act
         controller.focusDesk(firstDeskID)
         #expect(controller.saveDeskPresets())
-        try await Task.sleep(for: .milliseconds(350))
+        try await Task.sleep(for: .milliseconds(50))
 
         // Assert
         #expect(manager.profileSaveCount == writesBefore + 1)
@@ -919,10 +922,13 @@ struct ProfileManagerTests {
         controller.focusBoard(secondBoard.id)
         windowModel.showOverview()
         #expect(windowModel.beginOverviewBoardDrag(firstBoard.id))
-        try await Task.sleep(for: .milliseconds(450))
+        try await Task.sleep(for: .milliseconds(350))
         #expect(manager.profileSaveCount == writesBefore)
         windowModel.overview.cancelBoardDrag()
-        try await Task.sleep(for: .milliseconds(450))
+        let dragSaveDeadline = ContinuousClock.now + .seconds(2)
+        while manager.profileSaveCount == writesBefore, ContinuousClock.now < dragSaveDeadline {
+            try await Task.sleep(for: .milliseconds(10))
+        }
 
         // Assert
         #expect(manager.profileSaveCount == writesBefore + 1)
@@ -949,7 +955,10 @@ struct ProfileManagerTests {
         #expect(!controller.saveDeskPresets())
         #expect(manager.errorMessage != nil)
         try FileManager.default.removeItem(at: profileURL)
-        try await Task.sleep(for: .milliseconds(350))
+        let failedSaveDeadline = ContinuousClock.now + .seconds(2)
+        while manager.profileSaveCount < writesBefore + 2, ContinuousClock.now < failedSaveDeadline {
+            try await Task.sleep(for: .milliseconds(10))
+        }
 
         // Assert
         #expect(manager.profileSaveCount == writesBefore + 2)
