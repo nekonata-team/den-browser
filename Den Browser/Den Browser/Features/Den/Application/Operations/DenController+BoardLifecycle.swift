@@ -294,36 +294,16 @@ extension DenController {
         deskID: DeskID? = nil,
         save: Bool = true
     ) -> Bool {
-        let deskIndex: Int
-        if let deskID {
-            guard let index = state.desks.firstIndex(where: { $0.id == deskID }) else { return false }
-            deskIndex = index
-        } else if let afterBoardID {
-            guard let indices = boardIndices(for: afterBoardID) else { return false }
-            deskIndex = indices.desk
-        } else {
-            guard let focusedDeskIndex else { return false }
-            deskIndex = focusedDeskIndex
-        }
-        let insertionAfterBoardID: BoardID?
-        if let afterBoardID,
-            let indices = boardIndices(for: afterBoardID),
-            indices.desk == deskIndex
-        {
-            insertionAfterBoardID = afterBoardID
-        } else {
-            guard deskID != nil || afterBoardID == nil else { return false }
-            insertionAfterBoardID = nil
-        }
-        let boards = state.desks[deskIndex].boards
-        let anchorBoardID = insertionAfterBoardID ?? state.desks[deskIndex].focusedBoardID
-        let anchorIndex = anchorBoardID.flatMap { id in boards.firstIndex(where: { $0.id == id }) }
-        let groupEndIndex = anchorBoardID.flatMap { id in
-            BoardGroup.containing(id, in: boards)?.boards.last.flatMap { member in
-                boards.firstIndex(where: { $0.id == member.id })
-            }
-        }
-        let insertIndex = (groupEndIndex ?? anchorIndex).map { $0 + 1 } ?? boards.endIndex
+        guard
+            let destination = BoardInsertion.resolve(
+                in: state.desks,
+                presentedDeskID: presentedDeskID,
+                deskID: deskID,
+                afterBoardID: afterBoardID)
+        else { return false }
+        let deskIndex = destination.deskIndex
+        let insertionAfterBoardID = destination.afterBoardID
+        let insertIndex = destination.boardIndex
 
         if !focus, let afterBoardID = insertionAfterBoardID {
             _ = prepareBoardLinkFocus(afterBoardID, origin: origin)

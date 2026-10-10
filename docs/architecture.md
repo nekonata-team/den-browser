@@ -113,6 +113,13 @@ operations. Typed outcomes and failure reasons are converted into window effects
 `DenController.requestOpenBoard`. Search-engine choices, names, and URL rules are Domain values;
 preference storage remains in App. Profile formats and preference raw values are unchanged.
 
+`BoardInsertion` resolves the destination Desk, validates the explicit anchor, and calculates a
+position after the complete primary/Side Board group. An explicit Desk takes precedence over the
+anchor's owner; without either, the presented Desk is used. Unusable anchors are ignored only when
+an explicit destination Desk is valid. The returned explicit anchor stays separate from the implicit
+focused-Board fallback so background-input requests retain their existing behavior. The Controller
+applies the insertion, focus changes, persistence, and window effects.
+
 Preference value types follow their meaning: `ExternalLinkDestination` belongs to Domain because
 it selects link-opening behavior, while `DrawerStyle` belongs to DenPresentationModels/Drawer because
 it selects a Feature's display form. Their small fixed labels stay in the enum declarations.
