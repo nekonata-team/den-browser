@@ -127,24 +127,18 @@ extension DenController {
 
     private func deleteDesk(_ deskID: DeskID) {
         guard
-            state.desks.count > 1,
-            let deskIndex = state.desks.firstIndex(where: { $0.id == deskID })
+            let deletion = DeskDeletion.delete(
+                deskID, from: state.desks,
+                isAvailable: { canPresentDesk?($0) ?? true })
         else { return }
-        let replacementCandidates = state.desks.prefix(deskIndex).reversed() + state.desks.dropFirst(deskIndex + 1)
-        guard
-            let replacementDeskID = replacementCandidates.first(where: {
-                $0.id != deskID && (canPresentDesk?($0.id) ?? true)
-            })?.id
-        else { return }
-
-        let desk = state.desks[deskIndex]
+        let desk = deletion.removedDesk
         for board in desk.boards {
             disposeRuntime(for: board.id)
         }
 
-        storage.state.desks.remove(at: deskIndex)
+        storage.state.desks = deletion.desks
         if presentedDeskID == deskID {
-            setFocusedDesk(replacementDeskID)
+            setFocusedDesk(deletion.replacementDeskID)
         }
         invalidateReferences(toRemovedBoardIDs: Set(desk.boards.map(\.id)))
         invalidateReferences(toRemovedDeskID: deskID)

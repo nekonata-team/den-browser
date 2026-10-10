@@ -135,6 +135,13 @@ The transformation clears removed anchors and selects the remaining focus withou
 state. The Controller applies the result to the single source of truth, clears window-local anchor
 jump references, bounds removal history, disposes Runtimes, and sends window effects.
 
+`DeskDeletion` rejects deletion of the last Desk or a missing Desk, and returns the remaining Desks
+with the removed Desk and replacement selection. Available Desks to the left are preferred, nearest
+first, before trying Desks to the right. Availability is supplied by App because window ownership
+is outside Application. The Controller owns confirmation, Runtime disposal, shared-state updates,
+presented-Desk selection, reference invalidation, and persistence. No available replacement means
+the deletion is rejected.
+
 Preference value types follow their meaning: `ExternalLinkDestination` belongs to Domain because
 it selects link-opening behavior, while `DrawerStyle` belongs to DenPresentationModels/Drawer because
 it selects a Feature's display form. Their small fixed labels stay in the enum declarations.
