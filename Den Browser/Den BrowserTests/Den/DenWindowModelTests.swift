@@ -137,21 +137,24 @@ struct DenWindowModelTests {
     @Test func latestFeedbackIsDisplayedAndPreviousTimerCannotDismissReplacement() async {
         // Arrange
         let controller = DenController(state: .sample)
-        let composition = DenWindowComposition(controller: controller, feedbackDuration: .milliseconds(150))
+        let composition = DenWindowComposition(controller: controller, feedbackDuration: .milliseconds(30))
         let windowModel = composition.model
         composition.connect()
         defer { composition.disconnect() }
 
         // Act
         controller.reportFeedback("First")
-        try? await Task.sleep(for: .milliseconds(100))
+        try? await Task.sleep(for: .milliseconds(20))
         controller.reportFeedback("Latest")
-        try? await Task.sleep(for: .milliseconds(70))
+        try? await Task.sleep(for: .milliseconds(15))
 
         // Assert
         #expect(windowModel.displayedFeedback?.body == "Latest")
 
-        try? await Task.sleep(for: .milliseconds(110))
+        let dismissDeadline = ContinuousClock.now + .seconds(2)
+        while windowModel.displayedFeedback != nil, ContinuousClock.now < dismissDeadline {
+            try? await Task.sleep(for: .milliseconds(10))
+        }
         #expect(windowModel.displayedFeedback == nil)
     }
 

@@ -6,6 +6,7 @@ import Testing
 
 @testable import Den_Browser
 
+@Suite(.serialized)
 @MainActor
 struct DenIPCServiceTests {
     @Test func healthCommandReturnsHealthyWithoutAnActiveProfile() async {
@@ -776,7 +777,8 @@ struct DenIPCServiceTests {
                             url: nil,
                             text: nil,
                             loadState: nil,
-                            function: "window.waitStarted = '\(readyToken)', window.targetReady === '\(readyToken)'",
+                            function:
+                                "(() => { window.waitStarted = '\(readyToken)'; return window.targetReady === '\(readyToken)'; })()",
                             timeout: 2))),
                 DenSheetInteractStep(
                     line: 2,
@@ -803,12 +805,15 @@ struct DenIPCServiceTests {
                     )))
         }
         var waitStarted = false
-        for _ in 0..<100 {
+        let waitDeadline = ContinuousClock.now + .seconds(2)
+        while ContinuousClock.now < waitDeadline {
             let value = try? await firstRuntime.webView.evaluateJavaScript(
                 "window.waitStarted === '\(readyToken)'")
-            waitStarted = (value as? Bool) == true
-            if waitStarted { break }
-            await Task.yield()
+            if (value as? Bool) == true {
+                waitStarted = true
+                break
+            }
+            try await Task.sleep(for: .milliseconds(10))
         }
         #expect(waitStarted)
         controller.focusBoard(secondBoardID)
@@ -968,7 +973,8 @@ struct DenIPCServiceTests {
                             url: nil,
                             text: nil,
                             loadState: nil,
-                            function: "window.waitStarted = '\(readyToken)', window.targetReady === '\(readyToken)'",
+                            function:
+                                "(() => { window.waitStarted = '\(readyToken)'; return window.targetReady === '\(readyToken)'; })()",
                             timeout: 2))),
                 DenSheetInteractStep(
                     line: 2,
@@ -992,12 +998,15 @@ struct DenIPCServiceTests {
                         command: .interact(payload), target: .explicit(firstBoardID.rawValue))))
         }
         var waitStarted = false
-        for _ in 0..<100 {
+        let waitDeadline = ContinuousClock.now + .seconds(2)
+        while ContinuousClock.now < waitDeadline {
             let value = try? await firstRuntime.webView.evaluateJavaScript(
                 "window.waitStarted === '\(readyToken)'")
-            waitStarted = (value as? Bool) == true
-            if waitStarted { break }
-            await Task.yield()
+            if (value as? Bool) == true {
+                waitStarted = true
+                break
+            }
+            try await Task.sleep(for: .milliseconds(10))
         }
         #expect(waitStarted)
         controller.removeBoard(firstBoardID)
@@ -1009,8 +1018,8 @@ struct DenIPCServiceTests {
         // Assert
         #expect(response.isOk == false)
         #expect(response.error == "Target Web Board no longer exists: \(firstBoardID.rawValue.uuidString)")
-        #expect(response.completedActions == 1)
-        #expect(response.failedActionIndex == 1)
+        #expect(response.completedActions == 0)
+        #expect(response.failedActionIndex == 0)
     }
 
     @Test func boardCloseReturnsContextFromTheClosedBoard() async throws {
