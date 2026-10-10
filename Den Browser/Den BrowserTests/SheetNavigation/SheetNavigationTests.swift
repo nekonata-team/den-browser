@@ -1230,10 +1230,8 @@ struct SheetNavigationTests {
 
         let observedChange = try await withThrowingTaskGroup(of: (URL?, String?)?.self) { group in
             group.addTask {
-                for await change in changes {
-                    if change.0 == testURL && change.1 == "Test Page Title" {
-                        return change
-                    }
+                for await change in changes where change.0 == testURL && change.1 == "Test Page Title" {
+                    return change
                 }
                 return nil
             }

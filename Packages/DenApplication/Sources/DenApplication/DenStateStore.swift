@@ -1,7 +1,9 @@
 import Foundation
 import Observation
 
-/// The Profile's source of truth. Readers receive this object without its write capability.
+/// The Profile's source of truth.
+///
+/// Readers receive this object without its write capability.
 @MainActor
 @Observable
 public final class DenStateStore {

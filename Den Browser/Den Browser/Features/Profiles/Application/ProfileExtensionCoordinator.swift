@@ -112,6 +112,8 @@ final class ProfileExtensionCoordinator {
     private func disposeAllHosts() {
         let currentHosts = Array(hosts.values)
         hosts.removeAll()
-        currentHosts.forEach { $0.dispose() }
+        for host in currentHosts {
+            host.dispose()
+        }
     }
 }

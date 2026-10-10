@@ -20,7 +20,9 @@ public struct RecentlyRemovedBoard: Equatable {
     }
 }
 
-/// Profile-shared data. Runtime resources and window presentation state are kept outside this value.
+/// Profile-shared data.
+///
+/// Runtime resources and window presentation state are kept outside this value.
 public struct DenSharedState: Equatable {
     public var den: DenState
     public var deskPresets: [PersonalDeskPreset]

@@ -166,7 +166,7 @@ class BaseWebRuntime: NSObject, NSWindowDelegate, WKDownloadDelegate, WKNavigati
         opensNewContext: Bool
     ) -> Bool {
         // Overridden by subclasses if needed. Return true if handled.
-        return false
+        false
     }
 
     func handleLinkActivation(navigationType: WKNavigationType) {
