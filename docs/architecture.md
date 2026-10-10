@@ -126,6 +126,12 @@ the existing Tutorial Board when reopening would create a duplicate. The Control
 history only after insertion or selection of the existing Tutorial Board, and owns feedback, focus,
 and persistence. Rejected restorations retain the history entry.
 
+`BoardRemoval` returns the updated Desk, removed Boards, and a history entry from a Desk value.
+Removing a primary Board includes its Side Board; removing a Side Board leaves the primary intact.
+The transformation clears removed anchors and selects the remaining focus without owning shared
+state. The Controller applies the result to the single source of truth, clears window-local anchor
+jump references, bounds removal history, disposes Runtimes, and sends window effects.
+
 Preference value types follow their meaning: `ExternalLinkDestination` belongs to Domain because
 it selects link-opening behavior, while `DrawerStyle` belongs to DenPresentationModels/Drawer because
 it selects a Feature's display form. Their small fixed labels stay in the enum declarations.

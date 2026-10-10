@@ -425,34 +425,6 @@ final class DenController {
     }
 
     @discardableResult
-    func removeBoard(at indices: (desk: Int, board: Int), focusNext: Bool = false) -> BoardState {
-        let board = storage.state.desks[indices.desk].boards.remove(at: indices.board)
-        let deskID = state.desks[indices.desk].id
-        if state.desks[indices.desk].anchorBoardID == board.id {
-            storage.state.desks[indices.desk].anchorBoardID = nil
-            anchorJumpOriginBoardIDByDesk.removeValue(forKey: deskID)
-        } else if anchorJumpOriginBoardIDByDesk[deskID] == board.id {
-            anchorJumpOriginBoardIDByDesk.removeValue(forKey: deskID)
-        }
-        let boards = state.desks[indices.desk].boards
-        if boards.isEmpty {
-            storage.state.desks[indices.desk].scrollOffsetX = nil
-        }
-        guard state.desks[indices.desk].focusedBoardID == board.id else { return board }
-
-        let focusedBoardID: BoardID?
-        if focusNext && indices.board < boards.count {
-            focusedBoardID = boards[indices.board].id
-        } else if indices.board > 0 {
-            focusedBoardID = boards[indices.board - 1].id
-        } else {
-            focusedBoardID = boards.first?.id
-        }
-        storage.state.desks[indices.desk].focusedBoardID = focusedBoardID
-        return board
-    }
-
-    @discardableResult
     func save() -> Bool {
         let signpost = PerformanceTrace.beginInterval("DenController.save")
         defer { PerformanceTrace.endInterval("DenController.save", signpost) }

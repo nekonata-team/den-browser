@@ -377,32 +377,20 @@ extension DenController {
             if isCLIBackgroundRemoval {
                 _ = prepareBoardRemoval(origin: origin)
             }
-            let sourceDeskID = state.desks[indices.desk].id
-            let board = state.desks[indices.desk].boards[indices.board]
-            let groupBoards =
-                board.isSideBoard
-                ? [board]
-                : (BoardGroup.containing(board.id, in: state.desks[indices.desk].boards)?.boards ?? [board])
-            let removedIDs = Set(groupBoards.map(\.id))
-            let removed = groupBoards.filter { $0.id != board.id }
-            for member in groupBoards.reversed() {
-                guard let memberIndex = state.desks[indices.desk].boards.firstIndex(where: { $0.id == member.id })
-                else { continue }
-                _ = removeBoard(at: (desk: indices.desk, board: memberIndex), focusNext: focusNext)
+            let sourceDesk = state.desks[indices.desk]
+            guard let removal = BoardRemoval.remove(boardID, from: sourceDesk, focusNext: focusNext) else { return }
+            let removedIDs = Set(removal.removedBoards.map(\.id))
+            storage.state.desks[indices.desk] = removal.desk
+            if sourceDesk.anchorBoardID.map({ removedIDs.contains($0) }) == true
+                || anchorJumpOriginBoardIDByDesk[sourceDesk.id].map({ removedIDs.contains($0) }) == true
+            {
+                anchorJumpOriginBoardIDByDesk.removeValue(forKey: sourceDesk.id)
             }
-            storage.recentlyRemovedBoards.insert(
-                RecentlyRemovedBoard(
-                    board: board,
-                    sideBoard: removed.first,
-                    sourceDeskID: sourceDeskID,
-                    sourceBoardIndex: indices.board
-                ),
-                at: 0
-            )
+            storage.recentlyRemovedBoards.insert(removal.historyEntry, at: 0)
             if recentlyRemovedBoards.count > Self.maximumRecentlyRemovedBoardCount {
                 storage.recentlyRemovedBoards.removeLast()
             }
-            for removedBoard in groupBoards {
+            for removedBoard in removal.removedBoards {
                 if removedBoard.isInspection, let targetBoardID = removedBoard.sideBoardTargetBoardID {
                     webRuntimes[targetBoardID]?.stopInspection()
                 }
@@ -410,7 +398,8 @@ extension DenController {
             }
 
             onWindowEffect?(
-                .overviewBoardRemoved(boardID: board.id, deskID: sourceDeskID, oldIndex: indices.board))
+                .overviewBoardRemoved(
+                    boardID: boardID, deskID: sourceDesk.id, oldIndex: removal.historyEntry.sourceBoardIndex))
             invalidateReferences(toRemovedBoardIDs: removedIDs)
             save()
         }
