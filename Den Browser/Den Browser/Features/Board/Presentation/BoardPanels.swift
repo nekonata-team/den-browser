@@ -144,6 +144,19 @@ struct OpenBoardPanel: View {
                             .help("Save as Essential…")
                             .accessibilityLabel("Save as Essential…")
                         }
+
+                        Button(role: .destructive) {
+                            controller.removeRecentItem(item)
+                        } label: {
+                            Image(systemSymbol: .trash)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .frame(width: 20, height: 20)
+                                .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .help("Remove from Recent")
+                        .accessibilityLabel("Remove from Recent")
                     }
                     .padding(.horizontal, 8)
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -162,6 +175,14 @@ struct OpenBoardPanel: View {
                             } label: {
                                 Label("Save as Essential…", systemSymbol: .sparkles)
                             }
+                        }
+
+                        Divider()
+
+                        Button(role: .destructive) {
+                            controller.removeRecentItem(item)
+                        } label: {
+                            Label("Remove from Recent", systemSymbol: .trash)
                         }
                     }
                 }
@@ -184,6 +205,11 @@ struct OpenBoardPanel: View {
             openBoard.message = nil
             if isFocused {
                 TextInputComposition.syncActiveFieldEditor(to: newValue)
+            }
+        }
+        .onChange(of: filteredRecentItems) { _, items in
+            if let selectedRecentItemID, !items.contains(selectedRecentItemID) {
+                self.selectedRecentItemID = nil
             }
         }
         .onExitCommand {

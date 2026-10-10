@@ -152,6 +152,71 @@ struct DenControllerRecentTests {
             })
     }
 
+    @Test(arguments: [
+        RecentItem.url(URL(string: "https://example.com/")!, title: "Example"),
+        .search("swift observation"),
+        .terminal(workingDirectory: "/tmp"),
+        .zellij(sessionName: "project"),
+        .zmx(sessionName: "project"),
+    ])
+    func removeRecentItemPersistsOnlyRemainingItems(_ item: RecentItem) {
+        // Arrange
+        let remaining: [RecentItem] = [.search("first"), .search("last")]
+        var savedItems: [RecentItem] = []
+        withTestController(
+            recentItems: [remaining[0], item, remaining[1]],
+            onRecentItemsSave: {
+                savedItems = $0
+                return true
+            },
+            body: { controller in
+                let originalState = controller.state
+
+                // Act
+                controller.removeRecentItem(item)
+
+                // Assert
+                #expect(controller.recentItems == remaining)
+                #expect(savedItems == remaining)
+                #expect(controller.state == originalState)
+            })
+    }
+
+    @Test func failedRecentRemovalRestoresItemsAndOrder() {
+        // Arrange
+        let original: [RecentItem] = [.search("first"), .search("remove"), .search("last")]
+        withTestController(
+            recentItems: original,
+            onRecentItemsSave: { _ in false },
+            body: { controller in
+                // Act
+                controller.removeRecentItem(original[1])
+
+                // Assert
+                #expect(controller.recentItems == original)
+            })
+    }
+
+    @Test func removingAbsentRecentItemDoesNotSave() {
+        // Arrange
+        let original: [RecentItem] = [.search("existing")]
+        var didSave = false
+        withTestController(
+            recentItems: original,
+            onRecentItemsSave: { _ in
+                didSave = true
+                return true
+            },
+            body: { controller in
+                // Act
+                controller.removeRecentItem(.search("absent"))
+
+                // Assert
+                #expect(controller.recentItems == original)
+                #expect(!didSave)
+            })
+    }
+
     @Test func failedRecentSaveRestoresItemsWithoutBlockingBoardCreation() {
         let original: [RecentItem] = [.search("existing")]
         withTestController(

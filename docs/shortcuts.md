@@ -16,6 +16,8 @@ Available globally or while focused in a Sheet.
 
 When the Profile panel is open, type to filter Profiles, use `Up` / `Down` to select one, press `Return` to open it, or press `Escape` to close the panel.
 
+In Open Board, remove an individual Recent Item with the trash icon to the right of its Essential control or with **Remove from Recent** in its context menu. Removal requires no confirmation and leaves existing Boards and Essentials unchanged.
+
 | Shortcut | Action |
 | --- | --- |
 | `Control` + `Command` + `P` | Open Profile panel |

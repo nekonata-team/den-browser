@@ -155,6 +155,15 @@ extension DenController {
         return fileManager.fileExists(atPath: path, isDirectory: &isDirectory) && isDirectory.boolValue
     }
 
+    func removeRecentItem(_ item: RecentItem) {
+        guard recentItems.contains(item) else { return }
+        let original = recentItems
+        storage.recentItems.removeAll { $0 == item }
+        if saveStateAndRecentItems() == false {
+            storage.recentItems = original
+        }
+    }
+
     func clearRecent() {
         guard !recentItems.isEmpty else { return }
         let original = recentItems
