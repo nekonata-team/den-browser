@@ -9,6 +9,38 @@ import Testing
 @MainActor
 @Suite(.serialized)
 struct AppPreferencesTests {
+    @Test(arguments: [nil, "unknown"] as [String?])
+    func deskSwitcherAlignmentDefaultsToLeft(storedValue: String?) throws {
+        // Arrange
+        let suiteName = "DeskSwitcherAlignmentDefaultsTests-\(UUID().uuidString)"
+        let defaults = try #require(UserDefaults(suiteName: suiteName))
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        defaults.set(storedValue, forKey: "preferences.appearance.desk-switcher.alignment")
+
+        // Act
+        let preferences = AppPreferences(defaults: defaults)
+
+        // Assert
+        #expect(preferences.deskSwitcherAlignment == .left)
+    }
+
+    @Test func deskSwitcherAlignmentUpdatesAndPersists() throws {
+        // Arrange
+        let suiteName = "DeskSwitcherAlignmentPersistTests-\(UUID().uuidString)"
+        let defaults = try #require(UserDefaults(suiteName: suiteName))
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let preferences = AppPreferences(defaults: defaults)
+
+        for alignment in DeskSwitcherAlignment.allCases {
+            // Act
+            preferences.setDeskSwitcherAlignment(alignment)
+
+            // Assert
+            #expect(preferences.deskSwitcherAlignment == alignment)
+            #expect(AppPreferences(defaults: defaults).deskSwitcherAlignment == alignment)
+        }
+    }
+
     @Test func automaticPictureInPictureDefaultsToDisabled() throws {
         // Arrange
         let suiteName = "AutomaticPictureInPictureDefaultsTests-\(UUID().uuidString)"

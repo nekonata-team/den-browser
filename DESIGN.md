@@ -16,6 +16,8 @@ Den controls feel like a calm desk laid over live web sheets. Web content remain
   Center using the group's full width, clamped to the scroll bounds.
 - Use only continuous 8pt, 12pt, and 18pt corner radii: small controls use 8pt, inner cards and inputs use 12pt, and Boards, panels, and Overview use 18pt.
 - Keep the Desk switcher in its own row at the top of the detail column, aligned with the horizontal Board Strip.
+  Align the Desk list and New Desk button together within the detail column when they fit, using the Appearance setting
+  (Left by default, or Center); otherwise allow horizontal scrolling.
   Use a native split view for the on-demand Board Rail sidebar and the horizontal Board Strip so the switcher and
   Strip move together when the Rail opens. Keep the Rail open when focus changes, let it take width from the Strip
   without changing its height or surface colors, and keep the Board header above Sheet with the Sheet stack indicator

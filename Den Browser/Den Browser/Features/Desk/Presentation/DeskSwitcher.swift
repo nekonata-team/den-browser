@@ -61,6 +61,7 @@ struct DeskSwitcher: View {
                     value: controller.state.desks.map(\.id)
                 )
             }
+            .defaultScrollAnchor(preferences.deskSwitcherAlignment == .center ? .center : .leading, for: .alignment)
             .scrollPosition($scrollPosition, anchor: .center)
             .coordinateSpace(name: DeskSwitcherCoordinateSpace.name)
             .scrollIndicators(.never)

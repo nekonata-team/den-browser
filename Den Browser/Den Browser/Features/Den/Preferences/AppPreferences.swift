@@ -4,6 +4,20 @@ import DenPresentationModels
 import Foundation
 import Observation
 
+enum DeskSwitcherAlignment: String, CaseIterable, Identifiable {
+    case left
+    case center
+
+    var id: String { rawValue }
+
+    var label: String {
+        switch self {
+        case .left: "Left"
+        case .center: "Center"
+        }
+    }
+}
+
 @MainActor
 @Observable
 final class AppPreferences {
@@ -19,6 +33,7 @@ final class AppPreferences {
     private(set) var shortcutOverrides: [ConfigurableShortcut: ShortcutOverride]
     private(set) var deskNumberBinding: ShortcutBinding?
     private(set) var motionPreference: MotionPreference
+    private(set) var deskSwitcherAlignment: DeskSwitcherAlignment
     private(set) var uBOLiteEnabled: Bool
     private(set) var boardCentering: FocusedBoardCentering
     private(set) var externalLinkDestination: ExternalLinkDestination
@@ -39,6 +54,7 @@ final class AppPreferences {
     private static let deskNumberShortcutDisabledKey =
         "preferences.shortcuts.desk-number.disabled"
     private static let motionKey = "preferences.appearance.motion.mode"
+    private static let deskSwitcherAlignmentKey = "preferences.appearance.desk-switcher.alignment"
     private static let uBOLiteEnabledKey = "preferences.content-blocking.ubolite.enabled"
     private static let boardCenteringKey = "preferences.appearance.board-centering.mode"
     private static let externalLinkDestinationKey = "preferences.external-links.destination"
@@ -60,6 +76,9 @@ final class AppPreferences {
         motionPreference =
             defaults.string(forKey: Self.motionKey).flatMap(MotionPreference.init(rawValue:))
             ?? .followSystem
+        deskSwitcherAlignment =
+            defaults.string(forKey: Self.deskSwitcherAlignmentKey).flatMap(DeskSwitcherAlignment.init(rawValue:))
+            ?? .left
         uBOLiteEnabled = defaults.bool(forKey: Self.uBOLiteEnabledKey)
         boardCentering =
             defaults.string(forKey: Self.boardCenteringKey).flatMap(FocusedBoardCentering.init(rawValue:))
@@ -119,6 +138,11 @@ final class AppPreferences {
     func setMotionPreference(_ preference: MotionPreference) {
         motionPreference = preference
         defaults.set(preference.rawValue, forKey: Self.motionKey)
+    }
+
+    func setDeskSwitcherAlignment(_ alignment: DeskSwitcherAlignment) {
+        deskSwitcherAlignment = alignment
+        defaults.set(alignment.rawValue, forKey: Self.deskSwitcherAlignmentKey)
     }
 
     func setBoardCentering(_ mode: FocusedBoardCentering) {

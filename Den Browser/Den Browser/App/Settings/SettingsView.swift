@@ -372,6 +372,21 @@ private struct AppearanceSettingsView: View {
 
     var body: some View {
         SettingsForm {
+            Section("Desk Switcher") {
+                Picker("Alignment", selection: deskSwitcherAlignmentBinding) {
+                    ForEach(DeskSwitcherAlignment.allCases) { alignment in
+                        Text(alignment.label).tag(alignment)
+                    }
+                }
+                .pickerStyle(.radioGroup)
+
+                SettingsHelpText {
+                    Text(
+                        "Align the Desk list and New Desk button within the work area when they fit. "
+                            + "Applies immediately across Profiles.")
+                }
+            }
+
             Section("Board Centering") {
                 Picker("Centering", selection: boardCenteringBinding) {
                     ForEach(FocusedBoardCentering.allCases) { mode in
@@ -443,6 +458,14 @@ private struct AppearanceSettingsView: View {
                     Text(drawerStyleDescription)
                 }
             }
+        }
+    }
+
+    private var deskSwitcherAlignmentBinding: Binding<DeskSwitcherAlignment> {
+        Binding {
+            preferences.deskSwitcherAlignment
+        } set: { alignment in
+            preferences.setDeskSwitcherAlignment(alignment)
         }
     }
 
