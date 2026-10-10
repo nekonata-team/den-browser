@@ -245,13 +245,23 @@ struct DenView<Header: View>: View {
             panelOverlay(newDeskPanel)
         case .deskPresetManagement:
             panelOverlay(
-                DeskPresetManagementPanel(isStandalone: true, profileColor: profileColor) {
+                DeskPresetManagementPanel(
+                    isStandalone: true, profileColor: profileColor,
+                    presets: controller.deskPresets,
+                    renamePreset: windowModel.deskPresetActions.rename,
+                    requestDeletion: windowModel.deskPresetActions.requestDeletion
+                ) {
                     windowModel.hideNewDeskPanel(exitsDenMode: true)
                 })
         case .boardWidth:
             panelOverlay(boardWidthPanel)
         case .saveDeskPreset:
-            panelOverlay(SaveDeskPresetPanel())
+            panelOverlay(
+                SaveDeskPresetPanel(
+                    initialLabel: controller.focusedDesk?.label ?? "",
+                    previewBoards: DeskPresetBoard.capture(from: controller.focusedDesk?.boards ?? []),
+                    savePreset: windowModel.deskPresetActions.save,
+                    onClose: { windowModel.hideSaveDeskPresetPanel() }))
         case .renameBoard:
             panelOverlay(RenameBoardPanel())
         case .renameDesk:

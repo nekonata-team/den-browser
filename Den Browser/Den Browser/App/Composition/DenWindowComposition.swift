@@ -131,6 +131,10 @@ final class DenWindowComposition {
                     return nil
                 },
                 cancelDuplication: { controller.cancelZmxDuplicationRequest() }),
+            deskPresetActions: DeskPresetActions(
+                save: { controller.saveFocusedDeskAsPreset(label: $0) },
+                rename: { controller.renameDeskPreset($0, to: $1) },
+                requestDeletion: { controller.requestDeskPresetDeletion($0) }),
             feedbackDuration: feedbackDuration)
         self.model = model
         overview.onDismiss = { [weak model] in model?.hideOverview() }

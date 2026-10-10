@@ -145,6 +145,7 @@ public final class DenWindowModel {
     @ObservationIgnored let inputs: Inputs
     @ObservationIgnored let windowActions: WindowActions
     @ObservationIgnored let boardActions: BoardActions
+    @ObservationIgnored public let deskPresetActions: DeskPresetActions
     @ObservationIgnored let zmxActions: ZmxActions
     @ObservationIgnored private var feedbackTask: Task<Void, Never>?
     @ObservationIgnored private var lastReceivedFeedbackID: UUID?
@@ -163,6 +164,7 @@ public final class DenWindowModel {
         windowActions: WindowActions,
         boardActions: BoardActions,
         zmxActions: ZmxActions,
+        deskPresetActions: DeskPresetActions,
         feedbackDuration: Duration = .seconds(5)
     ) {
         self.overview = overview
@@ -178,6 +180,7 @@ public final class DenWindowModel {
         self.windowActions = windowActions
         self.boardActions = boardActions
         self.zmxActions = zmxActions
+        self.deskPresetActions = deskPresetActions
         self.feedbackDuration = feedbackDuration
     }
 

@@ -104,7 +104,12 @@ struct NewDeskPanel: View {
         .accessibilityHidden(isManagementPresented)
         .overlay {
             if isManagementPresented {
-                DeskPresetManagementPanel(isStandalone: false, profileColor: profileColor) {
+                DeskPresetManagementPanel(
+                    isStandalone: false, profileColor: profileColor,
+                    presets: controller.deskPresets,
+                    renamePreset: windowModel.deskPresetActions.rename,
+                    requestDeletion: windowModel.deskPresetActions.requestDeletion
+                ) {
                     isManagementPresented = false
                     DispatchQueue.main.async { isSearchFocused = true }
                 }
@@ -264,8 +269,10 @@ struct NewDeskPanel: View {
 }
 
 struct SaveDeskPresetPanel: View {
-    @Environment(DenController.self) private var controller
-    @Environment(DenWindowModel.self) private var windowModel
+    let initialLabel: String
+    let previewBoards: [DeskPresetBoard]
+    let savePreset: (String) -> DeskPresetSaveResult
+    let onClose: () -> Void
     @State private var label = ""
     @State private var message: String?
     @FocusState private var isFocused: Bool
@@ -285,8 +292,7 @@ struct SaveDeskPresetPanel: View {
             .textFieldStyle(.roundedBorder)
             .focused($isFocused)
             .onSubmit { TextInputComposition.performUnlessActive(save) }
-            DeskPresetPreview(
-                boards: DeskPresetBoard.capture(from: controller.focusedDesk?.boards ?? []))
+            DeskPresetPreview(boards: previewBoards)
             HStack {
                 if let message {
                     DenValidationMessage(message)
@@ -301,17 +307,17 @@ struct SaveDeskPresetPanel: View {
         }
         .denPanel()
         .onAppear {
-            label = controller.focusedDesk?.label ?? ""
+            label = initialLabel
             message = nil
             DispatchQueue.main.async { isFocused = true }
         }
-        .onExitCommand { windowModel.hideSaveDeskPresetPanel() }
+        .onExitCommand { onClose() }
     }
 
     private func save() {
-        switch controller.saveFocusedDeskAsPreset(label: label) {
+        switch savePreset(label) {
         case .created:
-            windowModel.hideSaveDeskPresetPanel()
+            onClose()
         case .replacementPending:
             message = nil
         case .invalidLabel:

@@ -71,6 +71,12 @@ shared state source, and connects Runtime operations, persistence, and window ef
 `BoardOpening` and `DrawerPlacement` also own their create-before-record/discard sequences;
 App supplies the concrete operations. Application has no dependency on Presentation.
 
+Personal Desk Preset management uses `DeskPresetOperations` in DenApplication for validation,
+shared-state updates, and persistence. App supplies the persistence function; Controller translates
+outcomes into confirmation and feedback. The management and save panels receive Preset values and
+narrow actions from App composition, without a Controller reference. Presets remain in the Profile's
+existing state source; the native resource adapter exposes their collection read-only.
+
 Preference value types follow their meaning: `SearchEngine` and `ExternalLinkDestination` belong
 to Domain, while `DrawerStyle` belongs to DenPresentationModels. `AppPreferences` owns their
 persisted selections.

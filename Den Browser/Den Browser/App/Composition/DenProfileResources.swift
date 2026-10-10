@@ -10,14 +10,17 @@ final class DenProfileResources {
     let data: DenStateStore
     @ObservationIgnored private let writer: DenStateWriter
 
+    var deskPresetOperations: DeskPresetOperations {
+        DeskPresetOperations(state: data, writer: writer, persist: onDeskPresetsSave ?? { _ in false })
+    }
+
     var state: DenState {
         get { data.snapshot.den }
         set { writer.update { $0.den = newValue } }
     }
 
     var deskPresets: [PersonalDeskPreset] {
-        get { data.snapshot.deskPresets }
-        set { writer.update { $0.deskPresets = newValue } }
+        data.snapshot.deskPresets
     }
 
     var recentItems: [RecentItem] {

@@ -3,61 +3,31 @@ import DenDomain
 import DenPresentationModels
 import Foundation
 
-enum DeskPresetSaveResult: Equatable {
-    case created
-    case replacementPending
-    case invalidLabel
-    case emptyDesk
-    case reservedLabel
-}
-
-enum DeskPresetRenameResult: Equatable {
-    case renamed
-    case unchanged
-    case invalidLabel
-    case reservedLabel
-    case duplicateLabel
-    case unavailable
-}
-
 extension DenController {
     func saveFocusedDeskAsPreset(label: String) -> DeskPresetSaveResult {
-        let label = label.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !label.isEmpty else { return .invalidLabel }
-        guard let desk = focusedDesk, desk.boards.contains(where: { !$0.isTutorial }) else { return .emptyDesk }
-        guard !BuiltInDeskPreset.allCases.contains(where: { samePresetLabel($0.label, label) }) else {
-            return .reservedLabel
-        }
-
-        if let existing = deskPresets.first(where: { samePresetLabel($0.label, label) }) {
-            onWindowEffect?(
-                .requestConfirmation(
-                    .replaceDeskPreset(
-                        PersonalDeskPreset(id: existing.id, label: existing.label, desk: desk))))
+        switch storage.deskPresetOperations.save(label: label, desk: focusedDesk) {
+        case .invalidLabel: return .invalidLabel
+        case .emptyDesk: return .emptyDesk
+        case .reservedLabel: return .reservedLabel
+        case .replacementRequired(let replacement):
+            onWindowEffect?(.requestConfirmation(.replaceDeskPreset(replacement)))
             return .replacementPending
+        case .created(let persisted):
+            onWindowEffect?(.exitDenMode)
+            reportPresetSave(persisted)
+            return .created
         }
-
-        storage.deskPresets.insert(PersonalDeskPreset(label: label, desk: desk), at: 0)
-        onWindowEffect?(.exitDenMode)
-        if saveDeskPresets() {
-            reportFeedback("Saved Desk Preset.", severity: .success)
-        } else {
-            reportFeedback("Could not save Desk Preset.", severity: .error)
-        }
-        return .created
     }
 
     @discardableResult
     func replaceDeskPreset(_ replacement: PersonalDeskPreset) -> Bool {
-        guard let index = deskPresets.firstIndex(where: { $0.id == replacement.id }) else { return false }
-        storage.deskPresets[index] = replacement
-        onWindowEffect?(.exitDenMode)
-        if saveDeskPresets() {
-            reportFeedback("Saved Desk Preset.", severity: .success)
-        } else {
-            reportFeedback("Could not save Desk Preset.", severity: .error)
+        switch storage.deskPresetOperations.replace(replacement) {
+        case .unavailable: return false
+        case .replaced(let persisted):
+            onWindowEffect?(.exitDenMode)
+            reportPresetSave(persisted)
+            return true
         }
-        return true
     }
 
     func requestDeskPresetDeletion(_ id: UUID) {
@@ -65,33 +35,28 @@ extension DenController {
         onWindowEffect?(.requestConfirmation(.deleteDeskPreset(preset)))
     }
 
-    func renameDeskPreset(_ id: UUID, to rawLabel: String) -> DeskPresetRenameResult {
-        let label = rawLabel.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !label.isEmpty else { return .invalidLabel }
-        guard !BuiltInDeskPreset.allCases.contains(where: { samePresetLabel($0.label, label) }) else {
-            return .reservedLabel
+    func renameDeskPreset(_ id: UUID, to label: String) -> DeskPresetRenameResult {
+        switch storage.deskPresetOperations.rename(id, to: label) {
+        case .invalidLabel: return .invalidLabel
+        case .reservedLabel: return .reservedLabel
+        case .duplicateLabel: return .duplicateLabel
+        case .unavailable: return .unavailable
+        case .unchanged: return .unchanged
+        case .renamed(let persisted):
+            if !persisted { reportFeedback("Could not rename Desk Preset.", severity: .error) }
+            return .renamed
         }
-        guard let index = deskPresets.firstIndex(where: { $0.id == id }) else { return .unavailable }
-        guard !deskPresets.contains(where: { $0.id != id && samePresetLabel($0.label, label) }) else {
-            return .duplicateLabel
-        }
-        guard deskPresets[index].label != label else { return .unchanged }
-
-        storage.deskPresets[index].label = label
-        if !saveDeskPresets() {
-            reportFeedback("Could not rename Desk Preset.", severity: .error)
-        }
-        return .renamed
     }
 
     func deleteDeskPreset(_ id: UUID) {
-        storage.deskPresets.removeAll { $0.id == id }
-        if !saveDeskPresets() {
+        if !storage.deskPresetOperations.delete(id) {
             reportFeedback("Could not delete Desk Preset.", severity: .error)
         }
     }
 
-    private func samePresetLabel(_ lhs: String, _ rhs: String) -> Bool {
-        lhs.compare(rhs, options: [.caseInsensitive, .widthInsensitive]) == .orderedSame
+    private func reportPresetSave(_ persisted: Bool) {
+        reportFeedback(
+            persisted ? "Saved Desk Preset." : "Could not save Desk Preset.",
+            severity: persisted ? .success : .error)
     }
 }
