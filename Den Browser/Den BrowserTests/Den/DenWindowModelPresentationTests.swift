@@ -12,11 +12,35 @@ import Testing
 @MainActor
 @Suite(.serialized)
 struct DenWindowModelPresentationTests {
+    @Test func boardRailSettingRemainsSharedAndObservable() {
+        // Arrange
+        withTestController { controller in
+            let first = DenWindowComposition(controller: controller).model
+            let second = DenWindowComposition(controller: controller).model
+            let isPresented = !first.isBoardRailPresented
+            let changed = Mutex(false)
+            withObservationTracking {
+                _ = second.isBoardRailPresented
+            } onChange: {
+                changed.withLock { $0 = true }
+            }
+
+            // Act
+            first.isBoardRailPresented = isPresented
+
+            // Assert
+            #expect(controller.preferences.isBoardRailPresented == isPresented)
+            #expect(first.isBoardRailPresented == isPresented)
+            #expect(second.isBoardRailPresented == isPresented)
+            #expect(changed.withLock { $0 })
+        }
+    }
+
     @Test func boardWidthKeepsSharedUpdatesObservable() {
         // Arrange
         let target = board("Board")
         let source = desk("Desk", boards: [target], focusedBoardID: target.id)
-        withTestWindowModel(desks: [source]) { windowModel in
+        withTestWindowModel(desks: [source]) { windowModel, controller in
             let changed = Mutex(false)
             withObservationTracking {
                 _ = windowModel.defaultBoardWidth
@@ -25,7 +49,7 @@ struct DenWindowModelPresentationTests {
             }
 
             // Act
-            windowModel.controller.adjustBoardWidth(target.id, by: 80)
+            controller.adjustBoardWidth(target.id, by: 80)
 
             // Assert
             #expect(changed.withLock { $0 })
@@ -190,7 +214,7 @@ struct DenWindowModelPresentationTests {
     @Test func openBoardPanelKeepsDraftAndShowsConfigurationFailure() {
         // Arrange
         let source = desk("Desk")
-        withTestWindowModel(desks: [source]) { windowModel in
+        withTestWindowModel(desks: [source]) { windowModel, controller in
             windowModel.showOpenBoardPanel()
             windowModel.openBoard.input = ":zmx project"
 
@@ -201,7 +225,7 @@ struct DenWindowModelPresentationTests {
             #expect(windowModel.isOpenBoardPanelPresented)
             #expect(windowModel.openBoard.input == ":zmx project")
             #expect(windowModel.openBoard.message == "Set an absolute zmx executable path in Settings > Terminal.")
-            #expect(windowModel.controller.focusedDesk?.boards.isEmpty == true)
+            #expect(controller.focusedDesk?.boards.isEmpty == true)
         }
     }
 
@@ -210,7 +234,7 @@ struct DenWindowModelPresentationTests {
         let first = board("First")
         let second = board("Second")
         let source = desk("Desk", boards: [first, second], focusedBoardID: second.id)
-        try withTestWindowModel(desks: [source]) { windowModel in
+        try withTestWindowModel(desks: [source]) { windowModel, controller in
             let item = RecentItem.url(URL(string: "https://example.com/recent")!)
             windowModel.showOpenBoardPanel(afterBoardID: first.id)
 
@@ -218,11 +242,11 @@ struct DenWindowModelPresentationTests {
             windowModel.openBoard.submit(item.displayText, preferredWidth: 640)
 
             // Assert
-            let opened = try #require(windowModel.controller.focusedBoard)
+            let opened = try #require(controller.focusedBoard)
             #expect(opened.currentSheetURL == URL(string: item.displayText))
             #expect(opened.width == 640)
-            #expect(windowModel.controller.focusedDesk?.boards.map(\.id) == [first.id, opened.id, second.id])
-            #expect(windowModel.controller.recentItems.first == item)
+            #expect(controller.focusedDesk?.boards.map(\.id) == [first.id, opened.id, second.id])
+            #expect(controller.recentItems.first == item)
             #expect(!windowModel.isOpenBoardPanelPresented)
             #expect(windowModel.openBoard.message == nil)
         }
@@ -489,8 +513,8 @@ struct DenWindowModelPresentationTests {
     }
 
     @Test func escapePassesThroughToSheetInput() throws {
-        try withTestWindowModel(desks: [desk("Desk")]) { windowModel in
-            let controller = windowModel.controller
+        try withTestWindowModel(desks: [desk("Desk")]) { windowModel, controller in
+
             let event = try #require(
                 NSEvent.keyEvent(
                     with: .keyDown,
@@ -511,8 +535,8 @@ struct DenWindowModelPresentationTests {
     }
 
     @Test func escapeExitsDenMode() throws {
-        try withTestWindowModel(desks: [desk("Desk")]) { windowModel in
-            let controller = windowModel.controller
+        try withTestWindowModel(desks: [desk("Desk")]) { windowModel, controller in
+
             windowModel.isDenMode = true
             let event = try #require(
                 NSEvent.keyEvent(
@@ -537,8 +561,8 @@ struct DenWindowModelPresentationTests {
         let first = desk("First")
         let second = desk("Second")
         let third = desk("Third")
-        withTestWindowModel(desks: [first, second, third]) { windowModel in
-            let controller = windowModel.controller
+        withTestWindowModel(desks: [first, second, third]) { windowModel, controller in
+
             // 1. focusDesk(number:) exits DenMode on actual switch
             windowModel.isDenMode = true
             controller.focusDesk(number: 2)
@@ -590,8 +614,8 @@ struct DenWindowModelPresentationTests {
 
     @Test func boardRenamingAndCustomLabelStickiness() {
         let googleBoard = board("Google", url: "https://google.com")
-        withTestWindowModel(desks: [desk("Main", boards: [googleBoard])]) { windowModel in
-            let controller = windowModel.controller
+        withTestWindowModel(desks: [desk("Main", boards: [googleBoard])]) { windowModel, controller in
+
             // 1. Initially, customLabel is nil, displayName returns page title
             let boardID = googleBoard.id
             guard
@@ -645,8 +669,8 @@ struct DenWindowModelPresentationTests {
     }
 
     @Test func controlCommaTogglesDenMode() throws {
-        try withTestWindowModel(desks: [desk("Desk")]) { windowModel in
-            let controller = windowModel.controller
+        try withTestWindowModel(desks: [desk("Desk")]) { windowModel, controller in
+
             let event = try #require(
                 NSEvent.keyEvent(
                     with: .keyDown,
@@ -669,8 +693,8 @@ struct DenWindowModelPresentationTests {
     }
 
     @Test func controlPeriodPassesThroughToSheetInput() throws {
-        try withTestWindowModel(desks: [desk("Desk")]) { windowModel in
-            let controller = windowModel.controller
+        try withTestWindowModel(desks: [desk("Desk")]) { windowModel, controller in
+
             let event = try #require(
                 NSEvent.keyEvent(
                     with: .keyDown,
@@ -692,8 +716,9 @@ struct DenWindowModelPresentationTests {
 
     @Test func commandOptionArrowsNavigateBoardsWithoutEnteringDenMode() throws {
         let boards = [board("First"), board("Second")]
-        try withTestWindowModel(desks: [desk("Desk", boards: boards, focusedBoardID: boards[0].id)]) { windowModel in
-            let controller = windowModel.controller
+        try withTestWindowModel(desks: [desk("Desk", boards: boards, focusedBoardID: boards[0].id)]) {
+            windowModel, controller in
+
             let right = try arrowEvent(.rightArrow, modifiers: [.command, .option])
             let left = try arrowEvent(.leftArrow, modifiers: [.command, .option])
 
@@ -709,8 +734,9 @@ struct DenWindowModelPresentationTests {
 
     @Test func shiftCommandOptionArrowsMoveFocusedBoardWithoutEnteringDenMode() throws {
         let boards = [board("First"), board("Second")]
-        try withTestWindowModel(desks: [desk("Desk", boards: boards, focusedBoardID: boards[0].id)]) { windowModel in
-            let controller = windowModel.controller
+        try withTestWindowModel(desks: [desk("Desk", boards: boards, focusedBoardID: boards[0].id)]) {
+            windowModel, controller in
+
             let right = try arrowEvent(.rightArrow, modifiers: [.command, .option, .shift])
             let left = try arrowEvent(.leftArrow, modifiers: [.command, .option, .shift])
 
@@ -725,8 +751,8 @@ struct DenWindowModelPresentationTests {
     }
 
     @Test func commandQPassesThroughFromDenMode() throws {
-        try withTestWindowModel(desks: [desk("Desk")]) { windowModel in
-            let controller = windowModel.controller
+        try withTestWindowModel(desks: [desk("Desk")]) { windowModel, controller in
+
             windowModel.isDenMode = true
             let event = try #require(
                 NSEvent.keyEvent(
@@ -749,8 +775,8 @@ struct DenWindowModelPresentationTests {
 
     @Test func denModeMaximizesAndCentersFocusedBoardWithoutChangingDenState() throws {
         let current = board("Current", width: 520)
-        try withTestWindowModel(desks: [desk("Desk", boards: [current])]) { windowModel in
-            let controller = windowModel.controller
+        try withTestWindowModel(desks: [desk("Desk", boards: [current])]) { windowModel, controller in
+
             windowModel.isDenMode = true
             let stateBeforeCommands = controller.state
             let maximize = try #require(
@@ -847,8 +873,8 @@ struct DenWindowModelPresentationTests {
 
     @Test func denModeBoardWidthPanelAdjustsAllBoardsAndAcceptsFitSelectionKeys() throws {
         let boards = [board("First"), board("Second")]
-        try withTestWindowModel(desks: [desk("Desk", boards: boards)]) { windowModel in
-            let controller = windowModel.controller
+        try withTestWindowModel(desks: [desk("Desk", boards: boards)]) { windowModel, controller in
+
             windowModel.isDenMode = true
             windowModel.updateBoardLayout(availableWidth: 1_180, spacing: 10)
             let open = try #require(
@@ -991,7 +1017,7 @@ struct DenWindowModelPresentationTests {
 
     @Test func saveEssentialValidatesInputAndUpdatesPreferences() {
         withTestController { controller in
-            withTestWindowModel(controller: controller) { windowModel in
+            withTestWindowModel(controller: controller) { windowModel, _ in
                 windowModel.showSaveEssentialPanel(name: "Test", key: "", input: "https://test.com")
                 #expect(windowModel.isSaveEssentialPanelPresented)
 
@@ -1018,8 +1044,8 @@ struct DenWindowModelPresentationTests {
     }
 
     @Test func saveFocusedBoardAsEssentialShowsToastWhenNoBoardFocused() {
-        withTestWindowModel(desks: [desk("Empty")]) { windowModel in
-            let controller = windowModel.controller
+        withTestWindowModel(desks: [desk("Empty")]) { windowModel, controller in
+
             windowModel.saveFocusedBoardAsEssential()
             #expect(!windowModel.isSaveEssentialPanelPresented)
             #expect(controller.latestFeedback?.message == "No focused board.")

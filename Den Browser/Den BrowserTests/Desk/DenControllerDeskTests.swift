@@ -12,8 +12,8 @@ import Testing
 struct DenControllerDeskTests {
 
     @Test func createsEmptyDeskAfterFocusedDesk() {
-        withTestWindowModel(desks: [desk("First"), desk("Second")]) { windowModel in
-            let controller = windowModel.controller
+        withTestWindowModel(desks: [desk("First"), desk("Second")]) { windowModel, controller in
+
             windowModel.isDenMode = true
             controller.createDesk(label: "  Writing  ", preset: .empty)
 
@@ -186,8 +186,8 @@ struct DenControllerDeskTests {
     @Test func cancellingDeskReplacementKeepsDeskAndPanel() {
         let existing = board("Existing")
         let original = desk("Original", boards: [existing])
-        withTestWindowModel(desks: [original]) { windowModel in
-            let controller = windowModel.controller
+        withTestWindowModel(desks: [original]) { windowModel, controller in
+
             windowModel.showReplaceDeskPanel()
             #expect(controller.replaceFocusedDesk(label: "AI", preset: .gemini) == .confirmationPending)
 
@@ -201,8 +201,8 @@ struct DenControllerDeskTests {
 
     @Test func replacingEmptyDeskAppliesImmediatelyAndEmptyPresetIsUnavailable() {
         let empty = desk("Empty")
-        withTestWindowModel(desks: [empty]) { windowModel in
-            let controller = windowModel.controller
+        withTestWindowModel(desks: [empty]) { windowModel, controller in
+
             windowModel.showReplaceDeskPanel()
 
             #expect(controller.replaceFocusedDesk(label: "Still Empty", preset: .empty) == .unavailable)
@@ -220,8 +220,8 @@ struct DenControllerDeskTests {
         let first = desk("First")
         let empty = desk("Empty")
         let third = desk("Third")
-        withTestWindowModel(desks: [first, empty, third]) { windowModel in
-            let controller = windowModel.controller
+        withTestWindowModel(desks: [first, empty, third]) { windowModel, controller in
+
             controller.focusDesk(empty.id)
             windowModel.isDenMode = true
             controller.deleteFocusedDesk()
@@ -248,8 +248,8 @@ struct DenControllerDeskTests {
         let secondBoard = board("SecondBoard")
         let second = desk("Second", boards: [secondBoard])
         let third = desk("Third")
-        withTestWindowModel(desks: [first, second, third]) { windowModel in
-            let controller = windowModel.controller
+        withTestWindowModel(desks: [first, second, third]) { windowModel, controller in
+
             controller.focusDesk(second.id)
             controller.deleteFocusedDesk()
             if case let .deleteDesk(pending)? = windowModel.pendingConfirmation {
@@ -441,8 +441,8 @@ struct DenControllerDeskTests {
         let board = board("Board")
         let populated = desk("Populated", boards: [board])
         let empty = desk("Empty")
-        withTestWindowModel(desks: [populated, empty]) { windowModel in
-            let controller = windowModel.controller
+        withTestWindowModel(desks: [populated, empty]) { windowModel, controller in
+
             controller.deleteFocusedDesk()
 
             #expect(controller.state.desks.count == 2)
@@ -463,8 +463,8 @@ struct DenControllerDeskTests {
     @Test func confirmingDeskDeletionExitsDenModeAfterSuccessfulDeletion() {
         let populated = desk("Populated", boards: [board("Board")])
         let empty = desk("Empty")
-        withTestWindowModel(desks: [populated, empty]) { windowModel in
-            let controller = windowModel.controller
+        withTestWindowModel(desks: [populated, empty]) { windowModel, controller in
+
             windowModel.isDenMode = true
             controller.deleteFocusedDesk()
 
@@ -478,8 +478,8 @@ struct DenControllerDeskTests {
     @Test func cancellingDeskDeletionKeepsBoards() {
         let populated = desk("Populated", boards: [board("Board")])
         let empty = desk("Empty")
-        withTestWindowModel(desks: [populated, empty]) { windowModel in
-            let controller = windowModel.controller
+        withTestWindowModel(desks: [populated, empty]) { windowModel, controller in
+
             controller.deleteFocusedDesk()
             windowModel.cancelConfirmation()
 
@@ -492,8 +492,8 @@ struct DenControllerDeskTests {
         let board = board("Board")
         let populated = desk("Populated", boards: [board])
         let empty = desk("Empty")
-        withTestWindowModel(desks: [populated, empty]) { windowModel in
-            let controller = windowModel.controller
+        withTestWindowModel(desks: [populated, empty]) { windowModel, controller in
+
             let runtime = controller.webRuntime(for: board)
             controller.deleteFocusedDesk()
 
@@ -528,8 +528,8 @@ struct DenControllerDeskTests {
 
     @Test func lastDeskCannotBeDeleted() {
         let onlyDesk = desk("Only")
-        withTestWindowModel(desks: [onlyDesk]) { windowModel in
-            let controller = windowModel.controller
+        withTestWindowModel(desks: [onlyDesk]) { windowModel, controller in
+
             controller.deleteFocusedDesk()
 
             #expect(controller.state.desks.count == 1)
@@ -557,8 +557,8 @@ struct DenControllerDeskTests {
         let firstBoard = board("Google")
         let desk1 = desk("Main", boards: [firstBoard], focusedBoardID: firstBoard.id)
 
-        withTestWindowModel(desks: [desk1]) { windowModel in
-            let controller = windowModel.controller
+        withTestWindowModel(desks: [desk1]) { windowModel, controller in
+
             // 1. Enter Den Mode, show rename panel
             windowModel.isDenMode = true
             windowModel.showRenameDeskPanel()

@@ -89,8 +89,8 @@ struct DenControllerBoardTests {
 
     @Test func zellijBoardRequiresConfiguredAbsoluteExecutablePath() {
         let source = desk("Desk")
-        withTestWindowModel(desks: [source]) { windowModel in
-            let controller = windowModel.controller
+        withTestWindowModel(desks: [source]) { windowModel, controller in
+
             windowModel.showOpenBoardPanel()
             controller.openBoard(input: ":zellij")
 
@@ -106,8 +106,8 @@ struct DenControllerBoardTests {
             ["list"]: TerminalCommandResult(terminationStatus: 0, standardOutput: "")
         ])
         try await withTestWindowModel(desks: [source], terminalCommandRunner: runner) {
-            windowModel in
-            let controller = windowModel.controller
+            windowModel, controller in
+
             controller.preferences.setZmxPath("/opt/homebrew/bin/zmx")
 
             controller.openBoard(input: ":zmx project-a")
@@ -165,8 +165,8 @@ struct DenControllerBoardTests {
             ])
         await withTestWindowModel(
             desks: [source], terminalCommandRunner: commandRunner
-        ) { windowModel in
-            let controller = windowModel.controller
+        ) { windowModel, controller in
+
             controller.preferences.setZmxPath("/opt/homebrew/bin/zmx")
 
             windowModel.showZmxSessions(selectedSessionName: "den-vi")
@@ -219,8 +219,8 @@ struct DenControllerBoardTests {
         await withTestWindowModel(
             desks: [desk("Desk", boards: [existing], focusedBoardID: existing.id)],
             terminalCommandRunner: commandRunner
-        ) { windowModel in
-            let controller = windowModel.controller
+        ) { windowModel, controller in
+
             controller.preferences.setZmxPath("/opt/homebrew/bin/zmx")
             windowModel.showZmxSessions(selectedSessionName: "den-vi")
             await waitForZmxSessionLoad(windowModel)
@@ -273,8 +273,8 @@ struct DenControllerBoardTests {
                     standardOutput: "")
             ])
         try await withTestWindowModel(desks: [source], terminalCommandRunner: runner) {
-            windowModel in
-            let controller = windowModel.controller
+            windowModel, controller in
+
             controller.preferences.setZmxPath("/usr/bin/zmx")
 
             controller.duplicateFocusedBoardFromFirstSheet()
@@ -344,8 +344,8 @@ struct DenControllerBoardTests {
             ])
         await withTestWindowModel(
             desks: [source], terminalCommandRunner: commandRunner
-        ) { windowModel in
-            let controller = windowModel.controller
+        ) { windowModel, controller in
+
             controller.preferences.setZmxPath("/usr/bin/zmx")
 
             controller.duplicateFocusedBoard()
@@ -580,8 +580,8 @@ struct DenControllerBoardTests {
         let firstBoard = BoardState(label: "First", width: 520, currentSheetURL: nil)
         let secondBoard = BoardState(label: "Second", width: 520, currentSheetURL: nil)
         let source = desk("Desk", boards: [firstBoard, secondBoard], focusedBoardID: firstBoard.id)
-        withTestWindowModel(desks: [source]) { windowModel in
-            let controller = windowModel.controller
+        withTestWindowModel(desks: [source]) { windowModel, controller in
+
             controller.prepareBoardLinkFocus(firstBoard.id)
             #expect(windowModel.pendingBoardLinkFocus != nil)
             guard let firstIntent = windowModel.pendingBoardLinkFocus else { return }
@@ -601,8 +601,8 @@ struct DenControllerBoardTests {
     @Test func focusedBoardCreationEndsLinkFocusSuppression() throws {
         let source = BoardState(label: "Source", width: 520, currentSheetURL: nil)
         let desk = desk("Desk", boards: [source], focusedBoardID: source.id)
-        withTestWindowModel(desks: [desk]) { windowModel in
-            let controller = windowModel.controller
+        withTestWindowModel(desks: [desk]) { windowModel, controller in
+
             controller.prepareBoardLinkFocus(source.id)
             #expect(controller.createBoard(urlString: "https://focused.example", afterBoardID: source.id) != nil)
 
@@ -742,8 +742,8 @@ struct DenControllerBoardTests {
         let source = BoardState(label: "Source", width: 520, currentSheetURL: nil)
         let other = BoardState(label: "Other", width: 520, currentSheetURL: nil)
         let desk = desk("Desk", boards: [source, other], focusedBoardID: source.id)
-        try withTestWindowModel(desks: [desk]) { windowModel in
-            let controller = windowModel.controller
+        try withTestWindowModel(desks: [desk]) { windowModel, controller in
+
             #expect(
                 controller.createBoard(
                     urlString: "https://background.example",
@@ -765,8 +765,8 @@ struct DenControllerBoardTests {
         let source = BoardState(label: "Source", width: 520, currentSheetURL: nil)
         let other = BoardState(label: "Other", width: 520, currentSheetURL: nil)
         let desk = desk("Desk", boards: [source, other], focusedBoardID: source.id)
-        try withTestWindowModel(desks: [desk]) { windowModel in
-            let controller = windowModel.controller
+        try withTestWindowModel(desks: [desk]) { windowModel, controller in
+
             #expect(
                 controller.createBoard(
                     urlString: "https://cli.example",
@@ -783,8 +783,8 @@ struct DenControllerBoardTests {
         let left = BoardState(label: "Left", width: 520, currentSheetURL: nil)
         let focused = BoardState(label: "Focused", width: 520, currentSheetURL: nil)
         let source = desk("Desk", boards: [left, focused], focusedBoardID: focused.id)
-        try withTestWindowModel(desks: [source]) { windowModel in
-            let controller = windowModel.controller
+        try withTestWindowModel(desks: [source]) { windowModel, controller in
+
             controller.removeBoard(left.id, origin: .cli)
 
             let intent = try #require(windowModel.pendingBoardRemoval)
@@ -940,8 +940,7 @@ struct DenControllerBoardTests {
 
     @Test func emptyDeskUsesTwoBoardFitWidthAsDefault() {
         let emptyDesk = desk("Empty")
-        withTestWindowModel(desks: [emptyDesk]) { windowModel in
-            let controller = windowModel.controller
+        withTestWindowModel(desks: [emptyDesk]) { windowModel, controller in
 
             #expect(controller.inheritedBoardWidth == BuiltInDeskPreset.boardWidth)
 
@@ -956,8 +955,8 @@ struct DenControllerBoardTests {
     @Test func emptyDeskAppliesFitWidthToClipboardAndEssential() {
         let emptyDesk = desk("Empty")
         let essential = Essential(name: "Search", key: "s", input: "https://example.com")
-        withTestWindowModel(desks: [emptyDesk]) { windowModel in
-            let controller = windowModel.controller
+        withTestWindowModel(desks: [emptyDesk]) { windowModel, controller in
+
             #expect(controller.preferences.setEssentials([essential]))
             windowModel.updateBoardLayout(availableWidth: 1000, spacing: 12)
 
@@ -1050,7 +1049,7 @@ struct DenControllerBoardTests {
         // Arrange
         let sourceDesk = desk("Desk")
         let controller = DenController(state: DenState(desks: [sourceDesk], focusedDeskID: sourceDesk.id))
-        withTestWindowModel(controller: controller) { windowModel in
+        withTestWindowModel(controller: controller) { windowModel, _ in
 
             #expect(controller.openTutorialBoard())
             #expect(controller.openBoard(input: "https://one.example/"))
@@ -1071,7 +1070,7 @@ struct DenControllerBoardTests {
     @Test(arguments: [false, true])
     func showingKeyboardShortcutsCompletesOptionalTutorialStepOnlyInDenMode(inDenMode: Bool) {
         let controller = DenController(state: .sample)
-        withTestWindowModel(controller: controller) { windowModel in
+        withTestWindowModel(controller: controller) { windowModel, _ in
             #expect(controller.openTutorialBoard())
             if inDenMode { windowModel.toggleDenMode() }
 
@@ -1117,8 +1116,8 @@ struct DenControllerBoardTests {
                 saveCount += 1
                 return true
             },
-            body: { windowModel in
-                let controller = windowModel.controller
+            body: { windowModel, controller in
+
                 windowModel.deskFilter.enter()
                 windowModel.deskFilter.setQuery("board")
                 windowModel.isDenMode = true
@@ -1191,8 +1190,9 @@ struct DenControllerBoardTests {
 
     @Test func reorderingBoardKeepsItFocusedAndStopsAtDeskEdge() {
         let boards = [board("A"), board("B"), board("C")]
-        withTestWindowModel(desks: [desk("Desk", boards: boards, focusedBoardID: boards[1].id)]) { windowModel in
-            let controller = windowModel.controller
+        withTestWindowModel(desks: [desk("Desk", boards: boards, focusedBoardID: boards[1].id)]) {
+            windowModel, controller in
+
             controller.moveFocusedBoardLeft()
             controller.moveFocusedBoardLeft()
 
@@ -1297,8 +1297,8 @@ struct DenControllerBoardTests {
                 saveCount += 1
                 return true
             },
-            body: { windowModel in
-                let controller = windowModel.controller
+            body: { windowModel, controller in
+
                 controller.moveFocusedBoardRight()
 
                 #expect(controller.focusedDesk?.boards.map(\.id) == [boards[1].id, boards[0].id])
@@ -1310,8 +1310,9 @@ struct DenControllerBoardTests {
 
     @Test func rapidBoardReorderingKeepsFocusAndRequestsCentering() {
         let boards = [board("A"), board("B"), board("C"), board("D")]
-        withTestWindowModel(desks: [desk("Desk", boards: boards, focusedBoardID: boards[0].id)]) { windowModel in
-            let controller = windowModel.controller
+        withTestWindowModel(desks: [desk("Desk", boards: boards, focusedBoardID: boards[0].id)]) {
+            windowModel, controller in
+
             controller.moveFocusedBoardRight()
             #expect(controller.focusedDesk?.focusedBoardID == boards[0].id)
             #expect(
@@ -1751,8 +1752,8 @@ struct DenControllerBoardTests {
         let otherBoard = board("Other", width: 760)
         let firstDesk = desk("First", boards: boards, focusedBoardID: boards[0].id)
         let secondDesk = desk("Second", boards: [otherBoard])
-        withTestWindowModel(desks: [firstDesk, secondDesk]) { windowModel in
-            let controller = windowModel.controller
+        withTestWindowModel(desks: [firstDesk, secondDesk]) { windowModel, controller in
+
             windowModel.toggleFocusedBoardMaximized()
 
             windowModel.adjustFocusedDeskBoardWidths(by: -80)
@@ -1777,8 +1778,8 @@ struct DenControllerBoardTests {
                 saveCount += 1
                 return true
             },
-            body: { windowModel in
-                let controller = windowModel.controller
+            body: { windowModel, controller in
+
                 windowModel.updateBoardLayout(availableWidth: 1_180, spacing: 10)
                 windowModel.toggleFocusedBoardMaximized()
                 controller.storage.state.desks[0].scrollOffsetX = 180
@@ -1800,8 +1801,8 @@ struct DenControllerBoardTests {
 
     @Test func rejectsBoardFitCountsOutsideCurrentWidth() {
         let boards = [board("First"), board("Second")]
-        withTestWindowModel(desks: [desk("Desk", boards: boards)]) { windowModel in
-            let controller = windowModel.controller
+        withTestWindowModel(desks: [desk("Desk", boards: boards)]) { windowModel, controller in
+
             #expect(windowModel.boardLayoutMetrics == nil)
             #expect(windowModel.boardWidth(toFit: 3) == nil)
 
@@ -1818,8 +1819,8 @@ struct DenControllerBoardTests {
     }
 
     @Test func oneBoardFitUsesFullWindowBeyondManualResizeLimit() {
-        withTestWindowModel(desks: [desk("Desk", boards: [board("Wide")])]) { windowModel in
-            let controller = windowModel.controller
+        withTestWindowModel(desks: [desk("Desk", boards: [board("Wide")])]) { windowModel, controller in
+
             windowModel.updateBoardLayout(availableWidth: 2_480, spacing: 10)
 
             #expect(windowModel.resizeFocusedDeskBoards(toFit: 1))
@@ -2133,8 +2134,8 @@ struct DenControllerBoardTests {
         let first = BoardState(width: 400, workingDirectory: "/tmp")
         let second = board("Second")
         let source = desk("Desk", boards: [first, second], focusedBoardID: first.id)
-        withTestWindowModel(desks: [source]) { windowModel in
-            let controller = windowModel.controller
+        withTestWindowModel(desks: [source]) { windowModel, controller in
+
             windowModel.setTemporaryContext(.openBoard)
             controller.duplicateFocusedBoard()
 

@@ -389,7 +389,7 @@ struct DenControllerDeskPresetTests {
         // Arrange
         let empty = desk("Empty")
 
-        withTestWindowModel(desks: [empty]) { windowModel in
+        withTestWindowModel(desks: [empty]) { windowModel, _ in
             // Act
             windowModel.showSaveDeskPresetPanel()
 

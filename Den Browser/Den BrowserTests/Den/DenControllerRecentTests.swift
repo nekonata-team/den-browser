@@ -248,7 +248,7 @@ struct DenControllerRecentTests {
             recentItems: [item],
             onRecentItemsSave: { _ in true },
             body: { controller in
-                withTestWindowModel(controller: controller) { windowModel in
+                withTestWindowModel(controller: controller) { windowModel, _ in
                     controller.openBoard(recentItem: item)
 
                     #expect(controller.focusedDesk?.boards.isEmpty == true)
@@ -294,7 +294,7 @@ struct DenControllerRecentTests {
             recentItems: [item],
             onRecentItemsSave: { _ in true },
             body: { controller in
-                withTestWindowModel(controller: controller) { windowModel in
+                withTestWindowModel(controller: controller) { windowModel, _ in
                     controller.openBoard(recentItem: item)
 
                     #expect(controller.focusedDesk?.boards.isEmpty == true)
@@ -310,7 +310,7 @@ struct DenControllerRecentTests {
             recentItems: [item],
             onRecentItemsSave: { _ in true },
             body: { controller in
-                withTestWindowModel(controller: controller) { windowModel in
+                withTestWindowModel(controller: controller) { windowModel, _ in
                     controller.openBoard(recentItem: item)
 
                     #expect(controller.focusedDesk?.boards.isEmpty == true)

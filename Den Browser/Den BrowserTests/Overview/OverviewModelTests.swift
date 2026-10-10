@@ -16,8 +16,8 @@ struct OverviewModelTests {
         let first = board("First")
         let second = board("Second")
         try withTestWindowModel(desks: [desk("Desk", boards: [first, second], focusedBoardID: first.id)]) {
-            windowModel in
-            let controller = windowModel.controller
+            windowModel, controller in
+
             windowModel.showOverview()
             let openBoard = try #require(keyEvent("t", keyCode: 17))
             let editLink = try #require(keyEvent("l", keyCode: 37))
@@ -42,7 +42,7 @@ struct OverviewModelTests {
     @Test func temporaryContextsAreExclusiveAndClearOverviewSelection() {
         // Arrange
         let board = board("Board")
-        withTestWindowModel(desks: [desk("Desk", boards: [board], focusedBoardID: board.id)]) { windowModel in
+        withTestWindowModel(desks: [desk("Desk", boards: [board], focusedBoardID: board.id)]) { windowModel, _ in
             windowModel.showOverview()
             #expect(windowModel.temporaryContext == .overview)
             #expect(windowModel.overview.selectionBoardID == board.id)
@@ -64,7 +64,7 @@ struct OverviewModelTests {
         let desk1 = desk("Main", boards: [googleBoard], focusedBoardID: googleBoard.id)
 
         // Act
-        withTestWindowModel(desks: [desk1]) { windowModel in
+        withTestWindowModel(desks: [desk1]) { windowModel, _ in
             windowModel.showOverview()
 
             // Assert
@@ -82,7 +82,7 @@ struct OverviewModelTests {
         let desk1 = desk("Main", boards: [googleBoard], focusedBoardID: googleBoard.id)
         let desk2 = desk("Dev", boards: [githubBoard], focusedBoardID: githubBoard.id)
 
-        withTestWindowModel(desks: [desk1, desk2]) { windowModel in
+        withTestWindowModel(desks: [desk1, desk2]) { windowModel, _ in
             windowModel.showOverview()
 
             // Act
@@ -102,7 +102,7 @@ struct OverviewModelTests {
         let desk1 = desk("Main", boards: [googleBoard], focusedBoardID: googleBoard.id)
         let desk2 = desk("Dev", boards: [githubBoard], focusedBoardID: githubBoard.id)
 
-        withTestWindowModel(desks: [desk1, desk2]) { windowModel in
+        withTestWindowModel(desks: [desk1, desk2]) { windowModel, _ in
             windowModel.showOverview()
 
             // Act
@@ -121,7 +121,7 @@ struct OverviewModelTests {
         let googleBoard = board("Google", url: "https://google.com")
         let desk1 = desk("Main", boards: [googleBoard], focusedBoardID: googleBoard.id)
 
-        withTestWindowModel(desks: [desk1]) { windowModel in
+        withTestWindowModel(desks: [desk1]) { windowModel, _ in
             windowModel.showOverview()
 
             // Act
@@ -138,7 +138,7 @@ struct OverviewModelTests {
         let googleBoard = board("Google", url: "https://google.com")
         let desk1 = desk("Main", boards: [googleBoard], focusedBoardID: googleBoard.id)
 
-        withTestWindowModel(desks: [desk1]) { windowModel in
+        withTestWindowModel(desks: [desk1]) { windowModel, _ in
             windowModel.showOverview()
 
             // Act
@@ -160,7 +160,7 @@ struct OverviewModelTests {
         let desk1 = desk("Main", boards: [googleBoard], focusedBoardID: googleBoard.id)
         let desk2 = desk("Dev", boards: [githubBoard], focusedBoardID: githubBoard.id)
 
-        withTestWindowModel(desks: [desk1, desk2]) { windowModel in
+        withTestWindowModel(desks: [desk1, desk2]) { windowModel, _ in
             windowModel.showOverview()
             windowModel.overview.setQuery("git")
 
@@ -180,7 +180,7 @@ struct OverviewModelTests {
         let googleBoard = board("Google", url: "https://google.com")
         let desk1 = desk("Main", boards: [googleBoard], focusedBoardID: googleBoard.id)
 
-        withTestWindowModel(desks: [desk1]) { windowModel in
+        withTestWindowModel(desks: [desk1]) { windowModel, _ in
             windowModel.showOverview()
             windowModel.overview.enterFilterMode()
             windowModel.overview.setQuery("goog")

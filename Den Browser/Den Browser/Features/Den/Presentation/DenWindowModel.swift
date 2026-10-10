@@ -7,6 +7,25 @@ import SwiftUI
 @MainActor
 @Observable
 final class DenWindowModel {
+    struct Inputs {
+        let focusedDesk: () -> DeskState?
+        let focusedBoard: () -> BoardState?
+        let board: (BoardID) -> BoardState?
+        let essentials: () -> [Essential]
+        let isBoardRailPresented: () -> Bool
+        let isBoardDragging: () -> Bool
+        let isDeskDragging: () -> Bool
+        let canCreateDesk: () -> Bool
+    }
+
+    struct WindowActions {
+        let setBoardRailPresented: (Bool) -> Void
+        let openFeedbackTarget: (DenFeedback.Target?) -> Void
+        let reportWarning: (String) -> Void
+        let didEnterDenMode: () -> Void
+        let didShowKeyboardShortcuts: () -> Void
+    }
+
     struct BoardActions {
         let adjustBoardWidth: (BoardID, Double) -> Void
         let adjustDeskBoardWidths: (DeskID, Double) -> Void
@@ -25,7 +44,6 @@ final class DenWindowModel {
         let cancelDuplication: () -> Void
     }
 
-    let controller: DenController
     let overview: OverviewModel
     let drawer: DrawerModel
     let openBoard: OpenBoardModel
@@ -60,16 +78,14 @@ final class DenWindowModel {
     @ObservationIgnored let onLaunchEssential: (UUID, Double?) -> Void
     @ObservationIgnored let onSaveEssential: (String, String, String) -> Bool
     @ObservationIgnored let onConfirmOperation: (DenConfirmationRequest) -> Bool
-    @ObservationIgnored let focusedDesk: () -> DeskState?
-    @ObservationIgnored let focusedBoard: () -> BoardState?
-    @ObservationIgnored let board: (BoardID) -> BoardState?
+    @ObservationIgnored let inputs: Inputs
+    @ObservationIgnored let windowActions: WindowActions
     @ObservationIgnored let boardActions: BoardActions
     @ObservationIgnored let zmxActions: ZmxActions
     @ObservationIgnored private var feedbackTask: Task<Void, Never>?
     @ObservationIgnored private var lastReceivedFeedbackID: UUID?
 
     init(
-        controller: DenController,
         overview: OverviewModel,
         drawer: DrawerModel,
         openBoard: OpenBoardModel,
@@ -79,14 +95,12 @@ final class DenWindowModel {
         onLaunchEssential: @escaping (UUID, Double?) -> Void,
         onSaveEssential: @escaping (String, String, String) -> Bool,
         onConfirmOperation: @escaping (DenConfirmationRequest) -> Bool,
-        focusedDesk: @escaping () -> DeskState?,
-        focusedBoard: @escaping () -> BoardState?,
-        board: @escaping (BoardID) -> BoardState?,
+        inputs: Inputs,
+        windowActions: WindowActions,
         boardActions: BoardActions,
         zmxActions: ZmxActions,
         feedbackDuration: Duration = .seconds(5)
     ) {
-        self.controller = controller
         self.overview = overview
         self.drawer = drawer
         self.openBoard = openBoard
@@ -96,9 +110,8 @@ final class DenWindowModel {
         self.onLaunchEssential = onLaunchEssential
         self.onSaveEssential = onSaveEssential
         self.onConfirmOperation = onConfirmOperation
-        self.focusedDesk = focusedDesk
-        self.focusedBoard = focusedBoard
-        self.board = board
+        self.inputs = inputs
+        self.windowActions = windowActions
         self.boardActions = boardActions
         self.zmxActions = zmxActions
         self.feedbackDuration = feedbackDuration
@@ -163,7 +176,7 @@ final class DenWindowModel {
             maximizedBoardID = nil
         case .runtimeFocusedBoard(let boardID):
             guard !isDenMode, temporaryContext == nil else { return }
-            if board(boardID)?.isTerminal == true, focusedBoard()?.id != boardID { return }
+            if inputs.board(boardID)?.isTerminal == true, inputs.focusedBoard()?.id != boardID { return }
             boardActions.focusBoard(boardID, true)
         case .drawerItemRemoved(let itemID, let previousItems, let advancesPreview, let focusNext):
             drawer.itemWasRemoved(
@@ -171,7 +184,7 @@ final class DenWindowModel {
                 previousItems: previousItems,
                 advancesPreview: advancesPreview,
                 focusNext: focusNext)
-            if controller.state.drawerItems.isEmpty { closeDrawer() }
+            if drawer.items.isEmpty { closeDrawer() }
         case .drawerCleared:
             drawer.resetPresentation()
             closeDrawer()
@@ -234,7 +247,7 @@ final class DenWindowModel {
 
     func handleTap(on feedback: DenFeedback) {
         guard displayedFeedback?.id == feedback.id else { return }
-        controller.openFeedbackTarget(feedback.target)
+        windowActions.openFeedbackTarget(feedback.target)
         dismissFeedback(id: feedback.id)
     }
 

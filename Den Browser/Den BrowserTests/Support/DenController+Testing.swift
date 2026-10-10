@@ -224,25 +224,25 @@ func withController<T>(
 @MainActor
 func withTestWindowModel<T>(
     controller: DenController,
-    body: (DenWindowModel) throws -> T
+    body: (DenWindowModel, DenController) throws -> T
 ) rethrows -> T {
     let composition = DenWindowComposition(controller: controller)
     let windowModel = composition.model
     composition.connect()
     defer { composition.disconnect() }
-    return try body(windowModel)
+    return try body(windowModel, controller)
 }
 
 @MainActor
 func withTestWindowModel<T>(
     controller: DenController,
-    body: (DenWindowModel) async throws -> T
+    body: (DenWindowModel, DenController) async throws -> T
 ) async rethrows -> T {
     let composition = DenWindowComposition(controller: controller)
     let windowModel = composition.model
     composition.connect()
     defer { composition.disconnect() }
-    return try await body(windowModel)
+    return try await body(windowModel, controller)
 }
 
 @MainActor
@@ -250,7 +250,7 @@ func withTestWindowModel<T>(
     desks: [DeskState],
     onSave: ((DenState) -> Bool)? = nil,
     terminalCommandRunner: any TerminalCommandRunning = SubprocessCommandRunner(),
-    body: (DenWindowModel) throws -> T
+    body: (DenWindowModel, DenController) throws -> T
 ) rethrows -> T {
     try withTestController(desks: desks, onSave: onSave, terminalCommandRunner: terminalCommandRunner) { controller in
         try withTestWindowModel(controller: controller, body: body)
@@ -262,7 +262,7 @@ func withTestWindowModel<T>(
     desks: [DeskState],
     onSave: ((DenState) -> Bool)? = nil,
     terminalCommandRunner: any TerminalCommandRunning = SubprocessCommandRunner(),
-    body: (DenWindowModel) async throws -> T
+    body: (DenWindowModel, DenController) async throws -> T
 ) async rethrows -> T {
     try await withTestController(desks: desks, onSave: onSave, terminalCommandRunner: terminalCommandRunner) {
         controller in

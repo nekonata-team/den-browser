@@ -75,7 +75,6 @@ final class DenWindowComposition {
             openNotification: { controller.openNotification($0) },
             requestClearConfirmation: { controller.requestNotificationClearConfirmation() })
         let model = DenWindowModel(
-            controller: controller,
             overview: overview,
             drawer: drawer,
             openBoard: openBoard,
@@ -85,9 +84,27 @@ final class DenWindowComposition {
             onLaunchEssential: { controller.launchEssential(id: $0, preferredWidth: $1) },
             onSaveEssential: { controller.saveEssential(name: $0, key: $1, input: $2) },
             onConfirmOperation: { controller.performConfirmedOperation($0) },
-            focusedDesk: { controller.focusedDesk },
-            focusedBoard: { controller.focusedBoard },
-            board: { controller.board(for: $0) },
+            inputs: DenWindowModel.Inputs(
+                focusedDesk: { controller.focusedDesk },
+                focusedBoard: { controller.focusedBoard },
+                board: { controller.board(for: $0) },
+                essentials: { controller.essentials },
+                isBoardRailPresented: { controller.preferences.isBoardRailPresented },
+                isBoardDragging: {
+                    guard case .board? = controller.activeDrag else { return false }
+                    return true
+                },
+                isDeskDragging: {
+                    guard case .desk? = controller.activeDrag else { return false }
+                    return true
+                },
+                canCreateDesk: { controller.canCreateDesk }),
+            windowActions: DenWindowModel.WindowActions(
+                setBoardRailPresented: { controller.preferences.setBoardRailPresented($0) },
+                openFeedbackTarget: { controller.openFeedbackTarget($0) },
+                reportWarning: { controller.reportFeedback($0, severity: .warning) },
+                didEnterDenMode: { controller.dispatchDenOperationEvent(.denModeEntered) },
+                didShowKeyboardShortcuts: { controller.dispatchDenOperationEvent(.keyboardShortcutsShown) }),
             boardActions: DenWindowModel.BoardActions(
                 adjustBoardWidth: { controller.adjustBoardWidth($0, by: $1) },
                 adjustDeskBoardWidths: { controller.adjustDeskBoardWidths($0, by: $1) },
