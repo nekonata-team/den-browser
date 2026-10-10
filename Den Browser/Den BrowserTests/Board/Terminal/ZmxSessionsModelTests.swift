@@ -166,55 +166,79 @@ struct ZmxSessionsModelTests {
         #expect(model.selectedSessionName == "den")
     }
 
-    @Test func stoppingModelIgnoresDelayedRefreshCallbacks() async {
+    @Test(arguments: [false, true], [false, true])
+    func cancelledRefreshDoesNotChangeStoppedOrRestartedModel(restart: Bool, fails: Bool) async {
         // Arrange
-        let client = ZmxClient(
-            executablePath: "/opt/homebrew/bin/zmx",
-            commandRunner: ModelTerminalCommandRunner(
-                responses: [
-                    ["list"]: TerminalCommandResult(
-                        terminationStatus: 0,
-                        standardOutput: "name=den\n"
-                            + "name=den-vi\tden.root=den\n")
-                ]))
-        let model = ZmxSessionsModel(client: client)
+        let deferred = DeferredZmxOperation<ZmxSessionSnapshot>()
+        let current = ZmxSessionSnapshot(
+            groups: [ZmxSessionGroup(rootSessionName: "current", isRootActive: true, childSessionNames: [])],
+            processNames: ["current": "shell"])
+        var operations = ZmxSessionsModel.Operations(load: { try await deferred.run() }, kill: { _ in })
+        let model = ZmxSessionsModel(operations: { operations })
+        model.start(selectedSessionName: nil)
+        await deferred.waitUntilStarted()
+        let completion = await pendingCompletion(of: model)
 
         // Act
-        model.refresh()
         model.stop()
-        await model.waitForRefresh()
+        if restart {
+            operations = ZmxSessionsModel.Operations(load: { current }, kill: { _ in })
+            model.start(selectedSessionName: "current")
+            await model.waitForRefresh()
+        }
+        deferred.complete(
+            fails
+                ? .failure(TerminalCommandError(message: "Old refresh failed"))
+                : .success(
+                    ZmxSessionSnapshot(
+                        groups: [ZmxSessionGroup(rootSessionName: "old", isRootActive: true, childSessionNames: [])],
+                        processNames: ["old": "editor"])))
+        await completion.value
 
         // Assert
-        #expect(model.groups.isEmpty)
-        #expect(model.selectedSessionName == nil)
+        #expect(model.groups == (restart ? current.groups : []))
+        #expect(model.processNames == (restart ? current.processNames : [:]))
+        #expect(model.selectedSessionName == (restart ? "current" : nil))
         #expect(!model.isLoading)
         #expect(model.message == nil)
     }
 
-    @Test func stoppingModelIgnoresDelayedKillCallbacks() async {
+    @Test(arguments: [false, true], [false, true])
+    func cancelledKillDoesNotChangeStoppedOrRestartedModel(restart: Bool, fails: Bool) async {
         // Arrange
-        let client = ZmxClient(
-            executablePath: "/opt/homebrew/bin/zmx",
-            commandRunner: ModelTerminalCommandRunner(
-                responses: [
-                    ["list"]: TerminalCommandResult(
-                        terminationStatus: 0,
-                        standardOutput: "name=den\n"),
-                    ["kill", "den", "--force"]: TerminalCommandResult(
-                        terminationStatus: 1,
-                        standardOutput: ""),
-                ]))
-        let model = ZmxSessionsModel(client: client)
-        model.start(selectedSessionName: "den")
+        let deferred = DeferredZmxOperation<Void>()
+        let old = ZmxSessionSnapshot(
+            groups: [ZmxSessionGroup(rootSessionName: "old", isRootActive: true, childSessionNames: [])],
+            processNames: [:])
+        let current = ZmxSessionSnapshot(
+            groups: [ZmxSessionGroup(rootSessionName: "current", isRootActive: true, childSessionNames: [])],
+            processNames: ["current": "shell"])
+        var operations = ZmxSessionsModel.Operations(load: { old }, kill: { _ in try await deferred.run() })
+        let model = ZmxSessionsModel(operations: { operations })
+        model.start(selectedSessionName: "old")
+        await model.waitForRefresh()
+        model.kill("old")
+        await deferred.waitUntilStarted()
+        let completion = await pendingCompletion(of: model)
 
         // Act
-        model.kill(["den"])
         model.stop()
+        if restart {
+            operations = ZmxSessionsModel.Operations(load: { current }, kill: { _ in })
+            model.start(selectedSessionName: "current")
+            await model.waitForRefresh()
+        }
+        deferred.complete(
+            fails ? .failure(TerminalCommandError(message: "Old kill failed")) : .success(()))
+        await completion.value
         await model.waitForRefresh()
 
         // Assert
+        #expect(model.groups == (restart ? current.groups : []))
+        #expect(model.processNames == (restart ? current.processNames : [:]))
+        #expect(model.selectedSessionName == (restart ? "current" : nil))
+        #expect(!model.isLoading)
         #expect(model.message == nil)
-        #expect(model.groups.isEmpty)
     }
 }
 
@@ -243,4 +267,39 @@ private struct ModelTerminalCommandRunner: TerminalCommandRunning, Sendable {
         }
         return response
     }
+}
+
+@MainActor
+private final class DeferredZmxOperation<Value: Sendable> {
+    private let started = AsyncStream<Void>.makeStream()
+    private var continuation: CheckedContinuation<Value, any Error>?
+
+    func run() async throws -> Value {
+        try await withCheckedThrowingContinuation { continuation in
+            self.continuation = continuation
+            started.continuation.yield(())
+        }
+    }
+
+    func waitUntilStarted() async {
+        var iterator = started.stream.makeAsyncIterator()
+        _ = await iterator.next()
+    }
+
+    func complete(_ result: Result<Value, any Error>) {
+        continuation?.resume(with: result)
+        continuation = nil
+    }
+}
+
+@MainActor
+private func pendingCompletion(of model: ZmxSessionsModel) async -> Task<Void, Never> {
+    let started = AsyncStream<Void>.makeStream()
+    let completion = Task {
+        started.continuation.yield(())
+        await model.waitForRefresh()
+    }
+    var iterator = started.stream.makeAsyncIterator()
+    _ = await iterator.next()
+    return completion
 }

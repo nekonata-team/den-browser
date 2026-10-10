@@ -33,7 +33,6 @@ public final class ZmxSessionsModel {
     @ObservationIgnored private var killTask: Task<Void, Never>?
     @ObservationIgnored private var selectionFallbackAfterDeletion: String?
     @ObservationIgnored private var refreshGeneration = 0
-    @ObservationIgnored private var lifecycleGeneration = 0
 
     public init(operations: @escaping () -> Operations) {
         self.operations = operations
@@ -93,7 +92,6 @@ public final class ZmxSessionsModel {
         killTask?.cancel()
         refreshTask = nil
         killTask = nil
-        lifecycleGeneration += 1
         self.selectedSessionName = selectedSessionName
         markedSessionNames = []
         selectionFallbackAfterDeletion = nil
@@ -104,7 +102,6 @@ public final class ZmxSessionsModel {
     }
 
     public func stop() {
-        lifecycleGeneration += 1
         refreshTask?.cancel()
         killTask?.cancel()
         refreshTask = nil
@@ -129,16 +126,13 @@ public final class ZmxSessionsModel {
         refreshTask?.cancel()
         refreshGeneration += 1
         let refreshGeneration = refreshGeneration
-        let lifecycleGeneration = lifecycleGeneration
         isLoading = true
         message = nil
         refreshTask = Task { [weak self, operations] in
             do {
                 let snapshot = try await operations.load()
                 guard !Task.isCancelled, let self else { return }
-                guard self.refreshGeneration == refreshGeneration,
-                    self.lifecycleGeneration == lifecycleGeneration
-                else { return }
+                guard self.refreshGeneration == refreshGeneration else { return }
                 self.isLoading = false
                 self.groups = snapshot.groups
                 self.processNames = snapshot.processNames
@@ -147,9 +141,7 @@ public final class ZmxSessionsModel {
                 return
             } catch {
                 guard !Task.isCancelled, let self else { return }
-                guard self.refreshGeneration == refreshGeneration,
-                    self.lifecycleGeneration == lifecycleGeneration
-                else { return }
+                guard self.refreshGeneration == refreshGeneration else { return }
                 self.isLoading = false
                 self.groups = []
                 self.processNames = [:]
@@ -162,9 +154,11 @@ public final class ZmxSessionsModel {
     }
 
     public func waitForRefresh() async {
+        let refreshTask = refreshTask
+        let killTask = killTask
         await refreshTask?.value
         await killTask?.value
-        await refreshTask?.value
+        await self.refreshTask?.value
     }
 
     public func select(by offset: Int) {
@@ -241,7 +235,6 @@ public final class ZmxSessionsModel {
 
     public func kill(_ sessionNames: [String]) {
         let operations = self.operations()
-        let lifecycleGeneration = lifecycleGeneration
         let sessionNames = sessionNames.uniqued()
         guard !sessionNames.isEmpty else { return }
         selectionFallbackAfterDeletion = selectionFallback(for: Set(sessionNames))
@@ -260,7 +253,6 @@ public final class ZmxSessionsModel {
                 }
             }
             guard !Task.isCancelled, let self else { return }
-            guard self.lifecycleGeneration == lifecycleGeneration else { return }
             self.refresh(using: operations)
             if !failures.isEmpty {
                 self.message = "Could not end \(failures.joined(separator: ", "))."
