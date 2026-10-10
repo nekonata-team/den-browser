@@ -125,7 +125,10 @@ updated projections; those saved fields supply initial state when restoring a ru
 `App/Composition/DenProfileResources` connects the shared state source, persistence callbacks,
 window event owners, and the native registry. `DenBoardRuntimes` owns Profile-shared Web and
 Terminal runtimes and their disposal; `DenWindowResources` owns the Drawer Preview and cancellable
-window operation Tasks. Closing one window releases its resources while shared Board runtimes
+window operation Tasks. Web Boards and Drawer Preview use the same `WebRuntime` type. Placing
+the invoking window’s Preview transfers that instance into the Profile registry and attaches Board
+actions and identity without loading, reloading, or disposing its WebView. Board insertion must
+succeed before the window releases ownership; other windows’ Previews of the removed Item are disposed. Closing one window releases its resources while shared Board runtimes
 remain alive for other windows. These native resource holders are app-target adapters.
 
 The remaining operation workflows in `DenController`, native resource integration,
@@ -156,7 +159,7 @@ Persisted Profile data remains separate from live Web and Terminal runtime objec
 
 - `DenStateStore` holds the authoritative `DenState` value for Desk and Board identity, order, labels, widths, focus, Board kinds and their saved state, and Drawer Items. Drawer selection and Preview expansion are window-local Model state.
 - `DenStateStore` also holds Profile-owned persisted Desk Presets and Recent Items. These are persisted alongside `DenState` but remain separate data collections.
-- `WebBoardRuntime` owns live WebKit state, including each Web Board's in-memory Sheet Stack.
+- `WebRuntime` owns live WebKit state, including each Web Board's in-memory Sheet Stack.
 - `BoardState.kind` distinguishes Web, Inspection, Terminal, and Tutorial Boards and carries their kind-specific state. A Board presents Sheets; Web Boards have a Sheet Stack, while Terminal Boards present one Sheet backed by a live Terminal Session. Tutorial Boards and their progress are session-only and stay out of persisted DenState and Desk Presets. Terminal session choices (Shell, Zellij, and zmx) belong to Terminal Board state; URLs and Vim-style Sheet Navigation settings belong to Web Board state.
 - `TerminalRuntime` owns one libghostty surface and Shell, Zellij, or zmx process. One controller is used per Terminal Board.
 - Each Profile has one shared `DenStateStore`, retained through `DenProfileResources`. The latter holds the private write capability and persistence callbacks, forwards data reads to the observable source, and owns native runtime registries. Profile-shared transient state includes Notifications, active drag state, Recently Removed Boards, and discarded Drawer Item restoration history. `DenController` uses shared weak references in `DenProfileResources` to route Board and Desk removal invalidations to every window, so local selections and insertion anchors cannot retain removed IDs. Each Profile window has a `DenController` for its presented Desk and application resources, and a `DenWindowModel` for presentation state.
@@ -264,7 +267,7 @@ Settings is not a Feature. `App/Settings` owns the Settings scene and its naviga
 
 ### Platform
 
-Contains reusable operating-system integration rather than product concepts. Do not create a global Platform folder merely because code imports AppKit or WebKit. `TextInputComposition` is a feature-independent IME composition helper shared by Den, Sheet Navigation, and App settings. `SurfaceHost` is a generic native-view host shared by Board kind adapters and Drawer Preview; its API uses only AppKit views and generic request values. `WebBoardRuntime` and `WebBoardSurface` remain in `Board/Web` because they own Web Board lifecycle. `SheetNavigationManager` remains in SheetNavigation because its WebKit integration implements that Feature. `KeyboardController` remains in `App` while it routes app-wide commands into Den behavior. A component moves to `Platform` only when its API is feature-independent and no reverse dependency on a Feature is required.
+Contains reusable operating-system integration rather than product concepts. Do not create a global Platform folder merely because code imports AppKit or WebKit. `TextInputComposition` is a feature-independent IME composition helper shared by Den, Sheet Navigation, and App settings. `SurfaceHost` is a generic native-view host shared by Board kind adapters and Drawer Preview; its API uses only AppKit views and generic request values. `WebRuntime` belongs to `Web` because Web Boards and Drawer Preview share its live execution; `WebBoardSurface` remains in `Board/Web` because it owns Board presentation. `SheetNavigationManager` remains in SheetNavigation because its WebKit integration implements that Feature. `KeyboardController` remains in `App` while it routes app-wide commands into Den behavior. A component moves to `Platform` only when its API is feature-independent and no reverse dependency on a Feature is required.
 
 ## Folder rules
 

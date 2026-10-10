@@ -7,7 +7,8 @@ enum UITestFixtureFactory {
         fixture: UITestFixture,
         boardCount: UITestBoardCount = .three,
         terminalBoard: Bool = false,
-        multipleDrawerItems: Bool = false
+        multipleDrawerItems: Bool = false,
+        drawerSheetURL: URL? = nil
     ) throws -> Data {
         let alphaID = FixtureBoard.alpha.rawValue
         let bravoID = FixtureBoard.bravo.rawValue
@@ -85,7 +86,8 @@ enum UITestFixtureFactory {
         ]
         let thirdDesk: [String: Any] = ["id": thirdDeskID, "label": "Third", "boards": [] as [[String: Any]]]
         let drawerItem: [String: Any] = [
-            "id": "00000000-0000-0000-0000-000000000401", "url": sheetURL, "title": "Drawer Fixture",
+            "id": "00000000-0000-0000-0000-000000000401", "url": drawerSheetURL?.absoluteString ?? sheetURL,
+            "title": "Drawer Fixture",
         ]
         let secondDrawerItem: [String: Any] = [
             "id": "00000000-0000-0000-0000-000000000402", "url": sheetURL, "title": "Next Drawer Fixture",

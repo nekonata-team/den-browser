@@ -354,7 +354,7 @@ struct DenControllerBoardTests {
         defer { controller.releaseRuntimes() }
 
         let popupURL = try #require(URL(string: "https://login.example/authorize"))
-        let backgroundPopup = WebBoardWKWebView(frame: .zero, configuration: WKWebViewConfiguration())
+        let backgroundPopup = RuntimeWKWebView(frame: .zero, configuration: WKWebViewConfiguration())
 
         // Act
         #expect(
@@ -378,7 +378,7 @@ struct DenControllerBoardTests {
         let sourceBoard = BoardState(label: "Source", width: 520, currentSheetURL: nil)
         let controller = popupController(for: sourceBoard)
         defer { controller.releaseRuntimes() }
-        let popup = WebBoardWKWebView(frame: .zero, configuration: WKWebViewConfiguration())
+        let popup = RuntimeWKWebView(frame: .zero, configuration: WKWebViewConfiguration())
 
         // Act
         #expect(
@@ -401,7 +401,7 @@ struct DenControllerBoardTests {
         let sourceBoard = BoardState(label: "Source", width: 520, currentSheetURL: nil)
         let controller = popupController(for: sourceBoard)
         defer { controller.releaseRuntimes() }
-        let popup = WebBoardWKWebView(frame: .zero, configuration: WKWebViewConfiguration())
+        let popup = RuntimeWKWebView(frame: .zero, configuration: WKWebViewConfiguration())
 
         // Act
         #expect(
@@ -422,7 +422,7 @@ struct DenControllerBoardTests {
         let sourceBoard = BoardState(label: "Source", width: 520, currentSheetURL: nil)
         let controller = popupController(for: sourceBoard)
         defer { controller.releaseRuntimes() }
-        let popup = WebBoardWKWebView(frame: .zero, configuration: WKWebViewConfiguration())
+        let popup = RuntimeWKWebView(frame: .zero, configuration: WKWebViewConfiguration())
         #expect(
             controller.createPopupBoard(
                 popup,
@@ -447,7 +447,7 @@ struct DenControllerBoardTests {
         let configuration = WKWebViewConfiguration()
         configuration.websiteDataStore = controller.websiteDataStore
         configuration.userContentController = controller.sheetNavigation.userContentController
-        let sourceWebView = WebBoardWKWebView(frame: .zero, configuration: configuration)
+        let sourceWebView = RuntimeWKWebView(frame: .zero, configuration: configuration)
         let sourceRuntime = controller.webRuntime(for: sourceBoard, popupWebView: sourceWebView)
         let waiter = SheetInteractionWebViewLoadWaiter()
         await waiter.load(

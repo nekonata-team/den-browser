@@ -105,7 +105,8 @@ extension DenController {
                         urlString: item.url.absoluteString,
                         preferredWidth: preferredWidth ?? focusedBoard?.width,
                         recentItem: .url(WebURLPolicy.canonicalSheetURL(item.url)),
-                        deskID: deskID)
+                        deskID: deskID,
+                        existingRuntime: drawerPreviewRuntime?.id == item.id ? drawerPreviewRuntime : nil)
                 },
                 discardItem: { [self] itemID in
                     discardDrawerItem(itemID, advancesPreview: false, recordsDiscardHistory: false)
@@ -115,13 +116,13 @@ extension DenController {
         return boardID
     }
 
-    func drawerRuntime(for item: DrawerItem) -> DrawerPreviewRuntime {
+    func drawerRuntime(for item: DrawerItem) -> WebRuntime {
         ensureWebExtensionContext()
         if let drawerPreviewRuntime, drawerPreviewRuntime.id == item.id {
             return drawerPreviewRuntime
         }
         releaseDrawerPreview()
-        let runtime = DrawerPreviewRuntime(
+        let runtime = WebRuntime(
             item: item,
             websiteDataStore: websiteDataStore,
             sheetNavigation: sheetNavigation,
@@ -155,6 +156,7 @@ extension DenController {
             onPasteURLFailed: { [weak self] in
                 self?.reportFeedback("Clipboard does not contain a supported URL.", severity: .warning)
             },
+            downloadActivityOwnerID: ObjectIdentifier(self),
             onDownloadActivity: { [weak self] event in
                 self?.handleDownloadActivity(event)
             },

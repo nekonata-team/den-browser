@@ -33,7 +33,7 @@ struct InspectionBoardView: View {
     @Environment(\.accessibilityDifferentiateWithoutColor) private var differentiateWithoutColor
 
     private var targetBoard: BoardState? { controller.board(for: targetBoardID) }
-    private var targetRuntime: WebBoardRuntime? { controller.webRuntimes[targetBoardID] }
+    private var targetRuntime: WebRuntime? { controller.webRuntimes[targetBoardID] }
     private var inspectionHighlightColor: ProfileRGB? { profileRGB(from: profileColor) }
 
     var body: some View {

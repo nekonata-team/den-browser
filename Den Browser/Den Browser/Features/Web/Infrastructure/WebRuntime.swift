@@ -5,7 +5,7 @@ import DenInfrastructure
 import Foundation
 import WebKit
 
-final class WebBoardWKWebView: WKWebView {
+final class RuntimeWKWebView: WKWebView {
     var isFocusAllowed: () -> Bool = { false }
     var onUserInteraction: (() -> Void)?
     var onRejectedFocus: (() -> Void)?
@@ -35,7 +35,12 @@ final class WebBoardWKWebView: WKWebView {
 }
 
 @MainActor
-final class WebBoardRuntime: BaseWebRuntime, ObservableObject {
+final class WebRuntime: BaseWebRuntime, ObservableObject {
+    enum Presentation {
+        case drawer
+        case board
+    }
+
     struct Events {
         var onChange: (BoardID, URL?, String?) -> Void
         var onFullscreenChange: ((BoardID, Bool) -> Void)?
@@ -65,7 +70,8 @@ final class WebBoardRuntime: BaseWebRuntime, ObservableObject {
     @Published private(set) var isInspectionActive = false
     @Published private(set) var isInspectionCollecting = false
     @Published private(set) var inspectionPageGeneration = 0
-    var boardID: BoardID { BoardID(id) }
+    private(set) var boardID: BoardID
+    private var presentation: Presentation
     private var actionHighlightTask: Task<Void, Never>?
     private var inspectionHighlightColor: ProfileRGB?
     private var inspectionCollectionUserScript: WKUserScript?
@@ -104,7 +110,7 @@ final class WebBoardRuntime: BaseWebRuntime, ObservableObject {
         PerformanceTrace.mark("webProcessPID=\(processIdentifier)", category: "WebKit")
     }
 
-    init(
+    convenience init(
         board: BoardState,
         websiteDataStore: WKWebsiteDataStore,
         sheetNavigation: SheetNavigationManager,
@@ -115,34 +121,68 @@ final class WebBoardRuntime: BaseWebRuntime, ObservableObject {
         sheetNavigationActions: SheetNavigationManager.Actions,
         events: Events
     ) {
+        self.init(
+            id: board.id.rawValue,
+            initialURL: board.currentSheetURL,
+            sheetNavigationPaused: board.sheetNavigationPaused,
+            presentation: .board,
+            websiteDataStore: websiteDataStore,
+            sheetNavigation: sheetNavigation,
+            webExtensionHost: webExtensionHost,
+            webExtensionWindow: webExtensionWindow,
+            sheetScale: sheetScale,
+            popupWebView: popupWebView,
+            sheetNavigationActions: sheetNavigationActions,
+            events: events)
+    }
+
+    init(
+        id: UUID,
+        initialURL: URL?,
+        sheetNavigationPaused: Bool = false,
+        presentation: Presentation,
+        websiteDataStore: WKWebsiteDataStore,
+        sheetNavigation: SheetNavigationManager,
+        webExtensionHost: WebExtensionHost? = nil,
+        webExtensionWindow: MV3WebExtensionWindow? = nil,
+        sheetScale: Int,
+        popupWebView: WKWebView? = nil,
+        sheetNavigationActions: SheetNavigationManager.Actions,
+        events: Events
+    ) {
+        boardID = BoardID(id)
+        self.presentation = presentation
         self.sheetNavigation = sheetNavigation
         self.webExtensionHost = webExtensionHost
         self.webExtensionWindow = webExtensionWindow
         self.sheetNavigationActions = sheetNavigationActions
         self.events = events
-        PerformanceTrace.mark("WebBoardRuntime.init (\(board.id.rawValue.uuidString.prefix(8)))", category: "Board")
+        PerformanceTrace.mark("WebRuntime.init (\(id.uuidString.prefix(8)))", category: "Board")
 
         super.init(
-            id: board.id.rawValue,
+            id: id,
             initialURL: webExtensionHost != nil && webExtensionWindow != nil
                 ? nil
-                : board.currentSheetURL,
+                : initialURL,
             websiteDataStore: websiteDataStore,
             userContentController: popupWebView?.configuration.userContentController
                 ?? sheetNavigation.makeBoardUserContentController(),
             webExtensionController: webExtensionHost?.controller,
             sheetScale: sheetScale,
-            enableElementFullscreen: true,
+            enableElementFullscreen: presentation == .board,
             existingWebView: popupWebView,
             makeWebView: { configuration in
-                WebBoardWKWebView(frame: .zero, configuration: configuration)
+                RuntimeWKWebView(frame: .zero, configuration: configuration)
             }
         )
+        if presentation == .drawer {
+            self.sheetNavigationActions.onNavigateCurrentSheet = { [weak self] url in self?.load(url) }
+        }
         webView.allowsMagnification = true
 
-        if let boardWebView = webView as? WebBoardWKWebView {
+        if let boardWebView = webView as? RuntimeWKWebView {
             boardWebView.isFocusAllowed = { [weak self] in
-                self?.events.isFocused() ?? false
+                self?.presentation == .drawer || (self?.events.isFocused() ?? false)
             }
             boardWebView.onUserInteraction = { [weak self] in
                 self?.events.onFocus()
@@ -156,15 +196,15 @@ final class WebBoardRuntime: BaseWebRuntime, ObservableObject {
 
         sheetNavigation.didOpen(
             webView,
-            boardID: boardID,
-            paused: board.sheetNavigationPaused,
-            actions: sheetNavigationActions
+            boardID: presentation == .board ? boardID : nil,
+            paused: sheetNavigationPaused,
+            actions: self.sheetNavigationActions
         )
         if let webExtensionHost, let webExtensionWindow {
             webExtensionHost.register(
                 webView: webView,
                 in: webExtensionWindow,
-                initialURL: popupWebView == nil ? board.currentSheetURL : nil
+                initialURL: popupWebView == nil ? initialURL : nil
             ) { [weak self] url in
                 self?.load(url)
             }
@@ -195,9 +235,26 @@ final class WebBoardRuntime: BaseWebRuntime, ObservableObject {
             }
         }
 
-        if board.currentSheetURL != nil {
+        if initialURL != nil {
             isShowingInitialLoadFallback = true
         }
+    }
+
+    /// Changes the presentation owner without loading or disposing the live page.
+    func attach(
+        to board: BoardState,
+        sheetNavigationActions: SheetNavigationManager.Actions,
+        events: Events
+    ) {
+        boardID = board.id
+        presentation = .board
+        webView.configuration.preferences.isElementFullscreenEnabled = true
+        updateOwner(sheetNavigationActions: sheetNavigationActions, events: events)
+        sheetNavigation.didOpen(
+            webView,
+            boardID: board.id,
+            paused: board.sheetNavigationPaused,
+            actions: sheetNavigationActions)
     }
 
     func updateOwner(
@@ -219,9 +276,9 @@ final class WebBoardRuntime: BaseWebRuntime, ObservableObject {
             }
         }
         sheetNavigation.updateActions(sheetNavigationActions, for: webView)
-        if let boardWebView = webView as? WebBoardWKWebView {
+        if let boardWebView = webView as? RuntimeWKWebView {
             boardWebView.isFocusAllowed = { [weak self] in
-                self?.events.isFocused() ?? false
+                self?.presentation == .drawer || (self?.events.isFocused() ?? false)
             }
             boardWebView.onUserInteraction = { [weak self] in
                 self?.events.onFocus()
@@ -321,6 +378,22 @@ final class WebBoardRuntime: BaseWebRuntime, ObservableObject {
         button: MouseButton?,
         opensNewContext: Bool
     ) -> Bool {
+        if presentation == .drawer {
+            if WebNavigationPolicy.shouldOpenLinkInNewBoard(
+                navigationType: navigationType,
+                modifierFlags: modifierFlags,
+                button: button,
+                url: url
+            ) {
+                openBoardFromModifierClick(url, modifierFlags: modifierFlags)
+                return true
+            }
+            if opensNewContext && navigationType == .linkActivated {
+                sheetNavigationActions.onKeepInDrawer(url)
+                return true
+            }
+        }
+
         if WebNavigationPolicy.shouldKeepLinkInDrawer(
             navigationType: navigationType,
             modifierFlags: modifierFlags,
@@ -371,7 +444,7 @@ final class WebBoardRuntime: BaseWebRuntime, ObservableObject {
 
     override func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
         PerformanceTrace.mark(
-            "WebBoardRuntime.didFinish navigation (\(boardID.rawValue.uuidString.prefix(8)))",
+            "WebRuntime.didFinish navigation (\(boardID.rawValue.uuidString.prefix(8)))",
             category: "Board")
         traceWebProcessIdentifier()
         sheetNavigation.refreshConfiguration(for: webView)
@@ -515,7 +588,7 @@ final class WebBoardRuntime: BaseWebRuntime, ObservableObject {
 
     override func webView(_ webView: WKWebView, didCommit navigation: WKNavigation!) {
         PerformanceTrace.mark(
-            "WebBoardRuntime.didCommit navigation (\(boardID.rawValue.uuidString.prefix(8)))",
+            "WebRuntime.didCommit navigation (\(boardID.rawValue.uuidString.prefix(8)))",
             category: "Board")
         traceWebProcessIdentifier()
         didTerminateContentProcess = false
@@ -577,6 +650,13 @@ final class WebBoardRuntime: BaseWebRuntime, ObservableObject {
         for navigationAction: WKNavigationAction,
         windowFeatures: WKWindowFeatures
     ) -> WKWebView? {
+        if presentation == .drawer {
+            return super.webView(
+                webView,
+                createWebViewWith: configuration,
+                for: navigationAction,
+                windowFeatures: windowFeatures)
+        }
         guard navigationAction.targetFrame == nil else { return nil }
         let url = navigationAction.request.url
 
@@ -596,7 +676,7 @@ final class WebBoardRuntime: BaseWebRuntime, ObservableObject {
         }
 
         configuration.userContentController = sheetNavigation.makeBoardUserContentController()
-        let popup = WebBoardWKWebView(frame: .zero, configuration: configuration)
+        let popup = RuntimeWKWebView(frame: .zero, configuration: configuration)
         popup.pageZoom = webView.pageZoom
         guard events.onCreatePopupBoard(popup, url, navigationAction.modifierFlags) else { return nil }
         return popup

@@ -15,7 +15,7 @@ struct BoardRuntimeWebUITests {
         actions.onOpenBoard = { openedURL = $0 }
         actions.onOpenBoardInBackground = { backgroundURL = $0 }
 
-        let runtime = WebBoardRuntime(
+        let runtime = WebRuntime(
             board: BoardState(label: "Board", width: 320, currentSheetURL: nil),
             websiteDataStore: .nonPersistent(),
             sheetNavigation: makeTestSheetNavigationManager(scriptSource: ""),
@@ -211,7 +211,7 @@ struct BoardRuntimeWebUITests {
         let item = DrawerItem(url: try #require(URL(string: "file:///tmp/drawer-preview.html")))
         var keptURL: URL?
         var backgroundURL: URL?
-        let runtime = DrawerPreviewRuntime(
+        let runtime = WebRuntime(
             item: item,
             websiteDataStore: .nonPersistent(),
             sheetNavigation: manager,
@@ -411,7 +411,7 @@ struct BoardRuntimeWebUITests {
         var finishedFilename: String?
         var failedFilename: String?
         var activityEvents: [DownloadActivityEvent] = []
-        let runtime = WebBoardRuntime(
+        let runtime = WebRuntime(
             board: BoardState(label: "Board", width: 320, currentSheetURL: nil),
             websiteDataStore: .nonPersistent(),
             sheetNavigation: makeTestSheetNavigationManager(scriptSource: ""),

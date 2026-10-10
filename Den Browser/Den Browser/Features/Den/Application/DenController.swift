@@ -64,7 +64,7 @@ final class DenController {
     private(set) var webExtensionHost: WebExtensionHost?
     private(set) var webExtensionWindow: MV3WebExtensionWindow?
 
-    var webRuntimes: [BoardID: WebBoardRuntime] {
+    var webRuntimes: [BoardID: WebRuntime] {
         get { storage.webRuntimes }
         set { storage.webRuntimes = newValue }
     }
@@ -74,7 +74,7 @@ final class DenController {
     }
     @ObservationIgnored var onWindowEffect: ((DenWindowEffect) -> Void)?
     @ObservationIgnored private let windowResources = DenWindowResources()
-    var drawerPreviewRuntime: DrawerPreviewRuntime? {
+    var drawerPreviewRuntime: WebRuntime? {
         get { windowResources.drawerPreview }
         set { windowResources.drawerPreview = newValue }
     }

@@ -146,7 +146,7 @@ The temporary live web presentation expanded beneath a Drawer Item in one Profil
 _Avoid_: Board, floating Board, temporary Desk
 
 **Drawer Placement**:
-Creating a Board from a Drawer Item in the Focused Desk. The placed item leaves the Drawer.
+Creating a Board from a Drawer Item in the Focused Desk. Placement continues the invoking window’s live Drawer Preview when present; the placed item leaves the Drawer.
 _Avoid_: Restore, open tab, move to workspace
 
 **Drawer Discard**:

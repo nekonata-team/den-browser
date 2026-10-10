@@ -12,7 +12,7 @@ private struct TerminalSignalError: LocalizedError {
 }
 
 extension DenController {
-    func webRuntime(for board: BoardState, popupWebView: WKWebView? = nil) -> WebBoardRuntime {
+    func webRuntime(for board: BoardState, popupWebView: WKWebView? = nil) -> WebRuntime {
         precondition(board.isWeb, "Only Web Boards can create a web runtime")
         ensureWebExtensionContext()
         let actions = sheetNavigationActions(for: board)
@@ -32,7 +32,7 @@ extension DenController {
             return runtime
         }
 
-        let runtime = WebBoardRuntime(
+        let runtime = WebRuntime(
             board: board,
             websiteDataStore: websiteDataStore,
             sheetNavigation: sheetNavigation,
@@ -45,6 +45,16 @@ extension DenController {
         )
         webRuntimes[board.id] = runtime
         return runtime
+    }
+
+    func attachWebRuntime(_ runtime: WebRuntime, to board: BoardState) {
+        runtime.attach(
+            to: board,
+            sheetNavigationActions: sheetNavigationActions(for: board),
+            events: boardRuntimeEvents(for: board))
+        webRuntimes[board.id] = runtime
+        storage.onRuntimeOwnerChange?(board.id, self)
+        runtime.activateWebExtensionTab()
     }
 
     func terminalRuntime(for board: BoardState) -> TerminalRuntime {
@@ -158,7 +168,7 @@ extension DenController {
             })
     }
 
-    private func boardRuntimeEvents(for board: BoardState) -> WebBoardRuntime.Events {
+    private func boardRuntimeEvents(for board: BoardState) -> WebRuntime.Events {
         .init(
             onChange: { [weak self] boardID, url, title in
                 self?.updateBoard(boardID: boardID, url: url, title: title)
@@ -317,7 +327,7 @@ extension DenController {
         storage.boardRuntimes.dispose(boardID)
     }
 
-    var focusedWebRuntime: WebBoardRuntime? {
+    var focusedWebRuntime: WebRuntime? {
         guard
             let desk = focusedDesk,
             let focusedBoardID = desk.focusedBoardID,

@@ -34,7 +34,7 @@ extension DenController {
             successMessage: { _ in "Copied Current Sheet screenshot to clipboard." })
     }
 
-    private func focusedSheetRuntime() -> WebBoardRuntime? {
+    private func focusedSheetRuntime() -> WebRuntime? {
         guard let board = focusedBoard, board.isWeb else {
             reportFeedback("No focused Web Board.", severity: .warning)
             return nil

@@ -332,6 +332,166 @@ struct DenControllerDrawerTests {
         #expect(!windowModel.isDrawerOpen)
     }
 
+    @Test func placementTransfersLiveDocumentWithoutReloading() async throws {
+        // Arrange
+        let directory = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let url = directory.appending(path: "preview.html")
+        try "<html><head><title>Live Preview</title></head><body></body></html>".write(
+            to: url, atomically: true, encoding: .utf8)
+        let item = DrawerItem(url: url)
+        let source = desk("Desk")
+        let controller = DenController(
+            state: DenState(desks: [source], focusedDeskID: source.id, drawerItems: [item]),
+            sheetNavigation: makeTestSheetNavigationManager(scriptSource: ""))
+        let composition = DenWindowComposition(controller: controller)
+        composition.connect()
+        defer {
+            composition.disconnect()
+            controller.releaseRuntimes()
+        }
+        composition.model.focusDrawerItem(item.id)
+        let preview = controller.drawerRuntime(for: item)
+        for _ in 0..<200 where preview.webView.title != "Live Preview" || preview.webView.isLoading {
+            try await Task.sleep(for: .milliseconds(10))
+        }
+        #expect(preview.webView.title == "Live Preview")
+        let documentToken = try #require(
+            try await preview.webView.evaluateJavaScript("window.documentToken = crypto.randomUUID()") as? String)
+
+        // Act
+        let boardID = try #require(controller.placeDrawerItemAsBoard(item.id))
+        let placed = try #require(controller.webRuntimes[boardID])
+        let transferredToken = try await placed.webView.evaluateJavaScript("window.documentToken") as? String
+
+        // Assert
+        #expect(placed === preview)
+        #expect(placed.boardID == boardID)
+        #expect(placed.webView.navigationDelegate === placed)
+        #expect(placed.webView.uiDelegate === placed)
+        #expect(transferredToken == documentToken)
+        #expect(!placed.webView.isLoading)
+        #expect(controller.focusedBoard?.label == "Live Preview")
+        #expect(controller.drawerPreviewRuntime == nil)
+        #expect(controller.state.drawerItems.isEmpty)
+    }
+
+    @Test func placementPreservesDownloadsAndRoutesSubsequentChangesToBoard() throws {
+        // Arrange
+        let item = DrawerItem(url: try #require(URL(string: "https://preview.example/")))
+        let source = desk("Desk")
+        let controller = DenController(
+            state: DenState(desks: [source], focusedDeskID: source.id, drawerItems: [item]))
+        defer { controller.releaseRuntimes() }
+        let preview = controller.drawerRuntime(for: item)
+        let directory = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let temporaryURL = directory.appending(path: "download.part")
+        let destinationURL = directory.appending(path: "download.txt")
+        try Data("download contents".utf8).write(to: temporaryURL)
+        let download = NSObject()
+        let key = ObjectIdentifier(download)
+        let downloadID = preview.registerPendingDownload(
+            for: key, destinationURL: destinationURL, temporaryURL: temporaryURL)
+        let nextURL = try #require(URL(string: "https://preview.example/next"))
+
+        // Act
+        let boardID = try #require(controller.placeDrawerItemAsBoard(item.id))
+        controller.releaseWindowResources()
+        preview.handleURLOrTitleChange(url: nextURL, title: "Continued")
+        let downloadCompleted = preview.completeDownload(for: key)
+
+        // Assert
+        #expect(controller.webRuntimes[boardID] === preview)
+        #expect(preview.webView.navigationDelegate === preview)
+        #expect(controller.focusedBoard?.currentSheetURL == nextURL)
+        #expect(controller.focusedBoard?.label == "Continued")
+        #expect(downloadCompleted)
+        #expect(try Data(contentsOf: destinationURL) == Data("download contents".utf8))
+        #expect(!preview.activeDownloadActivities.contains { $0.id == downloadID })
+        #expect(controller.state.drawerItems.isEmpty)
+    }
+
+    @Test func placementSwitchesPreviewActionsAndFocusToBoard() throws {
+        // Arrange
+        let item = DrawerItem(url: try #require(URL(string: "https://preview.example/")))
+        let source = desk("Desk")
+        let manager = makeTestSheetNavigationManager(scriptSource: "")
+        manager.setEnabled(true)
+        let controller = DenController(
+            state: DenState(desks: [source], focusedDeskID: source.id, drawerItems: [item]),
+            sheetNavigation: manager)
+        defer { controller.releaseRuntimes() }
+        let preview = controller.drawerRuntime(for: item)
+        let destination = try #require(URL(string: "https://board.example/"))
+
+        // Act
+        let boardID = try #require(controller.placeDrawerItemAsBoard(item.id))
+        let handled = preview.handleLinkNavigation(
+            destination,
+            navigationType: .linkActivated,
+            modifierFlags: [.command, .shift],
+            button: .primary,
+            opensNewContext: false)
+        let webView = try #require(preview.webView as? RuntimeWKWebView)
+        let focusAllowedAfterLeaving = webView.isFocusAllowed()
+        controller.focusBoard(boardID)
+        let focusAllowedAfterReturning = webView.isFocusAllowed()
+        let boardIDCopied = manager.handleScriptMessage(["action": "copyBoardID"], from: webView)
+
+        // Assert
+        #expect(handled)
+        #expect(controller.focusedDesk?.boards.count == 2)
+        #expect(controller.focusedDesk?.boards.last?.currentSheetURL == destination)
+        #expect(controller.state.drawerItems.isEmpty)
+        #expect(!focusAllowedAfterLeaving)
+        #expect(focusAllowedAfterReturning)
+        #expect(boardIDCopied)
+        #expect(controller.pasteboard.string(forType: .string) == boardID.rawValue.uuidString.lowercased())
+    }
+
+    @Test func failedPlacementKeepsPreviewAndDrawerItem() throws {
+        // Arrange
+        let item = DrawerItem(url: try #require(URL(string: "https://preview.example/")))
+        let source = desk("Desk")
+        let controller = DenController(
+            state: DenState(desks: [source], focusedDeskID: source.id, drawerItems: [item]))
+        defer { controller.releaseRuntimes() }
+        let preview = controller.drawerRuntime(for: item)
+
+        // Act
+        let boardID = controller.placeDrawerItemAsBoard(item.id, deskID: DeskID())
+
+        // Assert
+        #expect(boardID == nil)
+        #expect(controller.drawerPreviewRuntime === preview)
+        #expect(preview.webView.navigationDelegate === preview)
+        #expect(controller.state.drawerItems == [item])
+        #expect(controller.webRuntimes.isEmpty)
+    }
+
+    @Test func sharedPlacementTransfersInvokingWindowsPreviewAndDisposesOtherPreview() throws {
+        // Arrange
+        let item = DrawerItem(url: try #require(URL(string: "https://preview.example/")))
+        try withSharedDrawerControllers(items: [item]) { first, second in
+            let firstPreview = first.drawerRuntime(for: item)
+            let secondPreview = second.drawerRuntime(for: item)
+
+            // Act
+            let boardID = try #require(first.placeDrawerItemAsBoard(item.id))
+
+            // Assert
+            #expect(first.webRuntimes[boardID] === firstPreview)
+            #expect(second.webRuntimes[boardID] === firstPreview)
+            #expect(firstPreview.webView.navigationDelegate === firstPreview)
+            #expect(secondPreview.webView.navigationDelegate == nil)
+            #expect(first.drawerPreviewRuntime == nil)
+            #expect(second.drawerPreviewRuntime == nil)
+        }
+    }
+
     @Test func keepAndPlaceReturnIdentifiersAndDiscardReturnsSuccess() throws {
         let source = desk("Desk")
         let controller = DenController(state: DenState(desks: [source], focusedDeskID: source.id))

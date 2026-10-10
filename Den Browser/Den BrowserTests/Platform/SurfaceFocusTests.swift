@@ -56,7 +56,7 @@ struct SurfaceFocusTests {
     }
 
     @Test func boardWKWebViewBlocksAutofocusWhenUnfocused() {
-        let webView = WebBoardWKWebView(frame: .zero, configuration: WKWebViewConfiguration())
+        let webView = RuntimeWKWebView(frame: .zero, configuration: WKWebViewConfiguration())
         var isFocused = false
         var rejectedCount = 0
         webView.isFocusAllowed = { isFocused }
@@ -71,7 +71,7 @@ struct SurfaceFocusTests {
     }
 
     @Test func boardWKWebViewNotifiesUserInteractionOnMouseDown() {
-        let webView = WebBoardWKWebView(
+        let webView = RuntimeWKWebView(
             frame: NSRect(x: 0, y: 0, width: 100, height: 100),
             configuration: WKWebViewConfiguration())
         var interactionCount = 0

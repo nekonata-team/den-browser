@@ -172,7 +172,8 @@ extension DenController {
         focus: Bool = true,
         origin: BoardOperationOrigin = .interactive,
         recentItem: RecentItem? = nil,
-        deskID: DeskID? = nil
+        deskID: DeskID? = nil,
+        existingRuntime: WebRuntime? = nil
     ) -> BoardID? {
         guard let url = normalizedURL(from: urlString) else { return nil }
         let label = url.host(percentEncoded: false) ?? url.absoluteString
@@ -185,7 +186,8 @@ extension DenController {
                 focus: focus,
                 origin: origin,
                 deskID: deskID,
-                save: recentItem == nil)
+                save: recentItem == nil,
+                existingRuntime: existingRuntime)
         else { return nil }
         if let recentItem {
             saveRecentItem(recentItem)
@@ -292,7 +294,8 @@ extension DenController {
         focus: Bool,
         origin: BoardOperationOrigin,
         deskID: DeskID? = nil,
-        save: Bool = true
+        save: Bool = true,
+        existingRuntime: WebRuntime? = nil
     ) -> Bool {
         guard
             let insertion = BoardInsertion.insert(
@@ -301,6 +304,10 @@ extension DenController {
                 deskID: deskID,
                 afterBoardID: afterBoardID, focus: focus)
         else { return false }
+        if let existingRuntime {
+            if drawerPreviewRuntime === existingRuntime { drawerPreviewRuntime = nil }
+            attachWebRuntime(existingRuntime, to: board)
+        }
         let deskIndex = insertion.deskIndex.rawValue
         let insertionAfterBoardID = insertion.afterBoardID
 
@@ -325,6 +332,9 @@ extension DenController {
             onWindowEffect?(.suppressBoardMutationAnimation)
         }
         insert()
+        if let existingRuntime {
+            updateBoard(boardID: board.id, url: existingRuntime.webView.url, title: existingRuntime.webView.title)
+        }
         if board.isWeb {
             dispatchDenOperationEvent(.webBoardOpened)
         } else if board.isTerminal {

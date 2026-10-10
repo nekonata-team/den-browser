@@ -97,7 +97,7 @@ struct SheetNavigationTests {
 
         var continuation: AsyncStream<(URL?, String?)>.Continuation?
         let changes = AsyncStream<(URL?, String?)> { continuation = $0 }
-        let runtime = WebBoardRuntime(
+        let runtime = WebRuntime(
             board: BoardState(label: "Local", width: 520, currentSheetURL: htmlURL),
             websiteDataStore: .nonPersistent(),
             sheetNavigation: makeTestSheetNavigationManager(scriptSource: ""),
@@ -131,7 +131,7 @@ struct SheetNavigationTests {
     }
 
     @Test func boardRuntimeAppliesSafariUserAgent() {
-        let userAgent = WebBoardRuntime.defaultUserAgent
+        let userAgent = WebRuntime.defaultUserAgent
         #expect(userAgent.contains("Version/"))
         #expect(userAgent.contains("Safari/"))
     }
@@ -714,7 +714,7 @@ struct SheetNavigationTests {
 
     @Test func boardWebViewUsesIsolatedSheetNavigationControllerAndActionHighlight() async throws {
         let manager = makeTestSheetNavigationManager(scriptSource: "")
-        let runtime = WebBoardRuntime(
+        let runtime = WebRuntime(
             board: board("Navigation", url: "about:blank"),
             websiteDataStore: .nonPersistent(),
             sheetNavigation: manager,
@@ -1209,7 +1209,7 @@ struct SheetNavigationTests {
             changeContinuation = continuation
         }
 
-        let runtime = WebBoardRuntime(
+        let runtime = WebRuntime(
             board: board("Initial", url: "about:blank"),
             websiteDataStore: .nonPersistent(),
             sheetNavigation: manager,
@@ -1252,7 +1252,7 @@ struct SheetNavigationTests {
     }
 
     @Test func boardRuntimeFindsPageFavicon() async throws {
-        let runtime = WebBoardRuntime(
+        let runtime = WebRuntime(
             board: BoardState(label: "Initial", width: 520, currentSheetURL: nil),
             websiteDataStore: .nonPersistent(),
             sheetNavigation: makeTestSheetNavigationManager(scriptSource: ""),
@@ -1409,7 +1409,7 @@ struct SheetNavigationTests {
         onFullscreenChange: ((BoardID, Bool) -> Void)? = nil,
         onDownloadFinished: @escaping (String) -> Void = { _ in },
         onDownloadFailed: @escaping (String) -> Void = { _ in }
-    ) -> WebBoardRuntime.Events {
+    ) -> WebRuntime.Events {
         .init(
             onChange: onChange,
             onFullscreenChange: onFullscreenChange,

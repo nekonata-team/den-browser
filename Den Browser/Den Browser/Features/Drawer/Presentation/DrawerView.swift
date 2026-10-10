@@ -15,7 +15,7 @@ struct DrawerView: View {
     let isDenMode: () -> Bool
     let isDrawerOpen: () -> Bool
     let motionPreference: MotionPreference
-    let drawerRuntime: (DrawerItem) -> DrawerPreviewRuntime
+    let drawerRuntime: (DrawerItem) -> WebRuntime
     let placeFromContextMenu: (UUID) -> Void
     let placeAsBoard: (UUID) -> Void
 

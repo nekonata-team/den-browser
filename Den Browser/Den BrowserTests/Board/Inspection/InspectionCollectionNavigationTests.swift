@@ -108,8 +108,8 @@ struct InspectionCollectionNavigationTests {
         #expect(stoppedInspection == "undefined")
     }
 
-    private func makeRuntime(_ manager: SheetNavigationManager) -> WebBoardRuntime {
-        WebBoardRuntime(
+    private func makeRuntime(_ manager: SheetNavigationManager) -> WebRuntime {
+        WebRuntime(
             board: BoardState(label: "Board", width: 360, currentSheetURL: nil),
             websiteDataStore: .nonPersistent(),
             sheetNavigation: manager,

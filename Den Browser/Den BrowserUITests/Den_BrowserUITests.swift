@@ -281,6 +281,53 @@ final class Den_BrowserUITests: XCTestCase, BDD {
         }
     }
 
+    // Protects WebView reparenting and responder activation through SwiftUI placement.
+    // Unit tests cannot observe keyboard delivery to the newly mounted Board surface.
+    @MainActor
+    func testDrawerPlacementPreservesLivePageAndReceivesBoardInput() throws {
+        let directory = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        fixtureDirectories.append(directory)
+        let url = directory.appending(path: "drawer.html")
+        try """
+        <html><head><title>Drawer Fixture</title></head><body>
+          <input aria-label="Live input">
+        </body></html>
+        """.write(to: url, atomically: true, encoding: .utf8)
+        let app = launchApp(boardCount: .one, drawerSheetURL: url)
+        let drawer = app.descendants(matching: .any).matching(identifier: "drawer").firstMatch
+        let previewInput = drawer.textFields["Live input"].firstMatch
+        let placedInput = app.textFields["Live input"].firstMatch
+
+        given("a Drawer Preview holds a live value") {
+            enterDenMode(in: app)
+            app.typeKey(.tab, modifierFlags: [])
+            XCTAssertTrue(drawer.waitForExistence(timeout: 5))
+            app.typeKey(.return, modifierFlags: [])
+            XCTAssertTrue(previewInput.waitForExistence(timeout: 10))
+            previewInput.click()
+            app.typeText("seed")
+        }
+
+        when("placing the Preview into the Desk") {
+            app.buttons["Place Drawer Fixture as Board"].click()
+        }
+
+        then("the Board keeps the live value") {
+            XCTAssertTrue(drawer.waitForNonExistence(timeout: 5))
+            XCTAssertTrue(placedInput.waitForExistence(timeout: 5))
+            XCTAssertEqual(placedInput.value as? String, "seed")
+        }
+
+        when("typing after placement without clicking the Sheet again") {
+            app.typeText("continued")
+        }
+
+        then("the placed Board receives that input") {
+            XCTAssertEqual(placedInput.value as? String, "seedcontinued")
+        }
+    }
+
     @MainActor
     func testOrganizesBoardsUsingPointer() throws {
         let app = launchApp(boardCount: .three)
@@ -551,7 +598,8 @@ final class Den_BrowserUITests: XCTestCase, BDD {
         boardCount: UITestBoardCount = .three,
         terminalBoard: Bool = false,
         sheetNavigationEnabled: Bool = false,
-        multipleDrawerItems: Bool = false
+        multipleDrawerItems: Bool = false,
+        drawerSheetURL: URL? = nil
     ) -> XCUIApplication {
         let app = uiTestApplication()
         let runID = UUID().uuidString
@@ -566,7 +614,8 @@ final class Den_BrowserUITests: XCTestCase, BDD {
                 fixture: fixture,
                 boardCount: boardCount,
                 terminalBoard: terminalBoard,
-                multipleDrawerItems: multipleDrawerItems
+                multipleDrawerItems: multipleDrawerItems,
+                drawerSheetURL: drawerSheetURL
             )
             .write(to: seedURL, options: .atomic)
         } catch {

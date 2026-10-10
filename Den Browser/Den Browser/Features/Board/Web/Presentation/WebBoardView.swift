@@ -15,7 +15,7 @@ struct WebBoardView: View {
     let isFocused: Bool
     let focusRequest: BoardFocusRequest?
     let isDragging: Bool
-    @ObservedObject var runtime: WebBoardRuntime
+    @ObservedObject var runtime: WebRuntime
     let profileColor: Color
     let width: Double
     let height: Double

@@ -6,7 +6,7 @@ import Observation
 @MainActor
 @Observable
 final class DenBoardRuntimes {
-    var web: [BoardID: WebBoardRuntime] = [:]
+    var web: [BoardID: WebRuntime] = [:]
     @ObservationIgnored var terminal: [BoardID: TerminalRuntime] = [:]
     @ObservationIgnored private let onDispose: (BoardID) -> Void
 

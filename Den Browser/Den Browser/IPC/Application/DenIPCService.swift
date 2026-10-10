@@ -13,7 +13,7 @@ final class DenIPCService {
         let profileID: ProfileID
         let controller: DenController
         let board: BoardState
-        let runtime: WebBoardRuntime
+        let runtime: WebRuntime
     }
 
     private var server: DenSocketServer?

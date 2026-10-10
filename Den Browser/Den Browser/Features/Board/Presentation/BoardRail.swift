@@ -245,7 +245,7 @@ struct BoardRail: View {
 }
 
 private struct BoardRailFavicon: View {
-    @ObservedObject var runtime: WebBoardRuntime
+    @ObservedObject var runtime: WebRuntime
 
     var body: some View {
         AsyncImage(url: runtime.faviconURL) { image in

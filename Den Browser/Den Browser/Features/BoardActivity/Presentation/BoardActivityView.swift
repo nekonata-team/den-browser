@@ -160,7 +160,7 @@ struct BoardActivityView: View {
 
 private struct BoardActivityRow: View {
     let board: BoardState
-    let webRuntime: WebBoardRuntime?
+    let webRuntime: WebRuntime?
     let terminalRuntime: TerminalRuntime?
     let usage: ProcessResourceUsage?
     let processLabel: String?
@@ -353,7 +353,7 @@ private struct BoardActivityTableHeader: View {
 }
 
 private struct WebActivityStateIcon: View {
-    @ObservedObject var runtime: WebBoardRuntime
+    @ObservedObject var runtime: WebRuntime
 
     @ViewBuilder
     var body: some View {

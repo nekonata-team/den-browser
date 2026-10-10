@@ -54,7 +54,7 @@ final class DenProfileResources {
 
     let boardRuntimes: DenBoardRuntimes
 
-    var webRuntimes: [BoardID: WebBoardRuntime] {
+    var webRuntimes: [BoardID: WebRuntime] {
         get { boardRuntimes.web }
         set { boardRuntimes.web = newValue }
     }
