@@ -434,6 +434,57 @@ struct KeyboardShortcutTests {
                 == .perform(.board(.decreaseSheetSize)))
     }
 
+    @Test(arguments: [false, true])
+    func commandDCreatesTerminalSideBoardInEveryInputMode(_ isDenMode: Bool) throws {
+        // Arrange
+        let primary = BoardState(label: "Terminal", width: 520, workingDirectory: "/work")
+        let controller = try makeController(boards: [primary])
+        let composition = DenWindowComposition(controller: controller)
+        let windowModel = composition.model
+        composition.connect()
+        defer { composition.disconnect() }
+        windowModel.isDenMode = isDenMode
+        let commandD = try keyEvent(
+            characters: "d", charactersIgnoringModifiers: "d", modifiers: [.command], keyCode: 2)
+
+        // Act
+        let handled = KeyboardController.handle(commandD, controller: controller, windowModel: windowModel)
+
+        // Assert
+        let sideBoard = try #require(controller.focusedBoard)
+        #expect(handled)
+        #expect(controller.state.desks[0].boards.count == 2)
+        #expect(sideBoard.id != primary.id)
+        #expect(sideBoard.label == "Terminal Side Board")
+        #expect(sideBoard.isTerminal)
+        #expect(sideBoard.isSideBoard)
+        #expect(sideBoard.sideBoardTargetBoardID == primary.id)
+        #expect(sideBoard.terminalWorkingDirectory == "/work")
+        #expect(controller.createTerminalSideBoard(targetBoardID: sideBoard.id) == sideBoard.id)
+        #expect(controller.state.desks[0].boards.count == 2)
+    }
+
+    @Test func commandDIsDisabledForWebBoards() throws {
+        // Arrange
+        let webBoard = board("Web")
+        let controller = try makeController(boards: [webBoard])
+        let composition = DenWindowComposition(controller: controller)
+        let windowModel = composition.model
+        composition.connect()
+        defer { composition.disconnect() }
+        let commandD = try keyEvent(
+            characters: "d", charactersIgnoringModifiers: "d", modifiers: [.command], keyCode: 2)
+
+        // Act
+        let decision = KeyboardController.decision(for: commandD, controller: controller, windowModel: windowModel)
+        let handled = KeyboardController.handle(commandD, controller: controller, windowModel: windowModel)
+
+        // Assert
+        #expect(decision == .forward(.sheet))
+        #expect(!handled)
+        #expect(controller.state.desks[0].boards == [webBoard])
+    }
+
     @Test func controlTabDeskShortcutsNavigateAndReturn() throws {
         let firstDesk = DeskState(label: "First", boards: [])
         let secondDesk = DeskState(label: "Second", boards: [])

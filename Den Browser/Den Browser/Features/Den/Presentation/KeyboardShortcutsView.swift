@@ -100,6 +100,7 @@ struct KeyboardShortcutsView: View {
                 title: "Board",
                 items: [
                     item(["⌘", "T"], "Open Board"),
+                    item(["⌘", "D"], "Create Terminal Side Board"),
                     item(["n", "/", "Space"], "Den Mode: Open Board"),
                     item(["v"], "Den Mode: Open Board from clipboard"),
                     item(["g", "then", "key"], "Den Mode: Start Essential"),

@@ -1,5 +1,6 @@
 import AppKit
 import DenApplication
+import DenDomain
 import DenPresentationModels
 import Foundation
 
@@ -55,6 +56,7 @@ struct InputContext {
     let surface: KeyboardSurface?
     let mode: KeyboardMode
     let hasFocusedBoard: Bool
+    let focusedBoardIsTerminal: Bool
 
     init(controller: DenController, windowModel: DenWindowModel, event: NSEvent) {
         isFullscreenActive = windowModel.isFullscreenActive
@@ -92,6 +94,7 @@ struct InputContext {
                 }
         }
         hasFocusedBoard = controller.focusedBoard != nil
+        focusedBoardIsTerminal = controller.focusedBoard?.isTerminal == true
     }
 
     private static func isDrawerPreviewFirstResponder(_ event: NSEvent, controller: DenController) -> Bool {

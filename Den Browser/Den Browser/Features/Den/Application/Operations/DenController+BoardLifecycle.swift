@@ -221,6 +221,38 @@ extension DenController {
     }
 
     @discardableResult
+    func createTerminalSideBoard(targetBoardID: BoardID, focus: Bool = true) -> BoardID? {
+        guard let requestedIndices = boardIndices(for: targetBoardID) else { return nil }
+        let requestedBoard = state.desks[requestedIndices.deskOffset].boards[requestedIndices.boardOffset]
+        let primaryBoardID = requestedBoard.sideBoardTargetBoardID ?? requestedBoard.id
+        guard let indices = boardIndices(for: primaryBoardID) else { return nil }
+        let primaryBoard = state.desks[indices.deskOffset].boards[indices.boardOffset]
+        guard primaryBoard.isTerminal else { return nil }
+
+        if let existingSideBoard = state.desks[indices.deskOffset].boards.first(where: {
+            $0.sideBoardTargetBoardID == primaryBoardID
+        }) {
+            guard existingSideBoard.isTerminal else { return nil }
+            if focus { focusBoard(existingSideBoard.id, exitsDenMode: true) }
+            return existingSideBoard.id
+        }
+
+        let workingDirectory =
+            primaryBoard.terminalWorkingDirectory
+            ?? FileManager.default.homeDirectoryForCurrentUser.path
+        var board = BoardState(label: "Terminal Side Board", width: 360, workingDirectory: workingDirectory)
+        board.role = .sideBoard(targetBoardID: primaryBoardID)
+        guard
+            insertBoard(
+                board,
+                afterBoardID: primaryBoardID,
+                focus: focus,
+                origin: focus ? .interactive : .cli)
+        else { return nil }
+        return board.id
+    }
+
+    @discardableResult
     func createPopupBoard(
         _ popupWebView: WKWebView,
         requestedURL: URL?,

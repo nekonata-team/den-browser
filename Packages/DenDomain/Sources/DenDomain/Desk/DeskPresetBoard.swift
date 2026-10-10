@@ -159,7 +159,16 @@ public struct DeskPresetBoard: Codable, Equatable {
                         width: presetBoard.width,
                         targetBoardID: boardIDs[targetBoardIndex]))
             } else {
-                guard let board = presetBoard.makeBoard(id: boardIDs[index]) else { return nil }
+                guard var board = presetBoard.makeBoard(id: boardIDs[index]) else { return nil }
+                if case .terminal = presetBoard.kind,
+                    let targetBoardIndex = presetBoard.targetBoardIndex?.rawValue
+                {
+                    guard
+                        presetBoards.indices.contains(targetBoardIndex),
+                        case .terminal = presetBoards[targetBoardIndex].kind
+                    else { return nil }
+                    board.role = .sideBoard(targetBoardID: boardIDs[targetBoardIndex])
+                }
                 boards.append(board)
             }
         }

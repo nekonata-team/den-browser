@@ -32,6 +32,30 @@ struct DeskPresetOperationsTests {
         #expect(created.focusedBoardID == created.boards[focusIndex == 1 ? 1 : 0].id)
     }
 
+    @Test
+    func creationRestoresTerminalSideBoardRelationshipFromCapturedPreset() throws {
+        // Arrange
+        let primary = BoardState(label: "Terminal", width: 520, workingDirectory: "/work")
+        var sideBoard = BoardState(label: "Command", width: 360, workingDirectory: "/work")
+        sideBoard.role = .sideBoard(targetBoardID: primary.id)
+        let preset = DeskPresetBoard.capture(from: [primary, sideBoard])
+        let presented = DeskState(label: "Presented", boards: [])
+
+        // Act
+        let creation = try #require(
+            DeskCreation.create(
+                label: "Restored", presetBoards: preset, focusedBoardIndex: nil,
+                in: [presented], presentedDeskID: presented.id))
+
+        // Assert
+        #expect(preset[1].targetBoardIndex == BoardIndex(rawValue: 0))
+        #expect(creation.createdDesk.boards.count == 2)
+        #expect(creation.createdDesk.boards[1].isTerminal)
+        #expect(creation.createdDesk.boards[1].isSideBoard)
+        #expect(creation.createdDesk.boards[1].sideBoardTargetBoardID == creation.createdDesk.boards[0].id)
+        #expect(creation.createdDesk.boards[1].terminalWorkingDirectory == "/work")
+    }
+
     nonisolated enum UnavailableCreation: CaseIterable, Sendable {
         case blankLabel
         case deskLimit

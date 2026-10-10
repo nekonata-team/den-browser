@@ -226,6 +226,9 @@ private struct DenCommands: Commands {
                 }
                 .keyboardShortcut("i", modifiers: [.command, .option])
                 .disabled(controller?.focusedBoard?.isWeb != true)
+                Button("Create Terminal Side Board") { perform(.board(.createTerminalSideBoard)) }
+                    .keyboardShortcut("d", modifiers: [.command])
+                    .disabled(controller?.focusedBoard?.isTerminal != true)
                 Menu("Sheet Size") {
                     Button(
                         controller?.focusedBoard?.isTerminal == true
