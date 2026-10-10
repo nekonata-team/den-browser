@@ -4,6 +4,35 @@ import Testing
 
 @MainActor
 struct BoardRestorationTests {
+    @Test func restoresGroupToOriginalDeskAndFocusesPrimary() {
+        // Arrange
+        let primary = BoardState(label: "Primary", width: 520, currentSheetURL: nil)
+        let side = BoardState(width: 390, targetBoardID: primary.id)
+        let before = BoardState(label: "Before", width: 520, currentSheetURL: nil)
+        let after = BoardState(label: "After", width: 520, currentSheetURL: nil)
+        let source = DeskState(
+            label: "Source", boards: [before, after], focusedBoardID: after.id,
+            scrollOffsetX: 180, anchorBoardID: after.id)
+        let presented = DeskState(label: "Presented", boards: [])
+        let history = RecentlyRemovedBoard(
+            board: primary, sideBoard: side, sourceDeskID: source.id, sourceBoardIndex: 1)
+
+        // Act
+        let outcome = BoardRestoration.restore(history, in: [presented, source], presentedDeskID: presented.id)
+
+        // Assert
+        guard case .restored(let deskIndex, let desk) = outcome else {
+            Issue.record("The removed Board group should be restored.")
+            return
+        }
+        #expect(deskIndex == 1)
+        #expect(desk.id == source.id)
+        #expect(desk.boards.map(\.id) == [before.id, primary.id, side.id, after.id])
+        #expect(desk.focusedBoardID == primary.id)
+        #expect(desk.scrollOffsetX == nil)
+        #expect(desk.anchorBoardID == after.id)
+    }
+
     @Test(arguments: [false, true])
     func rejectsSideBoardRestorationWhenTargetIsMissingOrOccupied(_ targetHasSide: Bool) {
         // Arrange
@@ -14,7 +43,7 @@ struct BoardRestorationTests {
         let history = RecentlyRemovedBoard(board: removed, sourceDeskID: desk.id, sourceBoardIndex: 1)
 
         // Act
-        let outcome = BoardRestoration.resolve(history, in: [desk], presentedDeskID: desk.id)
+        let outcome = BoardRestoration.restore(history, in: [desk], presentedDeskID: desk.id)
 
         // Assert
         switch outcome {
@@ -35,7 +64,7 @@ struct BoardRestorationTests {
         let history = RecentlyRemovedBoard(board: removed, sourceDeskID: DeskID(), sourceBoardIndex: 0)
 
         // Act
-        let outcome = BoardRestoration.resolve(history, in: [desk], presentedDeskID: DeskID())
+        let outcome = BoardRestoration.restore(history, in: [desk], presentedDeskID: DeskID())
 
         // Assert
         guard case .focusExistingTutorial(let boardID) = outcome else {
@@ -51,7 +80,7 @@ struct BoardRestorationTests {
         let history = RecentlyRemovedBoard(board: removed, sourceDeskID: DeskID(), sourceBoardIndex: 0)
 
         // Act
-        let outcome = BoardRestoration.resolve(history, in: [], presentedDeskID: DeskID())
+        let outcome = BoardRestoration.restore(history, in: [], presentedDeskID: DeskID())
 
         // Assert
         guard case .rejected(.destinationDeskMissing) = outcome else {

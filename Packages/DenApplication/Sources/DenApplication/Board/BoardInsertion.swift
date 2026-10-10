@@ -1,19 +1,21 @@
 import DenDomain
 
 public enum BoardInsertion {
-    public struct Destination {
+    public struct Result {
         public let deskIndex: Int
-        public let boardIndex: Int
+        public let desk: DeskState
         /// The validated explicit anchor, excluding any implicit focused-Board fallback.
         public let afterBoardID: BoardID?
     }
 
-    public static func resolve(
+    public static func insert(
+        _ board: BoardState,
         in desks: [DeskState],
         presentedDeskID: DeskID,
         deskID: DeskID? = nil,
-        afterBoardID: BoardID? = nil
-    ) -> Destination? {
+        afterBoardID: BoardID? = nil,
+        focus: Bool = true
+    ) -> Result? {
         let anchorDeskIndex = afterBoardID.flatMap { boardID in
             desks.firstIndex { desk in desk.boards.contains { $0.id == boardID } }
         }
@@ -45,6 +47,11 @@ public enum BoardInsertion {
             }
         }
         let boardIndex = (groupEndIndex ?? anchorIndex).map { $0 + 1 } ?? boards.endIndex
-        return Destination(deskIndex: deskIndex, boardIndex: boardIndex, afterBoardID: explicitAnchor)
+        var desk = desks[deskIndex]
+        desk.boards.insert(board, at: boardIndex)
+        if focus || desk.focusedBoardID == nil {
+            desk.focusedBoardID = board.id
+        }
+        return Result(deskIndex: deskIndex, desk: desk, afterBoardID: explicitAnchor)
     }
 }

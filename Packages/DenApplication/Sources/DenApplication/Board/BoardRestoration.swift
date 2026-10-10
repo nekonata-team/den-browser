@@ -8,12 +8,12 @@ public enum BoardRestoration {
     }
 
     public enum Outcome {
-        case insert(deskIndex: Int, boardIndex: Int)
+        case restored(deskIndex: Int, desk: DeskState)
         case focusExistingTutorial(BoardID)
         case rejected(Failure)
     }
 
-    public static func resolve(
+    public static func restore(
         _ removed: RecentlyRemovedBoard,
         in desks: [DeskState],
         presentedDeskID: DeskID
@@ -66,6 +66,10 @@ public enum BoardRestoration {
                 insertionIndex = lastMemberIndex + 1
             }
         }
-        return .insert(deskIndex: deskIndex, boardIndex: insertionIndex)
+        var desk = desks[deskIndex]
+        let restoredBoards = [removed.board] + (removed.sideBoard.map { [$0] } ?? [])
+        desk.boards.insert(contentsOf: restoredBoards, at: insertionIndex)
+        desk.focusedBoardID = removed.board.id
+        return .restored(deskIndex: deskIndex, desk: desk)
     }
 }

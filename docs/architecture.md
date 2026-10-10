@@ -118,13 +118,16 @@ position after the complete primary/Side Board group. An explicit Desk takes pre
 anchor's owner; without either, the presented Desk is used. Unusable anchors are ignored only when
 an explicit destination Desk is valid. The returned explicit anchor stays separate from the implicit
 focused-Board fallback so background-input requests retain their existing behavior. The Controller
-applies the insertion, focus changes, persistence, and window effects.
+applies the returned Desk, selects the presented Desk, and handles persistence and window effects.
+The insertion transformation sets Board focus when requested or when the destination has no focus.
 
 `BoardRestoration` resolves the original or fallback destination, preserves primary/Side Board
 groups at the insertion position, and rejects missing or occupied Side Board targets. It returns
-the existing Tutorial Board when reopening would create a duplicate. The Controller consumes removal
-history only after insertion or selection of the existing Tutorial Board, and owns feedback, focus,
-and persistence. Rejected restorations retain the history entry.
+the existing Tutorial Board when reopening would create a duplicate; otherwise it returns the
+updated Desk with the restored group and Board focus. The Controller applies the Desk and consumes
+removal history on restoration or selection of the existing Tutorial Board, and owns feedback,
+presented-Desk selection, notification updates, and persistence. Rejected restorations retain the
+history entry.
 
 `BoardRemoval` returns the updated Desk, removed Boards, and a history entry from a Desk value.
 Removing a primary Board includes its Side Board; removing a Side Board leaves the primary intact.

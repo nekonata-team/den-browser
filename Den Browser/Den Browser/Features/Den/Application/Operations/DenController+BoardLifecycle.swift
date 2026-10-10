@@ -295,15 +295,14 @@ extension DenController {
         save: Bool = true
     ) -> Bool {
         guard
-            let destination = BoardInsertion.resolve(
-                in: state.desks,
+            let insertion = BoardInsertion.insert(
+                board, in: state.desks,
                 presentedDeskID: presentedDeskID,
                 deskID: deskID,
-                afterBoardID: afterBoardID)
+                afterBoardID: afterBoardID, focus: focus)
         else { return false }
-        let deskIndex = destination.deskIndex
-        let insertionAfterBoardID = destination.afterBoardID
-        let insertIndex = destination.boardIndex
+        let deskIndex = insertion.deskIndex
+        let insertionAfterBoardID = insertion.afterBoardID
 
         if !focus, let afterBoardID = insertionAfterBoardID {
             _ = prepareBoardLinkFocus(afterBoardID, origin: origin)
@@ -313,15 +312,12 @@ extension DenController {
             && !focus
             && insertionAfterBoardID != nil
         let insert = { [self] in
-            storage.state.desks[deskIndex].boards.insert(board, at: insertIndex)
+            storage.state.desks[deskIndex] = insertion.desk
             if focus {
                 onWindowEffect?(.clearBoardInputRequests)
-                storage.state.desks[deskIndex].focusedBoardID = board.id
                 setFocusedDesk(state.desks[deskIndex].id)
                 onWindowEffect?(.dismissTemporaryPresentation)
                 onWindowEffect?(.exitDenMode)
-            } else if state.desks[deskIndex].focusedBoardID == nil {
-                storage.state.desks[deskIndex].focusedBoardID = board.id
             }
             if save { self.save() }
         }
@@ -416,13 +412,13 @@ extension DenController {
         }
 
         let deskIndex: Int
-        let insertionIndex: Int
-        switch BoardRestoration.resolve(
+        let restoredDesk: DeskState
+        switch BoardRestoration.restore(
             recentlyRemovedBoard, in: state.desks, presentedDeskID: presentedDeskID)
         {
-        case .insert(let destinationDeskIndex, let boardIndex):
+        case .restored(let destinationDeskIndex, let desk):
             deskIndex = destinationDeskIndex
-            insertionIndex = boardIndex
+            restoredDesk = desk
         case .focusExistingTutorial(let boardID):
             storage.recentlyRemovedBoards.removeFirst()
             focusBoard(boardID, exitsDenMode: true)
@@ -441,9 +437,7 @@ extension DenController {
         }
 
         let board = recentlyRemovedBoard.board
-        let restoredBoards = [board] + (recentlyRemovedBoard.sideBoard.map { [$0] } ?? [])
-        storage.state.desks[deskIndex].boards.insert(contentsOf: restoredBoards, at: insertionIndex)
-        storage.state.desks[deskIndex].focusedBoardID = board.id
+        storage.state.desks[deskIndex] = restoredDesk
         let deskID = state.desks[deskIndex].id
         let changedDesk = setFocusedDesk(deskID)
         if !changedDesk && presentedDeskID == deskID {
