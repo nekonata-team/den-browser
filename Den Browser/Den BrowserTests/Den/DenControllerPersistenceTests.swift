@@ -10,9 +10,9 @@ import Testing
 @Suite(.serialized)
 struct DenControllerPersistenceTests {
 
-    @Test func sheetScaleAppliesToNewBoardRuntime() throws {
+    @Test func sheetScaleAndContentSizeAdjustmentsApplyToWebRuntime() throws {
         // Arrange
-        let suiteName = "SheetScaleTests-\(UUID())"
+        let suiteName = "SheetScaleAndContentSizeTests-\(UUID())"
         let defaults = try #require(UserDefaults(suiteName: suiteName))
         defer { defaults.removePersistentDomain(forName: suiteName) }
         let preferences = AppPreferences(defaults: defaults)
@@ -25,87 +25,33 @@ struct DenControllerPersistenceTests {
             sheetNavigation: sheetNavigation,
             preferences: preferences)
 
-        // Act
+        // 1. Initial global scale applied to new board runtime (80%)
         let runtime = controller.webRuntime(for: board)
-
-        // Assert
         #expect(runtime.webView.pageZoom == 0.8)
-    }
 
-    @Test func sheetScaleAppliesToLiveBoardRuntime() throws {
-        // Arrange
-        let suiteName = "SheetScaleLiveTests-\(UUID())"
-        let defaults = try #require(UserDefaults(suiteName: suiteName))
-        defer { defaults.removePersistentDomain(forName: suiteName) }
-        let preferences = AppPreferences(defaults: defaults)
-        preferences.setSheetScale(80)
-        let sheetNavigation = SheetNavigationManager(defaults: defaults)
-        let board = board("Board")
-        let source = desk("Desk", boards: [board], focusedBoardID: board.id)
-        let controller = DenController(
-            state: DenState(desks: [source], focusedDeskID: source.id),
-            sheetNavigation: sheetNavigation,
-            preferences: preferences)
-        let runtime = controller.webRuntime(for: board)
+        // 2. Adjust individual sheet size (+1 step from 80% -> 90%)
         runtime.webView.magnification = 1.2
-        preferences.setSheetScale(90)
-
-        // Act
-        controller.applySheetScale(preferences.sheetScale)
-
-        // Assert
+        controller.adjustFocusedSheetSize(by: 1)
         #expect(runtime.webView.pageZoom == 0.9)
         #expect(runtime.webView.magnification == 1)
-    }
-
-    @Test func focusedBoardContentSizeIncreaseAdjustsLiveWebRuntime() throws {
-        // Arrange
-        let suiteName = "BoardContentSizeIncreaseTests-\(UUID())"
-        let defaults = try #require(UserDefaults(suiteName: suiteName))
-        defer { defaults.removePersistentDomain(forName: suiteName) }
-        let preferences = AppPreferences(defaults: defaults)
-        let sheetNavigation = SheetNavigationManager(defaults: defaults)
-        let board = board("Board")
-        let source = desk("Desk", boards: [board], focusedBoardID: board.id)
-        let controller = DenController(
-            state: DenState(desks: [source], focusedDeskID: source.id),
-            sheetNavigation: sheetNavigation,
-            preferences: preferences)
-        let runtime = controller.webRuntime(for: board)
-        runtime.webView.magnification = 1.2
-
-        // Act
-        controller.adjustFocusedSheetSize(by: 1)
-
-        // Assert
-        #expect(runtime.webView.pageZoom == 1.1)
-        #expect(runtime.webView.magnification == 1)
         #expect(controller.state.desks[0].boards[0] == board)
-    }
 
-    @Test func focusedBoardContentSizeResetReturnsToGlobalScale() throws {
-        // Arrange
-        let suiteName = "BoardContentSizeResetTests-\(UUID())"
-        let defaults = try #require(UserDefaults(suiteName: suiteName))
-        defer { defaults.removePersistentDomain(forName: suiteName) }
-        let preferences = AppPreferences(defaults: defaults)
-        preferences.setSheetScale(80)
-        let sheetNavigation = SheetNavigationManager(defaults: defaults)
-        let board = board("Board")
-        let source = desk("Desk", boards: [board], focusedBoardID: board.id)
-        let controller = DenController(
-            state: DenState(desks: [source], focusedDeskID: source.id),
-            sheetNavigation: sheetNavigation,
-            preferences: preferences)
-        let runtime = controller.webRuntime(for: board)
-        runtime.webView.pageZoom = 1.4
+        // 3. Reset individual sheet size back to global scale (80%)
         runtime.webView.magnification = 1.2
-
-        // Act
         controller.resetFocusedSheetSize()
-
-        // Assert
         #expect(runtime.webView.pageZoom == 0.8)
+        #expect(runtime.webView.magnification == 1)
+
+        // 4. Change global sheet scale and apply to live runtime (100%)
+        preferences.setSheetScale(100)
+        runtime.webView.magnification = 1.2
+        controller.applySheetScale(preferences.sheetScale)
+        #expect(runtime.webView.pageZoom == 1.0)
+        #expect(runtime.webView.magnification == 1)
+
+        // 5. Adjust individual sheet size from 100% (+1 step -> 1.1)
+        controller.adjustFocusedSheetSize(by: 1)
+        #expect(runtime.webView.pageZoom == 1.1)
         #expect(runtime.webView.magnification == 1)
     }
 
