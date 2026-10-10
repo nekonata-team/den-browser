@@ -175,7 +175,7 @@ struct DenView<Header: View>: View {
             if deskFilter.isPresented {
                 DeskFilterOverlay(profileColor: profileColor)
                     .padding(.top, DenLayout.outerInset)
-                    .transition(DenMotion.transition(reduceMotion: shouldReduceMotion, scale: 0.96))
+                    .transition(DenMotion.panelTransition(reduceMotion: shouldReduceMotion))
                     .zIndex(DenOverlayLayer.deskFilter)
             }
 
@@ -261,11 +261,11 @@ struct DenView<Header: View>: View {
         case .overview:
             OverviewView(profileColor: profileColor, boardHeight: boardHeight)
                 .padding(DenLayout.overlayInset)
-                .transition(DenMotion.transition(reduceMotion: shouldReduceMotion, scale: 0.98))
+                .transition(DenMotion.panelTransition(reduceMotion: shouldReduceMotion))
         case .boardActivity:
             BoardActivityView(profileColor: profileColor)
                 .padding(DenLayout.overlayInset)
-                .transition(DenMotion.transition(reduceMotion: shouldReduceMotion, scale: 0.98))
+                .transition(DenMotion.panelTransition(reduceMotion: shouldReduceMotion))
         case .keyboardShortcuts:
             KeyboardShortcutsView(onClose: windowModel.hideKeyboardShortcuts)
                 .padding(DenKeyboardShortcutsLayout.guidePadding)
@@ -277,7 +277,7 @@ struct DenView<Header: View>: View {
                     .regular,
                     in: RoundedRectangle(cornerRadius: DenRadius.large, style: .continuous)
                 )
-                .transition(DenMotion.transition(reduceMotion: shouldReduceMotion, scale: 0.98))
+                .transition(DenMotion.panelTransition(reduceMotion: shouldReduceMotion))
         case .profilePicker:
             panelOverlay(
                 OpenProfilePanel(
@@ -305,7 +305,7 @@ struct DenView<Header: View>: View {
                         ? DenLayout.panelGap
                         : DenLayout.outerInset
                 )
-                .transition(DenMotion.transition(reduceMotion: shouldReduceMotion, scale: 0.96))
+                .transition(DenMotion.panelTransition(reduceMotion: shouldReduceMotion))
 
             Spacer(minLength: 0)
         }
@@ -409,7 +409,7 @@ struct DenView<Header: View>: View {
             )
             .padding(.trailing, DenLayout.outerInset)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
-            .transition(DenMotion.transition(reduceMotion: shouldReduceMotion, scale: 0.96))
+            .transition(DenMotion.panelTransition(reduceMotion: shouldReduceMotion))
             .zIndex(DenOverlayLayer.notificationList)
         }
     }
@@ -439,7 +439,7 @@ struct DenView<Header: View>: View {
                 .transition(
                     isBottom
                         ? DenMotion.transition(reduceMotion: shouldReduceMotion, edge: .bottom)
-                        : DenMotion.transition(reduceMotion: shouldReduceMotion, scale: 0.96)
+                        : DenMotion.panelTransition(reduceMotion: shouldReduceMotion)
                 )
             }
         }

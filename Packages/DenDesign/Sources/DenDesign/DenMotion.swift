@@ -42,8 +42,8 @@ public enum DenMotion {
         reduceMotion ? .easeOut(duration: 0.10) : .smooth(duration: 0.16, extraBounce: 0)
     }
 
-    public static func transition(reduceMotion: Bool, scale: Double) -> AnyTransition {
-        reduceMotion ? .opacity : .scale(scale: scale).combined(with: .opacity)
+    public static func panelTransition(reduceMotion: Bool) -> AnyTransition {
+        reduceMotion ? .opacity : .scale(scale: 0.96, anchor: .center).combined(with: .opacity)
     }
 
     public static func transition(reduceMotion: Bool, edge: Edge) -> AnyTransition {
