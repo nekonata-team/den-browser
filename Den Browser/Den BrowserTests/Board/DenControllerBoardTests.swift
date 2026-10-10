@@ -33,20 +33,6 @@ struct DenControllerBoardTests {
         #expect(throws: TerminalInputError.self) { try missing?.get() }
     }
 
-    @Test func zellijInputResolvesWelcomeAndNamedSessions() {
-        #expect(DenController.resolveZellijInput(":zellij") == .welcome)
-        #expect(DenController.resolveZellijInput(":zellij   ") == .welcome)
-        #expect(DenController.resolveZellijInput(":zellij project-a") == .session("project-a"))
-        #expect(DenController.resolveZellijInput(":zellijly") == nil)
-    }
-
-    @Test func zmxInputRequiresAndResolvesNamedSessions() {
-        #expect(DenController.resolveZmxInput(":zmx") == .missingSessionName)
-        #expect(DenController.resolveZmxInput(":zmx   ") == .missingSessionName)
-        #expect(DenController.resolveZmxInput(":zmx project-a") == .session("project-a"))
-        #expect(DenController.resolveZmxInput(":zmxly") == nil)
-    }
-
     @Test func zellijBoardsPersistOptionalSessionNames() throws {
         let source = desk("Desk")
         try withTestController(desks: [source]) { controller in

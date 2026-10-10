@@ -1,6 +1,7 @@
 import AppKit
 import DenDesign
 import DenDomain
+import DenPresentationModels
 import SFSafeSymbols
 import SwiftUI
 
@@ -102,7 +103,7 @@ private struct WebSettingsView: View {
                     selection: Binding(get: { preferences.searchEngine }, set: { preferences.setSearchEngine($0) })
                 ) {
                     ForEach(SearchEngine.allCases) { engine in
-                        Text(engine.label).tag(engine)
+                        Text(engine.displayName).tag(engine)
                     }
                 }
                 SettingsHelpText {

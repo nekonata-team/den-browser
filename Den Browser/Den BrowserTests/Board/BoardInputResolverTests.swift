@@ -1,8 +1,7 @@
+import DenApplication
 import DenDomain
 import Foundation
 import Testing
-
-@testable import Den_Browser
 
 @MainActor
 struct BoardInputResolverTests {
@@ -11,6 +10,7 @@ struct BoardInputResolverTests {
         #expect(BoardInputResolver.resolveZellijInput(":zellij   ") == .welcome)
         #expect(BoardInputResolver.resolveZellijInput(":zellij dev") == .session("dev"))
         #expect(BoardInputResolver.resolveZellijInput("other") == nil)
+        #expect(BoardInputResolver.resolveZellijInput(":zellijly") == nil)
     }
 
     @Test func resolvesZmxCommands() {
@@ -18,19 +18,23 @@ struct BoardInputResolverTests {
         #expect(BoardInputResolver.resolveZmxInput(":zmx   ") == .missingSessionName)
         #expect(BoardInputResolver.resolveZmxInput(":zmx work") == .session("work"))
         #expect(BoardInputResolver.resolveZmxInput("other") == nil)
+        #expect(BoardInputResolver.resolveZmxInput(":zmxly") == nil)
     }
 
     @Test func resolvesTerminalCommands() throws {
         let temp = FileManager.default.temporaryDirectory
 
         #expect(
-            try BoardInputResolver.resolveTerminalInput(":terminal", homeDirectory: temp)?.get()
+            try BoardInputResolver.resolveTerminalInput(
+                ":terminal", homeDirectory: temp, directoryExists: { $0 == temp.standardizedFileURL.path })?.get()
                 == temp.standardizedFileURL.path)
         #expect(
-            try BoardInputResolver.resolveTerminalInput(":terminal .", homeDirectory: temp)?.get()
+            try BoardInputResolver.resolveTerminalInput(
+                ":terminal .", homeDirectory: temp, directoryExists: { $0 == temp.standardizedFileURL.path })?.get()
                 == temp.standardizedFileURL.path)
         #expect(
-            BoardInputResolver.resolveTerminalInput(":terminalnot", homeDirectory: temp) == nil)
+            BoardInputResolver.resolveTerminalInput(
+                ":terminalnot", homeDirectory: temp, directoryExists: { $0 == temp.standardizedFileURL.path }) == nil)
     }
 
     @Test func resolvesURLsAndSearch() {

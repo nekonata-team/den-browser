@@ -1,28 +1,22 @@
 import DenDomain
 import Foundation
 
-enum TerminalInputError: Error, Equatable {
+public nonisolated enum TerminalInputError: Error, Equatable {
     case missingDirectory(String)
-
-    var message: String {
-        switch self {
-        case .missingDirectory(let path): "Terminal directory does not exist: \(path)"
-        }
-    }
 }
 
-enum ZellijInput: Equatable {
+public nonisolated enum ZellijInput: Equatable {
     case welcome
     case session(String)
 }
 
-enum ZmxInput: Equatable {
+public nonisolated enum ZmxInput: Equatable {
     case missingSessionName
     case session(String)
 }
 
-enum BoardInputResolver {
-    static func resolveZellijInput(_ input: String) -> ZellijInput? {
+public enum BoardInputResolver {
+    public static func resolveZellijInput(_ input: String) -> ZellijInput? {
         let trimmed = input.trimmingCharacters(in: .whitespacesAndNewlines)
         let parts = trimmed.split(maxSplits: 1, whereSeparator: \.isWhitespace)
         guard parts.first == ":zellij" else { return nil }
@@ -32,7 +26,7 @@ enum BoardInputResolver {
         return sessionName.isEmpty ? .welcome : .session(sessionName)
     }
 
-    static func resolveZmxInput(_ input: String) -> ZmxInput? {
+    public static func resolveZmxInput(_ input: String) -> ZmxInput? {
         let trimmed = input.trimmingCharacters(in: .whitespacesAndNewlines)
         let parts = trimmed.split(maxSplits: 1, whereSeparator: \.isWhitespace)
         guard parts.first == ":zmx" else { return nil }
@@ -42,10 +36,10 @@ enum BoardInputResolver {
         return sessionName.isEmpty ? .missingSessionName : .session(sessionName)
     }
 
-    static func resolveTerminalInput(
+    public static func resolveTerminalInput(
         _ input: String,
-        homeDirectory: URL = FileManager.default.homeDirectoryForCurrentUser,
-        fileManager: FileManager = .default
+        homeDirectory: URL,
+        directoryExists: (String) -> Bool
     ) -> Result<String, TerminalInputError>? {
         let trimmed = input.trimmingCharacters(in: .whitespacesAndNewlines)
         let parts = trimmed.split(maxSplits: 1, whereSeparator: \.isWhitespace)
@@ -65,26 +59,25 @@ enum BoardInputResolver {
         } else {
             url = homeDirectory.appending(path: rawPath, directoryHint: .isDirectory)
         }
-        return validateTerminalWorkingDirectory(url.standardizedFileURL.path, fileManager: fileManager)
+        return validateTerminalWorkingDirectory(url.standardizedFileURL.path, directoryExists: directoryExists)
     }
 
-    static func validateTerminalWorkingDirectory(
+    public static func validateTerminalWorkingDirectory(
         _ workingDirectory: String,
-        fileManager: FileManager = .default
+        directoryExists: (String) -> Bool
     ) -> Result<String, TerminalInputError> {
         let standardized = URL(fileURLWithPath: workingDirectory, isDirectory: true).standardizedFileURL
-        var isDirectory: ObjCBool = false
-        guard fileManager.fileExists(atPath: standardized.path, isDirectory: &isDirectory), isDirectory.boolValue else {
+        guard directoryExists(standardized.path) else {
             return .failure(.missingDirectory(standardized.path))
         }
         return .success(standardized.path)
     }
 
-    static func normalizedURL(from text: String, searchEngine: SearchEngine) -> URL? {
+    public static func normalizedURL(from text: String, searchEngine: SearchEngine) -> URL? {
         resolveOpenBoardInput(text, searchEngine: searchEngine).map { WebURLPolicy.canonicalSheetURL($0.url) }
     }
 
-    static func resolveOpenBoardInput(
+    public static func resolveOpenBoardInput(
         _ text: String,
         searchEngine: SearchEngine
     ) -> (url: URL, item: RecentItem)? {

@@ -45,111 +45,45 @@ extension DenController {
         opensFromOpenBoardPanel: Bool = false,
         zmxRootSessionName: String? = nil
     ) -> BoardOpenResult {
-        if input.trimmingCharacters(in: .whitespacesAndNewlines) == ":tutorial" {
-            return openTutorialBoard(preferredWidth: preferredWidth, afterBoardID: afterBoardID)
-                ? .accepted : .rejected(nil)
-        }
-
-        if let zmx = Self.resolveZmxInput(input) {
-            guard zmxClient.isConfigured else {
+        let outcome = BoardOpening.open(
+            input: input,
+            width: preferredWidth ?? inheritedBoardWidth,
+            afterBoardID: afterBoardID,
+            zmxRootSessionName: zmxRootSessionName,
+            configuration: BoardOpening.Configuration(
+                searchEngine: preferences.searchEngine,
+                zmxConfigured: zmxClient.isConfigured,
+                zellijConfigured: zellijClient.isConfigured,
+                homeDirectory: FileManager.default.homeDirectoryForCurrentUser),
+            directoryExists: { Self.directoryExists($0, fileManager: .default) },
+            actions: BoardOpening.Actions(
+                openTutorial: { [self] in openTutorialBoard(preferredWidth: $0, afterBoardID: $1) },
+                insertBoard: { [self] in
+                    insertBoard($0, afterBoardID: $1, focus: true, origin: .interactive, save: $2)
+                },
+                recordRecent: { [self] in saveRecentItem($0) }))
+        switch outcome {
+        case .openedBoard:
+            onWindowEffect?(.openBoardResult(nil))
+            return .accepted
+        case .openedTutorial:
+            return .accepted
+        case .selectZmxSession:
+            onWindowEffect?(
+                .presentZmxSessions(returnsToOpenBoard: opensFromOpenBoardPanel, selectedSessionName: nil))
+            return .accepted
+        case .rejected(let failure):
+            switch failure {
+            case .zmxNotConfigured:
                 return .rejected("Set an absolute zmx executable path in Settings > Terminal.")
-            }
-            guard case .session(let sessionName) = zmx else {
-                onWindowEffect?(
-                    .presentZmxSessions(
-                        returnsToOpenBoard: opensFromOpenBoardPanel,
-                        selectedSessionName: nil))
-                return .accepted
-            }
-            let board = BoardState(
-                width: preferredWidth ?? inheritedBoardWidth,
-                zmxSessionName: sessionName,
-                rootSessionName: zmxRootSessionName)
-            let recentItem =
-                input.count <= Self.maximumPersistedRecentInputLength
-                ? RecentItem.zmx(sessionName: sessionName)
-                : nil
-            guard
-                insertBoard(
-                    board,
-                    afterBoardID: afterBoardID,
-                    focus: true,
-                    origin: .interactive,
-                    save: recentItem == nil)
-            else { return .rejected(nil) }
-            if let recentItem {
-                saveRecentItem(recentItem)
-            }
-            onWindowEffect?(.openBoardResult(nil))
-            return .accepted
-        }
-
-        if let zellij = Self.resolveZellijInput(input) {
-            guard zellijClient.isConfigured else {
+            case .zellijNotConfigured:
                 return .rejected("Set an absolute Zellij executable path in Settings > Terminal.")
-            }
-            let sessionName: String?
-            switch zellij {
-            case .welcome:
-                sessionName = nil
-            case .session(let name):
-                sessionName = name
-            }
-            let board = BoardState(
-                width: preferredWidth ?? inheritedBoardWidth,
-                zellijSessionName: sessionName)
-            let recentItem =
-                input.count <= Self.maximumPersistedRecentInputLength
-                ? RecentItem.zellij(sessionName: sessionName)
-                : nil
-            guard
-                insertBoard(
-                    board,
-                    afterBoardID: afterBoardID,
-                    focus: true,
-                    origin: .interactive,
-                    save: recentItem == nil)
-            else { return .rejected(nil) }
-            if let recentItem {
-                saveRecentItem(recentItem)
-            }
-            onWindowEffect?(.openBoardResult(nil))
-            return .accepted
-        }
-
-        if let terminal = Self.resolveTerminalInput(input) {
-            switch terminal {
-            case .success(let workingDirectory):
-                let recentItem =
-                    input.count <= Self.maximumPersistedRecentInputLength
-                    ? RecentItem.terminal(workingDirectory: workingDirectory)
-                    : nil
-                guard
-                    createTerminalBoard(
-                        workingDirectory: workingDirectory,
-                        preferredWidth: preferredWidth,
-                        afterBoardID: afterBoardID,
-                        recentItem: recentItem) != nil
-                else { return .rejected(nil) }
-                onWindowEffect?(.openBoardResult(nil))
-                return .accepted
-            case .failure(let error):
-                return .rejected(error.message)
+            case .terminalDirectoryMissing(let path):
+                return .rejected(TerminalInputError.missingDirectory(path).message)
+            case .invalidInput, .creationFailed:
+                return .rejected(nil)
             }
         }
-        guard let resolution = resolveOpenBoardInput(input) else { return .rejected(nil) }
-        let recentItem = input.count <= Self.maximumPersistedRecentInputLength ? resolution.item : nil
-        guard
-            createBoard(
-                urlString: input,
-                preferredWidth: preferredWidth,
-                afterBoardID: afterBoardID,
-                recentItem: recentItem) != nil
-        else {
-            return .rejected(nil)
-        }
-        onWindowEffect?(.openBoardResult(nil))
-        return .accepted
     }
 
     @discardableResult
@@ -194,20 +128,14 @@ extension DenController {
         storage.state.desks[indices.desk].boards[indices.board].kind = .tutorial(tutorial)
     }
 
-    static func resolveZellijInput(_ input: String) -> ZellijInput? {
-        BoardInputResolver.resolveZellijInput(input)
-    }
-
-    static func resolveZmxInput(_ input: String) -> ZmxInput? {
-        BoardInputResolver.resolveZmxInput(input)
-    }
-
     static func resolveTerminalInput(
         _ input: String,
         homeDirectory: URL = FileManager.default.homeDirectoryForCurrentUser,
         fileManager: FileManager = .default
     ) -> Result<String, TerminalInputError>? {
-        BoardInputResolver.resolveTerminalInput(input, homeDirectory: homeDirectory, fileManager: fileManager)
+        BoardInputResolver.resolveTerminalInput(
+            input, homeDirectory: homeDirectory,
+            directoryExists: { directoryExists($0, fileManager: fileManager) })
     }
 
     func openBoard(recentItem: RecentItem, preferredWidth: Double? = nil, afterBoardID: BoardID? = nil) {
@@ -218,7 +146,13 @@ extension DenController {
         _ workingDirectory: String,
         fileManager: FileManager = .default
     ) -> Result<String, TerminalInputError> {
-        BoardInputResolver.validateTerminalWorkingDirectory(workingDirectory, fileManager: fileManager)
+        BoardInputResolver.validateTerminalWorkingDirectory(
+            workingDirectory, directoryExists: { directoryExists($0, fileManager: fileManager) })
+    }
+
+    private static func directoryExists(_ path: String, fileManager: FileManager) -> Bool {
+        var isDirectory: ObjCBool = false
+        return fileManager.fileExists(atPath: path, isDirectory: &isDirectory) && isDirectory.boolValue
     }
 
     func clearRecent() {
@@ -799,10 +733,6 @@ extension DenController {
 
     private func normalizedURL(from text: String) -> URL? {
         BoardInputResolver.normalizedURL(from: text, searchEngine: preferences.searchEngine)
-    }
-
-    private func resolveOpenBoardInput(_ text: String) -> (url: URL, item: RecentItem)? {
-        BoardInputResolver.resolveOpenBoardInput(text, searchEngine: preferences.searchEngine)
     }
 
     private func saveRecentItem(_ item: RecentItem) {

@@ -1,65 +1,8 @@
 import DenDesign
 import DenDomain
+import DenPresentationModels
 import Foundation
 import Observation
-
-enum SearchEngine: String, CaseIterable, Identifiable {
-    case google
-    case duckDuckGo
-    case bing
-    case brave
-    case yahooJapan
-
-    var id: Self { self }
-
-    var label: String {
-        switch self {
-        case .google: "Google"
-        case .duckDuckGo: "DuckDuckGo"
-        case .bing: "Bing"
-        case .brave: "Brave Search"
-        case .yahooJapan: "Yahoo! JAPAN"
-        }
-    }
-
-    var searchURL: String {
-        switch self {
-        case .google: "https://www.google.com/search"
-        case .duckDuckGo: "https://duckduckgo.com/"
-        case .bing: "https://www.bing.com/search"
-        case .brave: "https://search.brave.com/search"
-        case .yahooJapan: "https://search.yahoo.co.jp/search"
-        }
-    }
-}
-
-enum ExternalLinkDestination: String, CaseIterable, Identifiable {
-    case drawerPreview = "drawer-preview"
-    case focusedBoard = "focused-board"
-
-    var id: Self { self }
-
-    var label: String {
-        switch self {
-        case .drawerPreview: "Drawer Preview"
-        case .focusedBoard: "Right of Focused Board"
-        }
-    }
-}
-
-enum DrawerStyle: String, CaseIterable, Identifiable {
-    case floating
-    case bottom
-
-    var id: Self { self }
-
-    var label: String {
-        switch self {
-        case .floating: "Floating"
-        case .bottom: "Bottom"
-        }
-    }
-}
 
 @MainActor
 @Observable

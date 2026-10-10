@@ -1,4 +1,5 @@
 import Darwin
+import DenApplication
 import DenDomain
 import DenIPCProtocol
 import Foundation
@@ -966,7 +967,7 @@ final class DenIPCService {
     ) -> DenIPCOperationResult {
         let resolvedDir: String
         if let dir = payload.path {
-            switch BoardInputResolver.validateTerminalWorkingDirectory(dir) {
+            switch DenController.validateTerminalWorkingDirectory(dir) {
             case .success(let path):
                 resolvedDir = path
             case .failure(let error):

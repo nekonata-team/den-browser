@@ -43,7 +43,7 @@ final class DenWindowComposition {
         }
         let openBoard = OpenBoardModel { input, width, afterBoardID in
             let rootSessionName: String?
-            if case .session(let sessionName)? = DenController.resolveZmxInput(input) {
+            if case .session(let sessionName)? = BoardInputResolver.resolveZmxInput(input) {
                 rootSessionName = zmxSessions.rootSessionName(for: sessionName)
             } else {
                 rootSessionName = nil
