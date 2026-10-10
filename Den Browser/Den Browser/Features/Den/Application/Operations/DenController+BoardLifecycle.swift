@@ -426,56 +426,29 @@ extension DenController {
             return
         }
 
-        if recentlyRemovedBoard.board.isTutorial,
-            let existingTutorialBoard = state.desks.lazy.flatMap(\.boards).first(where: \.isTutorial)
+        let deskIndex: Int
+        let insertionIndex: Int
+        switch BoardRestoration.resolve(
+            recentlyRemovedBoard, in: state.desks, presentedDeskID: presentedDeskID)
         {
+        case .insert(let destinationDeskIndex, let boardIndex):
+            deskIndex = destinationDeskIndex
+            insertionIndex = boardIndex
+        case .focusExistingTutorial(let boardID):
             storage.recentlyRemovedBoards.removeFirst()
-            focusBoard(existingTutorialBoard.id, exitsDenMode: true)
+            focusBoard(boardID, exitsDenMode: true)
             reportFeedback("Tutorial Board is already open.", severity: .warning)
             return
-        }
-
-        let deskIndex: Int
-        let insertIndex: Int
-        if let targetBoardID = recentlyRemovedBoard.board.sideBoardTargetBoardID,
-            let targetIndices = boardIndices(for: targetBoardID)
-        {
-            let targetBoards = state.desks[targetIndices.desk].boards
-            guard !targetBoards.contains(where: { $0.sideBoardTargetBoardID == targetBoardID }) else {
+        case .rejected(let failure):
+            switch failure {
+            case .sideBoardAlreadyExists:
                 reportFeedback("A Side Board already exists for this Board.", severity: .warning)
-                return
+            case .targetBoardMissing:
+                reportFeedback("The target Board no longer exists.", severity: .warning)
+            case .destinationDeskMissing:
+                break
             }
-            deskIndex = targetIndices.desk
-            insertIndex =
-                BoardGroup.containing(targetBoardID, in: targetBoards)?.boards.last.flatMap { member in
-                    targetBoards.firstIndex(where: { $0.id == member.id }).map { $0 + 1 }
-                } ?? targetIndices.board + 1
-        } else if recentlyRemovedBoard.board.isSideBoard {
-            reportFeedback("The target Board no longer exists.", severity: .warning)
             return
-        } else if let sourceDeskIndex = state.desks.firstIndex(where: { $0.id == recentlyRemovedBoard.sourceDeskID }) {
-            deskIndex = sourceDeskIndex
-            insertIndex = min(recentlyRemovedBoard.sourceBoardIndex, state.desks[deskIndex].boards.endIndex)
-        } else {
-            guard let focusedDeskIndex else { return }
-            deskIndex = focusedDeskIndex
-            if let focusedBoardIndex = focusedBoardIndex(in: deskIndex) {
-                insertIndex = focusedBoardIndex + 1
-            } else {
-                insertIndex = state.desks[deskIndex].boards.endIndex
-            }
-        }
-
-        let boards = state.desks[deskIndex].boards
-        var insertionIndex = min(max(insertIndex, 0), boards.count)
-        if insertionIndex > 0, insertionIndex < boards.count {
-            let precedingGroup = BoardGroup.containing(boards[insertionIndex - 1].id, in: boards)
-            if let lastMember = precedingGroup?.boards.last,
-                let lastMemberIndex = boards.lastIndex(where: { $0.id == lastMember.id }),
-                insertionIndex <= lastMemberIndex
-            {
-                insertionIndex = lastMemberIndex + 1
-            }
         }
 
         let board = recentlyRemovedBoard.board

@@ -120,6 +120,12 @@ an explicit destination Desk is valid. The returned explicit anchor stays separa
 focused-Board fallback so background-input requests retain their existing behavior. The Controller
 applies the insertion, focus changes, persistence, and window effects.
 
+`BoardRestoration` resolves the original or fallback destination, preserves primary/Side Board
+groups at the insertion position, and rejects missing or occupied Side Board targets. It returns
+the existing Tutorial Board when reopening would create a duplicate. The Controller consumes removal
+history only after insertion or selection of the existing Tutorial Board, and owns feedback, focus,
+and persistence. Rejected restorations retain the history entry.
+
 Preference value types follow their meaning: `ExternalLinkDestination` belongs to Domain because
 it selects link-opening behavior, while `DrawerStyle` belongs to DenPresentationModels/Drawer because
 it selects a Feature's display form. Their small fixed labels stay in the enum declarations.
