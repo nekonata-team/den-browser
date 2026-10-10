@@ -60,7 +60,7 @@ extension DenWindowModel {
         case .drawer:
             drawer.endPresentation()
         case .zmxDuplication:
-            controller.cancelZmxDuplicationRequest()
+            zmxActions.cancelDuplication()
             zmxDuplicationRootSessionName = nil
         case .zmxSessions:
             let wasReturningToOpenBoard = zmxSessionsReturnToOpenBoard
@@ -181,12 +181,9 @@ extension DenWindowModel {
     }
 
     func showZmxSessions(selectedSessionName: String? = nil, returnsToOpenBoard: Bool = false) {
-        guard controller.zmxClient.isConfigured else {
-            controller.reportFeedback("Set an absolute zmx executable path in Settings > Terminal.", severity: .warning)
-            return
-        }
+        guard zmxActions.canPresentSessions() else { return }
         zmxSessionsReturnToOpenBoard = returnsToOpenBoard
-        zmxSessions.start(client: controller.zmxClient, selectedSessionName: selectedSessionName)
+        zmxSessions.start(selectedSessionName: selectedSessionName)
         setTemporaryContext(.zmxSessions)
     }
 

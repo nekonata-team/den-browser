@@ -1,3 +1,5 @@
+import DenDomain
+import DenPresentation
 import Foundation
 import Testing
 
@@ -5,7 +7,7 @@ import Testing
 
 @MainActor
 struct ZmxSessionsModelTests {
-    @Test func loadsFiltersAndSelectsSessionsWithoutDenController() async {
+    @Test func loadsFiltersAndSelectsSessions() async {
         let model = ZmxSessionsModel(
             client: ZmxClient(
                 executablePath: "/opt/homebrew/bin/zmx",
@@ -115,53 +117,51 @@ struct ZmxSessionsModelTests {
     }
 
     @Test func endingFocusedSessionMovesToTheNearestSurvivingSession() async {
-        let model = ZmxSessionsModel(
-            client: ZmxClient(
-                executablePath: "/opt/homebrew/bin/zmx",
-                commandRunner: ModelTerminalCommandRunner(
-                    responses: [
-                        ["list"]: TerminalCommandResult(
-                            terminationStatus: 0,
-                            standardOutput: "name=den\n"
-                                + "name=den-vi\tden.root=den\n"
-                                + "name=den-nvim\tden.root=den\n")
-                    ])))
+        var client = ZmxClient(
+            executablePath: "/opt/homebrew/bin/zmx",
+            commandRunner: ModelTerminalCommandRunner(
+                responses: [
+                    ["list"]: TerminalCommandResult(
+                        terminationStatus: 0,
+                        standardOutput: "name=den\n"
+                            + "name=den-vi\tden.root=den\n"
+                            + "name=den-nvim\tden.root=den\n")
+                ]))
+        let model = ZmxSessionsModel(operations: { zmxOperations(client) })
 
         model.refresh()
         await model.waitForRefresh()
         model.select(sessionName: "den-vi")
         model.requestDeletion()
-        model.kill(
-            model.pendingDeletion,
-            using: ZmxClient(
-                executablePath: "/opt/homebrew/bin/zmx",
-                commandRunner: ModelTerminalCommandRunner(
-                    responses: [
-                        ["list"]: TerminalCommandResult(
-                            terminationStatus: 0,
-                            standardOutput: "name=den\nname=den-nvim\tden.root=den\n"),
-                        ["kill", "den-vi", "--force"]: TerminalCommandResult(
-                            terminationStatus: 0,
-                            standardOutput: ""),
-                    ])))
+        client = ZmxClient(
+            executablePath: "/opt/homebrew/bin/zmx",
+            commandRunner: ModelTerminalCommandRunner(
+                responses: [
+                    ["list"]: TerminalCommandResult(
+                        terminationStatus: 0,
+                        standardOutput: "name=den\nname=den-nvim\tden.root=den\n"),
+                    ["kill", "den-vi", "--force"]: TerminalCommandResult(
+                        terminationStatus: 0,
+                        standardOutput: ""),
+                ]))
+        model.kill(model.pendingDeletion)
         await model.waitForRefresh()
         #expect(model.selectedSessionName == "den-nvim")
 
         model.select(sessionName: "den-nvim")
         model.requestDeletion()
-        model.kill(
-            model.pendingDeletion,
-            using: ZmxClient(
-                executablePath: "/opt/homebrew/bin/zmx",
-                commandRunner: ModelTerminalCommandRunner(
-                    responses: [
-                        ["list"]: TerminalCommandResult(
-                            terminationStatus: 0,
-                            standardOutput: "name=den\n"),
-                        ["kill", "den-nvim", "--force"]: TerminalCommandResult(
-                            terminationStatus: 0,
-                            standardOutput: ""),
-                    ])))
+        client = ZmxClient(
+            executablePath: "/opt/homebrew/bin/zmx",
+            commandRunner: ModelTerminalCommandRunner(
+                responses: [
+                    ["list"]: TerminalCommandResult(
+                        terminationStatus: 0,
+                        standardOutput: "name=den\n"),
+                    ["kill", "den-nvim", "--force"]: TerminalCommandResult(
+                        terminationStatus: 0,
+                        standardOutput: ""),
+                ]))
+        model.kill(model.pendingDeletion)
         await model.waitForRefresh()
         #expect(model.selectedSessionName == "den")
     }
@@ -205,7 +205,7 @@ struct ZmxSessionsModelTests {
                         standardOutput: ""),
                 ]))
         let model = ZmxSessionsModel(client: client)
-        model.start(client: client, selectedSessionName: "den")
+        model.start(selectedSessionName: "den")
 
         // Act
         model.kill(["den"])
@@ -215,6 +215,18 @@ struct ZmxSessionsModelTests {
         // Assert
         #expect(model.message == nil)
         #expect(model.groups.isEmpty)
+    }
+}
+
+private func zmxOperations(_ client: ZmxClient) -> ZmxSessionsModel.Operations {
+    ZmxSessionsModel.Operations(
+        load: { try await client.sessionSnapshot() },
+        kill: { try await client.killSession($0) })
+}
+
+private extension ZmxSessionsModel {
+    convenience init(client: ZmxClient) {
+        self.init(operations: { zmxOperations(client) })
     }
 }
 

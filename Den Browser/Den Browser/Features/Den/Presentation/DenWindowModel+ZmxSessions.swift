@@ -1,10 +1,11 @@
+import DenApplication
 import DenDomain
 import DenPresentation
 import Foundation
 
 extension DenWindowModel {
     func refreshZmxSessions() {
-        zmxSessions.refresh(using: controller.zmxClient)
+        zmxSessions.refresh()
     }
 
     func selectZmxSession(by offset: Int) {
@@ -23,22 +24,11 @@ extension DenWindowModel {
     func clearZmxSessionFilter() { zmxSessions.clearFilter() }
 
     func openZmxSession(_ sessionName: String) {
-        if let board = controller.state.desks.lazy.flatMap(\.boards).first(where: { $0.zmxSessionName == sessionName })
+        if case .focusedExistingBoard = zmxActions.openSession(
+            sessionName, defaultBoardWidth, zmxSessionsReturnToOpenBoard)
         {
-            controller.updateZmxRootSessionName(
-                boardID: board.id,
-                rootSessionName: zmxSessions.rootSessionName(for: sessionName))
-            controller.focusBoard(board.id, exitsDenMode: true)
             hideZmxSessions(returnToSource: false)
-            return
         }
-        let trimmed = sessionName.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return }
-        controller.openBoard(
-            input: ":zmx \(trimmed)",
-            preferredWidth: defaultBoardWidth,
-            opensFromOpenBoardPanel: zmxSessionsReturnToOpenBoard,
-            zmxRootSessionName: zmxSessions.rootSessionName(for: trimmed))
     }
 
     func openSelectedZmxSession() {
@@ -55,15 +45,10 @@ extension DenWindowModel {
     }
 
     func killZmxSessions(_ sessionNames: [String]) {
-        zmxSessions.kill(sessionNames, using: controller.zmxClient)
+        zmxSessions.kill(sessionNames)
     }
 
     func zmxBoardLocation(for sessionName: String) -> String? {
-        for desk in controller.state.desks {
-            if let board = desk.boards.first(where: { $0.zmxSessionName == sessionName }) {
-                return "\(desk.label) · \(board.displayName)"
-            }
-        }
-        return nil
+        zmxActions.boardLocation(sessionName)
     }
 }

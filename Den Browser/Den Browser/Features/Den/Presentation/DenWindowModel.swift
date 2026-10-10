@@ -18,6 +18,13 @@ final class DenWindowModel {
         let cancelDeskDrag: () -> Void
     }
 
+    struct ZmxActions {
+        let canPresentSessions: () -> Bool
+        let openSession: (String, Double?, Bool) -> ZmxSessionOpenResult
+        let boardLocation: (String) -> String?
+        let cancelDuplication: () -> Void
+    }
+
     let controller: DenController
     let overview: OverviewModel
     let drawer: DrawerModel
@@ -57,6 +64,7 @@ final class DenWindowModel {
     @ObservationIgnored let focusedBoard: () -> BoardState?
     @ObservationIgnored let board: (BoardID) -> BoardState?
     @ObservationIgnored let boardActions: BoardActions
+    @ObservationIgnored let zmxActions: ZmxActions
     @ObservationIgnored private var feedbackTask: Task<Void, Never>?
     @ObservationIgnored private var lastReceivedFeedbackID: UUID?
 
@@ -75,6 +83,7 @@ final class DenWindowModel {
         focusedBoard: @escaping () -> BoardState?,
         board: @escaping (BoardID) -> BoardState?,
         boardActions: BoardActions,
+        zmxActions: ZmxActions,
         feedbackDuration: Duration = .seconds(5)
     ) {
         self.controller = controller
@@ -91,6 +100,7 @@ final class DenWindowModel {
         self.focusedBoard = focusedBoard
         self.board = board
         self.boardActions = boardActions
+        self.zmxActions = zmxActions
         self.feedbackDuration = feedbackDuration
     }
 

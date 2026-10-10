@@ -1,3 +1,4 @@
+import DenDomain
 import Foundation
 import Subprocess
 import System
@@ -21,11 +22,6 @@ nonisolated struct TerminalCommandResult: Sendable {
 nonisolated struct TerminalCommandError: LocalizedError, Equatable, Sendable {
     let message: String
     var errorDescription: String? { message }
-}
-
-nonisolated struct ZmxSessionSnapshot: Sendable {
-    let groups: [ZmxSessionGroup]
-    let processNames: [String: String]
 }
 
 nonisolated struct ZmxDuplicationContext: Sendable {

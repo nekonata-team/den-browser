@@ -35,7 +35,12 @@ final class DenWindowComposition {
             },
             toggleStyle: { controller.preferences.toggleDrawerStyle() },
             requestClearConfirmation: { controller.requestDrawerClearConfirmation() })
-        let zmxSessions = ZmxSessionsModel()
+        let zmxSessions = ZmxSessionsModel {
+            let client = controller.zmxClient
+            return ZmxSessionsModel.Operations(
+                load: { try await client.sessionSnapshot() },
+                kill: { try await client.killSession($0) })
+        }
         let openBoard = OpenBoardModel { input, width, afterBoardID in
             let rootSessionName: String?
             if case .session(let sessionName)? = DenController.resolveZmxInput(input) {
@@ -92,6 +97,23 @@ final class DenWindowComposition {
                 centerFocusedBoard: { controller.centerFocusedBoard() },
                 cancelBoardDrag: { controller.requestBoardDragCancellation() },
                 cancelDeskDrag: { controller.requestDeskDragCancellation() }),
+            zmxActions: DenWindowModel.ZmxActions(
+                canPresentSessions: { controller.canPresentZmxSessions() },
+                openSession: {
+                    controller.openZmxSession(
+                        $0, preferredWidth: $1,
+                        rootSessionName: { zmxSessions.rootSessionName(for: $0) },
+                        opensFromOpenBoardPanel: $2)
+                },
+                boardLocation: { sessionName in
+                    for desk in controller.state.desks {
+                        if let board = desk.boards.first(where: { $0.zmxSessionName == sessionName }) {
+                            return "\(desk.label) · \(board.displayName)"
+                        }
+                    }
+                    return nil
+                },
+                cancelDuplication: { controller.cancelZmxDuplicationRequest() }),
             feedbackDuration: feedbackDuration)
         self.model = model
         overview.onDismiss = { [weak model] in model?.hideOverview() }

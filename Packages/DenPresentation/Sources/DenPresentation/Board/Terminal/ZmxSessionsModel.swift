@@ -1,37 +1,42 @@
-import DenPresentation
+import DenDomain
 import Foundation
 import Observation
 
-nonisolated struct ZmxSessionGroup: Identifiable, Equatable, Sendable {
-    let rootSessionName: String
-    let isRootActive: Bool
-    let childSessionNames: [String]
-
-    var id: String { rootSessionName }
-}
-
 @MainActor
 @Observable
-final class ZmxSessionsModel {
-    private(set) var groups: [ZmxSessionGroup] = []
-    private(set) var processNames: [String: String] = [:]
-    private(set) var message: String?
-    private(set) var isLoading = false
-    private(set) var selectedSessionName: String?
-    private(set) var markedSessionNames: Set<String> = []
-    private(set) var filterPhase: FilterPhase = .inactive
-    private(set) var pendingDeletion: [String] = []
-    private(set) var query = ""
+public final class ZmxSessionsModel {
+    public nonisolated struct Operations: Sendable {
+        public let load: @Sendable () async throws -> ZmxSessionSnapshot
+        public let kill: @Sendable (String) async throws -> Void
 
-    @ObservationIgnored private var client: ZmxClient
+        public init(
+            load: @escaping @Sendable () async throws -> ZmxSessionSnapshot,
+            kill: @escaping @Sendable (String) async throws -> Void
+        ) {
+            self.load = load
+            self.kill = kill
+        }
+    }
+
+    public private(set) var groups: [ZmxSessionGroup] = []
+    public private(set) var processNames: [String: String] = [:]
+    public private(set) var message: String?
+    public private(set) var isLoading = false
+    public private(set) var selectedSessionName: String?
+    public private(set) var markedSessionNames: Set<String> = []
+    public private(set) var filterPhase: FilterPhase = .inactive
+    public private(set) var pendingDeletion: [String] = []
+    public private(set) var query = ""
+
+    @ObservationIgnored private let operations: () -> Operations
     @ObservationIgnored private var refreshTask: Task<Void, Never>?
     @ObservationIgnored private var killTask: Task<Void, Never>?
     @ObservationIgnored private var selectionFallbackAfterDeletion: String?
     @ObservationIgnored private var refreshGeneration = 0
     @ObservationIgnored private var lifecycleGeneration = 0
 
-    init(client: ZmxClient = ZmxClient(executablePath: "")) {
-        self.client = client
+    public init(operations: @escaping () -> Operations) {
+        self.operations = operations
     }
 
     deinit {
@@ -39,7 +44,7 @@ final class ZmxSessionsModel {
         killTask?.cancel()
     }
 
-    var filteredGroups: [ZmxSessionGroup] {
+    public var filteredGroups: [ZmxSessionGroup] {
         guard !query.isEmpty else { return groups }
         return groups.compactMap { group in
             let rootMatches = group.rootSessionName.localizedCaseInsensitiveContains(query)
@@ -57,39 +62,38 @@ final class ZmxSessionsModel {
         }
     }
 
-    var sessionNames: [String] {
+    public var sessionNames: [String] {
         filteredGroups.flatMap { group in
             (group.isRootActive ? [group.rootSessionName] : []) + group.childSessionNames
         }
     }
 
-    var markedSessionCount: Int { markedSessionNames.count }
+    public var markedSessionCount: Int { markedSessionNames.count }
 
-    var hasMarkedSessions: Bool { !markedSessionNames.isEmpty }
+    public var hasMarkedSessions: Bool { !markedSessionNames.isEmpty }
 
-    var activeSessionCount: Int { activeSessionNames.count }
+    public var activeSessionCount: Int { activeSessionNames.count }
 
-    var isFilterInputActive: Bool { filterPhase == .filtering }
+    public var isFilterInputActive: Bool { filterPhase == .filtering }
 
-    func isMarked(_ sessionName: String) -> Bool {
+    public func isMarked(_ sessionName: String) -> Bool {
         markedSessionNames.contains(sessionName)
     }
 
-    func processName(for sessionName: String) -> String? {
+    public func processName(for sessionName: String) -> String? {
         processNames[sessionName]
     }
 
-    func rootSessionName(for sessionName: String) -> String? {
+    public func rootSessionName(for sessionName: String) -> String? {
         groups.first { $0.childSessionNames.contains(sessionName) }?.rootSessionName
     }
 
-    func start(client: ZmxClient, selectedSessionName: String?) {
+    public func start(selectedSessionName: String?) {
         refreshTask?.cancel()
         killTask?.cancel()
         refreshTask = nil
         killTask = nil
         lifecycleGeneration += 1
-        self.client = client
         self.selectedSessionName = selectedSessionName
         markedSessionNames = []
         selectionFallbackAfterDeletion = nil
@@ -99,7 +103,7 @@ final class ZmxSessionsModel {
         refresh()
     }
 
-    func stop() {
+    public func stop() {
         lifecycleGeneration += 1
         refreshTask?.cancel()
         killTask?.cancel()
@@ -117,18 +121,20 @@ final class ZmxSessionsModel {
         pendingDeletion = []
     }
 
-    func refresh(using client: ZmxClient? = nil) {
-        if let client { self.client = client }
+    public func refresh() {
+        refresh(using: operations())
+    }
+
+    private func refresh(using operations: Operations) {
         refreshTask?.cancel()
         refreshGeneration += 1
         let refreshGeneration = refreshGeneration
         let lifecycleGeneration = lifecycleGeneration
-        let client = self.client
         isLoading = true
         message = nil
-        refreshTask = Task { [weak self, client] in
+        refreshTask = Task { [weak self, operations] in
             do {
-                let snapshot = try await client.sessionSnapshot()
+                let snapshot = try await operations.load()
                 guard !Task.isCancelled, let self else { return }
                 guard self.refreshGeneration == refreshGeneration,
                     self.lifecycleGeneration == lifecycleGeneration
@@ -155,13 +161,13 @@ final class ZmxSessionsModel {
         }
     }
 
-    func waitForRefresh() async {
+    public func waitForRefresh() async {
         await refreshTask?.value
         await killTask?.value
         await refreshTask?.value
     }
 
-    func select(by offset: Int) {
+    public func select(by offset: Int) {
         selectedSessionName = SelectionNavigation.next(
             selectedSessionName,
             among: sessionNames,
@@ -169,12 +175,12 @@ final class ZmxSessionsModel {
         )
     }
 
-    func select(sessionName: String) {
+    public func select(sessionName: String) {
         guard sessionNames.contains(sessionName) else { return }
         selectedSessionName = sessionName
     }
 
-    func toggleMarking(_ sessionName: String) {
+    public func toggleMarking(_ sessionName: String) {
         guard sessionNames.contains(sessionName) else { return }
         if markedSessionNames.contains(sessionName) {
             markedSessionNames.remove(sessionName)
@@ -183,37 +189,37 @@ final class ZmxSessionsModel {
         }
     }
 
-    func markAllVisible() {
+    public func markAllVisible() {
         markedSessionNames = Set(sessionNames)
     }
 
-    func clearMarks() {
+    public func clearMarks() {
         markedSessionNames = []
     }
 
-    func enterFilter() {
+    public func enterFilter() {
         filterPhase = .filtering
         updateSelection()
     }
 
-    func setQuery(_ query: String) {
+    public func setQuery(_ query: String) {
         self.query = query
         updateSelection()
     }
 
-    func exitFilter() {
+    public func exitFilter() {
         filterPhase = .inactive
         query = ""
         updateSelection()
     }
 
-    func clearFilter() {
+    public func clearFilter() {
         filterPhase = .inactive
         query = ""
         updateSelection()
     }
 
-    func requestDeletion(sessionName: String? = nil) {
+    public func requestDeletion(sessionName: String? = nil) {
         let targets =
             if let sessionName {
                 [sessionName]
@@ -225,17 +231,16 @@ final class ZmxSessionsModel {
         pendingDeletion = targets
     }
 
-    func clearPendingDeletion() {
+    public func clearPendingDeletion() {
         pendingDeletion = []
     }
 
-    func kill(_ sessionName: String, using client: ZmxClient? = nil) {
-        kill([sessionName], using: client)
+    public func kill(_ sessionName: String) {
+        kill([sessionName])
     }
 
-    func kill(_ sessionNames: [String], using client: ZmxClient? = nil) {
-        if let client { self.client = client }
-        let client = self.client
+    public func kill(_ sessionNames: [String]) {
+        let operations = self.operations()
         let lifecycleGeneration = lifecycleGeneration
         let sessionNames = sessionNames.uniqued()
         guard !sessionNames.isEmpty else { return }
@@ -243,11 +248,11 @@ final class ZmxSessionsModel {
         pendingDeletion = []
         markedSessionNames.subtract(sessionNames)
         killTask?.cancel()
-        killTask = Task { [weak self, client] in
+        killTask = Task { [weak self, operations] in
             var failures: [String] = []
             for sessionName in sessionNames {
                 do {
-                    try await client.killSession(sessionName)
+                    try await operations.kill(sessionName)
                 } catch is CancellationError {
                     return
                 } catch {
@@ -256,7 +261,7 @@ final class ZmxSessionsModel {
             }
             guard !Task.isCancelled, let self else { return }
             guard self.lifecycleGeneration == lifecycleGeneration else { return }
-            self.refresh(using: client)
+            self.refresh(using: operations)
             if !failures.isEmpty {
                 self.message = "Could not end \(failures.joined(separator: ", "))."
             }
