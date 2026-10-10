@@ -147,44 +147,12 @@ extension DenController {
     }
 
     func canMoveBoard(_ boardID: BoardID, by delta: Int) -> Bool {
-        guard let indices = boardIndices(for: boardID), delta != 0 else { return false }
-        let boards = state.desks[indices.desk].boards
-        guard let group = BoardGroup.containing(boardID, in: boards),
-            let first = group.boards.first,
-            let last = group.boards.last,
-            let firstIndex = boards.firstIndex(where: { $0.id == first.id }),
-            let lastIndex = boards.firstIndex(where: { $0.id == last.id })
-        else { return false }
-        return delta < 0 ? firstIndex > 0 : lastIndex < boards.count - 1
+        storage.boardMovement.canMove(boardID, by: delta)
     }
 
     func transferBoardGroup(containing boardID: BoardID, from sourceIndex: Int, to targetIndex: Int, at index: Int) {
-        let sourceBoards = state.desks[sourceIndex].boards
-        guard let group = BoardGroup.containing(boardID, in: sourceBoards) else { return }
-        let groupBoards = group.boards
-        let ids = Set(groupBoards.map(\.id))
-        let removedIndex = sourceBoards.firstIndex { ids.contains($0.id) } ?? 0
-        let sourceWasFocused = state.desks[sourceIndex].focusedBoardID.map(ids.contains) ?? false
-        storage.state.desks[sourceIndex].boards.removeAll { ids.contains($0.id) }
-        if sourceWasFocused {
-            let remaining = state.desks[sourceIndex].boards
-            storage.state.desks[sourceIndex].focusedBoardID =
-                remaining.indices.contains(removedIndex)
-                ? remaining[removedIndex].id
-                : remaining.last?.id
-        }
-        let targetBoards = state.desks[targetIndex].boards
-        var insertionIndex = min(max(index, 0), targetBoards.count)
-        if insertionIndex > 0, insertionIndex < targetBoards.count {
-            let precedingGroup = BoardGroup.containing(targetBoards[insertionIndex - 1].id, in: targetBoards)
-            let precedingIDs = Set(precedingGroup?.boards.map(\.id) ?? [])
-            if let lastMemberIndex = targetBoards.lastIndex(where: { precedingIDs.contains($0.id) }),
-                insertionIndex <= lastMemberIndex
-            {
-                insertionIndex = lastMemberIndex + 1
-            }
-        }
-        storage.state.desks[targetIndex].boards.insert(contentsOf: groupBoards, at: insertionIndex)
+        storage.boardMovement.transfer(
+            boardID, from: state.desks[sourceIndex].id, to: state.desks[targetIndex].id, at: index)
     }
 
     func beginBoardDrag(_ boardID: BoardID) -> Bool {
@@ -214,38 +182,11 @@ extension DenController {
     }
 
     func reorderBoardGroup(containing boardID: BoardID, to targetIndex: Int, in deskIndex: Int) {
-        let boards = state.desks[deskIndex].boards
-        guard let group = BoardGroup.containing(boardID, in: boards), boards.indices.contains(targetIndex) else {
-            return
-        }
-        let groupIDs = Set(group.boards.map(\.id))
-        guard let firstIndex = boards.firstIndex(where: { groupIDs.contains($0.id) }) else { return }
-        guard let destinationGroup = BoardGroup.containing(boards[targetIndex].id, in: boards) else { return }
-        guard !destinationGroup.boards.contains(where: { groupIDs.contains($0.id) }) else { return }
-        var remaining = boards.filter { !groupIDs.contains($0.id) }
-        let insertionIndex: Int
-        if targetIndex < firstIndex {
-            insertionIndex =
-                destinationGroup.boards.first.flatMap { member in
-                    remaining.firstIndex(where: { $0.id == member.id })
-                } ?? 0
-        } else if let destinationLastID = destinationGroup.boards.last?.id,
-            let index = remaining.firstIndex(where: { $0.id == destinationLastID })
-        {
-            insertionIndex = index + 1
-        } else {
-            insertionIndex = remaining.endIndex
-        }
-        remaining.insert(contentsOf: group.boards, at: insertionIndex)
-        storage.state.desks[deskIndex].boards = remaining
+        storage.boardMovement.reorder(boardID, to: targetIndex, in: state.desks[deskIndex].id)
     }
 
     func restoreBoardOrder(_ boardIDs: [BoardID], in deskID: DeskID) {
-        guard let deskIndex = state.desks.firstIndex(where: { $0.id == deskID }) else { return }
-        let order = Dictionary(uniqueKeysWithValues: boardIDs.enumerated().map { ($1, $0) })
-        storage.state.desks[deskIndex].boards.sort {
-            (order[$0.id] ?? Int.max) < (order[$1.id] ?? Int.max)
-        }
+        storage.boardMovement.restoreOrder(boardIDs, in: deskID)
     }
 
     func finishBoardDrag() {

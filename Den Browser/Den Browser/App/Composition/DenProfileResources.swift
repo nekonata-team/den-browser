@@ -10,6 +10,10 @@ final class DenProfileResources {
     let data: DenStateStore
     @ObservationIgnored private let writer: DenStateWriter
 
+    var boardMovement: BoardMovement {
+        BoardMovement(state: data, writer: writer)
+    }
+
     var deskPresetOperations: DeskPresetOperations {
         DeskPresetOperations(state: data, writer: writer, persist: onDeskPresetsSave ?? { _ in false })
     }

@@ -77,6 +77,10 @@ outcomes into confirmation and feedback. The management and save panels receive 
 narrow actions from App composition, without a Controller reference. Presets remain in the Profile's
 existing state source; the native resource adapter exposes their collection read-only.
 
+`BoardMovement` owns group reordering, Desk-to-Desk transfer, and order restoration against the
+same Profile state source. Normal actions, Overview, and drag handling share this entry point.
+Controller retains window focus, scrolling, PiP, drag lifecycle, and persistence timing.
+
 Preference value types follow their meaning: `SearchEngine` and `ExternalLinkDestination` belong
 to Domain, while `DrawerStyle` belongs to DenPresentationModels. `AppPreferences` owns their
 persisted selections.
