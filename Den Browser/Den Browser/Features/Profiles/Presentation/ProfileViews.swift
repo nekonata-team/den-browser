@@ -138,9 +138,6 @@ private struct ProfileDenWindow: View {
                 registerKeyboardWindow: registerKeyboardWindow,
                 unregisterKeyboardWindow: unregisterKeyboardWindow)
         )
-        .toolbar {
-            DenHeaderControls(profile: profile, windowID: route.windowID)
-        }
         .environment(controller)
         .environment(windowModel)
         .toolbarVisibility(windowModel.isZenViewPresented ? .hidden : .visible, for: .windowToolbar)

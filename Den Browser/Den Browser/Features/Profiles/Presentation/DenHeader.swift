@@ -41,6 +41,9 @@ struct DenHeader: View {
         .allowsHitTesting(windowModel.temporaryContext == nil)
         .accessibilityHidden(windowModel.temporaryContext != nil)
         .frame(height: DenLayout.denHeaderHeight)
+        .toolbar {
+            DenHeaderControls(profile: profile, windowID: windowID)
+        }
     }
 }
 
@@ -56,17 +59,9 @@ struct DenHeaderControls: ToolbarContent {
         if !windowModel.isOverviewPresented {
             ToolbarSpacer(.flexible)
             ToolbarItem(placement: .automatic) {
-                Button {
-                    windowModel.showUniversalSearch()
-                } label: {
-                    Label("Search", systemSymbol: .magnifyingglass)
-                }
-                .labelStyle(.titleAndIcon)
-                .tint(.secondary)
-                .disabled(windowModel.temporaryContext != nil)
-                .help("Universal Search (⌘P)")
-                .accessibilityIdentifier("universal-search-button")
+                UniversalSearchButton()
             }
+            ToolbarSpacer(.fixed)
             ToolbarItemGroup(placement: .automatic) {
                 NotificationButton()
 
@@ -79,6 +74,33 @@ struct DenHeaderControls: ToolbarContent {
                 ProfileChip(profile: profile, windowID: windowID)
             }
         }
+    }
+}
+
+private struct UniversalSearchButton: View {
+    @Environment(DenWindowModel.self) private var windowModel
+
+    var body: some View {
+        Button {
+            windowModel.showUniversalSearch()
+        } label: {
+            Label {
+                HStack(spacing: 8) {
+                    Text("Search")
+                    Text("⌘P")
+                        .font(.caption.monospaced())
+                        .foregroundStyle(.secondary)
+                        .accessibilityHidden(true)
+                }
+            } icon: {
+                Image(systemSymbol: .magnifyingglass)
+            }
+        }
+        .labelStyle(.titleAndIcon)
+        .tint(.secondary)
+        .disabled(windowModel.temporaryContext != nil)
+        .help("Universal Search (⌘P)")
+        .accessibilityIdentifier("universal-search-button")
     }
 }
 
