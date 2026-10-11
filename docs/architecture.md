@@ -178,39 +178,25 @@ for the mounted window lifetime. Views, menu commands, and keyboard routing use 
 shared Desk or Board state. Views may read observable application state directly without a separate
 Model for every View.
 
-The window Model owns temporary-context transitions, drafts for its remaining panels, confirmation
-display, Den/Zen/Focus modes, layout measurements, and pending scroll or native-input requests.
-`OverviewModel`, `DrawerModel`, `OpenBoardModel`, and `DeskFilterModel` own their
-contexts' drafts, queries, selections, local operations, and cancellable presentation Tasks.
-`NotificationListModel` owns selection and navigation within the notification list.
-`DenWindowComposition` constructs and connects these models; `DenWindowModel` receives the models
-it coordinates instead of constructing them. The window supplies them to their Views.
-`DenWindowModel` coordinates opening, closing, transitions between contexts, and window-dependent values such as
-Board width. Open Board retains its draft when returning from Zmx Sessions. Context models do not reference
-one another or copy domain state. Small panels may keep their drafts in View-local State.
-Each panel owns its `FocusState` and local drafts; drafts that survive panel replacement belong to its Model.
-Models pass explicit values or identifiers to injected operations. Presentation-owned confirmation requests
-describe the pending dialog; the Controller executes the confirmed operation.
+Window presentation owns modes, context transitions, layout, confirmations, and input requests.
+Context Models own local queries, selections, drafts, and cancellable work; they do not reference one another or copy domain state.
+Panels own their `FocusState` and local drafts. Drafts that survive panel replacement belong to a Model;
+for example, Open Board retains its draft when returning from Zmx Sessions.
+Composition supplies Models and narrow operations; Models pass explicit values or identifiers to those operations.
+Confirmation display belongs to Presentation, while the Controller executes confirmed operations.
 
-`DenController` emits plain `DenWindowEffect` values through one synchronous callback. This preserves
-multiple effects from an operation and updates input context before the next keyboard event. CLI and
-IPC still call Controller operations directly. The Application core does not depend on Presentation;
-the App-target Controller adapter emits Presentation-owned effect values without referencing the Model.
-`DenWindowComposition` connects and disconnects the callback through the window lifecycle;
-construction does not register callbacks. `DenWindowModel.receive` applies effects to presentation state,
-and `endWindowPresentation` cancels presentation work when disconnected. `DenWindowModel` lives in
-`DenPresentationModels`, whose Domain-only package dependency prevents direct Controller or shared-Store access.
+Controller effects are plain values delivered through one synchronous callback, preserving all effects
+and their order and updating input context before the next keyboard event.
+The callback is connected only for the mounted window lifetime, not during construction;
+disconnecting cancels presentation work. The App-target Controller emits Presentation-owned values
+without referencing the Model; the Application core remains independent of Presentation.
+CLI and IPC call Controller operations directly.
 
-For Board mutations that must suppress animation, Controller emits a plain window effect before changing
-state. The Model records the request, and DenView applies the SwiftUI transaction to its rendered
-window content. Application does not construct SwiftUI transactions. Tutorial operation events map to
-steps in Den Application; Tutorial Domain enforces step ordering and updates progress state.
+Animation requests precede the Board mutations they affect; Views apply SwiftUI transactions.
+Presentation Models and Application do not construct them. Tutorial progress and step ordering belong to Application and Domain.
 
-`DenFeedback` contains a message, severity, and optional Board, Drawer Item, or Notification target,
-without SwiftUI styling or a presentation timer. The Controller retains the latest operation feedback and
-emits it as an effect. The Model owns Toast display, replacement, dismissal, and its timer. A
-Toast click passes the explicit target back to the injected target-opening operation. Toast animation
-belongs to DenView; the Model updates observable state without importing SwiftUI.
+Feedback is plain operation data. Presentation owns Toast display and timing; Views own styling and animation.
+Toast activation sends an explicit target to an injected application operation.
 
 ## Feature boundaries
 

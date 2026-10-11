@@ -22,10 +22,6 @@ result. This foundation does not yet provide fuzzy ranking or usage history.
 
 ## Extension points
 
-`UniversalSearchModel` filters and selects typed candidates without UI or runtime objects.
-`UniversalSearchActions` supplies metadata and dispatches selections to application operations.
-Adding search sources requires no new keyboard entrance or panel.
-
 Cross-Profile Board/Desk search, page-body and Terminal-output search, Board relocation, and parameterized command
 workflows are outside this foundation. Searches do not instantiate runtimes or open other Profiles merely to
 enumerate candidates. Profile activation uses the existing window registry.
