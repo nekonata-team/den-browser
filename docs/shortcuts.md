@@ -166,7 +166,8 @@ controls group the zoom level, zoom buttons, and Return to current Desk. Returni
 to the current Desk clears search, selects its Focused Board, and restores the
 initial scale without leaving Overview.
 The canvas extends to the panel edges with hidden scroll bars; scroll or drag its
-background to pan.
+background to pan. Right-drag anywhere on the canvas, including over a Board,
+to pan without moving Boards.
 
 Board sizes and Desk order remain visible on a canvas. Previously viewed Web and
 Terminal Boards show a small, memory-only snapshot when available; Overview does
@@ -210,7 +211,8 @@ asynchronous and skip loading pages. Retained thumbnail rasters share a 64 MiB c
   - Drag Desk button to reorder Desks.
   - Right-click for context menu (copy ID, open in new window, rename, delete, save preset, export).
 - **Overview**:
-  - Scroll in either direction or drag the background to pan.
+  - Scroll in either direction or drag the background to pan. Right-drag anywhere on the canvas, including over a Board,
+to pan without moving Boards.
   - Pinch to zoom around the gesture's starting position.
   - Hold `Command` while scrolling vertically over the canvas to zoom around the pointer.
   - Drag Board cards to reposition within or across Desks.

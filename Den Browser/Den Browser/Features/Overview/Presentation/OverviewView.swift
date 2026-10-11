@@ -28,6 +28,7 @@ struct OverviewView: View {
     @State private var pinchStartScale: CGFloat?
     @State private var pinchStartOffset: CGPoint?
     @State private var panStartOffset: CGPoint?
+    @State private var rightPanStartOffset: CGPoint?
     @State private var canvasBaseSize = CGSize.zero
     @State private var canvasOffset = CGPoint.zero
     @State private var canvasMargin = CGSize.zero
@@ -144,9 +145,21 @@ struct OverviewView: View {
             .scrollPosition($scrollPosition, anchor: .center)
             .coordinateSpace(name: OverviewCoordinateSpace.name)
             .background {
-                OverviewCommandScrollSurface { factor, anchor in
-                    zoomCanvas(by: factor, anchor: anchor)
-                }
+                OverviewCanvasInputSurface(
+                    onZoom: { zoomCanvas(by: $0, anchor: $1) },
+                    onPan: { translation in
+                        guard let translation else {
+                            rightPanStartOffset = nil
+                            return true
+                        }
+                        guard windowModel.isOverviewPresented, overviewDrag == nil, didSetInitialScale else {
+                            return false
+                        }
+                        if rightPanStartOffset == nil { rightPanStartOffset = canvasOffset }
+                        guard let origin = rightPanStartOffset else { return false }
+                        scrollCanvas(to: CGPoint(x: origin.x - translation.width, y: origin.y - translation.height))
+                        return true
+                    })
             }
             .simultaneousGesture(
                 MagnifyGesture()

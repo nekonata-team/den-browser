@@ -175,6 +175,7 @@ struct KeyboardShortcutsView: View {
                     item(["=", "/", "-"], "Zoom Overview (⌘ + / - also work)"),
                     item(["0"], "Reset Overview view (⌘0 also works)"),
                     item(["⌘", "+", "scroll"], "Zoom Overview at pointer"),
+                    item(["Right drag"], "Pan Overview canvas"),
                     item(["/"], "Search / Filter"),
                     item(["←", "/", "→", "or", "h", "/", "l"], "Select Board"),
                     item(["↑", "/", "↓", "or", "j", "/", "k"], "Select Desk"),
