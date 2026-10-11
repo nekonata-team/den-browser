@@ -121,7 +121,7 @@ MCP Sheet action tools do not include the CLI's optional `--snapshot` result. Ca
 
 Sheet references such as `@e1` are document-scoped. They remain usable across operations in the same document and are regenerated when navigation replaces the document. Use the `board_id` returned from `inspect_sheet` for subsequent Sheet calls.
 
-`read_inspection` requires `board_id` and accepts only an Inspection Board. Its structured result has an `inspection` object with page metadata and available inspection data: selected-element details, accessible labels, a captured CSS selector, capture time, document identity, ancestors, retained console or JavaScript events, and a count of dropped events. A page with no selected element is represented as unselected. The read-only call does not change Board focus, selection, or the target Sheet. Use the returned target Web Board ID with Sheet tools for current `@e…` references or more page content.
+`read_inspection` requires `board_id` and accepts only an Inspection Board. Its structured result has an `inspection` object whose shared data, freshness, and optional fields are specified in [Reading inspection context](inspection.md#reading-inspection-context-with-den). The read-only call does not change Board focus, selection, or the target Sheet. Use the returned target Web Board ID with Sheet tools for current `@e…` references or more page content.
 
 ### 4.3 Drawer
 
@@ -161,8 +161,6 @@ Example `inspect_den` result:
   "drawer_item_count": 1
 }
 ```
-
-Inspection results describe the information available for the target page. Optional details can be absent when the page has not supplied them; consumers should not treat missing details as a failed read.
 
 ## 6. Deferred Tools
 

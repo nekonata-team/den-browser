@@ -61,7 +61,7 @@ Den resolves theme names from its bundled catalog. See [Ghostty's configuration 
 - **Den**: The complete work environment for one Profile.
 - **Desk**: A broad work context containing Boards in a horizontal work area.
 - **Board**: A persistent work surface containing Web Sheets, a Terminal Session, a Zellij Session, or a zmx Session.
-- **Sheet**: A web screen held within a Board.
+- **Sheet**: A unit of content held and presented by a Board, including web content or a Terminal Session.
 
 Den Browser draws loosely on [Niri](https://github.com/niri-wm/niri)'s spatial
 window management. Its paper-workspace model is designed around web tasks,

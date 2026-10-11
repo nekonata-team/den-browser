@@ -60,7 +60,8 @@ Denはテーマ名を同梱カタログから解決します。詳しくは[Ghos
 - **Den**: 一つのProfileに属する作業環境全体。
 - **Desk**: Boardを水平に並べる、大きな作業文脈。
 - **Board**: Web Sheet、Terminal Session、Zellij Session、またはzmx Sessionを保持する、永続する作業面。
-- **Sheet**: Board内に保持されるWeb画面。
+- **Sheet**: Boardが保持して表示する内容の単位。
+  Webの内容やTerminal Sessionを扱う。
 
 Den Browserは、[Niri](https://github.com/niri-wm/niri)の空間的なウィンドウ
 管理から着想を得ています。Web作業、閲覧履歴、状態復元に適した紙の作業

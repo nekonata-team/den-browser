@@ -17,11 +17,11 @@ NSEvent
        -> forward(InputDestination)
 ```
 
-`KeyboardController` is the AppKit adapter. It normalizes the event, snapshots the current input context, calls `KeyboardRouter`, and applies the decision. It must not contain key policy or mutate `DenController` directly. Each Profile window registers its mounted `DenWindowModel`; events use the instance associated with `event.window`. `InputContext` combines that Model's presentation state with its Store's application state.
+`KeyboardController` is the AppKit adapter. It normalizes the event, snapshots the current input context, calls `KeyboardRouter`, and applies the decision. It must not contain key policy or mutate `DenController` directly. Each Profile window registers its mounted `DenWindowModel`; events use the instance associated with `event.window`. `InputContext` receives `DenController` and `DenWindowModel` separately, combining application state from the Controller with window presentation state from the Model. The Model does not own the Controller or shared Store; see [the current ownership boundary](./architecture.md#shared-state-and-presentation-package-boundaries).
 
 `KeyboardRouter` owns Profile-window key precedence. It is side-effect free: it receives values and returns exactly one `InputDecision`. It must not reference UI objects, call `DenController`, or open windows. The Essentials Prefix is a temporary context: Den Mode's `g` or Vim-style Sheet Navigation's `o` enters it. Up and Down move the focused Essential, Return launches it, and one configured key, optionally with Shift for uppercase, still launches its matching Essential directly. Escape exits the prefix.
 
-`AppAction` names input-reachable application behavior. `AppActionHandler` is the only keyboard path that performs these actions. It receives the window Store and Model explicitly, using the Model for UI workflows and the Store for application operations. SwiftUI `Commands` use the focused Store, Model, and action when a menu item and a key event represent the same behavior. Menu-only operations do not need an `AppAction`.
+`AppAction` names input-reachable application behavior. `AppActionHandler` is the only keyboard path that performs these actions. It receives the window Controller and Model explicitly, using the Model for UI workflows and the Controller for application operations. SwiftUI `Commands` use the focused Controller, Model, and action when a menu item and a key event represent the same behavior. Menu-only operations do not need an `AppAction`.
 
 Shortcut recording is configuration input, not an action entrance. It updates `AppPreferences`; the next event receives the effective values through `ShortcutConfiguration`.
 

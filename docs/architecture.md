@@ -5,7 +5,7 @@ contains Views, native adapters, and operations grouped by product Feature.
 
 ## Platform baseline
 
-The app and test targets support macOS 26.0 and later. Availability checks and fallback paths must reflect versions that can actually run under this baseline. In particular, `if #available(macOS 26.0, *)` is redundant and should not be introduced, nor should code remain solely for versions below macOS 26.0. Checks for runtime presence of private or optional selectors are a separate concern and must be justified by the API's runtime behavior, not by the deployment target.
+The app and test targets support macOS 26.0 and later. Availability and runtime capability rules are defined in [the agent guide](../AGENTS.md#platform-baseline).
 
 ## Packages and folders
 
@@ -89,23 +89,18 @@ persisted selections.
 and `PerformanceTrace`. It depends only on DenDomain, Foundation, and OS diagnostics. It has no
 app or Presentation dependency. App adapters retain Profile lifecycle and native resource ownership.
 
-`DenPresentationModels` depends only on Foundation, Observation, and `DenDomain`. It owns
-`DrawerModel`, `NotificationListModel`, `OverviewModel`, `DeskFilterModel`, `OpenBoardModel`,
-`ZmxSessionsModel`, and `DenWindowModel`.
+`DenPresentationModels` depends only on Foundation, Observation, and `DenDomain`.
 The package name identifies presentation Models and their state/effect values; it contains no Views
 or shared visual components. Shared visual components belong to DenDesign, while Feature Views
 remain in the app target. Controller imports of DenPresentationModels refer to these value contracts.
-These observable Models own window-local queries, selections, expansion, and drafts. They receive
-live data getters and only the operations they use. They cannot import the app target, DenController,
+Models receive live data getters and only the operations they use. They cannot import the app target, DenController,
 native runtimes, or `DenApplication`. The app's `App/Composition/DenWindowComposition` supplies
-the data and operations and connects application effects to `DenWindowModel`.
+the data and operations; [Window presentation model](#window-presentation-model) describes its lifecycle and effect connection.
 
 UDF has two separate paths: changes to shared data invalidate reads from its single source;
 window effects request presentation changes. Views read shared data through the read-only
 DenController facade and request operations instead of writing shared values. The existing getters forward to the observable source, without keeping a second authoritative data copy.
-Window Models do not own Profile data; multiple windows use the same source with independent
-presentation state. Native runtimes and persistence callbacks stay in the app adapter and do not
-enter `DenSharedState` or its serialization.
+Native runtimes and persistence callbacks stay in the app adapter and do not enter `DenSharedState` or its serialization.
 
 State ownership is explicit:
 
@@ -155,19 +150,17 @@ WebExtension integration uses the existing `WebExtensionHost` boundary. Board an
 
 ## Den state and live runtimes
 
-Persisted Profile data remains separate from live Web and Terminal runtime objects.
+The [state ownership table](#shared-state-and-presentation-package-boundaries) defines shared, window-local, and persisted state. Live runtime objects remain outside persisted Profile data.
 
-- `DenStateStore` holds the authoritative `DenState` value for Desk and Board identity, order, labels, widths, focus, Board kinds and their saved state, and Drawer Items. Drawer selection and Preview expansion are window-local Model state.
-- `DenStateStore` also holds Profile-owned persisted Desk Presets and Recent Items. These are persisted alongside `DenState` but remain separate data collections.
-- `WebRuntime` owns live WebKit state, including each Web Board's in-memory Sheet Stack.
-- `BoardState.kind` distinguishes Web, Inspection, Terminal, and Tutorial Boards and carries their kind-specific state. A Board presents Sheets; Web Boards have a Sheet Stack, while Terminal Boards present one Sheet backed by a live Terminal Session. Tutorial Boards and their progress are session-only and stay out of persisted DenState and Desk Presets. Terminal session choices (Shell, Zellij, and zmx) belong to Terminal Board state; URLs and Vim-style Sheet Navigation settings belong to Web Board state.
+- `WebRuntime` owns live WebKit state, including each Web Board's in-memory Sheet Stack. Web Boards have a Sheet Stack, while Terminal Boards present one Sheet backed by a live Terminal Session.
+- `BoardState.kind` distinguishes Web, Inspection, Terminal, and Tutorial Boards and carries their kind-specific state. Tutorial Boards and their progress are session-only and stay out of persisted DenState and Desk Presets. Terminal session choices (Shell, Zellij, and zmx) belong to Terminal Board state; URLs and Vim-style Sheet Navigation settings belong to Web Board state.
 - `TerminalRuntime` owns one libghostty surface and Shell, Zellij, or zmx process. One controller is used per Terminal Board.
-- Each Profile has one shared `DenStateStore`, retained through `DenProfileResources`. The latter holds the private write capability and persistence callbacks, forwards data reads to the observable source, and owns native runtime registries. Profile-shared transient state includes Notifications, active drag state, Recently Removed Boards, and discarded Drawer Item restoration history. `DenController` uses shared weak references in `DenProfileResources` to route Board and Desk removal invalidations to every window, so local selections and insertion anchors cannot retain removed IDs. Each Profile window has a `DenController` for its presented Desk and application resources, and a `DenWindowModel` for presentation state.
+- `DenController` uses shared weak references in `DenProfileResources` to route Board and Desk removal invalidations to every window, so local selections and insertion anchors cannot retain removed IDs. Each Profile window has a `DenController` for its presented Desk and application resources.
 - `ProfileManager` retains the event-owner `DenController` for each active Board runtime. Runtime disposal or final Profile-window teardown releases these owners. Closing one window preserves detached runtime event delivery while other Profile windows remain.
 - `DenView` renders only the Desk assigned to its window. Shared runtime storage retains both runtime types across Desk and window changes; detached Terminal views stop rendering without ending their process. A detached TerminalRuntime also runs low-frequency app ticks until its surface is visible again or the runtime is disposed; this follows [ADR 0040](./adr/0040-tick-detached-terminal-runtimes.md).
-- `DenWindowModel` owns Den Mode, filters, panel presentation and workflows, confirmation presentation, layout metrics, scroll and native-input requests, and Toast presentation. Each panel owns its local draft values and `FocusState`; drafts that survive panel replacement, such as Open Board input, belong to the Model. Drawer Preview runtime and download operations remain in `DenController`. Window-to-Desk assignment is managed by `ProfileManager` and is not persisted.
+- Drawer Preview runtime and download operations remain in `DenController`. Window-to-Desk assignment is managed by `ProfileManager` and is not persisted.
 - zmx session discovery is window-local. Each `DenWindowModel` owns one `ZmxSessionsModel` from `DenPresentationModels`, which owns session listing, filtering, selection, deletion, and their asynchronous Tasks. App composition injects listing and termination operations backed by the current zmx client; each operation batch captures its dependencies through completion. The Model is stopped when the zmx Sessions context closes, so late command results cannot update a closed panel. `DenController` finds existing zmx Boards, updates root metadata, and opens or focuses Boards; the Window Model coordinates the panel transition.
-- Persistence never serializes WebKit objects, terminal processes, terminal screens, or scrollback.
+- Persistence never serializes WebKit objects, terminal processes, terminal screens, or scrollback; [persistence.md](./persistence.md) defines the saved data and recovery contract.
 
 This boundary follows [ADR 0008](./adr/0008-codable-den-state-webview-runtime.md).
 
@@ -190,11 +183,11 @@ display, Den/Zen/Focus modes, layout measurements, and pending scroll or native-
 contexts' drafts, queries, selections, local operations, and cancellable presentation Tasks.
 `NotificationListModel` owns selection and navigation within the notification list.
 `DenWindowComposition` constructs and connects these models; `DenWindowModel` receives the models
-it coordinates instead of constructing them. The window supplies them to their Views. Drawer and Notifications
-receive narrow live inputs and actions connected by composition, as do Overview, Desk Filter, and Open Board.
+it coordinates instead of constructing them. The window supplies them to their Views.
 `DenWindowModel` coordinates opening, closing, transitions between contexts, and window-dependent values such as
 Board width. Open Board retains its draft when returning from Zmx Sessions. Context models do not reference
 one another or copy domain state. Small panels may keep their drafts in View-local State.
+Each panel owns its `FocusState` and local drafts; drafts that survive panel replacement belong to its Model.
 Models pass explicit values or identifiers to injected operations. Presentation-owned confirmation requests
 describe the pending dialog; the Controller executes the confirmed operation.
 
@@ -227,13 +220,13 @@ operations to native resources and persistence. `DenWindowModel` coordinates win
 App composition supplies live data and focused operations to it and the Feature Models. Board
 input parsing and shared-state transformations belong to DenApplication, as described above.
 
-Desk owns Desk state and preset data. Board owns shared Board state and grouping plus its Web, Terminal, Inspection, and Tutorial implementations. Their views may depend on Den's application operations without changing data ownership. Drawer owns Drawer Items, its view, and Preview runtime. Drawer Presentation owns filtering, selection, and expansion; Den composition supplies live Drawer Items and style, window presentation state, and focused operations. Drawer-to-Board placement remains a Den Application workflow, and its concrete Preview runtime stays at the native view boundary. This boundary follows [ADR 0061](./adr/0061-narrow-feature-presentation-inputs.md). Terminal owns launch command selection and zmx query results used to prepare duplication; DenController owns task cancellation, focus checks, Board naming against current Den state, and insertion. `ZmxSessionsModel` belongs to `DenPresentationModels/Board/Terminal` because its discovery Tasks, filtering, and selection serve the Sessions panel.
+Desk owns Desk state and preset data. Board owns shared Board state and grouping plus its Web, Terminal, Inspection, and Tutorial implementations. Drawer owns Drawer Items, its view, and Preview runtime; Drawer-to-Board placement remains a Den Application workflow. Feature inputs follow [ADR 0061](./adr/0061-narrow-feature-presentation-inputs.md) and the package boundaries above. Terminal owns launch command selection and zmx query results used to prepare duplication; DenController owns task cancellation, focus checks, Board naming against current Den state, and insertion.
 
 Den also owns preferences for shared presentation behavior. `IPC/Application` connects external CLI and MCP requests to active Profile windows through existing domain operations, following [ADR 0047](./adr/0047-integrate-den-cli.md) and [ADR 0055](./adr/0055-add-den-mcp-server.md).
 
 ### Overview
 
-Overview owns its View and observable Model. Its search and selection span Desks and Boards, but its selection is temporary presentation state. Den coordinates opening and closing Overview, transitions between window contexts, and the application operations that focus or rearrange Desks and Boards. Overview introduces no separate Domain layer or Store.
+Overview owns its View and observable Model. Den coordinates its window transitions and the application operations that focus or rearrange Desks and Boards. Overview introduces no separate Domain layer or Store.
 
 ### BoardActivity
 
@@ -243,7 +236,7 @@ BoardActivity owns the resource-usage screen in Presentation and process samplin
 
 Essentials owns the `Essential` model, the Prefix panel, and Essential settings. The collection remains app-wide in `AppPreferences`; the Settings scene assembles its feature-owned screen. Den coordinates Prefix presentation and opening an Essential as a Board.
 
-Notifications owns the `DenNotification` model, list UI, and list-local selection. Its Model receives live display items and actions to open a notification or request clearing, without retaining DenController. Den composition maps notifications and their current source labels into display items. Notification data remains Profile-shared, transient state in `DenProfileResources`. DenController records messages, marks them read, clears them, and resolves their originating Board across Desks. DenWindowModel coordinates opening and closing the list, confirmation display, and transitions to other window contexts. These ownership groups do not introduce separate stores or change persistence.
+Notifications owns the `DenNotification` model, list UI, and list-local selection. Den composition maps notifications and their current source labels into display items. Notification data is Profile-shared, transient state in `DenStateStore`; `DenProfileResources` forwards access to that source. DenController records messages, marks them read, clears them, and resolves their originating Board across Desks. Window presentation follows the Model boundary above. These ownership groups do not introduce separate stores or change persistence.
 
 ### Profiles
 

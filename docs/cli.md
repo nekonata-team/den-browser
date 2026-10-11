@@ -165,7 +165,7 @@ Commands operating on a Terminal Board and the Terminal Session it presents.
 | `den board inspection new` | `--target <web-board-id> [--focus]` | Create or reuse the Inspection Board associated with the specified Web Board and return its Board ID. The target must be an existing Web Board; the target relationship is preserved in the Board Group. Focus stays unchanged by default; use `--focus` to focus the Inspection Board. | `den board inspection new --target 4F72344C-... --json` |
 | `den board inspection read` | `--board <inspection-board-id>` | Read the selected element and available page inspection context from the specified Inspection Board's target Web Board. This is read-only and requires an explicit Inspection Board ID. | `den board inspection read --board 4F72344C-... --json` |
 
-The JSON result contains an `inspection` object describing the target page and current inspection data, including available selection details, accessible labels, a captured CSS selector, capture time, document identity, ancestor path, retained console or JavaScript events, and dropped-event count. A page with no selected element is reported as unselected. For current `@e…` references, use `den board web snapshot` or `den board web query` on the target Web Board. Exact optional fields depend on available page data; see [Inspection](inspection.md).
+The JSON result contains an `inspection` object. Its shared data, freshness, optional fields, and use of current `@e…` references are specified in [Reading inspection context](inspection.md#reading-inspection-context-with-den).
 
 ### 3.6 `den desk` (Desks)
 

@@ -131,7 +131,7 @@ Error and feedback presentation is strictly unified into three channels:
 - Present Getting Started as an app-owned checklist with Liquid Glass treatment and shared Board focus behavior.
 - Keep Tutorial Board header controls for movement, centering, and removal; do not provide a header context menu or duplication.
 - Advance checklist steps only after the matching Den operation succeeds, not when the user requests it. Require Web Board creation, keyboard Board navigation, then Desk creation; show optional shortcuts and Terminal steps after the required sequence.
-- Offer the Tutorial Board from the empty Desk's Try Tutorial action and `:tutorial`. Keep at most one per Den and keep its state session-only; see [ADR 0056](docs/adr/0056-provide-an-interactive-tutorial-board.md).
+- Offer the Tutorial Board from the empty Desk's Try Tutorial action and `:tutorial`. Keep at most one per Den and keep its state session-only; see [ADR 0063](docs/adr/0063-provide-an-interactive-tutorial-board.md).
 
 ## Review checklist
 
