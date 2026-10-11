@@ -1,6 +1,6 @@
 # Keyboard Input
 
-This document is the implementation contract for keyboard input. User-visible bindings belong in [shortcuts.md](./shortcuts.md); the reasons for architectural choices belong in [ADR 0036](./adr/0036-centralize-profile-keyboard-routing.md) and [ADR 0038](./adr/0038-use-one-g-prefix-for-essentials.md).
+Keyboard input follows the contract below. Bindings are listed in [shortcuts.md](./shortcuts.md); architectural reasons are recorded in [ADR 0036](./adr/0036-centralize-profile-keyboard-routing.md) and [ADR 0038](./adr/0038-use-one-g-prefix-for-essentials.md).
 
 ## Canonical flow
 
@@ -17,13 +17,13 @@ NSEvent
        -> forward(InputDestination)
 ```
 
-`KeyboardController` is the AppKit adapter. It normalizes the event, snapshots the current input context, calls `KeyboardRouter`, and applies the decision. It must not contain key policy or mutate `DenController` directly. Each Profile window registers its mounted `DenWindowModel`; events use the instance associated with `event.window`. `InputContext` receives `DenController` and `DenWindowModel` separately, combining application state from the Controller with window presentation state from the Model. The Model does not own the Controller or shared Store; see [the current ownership boundary](./architecture.md#shared-state-and-presentation-package-boundaries).
+`KeyboardController` normalizes AppKit events, snapshots input context, calls `KeyboardRouter`, and applies its decision. It must not contain key policy or mutate `DenController` directly. Each Profile window registers its mounted `DenWindowModel`; events use the instance associated with `event.window`. `InputContext` receives application state from `DenController` and presentation state from `DenWindowModel` as separate inputs. The Model owns neither the Controller nor shared Store; see [the ownership boundary](./architecture.md#shared-state-and-presentation-package-boundaries).
 
-`KeyboardRouter` owns Profile-window key precedence. It is side-effect free: it receives values and returns exactly one `InputDecision`. It must not reference UI objects, call `DenController`, or open windows. The Essentials Prefix is a temporary context: Den Mode's `g` or Vim-style Sheet Navigation's `o` enters it. Up and Down move the focused Essential, Return launches it, and one configured key, optionally with Shift for uppercase, still launches its matching Essential directly. Escape exits the prefix.
+`KeyboardRouter` determines Profile-window key precedence from input values, returning exactly one `InputDecision` without side effects. It must not reference UI objects, call `DenController`, or open windows. Den Mode's `g` or Vim-style Sheet Navigation's `o` enters the temporary Essentials Prefix context. Up and Down move the focused Essential, Return launches it, and a configured key (with Shift for uppercase) launches its matching Essential directly. Escape exits the prefix.
 
 `AppAction` names input-reachable application behavior. `AppActionHandler` is the only keyboard path that performs these actions. It receives the window Controller and Model explicitly, using the Model for UI workflows and the Controller for application operations. SwiftUI `Commands` use the focused Controller, Model, and action when a menu item and a key event represent the same behavior. Menu-only operations do not need an `AppAction`.
 
-Shortcut recording is configuration input, not an action entrance. It updates `AppPreferences`; the next event receives the effective values through `ShortcutConfiguration`.
+Shortcut recording updates `AppPreferences` without dispatching actions; the next event uses the effective values through `ShortcutConfiguration`.
 
 Universal Search is an exclusive temporary input context. Its Router forwards text editing and all marked-text
 composition events to the native field, consumes Up/Down for result selection, Return for execution, and Escape
@@ -53,7 +53,7 @@ Den Mode actions must never be implemented by forwarding an event and relying on
 - Do not log raw keys, composed text, or forwarded Sheet Input.
 - Native SwiftUI controls may handle local navigation or editing only after the Router has forwarded the event to their input destination.
 
-The exhaustive decision and action enums, the pure Router boundary, focused tests, and the single runtime monitor provide enforcement beyond code review.
+Decision and action enums, the pure Router, focused tests, and the single runtime monitor support enforcement.
 
 ## Diagnosing input bugs
 

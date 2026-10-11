@@ -33,7 +33,7 @@ flowchart TD
 | `DenDesign` | Shared visual tokens and controls |
 | `DenIPCProtocol` | CLI/app request and response types |
 
-The app target uses these packages. Its main folders have these roles:
+App-target folders:
 
 | Folder | Role |
 | --- | --- |
@@ -44,9 +44,9 @@ The app target uses these packages. Its main folders have these roles:
 | `PrivateWebKit` | Private WebKit API declarations |
 | `Resources` | Bundled assets |
 
-Within Feature folders, Application coordinates operations, Presentation renders UI, and
-Infrastructure integrates native SDKs. These folders describe ownership within the app target;
-package dependencies enforce the shared layer boundaries. Den coordinates operations spanning
+Within Features, Application coordinates operations, Presentation renders UI, and
+Infrastructure integrates native SDKs. Folders describe ownership; package dependencies
+enforce shared layer boundaries. Den coordinates operations spanning
 Desks, Boards, and Drawer. Board kind-specific code belongs to Board; shared Web integration
 belongs to Web.
 
@@ -59,8 +59,8 @@ The Store is `@Observable` and exposes a read-only snapshot. Views observe the a
 value through live getters. Its separate `DenStateWriter` is created together with the Store and retained privately by the app's
 `DenProfileResources` adapter. Readers cannot obtain a writer for an existing Store.
 
-`DenPresentationModels` owns confirmation display values such as `DenConfirmationRequest` and
-`PendingDeskReplacement`, the display values describing an operation awaiting confirmation.
+`DenPresentationModels` owns display values for pending confirmations, including
+`DenConfirmationRequest` and `PendingDeskReplacement`.
 The App-target Controller adapter executes confirmed operations. The Application core has no
 Presentation dependency. Board operation origin and zmx operation outcomes are Domain values.
 
@@ -86,23 +86,22 @@ to Domain, while `DrawerStyle` belongs to DenPresentationModels. `AppPreferences
 persisted selections.
 
 `DenInfrastructure` contains `ProfilePersistence`, its schema DTOs and migration decoder,
-and `PerformanceTrace`. It depends only on DenDomain, Foundation, and OS diagnostics. It has no
-app or Presentation dependency. App adapters retain Profile lifecycle and native resource ownership.
+and `PerformanceTrace`. It depends only on DenDomain, Foundation, and OS diagnostics.
+App adapters retain Profile lifecycle and native resources.
 
 `DenPresentationModels` depends only on Foundation, Observation, and `DenDomain`.
-The package name identifies presentation Models and their state/effect values; it contains no Views
-or shared visual components. Shared visual components belong to DenDesign, while Feature Views
-remain in the app target. Controller imports of DenPresentationModels refer to these value contracts.
+It contains Models and state/effect values, with no Views or shared visual components.
+Shared components belong to DenDesign and Feature Views to the app target. Controller imports use these value contracts.
 Models receive live data getters and only the operations they use. They cannot import the app target, DenController,
 native runtimes, or `DenApplication`. The app's `App/Composition/DenWindowComposition` supplies
 the data and operations; [Window presentation model](#window-presentation-model) describes its lifecycle and effect connection.
 
-UDF has two separate paths: changes to shared data invalidate reads from its single source;
-window effects request presentation changes. Views read shared data through the read-only
-DenController facade and request operations instead of writing shared values. The existing getters forward to the observable source, without keeping a second authoritative data copy.
+UDF uses two paths: shared-data changes invalidate reads; window effects request presentation changes.
+Views read through the read-only DenController facade and request operations instead of writing shared values.
+Getters forward to the observable source without copying authoritative data.
 Native runtimes and persistence callbacks stay in the app adapter and do not enter `DenSharedState` or its serialization.
 
-State ownership is explicit:
+State ownership:
 
 | State | Source and scope | Persistence |
 | --- | --- | --- |
@@ -126,8 +125,8 @@ actions and identity without loading, reloading, or disposing its WebView. Board
 succeed before the window releases ownership; other windows’ Previews of the removed Item are disposed. Closing one window releases its resources while shared Board runtimes
 remain alive for other windows. These native resource holders are app-target adapters.
 
-The remaining operation workflows in `DenController`, native resource integration,
-and Views are still in the app target. Their folder boundaries are not compiler-enforced. Layer import guards also
+`DenController` workflows, native integration, and Views remain in the app target.
+Their folder boundaries are not compiler-enforced. Layer import guards
 reject Presentation access to the mutable adapter. This boundary follows
 [ADR 0062](./adr/0062-profile-state-source-and-presentation-models.md).
 
@@ -144,7 +143,9 @@ reject Presentation access to the mutable adapter. This boundary follows
 - IPC is an application adapter shared with the bundled CLI. `DenIPCProtocol` supplies the typed operation envelope and response DTOs; socket transport does not own Board or Profile policy.
 - Feature-specific settings UI remains with its owner. `App/Settings` assembles those screens.
 
-Folders communicate ownership but do not enforce access control between source groups that remain in the app target. Swift packages enforce their module boundaries. Judge remaining dependencies by the role of the code, not by assuming every sibling Feature is an independent module. Keep domain rules free of UI and runtime dependencies, and use the narrowest practical entry point for cross-domain operations.
+Folders describe ownership within the app target; Swift packages enforce module boundaries.
+Judge app-target dependencies by responsibility rather than treating each Feature as a module.
+Keep domain rules free of UI and runtime dependencies, and use narrow entry points for cross-domain operations.
 
 WebExtension integration uses the existing `WebExtensionHost` boundary. Board and Drawer supply their WebKit instances and URL-loading callbacks; Extensions owns tab registration and never imports Den runtime types. Profile-window keyboard ownership follows [keyboard-input.md](./keyboard-input.md).
 

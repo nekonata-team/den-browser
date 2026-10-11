@@ -4,16 +4,9 @@
 
 **Web and terminal work, the Niri way.** — [den.nekonata.dev](https://den.nekonata.dev/)
 
-Den Browser is a keyboard-first spatial browser for long-running web and terminal work. It
-keeps parallel tasks as persistent work surfaces instead of growing tab and terminal-window lists,
-so research, AI chats, development, writing, and documentation stay easy to
-revisit.
-
-> **Status:** macOS companion browser under active development.
-
-Den Browser complements Safari, Chrome, or another general-purpose browser. It
-is for work that benefits from spatial memory and long-lived context, not for
-replacing everyday browsing.
+Den Browser is a keyboard-first spatial browser for long-running web and terminal work.
+It keeps research, AI chats, development, writing, and documentation on persistent work
+surfaces, making parallel tasks easy to revisit.
 
 ## Installation
 
@@ -27,7 +20,7 @@ Upgrade with `brew upgrade --cask den-browser`.
 
 ### Agent Skill
 
-Coding agents (Claude Code, Cursor, etc.) can drive adjacent Web Boards via the bundled CLI:
+Install the skill for coding agents such as Claude Code or Cursor:
 
 ```sh
 npx skills add nekonata-team/den-browser --skill den
@@ -45,7 +38,7 @@ den board web text
 ### Ghostty configuration
 
 Terminal Boards read your Ghostty configuration from the standard XDG and macOS
-locations. Choose only the settings you want, for example:
+locations. For example:
 
 ```ini
 theme = dark:Catppuccin Mocha,light:Catppuccin Latte
@@ -63,10 +56,9 @@ Den resolves theme names from its bundled catalog. See [Ghostty's configuration 
 - **Board**: A persistent work surface containing Web Sheets, a Terminal Session, a Zellij Session, or a zmx Session.
 - **Sheet**: A unit of content held and presented by a Board, including web content or a Terminal Session.
 
-Den Browser draws loosely on [Niri](https://github.com/niri-wm/niri)'s spatial
-window management. Its paper-workspace model is designed around web tasks,
-navigation history, and restoration. See [CONTEXT.md](./CONTEXT.md) for the
-complete product language.
+Inspired by [Niri](https://github.com/niri-wm/niri)'s spatial window management,
+Den's paper-workspace model supports web tasks, navigation history, and restoration.
+See [CONTEXT.md](./CONTEXT.md) for product terms.
 
 ## What Den Browser provides
 
@@ -96,7 +88,7 @@ just test
 just check
 ```
 
-These commands disable code signing. Run `just --list` for the available tasks.
+Run `just --list` for the available tasks.
 
 ## Documentation
 

@@ -1,6 +1,6 @@
 # Testing
 
-Den Browser uses automated tests for stable product behavior and exploratory human validation for areas where automation is not reliable, building on the foundational architecture established in [ADR 0000](./adr/0000-poc-accepted.md). This document defines the validation boundary rather than providing an exhaustive operation checklist.
+Automated tests protect stable product behavior; exploratory human validation covers areas where automation is unreliable. The validation boundary below builds on [ADR 0000](./adr/0000-poc-accepted.md).
 
 ## XCUITest admission rule
 
@@ -74,7 +74,7 @@ XCUITests own native UI integration, including:
 
 ### UI test readability
 
-UI tests use a lightweight BDD-style structure. This is a readability convention, not a second test framework:
+UI tests use BDD-style sections for readability:
 
 - `Given` describes the user-visible starting context.
 - `When` describes a user action or meaningful transition.
@@ -115,7 +115,7 @@ Human validation is exploratory, not a correctness guarantee. When it finds a re
 ## Automated commands
 
 Run from repository root. `just` commands use the shared `Den Browser` scheme, local macOS destination, and
-repository-local DerivedData. Build and unit-test commands disable code signing; macOS UI tests use normal local
+repository-local DerivedData. Builds use development signing. Unit-test commands disable code signing; macOS UI tests use normal local
 development signing and separate `.derived-data-ui` output because their runner must control the app process.
 
 ```sh

@@ -1,8 +1,8 @@
 # Den CLI (`den`) Specification
 
-Den Browser provides a first-party command-line interface (`den`) bundled directly inside the application bundle at `Den Browser.app/Contents/MacOS/den`.
+Den Browser bundles its first-party CLI at `Den Browser.app/Contents/MacOS/den`.
 
-It enables AI coding agents (such as Codex and Claude Code) and human developers to inspect and control Den Browser from Terminal Boards or external shells with zero configuration.
+Coding agents and developers can inspect and control Den from Terminal Boards or external shells without configuration.
 
 ---
 
@@ -16,7 +16,7 @@ den <domain> <action> [arguments...] [options...]
 
 `den health` is an application-level readiness check. It does not target a Desk or Board.
 
-The command hierarchy follows the product model while keeping kind-specific operations under their Board:
+The hierarchy follows the product model, with operations grouped by Board kind:
 
 ```text
 Den (Personal Environment for a Profile) ─── den
@@ -310,7 +310,7 @@ npx skills add nekonata-team/den-browser --skill den
 npx skills add nekonata-team/den-browser --skill den --global
 ```
 
-This equips the agent with the procedural knowledge in `.agents/skills/den/SKILL.md` to autonomously reason over web elements using the Snapshot + Ref model, navigate history, and control Web Boards. The skill resolves `den` from `PATH` (linked automatically when installed via Homebrew Cask) or falls back to `/Applications/Den Browser.app/Contents/MacOS/den`.
+The skill's `.agents/skills/den/SKILL.md` covers Snapshot + Ref interaction, history navigation, and Web Board control. It resolves `den` from `PATH` (linked by Homebrew Cask) or falls back to `/Applications/Den Browser.app/Contents/MacOS/den`.
 
 ---
 

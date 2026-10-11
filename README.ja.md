@@ -4,16 +4,8 @@
 
 **Webとターミナル作業を、Niriのように。** — [den.nekonata.dev](https://den.nekonata.dev/)
 
-Den Browserは、長時間続くWeb・ターミナル作業のためのキーボードファーストな空間
-ブラウザです。増え続けるタブやターミナルウィンドウの代わりに、並行する作業を永続する
-作業面として保持し、調査、AIチャット、開発、執筆、ドキュメント作業を
-後からすぐ再開できます。
-
-> **現在の状態:** 主要機能が動作する、開発継続中のmacOS向けブラウザです。
-
-SafariやChromeなどの汎用ブラウザを置き換えるものではありません。日常の
-ブラウジングには普段のブラウザを使い、空間記憶と長く続く文脈が役立つ
-作業にDen Browserを併用します。
+Den Browserは、長時間のWeb作業とターミナル作業に使う、キーボード中心の空間ブラウザです。
+調査、AIチャット、開発、執筆やドキュメント作業を永続する作業面に保持し、並行する作業をすぐ再開できます。
 
 ## インストール
 
@@ -23,17 +15,17 @@ Den BrowserにはmacOS 26以降が必要です。
 brew install --cask nekonata-team/tap/den-browser
 ```
 
-更新には `brew upgrade --cask den-browser` を使用します。
+更新には `brew upgrade --cask den-browser` を実行します。
 
 ### エージェントスキル
 
-コーディングエージェント（Claude Code、Cursor など）から隣接するWeb Boardを操作するためのスキル:
+Claude CodeやCursorなどのコーディングエージェント向けスキルをインストールします。
 
 ```sh
 npx skills add nekonata-team/den-browser --skill den
 ```
 
-Terminal Boardからは、同梱の`den` CLIで隣接するWeb Boardの確認・操作もできます。
+Terminal Boardから、同梱の`den` CLIで隣接するWeb Boardを確認、操作できます。
 
 ```sh
 den board list
@@ -44,14 +36,15 @@ den board web text
 ### Ghostty設定
 
 Terminal Boardは、標準のXDG/macOS設定ファイルを読み込みます。
-必要な設定だけ選択できます。例えば、次のように指定します。
+設定例:
 
 ```ini
 theme = dark:Catppuccin Mocha,light:Catppuccin Latte
 copy-on-select = clipboard
 ```
 
-Denはテーマ名を同梱カタログから解決します。詳しくは[Ghosttyの設定リファレンス](https://ghostty.org/docs/config/reference)を参照してください。
+Denはテーマ名を同梱カタログから解決します。
+詳細は[Ghosttyの設定リファレンス](https://ghostty.org/docs/config/reference)を参照してください。
 
 ## 作業モデル
 
@@ -63,10 +56,8 @@ Denはテーマ名を同梱カタログから解決します。詳しくは[Ghos
 - **Sheet**: Boardが保持して表示する内容の単位。
   Webの内容やTerminal Sessionを扱う。
 
-Den Browserは、[Niri](https://github.com/niri-wm/niri)の空間的なウィンドウ
-管理から着想を得ています。Web作業、閲覧履歴、状態復元に適した紙の作業
-空間モデルです。完全なプロダクト用語は[CONTEXT.md](./CONTEXT.md)を参照して
-ください。
+[Niri](https://github.com/niri-wm/niri)の空間的なウィンドウ管理から着想を得た、Web作業、閲覧履歴や状態復元に適した紙の作業空間モデルです。
+プロダクト用語は[CONTEXT.md](./CONTEXT.md)を参照してください。
 
 ## Den Browserの特徴
 
@@ -78,7 +69,7 @@ Den Browserは、[Niri](https://github.com/niri-wm/niri)の空間的なウィン
 - Current Sheet内のコンテンツを操作する、任意のファーストパーティ製
   Vim-style Sheet Navigation。
 
-詳しいキーボード操作は[docs/shortcuts.md](./docs/shortcuts.md)を参照してください。
+キーボード操作は[docs/shortcuts.md](./docs/shortcuts.md)を参照してください。
 
 ## 開発
 
@@ -92,8 +83,7 @@ just test
 just check
 ```
 
-これらのコマンドはコード署名を無効にします。利用できるタスクは
-`just --list`で確認できます。
+タスク一覧は`just --list`で確認できます。
 
 ## ドキュメント
 

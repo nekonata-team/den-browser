@@ -1,6 +1,6 @@
 # Den MCP Server (`den mcp`)
 
-`den mcp` exposes common Den operations as typed MCP tools. Tools reuse Den's operation semantics and typed IPC. Den Browser remains the owner of Profile, Board, Sheet, and Terminal state.
+`den mcp` exposes typed tools over Den's operations and IPC. Den Browser owns Profile, Board, Sheet, and Terminal state.
 
 ## 1. Tool model
 
@@ -19,7 +19,7 @@ click_sheet_element
 save_url_to_drawer
 ```
 
-Clients discover JSON Schema inputs and call tools directly; tools do not accept shell command strings. `inspect_den` combines related reads into one consistent result. Other tools map to existing CLI operations where possible. Product terms follow [CONTEXT.md](../CONTEXT.md).
+Clients discover JSON Schema inputs and call tools directly, without shell command strings. `inspect_den` combines reads into one consistent result; other tools map to CLI operations where possible. Product terms follow [CONTEXT.md](../CONTEXT.md).
 
 ## 2. Server Lifecycle and Transport
 
