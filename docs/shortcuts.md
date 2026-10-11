@@ -170,12 +170,14 @@ background to pan. Right-drag anywhere on the canvas, including over a Board,
 to pan without moving Boards.
 
 Board sizes and Desk order remain visible on a canvas. Previously viewed Web and
-Terminal Boards show a small, memory-only snapshot when available; Overview does
+Terminal Boards show a small snapshot when available; Overview does
 not load unvisited Boards to obtain one. Captures are suppressed for 30 seconds
 after a successful capture, and the last image remains available afterwards.
 Snapshots are requested when a surface is hidden or removed, without a fixed delay
 after appearing. Terminal snapshots are captured before hiding; Web snapshots are
-asynchronous and skip loading pages. Retained thumbnail rasters share a 64 MiB cache budget.
+asynchronous and skip loading pages. Retained thumbnail rasters share a 64 MiB memory
+budget. Ordinary Profiles retain compressed snapshots across restarts in a separate
+128 MiB disk cache; Private Den keeps snapshots only in memory.
 
 | Shortcut | Action |
 | --- | --- |

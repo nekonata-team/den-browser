@@ -67,6 +67,42 @@ struct ProfileManagerTests {
         #expect(!FileManager.default.fileExists(atPath: directory.path))
     }
 
+    @Test(arguments: [false, true])
+    func overviewSnapshotsPersistOnlyForOrdinaryProfiles(isEphemeral: Bool) async throws {
+        // Arrange
+        let directory = temporaryProfileDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let manager = makeProfileManager(directory: directory, isEphemeral: isEphemeral)
+        let profileID = manager.personalProfileID
+        let controller = try #require(manager.controller(for: profileID))
+        let board = board("Snapshot")
+        controller.storage.state.desks[0].boards = [board]
+        controller.storage.state.desks[0].focusedBoardID = board.id
+        #expect(controller.save())
+        let bitmap = try #require(
+            NSBitmapImageRep(
+                bitmapDataPlanes: nil, pixelsWide: 16, pixelsHigh: 12, bitsPerSample: 8,
+                samplesPerPixel: 4, hasAlpha: true, isPlanar: false, colorSpaceName: .deviceRGB,
+                bytesPerRow: 0, bitsPerPixel: 0))
+        let image = NSImage(size: CGSize(width: 16, height: 12))
+        image.addRepresentation(bitmap)
+
+        // Act
+        controller.thumbnailCache.setThumbnail(image, for: board.id)
+        await controller.thumbnailCache.flushPendingWrites()
+        let restoredManager = makeProfileManager(directory: directory, isEphemeral: isEphemeral)
+        let restoredController = try #require(restoredManager.controller(for: restoredManager.personalProfileID))
+        await restoredController.thumbnailCache.loadThumbnail(for: board.id)
+
+        // Assert
+        #expect((restoredController.thumbnailCache.image(for: board.id) != nil) == !isEphemeral)
+        #expect(
+            FileManager.default.fileExists(atPath: directory.appending(path: "OverviewThumbnails").path) == !isEphemeral
+        )
+        #expect(restoredController.webRuntimes.isEmpty)
+        #expect(restoredController.terminalRuntimes.isEmpty)
+    }
+
     @Test func extensionHostStaysUnloadedForEmptyAndTerminalStores() throws {
         // Arrange
         let directory = temporaryProfileDirectory()

@@ -15,6 +15,8 @@ final class ProfileManager {
     var clearBrowsingDataWindowID: UUID?
     private(set) var windowAssignmentRevision = 0
 
+    @ObservationIgnored private let thumbnailDirectoryURL: URL?
+    @ObservationIgnored private var thumbnailDisks: [ProfileID: OverviewThumbnailDiskCache] = [:]
     @ObservationIgnored private let persistence: ProfilePersistence
     @ObservationIgnored private var persistedProfiles: [ProfileID: PersistedProfile] = [:]
     var profileSaveCount: Int { persistence.profileSaveCount }
@@ -57,6 +59,12 @@ final class ProfileManager {
         ipcSocketPath: String = DenSocketPath.resolve(),
         quarantineFile: @escaping (URL, URL) throws -> Void = ProfilePersistence.moveFileToQuarantine
     ) {
+        let cacheRoot =
+            directoryURL == Self.defaultDirectoryURL()
+            ? FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0].appending(
+                path: "Den Browser/OverviewThumbnails")
+            : directoryURL.appending(path: "OverviewThumbnails")
+        thumbnailDirectoryURL = isEphemeral ? nil : cacheRoot
         self.persistence = ProfilePersistence(
             directoryURL: directoryURL,
             isEphemeral: isEphemeral,
@@ -192,10 +200,13 @@ final class ProfileManager {
             case .identified(let dataStoreID) = profile.webProfileStore
         else { return false }
 
+        let thumbnailCache = storages[profileID]?.thumbnailCache
         closeWindows(for: profileID)
         let hadDocument = persistence.profileDocumentExists(for: profileID)
         do {
             try await removeDataStore(dataStoreID)
+            await thumbnailCache?.clearDisk()
+            await thumbnailDisk(for: profileID)?.removeAll()
             if hadDocument { try persistence.removeProfileDocument(for: profileID) }
             profiles.removeAll { $0.id == profileID }
             persistedProfiles.removeValue(forKey: profileID)
@@ -221,6 +232,10 @@ final class ProfileManager {
         let store = websiteDataStore(profile.webProfileStore)
         do {
             try await removeWebsiteDataTypes(store, types)
+            if categories.contains(.cache) {
+                await storages[profileID]?.thumbnailCache.clearDisk()
+                await thumbnailDisk(for: profileID)?.removeAll()
+            }
             return true
         } catch {
             errorMessage = "Could not clear browsing data: \(error.localizedDescription)"
@@ -358,8 +373,14 @@ final class ProfileManager {
         if let storage = storages[profileID] { return storage }
         guard let persisted = persistedProfiles[profileID] else { return nil }
         let normalizedState = DenController.normalizedPersistedState(persisted.den)
+        let disk = thumbnailDisk(for: profileID)
+        if let disk {
+            let boardIDs = Set(normalizedState.desks.flatMap { $0.boards.map(\.id) })
+            Task { await disk.prune(keeping: boardIDs) }
+        }
         let storage = DenProfileResources(
             state: normalizedState,
+            thumbnailDisk: disk,
             deskPresets: persisted.deskPresets,
             recentItems: persisted.recentItems,
             onSave: { [weak self] den in self?.saveDen(den, for: profileID) ?? false },
@@ -374,6 +395,15 @@ final class ProfileManager {
             _ = saveDen(normalizedState, for: profileID)
         }
         return storage
+    }
+
+    private func thumbnailDisk(for profileID: ProfileID) -> OverviewThumbnailDiskCache? {
+        guard let thumbnailDirectoryURL else { return nil }
+        if let disk = thumbnailDisks[profileID] { return disk }
+        let disk = OverviewThumbnailDiskCache(
+            directoryURL: thumbnailDirectoryURL.appending(path: profileID.rawValue.uuidString.lowercased()))
+        thumbnailDisks[profileID] = disk
+        return disk
     }
 
     private func profileWebsiteDataStore(for profileID: ProfileID) -> WKWebsiteDataStore {

@@ -76,6 +76,7 @@ final class DenProfileResources {
 
     init(
         state: DenState,
+        thumbnailDisk: OverviewThumbnailDiskCache? = nil,
         deskPresets: [PersonalDeskPreset] = [],
         recentItems: [RecentItem] = [],
         onSave: ((DenState) -> Bool)? = nil,
@@ -94,7 +95,7 @@ final class DenProfileResources {
         self.onDeskPresetsSave = onDeskPresetsSave
         self.onRecentItemsSave = onRecentItemsSave
         self.onRuntimeOwnerChange = onRuntimeOwnerChange
-        let cache = OverviewThumbnailCache()
+        let cache = OverviewThumbnailCache(disk: thumbnailDisk)
         thumbnailCache = cache
         thumbnailCapture = OverviewThumbnailCapture(cache: cache)
     }

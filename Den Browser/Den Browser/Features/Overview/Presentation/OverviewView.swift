@@ -494,6 +494,7 @@ struct OverviewView: View {
                 .padding(DenOverviewLayout.boardCloseButtonPadding * canvasScale)
             }
         }
+        .task(id: board.id) { await controller.thumbnailCache.loadThumbnail(for: board.id) }
         .onHover { isHovering in
             if isHovering {
                 if hoveredBoardID != board.id {
