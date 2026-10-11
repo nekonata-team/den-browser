@@ -120,6 +120,54 @@ struct OverviewModelTests {
         }
     }
 
+    @Test(arguments: [false, true])
+    func removalUsesOverviewSelectionAndKeepsPresentedDesk(focusNext: Bool) {
+        // Arrange
+        let active = board("Active")
+        let first = board("First")
+        let selected = board("Selected")
+        let last = board("Last")
+        let activeDesk = desk("Active Desk", boards: [active], focusedBoardID: active.id)
+        let otherDesk = desk("Other Desk", boards: [first, selected, last], focusedBoardID: first.id)
+        withTestWindowModel(desks: [activeDesk, otherDesk]) { model, controller in
+            model.showOverview()
+            model.overview.selectBoard(selected.id)
+
+            // Act
+            model.overview.removeSelectedBoard(focusNext: focusNext)
+
+            // Assert
+            #expect(controller.state.desks[1].boards.map(\.id) == [first.id, last.id])
+            #expect(model.overview.selectionBoardID == (focusNext ? last.id : first.id))
+            #expect(controller.presentedDeskID == activeDesk.id)
+            #expect(model.isOverviewPresented)
+        }
+    }
+
+    @Test func restorationKeepsOverviewAndSelectsRestoredBoardOnOtherDesk() {
+        // Arrange
+        let active = board("Active")
+        let removed = board("Removed")
+        let activeDesk = desk("Active Desk", boards: [active], focusedBoardID: active.id)
+        let otherDesk = desk("Other Desk", boards: [removed], focusedBoardID: removed.id)
+        withTestWindowModel(desks: [activeDesk, otherDesk]) { model, controller in
+            model.showOverview()
+            model.overview.selectBoard(removed.id)
+            model.overview.removeSelectedBoard(focusNext: false)
+            model.overview.setQuery("Active")
+
+            // Act
+            model.overview.restoreRemovedBoard()
+
+            // Assert
+            #expect(controller.state.desks[1].boards.map(\.id) == [removed.id])
+            #expect(model.overview.selectionBoardID == removed.id)
+            #expect(model.overview.query.isEmpty)
+            #expect(controller.presentedDeskID == activeDesk.id)
+            #expect(model.isOverviewPresented)
+        }
+    }
+
     @Test func overviewFilterMatchesCorrectBoards() {
         // Arrange
         let googleBoard = board("Google", url: "https://google.com")

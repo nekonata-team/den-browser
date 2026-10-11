@@ -128,6 +128,8 @@ enum ZmxSessionsAction: Equatable {
 }
 
 enum OverviewAction: Equatable {
+    case removeSelection(focusNext: Bool)
+    case restoreRemovedBoard
     case zoomIn
     case zoomOut
     case resetZoom
@@ -314,6 +316,8 @@ enum AppActionHandler {
             }
         case .overview(let action):
             switch action {
+            case .removeSelection(let focusNext): windowModel.overview.removeSelectedBoard(focusNext: focusNext)
+            case .restoreRemovedBoard: windowModel.overview.restoreRemovedBoard()
             case .zoomIn: windowModel.overview.adjustCanvasZoom(by: 1)
             case .zoomOut: windowModel.overview.adjustCanvasZoom(by: -1)
             case .resetZoom: windowModel.overview.resetCanvasZoom()

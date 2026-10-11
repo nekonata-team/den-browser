@@ -460,6 +460,13 @@ enum KeyboardRouter {
         if case .board? = activeDrag, event.isEscape, modifiers == [] {
             return .perform(.board(.requestDragCancellation))
         }
+        if activeDrag == nil, modifiers == [], let character = event.character?.lowercased(),
+            ["x", "d", "u"].contains(character)
+        {
+            if event.isRepeat { return .consume(.ignoredRepeat) }
+            return .perform(
+                .overview(character == "u" ? .restoreRemovedBoard : .removeSelection(focusNext: character == "d")))
+        }
         if activeDrag == nil, let action = overviewZoomAction(event) {
             return .perform(.overview(action))
         }

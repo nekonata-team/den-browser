@@ -456,10 +456,11 @@ extension DenController {
         remove()
     }
 
-    func restoreRecentlyRemovedBoard() {
+    @discardableResult
+    func restoreRecentlyRemovedBoard(present: Bool = true) -> BoardID? {
         guard let recentlyRemovedBoard = recentlyRemovedBoards.first else {
             reportFeedback("No removed board to restore.", severity: .warning)
-            return
+            return nil
         }
 
         let deskIndex: DeskIndex
@@ -472,9 +473,9 @@ extension DenController {
             restoredDesk = desk
         case .focusExistingTutorial(let boardID):
             storage.recentlyRemovedBoards.removeFirst()
-            focusBoard(boardID, exitsDenMode: true)
+            if present { focusBoard(boardID, exitsDenMode: true) }
             reportFeedback("Tutorial Board is already open.", severity: .warning)
-            return
+            return boardID
         case .rejected(let failure):
             switch failure {
             case .sideBoardAlreadyExists:
@@ -484,18 +485,19 @@ extension DenController {
             case .destinationDeskMissing:
                 break
             }
-            return
+            return nil
         }
 
         let board = recentlyRemovedBoard.board
         storage.state.desks[deskIndex.rawValue] = restoredDesk
         let deskID = state.desks[deskIndex.rawValue].id
-        let changedDesk = setFocusedDesk(deskID)
+        let changedDesk = present && setFocusedDesk(deskID)
         if !changedDesk && presentedDeskID == deskID {
             markNotificationsRead(for: board.id)
         }
         storage.recentlyRemovedBoards.removeFirst()
         save()
+        return board.id
     }
 
     func duplicateFocusedBoard() {

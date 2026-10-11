@@ -20,6 +20,8 @@ final class DenWindowComposition {
             },
             isDragging: { controller.activeDrag != nil },
             actions: OverviewModel.Actions(
+                removeBoard: { controller.removeBoard($0, focusNext: $1) },
+                restoreBoard: { controller.restoreRecentlyRemovedBoard(present: false) },
                 enterSelection: { controller.enterOverviewSelection(deskID: $0, boardID: $1) },
                 beginDrag: { controller.beginOverviewBoardDrag($0) },
                 finishDrag: { controller.finishOverviewBoardDrag($0, toDeskID: $1, at: $2) },

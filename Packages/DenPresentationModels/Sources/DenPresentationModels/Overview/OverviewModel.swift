@@ -16,6 +16,8 @@ public struct OverviewSelection: Equatable {
 @Observable
 public final class OverviewModel {
     public struct Actions {
+        public let removeBoard: (BoardID, Bool) -> Void
+        public let restoreBoard: () -> BoardID?
         public let enterSelection: (DeskID, BoardID?) -> Void
         public let beginDrag: (BoardID) -> Bool
         public let finishDrag: (BoardID, DeskID, BoardIndex) -> Void
@@ -24,6 +26,8 @@ public final class OverviewModel {
         public let moveBoardToDesk: (BoardID, Int) -> Void
 
         public init(
+            removeBoard: @escaping (BoardID, Bool) -> Void,
+            restoreBoard: @escaping () -> BoardID?,
             enterSelection: @escaping (DeskID, BoardID?) -> Void,
             beginDrag: @escaping (BoardID) -> Bool,
             finishDrag: @escaping (BoardID, DeskID, BoardIndex) -> Void,
@@ -31,6 +35,8 @@ public final class OverviewModel {
             moveBoard: @escaping (BoardID, Int) -> Void,
             moveBoardToDesk: @escaping (BoardID, Int) -> Void
         ) {
+            self.removeBoard = removeBoard
+            self.restoreBoard = restoreBoard
             self.enterSelection = enterSelection
             self.beginDrag = beginDrag
             self.finishDrag = finishDrag
@@ -145,6 +151,27 @@ public final class OverviewModel {
             }
         }
         selection = nil
+    }
+
+    public func removeSelectedBoard(focusNext: Bool) {
+        guard !isDragging(), let selection, let boardID = selection.boardID,
+            let desk = desks().first(where: { $0.id == selection.deskID })
+        else { return }
+        let boards = desk.boards.filter { matchesFilter($0, in: desk) }
+        guard let index = boards.firstIndex(where: { $0.id == boardID }) else { return }
+        actions.removeBoard(boardID, focusNext)
+        let remainingIDs = Set(desks().first(where: { $0.id == desk.id })?.boards.map(\.id) ?? [])
+        guard !remainingIDs.contains(boardID) else { return }
+        let previous = boards[..<index].last { remainingIDs.contains($0.id) }?.id
+        let next = boards.dropFirst(index + 1).first { remainingIDs.contains($0.id) }?.id
+        self.selection = OverviewSelection(
+            deskID: desk.id, boardID: focusNext ? (next ?? previous) : (previous ?? next))
+    }
+
+    public func restoreRemovedBoard() {
+        guard !isDragging(), let boardID = actions.restoreBoard() else { return }
+        exitFilterMode()
+        selectBoard(boardID)
     }
 
     public func enterSelection() {

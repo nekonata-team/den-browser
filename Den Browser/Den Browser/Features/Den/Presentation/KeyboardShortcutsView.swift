@@ -170,6 +170,8 @@ struct KeyboardShortcutsView: View {
                 title: "Overview",
                 items: [
                     item(["o"], "Den Mode: Overview"),
+                    item(["x", "/", "d"], "Remove selected Board / remove and select next"),
+                    item(["u"], "Restore removed Board"),
                     item(["=", "/", "-"], "Zoom Overview (⌘ + / - also work)"),
                     item(["0"], "Reset Overview view (⌘0 also works)"),
                     item(["⌘", "+", "scroll"], "Zoom Overview at pointer"),

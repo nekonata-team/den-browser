@@ -181,6 +181,8 @@ asynchronous and skip loading pages. Retained thumbnail rasters share a 64 MiB c
 | `Left` / `Right` or `h` / `l` | Select Board |
 | `Up` / `Down` or `j` / `k` | Select Desk |
 | `Shift` + movement | Move selected Board |
+| `x` / `d` | Remove selected Board and select previous / next (Overview stays open) |
+| `u` | Restore the most recently removed Board and select it (Overview stays open) |
 | `=` / `+` / `-` | Zoom Overview in / out (plain keys remain text while searching) |
 | `Command` + `+` / `-` | Zoom Overview in / out |
 | `0` / `Command` + `0` | Reset Overview to its initial scale and center the selection (`0` remains text while searching) |

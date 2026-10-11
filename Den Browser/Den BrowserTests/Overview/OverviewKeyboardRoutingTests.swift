@@ -25,7 +25,7 @@ struct OverviewKeyboardRoutingTests {
         }
     }
 
-    @Test(arguments: ["=", "-", "0"])
+    @Test(arguments: ["=", "-", "0", "x", "d", "u"])
     func plainZoomKeysRemainTextWhileFiltering(character: String) throws {
         // Arrange
         let board = BoardState(label: "Board", width: 520)
@@ -58,6 +58,25 @@ struct OverviewKeyboardRoutingTests {
 
             // Assert
             let action: OverviewAction = character == "0" ? .resetZoom : (character == "-" ? .zoomOut : .zoomIn)
+            #expect(decision == .perform(.overview(action)))
+        }
+    }
+
+    @Test(arguments: ["x", "d", "u"])
+    func removalKeysTargetOverviewSelection(character: String) throws {
+        // Arrange
+        let board = BoardState(label: "Board", width: 520)
+        let desk = DeskState(label: "Desk", boards: [board], focusedBoardID: board.id)
+        try withTestWindowModel(desks: [desk]) { model, controller in
+            model.showOverview()
+            let event = try key(character)
+
+            // Act
+            let decision = route(event, model: model, controller: controller)
+
+            // Assert
+            let action: OverviewAction =
+                character == "u" ? .restoreRemovedBoard : .removeSelection(focusNext: character == "d")
             #expect(decision == .perform(.overview(action)))
         }
     }
