@@ -5,6 +5,20 @@ import Foundation
 import SFSafeSymbols
 import SwiftUI
 
+enum DeskSwitcherAlignment: String, CaseIterable, Identifiable {
+    case left
+    case center
+
+    var id: String { rawValue }
+
+    var label: String {
+        switch self {
+        case .left: "Left"
+        case .center: "Center"
+        }
+    }
+}
+
 struct DeskSwitcher: View {
     @Environment(DenController.self) private var controller
     @Environment(DenWindowModel.self) private var windowModel

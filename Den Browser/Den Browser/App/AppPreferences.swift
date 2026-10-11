@@ -4,20 +4,6 @@ import DenPresentationModels
 import Foundation
 import Observation
 
-enum DeskSwitcherAlignment: String, CaseIterable, Identifiable {
-    case left
-    case center
-
-    var id: String { rawValue }
-
-    var label: String {
-        switch self {
-        case .left: "Left"
-        case .center: "Center"
-        }
-    }
-}
-
 @MainActor
 @Observable
 final class AppPreferences {
