@@ -31,6 +31,8 @@ Den controls feel like a calm desk laid over live web sheets. Web content remain
   Show a trailing arrow for switching, `plus.app` for creation, and chevron for command execution.
   Hide the toolbar entrance in Overview and Zen View; keyboard entrances remain available in Zen View.
 - Prefer SF Symbols and system typography. Preserve macOS accessibility defaults where possible.
+- Use `.xmark` to dismiss UI or close an active work surface, including removing a Board from its Desk.
+  Use `.trash` to discard a collection item, such as a Drawer or Recent Item; restoration availability does not change the symbol.
 - Use SwiftUI semantic text styles such as `title`, `headline`, `body`, `caption`, and `caption2` for app-owned
   text. Apply weight, design, and monospaced variants to a semantic style instead of specifying a point size.
 - Avoid `.system(size:)` for app-owned text. Fixed sizes remain appropriate for geometry-bound symbols and
