@@ -896,7 +896,7 @@ private struct OverviewEmptyDeskCard: View {
     }
 }
 
-private struct OverviewBoardCard: View {
+struct OverviewBoardCard: View {
     let board: BoardState
     let isSelected: Bool
     var isAnchor: Bool = false
@@ -953,8 +953,8 @@ private struct OverviewBoardCard: View {
             if let thumbnail {
                 Image(nsImage: thumbnail)
                     .resizable()
-                    .scaledToFill()
-                    .frame(width: cardWidth, height: DenOverviewLayout.boardCardHeight * scale)
+                    .scaledToFit()
+                    .frame(width: cardWidth, height: DenOverviewLayout.boardCardHeight * scale, alignment: .center)
                     .clipped()
                     .opacity(0.85)
 

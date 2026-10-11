@@ -170,8 +170,9 @@ background to pan. Right-drag anywhere on the canvas, including over a Board,
 to pan without moving Boards.
 
 Board sizes and Desk order remain visible on a canvas. Previously viewed Web and
-Terminal Boards show a small snapshot when available; Overview does
-not load unvisited Boards to obtain one. Captures are suppressed for 30 seconds
+Terminal Boards show a small snapshot when available. Snapshots fit inside Board
+previews without cropping and retain their aspect ratio. Overview does not load
+unvisited Boards to obtain one. Captures are suppressed for 30 seconds
 after a successful capture, and the last image remains available afterwards.
 Snapshots are requested when a surface is hidden or removed, without a fixed delay
 after appearing. Terminal snapshots are captured before hiding; Web snapshots are
