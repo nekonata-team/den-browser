@@ -450,12 +450,18 @@ enum KeyboardRouter {
         let modifiers = event.modifiers
         if filterPhase == .filtering {
             if event.hasMarkedText { return .forward(.filterTextInput) }
+            if modifiers.contains(.command), let action = overviewZoomAction(event) {
+                return .perform(.overview(action))
+            }
             if event.isEscape, modifiers == [] { return .perform(.overview(.exitFilterMode)) }
             if event.key == .returnKey, modifiers == [] { return .perform(.overview(.confirmFilterQuery)) }
             return .forward(.filterTextInput)
         }
         if case .board? = activeDrag, event.isEscape, modifiers == [] {
             return .perform(.board(.requestDragCancellation))
+        }
+        if activeDrag == nil, let action = overviewZoomAction(event) {
+            return .perform(.overview(action))
         }
         if event.isEscape, modifiers == [] {
             return .perform(hasQuery ? .overview(.clearQuery) : .overview(.hide))
@@ -466,6 +472,18 @@ enum KeyboardRouter {
         }
         if let action = movementAction(event, overview: true) { return .perform(action) }
         return .consume(.exclusiveContext)
+    }
+
+    private static func overviewZoomAction(_ event: KeyEvent) -> OverviewAction? {
+        let modifiers = event.modifiers
+        if event.character == "=" || event.character == "+",
+            modifiers.subtracting([.command, .shift]).isEmpty
+        {
+            return .zoomIn
+        }
+        if event.character == "-", modifiers == [] || modifiers == [.command] { return .zoomOut }
+        if event.character == "0", modifiers == [] || modifiers == [.command] { return .resetZoom }
+        return nil
     }
 
     private static func routeZmxSessions(

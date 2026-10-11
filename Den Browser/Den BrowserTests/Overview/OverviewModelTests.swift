@@ -93,6 +93,33 @@ struct OverviewModelTests {
         }
     }
 
+    @Test func returnToCurrentDeskRestoresFocusAndClearsSearch() {
+        // Arrange
+        let currentBoard = board("Current")
+        let otherBoard = board("Other")
+        let currentDesk = desk("Current Desk", boards: [currentBoard], focusedBoardID: currentBoard.id)
+        let otherDesk = desk("Other Desk", boards: [otherBoard], focusedBoardID: otherBoard.id)
+        withTestWindowModel(desks: [currentDesk, otherDesk]) { windowModel, controller in
+            windowModel.showOverview()
+            let overview = windowModel.overview
+            overview.enterFilterMode()
+            overview.setQuery("Other")
+            let resetRequest = overview.canvasResetRequest
+
+            // Act
+            overview.returnToCurrentDesk()
+
+            // Assert
+            #expect(overview.query.isEmpty)
+            #expect(overview.filterPhase == .inactive)
+            #expect(overview.selectionDeskID == currentDesk.id)
+            #expect(overview.selectionBoardID == currentBoard.id)
+            #expect(overview.canvasResetRequest == resetRequest + 1)
+            #expect(controller.focusedDesk?.id == currentDesk.id)
+            #expect(windowModel.isOverviewPresented)
+        }
+    }
+
     @Test func overviewFilterMatchesCorrectBoards() {
         // Arrange
         let googleBoard = board("Google", url: "https://google.com")

@@ -7,8 +7,12 @@ struct WebBoardSurface: NSViewRepresentable {
     let isHidden: Bool
     let focusRequest: BoardFocusRequest?
     let onSurfaceReady: (NSWindow) -> Bool
+    var onBeforeHide: () -> Void = {}
 
-    func makeNSView(context _: Context) -> SurfaceHost<BoardFocusRequest, WKWebView> {
+    func makeCoordinator() -> Coordinator { Coordinator() }
+
+    func makeNSView(context: Context) -> SurfaceHost<BoardFocusRequest, WKWebView> {
+        context.coordinator.onBeforeHide = onBeforeHide
         let host = SurfaceHost<BoardFocusRequest, WKWebView>(content: webView)
         webView.isHidden = isHidden
         host.update(request: focusRequest, onReady: onSurfaceReady)
@@ -17,9 +21,20 @@ struct WebBoardSurface: NSViewRepresentable {
 
     func updateNSView(
         _ nsView: SurfaceHost<BoardFocusRequest, WKWebView>,
-        context _: Context
+        context: Context
     ) {
+        context.coordinator.onBeforeHide = onBeforeHide
+        if isHidden && !webView.isHidden { onBeforeHide() }
         webView.isHidden = isHidden
         nsView.update(request: focusRequest, onReady: onSurfaceReady)
+    }
+
+    static func dismantleNSView(_ nsView: SurfaceHost<BoardFocusRequest, WKWebView>, coordinator: Coordinator) {
+        if !nsView.content.isHidden { coordinator.onBeforeHide?() }
+        coordinator.onBeforeHide = nil
+    }
+
+    final class Coordinator {
+        var onBeforeHide: (() -> Void)?
     }
 }

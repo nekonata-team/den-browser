@@ -72,6 +72,8 @@ final class DenController {
         get { storage.terminalRuntimes }
         set { storage.terminalRuntimes = newValue }
     }
+    var thumbnailCache: OverviewThumbnailCache { storage.thumbnailCache }
+    var thumbnailCapture: OverviewThumbnailCapture { storage.thumbnailCapture }
     @ObservationIgnored var onWindowEffect: ((DenWindowEffect) -> Void)?
     @ObservationIgnored private let windowResources = DenWindowResources()
     var drawerPreviewRuntime: WebRuntime? {

@@ -546,6 +546,7 @@ final class ProfileManager {
     }
 
     private func releaseRuntimes(_ storage: DenProfileResources, profileID: ProfileID) {
+        storage.thumbnailCache.removeAll()
         for runtime in storage.webRuntimes.values { runtime.dispose() }
         storage.webRuntimes.removeAll()
         for runtime in storage.terminalRuntimes.values { runtime.dispose() }

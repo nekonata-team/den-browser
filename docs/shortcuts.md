@@ -157,11 +157,33 @@ Open with `Tab` in Den Mode.
 
 Open with `o` in Den Mode.
 
+Overview opens around the Focused Board at a scale that leaves room for its Desk
+and the neighboring Desk above and below, without an initial scrolling animation.
+When zoomed-out content fits in the viewport, it is centered in both directions.
+Zoom ranges from 20% to 300% of the base Board size across all input methods.
+Search centers the selected result after the filtered layout updates. The canvas
+controls group the zoom level, zoom buttons, and Return to current Desk. Returning
+to the current Desk clears search, selects its Focused Board, and restores the
+initial scale without leaving Overview.
+The canvas extends to the panel edges with hidden scroll bars; scroll or drag its
+background to pan.
+
+Board sizes and Desk order remain visible on a canvas. Previously viewed Web and
+Terminal Boards show a small, memory-only snapshot when available; Overview does
+not load unvisited Boards to obtain one. Captures are suppressed for 30 seconds
+after a successful capture, and the last image remains available afterwards.
+Snapshots are requested when a surface is hidden or removed, without a fixed delay
+after appearing. Terminal snapshots are captured before hiding; Web snapshots are
+asynchronous and skip loading pages. Retained thumbnail rasters share a 64 MiB cache budget.
+
 | Shortcut | Action |
 | --- | --- |
 | `Left` / `Right` or `h` / `l` | Select Board |
 | `Up` / `Down` or `j` / `k` | Select Desk |
 | `Shift` + movement | Move selected Board |
+| `=` / `+` / `-` | Zoom Overview in / out (plain keys remain text while searching) |
+| `Command` + `+` / `-` | Zoom Overview in / out |
+| `0` / `Command` + `0` | Reset Overview to its initial scale and center the selection (`0` remains text while searching) |
 | `/` | Search / filter Desks and Boards (`Return` confirms, `Escape` clears) |
 | `Return` | Enter selection as Focused Board |
 | `Escape` | Clear search or return to Den Mode |
@@ -186,6 +208,9 @@ Open with `o` in Den Mode.
   - Drag Desk button to reorder Desks.
   - Right-click for context menu (copy ID, open in new window, rename, delete, save preset, export).
 - **Overview**:
+  - Scroll in either direction or drag the background to pan.
+  - Pinch to zoom around the gesture's starting position.
+  - Hold `Command` while scrolling vertically over the canvas to zoom around the pointer.
   - Drag Board cards to reposition within or across Desks.
   - Click selects; double-click opens that Desk and Board. Hover card shows close button.
 - **Web Popups**:

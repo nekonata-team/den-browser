@@ -309,6 +309,7 @@ extension DenController {
     }
 
     func releaseRuntimes() {
+        storage.thumbnailCache.removeAll()
         releaseWebRuntimes()
         storage.boardRuntimes.releaseTerminal()
     }
@@ -324,6 +325,7 @@ extension DenController {
     }
 
     func disposeRuntime(for boardID: BoardID) {
+        storage.thumbnailCache.invalidate(for: boardID)
         storage.boardRuntimes.dispose(boardID)
     }
 
@@ -350,6 +352,7 @@ extension DenController {
             let canonicalURL = WebURLPolicy.canonicalSheetURL(url)
             if state.desks[indices.deskOffset].boards[indices.boardOffset].currentSheetURL != canonicalURL {
                 storage.state.desks[indices.deskOffset].boards[indices.boardOffset].currentSheetURL = canonicalURL
+                storage.thumbnailCache.invalidate(for: boardID)
                 changed = true
             }
         }

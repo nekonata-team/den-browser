@@ -128,6 +128,9 @@ enum ZmxSessionsAction: Equatable {
 }
 
 enum OverviewAction: Equatable {
+    case zoomIn
+    case zoomOut
+    case resetZoom
     case show
     case hide
     case toggleActivity
@@ -311,6 +314,9 @@ enum AppActionHandler {
             }
         case .overview(let action):
             switch action {
+            case .zoomIn: windowModel.overview.adjustCanvasZoom(by: 1)
+            case .zoomOut: windowModel.overview.adjustCanvasZoom(by: -1)
+            case .resetZoom: windowModel.overview.resetCanvasZoom()
             case .show: windowModel.showOverview()
             case .hide: windowModel.hideOverview()
             case .toggleActivity: windowModel.toggleBoardActivity()

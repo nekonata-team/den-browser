@@ -17,12 +17,27 @@ struct OverviewView: View {
     @Environment(\.appearsActive) private var appearsActive
 
     @FocusState private var isSearchFocused: Bool
+    @ScaledMetric(relativeTo: .caption) private var captionSize: CGFloat = 12
     @State private var scrollPosition = ScrollPosition()
     @State private var overviewDrag: OverviewDragState?
     @State private var overviewGeometry = OverviewGeometry()
     @State private var scrollSize = CGSize.zero
     @State private var lastAutoScrollTime = 0.0
     @State private var hoveredBoardID: BoardID?
+    @State private var canvasScale: CGFloat = 1.0
+    @State private var pinchStartScale: CGFloat?
+    @State private var pinchStartOffset: CGPoint?
+    @State private var panStartOffset: CGPoint?
+    @State private var canvasBaseSize = CGSize.zero
+    @State private var canvasOffset = CGPoint.zero
+    @State private var canvasMargin = CGSize.zero
+    @State private var measuredCanvasMargin = CGSize.zero
+    @State private var didSetInitialScale = false
+    @State private var didCenterInitialSelection = false
+    @State private var animateInitialCenter = false
+    @State private var centeredSearchQuery: String?
+    @State private var measuredCanvasQuery: String?
+    @State private var measuredBoardQuery: String?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -72,41 +87,112 @@ struct OverviewView: View {
                 }
             }
             .frame(maxWidth: .infinity)
+            .padding(.horizontal, DenOverviewLayout.contentPadding)
+            .padding(.top, DenOverviewLayout.contentPadding)
 
             ScrollView([.horizontal, .vertical]) {
-                VStack(alignment: .leading, spacing: 18) {
-                    ForEach(controller.state.desks) { desk in
-                        let filtered = desk.boards.filter { board in
-                            overview.matchesFilter(board, in: desk)
-                        }
-                        if overview.query.isEmpty {
-                            deskRow(desk, filteredBoards: filtered)
-                        } else if !filtered.isEmpty {
-                            deskRow(desk, filteredBoards: filtered)
+                ZStack {
+                    Color.clear
+                        .contentShape(Rectangle())
+                        .gesture(
+                            DragGesture(minimumDistance: 3, coordinateSpace: .named(OverviewCoordinateSpace.name))
+                                .onChanged { value in
+                                    if panStartOffset == nil { panStartOffset = canvasOffset }
+                                    guard let start = panStartOffset else { return }
+                                    scrollCanvas(
+                                        to: CGPoint(
+                                            x: start.x - value.translation.width, y: start.y - value.translation.height)
+                                    )
+                                }
+                                .onEnded { _ in panStartOffset = nil }
+                        )
+                    // Lay out at the zoomed size so UI text and symbols render at native resolution.
+                    VStack(alignment: .leading, spacing: DenOverviewLayout.deskSpacing * canvasScale) {
+                        ForEach(controller.state.desks) { desk in
+                            let filtered = desk.boards.filter { board in
+                                overview.matchesFilter(board, in: desk)
+                            }
+                            if overview.query.isEmpty {
+                                deskRow(desk, filteredBoards: filtered)
+                            } else if !filtered.isEmpty {
+                                deskRow(desk, filteredBoards: filtered)
+                            }
                         }
                     }
+                    .scrollTargetLayout()
+                    .fixedSize(horizontal: true, vertical: true)
+                    .padding(.horizontal, canvasMargin.width * canvasScale)
+                    .padding(.vertical, canvasMargin.height * canvasScale)
+                    .onGeometryChange(for: OverviewCanvasMeasurement.self) {
+                        OverviewCanvasMeasurement(
+                            size: CGSize(width: $0.size.width / canvasScale, height: $0.size.height / canvasScale),
+                            margin: canvasMargin, query: overview.query)
+                    } action: { measurement in
+                        canvasBaseSize = measurement.size
+                        measuredCanvasMargin = measurement.margin
+                        measuredCanvasQuery = measurement.query
+                        centerInitialSelectionIfReady()
+                        centerSearchSelectionIfReady()
+                    }
+                    .animation(
+                        DenMotion.spatial(reduceMotion: shouldReduceMotion),
+                        value: controller.state.desks.map { $0.boards.map(\.id) })
                 }
-                .scrollTargetLayout()
-                .padding(2)
-                .animation(
-                    DenMotion.spatial(reduceMotion: shouldReduceMotion),
-                    value: controller.state.desks.map { $0.boards.map(\.id) })
+                .frame(minWidth: scrollSize.width, minHeight: scrollSize.height, alignment: .center)
             }
+            .scrollIndicators(.never)
             .scrollPosition($scrollPosition, anchor: .center)
             .coordinateSpace(name: OverviewCoordinateSpace.name)
-            .onScrollGeometryChange(for: CGSize.self) { geometry in
-                geometry.containerSize
-            } action: { _, size in
-                scrollSize = size
+            .background {
+                OverviewCommandScrollSurface { factor, anchor in
+                    zoomCanvas(by: factor, anchor: anchor)
+                }
+            }
+            .simultaneousGesture(
+                MagnifyGesture()
+                    .onChanged { value in
+                        if pinchStartScale == nil {
+                            pinchStartScale = canvasScale
+                            pinchStartOffset = canvasOffset
+                        }
+                        let base = pinchStartScale ?? 1.0
+                        let newScale = min(max(base * value.magnification, 0.2), DenOverviewLayout.maximumScale)
+                        let anchor = CGPoint(
+                            x: value.startAnchor.x * scrollSize.width, y: value.startAnchor.y * scrollSize.height)
+                        let offset = OverviewCanvasGeometry.zoomOffset(
+                            offset: pinchStartOffset ?? canvasOffset, anchor: anchor,
+                            contentSize: CGSize(
+                                width: canvasBaseSize.width * base, height: canvasBaseSize.height * base),
+                            viewportSize: scrollSize, factor: newScale / base)
+                        canvasScale = newScale
+                        scrollCanvas(to: offset)
+                    }
+                    .onEnded { _ in
+                        pinchStartScale = nil
+                        pinchStartOffset = nil
+                    }
+            )
+            .onScrollGeometryChange(for: OverviewScrollGeometry.self) { geometry in
+                OverviewScrollGeometry(size: geometry.containerSize, offset: geometry.contentOffset)
+            } action: { _, geometry in
+                scrollSize = geometry.size
+                canvasOffset = geometry.offset
+                prepareInitialCanvas()
+                centerInitialSelectionIfReady()
             }
             .onPreferenceChange(OverviewBoardFramePreferenceKey.self) {
-                overviewGeometry.boardFrames = $0
+                overviewGeometry.boardFrames = $0.frames
+                measuredBoardQuery = $0.query
+                centerInitialSelectionIfReady()
+                centerSearchSelectionIfReady()
             }
             .onPreferenceChange(OverviewDeskFramePreferenceKey.self) {
                 overviewGeometry.deskFrames = $0
+                centerInitialSelectionIfReady()
             }
             .onPreferenceChange(OverviewEmptyBoardFramePreferenceKey.self) {
                 overviewGeometry.emptyBoardFrames = $0
+                centerInitialSelectionIfReady()
             }
             .onChange(of: windowModel.boardDragCancellationRequest) { _, _ in
                 cancelOverviewBoardDrag()
@@ -117,6 +203,39 @@ struct OverviewView: View {
             .onChange(of: appearsActive) { _, isActive in
                 if !isActive { cancelOverviewBoardDrag() }
             }
+            .overlay(alignment: .bottomTrailing) {
+                HStack(spacing: 8) {
+                    Button {
+                        overview.adjustCanvasZoom(by: -1)
+                    } label: {
+                        Image(systemSymbol: .minus)
+                    }
+                    .help("Zoom out (-)")
+                    .accessibilityLabel("Zoom out")
+                    Text(canvasScale, format: .percent.precision(.fractionLength(0)))
+                        .monospacedDigit()
+                    Button {
+                        overview.adjustCanvasZoom(by: 1)
+                    } label: {
+                        Image(systemSymbol: .plus)
+                    }
+                    .help("Zoom in (=)")
+                    .accessibilityLabel("Zoom in")
+                    Divider().frame(height: 14)
+                    Button {
+                        overview.returnToCurrentDesk()
+                    } label: {
+                        Image(systemSymbol: .arrowCounterclockwise)
+                    }
+                    .help("Return to current Desk")
+                    .accessibilityLabel("Return to current Desk")
+                }
+                .buttonStyle(.borderless)
+                .padding(10)
+                .glassEffect(.regular, in: Capsule())
+                .disabled(overviewDrag != nil)
+                .padding(12)
+            }
             .overlay(alignment: .topLeading) {
                 if let drag = overviewDrag, let board = draggedOverviewBoard {
                     OverviewBoardCard(
@@ -124,7 +243,9 @@ struct OverviewView: View {
                         isSelected: true,
                         profileColor: profileColor,
                         boardHeight: boardHeight,
-                        differentiateWithoutColor: differentiateWithoutColor
+                        differentiateWithoutColor: differentiateWithoutColor,
+                        thumbnail: controller.thumbnailCache.image(for: board.id),
+                        scale: canvasScale
                     )
                     .scaleEffect(shouldReduceMotion ? 1 : 1.03)
                     .shadow(color: .black.opacity(0.32), radius: 18, y: 10)
@@ -147,8 +268,8 @@ struct OverviewView: View {
                 }
             }
         }
-        .padding(DenOverviewLayout.contentPadding)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .clipShape(RoundedRectangle(cornerRadius: DenRadius.large, style: .continuous))
         .glassEffect(.regular, in: RoundedRectangle(cornerRadius: DenRadius.large, style: .continuous))
         .overlay(alignment: .topTrailing) {
             DenCloseButton(label: "Close Overview") {
@@ -170,16 +291,105 @@ struct OverviewView: View {
         .onChange(of: overview.selectionBoardID) { _, boardID in
             scrollToSelection(boardID)
         }
+        .onChange(of: overview.selectionDeskID) { _, _ in
+            if overview.selectionBoardID == nil { scrollToSelection(nil) }
+        }
+        .onChange(of: overview.canvasZoomSteps) { old, new in
+            zoomCanvas(
+                by: pow(1.2, CGFloat(new - old)), anchor: CGPoint(x: scrollSize.width / 2, y: scrollSize.height / 2))
+        }
+        .onChange(of: overview.canvasResetRequest) { _, _ in
+            animateInitialCenter = true
+            didSetInitialScale = false
+            didCenterInitialSelection = false
+            prepareInitialCanvas()
+            centerInitialSelectionIfReady()
+        }
         .onAppear {
-            scrollToSelection(overview.selectionBoardID)
+            prepareInitialCanvas()
         }
     }
 
-    private func scrollToSelection(_ boardID: BoardID?) {
-        guard let boardID else { return }
-        withAnimation(DenMotion.spatial(reduceMotion: shouldReduceMotion)) {
-            scrollPosition.scrollTo(id: boardID, anchor: .center)
+    private func scrollToSelection(_ boardID: BoardID?, animated: Bool = true) {
+        guard measuredCanvasQuery == overview.query, boardID == nil || measuredBoardQuery == overview.query else {
+            return
         }
+        guard
+            let frame = boardID.flatMap({ overviewGeometry.boardFrames[$0] })
+                ?? overview.selectionDeskID.flatMap({
+                    overviewGeometry.emptyBoardFrames[$0] ?? overviewGeometry.deskFrames[$0]
+                })
+        else { return }
+        centerCanvas(on: frame, animated: animated)
+    }
+
+    private func centerCanvas(on frame: CGRect, animated: Bool = true) {
+        withAnimation(animated ? DenMotion.spatial(reduceMotion: shouldReduceMotion) : nil) {
+            scrollCanvas(
+                to: CGPoint(
+                    x: canvasOffset.x + frame.midX - scrollSize.width / 2,
+                    y: canvasOffset.y + frame.midY - scrollSize.height / 2))
+        }
+    }
+
+    private func prepareInitialCanvas() {
+        guard !didSetInitialScale, scrollSize.width > 0, scrollSize.height > 0, boardHeight > 0 else { return }
+        let board = controller.state.desks.lazy.flatMap(\.boards).first { $0.id == overview.selectionBoardID }
+        let size = CGSize(
+            width: board.map { CGFloat($0.width) * DenOverviewLayout.boardCardHeight / boardHeight }
+                ?? DenOverviewLayout.emptyBoardWidth,
+            height: DenOverviewLayout.boardCardHeight)
+        let rowHeight = captionSize * 1.2 + 4 + DenOverviewLayout.boardCardHeight
+        let neighborhoodHeight = rowHeight * 3 + DenOverviewLayout.deskSpacing * 2
+        canvasScale = min(
+            max(
+                OverviewCanvasGeometry.initialScale(
+                    boardSize: size, neighborhoodHeight: neighborhoodHeight, viewportSize: scrollSize), 0.2),
+            DenOverviewLayout.maximumScale)
+        canvasMargin = CGSize(
+            width: scrollSize.width / (2 * canvasScale), height: scrollSize.height / (2 * canvasScale))
+        didSetInitialScale = true
+    }
+
+    private func centerInitialSelectionIfReady() {
+        guard didSetInitialScale, !didCenterInitialSelection, measuredCanvasMargin == canvasMargin,
+            measuredCanvasQuery == overview.query,
+            overview.selectionBoardID == nil || measuredBoardQuery == overview.query,
+            let frame = overview.selectionBoardID.flatMap({ overviewGeometry.boardFrames[$0] })
+                ?? overview.selectionDeskID.flatMap({ overviewGeometry.emptyBoardFrames[$0] }),
+            abs(frame.height - DenOverviewLayout.boardCardHeight * canvasScale) < 0.5
+        else { return }
+        didCenterInitialSelection = true
+        scrollToSelection(overview.selectionBoardID, animated: animateInitialCenter)
+    }
+
+    private func centerSearchSelectionIfReady() {
+        guard measuredCanvasQuery == overview.query, measuredBoardQuery == overview.query,
+            centeredSearchQuery != overview.query
+        else { return }
+        centeredSearchQuery = overview.query
+        if !overview.query.isEmpty { scrollToSelection(overview.selectionBoardID) }
+    }
+
+    private func scrollCanvas(to offset: CGPoint) {
+        let target = OverviewCanvasGeometry.clampedOffset(
+            offset,
+            contentSize: CGSize(width: canvasBaseSize.width * canvasScale, height: canvasBaseSize.height * canvasScale),
+            viewportSize: scrollSize)
+        scrollPosition.scrollTo(x: target.x, y: target.y)
+    }
+
+    @discardableResult
+    private func zoomCanvas(by factor: CGFloat, anchor: CGPoint) -> Bool {
+        guard windowModel.isOverviewPresented, overviewDrag == nil, didSetInitialScale else { return false }
+        let nextScale = min(max(canvasScale * factor, 0.2), DenOverviewLayout.maximumScale)
+        let offset = OverviewCanvasGeometry.zoomOffset(
+            offset: canvasOffset, anchor: anchor,
+            contentSize: CGSize(width: canvasBaseSize.width * canvasScale, height: canvasBaseSize.height * canvasScale),
+            viewportSize: scrollSize, factor: nextScale / canvasScale)
+        canvasScale = nextScale
+        scrollCanvas(to: offset)
+        return true
     }
 
     private var hasOverviewMatches: Bool {
@@ -190,36 +400,38 @@ struct OverviewView: View {
     }
 
     private func deskRow(_ desk: DeskState, filteredBoards: [BoardState]) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 8) {
+        VStack(alignment: .leading, spacing: 4 * canvasScale) {
+            HStack(spacing: 8 * canvasScale) {
                 Text(desk.label)
-                    .font(.caption.weight(.semibold))
+                    .font(.system(size: captionSize * canvasScale, weight: .semibold))
 
                 if desk.id == overview.selectionDeskID {
                     Circle()
                         .fill(profileColor)
                         .frame(
-                            width: DenOverviewLayout.selectionIndicatorSize,
-                            height: DenOverviewLayout.selectionIndicatorSize
+                            width: DenOverviewLayout.selectionIndicatorSize * canvasScale,
+                            height: DenOverviewLayout.selectionIndicatorSize * canvasScale
                         )
                         .overlay {
                             if differentiateWithoutColor {
                                 Circle()
-                                    .stroke(Color.primary, lineWidth: 1)
+                                    .stroke(Color.primary, lineWidth: canvasScale)
                             }
                         }
                 }
             }
+            .frame(height: captionSize * 1.2 * canvasScale)
             .foregroundStyle(Color.primary.opacity(desk.id == overview.selectionDeskID ? 0.96 : 0.58))
             .accessibilityElement(children: .ignore)
             .accessibilityLabel("Desk \(desk.label)")
             .accessibilityValue(desk.id == overview.selectionDeskID ? "Selected Desk" : "")
             .accessibilityAddTraits(desk.id == overview.selectionDeskID ? .isSelected : [])
 
-            HStack(alignment: .top, spacing: DenOverviewLayout.boardSpacing) {
+            HStack(alignment: .top, spacing: DenOverviewLayout.boardSpacing * canvasScale) {
                 if filteredBoards.isEmpty {
                     OverviewEmptyDeskCard(
                         desk: desk,
+                        scale: canvasScale,
                         onSelect: { overview.selectDesk(desk.id) },
                         onEnter: { overview.enterDesk(desk.id) }
                     )
@@ -255,16 +467,18 @@ struct OverviewView: View {
                     isAnchor: desk.anchorBoardID == board.id,
                     profileColor: profileColor,
                     boardHeight: boardHeight,
-                    differentiateWithoutColor: differentiateWithoutColor
+                    differentiateWithoutColor: differentiateWithoutColor,
+                    thumbnail: controller.thumbnailCache.image(for: board.id),
+                    scale: canvasScale
                 )
             }
             .buttonStyle(.plain)
 
             if hoveredBoardID == board.id && overviewDrag == nil {
-                OverviewBoardCloseButton(boardName: board.displayName) {
+                OverviewBoardCloseButton(boardName: board.displayName, scale: canvasScale) {
                     controller.removeBoard(board.id)
                 }
-                .padding(DenOverviewLayout.boardCloseButtonPadding)
+                .padding(DenOverviewLayout.boardCloseButtonPadding * canvasScale)
             }
         }
         .onHover { isHovering in
@@ -280,7 +494,9 @@ struct OverviewView: View {
             GeometryReader { proxy in
                 Color.clear.preference(
                     key: OverviewBoardFramePreferenceKey.self,
-                    value: [board.id: proxy.frame(in: .named(OverviewCoordinateSpace.name))])
+                    value: OverviewBoardFrames(
+                        query: overview.query, frames: [board.id: proxy.frame(in: .named(OverviewCoordinateSpace.name))]
+                    ))
             }
         }
         .opacity(overviewDrag?.boardID == board.id ? 0 : 1)
@@ -407,13 +623,13 @@ struct OverviewView: View {
             let isBeforeReference = target.index.rawValue < orderedBoardIDs.count
             return OverviewDropTarget(
                 lineX: isBeforeReference
-                    ? frame.minX - DenOverviewLayout.boardSpacing / 2
-                    : frame.maxX + DenOverviewLayout.boardSpacing / 2,
+                    ? frame.minX - DenOverviewLayout.boardSpacing * canvasScale / 2
+                    : frame.maxX + DenOverviewLayout.boardSpacing * canvasScale / 2,
                 lineY: frame.midY,
                 height: frame.height + 8)
         } else if let frame = overviewGeometry.emptyBoardFrames[desk.id] {
             return OverviewDropTarget(
-                lineX: frame.minX - DenOverviewLayout.boardSpacing / 2,
+                lineX: frame.minX - DenOverviewLayout.boardSpacing * canvasScale / 2,
                 lineY: frame.midY,
                 height: frame.height + 8)
         } else {
@@ -462,11 +678,11 @@ struct OverviewView: View {
             let boardID = (isLeading ? desk.boards.first : desk.boards.last)?.id
         {
             withAnimation(.linear(duration: shouldReduceMotion ? 0 : 0.14)) {
-                scrollPosition.scrollTo(id: boardID, anchor: .center)
+                scrollToSelection(boardID)
             }
         } else if let deskID = nearestDeskID(to: location.y, leading: isLeading) {
             withAnimation(.linear(duration: shouldReduceMotion ? 0 : 0.14)) {
-                scrollPosition.scrollTo(id: deskID, anchor: .center)
+                if let frame = overviewGeometry.deskFrames[deskID] { centerCanvas(on: frame) }
             }
         }
     }
@@ -504,6 +720,7 @@ struct OverviewView: View {
 }
 
 private enum DenOverviewLayout {
+    static let maximumScale: CGFloat = 3
     static let contentPadding: CGFloat = 18
     static let closeButtonInset: CGFloat = 14
     static let searchFieldWidth: CGFloat = 320
@@ -511,6 +728,7 @@ private enum DenOverviewLayout {
     static let emptyBoardWidth: CGFloat = 150
     static let boardCardHeight: CGFloat = 120
     static let boardSpacing: CGFloat = 10
+    static let deskSpacing: CGFloat = 12
     static let boardPadding: CGFloat = 10
     static let widthIndicatorHeight: CGFloat = 5
     static let boardCloseButtonSize: CGFloat = 18
@@ -519,6 +737,7 @@ private enum DenOverviewLayout {
 
 private struct OverviewBoardCloseButton: View {
     let boardName: String
+    var scale: CGFloat = 1
     let onRemove: () -> Void
 
     @State private var isHovered = false
@@ -526,11 +745,11 @@ private struct OverviewBoardCloseButton: View {
     var body: some View {
         Button(action: onRemove) {
             Image(systemSymbol: .xmark)
-                .font(.system(size: 9, weight: .bold))
+                .font(.system(size: 9 * scale, weight: .bold))
                 .foregroundStyle(isHovered ? Color.primary : Color.secondary)
                 .frame(
-                    width: DenOverviewLayout.boardCloseButtonSize,
-                    height: DenOverviewLayout.boardCloseButtonSize
+                    width: DenOverviewLayout.boardCloseButtonSize * scale,
+                    height: DenOverviewLayout.boardCloseButtonSize * scale
                 )
                 .background(
                     isHovered ? Color.primary.opacity(0.20) : Color.primary.opacity(0.10),
@@ -569,6 +788,17 @@ private struct OverviewGeometry {
     var emptyBoardFrames: [DeskID: CGRect] = [:]
 }
 
+private struct OverviewScrollGeometry: Equatable {
+    let size: CGSize
+    let offset: CGPoint
+}
+
+private nonisolated struct OverviewCanvasMeasurement: Equatable, Sendable {
+    let size: CGSize
+    let margin: CGSize
+    let query: String
+}
+
 private struct OverviewDropTarget {
     let lineX: CGFloat
     let lineY: CGFloat
@@ -579,11 +809,18 @@ private enum OverviewCoordinateSpace {
     static let name = "overview"
 }
 
-private struct OverviewBoardFramePreferenceKey: PreferenceKey {
-    static let defaultValue: [BoardID: CGRect] = [:]
+private struct OverviewBoardFrames: Equatable {
+    var query: String?
+    var frames: [BoardID: CGRect] = [:]
+}
 
-    static func reduce(value: inout [BoardID: CGRect], nextValue: () -> [BoardID: CGRect]) {
-        value.merge(nextValue(), uniquingKeysWith: { $1 })
+private struct OverviewBoardFramePreferenceKey: PreferenceKey {
+    static let defaultValue = OverviewBoardFrames()
+
+    static func reduce(value: inout OverviewBoardFrames, nextValue: () -> OverviewBoardFrames) {
+        let next = nextValue()
+        if let query = next.query { value.query = query }
+        value.frames.merge(next.frames, uniquingKeysWith: { $1 })
     }
 }
 
@@ -605,22 +842,24 @@ private struct OverviewEmptyBoardFramePreferenceKey: PreferenceKey {
 
 private struct OverviewEmptyDeskCard: View {
     let desk: DeskState
+    var scale: CGFloat = 1
     let onSelect: () -> Void
     let onEnter: () -> Void
+    @ScaledMetric(relativeTo: .caption) private var captionSize: CGFloat = 12
 
     var body: some View {
         Button(action: onSelect) {
             Text("Empty")
-                .font(.caption)
+                .font(.system(size: captionSize * scale))
                 .foregroundStyle(.secondary)
                 .frame(
-                    width: DenOverviewLayout.emptyBoardWidth,
-                    height: DenOverviewLayout.boardCardHeight
+                    width: DenOverviewLayout.emptyBoardWidth * scale,
+                    height: DenOverviewLayout.boardCardHeight * scale
                 )
                 .background(
                     Color.primary.opacity(0.06),
                     in: RoundedRectangle(
-                        cornerRadius: DenRadius.medium,
+                        cornerRadius: DenRadius.small * scale,
                         style: .continuous
                     )
                 )
@@ -650,6 +889,10 @@ private struct OverviewBoardCard: View {
     let profileColor: Color
     let boardHeight: CGFloat
     let differentiateWithoutColor: Bool
+    var thumbnail: NSImage?
+    var scale: CGFloat = 1
+    @ScaledMetric(relativeTo: .caption) private var captionSize: CGFloat = 12
+    @ScaledMetric(relativeTo: .caption2) private var caption2Size: CGFloat = 11
 
     static func kindLabel(for board: BoardState) -> String {
         if board.isInspection { return "Inspection" }
@@ -661,12 +904,12 @@ private struct OverviewBoardCard: View {
     }
 
     private var cardWidth: CGFloat {
-        CGFloat(board.width) * DenOverviewLayout.boardCardHeight / boardHeight
+        CGFloat(board.width) * DenOverviewLayout.boardCardHeight / boardHeight * scale
     }
 
     private var boardTypeIcon: some View {
         Image(systemSymbol: boardSymbol(for: board.kind))
-            .font(.caption.weight(.semibold))
+            .font(.system(size: captionSize * scale, weight: .semibold))
             .foregroundStyle(typeColor)
     }
 
@@ -692,57 +935,90 @@ private struct OverviewBoardCard: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack(spacing: 6) {
-                boardTypeIcon
-                    .accessibilityHidden(true)
+        ZStack(alignment: .topLeading) {
+            if let thumbnail {
+                Image(nsImage: thumbnail)
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: cardWidth, height: DenOverviewLayout.boardCardHeight * scale)
+                    .clipped()
+                    .opacity(0.85)
 
-                Text(Self.kindLabel(for: board))
-                    .font(.caption2.weight(.medium))
-                    .foregroundStyle(typeColor)
-
-                if isAnchor {
-                    Spacer(minLength: 0)
-                    Image(systemSymbol: .pinFill)
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
+                // Subdued bottom gradient overlay for readability of board label
+                VStack {
+                    Spacer()
+                    HStack(spacing: 4 * scale) {
+                        boardTypeIcon
+                        Text(board.displayName)
+                            .font(.system(size: caption2Size * scale, weight: .semibold))
+                            .lineLimit(1)
+                            .foregroundStyle(.white)
+                        Spacer(minLength: 0)
+                        if isAnchor {
+                            Image(systemSymbol: .pinFill)
+                                .font(.system(size: caption2Size * scale))
+                                .foregroundStyle(.white.opacity(0.8))
+                        }
+                    }
+                    .padding(.horizontal, 6 * scale)
+                    .padding(.vertical, 4 * scale)
+                    .background(Color.black.opacity(0.6))
                 }
+            } else {
+                VStack(alignment: .leading, spacing: 6 * scale) {
+                    HStack(spacing: 6 * scale) {
+                        boardTypeIcon
+                            .accessibilityHidden(true)
+
+                        Text(Self.kindLabel(for: board))
+                            .font(.system(size: caption2Size * scale, weight: .medium))
+                            .foregroundStyle(typeColor)
+
+                        if isAnchor {
+                            Spacer(minLength: 0)
+                            Image(systemSymbol: .pinFill)
+                                .font(.system(size: caption2Size * scale))
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+
+                    Text(board.displayName)
+                        .font(.system(size: captionSize * scale, weight: .semibold))
+                        .lineLimit(2)
+
+                    Text(detailText)
+                        .font(.system(size: caption2Size * scale))
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+
+                    Spacer(minLength: 0)
+
+                    Capsule()
+                        .fill(.secondary.opacity(0.35))
+                        .frame(maxWidth: .infinity)
+                        .frame(height: DenOverviewLayout.widthIndicatorHeight * scale)
+                }
+                .padding(DenOverviewLayout.boardPadding * scale)
             }
-
-            Text(board.displayName)
-                .font(.caption.weight(.semibold))
-                .lineLimit(2)
-
-            Text(detailText)
-                .font(.caption2)
-                .foregroundStyle(.secondary)
-                .lineLimit(1)
-
-            Spacer(minLength: 0)
-
-            Capsule()
-                .fill(.secondary.opacity(0.35))
-                .frame(maxWidth: .infinity)
-                .frame(height: DenOverviewLayout.widthIndicatorHeight)
         }
-        .padding(DenOverviewLayout.boardPadding)
         .frame(
             width: cardWidth,
-            height: DenOverviewLayout.boardCardHeight,
+            height: DenOverviewLayout.boardCardHeight * scale,
             alignment: .leading
         )
         .foregroundStyle(.primary)
         .background(
             backgroundColor,
-            in: RoundedRectangle(cornerRadius: DenRadius.medium, style: .continuous)
+            in: RoundedRectangle(cornerRadius: DenRadius.small * scale, style: .continuous)
         )
+        .clipShape(RoundedRectangle(cornerRadius: DenRadius.small * scale, style: .continuous))
         .overlay {
-            RoundedRectangle(cornerRadius: DenRadius.medium, style: .continuous)
+            RoundedRectangle(cornerRadius: DenRadius.small * scale, style: .continuous)
                 .stroke(
                     isSelected
                         ? (differentiateWithoutColor ? Color.primary : profileColor.opacity(0.86))
                         : Color.primary.opacity(0.12),
-                    lineWidth: isSelected ? 2 : 1)
+                    lineWidth: (isSelected ? 2 : 1) * scale)
         }
     }
 }

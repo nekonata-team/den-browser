@@ -63,6 +63,9 @@ final class DenProfileResources {
         get { boardRuntimes.terminal }
         set { boardRuntimes.terminal = newValue }
     }
+    @ObservationIgnored let thumbnailCache: OverviewThumbnailCache
+    @ObservationIgnored let thumbnailCapture: OverviewThumbnailCapture
+
     @ObservationIgnored let drawerPresentations = NSHashTable<DenController>.weakObjects()
     @ObservationIgnored let onRuntimeOwnerChange: ((BoardID, DenController?) -> Void)?
     @ObservationIgnored let onSave: ((DenState) -> Bool)?
@@ -91,5 +94,8 @@ final class DenProfileResources {
         self.onDeskPresetsSave = onDeskPresetsSave
         self.onRecentItemsSave = onRecentItemsSave
         self.onRuntimeOwnerChange = onRuntimeOwnerChange
+        let cache = OverviewThumbnailCache()
+        thumbnailCache = cache
+        thumbnailCapture = OverviewThumbnailCapture(cache: cache)
     }
 }

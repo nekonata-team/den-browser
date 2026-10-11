@@ -37,8 +37,12 @@ struct TerminalBoardView: View {
             TerminalBoardSurface(
                 terminalView: runtime.terminalView,
                 onSurfaceVisibilityChange: { runtime.setSurfaceVisible($0) },
-                isHidden: !isVisibleInViewport || windowModel.isOverviewPresented
-                    || (windowModel.isDrawerOpen && preferences.drawerStyle == .bottom),
+                onBeforeHide: {
+                    guard controller.terminalRuntimes[board.id] === runtime else { return }
+                    controller.thumbnailCapture.captureTerminal(
+                        boardID: board.id, terminalView: runtime.terminalView)
+                },
+                isHidden: !isSurfaceVisible,
                 focusRequest: focusRequest,
                 onSurfaceReady: { window in
                     guard
@@ -95,6 +99,11 @@ struct TerminalBoardView: View {
                 shouldReduceMotion: shouldReduceMotion
             )
         )
+    }
+
+    private var isSurfaceVisible: Bool {
+        isVisibleInViewport && !windowModel.isOverviewPresented
+            && !(windowModel.isDrawerOpen && preferences.drawerStyle == .bottom)
     }
 
     private var isFocusModeDeemphasized: Bool {
@@ -271,6 +280,7 @@ struct TerminalBoardView: View {
 private struct TerminalBoardSurface: NSViewRepresentable {
     let terminalView: AppTerminalView
     let onSurfaceVisibilityChange: (Bool) -> Void
+    let onBeforeHide: () -> Void
     let isHidden: Bool
     let focusRequest: BoardFocusRequest?
     let onSurfaceReady: (NSWindow) -> Bool
@@ -296,17 +306,22 @@ private struct TerminalBoardSurface: NSViewRepresentable {
         _ nsView: SurfaceHost<BoardFocusRequest, AppTerminalView>,
         coordinator: Coordinator
     ) {
+        coordinator.onBeforeHide?()
         coordinator.onSurfaceVisibilityChange?(false)
         coordinator.onSurfaceVisibilityChange = nil
+        coordinator.onBeforeHide = nil
     }
 
     private func update(_ view: AppTerminalView, coordinator: Coordinator) {
         coordinator.onSurfaceVisibilityChange = onSurfaceVisibilityChange
+        coordinator.onBeforeHide = onBeforeHide
+        if isHidden && !view.isHidden { onBeforeHide() }
         view.isHidden = isHidden
         onSurfaceVisibilityChange(!isHidden)
     }
 
     final class Coordinator {
         fileprivate var onSurfaceVisibilityChange: ((Bool) -> Void)?
+        fileprivate var onBeforeHide: (() -> Void)?
     }
 }

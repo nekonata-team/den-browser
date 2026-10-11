@@ -50,6 +50,8 @@ public final class OverviewModel {
     public var query = ""
     public var filterPhase: FilterPhase = .inactive
     public private(set) var selection: OverviewSelection?
+    public private(set) var canvasZoomSteps = 0
+    public private(set) var canvasResetRequest = 0
 
     @ObservationIgnored public var onDismiss: (() -> Void)?
 
@@ -188,6 +190,17 @@ public final class OverviewModel {
     public func cancelBoardDrag() { actions.cancelDrag() }
 
     public func selectPreviousBoard() { moveBoardSelection(by: -1) }
+    public func adjustCanvasZoom(by steps: Int) { canvasZoomSteps += steps }
+    public func resetCanvasZoom() { canvasResetRequest += 1 }
+
+    public func returnToCurrentDesk() {
+        exitFilterMode()
+        let deskID = presentedDeskID()
+        let desk = desks().first { $0.id == deskID }
+        selection = OverviewSelection(deskID: deskID, boardID: desk?.focusedBoardID)
+        resetCanvasZoom()
+    }
+
     public func selectNextBoard() { moveBoardSelection(by: 1) }
     public func selectPreviousDesk() { moveDeskSelection(by: -1) }
     public func selectNextDesk() { moveDeskSelection(by: 1) }

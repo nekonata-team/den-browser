@@ -35,8 +35,7 @@ struct WebBoardView: View {
             ZStack(alignment: .top) {
                 WebBoardSurface(
                     webView: runtime.webView,
-                    isHidden: !isVisibleInViewport || windowModel.isOverviewPresented
-                        || (windowModel.isDrawerOpen && preferences.drawerStyle == .bottom),
+                    isHidden: !isSurfaceVisible,
                     focusRequest: focusRequest,
                     onSurfaceReady: { window in
                         guard runtime.webView.fullscreenState == .notInFullscreen else {
@@ -49,6 +48,13 @@ struct WebBoardView: View {
                             )
                         else { return true }
                         return window.makeFirstResponder(runtime.webView)
+                    },
+                    onBeforeHide: {
+                        Task {
+                            guard controller.webRuntimes[board.id] === runtime else { return }
+                            await controller.thumbnailCapture.captureWeb(
+                                boardID: board.id, webView: runtime.webView)
+                        }
                     }
                 )
                 .simultaneousGesture(
@@ -94,6 +100,11 @@ struct WebBoardView: View {
             guard isFocused else { return }
             runtime.activateWebExtensionTab()
         }
+    }
+
+    private var isSurfaceVisible: Bool {
+        isVisibleInViewport && !windowModel.isOverviewPresented
+            && !(windowModel.isDrawerOpen && preferences.drawerStyle == .bottom)
     }
 
     private var initialLoadFallback: some View {
