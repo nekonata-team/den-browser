@@ -12,14 +12,43 @@ private enum ScreenshotResult {
     case copied
 }
 
+private enum FocusedScreenshotTarget {
+    case web(WebRuntime)
+    case terminal(TerminalRuntime)
+
+    var window: NSWindow? {
+        switch self {
+        case .web(let runtime): runtime.webView.window
+        case .terminal(let runtime): runtime.terminalView.window
+        }
+    }
+
+    var defaultScope: String {
+        "Current Sheet Screenshot"
+    }
+
+    var clipboardSuccessMessage: String {
+        "Copied Current Sheet screenshot to clipboard."
+    }
+
+    func capture() async throws -> NSImage {
+        switch self {
+        case .web(let runtime):
+            try await ScreenshotCapture.visibleCurrentSheet(in: runtime.webView)
+        case .terminal(let runtime):
+            try ScreenshotCapture.visibleCurrentSheet(in: runtime.terminalView)
+        }
+    }
+}
+
 extension DenController {
     func captureFocusedSheetScreenshot() {
-        guard let runtime = focusedSheetRuntime() else { return }
+        guard let target = focusedScreenshotTarget() else { return }
         startScreenshotTask(
-            capture: { try await ScreenshotCapture.visibleCurrentSheet(in: runtime.webView) },
+            capture: { try await target.capture() },
             destination: .save(
-                scope: "Current Sheet Screenshot",
-                window: runtime.webView.window),
+                scope: target.defaultScope,
+                window: target.window),
             successMessage: { result in
                 guard case let .saved(destination) = result else { return "" }
                 return "Saved \(destination.lastPathComponent)."
@@ -27,19 +56,26 @@ extension DenController {
     }
 
     func copyFocusedSheetScreenshot() {
-        guard let runtime = focusedSheetRuntime() else { return }
+        guard let target = focusedScreenshotTarget() else { return }
         startScreenshotTask(
-            capture: { try await ScreenshotCapture.visibleCurrentSheet(in: runtime.webView) },
+            capture: { try await target.capture() },
             destination: .clipboard,
-            successMessage: { _ in "Copied Current Sheet screenshot to clipboard." })
+            successMessage: { _ in target.clipboardSuccessMessage })
     }
 
-    private func focusedSheetRuntime() -> WebRuntime? {
-        guard let board = focusedBoard, board.isWeb else {
-            reportFeedback("No focused Web Board.", severity: .warning)
+    private func focusedScreenshotTarget() -> FocusedScreenshotTarget? {
+        guard let board = focusedBoard else {
+            reportFeedback("No focused Board.", severity: .warning)
             return nil
         }
-        return webRuntime(for: board)
+        if board.isWeb {
+            return .web(webRuntime(for: board))
+        }
+        if board.isTerminal {
+            return .terminal(terminalRuntime(for: board))
+        }
+        reportFeedback("Focused Board cannot be captured.", severity: .warning)
+        return nil
     }
 
     private func startScreenshotTask(

@@ -60,35 +60,16 @@ final class OverviewThumbnailCapture {
         guard shouldCapture(boardID: boardID) else { return }
         guard terminalView.window != nil, !terminalView.isHiddenOrHasHiddenAncestor else { return }
 
-        let bounds = terminalView.bounds
-        guard bounds.width > 0, bounds.height > 0 else { return }
-
-        let scale = min(
-            terminalView.window?.backingScaleFactor ?? 1, Self.maxCapturePixels / max(bounds.width, bounds.height))
-
         guard
-            let bitmap = NSBitmapImageRep(
-                bitmapDataPlanes: nil,
-                pixelsWide: max(1, Int(bounds.width * scale)),
-                pixelsHigh: max(1, Int(bounds.height * scale)),
-                bitsPerSample: 8,
-                samplesPerPixel: 4,
-                hasAlpha: true,
-                isPlanar: false,
-                colorSpaceName: .deviceRGB,
-                bytesPerRow: 0,
-                bitsPerPixel: 0
+            let image = try? ScreenshotCapture.visibleCurrentSheet(
+                in: terminalView,
+                maxPixels: Self.maxCapturePixels
             )
         else {
             return
         }
 
-        bitmap.size = bounds.size
         let token = cache.beginCapture(for: boardID)
-        terminalView.cacheDisplay(in: bounds, to: bitmap)
-
-        let image = NSImage(size: bounds.size)
-        image.addRepresentation(bitmap)
         // Capture before hiding, but publish outside NSViewRepresentable's update transaction.
         Task { @MainActor in
             defer { cache.finishCapture(token, for: boardID) }

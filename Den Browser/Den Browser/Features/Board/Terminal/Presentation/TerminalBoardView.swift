@@ -229,6 +229,12 @@ struct TerminalBoardView: View {
         } label: {
             Label("Reset Font Size", systemSymbol: .arrowCounterclockwise)
         }
+        Button {
+            controller.focusBoard(board.id)
+            controller.captureFocusedSheetScreenshot()
+        } label: {
+            Label("Capture Current Sheet Screenshot...", systemSymbol: .camera)
+        }
         Divider()
         Button {
             controller.focusBoard(board.id)

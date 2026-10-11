@@ -281,7 +281,7 @@ private struct DenCommands: Commands {
                 Button("Capture Current Sheet Screenshot…") {
                     perform(.board(.captureSheet))
                 }
-                .disabled(controller?.focusedBoard?.isWeb != true)
+                .disabled(controller?.focusedBoard?.isWeb != true && controller?.focusedBoard?.isTerminal != true)
 
                 Divider()
 

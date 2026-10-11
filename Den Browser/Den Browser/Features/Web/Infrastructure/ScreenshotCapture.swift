@@ -1,4 +1,5 @@
 import AppKit
+import GhosttyTerminal
 import UniformTypeIdentifiers
 import WebKit
 
@@ -29,6 +30,44 @@ enum ScreenshotCapture {
                 }
             }
         }
+    }
+
+    static func visibleCurrentSheet(
+        in terminalView: AppTerminalView,
+        maxPixels: CGFloat? = nil
+    ) throws -> NSImage {
+        let bounds = terminalView.bounds
+        guard bounds.width > 0, bounds.height > 0 else {
+            throw CaptureError.imageUnavailable
+        }
+
+        var scale = terminalView.window?.backingScaleFactor ?? NSScreen.main?.backingScaleFactor ?? 2
+        if let maxPixels {
+            scale = min(scale, maxPixels / max(bounds.width, bounds.height))
+        }
+        guard
+            let bitmap = NSBitmapImageRep(
+                bitmapDataPlanes: nil,
+                pixelsWide: max(1, Int(bounds.width * scale)),
+                pixelsHigh: max(1, Int(bounds.height * scale)),
+                bitsPerSample: 8,
+                samplesPerPixel: 4,
+                hasAlpha: true,
+                isPlanar: false,
+                colorSpaceName: .deviceRGB,
+                bytesPerRow: 0,
+                bitsPerPixel: 0
+            )
+        else {
+            throw CaptureError.imageUnavailable
+        }
+
+        bitmap.size = bounds.size
+        terminalView.cacheDisplay(in: bounds, to: bitmap)
+
+        let image = NSImage(size: bounds.size)
+        image.addRepresentation(bitmap)
+        return image
     }
 }
 
