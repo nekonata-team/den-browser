@@ -67,6 +67,40 @@ final class Den_BrowserUITests: XCTestCase, BDD {
         XCTAssertEqual(TISSelectInputSource(source), noErr)
     }
 
+    // Protects native text delivery from Den Mode into the palette; unit tests cannot observe the field editor.
+    @MainActor
+    func testUniversalSearchOwnsTextInputAndEscapeReturnsToDenMode() throws {
+        let app = launchApp(boardCount: .one)
+        let search = app.textFields["universal-search-input"].firstMatch
+        let openBoardInput = app.textFields["open-board-input"].firstMatch
+
+        given("Universal Search is opened from Den Mode") {
+            enterDenMode(in: app)
+            app.typeText(":")
+            XCTAssertTrue(search.waitForExistence(timeout: 5))
+        }
+
+        when("typing into Universal Search and cancelling") {
+            app.typeText("alpha")
+            XCTAssertEqual(search.value as? String, "alpha")
+            app.typeKey(.escape, modifierFlags: [])
+        }
+
+        then("the palette closes") {
+            XCTAssertTrue(search.waitForNonExistence(timeout: 5))
+        }
+
+        when("using the Den Mode shortcut to create a Board") {
+            app.typeKey("n", modifierFlags: [])
+            XCTAssertTrue(openBoardInput.waitForExistence(timeout: 5))
+            app.typeText("still-in-den")
+        }
+
+        then("Open Board receives text without another mode toggle") {
+            XCTAssertEqual(openBoardInput.value as? String, "still-in-den")
+        }
+    }
+
     // Protects AppKit toolbar and shortcut delivery plus native split-view geometry, which unit tests cannot observe.
     @MainActor
     func testBoardRailShortcutPushesDeskSwitcherAndResizesBoardStrip() throws {

@@ -15,6 +15,10 @@ enum AppAction: Equatable {
 }
 
 enum ApplicationAction: Equatable {
+    case showUniversalSearch(commandsOnly: Bool)
+    case hideUniversalSearch
+    case moveSearchSelection(Int)
+    case submitSearch
     case openSettings
     case toggleDenMode
     case toggleBoardRail
@@ -176,6 +180,12 @@ enum AppActionHandler {
         switch action {
         case .application(let action):
             switch action {
+            case .showUniversalSearch(let commandsOnly): windowModel.showUniversalSearch(commandsOnly: commandsOnly)
+            case .hideUniversalSearch:
+                windowModel.hideUniversalSearch()
+                controller.restoreFocusedFirstResponder()
+            case .moveSearchSelection(let offset): windowModel.universalSearch.moveSelection(by: offset)
+            case .submitSearch: windowModel.universalSearch.submit()
             case .openSettings: break
             case .toggleDenMode: windowModel.toggleDenMode()
             case .toggleBoardRail: windowModel.toggleBoardRail()

@@ -4,6 +4,7 @@ import Foundation
 public enum TemporaryContext: Equatable {
     case essentialsPrefix
     case openBoard
+    case universalSearch
     case zmxSessions
     case zmxDuplication
     case editBoardLink

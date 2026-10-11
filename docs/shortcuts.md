@@ -23,6 +23,8 @@ In Open Board, remove an individual Recent Item with the trash icon to the right
 | `Control` + `Command` + `P` | Open Profile panel |
 | `Shift` + `Command` + `N` | Open Private Den |
 | `Command` + `T` | Open Board panel (URL, search, `:tutorial`, `:terminal`, `:zellij`, `:zmx`) |
+| `Command` + `P` | Universal Search (Boards, Desks, Profiles, Essentials, creation, commands) |
+| `Command` + `Shift` + `P` | Universal Search with `> ` prefilled (commands only) |
 | `Command` + `S` | Toggle Board Rail |
 | `Command` + `L` | Edit Focused Board Link |
 | `Command` + `W` | Remove Focused Board (or discard selected Drawer item) |
@@ -60,6 +62,7 @@ Toggle with `Control` + `,`. Press `Escape` to exit to Sheet Input.
 | `1`–`9`, `0` | Focus Desk 1–10 |
 | `Shift` + digit | Move Focused Board to Desk 1–10 |
 | `n` / `Space` | Open Board panel |
+| `:` | Universal Search |
 | `v` | Open Board from clipboard |
 | `Shift` + `N` | New Desk panel |
 | `p` | Save Desk as Preset |

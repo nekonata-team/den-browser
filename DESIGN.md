@@ -24,6 +24,12 @@ Den controls feel like a calm desk laid over live web sheets. Web content remain
   secondary. Show a small Profile-colored dot on each Board with unread Notifications, and include the exact count in
   the row's accessibility label. When a Board receives focus, mark its unread Notifications as read.
 - Show the current Profile name in the titlebar and a distinct background gradient for Private Den while preserving its Profile color in the Den glow and controls. Place Notifications, Save Desk as Preset when the Focused Desk has Boards, and Profile controls in the trailing window toolbar. Use native toolbar button styling, and give icons accessibility labels and help text; Profile identity must not depend on color alone.
+- Put the native Universal Search toolbar button before Notifications, Save Desk as Preset, and Profile controls.
+  All entrances open the same palette; use `>` to restrict results to commands. Keep candidate actions explicit:
+  switching to an existing Board and creating a Board from an Essential are distinct results.
+  Give candidates leading SF Symbols for their target or command; use the existing Board-kind symbols for Boards.
+  Show a trailing arrow for switching, `plus.app` for creation, and chevron for command execution.
+  Hide the toolbar entrance in Overview and Zen View; keyboard entrances remain available in Zen View.
 - Prefer SF Symbols and system typography. Preserve macOS accessibility defaults where possible.
 - Use SwiftUI semantic text styles such as `title`, `headline`, `body`, `caption`, and `caption2` for app-owned
   text. Apply weight, design, and monospaced variants to a semantic style instead of specifying a point size.

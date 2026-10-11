@@ -2,6 +2,15 @@ import DenDomain
 import Foundation
 
 public extension DenWindowModel {
+    func showUniversalSearch(commandsOnly: Bool = false) {
+        universalSearch.prepare(commandsOnly: commandsOnly)
+        setTemporaryContext(.universalSearch)
+    }
+
+    func hideUniversalSearch() {
+        if temporaryContext == .universalSearch { setTemporaryContext(nil) }
+    }
+
     var isDrawerOpen: Bool { temporaryContext == .drawer }
     var isOpenBoardPanelPresented: Bool { temporaryContext == .openBoard }
     var isZmxSessionsPresented: Bool { temporaryContext == .zmxSessions }

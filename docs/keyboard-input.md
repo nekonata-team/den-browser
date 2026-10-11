@@ -25,6 +25,11 @@ NSEvent
 
 Shortcut recording is configuration input, not an action entrance. It updates `AppPreferences`; the next event receives the effective values through `ShortcutConfiguration`.
 
+Universal Search is an exclusive temporary input context. Its Router forwards text editing and all marked-text
+composition events to the native field, consumes Up/Down for result selection, Return for execution, and Escape
+for dismissal. Dismissal preserves the previous Den Mode state. `Command-P`, `Command-Shift-P`, Den Mode's `:`,
+the menu items, and the toolbar button use the same window-local presentation. See [Universal Search](./universal-search.md).
+
 ## Ownership and precedence
 
 Routing must preserve this order:

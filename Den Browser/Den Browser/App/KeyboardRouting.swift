@@ -67,6 +67,21 @@ enum KeyboardRouter {
         if character == "q", modifiers == [.command] { return .forward(.nativeCommand) }
         if context.hasPendingConfirmation { return .forward(.temporaryTextInput) }
 
+        if case .universalSearch? = context.surface {
+            if event.hasMarkedText { return .forward(.temporaryTextInput) }
+            if event.isEscape, modifiers == [] { return .perform(.application(.hideUniversalSearch)) }
+            if modifiers == [] {
+                switch event.key {
+                case .upArrow: return .perform(.application(.moveSearchSelection(-1)))
+                case .downArrow: return .perform(.application(.moveSearchSelection(1)))
+                case .returnKey:
+                    return event.isRepeat ? .consume(.ignoredRepeat) : .perform(.application(.submitSearch))
+                default: break
+                }
+            }
+            return .forward(.temporaryTextInput)
+        }
+
         if event.isEscape, modifiers == [.shift] {
             return event.isRepeat ? .consume(.ignoredRepeat) : .perform(.overview(.toggleActivity))
         }
@@ -94,6 +109,8 @@ enum KeyboardRouter {
         if character == "w", modifiers == [.command, .shift] { return .forward(.nativeCommand) }
 
         switch context.surface {
+        case .universalSearch:
+            return .forward(.temporaryTextInput)
         case .notifications:
             return routeNotifications(event)
         case .deskFilter:
@@ -181,6 +198,17 @@ enum KeyboardRouter {
 
         if let binding = event.binding, let shortcut = shortcuts.shortcut(matching: binding) {
             return route(shortcut: shortcut, isRepeat: event.isRepeat)
+        }
+
+        if character == "p", modifiers == [.command] || modifiers == [.command, .shift] {
+            return event.isRepeat
+                ? .consume(.ignoredRepeat)
+                : .perform(.application(.showUniversalSearch(commandsOnly: modifiers.contains(.shift))))
+        }
+        if context.mode == .den, event.characters == ":", modifiers.subtracting(.shift).isEmpty {
+            return event.isRepeat
+                ? .consume(.ignoredRepeat)
+                : .perform(.application(.showUniversalSearch(commandsOnly: false)))
         }
 
         if context.mode == .den { return routeDenMode(event) }

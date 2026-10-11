@@ -37,6 +37,7 @@ enum KeyboardMode: Equatable {
 }
 
 enum KeyboardSurface {
+    case universalSearch
     case notifications
     case deskFilter(phase: FilterPhase)
     case keyboardShortcuts
@@ -68,6 +69,7 @@ struct InputContext {
         } else {
             surface =
                 switch windowModel.temporaryContext {
+                case .universalSearch: .universalSearch
                 case .keyboardShortcuts: .keyboardShortcuts
                 case .essentialsPrefix: .essentialsPrefix
                 case .boardWidth: .boardWidth

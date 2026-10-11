@@ -55,6 +55,18 @@ struct DenHeaderControls: ToolbarContent {
     var body: some ToolbarContent {
         if !windowModel.isOverviewPresented {
             ToolbarSpacer(.flexible)
+            ToolbarItem(placement: .automatic) {
+                Button {
+                    windowModel.showUniversalSearch()
+                } label: {
+                    Label("Search", systemSymbol: .magnifyingglass)
+                }
+                .labelStyle(.titleAndIcon)
+                .tint(.secondary)
+                .disabled(windowModel.temporaryContext != nil)
+                .help("Universal Search (⌘P)")
+                .accessibilityIdentifier("universal-search-button")
+            }
             ToolbarItemGroup(placement: .automatic) {
                 NotificationButton()
 

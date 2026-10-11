@@ -213,6 +213,13 @@ private struct DenCommands: Commands {
         }
 
         CommandMenu("Den") {
+            Button("Universal Search…") { perform(.application(.showUniversalSearch(commandsOnly: false))) }
+                .keyboardShortcut("p", modifiers: [.command])
+                .disabled(controller == nil)
+            Button("Commands…") { perform(.application(.showUniversalSearch(commandsOnly: true))) }
+                .keyboardShortcut("p", modifiers: [.command, .shift])
+                .disabled(controller == nil)
+
             Button("Toggle Den Mode") { perform(.application(.toggleDenMode)) }
                 .disabled(controller == nil)
 

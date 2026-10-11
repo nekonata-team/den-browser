@@ -224,6 +224,8 @@ struct DenView<Header: View>: View {
     @ViewBuilder
     private func activePanel(newBoardWidth: CGFloat, boardHeight: CGFloat) -> some View {
         switch windowModel.temporaryContext {
+        case .universalSearch:
+            panelOverlay(UniversalSearchPanel(profileName: profileName ?? "", profileColor: profileColor))
         case .essentialsPrefix:
             panelOverlay(
                 EssentialsPrefixPanel(
@@ -331,6 +333,9 @@ struct DenView<Header: View>: View {
 
     private func dismissTemporaryPresentation() {
         switch windowModel.temporaryContext {
+        case .universalSearch:
+            windowModel.hideUniversalSearch()
+            controller.restoreFocusedFirstResponder()
         case .essentialsPrefix:
             windowModel.exitEssentialsPrefix()
         case .openBoard:

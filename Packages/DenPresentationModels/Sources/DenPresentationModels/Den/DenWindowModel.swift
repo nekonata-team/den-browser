@@ -111,6 +111,7 @@ public final class DenWindowModel {
     public let overview: OverviewModel
     public let drawer: DrawerModel
     public let openBoard: OpenBoardModel
+    public let universalSearch = UniversalSearchModel()
     public let deskFilter: DeskFilterModel
     public let notificationList: NotificationListModel
     public var temporaryContext: TemporaryContext?
