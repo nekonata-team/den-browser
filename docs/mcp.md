@@ -162,17 +162,6 @@ Example `inspect_den` result:
 }
 ```
 
-## 6. Deferred Tools
-
-The first tool catalog focuses on common Den, Sheet, Drawer, and Terminal workflows. These CLI operations remain candidates for later MCP tools when a concrete use case calls for them:
-
-- Arbitrary JavaScript evaluation (`board web eval`).
-- JavaScript-condition waits (`board web wait --fn`).
-- Low-level pointer events, drag, double-click, and focus.
-- Screenshot capture.
-- Raw Terminal input and process signaling (`board terminal send`, `board terminal kill`).
-- Desk switching and creation, when those operations are available through the CLI.
-
-## 7. Related decision
+## 6. Related decision
 
 The MCP adoption and v1 direction in this specification are approved by [ADR 0055](adr/0055-add-den-mcp-server.md). ADR 0055 supersedes only ADR 0047's decision to avoid MCP; its CLI and IPC decisions remain in effect.

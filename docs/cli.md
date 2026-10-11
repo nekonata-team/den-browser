@@ -316,12 +316,3 @@ The skill's `.agents/skills/den/SKILL.md` covers Snapshot + Ref interaction, his
 
 ---
 
-## 6. Future Roadmap
-
-- **`den board`**:
-  - `den board focus <id>`
-- **`den desk`**:
-  - `den desk switch <id|label>`
-  - `den desk new [<label>]`
-- **`den profile`**:
-  - `den profile close <uuid>`

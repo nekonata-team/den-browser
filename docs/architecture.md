@@ -204,8 +204,7 @@ Toast activation sends an explicit target to an injected application operation.
 
 Den coordinates operations spanning Desks, Boards, and Drawer. `DenController` connects these
 operations to native resources and persistence. `DenWindowModel` coordinates window presentation;
-App composition supplies live data and focused operations to it and the Feature Models. Board
-input parsing and shared-state transformations belong to DenApplication, as described above.
+App composition supplies live data and focused operations to it and the Feature Models.
 
 Desk owns Desk state and preset data. Board owns shared Board state and grouping plus its Web, Terminal, Inspection, and Tutorial implementations. Drawer owns Drawer Items, its view, and Preview runtime; Drawer-to-Board placement remains a Den Application workflow. Feature inputs follow [ADR 0061](./adr/0061-narrow-feature-presentation-inputs.md) and the package boundaries above. Terminal owns launch command selection and zmx query results used to prepare duplication; DenController owns task cancellation, focus checks, Board naming against current Den state, and insertion.
 
@@ -213,23 +212,23 @@ Den also owns preferences for shared presentation behavior. `IPC/Application` co
 
 ### Overview
 
-Overview owns its View and observable Model. Den coordinates its window transitions and the application operations that focus or rearrange Desks and Boards. Overview introduces no separate Domain layer or Store.
+Overview owns its View and observable Model. Den coordinates its window transitions and the application operations that focus or rearrange Desks and Boards.
 
 ### BoardActivity
 
-BoardActivity owns the resource-usage screen in Presentation and process sampling in Infrastructure. The screen reads shared Board state and runtimes through DenController; Den coordinates opening, closing, and entering a Board from the screen. BoardActivity introduces no separate Domain layer, Store, or Model.
+BoardActivity owns the resource-usage screen in Presentation and process sampling in Infrastructure. The screen reads shared Board state and runtimes through DenController; Den coordinates opening, closing, and entering a Board from the screen.
 
 ### Essentials and Notifications
 
 Essentials owns the `Essential` model, the Prefix panel, and Essential settings. The collection remains app-wide in `AppPreferences`; the Settings scene assembles its feature-owned screen. Den coordinates Prefix presentation and opening an Essential as a Board.
 
-Notifications owns the `DenNotification` model, list UI, and list-local selection. Den composition maps notifications and their current source labels into display items. Notification data is Profile-shared, transient state in `DenStateStore`; `DenProfileResources` forwards access to that source. DenController records messages, marks them read, clears them, and resolves their originating Board across Desks. Window presentation follows the Model boundary above. These ownership groups do not introduce separate stores or change persistence.
+Notifications owns the `DenNotification` model, list UI, and list-local selection. Den composition maps notifications and their current source labels into display items. Notification data is Profile-shared, transient state in `DenStateStore`; `DenProfileResources` forwards access to that source. DenController records messages, marks them read, clears them, and resolves their originating Board across Desks. Window presentation follows the Model boundary above.
 
 ### Profiles
 
 Owns Profile identity, Profile-scoped persistence, website-data isolation, and Profile window lifecycle. A Profile owns one Den and may present distinct Desks from it in multiple windows, so this Feature may depend on the Den Feature to create, restore, and present that Den. WebKit storage mechanics may live in `Platform`, while Profile policy remains in the feature.
 
-`ProfileManager` owns the lifecycle binding: one lazily created `MV3WebExtensionHost` per Profile and one extension window per Profile Window using that host. When content blocking is enabled, the first live Web Board, Drawer Preview, or explicit extension popup/options request creates the host. Creating or focusing an empty or Terminal-only Profile Window does not load the extension. Ordinary Profiles use a persistent extension controller identified by their stable Profile ID; Private Den uses a non-persistent extension controller so its extension state does not carry into another session. Host implementation, curated descriptors, on-demand installation, resource loading, and WebKit controller integration belong to `Extensions`.
+`ProfileManager` owns the lifecycle binding: one lazily created `MV3WebExtensionHost` per Profile and one extension window per Profile Window using that host. When content blocking is enabled, the first live Web Board, Drawer Preview, or explicit extension popup/options request creates the host. Creating or focusing an empty or Terminal-only Profile Window does not load the extension. Ordinary Profiles use a persistent extension controller identified by their stable Profile ID; Private Den uses a non-persistent extension controller so its extension state does not carry into another session.
 
 ### Extensions
 
