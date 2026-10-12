@@ -61,7 +61,6 @@ struct BoardStrip: View {
 
     @State private var boardDrag: BoardDragState?
     @State private var resizingBoardID: BoardID?
-    @State private var boardFrames: [BoardID: CGRect] = [:]
     @State private var scrollPosition = ScrollPosition(idType: BoardID.self)
     @State private var scrollGeometry = BoardStripScrollGeometry.zero
     @State private var alignedBoardDeskID: DeskID?
@@ -204,14 +203,6 @@ struct BoardStrip: View {
                         x: isDragging ? boardDrag?.offset.width ?? 0 : 0,
                         y: isDragging ? boardDrag?.offset.height ?? 0 : 0
                     )
-                    .background {
-                        GeometryReader { proxy in
-                            Color.clear.preference(
-                                key: BoardFramePreferenceKey.self,
-                                value: [board.id: proxy.frame(in: .named(BoardStripCoordinateSpace.name))]
-                            )
-                        }
-                    }
                     .overlay(alignment: .trailing) {
                         if !deskFilter.isPresented && windowModel.maximizedBoardID != board.id {
                             let canResizeWithNextBoard =
@@ -307,7 +298,8 @@ struct BoardStrip: View {
         } action: { _, geometry in
             scrollGeometry = geometry
             completePendingBoardActivationAlignment(using: geometry)
-            settlePendingBoardAlignment(in: boardFrames)
+            settlePendingBoardAlignment()
+            updateDraggedBoardOnScroll(using: geometry)
         }
         .onScrollPhaseChange { oldPhase, newPhase in
             guard !deskFilter.isPresented else { return }
@@ -334,11 +326,6 @@ struct BoardStrip: View {
             if pendingBoardAlignment?.deskID != deskID {
                 cancelPendingBoardAlignment()
             }
-        }
-        .onPreferenceChange(BoardFramePreferenceKey.self) { frames in
-            boardFrames = frames
-            alignDraggedBoard(to: frames)
-            settlePendingBoardAlignment(in: frames)
         }
         .onAppear {
             updateBoardLayout(for: size)
@@ -706,25 +693,30 @@ struct BoardStrip: View {
         value: DragGesture.Value,
         in size: CGSize
     ) {
+        let boards = controller.focusedDesk?.boards ?? []
+        let frames = calculatedBoardFrames(for: boards)
+
         if boardDrag == nil {
             guard
                 let desk = controller.focusedDesk,
-                let frame = boardFrames[board.id],
+                let frame = frames[board.id],
                 controller.beginBoardDrag(board.id)
             else { return }
             boardDrag = BoardDragState(
                 boardID: board.id,
                 deskID: desk.id,
                 originalOrder: desk.boards.map(\.id),
-                startCenterX: frame.midX
+                startCenterX: frame.midX,
+                startScrollOffsetX: scrollGeometry.offsetX
             )
         }
 
         guard var drag = boardDrag, drag.boardID == board.id else { return }
         drag.translation = value.translation
         drag.offset.height = value.translation.height
-        if let frame = boardFrames[board.id] {
-            drag.offset.width = drag.desiredCenterX - frame.midX
+        if let frame = frames[board.id] {
+            let desiredCenterX = drag.desiredContentCenterX(currentScrollOffsetX: scrollGeometry.offsetX)
+            drag.offset.width = desiredCenterX - frame.midX
         }
         boardDrag = drag
         updateBoardInsertion()
@@ -739,12 +731,14 @@ struct BoardStrip: View {
             BoardGroup.containing(drag.boardID, in: boards) != nil
         {
             let groups = boardGroups(in: boards)
+            let frames = calculatedBoardFrames(for: boards)
+            let desiredCenterX = drag.desiredContentCenterX(currentScrollOffsetX: scrollGeometry.offsetX)
             guard
                 let targetIndex = HorizontalDragInsertion.groupedTargetIndex(
                     draggedID: drag.boardID,
                     orderedGroups: groups.map { $0.boards.map(\.id) },
-                    desiredCenterX: drag.desiredCenterX,
-                    frames: boardFrames),
+                    desiredCenterX: desiredCenterX,
+                    frames: frames),
                 boards.indices.contains(targetIndex),
                 let targetGroup = groups.first(where: { $0.boards.first?.id == boards[targetIndex].id })
             else { break }
@@ -763,6 +757,41 @@ struct BoardStrip: View {
         }
     }
 
+    private func updateDraggedBoardOnScroll(using geometry: BoardStripScrollGeometry) {
+        guard var drag = boardDrag else { return }
+        let boards = controller.focusedDesk?.boards ?? []
+        let frames = calculatedBoardFrames(for: boards)
+        if let frame = frames[drag.boardID] {
+            let desiredCenterX = drag.desiredContentCenterX(currentScrollOffsetX: geometry.offsetX)
+            let newOffsetX = desiredCenterX - frame.midX
+            if abs(newOffsetX - drag.offset.width) > 0.5 {
+                drag.offset.width = newOffsetX
+                boardDrag = drag
+                updateBoardInsertion()
+            }
+        }
+    }
+
+    private func calculatedBoardFrames(for boards: [BoardState]) -> [BoardID: CGRect] {
+        let params = boardLayoutParameters(for: boards)
+        let boardHeight = DenLayout.boardHeight(
+            for: size,
+            shouldShowHeader: shouldShowHeader,
+            shouldShowIndicator: !windowModel.isZenViewPresented && boards.count > 1
+        )
+        var frames: [BoardID: CGRect] = [:]
+        for (index, board) in boards.enumerated() {
+            guard let range = BoardLayout.boardContentRange(for: index, in: params) else { continue }
+            frames[board.id] = CGRect(
+                x: range.minX,
+                y: 0,
+                width: range.maxX - range.minX,
+                height: boardHeight
+            )
+        }
+        return frames
+    }
+
     private func boardGroups(in boards: [BoardState]) -> [BoardGroup] {
         var seen = Set<BoardID>()
         return boards.compactMap { board in
@@ -771,14 +800,6 @@ struct BoardStrip: View {
             }
             return group
         }
-    }
-
-    private func alignDraggedBoard(to frames: [BoardID: CGRect]) {
-        guard var drag = boardDrag, let frame = frames[drag.boardID] else { return }
-        let offsetX = drag.desiredCenterX - frame.midX
-        guard abs(offsetX - drag.offset.width) > 0.5 else { return }
-        drag.offset.width = offsetX
-        boardDrag = drag
     }
 
     private func autoScrollBoardStrip(at location: CGPoint, in size: CGSize) {
@@ -871,8 +892,6 @@ struct BoardStrip: View {
         let boardIDs = Set(alignmentBoards.map(\.id))
         guard
             boardIDs.contains(boardID),
-            boardFrames[boardID] != nil,
-            boardIDs.isSubset(of: boardFrames.keys),
             scrollGeometry.containerWidth > 0,
             scrollGeometry.contentWidth > 0,
             abs(scrollGeometry.containerWidth - size.width) <= 1,
@@ -897,8 +916,6 @@ struct BoardStrip: View {
         let boardIDs = Set(alignmentBoards.map(\.id))
         guard
             boardIDs.contains(boardID),
-            boardFrames[boardID] != nil,
-            boardIDs.isSubset(of: boardFrames.keys),
             scrollGeometry.containerWidth > 0,
             scrollGeometry.contentWidth > 0,
             abs(scrollGeometry.containerWidth - size.width) <= 1,
@@ -983,10 +1000,10 @@ struct BoardStrip: View {
         }
     }
 
-    private func settlePendingBoardAlignment(in frames: [BoardID: CGRect]) {
+    private func settlePendingBoardAlignment() {
         guard
             let pending = pendingBoardAlignment,
-            canApplyPendingBoardAlignment(pending, frames: frames)
+            canApplyPendingBoardAlignment(pending)
         else { return }
         if alignedBoardDeskID != pending.deskID {
             pendingBoardActivationAlignment = PendingBoardActivationAlignment(
@@ -1065,7 +1082,7 @@ struct BoardStrip: View {
         boardCenteringTask = Task { @MainActor in
             await Task.yield()
             guard !Task.isCancelled else { return }
-            settlePendingBoardAlignment(in: boardFrames)
+            settlePendingBoardAlignment()
         }
     }
 
@@ -1083,14 +1100,9 @@ struct BoardStrip: View {
                 layoutKey: layoutKey)
     }
 
-    private func canApplyPendingBoardAlignment(
-        _ pending: PendingBoardAlignment,
-        frames: [BoardID: CGRect]
-    ) -> Bool {
+    private func canApplyPendingBoardAlignment(_ pending: PendingBoardAlignment) -> Bool {
         guard
             pendingBoardAlignmentIsRelevant(pending),
-            frames[pending.boardID] != nil,
-            Set(alignmentBoards.map(\.id)).isSubset(of: frames.keys),
             scrollGeometry.containerWidth > 0,
             scrollGeometry.contentWidth > 0
         else { return false }
@@ -1099,22 +1111,7 @@ struct BoardStrip: View {
                 return false
             }
         }
-        guard abs(scrollGeometry.contentWidth - expectedContentWidth(for: alignmentBoards)) <= 1 else {
-            return false
-        }
-        return pending.layoutKey == nil || boardFramesMatchLayout(frames)
-    }
-
-    private func boardFramesMatchLayout(_ frames: [BoardID: CGRect]) -> Bool {
-        let boards = alignmentBoards
-        return boards.allSatisfy { board in
-            guard let frame = frames[board.id] else { return false }
-            let expectedWidth =
-                windowModel.maximizedBoardID == board.id
-                ? max(CGFloat(BoardState.minimumWidth), size.width - boardHorizontalPadding * 2)
-                : CGFloat(board.width)
-            return abs(frame.width - expectedWidth) <= 1
-        }
+        return abs(scrollGeometry.contentWidth - expectedContentWidth(for: alignmentBoards)) <= 1
     }
 
     private func shouldCenterBoardOnOverflow(_ boardID: BoardID?) -> Bool {
@@ -1313,19 +1310,12 @@ struct BoardDragState {
     let deskID: DeskID
     let originalOrder: [BoardID]
     let startCenterX: CGFloat
+    let startScrollOffsetX: CGFloat
     var translation: CGSize = .zero
     var offset: CGSize = .zero
 
-    var desiredCenterX: CGFloat {
-        startCenterX + translation.width
-    }
-}
-
-struct BoardFramePreferenceKey: PreferenceKey {
-    static let defaultValue: [BoardID: CGRect] = [:]
-
-    static func reduce(value: inout [BoardID: CGRect], nextValue: () -> [BoardID: CGRect]) {
-        value.merge(nextValue(), uniquingKeysWith: { _, new in new })
+    func desiredContentCenterX(currentScrollOffsetX: CGFloat) -> CGFloat {
+        startCenterX + translation.width + (currentScrollOffsetX - startScrollOffsetX)
     }
 }
 
