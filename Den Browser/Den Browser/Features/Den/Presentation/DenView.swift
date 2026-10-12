@@ -564,10 +564,7 @@ private struct DeskFilterOverlay: View {
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
         .frame(width: DenLayout.deskFilterWidth)
-        .background(
-            .regularMaterial,
-            in: RoundedRectangle(cornerRadius: DenRadius.medium, style: .continuous)
-        )
+        .glassEffect(in: RoundedRectangle(cornerRadius: DenRadius.medium, style: .continuous))
         .overlay {
             RoundedRectangle(cornerRadius: DenRadius.medium, style: .continuous)
                 .stroke(
@@ -577,7 +574,6 @@ private struct DeskFilterOverlay: View {
                     lineWidth: deskFilter.isInputActive ? 1.5 : 1
                 )
         }
-        .shadow(color: .black.opacity(0.25), radius: 16, y: 8)
         .onTapGesture {
             deskFilter.enter()
         }
