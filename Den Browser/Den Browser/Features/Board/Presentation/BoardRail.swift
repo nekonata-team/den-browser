@@ -9,6 +9,7 @@ struct BoardRail: View {
 
     @Environment(DenController.self) private var controller
     @Environment(DenWindowModel.self) private var windowModel
+    @FocusState private var isRailFocused: Bool
 
     private var railDesk: DeskState? {
         if windowModel.isOverviewPresented,
@@ -57,6 +58,7 @@ struct BoardRail: View {
                 .help("Open Board at End of Desk")
             }
             .listStyle(.sidebar)
+            .focused($isRailFocused)
             .scrollContentBackground(.hidden)
             .accessibilityIdentifier("board-rail")
         }
@@ -124,6 +126,15 @@ struct BoardRail: View {
             }
         }
         .padding(.vertical, 2)
+        // On macOS 27.0.1, native sidebar selection stayed blue despite the Profile tint.
+        // Hide this background while the Rail has focus to avoid blending with native selection.
+        .listRowBackground(
+            (isFocused || isOverviewSelected) && !isRailFocused
+                ? RoundedRectangle(cornerRadius: DenRadius.small, style: .continuous)
+                    .fill(profileColor.opacity(0.22))
+                    .padding(.horizontal, 10)
+                : nil
+        )
         .tag(board.id)
         .accessibilityElement(children: .combine)
         .accessibilityLabel(
