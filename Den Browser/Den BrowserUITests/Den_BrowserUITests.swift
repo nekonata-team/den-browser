@@ -101,6 +101,84 @@ final class Den_BrowserUITests: XCTestCase, BDD {
         }
     }
 
+    // Protects input ownership across the native popover window and WebKit responder boundary.
+    @MainActor
+    func testNotificationPopoverEscapeRestoresBoardInput() throws {
+        let app = launchApp(boardCount: .one)
+        let sheetInput = boardSurface(.alpha, in: app).textFields["Sheet input"].firstMatch
+        let notifications = app.toolbars.buttons["Notifications"].firstMatch
+        let list = app.descendants(matching: .any).matching(identifier: "notification-list").firstMatch
+
+        given("a Web Board's Sheet input is focused") {
+            XCTAssertTrue(sheetInput.waitForExistence(timeout: 5))
+            sheetInput.click()
+            app.typeText("a")
+            XCTAssertEqual(sheetInput.value as? String, "a")
+        }
+
+        when("opening Notifications and typing while the popover owns input") {
+            notifications.click()
+            XCTAssertTrue(list.waitForExistence(timeout: 5))
+            app.typeText("x")
+            app.typeKey(.downArrow, modifierFlags: [])
+            app.typeKey(.return, modifierFlags: [])
+        }
+
+        then("the empty list stays open and the Board receives no input") {
+            XCTAssertTrue(list.exists)
+            XCTAssertEqual(sheetInput.value as? String, "a")
+        }
+
+        when("closing Notifications with Escape and typing again") {
+            app.typeKey(.escape, modifierFlags: [])
+            XCTAssertTrue(list.waitForNonExistence(timeout: 5))
+            app.typeText("b")
+        }
+
+        then("input returns to the focused Board without another click") {
+            XCTAssertEqual(sheetInput.value as? String, "ab")
+        }
+    }
+
+    // Protects the popover's Return action and input handoff to a mounted Ghostty surface.
+    @MainActor
+    func testNotificationPopoverReturnRestoresSourceTerminalInput() throws {
+        let directory = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
+        fixtureDirectories.append(directory)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        let notificationScript = directory.appending(path: "notify.zsh")
+        try "printf '\\033]777;notify;Finished;Terminal task finished\\007'\n"
+            .write(to: notificationScript, atomically: true, encoding: .utf8)
+        let app = launchApp(boardCount: .two, terminalBoard: true)
+        let terminal = board(.alpha, in: app)
+        let sheetInput = boardSurface(.bravo, in: app).textFields["Sheet input"].firstMatch
+        let notifications = app.toolbars.buttons["Notifications"].firstMatch
+        let list = app.descendants(matching: .any).matching(identifier: "notification-list").firstMatch
+
+        given("a Terminal Board has emitted a Notification and another Board is focused") {
+            app.typeText("source \(notificationScript.path)")
+            app.typeKey(.return, modifierFlags: [])
+            XCTAssertTrue(sheetInput.waitForExistence(timeout: 5))
+            sheetInput.click()
+        }
+
+        when("opening Notifications and confirming the selected Notification") {
+            notifications.click()
+            XCTAssertTrue(list.waitForExistence(timeout: 5))
+            XCTAssertTrue(app.buttons["Finished"].firstMatch.waitForExistence(timeout: 5))
+            app.typeKey(.downArrow, modifierFlags: [])
+            app.typeKey(.upArrow, modifierFlags: [])
+            app.typeKey(.return, modifierFlags: [])
+            XCTAssertTrue(list.waitForNonExistence(timeout: 5))
+            app.typeText("exit")
+            app.typeKey(.return, modifierFlags: [])
+        }
+
+        then("the source Terminal receives the command and its Board closes") {
+            XCTAssertTrue(terminal.waitForNonExistence(timeout: 10))
+        }
+    }
+
     // Protects AppKit toolbar and shortcut delivery plus native split-view geometry, which unit tests cannot observe.
     @MainActor
     func testBoardRailShortcutPushesDeskSwitcherAndResizesBoardStrip() throws {

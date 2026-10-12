@@ -68,10 +68,6 @@ struct NotificationListView: View {
         }
         .padding(DenPanelLayout.padding)
         .frame(width: 380)
-        .glassEffect(
-            .regular,
-            in: RoundedRectangle(cornerRadius: DenRadius.large, style: .continuous)
-        )
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("notification-list")
     }

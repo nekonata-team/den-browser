@@ -1,6 +1,7 @@
 import AppKit
 import DenPresentationModels
 import Foundation
+import SwiftUI
 
 @MainActor
 final class KeyboardController {
@@ -75,6 +76,20 @@ final class KeyboardController {
             event: KeyEvent(event),
             context: InputContext(controller: controller, windowModel: windowModel, event: event),
             shortcuts: ShortcutConfiguration(preferences: preferences))
+    }
+
+    static func handleNotificationKeyPress(
+        _ press: KeyPress,
+        controller: DenController,
+        windowModel: DenWindowModel
+    ) -> KeyPress.Result {
+        guard windowModel.isNotificationListPresented else { return .ignored }
+        let decision = KeyboardRouter.route(
+            event: KeyEvent(notificationKeyPress: press),
+            context: InputContext(controller: controller, windowModel: windowModel),
+            shortcuts: ShortcutConfiguration(preferences: controller.preferences))
+        apply(decision, controller: controller, windowModel: windowModel, openSettings: {})
+        return decision.isForwarded ? .ignored : .handled
     }
 
     private static func apply(

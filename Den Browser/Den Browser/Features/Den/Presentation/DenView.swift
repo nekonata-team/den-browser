@@ -387,12 +387,16 @@ struct DenView<Header: View>: View {
 
     @ViewBuilder
     private var notificationsOverlay: some View {
-        if windowModel.isNotificationListPresented {
+        if windowModel.isNotificationListPresented, windowModel.isZenViewPresented {
             dismissBlocker(onDismiss: windowModel.closeNotificationList)
                 .zIndex(DenOverlayLayer.notificationDismissArea)
 
             NotificationListView(
                 profileColor: profileColor
+            )
+            .glassEffect(
+                .regular,
+                in: RoundedRectangle(cornerRadius: DenRadius.large, style: .continuous)
             )
             .padding(
                 .top,

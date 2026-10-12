@@ -27,6 +27,7 @@ Den controls feel like a calm desk laid over live web sheets. Web content remain
   the row's accessibility label. When a Board receives focus, mark its unread Notifications as read.
 - Show the current Profile name in the titlebar and a distinct background gradient for Private Den while preserving its Profile color in the Den glow and controls. Place Notifications, Save Desk as Preset when the Focused Desk has Boards, and Profile controls in the trailing window toolbar. Use native toolbar button styling, and give icons accessibility labels and help text; Profile identity must not depend on color alone.
 - Put the native Universal Search toolbar button before Notifications, Save Desk as Preset, and Profile controls.
+- Present Notifications in a native popover anchored to the toolbar bell. In Zen View, where the toolbar is hidden, retain the upper-right notification panel. Preserve keyboard selection, Escape dismissal, and return of input to the focused Board when the popover closes.
   Declare these toolbar controls within the detail column and use a fixed toolbar spacer to separate Universal Search
   from the other controls. Let the native toolbar provide their glass backgrounds and search icon sizing.
   Show a secondary `⌘P` hint after its Search label.

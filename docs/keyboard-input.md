@@ -23,6 +23,11 @@ NSEvent
 
 `AppAction` names input-reachable application behavior. `AppActionHandler` is the only keyboard path that performs these actions. It receives the window Controller and Model explicitly, using the Model for UI workflows and the Controller for application operations. SwiftUI `Commands` use the focused Controller, Model, and action when a menu item and a key event represent the same behavior. Menu-only operations do not need an `AppAction`.
 
+The Notifications popover uses SwiftUI focus and `onKeyPress` to receive input in its separate window.
+`KeyboardController.handleNotificationKeyPress` normalizes these events for the same Router and action path
+without adding a local monitor. This adapter is limited to Notifications, which has no text editor.
+Up/Down select, Return opens the selected Notification, and Escape dismisses.
+
 Shortcut recording updates `AppPreferences` without dispatching actions; the next event uses the effective values through `ShortcutConfiguration`.
 
 Universal Search is an exclusive temporary input context. Its Router forwards text editing and all marked-text

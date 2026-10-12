@@ -3,6 +3,7 @@ import DenApplication
 import DenDomain
 import DenPresentationModels
 import Foundation
+import SwiftUI
 
 struct KeyEvent {
     let character: String?
@@ -28,6 +29,23 @@ struct KeyEvent {
         isRepeat = event.isARepeat
         hasMarkedText = TextInputComposition.isActive(in: event.window)
         isEscape = event.keyCode == 53
+    }
+
+    // Notifications have no text editor; KeyPress supplies the keys needed by their exclusive context.
+    init(notificationKeyPress press: KeyPress) {
+        character = String(press.key.character)
+        baseCharacter = nil
+        characters = press.characters
+        key = ShortcutKey(keyEquivalent: String(press.key.character))
+        var modifiers: ShortcutModifiers = []
+        if press.modifiers.contains(.control) { modifiers.insert(.control) }
+        if press.modifiers.contains(.option) { modifiers.insert(.option) }
+        if press.modifiers.contains(.shift) { modifiers.insert(.shift) }
+        if press.modifiers.contains(.command) { modifiers.insert(.command) }
+        self.modifiers = modifiers
+        isRepeat = press.phase == .repeat
+        hasMarkedText = false
+        isEscape = press.key == .escape
     }
 }
 
@@ -59,7 +77,7 @@ struct InputContext {
     let hasFocusedBoard: Bool
     let focusedBoardIsTerminal: Bool
 
-    init(controller: DenController, windowModel: DenWindowModel, event: NSEvent) {
+    init(controller: DenController, windowModel: DenWindowModel, event: NSEvent? = nil) {
         isFullscreenActive = windowModel.isFullscreenActive
         hasPendingConfirmation = windowModel.hasPendingConfirmation
         activeDrag = controller.activeDrag
@@ -99,10 +117,10 @@ struct InputContext {
         focusedBoardIsTerminal = controller.focusedBoard?.isTerminal == true
     }
 
-    private static func isDrawerPeekFirstResponder(_ event: NSEvent, controller: DenController) -> Bool {
+    private static func isDrawerPeekFirstResponder(_ event: NSEvent?, controller: DenController) -> Bool {
         guard
             let webView = controller.drawerPeekRuntime?.webView,
-            var view = event.window?.firstResponder as? NSView
+            var view = event?.window?.firstResponder as? NSView
         else { return false }
 
         while view !== webView {

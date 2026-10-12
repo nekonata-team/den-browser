@@ -63,7 +63,7 @@ struct DenHeaderControls: ToolbarContent {
             }
             ToolbarSpacer(.fixed)
             ToolbarItemGroup(placement: .automatic) {
-                NotificationButton()
+                NotificationButton(profileColor: profileDisplayColor(for: profile.color))
 
                 if controller.focusedDesk?.boards.isEmpty == false {
                     SaveDeskPresetButton {
@@ -105,6 +105,9 @@ private struct UniversalSearchButton: View {
 }
 
 private struct NotificationButton: View {
+    let profileColor: Color
+
+    @FocusState private var isNotificationListFocused: Bool
     @Environment(DenController.self) private var controller
     @Environment(DenWindowModel.self) private var windowModel
 
@@ -128,6 +131,29 @@ private struct NotificationButton: View {
                 : "No unread notifications"
         )
         .help("Notifications")
+        .popover(
+            isPresented: Binding(
+                get: { windowModel.isNotificationListPresented && !windowModel.isZenViewPresented },
+                set: { if !$0 { windowModel.closeNotificationList() } }
+            ),
+            arrowEdge: .bottom
+        ) {
+            NotificationListView(profileColor: profileColor)
+                .environment(windowModel.notificationList)
+                .focusable(interactions: .edit)
+                .focusEffectDisabled()
+                .focused($isNotificationListFocused)
+                .onAppear { isNotificationListFocused = true }
+                .onKeyPress(phases: [.down, .repeat]) { press in
+                    KeyboardController.handleNotificationKeyPress(
+                        press, controller: controller, windowModel: windowModel)
+                }
+                .onDisappear {
+                    if windowModel.temporaryContext == nil, !windowModel.hasPendingConfirmation {
+                        controller.restoreFocusedFirstResponder()
+                    }
+                }
+        }
     }
 }
 
