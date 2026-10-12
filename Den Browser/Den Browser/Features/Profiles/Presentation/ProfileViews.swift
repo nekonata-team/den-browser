@@ -309,6 +309,8 @@ struct OpenProfilePanel: View {
                 .frame(height: 30)
                 .denSelectionHighlight(profile.id == selectedProfileID, profileColor: profileColor)
             }
+
+            DenPanelHint("↑↓ Select · Return Open · Escape Close")
         }
         .denPanel()
         .onAppear { DispatchQueue.main.async { isFocused = true } }

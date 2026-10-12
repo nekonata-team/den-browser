@@ -63,6 +63,7 @@ Den controls feel like a calm desk laid over live web sheets. Web content remain
 - Share panel width horizontally; let height follow content.
 - Use the active Profile color for selected-item highlights.
 - A panel should not display the shortcut used to open it.
+- Use `DenPanelHint` for panel-internal keyboard navigation and action hints at the bottom of panels.
 - Candidate-list selection wraps between the first and last items in both directions. Reuse shared
   selection-navigation logic. Keep Board and Desk movement or reordering separate with
   action-specific boundaries.

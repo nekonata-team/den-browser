@@ -89,6 +89,8 @@ struct DeskPresetManagementPanel: View {
                 }
             }
             .deskPresetArrowNavigation(isEditing: editingPresetID != nil) { moveSelection(by: $0) }
+
+            DenPanelHint("↑↓ Select · Return Rename · Delete Remove · Escape Close")
         }
         .denPanel(width: DenPanelLayout.wideWidth)
         .onAppear {

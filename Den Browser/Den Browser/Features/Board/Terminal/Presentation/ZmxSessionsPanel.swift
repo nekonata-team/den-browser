@@ -274,11 +274,9 @@ struct ZmxSessionsPanel: View {
     }
 
     private var footer: some View {
-        Text(
+        DenPanelHint(
             "↑↓ / j k Focus  ·  Space Select  ·  Return Open  ·  x End\n⌘A Select visible  ·  r Refresh  ·  / Filter  ·  Esc Clear / Close"
         )
-        .font(.caption)
-        .foregroundStyle(.secondary)
         .fixedSize(horizontal: false, vertical: true)
     }
 
