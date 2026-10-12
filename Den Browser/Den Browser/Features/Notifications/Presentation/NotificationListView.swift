@@ -129,10 +129,10 @@ private struct NotificationRow: View {
                     : item.notification.isRead
                         ? Color.clear
                         : profileColor.opacity(0.1),
-                in: RoundedRectangle(cornerRadius: DenRadius.medium, style: .continuous)
+                in: RoundedRectangle(cornerRadius: DenRadius.small, style: .continuous)
             )
             .overlay {
-                RoundedRectangle(cornerRadius: DenRadius.medium, style: .continuous)
+                RoundedRectangle(cornerRadius: DenRadius.small, style: .continuous)
                     .strokeBorder(
                         isSelected
                             ? (differentiateWithoutColor ? Color.primary : profileColor.opacity(0.85))

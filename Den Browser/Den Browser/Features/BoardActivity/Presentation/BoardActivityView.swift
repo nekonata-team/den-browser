@@ -233,9 +233,9 @@ private struct BoardActivityRow: View {
             }
         }
         .padding(.trailing, BoardActivityColumns.actionArea)
-        .background(Color.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: DenRadius.medium))
+        .background(Color.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: DenRadius.small))
         .overlay {
-            RoundedRectangle(cornerRadius: DenRadius.medium)
+            RoundedRectangle(cornerRadius: DenRadius.small)
                 .stroke(profileColor.opacity(0.18), lineWidth: 1)
         }
         .overlay(alignment: .topTrailing) {

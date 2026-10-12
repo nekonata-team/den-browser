@@ -109,7 +109,7 @@ struct DrawerItemView<Preview: View>: View {
             }
         }
         .background(
-            RoundedRectangle(cornerRadius: DenRadius.medium, style: .continuous)
+            RoundedRectangle(cornerRadius: DenRadius.small, style: .continuous)
                 .fill(
                     isSelected
                         ? (differentiateWithoutColor ? Color.primary : profileColor).opacity(0.18)
@@ -117,7 +117,7 @@ struct DrawerItemView<Preview: View>: View {
                 )
         )
         .overlay {
-            RoundedRectangle(cornerRadius: DenRadius.medium, style: .continuous)
+            RoundedRectangle(cornerRadius: DenRadius.small, style: .continuous)
                 .stroke(
                     isSelected
                         ? (differentiateWithoutColor ? Color.primary : profileColor.opacity(0.38))
