@@ -38,7 +38,7 @@ Routing must preserve this order:
 2. Dragging and exclusive temporary contexts consume keys they own. Their allowed cancellation and movement keys become `AppAction` values.
 3. Configurable app-wide shortcuts take priority over Sheet Input while a Profile window is active.
 4. Den Mode owns every remaining key. The reserved `g` enters the Essentials Prefix; its next key, including its case, is handled by that temporary context. Other mapped keys perform an action; an unmapped key is consumed with a warning Toast.
-5. Sheet Input, Drawer Preview input, and filter text fields receive only events explicitly forwarded to them.
+5. Sheet Input, Drawer Peek input, and filter text fields receive only events explicitly forwarded to them.
 
 Den Mode actions must never be implemented by forwarding an event and relying on a SwiftUI menu item to catch it. In particular, unmodified comma performs `openSettings` and is consumed before Sheet Input can receive it.
 

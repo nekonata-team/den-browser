@@ -28,7 +28,7 @@ export const ui = {
     'features.keyboard.title': 'Keyboard-First & Vim Navigation',
     'features.keyboard.desc': 'Toggle Den Mode (`Ctrl + ,`) to manage boards and desks, and navigate web sheets mouse-free with first-party Vim keybindings (scrolling, link hints with `f`). Complete control without touching the mouse.',
     'features.drawer.title': 'Shared Drawer & History',
-    'features.drawer.desc': 'Capture links opened from external apps into a Den-wide Drawer (`a`) without disrupting your active Desk. Preview, filter, place (`p`), discard (`x`), or restore (`u`) anytime.',
+    'features.drawer.desc': 'Capture links opened from external apps into a Den-wide Drawer (`a`) without disrupting your active Desk. Peek, filter, place (`p`), discard (`x`), or restore (`u`) anytime.',
     'features.ubol.title': 'Optional Content Blocking (uBOL)',
     'features.ubol.desc': 'Optionally install uBlock Origin Lite to block intrusive ads, popups, and trackers for a lightweight, distraction-free web experience.',
     'footer.rights': 'All rights reserved.',
@@ -168,7 +168,7 @@ export const home = {
           description: [
             'Capture links opened from external apps into a Den-wide Drawer (',
             { code: 'a' },
-            ') without disrupting your active Desk. Preview, filter, place (',
+            ') without disrupting your active Desk. Peek, filter, place (',
             { code: 'p' },
             '), discard (',
             { code: 'x' },

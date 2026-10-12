@@ -857,7 +857,7 @@ struct KeyboardShortcutTests {
         composition.connect()
         defer { composition.disconnect() }
         controller.keepInDrawer(try #require(URL(string: "https://example.com/")))
-        let previewID = windowModel.drawer.expandedItemID
+        let peekID = windowModel.drawer.expandedItemID
         let toggle = try keyEvent(
             characters: ",", charactersIgnoringModifiers: ",", modifiers: [.control], keyCode: 43)
 
@@ -865,13 +865,13 @@ struct KeyboardShortcutTests {
             KeyboardController.handle(
                 toggle, controller: controller, windowModel: windowModel, preferences: preferences))
         #expect(windowModel.isDenMode)
-        #expect(windowModel.drawer.expandedItemID == previewID)
+        #expect(windowModel.drawer.expandedItemID == peekID)
 
         #expect(
             KeyboardController.handle(
                 toggle, controller: controller, windowModel: windowModel, preferences: preferences))
         #expect(!windowModel.isDenMode)
-        #expect(windowModel.drawer.expandedItemID == previewID)
+        #expect(windowModel.drawer.expandedItemID == peekID)
     }
 
     @Test func drawerCommandWDiscardsSelectedItemWithoutRemovingBoard() throws {
@@ -911,7 +911,7 @@ struct KeyboardShortcutTests {
         #expect(controller.state.drawerItems.count == 1)
     }
 
-    @Test func drawerControlEscapeClosesDrawerWithOrWithoutPreview() throws {
+    @Test func drawerControlEscapeClosesDrawerWithOrWithoutPeek() throws {
         let controller = try makeController(boards: [board("First")])
         let composition = DenWindowComposition(controller: controller)
         let windowModel = composition.model
@@ -941,7 +941,7 @@ struct KeyboardShortcutTests {
         #expect(controller.state.drawerItems.count == 1)
     }
 
-    @Test func drawerConsumesUnmappedKeysWhenPreviewIsNotFocused() throws {
+    @Test func drawerConsumesUnmappedKeysWhenPeekIsNotFocused() throws {
         let controller = try makeController(boards: [board("First")])
         let composition = DenWindowComposition(controller: controller)
         let windowModel = composition.model

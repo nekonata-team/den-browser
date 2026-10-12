@@ -15,7 +15,7 @@ extension DenController {
             reportFeedback("Only HTTP, HTTPS, and local file URLs are supported.", severity: .warning)
             return nil
         }
-        if selectsItem { releaseDrawerPreview() }
+        if selectsItem { releaseDrawerPeek() }
         let item = DrawerItem(url: url, title: title)
         storage.state.drawerItems.insert(item, at: 0)
         onWindowEffect?(.drawerItemKept(item.id, opensDrawer: opensDrawer, selectsItem: selectsItem))
@@ -37,13 +37,13 @@ extension DenController {
     @discardableResult
     func discardDrawerItem(_ itemID: UUID, focusNext: Bool = true) -> Bool {
         guard state.drawerItems.contains(where: { $0.id == itemID }) else { return false }
-        discardDrawerItem(itemID, advancesPreview: true, focusNext: focusNext)
+        discardDrawerItem(itemID, advancesPeek: true, focusNext: focusNext)
         return true
     }
 
     private func discardDrawerItem(
         _ itemID: UUID,
-        advancesPreview: Bool,
+        advancesPeek: Bool,
         focusNext: Bool = true,
         recordsDiscardHistory: Bool = true
     ) {
@@ -56,10 +56,10 @@ extension DenController {
         }
         storage.state.drawerItems.remove(at: index)
         for presentation in storage.drawerPresentations.allObjects {
-            if presentation.drawerPreviewRuntime?.id == itemID { presentation.releaseDrawerPreview() }
+            if presentation.drawerPeekRuntime?.id == itemID { presentation.releaseDrawerPeek() }
             presentation.onWindowEffect?(
                 .drawerItemRemoved(
-                    itemID, previousItems: previousItems, advancesPreview: advancesPreview, focusNext: focusNext))
+                    itemID, previousItems: previousItems, advancesPeek: advancesPeek, focusNext: focusNext))
         }
         save()
     }
@@ -70,7 +70,7 @@ extension DenController {
             return
         }
 
-        releaseDrawerPreview()
+        releaseDrawerPeek()
         storage.state.drawerItems.insert(item, at: 0)
         storage.recentlyDiscardedDrawerItems.removeFirst()
         onWindowEffect?(.drawerItemRestored(item.id))
@@ -106,10 +106,10 @@ extension DenController {
                         preferredWidth: preferredWidth ?? focusedBoard?.width,
                         recentItem: .url(WebURLPolicy.canonicalSheetURL(item.url)),
                         deskID: deskID,
-                        existingRuntime: drawerPreviewRuntime?.id == item.id ? drawerPreviewRuntime : nil)
+                        existingRuntime: drawerPeekRuntime?.id == item.id ? drawerPeekRuntime : nil)
                 },
                 discardItem: { [self] itemID in
-                    discardDrawerItem(itemID, advancesPreview: false, recordsDiscardHistory: false)
+                    discardDrawerItem(itemID, advancesPeek: false, recordsDiscardHistory: false)
                 })
         else { return nil }
         onWindowEffect?(.dismissTemporaryPresentation)
@@ -118,10 +118,10 @@ extension DenController {
 
     func drawerRuntime(for item: DrawerItem) -> WebRuntime {
         ensureWebExtensionContext()
-        if let drawerPreviewRuntime, drawerPreviewRuntime.id == item.id {
-            return drawerPreviewRuntime
+        if let drawerPeekRuntime, drawerPeekRuntime.id == item.id {
+            return drawerPeekRuntime
         }
-        releaseDrawerPreview()
+        releaseDrawerPeek()
         let runtime = WebRuntime(
             item: item,
             websiteDataStore: websiteDataStore,
@@ -168,14 +168,14 @@ extension DenController {
             }
         )
         webExtensionHost?.activate(webView: runtime.webView)
-        drawerPreviewRuntime = runtime
+        drawerPeekRuntime = runtime
         return runtime
     }
 
-    func releaseDrawerPreview() {
-        guard let runtime = drawerPreviewRuntime else { return }
+    func releaseDrawerPeek() {
+        guard let runtime = drawerPeekRuntime else { return }
         runtime.dispose()
-        drawerPreviewRuntime = nil
+        drawerPeekRuntime = nil
         if let focusedBoardID = focusedBoard?.id, let focusedWebRuntime = webRuntimes[focusedBoardID] {
             webExtensionHost?.activate(webView: focusedWebRuntime.webView)
         }
@@ -201,7 +201,7 @@ extension DenController {
         rememberDiscardedDrawerItems(state.drawerItems)
         storage.state.drawerItems = []
         for presentation in storage.drawerPresentations.allObjects {
-            presentation.releaseDrawerPreview()
+            presentation.releaseDrawerPeek()
             presentation.onWindowEffect?(.drawerCleared)
         }
         save()

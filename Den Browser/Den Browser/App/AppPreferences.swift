@@ -11,7 +11,7 @@ final class AppPreferences {
     static let defaultDeskNumberBinding = ShortcutBinding(
         key: .character("1"), modifiers: [.command, .option])
     static let defaultSheetScale = 100
-    static let defaultExternalLinkDestination: ExternalLinkDestination = .drawerPreview
+    static let defaultExternalLinkDestination: ExternalLinkDestination = .drawerPeek
     static let defaultDrawerStyle: DrawerStyle = .floating
     static let defaultAutomaticPIPOnDeskSwitch = false
     static let sheetScaleRange = 50...200
@@ -70,7 +70,7 @@ final class AppPreferences {
             defaults.string(forKey: Self.boardCenteringKey).flatMap(FocusedBoardCentering.init(rawValue:))
             ?? .never
         externalLinkDestination =
-            defaults.string(forKey: Self.externalLinkDestinationKey).flatMap(ExternalLinkDestination.init(rawValue:))
+            defaults.string(forKey: Self.externalLinkDestinationKey).flatMap(ExternalLinkDestination.init(storedValue:))
             ?? Self.defaultExternalLinkDestination
         drawerStyle =
             defaults.string(forKey: Self.drawerStyleKey).flatMap(DrawerStyle.init(rawValue:))

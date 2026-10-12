@@ -256,14 +256,14 @@ final class Den_BrowserUITests: XCTestCase, BDD {
     }
 
     @MainActor
-    func testDrawerPreviewReceivesVimAndFormInputAndRetainsAfterDiscarding() throws {
+    func testDrawerPeekReceivesVimAndFormInputAndRetainsAfterDiscarding() throws {
         let app = launchApp(
             boardCount: .one,
             sheetNavigationEnabled: true,
             multipleDrawerItems: true)
 
         let drawer = app.descendants(matching: .any).matching(identifier: "drawer").firstMatch
-        let previewContent = drawer.staticTexts["result:pending"].firstMatch
+        let peekContent = drawer.staticTexts["result:pending"].firstMatch
         let sheetInput = app.textFields["Sheet input"].firstMatch
         let nextDrawerItem = app.buttons
             .matching(NSPredicate(format: "label BEGINSWITH %@", "Next Drawer Fixture"))
@@ -272,23 +272,23 @@ final class Den_BrowserUITests: XCTestCase, BDD {
             .matching(NSPredicate(format: "label BEGINSWITH %@", "Drawer Fixture"))
             .firstMatch
 
-        given("Sheet Navigation is enabled, two Drawer items exist, and the first preview is focused") {
+        given("Sheet Navigation is enabled, two Drawer items exist, and the first peek is focused") {
             enterDenMode(in: app)
             app.typeKey(.tab, modifierFlags: [])
             XCTAssertTrue(drawer.waitForExistence(timeout: 5))
             app.typeKey(.return, modifierFlags: [])
-            XCTAssertTrue(previewContent.waitForExistence(timeout: 10))
+            XCTAssertTrue(peekContent.waitForExistence(timeout: 10))
             XCTAssertTrue(nextDrawerItem.waitForExistence(timeout: 10))
             XCTAssertTrue(drawerItem.exists)
         }
 
-        when("moving to the Sheet input and typing in the first preview") {
+        when("moving to the Sheet input and typing in the first peek") {
             app.typeText("gi")
             XCTAssertTrue(sheetInput.waitForExistence(timeout: 5))
             app.typeText("a")
         }
 
-        then("the first Drawer preview accepts Sheet input") {
+        then("the first Drawer peek accepts Sheet input") {
             XCTAssertEqual(sheetInput.value as? String, "a")
         }
 
@@ -296,21 +296,21 @@ final class Den_BrowserUITests: XCTestCase, BDD {
             app.typeKey("w", modifierFlags: [.command])
         }
 
-        then("the next Drawer preview remains visible") {
+        then("the next Drawer peek remains visible") {
             XCTAssertTrue(nextDrawerItem.waitForNonExistence(timeout: 5))
             XCTAssertTrue(drawerItem.exists)
         }
 
-        when("using Sheet Navigation in the remaining preview") {
+        when("using Sheet Navigation in the remaining peek") {
             app.typeText("gi")
         }
 
-        when("typing into the Sheet input from the remaining preview") {
+        when("typing into the Sheet input from the remaining peek") {
             XCTAssertTrue(sheetInput.waitForExistence(timeout: 5))
             app.typeText("b")
         }
 
-        then("the remaining preview accepts Sheet input") {
+        then("the remaining peek accepts Sheet input") {
             XCTAssertEqual(sheetInput.value as? String, "b")
         }
     }
@@ -330,20 +330,20 @@ final class Den_BrowserUITests: XCTestCase, BDD {
         """.write(to: url, atomically: true, encoding: .utf8)
         let app = launchApp(boardCount: .one, drawerSheetURL: url)
         let drawer = app.descendants(matching: .any).matching(identifier: "drawer").firstMatch
-        let previewInput = drawer.textFields["Live input"].firstMatch
+        let peekInput = drawer.textFields["Live input"].firstMatch
         let placedInput = app.textFields["Live input"].firstMatch
 
-        given("a Drawer Preview holds a live value") {
+        given("a Drawer Peek holds a live value") {
             enterDenMode(in: app)
             app.typeKey(.tab, modifierFlags: [])
             XCTAssertTrue(drawer.waitForExistence(timeout: 5))
             app.typeKey(.return, modifierFlags: [])
-            XCTAssertTrue(previewInput.waitForExistence(timeout: 10))
-            previewInput.click()
+            XCTAssertTrue(peekInput.waitForExistence(timeout: 10))
+            peekInput.click()
             app.typeText("seed")
         }
 
-        when("placing the Preview into the Desk") {
+        when("placing the Peek into the Desk") {
             app.buttons["Place Drawer Fixture as Board"].click()
         }
 

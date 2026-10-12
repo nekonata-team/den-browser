@@ -1,9 +1,9 @@
 import Foundation
 
-/// Preview and operation tasks belong to the window, rather than the Profile's Board registry.
+/// Peek and operation tasks belong to the window, rather than the Profile's Board registry.
 @MainActor
 final class DenWindowResources {
-    var drawerPreview: WebRuntime?
+    var drawerPeek: WebRuntime?
     var zmxCommandTask: Task<Void, Never>?
     var screenshotTask: Task<Void, Never>?
 

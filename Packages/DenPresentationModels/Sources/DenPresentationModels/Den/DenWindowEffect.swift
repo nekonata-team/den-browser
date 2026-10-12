@@ -25,7 +25,7 @@ public enum DenWindowEffect {
     case dismissDeskFilter
     case clearMaximizedBoard
     case runtimeFocusedBoard(BoardID)
-    case drawerItemRemoved(UUID, previousItems: [DrawerItem], advancesPreview: Bool, focusNext: Bool)
+    case drawerItemRemoved(UUID, previousItems: [DrawerItem], advancesPeek: Bool, focusNext: Bool)
     case drawerCleared
     case drawerItemKept(UUID, opensDrawer: Bool, selectsItem: Bool)
     case drawerItemRestored(UUID)

@@ -118,11 +118,11 @@ updated projections; those saved fields supply initial state when restoring a ru
 
 `App/Composition/DenProfileResources` connects the shared state source, persistence callbacks,
 window event owners, and the native registry. `DenBoardRuntimes` owns Profile-shared Web and
-Terminal runtimes and their disposal; `DenWindowResources` owns the Drawer Preview and cancellable
-window operation Tasks. Web Boards and Drawer Preview use the same `WebRuntime` type. Placing
-the invoking window’s Preview transfers that instance into the Profile registry and attaches Board
+Terminal runtimes and their disposal; `DenWindowResources` owns the Drawer Peek and cancellable
+window operation Tasks. Web Boards and Drawer Peek use the same `WebRuntime` type. Placing
+the invoking window’s Peek transfers that instance into the Profile registry and attaches Board
 actions and identity without loading, reloading, or disposing its WebView. Board insertion must
-succeed before the window releases ownership; other windows’ Previews of the removed Item are disposed. Closing one window releases its resources while shared Board runtimes
+succeed before the window releases ownership; other windows’ Peeks of the removed Item are disposed. Closing one window releases its resources while shared Board runtimes
 remain alive for other windows. These native resource holders are app-target adapters.
 
 `DenController` workflows, native integration, and Views remain in the app target.
@@ -159,7 +159,7 @@ The [state ownership table](#shared-state-and-presentation-package-boundaries) d
 - `DenController` uses shared weak references in `DenProfileResources` to route Board and Desk removal invalidations to every window, so local selections and insertion anchors cannot retain removed IDs. Each Profile window has a `DenController` for its presented Desk and application resources.
 - `ProfileManager` retains the event-owner `DenController` for each active Board runtime. Runtime disposal or final Profile-window teardown releases these owners. Closing one window preserves detached runtime event delivery while other Profile windows remain.
 - `DenView` renders only the Desk assigned to its window. Shared runtime storage retains both runtime types across Desk and window changes; detached Terminal views stop rendering without ending their process. A detached TerminalRuntime also runs low-frequency app ticks until its surface is visible again or the runtime is disposed; this follows [ADR 0040](./adr/0040-tick-detached-terminal-runtimes.md).
-- Drawer Preview runtime and download operations remain in `DenController`. Window-to-Desk assignment is managed by `ProfileManager` and is not persisted.
+- Drawer Peek runtime and download operations remain in `DenController`. Window-to-Desk assignment is managed by `ProfileManager` and is not persisted.
 - zmx session discovery is window-local. Each `DenWindowModel` owns one `ZmxSessionsModel` from `DenPresentationModels`, which owns session listing, filtering, selection, deletion, and their asynchronous Tasks. App composition injects listing and termination operations backed by the current zmx client; each operation batch captures its dependencies through completion. The Model is stopped when the zmx Sessions context closes, so late command results cannot update a closed panel. `DenController` finds existing zmx Boards, updates root metadata, and opens or focuses Boards; the Window Model coordinates the panel transition.
 - Persistence never serializes WebKit objects, terminal processes, terminal screens, or scrollback; [persistence.md](./persistence.md) defines the saved data and recovery contract.
 
@@ -206,7 +206,7 @@ Den coordinates operations spanning Desks, Boards, and Drawer. `DenController` c
 operations to native resources and persistence. `DenWindowModel` coordinates window presentation;
 App composition supplies live data and focused operations to it and the Feature Models.
 
-Desk owns Desk state and preset data. Board owns shared Board state and grouping plus its Web, Terminal, Inspection, and Tutorial implementations. Drawer owns Drawer Items, its view, and Preview runtime; Drawer-to-Board placement remains a Den Application workflow. Feature inputs follow [ADR 0061](./adr/0061-narrow-feature-presentation-inputs.md) and the package boundaries above. Terminal owns launch command selection and zmx query results used to prepare duplication; DenController owns task cancellation, focus checks, Board naming against current Den state, and insertion.
+Desk owns Desk state and preset data. Board owns shared Board state and grouping plus its Web, Terminal, Inspection, and Tutorial implementations. Drawer owns Drawer Items, its view, and Peek runtime; Drawer-to-Board placement remains a Den Application workflow. Feature inputs follow [ADR 0061](./adr/0061-narrow-feature-presentation-inputs.md) and the package boundaries above. Terminal owns launch command selection and zmx query results used to prepare duplication; DenController owns task cancellation, focus checks, Board naming against current Den state, and insertion.
 
 Den also owns preferences for shared presentation behavior. `IPC/Application` connects external CLI and MCP requests to active Profile windows through existing domain operations, following [ADR 0047](./adr/0047-integrate-den-cli.md) and [ADR 0055](./adr/0055-add-den-mcp-server.md).
 
@@ -234,7 +234,7 @@ Notifications owns the `DenNotification` model, list UI, and list-local selectio
 
 Owns Profile identity, Profile-scoped persistence, website-data isolation, and Profile window lifecycle. A Profile owns one Den and may present distinct Desks from it in multiple windows, so this Feature may depend on the Den Feature to create, restore, and present that Den. WebKit storage mechanics may live in `Platform`, while Profile policy remains in the feature.
 
-`ProfileManager` owns the lifecycle binding: one lazily created `MV3WebExtensionHost` per Profile and one extension window per Profile Window using that host. When content blocking is enabled, the first live Web Board, Drawer Preview, or explicit extension popup/options request creates the host. Creating or focusing an empty or Terminal-only Profile Window does not load the extension. Ordinary Profiles use a persistent extension controller identified by their stable Profile ID; Private Den uses a non-persistent extension controller so its extension state does not carry into another session.
+`ProfileManager` owns the lifecycle binding: one lazily created `MV3WebExtensionHost` per Profile and one extension window per Profile Window using that host. When content blocking is enabled, the first live Web Board, Drawer Peek, or explicit extension popup/options request creates the host. Creating or focusing an empty or Terminal-only Profile Window does not load the extension. Ordinary Profiles use a persistent extension controller identified by their stable Profile ID; Private Den uses a non-persistent extension controller so its extension state does not carry into another session.
 
 ### Extensions
 
@@ -252,7 +252,7 @@ Settings is not a Feature. `App/Settings` owns the Settings scene and its naviga
 
 ### Platform
 
-Contains reusable operating-system integration rather than product concepts. Do not create a global Platform folder merely because code imports AppKit or WebKit. `TextInputComposition` is a feature-independent IME composition helper shared by Den, Sheet Navigation, and App settings. `SurfaceHost` is a generic native-view host shared by Board kind adapters and Drawer Preview; its API uses only AppKit views and generic request values. `WebRuntime` belongs to `Web` because Web Boards and Drawer Preview share its live execution; `WebBoardSurface` remains in `Board/Web` because it owns Board presentation. `SheetNavigationManager` remains in SheetNavigation because its WebKit integration implements that Feature. `KeyboardController` remains in `App` while it routes app-wide commands into Den behavior. A component moves to `Platform` only when its API is feature-independent and no reverse dependency on a Feature is required.
+Contains reusable operating-system integration rather than product concepts. Do not create a global Platform folder merely because code imports AppKit or WebKit. `TextInputComposition` is a feature-independent IME composition helper shared by Den, Sheet Navigation, and App settings. `SurfaceHost` is a generic native-view host shared by Board kind adapters and Drawer Peek; its API uses only AppKit views and generic request values. `WebRuntime` belongs to `Web` because Web Boards and Drawer Peek share its live execution; `WebBoardSurface` remains in `Board/Web` because it owns Board presentation. `SheetNavigationManager` remains in SheetNavigation because its WebKit integration implements that Feature. `KeyboardController` remains in `App` while it routes app-wide commands into Den behavior. A component moves to `Platform` only when its API is feature-independent and no reverse dependency on a Feature is required.
 
 ## Folder rules
 

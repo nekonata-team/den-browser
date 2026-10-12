@@ -50,7 +50,7 @@ Nested objects use these keys:
 - `DeskPresetBoard`: `label`, `width`, optional `customLabel`, `content` using Web, Inspection, or Terminal with a Shell, Zellij, or zmx `session`, and optional `targetBoardIndex` for a Side Board (Inspection or Terminal) pointing to its Primary Board. A zmx session may include `rootSessionName` when its group is known.
 - `RecentItem`: `kind`, plus `url` for a URL, `query` for a search term, `workingDirectory` for a Terminal location, optional `sessionName` for a Zellij session intent, or `sessionName` for a zmx session intent used by Open Board
 
-Recent Items are recorded when a new Board is successfully opened from an input, including an Essential, an explicit link-to-new-Board action, a Drawer placement, or a zmx Session selection. Sheet navigation, Board restoration, and Drawer Preview do not create Recent Items. Opening the zmx Sessions picker without selecting a session does not create one.
+Recent Items are recorded when a new Board is successfully opened from an input, including an Essential, an explicit link-to-new-Board action, a Drawer placement, or a zmx Session selection. Sheet navigation, Board restoration, and Drawer Peek do not create Recent Items. Opening the zmx Sessions picker without selecting a session does not create one.
 
 Removing an individual Recent Item or clearing Recent saves the updated list in the Profile document. If saving fails, the in-memory list is restored. Opening a new Board from the same input records it again.
 
@@ -70,7 +70,7 @@ When `BoardState.role` is absent, it decodes as `primary`.
 | --- | --- | --- | --- | --- | --- |
 | `schema` | Version | `preferences.schema.version` | `Int` | `1` | Internal |
 | `search` | Engine | `preferences.search.engine` | `SearchEngine.rawValue` | `google` | Web > Search |
-| `external-links` | Destination | `preferences.external-links.destination` | `ExternalLinkDestination.rawValue` | `drawer-preview` | Web > Sheet Navigation |
+| `external-links` | Destination | `preferences.external-links.destination` | `ExternalLinkDestination.rawValue` | `drawer-peek` | Web > Sheet Navigation |
 | `sheet-navigation` | Enabled | `preferences.sheet-navigation.enabled` | `Bool` | `false` | Web > Vim-style Sheet Navigation |
 | `sheet-navigation` | Hint alphabet | `preferences.sheet-navigation.hint-alphabet` | `String` | `asdfghjkl` | Web > Vim-style Sheet Navigation |
 | `sheet-navigation` | Ignored hosts | `preferences.sheet-navigation.ignored-hosts` | `[String]` | `[]` | Web > Vim-style Sheet Navigation |

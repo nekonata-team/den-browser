@@ -273,8 +273,8 @@ extension DenController {
             runtime.webView.magnification = 1
             runtime.webView.pageZoom = CGFloat(scale) / 100
         }
-        drawerPreviewRuntime?.webView.magnification = 1
-        drawerPreviewRuntime?.webView.pageZoom = CGFloat(scale) / 100
+        drawerPeekRuntime?.webView.magnification = 1
+        drawerPeekRuntime?.webView.pageZoom = CGFloat(scale) / 100
     }
 
     func adjustFocusedSheetSize(by delta: Int) {
@@ -316,12 +316,12 @@ extension DenController {
 
     func releaseWebRuntimes() {
         storage.boardRuntimes.releaseWeb()
-        releaseDrawerPreview()
+        releaseDrawerPeek()
     }
 
     func releaseWindowResources() {
         cancelWindowOperationTasks()
-        releaseDrawerPreview()
+        releaseDrawerPeek()
     }
 
     func disposeRuntime(for boardID: BoardID) {

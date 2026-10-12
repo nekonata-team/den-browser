@@ -206,9 +206,9 @@ struct BoardRuntimeWebUITests {
         )
     }
 
-    @Test func drawerPreviewDistinguishesNewContextLinks() throws {
+    @Test func drawerPeekDistinguishesNewContextLinks() throws {
         let manager = makeTestSheetNavigationManager(scriptSource: "")
-        let item = DrawerItem(url: try #require(URL(string: "file:///tmp/drawer-preview.html")))
+        let item = DrawerItem(url: try #require(URL(string: "file:///tmp/drawer-peek.html")))
         var keptURL: URL?
         var backgroundURL: URL?
         let runtime = WebRuntime(

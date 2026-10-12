@@ -176,7 +176,7 @@ struct ProfileManagerTests {
         #expect(second.webExtensionWindow?.tabs.count == 1)
     }
 
-    @Test func drawerPreviewRequestsHost() throws {
+    @Test func drawerPeekRequestsHost() throws {
         // Arrange
         let directory = temporaryProfileDirectory()
         defer { try? FileManager.default.removeItem(at: directory) }
@@ -193,15 +193,15 @@ struct ProfileManagerTests {
         defer { manager.setUBOLiteEnabled(false) }
 
         // Act
-        let firstPreview = controller.drawerRuntime(for: item)
+        let firstPeek = controller.drawerRuntime(for: item)
 
         // Assert
         #expect(controller.webExtensionHost != nil)
         #expect(controller.webExtensionWindow?.tabs.count == 1)
-        #expect(firstPreview.id == item.id)
+        #expect(firstPeek.id == item.id)
     }
 
-    @Test func disablingExtensionDisconnectsLiveDrawerPreview() throws {
+    @Test func disablingExtensionDisconnectsLiveDrawerPeek() throws {
         // Arrange
         let directory = temporaryProfileDirectory()
         defer { try? FileManager.default.removeItem(at: directory) }
@@ -213,16 +213,16 @@ struct ProfileManagerTests {
         let itemID = try #require(controller.keepInDrawer(URL(fileURLWithPath: #filePath), opensDrawer: false))
         let item = try #require(controller.state.drawerItems.first { $0.id == itemID })
         manager.setUBOLiteEnabled(true)
-        let preview = controller.drawerRuntime(for: item)
+        let peek = controller.drawerRuntime(for: item)
         defer { manager.setUBOLiteEnabled(false) }
 
         // Act
         manager.setUBOLiteEnabled(false)
 
         // Assert
-        #expect(controller.drawerPreviewRuntime == nil)
+        #expect(controller.drawerPeekRuntime == nil)
         #expect(controller.webExtensionHost == nil)
-        #expect(preview.webView.navigationDelegate == nil)
+        #expect(peek.webView.navigationDelegate == nil)
     }
 
     @Test func enablingExtensionAppliesToExistingWebRuntimeDemand() throws {

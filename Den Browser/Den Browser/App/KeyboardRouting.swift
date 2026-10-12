@@ -49,7 +49,7 @@ enum InputDestination: Equatable {
     case nativeCommand
     case temporaryTextInput
     case sheet
-    case drawerPreview
+    case drawerPeek
     case filterTextInput
 }
 
@@ -130,12 +130,12 @@ enum KeyboardRouter {
         case .boardActivity:
             if event.isEscape, modifiers == [] { return .perform(.overview(.hideActivity)) }
             return .forward(.temporaryTextInput)
-        case .drawer(let filterPhase, let previewFirstResponder):
+        case .drawer(let filterPhase, let peekFirstResponder):
             return routeDrawer(
                 event,
                 mode: context.mode,
                 filterPhase: filterPhase,
-                previewFirstResponder: previewFirstResponder)
+                peekFirstResponder: peekFirstResponder)
         case .zmxSessions(let filterPhase, let hasQuery, let hasSelection):
             return routeZmxSessions(event, filterPhase: filterPhase, hasQuery: hasQuery, hasSelection: hasSelection)
         case .textInput:
@@ -328,7 +328,7 @@ enum KeyboardRouter {
         _ event: KeyEvent,
         mode: KeyboardMode,
         filterPhase: FilterPhase,
-        previewFirstResponder: Bool
+        peekFirstResponder: Bool
     ) -> InputDecision {
         let modifiers = event.modifiers
         let character = event.character?.lowercased()
@@ -339,7 +339,7 @@ enum KeyboardRouter {
                 : .perform(.drawer(.discardSelectedItem(focusNext: true)))
         }
         if event.isEscape, modifiers == [.control] { return .perform(.drawer(.close)) }
-        if mode == .sheet, previewFirstResponder { return .forward(.drawerPreview) }
+        if mode == .sheet, peekFirstResponder { return .forward(.drawerPeek) }
 
         if filterPhase == .filtering {
             if event.hasMarkedText { return .forward(.filterTextInput) }

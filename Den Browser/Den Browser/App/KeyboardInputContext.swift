@@ -45,7 +45,7 @@ enum KeyboardSurface {
     case boardWidth
     case overview(filterPhase: FilterPhase, hasQuery: Bool)
     case boardActivity
-    case drawer(filterPhase: FilterPhase, previewFirstResponder: Bool)
+    case drawer(filterPhase: FilterPhase, peekFirstResponder: Bool)
     case zmxSessions(filterPhase: FilterPhase, hasQuery: Bool, hasSelection: Bool)
     case textInput
 }
@@ -81,7 +81,7 @@ struct InputContext {
                 case .drawer:
                     .drawer(
                         filterPhase: windowModel.drawer.filterPhase,
-                        previewFirstResponder: Self.isDrawerPreviewFirstResponder(event, controller: controller))
+                        peekFirstResponder: Self.isDrawerPeekFirstResponder(event, controller: controller))
                 case .zmxSessions:
                     .zmxSessions(
                         filterPhase: windowModel.zmxSessions.filterPhase,
@@ -99,9 +99,9 @@ struct InputContext {
         focusedBoardIsTerminal = controller.focusedBoard?.isTerminal == true
     }
 
-    private static func isDrawerPreviewFirstResponder(_ event: NSEvent, controller: DenController) -> Bool {
+    private static func isDrawerPeekFirstResponder(_ event: NSEvent, controller: DenController) -> Bool {
         guard
-            let webView = controller.drawerPreviewRuntime?.webView,
+            let webView = controller.drawerPeekRuntime?.webView,
             var view = event.window?.firstResponder as? NSView
         else { return false }
 

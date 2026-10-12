@@ -3,7 +3,7 @@ import DenDomain
 import SFSafeSymbols
 import SwiftUI
 
-struct DrawerItemView<Preview: View>: View {
+struct DrawerItemView<Peek: View>: View {
     @Environment(\.accessibilityDifferentiateWithoutColor) private var differentiateWithoutColor
 
     @FocusState.Binding var focusedDrawerItemID: UUID?
@@ -12,14 +12,14 @@ struct DrawerItemView<Preview: View>: View {
     let item: DrawerItem
     let isSelected: Bool
     let isExpanded: Bool
-    let isPreviewVisible: Bool
+    let isPeekVisible: Bool
     let profileColor: Color
-    let previewHeight: CGFloat
+    let peekHeight: CGFloat
     let onToggle: () -> Void
     let onPlaceFromContextMenu: () -> Void
     let onPlaceAsBoard: () -> Void
     let onDiscard: () -> Void
-    @ViewBuilder let preview: () -> Preview
+    @ViewBuilder let peek: () -> Peek
 
     var body: some View {
         VStack(spacing: 0) {
@@ -100,10 +100,10 @@ struct DrawerItemView<Preview: View>: View {
                 .help("Discard")
             }
 
-            if isPreviewVisible {
-                preview()
+            if isPeekVisible {
+                peek()
                     .id(item.id)
-                    .frame(height: previewHeight)
+                    .frame(height: peekHeight)
                     .clipShape(RoundedRectangle(cornerRadius: DenRadius.small, style: .continuous))
                     .padding([.horizontal, .bottom], DenLayout.outerInset)
             }

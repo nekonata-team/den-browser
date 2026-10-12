@@ -143,7 +143,7 @@ Open with `Tab` in Den Mode.
 | `Control` + `Escape` | Close Drawer |
 | `/` | Search / filter Drawer items |
 | `Up` / `Down` or `k` / `j` | Select Drawer item |
-| `Return` | Toggle expanded Preview |
+| `Return` | Toggle expanded Peek |
 | `p` | Place selected item as a Board |
 | `x` | Discard item and focus previous |
 | `d` or `Delete` | Discard item and focus next |

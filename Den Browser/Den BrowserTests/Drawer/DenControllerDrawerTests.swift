@@ -123,7 +123,7 @@ struct DenControllerDrawerTests {
         #expect(controller.state.drawerItems[1].id == firstID)
     }
 
-    @Test func backgroundKeepPreservesCurrentPreviewSelection() throws {
+    @Test func backgroundKeepPreservesCurrentPeekSelection() throws {
         let source = desk("Desk")
         let currentItem = DrawerItem(url: try #require(URL(string: "https://current.example/")))
         let controller = DenController(
@@ -145,10 +145,10 @@ struct DenControllerDrawerTests {
         #expect(controller.state.drawerItems.map(\.url) == [backgroundURL, currentItem.url])
         #expect(windowModel.drawer.selectedItemID == currentItem.id)
         #expect(windowModel.drawer.expandedItemID == currentItem.id)
-        #expect(controller.drawerPreviewRuntime === runtime)
+        #expect(controller.drawerPeekRuntime === runtime)
     }
 
-    @Test func drawerPreviewPresentationIsWindowLocalAndSharedMetadataUsesLatestUpdate() throws {
+    @Test func drawerPeekPresentationIsWindowLocalAndSharedMetadataUsesLatestUpdate() throws {
         let item = DrawerItem(url: try #require(URL(string: "https://initial.example/")))
         try withSharedDrawerControllers(items: [item]) { first, second in
             let firstComposition = DenWindowComposition(controller: first)
@@ -204,8 +204,8 @@ struct DenControllerDrawerTests {
             #expect(secondWindowModel.drawer.selectedItemID == secondItem.id)
             #expect(firstWindowModel.drawer.expandedItemID == secondItem.id)
             #expect(secondWindowModel.drawer.expandedItemID == secondItem.id)
-            #expect(first.drawerPreviewRuntime == nil)
-            #expect(second.drawerPreviewRuntime == nil)
+            #expect(first.drawerPeekRuntime == nil)
+            #expect(second.drawerPeekRuntime == nil)
             #expect(firstRuntime.webView.navigationDelegate == nil)
             #expect(secondRuntime.webView.navigationDelegate == nil)
         }
@@ -237,8 +237,8 @@ struct DenControllerDrawerTests {
             #expect(secondWindowModel.drawer.selectedItemID == nil)
             #expect(firstWindowModel.drawer.expandedItemID == nil)
             #expect(secondWindowModel.drawer.expandedItemID == nil)
-            #expect(first.drawerPreviewRuntime == nil)
-            #expect(second.drawerPreviewRuntime == nil)
+            #expect(first.drawerPeekRuntime == nil)
+            #expect(second.drawerPeekRuntime == nil)
             #expect(!firstWindowModel.isDrawerOpen)
             #expect(!secondWindowModel.isDrawerOpen)
         }
@@ -337,8 +337,8 @@ struct DenControllerDrawerTests {
         let directory = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: directory) }
-        let url = directory.appending(path: "preview.html")
-        try "<html><head><title>Live Preview</title></head><body></body></html>".write(
+        let url = directory.appending(path: "peek.html")
+        try "<html><head><title>Live Peek</title></head><body></body></html>".write(
             to: url, atomically: true, encoding: .utf8)
         let item = DrawerItem(url: url)
         let source = desk("Desk")
@@ -352,13 +352,13 @@ struct DenControllerDrawerTests {
             controller.releaseRuntimes()
         }
         composition.model.focusDrawerItem(item.id)
-        let preview = controller.drawerRuntime(for: item)
-        for _ in 0..<200 where preview.webView.title != "Live Preview" || preview.webView.isLoading {
+        let peek = controller.drawerRuntime(for: item)
+        for _ in 0..<200 where peek.webView.title != "Live Peek" || peek.webView.isLoading {
             try await Task.sleep(for: .milliseconds(10))
         }
-        #expect(preview.webView.title == "Live Preview")
+        #expect(peek.webView.title == "Live Peek")
         let documentToken = try #require(
-            try await preview.webView.evaluateJavaScript("window.documentToken = crypto.randomUUID()") as? String)
+            try await peek.webView.evaluateJavaScript("window.documentToken = crypto.randomUUID()") as? String)
 
         // Act
         let boardID = try #require(controller.placeDrawerItemAsBoard(item.id))
@@ -366,25 +366,25 @@ struct DenControllerDrawerTests {
         let transferredToken = try await placed.webView.evaluateJavaScript("window.documentToken") as? String
 
         // Assert
-        #expect(placed === preview)
+        #expect(placed === peek)
         #expect(placed.boardID == boardID)
         #expect(placed.webView.navigationDelegate === placed)
         #expect(placed.webView.uiDelegate === placed)
         #expect(transferredToken == documentToken)
         #expect(!placed.webView.isLoading)
-        #expect(controller.focusedBoard?.label == "Live Preview")
-        #expect(controller.drawerPreviewRuntime == nil)
+        #expect(controller.focusedBoard?.label == "Live Peek")
+        #expect(controller.drawerPeekRuntime == nil)
         #expect(controller.state.drawerItems.isEmpty)
     }
 
     @Test func placementPreservesDownloadsAndRoutesSubsequentChangesToBoard() throws {
         // Arrange
-        let item = DrawerItem(url: try #require(URL(string: "https://preview.example/")))
+        let item = DrawerItem(url: try #require(URL(string: "https://peek.example/")))
         let source = desk("Desk")
         let controller = DenController(
             state: DenState(desks: [source], focusedDeskID: source.id, drawerItems: [item]))
         defer { controller.releaseRuntimes() }
-        let preview = controller.drawerRuntime(for: item)
+        let peek = controller.drawerRuntime(for: item)
         let directory = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: directory) }
@@ -393,30 +393,30 @@ struct DenControllerDrawerTests {
         try Data("download contents".utf8).write(to: temporaryURL)
         let download = NSObject()
         let key = ObjectIdentifier(download)
-        let downloadID = preview.registerPendingDownload(
+        let downloadID = peek.registerPendingDownload(
             for: key, destinationURL: destinationURL, temporaryURL: temporaryURL)
-        let nextURL = try #require(URL(string: "https://preview.example/next"))
+        let nextURL = try #require(URL(string: "https://peek.example/next"))
 
         // Act
         let boardID = try #require(controller.placeDrawerItemAsBoard(item.id))
         controller.releaseWindowResources()
-        preview.handleURLOrTitleChange(url: nextURL, title: "Continued")
-        let downloadCompleted = preview.completeDownload(for: key)
+        peek.handleURLOrTitleChange(url: nextURL, title: "Continued")
+        let downloadCompleted = peek.completeDownload(for: key)
 
         // Assert
-        #expect(controller.webRuntimes[boardID] === preview)
-        #expect(preview.webView.navigationDelegate === preview)
+        #expect(controller.webRuntimes[boardID] === peek)
+        #expect(peek.webView.navigationDelegate === peek)
         #expect(controller.focusedBoard?.currentSheetURL == nextURL)
         #expect(controller.focusedBoard?.label == "Continued")
         #expect(downloadCompleted)
         #expect(try Data(contentsOf: destinationURL) == Data("download contents".utf8))
-        #expect(!preview.activeDownloadActivities.contains { $0.id == downloadID })
+        #expect(!peek.activeDownloadActivities.contains { $0.id == downloadID })
         #expect(controller.state.drawerItems.isEmpty)
     }
 
-    @Test func placementSwitchesPreviewActionsAndFocusToBoard() throws {
+    @Test func placementSwitchesPeekActionsAndFocusToBoard() throws {
         // Arrange
-        let item = DrawerItem(url: try #require(URL(string: "https://preview.example/")))
+        let item = DrawerItem(url: try #require(URL(string: "https://peek.example/")))
         let source = desk("Desk")
         let manager = makeTestSheetNavigationManager(scriptSource: "")
         manager.setEnabled(true)
@@ -424,18 +424,18 @@ struct DenControllerDrawerTests {
             state: DenState(desks: [source], focusedDeskID: source.id, drawerItems: [item]),
             sheetNavigation: manager)
         defer { controller.releaseRuntimes() }
-        let preview = controller.drawerRuntime(for: item)
+        let peek = controller.drawerRuntime(for: item)
         let destination = try #require(URL(string: "https://board.example/"))
 
         // Act
         let boardID = try #require(controller.placeDrawerItemAsBoard(item.id))
-        let handled = preview.handleLinkNavigation(
+        let handled = peek.handleLinkNavigation(
             destination,
             navigationType: .linkActivated,
             modifierFlags: [.command, .shift],
             button: .primary,
             opensNewContext: false)
-        let webView = try #require(preview.webView as? RuntimeWKWebView)
+        let webView = try #require(peek.webView as? RuntimeWKWebView)
         let focusAllowedAfterLeaving = webView.isFocusAllowed()
         controller.focusBoard(boardID)
         let focusAllowedAfterReturning = webView.isFocusAllowed()
@@ -452,43 +452,43 @@ struct DenControllerDrawerTests {
         #expect(controller.pasteboard.string(forType: .string) == boardID.rawValue.uuidString.lowercased())
     }
 
-    @Test func failedPlacementKeepsPreviewAndDrawerItem() throws {
+    @Test func failedPlacementKeepsPeekAndDrawerItem() throws {
         // Arrange
         let item = DrawerItem(url: try #require(URL(string: "https://preview.example/")))
         let source = desk("Desk")
         let controller = DenController(
             state: DenState(desks: [source], focusedDeskID: source.id, drawerItems: [item]))
         defer { controller.releaseRuntimes() }
-        let preview = controller.drawerRuntime(for: item)
+        let peek = controller.drawerRuntime(for: item)
 
         // Act
         let boardID = controller.placeDrawerItemAsBoard(item.id, deskID: DeskID())
 
         // Assert
         #expect(boardID == nil)
-        #expect(controller.drawerPreviewRuntime === preview)
-        #expect(preview.webView.navigationDelegate === preview)
+        #expect(controller.drawerPeekRuntime === peek)
+        #expect(peek.webView.navigationDelegate === peek)
         #expect(controller.state.drawerItems == [item])
         #expect(controller.webRuntimes.isEmpty)
     }
 
-    @Test func sharedPlacementTransfersInvokingWindowsPreviewAndDisposesOtherPreview() throws {
+    @Test func sharedPlacementTransfersInvokingWindowsPeekAndDisposesOtherPeek() throws {
         // Arrange
         let item = DrawerItem(url: try #require(URL(string: "https://preview.example/")))
         try withSharedDrawerControllers(items: [item]) { first, second in
-            let firstPreview = first.drawerRuntime(for: item)
-            let secondPreview = second.drawerRuntime(for: item)
+            let firstPeek = first.drawerRuntime(for: item)
+            let secondPeek = second.drawerRuntime(for: item)
 
             // Act
             let boardID = try #require(first.placeDrawerItemAsBoard(item.id))
 
             // Assert
-            #expect(first.webRuntimes[boardID] === firstPreview)
-            #expect(second.webRuntimes[boardID] === firstPreview)
-            #expect(firstPreview.webView.navigationDelegate === firstPreview)
-            #expect(secondPreview.webView.navigationDelegate == nil)
-            #expect(first.drawerPreviewRuntime == nil)
-            #expect(second.drawerPreviewRuntime == nil)
+            #expect(first.webRuntimes[boardID] === firstPeek)
+            #expect(second.webRuntimes[boardID] === firstPeek)
+            #expect(firstPeek.webView.navigationDelegate === firstPeek)
+            #expect(secondPeek.webView.navigationDelegate == nil)
+            #expect(first.drawerPeekRuntime == nil)
+            #expect(second.drawerPeekRuntime == nil)
         }
     }
 
@@ -581,7 +581,7 @@ struct DenControllerDrawerTests {
         #expect(controller.state.drawerItems.map(\.id) == Array(items[1...11]).map(\.id))
     }
 
-    @Test func discardingExpandedItemDisposesItsPreviewRuntime() throws {
+    @Test func discardingExpandedItemDisposesItsPeekRuntime() throws {
         let source = desk("Desk")
         let controller = DenController(state: DenState(desks: [source], focusedDeskID: source.id))
         let composition = DenWindowComposition(controller: controller)
@@ -594,12 +594,12 @@ struct DenControllerDrawerTests {
 
         controller.discardDrawerItem(item.id)
 
-        #expect(controller.drawerPreviewRuntime == nil)
+        #expect(controller.drawerPeekRuntime == nil)
         #expect(runtime.webView.navigationDelegate == nil)
         #expect(runtime.webView.uiDelegate == nil)
     }
 
-    @Test func discardingExpandedItemOpensFollowingPreview() throws {
+    @Test func discardingExpandedItemOpensFollowingPeek() throws {
         let source = desk("Desk")
         let first = DrawerItem(url: try #require(URL(string: "https://first.example/")))
         let second = DrawerItem(url: try #require(URL(string: "https://second.example/")))
@@ -624,7 +624,7 @@ struct DenControllerDrawerTests {
         #expect(windowModel.isDrawerOpen)
     }
 
-    @Test func discardingLastExpandedItemOpensPreviousPreview() throws {
+    @Test func discardingLastExpandedItemOpensPreviousPeek() throws {
         let source = desk("Desk")
         let first = DrawerItem(url: try #require(URL(string: "https://first.example/")))
         let second = DrawerItem(url: try #require(URL(string: "https://second.example/")))
@@ -647,7 +647,7 @@ struct DenControllerDrawerTests {
         #expect(windowModel.drawer.expandedItemID == first.id)
     }
 
-    @Test func placementDoesNotAdvanceToAnotherDrawerPreview() throws {
+    @Test func placementDoesNotAdvanceToAnotherDrawerPeek() throws {
         let source = desk("Desk")
         let first = DrawerItem(url: try #require(URL(string: "https://first.example/")))
         let second = DrawerItem(url: try #require(URL(string: "https://second.example/")))
@@ -692,7 +692,7 @@ struct DenControllerDrawerTests {
         #expect(windowModel.drawerPendingDeletionCount == nil)
         #expect(windowModel.drawer.selectedItemID == nil)
         #expect(windowModel.drawer.expandedItemID == nil)
-        #expect(controller.drawerPreviewRuntime == nil)
+        #expect(controller.drawerPeekRuntime == nil)
         #expect(controller.recentlyDiscardedDrawerItems.count == 2)
         #expect(!windowModel.isDrawerOpen)
     }
@@ -709,7 +709,7 @@ struct DenControllerDrawerTests {
         #expect(decoded.drawerItems.isEmpty)
     }
 
-    @Test func closingDrawerKeepsExpandedPreviewForNextOpen() throws {
+    @Test func closingDrawerKeepsExpandedPeekForNextOpen() throws {
         let source = desk("Desk")
         var savedState: DenState?
         let controller = DenController(
@@ -736,7 +736,7 @@ struct DenControllerDrawerTests {
 
         #expect(!windowModel.isDrawerOpen)
         #expect(windowModel.drawer.expandedItemID == itemID)
-        #expect(controller.drawerPreviewRuntime === runtime)
+        #expect(controller.drawerPeekRuntime === runtime)
         #expect(savedState == controller.state)
 
         windowModel.toggleDrawer()
@@ -747,7 +747,7 @@ struct DenControllerDrawerTests {
 
         windowModel.drawer.toggleItem(itemID)
 
-        #expect(controller.drawerPreviewRuntime == nil)
+        #expect(controller.drawerPeekRuntime == nil)
     }
 
     @Test func denModeKeyboardControlsOpenDrawer() throws {
@@ -781,7 +781,7 @@ struct DenControllerDrawerTests {
         #expect(windowModel.drawer.expandedItemID == nil)
     }
 
-    @Test func openingDrawerExitsDenModeOnlyForExpandedPreview() throws {
+    @Test func openingDrawerExitsDenModeOnlyForExpandedPeek() throws {
         let source = desk("Desk")
         let item = DrawerItem(url: try #require(URL(string: "https://example.com/")))
         let controller = DenController(
@@ -805,7 +805,7 @@ struct DenControllerDrawerTests {
         #expect(!windowModel.isDenMode)
     }
 
-    @Test func slashSearchAndReturnToggleFilteredSelectionPreview() throws {
+    @Test func slashSearchAndReturnToggleFilteredSelectionPeek() throws {
         let source = desk("Desk")
         let first = DrawerItem(
             url: try #require(URL(string: "https://first.example/")),

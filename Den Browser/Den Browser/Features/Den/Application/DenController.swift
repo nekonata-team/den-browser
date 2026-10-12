@@ -76,9 +76,9 @@ final class DenController {
     var facingCapture: BoardFacingCapture { storage.facingCapture }
     @ObservationIgnored var onWindowEffect: ((DenWindowEffect) -> Void)?
     @ObservationIgnored private let windowResources = DenWindowResources()
-    var drawerPreviewRuntime: WebRuntime? {
-        get { windowResources.drawerPreview }
-        set { windowResources.drawerPreview = newValue }
+    var drawerPeekRuntime: WebRuntime? {
+        get { windowResources.drawerPeek }
+        set { windowResources.drawerPeek = newValue }
     }
     var zmxCommandTask: Task<Void, Never>? {
         get { windowResources.zmxCommandTask }
@@ -103,7 +103,7 @@ final class DenController {
 
     func handleExternalURL(_ url: URL) {
         switch preferences.externalLinkDestination {
-        case .drawerPreview:
+        case .drawerPeek:
             keepInDrawer(url)
         case .focusedBoard:
             _ = createBoard(
@@ -132,13 +132,13 @@ final class DenController {
     ) {
         guard webExtensionHost !== host || webExtensionWindow !== window else { return }
         releaseWebRuntimes()
-        releaseDrawerPreview()
+        releaseDrawerPeek()
         webExtensionHost = host
         webExtensionWindow = window
     }
 
     var hasWebExtensionDemand: Bool {
-        !webRuntimes.isEmpty || drawerPreviewRuntime != nil
+        !webRuntimes.isEmpty || drawerPeekRuntime != nil
     }
 
     func ensureWebExtensionContext() {

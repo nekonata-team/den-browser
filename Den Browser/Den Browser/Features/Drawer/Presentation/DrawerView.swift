@@ -83,25 +83,25 @@ struct DrawerView: View {
                     ScrollView {
                         LazyVStack(spacing: 6) {
                             ForEach(drawer.filteredItems) { item in
-                                let isPreviewFocused = !isDenMode()
+                                let isPeekFocused = !isDenMode()
                                 DrawerItemView(
                                     focusedDrawerItemID: $focusedDrawerItemID,
                                     item: item,
                                     isSelected: drawer.selectedItemID == item.id,
                                     isExpanded: drawer.expandedItemID == item.id,
-                                    isPreviewVisible: isDrawerOpen()
+                                    isPeekVisible: isDrawerOpen()
                                         && drawer.expandedItemID == item.id,
                                     profileColor: profileColor,
-                                    previewHeight: previewHeight,
+                                    peekHeight: peekHeight,
                                     onToggle: { drawer.toggleItem(item.id) },
                                     onPlaceFromContextMenu: { placeFromContextMenu(item.id) },
                                     onPlaceAsBoard: { placeAsBoard(item.id) },
                                     onDiscard: { drawer.discardItem(item.id) },
-                                    preview: {
+                                    peek: {
                                         let runtime = drawerRuntime(item)
                                         DrawerWebSurface(
                                             webView: runtime.webView,
-                                            isFocused: isPreviewFocused
+                                            isFocused: isPeekFocused
                                         )
                                     }
                                 )
@@ -116,16 +116,16 @@ struct DrawerView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .onChange(of: drawer.expandedItemID) { _, itemID in
                 guard isDrawerOpen(), let itemID else { return }
-                schedulePreviewScroll(to: itemID, using: proxy)
+                schedulePeekScroll(to: itemID, using: proxy)
             }
             .onChange(of: isDrawerOpen()) { _, isOpen in
                 guard isOpen, let itemID = drawer.expandedItemID else { return }
-                schedulePreviewScroll(to: itemID, using: proxy)
+                schedulePeekScroll(to: itemID, using: proxy)
             }
         }
     }
 
-    private func schedulePreviewScroll(to itemID: UUID, using proxy: ScrollViewProxy) {
+    private func schedulePeekScroll(to itemID: UUID, using proxy: ScrollViewProxy) {
         let animation = DenMotion.spatial(reduceMotion: shouldReduceMotion)
         Task { @MainActor in
             await Task.yield()
@@ -183,11 +183,11 @@ struct DrawerView: View {
         return min(availableHeight - DenLayout.overlayInset * 2, preferredHeight)
     }
 
-    private var previewHeight: CGFloat {
+    private var peekHeight: CGFloat {
         if isBottomStyle {
-            return max(DenDrawerLayout.bottomMinimumHeight, drawerHeight - DenDrawerLayout.previewReservedHeight)
+            return max(DenDrawerLayout.bottomMinimumHeight, drawerHeight - DenDrawerLayout.peekReservedHeight)
         }
-        return max(240, drawerHeight - DenDrawerLayout.previewReservedHeight)
+        return max(240, drawerHeight - DenDrawerLayout.peekReservedHeight)
     }
 
     private var shouldReduceMotion: Bool {
@@ -216,7 +216,7 @@ enum DenDrawerLayout {
     static let floatingExpandedHeight: CGFloat = 620
     static let emptyHeight: CGFloat = 300
     static let bottomMinimumHeight: CGFloat = 360
-    static let previewReservedHeight: CGFloat = 160
+    static let peekReservedHeight: CGFloat = 160
 
     static func windowClearance(shouldShowHeader: Bool) -> CGFloat {
         let topInset = shouldShowHeader ? DenLayout.denHeaderHeight : DenLayout.outerInset

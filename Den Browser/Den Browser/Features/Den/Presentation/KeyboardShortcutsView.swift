@@ -154,7 +154,7 @@ struct KeyboardShortcutsView: View {
                     item(["Tab"], "Den Mode: Toggle Drawer"),
                     item(["/"], "Search Drawer Items in Den Mode"),
                     item(["↑", "/", "↓", "or", "k", "/", "j"], "Select Drawer Item"),
-                    item(["Return"], "Toggle Drawer Preview"),
+                    item(["Return"], "Toggle Drawer Peek"),
                     item(["f"], "Toggle Floating / Bottom presentation"),
                     item(["p"], "Place as Board"),
                     item(["a"], "Den Mode: Keep Current Sheet in Drawer"),

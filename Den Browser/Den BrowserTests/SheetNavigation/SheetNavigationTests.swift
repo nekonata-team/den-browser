@@ -841,7 +841,7 @@ struct SheetNavigationTests {
         }
     }
 
-    @Test func drawerPreviewShowsFeedbackForCopyAndInvalidPaste() async throws {
+    @Test func drawerPeekShowsFeedbackForCopyAndInvalidPaste() async throws {
         let manager = makeTestSheetNavigationManager(scriptSource: "")
         let item = DrawerItem(url: try #require(URL(string: "https://drawer.example/")))
         let desk = DeskState(label: "Desk", boards: [])
@@ -855,9 +855,9 @@ struct SheetNavigationTests {
         let waiter = WebViewLoadWaiter()
 
         manager.setEnabled(true)
-        await waiter.load("<html>Drawer Preview</html>", baseURL: item.url, in: runtime.webView)
+        await waiter.load("<html>Drawer Peek</html>", baseURL: item.url, in: runtime.webView)
         defer {
-            controller.releaseDrawerPreview()
+            controller.releaseDrawerPeek()
             manager.pasteboard.clearContents()
         }
 
@@ -866,12 +866,12 @@ struct SheetNavigationTests {
 
         #expect(
             manager.handleScriptMessage(
-                ["action": "copyMarkdownLink", "title": "Drawer Preview"],
+                ["action": "copyMarkdownLink", "title": "Drawer Peek"],
                 from: runtime.webView))
         #expect(controller.latestFeedback?.message == "Copied Current Sheet Markdown link.")
         #expect(
             manager.pasteboard.string(forType: .string)
-                == "[Drawer Preview](https://drawer.example/)")
+                == "[Drawer Peek](https://drawer.example/)")
 
         manager.pasteboard.clearContents()
         for action in ["pasteURL", "pasteURLInNewBoard"] {

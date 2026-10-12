@@ -78,7 +78,7 @@ UI tests use BDD-style sections for readability:
 
 The `given`, `when`, and `then` helpers in `BDD.swift` record these sections with XCTest's `XCTContext` activities. They are available only to UI tests through a small marker protocol and must stay thin. Do not build a general-purpose fluent DSL or hide the scenario's important assertions behind helpers.
 
-Keep scenario text in Den's domain language (`Desk`, `Board`, `Sheet`, `Drawer`, and `Drawer Preview`). Hide only mechanical details that obscure the behavior, such as repeated keyboard sequences, accessibility queries, fixture setup, or polling. The test body should still make the causal sequence and final assertions obvious.
+Keep scenario text in Den's domain language (`Desk`, `Board`, `Sheet`, `Drawer`, and `Drawer Peek`). Hide only mechanical details that obscure the behavior, such as repeated keyboard sequences, accessibility queries, fixture setup, or polling. The test body should still make the causal sequence and final assertions obvious.
 
 Keep `Then` blocks assertion-only. Put input, navigation, dismissal, and other state-changing operations in `When` blocks. Use `assertEventually` for UI settling and animation boundaries; do not add sleeps or arbitrary delays.
 

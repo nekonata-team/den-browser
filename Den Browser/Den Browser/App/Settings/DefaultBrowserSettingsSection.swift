@@ -60,8 +60,8 @@ struct DefaultBrowserSettingsSection: View {
 
     private var externalLinkDestinationDescription: String {
         switch preferences.externalLinkDestination {
-        case .drawerPreview:
-            "Links opened from other apps enter the Drawer as a new Drawer Preview."
+        case .drawerPeek:
+            "Links opened from other apps enter the Drawer as a new Drawer Peek."
         case .focusedBoard:
             "Links opened from other apps create a new Board to the right of the Focused Board."
         }

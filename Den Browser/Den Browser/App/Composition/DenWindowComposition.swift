@@ -31,7 +31,7 @@ final class DenWindowComposition {
         let drawer = DrawerModel(
             items: { controller.state.drawerItems },
             isBottomStyle: { controller.preferences.drawerStyle == .bottom },
-            releasePreview: { controller.releaseDrawerPreview() },
+            releasePeek: { controller.releaseDrawerPeek() },
             discardItem: { itemID, focusNext in
                 _ = controller.discardDrawerItem(itemID, focusNext: focusNext)
             },
@@ -140,7 +140,7 @@ final class DenWindowComposition {
             feedbackDuration: feedbackDuration)
         self.model = model
         overview.onDismiss = { [weak model] in model?.hideOverview() }
-        drawer.onPreviewExpanded = { [weak model] in model?.isDenMode = false }
+        drawer.onPeekExpanded = { [weak model] in model?.isDenMode = false }
         drawer.onClose = { [weak model] in model?.closeDrawer() }
         deskFilter.onCenterFocusedBoard = { [weak model] in model?.centerFocusedBoardRequest &+= 1 }
         notificationList.onClose = { [weak model] in model?.closeNotificationList() }

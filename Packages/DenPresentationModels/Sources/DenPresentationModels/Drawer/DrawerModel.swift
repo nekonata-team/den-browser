@@ -7,7 +7,7 @@ import Observation
 public final class DrawerModel {
     @ObservationIgnored private let itemProvider: () -> [DrawerItem]
     @ObservationIgnored private let isBottomStyleProvider: () -> Bool
-    @ObservationIgnored private let releasePreview: () -> Void
+    @ObservationIgnored private let releasePeek: () -> Void
     @ObservationIgnored private let discardItemAction: (UUID, Bool) -> Void
     @ObservationIgnored private let toggleStyleAction: () -> Void
     @ObservationIgnored private let requestClearConfirmationAction: () -> Void
@@ -16,20 +16,20 @@ public final class DrawerModel {
     public var selectedItemID: UUID?
     public var expandedItemID: UUID?
 
-    @ObservationIgnored public var onPreviewExpanded: (() -> Void)?
+    @ObservationIgnored public var onPeekExpanded: (() -> Void)?
     @ObservationIgnored public var onClose: (() -> Void)?
 
     public init(
         items: @escaping () -> [DrawerItem],
         isBottomStyle: @escaping () -> Bool,
-        releasePreview: @escaping () -> Void,
+        releasePeek: @escaping () -> Void,
         discardItem: @escaping (UUID, Bool) -> Void,
         toggleStyle: @escaping () -> Void,
         requestClearConfirmation: @escaping () -> Void
     ) {
         itemProvider = items
         isBottomStyleProvider = isBottomStyle
-        self.releasePreview = releasePreview
+        self.releasePeek = releasePeek
         discardItemAction = discardItem
         toggleStyleAction = toggleStyle
         requestClearConfirmationAction = requestClearConfirmation
@@ -102,11 +102,11 @@ public final class DrawerModel {
         selectedItemID = itemID
         if expandedItemID == itemID {
             expandedItemID = nil
-            releasePreview()
+            releasePeek()
         } else {
             expandedItemID = itemID
-            releasePreview()
-            onPreviewExpanded?()
+            releasePeek()
+            onPeekExpanded?()
         }
     }
 
@@ -122,7 +122,7 @@ public final class DrawerModel {
         selectedItemID = targetID
         if expandedItemID != nil {
             expandedItemID = targetID
-            releasePreview()
+            releasePeek()
         }
     }
 
@@ -162,7 +162,7 @@ public final class DrawerModel {
     }
 
     public func resetPresentation() {
-        releasePreview()
+        releasePeek()
         selectedItemID = nil
         expandedItemID = nil
         query = ""
@@ -174,7 +174,7 @@ public final class DrawerModel {
         guard items.contains(where: { $0.id == itemID }) else { return false }
         query = ""
         filterPhase = .inactive
-        releasePreview()
+        releasePeek()
         selectedItemID = itemID
         expandedItemID = itemID
         return true
@@ -194,12 +194,12 @@ public final class DrawerModel {
     }
 
     public func itemWasRemoved(
-        _ itemID: UUID, previousItems: [DrawerItem], advancesPreview: Bool, focusNext: Bool
+        _ itemID: UUID, previousItems: [DrawerItem], advancesPeek: Bool, focusNext: Bool
     ) {
         let wasSelected = selectedItemID == itemID
         let wasExpanded = expandedItemID == itemID
         let adjacentItemID =
-            advancesPreview && (wasSelected || wasExpanded)
+            advancesPeek && (wasSelected || wasExpanded)
             ? adjacentItemID(after: itemID, among: previousItems, focusNext: focusNext)
             : nil
         if wasExpanded {

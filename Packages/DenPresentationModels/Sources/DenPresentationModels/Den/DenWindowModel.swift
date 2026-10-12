@@ -246,11 +246,11 @@ public final class DenWindowModel {
             guard !isDenMode, temporaryContext == nil else { return }
             if inputs.board(boardID)?.isTerminal == true, inputs.focusedBoard()?.id != boardID { return }
             boardActions.focusBoard(boardID, true)
-        case .drawerItemRemoved(let itemID, let previousItems, let advancesPreview, let focusNext):
+        case .drawerItemRemoved(let itemID, let previousItems, let advancesPeek, let focusNext):
             drawer.itemWasRemoved(
                 itemID,
                 previousItems: previousItems,
-                advancesPreview: advancesPreview,
+                advancesPeek: advancesPeek,
                 focusNext: focusNext)
             if drawer.items.isEmpty { closeDrawer() }
         case .drawerCleared:

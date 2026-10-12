@@ -346,7 +346,7 @@ extension DenController {
                 afterBoardID: afterBoardID, focus: focus)
         else { return false }
         if let existingRuntime {
-            if drawerPreviewRuntime === existingRuntime { drawerPreviewRuntime = nil }
+            if drawerPeekRuntime === existingRuntime { drawerPeekRuntime = nil }
             attachWebRuntime(existingRuntime, to: board)
         }
         let deskIndex = insertion.deskIndex.rawValue

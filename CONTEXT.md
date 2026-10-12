@@ -146,12 +146,12 @@ Web material held in the Drawer before it is placed into an established context 
 Web material enters the Drawer when it is kept there. Keeping it does not change the Current Sheet or Desk layout.
 _Avoid_: Inbox item, task, bookmark, history entry
 
-**Drawer Preview**:
+**Drawer Peek**:
 The temporary live web presentation expanded beneath a Drawer Item in one Profile window. Its selection and live state belong to that window; the underlying Drawer Item remains Den-wide.
-_Avoid_: Board, floating Board, temporary Desk
+_Avoid_: Board, floating Board, temporary Desk, Drawer Preview
 
 **Drawer Placement**:
-Creating a Board from a Drawer Item in the Focused Desk. Placement continues the invoking window’s live Drawer Preview when present; the placed item leaves the Drawer.
+Creating a Board from a Drawer Item in the Focused Desk. Placement continues the invoking window’s live Drawer Peek when present; the placed item leaves the Drawer.
 _Avoid_: Restore, open tab, move to workspace
 
 **Drawer Discard**:
