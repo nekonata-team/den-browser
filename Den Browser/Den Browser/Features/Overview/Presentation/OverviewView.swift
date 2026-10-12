@@ -125,9 +125,10 @@ struct OverviewView: View {
                     .padding(.horizontal, canvasMargin.width * canvasScale)
                     .padding(.vertical, canvasMargin.height * canvasScale)
                     .onGeometryChange(for: OverviewCanvasMeasurement.self) {
+                        [canvasScale, canvasMargin, query = overview.query] in
                         OverviewCanvasMeasurement(
                             size: CGSize(width: $0.size.width / canvasScale, height: $0.size.height / canvasScale),
-                            margin: canvasMargin, query: overview.query)
+                            margin: canvasMargin, query: query)
                     } action: { measurement in
                         canvasBaseSize = measurement.size
                         measuredCanvasMargin = measurement.margin
