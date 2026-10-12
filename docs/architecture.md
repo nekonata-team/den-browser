@@ -213,9 +213,9 @@ Den also owns preferences for shared presentation behavior. `IPC/Application` co
 ### Overview
 
 Overview owns its View and observable Model. Its app-target Infrastructure owns
-`OverviewThumbnailCapture` for native snapshots and `OverviewThumbnailCache` for
+`BoardFacingCapture` for native snapshots and `BoardFacingCache` for
 transient images, memory budgeting, and capture invalidation.
-`OverviewThumbnailDiskCache` serializes image encoding, decoding, and filesystem
+`BoardFacingDiskCache` serializes image encoding, decoding, and filesystem
 operations on an actor outside the main actor, retaining disposable snapshots for
 ordinary Profiles. Private Den supplies no disk cache. Profile resources
 retain these native adapters; they are not part of persisted Den state. Den coordinates its window transitions and the application operations that focus or rearrange Desks and Boards.

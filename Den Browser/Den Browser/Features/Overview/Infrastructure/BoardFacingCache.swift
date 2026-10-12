@@ -5,32 +5,32 @@ import Observation
 
 @MainActor
 @Observable
-final class OverviewThumbnailCache {
-    struct ThumbnailEntry {
+final class BoardFacingCache {
+    struct FacingEntry {
         let capturedAt: ContinuousClock.Instant?
         let estimatedCost: Int
     }
 
-    private(set) var thumbnails: [BoardID: NSImage] = [:]
-    @ObservationIgnored private var entries: [BoardID: ThumbnailEntry] = [:]
+    private(set) var facings: [BoardID: NSImage] = [:]
+    @ObservationIgnored private var entries: [BoardID: FacingEntry] = [:]
     @ObservationIgnored private var lruOrder: [BoardID] = []
     @ObservationIgnored private var totalCost: Int = 0
     @ObservationIgnored private var captures: [BoardID: UUID] = [:]
 
-    @ObservationIgnored private let disk: OverviewThumbnailDiskCache?
+    @ObservationIgnored private let disk: BoardFacingDiskCache?
     @ObservationIgnored private var pendingWrite: Task<Void, Never>?
     @ObservationIgnored private var loads: [BoardID: UUID] = [:]
 
     // Budget counts the retained raster's actual row bytes, including Retina pixels.
     let maxCost: Int
 
-    init(maxCost: Int = 64 * 1024 * 1024, disk: OverviewThumbnailDiskCache? = nil) {
+    init(maxCost: Int = 64 * 1024 * 1024, disk: BoardFacingDiskCache? = nil) {
         self.maxCost = maxCost
         self.disk = disk
     }
 
     func image(for boardID: BoardID) -> NSImage? {
-        if let image = thumbnails[boardID] {
+        if let image = facings[boardID] {
             touch(boardID)
             return image
         }
@@ -41,7 +41,7 @@ final class OverviewThumbnailCache {
         entries[boardID]?.capturedAt
     }
 
-    func setThumbnail(
+    func setFacing(
         _ image: NSImage, for boardID: BoardID, at instant: ContinuousClock.Instant? = .now, persist: Bool = true
     ) {
         guard let raster = image.cgImage(forProposedRect: nil, context: nil, hints: nil) else { return }
@@ -50,9 +50,9 @@ final class OverviewThumbnailCache {
             totalCost -= existing.estimatedCost
         }
 
-        let entry = ThumbnailEntry(capturedAt: instant, estimatedCost: cost)
+        let entry = FacingEntry(capturedAt: instant, estimatedCost: cost)
         entries[boardID] = entry
-        thumbnails[boardID] = NSImage(cgImage: raster, size: image.size)
+        facings[boardID] = NSImage(cgImage: raster, size: image.size)
         totalCost += cost
         touch(boardID)
 
@@ -67,15 +67,15 @@ final class OverviewThumbnailCache {
         }
     }
 
-    func loadThumbnail(for boardID: BoardID) async {
-        guard thumbnails[boardID] == nil, loads[boardID] == nil, let disk else { return }
+    func loadFacing(for boardID: BoardID) async {
+        guard facings[boardID] == nil, loads[boardID] == nil, let disk else { return }
         let token = UUID()
         loads[boardID] = token
         defer { if loads[boardID] == token { loads.removeValue(forKey: boardID) } }
         await pendingWrite?.value
         let raster = await disk.image(for: boardID)
-        guard !Task.isCancelled, loads[boardID] == token, thumbnails[boardID] == nil, let raster else { return }
-        setThumbnail(
+        guard !Task.isCancelled, loads[boardID] == token, facings[boardID] == nil, let raster else { return }
+        setFacing(
             NSImage(cgImage: raster, size: CGSize(width: raster.width, height: raster.height)), for: boardID, at: nil,
             persist: false)
     }
@@ -91,7 +91,7 @@ final class OverviewThumbnailCache {
         captures.removeValue(forKey: boardID)
         loads.removeValue(forKey: boardID)
         guard let existing = entries.removeValue(forKey: boardID) else { return }
-        thumbnails.removeValue(forKey: boardID)
+        facings.removeValue(forKey: boardID)
         totalCost -= existing.estimatedCost
         lruOrder.removeAll { $0 == boardID }
     }
@@ -100,7 +100,7 @@ final class OverviewThumbnailCache {
         captures.removeAll()
         loads.removeAll()
         entries.removeAll()
-        thumbnails.removeAll()
+        facings.removeAll()
         lruOrder.removeAll()
         totalCost = 0
     }
@@ -114,7 +114,7 @@ final class OverviewThumbnailCache {
         while totalCost > maxCost, !lruOrder.isEmpty {
             let oldest = lruOrder.removeFirst()
             if let entry = entries.removeValue(forKey: oldest) {
-                thumbnails.removeValue(forKey: oldest)
+                facings.removeValue(forKey: oldest)
                 totalCost -= entry.estimatedCost
             }
         }
@@ -133,8 +133,8 @@ final class OverviewThumbnailCache {
         captures.removeValue(forKey: boardID)
     }
 
-    func setCapturedThumbnail(_ image: NSImage, for boardID: BoardID, token: UUID) {
+    func setCapturedFacing(_ image: NSImage, for boardID: BoardID, token: UUID) {
         guard captures[boardID] == token else { return }
-        setThumbnail(image, for: boardID)
+        setFacing(image, for: boardID)
     }
 }

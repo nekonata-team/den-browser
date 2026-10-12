@@ -88,16 +88,16 @@ struct ProfileManagerTests {
         image.addRepresentation(bitmap)
 
         // Act
-        controller.thumbnailCache.setThumbnail(image, for: board.id)
-        await controller.thumbnailCache.flushPendingWrites()
+        controller.facingCache.setFacing(image, for: board.id)
+        await controller.facingCache.flushPendingWrites()
         let restoredManager = makeProfileManager(directory: directory, isEphemeral: isEphemeral)
         let restoredController = try #require(restoredManager.controller(for: restoredManager.personalProfileID))
-        await restoredController.thumbnailCache.loadThumbnail(for: board.id)
+        await restoredController.facingCache.loadFacing(for: board.id)
 
         // Assert
-        #expect((restoredController.thumbnailCache.image(for: board.id) != nil) == !isEphemeral)
+        #expect((restoredController.facingCache.image(for: board.id) != nil) == !isEphemeral)
         #expect(
-            FileManager.default.fileExists(atPath: directory.appending(path: "OverviewThumbnails").path) == !isEphemeral
+            FileManager.default.fileExists(atPath: directory.appending(path: "BoardFacings").path) == !isEphemeral
         )
         #expect(restoredController.webRuntimes.isEmpty)
         #expect(restoredController.terminalRuntimes.isEmpty)

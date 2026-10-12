@@ -257,7 +257,7 @@ struct OverviewView: View {
                         profileColor: profileColor,
                         boardHeight: boardHeight,
                         differentiateWithoutColor: differentiateWithoutColor,
-                        thumbnail: controller.thumbnailCache.image(for: board.id),
+                        facing: controller.facingCache.image(for: board.id),
                         scale: canvasScale
                     )
                     .scaleEffect(shouldReduceMotion ? 1 : 1.03)
@@ -481,7 +481,7 @@ struct OverviewView: View {
                     profileColor: profileColor,
                     boardHeight: boardHeight,
                     differentiateWithoutColor: differentiateWithoutColor,
-                    thumbnail: controller.thumbnailCache.image(for: board.id),
+                    facing: controller.facingCache.image(for: board.id),
                     scale: canvasScale
                 )
             }
@@ -494,7 +494,7 @@ struct OverviewView: View {
                 .padding(DenOverviewLayout.boardCloseButtonPadding * canvasScale)
             }
         }
-        .task(id: board.id) { await controller.thumbnailCache.loadThumbnail(for: board.id) }
+        .task(id: board.id) { await controller.facingCache.loadFacing(for: board.id) }
         .onHover { isHovering in
             if isHovering {
                 if hoveredBoardID != board.id {
@@ -903,7 +903,7 @@ struct OverviewBoardCard: View {
     let profileColor: Color
     let boardHeight: CGFloat
     let differentiateWithoutColor: Bool
-    var thumbnail: NSImage?
+    var facing: NSImage?
     var scale: CGFloat = 1
     @ScaledMetric(relativeTo: .caption) private var captionSize: CGFloat = 12
     @ScaledMetric(relativeTo: .caption2) private var caption2Size: CGFloat = 11
@@ -950,8 +950,8 @@ struct OverviewBoardCard: View {
 
     var body: some View {
         ZStack(alignment: .topLeading) {
-            if let thumbnail {
-                Image(nsImage: thumbnail)
+            if let facing {
+                Image(nsImage: facing)
                     .resizable()
                     .scaledToFit()
                     .frame(width: cardWidth, height: DenOverviewLayout.boardCardHeight * scale, alignment: .center)

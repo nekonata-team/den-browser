@@ -176,7 +176,7 @@ unvisited Boards to obtain one. Captures are suppressed for 30 seconds
 after a successful capture, and the last image remains available afterwards.
 Snapshots are requested when a surface is hidden or removed, without a fixed delay
 after appearing. Terminal snapshots are captured before hiding; Web snapshots are
-asynchronous and skip loading pages. Retained thumbnail rasters share a 64 MiB memory
+asynchronous and skip loading pages. Retained Board Facing rasters share a 64 MiB memory
 budget. Ordinary Profiles retain compressed snapshots across restarts in a separate
 128 MiB disk cache; Private Den keeps snapshots only in memory.
 

@@ -5,15 +5,15 @@ import GhosttyTerminal
 import WebKit
 
 @MainActor
-final class OverviewThumbnailCapture {
+final class BoardFacingCapture {
     // Suppression duration: do not recapture same board within 30 seconds
     static let recaptureSuppressionDuration: Duration = .seconds(30)
     // Cap both dimensions without changing the Board's aspect ratio.
     static let maxCapturePixels: CGFloat = 720
 
-    private let cache: OverviewThumbnailCache
+    private let cache: BoardFacingCache
 
-    init(cache: OverviewThumbnailCache) {
+    init(cache: BoardFacingCache) {
         self.cache = cache
     }
 
@@ -50,9 +50,9 @@ final class OverviewThumbnailCapture {
         do {
             let image = try await webView.takeSnapshot(configuration: config)
             guard !Task.isCancelled, webView.url == url, !webView.isLoading else { return }
-            cache.setCapturedThumbnail(image, for: boardID, token: token)
+            cache.setCapturedFacing(image, for: boardID, token: token)
         } catch {
-            // Keep existing thumbnail on failure
+            // Keep existing facing on failure
         }
     }
 
@@ -73,7 +73,7 @@ final class OverviewThumbnailCapture {
         // Capture before hiding, but publish outside NSViewRepresentable's update transaction.
         Task { @MainActor in
             defer { cache.finishCapture(token, for: boardID) }
-            cache.setCapturedThumbnail(image, for: boardID, token: token)
+            cache.setCapturedFacing(image, for: boardID, token: token)
         }
     }
 }

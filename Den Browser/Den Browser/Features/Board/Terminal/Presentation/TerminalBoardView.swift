@@ -39,7 +39,7 @@ struct TerminalBoardView: View {
                 onSurfaceVisibilityChange: { runtime.setSurfaceVisible($0) },
                 onBeforeHide: {
                     guard controller.terminalRuntimes[board.id] === runtime else { return }
-                    controller.thumbnailCapture.captureTerminal(
+                    controller.facingCapture.captureTerminal(
                         boardID: board.id, terminalView: runtime.terminalView)
                 },
                 isHidden: !isSurfaceVisible,

@@ -52,7 +52,7 @@ struct WebBoardView: View {
                     onBeforeHide: {
                         Task {
                             guard controller.webRuntimes[board.id] === runtime else { return }
-                            await controller.thumbnailCapture.captureWeb(
+                            await controller.facingCapture.captureWeb(
                                 boardID: board.id, webView: runtime.webView)
                         }
                     }

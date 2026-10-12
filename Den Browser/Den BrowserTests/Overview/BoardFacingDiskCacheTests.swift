@@ -6,25 +6,25 @@ import Testing
 @testable import Den_Browser
 
 @MainActor
-struct OverviewThumbnailDiskCacheTests {
+struct BoardFacingDiskCacheTests {
     @Test func persistedSnapshotLoadsIntoFreshMemoryCacheWithoutStartingRecaptureSuppression() async throws {
         // Arrange
         let directory = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
         defer { try? FileManager.default.removeItem(at: directory) }
         let boardID = BoardID()
-        let first = OverviewThumbnailCache(disk: OverviewThumbnailDiskCache(directoryURL: directory))
+        let first = BoardFacingCache(disk: BoardFacingDiskCache(directoryURL: directory))
         let raster = try image()
-        first.setThumbnail(
+        first.setFacing(
             NSImage(cgImage: raster, size: CGSize(width: raster.width, height: raster.height)), for: boardID)
         await first.flushPendingWrites()
-        let restored = OverviewThumbnailCache(disk: OverviewThumbnailDiskCache(directoryURL: directory))
+        let restored = BoardFacingCache(disk: BoardFacingDiskCache(directoryURL: directory))
 
         // Act
-        await restored.loadThumbnail(for: boardID)
+        await restored.loadFacing(for: boardID)
 
         // Assert
-        let thumbnail = try #require(restored.image(for: boardID))
-        let restoredRaster = try #require(thumbnail.cgImage(forProposedRect: nil, context: nil, hints: nil))
+        let facing = try #require(restored.image(for: boardID))
+        let restoredRaster = try #require(facing.cgImage(forProposedRect: nil, context: nil, hints: nil))
         #expect(restoredRaster.width == raster.width)
         #expect(restoredRaster.height == raster.height)
         #expect(restored.lastCapturedInstant(for: boardID) == nil)
@@ -34,7 +34,7 @@ struct OverviewThumbnailDiskCacheTests {
         // Arrange
         let directory = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
         defer { try? FileManager.default.removeItem(at: directory) }
-        let disk = OverviewThumbnailDiskCache(directoryURL: directory)
+        let disk = BoardFacingDiskCache(directoryURL: directory)
         let kept = BoardID()
         let removed = BoardID()
         let raster = try image()
@@ -53,7 +53,7 @@ struct OverviewThumbnailDiskCacheTests {
         // Arrange
         let directory = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
         defer { try? FileManager.default.removeItem(at: directory) }
-        let disk = OverviewThumbnailDiskCache(directoryURL: directory)
+        let disk = BoardFacingDiskCache(directoryURL: directory)
         let boardID = BoardID()
         let raster = try image()
         let capturedAt = Date.now
@@ -75,12 +75,12 @@ struct OverviewThumbnailDiskCacheTests {
         let first = BoardID()
         let second = BoardID()
         let raster = try image()
-        let initial = OverviewThumbnailDiskCache(directoryURL: directory)
+        let initial = BoardFacingDiskCache(directoryURL: directory)
         await initial.save(raster, for: first, capturedAt: Date(timeIntervalSince1970: 1))
         let url = try #require(
             FileManager.default.contentsOfDirectory(at: directory, includingPropertiesForKeys: nil).first)
         let size = try #require(url.resourceValues(forKeys: [.fileSizeKey]).fileSize)
-        let limited = OverviewThumbnailDiskCache(directoryURL: directory, maxCost: size)
+        let limited = BoardFacingDiskCache(directoryURL: directory, maxCost: size)
 
         // Act
         await limited.save(raster, for: second, capturedAt: Date(timeIntervalSince1970: 2))
@@ -97,7 +97,7 @@ struct OverviewThumbnailDiskCacheTests {
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         let corrupt = BoardID()
         try Data("broken".utf8).write(to: directory.appending(path: corrupt.rawValue.uuidString.lowercased() + ".png"))
-        let disk = OverviewThumbnailDiskCache(directoryURL: directory)
+        let disk = BoardFacingDiskCache(directoryURL: directory)
 
         // Act
         let missingImage = await disk.image(for: BoardID())

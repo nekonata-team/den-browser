@@ -6,8 +6,8 @@ import Testing
 @testable import Den_Browser
 
 @MainActor
-struct OverviewThumbnailLayoutTests {
-    @Test func thumbnailKeepsBothHorizontalEdgesWhenItsAspectRatioDiffersFromBoard() throws {
+struct BoardFacingLayoutTests {
+    @Test func facingKeepsBothHorizontalEdgesWhenItsAspectRatioDiffersFromBoard() throws {
         // Arrange
         let context = try #require(
             CGContext(
@@ -20,10 +20,10 @@ struct OverviewThumbnailLayoutTests {
         context.setFillColor(CGColor(red: 0, green: 0, blue: 1, alpha: 1))
         context.fill(CGRect(x: 72, y: 0, width: 8, height: 120))
         let raster = try #require(context.makeImage())
-        let thumbnail = NSImage(cgImage: raster, size: CGSize(width: 80, height: 120))
+        let facing = NSImage(cgImage: raster, size: CGSize(width: 80, height: 120))
         let card = OverviewBoardCard(
             board: BoardState(label: "Board", width: 400), isSelected: false,
-            profileColor: .blue, boardHeight: 800, differentiateWithoutColor: false, thumbnail: thumbnail
+            profileColor: .blue, boardHeight: 800, differentiateWithoutColor: false, facing: facing
         )
         .environment(\.colorScheme, .light)
 

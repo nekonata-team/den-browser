@@ -3,7 +3,7 @@ import Foundation
 import ImageIO
 import UniformTypeIdentifiers
 
-actor OverviewThumbnailDiskCache {
+actor BoardFacingDiskCache {
     private let directoryURL: URL
     private let maxCost: Int
     private var minimumCaptureDate = Date.distantPast

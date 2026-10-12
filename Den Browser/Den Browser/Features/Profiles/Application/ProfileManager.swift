@@ -15,8 +15,8 @@ final class ProfileManager {
     var clearBrowsingDataWindowID: UUID?
     private(set) var windowAssignmentRevision = 0
 
-    @ObservationIgnored private let thumbnailDirectoryURL: URL?
-    @ObservationIgnored private var thumbnailDisks: [ProfileID: OverviewThumbnailDiskCache] = [:]
+    @ObservationIgnored private let facingDirectoryURL: URL?
+    @ObservationIgnored private var facingDisks: [ProfileID: BoardFacingDiskCache] = [:]
     @ObservationIgnored private let persistence: ProfilePersistence
     @ObservationIgnored private var persistedProfiles: [ProfileID: PersistedProfile] = [:]
     var profileSaveCount: Int { persistence.profileSaveCount }
@@ -66,9 +66,9 @@ final class ProfileManager {
             directoryURL == Self.defaultDirectoryURL()
             ? FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0]
                 .appending(path: bundleIdentifier)
-                .appending(path: "OverviewThumbnails")
-            : directoryURL.appending(path: "OverviewThumbnails")
-        thumbnailDirectoryURL = isEphemeral ? nil : cacheRoot
+                .appending(path: "BoardFacings")
+            : directoryURL.appending(path: "BoardFacings")
+        facingDirectoryURL = isEphemeral ? nil : cacheRoot
         self.persistence = ProfilePersistence(
             directoryURL: directoryURL,
             isEphemeral: isEphemeral,
@@ -214,14 +214,14 @@ final class ProfileManager {
             case .identified(let dataStoreID) = profile.webProfileStore
         else { return false }
 
-        let thumbnailCache = storages[profileID]?.thumbnailCache
+        let facingCache = storages[profileID]?.facingCache
         closeWindows(for: profileID)
         let hadDocument = persistence.profileDocumentExists(for: profileID)
         do {
             try await removeDataStore(dataStoreID)
             try removeExtensionData(profileID)
-            await thumbnailCache?.clearDisk()
-            await thumbnailDisk(for: profileID)?.removeAll()
+            await facingCache?.clearDisk()
+            await facingDisk(for: profileID)?.removeAll()
             if hadDocument { try persistence.removeProfileDocument(for: profileID) }
             profiles.removeAll { $0.id == profileID }
             persistedProfiles.removeValue(forKey: profileID)
@@ -248,8 +248,8 @@ final class ProfileManager {
         do {
             try await removeWebsiteDataTypes(store, types)
             if categories.contains(.cache) {
-                await storages[profileID]?.thumbnailCache.clearDisk()
-                await thumbnailDisk(for: profileID)?.removeAll()
+                await storages[profileID]?.facingCache.clearDisk()
+                await facingDisk(for: profileID)?.removeAll()
             }
             return true
         } catch {
@@ -388,14 +388,14 @@ final class ProfileManager {
         if let storage = storages[profileID] { return storage }
         guard let persisted = persistedProfiles[profileID] else { return nil }
         let normalizedState = DenController.normalizedPersistedState(persisted.den)
-        let disk = thumbnailDisk(for: profileID)
+        let disk = facingDisk(for: profileID)
         if let disk {
             let boardIDs = Set(normalizedState.desks.flatMap { $0.boards.map(\.id) })
             Task { await disk.prune(keeping: boardIDs) }
         }
         let storage = DenProfileResources(
             state: normalizedState,
-            thumbnailDisk: disk,
+            facingDisk: disk,
             deskPresets: persisted.deskPresets,
             recentItems: persisted.recentItems,
             onSave: { [weak self] den in self?.saveDen(den, for: profileID) ?? false },
@@ -412,12 +412,12 @@ final class ProfileManager {
         return storage
     }
 
-    private func thumbnailDisk(for profileID: ProfileID) -> OverviewThumbnailDiskCache? {
-        guard let thumbnailDirectoryURL else { return nil }
-        if let disk = thumbnailDisks[profileID] { return disk }
-        let disk = OverviewThumbnailDiskCache(
-            directoryURL: thumbnailDirectoryURL.appending(path: profileID.rawValue.uuidString.lowercased()))
-        thumbnailDisks[profileID] = disk
+    private func facingDisk(for profileID: ProfileID) -> BoardFacingDiskCache? {
+        guard let facingDirectoryURL else { return nil }
+        if let disk = facingDisks[profileID] { return disk }
+        let disk = BoardFacingDiskCache(
+            directoryURL: facingDirectoryURL.appending(path: profileID.rawValue.uuidString.lowercased()))
+        facingDisks[profileID] = disk
         return disk
     }
 
@@ -591,7 +591,7 @@ final class ProfileManager {
     }
 
     private func releaseRuntimes(_ storage: DenProfileResources, profileID: ProfileID) {
-        storage.thumbnailCache.removeAll()
+        storage.facingCache.removeAll()
         for runtime in storage.webRuntimes.values { runtime.dispose() }
         storage.webRuntimes.removeAll()
         for runtime in storage.terminalRuntimes.values { runtime.dispose() }

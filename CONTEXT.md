@@ -112,6 +112,11 @@ _Avoid_: Browser history, tab stack, card stack
 The Sheet currently presented by a Board. On a Web Board it is the selected Sheet in the Sheet Stack; on a single-sheet Board it is that Board's one Sheet.
 _Avoid_: Active page, top page, visible sheet
 
+**Board Facing**:
+The visual presentation of a Board's Current Sheet captured for overview or selection.
+_Avoid_: Thumbnail, snapshot, card preview
+
+
 **First Sheet**:
 The URL held by a Web Board when it was created. It remains that Board's fixed return point independently of the Current Sheet and may be absent on Boards restored from older data.
 _Avoid_: Home page, bookmark, browser history
