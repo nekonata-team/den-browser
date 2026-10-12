@@ -120,22 +120,16 @@
 		};
 		530E9DEB2FFFFEDB0033427C /* Den BrowserTests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-			);
 			path = "Den BrowserTests";
 			sourceTree = "<group>";
 		};
 		530E9DF52FFFFEDB0033427C /* Den BrowserUITests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-			);
 			path = "Den BrowserUITests";
 			sourceTree = "<group>";
 		};
 		531CEF99304D46A100C9C636 /* den */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-			);
 			path = den;
 			sourceTree = "<group>";
 		};
@@ -379,12 +373,12 @@
 				55A10002301A000000000001 /* XCRemoteSwiftPackageReference "SFSafeSymbols" */,
 				56B1000230C0000000000001 /* XCRemoteSwiftPackageReference "swift-subprocess" */,
 				57C0A1E03000000000000001 /* XCRemoteSwiftPackageReference "swift-sdk" */,
-				58C0A1E03000000000000002 /* XCLocalSwiftPackageReference "DenDomain" */,
-				59C0A1E03000000000000002 /* XCLocalSwiftPackageReference "DenDesign" */,
-				5AC0A1E03000000000000002 /* XCLocalSwiftPackageReference "DenIPCProtocol" */,
-				5DC0A1E03000000000000002 /* XCLocalSwiftPackageReference "DenInfrastructure" */,
-				5CC0A1E03000000000000002 /* XCLocalSwiftPackageReference "DenPresentationModels" */,
-				5BC0A1E03000000000000002 /* XCLocalSwiftPackageReference "DenApplication" */,
+				58C0A1E03000000000000002 /* XCLocalSwiftPackageReference "../Packages/DenDomain" */,
+				59C0A1E03000000000000002 /* XCLocalSwiftPackageReference "../Packages/DenDesign" */,
+				5AC0A1E03000000000000002 /* XCLocalSwiftPackageReference "../Packages/DenIPCProtocol" */,
+				5DC0A1E03000000000000002 /* XCLocalSwiftPackageReference "../Packages/DenInfrastructure" */,
+				5CC0A1E03000000000000002 /* XCLocalSwiftPackageReference "../Packages/DenPresentationModels" */,
+				5BC0A1E03000000000000002 /* XCLocalSwiftPackageReference "../Packages/DenApplication" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 530E9DDC2FFFFED90033427C /* Products */;
@@ -880,27 +874,27 @@
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */
-		58C0A1E03000000000000002 /* XCLocalSwiftPackageReference "DenDomain" */ = {
+		58C0A1E03000000000000002 /* XCLocalSwiftPackageReference "../Packages/DenDomain" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = ../Packages/DenDomain;
 		};
-		59C0A1E03000000000000002 /* XCLocalSwiftPackageReference "DenDesign" */ = {
+		59C0A1E03000000000000002 /* XCLocalSwiftPackageReference "../Packages/DenDesign" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = ../Packages/DenDesign;
 		};
-		5AC0A1E03000000000000002 /* XCLocalSwiftPackageReference "DenIPCProtocol" */ = {
+		5AC0A1E03000000000000002 /* XCLocalSwiftPackageReference "../Packages/DenIPCProtocol" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = ../Packages/DenIPCProtocol;
 		};
-		5BC0A1E03000000000000002 /* XCLocalSwiftPackageReference "DenApplication" */ = {
+		5BC0A1E03000000000000002 /* XCLocalSwiftPackageReference "../Packages/DenApplication" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = ../Packages/DenApplication;
 		};
-		5CC0A1E03000000000000002 /* XCLocalSwiftPackageReference "DenPresentationModels" */ = {
+		5CC0A1E03000000000000002 /* XCLocalSwiftPackageReference "../Packages/DenPresentationModels" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = ../Packages/DenPresentationModels;
 		};
-		5DC0A1E03000000000000002 /* XCLocalSwiftPackageReference "DenInfrastructure" */ = {
+		5DC0A1E03000000000000002 /* XCLocalSwiftPackageReference "../Packages/DenInfrastructure" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = ../Packages/DenInfrastructure;
 		};
@@ -995,32 +989,32 @@
 		};
 		58C0A1E03000000000000003 /* DenDomain */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = 58C0A1E03000000000000002 /* XCLocalSwiftPackageReference "DenDomain" */;
+			package = 58C0A1E03000000000000002 /* XCLocalSwiftPackageReference "../Packages/DenDomain" */;
 			productName = DenDomain;
 		};
 		59C0A1E03000000000000003 /* DenDesign */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = 59C0A1E03000000000000002 /* XCLocalSwiftPackageReference "DenDesign" */;
+			package = 59C0A1E03000000000000002 /* XCLocalSwiftPackageReference "../Packages/DenDesign" */;
 			productName = DenDesign;
 		};
 		5AC0A1E03000000000000003 /* DenIPCProtocol */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = 5AC0A1E03000000000000002 /* XCLocalSwiftPackageReference "DenIPCProtocol" */;
+			package = 5AC0A1E03000000000000002 /* XCLocalSwiftPackageReference "../Packages/DenIPCProtocol" */;
 			productName = DenIPCProtocol;
 		};
 		5BC0A1E03000000000000003 /* DenApplication */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = 5BC0A1E03000000000000002 /* XCLocalSwiftPackageReference "DenApplication" */;
+			package = 5BC0A1E03000000000000002 /* XCLocalSwiftPackageReference "../Packages/DenApplication" */;
 			productName = DenApplication;
 		};
 		5CC0A1E03000000000000003 /* DenPresentationModels */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = 5CC0A1E03000000000000002 /* XCLocalSwiftPackageReference "DenPresentationModels" */;
+			package = 5CC0A1E03000000000000002 /* XCLocalSwiftPackageReference "../Packages/DenPresentationModels" */;
 			productName = DenPresentationModels;
 		};
 		5DC0A1E03000000000000003 /* DenInfrastructure */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = 5DC0A1E03000000000000002 /* XCLocalSwiftPackageReference "DenInfrastructure" */;
+			package = 5DC0A1E03000000000000002 /* XCLocalSwiftPackageReference "../Packages/DenInfrastructure" */;
 			productName = DenInfrastructure;
 		};
 /* End XCSwiftPackageProductDependency section */
