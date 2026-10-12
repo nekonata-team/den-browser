@@ -61,10 +61,12 @@ final class ProfileManager {
         ipcSocketPath: String = DenSocketPath.resolve(),
         quarantineFile: @escaping (URL, URL) throws -> Void = ProfilePersistence.moveFileToQuarantine
     ) {
+        let bundleIdentifier = Bundle.main.bundleIdentifier ?? "dev.nekonata.denbrowser"
         let cacheRoot =
             directoryURL == Self.defaultDirectoryURL()
-            ? FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0].appending(
-                path: "Den Browser/OverviewThumbnails")
+            ? FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0]
+                .appending(path: bundleIdentifier)
+                .appending(path: "OverviewThumbnails")
             : directoryURL.appending(path: "OverviewThumbnails")
         thumbnailDirectoryURL = isEphemeral ? nil : cacheRoot
         self.persistence = ProfilePersistence(
