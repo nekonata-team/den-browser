@@ -535,7 +535,6 @@ private struct AppearanceSettingsView: View {
 
 private struct ProfilesSettingsView: View {
     @Environment(ProfileManager.self) private var profileManager
-    @Environment(\.dismissWindow) private var dismissWindow
     @State private var newName = ""
     @State private var newColor: ProfileColor = .purple
     @State private var profileToDelete: ProfileState?
@@ -546,7 +545,7 @@ private struct ProfilesSettingsView: View {
                 ForEach(profileManager.profiles) { profile in
                     ProfileSettingsRow(
                         profile: profile,
-                        canDelete: profile.webProfileStore != .default,
+                        canDelete: profileManager.canDeleteProfile(profile.id),
                         onDelete: { profileToDelete = profile })
                 }
             }
@@ -587,16 +586,15 @@ private struct ProfilesSettingsView: View {
             Button("Delete Profile", role: .destructive) {
                 guard let profileToDelete else { return }
                 Task {
-                    if await profileManager.deleteProfile(profileToDelete.id) {
-                        dismissWindow(value: profileToDelete.id)
-                    }
+                    _ = await profileManager.deleteProfile(profileToDelete.id)
                     self.profileToDelete = nil
                 }
             }
+            .disabled(profileToDelete.map { !profileManager.canDeleteProfile($0.id) } ?? true)
             .keyboardShortcut(.defaultAction)
             Button("Cancel", role: .cancel) { profileToDelete = nil }
         } message: {
-            Text("Its Den, open window, and website data will be removed.")
+            Text("Its Den, website data, and extension data will be removed.")
         }
         .alert(
             "Profile Error",
@@ -723,12 +721,13 @@ private struct ProfileSettingsRow: View {
             .help("Clear Browsing Data…")
             .accessibilityLabel("Clear Browsing Data for \(profile.name)")
 
-            if canDelete {
+            if profile.webProfileStore != .default {
                 Button(role: .destructive, action: onDelete) {
                     Image(systemSymbol: .trash)
                 }
                 .buttonStyle(.borderless)
-                .help("Delete Profile")
+                .disabled(!canDelete)
+                .help(canDelete ? "Delete Profile" : "Close this Profile’s windows before deleting it")
                 .accessibilityLabel("Delete Profile \(profile.name)")
             } else {
                 Button {

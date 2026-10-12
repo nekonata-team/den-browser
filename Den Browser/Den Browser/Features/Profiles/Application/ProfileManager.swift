@@ -28,6 +28,7 @@ final class ProfileManager {
     @ObservationIgnored private let sheetNavigation: SheetNavigationManager
     @ObservationIgnored private let preferences: AppPreferences
     @ObservationIgnored private let removeDataStore: (UUID) async throws -> Void
+    @ObservationIgnored private let removeExtensionData: (ProfileID) throws -> Void
     @ObservationIgnored private let removeWebsiteDataTypes: (WKWebsiteDataStore, Set<String>) async throws -> Void
     @ObservationIgnored private let initialProfile: PersistedProfile?
     @ObservationIgnored private let isEphemeral: Bool
@@ -50,6 +51,7 @@ final class ProfileManager {
         preferences: AppPreferences,
         uboliteInstaller: UBOLiteInstaller = UBOLiteInstaller(),
         removeDataStore: @escaping (UUID) async throws -> Void = ProfileManager.removeWebsiteDataStore,
+        removeExtensionData: @escaping (ProfileID) throws -> Void = { try ProfileExtensionDataStore.remove($0) },
         removeWebsiteDataTypes: @escaping (WKWebsiteDataStore, Set<String>) async throws -> Void = ProfileManager
             .removeWebsiteDataTypes,
         initialProfile: PersistedProfile? = nil,
@@ -78,6 +80,7 @@ final class ProfileManager {
             descriptors: webExtensionDescriptors,
             isEphemeral: isEphemeral)
         self.removeDataStore = removeDataStore
+        self.removeExtensionData = removeExtensionData
         self.removeWebsiteDataTypes = removeWebsiteDataTypes
         self.initialProfile = initialProfile
         self.isEphemeral = isEphemeral
@@ -194,8 +197,17 @@ final class ProfileManager {
         }
     }
 
+    func canDeleteProfile(_ profileID: ProfileID) -> Bool {
+        _ = windowAssignmentRevision
+        guard let profile = profile(id: profileID),
+            case .identified = profile.webProfileStore
+        else { return false }
+        return !windowRegistry.hasController(for: profileID) && !windowRegistry.hasWindow(for: profileID)
+    }
+
     func deleteProfile(_ profileID: ProfileID) async -> Bool {
         guard
+            canDeleteProfile(profileID),
             let profile = profile(id: profileID),
             case .identified(let dataStoreID) = profile.webProfileStore
         else { return false }
@@ -205,6 +217,7 @@ final class ProfileManager {
         let hadDocument = persistence.profileDocumentExists(for: profileID)
         do {
             try await removeDataStore(dataStoreID)
+            try removeExtensionData(profileID)
             await thumbnailCache?.clearDisk()
             await thumbnailDisk(for: profileID)?.removeAll()
             if hadDocument { try persistence.removeProfileDocument(for: profileID) }

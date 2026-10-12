@@ -396,6 +396,12 @@ struct ProfileManagerTests {
         let manager = makeProfileManager(directory: directory)
         let personalID = manager.personalProfileID
         let work = try #require(manager.createProfile(name: "Work", color: .gray))
+        let extensionRoot = directory.appending(path: "WebExtensions")
+        let personalExtensions = extensionRoot.appending(path: personalID.rawValue.uuidString)
+        let workExtensions = extensionRoot.appending(path: work.id.rawValue.uuidString)
+        try FileManager.default.createDirectory(at: personalExtensions, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: workExtensions, withIntermediateDirectories: true)
+        try Data("compiled rules".utf8).write(to: workExtensions.appending(path: "ContentRuleList.data"))
 
         // Act
         let personalDeleted = await manager.deleteProfile(personalID)
@@ -405,6 +411,85 @@ struct ProfileManagerTests {
         #expect(!personalDeleted)
         #expect(workDeleted)
         #expect(manager.profiles.map(\.id) == [personalID])
+        #expect(!FileManager.default.fileExists(atPath: workExtensions.path))
+        #expect(FileManager.default.fileExists(atPath: personalExtensions.path))
+    }
+
+    @Test(arguments: [true, false])
+    func openProfileCannotBeDeleted(hasRegisteredWindow: Bool) async throws {
+        // Arrange
+        let directory = temporaryProfileDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        var removedWebsiteData = false
+        var removedExtensionData = false
+        let manager = ProfileManager(
+            directoryURL: directory,
+            sheetNavigation: SheetNavigationManager(defaults: makeTestDefaults(), scriptSource: ""),
+            preferences: AppPreferences(defaults: makeTestDefaults()),
+            removeDataStore: { _ in removedWebsiteData = true },
+            removeExtensionData: { _ in removedExtensionData = true },
+            websiteDataStore: { _ in .nonPersistent() })
+        let work = try #require(manager.createProfile(name: "Work", color: .gray))
+        let route = ProfileWindowRoute(profileID: work.id)
+        let window = NSWindow()
+        if hasRegisteredWindow {
+            manager.register(window: window, for: route)
+        } else {
+            _ = try #require(manager.controller(for: route))
+        }
+
+        // Act
+        let deleted = await manager.deleteProfile(work.id)
+
+        // Assert
+        #expect(!manager.canDeleteProfile(work.id))
+        #expect(!deleted)
+        #expect(!removedWebsiteData)
+        #expect(!removedExtensionData)
+        #expect(manager.profile(id: work.id) != nil)
+        #expect(FileManager.default.fileExists(atPath: profileURL(work.id, in: directory).path))
+    }
+
+    @Test func closingProfileWindowMakesDeletionAvailable() throws {
+        // Arrange
+        let directory = temporaryProfileDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let manager = makeProfileManager(directory: directory)
+        let work = try #require(manager.createProfile(name: "Work", color: .gray))
+        let route = ProfileWindowRoute(profileID: work.id)
+        let window = NSWindow()
+        _ = try #require(manager.controller(for: route))
+        manager.register(window: window, for: route)
+
+        // Act
+        manager.unregister(window: window, for: route)
+
+        // Assert
+        #expect(manager.canDeleteProfile(work.id))
+    }
+
+    @Test func failedExtensionDataDeletionKeepsProfileForRetry() async throws {
+        // Arrange
+        struct ExpectedError: Error {}
+        let directory = temporaryProfileDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let manager = ProfileManager(
+            directoryURL: directory,
+            sheetNavigation: SheetNavigationManager(defaults: makeTestDefaults(), scriptSource: ""),
+            preferences: AppPreferences(defaults: makeTestDefaults()),
+            removeDataStore: { _ in },
+            removeExtensionData: { _ in throw ExpectedError() },
+            websiteDataStore: { _ in .nonPersistent() })
+        let work = try #require(manager.createProfile(name: "Work", color: .gray))
+
+        // Act
+        let deleted = await manager.deleteProfile(work.id)
+
+        // Assert
+        #expect(!deleted)
+        #expect(manager.errorMessage != nil)
+        #expect(manager.profile(id: work.id) != nil)
+        #expect(FileManager.default.fileExists(atPath: profileURL(work.id, in: directory).path))
     }
 
     @Test func failedWebsiteDataDeletionRestoresProfileDocument() async throws {
@@ -1141,8 +1226,6 @@ struct ProfileManagerTests {
             websiteDataStore: { _ in .nonPersistent() })
 
         let profile = try #require(manager.createProfile(name: "TestProfile", color: .green))
-        let controller = try #require(manager.controller(for: profile.id))
-        _ = controller.createBoard(urlString: "https://example.com")
 
         // Act
         let deleted = await manager.deleteProfile(profile.id)
@@ -1168,8 +1251,6 @@ struct ProfileManagerTests {
             websiteDataStore: { _ in .nonPersistent() })
 
         let profile = try #require(manager.createProfile(name: "TestProfile", color: .green))
-        let controller = try #require(manager.controller(for: profile.id))
-        _ = controller.createBoard(urlString: "https://example.com")
         _ = await manager.deleteProfile(profile.id)
 
         // Act
@@ -1207,6 +1288,10 @@ struct ProfileManagerTests {
             sheetNavigation: navigation,
             preferences: preferences,
             removeDataStore: { _ in },
+            removeExtensionData: { profileID in
+                try ProfileExtensionDataStore.remove(
+                    profileID, directoryURL: directory.appending(path: "WebExtensions"))
+            },
             isEphemeral: isEphemeral,
             websiteDataStore: { _ in .nonPersistent() },
             webExtensionDescriptors: webExtensionDescriptors,
