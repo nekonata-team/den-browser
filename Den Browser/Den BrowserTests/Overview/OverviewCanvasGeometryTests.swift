@@ -2,6 +2,8 @@ import DenPresentationModels
 import Foundation
 import Testing
 
+@testable import Den_Browser
+
 @MainActor
 struct OverviewCanvasGeometryTests {
     @Test func initialScaleFitsFocusedBoardInLandscapeAndPortrait() {

@@ -1,6 +1,7 @@
 import Foundation
 
-public enum OverviewCanvasGeometry {
+// 2026-10-13: Swift 6 compiler bug workaround (SIL PerformanceSILLinker crash during cross-module WMO)
+enum OverviewCanvasGeometry {
     public static func initialScale(boardSize: CGSize, neighborhoodHeight: CGFloat, viewportSize: CGSize) -> CGFloat {
         guard boardSize.width > 0, neighborhoodHeight > 0, viewportSize.width > 0, viewportSize.height > 0 else {
             return 1
