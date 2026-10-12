@@ -25,6 +25,9 @@ struct AppConfiguration {
                 let runID = "\(processInfo.processIdentifier)"
                 return unitTest(runID: runID)
             }
+            if let domainName = Bundle.main.bundleIdentifier {
+                WindowStatePreferences.removeLegacyProfileState(defaults: .standard, domainName: domainName)
+            }
             let ipcSocketPath =
                 if isPrivateDen {
                     DenSocketPath.temporary(prefix: "den-private")

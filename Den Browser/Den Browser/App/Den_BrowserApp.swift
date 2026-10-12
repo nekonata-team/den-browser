@@ -39,7 +39,7 @@ struct Den_BrowserApp: App {
     }
 
     var body: some Scene {
-        WindowGroup("Den Browser", for: ProfileWindowRoute.self) { $route in
+        WindowGroup("Den Browser", id: "profile-window", for: ProfileWindowRoute.self) { $route in
             ProfileWindowView(
                 route: route,
                 startUpdater: { updaterController.start() },
