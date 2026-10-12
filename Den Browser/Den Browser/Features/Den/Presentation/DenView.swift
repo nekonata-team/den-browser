@@ -48,11 +48,6 @@ struct DenView<Header: View>: View {
                     BoardRail(profileColor: profileColor)
                         .navigationSplitViewColumnWidth(min: 192, ideal: 208, max: 224)
                         .accessibilityHidden(windowModel.temporaryContext != nil)
-                        .overlay {
-                            if windowModel.temporaryContext != nil {
-                                dismissBlocker(onDismiss: dismissTemporaryPresentation)
-                            }
-                        }
                 } detail: {
                     VStack(spacing: 0) {
                         if shouldShowHeader {
@@ -60,11 +55,6 @@ struct DenView<Header: View>: View {
                                 .frame(maxWidth: .infinity)
                                 .frame(height: DenLayout.denHeaderHeight)
                                 .accessibilityHidden(windowModel.temporaryContext != nil)
-                                .overlay {
-                                    if windowModel.temporaryContext != nil {
-                                        dismissBlocker(onDismiss: dismissTemporaryPresentation)
-                                    }
-                                }
                         }
 
                         GeometryReader { detailGeometry in
@@ -80,6 +70,8 @@ struct DenView<Header: View>: View {
                     DenMotion.spatial(reduceMotion: shouldReduceMotion),
                     value: windowModel.isBoardRailPresented
                 )
+
+                activePanelOverlay(in: geometry.size)
 
                 notificationsOverlay
                     .zIndex(DenOverlayLayer.notificationList)
@@ -179,18 +171,6 @@ struct DenView<Header: View>: View {
                     .zIndex(DenOverlayLayer.deskFilter)
             }
 
-            if windowModel.temporaryContext != nil, windowModel.temporaryContext != .drawer {
-                dismissBlocker(onDismiss: dismissTemporaryPresentation)
-                    .frame(width: size.width, height: size.height)
-                    .zIndex(DenOverlayLayer.activePanel)
-            }
-
-            activePanel(
-                newBoardWidth: newBoardWidth(in: size),
-                boardHeight: DenLayout.boardHeight(for: size, shouldShowHeader: false)
-            )
-            .zIndex(DenOverlayLayer.activePanel)
-
             indicatorOverlay
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
@@ -219,6 +199,21 @@ struct DenView<Header: View>: View {
             return profileTitle
         }
         return "\(profileTitle) · \(windowModel.isDenMode ? "DEN MODE" : "SHEET INPUT")"
+    }
+
+    @ViewBuilder
+    private func activePanelOverlay(in size: CGSize) -> some View {
+        if windowModel.temporaryContext != nil, windowModel.temporaryContext != .drawer {
+            dismissBlocker(onDismiss: dismissTemporaryPresentation)
+                .frame(width: size.width, height: size.height)
+                .zIndex(DenOverlayLayer.activePanel)
+
+            activePanel(
+                newBoardWidth: newBoardWidth(in: size),
+                boardHeight: DenLayout.boardHeight(for: size, shouldShowHeader: shouldShowHeader)
+            )
+            .zIndex(DenOverlayLayer.activePanel)
+        }
     }
 
     @ViewBuilder
