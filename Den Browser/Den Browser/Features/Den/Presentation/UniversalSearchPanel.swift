@@ -78,7 +78,7 @@ struct UniversalSearchPanel: View {
             }
             DenPanelHint("↑↓ Select · Return Run · Escape Close · > Commands")
         }
-        .denPanel(width: 600)
+        .denPanel(width: DenPanelLayout.wideWidth)
         .onChange(of: sourceItems, initial: true) { _, items in search.items = items }
         .onChange(of: search.query) { _, value in
             search.message = nil

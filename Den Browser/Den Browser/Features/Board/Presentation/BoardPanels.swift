@@ -196,7 +196,7 @@ struct OpenBoardPanel: View {
                 DenPanelHint("Use :terminal [path], :zellij [session], or :zmx [session] for a Terminal Board")
             }
         }
-        .denPanel()
+        .denPanel(width: DenPanelLayout.wideWidth)
         .confirmationDialog(
             "Clear all Recent Items?",
             isPresented: $isClearRecentConfirmationPresented,
@@ -442,7 +442,7 @@ struct BoardWidthPanel: View {
                 DenPanelHint("Changes every Board in the Focused Desk. Press - / = or 1–9, then Escape.")
             }
         }
-        .denPanel(width: DenPanelLayout.compactWidth)
+        .denPanel()
         .onExitCommand { windowModel.hideBoardWidthPanel() }
     }
 }
@@ -531,7 +531,7 @@ struct SaveEssentialPanel: View {
                     .disabled(!canSave)
             }
         }
-        .denPanel(width: DenPanelLayout.narrowWidth)
+        .denPanel()
         .onAppear {
             if let draft = windowModel.saveEssentialDraft {
                 name = draft.name

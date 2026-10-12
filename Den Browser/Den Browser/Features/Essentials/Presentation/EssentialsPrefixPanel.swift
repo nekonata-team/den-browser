@@ -46,7 +46,7 @@ struct EssentialsPrefixPanel: View {
                     : "↑↓ Focus · Return Start · Essential key Start · Esc Cancel"
             )
         }
-        .denPanel(width: DenPanelLayout.narrowWidth)
+        .denPanel()
     }
 
     private var essentialRows: some View {

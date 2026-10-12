@@ -39,7 +39,7 @@ struct ZmxSessionsPanel: View {
 
             footer
         }
-        .denPanel(width: DenPanelLayout.standardWidth)
+        .denPanel(width: DenPanelLayout.wideWidth)
         .confirmationDialog(
             pendingDeletionTitle,
             isPresented: Binding(

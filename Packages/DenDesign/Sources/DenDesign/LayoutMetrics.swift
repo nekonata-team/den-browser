@@ -26,10 +26,8 @@ public enum DenPanelLayout {
     public static let controlSpacing: CGFloat = 10
     public static let titleHeight: CGFloat = 38
     public static let deskPresetListMaxHeight: CGFloat = 360
-    public static let narrowWidth: CGFloat = 380
-    public static let compactWidth: CGFloat = 420
-    public static let standardWidth: CGFloat = 520
-    public static let wideWidth: CGFloat = 620
+    public static let standardWidth: CGFloat = 480
+    public static let wideWidth: CGFloat = 600
 }
 
 public enum DenKeyboardShortcutsLayout {

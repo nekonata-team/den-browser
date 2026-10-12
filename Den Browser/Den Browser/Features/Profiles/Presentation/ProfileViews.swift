@@ -310,7 +310,7 @@ struct OpenProfilePanel: View {
                 .denSelectionHighlight(profile.id == selectedProfileID, profileColor: profileColor)
             }
         }
-        .denPanel(width: DenPanelLayout.narrowWidth)
+        .denPanel()
         .onAppear { DispatchQueue.main.async { isFocused = true } }
         .onChange(of: query) { _, _ in selectedProfileID = nil }
         .onExitCommand(perform: close)
