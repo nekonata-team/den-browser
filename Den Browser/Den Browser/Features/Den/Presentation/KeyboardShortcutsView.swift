@@ -38,6 +38,7 @@ struct KeyboardShortcutsView: View {
                     .padding(1)
                 }
             }
+            .frame(maxHeight: 420)
         }
         .onAppear { isSearchFocused = true }
     }

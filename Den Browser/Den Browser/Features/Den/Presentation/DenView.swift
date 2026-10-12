@@ -279,17 +279,10 @@ struct DenView<Header: View>: View {
                 .padding(DenLayout.overlayInset)
                 .transition(DenMotion.panelTransition(reduceMotion: shouldReduceMotion))
         case .keyboardShortcuts:
-            KeyboardShortcutsView(onClose: windowModel.hideKeyboardShortcuts)
-                .padding(DenKeyboardShortcutsLayout.guidePadding)
-                .frame(
-                    width: DenKeyboardShortcutsLayout.guideSize.width,
-                    height: DenKeyboardShortcutsLayout.guideSize.height
-                )
-                .glassEffect(
-                    .regular,
-                    in: RoundedRectangle(cornerRadius: DenRadius.large, style: .continuous)
-                )
-                .transition(DenMotion.panelTransition(reduceMotion: shouldReduceMotion))
+            panelOverlay(
+                KeyboardShortcutsView(onClose: windowModel.hideKeyboardShortcuts)
+                    .denPanel(width: DenPanelLayout.wideWidth)
+            )
         case .profilePicker:
             panelOverlay(
                 OpenProfilePanel(
@@ -309,19 +302,9 @@ struct DenView<Header: View>: View {
     }
 
     private func panelOverlay<Content: View>(_ content: Content) -> some View {
-        VStack(spacing: 0) {
-            content
-                .padding(
-                    .top,
-                    shouldShowHeader
-                        ? DenLayout.panelGap
-                        : DenLayout.outerInset
-                )
-                .transition(DenMotion.panelTransition(reduceMotion: shouldReduceMotion))
-
-            Spacer(minLength: 0)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        content
+            .transition(DenMotion.panelTransition(reduceMotion: shouldReduceMotion))
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
     }
 
     private func dismissBlocker(onDismiss: @escaping () -> Void) -> some View {
