@@ -45,17 +45,9 @@ struct DownloadActivityView: View {
         .padding(.horizontal, 14)
         .padding(.vertical, 10)
         .frame(width: 320, alignment: .leading)
-        .background(
-            .ultraThinMaterial,
-            in: RoundedRectangle(
-                cornerRadius: DenRadius.medium,
-                style: .continuous)
+        .glassEffect(
+            in: RoundedRectangle(cornerRadius: DenRadius.medium, style: .continuous)
         )
-        .overlay(
-            RoundedRectangle(cornerRadius: DenRadius.medium, style: .continuous)
-                .stroke(.white.opacity(0.12), lineWidth: 1)
-        )
-        .shadow(color: .black.opacity(0.25), radius: 8, x: 0, y: 4)
         .allowsHitTesting(false)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("Downloading \(activity.filename)")

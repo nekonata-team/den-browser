@@ -29,13 +29,7 @@ struct DrawerView: View {
             drawerContents
         }
         .frame(width: drawerWidth, height: drawerHeight, alignment: .top)
-        .background(.regularMaterial)
-        .clipShape(drawerShape)
-        .overlay {
-            drawerShape
-                .strokeBorder(Color.primary.opacity(0.14))
-        }
-        .shadow(color: .black.opacity(isBottomStyle ? 0.4 : 0.35), radius: 28, y: shadowY)
+        .glassEffect(in: drawerShape)
         .animation(DenMotion.feedback(reduceMotion: shouldReduceMotion), value: drawer.expandedItemID)
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("drawer")
