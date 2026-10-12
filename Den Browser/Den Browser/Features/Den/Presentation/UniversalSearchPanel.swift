@@ -67,7 +67,7 @@ struct UniversalSearchPanel: View {
                         }
                     }
                 }
-                .frame(maxHeight: 360)
+                .frame(maxHeight: DenPanelLayout.standardListMaxHeight)
                 .onChange(of: search.selectedItem?.id) { _, id in
                     if let id { proxy.scrollTo(id) }
                 }

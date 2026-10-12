@@ -37,7 +37,7 @@ struct EssentialsPrefixPanel: View {
                         }
                     }
                 }
-                .frame(maxHeight: 320)
+                .frame(maxHeight: DenPanelLayout.standardListMaxHeight)
             }
 
             DenPanelHint(

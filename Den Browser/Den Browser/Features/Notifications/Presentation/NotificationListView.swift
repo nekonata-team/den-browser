@@ -63,7 +63,7 @@ struct NotificationListView: View {
                         proxy.scrollTo(selectedNotificationID, anchor: .center)
                     }
                 }
-                .frame(maxHeight: 480)
+                .frame(maxHeight: DenPanelLayout.tallListMaxHeight)
             }
         }
         .padding(DenPanelLayout.padding)

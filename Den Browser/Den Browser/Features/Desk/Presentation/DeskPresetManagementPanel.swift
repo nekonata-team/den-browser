@@ -85,7 +85,7 @@ struct DeskPresetManagementPanel: View {
                     }
                     .scrollPosition($scrollPosition, anchor: .center)
                     .scrollIndicators(.never)
-                    .frame(maxHeight: DenPanelLayout.deskPresetListMaxHeight)
+                    .frame(maxHeight: DenPanelLayout.standardListMaxHeight)
                 }
             }
             .deskPresetArrowNavigation(isEditing: editingPresetID != nil) { moveSelection(by: $0) }

@@ -25,7 +25,8 @@ public enum DenPanelLayout {
     public static let contentSpacing: CGFloat = 12
     public static let controlSpacing: CGFloat = 10
     public static let titleHeight: CGFloat = 38
-    public static let deskPresetListMaxHeight: CGFloat = 360
+    public static let standardListMaxHeight: CGFloat = 360
+    public static let tallListMaxHeight: CGFloat = 420
     public static let standardWidth: CGFloat = 480
     public static let wideWidth: CGFloat = 600
 }

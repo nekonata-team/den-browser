@@ -163,7 +163,7 @@ struct ZmxSessionsPanel: View {
                 scrollToSelected(using: proxy)
             }
         }
-        .frame(maxHeight: 420)
+        .frame(maxHeight: DenPanelLayout.tallListMaxHeight)
     }
 
     private func missingRootRow(_ sessionName: String) -> some View {

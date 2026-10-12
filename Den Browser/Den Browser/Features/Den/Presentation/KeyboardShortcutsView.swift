@@ -38,7 +38,7 @@ struct KeyboardShortcutsView: View {
                     .padding(1)
                 }
             }
-            .frame(maxHeight: 420)
+            .frame(maxHeight: DenPanelLayout.tallListMaxHeight)
         }
         .onAppear { isSearchFocused = true }
     }
