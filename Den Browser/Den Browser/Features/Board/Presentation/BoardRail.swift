@@ -46,6 +46,7 @@ struct BoardRail: View {
                 ForEach(railDesk?.boards ?? []) { board in
                     boardRow(board)
                 }
+                .onMove(perform: moveBoards)
 
                 Button(action: openBoardAtEnd) {
                     Image(systemSymbol: .plus)
@@ -135,12 +136,65 @@ struct BoardRail: View {
             )
         )
         .accessibilityAddTraits(isFocused || isOverviewSelected ? .isSelected : [])
+        .accessibilityAction(named: "Move Board Up") {
+            moveBoardByDelta(board.id, delta: -1)
+        }
+        .accessibilityAction(named: "Move Board Down") {
+            moveBoardByDelta(board.id, delta: 1)
+        }
         .accessibilityIdentifier("board-rail-board.\(board.id.rawValue.uuidString.lowercased())")
         .help(board.displayName)
         .contextMenu {
             if let desk = railDesk {
                 boardContextMenu(board, in: desk)
             }
+        }
+    }
+
+    private func moveBoards(from sourceIndices: IndexSet, to destinationIndex: Int) {
+        guard let desk = railDesk,
+            let sourceIndex = sourceIndices.first,
+            desk.boards.indices.contains(sourceIndex)
+        else { return }
+
+        let targetOffset = destinationIndex > sourceIndex ? destinationIndex - 1 : destinationIndex
+        guard desk.boards.indices.contains(targetOffset), sourceIndex != targetOffset else { return }
+
+        let board = desk.boards[sourceIndex]
+        if windowModel.isOverviewPresented {
+            controller.reorderBoardGroup(
+                containing: board.id,
+                to: BoardIndex(rawValue: targetOffset),
+                in: DeskIndex(rawValue: controller.state.desks.firstIndex(where: { $0.id == desk.id }) ?? 0)
+            )
+            controller.save()
+            windowModel.overview.selectBoard(board.id)
+        } else {
+            controller.focusBoard(board.id)
+            controller.previewBoardMove(board.id, to: BoardIndex(rawValue: targetOffset))
+            controller.save()
+        }
+    }
+
+    private func moveBoardByDelta(_ boardID: BoardID, delta: Int) {
+        guard let desk = railDesk,
+            let currentIndex = desk.boards.firstIndex(where: { $0.id == boardID })
+        else { return }
+        let targetIndex = currentIndex + delta
+        guard desk.boards.indices.contains(targetIndex) else { return }
+
+        if windowModel.isOverviewPresented {
+            controller.reorderBoardGroup(
+                containing: boardID,
+                to: BoardIndex(rawValue: targetIndex),
+                in: DeskIndex(rawValue: controller.state.desks.firstIndex(where: { $0.id == desk.id }) ?? 0)
+            )
+            controller.save()
+            windowModel.overview.selectBoard(boardID)
+        } else {
+            controller.focusBoard(boardID)
+            controller.previewBoardMove(boardID, to: BoardIndex(rawValue: targetIndex))
+            controller.save()
         }
     }
 

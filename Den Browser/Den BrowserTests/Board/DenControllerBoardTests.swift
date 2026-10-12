@@ -1170,6 +1170,22 @@ struct DenControllerBoardTests {
         }
     }
 
+    @Test func reorderingBoardToTargetIndexUpdatesAndPersistsOrder() {
+        let boards = [board("A"), board("B"), board("C")]
+        var persistedState: DenState?
+        let deskState = desk("Desk", boards: boards, focusedBoardID: boards[0].id)
+        let controller = DenController(state: DenState(desks: [deskState], focusedDeskID: deskState.id)) {
+            persistedState = $0
+        }
+
+        controller.previewBoardMove(boards[0].id, to: BoardIndex(rawValue: 2))
+        controller.save()
+
+        #expect(controller.focusedDesk?.boards.map(\.id) == [boards[1].id, boards[2].id, boards[0].id])
+        #expect(controller.focusedDesk?.focusedBoardID == boards[0].id)
+        #expect(persistedState?.desks[0].boards.map(\.id) == [boards[1].id, boards[2].id, boards[0].id])
+    }
+
     @Test func sideBoardMovesWithTargetAndIsRestoredWithItAfterRemoval() {
         let target = board("Target")
         let side = BoardState(width: 390, targetBoardID: target.id)
