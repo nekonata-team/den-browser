@@ -96,98 +96,15 @@ struct OpenBoardPanel: View {
                 }
 
                 ForEach(filteredRecentItems) { item in
-                    let matchedEssential = controller.essentials.first { item.matches(essential: $0) }
-                    HStack(spacing: DenPanelLayout.controlSpacing) {
-                        Button {
-                            openRecent(item)
-                        } label: {
-                            HStack(spacing: DenPanelLayout.controlSpacing) {
-                                recentItemIcon(for: item)
-                                VStack(alignment: .leading, spacing: 1) {
-                                    Text(item.title ?? item.displayText)
-                                        .lineLimit(1)
-                                        .truncationMode(item.title == nil ? .middle : .tail)
-                                    if item.title != nil, case .url(let url, _) = item {
-                                        Text(url.host ?? url.absoluteString)
-                                            .font(.caption2)
-                                            .foregroundStyle(.secondary)
-                                            .lineLimit(1)
-                                            .truncationMode(.middle)
-                                    }
-                                }
-                                Spacer(minLength: 0)
-                            }
-                            .contentShape(Rectangle())
-                        }
-                        .buttonStyle(.plain)
-                        .accessibilityHint("Opens a new Board")
-
-                        if let matchedEssential {
-                            HStack(spacing: 4) {
-                                ShortcutChip(tokens: [matchedEssential.displayKey])
-                                Image(systemSymbol: .sparkles)
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                                    .frame(width: 20, height: 20)
-                            }
-                            .help("Essential: \(matchedEssential.name) [\(matchedEssential.displayKey)]")
-                            .accessibilityLabel(
-                                "Essential: \(matchedEssential.name), key \(matchedEssential.displayKey)")
-                        } else {
-                            Button {
-                                windowModel.showSaveEssentialPanel(for: item)
-                            } label: {
-                                Image(systemSymbol: .sparkles)
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                                    .frame(width: 20, height: 20)
-                                    .contentShape(Rectangle())
-                            }
-                            .buttonStyle(.plain)
-                            .help("Save as Essential…")
-                            .accessibilityLabel("Save as Essential…")
-                        }
-
-                        Button(role: .destructive) {
-                            controller.removeRecentItem(item)
-                        } label: {
-                            Image(systemSymbol: .trash)
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                                .frame(width: 20, height: 20)
-                                .contentShape(Rectangle())
-                        }
-                        .buttonStyle(.plain)
-                        .help("Remove from Recent")
-                        .accessibilityLabel("Remove from Recent")
-                    }
-                    .padding(.horizontal, 8)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .frame(height: item.title == nil ? 30 : 38)
-                    .denSelectionHighlight(item.id == selectedRecentItemID, profileColor: profileColor)
-                    .contextMenu {
-                        if let matchedEssential {
-                            Button {
-                            } label: {
-                                Label("Saved as Essential [\(matchedEssential.displayKey)]", systemSymbol: .sparkles)
-                            }
-                            .disabled(true)
-                        } else {
-                            Button {
-                                windowModel.showSaveEssentialPanel(for: item)
-                            } label: {
-                                Label("Save as Essential…", systemSymbol: .sparkles)
-                            }
-                        }
-
-                        Divider()
-
-                        Button(role: .destructive) {
-                            controller.removeRecentItem(item)
-                        } label: {
-                            Label("Remove from Recent", systemSymbol: .trash)
-                        }
-                    }
+                    OpenBoardRecentRow(
+                        item: item,
+                        isSelected: item.id == selectedRecentItemID,
+                        matchedEssential: controller.essentials.first { item.matches(essential: $0) },
+                        profileColor: profileColor,
+                        onOpen: { openRecent(item) },
+                        onSaveEssential: { windowModel.showSaveEssentialPanel(for: item) },
+                        onRemove: { controller.removeRecentItem(item) }
+                    )
                 }
             }
 
@@ -246,18 +163,111 @@ struct OpenBoardPanel: View {
         openBoard.clearDraft()
     }
 
-    private func recentItemIcon(for item: RecentItem) -> some View {
-        Image(systemSymbol: recentItemSymbol(for: item))
-            .foregroundStyle(.secondary)
-            .frame(width: 16)
-    }
-
     private func moveRecentSelection(by offset: Int) {
         selectedRecentItemID = SelectionNavigation.next(
             selectedRecentItemID,
             among: filteredRecentItems.map(\.id),
             by: offset
         )
+    }
+}
+
+private struct OpenBoardRecentRow: View {
+    let item: RecentItem
+    let isSelected: Bool
+    let matchedEssential: Essential?
+    let profileColor: Color
+    let onOpen: () -> Void
+    let onSaveEssential: () -> Void
+    let onRemove: () -> Void
+
+    var body: some View {
+        HStack(spacing: DenPanelLayout.controlSpacing) {
+            Button(action: onOpen) {
+                HStack(spacing: DenPanelLayout.controlSpacing) {
+                    recentItemIcon
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text(item.title ?? item.displayText)
+                            .lineLimit(1)
+                            .truncationMode(item.title == nil ? .middle : .tail)
+                        if item.title != nil, case .url(let url, _) = item {
+                            Text(url.host ?? url.absoluteString)
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                                .lineLimit(1)
+                                .truncationMode(.middle)
+                        }
+                    }
+                    Spacer(minLength: 0)
+                }
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityHint("Opens a new Board")
+
+            if let matchedEssential {
+                HStack(spacing: 4) {
+                    ShortcutChip(tokens: [matchedEssential.displayKey])
+                    Image(systemSymbol: .sparkles)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .frame(width: 20, height: 20)
+                }
+                .help("Essential: \(matchedEssential.name) [\(matchedEssential.displayKey)]")
+                .accessibilityLabel("Essential: \(matchedEssential.name), key \(matchedEssential.displayKey)")
+            } else {
+                Button(action: onSaveEssential) {
+                    Image(systemSymbol: .sparkles)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .frame(width: 20, height: 20)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .help("Save as Essential…")
+                .accessibilityLabel("Save as Essential…")
+            }
+
+            Button(role: .destructive, action: onRemove) {
+                Image(systemSymbol: .trash)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .frame(width: 20, height: 20)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .help("Remove from Recent")
+            .accessibilityLabel("Remove from Recent")
+        }
+        .padding(.horizontal, 8)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(height: item.title == nil ? 30 : 38)
+        .denSelectionHighlight(isSelected, profileColor: profileColor)
+        .contextMenu {
+            if let matchedEssential {
+                Button {
+                } label: {
+                    Label("Saved as Essential [\(matchedEssential.displayKey)]", systemSymbol: .sparkles)
+                }
+                .disabled(true)
+            } else {
+                Button(action: onSaveEssential) {
+                    Label("Save as Essential…", systemSymbol: .sparkles)
+                }
+            }
+
+            Divider()
+
+            Button(role: .destructive, action: onRemove) {
+                Label("Remove from Recent", systemSymbol: .trash)
+            }
+        }
+    }
+
+    private var recentItemIcon: some View {
+        Image(systemSymbol: recentItemSymbol(for: item))
+            .foregroundStyle(.secondary)
+            .frame(width: 16)
     }
 }
 
