@@ -239,23 +239,10 @@ struct BoardStrip: View {
                 }
 
                 if !deskFilter.isPresented, let lastBoardID = boards.last?.id {
-                    Button {
-                        onOpenBoardAtEnd(lastBoardID)
-                    } label: {
-                        Image(systemSymbol: .plus)
-                            .font(.headline)
-                            .frame(
-                                width: DenLayout.openBoardAtEndButtonSize,
-                                height: DenLayout.openBoardAtEndButtonSize
-                            )
-                            .contentShape(Circle())
-                    }
-                    .buttonStyle(.plain)
-                    .foregroundStyle(.primary)
-                    .glassEffect(.regular, in: Circle())
-                    .frame(height: boardHeight)
-                    .help("Open Board at End of Desk")
-                    .accessibilityLabel("Open Board at End of Desk")
+                    BoardStripAddButton(
+                        boardHeight: boardHeight,
+                        action: { onOpenBoardAtEnd(lastBoardID) }
+                    )
                 }
             }
             .scrollTargetLayout()
@@ -1472,6 +1459,29 @@ private struct UnactivatedBoardView: View {
 
     private var borderColor: Color {
         isFocused ? profileColor.opacity(0.75) : Color.primary.opacity(0.16)
+    }
+}
+
+private struct BoardStripAddButton: View {
+    let boardHeight: CGFloat
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Image(systemSymbol: .plus)
+                .font(.headline)
+                .frame(
+                    width: DenLayout.openBoardAtEndButtonSize,
+                    height: DenLayout.openBoardAtEndButtonSize
+                )
+                .contentShape(Circle())
+        }
+        .buttonStyle(.plain)
+        .foregroundStyle(.primary)
+        .glassEffect(.regular, in: Circle())
+        .frame(height: boardHeight)
+        .help("Open Board at End of Desk")
+        .accessibilityLabel("Open Board at End of Desk")
     }
 }
 
