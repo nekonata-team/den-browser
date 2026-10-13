@@ -44,11 +44,11 @@ set-version version: (_validate-version version)
 candidate version: (_validate-version version)
     {{fastlane}} release_candidate tag:v{{version}}
 
-# Run release checks before signing and packaging.
+# Run release checks before signing and packaging (runs UI tests against Release build).
 [script]
 verify:
     just check
-    just ui-test
+    just ui-test "Den_BrowserUITests" "Release"
 
 # Generate the Sparkle EdDSA key in the login Keychain.
 [confirm("Generate Sparkle EdDSA key in the login Keychain?")]
@@ -143,6 +143,15 @@ publish $version: (_validate-version version) _require-main _commit-version-if-n
     just --yes release github "$version"
     git push origin main
     just --yes release homebrew "$version"
+
+# Bump version, build, notarize, and generate appcast without running verify.
+candidate-fast $version: (_validate-version version) _require-clean (set-version version) (candidate version) (appcast version)
+
+# Abort release preparation and restore working tree to clean state.
+[confirm("Abort release preparation and restore working tree?")]
+abort:
+    git restore "Den Browser/Den Browser.xcodeproj/project.pbxproj" web/public/appcast.xml
+    @echo "✓ Release preparation aborted; working tree restored."
 
 # Prepare and publish without manual candidate verification.
 [confirm("Prepare and publish release without manual verification?")]
