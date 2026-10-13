@@ -1165,28 +1165,42 @@ struct KeyboardShortcutTests {
                 == .forward(.temporaryTextInput))
     }
 
-    @Test func textInputPanelConsumesTabTraversal() throws {
+    @Test(arguments: [false, true])
+    func textInputPanelConsumesTabTraversalUnlessComposing(hasMarkedText: Bool) throws {
+        // Arrange
         let controller = try makeController(boards: [board("First")])
         let composition = DenWindowComposition(controller: controller)
         let windowModel = composition.model
         windowModel.showOpenBoardPanel()
-        let tab = try keyEvent(
-            characters: "\t",
-            charactersIgnoringModifiers: "\t",
-            keyCode: 48)
-        let shiftTab = try keyEvent(
-            characters: "\t",
-            charactersIgnoringModifiers: "\t",
-            modifiers: [.shift],
-            keyCode: 48)
+        let window = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 400, height: 100),
+            styleMask: .borderless, backing: .buffered, defer: false)
+        window.isReleasedWhenClosed = false
+        defer { window.close() }
+        let editor = NSTextView(frame: NSRect(x: 0, y: 0, width: 400, height: 100))
+        window.contentView?.addSubview(editor)
+        #expect(window.makeFirstResponder(editor))
+        if hasMarkedText {
+            editor.setMarkedText(
+                "変換", selectedRange: NSRange(location: 2, length: 0),
+                replacementRange: NSRange(location: NSNotFound, length: 0))
+        }
 
         #expect(windowModel.temporaryContext == .openBoard)
-        #expect(
-            KeyboardController.decision(for: tab, controller: controller, windowModel: windowModel)
-                == .consume(.exclusiveContext))
-        #expect(
-            KeyboardController.decision(for: shiftTab, controller: controller, windowModel: windowModel)
-                == .consume(.exclusiveContext))
+        for modifiers: NSEvent.ModifierFlags in [[], [.shift]] {
+            let event = try #require(
+                NSEvent.keyEvent(
+                    with: .keyDown, location: .zero, modifierFlags: modifiers, timestamp: 0,
+                    windowNumber: window.windowNumber, context: nil,
+                    characters: "\t", charactersIgnoringModifiers: "\t", isARepeat: false, keyCode: 48))
+            #expect(KeyEvent(event).hasMarkedText == hasMarkedText)
+
+            // Act
+            let decision = KeyboardController.decision(for: event, controller: controller, windowModel: windowModel)
+
+            // Assert
+            #expect(decision == (hasMarkedText ? .forward(.temporaryTextInput) : .consume(.exclusiveContext)))
+        }
     }
 
     @Test func drawerFilterPassesShiftedCharactersToTextInput() throws {

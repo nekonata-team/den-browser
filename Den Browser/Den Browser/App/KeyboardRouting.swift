@@ -139,7 +139,7 @@ enum KeyboardRouter {
         case .zmxSessions(let filterPhase, let hasQuery, let hasSelection):
             return routeZmxSessions(event, filterPhase: filterPhase, hasQuery: hasQuery, hasSelection: hasSelection)
         case .textInput:
-            if event.key == .tab { return .consume(.exclusiveContext) }
+            if event.key == .tab, !event.hasMarkedText { return .consume(.exclusiveContext) }
             return .forward(.temporaryTextInput)
         case nil:
             break

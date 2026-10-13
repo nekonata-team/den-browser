@@ -57,6 +57,8 @@ Den Mode actions must never be implemented by forwarding an event and relying on
 - Do not add global hotkeys without a new architectural decision.
 - Do not log raw keys, composed text, or forwarded Sheet Input.
 - Native SwiftUI controls may handle local navigation or editing only after the Router has forwarded the event to their input destination.
+- Text-entry panels consume Tab and Shift-Tab traversal to keep focus inside the panel. During IME composition,
+  they forward these keys to native text input for conversion.
 
 Decision and action enums, the pure Router, focused tests, and the single runtime monitor support enforcement.
 
