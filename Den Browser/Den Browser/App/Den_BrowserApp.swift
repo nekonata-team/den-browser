@@ -66,6 +66,7 @@ struct Den_BrowserApp: App {
                 windowID: profileManager.personalProfileID.rawValue,
                 profileID: profileManager.personalProfileID)
         }
+        .restorationBehavior(profileManager.isPrivateDen ? .disabled : .automatic)
         .handlesExternalEvents(matching: ["*"])
         .commands {
             DenCommands(
