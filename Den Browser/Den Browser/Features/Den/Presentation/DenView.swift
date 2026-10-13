@@ -77,8 +77,11 @@ struct DenView<Header: View>: View {
                     .zIndex(DenOverlayLayer.notificationList)
                 drawerOverlay(in: geometry.size)
                     .zIndex(DenOverlayLayer.drawer)
-                feedbackOverlay
-                    .zIndex(DenOverlayLayer.toast)
+                DenFeedbackOverlay(
+                    profileColor: profileColor,
+                    shouldReduceMotion: shouldReduceMotion
+                )
+                .zIndex(DenOverlayLayer.toast)
             }
             .onChange(of: preferences.sheetScale) { _, scale in
                 controller.applySheetScale(scale)
@@ -447,41 +450,6 @@ struct DenView<Header: View>: View {
     }
 
     @ViewBuilder
-    private var feedbackOverlay: some View {
-        VStack(alignment: .trailing, spacing: 8) {
-            ForEach(controller.activeDownloads) { activity in
-                DownloadActivityView(activity: activity, tint: profileColor)
-                    .transition(feedbackTransition)
-            }
-
-            if let toast = windowModel.displayedFeedback {
-                ToastView(toast: toast) {
-                    windowModel.handleTap(on: toast)
-                }
-                .transition(feedbackTransition)
-            }
-        }
-        .padding(.trailing, 20)
-        .padding(.bottom, 20)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
-        .animation(
-            windowModel.displayedFeedback == nil ? .easeIn(duration: 0.15) : .easeOut(duration: 0.15),
-            value: windowModel.displayedFeedback?.id
-        )
-        .animation(
-            DenMotion.feedback(reduceMotion: shouldReduceMotion),
-            value: controller.activeDownloads.map(\.id)
-        )
-        .zIndex(DenOverlayLayer.toast)
-    }
-
-    private var feedbackTransition: AnyTransition {
-        systemReduceMotion
-            ? .opacity
-            : .move(edge: .bottom).combined(with: .opacity)
-    }
-
-    @ViewBuilder
     private var indicatorOverlay: some View {
         if shouldShowBoardIndicator {
             boardIndicator
@@ -660,5 +628,47 @@ private struct BoardStripIndicator: View {
         .animation(DenMotion.spatial(reduceMotion: reduceMotion), value: boards.map(\.id))
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("board-strip-indicator")
+    }
+}
+
+private struct DenFeedbackOverlay: View {
+    let profileColor: Color
+    let shouldReduceMotion: Bool
+
+    @Environment(DenController.self) private var controller
+    @Environment(DenWindowModel.self) private var windowModel
+    @Environment(\.accessibilityReduceMotion) private var systemReduceMotion
+
+    var body: some View {
+        VStack(alignment: .trailing, spacing: 8) {
+            ForEach(controller.activeDownloads) { activity in
+                DownloadActivityView(activity: activity, tint: profileColor)
+                    .transition(feedbackTransition)
+            }
+
+            if let toast = windowModel.displayedFeedback {
+                ToastView(toast: toast) {
+                    windowModel.handleTap(on: toast)
+                }
+                .transition(feedbackTransition)
+            }
+        }
+        .padding(.trailing, 20)
+        .padding(.bottom, 20)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
+        .animation(
+            windowModel.displayedFeedback == nil ? .easeIn(duration: 0.15) : .easeOut(duration: 0.15),
+            value: windowModel.displayedFeedback?.id
+        )
+        .animation(
+            DenMotion.feedback(reduceMotion: shouldReduceMotion),
+            value: controller.activeDownloads.map(\.id)
+        )
+    }
+
+    private var feedbackTransition: AnyTransition {
+        systemReduceMotion
+            ? .opacity
+            : .move(edge: .bottom).combined(with: .opacity)
     }
 }
