@@ -257,6 +257,9 @@ extension TerminalRuntime: TerminalSurfaceLifecycleDelegate {
     func terminalDidAttachSurface(_: TerminalSurface) {
         guard !isDisposed else { return }
         isSurfaceReady = true
+        if let rawGhosttySurface {
+            ghostty_surface_set_focus(rawGhosttySurface, false)
+        }
 
         let commands = pendingCommands
         pendingCommands.removeAll()
