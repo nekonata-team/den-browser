@@ -4,6 +4,7 @@ set positional-arguments := true
 project := "Den Browser/Den Browser.xcodeproj"
 scheme := "Den Browser"
 unit_test_scheme := "Den Browser UnitTests"
+ui_test_scheme := "Den Browser UITests"
 derived_data := ".derived-data"
 ui_test_derived_data := ".derived-data-ui"
 unit_test_result := derived_data + "/TestResults.xcresult"
@@ -137,7 +138,7 @@ test:
 [group("test")]
 ui-test target="Den_BrowserUITests" configuration="Debug":
     @rm -rf "{{ui_test_result}}"
-    @rtk test "xcodebuild test -project '{{project}}' -scheme '{{scheme}}' -configuration '{{configuration}}' -destination 'platform=macOS,arch=arm64' -derivedDataPath '{{ui_test_derived_data}}' -resultBundlePath '{{ui_test_result}}' -only-testing:'Den BrowserUITests/{{target}}'" || { echo "✗ UI tests failed."; echo '  Inspect: just test-results .derived-data-ui/TestResults.xcresult'; exit 1; }
+    @rtk test "xcodebuild test -project '{{project}}' -scheme '{{ui_test_scheme}}' -configuration '{{configuration}}' -destination 'platform=macOS,arch=arm64' -derivedDataPath '{{ui_test_derived_data}}' -resultBundlePath '{{ui_test_result}}' -only-testing:'Den BrowserUITests/{{target}}'" || { echo "✗ UI tests failed."; echo '  Inspect: just test-results .derived-data-ui/TestResults.xcresult'; exit 1; }
     echo "✓ UI tests passed"
 
 # Show a test result summary. Pass another result bundle path as the first argument.
