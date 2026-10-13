@@ -36,46 +36,26 @@ struct BoardActivityView: View {
 
                         ForEach(controller.state.desks) { desk in
                             if !desk.boards.isEmpty {
-                                VStack(alignment: .leading, spacing: 8) {
-                                    Button {
-                                        toggleDesk(desk.id)
-                                    } label: {
-                                        HStack(spacing: 6) {
-                                            Image(
-                                                systemSymbol: collapsedDeskIDs.contains(desk.id)
-                                                    ? .chevronRight : .chevronDown
-                                            )
-                                            .frame(width: 10)
-                                            Text(desk.label)
-                                                .fontWeight(.semibold)
-                                            Text("\(desk.boards.count)")
-                                                .foregroundStyle(.tertiary)
-                                        }
-                                        .font(.caption)
-                                        .foregroundStyle(.secondary)
-                                        .contentShape(Rectangle())
+                                BoardActivityDeskSection(
+                                    desk: desk,
+                                    isCollapsed: collapsedDeskIDs.contains(desk.id),
+                                    profileColor: profileColor,
+                                    onToggle: { toggleDesk(desk.id) },
+                                    rowContent: { board in
+                                        BoardActivityRow(
+                                            board: board,
+                                            webRuntime: controller.webRuntimes[board.id],
+                                            terminalRuntime: controller.terminalRuntimes[board.id],
+                                            usage: usage(for: board),
+                                            processLabel: processLabel(for: board),
+                                            processIdentifier: processIdentifier(for: board),
+                                            sharedWebBoardCount: sharedWebBoardCount(for: board),
+                                            profileColor: profileColor,
+                                            onOpen: { windowModel.enterBoardFromActivity(board.id) },
+                                            onRemove: { controller.removeBoard(board.id) }
+                                        )
                                     }
-                                    .buttonStyle(.plain)
-                                    .accessibilityLabel(desk.label)
-                                    .accessibilityValue(
-                                        collapsedDeskIDs.contains(desk.id) ? "Collapsed" : "Expanded")
-
-                                    if !collapsedDeskIDs.contains(desk.id) {
-                                        ForEach(desk.boards) { board in
-                                            BoardActivityRow(
-                                                board: board,
-                                                webRuntime: controller.webRuntimes[board.id],
-                                                terminalRuntime: controller.terminalRuntimes[board.id],
-                                                usage: usage(for: board),
-                                                processLabel: processLabel(for: board),
-                                                processIdentifier: processIdentifier(for: board),
-                                                sharedWebBoardCount: sharedWebBoardCount(for: board),
-                                                profileColor: profileColor,
-                                                onOpen: { windowModel.enterBoardFromActivity(board.id) },
-                                                onRemove: { controller.removeBoard(board.id) })
-                                        }
-                                    }
-                                }
+                                )
                             }
                         }
                     }
@@ -155,6 +135,41 @@ struct BoardActivityView: View {
                 return sampler.usage(key: key, pids: pids).map { (boardID, $0) }
             })
         sampler.removeSamples(keeping: activeSamplerKeys)
+    }
+}
+
+private struct BoardActivityDeskSection<RowContent: View>: View {
+    let desk: DeskState
+    let isCollapsed: Bool
+    let profileColor: Color
+    let onToggle: () -> Void
+    @ViewBuilder let rowContent: (BoardState) -> RowContent
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Button(action: onToggle) {
+                HStack(spacing: 6) {
+                    Image(systemSymbol: isCollapsed ? .chevronRight : .chevronDown)
+                        .frame(width: 10)
+                    Text(desk.label)
+                        .fontWeight(.semibold)
+                    Text("\(desk.boards.count)")
+                        .foregroundStyle(.tertiary)
+                }
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(desk.label)
+            .accessibilityValue(isCollapsed ? "Collapsed" : "Expanded")
+
+            if !isCollapsed {
+                ForEach(desk.boards) { board in
+                    rowContent(board)
+                }
+            }
+        }
     }
 }
 
