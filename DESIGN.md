@@ -62,6 +62,7 @@ Den controls feel like a calm desk laid over live web sheets. Web content remain
 ### Panels
 
 - Share panel width horizontally; let height follow content.
+- Center temporary panels horizontally and anchor their top edge 160pt below the top of the Den window's content area, independent of window or monitor size. Growing or shrinking panel contents must not move the input field. Overview, Board Activity, and Drawer retain their own layouts.
 - Use the active Profile color for selected-item highlights.
 - A panel should not display the shortcut used to open it.
 - Use `DenPanelHint` for panel-internal keyboard navigation and action hints at the bottom of panels.

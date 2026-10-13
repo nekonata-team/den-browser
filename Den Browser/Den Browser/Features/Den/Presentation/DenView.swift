@@ -299,7 +299,8 @@ struct DenView<Header: View>: View {
     private func panelOverlay<Content: View>(_ content: Content) -> some View {
         content
             .transition(DenMotion.panelTransition(reduceMotion: shouldReduceMotion))
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+            .padding(.top, 160)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
     }
 
     private func dismissBlocker(onDismiss: @escaping () -> Void) -> some View {
