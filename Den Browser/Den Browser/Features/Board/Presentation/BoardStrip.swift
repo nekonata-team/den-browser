@@ -264,6 +264,12 @@ struct BoardStrip: View {
             .padding(.top, topInset)
             .padding(.bottom, bottomInset)
             .animation(DenMotion.spatial(reduceMotion: shouldReduceMotion), value: layoutKey)
+            // Keep suppression next to the layout animation. Applying it only on DenView allowed
+            // CLI background insertion/removal to animate while compensating the scroll position.
+            .transaction(value: windowModel.boardMutationAnimationSuppressionRequest) { transaction in
+                transaction.animation = nil
+                transaction.disablesAnimations = true
+            }
             .transaction(value: deskFilter.isPresented) { transaction in
                 if !deskFilter.isPresented {
                     transaction.animation = nil
