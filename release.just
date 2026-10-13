@@ -2,63 +2,55 @@ set shell := ["zsh", "-cu"]
 
 fastlane := "bundle exec fastlane"
 
-_validate-version $version:
-    @[[ "$version" =~ '^[0-9]+\.[0-9]+\.[0-9]+$' ]] || { printf '%s\n' 'usage: version must be X.Y.Z' >&2; exit 1; }
+# Bump version and build a release candidate (runs full verify).
+[group("flow")]
+prepare $version: (_validate-version version) _require-clean (set-version version) verify (candidate version) (appcast version)
 
-_require-main:
-    @[[ "$(git branch --show-current)" == main ]] || { printf '%s\n' 'release must run on main' >&2; exit 1; }
+# Bump version, build, notarize, and generate appcast without running verify.
+[group("flow")]
+prepare-fast $version: (_validate-version version) _require-clean (set-version version) (candidate version) (appcast version)
 
-_require-clean:
-    @[[ -z "$(git status --porcelain)" ]] || { printf '%s\n' 'working tree has uncommitted changes' >&2; exit 1; }
+# Commit and publish a verified candidate to GitHub and Homebrew.
+[group("flow")]
+[confirm("Publish verified release candidate?")]
+publish $version: (_validate-version version) _require-main _commit-version-if-needed
+    [[ -z "$(git status --porcelain)" ]]
+    just --yes release github "$version"
+    git push origin main
+    just --yes release homebrew "$version"
 
-[private]
-[script]
-_sparkle-tools:
-    set -euo pipefail
+# Prepare and publish release without manual candidate verification.
+[group("flow")]
+[confirm("Prepare and publish release without manual verification?")]
+ship $version: (_validate-version version) _require-main (prepare version)
+    just --yes release publish "$version"
 
-    tools="${SPARKLE_TOOLS:?SPARKLE_TOOLS is not set}"
-    [[ -x "$tools/generate_keys" && -x "$tools/generate_appcast" ]] || {
-        printf '%s\n' "Sparkle tools not found at $tools; run just build first." >&2
-        exit 1
-    }
-    printf '%s\n' "$tools"
-
-[script]
-_commit-version-if-needed:
-    set -euo pipefail
-
-    git add "Den Browser/Den Browser.xcodeproj/project.pbxproj"
-    git add web/public/appcast.xml
-
-    if git diff --cached --quiet -- "Den Browser/Den Browser.xcodeproj/project.pbxproj" web/public/appcast.xml; then
-        printf '%s\n' 'version unchanged; skipping commit'
-    else
-        git commit -m "bump: バージョンを更新" -- "Den Browser/Den Browser.xcodeproj/project.pbxproj" web/public/appcast.xml
-    fi
-
-# Set version and auto-increment build number.
-set-version version: (_validate-version version)
-    {{fastlane}} bump_version version:{{version}}
-
-# Build, sign, notarize, and package a release candidate.
-candidate version: (_validate-version version)
-    {{fastlane}} release_candidate tag:v{{version}}
+# Abort release preparation and restore working tree to clean state.
+[group("flow")]
+[confirm("Abort release preparation and restore working tree?")]
+abort:
+    git restore "Den Browser/Den Browser.xcodeproj/project.pbxproj" web/public/appcast.xml
+    @echo "✓ Release preparation aborted; working tree restored."
 
 # Run release checks before signing and packaging (runs UI tests against Release build).
+[group("step")]
 [script]
 verify:
     just check
     just ui-test "Den_BrowserUITests" "Release"
 
-# Generate the Sparkle EdDSA key in the login Keychain.
-[confirm("Generate Sparkle EdDSA key in the login Keychain?")]
-[script]
-generate-key:
-    set -euo pipefail
-    tools="$(just release _sparkle-tools)"
-    "$tools/generate_keys"
+# Set version and auto-increment build number.
+[group("step")]
+set-version version: (_validate-version version)
+    {{fastlane}} bump_version version:{{version}}
+
+# Build, sign, notarize, and package a release candidate.
+[group("step")]
+candidate version: (_validate-version version)
+    {{fastlane}} release_candidate tag:v{{version}}
 
 # Generate the Appcast for a release candidate archive.
+[group("step")]
 [script]
 appcast version: (_validate-version version)
     set -euo pipefail
@@ -76,6 +68,7 @@ appcast version: (_validate-version version)
     xmllint --noout web/public/appcast.xml
 
 # Publish a tested release candidate to GitHub.
+[group("step")]
 [confirm("Publish candidate to GitHub?")]
 [script]
 github version: (_validate-version version)
@@ -114,6 +107,7 @@ github version: (_validate-version version)
         --notes "$notes"
 
 # Update the Homebrew Cask and enable auto-merge.
+[group("step")]
 [confirm("Update Homebrew Cask?")]
 [script]
 homebrew $version: (_validate-version version)
@@ -133,27 +127,49 @@ homebrew $version: (_validate-version version)
         --auto \
         --rebase
 
-# Bump version and build a release candidate.
-prepare $version: (_validate-version version) _require-clean (set-version version) verify (candidate version) (appcast version)
+# Generate the Sparkle EdDSA key in the login Keychain.
+[group("setup")]
+[confirm("Generate Sparkle EdDSA key in the login Keychain?")]
+[script]
+generate-key:
+    set -euo pipefail
+    tools="$(just release _sparkle-tools)"
+    "$tools/generate_keys"
 
-# Commit and publish a verified candidate to GitHub and Homebrew.
-[confirm("Publish verified release candidate?")]
-publish $version: (_validate-version version) _require-main _commit-version-if-needed
-    [[ -z "$(git status --porcelain)" ]]
-    just --yes release github "$version"
-    git push origin main
-    just --yes release homebrew "$version"
+[private]
+_validate-version $version:
+    @[[ "$version" =~ '^[0-9]+\.[0-9]+\.[0-9]+$' ]] || { printf '%s\n' 'usage: version must be X.Y.Z' >&2; exit 1; }
 
-# Bump version, build, notarize, and generate appcast without running verify.
-candidate-fast $version: (_validate-version version) _require-clean (set-version version) (candidate version) (appcast version)
+[private]
+_require-main:
+    @[[ "$(git branch --show-current)" == main ]] || { printf '%s\n' 'release must run on main' >&2; exit 1; }
 
-# Abort release preparation and restore working tree to clean state.
-[confirm("Abort release preparation and restore working tree?")]
-abort:
-    git restore "Den Browser/Den Browser.xcodeproj/project.pbxproj" web/public/appcast.xml
-    @echo "✓ Release preparation aborted; working tree restored."
+[private]
+_require-clean:
+    @[[ -z "$(git status --porcelain)" ]] || { printf '%s\n' 'working tree has uncommitted changes' >&2; exit 1; }
 
-# Prepare and publish without manual candidate verification.
-[confirm("Prepare and publish release without manual verification?")]
-ship $version: (_validate-version version) _require-main (prepare version)
-    just --yes release publish "$version"
+[private]
+[script]
+_sparkle-tools:
+    set -euo pipefail
+
+    tools="${SPARKLE_TOOLS:?SPARKLE_TOOLS is not set}"
+    [[ -x "$tools/generate_keys" && -x "$tools/generate_appcast" ]] || {
+        printf '%s\n' "Sparkle tools not found at $tools; run just build first." >&2
+        exit 1
+    }
+    printf '%s\n' "$tools"
+
+[private]
+[script]
+_commit-version-if-needed:
+    set -euo pipefail
+
+    git add "Den Browser/Den Browser.xcodeproj/project.pbxproj"
+    git add web/public/appcast.xml
+
+    if git diff --cached --quiet -- "Den Browser/Den Browser.xcodeproj/project.pbxproj" web/public/appcast.xml; then
+        printf '%s\n' 'version unchanged; skipping commit'
+    else
+        git commit -m "bump: バージョンを更新" -- "Den Browser/Den Browser.xcodeproj/project.pbxproj" web/public/appcast.xml
+    fi
