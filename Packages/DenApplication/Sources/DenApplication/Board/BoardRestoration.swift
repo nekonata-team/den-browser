@@ -56,16 +56,7 @@ public enum BoardRestoration {
         }
 
         let boards = desks[deskOffset].boards
-        var insertionOffset = min(max(insertOffset, 0), boards.count)
-        if insertionOffset > 0, insertionOffset < boards.count {
-            let precedingGroup = BoardGroup.containing(boards[insertionOffset - 1].id, in: boards)
-            if let lastMember = precedingGroup?.boards.last,
-                let lastMemberIndex = boards.lastIndex(where: { $0.id == lastMember.id }),
-                insertionOffset <= lastMemberIndex
-            {
-                insertionOffset = lastMemberIndex + 1
-            }
-        }
+        let insertionOffset = BoardInsertion.groupBoundaryOffset(insertOffset, in: boards)
         var desk = desks[deskOffset]
         let restoredBoards = [removed.board] + (removed.sideBoard.map { [$0] } ?? [])
         desk.boards.insert(contentsOf: restoredBoards, at: insertionOffset)

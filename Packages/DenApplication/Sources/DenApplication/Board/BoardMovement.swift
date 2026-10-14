@@ -44,16 +44,7 @@ public struct BoardMovement {
                     : remaining.last?.id
             }
             let targetBoards = snapshot.den.desks[targetIndex].boards
-            var insertionIndex = min(max(index.rawValue, 0), targetBoards.count)
-            if insertionIndex > 0, insertionIndex < targetBoards.count {
-                let precedingGroup = BoardGroup.containing(targetBoards[insertionIndex - 1].id, in: targetBoards)
-                let precedingIDs = Set(precedingGroup?.boards.map(\.id) ?? [])
-                if let lastMemberIndex = targetBoards.lastIndex(where: { precedingIDs.contains($0.id) }),
-                    insertionIndex <= lastMemberIndex
-                {
-                    insertionIndex = lastMemberIndex + 1
-                }
-            }
+            let insertionIndex = BoardInsertion.groupBoundaryOffset(index.rawValue, in: targetBoards)
             snapshot.den.desks[targetIndex].boards.insert(contentsOf: groupBoards, at: insertionIndex)
         }
     }

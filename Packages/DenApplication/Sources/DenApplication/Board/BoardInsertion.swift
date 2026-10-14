@@ -1,6 +1,16 @@
 import DenDomain
 
 public enum BoardInsertion {
+    static func groupBoundaryOffset(_ offset: Int, in boards: [BoardState]) -> Int {
+        let offset = min(max(offset, 0), boards.count)
+        guard offset > 0, offset < boards.count,
+            let group = BoardGroup.containing(boards[offset - 1].id, in: boards),
+            let lastMember = group.boards.last,
+            let lastIndex = boards.lastIndex(where: { $0.id == lastMember.id })
+        else { return offset }
+        return max(offset, lastIndex + 1)
+    }
+
     public struct Result {
         public let deskIndex: DeskIndex
         public let desk: DeskState

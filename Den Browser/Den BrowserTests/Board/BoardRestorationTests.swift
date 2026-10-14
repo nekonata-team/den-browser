@@ -4,6 +4,28 @@ import Testing
 
 @MainActor
 struct BoardRestorationTests {
+    @Test
+    func restorationInsertsAfterExistingGroup() {
+        // Arrange
+        let primary = BoardState(label: "Primary", width: 520, currentSheetURL: nil)
+        let side = BoardState(width: 390, targetBoardID: primary.id)
+        let inserted = BoardState(label: "Inserted", width: 520, currentSheetURL: nil)
+        let target = DeskState(label: "Target", boards: [primary, side])
+        let history = RecentlyRemovedBoard(
+            board: inserted, sourceDeskID: target.id, sourceBoardIndex: BoardIndex(rawValue: 1))
+
+        // Act
+        let outcome = BoardRestoration.restore(history, in: [target], presentedDeskID: target.id)
+        guard case .restored(_, let desk) = outcome else {
+            Issue.record("The removed Board should be restored.")
+            return
+        }
+        let result = desk.boards
+
+        // Assert
+        #expect(result.map(\.id) == [primary.id, side.id, inserted.id])
+    }
+
     @Test func restoresGroupToOriginalDeskAndFocusesPrimary() {
         // Arrange
         let primary = BoardState(label: "Primary", width: 520, currentSheetURL: nil)
