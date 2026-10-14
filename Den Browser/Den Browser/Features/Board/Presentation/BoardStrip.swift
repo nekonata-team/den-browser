@@ -588,81 +588,19 @@ struct BoardStrip: View {
                 onDragChanged: { updateBoardDrag(board, value: $0, in: containerSize) },
                 onDragEnded: { finishBoardDrag(value: $0, in: containerSize) })
         } else {
-            switch board.kind {
-            case .inspection:
-                if let targetBoardID = board.sideBoardTargetBoardID {
-                    InspectionBoardView(
-                        board: board,
-                        isFocused: focused,
-                        focusRequest: boardFocusRequest,
-                        isDragging: isDragging,
-                        isPointerFocusEnabled: pointerFocusEnabled,
-                        profileColor: profileColor,
-                        width: size.width,
-                        height: size.height,
-                        isVisibleInViewport: isVisible,
-                        targetBoardID: targetBoardID,
-                        onFocus: focus,
-                        onRemove: { controller.removeBoard(board.id) },
-                        onDragChanged: { updateBoardDrag(board, value: $0, in: containerSize) },
-                        onDragEnded: { finishBoardDrag(value: $0, in: containerSize) }
-                    )
-                } else {
-                    Color.clear.frame(width: size.width, height: size.height)
-                }
-            case .tutorial:
-                TutorialBoardView(
-                    board: board,
-                    isFocused: focused,
-                    isDragging: isDragging,
-                    profileColor: profileColor,
-                    width: size.width,
-                    height: size.height,
-                    isPointerFocusEnabled: pointerFocusEnabled,
-                    onFocus: focus,
-                    onRemove: { controller.removeBoard(board.id) },
-                    onDragChanged: { updateBoardDrag(board, value: $0, in: containerSize) },
-                    onDragEnded: { finishBoardDrag(value: $0, in: containerSize) })
-            case .terminal:
-                TerminalBoardView(
-                    board: board,
-                    isFocused: focused,
-                    focusRequest: boardFocusRequest,
-                    isDragging: isDragging,
-                    runtime: controller.terminalRuntime(for: board),
-                    profileColor: profileColor,
-                    width: size.width,
-                    height: size.height,
-                    isPointerFocusEnabled: pointerFocusEnabled,
-                    isVisibleInViewport: isVisible,
-                    onFocus: focus,
-                    onRemove: { controller.removeBoard(board.id) },
-                    onDragChanged: { updateBoardDrag(board, value: $0, in: containerSize) },
-                    onDragEnded: { finishBoardDrag(value: $0, in: containerSize) })
-            case .web:
-                if let runtime = controller.webRuntimes[board.id] {
-                    WebBoardView(
-                        board: board,
-                        isFocused: focused,
-                        focusRequest: boardFocusRequest,
-                        isDragging: isDragging,
-                        runtime: runtime,
-                        profileColor: profileColor,
-                        width: size.width,
-                        height: size.height,
-                        isPointerFocusEnabled: pointerFocusEnabled,
-                        isVisibleInViewport: isVisible,
-                        onFocus: focus,
-                        onGoToFirst: { controller.goToFirstSheetInBoard(board.id) },
-                        onGoBack: { controller.goBackInBoard(board.id) },
-                        onGoForward: { controller.goForwardInBoard(board.id) },
-                        onRemove: { controller.removeBoard(board.id) },
-                        onDragChanged: { updateBoardDrag(board, value: $0, in: containerSize) },
-                        onDragEnded: { finishBoardDrag(value: $0, in: containerSize) })
-                } else {
-                    Color.clear.frame(width: size.width, height: size.height)
-                }
-            }
+            ActivatedBoardView(
+                board: board,
+                isFocused: focused,
+                focusRequest: boardFocusRequest,
+                isDragging: isDragging,
+                isPointerFocusEnabled: pointerFocusEnabled,
+                profileColor: profileColor,
+                size: size,
+                isVisible: isVisible,
+                onFocus: focus,
+                onDragChanged: { updateBoardDrag(board, value: $0, in: containerSize) },
+                onDragEnded: { finishBoardDrag(value: $0, in: containerSize) }
+            )
         }
     }
 
