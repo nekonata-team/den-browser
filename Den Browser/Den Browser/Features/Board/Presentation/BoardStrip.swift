@@ -990,21 +990,10 @@ struct BoardStrip: View {
     }
 
     private func visibleBoardIDs(in geometry: BoardStripScrollGeometry) -> Set<BoardID> {
-        guard geometry.containerWidth > 0 else { return [] }
-
-        let boards = alignmentBoards
-        let params = boardLayoutParameters(for: boards)
-        var visibleIDs = Set<BoardID>()
-        for (index, board) in boards.enumerated() {
-            guard let range = BoardLayout.boardContentRange(for: index, in: params) else { continue }
-            let visibleWidth = max(
-                0,
-                min(range.maxX, geometry.offsetX + geometry.containerWidth)
-                    - max(range.minX, geometry.offsetX))
-            guard visibleWidth / (range.maxX - range.minX) >= 0.05 else { continue }
-            visibleIDs.insert(board.id)
-        }
-        return visibleIDs
+        BoardLayout.visibleBoardIDs(
+            in: boardLayoutParameters(for: alignmentBoards),
+            offsetX: geometry.offsetX,
+            containerWidth: geometry.containerWidth)
     }
 
     private func setPendingBoardAlignment(_ pending: PendingBoardAlignment) {

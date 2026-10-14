@@ -6,6 +6,26 @@ import Testing
 
 @MainActor
 struct BoardLayoutTests {
+    @Test func visibleBoardsRequireMinimumOverlapAndPositiveViewport() {
+        // Arrange
+        let params = parameters(centering: .never, boardCount: 3)
+        let first = BoardLayout.boardContentRange(for: 0, in: params)!
+        let width = first.maxX - first.minX
+
+        // Act
+        let belowThreshold = BoardLayout.visibleBoardIDs(
+            in: params, offsetX: first.maxX - width * 0.04, containerWidth: width)
+        let aboveThreshold = BoardLayout.visibleBoardIDs(
+            in: params, offsetX: first.maxX - width * 0.06, containerWidth: width)
+        let emptyViewport = BoardLayout.visibleBoardIDs(in: params, offsetX: 0, containerWidth: 0)
+
+        // Assert
+        #expect(!belowThreshold.contains(params.boards[0].id))
+        #expect(aboveThreshold.contains(params.boards[0].id))
+        #expect(aboveThreshold.contains(params.boards[1].id))
+        #expect(emptyViewport.isEmpty)
+    }
+
     @Test func appliesCenteringPaddingForEachMode() {
         #expect(paddings(for: .always, boardCount: 3) == (leading: 500, trailing: 444))
         #expect(paddings(for: .never, boardCount: 3) == (leading: 10, trailing: 10))

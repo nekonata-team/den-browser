@@ -172,6 +172,24 @@ struct BoardLayout {
         return paddings.leading + params.requiredBoardsWidth + openAtEndWidth + paddings.trailing
     }
 
+    static func visibleBoardIDs(
+        in params: Parameters,
+        offsetX: CGFloat,
+        containerWidth: CGFloat
+    ) -> Set<BoardID> {
+        guard containerWidth > 0 else { return [] }
+        var visibleIDs = Set<BoardID>()
+        for (index, board) in params.boards.enumerated() {
+            guard let range = boardContentRange(for: index, in: params) else { continue }
+            let visibleWidth = max(
+                0,
+                min(range.maxX, offsetX + containerWidth) - max(range.minX, offsetX))
+            guard visibleWidth / (range.maxX - range.minX) >= 0.05 else { continue }
+            visibleIDs.insert(board.id)
+        }
+        return visibleIDs
+    }
+
     private static func boardWidth(_ board: BoardState, in params: Parameters) -> CGFloat {
         params.maximizedBoardID == board.id ? params.maximizedBoardWidth : board.width
     }
