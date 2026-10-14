@@ -186,9 +186,6 @@ struct DenView<Header: View>: View {
 
             if deskFilter.isPresented {
                 DeskFilterOverlay(profileColor: profileColor)
-                    .padding(.top, DenLayout.outerInset)
-                    .transition(DenMotion.panelTransition(reduceMotion: shouldReduceMotion))
-                    .zIndex(DenOverlayLayer.deskFilter)
             }
 
             BoardStripIndicator(profileColor: profileColor)
@@ -256,7 +253,9 @@ extension DenView where Header == EmptyView {
 
 private struct DeskFilterOverlay: View {
     @Environment(DeskFilterModel.self) private var deskFilter
+    @Environment(AppPreferences.self) private var preferences
     @Environment(\.accessibilityDifferentiateWithoutColor) private var differentiateWithoutColor
+    @Environment(\.accessibilityReduceMotion) private var systemReduceMotion
     let profileColor: Color
     @FocusState private var isFocused: Bool
 
@@ -298,6 +297,9 @@ private struct DeskFilterOverlay: View {
                     lineWidth: deskFilter.isInputActive ? 1.5 : 1
                 )
         }
+        .padding(.top, DenLayout.outerInset)
+        .transition(DenMotion.panelTransition(reduceMotion: shouldReduceMotion))
+        .zIndex(DenOverlayLayer.deskFilter)
         .onTapGesture {
             deskFilter.enter()
         }
@@ -315,6 +317,13 @@ private struct DeskFilterOverlay: View {
             }
         }
         .accessibilityIdentifier("desk-filter")
+    }
+
+    private var shouldReduceMotion: Bool {
+        DenMotion.shouldReduceMotion(
+            preference: preferences.motionPreference,
+            systemReduceMotion: systemReduceMotion
+        )
     }
 }
 
