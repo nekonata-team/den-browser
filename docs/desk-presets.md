@@ -6,60 +6,90 @@ Desk Presets provide reusable starting arrangements for repeated work and bookma
 
 Saving the Focused Desk as a Personal Desk Preset captures:
 
-- Board order
-- Board Labels
-- Board Widths
+- Board order, Labels, and Widths
 - Current Sheet URLs, including path, query, and fragment
-- First Sheet URLs, initialized from each Board's Current Sheet URL at capture time
+- First Sheet URLs, initialized from each Board's Current Sheet URL
 - Terminal Working Directories, optional Zellij session names, zmx session names, and known zmx root session names
-- Focused Board
+- Focused Board index
 - Inspection Boards, including their position, width, and Board Group connection to a Target Board
 
-An Inspection Board's Target Board is stored by its position in the Preset. Applying the Preset creates new Board IDs and reconnects the Inspection Board to the new Target Board ID. Focus keeps its original Board position, including when the Focused Board is an Inspection Board.
+An Inspection Board's Target Board is stored by its position in the Preset.
+Applying the Preset creates new Board IDs and reconnects the Inspection Board to the new Target Board ID.
+Focus retains its relative position, even when the Focused Board is an Inspection Board.
 
-At least one Board is required. A Board without a Current Sheet URL remains valid because its Label, Width, position, or terminal content can still carry meaning. Inspection runtime data such as DOM selections, highlights, and Console events is not captured; applying the Preset creates an empty Inspection Board. Sheet Stacks, live `WKWebView` state, scroll positions, input, and sign-in state are not captured.
+At least one Board is required.
+A Board without a Current Sheet URL remains valid because its Label, Width, position, or terminal content still carries meaning.
+Inspection runtime data (such as DOM selections, highlights, and Console events) and live WebKit state (Sheet Stacks, scroll positions, input, and cookies) are not captured.
 
-Creating a Desk from any Desk Preset creates new Desk and Board identities. Web Boards receive the Preset's initial Sheet URL as both their Current Sheet URL and First Sheet URL; Inspection Boards start empty and link to the new Target Board ID; Terminal, Zellij, and zmx Boards receive their persisted terminal content. Replacing a Desk preserves its Desk identity and position while creating new Board identities. Neither operation leaves the Desk linked to the Desk Preset. Profile-owned WebKit data still supplies that Profile's existing site sessions.
+Creating a Desk from a Desk Preset instantiates fresh Desk and Board identities.
+Web Boards receive the Preset's initial Sheet URL as both their Current and First Sheet URL.
+Inspection Boards start empty and reconnect to the new Target Board.
+Terminal, Zellij, and zmx Boards restore their persisted terminal content.
+Replacing a Desk preserves its Desk identity and position while creating new Board identities.
+Neither operation keeps the Desk linked to the Preset, while Profile-owned WebKit data preserves site logins.
 
-When a zmx Board's root session name is known, its Personal Desk Preset retains that name. If the zmx session must be created again, the Board uses it to restore the `den.root` group label. Older Presets without a root session name keep their previous behavior.
+When a zmx Board's root session name is known, the Personal Desk Preset retains it.
+If the session must be recreated, the Board uses this name to restore the `den.root` group label.
 
 ## Saving
 
-When the Focused Desk contains a Board, an outline bookmark button appears left of the Profile control. The same action is available as `Save Desk as Preset…` in the Den menu and as `p` in Den Mode. Zen View hides the button with the other top controls.
+When the Focused Desk contains a Board, an outline bookmark button appears left of the Profile control.
+The same action triggers via `Save Desk as Preset…` in the Den menu or `p` in Den Mode.
+Zen View hides the button.
+A Desk with no Boards cannot be saved: the button is absent, the menu item is disabled, and `p` is a no-op.
 
-All three actions open the same top-center Liquid Glass panel. Its only editable value is the Desk Preset Label, initialized from the current Desk Label. Saving a new label inserts the Personal Desk Preset at the top of My Presets. Saving an existing Personal Desk Preset Label asks before replacing its captured state while preserving its identity and position. Built-in labels are reserved.
-
-Labels are trimmed, cannot be empty, and compare case- and width-insensitively. A Desk with no Boards cannot be saved: its button is absent, its Den menu item is disabled, and `p` is a no-op.
+All three actions open a top-center Liquid Glass panel to edit the Desk Preset Label, initialized from the Desk Label.
+Saving a new label inserts the preset at the top of My Presets.
+Saving an existing label asks before replacing its captured state while preserving its identity and position.
+Labels are trimmed, cannot be empty, compare case- and width-insensitively, and cannot collide with reserved built-in labels.
 
 ## Creating a Desk
 
-The New Desk panel starts with keyboard focus in Desk Preset search and treats Empty as the initial active candidate. Up and Down move the active candidate. Return or Tab confirms it, initializes the Desk Label from its Desk Preset Label, selects that label for editing, and advances focus to the Desk Label. Return from the label creates the Desk. Escape from the label returns to Preset selection; Escape there closes the panel. While IME conversion is active, Return, Tab, Shift-Tab, Up, and Down remain available to the input method instead of triggering these panel actions. Changing the Desk Label does not change the confirmed Desk Preset.
+The New Desk panel starts with keyboard focus in Desk Preset search, with Empty as the initial candidate.
+Up and Down move the active candidate.
+Return or Tab confirms it, initializes the Desk Label, selects it for editing, and advances focus.
+Return from the label field creates the Desk.
+Escape returns to Preset selection or closes the panel.
+During active IME conversion, Return, Tab, and arrow keys pass to the input method instead of panel navigation.
+Editing the Desk Label does not modify the underlying Desk Preset.
 
-Empty search keeps Built-in Presets and My Presets grouped. Typed search ranks fuzzy subsequence matches across both groups, prioritizing Desk Preset Labels, then Board Labels, then Current Sheet URL hosts or terminal session names. During Desk creation, a `Create "..."` Empty Desk option is always appended for a non-empty search, even when Desk Presets match; it is not offered when replacing a Desk. The first available choice becomes active but still requires Return or Tab for confirmation. The active candidate drives the preview without becoming the confirmed Desk Preset. The preview shows Board Labels, URL hosts, terminal session names, and relative Board Widths without capturing Sheet images. The built-in order is:
+Empty search keeps Built-in Presets and My Presets grouped.
+Typed search ranks fuzzy subsequence matches across both groups: Preset Labels first, followed by Board Labels, then URL hosts or session names.
+During Desk creation, a `Create "..."` Empty Desk option is always appended for non-empty search queries.
+The active candidate drives a preview showing Board Labels, URL hosts, session names, and relative widths without capturing Sheet images.
 
+The built-in order is:
 1. Empty
-2. ChatGPT
-3. Gemini
-
-ChatGPT and Gemini each create three 520-point Boards focused on the first Board. Site-specific built-in widths may be tuned later.
+2. ChatGPT (three 520-point Boards focused on the first Board)
+3. Gemini (three 520-point Boards focused on the first Board)
 
 ## Replacing a Desk
 
-`Replace Desk…` is available from each Desk button's context menu. Shift + `p` opens the same action for the Focused Desk in Den Mode. Empty is not offered because replacement must install at least one Board. Confirming a Preset initializes an editable Desk Label from its Desk Preset Label.
+`Replace Desk…` is available from each Desk button's context menu, or Shift + `p` for the Focused Desk in Den Mode.
+Empty is not offered because replacement requires installing at least one Board.
+Confirming a Preset initializes an editable Desk Label from its Preset Label.
 
-Replacing preserves the Desk identity and its position in the Den. It releases every existing Board runtime, creates independent Boards from the selected Desk Preset, applies the Preset's order, widths, Current Sheet URLs, and focus, and clears temporary Board maximization. Drawer contents, Drawer restoration history, and Recently Removed Boards remain unchanged.
+Replacement preserves Desk identity and position in the Den.
+It releases all existing Board runtimes and instantiates independent Boards from the selected Preset.
+It applies Preset order, widths, Sheet URLs, and focus, while clearing temporary Board maximization.
+Drawer contents, restoration history, and Recently Removed Boards remain untouched.
 
-An empty Desk is replaced immediately. A Desk containing Boards asks for confirmation and reports that its live Sheet state will be removed. Canceling returns to the configured replacement without changing the Desk. Successful replacement enters Sheet Input.
+An empty Desk replaces immediately.
+A Desk containing Boards asks for confirmation, warning that live Sheet state will be removed.
+Successful replacement enters Sheet Input.
 
 ## Managing Personal Desk Presets
 
-Manage Presets opens the same searchable panel from `Control` + `P` in Den Mode, the Desk Preset picker's sliders button, or a Desk button's context menu. In New Desk and Replace Desk, closing management returns to the same search and active selection. Up and Down move through filtered Personal Desk Presets and keep the active row visible; Return starts renaming it. The pencil and trash buttons rename and delete individual Presets. Escape cancels an active rename, then returns to the picker or closes standalone management. Renaming trims the label and rejects empty, duplicate, and Built-in Desk Preset labels; it keeps the captured Boards unchanged. Built-in Desk Presets are visible during selection but are not managed.
+Manage Presets opens from `Control` + `P` in Den Mode, the picker's sliders button, or a Desk button's context menu.
+In New Desk and Replace Desk, closing management returns to the previous search and selection.
+Up and Down navigate through filtered Presets; Return starts renaming the active row.
+Pencil and trash buttons rename and delete individual Presets.
+Escape cancels an active rename, then returns to the picker or closes standalone management.
+Renaming trims the label and rejects empty, duplicate, or Built-in labels without altering captured Boards.
 
-Saving a Focused Desk under an existing Personal Desk Preset Label remains the way to replace its captured state; it asks for confirmation and preserves the Desk Preset's identity and position.
-
-Deleting always asks for confirmation and states that existing Desks are unaffected. Deleting the selected Personal Desk Preset returns selection to Empty during creation, or to the first available non-empty Preset during replacement.
-
-Personal Desk Presets have no artificial count limit. They are deleted with their owning Profile. Profile documents without the optional list load with no Personal Desk Presets.
+Deleting always asks for confirmation and notes that existing Desks are unaffected.
+Deleting the selected Preset resets selection to Empty during creation, or to the first available non-empty Preset during replacement.
+Personal Desk Presets have no artificial count limit and are deleted alongside their owning Profile.
 
 ## Deferred
 

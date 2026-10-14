@@ -7,12 +7,31 @@ Den Browser persists only state needed to restore user-owned work. Version 3 gro
 - Each Profile owns one versioned JSON `PersistedProfile` document containing `ProfileState`, `DenState`, Drawer Items, Personal Desk Presets, and Recent.
 - A versioned JSON `ProfileIndex` stores Profile order.
 - App-wide preferences use typed, independent `UserDefaults` keys. Retired keys may remain in `UserDefaults` and are ignored.
-- Profile windows use the stable SwiftUI scene identifier `profile-window`. Private Den disables scene restoration so routes from previous sessions cannot claim its new session's Desks. Ordinary Profile windows retain automatic scene restoration. At ordinary and Private Den startup, legacy SwiftUI-generated Profile window frame and split-view keys are removed individually from the app's defaults domain. Bulk replacement can exceed CFPreferences' request limit when removing these long keys. These keys included reflected view types and process-dependent addresses, causing unbounded growth across launches. Their old window positions and split widths are discarded; app preferences and Profile documents are preserved. Unit-test, UI-test, and benchmark launches skip this cleanup.
+- Profile windows use the SwiftUI scene identifier `profile-window`.
+  Private Den disables scene restoration so routes from previous sessions cannot claim its Desks.
+  Ordinary Profile windows retain automatic scene restoration.
+  At startup, legacy SwiftUI window frame and split-view keys are removed individually from defaults.
+  These keys contained reflected view types and addresses that caused unbounded growth, while bulk deletion could exceed CFPreferences request limits.
+  Old positions and split widths are discarded, but preferences and Profile documents are preserved.
+  Tests and benchmark launches skip this cleanup.
 - WebKit owns website data in each Profile's `WKWebsiteDataStore`.
-- Installed uBlock Origin Lite resources and its app-wide enabled preference remain persistent. Extension state and compiled rules use a persistent WebKit extension controller for ordinary Profiles, and a non-persistent controller for Private Den. Private Den does not reuse extension state from a previous session. WebKit may still create compiled-rule files in an internal temporary directory; its current implementation does not explicitly delete that directory on unload, and Den leaves those files to OS management. Only additional Profiles with no open windows or live window controllers can be deleted. Settings disables deletion until all windows of that Profile are closed, and the deletion operation checks this again before touching stored data. Deleting an eligible Profile releases its remaining resources and removes its dedicated `~/Library/WebKit/<bundle-id>/WebExtensions/<profile-id>/` directory, including extension settings and compiled content-blocking rules. The folder is keyed by Profile ID, independently of the website data store ID. Missing extension folders are already clean. A cleanup error reports Profile deletion failure and keeps the Profile document for retry; website data may already have been removed. Den does not scan for or automatically remove orphaned extension directories from earlier versions.
-- Tutorial Boards and their checklist progress are session-only and omitted from Profile JSON. A Desk remains saved if its only Board was a Tutorial Board; it restores empty.
-- Ordinary Profiles retain Board Facings as disposable PNG files, keyed by ProfileID and BoardID, under `~/Library/Caches/<bundle-id>/BoardFacings/<profile-id>/`. Custom Profile directories use their own `BoardFacings` subdirectory. Private Den never writes Board Facings to disk. Overview loads cached Board Facings asynchronously without opening Boards. The memory budget is 64 MiB and the compressed disk budget is 128 MiB per Profile. Deleted Board images remain available for same-session restoration; unused Board files are pruned when Profile resources are created again. Clearing cached browsing data or deleting a Profile removes its Board Facings. Missing or corrupt files are cache misses, and Board Facings do not enter Profile JSON.
-- Live Web and Terminal runtimes, `WKWebView`, Shell, Zellij, and zmx processes, terminal screens, scrollback, transient presentation state, Recently Removed Boards, and recently discarded Drawer Item restoration history are not persisted.
+- uBlock Origin Lite resources and enabled preferences persist app-wide.
+  Ordinary Profiles use a persistent WebKit extension controller, while Private Den uses a non-persistent one that discards session state.
+  Only inactive Profiles with no open windows can be deleted.
+  Settings disables deletion while windows are open, and deletion verifies this before touching data.
+  Deleting an eligible Profile releases its resources and removes its dedicated `~/Library/WebKit/<bundle-id>/WebExtensions/<profile-id>/` directory, including settings and compiled content-blocking rules.
+  The directory is keyed by Profile ID independently of the website data store ID.
+  A cleanup error reports Profile deletion failure and retains the Profile document for retry; website data may already have been removed.
+  Den does not scan or remove orphaned extension directories from earlier versions.
+- Tutorial Boards and checklist progress are session-only and omitted from Profile JSON.
+  A Desk whose only Board was a Tutorial Board restores empty.
+- Ordinary Profiles save Board Facings as disposable PNG files under `~/Library/Caches/<bundle-id>/BoardFacings/<profile-id>/`.
+  Private Den never writes Board Facings to disk.
+  Overview loads cached Facings asynchronously without opening Boards, capped at 64 MiB memory and 128 MiB disk per Profile.
+  Deleted Board images remain available for same-session restoration, and unused files are pruned when resources reinitialize.
+  Clearing browsing data or deleting a Profile removes its Facings; missing or corrupt files are simple cache misses.
+- Ephemeral runtime state is not persisted.
+  This includes Web and Terminal runtimes, WebView and shell processes, scrollback, Recently Removed Boards, and discarded Drawer history.
 
 ## Version 3 JSON keys
 
@@ -48,15 +67,27 @@ Nested objects use these keys:
 - zmx session: `kind: zmx`, `sessionName`, `workingDirectory`, optional `rootSessionName`
 - `PersonalDeskPreset`: `id`, `label`, `boards`, optional `focusedBoardIndex`
 - `DeskPresetBoard`: `label`, `width`, optional `customLabel`, `content` using Web, Inspection, or Terminal with a Shell, Zellij, or zmx `session`, and optional `targetBoardIndex` for a Side Board (Inspection or Terminal) pointing to its Primary Board. A zmx session may include `rootSessionName` when its group is known.
-- `RecentItem`: `kind`, plus `url` for a URL, `query` for a search term, `workingDirectory` for a Terminal location, optional `sessionName` for a Zellij session intent, or `sessionName` for a zmx session intent used by Open Board
+- `RecentItem`: `kind`, plus `url` for a URL, `query` for search, `workingDirectory` for Terminal,
+  optional `sessionName` for Zellij, or `sessionName` for zmx Open Board intent
 
-Recent Items are recorded when a new Board is successfully opened from an input, including an Essential, an explicit link-to-new-Board action, a Drawer placement, or a zmx Session selection. Sheet navigation, Board restoration, and Drawer Peek do not create Recent Items. Opening the zmx Sessions picker without selecting a session does not create one.
+Recent Items are recorded when a new Board opens from an input, such as an Essential,
+a link-to-new-Board action, a Drawer placement, or a selected zmx Session.
+Sheet navigation, Board restoration, Drawer Peek, and unconfirmed picker selections do not create Recent Items.
+Removing an item or clearing Recent immediately saves the Profile document, restoring the in-memory list if saving fails.
 
-Removing an individual Recent Item or clearing Recent saves the updated list in the Profile document. If saving fails, the in-memory list is restored. Opening a new Board from the same input records it again.
+A Web Board without an optional Current Sheet URL simply has no Current Sheet,
+while a missing First Sheet URL disables returning to the initial Sheet.
+Web Board URLs normalize HTTP(S) root paths to `/` before persistence.
+Local file URLs persist as standard Foundation `URL`s without saving contents, bookmarks, or verifying file existence.
+Consequently, a moved or missing local file fails to load upon restoration without invalidating saved models.
 
-A missing optional Current Sheet URL means the Web Board has no Current Sheet. A missing First Sheet URL means the Web Board cannot use the persisted First Sheet return action. Web Board Sheet URLs normalize HTTP(S) root paths to `/` before persistence. Absolute local file URLs are stored with the same Foundation `URL` `Codable` representation; no file contents, access bookmarks, or existence state are persisted. A moved, deleted, or machine-specific local file may therefore fail to load after restoration without invalidating the saved Board, Drawer Item, Recent Item, or Desk Preset.
-
-`PersistedProfileDocumentDecoder` migrates version 1 and 2 documents before the current models decode them. Version 1 Boards decode as Web Boards. Version 2 flat Board kinds (`terminal`, `zellij`, `zmx`) and legacy Desk Preset kinds normalize to version 3 in memory; the next save writes version 3. Top-level `sheetNavigationPaused` moves into Web Board content. Desk Preset `targetBoardIndex` and Board Role `targetBoardID` retain their meaning and encoded names. An ordinary Terminal Board restores a new Shell in the saved Working Directory. Named Zellij restoration runs `zellij attach --create <sessionName>`; an unnamed Zellij Board runs `zellij -l welcome`. zmx restoration runs `zmx attach <sessionName>`.
+`PersistedProfileDocumentDecoder` migrates version 1 and 2 documents before decoding:
+- Version 1 Boards decode as Web Boards.
+- Version 2 flat kinds (`terminal`, `zellij`, `zmx`) and legacy Desk Presets normalize to version 3 in memory.
+- `sheetNavigationPaused` moves into Web Board content.
+- Terminal Boards restore a new Shell in the saved Working Directory.
+- Named Zellij attaches via `zellij attach --create <sessionName>`; unnamed Zellij runs `zellij -l welcome`.
+- zmx restoration attaches via `zmx attach <sessionName>`.
 
 When `BoardState.role` is absent, it decodes as `primary`.
 
@@ -119,9 +150,12 @@ silently replaced. If a confirmed-invalid file cannot be quarantined, recovery d
 ## Persistence failure and recovery contract
 
 - Profile document saves use atomic file writes.
-- Focus changes and keyboard Board Width adjustments are coalesced per Profile and saved 300 ms after the latest change. Successful immediate Profile document saves include the latest Den state and cancel its pending deferred save; failed writes leave the pending save scheduled.
-- Normal app termination synchronously flushes pending deferred saves, using the last stable Profile snapshot if a Board drag is active. An abrupt termination before these changes have been quiet for 300 ms can lose the latest state; continuous changes can keep it unsaved for longer than 300 ms from the first change.
-- `ProfileManager` maintains the latest intended `PersistedProfile` document in memory (`persistedProfiles`).
-- If writing a document to disk fails, `ProfileManager` reports the error and returns `false` without rolling back its in-memory document cache. This guarantees that subsequent saves of another collection (such as Recent Items or Desk Presets) do not overwrite the file with an outdated `DenState`.
-- Operations with irreversible runtime side effects (such as closing a live Board) retain the latest intended state in UI and cache; they are not artificially rewound, allowing subsequent writes to persist the intended state.
-- UI operations report success (such as displaying a success Toast) only when disk persistence actually succeeds.
+- Focus changes and keyboard Board Width adjustments coalesce per Profile, saving 300 ms after the latest change.
+  Immediate Profile saves include the latest Den state and cancel pending deferred saves.
+- Normal app termination synchronously flushes pending deferred saves, using the last stable snapshot if a drag is active.
+  An abrupt termination before 300 ms of inactivity can lose recent unsaved adjustments.
+- `ProfileManager` maintains the latest intended `PersistedProfile` document in memory.
+  If disk writing fails, it reports the error and returns `false` without rolling back the cache.
+  This prevents subsequent saves of other collections (such as Recent Items or Desk Presets) from overwriting disk with outdated state.
+- Irreversible operations (such as closing a live Board) retain intended state in UI and memory rather than artificially rewinding.
+- UI operations report success (such as displaying a success Toast) only after disk persistence succeeds.
