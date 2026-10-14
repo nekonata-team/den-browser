@@ -13,6 +13,13 @@ private enum DenOverlayLayer {
     static let toast: Double = 10
 }
 
+private func dismissBlocker(onDismiss: @escaping () -> Void) -> some View {
+    Color.clear
+        .contentShape(Rectangle())
+        .onTapGesture(perform: onDismiss)
+        .accessibilityHidden(true)
+}
+
 struct DenView<Header: View>: View {
     private let profileName: String?
     private let profileColor: Color
@@ -206,174 +213,16 @@ struct DenView<Header: View>: View {
 
     @ViewBuilder
     private func activePanelOverlay(in size: CGSize) -> some View {
-        if windowModel.temporaryContext != nil, windowModel.temporaryContext != .drawer {
-            dismissBlocker(onDismiss: dismissTemporaryPresentation)
-                .frame(width: size.width, height: size.height)
-                .zIndex(DenOverlayLayer.activePanel)
-
-            activePanel(
-                newBoardWidth: newBoardWidth(in: size),
-                boardHeight: DenLayout.boardHeight(for: size, shouldShowHeader: shouldShowHeader)
-            )
-            .zIndex(DenOverlayLayer.activePanel)
-        }
-    }
-
-    @ViewBuilder
-    private func activePanel(newBoardWidth: CGFloat, boardHeight: CGFloat) -> some View {
-        switch windowModel.temporaryContext {
-        case .universalSearch:
-            panelOverlay(UniversalSearchPanel(profileName: profileName ?? "", profileColor: profileColor))
-        case .essentialsPrefix:
-            panelOverlay(
-                EssentialsPrefixPanel(
-                    profileColor: profileColor,
-                    essentials: controller.essentials,
-                    selectedEssentialID: windowModel.selectedEssentialID,
-                    onSelect: { windowModel.selectEssential($0) }
-                )
-            )
-        case .openBoard:
-            panelOverlay(OpenBoardPanel(profileColor: profileColor, newBoardWidth: newBoardWidth))
-        case .zmxSessions:
-            panelOverlay(ZmxSessionsPanel(profileColor: profileColor))
-        case .zmxDuplication:
-            panelOverlay(ZmxDuplicationPanel())
-        case .editBoardLink:
-            panelOverlay(EditBoardLinkPanel())
-        case .newDesk, .replaceDesk:
-            panelOverlay(newDeskPanel)
-        case .deskPresetManagement:
-            panelOverlay(
-                DeskPresetManagementPanel(
-                    isStandalone: true, profileColor: profileColor,
-                    presets: controller.deskPresets,
-                    renamePreset: windowModel.deskPresetActions.rename,
-                    requestDeletion: windowModel.deskPresetActions.requestDeletion
-                ) {
-                    windowModel.hideNewDeskPanel(exitsDenMode: true)
-                })
-        case .boardWidth:
-            panelOverlay(boardWidthPanel)
-        case .saveDeskPreset:
-            panelOverlay(
-                SaveDeskPresetPanel(
-                    initialLabel: controller.focusedDesk?.label ?? "",
-                    previewBoards: DeskPresetBoard.capture(from: controller.focusedDesk?.boards ?? []),
-                    savePreset: windowModel.deskPresetActions.save,
-                    onClose: { windowModel.hideSaveDeskPresetPanel() }))
-        case .renameBoard:
-            panelOverlay(RenameBoardPanel())
-        case .renameDesk:
-            panelOverlay(RenameDeskPanel())
-        case .saveEssential:
-            panelOverlay(saveEssentialPanel)
-        case .overview:
-            OverviewView(profileColor: profileColor, boardHeight: boardHeight)
-                .padding(DenLayout.overlayInset)
-                .transition(DenMotion.panelTransition(reduceMotion: shouldReduceMotion))
-        case .boardActivity:
-            BoardActivityView(profileColor: profileColor)
-                .padding(DenLayout.overlayInset)
-                .transition(DenMotion.panelTransition(reduceMotion: shouldReduceMotion))
-        case .keyboardShortcuts:
-            panelOverlay(
-                KeyboardShortcutsView(onClose: windowModel.hideKeyboardShortcuts)
-                    .denPanel(width: DenPanelLayout.wideWidth)
-            )
-        case .profilePicker:
-            panelOverlay(
-                OpenProfilePanel(
-                    profiles: profileManager.profiles,
-                    profileColor: profileColor,
-                    onOpenProfile: { profileID in
-                        if !profileManager.activateWindow(for: profileID) {
-                            openWindow(value: ProfileWindowRoute(profileID: profileID))
-                        }
-                    },
-                    onClose: { windowModel.setTemporaryContext(nil) }
-                )
-            )
-        case .drawer, nil:
-            EmptyView()
-        }
-    }
-
-    private func panelOverlay<Content: View>(_ content: Content) -> some View {
-        content
-            .transition(DenMotion.panelTransition(reduceMotion: shouldReduceMotion))
-            .padding(.top, 160)
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-    }
-
-    private func dismissBlocker(onDismiss: @escaping () -> Void) -> some View {
-        Color.clear
-            .contentShape(Rectangle())
-            .onTapGesture(perform: onDismiss)
-            .accessibilityHidden(true)
-    }
-
-    private func dismissTemporaryPresentation() {
-        switch windowModel.temporaryContext {
-        case .universalSearch:
-            windowModel.hideUniversalSearch()
-            controller.restoreFocusedFirstResponder()
-        case .essentialsPrefix:
-            windowModel.exitEssentialsPrefix()
-        case .openBoard:
-            windowModel.hideOpenBoardPanel()
-            controller.restoreFocusedFirstResponder()
-        case .zmxSessions:
-            windowModel.hideZmxSessions()
-        case .zmxDuplication:
-            windowModel.hideZmxDuplicationPanel()
-            controller.restoreFocusedFirstResponder()
-        case .editBoardLink:
-            windowModel.hideEditBoardLinkPanel()
-            controller.restoreFocusedFirstResponder()
-        case .newDesk, .replaceDesk:
-            windowModel.hideNewDeskPanel()
-        case .deskPresetManagement:
-            windowModel.hideNewDeskPanel(exitsDenMode: true)
-        case .overview:
-            windowModel.hideOverview()
-        case .boardActivity:
-            windowModel.hideBoardActivity()
-        case .keyboardShortcuts:
-            windowModel.hideKeyboardShortcuts()
-        case .boardWidth:
-            windowModel.hideBoardWidthPanel()
-        case .saveDeskPreset:
-            windowModel.hideSaveDeskPresetPanel()
-        case .renameBoard:
-            windowModel.hideRenameBoardPanel()
-        case .renameDesk:
-            windowModel.hideRenameDeskPanel()
-        case .drawer:
-            windowModel.closeDrawer()
-        case .saveEssential:
-            windowModel.hideSaveEssentialPanel()
-        case .profilePicker:
-            windowModel.setTemporaryContext(nil)
-        case nil:
-            break
-        }
-    }
-
-    private var newDeskPanel: some View {
-        NewDeskPanel(profileColor: profileColor)
+        DenActivePanelOverlay(
+            size: size,
+            profileName: profileName,
+            profileColor: profileColor,
+            shouldShowHeader: shouldShowHeader
+        )
     }
 
     private func newBoardWidth(in size: CGSize) -> Double {
         DenLayout.newBoardWidth(in: size, focusedBoardWidth: controller.focusedBoard?.width)
-    }
-
-    private var saveEssentialPanel: some View {
-        SaveEssentialPanel()
-    }
-
-    private var boardWidthPanel: some View {
-        BoardWidthPanel()
     }
 
     private func boardStrip(in size: CGSize) -> some View {
@@ -670,5 +519,178 @@ private struct DenFeedbackOverlay: View {
         systemReduceMotion
             ? .opacity
             : .move(edge: .bottom).combined(with: .opacity)
+    }
+}
+
+private struct DenActivePanelOverlay: View {
+    let size: CGSize
+    let profileName: String?
+    let profileColor: Color
+    let shouldShowHeader: Bool
+
+    @Environment(DenController.self) private var controller
+    @Environment(DenWindowModel.self) private var windowModel
+    @Environment(ProfileManager.self) private var profileManager
+    @Environment(AppPreferences.self) private var preferences
+    @Environment(\.openWindow) private var openWindow
+    @Environment(\.accessibilityReduceMotion) private var systemReduceMotion
+
+    var body: some View {
+        if windowModel.temporaryContext != nil, windowModel.temporaryContext != .drawer {
+            dismissBlocker(onDismiss: dismissTemporaryPresentation)
+                .frame(width: size.width, height: size.height)
+                .zIndex(DenOverlayLayer.activePanel)
+
+            activePanel(
+                newBoardWidth: DenLayout.newBoardWidth(in: size, focusedBoardWidth: controller.focusedBoard?.width),
+                boardHeight: DenLayout.boardHeight(for: size, shouldShowHeader: shouldShowHeader)
+            )
+            .zIndex(DenOverlayLayer.activePanel)
+        }
+    }
+
+    @ViewBuilder
+    private func activePanel(newBoardWidth: CGFloat, boardHeight: CGFloat) -> some View {
+        switch windowModel.temporaryContext {
+        case .universalSearch:
+            panelOverlay(UniversalSearchPanel(profileName: profileName ?? "", profileColor: profileColor))
+        case .essentialsPrefix:
+            panelOverlay(
+                EssentialsPrefixPanel(
+                    profileColor: profileColor,
+                    essentials: controller.essentials,
+                    selectedEssentialID: windowModel.selectedEssentialID,
+                    onSelect: { windowModel.selectEssential($0) }
+                )
+            )
+        case .openBoard:
+            panelOverlay(OpenBoardPanel(profileColor: profileColor, newBoardWidth: newBoardWidth))
+        case .zmxSessions:
+            panelOverlay(ZmxSessionsPanel(profileColor: profileColor))
+        case .zmxDuplication:
+            panelOverlay(ZmxDuplicationPanel())
+        case .editBoardLink:
+            panelOverlay(EditBoardLinkPanel())
+        case .newDesk, .replaceDesk:
+            panelOverlay(NewDeskPanel(profileColor: profileColor))
+        case .deskPresetManagement:
+            panelOverlay(
+                DeskPresetManagementPanel(
+                    isStandalone: true,
+                    profileColor: profileColor,
+                    presets: controller.deskPresets,
+                    renamePreset: windowModel.deskPresetActions.rename,
+                    requestDeletion: windowModel.deskPresetActions.requestDeletion
+                ) {
+                    windowModel.hideNewDeskPanel(exitsDenMode: true)
+                }
+            )
+        case .boardWidth:
+            panelOverlay(BoardWidthPanel())
+        case .saveDeskPreset:
+            panelOverlay(
+                SaveDeskPresetPanel(
+                    initialLabel: controller.focusedDesk?.label ?? "",
+                    previewBoards: DeskPresetBoard.capture(from: controller.focusedDesk?.boards ?? []),
+                    savePreset: windowModel.deskPresetActions.save,
+                    onClose: { windowModel.hideSaveDeskPresetPanel() }
+                )
+            )
+        case .renameBoard:
+            panelOverlay(RenameBoardPanel())
+        case .renameDesk:
+            panelOverlay(RenameDeskPanel())
+        case .saveEssential:
+            panelOverlay(SaveEssentialPanel())
+        case .overview:
+            OverviewView(profileColor: profileColor, boardHeight: boardHeight)
+                .padding(DenLayout.overlayInset)
+                .transition(DenMotion.panelTransition(reduceMotion: shouldReduceMotion))
+        case .boardActivity:
+            BoardActivityView(profileColor: profileColor)
+                .padding(DenLayout.overlayInset)
+                .transition(DenMotion.panelTransition(reduceMotion: shouldReduceMotion))
+        case .keyboardShortcuts:
+            panelOverlay(
+                KeyboardShortcutsView(onClose: windowModel.hideKeyboardShortcuts)
+                    .denPanel(width: DenPanelLayout.wideWidth)
+            )
+        case .profilePicker:
+            panelOverlay(
+                OpenProfilePanel(
+                    profiles: profileManager.profiles,
+                    profileColor: profileColor,
+                    onOpenProfile: { profileID in
+                        if !profileManager.activateWindow(for: profileID) {
+                            openWindow(value: ProfileWindowRoute(profileID: profileID))
+                        }
+                    },
+                    onClose: { windowModel.setTemporaryContext(nil) }
+                )
+            )
+        case .drawer, nil:
+            EmptyView()
+        }
+    }
+
+    private func panelOverlay<Content: View>(_ content: Content) -> some View {
+        content
+            .transition(DenMotion.panelTransition(reduceMotion: shouldReduceMotion))
+            .padding(.top, 160)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+    }
+
+    private func dismissTemporaryPresentation() {
+        switch windowModel.temporaryContext {
+        case .universalSearch:
+            windowModel.hideUniversalSearch()
+            controller.restoreFocusedFirstResponder()
+        case .essentialsPrefix:
+            windowModel.exitEssentialsPrefix()
+        case .openBoard:
+            windowModel.hideOpenBoardPanel()
+            controller.restoreFocusedFirstResponder()
+        case .zmxSessions:
+            windowModel.hideZmxSessions()
+        case .zmxDuplication:
+            windowModel.hideZmxDuplicationPanel()
+            controller.restoreFocusedFirstResponder()
+        case .editBoardLink:
+            windowModel.hideEditBoardLinkPanel()
+            controller.restoreFocusedFirstResponder()
+        case .newDesk, .replaceDesk:
+            windowModel.hideNewDeskPanel()
+        case .deskPresetManagement:
+            windowModel.hideNewDeskPanel(exitsDenMode: true)
+        case .overview:
+            windowModel.hideOverview()
+        case .boardActivity:
+            windowModel.hideBoardActivity()
+        case .keyboardShortcuts:
+            windowModel.hideKeyboardShortcuts()
+        case .boardWidth:
+            windowModel.hideBoardWidthPanel()
+        case .saveDeskPreset:
+            windowModel.hideSaveDeskPresetPanel()
+        case .renameBoard:
+            windowModel.hideRenameBoardPanel()
+        case .renameDesk:
+            windowModel.hideRenameDeskPanel()
+        case .drawer:
+            windowModel.closeDrawer()
+        case .saveEssential:
+            windowModel.hideSaveEssentialPanel()
+        case .profilePicker:
+            windowModel.setTemporaryContext(nil)
+        case nil:
+            break
+        }
+    }
+
+    private var shouldReduceMotion: Bool {
+        DenMotion.shouldReduceMotion(
+            preference: preferences.motionPreference,
+            systemReduceMotion: systemReduceMotion
+        )
     }
 }
