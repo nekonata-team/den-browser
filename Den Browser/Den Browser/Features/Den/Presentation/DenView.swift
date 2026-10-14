@@ -80,8 +80,10 @@ struct DenView<Header: View>: View {
 
                 activePanelOverlay(in: geometry.size)
 
-                notificationsOverlay
-                    .zIndex(DenOverlayLayer.notificationList)
+                DenNotificationOverlay(
+                    profileColor: profileColor,
+                    shouldShowHeader: shouldShowHeader
+                )
                 drawerOverlay(in: geometry.size)
                     .zIndex(DenOverlayLayer.drawer)
                 DenFeedbackOverlay(
@@ -236,32 +238,6 @@ struct DenView<Header: View>: View {
                 windowModel.showOpenBoardPanel(afterBoardID: boardID)
             }
         )
-    }
-
-    @ViewBuilder
-    private var notificationsOverlay: some View {
-        if windowModel.isNotificationListPresented, windowModel.isZenViewPresented {
-            dismissBlocker(onDismiss: windowModel.closeNotificationList)
-                .zIndex(DenOverlayLayer.notificationDismissArea)
-
-            NotificationListView(
-                profileColor: profileColor
-            )
-            .glassEffect(
-                .regular,
-                in: RoundedRectangle(cornerRadius: DenRadius.large, style: .continuous)
-            )
-            .padding(
-                .top,
-                shouldShowHeader
-                    ? DenLayout.denHeaderHeight + DenLayout.panelGap
-                    : DenLayout.outerInset
-            )
-            .padding(.trailing, DenLayout.outerInset)
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
-            .transition(DenMotion.panelTransition(reduceMotion: shouldReduceMotion))
-            .zIndex(DenOverlayLayer.notificationList)
-        }
     }
 
     @ViewBuilder
@@ -516,6 +492,47 @@ private struct DenFeedbackOverlay: View {
         systemReduceMotion
             ? .opacity
             : .move(edge: .bottom).combined(with: .opacity)
+    }
+}
+
+private struct DenNotificationOverlay: View {
+    let profileColor: Color
+    let shouldShowHeader: Bool
+
+    @Environment(DenWindowModel.self) private var windowModel
+    @Environment(AppPreferences.self) private var preferences
+    @Environment(\.accessibilityReduceMotion) private var systemReduceMotion
+
+    var body: some View {
+        if windowModel.isNotificationListPresented, windowModel.isZenViewPresented {
+            dismissBlocker(onDismiss: windowModel.closeNotificationList)
+                .zIndex(DenOverlayLayer.notificationDismissArea)
+
+            NotificationListView(
+                profileColor: profileColor
+            )
+            .glassEffect(
+                .regular,
+                in: RoundedRectangle(cornerRadius: DenRadius.large, style: .continuous)
+            )
+            .padding(
+                .top,
+                shouldShowHeader
+                    ? DenLayout.denHeaderHeight + DenLayout.panelGap
+                    : DenLayout.outerInset
+            )
+            .padding(.trailing, DenLayout.outerInset)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
+            .transition(DenMotion.panelTransition(reduceMotion: shouldReduceMotion))
+            .zIndex(DenOverlayLayer.notificationList)
+        }
+    }
+
+    private var shouldReduceMotion: Bool {
+        DenMotion.shouldReduceMotion(
+            preference: preferences.motionPreference,
+            systemReduceMotion: systemReduceMotion
+        )
     }
 }
 
