@@ -118,8 +118,11 @@ updated projections; those saved fields supply initial state when restoring a ru
 
 `App/Composition/DenProfileResources` connects the shared state source, persistence callbacks,
 window event owners, and the native registry. `DenBoardRuntimes` owns Profile-shared Web and
-Terminal runtimes and their disposal; `DenWindowResources` owns the Drawer Peek and cancellable
-window operation Tasks. Web Boards and Drawer Peek use the same `WebRuntime` type. Placing
+Terminal runtimes and their disposal; `DenWindowResources` owns the Drawer Peek and zmx command Task,
+and privately manages the screenshot operation Task. `ScreenshotCapture` returns an image; Controller selects the
+target Sheet, requests capture, and passes the image to `ScreenshotOutput` for save or clipboard
+output before reporting feedback. Closing the window cancels the operation.
+Web Boards and Drawer Peek use the same `WebRuntime` type. Placing
 the invoking window’s Peek transfers that instance into the Profile registry and attaches Board
 actions and identity without loading, reloading, or disposing its WebView. Board insertion must
 succeed before the window releases ownership; other windows’ Peeks of the removed Item are disposed. Closing one window releases its resources while shared Board runtimes

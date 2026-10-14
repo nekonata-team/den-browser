@@ -84,9 +84,8 @@ final class DenController {
         get { windowResources.zmxCommandTask }
         set { windowResources.zmxCommandTask = newValue }
     }
-    var screenshotTask: Task<Void, Never>? {
-        get { windowResources.screenshotTask }
-        set { windowResources.screenshotTask = newValue }
+    func startScreenshotOperation(_ operation: @escaping @MainActor () async -> Void) {
+        windowResources.startScreenshotOperation(operation)
     }
     @ObservationIgnored var previousFocusedDeskID: DeskID?
     @ObservationIgnored var anchorJumpOriginBoardIDByDesk: [DeskID: BoardID] = [:]
