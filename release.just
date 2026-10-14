@@ -19,10 +19,14 @@ publish $version: (_validate-version version) _require-main _commit-version-if-n
     git push origin main
     just --yes release homebrew "$version"
 
-# Prepare and publish release without manual candidate verification.
+# Prepare and publish release without manual verification (prevents sleep during execution).
 [group("flow")]
 [confirm("Prepare and publish release without manual verification?")]
-ship $version: (_validate-version version) _require-main (prepare version)
+ship $version: (_validate-version version) _require-main
+    caffeinate -dimsu just release _ship-inner "$version"
+
+[private]
+_ship-inner $version: (prepare version)
     just --yes release publish "$version"
 
 # Abort release preparation and restore working tree to clean state.
