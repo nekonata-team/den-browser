@@ -615,6 +615,39 @@ struct OverviewModelTests {
         #expect(windowModel.overview.selectionBoardID == nil)
     }
 
+    @Test func movingDeskSelectionSelectsBoardClosestInXWhenAvailable() {
+        // Arrange
+        let board1 = board("Board 1")
+        let board2 = board("Board 2")
+        let board3 = board("Board 3")
+        let desk1 = desk("Desk 1", boards: [board1], focusedBoardID: board1.id)
+        let desk2 = desk("Desk 2", boards: [board2, board3], focusedBoardID: board2.id)
+
+        let controller = DenController(state: DenState(desks: [desk1, desk2], focusedDeskID: desk1.id))
+        let composition = DenWindowComposition(controller: controller)
+        let windowModel = composition.model
+        composition.connect()
+        defer { composition.disconnect() }
+        windowModel.showOverview()
+
+        #expect(windowModel.overview.selectionDeskID == desk1.id)
+        #expect(windowModel.overview.selectionBoardID == board1.id)
+
+        // board1 is at midX: 300, board2 (default focused) is at 100, board3 is at 310
+        windowModel.overview.boardMidXs = [
+            board1.id: 300,
+            board2.id: 100,
+            board3.id: 310,
+        ]
+
+        // Act
+        windowModel.overview.selectNextDesk()
+
+        // Assert: picks board3 because it's closest to board1's midX (300 vs 310), ignoring focused board2
+        #expect(windowModel.overview.selectionDeskID == desk2.id)
+        #expect(windowModel.overview.selectionBoardID == board3.id)
+    }
+
     private func keyEvent(_ character: String, keyCode: UInt16) -> NSEvent? {
         NSEvent.keyEvent(
             with: .keyDown,

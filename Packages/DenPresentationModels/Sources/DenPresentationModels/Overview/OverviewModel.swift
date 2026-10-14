@@ -60,6 +60,7 @@ public final class OverviewModel {
     public private(set) var canvasResetRequest = 0
 
     @ObservationIgnored public var onDismiss: (() -> Void)?
+    @ObservationIgnored public var boardMidXs: [BoardID: CGFloat] = [:]
 
     public var isFilterPresented: Bool { filterPhase != .inactive }
     public var isFilterInputActive: Bool { filterPhase == .filtering }
@@ -96,6 +97,7 @@ public final class OverviewModel {
         query = ""
         filterPhase = .inactive
         selection = nil
+        boardMidXs = [:]
     }
 
     public func setQuery(_ query: String) {
@@ -280,9 +282,16 @@ public final class OverviewModel {
         let index = desks.firstIndex { $0.id == selection?.deskID } ?? 0
         let desk = desks[(index + delta % desks.count + desks.count) % desks.count]
         let boards = desk.boards.filter { matchesFilter($0, in: desk) }
-        selection = OverviewSelection(
-            deskID: desk.id,
-            boardID: boards.first(where: { $0.id == desk.focusedBoardID })?.id ?? boards.first?.id)
+        guard let firstBoard = boards.first else {
+            selection = OverviewSelection(deskID: desk.id, boardID: nil)
+            return
+        }
+        let currentMidX = selection?.boardID.flatMap { boardMidXs[$0] } ?? 0
+        let targetBoard =
+            boards.min {
+                abs((boardMidXs[$0.id] ?? 0) - currentMidX) < abs((boardMidXs[$1.id] ?? 0) - currentMidX)
+            } ?? firstBoard
+        selection = OverviewSelection(deskID: desk.id, boardID: targetBoard.id)
     }
 
     private func moveSelectionBoard(by delta: Int) {

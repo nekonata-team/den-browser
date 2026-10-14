@@ -196,6 +196,7 @@ struct OverviewView: View {
             }
             .onPreferenceChange(OverviewBoardFramePreferenceKey.self) {
                 overviewGeometry.boardFrames = $0.frames
+                overview.boardMidXs = $0.frames.mapValues(\.midX)
                 measuredBoardQuery = $0.query
                 centerInitialSelectionIfReady()
                 centerSearchSelectionIfReady()
