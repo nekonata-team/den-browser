@@ -84,8 +84,11 @@ struct DenView<Header: View>: View {
                     profileColor: profileColor,
                     shouldShowHeader: shouldShowHeader
                 )
-                drawerOverlay(in: geometry.size)
-                    .zIndex(DenOverlayLayer.drawer)
+                DenDrawerOverlay(
+                    size: geometry.size,
+                    profileColor: profileColor,
+                    shouldShowHeader: shouldShowHeader
+                )
                 DenFeedbackOverlay(
                     profileColor: profileColor,
                     shouldReduceMotion: shouldReduceMotion
@@ -238,40 +241,6 @@ struct DenView<Header: View>: View {
                 windowModel.showOpenBoardPanel(afterBoardID: boardID)
             }
         )
-    }
-
-    @ViewBuilder
-    private func drawerOverlay(in size: CGSize) -> some View {
-        let isBottom = preferences.drawerStyle == .bottom
-
-        ZStack(alignment: isBottom ? .bottom : .center) {
-            if windowModel.isDrawerOpen {
-                dismissBlocker(onDismiss: windowModel.closeDrawer)
-                    .transition(.opacity)
-
-                DrawerView(
-                    availableHeight: size.height,
-                    availableWidth: size.width,
-                    profileColor: profileColor,
-                    shouldShowHeader: shouldShowHeader,
-                    isDenMode: { windowModel.isDenMode },
-                    isDrawerOpen: { windowModel.isDrawerOpen },
-                    motionPreference: preferences.motionPreference,
-                    drawerRuntime: { controller.drawerRuntime(for: $0) },
-                    placeFromContextMenu: { _ = controller.placeDrawerItemAsBoard($0) },
-                    placeAsBoard: { _ = windowModel.placeDrawerItemAsBoard($0) }
-                )
-                .padding(.horizontal, isBottom ? DenLayout.outerInset : 0)
-                .transition(
-                    isBottom
-                        ? DenMotion.transition(reduceMotion: shouldReduceMotion, edge: .bottom)
-                        : DenMotion.panelTransition(reduceMotion: shouldReduceMotion)
-                )
-            }
-        }
-        .frame(width: size.width, height: size.height)
-        .allowsHitTesting(windowModel.isDrawerOpen)
-        .zIndex(DenOverlayLayer.drawer)
     }
 
     private var shouldReduceMotion: Bool {
@@ -526,6 +495,57 @@ private struct DenNotificationOverlay: View {
             .transition(DenMotion.panelTransition(reduceMotion: shouldReduceMotion))
             .zIndex(DenOverlayLayer.notificationList)
         }
+    }
+
+    private var shouldReduceMotion: Bool {
+        DenMotion.shouldReduceMotion(
+            preference: preferences.motionPreference,
+            systemReduceMotion: systemReduceMotion
+        )
+    }
+}
+
+private struct DenDrawerOverlay: View {
+    let size: CGSize
+    let profileColor: Color
+    let shouldShowHeader: Bool
+
+    @Environment(DenController.self) private var controller
+    @Environment(DenWindowModel.self) private var windowModel
+    @Environment(AppPreferences.self) private var preferences
+    @Environment(\.accessibilityReduceMotion) private var systemReduceMotion
+
+    var body: some View {
+        let isBottom = preferences.drawerStyle == .bottom
+
+        ZStack(alignment: isBottom ? .bottom : .center) {
+            if windowModel.isDrawerOpen {
+                dismissBlocker(onDismiss: windowModel.closeDrawer)
+                    .transition(.opacity)
+
+                DrawerView(
+                    availableHeight: size.height,
+                    availableWidth: size.width,
+                    profileColor: profileColor,
+                    shouldShowHeader: shouldShowHeader,
+                    isDenMode: { windowModel.isDenMode },
+                    isDrawerOpen: { windowModel.isDrawerOpen },
+                    motionPreference: preferences.motionPreference,
+                    drawerRuntime: { controller.drawerRuntime(for: $0) },
+                    placeFromContextMenu: { _ = controller.placeDrawerItemAsBoard($0) },
+                    placeAsBoard: { _ = windowModel.placeDrawerItemAsBoard($0) }
+                )
+                .padding(.horizontal, isBottom ? DenLayout.outerInset : 0)
+                .transition(
+                    isBottom
+                        ? DenMotion.transition(reduceMotion: shouldReduceMotion, edge: .bottom)
+                        : DenMotion.panelTransition(reduceMotion: shouldReduceMotion)
+                )
+            }
+        }
+        .frame(width: size.width, height: size.height)
+        .allowsHitTesting(windowModel.isDrawerOpen)
+        .zIndex(DenOverlayLayer.drawer)
     }
 
     private var shouldReduceMotion: Bool {
