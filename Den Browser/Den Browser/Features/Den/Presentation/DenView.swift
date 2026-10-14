@@ -181,7 +181,7 @@ struct DenView<Header: View>: View {
                     .zIndex(DenOverlayLayer.deskFilter)
             }
 
-            indicatorOverlay
+            BoardStripIndicator(profileColor: profileColor)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .onAppear {
@@ -298,44 +298,6 @@ struct DenView<Header: View>: View {
         .zIndex(DenOverlayLayer.drawer)
     }
 
-    @ViewBuilder
-    private var indicatorOverlay: some View {
-        if shouldShowBoardIndicator {
-            boardIndicator
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
-                .padding(.bottom, DenLayout.outerInset)
-                .allowsHitTesting(windowModel.temporaryContext == nil)
-                .accessibilityHidden(windowModel.temporaryContext != nil)
-                .transition(.opacity)
-        }
-    }
-
-    private var shouldShowBoardIndicator: Bool {
-        !windowModel.isZenViewPresented
-            && windowModel.temporaryContext == nil
-            && (controller.focusedDesk?.boards.count ?? 0) > 1
-    }
-
-    private var boardIndicator: some View {
-        let boards =
-            deskFilter.isPresented
-            ? deskFilter.filteredBoards
-            : controller.focusedDesk?.boards ?? []
-        let focusedBoardID =
-            deskFilter.isPresented
-            ? deskFilter.selectionBoardID
-            : controller.focusedDesk?.focusedBoardID
-
-        return BoardStripIndicator(
-            boards: boards,
-            focusedBoardID: focusedBoardID,
-            anchorBoardID: controller.focusedDesk?.anchorBoardID,
-            profileColor: profileColor,
-            reduceMotion: shouldReduceMotion,
-            onSelect: { controller.focusBoard($0) }
-        )
-    }
-
     private var shouldReduceMotion: Bool {
         DenMotion.shouldReduceMotion(
             preference: preferences.motionPreference,
@@ -438,20 +400,48 @@ private struct DeskFilterOverlay: View {
 private struct BoardStripIndicator: View {
     private static let dotHeight: CGFloat = 6
 
-    let boards: [BoardState]
-    let focusedBoardID: BoardID?
-    let anchorBoardID: BoardID?
     let profileColor: Color
-    let reduceMotion: Bool
-    let onSelect: (BoardID) -> Void
+
+    @Environment(DenController.self) private var controller
+    @Environment(DenWindowModel.self) private var windowModel
+    @Environment(AppPreferences.self) private var preferences
+    @Environment(\.accessibilityReduceMotion) private var systemReduceMotion
 
     var body: some View {
-        HStack(spacing: 8) {
+        if shouldShowBoardIndicator {
+            content
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
+                .padding(.bottom, DenLayout.outerInset)
+                .allowsHitTesting(windowModel.temporaryContext == nil)
+                .accessibilityHidden(windowModel.temporaryContext != nil)
+                .transition(.opacity)
+        }
+    }
+
+    private var shouldShowBoardIndicator: Bool {
+        !windowModel.isZenViewPresented
+            && windowModel.temporaryContext == nil
+            && (controller.focusedDesk?.boards.count ?? 0) > 1
+    }
+
+    private var content: some View {
+        let deskFilter = windowModel.deskFilter
+        let boards =
+            deskFilter.isPresented
+            ? deskFilter.filteredBoards
+            : controller.focusedDesk?.boards ?? []
+        let focusedBoardID =
+            deskFilter.isPresented
+            ? deskFilter.selectionBoardID
+            : controller.focusedDesk?.focusedBoardID
+        let anchorBoardID = controller.focusedDesk?.anchorBoardID
+
+        return HStack(spacing: 8) {
             ForEach(boards) { board in
                 let isFocused = board.id == focusedBoardID
                 let isAnchor = board.id == anchorBoardID
                 Button {
-                    onSelect(board.id)
+                    controller.focusBoard(board.id)
                 } label: {
                     Capsule()
                         .fill(
@@ -477,6 +467,13 @@ private struct BoardStripIndicator: View {
         .animation(DenMotion.spatial(reduceMotion: reduceMotion), value: boards.map(\.id))
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("board-strip-indicator")
+    }
+
+    private var reduceMotion: Bool {
+        DenMotion.shouldReduceMotion(
+            preference: preferences.motionPreference,
+            systemReduceMotion: systemReduceMotion
+        )
     }
 }
 
