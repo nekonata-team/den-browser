@@ -78,7 +78,12 @@ struct DenView<Header: View>: View {
                     value: windowModel.isBoardRailPresented
                 )
 
-                activePanelOverlay(in: geometry.size)
+                DenActivePanelOverlay(
+                    size: geometry.size,
+                    profileName: profileName,
+                    profileColor: profileColor,
+                    shouldShowHeader: shouldShowHeader
+                )
 
                 DenNotificationOverlay(
                     profileColor: profileColor,
@@ -214,16 +219,6 @@ struct DenView<Header: View>: View {
             return profileTitle
         }
         return "\(profileTitle) · \(windowModel.isDenMode ? "DEN MODE" : "SHEET INPUT")"
-    }
-
-    @ViewBuilder
-    private func activePanelOverlay(in size: CGSize) -> some View {
-        DenActivePanelOverlay(
-            size: size,
-            profileName: profileName,
-            profileColor: profileColor,
-            shouldShowHeader: shouldShowHeader
-        )
     }
 
     private func newBoardWidth(in size: CGSize) -> Double {
