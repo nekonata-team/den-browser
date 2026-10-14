@@ -19,6 +19,15 @@ public struct UniversalSearchItem: Identifiable, Equatable {
         case essential(UUID)
         case createBoard(String)
         case command(UniversalSearchCommand)
+
+        fileprivate var navigationID: UUID? {
+            switch self {
+            case .board(let id): id.rawValue
+            case .desk(let id): id.rawValue
+            case .profile(let id): id.rawValue
+            case .essential, .createBoard, .command: nil
+            }
+        }
     }
 
     public let target: Target
@@ -57,13 +66,18 @@ public final class UniversalSearchModel {
     public var results: [UniversalSearchItem] {
         let trimmed = query.trimmingCharacters(in: .whitespaces)
         let terms = (commandsOnly ? String(trimmed.dropFirst()) : trimmed).split(whereSeparator: \.isWhitespace)
-        var results = items.filter { item in
-            if commandsOnly {
-                guard case .command = item.target else { return false }
+        let queryID = UUID(uuidString: trimmed)
+        let idMatches = items.filter { queryID != nil && $0.target.navigationID == queryID }
+        var results =
+            idMatches
+            + items.filter { item in
+                if let queryID, item.target.navigationID == queryID { return false }
+                if commandsOnly {
+                    guard case .command = item.target else { return false }
+                }
+                let searchable = "\(item.title) \(item.detail) \(item.keywords)"
+                return terms.allSatisfy { searchable.localizedCaseInsensitiveContains(String($0)) }
             }
-            let searchable = "\(item.title) \(item.detail) \(item.keywords)"
-            return terms.allSatisfy { searchable.localizedCaseInsensitiveContains(String($0)) }
-        }
         if !commandsOnly, !trimmed.isEmpty {
             results.append(
                 UniversalSearchItem(

@@ -9,6 +9,8 @@ its displayed action. IME composition retains native editing keys instead of exe
 
 - Search Board labels, Current Sheet URLs, Terminal working directories, and Zellij/zmx session names in the current Profile.
 - Switch to a Desk in the current Profile or open/activate a Profile window by Profile name.
+- Paste a full Board, Desk, or Profile UUID from CLI output to find an exact ID match, case-insensitively.
+  Board and Desk ID search stays within the current Profile; Profile ID search uses the Profile list.
 - Search Essential names, keys, and inputs; selecting an Essential creates a Board in the current Desk.
 - Open a URL, local path, web search, or existing `:terminal`, `:tutorial`, `:zellij`, and `:zmx` Board input.
 - Run New Desk, Open Profile, Open Settings, Toggle Zen View, Toggle Focus Mode, and Restore Recently Removed Board.
@@ -16,7 +18,9 @@ its displayed action. IME composition retains native editing keys instead of exe
 
 Boards and Essentials are separate candidates even when names or URLs match. Creation is always
 an explicit candidate, even when a Board matches. Ordering is Boards, Essentials, Desks,
-Profiles, commands, then creation. Each whitespace-separated search term must match candidate metadata,
+Profiles, commands, then creation. Exact UUID matches precede metadata matches, keeping their source order.
+Metadata matches and the creation candidate remain available; partial IDs do not match by ID.
+Each whitespace-separated search term must match candidate metadata,
 case-insensitively. Query changes select the first available result; a removed selection falls back to an available
 result. This foundation does not yet provide fuzzy ranking or usage history.
 

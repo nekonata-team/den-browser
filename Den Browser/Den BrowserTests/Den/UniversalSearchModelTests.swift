@@ -5,6 +5,49 @@ import Testing
 
 @MainActor
 struct UniversalSearchModelTests {
+    @Test func exactNavigationIDsPrecedeMetadataMatchesAndPreserveCreation() {
+        // Arrange
+        let search = UniversalSearchModel()
+        let id = UUID()
+        let query = id.uuidString.lowercased()
+        let metadataMatch = UniversalSearchItem(
+            target: .board(BoardID()), title: "Reference", detail: "Board", keywords: query)
+        let board = UniversalSearchItem(target: .board(BoardID(id)), title: query, detail: "Board")
+        let desk = UniversalSearchItem(target: .desk(DeskID(id)), title: "Work", detail: "Desk")
+        let profile = UniversalSearchItem(target: .profile(ProfileID(id)), title: "Personal", detail: "Profile")
+        let essential = UniversalSearchItem(target: .essential(id), title: "Docs", detail: "Essential")
+        search.items = [metadataMatch, board, desk, profile, essential]
+
+        // Act
+        search.query = " \(query) "
+
+        // Assert
+        #expect(
+            search.results.map(\.target) == [
+                board.target, desk.target, profile.target, metadataMatch.target, .createBoard(query),
+            ])
+        #expect(search.selectedItem == board)
+    }
+
+    @Test(arguments: [false, true])
+    func partialOrUnknownNavigationIDsDoNotMatch(useUnknownID: Bool) {
+        // Arrange
+        let search = UniversalSearchModel()
+        let id = UUID()
+        search.items = [
+            UniversalSearchItem(target: .board(BoardID(id)), title: "Docs", detail: "Board"),
+            UniversalSearchItem(target: .desk(DeskID(id)), title: "Work", detail: "Desk"),
+            UniversalSearchItem(target: .profile(ProfileID(id)), title: "Personal", detail: "Profile"),
+        ]
+        let query = useUnknownID ? UUID().uuidString : String(id.uuidString.prefix(8))
+
+        // Act
+        search.query = query
+
+        // Assert
+        #expect(search.results.map(\.target) == [.createBoard(query)])
+    }
+
     @Test func commandPrefixExcludesNavigationAndCreation() {
         // Arrange
         let search = UniversalSearchModel()
