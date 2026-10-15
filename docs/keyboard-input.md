@@ -74,4 +74,4 @@ Inspect the path in this order:
 6. For `.perform`, inspect `AppActionHandler` and the resulting Model, Store, or system effect.
 7. For `.forward`, inspect only the named destination's responder path.
 
-When changing routing, add a Router decision test. Add an action-result test when behavior mutates Den. Add a UI test when the regression crosses AppKit, SwiftUI Commands, WebKit, or Terminal responder boundaries. Run `just check`; run the focused `just ui-test` target for affected UI behavior.
+When changing routing, add a Router decision test. Add an action-result test when behavior mutates Den. Add a UI test when the regression crosses AppKit, SwiftUI Commands, WebKit, or Terminal responder boundaries. Run `just check`; run the focused `just test ui` target for affected UI behavior.

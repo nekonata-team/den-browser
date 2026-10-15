@@ -11,7 +11,7 @@ The `Den_BrowserUIPerformanceTests` class measures launch with XCTest's
 class. Run it explicitly and inspect the result bundle:
 
 ```sh
-just ui-test Den_BrowserUIPerformanceTests/testApplicationLaunchPerformance
+just test ui Den_BrowserUIPerformanceTests/testApplicationLaunchPerformance
 xcrun xcresulttool get test-results metrics --path <path-to-xcresult>
 ```
 

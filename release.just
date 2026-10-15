@@ -41,7 +41,7 @@ abort:
 [script]
 verify:
     just check
-    just ui-test "Den_BrowserUITests" "Release"
+    just test ui "Den_BrowserUITests" "Release"
 
 # Set version and auto-increment build number.
 [group("step")]

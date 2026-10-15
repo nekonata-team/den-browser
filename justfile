@@ -3,12 +3,8 @@ set positional-arguments := true
 
 project := "Den Browser/Den Browser.xcodeproj"
 scheme := "Den Browser"
-unit_test_scheme := "Den Browser UnitTests"
-ui_test_scheme := "Den Browser UITests"
 derived_data := ".derived-data"
 ui_test_derived_data := ".derived-data-ui"
-unit_test_result := derived_data + "/TestResults.xcresult"
-ui_test_result := ui_test_derived_data + "/TestResults.xcresult"
 export SPARKLE_TOOLS := derived_data + "/SourcePackages/artifacts/sparkle/Sparkle/bin"
 swift_format := "xcrun swift-format"
 # Prevent ast-grep (terminal-light) from leaking OSC 11 background color queries.
@@ -26,6 +22,9 @@ mod web
 
 # Prepare and publish signed releases.
 mod release
+
+# Test automation.
+mod test
 
 # Format all Swift sources in place.
 [group("quality")]
@@ -60,10 +59,9 @@ format-check:
 lint: architecture-check format-check
     @swiftlint lint --quiet --strict
 
-# Check Swift layer import rules and their fixtures.
+# Check Swift layer import rules against source files.
 [group("quality")]
 architecture-check:
-    @{{ast_grep}} test --config sgconfig.yml --skip-snapshot-tests
     @{{ast_grep}} scan --config sgconfig.yml
 
 # Build macOS app with development signing.
@@ -123,26 +121,7 @@ precommit:
 prepush:
     lefthook run pre-push
 
-# Run unit tests without code signing.
-[group("test")]
-test:
-    @rm -rf "{{unit_test_result}}"
-    @rtk test "xcodebuild test -project '{{project}}' -scheme '{{unit_test_scheme}}' -destination 'platform=macOS,arch=arm64' -derivedDataPath '{{derived_data}}' -resultBundlePath '{{unit_test_result}}' -only-testing:'Den BrowserTests' -parallel-testing-enabled YES CODE_SIGNING_ALLOWED=NO" || { echo "✗ Unit tests failed."; echo '  Inspect: just test-results'; exit 1; }
-    echo "✓ Unit tests passed"
-
-# Run deterministic macOS UI interaction tests. Pass target or configuration (e.g. just ui-test configuration=Release).
-[group("test")]
-ui-test target="Den_BrowserUITests" configuration="Debug":
-    @rm -rf "{{ui_test_result}}"
-    @rtk test "xcodebuild test -project '{{project}}' -scheme '{{ui_test_scheme}}' -configuration '{{configuration}}' -destination 'platform=macOS,arch=arm64' -derivedDataPath '{{ui_test_derived_data}}' -resultBundlePath '{{ui_test_result}}' -only-testing:'Den BrowserUITests/{{target}}'" || { echo "✗ UI tests failed."; echo '  Inspect: just test-results .derived-data-ui/TestResults.xcresult'; exit 1; }
-    echo "✓ UI tests passed"
-
-# Show a test result summary. Pass another result bundle path as the first argument.
-[group("test")]
-test-results result_path=unit_test_result:
-    @test -d "{{result_path}}"
-    xcrun xcresulttool get test-results summary --path "{{result_path}}"
-
 # Run lint, TypeScript checks, and unit tests.
-[group("test")]
-check: lint embedded-js-typecheck test
+[group("quality")]
+check: lint embedded-js-typecheck
+    just test

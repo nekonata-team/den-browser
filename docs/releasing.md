@@ -47,7 +47,7 @@ match, builds a universal app, notarizes it, writes the ZIP under
 `.release/vX.Y.Z/`, and generates `web/public/appcast.xml` from that candidate.
 
 The release checks run before the artifact pipeline: `just check` runs first,
-then `just ui-test`. Fastlane owns only signing, archiving, exporting,
+then `just test ui`. Fastlane owns only signing, archiving, exporting,
 notarizing, and packaging. A retry of `just release candidate X.Y.Z` after a
 Fastlane failure does not repeat the release checks; run `just release verify`
 again when source or version inputs change.
