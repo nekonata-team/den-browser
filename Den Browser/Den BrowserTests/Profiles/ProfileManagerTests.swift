@@ -503,6 +503,7 @@ struct ProfileManagerTests {
             deletion = Task { await manager.deleteProfile(work.id) }
         }
         let canDeleteWhileWaiting = manager.canDeleteProfile(work.id)
+        let canOpenWhileWaiting = manager.canOpenWindow(for: work.id)
         let reopened = manager.openWindow(for: work.id)
         let duplicateDeleted = await manager.deleteProfile(work.id)
         let controller = manager.controller(for: work.id)
@@ -512,6 +513,7 @@ struct ProfileManagerTests {
 
         // Assert
         #expect(!canDeleteWhileWaiting)
+        #expect(!canOpenWhileWaiting)
         #expect(!reopened)
         #expect(controller == nil)
         #expect(!duplicateDeleted)
@@ -520,10 +522,26 @@ struct ProfileManagerTests {
         #expect(openedProfiles == [manager.personalProfileID])
         #expect(deleted == !fails)
         #expect(manager.canDeleteProfile(work.id) == fails)
+        #expect(manager.canOpenWindow(for: work.id) == fails)
         if fails {
             #expect(manager.openWindow(for: work.id))
             #expect(manager.controller(for: work.id) != nil)
         }
+    }
+
+    @Test func canOpenWindowReportsAvailability() throws {
+        // Arrange
+        let directory = temporaryProfileDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let manager = ProfileManager(
+            directoryURL: directory,
+            sheetNavigation: SheetNavigationManager(defaults: makeTestDefaults(), scriptSource: ""),
+            preferences: AppPreferences(defaults: makeTestDefaults()),
+            websiteDataStore: { _ in .nonPersistent() })
+
+        // Assert
+        #expect(manager.canOpenWindow(for: manager.personalProfileID))
+        #expect(!manager.canOpenWindow(for: ProfileID()))
     }
 
     @Test func failedExtensionDataDeletionKeepsProfileForRetry() async throws {

@@ -138,6 +138,7 @@ private struct DenCommands: Commands {
     let updaterController: UpdaterControllerCoordinator
     let openSettingsCoordinator: OpenSettingsCoordinator
 
+    @Environment(\.openWindow) private var openWindow
     @FocusedValue(\.denWindowModel) private var windowModel
     @FocusedValue(\.denController) private var controller
     @FocusedValue(\.profileID) private var profileID
@@ -181,7 +182,10 @@ private struct DenCommands: Commands {
         CommandMenu("Profile") {
             ForEach(profileManager.profiles) { profile in
                 Button(profile.name) {
-                    _ = profileManager.openWindow(for: profile.id)
+                    guard profileManager.canOpenWindow(for: profile.id) else { return }
+                    if !profileManager.activateWindow(for: profile.id) {
+                        openWindow(value: ProfileWindowRoute(profileID: profile.id))
+                    }
                 }
             }
 

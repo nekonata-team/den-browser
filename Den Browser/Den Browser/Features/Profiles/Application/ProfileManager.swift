@@ -337,9 +337,13 @@ final class ProfileManager {
         set { windowRegistry.openWindowAction = newValue }
     }
 
+    func canOpenWindow(for profileID: ProfileID) -> Bool {
+        !deletingProfileIDs.contains(profileID) && profile(id: profileID) != nil
+    }
+
     @discardableResult
     func openWindow(for profileID: ProfileID) -> Bool {
-        guard !deletingProfileIDs.contains(profileID) else { return false }
+        guard canOpenWindow(for: profileID) else { return false }
         if activateWindow(for: profileID) {
             return true
         }
