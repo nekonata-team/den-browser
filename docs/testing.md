@@ -125,7 +125,7 @@ just check
 
 `just lint` runs `just architecture-check`, Xcode-bundled `swift-format` in strict mode, and SwiftLint. `just format` applies the same formatting configuration. Builds treat compiler warnings as errors.
 
-`just architecture-check` tests and runs the import guards described in [the rule guide](../.ast-grep/README.md).
+`just architecture-check` runs the import guards described in [the rule guide](../.ast-grep/README.md). Run `just architecture-test` to test rule definitions against fixtures.
 Package dependencies are compiler-enforced; the scan does not prove isolation between app source groups.
 Runtime event routing and shared-state consistency require behavioral tests.
 

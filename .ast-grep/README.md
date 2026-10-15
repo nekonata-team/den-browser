@@ -1,8 +1,9 @@
 # Swift import checks
 
-Run `just architecture-check` to test the rules and scan the application and all
+Run `just architecture-check` to scan the application and all
 six package source roots: `DenDomain`, `DenDesign`, `DenIPCProtocol`, `DenApplication`, `DenPresentationModels`, and `DenInfrastructure`.
-`just lint` and `just check` also run this check. The ast-grep version is pinned in
+Run `just architecture-test` to test the rule definitions against their fixtures.
+`just lint` and `just check` also run `architecture-check`. The ast-grep version is pinned in
 `mise.toml` so parser changes are reviewed together with the rule fixtures.
 
 - Domain excludes SwiftUI, AppKit, WebKit, and GhosttyTerminal imports. This rule

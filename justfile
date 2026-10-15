@@ -11,6 +11,8 @@ unit_test_result := derived_data + "/TestResults.xcresult"
 ui_test_result := ui_test_derived_data + "/TestResults.xcresult"
 export SPARKLE_TOOLS := derived_data + "/SourcePackages/artifacts/sparkle/Sparkle/bin"
 swift_format := "xcrun swift-format"
+# Prevent ast-grep (terminal-light) from leaking OSC 11 background color queries.
+ast_grep := 'COLORFGBG="15;0" ast-grep'
 swift_sources := "Den Browser"
 domain_sources := "Packages/DenDomain/Sources"
 design_sources := "Packages/DenDesign/Sources"
@@ -61,14 +63,8 @@ lint: architecture-check format-check
 # Check Swift layer import rules and their fixtures.
 [group("quality")]
 architecture-check:
-    @ast-grep test --config sgconfig.yml --skip-snapshot-tests
-    @ast-grep scan --config sgconfig.yml "{{swift_sources}}/Den Browser"
-    @ast-grep scan --config sgconfig.yml "{{domain_sources}}"
-    @ast-grep scan --config sgconfig.yml "{{design_sources}}"
-    @ast-grep scan --config sgconfig.yml "{{ipc_protocol_sources}}"
-    @ast-grep scan --config sgconfig.yml "{{application_sources}}"
-    @ast-grep scan --config sgconfig.yml "{{presentation_sources}}"
-    @ast-grep scan --config sgconfig.yml "{{infrastructure_sources}}"
+    @{{ast_grep}} test --config sgconfig.yml --skip-snapshot-tests
+    @{{ast_grep}} scan --config sgconfig.yml
 
 # Build macOS app with development signing.
 [group("build")]
