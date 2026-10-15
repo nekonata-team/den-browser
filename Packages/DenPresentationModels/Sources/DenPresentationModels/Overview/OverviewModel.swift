@@ -56,6 +56,7 @@ public final class OverviewModel {
     public var query = ""
     public var filterPhase: FilterPhase = .inactive
     public private(set) var selection: OverviewSelection?
+    public private(set) var selectionCenterRequest = 0
     public private(set) var canvasZoomSteps = 0
     public private(set) var canvasResetRequest = 0
 
@@ -148,11 +149,11 @@ public final class OverviewModel {
 
         for desk in desks() {
             if let board = desk.boards.first(where: { matchesFilter($0, in: desk) }) {
-                selection = OverviewSelection(deskID: desk.id, boardID: board.id)
+                setSelection(OverviewSelection(deskID: desk.id, boardID: board.id))
                 return
             }
         }
-        selection = nil
+        setSelection(nil)
     }
 
     public func removeSelectedBoard(focusNext: Bool) {
@@ -166,8 +167,9 @@ public final class OverviewModel {
         guard !remainingIDs.contains(boardID) else { return }
         let previous = boards[..<index].last { remainingIDs.contains($0.id) }?.id
         let next = boards.dropFirst(index + 1).first { remainingIDs.contains($0.id) }?.id
-        self.selection = OverviewSelection(
-            deskID: desk.id, boardID: focusNext ? (next ?? previous) : (previous ?? next))
+        setSelection(
+            OverviewSelection(
+                deskID: desk.id, boardID: focusNext ? (next ?? previous) : (previous ?? next)))
     }
 
     public func restoreRemovedBoard() {
@@ -184,9 +186,9 @@ public final class OverviewModel {
         actions.enterSelection(selection.deskID, selection.boardID)
     }
 
-    public func selectBoard(_ boardID: BoardID) {
+    public func selectBoard(_ boardID: BoardID, center: Bool = true) {
         guard let desk = desks().first(where: { $0.boards.contains(where: { $0.id == boardID }) }) else { return }
-        selection = OverviewSelection(deskID: desk.id, boardID: boardID)
+        setSelection(OverviewSelection(deskID: desk.id, boardID: boardID), center: center)
     }
 
     public func enterBoard(_ boardID: BoardID) {
@@ -196,7 +198,7 @@ public final class OverviewModel {
 
     public func selectDesk(_ deskID: DeskID) {
         guard desks().contains(where: { $0.id == deskID }) else { return }
-        selection = OverviewSelection(deskID: deskID, boardID: nil)
+        setSelection(OverviewSelection(deskID: deskID, boardID: nil))
     }
 
     public func enterDesk(_ deskID: DeskID) {
@@ -206,14 +208,13 @@ public final class OverviewModel {
 
     public func beginBoardDrag(_ boardID: BoardID) -> Bool {
         guard query.isEmpty, filterPhase == .inactive, actions.beginDrag(boardID) else { return false }
-        selectBoard(boardID)
         return true
     }
 
     public func finishBoardDrag(_ boardID: BoardID, toDeskID deskID: DeskID, at targetIndex: BoardIndex) {
         guard activeBoardID() == boardID else { return }
         actions.finishDrag(boardID, deskID, targetIndex)
-        selection = OverviewSelection(deskID: deskID, boardID: boardID)
+        setSelection(OverviewSelection(deskID: deskID, boardID: boardID), center: false)
     }
 
     public func cancelBoardDrag() { actions.cancelDrag() }
@@ -249,17 +250,22 @@ public final class OverviewModel {
             : (oldOffset > 0 && desk.boards.indices.contains(oldOffset - 1)
                 ? desk.boards[oldOffset - 1].id
                 : nil)
-        selection = OverviewSelection(deskID: deskID, boardID: nextBoardID)
+        setSelection(OverviewSelection(deskID: deskID, boardID: nextBoardID))
     }
 
     public func invalidateBoard(_ boardID: BoardID) {
         guard selection?.boardID == boardID else { return }
-        selection = nil
+        setSelection(nil)
     }
 
     public func invalidateDesk(_ deskID: DeskID) {
         guard selection?.deskID == deskID else { return }
-        selection = nil
+        setSelection(nil)
+    }
+
+    private func setSelection(_ selection: OverviewSelection?, center: Bool = true) {
+        self.selection = selection
+        if center { selectionCenterRequest += 1 }
     }
 
     private func moveBoardSelection(by delta: Int) {
@@ -269,9 +275,10 @@ public final class OverviewModel {
         let boards = desk.boards.filter { matchesFilter($0, in: desk) }
         guard !boards.isEmpty else { return }
         let index = selection.boardID.flatMap { id in boards.firstIndex { $0.id == id } } ?? 0
-        self.selection = OverviewSelection(
-            deskID: desk.id,
-            boardID: boards[(index + delta % boards.count + boards.count) % boards.count].id)
+        setSelection(
+            OverviewSelection(
+                deskID: desk.id,
+                boardID: boards[(index + delta % boards.count + boards.count) % boards.count].id))
     }
 
     private func moveDeskSelection(by delta: Int) {
@@ -283,7 +290,7 @@ public final class OverviewModel {
         let desk = desks[(index + delta % desks.count + desks.count) % desks.count]
         let boards = desk.boards.filter { matchesFilter($0, in: desk) }
         guard let firstBoard = boards.first else {
-            selection = OverviewSelection(deskID: desk.id, boardID: nil)
+            setSelection(OverviewSelection(deskID: desk.id, boardID: nil))
             return
         }
         let currentMidX = selection?.boardID.flatMap { boardMidXs[$0] } ?? 0
@@ -291,7 +298,7 @@ public final class OverviewModel {
             boards.min {
                 abs((boardMidXs[$0.id] ?? 0) - currentMidX) < abs((boardMidXs[$1.id] ?? 0) - currentMidX)
             } ?? firstBoard
-        selection = OverviewSelection(deskID: desk.id, boardID: targetBoard.id)
+        setSelection(OverviewSelection(deskID: desk.id, boardID: targetBoard.id))
     }
 
     private func moveSelectionBoard(by delta: Int) {

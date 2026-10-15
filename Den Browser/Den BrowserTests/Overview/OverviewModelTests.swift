@@ -267,6 +267,28 @@ struct OverviewModelTests {
         }
     }
 
+    @Test(arguments: [false, true], [false, true])
+    func selectingBoardCentersOnlyWhenRequested(alreadySelected: Bool, center: Bool) {
+        // Arrange
+        let first = board("First")
+        let second = board("Second")
+        withTestWindowModel(desks: [desk("Desk", boards: [first, second], focusedBoardID: first.id)]) {
+            windowModel, _ in
+            windowModel.showOverview()
+            let overview = windowModel.overview
+            let selectedID = alreadySelected ? first.id : second.id
+            let request = overview.selectionCenterRequest
+
+            // Act
+            overview.selectBoard(selectedID, center: center)
+
+            // Assert
+            #expect(overview.selectionBoardID == selectedID)
+            #expect(overview.selectionCenterRequest == request + (center ? 1 : 0))
+            #expect(windowModel.isOverviewPresented)
+        }
+    }
+
     @Test func overviewBoardDragMovesAcrossDesksOnlyOnCommit() {
         // Arrange
         let first = board("First")
@@ -285,11 +307,14 @@ struct OverviewModelTests {
         windowModel.showOverview()
 
         // Act - begin drag
+        let centerRequest = windowModel.overview.selectionCenterRequest
         let dragBegun = windowModel.beginOverviewBoardDrag(second.id)
 
         // Assert - drag begun without mutating order yet
         #expect(dragBegun)
         #expect(controller.state.desks[0].boards.map(\.id) == [first.id, second.id])
+        #expect(windowModel.overview.selectionBoardID == first.id)
+        #expect(windowModel.overview.selectionCenterRequest == centerRequest)
 
         // Act - finish drag into target desk
         windowModel.overview.finishBoardDrag(second.id, toDeskID: other.id, at: BoardIndex(rawValue: 0))
@@ -297,7 +322,10 @@ struct OverviewModelTests {
         // Assert - order committed
         #expect(controller.state.desks[0].boards.map(\.id) == [first.id])
         #expect(controller.state.desks[1].boards.map(\.id) == [second.id, third.id])
+        #expect(windowModel.overview.selectionDeskID == other.id)
         #expect(windowModel.overview.selectionBoardID == second.id)
+        #expect(windowModel.overview.selectionCenterRequest == centerRequest)
+        #expect(windowModel.isOverviewPresented)
         #expect(saveCount == 1)
     }
 
@@ -370,7 +398,9 @@ struct OverviewModelTests {
         #expect(windowModel.overview.selectionBoardID == side.id)
     }
 
-    @Test func overviewDragCarriesSideBoardGroupToAnotherDesk() {
+    @Test(arguments: [false, true])
+    func overviewDragCarriesSideBoardGroupToAnotherDesk(selectSide: Bool) {
+        // Arrange
         let target = board("Target")
         let side = BoardState(width: 390, targetBoardID: target.id)
         let source = desk("Source", boards: [target, side], focusedBoardID: target.id)
@@ -381,13 +411,17 @@ struct OverviewModelTests {
         composition.connect()
         defer { composition.disconnect() }
         windowModel.showOverview()
+        if selectSide { windowModel.overview.selectBoard(side.id) }
 
+        // Act
         #expect(windowModel.beginOverviewBoardDrag(side.id))
         windowModel.overview.finishBoardDrag(
             side.id, toDeskID: destination.id, at: BoardIndex(rawValue: 0))
 
+        // Assert
         #expect(controller.state.desks[0].boards.isEmpty)
         #expect(controller.state.desks[1].boards.map(\.id) == [target.id, side.id])
+        #expect(windowModel.overview.selectionDeskID == destination.id)
         #expect(windowModel.overview.selectionBoardID == side.id)
     }
 
@@ -427,7 +461,7 @@ struct OverviewModelTests {
         composition.connect()
         defer { composition.disconnect() }
         windowModel.showOverview()
-        #expect(windowModel.beginOverviewBoardDrag(first.id))
+        #expect(windowModel.beginOverviewBoardDrag(second.id))
         windowModel.overview.moveSelectionBoardRight()
 
         // Act
@@ -436,6 +470,7 @@ struct OverviewModelTests {
         // Assert
         #expect(controller.state.desks[0].boards.map(\.id) == [first.id, second.id])
         #expect(controller.state.desks[1].boards.map(\.id) == [third.id])
+        #expect(windowModel.overview.selectionBoardID == first.id)
         #expect(controller.activeDrag == nil)
         #expect(saveCount == 0)
     }

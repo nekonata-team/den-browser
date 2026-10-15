@@ -303,11 +303,8 @@ struct OverviewView: View {
                 TextInputComposition.syncActiveFieldEditor(to: newValue)
             }
         }
-        .onChange(of: overview.selectionBoardID) { _, boardID in
-            scrollToSelection(boardID)
-        }
-        .onChange(of: overview.selectionDeskID) { _, _ in
-            if overview.selectionBoardID == nil { scrollToSelection(nil) }
+        .onChange(of: overview.selectionCenterRequest) { _, _ in
+            scrollToSelection(overview.selectionBoardID)
         }
         .onChange(of: overview.canvasZoomSteps) { old, new in
             zoomCanvas(
@@ -607,6 +604,7 @@ struct OverviewView: View {
         guard let drag = overviewDrag else { return }
         guard let target = overviewInsertionTarget(at: value.location) else {
             overview.cancelBoardDrag()
+            overview.selectBoard(drag.boardID, center: false)
             overviewDrag = nil
             return
         }

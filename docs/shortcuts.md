@@ -214,6 +214,7 @@ budget. Ordinary Profiles retain compressed snapshots across restarts in a separ
   - Drag Desk button to reorder Desks.
   - Right-click for context menu (copy ID, open in new window, rename, delete, save preset, export).
 - **Overview**:
+  - Click a Board to select and center it when the mouse button is released, including an already selected Board. Dragging keeps the current selection until release, then selects the dragged Board without centering the canvas. Overview stays open for both actions. Double-click to enter a Board.
   - Scroll in either direction or drag the background to pan. Right-drag anywhere on the canvas, including over a Board,
 to pan without moving Boards.
   - Pinch to zoom around the gesture's starting position.
