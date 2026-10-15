@@ -56,7 +56,16 @@ struct NewDeskPanel: View {
                     Color.primary.opacity(0.055),
                     in: RoundedRectangle(cornerRadius: DenRadius.small, style: .continuous))
 
-                DeskPresetPreview(boards: selectedDeskPresetBoards, boardHeight: boardHeight)
+                DeskPresetPreview(
+                    boards: selectedDeskPresetBoards,
+                    boardHeight: boardHeight,
+                    facingForBoard: { index, _ in
+                        if case .personal(let id) = selectedDeskPreset {
+                            return controller.presetFacingStore.image(for: id, at: index)
+                        }
+                        return nil
+                    }
+                )
 
                 TextField(
                     text: $newDeskLabel,
@@ -133,6 +142,11 @@ struct NewDeskPanel: View {
         }
         .onChange(of: controller.deskPresets.map(\.id)) { _, _ in
             ensureSelectedPresetExists()
+        }
+        .task(id: selectedDeskPreset) {
+            if case .personal(let id) = selectedDeskPreset {
+                await controller.presetFacingStore.loadFacings(for: id, boardCount: selectedDeskPresetBoards.count)
+            }
         }
         .onExitCommand {
             guard !isManagementPresented else { return }
