@@ -33,6 +33,18 @@ struct WebURLCommand: ParsableCommand {
     }
 }
 
+struct WebStatusCommand: ParsableCommand {
+    static let configuration = CommandConfiguration(
+        commandName: "status",
+        abstract: "Print the main page's HTTP status code, or null when unavailable")
+
+    @OptionGroup var target: WebTargetOptions
+
+    func run() throws {
+        try DenIPCClient.execute(command: .status, options: target)
+    }
+}
+
 struct WebReloadCommand: ParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "reload",
@@ -614,6 +626,10 @@ private enum DenSheetInteractParser {
         case "url":
             try requireArguments(0...0, "url does not accept arguments")
             return .url
+
+        case "status":
+            try requireArguments(0...0, "status does not accept arguments")
+            return .status
 
         case "reload":
             try requireArguments(0...0, "reload does not accept arguments")

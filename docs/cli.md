@@ -115,6 +115,12 @@ Commands operating on the Current Sheet of the resolved Web Board.
 
 These commands operate on the Sheet Stack of a Web Board. Terminal Board interaction uses the `den board terminal` command family.
 
+`den board web status` reads the final HTTP response received for the main page in the current live runtime; it does not make another request or inspect individual `fetch`/XHR calls, iframe responses, or popup windows.
+JSON returns `{"ok":true,"status":200}` (including for HTTP error codes such as 404 or 500), and TTY prints the code.
+While loading, after a navigation failure, or when no HTTP response was observed (for example, local files), JSON returns `{"ok":true,"status":null}` and TTY prints `null`.
+HTTP status is not persisted across app restarts.
+Use a load condition with `den board web wait` before reading a newly navigated page's status.
+
 Every existing-Board Sheet operation accepts `--snapshot` to include a compact semantic snapshot after a successful operation. JSON retains the usual result fields and adds `snapshot`; TTY output prints the usual result followed by the snapshot. The snapshot comes from the same resolved Web Board, even if focus changes while the operation awaits. It does not wait for subsequent page activity: use a condition such as `den board web wait --text "Saved" --snapshot` when the observation depends on asynchronous completion. If the operation succeeds but snapshot capture fails, the response reports that distinction and exits with an error.
 
 `den board web snapshot` already returns a snapshot, so `--snapshot` does not capture twice. Like other Sheet operations, `den board web interact` captures a final snapshot only when `--snapshot` is specified. `interact --full` requires `--snapshot`; `--no-snapshot` has been removed. On an action failure, `interact --snapshot` attempts a best-effort snapshot alongside failure metadata.
@@ -126,6 +132,7 @@ Compact snapshots retain visible semantic ancestors of interactive elements, suc
 | `den board web new` | `<url> [--width <points>] [--focus]` | Open a **new** Web Board with a supported URL, bare hostname, or search query on the active Desk, start its Web runtime immediately, and return its UUID. `--width` sets its initial width in positive points; it may exceed the manual resize limit. Invalid or unsupported URL schemes fail. Use `den board web wait` to wait for loaded content. | `den board web new https://example.com --width 800` |
 | `den board web navigate` | `<url>` | Navigate Current Sheet in the target Web Board to a supported URL, bare hostname, or search query. Invalid or unsupported URL schemes fail. | `den board web navigate https://example.com` |
 | `den board web url` | None | Print Current Sheet URL of the target Web Board. | `den board web url` |
+| `den board web status` | None | Print the main page's final HTTP status code, or `null` when unavailable. | `den board web status` |
 | `den board web reload` | None | Reload Current Sheet in the target Web Board. | `den board web reload` |
 | `den board web eval` | `<script>` | Evaluate JavaScript and return the result. | `den board web eval document.title` |
 | `den board web text` | None | Extract visible text content (`innerText`) from the sheet, falling back to the root element's `textContent` for documents such as XML without an HTML body. | `den board web text` |

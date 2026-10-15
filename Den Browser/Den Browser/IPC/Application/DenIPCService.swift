@@ -431,6 +431,9 @@ final class DenIPCService {
                 let currentURL = runtime.webView.url?.absoluteString ?? board.currentSheetURL?.absoluteString ?? ""
                 return .success(.url(currentURL))
 
+            case .status:
+                return .success(.status(runtime.httpStatusCode))
+
             case .eval(let payload):
                 guard !payload.script.isEmpty else {
                     return .failure("Usage: den board web eval <javascript>")

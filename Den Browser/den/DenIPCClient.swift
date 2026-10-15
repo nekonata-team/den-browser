@@ -210,6 +210,8 @@ enum DenIPCClient {
             writeBoards(overview.boards, showBoardIDs: output.showBoardIDs)
         case .navigation(_, let url), .url(let url):
             print(url)
+        case .status(let status):
+            print(status.map(String.init) ?? "null")
         case .elements(let elements):
             for element in elements {
                 var line = element.ref

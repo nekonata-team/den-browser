@@ -5,6 +5,52 @@ import Testing
 @testable import Den_Browser
 
 struct DenWebCommandTests {
+    @Test(arguments: [Int?.none, 200, 404, 500])
+    func statusReturnsHTTPCodeOrExplicitNull(status: Int?) async throws {
+        // Arrange
+        let socketPath = FileManager.default.temporaryDirectory
+            .appendingPathComponent("den-status-\(UUID().uuidString).sock").path
+        let server = DenSocketServer(socketPath: socketPath)
+        try server.start { data in
+            do {
+                let request = try JSONDecoder().decode(DenIPCRequest.self, from: data)
+                let result: DenIPCOperationResult =
+                    request.operation == .sheet(command: .status, target: .automatic)
+                    ? .success(.status(status)) : .failure("Expected status command")
+                return try encodeResponse(result)
+            } catch {
+                return Data()
+            }
+        }
+        defer { server.stop() }
+        let process = Process()
+        process.executableURL = Bundle.main.bundleURL.appendingPathComponent("Contents/MacOS/den")
+        process.arguments = ["board", "web", "status", "--socket", socketPath, "--json"]
+        let output = Pipe()
+        process.standardOutput = output
+
+        // Act
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, any Error>) in
+            process.terminationHandler = { _ in continuation.resume() }
+            do {
+                try process.run()
+            } catch {
+                continuation.resume(throwing: error)
+            }
+        }
+        let data = output.fileHandleForReading.readDataToEndOfFile()
+
+        // Assert
+        #expect(process.terminationStatus == 0)
+        let result = try jsonResult(data)
+        #expect(result["ok"] as? Bool == true)
+        if let status {
+            #expect(result["status"] as? Int == status)
+        } else {
+            #expect(result["status"] is NSNull)
+        }
+    }
+
     @Test func webCommandForwardsOptionalSnapshotAlongsideResult() async throws {
         // Arrange
         let socketPath = FileManager.default.temporaryDirectory

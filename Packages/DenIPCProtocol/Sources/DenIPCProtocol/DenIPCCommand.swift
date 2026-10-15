@@ -27,6 +27,7 @@ public nonisolated enum DenIPCCommand {
         case navigate(DenSheetNavigatePayload)
         case inspect(DenSheetSnapshotPayload)
         case url
+        case status
         case reload
         case eval(DenSheetEvalPayload)
         case text

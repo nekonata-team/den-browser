@@ -75,6 +75,11 @@ final class WebRuntime: BaseWebRuntime, ObservableObject {
     private var actionHighlightTask: Task<Void, Never>?
     private var inspectionHighlightColor: ProfileRGB?
     private var inspectionCollectionUserScript: WKUserScript?
+    private var navigationHTTPStatusCode: Int?
+
+    var httpStatusCode: Int? {
+        webView.isLoading ? nil : navigationHTTPStatusCode
+    }
 
     var inspectionPageGenerationPublisher: AnyPublisher<Int, Never> {
         $inspectionPageGeneration.eraseToAnyPublisher()
@@ -599,6 +604,7 @@ final class WebRuntime: BaseWebRuntime, ObservableObject {
     }
 
     override func webViewWebContentProcessDidTerminate(_ webView: WKWebView) {
+        if webView === self.webView { navigationHTTPStatusCode = nil }
         didTerminateContentProcess = true
     }
 
@@ -607,11 +613,13 @@ final class WebRuntime: BaseWebRuntime, ObservableObject {
         didStartProvisionalNavigation navigation: WKNavigation!
     ) {
         faviconURL = nil
+        if webView === self.webView { navigationHTTPStatusCode = nil }
         if webView === self.webView, isInspectionActive { inspectionPageGeneration &+= 1 }
         traceWebProcessIdentifier()
     }
 
     override func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
+        if webView === self.webView { navigationHTTPStatusCode = nil }
         isShowingInitialLoadFallback = false
         events.onChange(boardID, webView.url, webView.title)
     }
@@ -621,8 +629,25 @@ final class WebRuntime: BaseWebRuntime, ObservableObject {
         didFailProvisionalNavigation navigation: WKNavigation!,
         withError error: Error
     ) {
+        if webView === self.webView { navigationHTTPStatusCode = nil }
         isShowingInitialLoadFallback = false
         events.onChange(boardID, webView.url, webView.title)
+    }
+
+    override func webView(
+        _ webView: WKWebView,
+        decidePolicyFor navigationResponse: WKNavigationResponse,
+        decisionHandler: @escaping @MainActor @Sendable (WKNavigationResponsePolicy) -> Void
+    ) {
+        recordHTTPStatus(
+            navigationResponse.canShowMIMEType ? (navigationResponse.response as? HTTPURLResponse)?.statusCode : nil,
+            isMainFrame: navigationResponse.isForMainFrame, in: webView)
+        super.webView(webView, decidePolicyFor: navigationResponse, decisionHandler: decisionHandler)
+    }
+
+    func recordHTTPStatus(_ statusCode: Int?, isMainFrame: Bool, in webView: WKWebView) {
+        guard webView === self.webView, isMainFrame else { return }
+        navigationHTTPStatusCode = statusCode
     }
 
     private func updateFavicon() {

@@ -232,6 +232,7 @@ public nonisolated enum DenIPCResultPayload: Codable, Sendable {
     case denOverview(DenIPCOverview)
     case sheet(boardID: String, url: String)
     case url(String)
+    case status(Int?)
     case elements([DenSheetElementInfo])
     case text(String)
     case value(String)
@@ -369,6 +370,7 @@ public nonisolated struct DenIPCOperationResultJSON: Encodable, Sendable {
         case url
         case snapshot
         case elements
+        case status
         case text
         case value
         case checked
@@ -433,6 +435,8 @@ public nonisolated struct DenIPCOperationResultJSON: Encodable, Sendable {
             try container.encode(url, forKey: .url)
         case .url(let url):
             try container.encode(url, forKey: .url)
+        case .status(let status):
+            try container.encode(status, forKey: .status)
         case .elements(let elements):
             try container.encode(elements, forKey: .elements)
         case .text(let text):
