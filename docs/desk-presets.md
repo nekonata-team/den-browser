@@ -56,6 +56,7 @@ Editing the Desk Label does not modify the underlying Desk Preset.
 Empty search keeps Built-in Presets and My Presets grouped.
 Typed search ranks fuzzy subsequence matches across both groups: Preset Labels first, followed by Board Labels, then URL hosts or session names.
 During Desk creation, a `Create "..."` Empty Desk option is always appended for non-empty search queries.
+Confirming this option creates the Desk directly; repeated Return events while the panel closes do not create additional Desks.
 The active candidate drives a preview showing Board Labels, URL hosts, session names, and relative widths without capturing Sheet images.
 
 The built-in order is:

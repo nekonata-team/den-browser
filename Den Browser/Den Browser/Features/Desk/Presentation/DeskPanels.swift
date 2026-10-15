@@ -199,6 +199,7 @@ struct NewDeskPanel: View {
     }
 
     private func submitDeskPreset() {
+        guard windowModel.isNewDeskPanelPresented, !isChoosing else { return }
         didAttemptAction = true
         guard !trimmedNewDeskLabel.isEmpty else { return }
 
@@ -236,6 +237,7 @@ struct NewDeskPanel: View {
     }
 
     private func confirmDeskPreset(_ selection: DeskPresetSelection) {
+        guard windowModel.isNewDeskPanelPresented, isChoosing else { return }
         if case .newDesk(let label) = selection {
             guard controller.canCreateDesk else {
                 presentDeskDetails(for: selection, label: label)

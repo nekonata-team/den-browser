@@ -357,6 +357,38 @@ final class Den_BrowserUITests: XCTestCase, BDD {
         }
     }
 
+    // Protects native TextField submission while SwiftUI removes the New Desk panel.
+    // Unit tests cannot deliver queued Return events to the outgoing native responder.
+    @MainActor
+    func testRepeatedReturnCreatesOnlyOneDesk() throws {
+        let app = launchApp(boardCount: .one)
+        let search = app.textFields.matching(NSPredicate(format: "placeholderValue == 'Filter presets'")).firstMatch
+        let desks = app.descendants(matching: .any)
+            .matching(NSPredicate(format: "identifier BEGINSWITH 'desk-switcher.'"))
+        let label = "Repeated Return"
+        let initialDeskCount = desks.count
+
+        given("New Desk search offers to create a named empty Desk") {
+            app.buttons["New Desk"].click()
+            XCTAssertTrue(search.waitForExistence(timeout: 5))
+            search.click()
+            app.typeText(label)
+            XCTAssertTrue(
+                app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Create \"\(label)\""))
+                    .firstMatch.waitForExistence(timeout: 5))
+        }
+
+        when("pressing Return repeatedly while the panel closes") {
+            app.typeText(String(repeating: "\r", count: 5))
+        }
+
+        then("only one Desk is created") {
+            XCTAssertTrue(search.waitForNonExistence(timeout: 5))
+            XCTAssertEqual(desks.count, initialDeskCount + 1)
+            XCTAssertEqual(desks.matching(NSPredicate(format: "label CONTAINS %@", label)).count, 1)
+        }
+    }
+
     @MainActor
     func testReordersDesksUsingPointer() throws {
         let app = launchApp(boardCount: .one)
