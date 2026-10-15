@@ -19,6 +19,8 @@ Den Browser persists only state needed to restore user-owned work. Version 3 gro
   Ordinary Profiles use a persistent WebKit extension controller, while Private Den uses a non-persistent one that discards session state.
   Only inactive Profiles with no open windows can be deleted.
   Settings disables deletion while windows are open, and deletion verifies this before touching data.
+  During deletion, that Profile cannot open windows, create controllers, or start another deletion.
+  If deletion fails, those operations become available again.
   Deleting an eligible Profile releases its resources and removes its dedicated `~/Library/WebKit/<bundle-id>/WebExtensions/<profile-id>/` directory, including settings and compiled content-blocking rules.
   The directory is keyed by Profile ID independently of the website data store ID.
   A cleanup error reports Profile deletion failure and retains the Profile document for retry; website data may already have been removed.

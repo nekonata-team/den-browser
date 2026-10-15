@@ -142,7 +142,6 @@ private struct DenCommands: Commands {
     @FocusedValue(\.denController) private var controller
     @FocusedValue(\.profileID) private var profileID
     @FocusedValue(\.profileWindowID) private var profileWindowID
-    @Environment(\.openWindow) private var openWindow
 
     private func perform(_ action: AppAction) {
         AppActionHandler.perform(action, controller: controller, windowModel: windowModel)
@@ -182,9 +181,7 @@ private struct DenCommands: Commands {
         CommandMenu("Profile") {
             ForEach(profileManager.profiles) { profile in
                 Button(profile.name) {
-                    if !profileManager.activateWindow(for: profile.id) {
-                        openWindow(value: ProfileWindowRoute(profileID: profile.id))
-                    }
+                    _ = profileManager.openWindow(for: profile.id)
                 }
             }
 

@@ -183,15 +183,12 @@ private struct ProfileChip: View {
 
     @Environment(DenWindowModel.self) private var windowModel
     @Environment(ProfileManager.self) private var profileManager
-    @Environment(\.openWindow) private var openWindow
 
     var body: some View {
         Menu {
             ForEach(profileManager.profiles) { item in
                 Button {
-                    if !profileManager.activateWindow(for: item.id) {
-                        openWindow(value: ProfileWindowRoute(profileID: item.id))
-                    }
+                    _ = profileManager.openWindow(for: item.id)
                 } label: {
                     Label(item.name, systemSymbol: item.id == profile.id ? .checkmark : .personCropCircle)
                 }

@@ -12,6 +12,7 @@ import WebKit
 final class ProfileManager {
     private(set) var profiles: [ProfileState] = []
     private(set) var errorMessage: String?
+    private var deletingProfileIDs: Set<ProfileID> = []
     var clearBrowsingDataProfileID: ProfileID?
     var clearBrowsingDataWindowID: UUID?
     private(set) var windowAssignmentRevision = 0
@@ -108,6 +109,7 @@ final class ProfileManager {
     }
 
     func controller(for route: ProfileWindowRoute) -> DenController? {
+        guard !deletingProfileIDs.contains(route.profileID) else { return nil }
         let profileID = resolvedProfileID(route.profileID)
         if let controller = windowRegistry.controller(for: route.windowID),
             windowRegistry.profileID(for: route.windowID) == profileID
@@ -205,7 +207,8 @@ final class ProfileManager {
 
     func canDeleteProfile(_ profileID: ProfileID) -> Bool {
         _ = windowAssignmentRevision
-        guard let profile = profile(id: profileID),
+        guard !deletingProfileIDs.contains(profileID),
+            let profile = profile(id: profileID),
             case .identified = profile.webProfileStore
         else { return false }
         return !windowRegistry.hasController(for: profileID) && !windowRegistry.hasWindow(for: profileID)
@@ -218,6 +221,8 @@ final class ProfileManager {
             case .identified(let dataStoreID) = profile.webProfileStore
         else { return false }
 
+        deletingProfileIDs.insert(profileID)
+        defer { deletingProfileIDs.remove(profileID) }
         let facingCache = storages[profileID]?.facingCache
         closeWindows(for: profileID)
         let hadDocument = persistence.profileDocumentExists(for: profileID)
@@ -334,6 +339,7 @@ final class ProfileManager {
 
     @discardableResult
     func openWindow(for profileID: ProfileID) -> Bool {
+        guard !deletingProfileIDs.contains(profileID) else { return false }
         if activateWindow(for: profileID) {
             return true
         }

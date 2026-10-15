@@ -570,7 +570,6 @@ private struct DenActivePanelOverlay: View {
     @Environment(DenWindowModel.self) private var windowModel
     @Environment(ProfileManager.self) private var profileManager
     @Environment(AppPreferences.self) private var preferences
-    @Environment(\.openWindow) private var openWindow
     @Environment(\.accessibilityReduceMotion) private var systemReduceMotion
 
     var body: some View {
@@ -661,9 +660,7 @@ private struct DenActivePanelOverlay: View {
                     profiles: profileManager.profiles,
                     profileColor: profileColor,
                     onOpenProfile: { profileID in
-                        if !profileManager.activateWindow(for: profileID) {
-                            openWindow(value: ProfileWindowRoute(profileID: profileID))
-                        }
+                        _ = profileManager.openWindow(for: profileID)
                     },
                     onClose: { windowModel.setTemporaryContext(nil) }
                 )

@@ -468,6 +468,64 @@ struct ProfileManagerTests {
         #expect(manager.canDeleteProfile(work.id))
     }
 
+    @Test(arguments: [false, true])
+    func deletingProfileRejectsReopeningAndDuplicateDeletion(fails: Bool) async throws {
+        // Arrange
+        struct ExpectedError: Error {}
+        let directory = temporaryProfileDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        var removalStarted: CheckedContinuation<Void, Never>?
+        var resumeRemoval: CheckedContinuation<Void, Never>?
+        var removalCount = 0
+        let manager = ProfileManager(
+            directoryURL: directory,
+            sheetNavigation: SheetNavigationManager(defaults: makeTestDefaults(), scriptSource: ""),
+            preferences: AppPreferences(defaults: makeTestDefaults()),
+            removeDataStore: { _ in
+                removalCount += 1
+                guard removalCount == 1 else { return }
+                await withCheckedContinuation { continuation in
+                    resumeRemoval = continuation
+                    removalStarted?.resume()
+                }
+                if fails { throw ExpectedError() }
+            },
+            removeExtensionData: { _ in },
+            websiteDataStore: { _ in .nonPersistent() })
+        let work = try #require(manager.createProfile(name: "Work", color: .gray))
+        var openedProfiles: [ProfileID] = []
+        manager.openWindowAction = { openedProfiles.append($0.profileID) }
+        var deletion: Task<Bool, Never>?
+
+        // Act
+        await withCheckedContinuation { continuation in
+            removalStarted = continuation
+            deletion = Task { await manager.deleteProfile(work.id) }
+        }
+        let canDeleteWhileWaiting = manager.canDeleteProfile(work.id)
+        let reopened = manager.openWindow(for: work.id)
+        let duplicateDeleted = await manager.deleteProfile(work.id)
+        let controller = manager.controller(for: work.id)
+        let personalOpened = manager.openWindow(for: manager.personalProfileID)
+        resumeRemoval?.resume()
+        let deleted = await deletion?.value
+
+        // Assert
+        #expect(!canDeleteWhileWaiting)
+        #expect(!reopened)
+        #expect(controller == nil)
+        #expect(!duplicateDeleted)
+        #expect(removalCount == 1)
+        #expect(personalOpened)
+        #expect(openedProfiles == [manager.personalProfileID])
+        #expect(deleted == !fails)
+        #expect(manager.canDeleteProfile(work.id) == fails)
+        if fails {
+            #expect(manager.openWindow(for: work.id))
+            #expect(manager.controller(for: work.id) != nil)
+        }
+    }
+
     @Test func failedExtensionDataDeletionKeepsProfileForRetry() async throws {
         // Arrange
         struct ExpectedError: Error {}
