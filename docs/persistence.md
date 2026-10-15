@@ -150,6 +150,8 @@ silently replaced. If a confirmed-invalid file cannot be quarantined, recovery d
 ## Persistence failure and recovery contract
 
 - Profile document saves use atomic file writes.
+- Save failures appear as error Toasts in open Den windows and remain available in the Settings Profile Error alert.
+  Failed deferred saves end without retaining a retry; the next successful normal save includes the latest in-memory state.
 - Focus changes and keyboard Board Width adjustments coalesce per Profile, saving 300 ms after the latest change.
   Immediate Profile saves include the latest Den state and cancel pending deferred saves.
 - Normal app termination synchronously flushes pending deferred saves, using the last stable snapshot if a drag is active.

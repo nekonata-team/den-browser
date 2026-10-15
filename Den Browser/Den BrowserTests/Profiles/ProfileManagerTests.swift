@@ -826,6 +826,8 @@ struct ProfileManagerTests {
         try FileManager.default.setAttributes([.posixPermissions: 0o500], ofItemAtPath: directory.path)
         _ = controller.createBoard(urlString: "https://example.com/updated")
         #expect(manager.errorMessage != nil)
+        #expect(controller.latestFeedback?.severity == .error)
+        #expect(controller.latestFeedback?.body == manager.errorMessage)
 
         try FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: directory.path)
         #expect(controller.saveDeskPresets())

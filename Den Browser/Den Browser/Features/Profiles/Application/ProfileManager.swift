@@ -2,6 +2,7 @@ import AppKit
 import DenApplication
 import DenDomain
 import DenInfrastructure
+import DenPresentationModels
 import Foundation
 import Observation
 import WebKit
@@ -770,7 +771,11 @@ final class ProfileManager {
     }
 
     private func reportSaveError(_ error: Error) {
-        errorMessage = "Could not save Profiles: \(error.localizedDescription)"
+        let message = "Could not save Profiles: \(error.localizedDescription)"
+        errorMessage = message
+        for entry in windowRegistry.controllerEntries() {
+            entry.controller.reportFeedback(message, severity: .error)
+        }
     }
 
     private static func personalProfile() -> PersistedProfile {
