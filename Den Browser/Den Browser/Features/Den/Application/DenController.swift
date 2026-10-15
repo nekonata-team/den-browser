@@ -74,6 +74,19 @@ final class DenController {
     }
     var facingCache: BoardFacingCache { storage.facingCache }
     var facingCapture: BoardFacingCapture { storage.facingCapture }
+    var presetFacingStore: PresetFacingStore { storage.presetFacingStore }
+
+    func savePresetFacings(for presetID: UUID, boards: [BoardState]) {
+        for (index, board) in boards.enumerated() {
+            if let image = facingCache.image(for: board.id) {
+                presetFacingStore.setFacing(image, for: presetID, at: index)
+            }
+        }
+    }
+
+    func removePresetFacings(for presetID: UUID) {
+        presetFacingStore.remove(for: presetID)
+    }
     @ObservationIgnored var onWindowEffect: ((DenWindowEffect) -> Void)?
     @ObservationIgnored private let windowResources = DenWindowResources()
     var drawerPeekRuntime: WebRuntime? {

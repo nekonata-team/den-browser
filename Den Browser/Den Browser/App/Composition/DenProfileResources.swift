@@ -65,6 +65,7 @@ final class DenProfileResources {
     }
     @ObservationIgnored let facingCache: BoardFacingCache
     @ObservationIgnored let facingCapture: BoardFacingCapture
+    @ObservationIgnored let presetFacingStore: PresetFacingStore
 
     @ObservationIgnored let drawerPresentations = NSHashTable<DenController>.weakObjects()
     @ObservationIgnored let onRuntimeOwnerChange: ((BoardID, DenController?) -> Void)?
@@ -77,6 +78,7 @@ final class DenProfileResources {
     init(
         state: DenState,
         facingDisk: BoardFacingDiskCache? = nil,
+        presetFacingDisk: PresetFacingDiskStore? = nil,
         deskPresets: [PersonalDeskPreset] = [],
         recentItems: [RecentItem] = [],
         onSave: ((DenState) -> Bool)? = nil,
@@ -98,5 +100,6 @@ final class DenProfileResources {
         let cache = BoardFacingCache(disk: facingDisk)
         facingCache = cache
         facingCapture = BoardFacingCapture(cache: cache)
+        presetFacingStore = PresetFacingStore(disk: presetFacingDisk)
     }
 }

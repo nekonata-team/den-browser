@@ -253,12 +253,12 @@ struct OverviewView: View {
             }
             .overlay(alignment: .topLeading) {
                 if let drag = overviewDrag, let board = draggedOverviewBoard {
-                    OverviewBoardCard(
+                    OverviewBoardFacing(
                         board: board,
                         isSelected: true,
                         profileColor: profileColor,
                         boardHeight: boardHeight,
-                        differentiateWithoutColor: differentiateWithoutColor,
+                        facingHeight: DenOverviewLayout.boardCardHeight,
                         facing: controller.facingCache.image(for: board.id),
                         scale: canvasScale
                     )
@@ -476,13 +476,13 @@ struct OverviewView: View {
             Button {
                 overview.selectBoard(board.id)
             } label: {
-                OverviewBoardCard(
+                OverviewBoardFacing(
                     board: board,
                     isSelected: isSelected,
                     isAnchor: desk.anchorBoardID == board.id,
                     profileColor: profileColor,
                     boardHeight: boardHeight,
-                    differentiateWithoutColor: differentiateWithoutColor,
+                    facingHeight: DenOverviewLayout.boardCardHeight,
                     facing: controller.facingCache.image(for: board.id),
                     scale: canvasScale
                 )
@@ -576,7 +576,7 @@ struct OverviewView: View {
         let isAnchor = desk.anchorBoardID == board.id
         return [
             isAnchor ? "Anchor board" : nil,
-            OverviewBoardCard.kindLabel(for: board) + " Board \(board.displayName)",
+            OverviewBoardFacing.kindLabel(for: board) + " Board \(board.displayName)",
             detail,
         ]
         .compactMap { $0 }
@@ -742,7 +742,7 @@ private enum DenOverviewLayout {
     static let searchFieldWidth: CGFloat = 320
     static let selectionIndicatorSize: CGFloat = 6
     static let emptyBoardWidth: CGFloat = 150
-    static let boardCardHeight: CGFloat = 120
+    static let boardCardHeight: CGFloat = DenLayout.overviewFacingHeight
     static let boardSpacing: CGFloat = 10
     static let deskSpacing: CGFloat = 12
     static let boardPadding: CGFloat = 10
@@ -895,146 +895,5 @@ private struct OverviewEmptyDeskCard: View {
         .simultaneousGesture(
             TapGesture(count: 2).onEnded(onEnter)
         )
-    }
-}
-
-struct OverviewBoardCard: View {
-    let board: BoardState
-    let isSelected: Bool
-    var isAnchor: Bool = false
-    let profileColor: Color
-    let boardHeight: CGFloat
-    let differentiateWithoutColor: Bool
-    var facing: NSImage?
-    var scale: CGFloat = 1
-    @ScaledMetric(relativeTo: .caption) private var captionSize: CGFloat = 12
-    @ScaledMetric(relativeTo: .caption2) private var caption2Size: CGFloat = 11
-
-    static func kindLabel(for board: BoardState) -> String {
-        if board.isInspection { return "Inspection" }
-        if board.isTutorial { return "Tutorial" }
-        if board.isZmx { return "zmx" }
-        if board.isZellij { return "Zellij" }
-        if board.isTerminal { return "Terminal" }
-        return "Web"
-    }
-
-    private var cardWidth: CGFloat {
-        CGFloat(board.width) * DenOverviewLayout.boardCardHeight / boardHeight * scale
-    }
-
-    private var boardTypeIcon: some View {
-        Image(systemSymbol: boardSymbol(for: board.kind))
-            .font(.system(size: captionSize * scale, weight: .semibold))
-            .foregroundStyle(typeColor)
-    }
-
-    private var typeColor: Color {
-        if board.isInspection { return .purple }
-        if board.isTutorial { return DenOverviewColors.tutorial }
-        return board.isTerminal ? DenOverviewColors.terminal : DenOverviewColors.web
-    }
-
-    private var backgroundColor: Color {
-        if isSelected { return (differentiateWithoutColor ? Color.primary : profileColor).opacity(0.18) }
-        return typeColor.opacity(0.09)
-    }
-
-    private var detailText: String {
-        if board.isTutorial { return "Interactive checklist" }
-        return board.zmxSessionName
-            ?? board.zellijSessionName
-            ?? board.terminalWorkingDirectory
-            ?? board.currentSheetURL?.host(percentEncoded: false)
-            ?? board.currentSheetURL?.absoluteString
-            ?? ""
-    }
-
-    var body: some View {
-        ZStack(alignment: .topLeading) {
-            if let facing {
-                Image(nsImage: facing)
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: cardWidth, height: DenOverviewLayout.boardCardHeight * scale, alignment: .center)
-                    .clipped()
-                    .opacity(0.85)
-
-                // Subdued bottom gradient overlay for readability of board label
-                VStack {
-                    Spacer()
-                    HStack(spacing: 4 * scale) {
-                        boardTypeIcon
-                        Text(board.displayName)
-                            .font(.system(size: caption2Size * scale, weight: .semibold))
-                            .lineLimit(1)
-                            .foregroundStyle(.white)
-                        Spacer(minLength: 0)
-                        if isAnchor {
-                            Image(systemSymbol: .pinFill)
-                                .font(.system(size: caption2Size * scale))
-                                .foregroundStyle(.white.opacity(0.8))
-                        }
-                    }
-                    .padding(.horizontal, 6 * scale)
-                    .padding(.vertical, 4 * scale)
-                    .background(Color.black.opacity(0.6))
-                }
-            } else {
-                VStack(alignment: .leading, spacing: 6 * scale) {
-                    HStack(spacing: 6 * scale) {
-                        boardTypeIcon
-                            .accessibilityHidden(true)
-
-                        Text(Self.kindLabel(for: board))
-                            .font(.system(size: caption2Size * scale, weight: .medium))
-                            .foregroundStyle(typeColor)
-
-                        if isAnchor {
-                            Spacer(minLength: 0)
-                            Image(systemSymbol: .pinFill)
-                                .font(.system(size: caption2Size * scale))
-                                .foregroundStyle(.secondary)
-                        }
-                    }
-
-                    Text(board.displayName)
-                        .font(.system(size: captionSize * scale, weight: .semibold))
-                        .lineLimit(2)
-
-                    Text(detailText)
-                        .font(.system(size: caption2Size * scale))
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-
-                    Spacer(minLength: 0)
-
-                    Capsule()
-                        .fill(.secondary.opacity(0.35))
-                        .frame(maxWidth: .infinity)
-                        .frame(height: DenOverviewLayout.widthIndicatorHeight * scale)
-                }
-                .padding(DenOverviewLayout.boardPadding * scale)
-            }
-        }
-        .frame(
-            width: cardWidth,
-            height: DenOverviewLayout.boardCardHeight * scale,
-            alignment: .leading
-        )
-        .foregroundStyle(.primary)
-        .background(
-            backgroundColor,
-            in: RoundedRectangle(cornerRadius: DenRadius.small * scale, style: .continuous)
-        )
-        .clipShape(RoundedRectangle(cornerRadius: DenRadius.small * scale, style: .continuous))
-        .overlay {
-            RoundedRectangle(cornerRadius: DenRadius.small * scale, style: .continuous)
-                .stroke(
-                    isSelected
-                        ? (differentiateWithoutColor ? Color.primary : profileColor.opacity(0.86))
-                        : Color.primary.opacity(0.12),
-                    lineWidth: (isSelected ? 2 : 1) * scale)
-        }
     }
 }

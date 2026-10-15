@@ -18,6 +18,8 @@ final class ProfileManager {
 
     @ObservationIgnored private let facingDirectoryURL: URL?
     @ObservationIgnored private var facingDisks: [ProfileID: BoardFacingDiskCache] = [:]
+    @ObservationIgnored private let presetFacingDirectoryURL: URL?
+    @ObservationIgnored private var presetFacingDisks: [ProfileID: PresetFacingDiskStore] = [:]
     @ObservationIgnored private let persistence: ProfilePersistence
     @ObservationIgnored private var persistedProfiles: [ProfileID: PersistedProfile] = [:]
     var profileSaveCount: Int { persistence.profileSaveCount }
@@ -70,6 +72,7 @@ final class ProfileManager {
                 .appending(path: "BoardFacings")
             : directoryURL.appending(path: "BoardFacings")
         facingDirectoryURL = isEphemeral ? nil : cacheRoot
+        presetFacingDirectoryURL = isEphemeral ? nil : directoryURL.appending(path: "PresetFacings")
         self.persistence = ProfilePersistence(
             directoryURL: directoryURL,
             isEphemeral: isEphemeral,
@@ -223,6 +226,7 @@ final class ProfileManager {
             try removeExtensionData(profileID)
             await facingCache?.clearDisk()
             await facingDisk(for: profileID)?.removeAll()
+            await presetFacingDisk(for: profileID)?.removeAll()
             if hadDocument { try persistence.removeProfileDocument(for: profileID) }
             profiles.removeAll { $0.id == profileID }
             persistedProfiles.removeValue(forKey: profileID)
@@ -394,9 +398,11 @@ final class ProfileManager {
             let boardIDs = Set(normalizedState.desks.flatMap { $0.boards.map(\.id) })
             Task { await disk.prune(keeping: boardIDs) }
         }
+        let presetDisk = presetFacingDisk(for: profileID)
         let storage = DenProfileResources(
             state: normalizedState,
             facingDisk: disk,
+            presetFacingDisk: presetDisk,
             deskPresets: persisted.deskPresets,
             recentItems: persisted.recentItems,
             onSave: { [weak self] den in self?.saveDen(den, for: profileID) ?? false },
@@ -411,6 +417,15 @@ final class ProfileManager {
             _ = saveDen(normalizedState, for: profileID)
         }
         return storage
+    }
+
+    private func presetFacingDisk(for profileID: ProfileID) -> PresetFacingDiskStore? {
+        guard let presetFacingDirectoryURL else { return nil }
+        if let disk = presetFacingDisks[profileID] { return disk }
+        let disk = PresetFacingDiskStore(
+            directoryURL: presetFacingDirectoryURL.appending(path: profileID.rawValue.uuidString.lowercased()))
+        presetFacingDisks[profileID] = disk
+        return disk
     }
 
     private func facingDisk(for profileID: ProfileID) -> BoardFacingDiskCache? {

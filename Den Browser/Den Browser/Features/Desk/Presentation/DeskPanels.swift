@@ -6,6 +6,7 @@ import SwiftUI
 
 struct NewDeskPanel: View {
     let profileColor: Color
+    var boardHeight: CGFloat = DenLayout.fallbackBoardHeight
 
     @Environment(DenController.self) private var controller
     @Environment(DenWindowModel.self) private var windowModel
@@ -37,6 +38,7 @@ struct NewDeskPanel: View {
                     isManagementPresented: $isManagementPresented,
                     allowsEmptyPreset: !windowModel.isReplaceDeskPanelPresented,
                     isSearchFocused: $isSearchFocused,
+                    boardHeight: boardHeight,
                     onConfirm: confirmDeskPreset)
             } else {
                 HStack(spacing: DenPanelLayout.controlSpacing) {
@@ -54,7 +56,7 @@ struct NewDeskPanel: View {
                     Color.primary.opacity(0.055),
                     in: RoundedRectangle(cornerRadius: DenRadius.small, style: .continuous))
 
-                DeskPresetPreview(boards: selectedDeskPresetBoards)
+                DeskPresetPreview(boards: selectedDeskPresetBoards, boardHeight: boardHeight)
 
                 TextField(
                     text: $newDeskLabel,
@@ -271,8 +273,10 @@ struct NewDeskPanel: View {
 struct SaveDeskPresetPanel: View {
     let initialLabel: String
     let previewBoards: [DeskPresetBoard]
+    var boardHeight: CGFloat = DenLayout.fallbackBoardHeight
     let savePreset: (String) -> DeskPresetSaveResult
     let onClose: () -> Void
+    @Environment(DenController.self) private var controller
     @State private var label = ""
     @State private var message: String?
     @FocusState private var isFocused: Bool
@@ -292,7 +296,16 @@ struct SaveDeskPresetPanel: View {
             .textFieldStyle(.roundedBorder)
             .focused($isFocused)
             .onSubmit { TextInputComposition.performUnlessActive(save) }
-            DeskPresetPreview(boards: previewBoards)
+            DeskPresetPreview(
+                boards: previewBoards,
+                boardHeight: boardHeight,
+                facingForBoard: { index, _ in
+                    guard let boards = controller.focusedDesk?.boards,
+                        boards.indices.contains(index)
+                    else { return nil }
+                    return controller.facingCache.image(for: boards[index].id)
+                }
+            )
             HStack {
                 if let message {
                     DenValidationMessage(message)
@@ -306,6 +319,12 @@ struct SaveDeskPresetPanel: View {
             }
         }
         .denPanel()
+        .task {
+            guard let boards = controller.focusedDesk?.boards else { return }
+            for board in boards {
+                await controller.facingCache.loadFacing(for: board.id)
+            }
+        }
         .onAppear {
             label = initialLabel
             message = nil

@@ -610,7 +610,7 @@ private struct DenActivePanelOverlay: View {
         case .editBoardLink:
             panelOverlay(EditBoardLinkPanel())
         case .newDesk, .replaceDesk:
-            panelOverlay(NewDeskPanel(profileColor: profileColor))
+            panelOverlay(NewDeskPanel(profileColor: profileColor, boardHeight: boardHeight))
         case .deskPresetManagement:
             panelOverlay(
                 DeskPresetManagementPanel(
@@ -630,6 +630,7 @@ private struct DenActivePanelOverlay: View {
                 SaveDeskPresetPanel(
                     initialLabel: controller.focusedDesk?.label ?? "",
                     previewBoards: DeskPresetBoard.capture(from: controller.focusedDesk?.boards ?? []),
+                    boardHeight: boardHeight,
                     savePreset: windowModel.deskPresetActions.save,
                     onClose: { windowModel.hideSaveDeskPresetPanel() }
                 )

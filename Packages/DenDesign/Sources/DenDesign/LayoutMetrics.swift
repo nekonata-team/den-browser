@@ -16,6 +16,8 @@ public enum DenLayout {
     public static let focusModeBlurRadius: CGFloat = 8
     public static let focusModeHaloRadius: CGFloat = 24
     public static let boardIndicatorHeight: CGFloat = 14
+    public static let fallbackBoardHeight: CGFloat = 600
+    public static let overviewFacingHeight: CGFloat = 120
 
     public static let denHeaderHeight = deskSwitcherHeight
 }
@@ -29,6 +31,7 @@ public enum DenPanelLayout {
     public static let tallListMaxHeight: CGFloat = 420
     public static let standardWidth: CGFloat = 480
     public static let wideWidth: CGFloat = 600
+    public static let presetFacingHeight: CGFloat = 100
 }
 
 public enum DenKeyboardShortcutsLayout {

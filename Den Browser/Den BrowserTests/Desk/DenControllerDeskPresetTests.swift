@@ -443,6 +443,41 @@ struct DenControllerDeskPresetTests {
         #expect(controller.latestFeedback?.severity == DenFeedback.Severity.success)
     }
 
+    @Test func saveDeskPresetSavesFacingsFromCacheAndRemovesOnDelete() throws {
+        // Arrange
+        let boardState = board("Board")
+        let deskState = desk("Desk", boards: [boardState])
+        let controller = DenController(
+            state: DenState(desks: [deskState], focusedDeskID: deskState.id),
+            deskPresets: [],
+            onDeskPresetsSave: { _ in true }
+        )
+        let context = try #require(
+            CGContext(
+                data: nil, width: 10, height: 10, bitsPerComponent: 8, bytesPerRow: 40,
+                space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue))
+        let raster = try #require(context.makeImage())
+        let sampleImage = NSImage(cgImage: raster, size: CGSize(width: 10, height: 10))
+        controller.facingCache.setFacing(sampleImage, for: boardState.id)
+
+        // Act - Save
+        let saveResult = controller.saveFocusedDeskAsPreset(label: "Routine")
+        #expect(saveResult == .created)
+
+        let preset = controller.deskPresets.first(where: { $0.label == "Routine" })
+        #expect(preset != nil)
+        guard let presetID = preset?.id else { return }
+
+        // Assert - Facing cached in PresetFacingStore
+        #expect(controller.presetFacingStore.image(for: presetID, at: 0) != nil)
+
+        // Act - Delete
+        controller.deleteDeskPreset(presetID)
+
+        // Assert - Facing removed from PresetFacingStore
+        #expect(controller.presetFacingStore.image(for: presetID, at: 0) == nil)
+    }
+
     private static func sampleChoices() -> [DeskPresetChoice] {
         [
             DeskPresetChoice(

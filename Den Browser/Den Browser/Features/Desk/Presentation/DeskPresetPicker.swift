@@ -18,6 +18,7 @@ struct DeskPresetPicker: View {
     let allowsEmptyPreset: Bool
     let isSearchFocused: FocusState<Bool>.Binding
     let onConfirm: (DeskPresetSelection) -> Void
+    var boardHeight: CGFloat = DenLayout.fallbackBoardHeight
 
     @Environment(DenController.self) private var controller
     @State private var scrollPosition = ScrollPosition()
@@ -31,6 +32,7 @@ struct DeskPresetPicker: View {
         isManagementPresented: Binding<Bool>,
         allowsEmptyPreset: Bool,
         isSearchFocused: FocusState<Bool>.Binding,
+        boardHeight: CGFloat = DenLayout.fallbackBoardHeight,
         onConfirm: @escaping (DeskPresetSelection) -> Void
     ) {
         self.profileColor = profileColor
@@ -39,6 +41,7 @@ struct DeskPresetPicker: View {
         self._isManagementPresented = isManagementPresented
         self.allowsEmptyPreset = allowsEmptyPreset
         self.isSearchFocused = isSearchFocused
+        self.boardHeight = boardHeight
         self.onConfirm = onConfirm
         self._selection = State(initialValue: initialSelection)
     }
@@ -89,7 +92,21 @@ struct DeskPresetPicker: View {
             }
             .deskPresetArrowNavigation { moveSelection(by: $0) }
 
-            DeskPresetPreview(boards: selectedBoards)
+            DeskPresetPreview(
+                boards: selectedBoards,
+                boardHeight: boardHeight,
+                facingForBoard: { index, _ in
+                    if case .personal(let id) = selection {
+                        return controller.presetFacingStore.image(for: id, at: index)
+                    }
+                    return nil
+                }
+            )
+        }
+        .task(id: selection) {
+            if case .personal(let id) = selection {
+                await controller.presetFacingStore.loadFacings(for: id, boardCount: selectedBoards.count)
+            }
         }
         .onChange(of: controller.deskPresets.map(\.id)) { _, ids in
             if case .personal(let id) = selection, !ids.contains(id) {
@@ -397,7 +414,11 @@ enum DeskPresetSearch {
 }
 
 struct DeskPresetPreview: View {
+    private static let cardHeight: CGFloat = DenPanelLayout.presetFacingHeight
+
     let boards: [DeskPresetBoard]
+    var boardHeight: CGFloat = DenLayout.fallbackBoardHeight
+    var facingForBoard: ((Int, DeskPresetBoard) -> NSImage?)?
 
     var body: some View {
         if boards.isEmpty {
@@ -407,44 +428,17 @@ struct DeskPresetPreview: View {
         } else {
             ScrollView(.horizontal) {
                 HStack(alignment: .top, spacing: 6) {
-                    ForEach(Array(boards.enumerated()), id: \.offset) { _, board in
-                        VStack(alignment: .leading, spacing: 3) {
-                            Text(board.customLabel ?? board.label)
-                                .lineLimit(1)
-                            Text(previewSubtitle(for: board))
-                                .font(.caption2)
-                                .foregroundStyle(.secondary)
-                                .lineLimit(1)
-                            Text("\(Int(board.width.rounded())) pt")
-                                .font(.caption2)
-                                .foregroundStyle(.tertiary)
-                        }
-                        .padding(7)
-                        .frame(
-                            width: max(90, min(150, board.width / 4)),
-                            alignment: .leading
-                        )
-                        .background(
-                            Color.primary.opacity(0.055),
-                            in: RoundedRectangle(cornerRadius: DenRadius.small, style: .continuous)
+                    ForEach(Array(boards.enumerated()), id: \.offset) { index, board in
+                        DeskPresetBoardFacing(
+                            board: board,
+                            boardHeight: boardHeight,
+                            facingHeight: Self.cardHeight,
+                            facing: facingForBoard?(index, board)
                         )
                     }
                 }
             }
             .scrollIndicators(.hidden)
         }
-    }
-
-    private func previewSubtitle(for board: DeskPresetBoard) -> String {
-        guard case .inspection = board.kind else {
-            return board.initialSheetURL?.host(percentEncoded: false) ?? "Empty Board"
-        }
-        guard let targetBoardOffset = board.targetBoardIndex?.rawValue,
-            boards.indices.contains(targetBoardOffset)
-        else {
-            return "Inspection Board"
-        }
-        let targetBoard = boards[targetBoardOffset]
-        return "Inspection of \(targetBoard.customLabel ?? targetBoard.label)"
     }
 }

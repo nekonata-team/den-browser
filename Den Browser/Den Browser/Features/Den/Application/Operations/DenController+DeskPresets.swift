@@ -13,6 +13,11 @@ extension DenController {
             onWindowEffect?(.requestConfirmation(.replaceDeskPreset(replacement)))
             return .replacementPending
         case .created(let persisted):
+            if persisted, let preset = storage.deskPresets.first(where: { $0.label == label }),
+                let boards = focusedDesk?.boards
+            {
+                savePresetFacings(for: preset.id, boards: boards)
+            }
             onWindowEffect?(.exitDenMode)
             reportPresetSave(persisted)
             return .created
@@ -24,6 +29,9 @@ extension DenController {
         switch storage.deskPresetOperations.replace(replacement) {
         case .unavailable: return false
         case .replaced(let persisted):
+            if persisted, let boards = focusedDesk?.boards {
+                savePresetFacings(for: replacement.id, boards: boards)
+            }
             onWindowEffect?(.exitDenMode)
             reportPresetSave(persisted)
             return true
@@ -51,6 +59,8 @@ extension DenController {
     func deleteDeskPreset(_ id: UUID) {
         if !storage.deskPresetOperations.delete(id) {
             reportFeedback("Could not delete Desk Preset.", severity: .error)
+        } else {
+            removePresetFacings(for: id)
         }
     }
 
