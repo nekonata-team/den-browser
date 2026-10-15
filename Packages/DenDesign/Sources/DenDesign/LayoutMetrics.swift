@@ -29,6 +29,7 @@ public enum DenPanelLayout {
     public static let titleHeight: CGFloat = 38
     public static let standardListMaxHeight: CGFloat = 360
     public static let tallListMaxHeight: CGFloat = 420
+    public static let previewedListMaxHeight: CGFloat = 240
     public static let standardWidth: CGFloat = 480
     public static let wideWidth: CGFloat = 600
     public static let presetFacingHeight: CGFloat = 100

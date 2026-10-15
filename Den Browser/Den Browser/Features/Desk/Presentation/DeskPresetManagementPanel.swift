@@ -8,9 +8,12 @@ struct DeskPresetManagementPanel: View {
     let isStandalone: Bool
     let profileColor: Color
     let presets: [PersonalDeskPreset]
+    var boardHeight: CGFloat = DenLayout.fallbackBoardHeight
     let renamePreset: (UUID, String) -> DeskPresetRenameResult
     let requestDeletion: (UUID) -> Void
     let onClose: () -> Void
+
+    @Environment(DenController.self) private var controller
     @State private var query = ""
     @State private var selectedPresetID: UUID?
     @State private var editingPresetID: UUID?
@@ -20,6 +23,11 @@ struct DeskPresetManagementPanel: View {
     @State private var scrollPosition = ScrollPosition()
     @FocusState private var isSearchFocused: Bool
     @FocusState private var focusedEditingID: UUID?
+
+    private var selectedPreset: PersonalDeskPreset? {
+        guard let selectedPresetID else { return nil }
+        return presets.first { $0.id == selectedPresetID }
+    }
 
     private var filteredPresets: [PersonalDeskPreset] {
         guard !query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return presets }
@@ -85,14 +93,30 @@ struct DeskPresetManagementPanel: View {
                     }
                     .scrollPosition($scrollPosition, anchor: .center)
                     .scrollIndicators(.never)
-                    .frame(maxHeight: DenPanelLayout.standardListMaxHeight)
+                    .frame(maxHeight: DenPanelLayout.previewedListMaxHeight)
                 }
             }
             .deskPresetArrowNavigation(isEditing: editingPresetID != nil) { moveSelection(by: $0) }
 
+            if let selectedPreset {
+                DeskPresetPreview(
+                    boards: selectedPreset.boards,
+                    boardHeight: boardHeight,
+                    facingForBoard: { index, _ in
+                        controller.presetFacingStore.image(for: selectedPreset.id, at: index)
+                    }
+                )
+            }
+
             DenPanelHint("↑↓ Select · Return Rename · Delete Remove · Escape Close")
         }
         .denPanel(width: DenPanelLayout.wideWidth)
+        .task(id: selectedPresetID) {
+            if let selectedPreset {
+                await controller.presetFacingStore.loadFacings(
+                    for: selectedPreset.id, boardCount: selectedPreset.boards.count)
+            }
+        }
         .onAppear {
             ensureSelectedPreset()
             DispatchQueue.main.async { isSearchFocused = true }

@@ -617,6 +617,7 @@ private struct DenActivePanelOverlay: View {
                     isStandalone: true,
                     profileColor: profileColor,
                     presets: controller.deskPresets,
+                    boardHeight: boardHeight,
                     renamePreset: windowModel.deskPresetActions.rename,
                     requestDeletion: windowModel.deskPresetActions.requestDeletion
                 ) {

@@ -118,6 +118,7 @@ struct NewDeskPanel: View {
                 DeskPresetManagementPanel(
                     isStandalone: false, profileColor: profileColor,
                     presets: controller.deskPresets,
+                    boardHeight: boardHeight,
                     renamePreset: windowModel.deskPresetActions.rename,
                     requestDeletion: windowModel.deskPresetActions.requestDeletion
                 ) {
