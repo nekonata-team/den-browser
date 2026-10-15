@@ -128,7 +128,7 @@ Compact snapshots retain visible semantic ancestors of interactive elements, suc
 | `den board web url` | None | Print Current Sheet URL of the target Web Board. | `den board web url` |
 | `den board web reload` | None | Reload Current Sheet in the target Web Board. | `den board web reload` |
 | `den board web eval` | `<script>` | Evaluate JavaScript and return the result. | `den board web eval document.title` |
-| `den board web text` | None | Extract visible text content (`innerText`) from the sheet. | `den board web text` |
+| `den board web text` | None | Extract visible text content (`innerText`) from the sheet, falling back to the root element's `textContent` for documents such as XML without an HTML body. | `den board web text` |
 | `den board web back` | None | Navigate back in browsing history. | `den board web back` |
 | `den board web forward` | None | Navigate forward in browsing history. | `den board web forward` |
 | `den board web press` | `<key>` | Dispatch key events (`Enter`, `Escape`, `Tab`, arrows) to the active element. | `den board web press Enter` |

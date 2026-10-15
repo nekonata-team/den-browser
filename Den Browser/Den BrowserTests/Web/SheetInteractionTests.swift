@@ -19,6 +19,15 @@ final class SheetInteractionWebViewLoadWaiter: NSObject, WKNavigationDelegate {
         }
     }
 
+    func load(_ content: String, mimeType: String, baseURL: URL, in webView: WKWebView) async {
+        await withCheckedContinuation { continuation in
+            self.continuation = continuation
+            webView.navigationDelegate = self
+            pendingNavigation = webView.load(
+                Data(content.utf8), mimeType: mimeType, characterEncodingName: "utf-8", baseURL: baseURL)
+        }
+    }
+
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
         guard navigation === pendingNavigation else { return }
         resume()

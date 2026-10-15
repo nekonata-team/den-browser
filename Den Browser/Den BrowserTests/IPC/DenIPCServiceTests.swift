@@ -607,6 +607,47 @@ struct DenIPCServiceTests {
         #expect(response.error?.contains("No focused Board found") == true)
     }
 
+    @Test(arguments: [
+        ("text/html", "<body>Visible<span hidden>Hidden</span><script>/* Script */</script></body>", "Visible"),
+        ("application/xml", "<response><message>API result</message></response>", "API result"),
+        ("text/plain", "Plain text result", "Plain text result"),
+    ])
+    func sheetTextReadsHTMLAndDocumentsWithoutHTMLBody(mimeType: String, content: String, expected: String) async throws
+    {
+        // Arrange
+        let directory = FileManager.default.temporaryDirectory
+            .appending(path: "den-browser-ipc-sheet-text-\(UUID().uuidString)", directoryHint: .isDirectory)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let suiteName = "IPCServiceSheetTextPreferences-\(UUID().uuidString)"
+        let manager = ProfileManager(
+            directoryURL: directory,
+            sheetNavigation: SheetNavigationManager(
+                defaults: makeTestDefaults(suiteName: suiteName), scriptSource: ""),
+            preferences: AppPreferences(defaults: makeTestDefaults(suiteName: suiteName)),
+            removeDataStore: { _ in },
+            websiteDataStore: { _ in .nonPersistent() })
+        let controller = try #require(manager.controller(for: manager.personalProfileID))
+        let boardID = try #require(controller.createBoard(urlString: "https://text.example/"))
+        let board = try #require(controller.board(for: boardID))
+        let runtime = controller.webRuntime(for: board)
+        let waiter = SheetInteractionWebViewLoadWaiter()
+        await waiter.load(
+            content, mimeType: mimeType, baseURL: URL(string: "https://text.example/")!, in: runtime.webView)
+        let service = DenIPCService(profileManager: manager)
+
+        // Act
+        let response = await service.handleResult(
+            ipcRequest(.sheet(command: .text, target: .explicit(boardID.rawValue))))
+
+        // Assert
+        #expect(response.isOk)
+        guard case .text(let text) = response.payload else {
+            Issue.record("Expected Sheet text payload")
+            return
+        }
+        #expect(text == expected)
+    }
+
     @Test func sheetClickWithNewBoardCreatesWebBoard() async throws {
         // Arrange
         let directory = FileManager.default.temporaryDirectory
