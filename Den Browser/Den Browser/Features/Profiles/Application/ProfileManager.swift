@@ -697,15 +697,7 @@ final class ProfileManager {
             persisted.deskPresets = storage.deskPresets
             persisted.recentItems = storage.recentItems
         }
-        persistedProfiles[profileID] = persisted
-        do {
-            try persistence.save(persisted)
-            cancelPendingDeferredSave(for: profileID)
-            return true
-        } catch {
-            reportSaveError(error)
-            return false
-        }
+        return saveProfileDocument(persisted, for: profileID)
     }
 
     @discardableResult
@@ -713,15 +705,7 @@ final class ProfileManager {
         guard var persisted = persistedProfiles[profileID] else { return false }
         refreshDenData(in: &persisted, for: profileID)
         persisted.deskPresets = deskPresets
-        persistedProfiles[profileID] = persisted
-        do {
-            try persistence.save(persisted)
-            cancelPendingDeferredSave(for: profileID)
-            return true
-        } catch {
-            reportSaveError(error)
-            return false
-        }
+        return saveProfileDocument(persisted, for: profileID)
     }
 
     @discardableResult
@@ -729,6 +713,10 @@ final class ProfileManager {
         guard var persisted = persistedProfiles[profileID] else { return false }
         refreshDenData(in: &persisted, for: profileID)
         persisted.recentItems = recentItems
+        return saveProfileDocument(persisted, for: profileID)
+    }
+
+    private func saveProfileDocument(_ persisted: PersistedProfile, for profileID: ProfileID) -> Bool {
         persistedProfiles[profileID] = persisted
         do {
             try persistence.save(persisted)
