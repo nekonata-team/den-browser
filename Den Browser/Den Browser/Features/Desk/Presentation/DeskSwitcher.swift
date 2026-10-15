@@ -161,6 +161,13 @@ struct DeskSwitcher: View {
             }
             .disabled(!controller.canSelectDesk(desk.id))
 
+            Button {
+                controller.duplicateDesk(desk.id)
+            } label: {
+                Label("Duplicate Desk", systemSymbol: .plusSquareOnSquare)
+            }
+            .disabled(!controller.canCreateDesk)
+
             Button(role: .destructive) {
                 controller.focusDesk(desk.id)
                 controller.deleteFocusedDesk()

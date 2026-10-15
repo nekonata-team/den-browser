@@ -212,7 +212,7 @@ budget. Ordinary Profiles retain compressed snapshots across restarts in a separ
 - **Desk Switcher**:
   - Click `+` after the last Desk to create a new Desk.
   - Drag Desk button to reorder Desks.
-  - Right-click for context menu (copy ID, open in new window, rename, delete, save preset, export).
+  - Right-click for context menu (copy ID, open in new window, rename, duplicate, delete, save preset, export). [Duplicate Desk](./desk-presets.md#duplicating-a-desk) creates a same-label copy immediately after the source and switches to it.
 - **Overview**:
   - Click a Board to select and center it when the mouse button is released, including an already selected Board. Dragging keeps the current selection until release, then selects the dragged Board without centering the canvas. Overview stays open for both actions. Double-click to enter a Board.
   - Scroll in either direction or drag the background to pan. Right-drag anywhere on the canvas, including over a Board,

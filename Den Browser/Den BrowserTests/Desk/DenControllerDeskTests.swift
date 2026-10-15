@@ -77,6 +77,92 @@ struct DenControllerDeskTests {
         }
     }
 
+    @Test func duplicatesNamedDeskAfterSourceWithIndependentBoardsAndPreservedConfiguration() throws {
+        // Arrange
+        let web = board("Web", width: 640, url: "https://example.com/current?q=1#section")
+        let inspection = BoardState(width: 320, targetBoardID: web.id)
+        let shell = BoardState(label: "Shell", width: 700, workingDirectory: "/tmp/work")
+        let zmx = BoardState(label: "zmx", width: 600, zmxSessionName: "work", rootSessionName: "root")
+        let source = desk("Research", boards: [web, inspection, shell, zmx], focusedBoardID: inspection.id)
+        let other = desk("Other")
+        var savedState: DenState?
+        let controller = DenController(
+            state: DenState(desks: [source, other], focusedDeskID: other.id),
+            onSave: { savedState = $0 })
+        let context = try #require(
+            CGContext(
+                data: nil, width: 10, height: 10, bitsPerComponent: 8, bytesPerRow: 40,
+                space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue))
+        let raster = try #require(context.makeImage())
+        controller.facingCache.setFacing(NSImage(cgImage: raster, size: CGSize(width: 10, height: 10)), for: web.id)
+
+        // Act
+        controller.duplicateDesk(source.id)
+
+        // Assert
+        let copy = try #require(controller.focusedDesk)
+        #expect(controller.state.desks.map(\.id) == [source.id, copy.id, other.id])
+        #expect(controller.state.desks[0] == source)
+        #expect(copy.label == source.label)
+        #expect(copy.boards.count == source.boards.count)
+        #expect(Set(copy.boards.map(\.id)).isDisjoint(with: source.boards.map(\.id)))
+        #expect(DeskPresetBoard.capture(from: copy.boards) == DeskPresetBoard.capture(from: source.boards))
+        #expect(copy.focusedBoardID == copy.boards[1].id)
+        #expect(copy.boards[1].sideBoardTargetBoardID == copy.boards[0].id)
+        #expect(controller.facingCache.image(for: copy.boards[0].id) != nil)
+        #expect(controller.deskPresets.isEmpty)
+        #expect(controller.webRuntimes.isEmpty)
+        #expect(controller.terminalRuntimes.isEmpty)
+        #expect(savedState == controller.state)
+    }
+
+    @Test func duplicatesEmptyDeskWithSameLabelAndExitsDenMode() {
+        // Arrange
+        let source = desk("Empty")
+        withTestWindowModel(desks: [source]) { windowModel, controller in
+            windowModel.isDenMode = true
+
+            // Act
+            controller.duplicateDesk(source.id)
+
+            // Assert
+            #expect(controller.state.desks.map(\.label) == ["Empty", "Empty"])
+            #expect(controller.focusedDesk?.id != source.id)
+            #expect(controller.focusedDesk?.boards.isEmpty == true)
+            #expect(!windowModel.isDenMode)
+        }
+    }
+
+    @Test func deskDuplicationDoesNotDuplicateTutorialBoard() {
+        // Arrange
+        let source = desk("Learning")
+        let controller = DenController(state: DenState(desks: [source], focusedDeskID: source.id))
+        #expect(controller.openTutorialBoard())
+
+        // Act
+        controller.duplicateDesk(source.id)
+
+        // Assert
+        #expect(controller.state.desks.flatMap(\.boards).filter(\.isTutorial).count == 1)
+        #expect(controller.focusedDesk?.boards.isEmpty == true)
+    }
+
+    @Test(arguments: [false, true])
+    func deskDuplicationRejectsUnknownSourceOrFullDen(atLimit: Bool) {
+        // Arrange
+        let desks = (1...(atLimit ? DenController.maximumDeskCount : 1)).map { desk("Desk \($0)") }
+        let original = DenState(desks: desks, focusedDeskID: desks[0].id)
+        var didSave = false
+        let controller = DenController(state: original, onSave: { _ in didSave = true })
+
+        // Act
+        controller.duplicateDesk(atLimit ? desks[0].id : DeskID())
+
+        // Assert
+        #expect(controller.state == original)
+        #expect(!didSave)
+    }
+
     @Test func replacingPopulatedDeskRequiresConfirmationAndReleasesItsBoards() throws {
         let oldBoards = [board("First"), board("Second")]
         let replacing = desk("Research", boards: oldBoards, focusedBoardID: oldBoards[1].id)

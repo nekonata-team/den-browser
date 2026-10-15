@@ -20,18 +20,37 @@ extension DenController {
         createDesk(label: label, boards: preset.boards, focusedBoardIndex: preset.focusedBoardIndex)
     }
 
-    private func createDesk(label: String, boards: [DeskPresetBoard], focusedBoardIndex: BoardIndex?) {
+    func duplicateDesk(_ deskID: DeskID) {
+        guard let source = state.desks.first(where: { $0.id == deskID }) else { return }
+        let preset = PersonalDeskPreset(label: source.label, desk: source)
+        guard
+            let copy = createDesk(
+                label: source.label, boards: preset.boards, focusedBoardIndex: preset.focusedBoardIndex,
+                after: source.id)
+        else { return }
+        for (original, duplicate) in zip(source.boards.filter { !$0.isTutorial }, copy.boards) {
+            if let image = facingCache.image(for: original.id) {
+                facingCache.setFacing(image, for: duplicate.id, at: nil)
+            }
+        }
+    }
+
+    @discardableResult
+    private func createDesk(
+        label: String, boards: [DeskPresetBoard], focusedBoardIndex: BoardIndex?, after deskID: DeskID? = nil
+    ) -> DeskState? {
         guard
             let creation = DeskCreation.create(
                 label: label, presetBoards: boards, focusedBoardIndex: focusedBoardIndex,
-                in: state.desks, presentedDeskID: presentedDeskID)
-        else { return }
+                in: state.desks, presentedDeskID: deskID ?? presentedDeskID)
+        else { return nil }
         storage.state.desks = creation.desks
         setFocusedDesk(creation.createdDesk.id)
         onWindowEffect?(.dismissTemporaryPresentation)
         onWindowEffect?(.exitDenMode)
         save()
         dispatchDenOperationEvent(.deskCreated)
+        return creation.createdDesk
     }
 
     func replaceFocusedDesk(label: String, preset: BuiltInDeskPreset) -> DeskReplacementResult {

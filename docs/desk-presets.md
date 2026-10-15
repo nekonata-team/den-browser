@@ -64,6 +64,16 @@ The built-in order is:
 2. ChatGPT (three 520-point Boards focused on the first Board)
 3. Gemini (three 520-point Boards focused on the first Board)
 
+## Duplicating a Desk
+
+`Duplicate Desk` in a Desk button's context menu immediately creates a Desk with the same Label after the source Desk and switches to it.
+Empty Desks can also be duplicated; duplication is disabled at the ten-Desk limit.
+The copy uses the same captured Board configuration as a Desk Preset, including the relative Focused Board position, without saving a Personal Desk Preset.
+Tutorial Boards are excluded because a Den has at most one Tutorial Board.
+Available in-memory Board Facings are copied as initial previews.
+Ordinary Terminal Boards start a new Shell in the same Working Directory; Zellij and zmx Boards retain their session names and use the existing session connection behavior.
+The source Desk and its live Sheets remain unchanged.
+
 ## Replacing a Desk
 
 `Replace Desk…` is available from each Desk button's context menu, or Shift + `p` for the Focused Desk in Den Mode.
