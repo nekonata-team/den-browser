@@ -371,6 +371,7 @@ final class DenController {
             onWindowEffect?(.dismissTemporaryPresentation)
             onWindowEffect?(.exitDenMode)
             focusBoard(boardID, exitsDenMode: true)
+            if focusedDesk?.focusedBoardID == boardID { centerFocusedBoard() }
         case .drawerItem(let itemID):
             onWindowEffect?(.openDrawerItem(itemID))
         case .notification(let notificationID):
@@ -382,6 +383,7 @@ final class DenController {
             onWindowEffect?(.dismissTemporaryPresentation)
             onWindowEffect?(.exitDenMode)
             focusBoard(notification.boardID, exitsDenMode: true)
+            if focusedDesk?.focusedBoardID == notification.boardID { centerFocusedBoard() }
         }
     }
 

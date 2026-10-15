@@ -39,6 +39,7 @@ extension DenController {
         onWindowEffect?(.dismissTemporaryPresentation)
         onWindowEffect?(.exitDenMode)
         focusBoard(notification.boardID, exitsDenMode: true)
+        if focusedDesk?.focusedBoardID == notification.boardID { centerFocusedBoard() }
     }
 
     func markNotificationRead(_ notificationID: UUID) {

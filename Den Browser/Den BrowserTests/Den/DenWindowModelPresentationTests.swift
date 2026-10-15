@@ -1044,6 +1044,46 @@ struct DenWindowModelPresentationTests {
         }
     }
 
+    @Test func openFeedbackTargetCentersBoardEvenWhenAlreadyFocused() {
+        let targetBoard = board("Target")
+        var currentDesk = desk("Main", boards: [targetBoard], focusedBoardID: targetBoard.id)
+        currentDesk.scrollOffsetX = 180
+        withTestWindowModel(desks: [currentDesk]) { windowModel, controller in
+            let initialCenterRequests = windowModel.centerFocusedBoardRequest
+
+            // Act
+            controller.openFeedbackTarget(.board(targetBoard.id))
+
+            // Assert
+            #expect(windowModel.centerFocusedBoardRequest == initialCenterRequests + 1)
+            #expect(controller.focusedDesk?.scrollOffsetX == nil)
+        }
+    }
+
+    @Test func openFeedbackTargetDoesNotScrollWindowWhenTargetIsPresentedElsewhere() {
+        let sourceBoard = board("Source")
+        let targetBoard = board("Target")
+        var sourceDesk = desk("Source", boards: [sourceBoard], focusedBoardID: sourceBoard.id)
+        sourceDesk.scrollOffsetX = 180
+        let targetDesk = desk("Target", boards: [targetBoard], focusedBoardID: targetBoard.id)
+        withTestWindowModel(desks: [sourceDesk, targetDesk]) { _, existingController in
+            let controller = DenController(
+                storage: existingController.storage,
+                presentedDeskID: sourceDesk.id,
+                websiteDataStore: .nonPersistent(),
+                sheetNavigation: existingController.sheetNavigation,
+                preferences: existingController.preferences,
+                canPresentDesk: { _ in false },
+                onDeskPresentationRequest: { _ in false },
+                onWillResetDen: {})
+
+            controller.openFeedbackTarget(.board(targetBoard.id))
+
+            #expect(controller.presentedDeskID == sourceDesk.id)
+            #expect(controller.focusedDesk?.scrollOffsetX == 180)
+        }
+    }
+
     private func arrowEvent(
         _ specialKey: NSEvent.SpecialKey,
         modifiers: NSEvent.ModifierFlags
