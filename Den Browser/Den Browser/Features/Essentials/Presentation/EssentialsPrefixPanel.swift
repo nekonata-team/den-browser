@@ -1,3 +1,4 @@
+import AppKit
 import DenDesign
 import DenDomain
 import SFSafeSymbols
@@ -8,6 +9,7 @@ struct EssentialsPrefixPanel: View {
     let essentials: [Essential]
     let selectedEssentialID: UUID?
     let onSelect: (UUID) -> Void
+    let onOpenInDrawer: (UUID) -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: DenPanelLayout.contentSpacing) {
@@ -43,7 +45,7 @@ struct EssentialsPrefixPanel: View {
             DenPanelHint(
                 essentials.isEmpty
                     ? "Press Escape to cancel"
-                    : "↑↓ Focus · Return Start · Essential key Start · Esc Cancel"
+                    : "↑↓ Focus · Return Start · ⌥Return / ⌥Click Drawer · Essential key Start · Esc Cancel"
             )
         }
         .denPanel()
@@ -64,11 +66,20 @@ struct EssentialsPrefixPanel: View {
                 .frame(minHeight: 36)
                 .denSelectionHighlight(isSelected, profileColor: profileColor, inactiveOpacity: 0.04)
                 .contentShape(RoundedRectangle(cornerRadius: DenRadius.small))
-                .onTapGesture { onSelect(essential.id) }
+                .onTapGesture {
+                    if NSEvent.modifierFlags.contains(.option) {
+                        onOpenInDrawer(essential.id)
+                    } else {
+                        onSelect(essential.id)
+                    }
+                }
                 .id(essential.id)
+                .accessibilityIdentifier("essential.\(essential.id.uuidString)")
                 .accessibilityElement(children: .combine)
                 .accessibilityAddTraits(isSelected ? .isSelected : [])
-                .accessibilityHint("Return starts this Essential. Its shortcut starts it directly.")
+                .accessibilityHint(
+                    "Return starts this Essential. Option Return or Option click opens a URL or search in Drawer. Its shortcut starts it directly."
+                )
             }
         }
     }

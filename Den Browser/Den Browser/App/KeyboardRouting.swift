@@ -70,6 +70,9 @@ enum KeyboardRouter {
         if case .universalSearch? = context.surface {
             if event.hasMarkedText { return .forward(.temporaryTextInput) }
             if event.isEscape, modifiers == [] { return .perform(.application(.hideUniversalSearch)) }
+            if event.key == .returnKey, modifiers == [.option] {
+                return event.isRepeat ? .consume(.ignoredRepeat) : .perform(.application(.submitSearchInDrawer))
+            }
             if modifiers == [] {
                 switch event.key {
                 case .upArrow: return .perform(.application(.moveSearchSelection(-1)))
@@ -256,8 +259,9 @@ enum KeyboardRouter {
         if event.isEscape, event.modifiers == [] {
             return .perform(.essentials(.exitPrefix))
         }
-        if event.modifiers == [] {
-            if event.key == .returnKey { return .perform(.essentials(.launchSelected)) }
+        if event.key == .returnKey {
+            if event.modifiers == [] { return .perform(.essentials(.launchSelected)) }
+            if event.modifiers == [.option] { return .perform(.essentials(.launchSelectedInDrawer)) }
         }
         guard
             event.modifiers == [] || event.modifiers == [.shift],
@@ -589,6 +593,8 @@ enum KeyboardRouter {
         binding("n"): KeyboardCommand(action: .board(.showOpenPanel)),
         binding(" "): KeyboardCommand(action: .board(.showOpenPanel)),
         binding("v"): KeyboardCommand(action: .board(.openFromClipboard), repeatPolicy: .ignore),
+        binding("v", modifiers: [.option]): KeyboardCommand(
+            action: .board(.openClipboardInDrawer), repeatPolicy: .ignore),
         binding("n", modifiers: [.shift]): KeyboardCommand(action: .desk(.showNewPanel)),
         binding("p"): KeyboardCommand(action: .desk(.showSavePresetPanel), repeatPolicy: .ignore),
         binding("p", modifiers: [.shift]): KeyboardCommand(action: .desk(.showReplacePanel), repeatPolicy: .ignore),

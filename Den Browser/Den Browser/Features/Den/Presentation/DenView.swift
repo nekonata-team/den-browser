@@ -597,7 +597,8 @@ private struct DenActivePanelOverlay: View {
                     profileColor: profileColor,
                     essentials: controller.essentials,
                     selectedEssentialID: windowModel.selectedEssentialID,
-                    onSelect: { windowModel.selectEssential($0) }
+                    onSelect: { windowModel.selectEssential($0) },
+                    onOpenInDrawer: { windowModel.launchEssential(id: $0, inDrawer: true) }
                 )
             )
         case .openBoard:

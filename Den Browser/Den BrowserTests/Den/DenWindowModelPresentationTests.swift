@@ -253,6 +253,50 @@ struct DenWindowModelPresentationTests {
         }
     }
 
+    @Test(arguments: ["example.com", "Swift concurrency", "/tmp/drawer document.html"])
+    func openBoardPanelOpensWebInputInDrawer(input: String) throws {
+        // Arrange
+        let first = board("First")
+        let source = desk("Desk", boards: [first], focusedBoardID: first.id)
+        try withTestWindowModel(desks: [source]) { windowModel, controller in
+            windowModel.showOpenBoardPanel(afterBoardID: first.id)
+            windowModel.openBoard.input = input
+
+            // Act
+            windowModel.openBoard.submitToDrawer()
+
+            // Assert
+            let item = try #require(controller.state.drawerItems.first)
+            let expected = BoardInputResolver.normalizedURL(
+                from: input, searchEngine: controller.preferences.searchEngine)
+            #expect(WebURLPolicy.canonicalSheetURL(item.url) == expected)
+            #expect(controller.focusedDesk?.boards.map(\.id) == [first.id])
+            #expect(windowModel.isDrawerOpen)
+            #expect(windowModel.drawer.expandedItemID == item.id)
+            #expect(windowModel.openBoard.message == nil)
+        }
+    }
+
+    @Test(arguments: [":terminal", ":zellij project", ":zmx", ":tutorial", "https://", ""])
+    func openBoardPanelKeepsInvalidDrawerInput(input: String) {
+        // Arrange
+        let source = desk("Desk")
+        withTestWindowModel(desks: [source]) { windowModel, controller in
+            windowModel.showOpenBoardPanel()
+            windowModel.openBoard.input = input
+
+            // Act
+            windowModel.openBoard.submitToDrawer()
+
+            // Assert
+            #expect(windowModel.isOpenBoardPanelPresented)
+            #expect(windowModel.openBoard.input == input)
+            #expect(windowModel.openBoard.message != nil)
+            #expect(controller.state.drawerItems.isEmpty)
+            #expect(controller.focusedDesk?.boards.isEmpty == true)
+        }
+    }
+
     @Test func recordingNotificationAddsUnreadHistoryAndTargetedFeedback() {
         let target = board("Terminal")
         let desk = desk("Desk", boards: [target], focusedBoardID: target.id)

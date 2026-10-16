@@ -1,3 +1,4 @@
+import DenApplication
 import DenDomain
 import DenPresentationModels
 import Foundation
@@ -71,6 +72,66 @@ struct UniversalSearchActionsTests {
             #expect(error != nil)
             #expect(controller.focusedDesk?.boards.map(\.id) == [existing.id])
             #expect(model.temporaryContext == .universalSearch)
+        }
+    }
+    @Test(arguments: [false, true])
+    func webInputOpensInDrawerWithoutCreatingBoard(fromEssential: Bool) throws {
+        // Arrange
+        let existing = BoardState(
+            label: "Existing", width: 520, currentSheetURL: URL(string: "https://existing.example/"))
+        let desk = DeskState(label: "Desk", boards: [existing], focusedBoardID: existing.id)
+        try withTestWindowModel(desks: [desk]) { model, controller in
+            let input = "Swift concurrency"
+            let essential = Essential(name: "Search", key: "s", input: input)
+            #expect(controller.preferences.setEssentials([essential]))
+            model.showUniversalSearch()
+            let target: UniversalSearchItem.Target = fromEssential ? .essential(essential.id) : .createBoard(input)
+
+            // Act
+            let error = UniversalSearchActions.perform(
+                target, controller: controller, windowModel: model, inDrawer: true,
+                openProfile: { _ in false }, openSettings: {})
+
+            // Assert
+            #expect(error == nil)
+            let item = try #require(controller.state.drawerItems.first)
+            #expect(
+                item.url
+                    == BoardInputResolver.normalizedURL(from: input, searchEngine: controller.preferences.searchEngine))
+            #expect(controller.focusedDesk?.boards.map(\.id) == [existing.id])
+            #expect(model.isDrawerOpen)
+            #expect(model.drawer.expandedItemID == item.id)
+        }
+    }
+
+    @Test(arguments: [
+        UniversalSearchItem.Target.createBoard(":terminal"), .desk(DeskID()), .profile(ProfileID()),
+        .board(BoardID()), .command(.toggleZenView),
+    ])
+    func drawerSubmissionRejectsCommandsAndNavigation(target: UniversalSearchItem.Target) {
+        // Arrange
+        let desk = DeskState(label: "Desk", boards: [])
+        withTestWindowModel(desks: [desk]) { model, controller in
+            model.showUniversalSearch()
+            var openedProfile = false
+            var openedSettings = false
+
+            // Act
+            let error = UniversalSearchActions.perform(
+                target, controller: controller, windowModel: model, inDrawer: true,
+                openProfile: { _ in
+                    openedProfile = true
+                    return true
+                }, openSettings: { openedSettings = true })
+
+            // Assert
+            #expect(error != nil)
+            #expect(model.temporaryContext == .universalSearch)
+            #expect(controller.state.drawerItems.isEmpty)
+            #expect(controller.focusedDesk?.boards.isEmpty == true)
+            #expect(!model.isZenViewPresented)
+            #expect(!openedProfile)
+            #expect(!openedSettings)
         }
     }
 }

@@ -4,6 +4,15 @@ import DenPresentationModels
 import Foundation
 
 extension DenController {
+    func openInDrawer(input: String) -> String? {
+        guard !input.trimmingCharacters(in: .whitespacesAndNewlines).hasPrefix(":"),
+            let resolved = BoardInputResolver.resolveOpenBoardInput(
+                input, searchEngine: preferences.searchEngine)
+        else { return "Enter a URL or search to open in Drawer. Commands require a Board." }
+        guard keepInDrawer(resolved.url) != nil else { return "Could not open in Drawer." }
+        return nil
+    }
+
     @discardableResult
     func keepInDrawer(
         _ url: URL,

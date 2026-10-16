@@ -51,9 +51,16 @@ enum UniversalSearchActions {
         _ target: UniversalSearchItem.Target,
         controller: DenController,
         windowModel: DenWindowModel,
+        inDrawer: Bool = false,
         openProfile: (ProfileID) -> Bool,
         openSettings: () -> Void
     ) -> String? {
+        if inDrawer {
+            switch target {
+            case .essential, .createBoard: break
+            default: return "Choose a URL, search, or Essential to open in Drawer."
+            }
+        }
         switch target {
         case .board(let id):
             guard controller.state.desks.contains(where: { $0.boards.contains(where: { $0.id == id }) }) else {
@@ -76,9 +83,9 @@ enum UniversalSearchActions {
             guard let essential = controller.essentials.first(where: { $0.id == id }) else {
                 return "This Essential is no longer available."
             }
-            return open(essential.input, controller: controller, windowModel: windowModel)
+            return open(essential.input, controller: controller, windowModel: windowModel, inDrawer: inDrawer)
         case .createBoard(let input):
-            return open(input, controller: controller, windowModel: windowModel)
+            return open(input, controller: controller, windowModel: windowModel, inDrawer: inDrawer)
         case .command(let command):
             windowModel.hideUniversalSearch()
             let action: AppAction
@@ -98,7 +105,10 @@ enum UniversalSearchActions {
         return nil
     }
 
-    private static func open(_ input: String, controller: DenController, windowModel: DenWindowModel) -> String? {
+    private static func open(
+        _ input: String, controller: DenController, windowModel: DenWindowModel, inDrawer: Bool
+    ) -> String? {
+        if inDrawer { return controller.openInDrawer(input: input) }
         switch controller.requestOpenBoard(input: input, preferredWidth: windowModel.defaultBoardWidth) {
         case .accepted:
             windowModel.hideUniversalSearch()

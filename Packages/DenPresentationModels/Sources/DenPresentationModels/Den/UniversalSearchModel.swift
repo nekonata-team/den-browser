@@ -58,6 +58,7 @@ public final class UniversalSearchModel {
     public var selectedID: UniversalSearchItem.Target?
     public var message: String?
     public private(set) var submissionRequest = 0
+    public private(set) var submitsInDrawer = false
 
     public init() {}
 
@@ -100,5 +101,8 @@ public final class UniversalSearchModel {
         selectedID = SelectionNavigation.next(selectedItem?.id, among: results.map(\.id), by: offset)
     }
 
-    public func submit() { submissionRequest += 1 }
+    public func submit(inDrawer: Bool = false) {
+        submitsInDrawer = inDrawer
+        submissionRequest += 1
+    }
 }

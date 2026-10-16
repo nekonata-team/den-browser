@@ -1,3 +1,4 @@
+import AppKit
 import DenDesign
 import DenDomain
 import DenPresentationModels
@@ -65,13 +66,16 @@ struct OpenBoardPanel: View {
                     openBoard.input = selected.displayText
                     return .handled
                 }
+                .onKeyPress(keys: [.return], phases: .down) { press in
+                    guard press.modifiers == .option, !TextInputComposition.isActive else { return .ignored }
+                    let selected = filteredRecentItems.first { $0.id == selectedRecentItemID }
+                    submitBoard(selected?.displayText, inDrawer: true)
+                    return .handled
+                }
                 .onSubmit {
                     TextInputComposition.performUnlessActive {
-                        if let selected = filteredRecentItems.first(where: { $0.id == selectedRecentItemID }) {
-                            openRecent(selected)
-                        } else {
-                            submitBoard()
-                        }
+                        let selected = filteredRecentItems.first { $0.id == selectedRecentItemID }
+                        submitBoard(selected?.displayText)
                     }
                 }
             }
@@ -101,7 +105,7 @@ struct OpenBoardPanel: View {
                         isSelected: item.id == selectedRecentItemID,
                         matchedEssential: controller.essentials.first { item.matches(essential: $0) },
                         profileColor: profileColor,
-                        onOpen: { openRecent(item) },
+                        onOpen: { submitBoard(item.displayText, inDrawer: $0) },
                         onSaveEssential: { windowModel.showSaveEssentialPanel(for: item) },
                         onRemove: { controller.removeRecentItem(item) }
                     )
@@ -109,6 +113,7 @@ struct OpenBoardPanel: View {
             }
 
             VStack(alignment: .leading, spacing: 2) {
+                DenPanelHint("Option–Return or Option-click a Recent Item to open in Drawer")
                 DenPanelHint("Use :tutorial for the interactive guide")
                 DenPanelHint("Use :terminal [path], :zellij [session], or :zmx [session] for a Terminal Board")
             }
@@ -148,13 +153,12 @@ struct OpenBoardPanel: View {
         }
     }
 
-    private func submitBoard() {
-        openBoard.submit(preferredWidth: newBoardWidth)
-        finishOpeningBoardIfNeeded()
-    }
-
-    private func openRecent(_ item: RecentItem) {
-        openBoard.submit(item.displayText, preferredWidth: newBoardWidth)
+    private func submitBoard(_ input: String? = nil, inDrawer: Bool = false) {
+        if inDrawer {
+            openBoard.submitToDrawer(input)
+        } else {
+            openBoard.submit(input, preferredWidth: newBoardWidth)
+        }
         finishOpeningBoardIfNeeded()
     }
 
@@ -177,13 +181,15 @@ private struct OpenBoardRecentRow: View {
     let isSelected: Bool
     let matchedEssential: Essential?
     let profileColor: Color
-    let onOpen: () -> Void
+    let onOpen: (Bool) -> Void
     let onSaveEssential: () -> Void
     let onRemove: () -> Void
 
     var body: some View {
         HStack(spacing: DenPanelLayout.controlSpacing) {
-            Button(action: onOpen) {
+            Button {
+                onOpen(NSEvent.modifierFlags.contains(.option))
+            } label: {
                 HStack(spacing: DenPanelLayout.controlSpacing) {
                     recentItemIcon
                     VStack(alignment: .leading, spacing: 1) {
@@ -203,7 +209,7 @@ private struct OpenBoardRecentRow: View {
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
-            .accessibilityHint("Opens a new Board")
+            .accessibilityHint("Opens a new Board. Option click opens in Drawer.")
 
             if let matchedEssential {
                 HStack(spacing: 4) {

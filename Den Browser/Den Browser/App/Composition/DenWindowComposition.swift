@@ -43,24 +43,26 @@ final class DenWindowComposition {
                 load: { try await client.sessionSnapshot() },
                 kill: { try await client.killSession($0) })
         }
-        let openBoard = OpenBoardModel { input, width, afterBoardID in
-            let rootSessionName: String?
-            if case .session(let sessionName)? = BoardInputResolver.resolveZmxInput(input) {
-                rootSessionName = zmxSessions.rootSessionName(for: sessionName)
-            } else {
-                rootSessionName = nil
-            }
-            switch controller.requestOpenBoard(
-                input: input,
-                preferredWidth: width,
-                afterBoardID: afterBoardID,
-                opensFromOpenBoardPanel: true,
-                zmxRootSessionName: rootSessionName)
-            {
-            case .accepted: return nil
-            case .rejected(let message): return message
-            }
-        }
+        let openBoard = OpenBoardModel(
+            openInDrawer: { controller.openInDrawer(input: $0) },
+            openBoard: { input, width, afterBoardID in
+                let rootSessionName: String?
+                if case .session(let sessionName)? = BoardInputResolver.resolveZmxInput(input) {
+                    rootSessionName = zmxSessions.rootSessionName(for: sessionName)
+                } else {
+                    rootSessionName = nil
+                }
+                switch controller.requestOpenBoard(
+                    input: input,
+                    preferredWidth: width,
+                    afterBoardID: afterBoardID,
+                    opensFromOpenBoardPanel: true,
+                    zmxRootSessionName: rootSessionName)
+                {
+                case .accepted: return nil
+                case .rejected(let message): return message
+                }
+            })
         let deskFilter = DeskFilterModel(
             focusedDesk: { controller.focusedDesk },
             focusBoard: { controller.focusBoard($0, exitsDenMode: true) })
@@ -83,7 +85,7 @@ final class DenWindowComposition {
             deskFilter: deskFilter,
             notificationList: notificationList,
             zmxSessions: zmxSessions,
-            onLaunchEssential: { controller.launchEssential(id: $0, preferredWidth: $1) },
+            onLaunchEssential: { controller.launchEssential(id: $0, preferredWidth: $1, inDrawer: $2) },
             onSaveEssential: { controller.saveEssential(name: $0, key: $1, input: $2) },
             onConfirmOperation: { controller.performConfirmedOperation($0) },
             inputs: DenWindowModel.Inputs(

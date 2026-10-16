@@ -140,7 +140,7 @@ public final class DenWindowModel {
     public private(set) var displayedFeedback: DenFeedback?
 
     @ObservationIgnored private let feedbackDuration: Duration
-    @ObservationIgnored let onLaunchEssential: (UUID, Double?) -> Void
+    @ObservationIgnored let onLaunchEssential: (UUID, Double?, Bool) -> Void
     @ObservationIgnored let onSaveEssential: (String, String, String) -> Bool
     @ObservationIgnored let onConfirmOperation: (DenConfirmationRequest) -> Bool
     @ObservationIgnored let inputs: Inputs
@@ -158,7 +158,7 @@ public final class DenWindowModel {
         deskFilter: DeskFilterModel,
         notificationList: NotificationListModel,
         zmxSessions: ZmxSessionsModel,
-        onLaunchEssential: @escaping (UUID, Double?) -> Void,
+        onLaunchEssential: @escaping (UUID, Double?, Bool) -> Void,
         onSaveEssential: @escaping (String, String, String) -> Bool,
         onConfirmOperation: @escaping (DenConfirmationRequest) -> Bool,
         inputs: Inputs,

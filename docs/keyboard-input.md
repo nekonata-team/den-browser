@@ -19,7 +19,7 @@ NSEvent
 
 `KeyboardController` normalizes AppKit events, snapshots input context, calls `KeyboardRouter`, and applies its decision. It must not contain key policy or mutate `DenController` directly. Each Profile window registers its mounted `DenWindowModel`; events use the instance associated with `event.window`. `InputContext` receives application state from `DenController` and presentation state from `DenWindowModel` as separate inputs. The Model owns neither the Controller nor shared Store; see [the ownership boundary](./architecture.md#shared-state-and-presentation-package-boundaries).
 
-`KeyboardRouter` determines Profile-window key precedence from input values, returning exactly one `InputDecision` without side effects. It must not reference UI objects, call `DenController`, or open windows. Den Mode's `g` or Vim-style Sheet Navigation's `o` enters the temporary Essentials Prefix context. Up and Down move the focused Essential, Return launches it, and a configured key (with Shift for uppercase) launches its matching Essential directly. Escape exits the prefix.
+`KeyboardRouter` determines Profile-window key precedence from input values, returning exactly one `InputDecision` without side effects. It must not reference UI objects, call `DenController`, or open windows. Den Mode's `g` or Vim-style Sheet Navigation's `o` enters the temporary Essentials Prefix context. Up and Down move the focused Essential, Return launches it, Option-Return opens its URL or search in Drawer, and a configured key (with Shift for uppercase) launches its matching Essential directly. Escape exits the prefix.
 
 `AppAction` names input-reachable application behavior. `AppActionHandler` is the only keyboard path that performs these actions. It receives the window Controller and Model explicitly, using the Model for UI workflows and the Controller for application operations. SwiftUI `Commands` use the focused Controller, Model, and action when a menu item and a key event represent the same behavior. Menu-only operations do not need an `AppAction`.
 
@@ -31,7 +31,7 @@ Up/Down select, Return opens the selected Notification, and Escape dismisses.
 Shortcut recording updates `AppPreferences` without dispatching actions; the next event uses the effective values through `ShortcutConfiguration`.
 
 Universal Search is an exclusive temporary input context. Its Router forwards text editing and all marked-text
-composition events to the native field, consumes Up/Down for result selection, Return for execution, and Escape
+composition events to the native field, consumes Up/Down for result selection, Return for execution, Option-Return for opening a URL, search, or Essential in Drawer, and Escape
 for dismissal. Dismissal preserves the previous Den Mode state. `Command-P`, `Command-Shift-P`, Den Mode's `:`,
 the menu items, and the toolbar button use the same window-local presentation. See [Universal Search](./universal-search.md).
 

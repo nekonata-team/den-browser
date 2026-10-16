@@ -122,17 +122,17 @@ public extension DenWindowModel {
         selectedEssentialID = id
     }
 
-    func launchSelectedEssential() {
+    func launchSelectedEssential(inDrawer: Bool = false) {
         guard let selectedEssentialID else {
             exitEssentialsPrefix()
             return
         }
-        launchEssential(id: selectedEssentialID)
+        launchEssential(id: selectedEssentialID, inDrawer: inDrawer)
     }
 
-    func launchEssential(id: UUID) {
+    func launchEssential(id: UUID, inDrawer: Bool = false) {
         exitEssentialsPrefix()
-        onLaunchEssential(id, defaultBoardWidth)
+        onLaunchEssential(id, defaultBoardWidth, inDrawer)
     }
 
     func exitEssentialsPrefix() {

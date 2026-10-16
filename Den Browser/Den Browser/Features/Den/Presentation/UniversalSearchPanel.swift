@@ -1,3 +1,4 @@
+import AppKit
 import DenDesign
 import DenDomain
 import DenPresentationModels
@@ -38,7 +39,7 @@ struct UniversalSearchPanel: View {
                     LazyVStack(spacing: 4) {
                         ForEach(search.results) { item in
                             Button {
-                                submit(item)
+                                submit(item, inDrawer: NSEvent.modifierFlags.contains(.option))
                             } label: {
                                 HStack(spacing: 10) {
                                     Image(systemSymbol: symbol(for: item.target))
@@ -76,7 +77,7 @@ struct UniversalSearchPanel: View {
             if search.results.isEmpty {
                 Text("No matching commands").foregroundStyle(.secondary)
             }
-            DenPanelHint("↑↓ Select · Return Run · Escape Close · > Commands")
+            DenPanelHint("↑↓ Select · Return Run · ⌥Return / ⌥Click Drawer · Escape Close · > Commands")
         }
         .denPanel(width: DenPanelLayout.wideWidth)
         .onChange(of: sourceItems, initial: true) { _, items in search.items = items }
@@ -84,7 +85,7 @@ struct UniversalSearchPanel: View {
             search.message = nil
             if isFocused { TextInputComposition.syncActiveFieldEditor(to: value) }
         }
-        .onChange(of: search.submissionRequest) { _, _ in submit() }
+        .onChange(of: search.submissionRequest) { _, _ in submit(inDrawer: search.submitsInDrawer) }
         .onAppear { DispatchQueue.main.async { isFocused = true } }
         .onExitCommand {
             windowModel.hideUniversalSearch()
@@ -120,10 +121,10 @@ struct UniversalSearchPanel: View {
         }
     }
 
-    private func submit(_ item: UniversalSearchItem? = nil) {
+    private func submit(_ item: UniversalSearchItem? = nil, inDrawer: Bool = false) {
         guard let item = item ?? search.selectedItem else { return }
         search.message = UniversalSearchActions.perform(
-            item.target, controller: controller, windowModel: windowModel,
+            item.target, controller: controller, windowModel: windowModel, inDrawer: inDrawer,
             openProfile: { id in
                 profileManager.profile(id: id) != nil && profileManager.openWindow(for: id)
             }, openSettings: { openSettings() })

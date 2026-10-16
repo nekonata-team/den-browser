@@ -8,7 +8,8 @@ enum UITestFixtureFactory {
         boardCount: UITestBoardCount = .three,
         terminalBoard: Bool = false,
         multipleDrawerItems: Bool = false,
-        drawerSheetURL: URL? = nil
+        drawerSheetURL: URL? = nil,
+        recentURL: URL? = nil
     ) throws -> Data {
         let alphaID = FixtureBoard.alpha.rawValue
         let bravoID = FixtureBoard.bravo.rawValue
@@ -97,6 +98,9 @@ enum UITestFixtureFactory {
                 "desks": [desk, secondDesk, thirdDesk], "focusedDeskID": focusedDeskID,
                 "drawerItems": drawerItems,
             ],
+            "recentItems": recentURL.map {
+                [["kind": "url", "url": $0.absoluteString, "title": "Recent Drawer Fixture"]]
+            } ?? [],
             "deskPresets": [],
         ]
         return try JSONSerialization.data(withJSONObject: seed)

@@ -16,6 +16,10 @@ Available globally or while focused in a Sheet.
 
 When the Profile panel is open, type to filter Profiles, use `Up` / `Down` to select one, press `Return` to open it, or press `Escape` to close the panel.
 
+In Essentials, **Option + Return** or **Option-click** opens the selected Essential’s URL or search in Drawer. Board commands show a warning instead.
+
+In Open Board, **Option + Return** opens the typed URL or search, or the selected Recent Item, in a new Drawer Peek without adding a Board. Commands such as `:terminal` require a Board and show a validation message instead. Return continues to open a Board. Option-clicking a Recent Item also opens it in Drawer.
+
 In Open Board, remove an individual Recent Item with the trash icon to the right of its Essential control or with **Remove from Recent** in its context menu, without confirmation. **Clear** beside the Recent heading asks for confirmation before removing all Recent Items from the Profile. Both actions leave existing Boards and Essentials unchanged.
 
 | Shortcut | Action |
@@ -64,6 +68,7 @@ Toggle with `Control` + `,`. Press `Escape` to exit to Sheet Input.
 | `n` / `Space` | Open Board panel |
 | `:` | Universal Search |
 | `v` | Open Board from clipboard |
+| `Option` + `V` | Open clipboard URL or search in Drawer |
 | `Shift` + `N` | New Desk panel |
 | `p` | Save Desk as Preset |
 | `Shift` + `P` | Replace Desk from Preset |

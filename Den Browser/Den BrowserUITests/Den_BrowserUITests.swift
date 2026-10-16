@@ -195,6 +195,121 @@ final class Den_BrowserUITests: XCTestCase, BDD {
         }
     }
 
+    // Protects Option Return delivery from the native field through SwiftUI to Drawer Peek.
+    // Unit tests cannot observe native text-field key handling.
+    @MainActor
+    func testOpenBoardOptionReturnOpensDrawerPeek() throws {
+        let directory = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        fixtureDirectories.append(directory)
+        let url = directory.appending(path: "open-in-drawer.html")
+        try "<html><body><input aria-label='Opened in Drawer'></body></html>"
+            .write(to: url, atomically: true, encoding: .utf8)
+        let app = launchApp(boardCount: .one)
+        let input = app.textFields["open-board-input"]
+        let drawer = app.descendants(matching: .any).matching(identifier: "drawer").firstMatch
+
+        given("Open Board contains a local web URL") {
+            app.typeKey("t", modifierFlags: [.command])
+            XCTAssertTrue(input.waitForExistence(timeout: 5))
+            input.typeText(url.absoluteString)
+        }
+
+        when("pressing Option Return in the native input field") {
+            app.typeKey(.return, modifierFlags: [.option])
+        }
+
+        then("the input opens as a Drawer Peek") {
+            XCTAssertTrue(input.waitForNonExistence(timeout: 5))
+            XCTAssertTrue(drawer.textFields["Opened in Drawer"].firstMatch.waitForExistence(timeout: 10))
+        }
+    }
+
+    // Protects Router -> observable request -> SwiftUI execution from a native text field.
+    @MainActor
+    func testDrawerEntryUniversalSearchOptionReturn() throws {
+        let url = try makeDrawerEntryFixture()
+        let app = launchApp(boardCount: .one)
+        let input = app.textFields["universal-search-input"]
+        let drawer = app.descendants(matching: .any).matching(identifier: "drawer").firstMatch
+
+        given("Universal Search contains a local URL") {
+            app.typeKey("p", modifierFlags: [.command])
+            XCTAssertTrue(input.waitForExistence(timeout: 5))
+            input.typeText(url.absoluteString)
+        }
+        when("pressing Option Return") {
+            app.typeKey(.return, modifierFlags: [.option])
+        }
+        then("the URL is presented inside Drawer Peek") {
+            XCTAssertTrue(input.waitForNonExistence(timeout: 5))
+            XCTAssertTrue(drawer.textFields["Opened in Drawer"].firstMatch.waitForExistence(timeout: 10))
+        }
+    }
+
+    // Protects Option state reaching a SwiftUI Button action; unit tests cannot simulate a native click.
+    @MainActor
+    func testDrawerEntryRecentOptionClick() throws {
+        let url = try makeDrawerEntryFixture()
+        let app = launchApp(boardCount: .one, recentURL: url)
+        let recent = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Recent Drawer Fixture"))
+            .firstMatch
+        let drawer = app.descendants(matching: .any).matching(identifier: "drawer").firstMatch
+
+        given("Open Board shows a Recent Item") {
+            app.typeKey("t", modifierFlags: [.command])
+            XCTAssertTrue(recent.waitForExistence(timeout: 5))
+        }
+        when("Option clicking the Recent Item") {
+            XCUIElement.perform(withKeyModifiers: [.option]) { recent.click() }
+        }
+        then("the Recent Item opens in Drawer Peek") {
+            XCTAssertTrue(drawer.textFields["Opened in Drawer"].firstMatch.waitForExistence(timeout: 10))
+        }
+    }
+
+    // Protects modifier delivery through SwiftUI's tap gesture on an Essential row.
+    @MainActor
+    func testDrawerEntryEssentialOptionClick() throws {
+        let url = try makeDrawerEntryFixture()
+        let app = launchApp(boardCount: .one, recentURL: url)
+        let drawer = app.descendants(matching: .any).matching(identifier: "drawer").firstMatch
+        let essential = app.descendants(matching: .any)
+            .matching(NSPredicate(format: "identifier BEGINSWITH %@", "essential.")).firstMatch
+
+        given("an Essential has been saved from the Recent Item") {
+            app.typeKey("t", modifierFlags: [.command])
+            let save = app.buttons["Save as Essential…"].firstMatch
+            XCTAssertTrue(save.waitForExistence(timeout: 5))
+            save.click()
+            let key = app.textFields.matching(NSPredicate(format: "placeholderValue == %@", "e.g. c or C")).firstMatch
+            XCTAssertTrue(key.waitForExistence(timeout: 5))
+            key.click()
+            key.typeText("e")
+            app.buttons["Save Essential"].click()
+            XCTAssertTrue(key.waitForNonExistence(timeout: 5))
+            enterDenMode(in: app)
+            app.typeKey("g", modifierFlags: [])
+            XCTAssertTrue(essential.waitForExistence(timeout: 5))
+        }
+        when("Option clicking the Essential") {
+            XCUIElement.perform(withKeyModifiers: [.option]) { essential.click() }
+        }
+        then("the Essential opens in Drawer Peek") {
+            XCTAssertTrue(drawer.textFields["Opened in Drawer"].firstMatch.waitForExistence(timeout: 10))
+        }
+    }
+
+    private func makeDrawerEntryFixture() throws -> URL {
+        let directory = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        fixtureDirectories.append(directory)
+        let url = directory.appending(path: "drawer-entry.html")
+        try "<html><body><input aria-label='Opened in Drawer'></body></html>"
+            .write(to: url, atomically: true, encoding: .utf8)
+        return url
+    }
+
     // Protects WebView reparenting and responder activation through SwiftUI placement.
     // Unit tests cannot observe keyboard delivery to the newly mounted Board surface.
     @MainActor
@@ -507,7 +622,8 @@ final class Den_BrowserUITests: XCTestCase, BDD {
         terminalBoard: Bool = false,
         sheetNavigationEnabled: Bool = false,
         multipleDrawerItems: Bool = false,
-        drawerSheetURL: URL? = nil
+        drawerSheetURL: URL? = nil,
+        recentURL: URL? = nil
     ) -> XCUIApplication {
         let app = uiTestApplication()
         let runID = UUID().uuidString
@@ -523,7 +639,8 @@ final class Den_BrowserUITests: XCTestCase, BDD {
                 boardCount: boardCount,
                 terminalBoard: terminalBoard,
                 multipleDrawerItems: multipleDrawerItems,
-                drawerSheetURL: drawerSheetURL
+                drawerSheetURL: drawerSheetURL,
+                recentURL: recentURL
             )
             .write(to: seedURL, options: .atomic)
         } catch {

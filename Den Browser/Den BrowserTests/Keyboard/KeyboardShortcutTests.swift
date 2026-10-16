@@ -1,4 +1,5 @@
 import AppKit
+import DenApplication
 import DenDomain
 import DenPresentationModels
 import Foundation
@@ -118,6 +119,62 @@ struct KeyboardShortcutTests {
         #expect(escapeDecision == .perform(.application(.hideUniversalSearch)))
         #expect(model.temporaryContext == nil)
         #expect(model.isDenMode)
+    }
+
+    @Test func universalSearchOptionReturnRequestsDrawerAndIgnoresRepeats() throws {
+        // Arrange
+        let controller = try makeController(boards: [board("First")])
+        let composition = DenWindowComposition(controller: controller)
+        let model = composition.model
+        model.showUniversalSearch()
+        let enter = try keyEvent(
+            characters: "\r", charactersIgnoringModifiers: "\r", modifiers: [.option], keyCode: 36)
+        let repeated = try keyEvent(
+            characters: "\r", charactersIgnoringModifiers: "\r", modifiers: [.option], isARepeat: true, keyCode: 36)
+
+        // Act
+        let decision = KeyboardController.decision(for: enter, controller: controller, windowModel: model)
+        let repeatedDecision = KeyboardController.decision(for: repeated, controller: controller, windowModel: model)
+        let handled = KeyboardController.handle(enter, controller: controller, windowModel: model)
+
+        // Assert
+        #expect(decision == .perform(.application(.submitSearchInDrawer)))
+        #expect(repeatedDecision == .consume(.ignoredRepeat))
+        #expect(handled)
+        #expect(model.universalSearch.submitsInDrawer)
+        #expect(model.universalSearch.submissionRequest == 1)
+    }
+
+    @Test(arguments: ["https://clipboard.example/", "Swift concurrency"])
+    func denModeOptionVOpensClipboardInDrawer(input: String) throws {
+        // Arrange
+        let original = board("First")
+        let controller = try makeController(boards: [original])
+        let composition = DenWindowComposition(controller: controller)
+        let model = composition.model
+        composition.connect()
+        defer { composition.disconnect() }
+        controller.pasteboard.setString(input, forType: .string)
+        model.isDenMode = true
+        let event = try keyEvent(characters: "√", charactersIgnoringModifiers: "v", modifiers: [.option], keyCode: 9)
+        let repeated = try keyEvent(
+            characters: "√", charactersIgnoringModifiers: "v", modifiers: [.option], isARepeat: true, keyCode: 9)
+
+        // Act
+        let decision = KeyboardController.decision(for: event, controller: controller, windowModel: model)
+        let repeatedDecision = KeyboardController.decision(for: repeated, controller: controller, windowModel: model)
+        let handled = KeyboardController.handle(event, controller: controller, windowModel: model)
+
+        // Assert
+        #expect(decision == .perform(.board(.openClipboardInDrawer)))
+        #expect(handled)
+        let item = try #require(controller.state.drawerItems.first)
+        #expect(
+            item.url == BoardInputResolver.normalizedURL(from: input, searchEngine: controller.preferences.searchEngine)
+        )
+        #expect(controller.focusedDesk?.boards.map(\.id) == [original.id])
+        #expect(model.drawer.expandedItemID == item.id)
+        #expect(repeatedDecision == .consume(.ignoredRepeat))
     }
 
     @Test func keyboardShortcutGuideForwardsTextInputAndKeepsEscapeToClose() throws {
@@ -1527,6 +1584,60 @@ struct KeyboardShortcutTests {
         #expect(controller.focusedBoard?.currentSheetURL == URL(string: "https://second.example/"))
     }
 
+    @Test(arguments: ["https://drawer.example", "Swift concurrency"])
+    func essentialsPrefixOptionReturnOpensSelectedWebInputInDrawer(input: String) throws {
+        // Arrange
+        let original = board("First")
+        let controller = try makeController(boards: [original])
+        let composition = DenWindowComposition(controller: controller)
+        let windowModel = composition.model
+        composition.connect()
+        defer { composition.disconnect() }
+        let first = Essential(name: "First", key: "a", input: "https://first.example")
+        let selected = Essential(name: "Selected", key: "b", input: input)
+        #expect(controller.preferences.setEssentials([first, selected]))
+        windowModel.showEssentialsPrefix()
+        windowModel.moveEssentialSelection(by: 1)
+        let event = try keyEvent(
+            characters: "\r", charactersIgnoringModifiers: "\r", modifiers: [.option], keyCode: 36)
+
+        // Act
+        let handled = KeyboardController.handle(event, controller: controller, windowModel: windowModel)
+
+        // Assert
+        #expect(handled)
+        let item = try #require(controller.state.drawerItems.first)
+        #expect(
+            WebURLPolicy.canonicalSheetURL(item.url)
+                == BoardInputResolver.normalizedURL(
+                    from: input, searchEngine: controller.preferences.searchEngine))
+        #expect(controller.focusedDesk?.boards.map(\.id) == [original.id])
+        #expect(windowModel.isDrawerOpen)
+        #expect(windowModel.drawer.expandedItemID == item.id)
+        #expect(windowModel.selectedEssentialID == nil)
+    }
+
+    @Test func essentialsPrefixOptionReturnRejectsBoardCommands() throws {
+        // Arrange
+        let controller = try makeController(boards: [board("First")])
+        let composition = DenWindowComposition(controller: controller)
+        let windowModel = composition.model
+        composition.connect()
+        defer { composition.disconnect() }
+        let essential = Essential(name: "Terminal", key: "t", input: ":terminal")
+        #expect(controller.preferences.setEssentials([essential]))
+        windowModel.showEssentialsPrefix()
+
+        // Act
+        windowModel.launchSelectedEssential(inDrawer: true)
+
+        // Assert
+        #expect(controller.state.drawerItems.isEmpty)
+        #expect(controller.focusedDesk?.boards.count == 1)
+        #expect(controller.latestFeedback?.severity == .warning)
+        #expect(windowModel.temporaryContext == nil)
+    }
+
     @Test func essentialsPrefixRoutesArrowsReturnAndConfiguredJkKeys() throws {
         // Arrange
         let controller = try makeController(boards: [board("First")])
@@ -1542,6 +1653,8 @@ struct KeyboardShortcutTests {
         let down = try arrowEvent(.downArrow, modifiers: [])
         let returnKey = try keyEvent(
             characters: "\r", charactersIgnoringModifiers: "\r", keyCode: 36)
+        let optionReturn = try keyEvent(
+            characters: "\r", charactersIgnoringModifiers: "\r", modifiers: [.option], keyCode: 36)
         let jKey = try keyEvent(characters: "j", charactersIgnoringModifiers: "j", keyCode: 38)
         let kKey = try keyEvent(characters: "k", charactersIgnoringModifiers: "k", keyCode: 40)
 
@@ -1555,6 +1668,7 @@ struct KeyboardShortcutTests {
         let upDecision = route(upArrow)
         let downDecision = route(down)
         let returnDecision = route(returnKey)
+        let optionReturnDecision = route(optionReturn)
         let jDecision = route(jKey)
         let kDecision = route(kKey)
 
@@ -1562,6 +1676,7 @@ struct KeyboardShortcutTests {
         #expect(upDecision == .perform(.essentials(.moveSelection(-1))))
         #expect(downDecision == .perform(.essentials(.moveSelection(1))))
         #expect(returnDecision == .perform(.essentials(.launchSelected)))
+        #expect(optionReturnDecision == .perform(.essentials(.launchSelectedInDrawer)))
         #expect(jDecision == .perform(.essentials(.launch(jEssential.id))))
         #expect(kDecision == .perform(.essentials(.launch(kEssential.id))))
     }
@@ -1581,6 +1696,8 @@ struct KeyboardShortcutTests {
         let repeatedDown = try arrowEvent(.downArrow, modifiers: [], isARepeat: true)
         let repeatedReturn = try keyEvent(
             characters: "\r", charactersIgnoringModifiers: "\r", isARepeat: true, keyCode: 36)
+        let repeatedOptionReturn = try keyEvent(
+            characters: "\r", charactersIgnoringModifiers: "\r", modifiers: [.option], isARepeat: true, keyCode: 36)
         let repeatedKey = try keyEvent(
             characters: "a", charactersIgnoringModifiers: "a", isARepeat: true, keyCode: 0)
         let repeatedEscape = try keyEvent(
@@ -1596,6 +1713,7 @@ struct KeyboardShortcutTests {
         let upDecision = route(repeatedUp)
         let movementDecision = route(repeatedDown)
         let returnDecision = route(repeatedReturn)
+        let optionReturnDecision = route(repeatedOptionReturn)
         let keyDecision = route(repeatedKey)
         let escapeDecision = route(repeatedEscape)
         #expect(KeyboardController.handle(repeatedDown, controller: controller, windowModel: windowModel))
@@ -1607,6 +1725,7 @@ struct KeyboardShortcutTests {
         #expect(movementDecision == .perform(.essentials(.moveSelection(1))))
         #expect(windowModel.selectedEssentialID == nextEssential.id)
         #expect(returnDecision == .consume(.ignoredRepeat))
+        #expect(optionReturnDecision == .consume(.ignoredRepeat))
         #expect(keyDecision == .consume(.ignoredRepeat))
         #expect(escapeDecision == .consume(.ignoredRepeat))
         #expect(controller.focusedDesk?.boards.count == 1)

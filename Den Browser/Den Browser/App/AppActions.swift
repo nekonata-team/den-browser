@@ -19,6 +19,7 @@ enum ApplicationAction: Equatable {
     case hideUniversalSearch
     case moveSearchSelection(Int)
     case submitSearch
+    case submitSearchInDrawer
     case openSettings
     case toggleDenMode
     case toggleBoardRail
@@ -41,6 +42,7 @@ enum EssentialsAction: Equatable {
     case exitPrefix
     case moveSelection(Int)
     case launchSelected
+    case launchSelectedInDrawer
     case showNotFound(String)
     case launch(UUID)
     case saveFocusedBoardAsEssential
@@ -83,6 +85,7 @@ enum BoardAction: Equatable {
     case moveToDesk(Int)
     case showOpenPanel
     case openFromClipboard
+    case openClipboardInDrawer
     case showWidthPanel
     case hideWidthPanel
     case adjustWidth(Double)
@@ -191,6 +194,7 @@ enum AppActionHandler {
                 controller.restoreFocusedFirstResponder()
             case .moveSearchSelection(let offset): windowModel.universalSearch.moveSelection(by: offset)
             case .submitSearch: windowModel.universalSearch.submit()
+            case .submitSearchInDrawer: windowModel.universalSearch.submit(inDrawer: true)
             case .openSettings: break
             case .toggleDenMode: windowModel.toggleDenMode()
             case .toggleBoardRail: windowModel.toggleBoardRail()
@@ -213,6 +217,7 @@ enum AppActionHandler {
             case .exitPrefix: windowModel.exitEssentialsPrefix()
             case .moveSelection(let offset): windowModel.moveEssentialSelection(by: offset)
             case .launchSelected: windowModel.launchSelectedEssential()
+            case .launchSelectedInDrawer: windowModel.launchSelectedEssential(inDrawer: true)
             case .showNotFound(let key):
                 windowModel.exitEssentialsPrefix()
                 let label: String
@@ -265,6 +270,7 @@ enum AppActionHandler {
             case .moveToDesk(let number): controller.moveFocusedBoard(toDeskNumber: number)
             case .showOpenPanel: windowModel.showOpenBoardPanel()
             case .openFromClipboard: controller.openBoardFromClipboard(preferredWidth: windowModel.defaultBoardWidth)
+            case .openClipboardInDrawer: controller.openBoardFromClipboard(inDrawer: true)
             case .showWidthPanel: windowModel.showBoardWidthPanel()
             case .hideWidthPanel: windowModel.hideBoardWidthPanel()
             case .adjustWidth(let amount): windowModel.adjustFocusedBoardWidth(by: amount)

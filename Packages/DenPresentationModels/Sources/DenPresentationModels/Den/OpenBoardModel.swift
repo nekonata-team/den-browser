@@ -7,6 +7,8 @@ import Observation
 public final class OpenBoardModel {
     @ObservationIgnored private let openBoard: (String, Double?, BoardID?) -> String?
 
+    @ObservationIgnored private let openInDrawer: (String) -> String?
+
     public var initialURL: URL?
     public var input = "" {
         didSet {
@@ -19,7 +21,11 @@ public final class OpenBoardModel {
     public var afterBoardID: BoardID?
     public var message: String?
 
-    public init(openBoard: @escaping (String, Double?, BoardID?) -> String?) {
+    public init(
+        openInDrawer: @escaping (String) -> String?,
+        openBoard: @escaping (String, Double?, BoardID?) -> String?
+    ) {
+        self.openInDrawer = openInDrawer
         self.openBoard = openBoard
     }
 
@@ -51,6 +57,11 @@ public final class OpenBoardModel {
 
     public func invalidateBoard(_ boardID: BoardID) {
         if afterBoardID == boardID { afterBoardID = nil }
+    }
+
+    public func submitToDrawer(_ input: String? = nil) {
+        message = nil
+        message = openInDrawer(input ?? self.input)
     }
 
     public func submit(
