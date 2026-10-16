@@ -321,5 +321,7 @@ npx skills add nekonata-team/den-browser --skill den --global
 
 The skill's `.agents/skills/den/SKILL.md` covers Snapshot + Ref interaction, history navigation, and Web Board control. It resolves `den` from `PATH` (linked by Homebrew Cask) or falls back to `/Applications/Den Browser.app/Contents/MacOS/den`.
 
+For worked examples, see [Web Board operation examples](../.agents/skills/den/references/web.md), shipped with the skill. This document remains the CLI specification; the skill reference owns the worked examples. See [ADR-0065](./adr/0065-ship-cli-workflows-as-skill-references.md) for the documentation boundary.
+
 ---
 

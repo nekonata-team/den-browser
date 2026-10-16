@@ -45,7 +45,7 @@ Snapshots show interactive elements inside their semantic ancestor areas, short 
 
 Snapshot capture does not wait for asynchronous page updates. Use condition-based `wait --snapshot`, or include `wait` as the final batch step, when the next decision depends on unfinished state. Otherwise, proceed; fixed-duration waits are unsupported. If an action succeeds but snapshot capture fails, inspect the error and current state before repeating the action.
 
-See [Sheet operation examples](references/sheet.md) for element selection, forms, waits, extraction, and dynamic scrolling.
+See [Web Board operation examples](references/web.md) to choose between body text and snapshots, or to work with controls, forms, waits, extraction, and dynamic scrolling. Optional HTTP status diagnostics are covered at the end.
 
 ## Terminal work
 
