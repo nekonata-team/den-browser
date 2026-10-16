@@ -32,7 +32,11 @@ Den controls feel like a calm desk laid over live web sheets. Web content remain
   from the other controls. Let the native toolbar provide their glass backgrounds and search icon sizing.
   Show a secondary `⌘P` hint after its Search label.
   All entrances open the same palette; use `>` to restrict results to commands. Keep candidate actions explicit:
-  switching to an existing Board and creating a Board from an Essential are distinct results.
+  switching to an existing Board and creating a Board from an Essential or Recent Item are distinct results.
+  With empty input, show Recent (at most five), Essentials, Boards, Desks, Profiles, then commands.
+  Boards include all Desks in the current Profile, preserving Desk and Board order.
+  With input, search all Recent Items and show at most five matches alongside the other candidate types.
+  Recent results use a leading clock symbol and the trailing creation symbol.
   Give candidates leading SF Symbols for their target or command; use the existing Board-kind symbols for Boards.
   Show a trailing arrow for switching, `plus.app` for creation, and chevron for command execution.
   Hide the toolbar entrance in Overview and Zen View; keyboard entrances remain available in Zen View.

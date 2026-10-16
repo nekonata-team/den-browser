@@ -55,6 +55,7 @@ struct UniversalSearchModelTests {
         search.items = [
             UniversalSearchItem(target: .board(BoardID()), title: "Zen", detail: "Switch to Board"), command,
         ]
+        search.recentItems = [.search("zen")]
 
         // Act
         search.query = "> zen"
@@ -87,6 +88,7 @@ struct UniversalSearchModelTests {
         let first = UniversalSearchItem(target: .desk(DeskID()), title: "First", detail: "Desk")
         let second = UniversalSearchItem(target: .desk(DeskID()), title: "Second", detail: "Desk")
         search.items = [first, second]
+        search.query = "Desk"
         search.moveSelection(by: 1)
         #expect(search.selectedItem == second)
 
@@ -110,5 +112,62 @@ struct UniversalSearchModelTests {
         // Assert
         #expect(search.results.first == item)
         #expect(search.results.last?.target == .createBoard("design EXAMPLE"))
+    }
+    @Test(arguments: [0, 12])
+    func emptySearchShowsRecentEssentialsThenOtherKinds(recentCount: Int) {
+        // Arrange
+        let search = UniversalSearchModel()
+        let firstBoard = UniversalSearchItem(target: .board(BoardID()), title: "First", detail: "Board · First Desk")
+        let secondBoard = UniversalSearchItem(target: .board(BoardID()), title: "Second", detail: "Board · Second Desk")
+        let essential = UniversalSearchItem(target: .essential(UUID()), title: "Docs", detail: "Essential")
+        let desk = UniversalSearchItem(target: .desk(DeskID()), title: "Work", detail: "Desk")
+        let profile = UniversalSearchItem(target: .profile(ProfileID()), title: "Personal", detail: "Profile")
+        let command = UniversalSearchItem(target: .command(.openSettings), title: "Open Settings", detail: "Command")
+        search.items = [firstBoard, secondBoard, essential, desk, profile, command]
+        search.recentItems = (0..<recentCount).map { .search("query \($0)") }
+
+        // Act
+        let targets = search.results.map(\.target)
+
+        // Assert
+        #expect(
+            targets == search.recentItems.prefix(5).map { .recent($0) }
+                + [
+                    essential.target, firstBoard.target, secondBoard.target, desk.target, profile.target,
+                    command.target,
+                ])
+    }
+
+    @Test func recentSearchFindsOlderMatchesAndPrioritizesExactMatchesWithoutHidingOtherTargets() {
+        // Arrange
+        let search = UniversalSearchModel()
+        let desk = UniversalSearchItem(target: .desk(DeskID()), title: "Docs", detail: "Desk")
+        let exact = RecentItem.search("docs")
+        let titled = RecentItem.url(URL(string: "https://example.com/old")!, title: "Docs guide")
+        search.items = [desk]
+        search.recentItems = (0..<498).map { .search("docs \($0)") } + [exact, titled]
+
+        // Act
+        search.query = "DOCS"
+        let targets = search.results.map(\.target)
+
+        // Assert
+        #expect(targets.first == desk.target)
+        #expect(targets[1] == .recent(exact))
+        #expect(targets.filter { if case .recent = $0 { true } else { false } }.count == 5)
+        #expect(targets.last == .createBoard("DOCS"))
+    }
+
+    @Test func recentSearchMatchesTermsAcrossTitleAndInput() {
+        // Arrange
+        let search = UniversalSearchModel()
+        let item = RecentItem.url(URL(string: "https://example.com/reference")!, title: "Swift guide")
+        search.recentItems = [.search("unrelated"), item]
+
+        // Act
+        search.query = "SWIFT reference"
+
+        // Assert
+        #expect(search.results.first?.target == .recent(item))
     }
 }

@@ -84,6 +84,11 @@ enum UniversalSearchActions {
                 return "This Essential is no longer available."
             }
             return open(essential.input, controller: controller, windowModel: windowModel, inDrawer: inDrawer)
+        case .recent(let item):
+            guard controller.recentItems.contains(item) else {
+                return "This Recent Item is no longer available."
+            }
+            return open(item.displayText, controller: controller, windowModel: windowModel, inDrawer: inDrawer)
         case .createBoard(let input):
             return open(input, controller: controller, windowModel: windowModel, inDrawer: inDrawer)
         case .command(let command):

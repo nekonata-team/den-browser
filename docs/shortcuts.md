@@ -20,6 +20,8 @@ In Essentials, **Option + Return** or **Option-click** opens the selected Essent
 
 In Open Board, **Option + Return** opens the typed URL or search, or the selected Recent Item, in a new Drawer Peek without adding a Board. Commands such as `:terminal` require a Board and show a validation message instead. Return continues to open a Board. Option-clicking a Recent Item also opens it in Drawer.
 
+Universal Search behavior is documented in [universal-search.md](./universal-search.md).
+
 In Open Board, remove an individual Recent Item with the trash icon to the right of its Essential control or with **Remove from Recent** in its context menu, without confirmation. **Clear** beside the Recent heading asks for confirmation before removing all Recent Items from the Profile. Both actions leave existing Boards and Essentials unchanged.
 
 | Shortcut | Action |
@@ -27,7 +29,7 @@ In Open Board, remove an individual Recent Item with the trash icon to the right
 | `Control` + `Command` + `P` | Open Profile panel |
 | `Shift` + `Command` + `N` | Open Private Den |
 | `Command` + `T` | Open Board panel (URL, search, `:tutorial`, `:terminal`, `:zellij`, `:zmx`) |
-| `Command` + `P` | Universal Search (Boards, Desks, Profiles, Essentials, creation, commands) |
+| `Command` + `P` | Universal Search (Boards, Desks, Profiles, Essentials, Recent, creation, commands) |
 | `Command` + `Shift` + `P` | Universal Search with `> ` prefilled (commands only) |
 | `Command` + `S` | Toggle Board Rail |
 | `Command` + `L` | Edit Focused Board Link |

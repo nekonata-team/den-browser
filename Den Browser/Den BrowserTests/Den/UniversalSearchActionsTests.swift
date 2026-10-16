@@ -134,4 +134,27 @@ struct UniversalSearchActionsTests {
             #expect(!openedSettings)
         }
     }
+    @Test func recentCreatesAnotherBoardAndMovesInputToFront() {
+        // Arrange
+        let item = RecentItem.url(URL(string: "https://example.com/")!)
+        let existing = BoardState(label: "Example", width: 520, currentSheetURL: URL(string: item.displayText))
+        withTestController(boards: [existing], recentItems: [.search("other"), item]) { controller in
+            withTestWindowModel(controller: controller) { model, controller in
+                model.showUniversalSearch()
+
+                // Act
+                let error = UniversalSearchActions.perform(
+                    .recent(item), controller: controller, windowModel: model,
+                    openProfile: { _ in false }, openSettings: {})
+
+                // Assert
+                #expect(error == nil)
+                #expect(controller.focusedDesk?.boards.count == 2)
+                #expect(controller.focusedBoard?.id != existing.id)
+                #expect(controller.focusedBoard?.currentSheetURL?.absoluteString == item.displayText)
+                #expect(controller.recentItems.first == item)
+                #expect(model.temporaryContext == nil)
+            }
+        }
+    }
 }
