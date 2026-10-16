@@ -127,6 +127,7 @@ struct AppPreferencesTests {
         preferences.setSheetScale(80)
         preferences.setZellijPath(" /opt/homebrew/bin/zellij ")
         preferences.setZmxPath(" /opt/homebrew/bin/zmx ")
+        preferences.setRememberBoardInputMethod(true)
 
         // Assert
         let restored = AppPreferences(defaults: defaults)
@@ -141,6 +142,7 @@ struct AppPreferencesTests {
                 "preferences.appearance.sheet-scale.percent",
                 "preferences.terminal.zellij.executable-path",
                 "preferences.terminal.zmx.executable-path",
+                "preferences.input-method.remember-per-board",
             ])
         #expect(defaults.integer(forKey: "preferences.schema.version") == 1)
         #expect(restored.motionPreference == .standard)
@@ -150,6 +152,7 @@ struct AppPreferencesTests {
         #expect(restored.sheetScale == 80)
         #expect(restored.zellijPath == "/opt/homebrew/bin/zellij")
         #expect(restored.zmxPath == "/opt/homebrew/bin/zmx")
+        #expect(restored.rememberBoardInputMethod)
     }
 
     @Test func essentialsPersistWithoutProfileOwnership() throws {
@@ -289,5 +292,42 @@ struct AppPreferencesTests {
 
         restored.toggleDrawerStyle()
         #expect(restored.drawerStyle == .floating)
+    }
+
+    @Test func rememberBoardInputMethodDefaultsToDisabled() throws {
+        // Arrange
+        let suiteName = "RememberBoardInputMethodDefaultsTests-\(UUID().uuidString)"
+        let defaults = try #require(UserDefaults(suiteName: suiteName))
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+
+        // Act
+        let preferences = AppPreferences(defaults: defaults)
+
+        // Assert
+        #expect(!preferences.rememberBoardInputMethod)
+    }
+
+    @Test func rememberBoardInputMethodUpdatesAndPersists() throws {
+        // Arrange
+        let suiteName = "RememberBoardInputMethodPersistTests-\(UUID().uuidString)"
+        let defaults = try #require(UserDefaults(suiteName: suiteName))
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let preferences = AppPreferences(defaults: defaults)
+
+        // Act
+        preferences.setRememberBoardInputMethod(true)
+
+        // Assert
+        #expect(preferences.rememberBoardInputMethod)
+        #expect(defaults.bool(forKey: "preferences.input-method.remember-per-board"))
+        #expect(AppPreferences(defaults: defaults).rememberBoardInputMethod)
+
+        // Act
+        preferences.setRememberBoardInputMethod(false)
+
+        // Assert
+        #expect(!preferences.rememberBoardInputMethod)
+        #expect(!defaults.bool(forKey: "preferences.input-method.remember-per-board"))
+        #expect(!AppPreferences(defaults: defaults).rememberBoardInputMethod)
     }
 }

@@ -442,6 +442,7 @@ extension DenController {
                     webRuntimes[targetBoardID]?.stopInspection()
                 }
                 disposeRuntime(for: removedBoard.id)
+                inputSourceTracker.boardWillRemove(removedBoard.id)
             }
 
             onWindowEffect?(

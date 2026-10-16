@@ -32,6 +32,8 @@ struct SettingsView: View {
                     TerminalSettingsView()
                 case .web:
                     WebSettingsView()
+                case .features:
+                    FeaturesSettingsView()
                 }
             }
             .navigationTitle((selection ?? .profiles).title)
@@ -50,6 +52,7 @@ private enum SettingsSection: String, CaseIterable, Identifiable {
     case essentials
     case terminal
     case web
+    case features
 
     var id: Self { self }
 
@@ -67,6 +70,8 @@ private enum SettingsSection: String, CaseIterable, Identifiable {
             "Terminal"
         case .web:
             "Web"
+        case .features:
+            "Features"
         }
     }
 
@@ -84,6 +89,8 @@ private enum SettingsSection: String, CaseIterable, Identifiable {
             .appleTerminal
         case .web:
             .globe
+        case .features:
+            .puzzlepiece
         }
     }
 }
@@ -765,5 +772,27 @@ private struct ProfileSettingsRow: View {
             return
         }
         name = profileManager.profile(id: profile.id)?.name ?? name
+    }
+}
+
+private struct FeaturesSettingsView: View {
+    @Environment(AppPreferences.self) private var preferences
+
+    var body: some View {
+        SettingsForm {
+            Section("Input Method") {
+                Toggle(
+                    "Remember input method per Board",
+                    isOn: Binding(
+                        get: { preferences.rememberBoardInputMethod },
+                        set: { preferences.setRememberBoardInputMethod($0) }
+                    )
+                )
+
+                SettingsHelpText {
+                    Text("Automatically restores the last used keyboard input method when focusing a Board.")
+                }
+            }
+        }
     }
 }

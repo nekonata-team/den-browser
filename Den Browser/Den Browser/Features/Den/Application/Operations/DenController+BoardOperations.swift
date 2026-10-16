@@ -8,8 +8,11 @@ extension DenController {
     func focusDesk(_ deskID: DeskID) {
         let changedDesk = setFocusedDesk(deskID)
         guard changedDesk || presentedDeskID == deskID else { return }
-        if !changedDesk, let boardID = focusedDesk?.focusedBoardID {
-            markNotificationsRead(for: boardID)
+        if let boardID = focusedDesk?.focusedBoardID {
+            inputSourceTracker.boardDidFocus(boardID, isEnabled: preferences.rememberBoardInputMethod)
+            if !changedDesk {
+                markNotificationsRead(for: boardID)
+            }
         }
         onWindowEffect?(.dismissDeskFilter)
         onWindowEffect?(.exitDenMode)
@@ -17,6 +20,7 @@ extension DenController {
     }
 
     func focusBoard(_ boardID: BoardID, exitsDenMode: Bool = false) {
+        inputSourceTracker.boardDidFocus(boardID, isEnabled: preferences.rememberBoardInputMethod)
         guard let indices = boardIndices(for: boardID) else { return }
         let deskID = state.desks[indices.deskOffset].id
         let changed = presentedDeskID != deskID || state.desks[indices.deskOffset].focusedBoardID != boardID
@@ -294,6 +298,8 @@ extension DenController {
         storage.state.desks[deskIndex.rawValue].focusedBoardID = boardID
         markNotificationsRead(for: boardID)
         guard changesFocus else { return }
+        inputSourceTracker.boardDidFocus(boardID, isEnabled: preferences.rememberBoardInputMethod)
+        restoreFocusedFirstResponder()
         dispatchDenOperationEvent(.boardFocusMoved)
         saveDeferredState()
     }

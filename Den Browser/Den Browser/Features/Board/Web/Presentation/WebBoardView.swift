@@ -364,6 +364,12 @@ struct WebBoardView: View {
 
     private var navigationButtons: some View {
         HStack(spacing: 2) {
+            if preferences.rememberBoardInputMethod,
+                let label = controller.inputSourceTracker.shortLabel(for: board.id)
+            {
+                BoardInputSourceBadge(label: label, isFocused: isFocused)
+            }
+
             if controller.sheetNavigation.isEnabled {
                 Button {
                     controller.toggleBoardSheetNavigationPause(board.id)
@@ -439,7 +445,6 @@ struct WebBoardView: View {
                 }
                 .buttonStyle(.borderless)
                 .foregroundStyle(.primary)
-                .padding(.leading, 4)
                 .help("Remove Board")
                 .accessibilityLabel("Remove Board")
             )

@@ -221,3 +221,26 @@ extension DenMotion {
         reduceMotion ? .identity : .opacity
     }
 }
+
+struct BoardInputSourceBadge: View {
+    let label: String
+    let isFocused: Bool
+
+    var body: some View {
+        Text(label)
+            .font(.system(size: 9.5, weight: .bold, design: .rounded))
+            .foregroundStyle(isFocused ? Color.primary : Color.secondary)
+            .padding(.horizontal, 4)
+            .padding(.vertical, 1.5)
+            .background(
+                RoundedRectangle(cornerRadius: 3.5, style: .continuous)
+                    .fill(isFocused ? Color.primary.opacity(0.12) : Color.primary.opacity(0.06))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 3.5, style: .continuous)
+                    .stroke(isFocused ? Color.primary.opacity(0.2) : Color.primary.opacity(0.08), lineWidth: 0.5)
+            )
+            .frame(width: DenLayout.boardControlSize, height: DenLayout.boardControlSize)
+            .accessibilityLabel("Input method: \(label)")
+    }
+}

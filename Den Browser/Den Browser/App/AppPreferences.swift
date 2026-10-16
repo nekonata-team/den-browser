@@ -14,6 +14,7 @@ final class AppPreferences {
     static let defaultExternalLinkDestination: ExternalLinkDestination = .drawerPeek
     static let defaultDrawerStyle: DrawerStyle = .floating
     static let defaultAutomaticPIPOnDeskSwitch = false
+    static let defaultRememberBoardInputMethod = false
     static let sheetScaleRange = 50...200
 
     private(set) var shortcutOverrides: [ConfigurableShortcut: ShortcutOverride]
@@ -31,6 +32,7 @@ final class AppPreferences {
     private(set) var zmxPath: String
     private(set) var essentials: [Essential]
     private(set) var searchEngine: SearchEngine
+    private(set) var rememberBoardInputMethod: Bool
 
     @ObservationIgnored private let defaults: UserDefaults
 
@@ -53,6 +55,7 @@ final class AppPreferences {
     private static let zmxPathKey = "preferences.terminal.zmx.executable-path"
     private static let essentialsKey = "preferences.essentials.items"
     private static let searchEngineKey = "preferences.search.engine"
+    private static let rememberBoardInputMethodKey = "preferences.input-method.remember-per-board"
 
     init(defaults: UserDefaults) {
         self.defaults = defaults
@@ -86,6 +89,7 @@ final class AppPreferences {
         zmxPath = defaults.string(forKey: Self.zmxPathKey) ?? ""
         essentials = Self.loadEssentials(defaults)
         searchEngine = defaults.string(forKey: Self.searchEngineKey).flatMap(SearchEngine.init(rawValue:)) ?? .google
+        rememberBoardInputMethod = defaults.bool(forKey: Self.rememberBoardInputMethodKey)
         loadShortcutOverrides()
     }
 
@@ -109,6 +113,11 @@ final class AppPreferences {
     func setSearchEngine(_ engine: SearchEngine) {
         searchEngine = engine
         defaults.set(engine.rawValue, forKey: Self.searchEngineKey)
+    }
+
+    func setRememberBoardInputMethod(_ enabled: Bool) {
+        rememberBoardInputMethod = enabled
+        defaults.set(enabled, forKey: Self.rememberBoardInputMethodKey)
     }
 
     func setBoardRailPresented(_ isPresented: Bool) {

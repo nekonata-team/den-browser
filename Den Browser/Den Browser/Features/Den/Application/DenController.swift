@@ -87,6 +87,8 @@ final class DenController {
     func removePresetFacings(for presetID: UUID) {
         presetFacingStore.remove(for: presetID)
     }
+
+    let inputSourceTracker = BoardInputSourceTracker()
     @ObservationIgnored var onWindowEffect: ((DenWindowEffect) -> Void)?
     @ObservationIgnored private let windowResources = DenWindowResources()
     var drawerPeekRuntime: WebRuntime? {
@@ -210,6 +212,9 @@ final class DenController {
         onDeskPresentationRequest = nil
         onWillResetDen = nil
         storage.drawerPresentations.add(self)
+        inputSourceTracker.isEnabled = { [weak self] in
+            self?.preferences.rememberBoardInputMethod ?? false
+        }
         if self.state != state {
             _ = onSave?(self.state)
         }
@@ -251,6 +256,9 @@ final class DenController {
         self.onDeskPresentationRequest = onDeskPresentationRequest
         self.onWillResetDen = onWillResetDen
         storage.drawerPresentations.add(self)
+        inputSourceTracker.isEnabled = { [weak self] in
+            self?.preferences.rememberBoardInputMethod ?? false
+        }
     }
 
     static func normalizedPersistedState(_ state: DenState) -> DenState {
@@ -420,6 +428,7 @@ final class DenController {
         storage.state.focusedDeskID = deskID
         onWindowEffect?(.clearBoardInputRequests)
         if let boardID = focusedDesk?.focusedBoardID {
+            inputSourceTracker.boardDidFocus(boardID, isEnabled: preferences.rememberBoardInputMethod)
             markNotificationsRead(for: boardID)
         }
         return true

@@ -137,15 +137,23 @@ struct TerminalBoardView: View {
                         .foregroundStyle(.secondary)
                 }
             )
-            Button(action: onRemove) {
-                Image(systemSymbol: .xmark)
-                    .frame(width: DenLayout.boardControlSize, height: DenLayout.boardControlSize)
+            HStack(spacing: 2) {
+                if preferences.rememberBoardInputMethod,
+                    let label = controller.inputSourceTracker.shortLabel(for: board.id)
+                {
+                    BoardInputSourceBadge(label: label, isFocused: isFocused)
+                }
+
+                Button(action: onRemove) {
+                    Image(systemSymbol: .xmark)
+                        .frame(width: DenLayout.boardControlSize, height: DenLayout.boardControlSize)
+                }
+                .buttonStyle(.borderless)
+                .foregroundStyle(.primary)
+                .help("Remove Board")
+                .accessibilityLabel("Remove Board")
+                .contextMenu { boardContextMenu }
             }
-            .buttonStyle(.borderless)
-            .foregroundStyle(.primary)
-            .help("Remove Board")
-            .accessibilityLabel("Remove Board")
-            .contextMenu { boardContextMenu }
         }
         .padding(.horizontal, DenLayout.chromeHorizontalPadding)
         .frame(height: DenLayout.boardHeaderHeight)
