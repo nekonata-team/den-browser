@@ -104,7 +104,7 @@ struct BoardFacing: View {
             typeColor.opacity(0.09),
             in: RoundedRectangle(cornerRadius: DenRadius.small * scale, style: .continuous)
         )
-        .clipShape(RoundedRectangle(cornerRadius: DenRadius.small, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: DenRadius.small * scale, style: .continuous))
     }
 }
 
