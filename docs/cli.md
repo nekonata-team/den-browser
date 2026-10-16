@@ -71,7 +71,7 @@ For `den board terminal` operations on an existing Board, the caller's Terminal 
 - `--profile <uuid>`: Target specific Profile UUID (defaults to `$DEN_PROFILE` or ambient Profile). Fails immediately (`exit 1`) if invalid, not found, or has no active window.
 
 ### Board Targeting
-- `--board <id>`: Explicitly target a specific Board by its UUID. Available on existing-Board operations under `den board web`, `den board terminal`, and `den board inspection read`, plus `den board close`; fails immediately if not found or invalid. Creation commands (`new`) do not accept `--board`.
+- `--board <id>`: Explicitly target a specific Board by its UUID. Available on existing-Board operations under `den board web`, `den board terminal`, and `den board inspection read`, plus `den board close` and `den board focus`; fails immediately if not found or invalid. Creation commands (`new`) do not accept `--board`.
 - `den board close --board <id>` accepts any Board kind, including Inspection and Tutorial Boards. Web and Terminal Board commands require their corresponding Board kind.
 - Inspection commands require an explicit Board ID. `den board inspection read --board <id>` requires an Inspection Board; it does not infer one from ambient focus or choose another Board.
 
@@ -102,12 +102,13 @@ On a TTY, it prints `healthy`. With `--json` or when piped, it returns:
 
 ### 3.2 `den board` (Board Surfaces & Layout)
 
-Commands operating on Boards within the active Desk.
+Commands for listing, focusing, creating, and managing Boards. Listing and creation use the active Desk; explicit Board IDs can target other Desks.
 
 | Command | Arguments | Description | Example |
 |---|---|---|---|
 | `den board list` | `[-l]` | List all Boards on the active Desk with type (`web`/`inspection`/`terminal`/`tutorial`), label, and type-specific secondary information. JSON Inspection Board entries include their `target_board_id`. Use `-l` to include full Board IDs in human-readable output. | `den board list -l` |
 | `den board focused` | `[-l]` | Show the currently focused Board on the active Desk. Use `-l` to include full Board ID in human-readable output. | `den board focused -l` |
+| `den board focus` | `--board <id>` | Focus an existing Board of any kind in the resolved Profile, switching Desks when needed. Bring it into view even if already focused, dismiss temporary presentations, and enter Sheet Input. Does not activate the app or bring its window to the front. Returns the focused Board using the same JSON fields as `board focused`. | `den board focus --board 4F72344C-... --json` |
 | `den board close` | `[--board <id>]` | Close the specified Board or the target Web Board. Explicit IDs fail (`exit 1`) if invalid or not found. | `den board close --board 4F72344C-...` |
 
 ### 3.3 `den board web` (Web Board and Sheet Operations)

@@ -578,6 +578,36 @@ struct DenIPCServiceTests {
         #expect(board.type == "web")
     }
 
+    @Test func boardFocusSelectsSpecifiedBoardOnAnotherDesk() async throws {
+        // Arrange
+        let directory = FileManager.default.temporaryDirectory
+            .appending(path: "den-browser-ipc-board-focus-\(UUID().uuidString)", directoryHint: .isDirectory)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let defaults = makeTestDefaults()
+        let manager = ProfileManager(
+            directoryURL: directory,
+            sheetNavigation: SheetNavigationManager(defaults: defaults, scriptSource: ""),
+            preferences: AppPreferences(defaults: defaults),
+            removeDataStore: { _ in },
+            websiteDataStore: { _ in .nonPersistent() })
+        let controller = try #require(manager.controller(for: manager.personalProfileID))
+        let sourceDeskID = controller.presentedDeskID
+        controller.createDesk(label: "Target", preset: .empty)
+        let targetDeskID = controller.presentedDeskID
+        let boardID = try #require(controller.createBoard(urlString: "https://example.com/", focus: false))
+        _ = controller.createBoard(urlString: "https://other.example/", focus: true)
+        controller.focusDesk(sourceDeskID)
+        let service = DenIPCService(profileManager: manager)
+
+        // Act
+        let response = await service.handleResult(ipcRequest(.focusBoard(boardID: boardID.rawValue)))
+
+        // Assert
+        #expect(response.isOk)
+        #expect(controller.presentedDeskID == targetDeskID)
+        #expect(controller.focusedBoard?.id == boardID)
+    }
+
     @Test func boardFocusedCommandFailsWhenNoBoardsExist() async throws {
         // Arrange
         let directory = FileManager.default.temporaryDirectory

@@ -36,6 +36,7 @@ public nonisolated enum DenIPCOperation: Codable, Equatable, Sendable {
     case sheetWithSnapshot(command: DenIPCCommand.Sheet, target: BoardTarget, snapshot: DenSheetSnapshotPayload)
     case boardList(target: DeskTarget)
     case boardFocused(target: DeskTarget)
+    case focusBoard(boardID: UUID)
     case boardClose(target: BoardTarget)
     case createWebBoard(payload: DenBoardWebNewPayload, destination: DeskTarget)
     case createTerminalBoard(payload: DenBoardTerminalNewPayload, destination: DeskTarget)

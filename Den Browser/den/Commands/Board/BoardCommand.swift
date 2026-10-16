@@ -16,6 +16,7 @@ struct BoardCommand: ParsableCommand {
         subcommands: [
             BoardListCommand.self,
             BoardFocusedCommand.self,
+            BoardFocusCommand.self,
             BoardWebCommand.self,
             BoardTerminalCommand.self,
             BoardInspectionCommand.self,
@@ -94,6 +95,24 @@ struct BoardFocusedCommand: ParsableCommand {
             operation: .boardFocused(target: .automatic),
             options: options.common,
             showBoardIDs: options.showBoardIDs)
+    }
+}
+
+struct BoardFocusCommand: ParsableCommand {
+    static let configuration = CommandConfiguration(
+        commandName: "focus",
+        abstract: "Focus an existing Board and bring it into view without activating the window")
+
+    @OptionGroup var common: CLIOptions
+
+    @Option(name: .customLong("board"), help: "Board ID to focus")
+    var boardID: String
+
+    func run() throws {
+        try DenIPCClient.execute(
+            operation: .focusBoard(boardID: try DenIPCClient.requiredBoardID(boardID)),
+            options: common
+        )
     }
 }
 

@@ -2,6 +2,7 @@ import Darwin
 import DenApplication
 import DenDomain
 import DenIPCProtocol
+import DenPresentationModels
 import Foundation
 import WebKit
 
@@ -77,6 +78,10 @@ final class DenIPCService {
             return withDeskTarget(target, context: request.context) { self.handleBoardList(target: $0) }
         case .boardFocused(let target):
             return withDeskTarget(target, context: request.context) { self.handleBoardFocused(target: $0) }
+        case .focusBoard(let boardID):
+            return await withBoardTarget(.explicit(boardID), context: request.context, kind: .any) {
+                self.handleBoardFocus(target: $0)
+            }
         case .boardClose(let target):
             let kind: DenIPCTargetResolver.TargetKind = target == .automatic ? .web : .any
             return await withBoardTarget(target, context: request.context, kind: kind) {
@@ -904,6 +909,13 @@ final class DenIPCService {
         }
         let info = boardInfo(focusedBoard, focusedBoardID: focusedBoard.id)
         return .success(.board(info))
+    }
+
+    private func handleBoardFocus(target resolved: ResolvedBoardTarget) -> DenIPCOperationResult {
+        resolved.controller.onWindowEffect?(.dismissTemporaryPresentation)
+        resolved.controller.focusBoard(resolved.board.id, exitsDenMode: true)
+        resolved.controller.centerFocusedBoard()
+        return .success(.board(boardInfo(resolved.board, focusedBoardID: resolved.board.id)))
     }
 
     private func boardInfo(_ board: BoardState, focusedBoardID: BoardID?) -> DenBoardInfo {
