@@ -121,7 +121,8 @@ private struct NotificationRow: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(
                 isSelected
-                    ? (differentiateWithoutColor ? Color.primary : profileColor).opacity(0.2)
+                    ? (differentiateWithoutColor ? Color.primary : profileColor).opacity(
+                        DenSurfaceColors.selectionOpacity)
                     : item.notification.isRead
                         ? Color.clear
                         : profileColor.opacity(0.1),
@@ -131,7 +132,8 @@ private struct NotificationRow: View {
                 RoundedRectangle(cornerRadius: DenRadius.small, style: .continuous)
                     .strokeBorder(
                         isSelected
-                            ? (differentiateWithoutColor ? Color.primary : profileColor.opacity(0.85))
+                            ? (differentiateWithoutColor
+                                ? Color.primary : profileColor.opacity(DenSurfaceColors.emphasisOpacity))
                             : Color.clear,
                         lineWidth: 1
                     )

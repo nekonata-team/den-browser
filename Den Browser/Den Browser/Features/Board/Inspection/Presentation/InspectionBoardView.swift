@@ -431,7 +431,7 @@ private struct InspectionDOMBranch: View {
                 .accessibilityLabel("\(node.tag) DOM element")
                 .accessibilityIdentifier("inspection-dom-node-\(node.id)")
                 .padding(.horizontal, 4)
-                .background(isSelected ? profileColor.opacity(0.2) : .clear)
+                .background(isSelected ? profileColor.opacity(DenSurfaceColors.selectionOpacity) : .clear)
                 .clipShape(RoundedRectangle(cornerRadius: DenRadius.small, style: .continuous))
                 .overlay {
                     if isSelected {

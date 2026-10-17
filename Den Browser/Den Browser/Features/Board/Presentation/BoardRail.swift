@@ -131,7 +131,7 @@ struct BoardRail: View {
         .listRowBackground(
             (isFocused || isOverviewSelected) && !isRailFocused
                 ? RoundedRectangle(cornerRadius: DenRadius.small, style: .continuous)
-                    .fill(profileColor.opacity(0.22))
+                    .fill(profileColor.opacity(DenSurfaceColors.selectionOpacity))
                     .padding(.horizontal, 10)
                 : nil
         )

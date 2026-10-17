@@ -226,7 +226,7 @@ struct DeskPresetManagementPanel: View {
         }
         .padding(8)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .denSelectionHighlight(isSelected, profileColor: profileColor, inactiveOpacity: 0.055)
+        .denSelectionHighlight(isSelected, profileColor: profileColor, showsInactiveBackground: true)
     }
 
     private func moveSelection(by offset: Int) {

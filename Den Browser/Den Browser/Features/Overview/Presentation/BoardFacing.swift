@@ -124,7 +124,7 @@ struct OverviewBoardFacing: View {
 
     private var selectionBorderColor: Color {
         if isSelected {
-            return differentiateWithoutColor ? Color.primary : profileColor.opacity(0.86)
+            return differentiateWithoutColor ? Color.primary : profileColor.opacity(DenSurfaceColors.emphasisOpacity)
         }
         return Color.primary.opacity(0.12)
     }
@@ -144,7 +144,9 @@ struct OverviewBoardFacing: View {
                 scale: scale
             )
             .background(
-                isSelected ? (differentiateWithoutColor ? Color.primary : profileColor).opacity(0.18) : Color.clear,
+                isSelected
+                    ? (differentiateWithoutColor ? Color.primary : profileColor).opacity(
+                        DenSurfaceColors.selectionOpacity) : Color.clear,
                 in: RoundedRectangle(cornerRadius: DenRadius.small * scale, style: .continuous)
             )
             .overlay {

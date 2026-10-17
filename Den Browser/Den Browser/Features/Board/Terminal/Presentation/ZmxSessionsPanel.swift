@@ -124,7 +124,7 @@ struct ZmxSessionsPanel: View {
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
         .background(
-            Color.primary.opacity(model.isFilterInputActive ? 0.08 : 0.04),
+            DenSurfaceColors.filterInputBackground(isActive: model.isFilterInputActive),
             in: RoundedRectangle(cornerRadius: DenRadius.medium, style: .continuous)
         )
         .onTapGesture { windowModel.enterZmxSessionFilter() }
@@ -260,7 +260,8 @@ struct ZmxSessionsPanel: View {
         .padding(.horizontal, 8)
         .frame(minHeight: 48)
         .background(
-            (isFocused ? focusColor : Color.primary).opacity(isFocused ? 0.12 : (isMarked ? 0.1 : 0.04)),
+            (isFocused ? focusColor : Color.primary).opacity(
+                isFocused ? DenSurfaceColors.selectionOpacity : (isMarked ? 0.1 : 0.04)),
             in: RoundedRectangle(cornerRadius: DenRadius.small)
         )
         .overlay {

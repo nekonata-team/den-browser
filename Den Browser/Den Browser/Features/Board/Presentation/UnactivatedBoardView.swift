@@ -33,7 +33,7 @@ struct UnactivatedBoardView: View {
                 .stroke(borderColor, lineWidth: isFocused ? 2 : 1)
         }
         .shadow(
-            color: .black.opacity(isDragging ? 0.55 : (isFocused ? 0.42 : 0.30)),
+            color: DenSurfaceColors.boardShadow(isFocused: isFocused, isDragging: isDragging),
             radius: isDragging ? 42 : (isFocused ? 34 : 24), x: 0, y: isDragging ? 28 : 22
         )
     }
@@ -88,7 +88,7 @@ struct UnactivatedBoardView: View {
     }
 
     private var borderColor: Color {
-        isFocused ? profileColor.opacity(0.75) : Color.primary.opacity(0.16)
+        DenSurfaceColors.boardBorder(isFocused: isFocused, profileColor: profileColor)
     }
 }
 

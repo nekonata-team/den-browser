@@ -41,16 +41,17 @@ extension View {
             .font(.title3.weight(.medium))
     }
 
+    /// Selection rows may show a shared subtle background when inactive.
     public func denSelectionHighlight(
         _ isSelected: Bool,
         profileColor: Color,
-        inactiveOpacity: Double = 0
+        showsInactiveBackground: Bool = false
     ) -> some View {
         modifier(
             DenSelectionHighlight(
                 isSelected: isSelected,
                 profileColor: profileColor,
-                inactiveOpacity: inactiveOpacity
+                showsInactiveBackground: showsInactiveBackground
             ))
     }
 }
@@ -60,19 +61,22 @@ private struct DenSelectionHighlight: ViewModifier {
 
     let isSelected: Bool
     let profileColor: Color
-    let inactiveOpacity: Double
+    let showsInactiveBackground: Bool
 
     private var selectionColor: Color { differentiateWithoutColor ? .primary : profileColor }
 
     func body(content: Content) -> some View {
         content
             .background(
-                isSelected ? selectionColor.opacity(0.12) : Color.primary.opacity(inactiveOpacity),
+                isSelected
+                    ? selectionColor.opacity(DenSurfaceColors.selectionOpacity)
+                    : Color.primary.opacity(showsInactiveBackground ? 0.04 : 0),
                 in: RoundedRectangle(cornerRadius: DenRadius.small, style: .continuous)
             )
             .overlay {
                 RoundedRectangle(cornerRadius: DenRadius.small, style: .continuous)
-                    .strokeBorder(isSelected ? selectionColor.opacity(0.8) : .clear, lineWidth: 1)
+                    .strokeBorder(
+                        isSelected ? selectionColor.opacity(DenSurfaceColors.emphasisOpacity) : .clear, lineWidth: 1)
             }
     }
 }

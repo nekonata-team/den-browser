@@ -292,7 +292,8 @@ private struct DeskFilterOverlay: View {
             RoundedRectangle(cornerRadius: DenRadius.medium, style: .continuous)
                 .stroke(
                     deskFilter.isInputActive
-                        ? (differentiateWithoutColor ? Color.primary : profileColor.opacity(0.86))
+                        ? (differentiateWithoutColor
+                            ? Color.primary : profileColor.opacity(DenSurfaceColors.emphasisOpacity))
                         : Color.primary.opacity(0.16),
                     lineWidth: deskFilter.isInputActive ? 1.5 : 1
                 )

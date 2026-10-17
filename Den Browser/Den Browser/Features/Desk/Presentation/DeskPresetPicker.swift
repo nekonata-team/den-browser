@@ -193,7 +193,7 @@ struct DeskPresetPicker: View {
         .buttonStyle(.plain)
         .accessibilityValue(selection == choice.selection ? "Active" : "")
         .padding(8)
-        .denSelectionHighlight(isSelected, profileColor: profileColor, inactiveOpacity: 0.045)
+        .denSelectionHighlight(isSelected, profileColor: profileColor, showsInactiveBackground: true)
         .id(scrollID(for: choice.selection))
     }
 

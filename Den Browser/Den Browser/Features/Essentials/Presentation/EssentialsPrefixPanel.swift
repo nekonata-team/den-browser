@@ -64,7 +64,7 @@ struct EssentialsPrefixPanel: View {
                 }
                 .padding(.horizontal, 8)
                 .frame(minHeight: 36)
-                .denSelectionHighlight(isSelected, profileColor: profileColor, inactiveOpacity: 0.04)
+                .denSelectionHighlight(isSelected, profileColor: profileColor, showsInactiveBackground: true)
                 .contentShape(RoundedRectangle(cornerRadius: DenRadius.small))
                 .onTapGesture {
                     if NSEvent.modifierFlags.contains(.option) {

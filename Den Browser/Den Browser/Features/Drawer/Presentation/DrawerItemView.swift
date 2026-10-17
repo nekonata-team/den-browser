@@ -112,7 +112,8 @@ struct DrawerItemView<Peek: View>: View {
             RoundedRectangle(cornerRadius: DenRadius.small, style: .continuous)
                 .fill(
                     isSelected
-                        ? (differentiateWithoutColor ? Color.primary : profileColor).opacity(0.18)
+                        ? (differentiateWithoutColor ? Color.primary : profileColor).opacity(
+                            DenSurfaceColors.selectionOpacity)
                         : Color.primary.opacity(0.04)
                 )
         )

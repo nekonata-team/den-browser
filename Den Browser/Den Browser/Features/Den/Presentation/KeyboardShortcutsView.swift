@@ -287,7 +287,8 @@ struct ShortcutChip: View {
         .overlay {
             RoundedRectangle(cornerRadius: DenRadius.small, style: .continuous)
                 .stroke(
-                    isRecording ? Color.accentColor.opacity(0.8) : Color.primary.opacity(0.12),
+                    isRecording
+                        ? Color.accentColor.opacity(DenSurfaceColors.emphasisOpacity) : Color.primary.opacity(0.12),
                     lineWidth: 1
                 )
         }

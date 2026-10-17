@@ -56,6 +56,9 @@ Den controls feel like a calm desk laid over live web sheets. Web content remain
   values alone are not a reason to couple unrelated spacing or dimensions. Local literals are appropriate when a
   name would not add design intent.
 - Let SwiftUI semantic colors express standard hierarchy: use `primary`, `secondary`, and `tertiary` for Den text, icons, and neutral chrome.
+- Use `DenSurfaceColors` for shared filter-input and Board surface colors; pass interaction state instead of choosing opacity at each call site.
+- Use `denSelectionHighlight` for panel candidate rows. Choose whether inactive rows show the shared subtle background instead of specifying an opacity.
+- Use `DenSurfaceColors.selectionOpacity` for selected-item backgrounds and `emphasisOpacity` for strong focus or selection outlines. Keep shadows and ambient effects separate.
 - Resolve Den chrome in its dark appearance so semantic colors stay legible. Do not hard-code black or white for standard text and icons.
 - Reserve fixed colors for semantic meaning such as errors; use the active Profile color for Den atmosphere and focus, plus the dark background gradient and shadows.
 - Profile colors identify Profiles and tint the active Den context. They may be built-in presets or user-selected colors, and may appear on the Focused Board, Overview Selection, Desk switcher, and ambient background.

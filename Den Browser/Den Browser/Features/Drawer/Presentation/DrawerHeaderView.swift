@@ -90,15 +90,17 @@ struct DrawerHeaderView: View {
             .padding(.vertical, 8)
             .frame(width: DenDrawerLayout.searchFieldWidth)
             .background(
-                Color.primary.opacity(drawer.isFilterInputActive ? 0.08 : 0.04),
+                DenSurfaceColors.filterInputBackground(isActive: drawer.isFilterInputActive),
                 in: RoundedRectangle(cornerRadius: DenRadius.medium, style: .continuous)
             )
             .overlay {
                 RoundedRectangle(cornerRadius: DenRadius.medium, style: .continuous)
                     .stroke(
-                        drawer.isFilterInputActive
-                            ? (differentiateWithoutColor ? Color.primary : profileColor.opacity(0.86))
-                            : Color.primary.opacity(0.10),
+                        DenSurfaceColors.filterInputBorder(
+                            isActive: drawer.isFilterInputActive,
+                            profileColor: profileColor,
+                            differentiateWithoutColor: differentiateWithoutColor
+                        ),
                         lineWidth: drawer.isFilterInputActive ? 1.5 : 1
                     )
             }

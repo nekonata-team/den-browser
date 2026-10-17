@@ -69,15 +69,17 @@ struct OverviewView: View {
                 .padding(.vertical, 8)
                 .frame(width: DenOverviewLayout.searchFieldWidth)
                 .background(
-                    Color.primary.opacity(overview.isFilterInputActive ? 0.08 : 0.04),
+                    DenSurfaceColors.filterInputBackground(isActive: overview.isFilterInputActive),
                     in: RoundedRectangle(cornerRadius: DenRadius.medium, style: .continuous)
                 )
                 .overlay {
                     RoundedRectangle(cornerRadius: DenRadius.medium, style: .continuous)
                         .stroke(
-                            overview.isFilterInputActive
-                                ? (differentiateWithoutColor ? Color.primary : profileColor.opacity(0.86))
-                                : Color.primary.opacity(0.10),
+                            DenSurfaceColors.filterInputBorder(
+                                isActive: overview.isFilterInputActive,
+                                profileColor: profileColor,
+                                differentiateWithoutColor: differentiateWithoutColor
+                            ),
                             lineWidth: overview.isFilterInputActive ? 1.5 : 1
                         )
                 }
