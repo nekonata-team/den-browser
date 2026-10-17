@@ -31,9 +31,9 @@ struct ToastView: View {
                     }
                 }
             }
-            .padding(.horizontal, 14)
-            .padding(.vertical, 10)
-            .frame(maxWidth: 320, alignment: .leading)
+            .padding(.horizontal, DenFeedbackLayout.horizontalPadding)
+            .padding(.vertical, DenFeedbackLayout.verticalPadding)
+            .frame(maxWidth: DenFeedbackLayout.width, alignment: .leading)
         }
         .buttonStyle(.plain)
         .glassEffect(

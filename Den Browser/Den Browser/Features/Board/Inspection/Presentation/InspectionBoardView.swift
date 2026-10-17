@@ -140,7 +140,10 @@ struct InspectionBoardView: View {
         }
         .padding(.horizontal, DenLayout.chromeHorizontalPadding)
         .frame(height: DenLayout.boardHeaderHeight)
-        .background(windowModel.isDenMode && isFocused ? profileColor.opacity(0.12) : Color.clear)
+        .background(
+            windowModel.isDenMode && isFocused
+                ? profileColor.opacity(DenSurfaceColors.focusedBoardHeaderOpacity) : Color.clear
+        )
         .background(.regularMaterial)
         .contextMenu {
             if targetBoard != nil {
@@ -429,10 +432,11 @@ private struct InspectionDOMBranch: View {
                 .accessibilityIdentifier("inspection-dom-node-\(node.id)")
                 .padding(.horizontal, 4)
                 .background(isSelected ? profileColor.opacity(0.2) : .clear)
-                .clipShape(RoundedRectangle(cornerRadius: 3))
+                .clipShape(RoundedRectangle(cornerRadius: DenRadius.small, style: .continuous))
                 .overlay {
                     if isSelected {
-                        RoundedRectangle(cornerRadius: 3).stroke(profileColor.opacity(0.6), lineWidth: 1)
+                        RoundedRectangle(cornerRadius: DenRadius.small, style: .continuous).stroke(
+                            profileColor.opacity(0.6), lineWidth: 1)
                     }
                 }
                 .onHover(perform: onHover)

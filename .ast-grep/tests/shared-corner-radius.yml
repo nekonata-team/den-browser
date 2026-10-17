@@ -1,0 +1,16 @@
+id: shared-corner-radius
+valid:
+  - 'RoundedRectangle(cornerRadius: DenRadius.small, style: .continuous)'
+  - 'RoundedRectangle(cornerRadius: DenRadius.small * scale, style: .continuous)'
+  - 'RoundedRectangle(cornerRadius: geometry.size.height / 2)'
+  - 'Circle().frame(width: 8, height: 8)'
+  - '// RoundedRectangle(cornerRadius: 8)'
+  - 'let text = "RoundedRectangle(cornerRadius: 8)"'
+invalid:
+  - 'RoundedRectangle(cornerRadius: 8)'
+  - 'RoundedRectangle(cornerRadius: 3.5, style: .continuous)'
+  - |
+    RoundedRectangle(
+        cornerRadius: 12,
+        style: .continuous
+    )

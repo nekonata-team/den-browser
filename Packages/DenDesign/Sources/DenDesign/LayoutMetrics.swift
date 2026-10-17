@@ -39,3 +39,9 @@ public enum DenKeyboardShortcutsLayout {
     public static let guideSize = CGSize(width: 760, height: 560)
     public static let guidePadding: CGFloat = 18
 }
+
+public enum DenFeedbackLayout {
+    public static let horizontalPadding: CGFloat = 14
+    public static let verticalPadding: CGFloat = 10
+    public static let width: CGFloat = 320
+}

@@ -157,7 +157,10 @@ struct TerminalBoardView: View {
         }
         .padding(.horizontal, DenLayout.chromeHorizontalPadding)
         .frame(height: DenLayout.boardHeaderHeight)
-        .background(windowModel.isDenMode && isFocused ? profileColor.opacity(0.12) : Color.clear)
+        .background(
+            windowModel.isDenMode && isFocused
+                ? profileColor.opacity(DenSurfaceColors.focusedBoardHeaderOpacity) : Color.clear
+        )
         .background(.regularMaterial)
         .modifier(
             BoardHeaderCenteringModifier(

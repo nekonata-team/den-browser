@@ -1,6 +1,8 @@
 import SwiftUI
 
 public enum DenSurfaceColors {
+    public static let focusedBoardHeaderOpacity: Double = 0.12
+
     public static let denModeBackgroundGradientColors = [
         Color(red: 0.03, green: 0.18, blue: 0.23),
         Color(red: 0.06, green: 0.10, blue: 0.18),

@@ -1,4 +1,4 @@
-# Swift import checks
+# Swift source checks
 
 Run `just architecture-check` to scan the application and all
 six package source roots: `DenDomain`, `DenDesign`, `DenIPCProtocol`, `DenApplication`, `DenPresentationModels`, and `DenInfrastructure`.
@@ -22,6 +22,9 @@ enforce their module boundaries; behavioral tests should verify lifetime, event
 destinations, and shared-state consistency. Passing this scan does not prove isolation
 between app source groups.
 No automatic fixes are configured.
+
+App-owned corners use `DenRadius` instead of literal `cornerRadius` arguments in
+Feature and DenDesign sources. Geometry-derived expressions remain allowed.
 
 Rule fixtures include permitted imports, forbidden imports, qualified and
 attributed imports, and comments/strings. Snapshot output is not part of

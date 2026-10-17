@@ -61,9 +61,11 @@ struct TutorialBoardView: View {
                                 detail: "Click + in the Desk Switcher to create a Desk, then select this Desk."
                             )
                         }
-                        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
+                        .background(
+                            .regularMaterial, in: RoundedRectangle(cornerRadius: DenRadius.medium, style: .continuous)
+                        )
                         .overlay {
-                            RoundedRectangle(cornerRadius: 12)
+                            RoundedRectangle(cornerRadius: DenRadius.medium, style: .continuous)
                                 .strokeBorder(.primary.opacity(0.08))
                         }
 
@@ -87,9 +89,12 @@ struct TutorialBoardView: View {
                                     shortcutTokens: openBoardShortcutTokens
                                 )
                             }
-                            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
+                            .background(
+                                .regularMaterial,
+                                in: RoundedRectangle(cornerRadius: DenRadius.medium, style: .continuous)
+                            )
                             .overlay {
-                                RoundedRectangle(cornerRadius: 12)
+                                RoundedRectangle(cornerRadius: DenRadius.medium, style: .continuous)
                                     .strokeBorder(.primary.opacity(0.08))
                             }
                         }
@@ -154,7 +159,10 @@ struct TutorialBoardView: View {
         }
         .padding(.horizontal, DenLayout.chromeHorizontalPadding)
         .frame(height: DenLayout.boardHeaderHeight)
-        .background(windowModel.isDenMode && isFocused ? profileColor.opacity(0.12) : Color.clear)
+        .background(
+            windowModel.isDenMode && isFocused
+                ? profileColor.opacity(DenSurfaceColors.focusedBoardHeaderOpacity) : Color.clear
+        )
         .background(.regularMaterial)
         .modifier(BoardHeaderCenteringModifier(boardID: board.id, isEnabled: isPointerFocusEnabled))
     }
@@ -235,7 +243,9 @@ struct TutorialBoardView: View {
                             .font(.caption.monospaced())
                             .padding(.horizontal, 7)
                             .padding(.vertical, 4)
-                            .background(.quaternary, in: RoundedRectangle(cornerRadius: 5))
+                            .background(
+                                .quaternary, in: RoundedRectangle(cornerRadius: DenRadius.small, style: .continuous)
+                            )
                             .padding(.top, 2)
                     }
                     if let shortcutTokens {

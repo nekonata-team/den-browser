@@ -141,6 +141,33 @@ extension DenController {
 }
 
 @MainActor
+private func makeTestController(
+    defaults: UserDefaults,
+    desks: [DeskState]?,
+    boards: [BoardState] = [],
+    recentItems: [RecentItem] = [],
+    onRecentItemsSave: (([RecentItem]) -> Bool)?,
+    onSave: ((DenState) -> Bool)?,
+    terminalCommandRunner: any TerminalCommandRunning
+) -> DenController {
+    let preferences = AppPreferences(defaults: defaults)
+    let pasteboard = NSPasteboard.withUniqueName()
+    let controllerDesks = desks ?? [DeskState(label: "Desk", boards: boards, focusedBoardID: boards.first?.id)]
+    let focusedDeskID = controllerDesks.first?.id ?? DeskID()
+    return DenController(
+        state: DenState(desks: controllerDesks, focusedDeskID: focusedDeskID),
+        websiteDataStore: .nonPersistent(),
+        sheetNavigation: SheetNavigationManager(defaults: defaults, pasteboard: pasteboard, scriptSource: ""),
+        preferences: preferences,
+        pasteboard: pasteboard,
+        terminalCommandRunner: terminalCommandRunner,
+        recentItems: recentItems,
+        onSave: onSave,
+        onRecentItemsSave: onRecentItemsSave
+    )
+}
+
+@MainActor
 func withTestController<T>(
     desks: [DeskState]? = nil,
     boards: [BoardState] = [],
@@ -155,21 +182,14 @@ func withTestController<T>(
         preconditionFailure("Failed to create isolated test UserDefaults")
     }
     defer { defaults.removePersistentDomain(forName: suiteName) }
-    let preferences = AppPreferences(defaults: defaults)
-    let pasteboard = NSPasteboard.withUniqueName()
-    let controllerDesks = desks ?? [DeskState(label: "Desk", boards: boards, focusedBoardID: boards.first?.id)]
-    let focusedDeskID = controllerDesks.first?.id ?? DeskID()
-    let controller = DenController(
-        state: DenState(desks: controllerDesks, focusedDeskID: focusedDeskID),
-        websiteDataStore: .nonPersistent(),
-        sheetNavigation: SheetNavigationManager(defaults: defaults, pasteboard: pasteboard, scriptSource: ""),
-        preferences: preferences,
-        pasteboard: pasteboard,
-        terminalCommandRunner: terminalCommandRunner,
+    let controller = makeTestController(
+        defaults: defaults,
+        desks: desks,
+        boards: boards,
         recentItems: recentItems,
+        onRecentItemsSave: onRecentItemsSave,
         onSave: onSave,
-        onRecentItemsSave: onRecentItemsSave
-    )
+        terminalCommandRunner: terminalCommandRunner)
     return try body(controller)
 }
 
@@ -188,21 +208,14 @@ func withTestController<T>(
         preconditionFailure("Failed to create isolated test UserDefaults")
     }
     defer { defaults.removePersistentDomain(forName: suiteName) }
-    let preferences = AppPreferences(defaults: defaults)
-    let pasteboard = NSPasteboard.withUniqueName()
-    let controllerDesks = desks ?? [DeskState(label: "Desk", boards: boards, focusedBoardID: boards.first?.id)]
-    let focusedDeskID = controllerDesks.first?.id ?? DeskID()
-    let controller = DenController(
-        state: DenState(desks: controllerDesks, focusedDeskID: focusedDeskID),
-        websiteDataStore: .nonPersistent(),
-        sheetNavigation: SheetNavigationManager(defaults: defaults, pasteboard: pasteboard, scriptSource: ""),
-        preferences: preferences,
-        pasteboard: pasteboard,
-        terminalCommandRunner: terminalCommandRunner,
+    let controller = makeTestController(
+        defaults: defaults,
+        desks: desks,
+        boards: boards,
         recentItems: recentItems,
+        onRecentItemsSave: onRecentItemsSave,
         onSave: onSave,
-        onRecentItemsSave: onRecentItemsSave
-    )
+        terminalCommandRunner: terminalCommandRunner)
     return try await body(controller)
 }
 

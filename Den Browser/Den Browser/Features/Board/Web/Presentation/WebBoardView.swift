@@ -178,7 +178,10 @@ struct WebBoardView: View {
         }
         .padding(.horizontal, DenLayout.chromeHorizontalPadding)
         .frame(height: DenLayout.boardHeaderHeight)
-        .background(windowModel.isDenMode && isFocused ? profileColor.opacity(0.12) : Color.clear)
+        .background(
+            windowModel.isDenMode && isFocused
+                ? profileColor.opacity(DenSurfaceColors.focusedBoardHeaderOpacity) : Color.clear
+        )
         .background(.regularMaterial)
         .modifier(
             BoardHeaderCenteringModifier(
@@ -499,9 +502,9 @@ private struct ActionHighlightView: View {
     @State private var opacity: Double = 1.0
 
     var body: some View {
-        RoundedRectangle(cornerRadius: 6)
+        RoundedRectangle(cornerRadius: DenRadius.small, style: .continuous)
             .stroke(color, lineWidth: 3)
-            .background(RoundedRectangle(cornerRadius: 6).fill(color.opacity(0.15)))
+            .background(RoundedRectangle(cornerRadius: DenRadius.small, style: .continuous).fill(color.opacity(0.15)))
             .shadow(color: color.opacity(0.6), radius: 8)
             .frame(width: max(0, rect.width + 4), height: max(0, rect.height + 4))
             .position(x: rect.midX, y: rect.midY)

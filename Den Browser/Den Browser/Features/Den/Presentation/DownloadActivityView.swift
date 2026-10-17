@@ -42,9 +42,9 @@ struct DownloadActivityView: View {
                     .tint(tint)
             }
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 10)
-        .frame(width: 320, alignment: .leading)
+        .padding(.horizontal, DenFeedbackLayout.horizontalPadding)
+        .padding(.vertical, DenFeedbackLayout.verticalPadding)
+        .frame(width: DenFeedbackLayout.width, alignment: .leading)
         .glassEffect(
             in: RoundedRectangle(cornerRadius: DenRadius.medium, style: .continuous)
         )

@@ -1,0 +1,21 @@
+id: shared-corner-radius
+language: Swift
+severity: error
+message: Use DenRadius for app-owned corners; keep geometry-derived radii as expressions.
+files:
+  - "Den Browser/Den Browser/Features/**/*.swift"
+  - "Packages/DenDesign/Sources/**/*.swift"
+rule:
+  kind: value_argument
+  all:
+    - has:
+        field: name
+        regex: '^cornerRadius$'
+        stopBy: end
+    - has:
+        field: value
+        any:
+          - kind: integer_literal
+          - kind: real_literal
+        # Inspect the argument itself, not numeric operands in derived geometry.
+        stopBy: neighbor
