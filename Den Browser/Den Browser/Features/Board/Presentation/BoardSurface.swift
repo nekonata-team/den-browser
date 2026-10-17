@@ -124,9 +124,21 @@ struct BoardSurfaceModifier: ViewModifier {
     }
 }
 
+private struct BoardHeaderDoubleClickHandlerKey: EnvironmentKey {
+    static let defaultValue: ((BoardID) -> Void)? = nil
+}
+
+extension EnvironmentValues {
+    var boardHeaderDoubleClickHandler: ((BoardID) -> Void)? {
+        get { self[BoardHeaderDoubleClickHandlerKey.self] }
+        set { self[BoardHeaderDoubleClickHandlerKey.self] = newValue }
+    }
+}
+
 struct BoardHeaderCenteringModifier: ViewModifier {
     @Environment(DenController.self) private var controller
     @Environment(DenWindowModel.self) private var windowModel
+    @Environment(\.boardHeaderDoubleClickHandler) private var onHeaderDoubleClick
 
     let boardID: BoardID
     let isEnabled: Bool
@@ -136,8 +148,12 @@ struct BoardHeaderCenteringModifier: ViewModifier {
             TapGesture(count: 2)
                 .onEnded {
                     guard isEnabled else { return }
-                    controller.focusBoard(boardID, exitsDenMode: true)
-                    windowModel.centerFocusedBoard()
+                    if let onHeaderDoubleClick {
+                        onHeaderDoubleClick(boardID)
+                    } else {
+                        controller.focusBoard(boardID, exitsDenMode: true)
+                        windowModel.centerFocusedBoard()
+                    }
                 }
         )
     }

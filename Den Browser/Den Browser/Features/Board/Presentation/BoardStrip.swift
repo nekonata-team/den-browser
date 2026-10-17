@@ -340,6 +340,7 @@ struct BoardStrip: View {
         .coordinateSpace(name: BoardStripCoordinateSpace.name)
         .scrollIndicators(.never)
         .accessibilityIdentifier("board-strip")
+        .environment(\.boardHeaderDoubleClickHandler, handleHeaderDoubleClick)
         .onChange(of: controller.presentedDeskID) { _, deskID in
             alignedBoardDeskID = nil
             pendingBoardActivationAlignment = nil
@@ -951,6 +952,22 @@ struct BoardStrip: View {
             in: params,
             containerWidth: scrollGeometry.containerWidth,
             contentWidth: scrollGeometry.scrollableContentWidth)
+    }
+
+    private func handleHeaderDoubleClick(for boardID: BoardID) {
+        let isCurrentlyFocused = controller.focusedDesk?.focusedBoardID == boardID
+        let isMaximized = windowModel.maximizedBoardID == boardID
+        let isCurrentlyCentered: Bool = {
+            guard let targetCenteredX = centeredBoardScrollX(for: boardID) else { return false }
+            return abs(scrollGeometry.offsetX - targetCenteredX) < 2.0
+        }()
+
+        if isCurrentlyFocused && (isCurrentlyCentered || isMaximized) {
+            windowModel.toggleFocusedBoardMaximized()
+        } else {
+            controller.focusBoard(boardID, exitsDenMode: true)
+            windowModel.centerFocusedBoard()
+        }
     }
 
     private func performBoardVisibility(_ targetOffsetX: CGFloat, animated: Bool) {
