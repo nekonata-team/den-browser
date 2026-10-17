@@ -25,6 +25,8 @@ No automatic fixes are configured.
 
 App-owned corners use `DenRadius` instead of literal `cornerRadius` arguments in
 Feature and DenDesign sources. Geometry-derived expressions remain allowed.
+In the same sources, `RoundedRectangle` and `.rect` reject `style: .circular`;
+omit the style or use `.continuous`.
 
 Rule fixtures include permitted imports, forbidden imports, qualified and
 attributed imports, and comments/strings. Snapshot output is not part of

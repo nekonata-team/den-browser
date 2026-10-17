@@ -1,0 +1,24 @@
+id: no-circular-corners
+valid:
+  - 'RoundedRectangle(cornerRadius: DenRadius.small)'
+  - 'RoundedRectangle(cornerRadius: DenRadius.small, style: .continuous)'
+  - 'RoundedRectangle(cornerSize: size, style: .continuous)'
+  - 'view.clipShape(.rect(cornerRadius: DenRadius.small))'
+  - 'view.clipShape(.rect(cornerRadius: DenRadius.small, style: .continuous))'
+  - 'ProgressView().progressViewStyle(.circular)'
+  - 'OtherView(style: .circular)'
+  - 'OtherView(shape: RoundedRectangle(cornerRadius: radius), style: .circular)'
+  - 'RoundedRectangle(cornerRadius: measure(style: .circular))'
+  - '// RoundedRectangle(cornerRadius: radius, style: .circular)'
+  - 'let text = "RoundedRectangle(cornerRadius: radius, style: .circular)"'
+invalid:
+  - 'RoundedRectangle(cornerRadius: DenRadius.small, style: .circular)'
+  - 'RoundedRectangle(cornerSize: size, style: .circular)'
+  - 'SwiftUI.RoundedRectangle(cornerRadius: radius, style: .circular)'
+  - 'view.clipShape(.rect(cornerRadius: radius, style: .circular))'
+  - 'RoundedRectangle.rect(cornerSize: size, style: .circular)'
+  - |
+    RoundedRectangle(
+        cornerRadius: DenRadius.small,
+        style: .circular
+    )

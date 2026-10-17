@@ -1,0 +1,24 @@
+id: no-circular-corners
+language: Swift
+severity: error
+message: Den corners use continuous curves. Omit style or specify .continuous.
+files:
+  - "Den Browser/Den Browser/Features/**/*.swift"
+  - "Packages/DenDesign/Sources/**/*.swift"
+rule:
+  kind: call_expression
+  all:
+    - has:
+        regex: '^(SwiftUI\.)?RoundedRectangle$|^((SwiftUI\.)?RoundedRectangle)?\.rect$'
+        stopBy: neighbor
+    - has:
+        kind: call_suffix
+        stopBy: neighbor
+        has:
+          kind: value_arguments
+          stopBy: neighbor
+          has:
+            pattern:
+              context: 'RoundedRectangle(style: .circular)'
+              selector: value_argument
+            stopBy: neighbor
