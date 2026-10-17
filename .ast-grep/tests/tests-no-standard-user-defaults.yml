@@ -1,0 +1,18 @@
+id: tests-no-standard-user-defaults
+valid:
+  - 'let defaults = UserDefaults(suiteName: suiteName)'
+  - 'let defaults = Foundation.UserDefaults(suiteName: suiteName)'
+  - 'let defaults = makeTestDefaults()'
+  - 'UserDefaults().removePersistentDomain(forName: suiteName)'
+  - 'let defaults = OtherDefaults.standard'
+  - 'let text = "UserDefaults.standard"'
+  - '// UserDefaults.standard.set(true, forKey: "enabled")'
+invalid:
+  - 'let defaults = UserDefaults.standard'
+  - 'UserDefaults.standard.bool(forKey: "enabled")'
+  - 'UserDefaults.standard.set(true, forKey: "enabled")'
+  - 'let defaults = Foundation.UserDefaults.standard'
+  - 'Foundation.UserDefaults.standard.removeObject(forKey: "enabled")'
+  - |
+    let defaults = UserDefaults
+        .standard

@@ -1,0 +1,12 @@
+id: tests-no-standard-user-defaults
+language: Swift
+severity: error
+message: Use an isolated UserDefaults suite or test container instead of UserDefaults.standard in tests.
+files:
+  - "Den Browser/Den BrowserTests/**/*.swift"
+  - "Den Browser/Den BrowserUITests/**/*.swift"
+  - "Packages/*/Tests/**/*.swift"
+rule:
+  any:
+    - pattern: UserDefaults.standard
+    - pattern: Foundation.UserDefaults.standard

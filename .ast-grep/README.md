@@ -28,6 +28,9 @@ Feature and DenDesign sources. Geometry-derived expressions remain allowed.
 In the same sources, `RoundedRectangle` and `.rect` reject `style: .circular`;
 omit the style or use `.continuous`.
 
+App unit/UI tests and package `Tests` sources reject explicit `UserDefaults.standard`
+access, including `Foundation.UserDefaults.standard`. Use isolated suites or test containers.
+
 Rule fixtures include permitted imports, forbidden imports, qualified and
 attributed imports, and comments/strings. Snapshot output is not part of
 the contract, so the recipe uses `ast-grep test --skip-snapshot-tests`.
