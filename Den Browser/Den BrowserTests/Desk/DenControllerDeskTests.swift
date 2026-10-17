@@ -305,11 +305,13 @@ struct DenControllerDeskTests {
         withTestWindowModel(desks: [first, empty, third]) { windowModel, controller in
             controller.focusDesk(empty.id)
             windowModel.isDenMode = true
+            let initialSuppression = windowModel.boardMutationAnimationSuppressionRequest
             controller.deleteFocusedDesk()
 
             #expect(controller.state.desks.map(\.id) == [first.id, third.id])
             #expect(controller.focusedDesk?.id == first.id)
             #expect(!windowModel.isDenMode)
+            #expect(windowModel.boardMutationAnimationSuppressionRequest == initialSuppression + 1)
         }
     }
 
@@ -342,9 +344,11 @@ struct DenControllerDeskTests {
             controller.focusDesk(third.id)
             #expect(controller.previousFocusedDeskID == second.id)
 
+            let initialSuppression = windowModel.boardMutationAnimationSuppressionRequest
             windowModel.confirmDeskDeletion()
             #expect(controller.state.desks.map(\.id) == [first.id, third.id])
             #expect(controller.previousFocusedDeskID == nil)
+            #expect(windowModel.boardMutationAnimationSuppressionRequest == initialSuppression + 1)
         }
     }
 

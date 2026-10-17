@@ -110,6 +110,7 @@ extension DenController {
                 focusedBoardIndex: replacement.focusedBoardIndex, in: state.desks)
         else { return }
 
+        onWindowEffect?(.suppressBoardMutationAnimation)
         let removedBoardIDs = Set(result.removedBoards.map(\.id))
         for board in result.removedBoards {
             disposeRuntime(for: board.id)
@@ -145,15 +146,17 @@ extension DenController {
                 deskID, from: state.desks,
                 isAvailable: { canPresentDesk?($0) ?? true })
         else { return }
+        onWindowEffect?(.suppressBoardMutationAnimation)
         let desk = deletion.removedDesk
         for board in desk.boards {
             disposeRuntime(for: board.id)
         }
 
-        storage.state.desks = deletion.desks
         if presentedDeskID == deskID {
-            setFocusedDesk(deletion.replacementDeskID)
+            setFocusedDesk(deletion.replacementDeskID, autoPIP: false)
         }
+        storage.state.desks = deletion.desks
+        anchorJumpOriginBoardIDByDesk.removeValue(forKey: deskID)
         invalidateReferences(toRemovedBoardIDs: Set(desk.boards.map(\.id)))
         invalidateReferences(toRemovedDeskID: deskID)
         onWindowEffect?(.exitDenMode)
