@@ -110,6 +110,14 @@ struct BoardRail: View {
         let isAnchor = railDesk?.anchorBoardID == board.id
 
         return HStack(spacing: 8) {
+            if board.isSideBoard {
+                Image(systemSymbol: .arrowTurnDownRight)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .frame(width: 12, height: 16)
+                    .accessibilityHidden(true)
+            }
+
             boardIcon(for: board)
 
             BoardHeaderTitle(
@@ -297,6 +305,7 @@ struct BoardRail: View {
             ?? board.zellijSessionName
             ?? board.zmxSessionName
         return [
+            board.isSideBoard ? "Side Board" : nil,
             isAnchor ? "Anchor Board" : nil,
             "Board: \(board.displayName)",
             supplementaryText,
