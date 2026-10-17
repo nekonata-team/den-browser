@@ -337,10 +337,7 @@ struct SaveDeskPresetPanel: View {
         }
         .denPanel()
         .task {
-            guard let boards = controller.focusedDesk?.boards else { return }
-            for board in boards {
-                await controller.facingCache.loadFacing(for: board.id)
-            }
+            await controller.captureFocusedDeskFacings()
         }
         .onAppear {
             label = initialLabel

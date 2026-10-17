@@ -38,6 +38,7 @@ struct TerminalBoardView: View {
                 terminalView: runtime.terminalView,
                 onSurfaceVisibilityChange: { runtime.setSurfaceVisible($0) },
                 onBeforeHide: {
+                    guard controller.canCaptureFacing else { return }
                     guard controller.terminalRuntimes[board.id] === runtime else { return }
                     controller.facingCapture.captureTerminal(
                         boardID: board.id, terminalView: runtime.terminalView)
@@ -323,7 +324,7 @@ private struct TerminalBoardSurface: NSViewRepresentable {
         _ nsView: SurfaceHost<BoardFocusRequest, AppTerminalView>,
         coordinator: Coordinator
     ) {
-        coordinator.onBeforeHide?()
+        if !nsView.content.isHidden { coordinator.onBeforeHide?() }
         coordinator.onSurfaceVisibilityChange?(false)
         coordinator.onSurfaceVisibilityChange = nil
         coordinator.onBeforeHide = nil

@@ -7,7 +7,7 @@ struct WebBoardSurface: NSViewRepresentable {
     let isHidden: Bool
     let focusRequest: BoardFocusRequest?
     let onSurfaceReady: (NSWindow) -> Bool
-    var onBeforeHide: () -> Void = {}
+    var onBeforeHide: @MainActor () async -> Void = {}
 
     func makeCoordinator() -> Coordinator { Coordinator() }
 
@@ -24,17 +24,38 @@ struct WebBoardSurface: NSViewRepresentable {
         context: Context
     ) {
         context.coordinator.onBeforeHide = onBeforeHide
-        if isHidden && !webView.isHidden { onBeforeHide() }
-        webView.isHidden = isHidden
+        if isHidden {
+            if !webView.isHidden, context.coordinator.hideTask == nil {
+                let beforeHide = onBeforeHide
+                context.coordinator.hideTask = Task {
+                    @MainActor [weak coordinator = context.coordinator, weak webView] in
+                    defer { coordinator?.hideTask = nil }
+                    await beforeHide()
+                    guard !Task.isCancelled else { return }
+                    webView?.isHidden = true
+                }
+            }
+        } else {
+            context.coordinator.hideTask?.cancel()
+            context.coordinator.hideTask = nil
+            webView.isHidden = false
+        }
         nsView.update(request: focusRequest, onReady: onSurfaceReady)
     }
 
     static func dismantleNSView(_ nsView: SurfaceHost<BoardFocusRequest, WKWebView>, coordinator: Coordinator) {
-        if !nsView.content.isHidden { coordinator.onBeforeHide?() }
+        coordinator.hideTask?.cancel()
+        coordinator.hideTask = nil
+        if !nsView.content.isHidden, let beforeHide = coordinator.onBeforeHide {
+            Task { @MainActor in
+                await beforeHide()
+            }
+        }
         coordinator.onBeforeHide = nil
     }
 
     final class Coordinator {
-        var onBeforeHide: (() -> Void)?
+        var onBeforeHide: (@MainActor () async -> Void)?
+        var hideTask: Task<Void, Never>?
     }
 }

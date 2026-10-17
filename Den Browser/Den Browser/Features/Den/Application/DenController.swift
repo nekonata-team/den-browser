@@ -46,6 +46,9 @@ final class DenController {
         guard case .desk? = activeDrag else { return false }
         return true
     }
+    var canCaptureFacing: Bool {
+        activeDrag == nil
+    }
     private(set) var activeDownloads: [DownloadActivity] = []
     let sheetNavigation: SheetNavigationManager
     let preferences: AppPreferences
@@ -81,6 +84,18 @@ final class DenController {
             if let image = facingCache.image(for: board.id) {
                 presetFacingStore.setFacing(image, for: presetID, at: index)
             }
+        }
+    }
+
+    func captureFocusedDeskFacings() async {
+        guard canCaptureFacing, let boards = focusedDesk?.boards else { return }
+        for board in boards {
+            if let runtime = webRuntimes[board.id], !runtime.webView.isHidden {
+                await facingCapture.captureWeb(boardID: board.id, webView: runtime.webView)
+            } else if let runtime = terminalRuntimes[board.id], !runtime.terminalView.isHidden {
+                facingCapture.captureTerminal(boardID: board.id, terminalView: runtime.terminalView)
+            }
+            await facingCache.loadFacing(for: board.id)
         }
     }
 

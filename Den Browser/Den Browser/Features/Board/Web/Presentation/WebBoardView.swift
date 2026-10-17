@@ -50,11 +50,10 @@ struct WebBoardView: View {
                         return window.makeFirstResponder(runtime.webView)
                     },
                     onBeforeHide: {
-                        Task {
-                            guard controller.webRuntimes[board.id] === runtime else { return }
-                            await controller.facingCapture.captureWeb(
-                                boardID: board.id, webView: runtime.webView)
-                        }
+                        guard controller.canCaptureFacing else { return }
+                        guard controller.webRuntimes[board.id] === runtime else { return }
+                        await controller.facingCapture.captureWeb(
+                            boardID: board.id, webView: runtime.webView)
                     }
                 )
                 .simultaneousGesture(

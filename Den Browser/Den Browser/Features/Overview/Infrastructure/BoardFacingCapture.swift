@@ -45,7 +45,7 @@ final class BoardFacingCapture {
             bounds.width * min(1, Self.maxCapturePixels / (max(bounds.width, bounds.height) * backingScale))
         let config = WKSnapshotConfiguration()
         config.snapshotWidth = NSNumber(value: Double(captureWidth))
-        config.afterScreenUpdates = true
+        config.afterScreenUpdates = false
 
         do {
             let image = try await webView.takeSnapshot(configuration: config)
