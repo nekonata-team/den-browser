@@ -144,6 +144,7 @@ private struct UniversalSearchButton: View {
             } icon: {
                 Image(systemSymbol: .magnifyingglass)
             }
+            .padding(.horizontal, 4)
         }
         .labelStyle(.titleAndIcon)
         .tint(.secondary)
