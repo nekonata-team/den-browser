@@ -148,6 +148,7 @@ final class SheetNavigationManager {
         actionsByWebView[webViewID] = actions
         if let boardID { boardIDByWebView[webViewID] = boardID }
         pausedByWebView[webViewID] = paused
+        ensureScriptInjected(in: webView)
         applyConfiguration(to: webView)
     }
 
@@ -298,12 +299,12 @@ final class SheetNavigationManager {
             actions.onKeepInDrawer(url)
             return true
         case "editCurrentSheet":
-            guard
-                let url = webView.url,
-                let actions = actionsByWebView[ObjectIdentifier(webView)],
-                actions.isSupportedSheetURL(url)
-            else { return false }
-            actions.onEditCurrentSheet()
+            // Allow opening the URL editor even without a valid Sheet URL (e.g. on about:blank)
+            // so users can immediately navigate via Vim keys without leaving the keyboard.
+            guard let action = actionsByWebView[ObjectIdentifier(webView)]?.onEditCurrentSheet else {
+                return false
+            }
+            action()
             return true
         case "openCurrentSheetInNewBoard":
             guard
@@ -428,6 +429,19 @@ final class SheetNavigationManager {
     private func applyConfiguration(to webView: WKWebView) {
         webView.evaluateJavaScript(
             configurationJavaScript(for: webView), in: nil, in: Self.contentWorld, completionHandler: nil)
+    }
+
+    private func ensureScriptInjected(in webView: WKWebView) {
+        guard !scriptSource.isEmpty else { return }
+        // WKUserScript does not execute on un-navigated initial about:blank documents.
+        // Explicitly inject the navigation script so Board-level Vim keys (e.g. x, ge, t)
+        // remain usable immediately even before any URL navigation occurs.
+        let checkAndInject = """
+            if (typeof window.__denSheetNavigation === 'undefined') {
+            \(scriptSource)
+            }
+            """
+        webView.evaluateJavaScript(checkAndInject, in: nil, in: Self.contentWorld, completionHandler: nil)
     }
 
     private func installStartupScript() {

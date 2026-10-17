@@ -1077,6 +1077,33 @@ struct SheetNavigationTests {
         #expect(windowModel.temporaryContext == .essentialsPrefix)
     }
 
+    @Test func sheetNavigationWorksOnInitialUnnavigatedAboutBlank() async throws {
+        let source = try sheetNavigationScriptSource().replacingOccurrences(
+            of: "if (!event.isTrusted ||",
+            with: "if (")
+        let manager = makeTestSheetNavigationManager(scriptSource: source)
+        manager.setEnabled(true)
+        let board = BoardState(label: "Blank", width: 520, currentSheetURL: nil)
+        let desk = desk("Desk", boards: [board], focusedBoardID: board.id)
+        let controller = DenController(
+            state: DenState(desks: [desk], focusedDeskID: desk.id),
+            sheetNavigation: manager
+        )
+        let composition = DenWindowComposition(controller: controller)
+        let windowModel = composition.model
+        composition.connect()
+        defer { composition.disconnect() }
+        let webView = controller.webRuntime(for: board).webView
+
+        try await dispatchSheetKey("g", in: webView)
+        try await dispatchSheetKey("e", in: webView)
+        #expect(windowModel.isEditBoardLinkPanelPresented)
+
+        windowModel.hideEditBoardLinkPanel()
+        try await dispatchSheetKey("t", in: webView)
+        #expect(windowModel.isOpenBoardPanelPresented)
+    }
+
     @Test func sheetNavigationDispatchesYmToCopyMarkdownLink() async throws {
         let source = try sheetNavigationScriptSource().replacingOccurrences(
             of: "if (!event.isTrusted ||",
