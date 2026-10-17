@@ -441,7 +441,7 @@ struct OverviewView: View {
             .accessibilityValue(desk.id == overview.selectionDeskID ? "Selected Desk" : "")
             .accessibilityAddTraits(desk.id == overview.selectionDeskID ? .isSelected : [])
 
-            HStack(alignment: .top, spacing: DenOverviewLayout.boardSpacing * canvasScale) {
+            HStack(alignment: .top, spacing: 0) {
                 if filteredBoards.isEmpty {
                     OverviewEmptyDeskCard(
                         desk: desk,
@@ -450,8 +450,18 @@ struct OverviewView: View {
                         onEnter: { overview.enterDesk(desk.id) }
                     )
                 } else {
-                    ForEach(filteredBoards) { board in
+                    ForEach(Array(filteredBoards.enumerated()), id: \.element.id) { index, board in
+                        let leadingSpacing: CGFloat = {
+                            guard index > 0 else { return 0 }
+                            let previousBoard = filteredBoards[index - 1]
+                            let isAttachedSideBoard = board.sideBoardTargetBoardID == previousBoard.id
+                            return
+                                (isAttachedSideBoard
+                                ? DenOverviewLayout.sideBoardSpacing
+                                : DenOverviewLayout.boardSpacing) * canvasScale
+                        }()
                         overviewBoard(board, in: desk)
+                            .padding(.leading, leadingSpacing)
                     }
                 }
             }
@@ -574,6 +584,7 @@ struct OverviewView: View {
 
         let isAnchor = desk.anchorBoardID == board.id
         return [
+            board.isSideBoard ? "Side board" : nil,
             isAnchor ? "Anchor board" : nil,
             OverviewBoardFacing.kindLabel(for: board) + " Board \(board.displayName)",
             detail,
@@ -744,6 +755,7 @@ private enum DenOverviewLayout {
     static let emptyBoardWidth: CGFloat = 150
     static let boardCardHeight: CGFloat = DenLayout.overviewFacingHeight
     static let boardSpacing: CGFloat = 10
+    static let sideBoardSpacing: CGFloat = 4
     static let deskSpacing: CGFloat = 12
     static let boardPadding: CGFloat = 10
     static let widthIndicatorHeight: CGFloat = 5

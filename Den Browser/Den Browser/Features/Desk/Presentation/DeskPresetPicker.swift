@@ -415,6 +415,8 @@ enum DeskPresetSearch {
 
 struct DeskPresetPreview: View {
     private static let cardHeight: CGFloat = DenPanelLayout.presetFacingHeight
+    private static let boardSpacing: CGFloat = 6
+    private static let sideBoardSpacing: CGFloat = 3
 
     let boards: [DeskPresetBoard]
     var boardHeight: CGFloat = DenLayout.fallbackBoardHeight
@@ -427,14 +429,21 @@ struct DeskPresetPreview: View {
                 .foregroundStyle(.secondary)
         } else {
             ScrollView(.horizontal) {
-                HStack(alignment: .top, spacing: 6) {
+                HStack(alignment: .top, spacing: 0) {
                     ForEach(Array(boards.enumerated()), id: \.offset) { index, board in
+                        let isAttachedSideBoard =
+                            index > 0 && board.targetBoardIndex == BoardIndex(rawValue: index - 1)
+                        let leadingSpacing: CGFloat =
+                            index == 0
+                            ? 0
+                            : (isAttachedSideBoard ? Self.sideBoardSpacing : Self.boardSpacing)
                         DeskPresetBoardFacing(
                             board: board,
                             boardHeight: boardHeight,
                             facingHeight: Self.cardHeight,
                             facing: facingForBoard?(index, board)
                         )
+                        .padding(.leading, leadingSpacing)
                     }
                 }
             }
