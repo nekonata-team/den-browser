@@ -5,6 +5,35 @@ import Testing
 @testable import Den_Browser
 
 struct DenIPCClientValidationTests {
+    @Test(arguments: [false, true])
+    func dialogSaveForwardsDestinationAndExplicitOverwrite(overwrite: Bool) throws {
+        // Arrange
+        let id = UUID()
+        let socketPath = temporarySocketPath()
+        let destination = URL(fileURLWithPath: "report.pdf").standardizedFileURL.path
+        let server = DenSocketServer(socketPath: socketPath)
+        try server.start { data in
+            guard let request = try? JSONDecoder().decode(DenIPCRequest.self, from: data) else {
+                return encodedResponse(.failure("Could not decode request"))
+            }
+            let expected = DenIPCCommand.Sheet.dialog(.save(id: id, path: destination, overwrite: overwrite))
+            guard request.operation == .sheet(command: expected, target: .automatic) else {
+                return encodedResponse(.failure("Unexpected save destination or overwrite permission"))
+            }
+            return encodedResponse(.success())
+        }
+        defer { server.stop() }
+
+        // Act
+        let result = try runCLI(
+            ["board", "web", "dialog", "save", id.uuidString, "--path", "report.pdf"]
+                + (overwrite ? ["--overwrite"] : []),
+            socketPath: socketPath)
+
+        // Assert
+        #expect(result.status == 0)
+    }
+
     @Test(arguments: [
         MalformedCLIInvocation(
             arguments: ["board", "web", "url", "--board", "bad-id"],

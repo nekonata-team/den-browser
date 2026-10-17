@@ -5,6 +5,23 @@ import Testing
 @testable import Den_Browser
 
 struct DenIPCOperationResultTests {
+    @Test func saveDialogJSONExposesResponseIDAndSuggestedFilename() throws {
+        // Arrange
+        let dialog = DenSaveDialogInfo(id: UUID(), suggestedFilename: "report.pdf")
+        let result = DenIPCOperationResult.success(.dialogs([dialog]))
+
+        // Act
+        let data = try JSONEncoder().encode(result.publicJSON)
+        let object = try #require(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        let dialogs = try #require(object["dialogs"] as? [[String: Any]])
+
+        // Assert
+        #expect(dialogs.count == 1)
+        #expect(dialogs.first?["id"] as? String == dialog.id.uuidString)
+        #expect(dialogs.first?["type"] as? String == "save")
+        #expect(dialogs.first?["suggested_filename"] as? String == dialog.suggestedFilename)
+    }
+
     @Test func publicProjectionKeepsElementValuesAndOmitsAbsentFields() throws {
         // Arrange
         let element = DenSheetElementInfo(

@@ -134,6 +134,7 @@ struct BoardWebCommand: ParsableCommand {
             WebNavigateCommand.self,
             WebURLCommand.self,
             WebStatusCommand.self,
+            WebDialogCommand.self,
             WebReloadCommand.self,
             WebBackCommand.self,
             WebForwardCommand.self,

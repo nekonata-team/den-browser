@@ -439,6 +439,21 @@ final class DenIPCService {
             case .status:
                 return .success(.status(runtime.httpStatusCode))
 
+            case .dialog(let action):
+                switch action {
+                case .list:
+                    let dialogs = runtime.downloadHandler.saveDialogs.pending.map { id, dialog in
+                        DenSaveDialogInfo(id: id, suggestedFilename: dialog.suggestedFilename)
+                    }.sorted { $0.id.uuidString < $1.id.uuidString }
+                    return .success(.dialogs(dialogs))
+                case .save(let id, let path, let overwrite):
+                    try runtime.downloadHandler.saveDialogs.save(id: id, path: path, overwrite: overwrite)
+                    return .success(.message("Save destination accepted; download has not necessarily finished."))
+                case .cancel(let id):
+                    try runtime.downloadHandler.saveDialogs.cancel(id: id)
+                    return .success(.message("Cancelled save dialog \(id.uuidString)"))
+                }
+
             case .eval(let payload):
                 guard !payload.script.isEmpty else {
                     return .failure("Usage: den board web eval <javascript>")

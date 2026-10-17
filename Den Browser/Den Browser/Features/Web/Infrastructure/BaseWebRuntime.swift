@@ -3,26 +3,8 @@ import DenDomain
 import Foundation
 import WebKit
 
-struct DownloadActivity: Equatable, Identifiable {
-    let id: UUID
-    let filename: String
-    var fractionCompleted: Double?
-
-    init(id: UUID = UUID(), filename: String, fractionCompleted: Double? = nil) {
-        self.id = id
-        self.filename = filename
-        self.fractionCompleted = fractionCompleted
-    }
-}
-
-enum DownloadActivityEvent: Equatable {
-    case started(DownloadActivity)
-    case progressed(id: UUID, fractionCompleted: Double?)
-    case ended(id: UUID)
-}
-
 @MainActor
-class BaseWebRuntime: NSObject, NSWindowDelegate, WKDownloadDelegate, WKNavigationDelegate, WKUIDelegate {
+class BaseWebRuntime: NSObject, NSWindowDelegate, WKNavigationDelegate, WKUIDelegate {
     static var defaultUserAgent: String {
         let operatingSystemVersion = ProcessInfo.processInfo.operatingSystemVersion
         let versionString = "\(operatingSystemVersion.majorVersion).\(operatingSystemVersion.minorVersion)"
@@ -33,20 +15,7 @@ class BaseWebRuntime: NSObject, NSWindowDelegate, WKDownloadDelegate, WKNavigati
 
     let id: UUID
     let webView: WKWebView
-
-    struct PendingDownload: Equatable {
-        let activityID: UUID
-        let destinationURL: URL
-        let temporaryURL: URL
-        var fractionCompleted: Double?
-
-        var activity: DownloadActivity {
-            DownloadActivity(
-                id: activityID,
-                filename: destinationURL.lastPathComponent,
-                fractionCompleted: fractionCompleted)
-        }
-    }
+    let downloadHandler: DownloadHandler
 
     private var auxiliaryWindows: [ObjectIdentifier: NSWindow] = [:]
     var auxiliaryWindowFactory: (NSRect) -> NSWindow = { contentRect in
@@ -57,14 +26,8 @@ class BaseWebRuntime: NSObject, NSWindowDelegate, WKDownloadDelegate, WKNavigati
             defer: false
         )
     }
-    private(set) var pendingDownloads: [ObjectIdentifier: PendingDownload] = [:]
-    private var downloadProgressObservations: [ObjectIdentifier: NSKeyValueObservation] = [:]
     private var urlObservation: NSKeyValueObservation?
     private var titleObservation: NSKeyValueObservation?
-
-    var activeDownloadActivities: [DownloadActivity] {
-        pendingDownloads.values.map(\.activity)
-    }
 
     init(
         id: UUID,
@@ -93,6 +56,7 @@ class BaseWebRuntime: NSObject, NSWindowDelegate, WKDownloadDelegate, WKNavigati
             webView = makeWebView?(configuration) ?? WKWebView(frame: .zero, configuration: configuration)
         }
         self.webView = webView
+        downloadHandler = DownloadHandler(webView: webView)
         webView.customUserAgent = Self.defaultUserAgent
         if existingWebView == nil {
             webView.pageZoom = CGFloat(sheetScale) / 100
@@ -128,12 +92,12 @@ class BaseWebRuntime: NSObject, NSWindowDelegate, WKDownloadDelegate, WKNavigati
     }
 
     func dispose() {
+        downloadHandler.dispose()
         for window in Array(auxiliaryWindows.values) {
             window.delegate = nil
             window.close()
         }
         auxiliaryWindows.removeAll()
-        cleanupAllPendingDownloads()
         webView.closeAllMediaPresentations(completionHandler: nil)
         webView.setAllMediaPlaybackSuspended(true, completionHandler: nil)
         webView.stopLoading()
@@ -143,13 +107,6 @@ class BaseWebRuntime: NSObject, NSWindowDelegate, WKDownloadDelegate, WKNavigati
         titleObservation?.invalidate()
         urlObservation = nil
         titleObservation = nil
-    }
-
-    func cleanupAllPendingDownloads() {
-        for key in Array(pendingDownloads.keys) {
-            guard let pending = removePendingDownload(for: key) else { continue }
-            try? FileManager.default.removeItem(at: pending.temporaryURL)
-        }
     }
 
     // MARK: - Hooks for Subclasses
@@ -171,18 +128,6 @@ class BaseWebRuntime: NSObject, NSWindowDelegate, WKDownloadDelegate, WKNavigati
 
     func handleLinkActivation(navigationType: WKNavigationType) {
         // Overridden by subclasses when link activation affects Board state.
-    }
-
-    func notifyDownloadFinished(filename: String) {
-        // Overridden by subclasses
-    }
-
-    func notifyDownloadFailed(filename: String) {
-        // Overridden by subclasses
-    }
-
-    func notifyDownloadActivity(_ event: DownloadActivityEvent) {
-        // Overridden by subclasses
     }
 
     // MARK: - WKNavigationDelegate
@@ -246,7 +191,7 @@ class BaseWebRuntime: NSObject, NSWindowDelegate, WKDownloadDelegate, WKNavigati
         navigationAction: WKNavigationAction,
         didBecome download: WKDownload
     ) {
-        download.delegate = self
+        download.delegate = downloadHandler
     }
 
     func webView(
@@ -254,13 +199,13 @@ class BaseWebRuntime: NSObject, NSWindowDelegate, WKDownloadDelegate, WKNavigati
         navigationResponse: WKNavigationResponse,
         didBecome download: WKDownload
     ) {
-        download.delegate = self
+        download.delegate = downloadHandler
     }
 
     // WebKit creates downloads from its macOS context menu outside the public navigation callbacks.
     @objc(_webView:contextMenuDidCreateDownload:)
     func webView(_ webView: WKWebView, contextMenuDidCreate download: WKDownload) {
-        download.delegate = self
+        download.delegate = downloadHandler
     }
 
     // MARK: - WKUIDelegate
@@ -404,141 +349,5 @@ class BaseWebRuntime: NSObject, NSWindowDelegate, WKDownloadDelegate, WKNavigati
     func windowWillClose(_ notification: Notification) {
         guard let window = notification.object as? NSWindow else { return }
         auxiliaryWindows = auxiliaryWindows.filter { $0.value !== window }
-    }
-
-    // MARK: - WKDownloadDelegate
-
-    static func temporaryDownloadURL(for destinationURL: URL) -> URL {
-        let directory = destinationURL.deletingLastPathComponent()
-        let filename = destinationURL.lastPathComponent
-        let uniqueID = UUID().uuidString
-        return directory.appending(path: ".\(filename).\(uniqueID).download")
-    }
-
-    static func finalizeDownload(from temporaryURL: URL, to destinationURL: URL) throws {
-        let fileManager = FileManager.default
-        if fileManager.fileExists(atPath: destinationURL.path) {
-            _ = try fileManager.replaceItemAt(
-                destinationURL,
-                withItemAt: temporaryURL,
-                backupItemName: nil,
-                options: .withoutDeletingBackupItem
-            )
-        } else {
-            try fileManager.moveItem(at: temporaryURL, to: destinationURL)
-        }
-    }
-
-    func download(
-        _ download: WKDownload,
-        decideDestinationUsing response: URLResponse,
-        suggestedFilename: String,
-        completionHandler: @escaping @MainActor @Sendable (URL?) -> Void
-    ) {
-        let panel = NSSavePanel()
-        panel.canCreateDirectories = true
-        panel.nameFieldStringValue = suggestedFilename
-
-        let complete: @MainActor @Sendable (NSApplication.ModalResponse) -> Void = {
-            [weak self] response in
-            guard response == .OK, let destination = panel.url else {
-                completionHandler(nil)
-                return
-            }
-
-            let temporaryURL = Self.temporaryDownloadURL(for: destination)
-            let key = ObjectIdentifier(download)
-            self?.registerPendingDownload(
-                for: key,
-                destinationURL: destination,
-                temporaryURL: temporaryURL
-            )
-            self?.observeDownloadProgress(download.progress, for: key)
-            completionHandler(temporaryURL)
-        }
-
-        if let window = webView.window ?? NSApp.keyWindow {
-            panel.beginSheetModal(for: window, completionHandler: complete)
-        } else {
-            panel.begin(completionHandler: complete)
-        }
-    }
-
-    @discardableResult
-    func registerPendingDownload(
-        for key: ObjectIdentifier,
-        destinationURL: URL,
-        temporaryURL: URL
-    ) -> UUID {
-        let activity = DownloadActivity(filename: destinationURL.lastPathComponent)
-        pendingDownloads[key] = PendingDownload(
-            activityID: activity.id,
-            destinationURL: destinationURL,
-            temporaryURL: temporaryURL,
-            fractionCompleted: nil
-        )
-        notifyDownloadActivity(.started(activity))
-        return activity.id
-    }
-
-    @discardableResult
-    func completeDownload(for key: ObjectIdentifier) -> Bool {
-        guard let pending = removePendingDownload(for: key) else { return false }
-        do {
-            try Self.finalizeDownload(from: pending.temporaryURL, to: pending.destinationURL)
-            notifyDownloadFinished(filename: pending.destinationURL.lastPathComponent)
-            return true
-        } catch {
-            try? FileManager.default.removeItem(at: pending.temporaryURL)
-            notifyDownloadFailed(filename: pending.destinationURL.lastPathComponent)
-            return false
-        }
-    }
-
-    func failDownload(for key: ObjectIdentifier) {
-        guard let pending = removePendingDownload(for: key) else { return }
-        try? FileManager.default.removeItem(at: pending.temporaryURL)
-        notifyDownloadFailed(filename: pending.destinationURL.lastPathComponent)
-    }
-
-    nonisolated static func downloadProgressFraction(_ progress: Progress) -> Double? {
-        let fraction = progress.fractionCompleted
-        guard !progress.isIndeterminate, fraction.isFinite else { return nil }
-        return min(max(fraction, 0), 1)
-    }
-
-    private func observeDownloadProgress(_ progress: Progress, for key: ObjectIdentifier) {
-        downloadProgressObservations[key] = progress.observe(
-            \.fractionCompleted,
-            options: [.initial, .new]
-        ) { [weak self] progress, _ in
-            let fractionCompleted = Self.downloadProgressFraction(progress)
-            Task { @MainActor [weak self] in
-                self?.updateDownloadProgress(for: key, fractionCompleted: fractionCompleted)
-            }
-        }
-    }
-
-    private func updateDownloadProgress(for key: ObjectIdentifier, fractionCompleted: Double?) {
-        guard var pending = pendingDownloads[key] else { return }
-        pending.fractionCompleted = fractionCompleted
-        pendingDownloads[key] = pending
-        notifyDownloadActivity(
-            .progressed(id: pending.activityID, fractionCompleted: fractionCompleted))
-    }
-
-    private func removePendingDownload(for key: ObjectIdentifier) -> PendingDownload? {
-        downloadProgressObservations.removeValue(forKey: key)?.invalidate()
-        guard let pending = pendingDownloads.removeValue(forKey: key) else { return nil }
-        notifyDownloadActivity(.ended(id: pending.activityID))
-        return pending
-    }
-
-    func downloadDidFinish(_ download: WKDownload) {
-        completeDownload(for: ObjectIdentifier(download))
-    }
-
-    func download(_ download: WKDownload, didFailWithError error: Error, resumeData: Data?) {
-        failDownload(for: ObjectIdentifier(download))
     }
 }

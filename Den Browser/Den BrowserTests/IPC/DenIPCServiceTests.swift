@@ -1,3 +1,4 @@
+import AppKit
 import DenDomain
 import DenIPCProtocol
 import DenPresentationModels
@@ -9,6 +10,41 @@ import Testing
 @Suite(.serialized)
 @MainActor
 struct DenIPCServiceTests {
+    @Test(arguments: [false, true])
+    func cancellingSaveDialogRequiresItsOwningBoard(differentBoard: Bool) async throws {
+        // Arrange
+        let directory = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let suiteName = "DialogIPC-\(UUID().uuidString)"
+        let manager = ProfileManager(
+            directoryURL: directory,
+            sheetNavigation: makeTestSheetNavigationManager(scriptSource: ""),
+            preferences: AppPreferences(defaults: makeTestDefaults(suiteName: suiteName)),
+            removeDataStore: { _ in }, websiteDataStore: { _ in .nonPersistent() })
+        let controller = try #require(manager.controller(for: manager.personalProfileID))
+        let ownerID = try #require(controller.createBoard(urlString: "https://example.com/"))
+        let otherID = try #require(controller.createBoard(urlString: "https://example.com/other"))
+        let board = try #require(controller.board(for: ownerID))
+        let runtime = controller.webRuntime(for: board)
+        defer { runtime.dispose() }
+        var replies: [URL?] = []
+        let id = runtime.downloadHandler.saveDialogs.register(
+            panel: NSSavePanel(), suggestedFilename: "report.pdf", downloadKey: ObjectIdentifier(runtime)
+        ) { url, _ in replies.append(url) }
+        let service = DenIPCService(profileManager: manager)
+        // Act
+        let response = await service.handleResult(
+            ipcRequest(
+                .sheet(
+                    command: .dialog(.cancel(id: id)),
+                    target: .explicit((differentBoard ? otherID : ownerID).rawValue))))
+
+        // Assert
+        #expect(response.isOk == !differentBoard)
+        #expect(replies.count == (differentBoard ? 0 : 1))
+        #expect(replies.allSatisfy { $0 == nil })
+    }
+
     @Test func healthCommandReturnsHealthyWithoutAnActiveProfile() async {
         let service = DenIPCService()
         let response = await service.handleResult(ipcRequest(.health))

@@ -393,7 +393,7 @@ struct DenControllerDrawerTests {
         try Data("download contents".utf8).write(to: temporaryURL)
         let download = NSObject()
         let key = ObjectIdentifier(download)
-        let downloadID = peek.registerPendingDownload(
+        let downloadID = peek.downloadHandler.registerPendingDownload(
             for: key, destinationURL: destinationURL, temporaryURL: temporaryURL)
         let nextURL = try #require(URL(string: "https://peek.example/next"))
 
@@ -401,7 +401,7 @@ struct DenControllerDrawerTests {
         let boardID = try #require(controller.placeDrawerItemAsBoard(item.id))
         controller.releaseWindowResources()
         peek.handleURLOrTitleChange(url: nextURL, title: "Continued")
-        let downloadCompleted = peek.completeDownload(for: key)
+        let downloadCompleted = peek.downloadHandler.completeDownload(for: key)
 
         // Assert
         #expect(controller.webRuntimes[boardID] === peek)
@@ -410,7 +410,7 @@ struct DenControllerDrawerTests {
         #expect(controller.focusedBoard?.label == "Continued")
         #expect(downloadCompleted)
         #expect(try Data(contentsOf: destinationURL) == Data("download contents".utf8))
-        #expect(!peek.activeDownloadActivities.contains { $0.id == downloadID })
+        #expect(!peek.downloadHandler.activeActivities.contains { $0.id == downloadID })
         #expect(controller.state.drawerItems.isEmpty)
     }
 

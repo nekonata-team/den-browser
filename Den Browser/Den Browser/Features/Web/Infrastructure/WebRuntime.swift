@@ -180,6 +180,9 @@ final class WebRuntime: BaseWebRuntime, ObservableObject {
                 RuntimeWKWebView(frame: .zero, configuration: configuration)
             }
         )
+        downloadHandler.onActivity = { [weak self] event in self?.events.onDownloadActivity(event) }
+        downloadHandler.onFinished = { [weak self] filename in self?.events.onDownloadFinished(filename) }
+        downloadHandler.onFailed = { [weak self] filename in self?.events.onDownloadFailed(filename) }
         if presentation == .drawer {
             self.sheetNavigationActions.onNavigateCurrentSheet = { [weak self] url in self?.load(url) }
         }
@@ -269,14 +272,14 @@ final class WebRuntime: BaseWebRuntime, ObservableObject {
         let didChangeDownloadActivityOwner =
             self.events.downloadActivityOwnerID != events.downloadActivityOwnerID
         if didChangeDownloadActivityOwner {
-            for activity in activeDownloadActivities {
+            for activity in downloadHandler.activeActivities {
                 self.events.onDownloadActivity(.ended(id: activity.id))
             }
         }
         self.sheetNavigationActions = sheetNavigationActions
         self.events = events
         if didChangeDownloadActivityOwner {
-            for activity in activeDownloadActivities {
+            for activity in downloadHandler.activeActivities {
                 self.events.onDownloadActivity(.started(activity))
             }
         }
@@ -433,18 +436,6 @@ final class WebRuntime: BaseWebRuntime, ObservableObject {
         } else {
             sheetNavigationActions.onOpenBoardInBackground(url)
         }
-    }
-
-    override func notifyDownloadFinished(filename: String) {
-        events.onDownloadFinished(filename)
-    }
-
-    override func notifyDownloadFailed(filename: String) {
-        events.onDownloadFailed(filename)
-    }
-
-    override func notifyDownloadActivity(_ event: DownloadActivityEvent) {
-        events.onDownloadActivity(event)
     }
 
     override func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {

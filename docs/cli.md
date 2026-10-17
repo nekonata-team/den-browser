@@ -122,7 +122,7 @@ While loading, after a navigation failure, or when no HTTP response was observed
 HTTP status is not persisted across app restarts.
 Use a load condition with `den board web wait` before reading a newly navigated page's status.
 
-Every existing-Board Sheet operation accepts `--snapshot` to include a compact semantic snapshot after a successful operation. JSON retains the usual result fields and adds `snapshot`; TTY output prints the usual result followed by the snapshot. The snapshot comes from the same resolved Web Board, even if focus changes while the operation awaits. It does not wait for subsequent page activity: use a condition such as `den board web wait --text "Saved" --snapshot` when the observation depends on asynchronous completion. If the operation succeeds but snapshot capture fails, the response reports that distinction and exits with an error.
+Every existing-Board Sheet operation except `dialog` accepts `--snapshot` to include a compact semantic snapshot after a successful operation. JSON retains the usual result fields and adds `snapshot`; TTY output prints the usual result followed by the snapshot. The snapshot comes from the same resolved Web Board, even if focus changes while the operation awaits. It does not wait for subsequent page activity: use a condition such as `den board web wait --text "Saved" --snapshot` when the observation depends on asynchronous completion. If the operation succeeds but snapshot capture fails, the response reports that distinction and exits with an error.
 
 `den board web snapshot` already returns a snapshot, so `--snapshot` does not capture twice. Like other Sheet operations, `den board web interact` captures a final snapshot only when `--snapshot` is specified. `interact --full` requires `--snapshot`; `--no-snapshot` has been removed. On an action failure, `interact --snapshot` attempts a best-effort snapshot alongside failure metadata.
 
@@ -155,6 +155,22 @@ Compact snapshots retain visible semantic ancestors of interactive elements, suc
 | `den board web mouse` | `<move\|down\|up\|click\|wheel> ...` | Dispatch low-level pointer events (`move <x> <y>`, `down [btn]`, `up [btn]`, `click <x> <y> [--button <btn>] [--count <n>]`, `wheel <dy> [--dx <dx>]`). | `den board web mouse click 400 300 --json` |
 | `den board web interact` | `[<script-or-file>] [--snapshot [--full]]` | Execute multiple sheet actions in order from a script, script file, or stdin (`-`). Actions follow standard `den board web` subcommand syntax (e.g. `click`, `dblclick`, `focus`, `fill`, `type`, `drag`, `mouse`, `wait`, `navigate`); execution stops at the first failure. JSON returns status and action metadata. Add `--snapshot` for a final semantic snapshot, and `--full` for the complete semantic tree. | `den board web interact "click @e1; fill @e2 'query'" --snapshot` |
 | `den board web screenshot` | `[<path>]` | Save a PNG screenshot of the web sheet (defaults to temporary directory). | `den board web screenshot /tmp/screen.png` |
+
+#### Download save dialogs
+
+`den board web dialog` operates on pending download save panels owned by the resolved Web Board, not DOM dialogs or arbitrary macOS windows. These commands accept `--board`, `--socket`, and `--json`; they do not capture a DOM snapshot.
+
+```sh
+den board web dialog list --board <board-id> --json
+den board web dialog save <dialog-id> --board <board-id> --path /tmp/report.pdf --json
+den board web dialog cancel <dialog-id> --board <board-id> --json
+```
+
+`list` returns `dialogs`, each with `id`, `type: "save"`, and `suggested_filename`; no pending dialogs returns an empty array. A download may create its panel asynchronously after a click, so an immediate empty list does not mean it failed.
+
+`save` resolves relative paths against the CLI working directory. The parent directory must already exist and be writable. An existing file or symlink requires `--overwrite`; directories are rejected. Invalid destinations leave the request pending. Without `--overwrite`, a file appearing before download completion is preserved and the download fails. Success means the destination was accepted, not that the download has finished; completion or failure continues to use the app's download feedback.
+
+Human panel responses and CLI responses resolve the same request once. Reusing an ID or targeting a different Board fails. Closing the Board cancels pending requests; requests are not persisted. File-upload panels are not supported.
 
 ### 3.4 `den board terminal` (Terminal Board & Session Operations)
 

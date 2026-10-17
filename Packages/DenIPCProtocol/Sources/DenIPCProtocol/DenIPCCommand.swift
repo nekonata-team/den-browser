@@ -1,5 +1,11 @@
 import Foundation
 
+public nonisolated enum DenSheetDialogCommand: Codable, Equatable, Sendable {
+    case list
+    case save(id: UUID, path: String, overwrite: Bool)
+    case cancel(id: UUID)
+}
+
 public nonisolated enum DenSheetGetCommand: Codable, Equatable, Sendable {
     case text(DenSheetGetTargetPayload)
     case value(DenSheetGetTargetPayload)
@@ -28,6 +34,7 @@ public nonisolated enum DenIPCCommand {
         case inspect(DenSheetSnapshotPayload)
         case url
         case status
+        case dialog(DenSheetDialogCommand)
         case reload
         case eval(DenSheetEvalPayload)
         case text

@@ -212,6 +212,10 @@ enum DenIPCClient {
             print(url)
         case .status(let status):
             print(status.map(String.init) ?? "null")
+        case .dialogs(let dialogs):
+            for dialog in dialogs {
+                print("\(dialog.id.uuidString) save \(dialog.suggestedFilename)")
+            }
         case .elements(let elements):
             for element in elements {
                 var line = element.ref

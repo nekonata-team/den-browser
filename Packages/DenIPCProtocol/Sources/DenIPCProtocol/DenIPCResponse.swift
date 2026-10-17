@@ -217,6 +217,23 @@ public nonisolated struct DenBoundingBox: Codable, Equatable, Sendable {
     }
 }
 
+public nonisolated struct DenSaveDialogInfo: Codable, Sendable {
+    public let id: UUID
+    public let type: String
+    public let suggestedFilename: String
+
+    public init(id: UUID, suggestedFilename: String) {
+        self.id = id
+        self.type = "save"
+        self.suggestedFilename = suggestedFilename
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case id, type
+        case suggestedFilename = "suggested_filename"
+    }
+}
+
 public nonisolated enum DenIPCResultPayload: Codable, Sendable {
     case empty
     case message(String)
@@ -233,6 +250,7 @@ public nonisolated enum DenIPCResultPayload: Codable, Sendable {
     case sheet(boardID: String, url: String)
     case url(String)
     case status(Int?)
+    case dialogs([DenSaveDialogInfo])
     case elements([DenSheetElementInfo])
     case text(String)
     case value(String)
@@ -371,6 +389,7 @@ public nonisolated struct DenIPCOperationResultJSON: Encodable, Sendable {
         case snapshot
         case elements
         case status
+        case dialogs
         case text
         case value
         case checked
@@ -437,6 +456,8 @@ public nonisolated struct DenIPCOperationResultJSON: Encodable, Sendable {
             try container.encode(url, forKey: .url)
         case .status(let status):
             try container.encode(status, forKey: .status)
+        case .dialogs(let dialogs):
+            try container.encode(dialogs, forKey: .dialogs)
         case .elements(let elements):
             try container.encode(elements, forKey: .elements)
         case .text(let text):
