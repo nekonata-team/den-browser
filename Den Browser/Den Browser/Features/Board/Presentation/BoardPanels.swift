@@ -449,13 +449,13 @@ struct BoardWidthPanel: View {
                     }
                     .buttonStyle(.glass)
                     .disabled(!windowModel.canResizeFocusedDeskBoards(toFit: count))
-                    .accessibilityHint("Applies to every Board in the Focused Desk")
+                    .accessibilityHint("Applies to every Primary Board in the Focused Desk")
                 }
             }
             if let message = windowModel.boardWidthPanelMessage {
                 DenValidationMessage(message)
             } else {
-                DenPanelHint("Changes every Board in the Focused Desk. Press - / = or 1–9, then Escape.")
+                DenPanelHint("Changes every Primary Board in the Focused Desk. Press - / = or 1–9, then Escape.")
             }
         }
         .denPanel()

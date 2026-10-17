@@ -92,7 +92,7 @@ Toggle with `Control` + `,`. Press `Escape` to exit to Sheet Input.
 | `[` / `]` | Back / forward in Sheet stack |
 | `Shift` + `[` / `Shift` + `]` | Jump to First / latest Sheet |
 | `-` / `=` | Narrow / widen Focused Board |
-| `w`, then `-` / `=` / `1`–`9` | Resize all Boards (adjust by 80pt or fit to window width) |
+| `w`, then `-` / `=` / `1`–`9` | Resize all Primary Boards (adjust by 80pt or fit to window width) |
 | `f` | Toggle maximized Focused Board |
 | `c` | Center Focused Board |
 | `m` | Set / clear Anchor Board for Focused Desk |

@@ -16,7 +16,8 @@ extension DenController {
     func adjustDeskBoardWidths(_ deskID: DeskID, by delta: Double) {
         guard let deskIndex = state.desks.firstIndex(where: { $0.id == deskID }) else { return }
         var changed = false
-        for boardIndex in state.desks[deskIndex].boards.indices {
+        for boardIndex in state.desks[deskIndex].boards.indices
+        where !state.desks[deskIndex].boards[boardIndex].isSideBoard {
             let width = state.desks[deskIndex].boards[boardIndex].width + delta
             let constrainedWidth = BoardState.constrainedWidth(width)
             changed = changed || constrainedWidth != state.desks[deskIndex].boards[boardIndex].width
@@ -29,7 +30,8 @@ extension DenController {
     func resizeDeskBoards(_ deskID: DeskID, to width: Double) -> Bool {
         guard let deskIndex = state.desks.firstIndex(where: { $0.id == deskID }) else { return false }
 
-        for boardIndex in state.desks[deskIndex].boards.indices {
+        for boardIndex in state.desks[deskIndex].boards.indices
+        where !state.desks[deskIndex].boards[boardIndex].isSideBoard {
             storage.state.desks[deskIndex].boards[boardIndex].width = width
         }
         if state.desks[deskIndex].focusedBoardID != nil {

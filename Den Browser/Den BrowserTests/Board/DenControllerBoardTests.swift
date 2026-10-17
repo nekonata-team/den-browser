@@ -1730,7 +1730,9 @@ struct DenControllerBoardTests {
     }
 
     @Test func adjustsEveryBoardInFocusedDeskWithinBounds() {
-        let boards = [board("Narrow", width: 280), board("Wide", width: 1_400)]
+        let primary = board("Narrow", width: 280)
+        let side = BoardState(label: "Inspection Board", width: 360, targetBoardID: primary.id)
+        let boards = [primary, side, board("Wide", width: 1_400)]
         let otherBoard = board("Other", width: 760)
         let firstDesk = desk("First", boards: boards, focusedBoardID: boards[0].id)
         let secondDesk = desk("Second", boards: [otherBoard])
@@ -1738,17 +1740,19 @@ struct DenControllerBoardTests {
             windowModel.toggleFocusedBoardMaximized()
 
             windowModel.adjustFocusedDeskBoardWidths(by: -80)
-            #expect(controller.focusedDesk?.boards.map(\.width) == [280, 1_320])
+            #expect(controller.focusedDesk?.boards.map(\.width) == [280, 360, 1_320])
             #expect(controller.state.desks[1].boards.map(\.width) == [760])
             #expect(windowModel.maximizedBoardID == nil)
 
             windowModel.adjustFocusedDeskBoardWidths(by: 160)
-            #expect(controller.focusedDesk?.boards.map(\.width) == [440, 1_400])
+            #expect(controller.focusedDesk?.boards.map(\.width) == [440, 360, 1_400])
         }
     }
 
     @Test func resizesEveryBoardInFocusedDeskToFitCurrentWindow() {
-        let firstBoards = [board("First", width: 440), board("Second", width: 760)]
+        let first = board("First", width: 440)
+        let side = BoardState(label: "Inspection Board", width: 360, targetBoardID: first.id)
+        let firstBoards = [first, side, board("Second", width: 760)]
         let otherBoard = board("Other", width: 980)
         let firstDesk = desk("First", boards: firstBoards, focusedBoardID: firstBoards[0].id)
         let secondDesk = desk("Second", boards: [otherBoard])
@@ -1768,9 +1772,10 @@ struct DenControllerBoardTests {
 
                 #expect(windowModel.resizeFocusedDeskBoards(toFit: 3))
                 #expect(
-                    controller.focusedDesk?.boards.allSatisfy {
+                    controller.focusedDesk?.boards.filter { !$0.isSideBoard }.allSatisfy {
                         abs($0.width - 386.666_666_666_666_7) < 0.001
                     } == true)
+                #expect(controller.focusedDesk?.boards[1].width == 360)
                 #expect(controller.state.desks[1].boards[0].width == 980)
                 #expect(controller.state.desks[0].scrollOffsetX == nil)
                 #expect(windowModel.maximizedBoardID == nil)
