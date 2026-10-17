@@ -8,13 +8,15 @@ import SwiftUI
 struct BoardStripLayoutKey: Equatable {
     let ids: [BoardID]
     let widths: [Double]
+    var sideTargetIDs: [BoardID?] = []
     let maximizedBoardID: BoardID?
     let windowWidth: Double
 
     func insertedWidth(
         before boardID: BoardID,
         comparedTo previous: Self,
-        spacing: CGFloat
+        spacing: CGFloat,
+        sideSpacing: CGFloat = BoardLayout.Parameters.defaultSideSpacing
     ) -> CGFloat {
         guard let boardIndex = ids.firstIndex(of: boardID) else { return 0 }
 
@@ -22,7 +24,8 @@ struct BoardStripLayoutKey: Equatable {
         var insertedWidth: CGFloat = 0
         for index in ids.indices where index < boardIndex {
             guard widths.indices.contains(index), !previousIDs.contains(ids[index]) else { continue }
-            insertedWidth += CGFloat(widths[index]) + spacing
+            insertedWidth +=
+                CGFloat(widths[index]) + spacingAfter(index: index, spacing: spacing, sideSpacing: sideSpacing)
         }
         return insertedWidth
     }
@@ -30,7 +33,8 @@ struct BoardStripLayoutKey: Equatable {
     func removedWidth(
         before boardID: BoardID,
         comparedTo current: Self,
-        spacing: CGFloat
+        spacing: CGFloat,
+        sideSpacing: CGFloat = BoardLayout.Parameters.defaultSideSpacing
     ) -> CGFloat {
         guard let boardIndex = ids.firstIndex(of: boardID) else { return 0 }
 
@@ -38,9 +42,16 @@ struct BoardStripLayoutKey: Equatable {
         var removedWidth: CGFloat = 0
         for index in ids.indices where index < boardIndex {
             guard widths.indices.contains(index), !currentIDs.contains(ids[index]) else { continue }
-            removedWidth += CGFloat(widths[index]) + spacing
+            removedWidth +=
+                CGFloat(widths[index]) + spacingAfter(index: index, spacing: spacing, sideSpacing: sideSpacing)
         }
         return removedWidth
+    }
+
+    private func spacingAfter(index: Int, spacing: CGFloat, sideSpacing: CGFloat) -> CGFloat {
+        let nextIndex = index + 1
+        guard ids.indices.contains(index), sideTargetIDs.indices.contains(nextIndex) else { return spacing }
+        return sideTargetIDs[nextIndex] == ids[index] ? sideSpacing : spacing
     }
 }
 
@@ -85,6 +96,7 @@ struct BoardStrip: View {
         return BoardStripLayoutKey(
             ids: boards.map(\.id),
             widths: boards.map(\.width),
+            sideTargetIDs: boards.map(\.sideBoardTargetBoardID),
             maximizedBoardID: windowModel.maximizedBoardID,
             windowWidth: size.width
         )
@@ -153,8 +165,23 @@ struct BoardStrip: View {
         )
 
         return ScrollView(.horizontal) {
-            HStack(alignment: .top, spacing: boardSpacing) {
+            HStack(alignment: .top, spacing: 0) {
                 ForEach(boards) { board in
+                    let boardIndex = boards.firstIndex(where: { $0.id == board.id })
+                    let isAttachedSideBoard =
+                        boardIndex.map { index in
+                            index > 0 && board.sideBoardTargetBoardID == boards[index - 1].id
+                        } ?? false
+                    let leadingGap: CGFloat =
+                        switch boardIndex {
+                        case nil, 0?: 0
+                        default:
+                            isAttachedSideBoard
+                                ? BoardLayout.Parameters.defaultSideSpacing
+                                : boardSpacing
+                        }
+                    let trailingGap =
+                        boardIndex.map { layoutParams.spacingAfterBoard(at: $0) } ?? boardSpacing
                     let isFocused = controller.focusedDesk?.focusedBoardID == board.id
                     let isVisible = visibleBoardIDs.contains(board.id) || isFocused
                     let isActivated = activatedBoardIDs.contains(board.id) || isVisible
@@ -206,13 +233,13 @@ struct BoardStrip: View {
                     .overlay(alignment: .trailing) {
                         if !deskFilter.isPresented && windowModel.maximizedBoardID != board.id {
                             let canResizeWithNextBoard =
-                                boards.firstIndex(where: { $0.id == board.id }).map {
+                                boardIndex.map {
                                     $0 + 1 < boards.count
                                 } ?? false
                             BoardResizeHandle(
                                 board: board,
                                 height: boardHeight,
-                                width: boardSpacing,
+                                width: trailingGap,
                                 canResizeWithNextBoard: canResizeWithNextBoard,
                                 onResizeStart: {
                                     cancelPendingBoardAlignment()
@@ -230,9 +257,10 @@ struct BoardStrip: View {
                                     resizingBoardID = nil
                                 }
                             )
-                            .offset(x: boardSpacing)
+                            .offset(x: trailingGap)
                         }
                     }
+                    .padding(.leading, leadingGap)
                     .allowsHitTesting(isBoardHitTestingEnabled(for: board.id))
                     .accessibilityHidden(!isPointerFocusEnabled(for: board.id))
                     .zIndex(isDragging ? 2 : 1)
@@ -243,6 +271,7 @@ struct BoardStrip: View {
                         boardHeight: boardHeight,
                         action: { onOpenBoardAtEnd(lastBoardID) }
                     )
+                    .padding(.leading, boardSpacing)
                 }
             }
             .scrollTargetLayout()
@@ -680,9 +709,12 @@ struct BoardStrip: View {
             guard controller.focusedDesk?.boards.map(\.id) != previousOrder else { break }
 
             let direction = targetIndex > index ? -1.0 : 1.0
+            let internalSpacings =
+                CGFloat(max(0, crossedGroup.count - 1)) * BoardLayout.Parameters.defaultSideSpacing
             let crossedWidth =
                 crossedGroup.reduce(CGFloat.zero) { $0 + CGFloat($1.width) }
-                + CGFloat(crossedGroup.count) * DenLayout.outerInset
+                + internalSpacings
+                + boardSpacing
             drag.offset.width += direction * crossedWidth
             boardDrag = drag
         }

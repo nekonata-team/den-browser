@@ -25,12 +25,15 @@ enum FocusedBoardCentering: String, CaseIterable, Identifiable {
 
 struct BoardLayout {
     struct Parameters {
+        static let defaultSideSpacing: CGFloat = 4
+
         let centering: FocusedBoardCentering
         let boards: [BoardState]
         let maximizedBoardID: BoardID?
         let windowWidth: CGFloat
         let horizontalPadding: CGFloat
         let spacing: CGFloat
+        var sideSpacing: CGFloat = defaultSideSpacing
 
         var maximizedBoardWidth: CGFloat {
             max(CGFloat(BoardState.minimumWidth), windowWidth - horizontalPadding * 2)
@@ -40,12 +43,21 @@ struct BoardLayout {
             let totalBoardsWidth = boards.reduce(0.0) { sum, board in
                 sum + (maximizedBoardID == board.id ? maximizedBoardWidth : board.width)
             }
-            let totalSpacing = CGFloat(max(0, boards.count - 1)) * spacing
+            let totalSpacing = (0..<max(0, boards.count - 1)).reduce(CGFloat.zero) { sum, index in
+                sum + spacingAfterBoard(at: index)
+            }
             return totalBoardsWidth + totalSpacing
         }
 
         var boardsOverflow: Bool {
             requiredBoardsWidth > windowWidth - horizontalPadding * 2 + 1
+        }
+
+        func spacingAfterBoard(at index: Int) -> CGFloat {
+            guard boards.indices.contains(index) else { return spacing }
+            let nextIndex = index + 1
+            guard boards.indices.contains(nextIndex) else { return spacing }
+            return boards[nextIndex].sideBoardTargetBoardID == boards[index].id ? sideSpacing : spacing
         }
     }
 
@@ -127,8 +139,8 @@ struct BoardLayout {
         guard params.boards.indices.contains(boardIndex) else { return nil }
 
         let paddings = calculatePaddings(for: params)
-        let precedingWidth = params.boards.prefix(boardIndex).reduce(0.0) { total, board in
-            total + boardWidth(board, in: params) + params.spacing
+        let precedingWidth = (0..<boardIndex).reduce(0.0) { total, index in
+            total + boardWidth(params.boards[index], in: params) + params.spacingAfterBoard(at: index)
         }
         let minX = paddings.leading + precedingWidth
         return (minX, minX + boardWidth(params.boards[boardIndex], in: params))

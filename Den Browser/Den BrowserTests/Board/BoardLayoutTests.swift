@@ -148,6 +148,26 @@ struct BoardLayoutTests {
         #expect(BoardLayout.contentWidth(for: emptyParams) == 1_000)
     }
 
+    @Test func usesTighterSpacingBetweenPrimaryAndSideBoard() {
+        let primary = BoardState(label: "Primary", width: 500, currentSheetURL: nil)
+        let side = BoardState(label: "Inspection Board", width: 360, targetBoardID: primary.id)
+        let next = BoardState(label: "Next", width: 500, currentSheetURL: nil)
+        let params = BoardLayout.Parameters(
+            centering: .never,
+            boards: [primary, side, next],
+            maximizedBoardID: nil,
+            windowWidth: 1_000,
+            horizontalPadding: 10,
+            spacing: 8
+        )
+
+        #expect(params.spacingAfterBoard(at: 0) == 4)
+        #expect(params.spacingAfterBoard(at: 1) == 8)
+        #expect(BoardLayout.boardContentRange(for: 0, in: params)?.minX == 10)
+        #expect(BoardLayout.boardContentRange(for: 1, in: params)?.minX == 514)
+        #expect(BoardLayout.boardContentRange(for: 2, in: params)?.minX == 882)
+    }
+
     @Test func calculatesBoardHeightWithOptionalIndicator() {
         let size = CGSize(width: 1000, height: 800)
         let heightWithHeader = DenLayout.boardHeight(for: size, shouldShowHeader: true, shouldShowIndicator: false)

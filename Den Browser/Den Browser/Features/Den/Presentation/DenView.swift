@@ -349,6 +349,9 @@ private struct DeskFilterOverlay: View {
 
 private struct BoardStripIndicator: View {
     private static let dotHeight: CGFloat = 6
+    private static let sideDotHeight: CGFloat = 4
+    private static let groupSpacing: CGFloat = 8
+    private static let sideSpacing: CGFloat = 4
 
     let profileColor: Color
 
@@ -386,10 +389,15 @@ private struct BoardStripIndicator: View {
             : controller.focusedDesk?.focusedBoardID
         let anchorBoardID = controller.focusedDesk?.anchorBoardID
 
-        return HStack(spacing: 8) {
-            ForEach(boards) { board in
+        return HStack(spacing: 0) {
+            ForEach(Array(boards.enumerated()), id: \.element.id) { index, board in
                 let isFocused = board.id == focusedBoardID
                 let isAnchor = board.id == anchorBoardID
+                let isAttachedSide =
+                    index > 0 && board.sideBoardTargetBoardID == boards[index - 1].id
+                let dotSize = board.isSideBoard ? Self.sideDotHeight : Self.dotHeight
+                let leadingGap: CGFloat =
+                    index == 0 ? 0 : (isAttachedSide ? Self.sideSpacing : Self.groupSpacing)
                 Button {
                     controller.focusBoard(board.id)
                 } label: {
@@ -397,18 +405,24 @@ private struct BoardStripIndicator: View {
                         .fill(
                             isAnchor
                                 ? profileColor.opacity(isFocused ? 1 : 0.72)
-                                : Color.primary.opacity(isFocused ? 1 : 0.28)
+                                : Color.primary.opacity(isFocused ? 1 : (board.isSideBoard ? 0.22 : 0.28))
                         )
-                        .frame(width: isFocused ? 18 : Self.dotHeight, height: Self.dotHeight)
-                        .padding(.horizontal, 2)
+                        .frame(width: isFocused ? (board.isSideBoard ? 14 : 18) : dotSize, height: dotSize)
+                        .frame(height: Self.dotHeight)
+                        .padding(.horizontal, isAttachedSide ? 1 : 2)
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
-                .help(board.displayName)
+                .padding(.leading, leadingGap)
+                .help(board.isSideBoard ? "\(board.displayName) (Side Board)" : board.displayName)
                 .accessibilityLabel(
-                    isAnchor
-                        ? "\(board.displayName) Board, Anchor Board"
-                        : "\(board.displayName) Board"
+                    [
+                        "\(board.displayName) Board",
+                        board.isSideBoard ? "Side Board" : nil,
+                        isAnchor ? "Anchor Board" : nil,
+                    ]
+                    .compactMap { $0 }
+                    .joined(separator: ", ")
                 )
             }
         }

@@ -22,6 +22,13 @@ struct BoardHeaderTitle: View {
                     .foregroundStyle(.primary)
                     .lineLimit(1)
 
+                if board.isSideBoard {
+                    Image(systemSymbol: .sidebarRight)
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                        .help("Side Board")
+                }
+
                 if isAnchor {
                     Image(systemSymbol: .pinFill)
                         .font(.caption2)
@@ -53,6 +60,7 @@ struct BoardHeaderTitle: View {
 
     private var accessibilityLabel: String {
         [
+            board.isSideBoard ? "Side board" : nil,
             isAnchor ? "Anchor board" : nil,
             "Board: \(board.displayName)",
             supplementaryText,
