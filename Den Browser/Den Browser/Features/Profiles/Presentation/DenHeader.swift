@@ -69,11 +69,12 @@ struct DenHeaderControls: ToolbarContent {
             ToolbarItemGroup(placement: .automatic) {
                 NotificationButton(profileColor: profileDisplayColor(for: profile.color))
 
-                if controller.focusedDesk?.boards.isEmpty == false {
-                    SaveDeskPresetButton {
-                        windowModel.showSaveDeskPresetPanel()
-                    }
+                SaveDeskPresetButton {
+                    windowModel.showSaveDeskPresetPanel()
                 }
+                .disabled(
+                    controller.focusedDesk?.boards.isEmpty != false
+                        || windowModel.temporaryContext != nil)
 
                 ProfileChip(profile: profile, windowID: windowID)
             }
@@ -221,6 +222,7 @@ private struct SaveDeskPresetButton: View {
         }
         .tint(.secondary)
         .accessibilityLabel("Save Desk as Preset")
+        .accessibilityIdentifier("save-desk-preset-button")
         .help("Save Desk as Preset")
     }
 }

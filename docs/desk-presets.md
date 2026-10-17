@@ -33,10 +33,10 @@ If the session must be recreated, the Board uses this name to restore the `den.r
 
 ## Saving
 
-When the Focused Desk contains a Board, an outline bookmark button appears left of the Profile control.
+An outline bookmark button appears left of the Profile control to save the Focused Desk as a Preset.
 The same action triggers via `Save Desk as Preset…` in the Den menu or `p` in Den Mode.
 Zen View hides the button.
-A Desk with no Boards cannot be saved: the button is absent, the menu item is disabled, and `p` is a no-op.
+A Desk with no Boards cannot be saved: the button and the menu item are disabled, and `p` is a no-op.
 
 All three actions open a top-center Liquid Glass panel to edit the Desk Preset Label, initialized from the Desk Label.
 Saving a new label inserts the preset at the top of My Presets.
