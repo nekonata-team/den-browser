@@ -19,6 +19,8 @@ public enum DenLayout {
     public static let boardIndicatorHeight: CGFloat = 14
     public static let fallbackBoardHeight: CGFloat = 600
     public static let overviewFacingHeight: CGFloat = 120
+    public static let minimumWindowWidth: CGFloat = 720
+    public static let minimumWindowHeight: CGFloat = 640
 
     public static let denHeaderHeight = deskSwitcherHeight
 }

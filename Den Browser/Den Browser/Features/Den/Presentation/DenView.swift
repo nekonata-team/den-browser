@@ -126,7 +126,10 @@ struct DenView<Header: View>: View {
                 isPrivateDen: isPrivateDen,
                 profileColor: profileColor)
         )
-        .frame(minWidth: 800, minHeight: 720)
+        .frame(
+            minWidth: DenLayout.minimumWindowWidth,
+            minHeight: DenLayout.minimumWindowHeight
+        )
         .navigationTitle(titlebarTitle)
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("den-content")
