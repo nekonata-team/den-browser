@@ -1,4 +1,5 @@
 import DenApplication
+import DenDesign
 import DenDomain
 import DenPresentationModels
 import Foundation
@@ -218,7 +219,7 @@ extension DenController {
             return existingSideBoard.id
         }
         let board = BoardState(
-            width: 360,
+            width: DenLayout.sideBoardInitialWidth,
             targetBoardID: targetBoardID
         )
         let targetRuntime = focus ? nil : webRuntime(for: targetBoard)
@@ -254,7 +255,8 @@ extension DenController {
         let workingDirectory =
             primaryBoard.terminalWorkingDirectory
             ?? FileManager.default.homeDirectoryForCurrentUser.path
-        var board = BoardState(label: "Terminal Side Board", width: 360, workingDirectory: workingDirectory)
+        var board = BoardState(
+            label: "Terminal Side Board", width: DenLayout.sideBoardInitialWidth, workingDirectory: workingDirectory)
         board.role = .sideBoard(targetBoardID: primaryBoardID)
         guard
             insertBoard(
@@ -592,7 +594,7 @@ extension DenController {
                     ?? FileManager.default.homeDirectoryForCurrentUser.path
                 var board = BoardState(
                     label: asSideBoard ? "Terminal Side Board" : source.label,
-                    width: asSideBoard ? 360 : source.width,
+                    width: asSideBoard ? DenLayout.sideBoardInitialWidth : source.width,
                     zmxSessionName: newSessionName,
                     workingDirectory: workingDirectory,
                     rootSessionName: context.rootSessionName,
