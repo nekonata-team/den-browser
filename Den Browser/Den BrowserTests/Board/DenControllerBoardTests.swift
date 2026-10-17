@@ -337,6 +337,82 @@ struct DenControllerBoardTests {
         }
     }
 
+    @Test(arguments: [false, true])
+    func zmxSideBoardCreatesIndependentSessionInTheSameRoot(_ focus: Bool) async throws {
+        // Arrange
+        let primary = BoardState(
+            width: 640, zmxSessionName: "project-editor", workingDirectory: "/tmp/project",
+            rootSessionName: "old-root")
+        let occupied = BoardState(width: 520, zmxSessionName: "project-3")
+        let source = desk("Desk", boards: [primary, occupied], focusedBoardID: primary.id)
+        let runner = StubTerminalCommandRunner(responses: [
+            ["list", "--short"]: TerminalCommandResult(
+                terminationStatus: 0, standardOutput: "project-editor\nproject-2\n"),
+            ["get", "project-editor", "den.root"]: TerminalCommandResult(
+                terminationStatus: 0, standardOutput: "project\n"),
+        ])
+        try await withTestWindowModel(desks: [source], terminalCommandRunner: runner) { _, controller in
+            controller.preferences.setZmxPath("/usr/bin/zmx")
+
+            // Act
+            controller.createTerminalSideBoard(targetBoardID: primary.id, focus: focus)
+            await controller.waitForZmxCommand()
+
+            // Assert
+            let boards = try #require(controller.focusedDesk?.boards)
+            let side = try #require(boards.first { $0.sideBoardTargetBoardID == primary.id })
+            let sessionName = try #require(side.zmxSessionName)
+            #expect(boards.count == 3)
+            #expect(boards[1].id == side.id)
+            #expect(sessionName.hasPrefix("project-"))
+            #expect(!["project-editor", "project-2", "project-3"].contains(sessionName))
+            #expect(side.zmxRootSessionName == "project")
+            #expect(side.terminalWorkingDirectory == "/tmp/project")
+            #expect(controller.focusedBoard?.id == (focus ? side.id : primary.id))
+            #expect(controller.recentItems.isEmpty)
+        }
+    }
+
+    @Test func zmxSideBoardDoesNotCreateBoardAfterItsTargetIsRemoved() async {
+        // Arrange
+        let primary = BoardState(width: 640, zmxSessionName: "project")
+        let source = desk("Desk", boards: [primary], focusedBoardID: primary.id)
+        let runner = StubTerminalCommandRunner(responses: [
+            ["list", "--short"]: TerminalCommandResult(terminationStatus: 0, standardOutput: "")
+        ])
+        await withTestWindowModel(desks: [source], terminalCommandRunner: runner) { _, controller in
+            controller.preferences.setZmxPath("/usr/bin/zmx")
+
+            // Act
+            controller.createTerminalSideBoard(targetBoardID: primary.id)
+            controller.removeFocusedBoard()
+            await controller.waitForZmxCommand()
+
+            // Assert
+            #expect(controller.focusedDesk?.boards.isEmpty == true)
+        }
+    }
+
+    @Test func zmxSideBoardDoesNotCreateShellWhenSessionLookupFails() async {
+        // Arrange
+        let primary = BoardState(width: 640, zmxSessionName: "project")
+        let source = desk("Desk", boards: [primary], focusedBoardID: primary.id)
+        let runner = StubTerminalCommandRunner(responses: [
+            ["list", "--short"]: TerminalCommandResult(
+                terminationStatus: 1, standardOutput: "", standardError: "Session lookup failed")
+        ])
+        await withTestWindowModel(desks: [source], terminalCommandRunner: runner) { _, controller in
+            controller.preferences.setZmxPath("/usr/bin/zmx")
+
+            // Act
+            controller.createTerminalSideBoard(targetBoardID: primary.id)
+            await controller.waitForZmxCommand()
+
+            // Assert
+            #expect(controller.focusedDesk?.boards == [primary])
+        }
+    }
+
     @Test func invalidTerminalInputDoesNotCreateRecentItem() {
         let source = desk("Desk")
         let controller = DenController(state: DenState(desks: [source], focusedDeskID: source.id))

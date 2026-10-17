@@ -33,6 +33,7 @@ In Open Board, remove an individual Recent Item with the trash icon to the right
 | `Command` + `Shift` + `P` | Universal Search with `> ` prefilled (commands only) |
 | `Command` + `S` | Toggle Board Rail |
 | `Command` + `L` | Edit Focused Board Link |
+| `Command` + `D` | Create or focus a Terminal Side Board for the focused Terminal Board (both input modes) |
 | `Command` + `W` | Remove Focused Board (or discard selected Drawer item) |
 | `Shift` + `Command` + `W` | Close Profile window |
 | `Command` + `R` | Reload Current Sheet |
@@ -48,6 +49,8 @@ In Open Board, remove an individual Recent Item with the trash icon to the right
 | `Command` + `Option` + `Left` / `Right` | Focus previous / next Board |
 | `Shift` + `Command` + `Option` + `Left` / `Right` | Move Focused Board left / right |
 | `Command` + `Option` + `1`–`9`, `0` | Focus Desk 1–10 |
+
+A new Terminal Side Board uses its Primary Board's Working Directory. A zmx Primary Board creates an independent zmx session under the same root; other Terminal Boards create a Shell.
 
 ---
 

@@ -246,6 +246,11 @@ extension DenController {
             return existingSideBoard.id
         }
 
+        if primaryBoard.isZmx {
+            createZmxBoard(from: primaryBoard, suffix: "", asSideBoard: true, focus: focus)
+            return nil
+        }
+
         let workingDirectory =
             primaryBoard.terminalWorkingDirectory
             ?? FileManager.default.homeDirectoryForCurrentUser.path
@@ -550,10 +555,12 @@ extension DenController {
     }
 
     func duplicateFocusedZmxBoard(suffix: String) {
-        guard
-            let source = focusedBoard,
-            let sessionName = source.zmxSessionName
-        else { return }
+        guard let source = focusedBoard else { return }
+        createZmxBoard(from: source, suffix: suffix, asSideBoard: false, focus: true)
+    }
+
+    private func createZmxBoard(from source: BoardState, suffix: String, asSideBoard: Bool, focus: Bool) {
+        guard let sessionName = source.zmxSessionName else { return }
 
         let client = zmxClient
         zmxCommandTask?.cancel()
@@ -562,7 +569,16 @@ extension DenController {
                 let context = try await client.duplicationContext(
                     for: sessionName,
                     savedRootSessionName: source.zmxRootSessionName)
-                guard !Task.isCancelled, let self, self.focusedBoard?.id == source.id else { return }
+                guard !Task.isCancelled, let self else { return }
+                if asSideBoard {
+                    guard let indices = self.boardIndices(for: source.id),
+                        !self.state.desks[indices.deskOffset].boards.contains(where: {
+                            $0.sideBoardTargetBoardID == source.id
+                        })
+                    else { return }
+                } else {
+                    guard self.focusedBoard?.id == source.id else { return }
+                }
 
                 let denSessionNames = self.state.desks.flatMap { desk in
                     desk.boards.compactMap(\.zmxSessionName)
@@ -574,24 +590,27 @@ extension DenController {
                 let workingDirectory =
                     source.terminalWorkingDirectory
                     ?? FileManager.default.homeDirectoryForCurrentUser.path
-                let board = BoardState(
-                    label: source.label,
-                    width: source.width,
+                var board = BoardState(
+                    label: asSideBoard ? "Terminal Side Board" : source.label,
+                    width: asSideBoard ? 360 : source.width,
                     zmxSessionName: newSessionName,
                     workingDirectory: workingDirectory,
                     rootSessionName: context.rootSessionName,
-                    customLabel: source.customLabel)
+                    customLabel: asSideBoard ? nil : source.customLabel)
+                if asSideBoard { board.role = .sideBoard(targetBoardID: source.id) }
                 guard
                     self.insertBoard(
                         board,
                         afterBoardID: source.id,
-                        focus: true,
-                        origin: .interactive)
+                        focus: focus,
+                        origin: focus ? .interactive : .cli)
                 else { return }
             } catch is CancellationError {
                 return
             } catch {
-                guard !Task.isCancelled, let self, self.focusedBoard?.id == source.id else { return }
+                guard !Task.isCancelled, let self,
+                    asSideBoard ? self.boardIndices(for: source.id) != nil : self.focusedBoard?.id == source.id
+                else { return }
                 self.reportFeedback(
                     "Could not inspect active zmx sessions: \(error.localizedDescription)",
                     severity: .warning)
