@@ -57,6 +57,10 @@ struct DenHeaderControls: ToolbarContent {
     @ToolbarContentBuilder
     var body: some ToolbarContent {
         if !windowModel.isOverviewPresented {
+            ToolbarItemGroup(placement: .principal) {
+                OverviewButton()
+                DrawerButton()
+            }
             ToolbarSpacer(.flexible)
             ToolbarItem(placement: .automatic) {
                 UniversalSearchButton()
@@ -74,6 +78,50 @@ struct DenHeaderControls: ToolbarContent {
                 ProfileChip(profile: profile, windowID: windowID)
             }
         }
+    }
+}
+
+private struct OverviewButton: View {
+    @Environment(DenWindowModel.self) private var windowModel
+
+    var body: some View {
+        Button {
+            windowModel.toggleOverview()
+        } label: {
+            Label {
+                Text("Overview")
+            } icon: {
+                Image(systemSymbol: .squareGrid2x2)
+                    .font(.system(size: 13, weight: .semibold))
+            }
+        }
+        .tint(windowModel.isOverviewPresented ? .accentColor : .secondary)
+        .disabled(windowModel.temporaryContext != nil && !windowModel.isOverviewPresented)
+        .help("Overview")
+        .accessibilityLabel("Overview")
+        .accessibilityIdentifier("overview-button")
+    }
+}
+
+private struct DrawerButton: View {
+    @Environment(DenWindowModel.self) private var windowModel
+
+    var body: some View {
+        Button {
+            windowModel.toggleDrawer()
+        } label: {
+            Label {
+                Text("Drawer")
+            } icon: {
+                Image(systemSymbol: .tray)
+                    .font(.system(size: 13, weight: .semibold))
+            }
+        }
+        .tint(windowModel.isDrawerOpen ? .accentColor : .secondary)
+        .disabled(windowModel.temporaryContext != nil && !windowModel.isDrawerOpen)
+        .help("Drawer")
+        .accessibilityLabel("Drawer")
+        .accessibilityIdentifier("drawer-button")
     }
 }
 
