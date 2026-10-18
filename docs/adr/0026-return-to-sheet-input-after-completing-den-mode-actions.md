@@ -61,7 +61,7 @@ Work-content confirmation:
 
 - Confirming an edited Current Sheet URL.
 - Confirming a Board Label or Desk Label.
-- Opening a Drawer Item's Preview by confirming the selected Item.
+- Opening a Drawer Item's Peek by confirming the selected Item.
 
 Completion of an independent task:
 

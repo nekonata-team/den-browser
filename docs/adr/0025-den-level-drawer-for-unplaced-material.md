@@ -19,14 +19,14 @@ The intended intake flow is:
 1. The user opens a link from another application and macOS routes it to Den Browser.
 2. Den Browser resolves the receiving Profile, preferring the active or most recently active Profile according to the final external-link routing policy.
 3. By default, the link enters that Profile's Den-level Drawer without selecting or modifying a Desk. An External Links setting can instead create a Board to the right of the Focused Board.
-4. Den Browser may show a temporary preview while the captured material remains available from the Drawer.
+4. Den Browser may show a temporary Peek while the captured material remains available from the Drawer.
 5. The user later places it into a Board or Desk context, keeps it in the Drawer, or discards it.
 
 The default routing avoids guessing which Desk owns an externally received link and prevents incidental links from changing an established Desk layout. The alternate setting opts into placing the link immediately in the receiving Profile's Focused Desk. Profile selection remains a separate application-level routing decision.
 
 A user can also keep a Board's Current Sheet in the Drawer for later recall or temporary comparison with work in another Desk.
 
-Opening Drawer material may create a temporary live preview, but the Drawer should persist only enough state to recall the material; it must not persist `WKWebView` or other live runtime objects. Placing web material into an established context creates a Board or adds a Sheet to a Board, depending on the chosen destination. Discarding removes it from the Drawer and retains the item in a transient, current-run restoration history of up to ten items; this history is not persisted. Placement does not create a discard-history entry.
+Opening Drawer material may create a temporary live Peek, but the Drawer should persist only enough state to recall the material; it must not persist `WKWebView` or other live runtime objects. Placing web material into an established context creates a Board or adds a Sheet to a Board, depending on the chosen destination. Discarding removes it from the Drawer and retains the item in a transient, current-run restoration history of up to ten items; this history is not persisted. Placement does not create a discard-history entry.
 
 The first Current Sheet operation should preserve the source Board rather than silently remove a Sheet from its Sheet Stack. A later explicit “stow” operation may move a Sheet if a clear lifecycle and recovery model emerges.
 
@@ -45,22 +45,22 @@ Future media support must not turn the initial design into a speculative generic
 
 - Web material is a `Drawer Item`, separate from `Sheet`.
 - `Tab` opens and closes the Drawer in Den Mode. The initial implementation has no pointer entry point.
-- Den Mode remains independently toggleable while the Drawer is open. Entering Den Mode returns keyboard focus to Drawer Items without collapsing an expanded Preview; returning to Sheet Input focuses that Preview again.
-- Opening a Drawer with an expanded Preview enters Sheet Input and focuses its Sheet. Opening one without an expanded Preview keeps Den Mode, and expanding a Preview from Den Mode enters Sheet Input.
+- Den Mode remains independently toggleable while the Drawer is open. Entering Den Mode returns keyboard focus to Drawer Items without collapsing an expanded Peek; returning to Sheet Input focuses that Peek again.
+- Opening a Drawer with an expanded Peek enters Sheet Input and focuses its Sheet. Opening one without an expanded Peek keeps Den Mode, and expanding a Peek from Den Mode enters Sheet Input.
 - The Drawer appears from the bottom of the Den without changing Desk layout. It has no edge-hover target, handle, or drag interaction, and keeps an outer inset on both sides.
-- Drawer Items form a vertical accordion. One item at a time expands into a live `WKWebView` Drawer Preview.
-- When External Links is set to Drawer Preview, opening an external URL captures, selects, and expands a new Drawer Item.
-- Closing the Drawer keeps that Profile window's expanded Preview identity and live runtime for the next open during the current app run. Collapsing a Preview clears that window's identity and releases its runtime. Both operations keep the Drawer Item.
-- `Command` + `W` discards the selected Drawer Item from any Drawer context, including a focused Preview.
-- `Control` + `Escape` closes the Drawer from any Drawer context, including a focused Preview, without discarding Items; reopening preserves the expanded Preview.
-- Discarding an expanded Preview advances to the next visible Drawer Item's Preview, or the previous visible Item when the discarded Item was last; discarding a non-expanded Item does not change the current Preview.
+- Drawer Items form a vertical accordion. One item at a time expands into a live `WKWebView` Drawer Peek.
+- When External Links is set to Drawer Peek, opening an external URL captures, selects, and expands a new Drawer Item.
+- Closing the Drawer keeps that Profile window's expanded Peek identity and live runtime for the next open during the current app run. Collapsing a Peek clears that window's identity and releases its runtime. Both operations keep the Drawer Item.
+- `Command` + `W` discards the selected Drawer Item from any Drawer context, including a focused Peek.
+- `Control` + `Escape` closes the Drawer from any Drawer context, including a focused Peek, without discarding Items; reopening preserves the expanded Peek.
+- Discarding an expanded Peek advances to the next visible Drawer Item's Peek, or the previous visible Item when the discarded Item was last; discarding a non-expanded Item does not change the current Peek.
 - `u` restores the newest discarded Drawer Item, and repeated use restores older retained items. Restoration returns to the Drawer with the item selected and expanded; when invoked in Den Mode, it keeps Den Mode active. The history is limited to ten items and lasts only for the current app run.
-- Placement creates a Board to the right of the Focused Board, focuses it, removes the Drawer Item, and closes the Drawer. If the invoking window has a live Preview for that Item, its runtime transfers to the Board without a load, reload, or disposal. This preserves the live document, Sheet Stack, downloads, and auxiliary windows. Without a matching Preview, placement opens the stored URL as before; other windows’ Previews for the placed Item are released.
+- Placement creates a Board to the right of the Focused Board, focuses it, removes the Drawer Item, and closes the Drawer. If the invoking window has a live Peek for that Item, its runtime transfers to the Board without a load, reload, or disposal. This preserves the live document, Sheet Stack, downloads, and auxiliary windows. Without a matching Peek, placement opens the stored URL as before; other windows’ Peeks for the placed Item are released.
 - Keeping a Current Sheet in the Drawer copies its URL and label with independent identity without opening the Drawer. The source Board remains unchanged.
 - Option-clicking a supported HTTP, HTTPS, or local file link in a Current Sheet captures it as a new Drawer Item without opening the Drawer or changing the Current Sheet, Focused Board, or Desk layout. Local file URL support follows [ADR 0033](./0033-support-local-file-sheet-urls.md).
-- A Drawer Preview keeps targetless links, Command-clicks, and middle-clicks as new Drawer Items instead of creating Boards. Plain Command-clicks and middle-clicks retain the current Preview; adding Shift opens the new Item.
+- A Drawer Peek keeps targetless links, Command-clicks, and middle-clicks as new Drawer Items instead of creating Boards. Plain Command-clicks and middle-clicks retain the current Peek; adding Shift opens the new Item.
 - URL and title persist. Expanded identity and live WebKit state are Profile-window presentation state and do not persist; opening a Drawer after relaunch starts collapsed.
 - New items appear first. Duplicate URLs remain separate items.
-- The expanded Preview remains selected across Desk changes in the same Profile window.
-- An open Drawer uses most of the Den height and gives its Preview the remaining panel width and height.
+- The expanded Peek remains selected across Desk changes in the same Profile window.
+- An open Drawer uses most of the Den height and gives its Peek the remaining panel width and height.
 - Profile fallback when no Profile window is active remains an application-level routing decision.

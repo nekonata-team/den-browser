@@ -73,7 +73,7 @@ final class AppPreferences {
             defaults.string(forKey: Self.boardCenteringKey).flatMap(FocusedBoardCentering.init(rawValue:))
             ?? .never
         externalLinkDestination =
-            defaults.string(forKey: Self.externalLinkDestinationKey).flatMap(ExternalLinkDestination.init(storedValue:))
+            defaults.string(forKey: Self.externalLinkDestinationKey).flatMap(ExternalLinkDestination.init(rawValue:))
             ?? Self.defaultExternalLinkDestination
         drawerStyle =
             defaults.string(forKey: Self.drawerStyleKey).flatMap(DrawerStyle.init(rawValue:))

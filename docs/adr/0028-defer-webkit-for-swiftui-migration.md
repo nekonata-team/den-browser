@@ -12,7 +12,7 @@ This decision was evaluated with Xcode and the macOS 26.5 SDK. Apple's web docum
 
 | Current behavior | WebKit for SwiftUI | Decision |
 | --- | --- | --- |
-| Share one `WKWebsiteDataStore` across the Boards and Drawer Preview in a Profile | `WebPage.Configuration.websiteDataStore` accepts `WKWebsiteDataStore`. | Available. Preserve one Profile-owned data store per runtime configuration. |
+| Share one `WKWebsiteDataStore` across the Boards and Drawer Peek in a Profile | `WebPage.Configuration.websiteDataStore` accepts `WKWebsiteDataStore`. | Available. Preserve one Profile-owned data store per runtime configuration. |
 | Install startup scripts and a message handler in an isolated `WKContentWorld` | `WebPage.Configuration.userContentController` accepts `WKUserContentController`, and `WebPage.callJavaScript` accepts a content world. | Available with redesign. Sheet Navigation actions should be associated with each `WebPage`; the current map is keyed by the underlying `WKWebView`, which SwiftUI does not expose. |
 | Distinguish Command-click, Command-Shift-click, and Option-click | Apple's `WebPage.NavigationAction` documentation lists modifier information, but `modifierFlags` is absent from the macOS 26.5 SDK and a compile probe fails. | Blocking gap. Do not replace native link routing with page-injected click interception. |
 | Route `target="_blank"` to a new Board | `NavigationDeciding` receives an action whose target is `nil` for a new browsing context and can cancel the navigation. | Available, subject to focused tests. |
@@ -22,13 +22,13 @@ This decision was evaluated with Xcode and the macOS 26.5 SDK. Apple's web docum
 | Observe element fullscreen | SwiftUI `WebView` has `webViewElementFullscreenBehavior`, and `WebPage` exposes `fullscreenState`. | Available. |
 | Toggle native Picture in Picture | `WebPage.Configuration` does not expose `WKPreferences` or an equivalent PiP setting. JavaScript remains callable, but the private preference used by ADR 0045 cannot be configured. | Blocking gap while the built-in Feature remains supported. |
 | Apply persisted page zoom, navigate history, and reload | `WebPage` exposes its back-forward list, item loading, and reload. SwiftUI exposes magnification gestures but no equivalent to programmatically setting `WKWebView.pageZoom`. | Partial; page zoom is a blocking gap. |
-| Move first responder to a focused Board or an opened Drawer Preview | SwiftUI focus APIs exist, but `WebView` does not expose the underlying `NSView` for `makeFirstResponder`. | Unconfirmed. A prototype must prove initial Vim input, pointer focus changes, fullscreen transitions, and Drawer Preview focus. |
-| Keep live web objects out of persisted `DenState` | A runtime can own one `WebPage`, and Apple specifies that a `WebPage` binds to only one `WebView` at a time. | Available. `BoardRuntime` and `DrawerPreviewRuntime` remain the ownership boundary. |
+| Move first responder to a focused Board or an opened Drawer Peek | SwiftUI focus APIs exist, but `WebView` does not expose the underlying `NSView` for `makeFirstResponder`. | Unconfirmed. A prototype must prove initial Vim input, pointer focus changes, fullscreen transitions, and Drawer Peek focus. |
+| Keep live web objects out of persisted `DenState` | A runtime can own one `WebPage`, and Apple specifies that a `WebPage` binds to only one `WebView` at a time. | Available. `WebRuntime` remains the live web execution boundary for Web Boards and Drawer Peek. |
 | Preserve Sheet Navigation tests and critical UI tests | Pure routing and state tests can move to adapters, but modifier-click, download, and focus behavior cannot currently be exercised with equivalent production hooks. | Partial. Existing intent remains required after the blocking gaps close. |
 
 ## Consequences
 
-`BoardRuntime`, `DrawerPreviewRuntime`, and their small `NSViewRepresentable` views remain deliberate AppKit/WebKit boundaries. New Sheet behavior should continue to be added to the runtime layer rather than persisted `DenState`.
+`WebRuntime` and its small `NSViewRepresentable` views remain deliberate AppKit/WebKit boundaries. New Sheet behavior should continue to be added to the runtime layer rather than persisted `DenState`.
 
 Reevaluate this decision when the supported macOS SDK provides all of the following:
 
@@ -36,7 +36,7 @@ Reevaluate this decision when the supported macOS SDK provides all of the follow
 - a public download lifecycle hook with destination, completion, and failure control;
 - programmatic page zoom;
 - the required PiP configuration;
-- a proven SwiftUI focus path for Board and Drawer Preview web content.
+- a proven SwiftUI focus path for Board and Drawer Peek web content.
 
 At reevaluation, build an isolated prototype first. It must cover the compatibility table and the current Sheet Navigation and critical UI test intent before any production runtime is replaced.
 

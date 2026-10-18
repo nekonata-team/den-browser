@@ -2,14 +2,6 @@ public nonisolated enum ExternalLinkDestination: String, CaseIterable, Identifia
     case drawerPeek = "drawer-peek"
     case focusedBoard = "focused-board"
 
-    public init?(storedValue: String) {
-        if storedValue == "drawer-preview" {
-            self = .drawerPeek
-        } else {
-            self.init(rawValue: storedValue)
-        }
-    }
-
     public var id: Self { self }
 
     public var label: String {

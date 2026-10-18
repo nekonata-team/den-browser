@@ -112,7 +112,8 @@ struct AppPreferencesTests {
         #expect(preferences.sheetScale == AppPreferences.defaultSheetScale)
     }
 
-    @Test func appPreferencesPersistByKey() throws {
+    @Test(arguments: ExternalLinkDestination.allCases)
+    func appPreferencesPersistByKey(externalLinkDestination: ExternalLinkDestination) throws {
         // Arrange
         let suiteName = "AppPreferencesTests-\(UUID().uuidString)"
         let defaults = try #require(UserDefaults(suiteName: suiteName))
@@ -122,7 +123,7 @@ struct AppPreferencesTests {
         // Act
         preferences.setMotionPreference(.standard)
         preferences.setUBOLiteEnabled(true)
-        preferences.setExternalLinkDestination(.focusedBoard)
+        preferences.setExternalLinkDestination(externalLinkDestination)
         preferences.setAutomaticPIPOnDeskSwitch(true)
         preferences.setSheetScale(80)
         preferences.setZellijPath(" /opt/homebrew/bin/zellij ")
@@ -147,7 +148,7 @@ struct AppPreferencesTests {
         #expect(defaults.integer(forKey: "preferences.schema.version") == 1)
         #expect(restored.motionPreference == .standard)
         #expect(restored.uBOLiteEnabled)
-        #expect(restored.externalLinkDestination == .focusedBoard)
+        #expect(restored.externalLinkDestination == externalLinkDestination)
         #expect(restored.automaticPIPOnDeskSwitch)
         #expect(restored.sheetScale == 80)
         #expect(restored.zellijPath == "/opt/homebrew/bin/zellij")
