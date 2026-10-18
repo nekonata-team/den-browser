@@ -736,7 +736,6 @@ final class Den_BrowserUITests: XCTestCase, BDD {
     }
 }
 
-@MainActor
 final class Den_BrowserUIPerformanceTests: XCTestCase {
     private var processLock: UITestProcessLock?
     private var defaultsSuiteName: String?
@@ -761,6 +760,7 @@ final class Den_BrowserUIPerformanceTests: XCTestCase {
         try super.tearDownWithError()
     }
 
+    @MainActor
     func testApplicationLaunchPerformance() {
         let app = uiTestApplication()
         let runID = UUID().uuidString
@@ -794,6 +794,7 @@ final class Den_BrowserUIPerformanceTests: XCTestCase {
     }
 }
 
+@MainActor
 private func uiTestApplication() -> XCUIApplication {
     XCUIApplication()
 }
