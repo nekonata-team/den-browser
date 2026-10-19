@@ -113,7 +113,7 @@ When `BoardState.role` is absent, it decodes as `primary`.
 | `shortcuts` | Desk number disabled | `preferences.shortcuts.desk-number.disabled` | `Bool` | Absent / `false` | Shortcuts > Focus Desk 1–10 |
 | `appearance` | Motion mode | `preferences.appearance.motion.mode` | `MotionPreference.rawValue` | `follow-system` | Appearance > Motion |
 | `appearance` | Desk switcher alignment | `preferences.appearance.desk-switcher.alignment` | `DeskSwitcherAlignment.rawValue` (`left`, `center`) | `left` | Appearance > Desk Switcher |
-| `appearance` | Board centering mode | `preferences.appearance.board-centering.mode` | `FocusedBoardCentering.rawValue` | `never` | Appearance > Board Centering |
+| `appearance` | Board centering mode | `preferences.appearance.board-centering.mode` | `FocusedBoardCentering.rawValue` | `on-overflow` | Appearance > Board Centering |
 | `appearance` | Board Rail visibility | `preferences.appearance.board-rail-presented` | `Bool` | `false`; shared across windows and restored at launch | Board Rail |
 | `appearance` | Sheet scale | `preferences.appearance.sheet-scale.percent` | `Int` (`50...200`) | `100` | Appearance > Sheet Scale |
 | `drawer` | Style | `preferences.drawer.style` | `DrawerStyle.rawValue` | `floating` | Appearance > Drawer |

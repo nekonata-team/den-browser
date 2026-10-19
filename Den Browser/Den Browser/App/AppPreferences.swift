@@ -71,7 +71,7 @@ final class AppPreferences {
         uBOLiteEnabled = defaults.bool(forKey: Self.uBOLiteEnabledKey)
         boardCentering =
             defaults.string(forKey: Self.boardCenteringKey).flatMap(FocusedBoardCentering.init(rawValue:))
-            ?? .never
+            ?? .onOverflow
         externalLinkDestination =
             defaults.string(forKey: Self.externalLinkDestinationKey).flatMap(ExternalLinkDestination.init(rawValue:))
             ?? Self.defaultExternalLinkDestination
