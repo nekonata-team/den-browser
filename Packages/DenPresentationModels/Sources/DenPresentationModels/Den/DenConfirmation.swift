@@ -6,6 +6,7 @@ public enum DenConfirmationRequest {
     case replaceDesk(PendingDeskReplacement)
     case deleteDeskPreset(PersonalDeskPreset)
     case replaceDeskPreset(PersonalDeskPreset)
+    case replaceEssential(existing: Essential, replacement: Essential)
     case clearDrawer(Int)
     case clearNotifications(Int)
     case resetDen

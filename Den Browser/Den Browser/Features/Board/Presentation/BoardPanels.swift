@@ -514,9 +514,9 @@ struct SaveEssentialPanel: View {
                         }
 
                     if let conflict = conflictingEssential {
-                        Text("Already used by '\(conflict.name)'")
+                        Text("Assigned to '\(conflict.name)' · Saving asks to replace")
                             .font(.caption)
-                            .foregroundStyle(.red)
+                            .foregroundStyle(.secondary)
                             .lineLimit(1)
                     } else if !controller.essentials.isEmpty {
                         Text("Existing keys: \(usedKeysString)")
@@ -575,17 +575,13 @@ struct SaveEssentialPanel: View {
         let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
         let trimmedKey = key == " " ? key : key.trimmingCharacters(in: .whitespacesAndNewlines)
         let trimmedInput = input.trimmingCharacters(in: .whitespacesAndNewlines)
-        return !trimmedName.isEmpty && trimmedKey.count == 1 && !trimmedInput.isEmpty && conflictingEssential == nil
+        return !trimmedName.isEmpty && trimmedKey.count == 1 && !trimmedInput.isEmpty
     }
 
     private func save() {
         TextInputComposition.performUnlessActive {
             guard canSave else {
-                if let conflict = conflictingEssential {
-                    errorMessage = "Key '\(conflict.displayKey)' is already used by '\(conflict.name)'."
-                } else {
-                    errorMessage = "Enter a name, one key, and an input."
-                }
+                errorMessage = "Enter a name, one key, and an input."
                 return
             }
             if !windowModel.saveEssential(name: name, key: key, input: input) {

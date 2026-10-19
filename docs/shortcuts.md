@@ -117,6 +117,8 @@ Toggle with `Control` + `,`. Press `Escape` to exit to Sheet Input.
 | `Shift` + `Y` | Copy Focused Board ID |
 | `t` | Pause / resume Sheet Navigation for Focused Board |
 
+When saving a Board or Recent Item as an Essential, an assigned key asks for confirmation before replacing its Essential's name and input. Cancel keeps the save panel open with its input intact. Replacement preserves the Essential's position and leaves existing Boards unchanged.
+
 - Sheet navigation, reload, and screenshot commands do not apply to Terminal Boards.
 - Terminal Board removal or running `exit` ends its process; restoring starts a new shell or reconnects to Zellij/zmx.
 

@@ -16,6 +16,8 @@ extension DenController {
             deleteDeskPreset(preset.id)
         case .replaceDeskPreset(let replacement):
             return replaceDeskPreset(replacement)
+        case .replaceEssential(_, let replacement):
+            return replaceEssential(replacement)
         case .clearDrawer:
             clearDrawer()
         case .clearNotifications:

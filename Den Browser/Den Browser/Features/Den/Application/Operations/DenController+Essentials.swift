@@ -28,8 +28,10 @@ extension DenController {
             return false
         }
 
-        if essentials.contains(where: { $0.key == trimmedKey }) {
-            return false
+        if let existing = essentials.first(where: { $0.key == trimmedKey }) {
+            let replacement = Essential(id: existing.id, name: trimmedName, key: trimmedKey, input: trimmedInput)
+            onWindowEffect?(.requestConfirmation(.replaceEssential(existing: existing, replacement: replacement)))
+            return true
         }
 
         var updated = preferences.essentials
@@ -37,6 +39,22 @@ extension DenController {
         guard preferences.setEssentials(updated) else { return false }
 
         reportFeedback("Saved Essential '\(trimmedName)'.", severity: .success)
+        return true
+    }
+
+    @discardableResult
+    func replaceEssential(_ replacement: Essential) -> Bool {
+        var updated = preferences.essentials
+        guard let index = updated.firstIndex(where: { $0.id == replacement.id && $0.key == replacement.key }) else {
+            reportFeedback("The Essential no longer exists or its key has changed.", severity: .warning)
+            return false
+        }
+        updated[index] = replacement
+        guard preferences.setEssentials(updated) else {
+            reportFeedback("Could not save Essential.", severity: .error)
+            return false
+        }
+        reportFeedback("Saved Essential '\(replacement.name)'.", severity: .success)
         return true
     }
 }

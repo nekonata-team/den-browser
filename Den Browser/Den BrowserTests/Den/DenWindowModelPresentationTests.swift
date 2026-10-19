@@ -1071,10 +1071,71 @@ struct DenWindowModelPresentationTests {
                 #expect(controller.latestFeedback?.message == "Saved Essential 'Test'.")
                 #expect(controller.latestFeedback?.severity == .success)
 
-                // Duplicate key conflict rejected
+                // Duplicate key waits for confirmation without changing preferences.
                 windowModel.showSaveEssentialPanel(name: "Another", key: "t", input: "https://another.com")
-                #expect(!windowModel.saveEssential(name: "Another", key: "t", input: "https://another.com"))
+                #expect(windowModel.saveEssential(name: "Another", key: "t", input: "https://another.com"))
                 #expect(windowModel.isSaveEssentialPanelPresented)
+                #expect(windowModel.essentialPendingReplacement?.name == "Test")
+                #expect(controller.essentials.first?.name == "Test")
+            }
+        }
+    }
+
+    @Test(arguments: [false, true])
+    func essentialReplacementRequiresConfirmationAndPreservesIdentity(confirm: Bool) throws {
+        try withTestController { controller in
+            try withTestWindowModel(controller: controller) { windowModel, _ in
+                // Arrange
+                #expect(controller.saveEssential(name: "Original", key: "e", input: "https://example.com/original"))
+                #expect(controller.saveEssential(name: "Other", key: "E", input: "https://example.com/other"))
+                let original = controller.essentials
+                let draft = SaveEssentialDraft(name: "Updated", key: "e", input: "https://example.com/updated")
+                windowModel.showSaveEssentialPanel(name: draft.name, key: draft.key, input: draft.input)
+                #expect(windowModel.saveEssential(name: draft.name, key: draft.key, input: draft.input))
+
+                // Act
+                if confirm {
+                    windowModel.confirmEssentialReplacement()
+                } else {
+                    windowModel.cancelEssentialReplacement()
+                }
+
+                // Assert
+                #expect(windowModel.pendingConfirmation == nil)
+                #expect(windowModel.isSaveEssentialPanelPresented == !confirm)
+                #expect(controller.essentials.map(\.id) == original.map(\.id))
+                #expect(controller.essentials.last == original.last)
+                if confirm {
+                    let replaced = try #require(controller.essentials.first)
+                    #expect(replaced.name == draft.name)
+                    #expect(replaced.key == draft.key)
+                    #expect(replaced.input == draft.input)
+                } else {
+                    #expect(controller.essentials == original)
+                    #expect(windowModel.saveEssentialDraft == draft)
+                }
+            }
+        }
+    }
+
+    @Test func essentialReplacementDoesNotOverwriteReassignedKey() {
+        withTestController { controller in
+            withTestWindowModel(controller: controller) { windowModel, _ in
+                // Arrange
+                #expect(controller.saveEssential(name: "Original", key: "e", input: "https://example.com/original"))
+                windowModel.showSaveEssentialPanel(name: "Updated", key: "e", input: "https://example.com/updated")
+                #expect(windowModel.saveEssential(name: "Updated", key: "e", input: "https://example.com/updated"))
+                let other = Essential(name: "Other", key: "e", input: "https://example.com/other")
+                #expect(controller.preferences.setEssentials([other]))
+
+                // Act
+                windowModel.confirmEssentialReplacement()
+
+                // Assert
+                #expect(controller.essentials == [other])
+                #expect(windowModel.isSaveEssentialPanelPresented)
+                #expect(windowModel.essentialPendingReplacement != nil)
+                #expect(controller.latestFeedback?.severity == .warning)
             }
         }
     }

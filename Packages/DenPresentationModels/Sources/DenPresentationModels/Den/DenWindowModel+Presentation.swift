@@ -287,8 +287,25 @@ public extension DenWindowModel {
     @discardableResult
     func saveEssential(name: String, key: String, input: String) -> Bool {
         guard onSaveEssential(name, key, input) else { return false }
-        hideSaveEssentialPanel()
+        if essentialPendingReplacement == nil { hideSaveEssentialPanel() }
         return true
+    }
+
+    var essentialPendingReplacement: Essential? {
+        guard case .replaceEssential(let existing, _)? = pendingConfirmation else { return nil }
+        return existing
+    }
+
+    func confirmEssentialReplacement() {
+        guard let request = pendingConfirmation, case .replaceEssential = request,
+            onConfirmOperation(request)
+        else { return }
+        pendingConfirmation = nil
+        hideSaveEssentialPanel()
+    }
+
+    func cancelEssentialReplacement() {
+        if essentialPendingReplacement != nil { pendingConfirmation = nil }
     }
 
     func hideSaveEssentialPanel() {

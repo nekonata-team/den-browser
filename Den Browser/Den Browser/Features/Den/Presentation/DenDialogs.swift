@@ -78,6 +78,23 @@ struct DenDialogs: ViewModifier {
                 Text("Existing Desks will not be affected.")
             }
             .confirmationDialog(
+                "Replace \(windowModel.essentialPendingReplacement?.name ?? "Essential")?",
+                isPresented: Binding(
+                    get: { windowModel.essentialPendingReplacement != nil },
+                    set: { if !$0 { windowModel.cancelEssentialReplacement() } })
+            ) {
+                Button("Replace Essential") {
+                    windowModel.confirmEssentialReplacement()
+                }
+                .keyboardShortcut(.defaultAction)
+                Button("Cancel", role: .cancel) { windowModel.cancelEssentialReplacement() }
+            } message: {
+                let key = windowModel.essentialPendingReplacement?.displayKey ?? ""
+                Text(
+                    "The name and input assigned to key '\(key)' will be replaced. Existing Boards will not be affected."
+                )
+            }
+            .confirmationDialog(
                 "Reset Den?",
                 isPresented: Binding(
                     get: { windowModel.isResetDenPending },
