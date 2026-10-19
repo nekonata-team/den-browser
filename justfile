@@ -113,6 +113,16 @@ benchmark scenario *args: build
 clean:
     rm -rf "{{derived_data}}" "{{ui_test_derived_data}}"
 
+# Run promotional demo scenario in isolated Demo Mode without recording.
+[group("development")]
+demo: build
+    swift scripts/demo.swift
+
+# Record promotional demo video using OpenScreen.
+[group("development")]
+pv output="demo.mp4": build
+    swift scripts/demo.swift --record "$1"
+
 [group("development")]
 precommit:
     lefthook run pre-commit

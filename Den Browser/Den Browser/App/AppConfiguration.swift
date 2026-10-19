@@ -1,3 +1,4 @@
+import DenDesign
 import DenDomain
 import DenInfrastructure
 import Foundation
@@ -20,10 +21,36 @@ struct AppConfiguration {
 
         guard processInfo.arguments.contains("--ui-testing") else {
             let isPrivateDen = processInfo.arguments.contains("--private-den")
+            let isDemo = processInfo.arguments.contains("--demo")
             let isUnitTestHost = processInfo.environment["XCTestConfigurationFilePath"] != nil
             if isUnitTestHost {
                 let runID = "\(processInfo.processIdentifier)"
                 return unitTest(runID: runID)
+            }
+            if isDemo {
+                let runID = processInfo.environment["DEN_DEMO_RUN_ID"] ?? UUID().uuidString
+                let demoDirectory = FileManager.default.temporaryDirectory
+                    .appending(path: "DenBrowserDemo", directoryHint: .isDirectory)
+                    .appending(path: runID, directoryHint: .isDirectory)
+                    .appending(path: "Profile", directoryHint: .isDirectory)
+                let suiteName = "dev.nekonata.denbrowser.demo.\(runID)"
+                guard let defaults = UserDefaults(suiteName: suiteName) else {
+                    preconditionFailure("Could not create demo preferences")
+                }
+                defaults.removePersistentDomain(forName: suiteName)
+                defaults.set(MotionPreference.standard.rawValue, forKey: "preferences.appearance.motion.mode")
+                defaults.set(
+                    FocusedBoardCentering.onOverflow.rawValue, forKey: "preferences.appearance.board-centering.mode")
+                let socket =
+                    processInfo.environment["DEN_SOCKET"]
+                    ?? DenSocketPath.temporary(prefix: "den-demo", identifier: runID)
+                return AppConfiguration(
+                    profileDirectoryURL: demoDirectory,
+                    defaults: defaults,
+                    initialProfile: demoProfile(),
+                    isEphemeral: false,
+                    ipcSocketPath: socket,
+                    websiteDataStore: { _ in .nonPersistent() })
             }
             if let domainName = Bundle.main.bundleIdentifier {
                 WindowStatePreferences.removeLegacyProfileState(defaults: .standard, domainName: domainName)
@@ -105,6 +132,18 @@ struct AppConfiguration {
             isEphemeral: true,
             ipcSocketPath: DenSocketPath.temporary(prefix: "den-benchmark", identifier: runID),
             websiteDataStore: { _ in .nonPersistent() })
+    }
+
+    private static func demoProfile() -> PersistedProfile {
+        var den = DenState.sample
+        den.desks[0].label = "Research"
+        return PersistedProfile(
+            profile: ProfileState(
+                id: ProfileID(),
+                name: "Demo",
+                color: .blue,
+                webProfileStore: .default),
+            den: den)
     }
 
     private static func privateDenProfile() -> PersistedProfile {
