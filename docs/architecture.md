@@ -128,6 +128,10 @@ actions and identity without loading, reloading, or disposing its WebView. Board
 succeed before the window releases ownership; other windows’ Peeks of the removed Item are disposed. Closing one window releases its resources while shared Board runtimes
 remain alive for other windows. These native resource holders are app-target adapters.
 
+Web Boards and Drawer Peek allow HTTP content, including LAN and Tailscale IP addresses.
+The app's Info.plist sets `NSAllowsArbitraryLoadsInWebContent` to exempt `WKWebView`
+loads from ATS restrictions while retaining default ATS protections for `URLSession`.
+
 `DenController` workflows, native integration, and Views remain in the app target.
 Their folder boundaries are not compiler-enforced. Layer import guards
 reject Presentation access to the mutable adapter. This boundary follows
