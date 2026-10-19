@@ -42,4 +42,15 @@ public extension DenWindowModel {
     func cancelConfirmation() {
         pendingConfirmation = nil
     }
+
+    var zmxSessionPendingEnd: String? {
+        guard case .endZmxSession(let sessionName)? = pendingConfirmation else { return nil }
+        return sessionName
+    }
+
+    func confirmZmxSessionEnd() {
+        guard let request = pendingConfirmation, case .endZmxSession = request else { return }
+        pendingConfirmation = nil
+        _ = onConfirmOperation(request)
+    }
 }

@@ -18,6 +18,8 @@ extension DenController {
             return replaceDeskPreset(replacement)
         case .replaceEssential(_, let replacement):
             return replaceEssential(replacement)
+        case .endZmxSession(let sessionName):
+            endZmxSession(sessionName)
         case .clearDrawer:
             clearDrawer()
         case .clearNotifications:

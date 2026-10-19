@@ -107,6 +107,7 @@ Toggle with `Control` + `,`. Press `Escape` to exit to Sheet Input.
 | `b` | Save Focused Board as Essential |
 | `d` | Remove Focused Board and focus next Board |
 | `x` | Remove Focused Board and focus previous Board |
+| `q` | zmx: confirm and end its Session; other Boards: remove and focus previous Board |
 | `u` | Restore recently removed Board |
 | `Shift` + `D` | Delete Focused Desk (or discard all Drawer items in Drawer mode) |
 | `Shift` + `R` | Rename Focused Desk |
@@ -121,6 +122,7 @@ When saving a Board or Recent Item as an Essential, an assigned key asks for con
 
 - Sheet navigation, reload, and screenshot commands do not apply to Terminal Boards.
 - Terminal Board removal or running `exit` ends its process; restoring starts a new shell or reconnects to Zellij/zmx.
+- Den Mode `q` ends only the focused zmx Board's Session after confirmation, then closes its attached Boards. Child Sessions remain running. If ending the Session fails, its Boards remain open and an error is shown. `u` can restore a removed Board, but cannot restore terminated processes. For Zellij, `q` only removes the Board and leaves its Session running, like `x`.
 
 ---
 

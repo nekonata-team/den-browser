@@ -7,6 +7,7 @@ public enum DenConfirmationRequest {
     case deleteDeskPreset(PersonalDeskPreset)
     case replaceDeskPreset(PersonalDeskPreset)
     case replaceEssential(existing: Essential, replacement: Essential)
+    case endZmxSession(String)
     case clearDrawer(Int)
     case clearNotifications(Int)
     case resetDen

@@ -121,6 +121,23 @@ struct KeyboardShortcutTests {
         #expect(model.isDenMode)
     }
 
+    @Test func denModeQQuitsBoardAndIgnoresRepeats() throws {
+        // Arrange
+        let controller = try makeController(boards: [board("Board")])
+        let model = DenWindowComposition(controller: controller).model
+        model.isDenMode = true
+        let quit = try keyEvent(characters: "q", charactersIgnoringModifiers: "q", keyCode: 12)
+        let repeated = try keyEvent(characters: "q", charactersIgnoringModifiers: "q", isARepeat: true, keyCode: 12)
+
+        // Act
+        let decision = KeyboardController.decision(for: quit, controller: controller, windowModel: model)
+        let repeatedDecision = KeyboardController.decision(for: repeated, controller: controller, windowModel: model)
+
+        // Assert
+        #expect(decision == .perform(.board(.quit)))
+        #expect(repeatedDecision == .consume(.ignoredRepeat))
+    }
+
     @Test func universalSearchOptionReturnRequestsDrawerAndIgnoresRepeats() throws {
         // Arrange
         let controller = try makeController(boards: [board("First")])
@@ -1990,7 +2007,7 @@ struct KeyboardShortcutTests {
         defer { composition.disconnect() }
         windowModel.isDenMode = true
         let unmapped = try keyEvent(
-            characters: "q", charactersIgnoringModifiers: "q", modifiers: [], keyCode: 12)
+            characters: "\\", charactersIgnoringModifiers: "\\", modifiers: [], keyCode: 42)
 
         #expect(
             KeyboardController.decision(for: unmapped, controller: controller, windowModel: windowModel)

@@ -20,6 +20,22 @@ struct DenDialogs: ViewModifier {
     func body(content: Content) -> some View {
         content
             .confirmationDialog(
+                "End \(windowModel.zmxSessionPendingEnd ?? "zmx Session")?",
+                isPresented: Binding(
+                    get: { windowModel.zmxSessionPendingEnd != nil },
+                    set: { if !$0 { windowModel.cancelConfirmation() } })
+            ) {
+                Button("End Session", role: .destructive) {
+                    windowModel.confirmZmxSessionEnd()
+                }
+                .keyboardShortcut(.defaultAction)
+                Button("Cancel", role: .cancel) { windowModel.cancelConfirmation() }
+            } message: {
+                Text(
+                    "This ends the zmx Session and closes its attached Boards. Child Sessions remain running. Restoring a Board does not restore the running processes."
+                )
+            }
+            .confirmationDialog(
                 "Delete \(pendingDeskDeletion?.label ?? "Desk")?",
                 isPresented: Binding(
                     get: { pendingDeskDeletion != nil },

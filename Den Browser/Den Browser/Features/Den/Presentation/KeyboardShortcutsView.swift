@@ -119,6 +119,7 @@ struct KeyboardShortcutsView: View {
                     item(["f"], "Den Mode: Toggle maximized Board"),
                     item(["c"], "Den Mode: Center Focused Board"),
                     item(["b"], "Den Mode: Save Board as Essential"),
+                    item(["q"], "Den Mode: Remove Board / End zmx Session (confirm)"),
                     item(["⌘", "W"], "Remove Focused Board"),
                     item(["d"], "Den Mode: Remove Focused Board and focus next Board"),
                     item(["x"], "Den Mode: Remove Focused Board and focus previous Board"),

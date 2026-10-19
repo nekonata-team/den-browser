@@ -71,6 +71,7 @@ enum DeskAction: Equatable {
 }
 
 enum BoardAction: Equatable {
+    case quit
     case focusPrevious
     case focusNext
     case moveLeft
@@ -294,6 +295,7 @@ enum AppActionHandler {
                 }
             case .keepSheetInDrawer: controller.keepFocusedSheetInDrawer()
             case .remove: controller.removeFocusedBoard()
+            case .quit: controller.quitFocusedBoard()
             case .removeAndFocusNext: controller.removeFocusedBoard(focusNext: true)
             case .restore: controller.restoreRecentlyRemovedBoard()
             case .showRenamePanel: windowModel.showRenameBoardPanel()

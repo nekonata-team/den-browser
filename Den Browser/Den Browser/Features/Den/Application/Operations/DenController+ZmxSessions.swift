@@ -4,6 +4,36 @@ import DenPresentationModels
 import Foundation
 
 extension DenController {
+    func quitFocusedBoard() {
+        guard let sessionName = focusedBoard?.zmxSessionName else {
+            removeFocusedBoard()
+            return
+        }
+        onWindowEffect?(.requestConfirmation(.endZmxSession(sessionName)))
+    }
+
+    func endZmxSession(_ sessionName: String) {
+        let client = zmxClient
+        zmxCommandTask?.cancel()
+        zmxCommandTask = Task { [weak self, client] in
+            do {
+                try await client.killSession(sessionName)
+                guard !Task.isCancelled, let self else { return }
+                let boardIDs = self.state.desks.flatMap(\.boards)
+                    .filter { $0.zmxSessionName == sessionName }.map(\.id)
+                for boardID in boardIDs {
+                    self.removeBoard(boardID)
+                }
+            } catch is CancellationError {
+                return
+            } catch {
+                guard !Task.isCancelled else { return }
+                self?.reportFeedback(
+                    "Could not end zmx Session '\(sessionName)': \(error.localizedDescription)", severity: .error)
+            }
+        }
+    }
+
     func canPresentZmxSessions() -> Bool {
         guard zmxClient.isConfigured else {
             reportFeedback("Set an absolute zmx executable path in Settings > Terminal.", severity: .warning)
