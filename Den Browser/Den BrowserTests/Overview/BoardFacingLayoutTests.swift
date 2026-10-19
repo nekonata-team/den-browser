@@ -92,4 +92,28 @@ struct BoardFacingLayoutTests {
         // Assert: Outside scaled corner radius, no content should leak
         #expect(alpha == 0, "Pixel at outer corner (2, 2) must be fully clipped; got red=\(red), alpha=\(alpha)")
     }
+
+    @Test func facingUsesMaximizedBoardWidthWhenMaximized() throws {
+        // Arrange
+        let board = BoardState(label: "Board", width: 400)
+        let normalCard = OverviewBoardFacing(
+            board: board,
+            boardHeight: 800,
+            facingHeight: 120
+        )
+        let maximizedCard = OverviewBoardFacing(
+            board: board,
+            isMaximized: true,
+            maximizedBoardWidth: 800,
+            boardHeight: 800,
+            facingHeight: 120
+        )
+
+        // Act
+        let normalRendered = try #require(ImageRenderer(content: normalCard).cgImage)
+        let maximizedRendered = try #require(ImageRenderer(content: maximizedCard).cgImage)
+
+        // Assert: 800 maximized width must produce double the rendered width of 400 normal width
+        #expect(maximizedRendered.width == normalRendered.width * 2)
+    }
 }

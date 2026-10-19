@@ -113,6 +113,8 @@ struct OverviewBoardFacing: View {
     let board: BoardState
     var isSelected: Bool = false
     var isAnchor: Bool = false
+    var isMaximized: Bool = false
+    var maximizedBoardWidth: CGFloat?
     var profileColor: Color = .blue
     var boardHeight: CGFloat = DenLayout.fallbackBoardHeight
     var facingHeight: CGFloat = DenLayout.overviewFacingHeight
@@ -121,6 +123,13 @@ struct OverviewBoardFacing: View {
 
     @Environment(\.accessibilityDifferentiateWithoutColor) private var differentiateWithoutColor
     @ScaledMetric(relativeTo: .caption2) private var caption2Size: CGFloat = 11
+
+    private var effectiveBoardWidth: Double {
+        if isMaximized, let maximizedBoardWidth {
+            return Double(maximizedBoardWidth)
+        }
+        return board.width
+    }
 
     private var selectionBorderColor: Color {
         if isSelected {
@@ -133,7 +142,7 @@ struct OverviewBoardFacing: View {
         ZStack(alignment: .topTrailing) {
             BoardFacing(
                 displayName: board.displayName,
-                width: board.width,
+                width: effectiveBoardWidth,
                 symbol: boardSymbol(for: board.kind),
                 kindLabel: Self.kindLabel(for: board),
                 typeColor: Self.typeColor(for: board),

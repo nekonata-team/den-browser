@@ -258,6 +258,8 @@ struct OverviewView: View {
                     OverviewBoardFacing(
                         board: board,
                         isSelected: true,
+                        isMaximized: windowModel.maximizedBoardID == board.id,
+                        maximizedBoardWidth: maximizedBoardWidth,
                         profileColor: profileColor,
                         boardHeight: boardHeight,
                         facingHeight: DenOverviewLayout.boardCardHeight,
@@ -349,8 +351,11 @@ struct OverviewView: View {
     private func prepareInitialCanvas() {
         guard !didSetInitialScale, scrollSize.width > 0, scrollSize.height > 0, boardHeight > 0 else { return }
         let board = controller.state.desks.lazy.flatMap(\.boards).first { $0.id == overview.selectionBoardID }
+        let effectiveWidth = board.map { board in
+            windowModel.maximizedBoardID == board.id ? maximizedBoardWidth : CGFloat(board.width)
+        }
         let size = CGSize(
-            width: board.map { CGFloat($0.width) * DenOverviewLayout.boardCardHeight / boardHeight }
+            width: effectiveWidth.map { $0 * DenOverviewLayout.boardCardHeight / boardHeight }
                 ?? DenOverviewLayout.emptyBoardWidth,
             height: DenOverviewLayout.boardCardHeight)
         let rowHeight = captionSize * 1.2 + 4 + DenOverviewLayout.boardCardHeight
@@ -481,20 +486,24 @@ struct OverviewView: View {
 
     private func overviewBoard(_ board: BoardState, in desk: DeskState) -> some View {
         let isSelected = desk.id == overview.selectionDeskID && board.id == overview.selectionBoardID
+        let isMaximized = windowModel.maximizedBoardID == board.id
+        let facingView = OverviewBoardFacing(
+            board: board,
+            isSelected: isSelected,
+            isAnchor: desk.anchorBoardID == board.id,
+            isMaximized: isMaximized,
+            maximizedBoardWidth: maximizedBoardWidth,
+            profileColor: profileColor,
+            boardHeight: boardHeight,
+            facingHeight: DenOverviewLayout.boardCardHeight,
+            facing: controller.facingCache.image(for: board.id),
+            scale: canvasScale
+        )
         return ZStack(alignment: .topTrailing) {
             Button {
                 overview.selectBoard(board.id)
             } label: {
-                OverviewBoardFacing(
-                    board: board,
-                    isSelected: isSelected,
-                    isAnchor: desk.anchorBoardID == board.id,
-                    profileColor: profileColor,
-                    boardHeight: boardHeight,
-                    facingHeight: DenOverviewLayout.boardCardHeight,
-                    facing: controller.facingCache.image(for: board.id),
-                    scale: canvasScale
-                )
+                facingView
             }
             .buttonStyle(.plain)
 
@@ -743,6 +752,12 @@ struct OverviewView: View {
             preference: preferences.motionPreference,
             systemReduceMotion: systemReduceMotion
         )
+    }
+
+    private var maximizedBoardWidth: CGFloat {
+        max(
+            CGFloat(BoardState.minimumWidth),
+            scrollSize.width - DenOverviewLayout.contentPadding * 2)
     }
 }
 
