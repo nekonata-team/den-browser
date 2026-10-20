@@ -13,7 +13,7 @@ if CommandLine.arguments.dropFirst().first == "--input-source-log" {
 func printInputSourceSummary(from url: URL) throws {
     struct Measurement {
         let total: Double
-        let context: Double
+        let context: Double?
         let carbon: Double?
     }
     var groups: [String: [Measurement]] = [:]
@@ -26,7 +26,8 @@ func printInputSourceSummary(from url: URL) throws {
         }
         guard let match = fields["match"], ["same", "different", "unknown"].contains(match),
             let total = fields["duration"].flatMap(Double.init), total.isFinite, total >= 0,
-            let context = fields["context"].flatMap(Double.init), context.isFinite, context >= 0,
+            let rawContext = fields["context"],
+            rawContext == "none" || (Double(rawContext).map { $0.isFinite && $0 >= 0 } ?? false),
             let rawCarbon = fields["carbon"],
             rawCarbon == "none" || (Double(rawCarbon).map { $0.isFinite && $0 >= 0 } ?? false)
         else {
@@ -34,7 +35,8 @@ func printInputSourceSummary(from url: URL) throws {
                 domain: "DenBenchmark", code: 4,
                 userInfo: [NSLocalizedDescriptionKey: "Invalid input-source measurement: \(line)"])
         }
-        groups[match, default: []].append(Measurement(total: total, context: context, carbon: Double(rawCarbon)))
+        groups[match, default: []].append(
+            Measurement(total: total, context: Double(rawContext), carbon: Double(rawCarbon)))
     }
     guard !groups.isEmpty else {
         print(
@@ -58,7 +60,7 @@ func printInputSourceSummary(from url: URL) throws {
         guard let measurements = groups[match] else { continue }
         print("Input source: \(match)")
         printDurations("restore", measurements.map(\.total))
-        printDurations("context", measurements.map(\.context))
+        printDurations("context", measurements.compactMap(\.context))
         printDurations("carbon", measurements.compactMap(\.carbon))
     }
 }

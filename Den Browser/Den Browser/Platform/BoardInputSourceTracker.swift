@@ -95,24 +95,26 @@ final class BoardInputSourceTracker {
 
     func selectInputSource(id: String) {
         let tracing = PerformanceTrace.isEnabled
-        let previousSource = tracing ? currentInputSourceID() : nil
-        let match = previousSource.map { $0 == id ? "same" : "different" } ?? "unknown"
         let startedAt = tracing ? ContinuousClock.now : nil
+        let previousSource = currentInputSourceID()
+        let match = previousSource.map { $0 == id ? "same" : "different" } ?? "unknown"
         let interval = PerformanceTrace.beginInterval("BoardInputSourceTracker.selectInputSource")
-        var contextMilliseconds = 0.0
+        var contextMilliseconds: Double?
         var carbonMilliseconds: Double?
         defer {
             let milliseconds = startedAt.map { $0.duration(to: .now) / .milliseconds(1) }
             PerformanceTrace.endInterval("BoardInputSourceTracker.selectInputSource", interval)
             if let milliseconds {
+                let context = contextMilliseconds.map { String(format: "%.3f", $0) } ?? "none"
                 let carbon = carbonMilliseconds.map { String(format: "%.3f", $0) } ?? "none"
                 PerformanceTrace.mark(
                     String(
-                        format: "match=%@ duration=%.3f context=%.3f carbon=%@",
-                        match, milliseconds, contextMilliseconds, carbon),
+                        format: "match=%@ duration=%.3f context=%@ carbon=%@",
+                        match, milliseconds, context, carbon),
                     category: "InputSource")
             }
         }
+        guard previousSource != id else { return }
         let contextStartedAt = tracing ? ContinuousClock.now : nil
         if let inputContext = NSTextInputContext.current {
             inputContext.selectedKeyboardInputSource = id

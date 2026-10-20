@@ -26,6 +26,8 @@ reports count, total, average, nearest-rank p95, and maximum elapsed millisecond
 `restore` covers the whole restoration, `context` covers acquiring the AppKit
 input context and setting its source, and `carbon` covers `TISSelectInputSource`
 when called. The stage times are included in `restore`; do not sum them with it.
+Stages skipped because the current source already matches are recorded as
+`none` and excluded from that stage's call count and duration statistics.
 These are synchronous call durations on the main thread, including any OS waits,
 not isolated XPC wait times. Logging occurs after timing ends. Input source IDs
 are not written to the trace. Only completed calls produce a duration record;
