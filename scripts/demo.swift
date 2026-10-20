@@ -417,13 +417,24 @@ func inputSourceID(_ source: TISInputSource) -> String? {
     return Unmanaged<CFString>.fromOpaque(value).takeUnretainedValue() as String
 }
 
+func currentInputSourceID() -> String? {
+    guard let current = TISCopyCurrentKeyboardInputSource()?.takeRetainedValue() else { return nil }
+    return inputSourceID(current)
+}
+
 func selectInputSource(_ source: TISInputSource) throws {
-    guard let identifier = inputSourceID(source), TISSelectInputSource(source) == noErr else {
-        throw DemoError(description: "Could not select the keyboard input source")
+    guard let identifier = inputSourceID(source) else {
+        throw DemoError(description: "Could not resolve the keyboard input source identifier")
+    }
+    if let inputContext = NSTextInputContext.current {
+        inputContext.selectedKeyboardInputSource = identifier
+    }
+    if currentInputSourceID() == identifier { return }
+    guard TISSelectInputSource(source) == noErr else {
+        throw DemoError(description: "Could not select the keyboard input source \(identifier)")
     }
     try wait("keyboard input source \(identifier)", timeout: 3) {
-        guard let current = TISCopyCurrentKeyboardInputSource()?.takeRetainedValue() else { return false }
-        return inputSourceID(current) == identifier
+        currentInputSourceID() == identifier
     }
 }
 

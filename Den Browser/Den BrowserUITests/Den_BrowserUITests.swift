@@ -35,8 +35,12 @@ final class Den_BrowserUITests: XCTestCase, BDD {
         processLock = try UITestProcessLock()
         continueAfterFailure = false
         // Keep synthetic text input on Apple's ABC layout; restore user's IME in tearDown.
-        previousInputSource = TISCopyCurrentKeyboardInputSource().takeRetainedValue()
-        try selectInputSource(id: "com.apple.keylayout.ABC")
+        if let current = TISCopyCurrentKeyboardInputSource()?.takeRetainedValue() {
+            previousInputSource = current
+        }
+        let abcID = "com.apple.keylayout.ABC"
+        try selectInputSource(id: abcID)
+        XCTAssertTrue(waitForInputSource(id: abcID), "Timed out waiting for input source \(abcID)")
     }
 
     override func tearDownWithError() throws {
@@ -44,7 +48,10 @@ final class Den_BrowserUITests: XCTestCase, BDD {
             uiTestApplication().terminate()
         }
         if let previousInputSource {
-            XCTAssertEqual(TISSelectInputSource(previousInputSource), noErr)
+            selectInputSource(previousInputSource)
+            if let targetID = inputSourceID(for: previousInputSource) {
+                waitForInputSource(id: targetID)
+            }
         }
         for suiteName in defaultsSuiteNames {
             UserDefaults().removePersistentDomain(forName: suiteName)
@@ -55,16 +62,40 @@ final class Den_BrowserUITests: XCTestCase, BDD {
         processLock = nil
     }
 
+    private func inputSourceID(for source: TISInputSource) -> String? {
+        guard let ptr = TISGetInputSourceProperty(source, kTISPropertyInputSourceID) else { return nil }
+        return Unmanaged<CFString>.fromOpaque(ptr).takeUnretainedValue() as String
+    }
+
+    private func currentInputSourceID() -> String? {
+        guard let source = TISCopyCurrentKeyboardInputSource()?.takeRetainedValue() else { return nil }
+        return inputSourceID(for: source)
+    }
+
     private func selectInputSource(id: String) throws {
-        let sources =
-            TISCreateInputSourceList(
-                [kTISPropertyInputSourceID: id] as CFDictionary,
-                false
-            ).takeRetainedValue() as Array
+        let properties = [kTISPropertyInputSourceID: id as CFString] as CFDictionary
+        let sources = TISCreateInputSourceList(properties, false)?.takeRetainedValue() as Array?
         // Carbon exposes input sources through an untyped CFArray.
         // swiftlint:disable:next force_cast
-        let source = try XCTUnwrap(sources.first as! TISInputSource?)
-        XCTAssertEqual(TISSelectInputSource(source), noErr)
+        let source = try XCTUnwrap(sources?.first as! TISInputSource?)
+        selectInputSource(source)
+    }
+
+    private func selectInputSource(_ source: TISInputSource) {
+        if let id = inputSourceID(for: source), let inputContext = NSTextInputContext.current {
+            inputContext.selectedKeyboardInputSource = id
+        }
+        TISSelectInputSource(source)
+    }
+
+    @discardableResult
+    private func waitForInputSource(id: String, timeout: TimeInterval = 3) -> Bool {
+        let deadline = Date().addingTimeInterval(timeout)
+        while Date() < deadline {
+            if currentInputSourceID() == id { return true }
+            Thread.sleep(forTimeInterval: 0.05)
+        }
+        return currentInputSourceID() == id
     }
 
     @MainActor
