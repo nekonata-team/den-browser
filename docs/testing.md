@@ -82,6 +82,8 @@ Keep scenario text in Den's domain language (`Desk`, `Board`, `Sheet`, `Drawer`,
 
 Keep `Then` blocks assertion-only. Put input, navigation, dismissal, and other state-changing operations in `When` blocks. Use `assertEventually` for UI settling and animation boundaries; do not add sleeps or arbitrary delays.
 
+Enter long text such as URLs via the `paste` helper instead of character-by-character `typeText` to minimize execution time.
+
 UI tests launch with deterministic fixture state. Each test should request the smallest fixture that covers its
 Given: one Board for single-Board workflows, two Boards when focus or ordering compares a pair, and three or more
 only when the scenario needs them. The dedicated Desk fixtures should be used when a workflow needs a particular
