@@ -1,6 +1,7 @@
 import AppKit
 import Carbon
 import DenDomain
+import DenInfrastructure
 import Observation
 
 @MainActor
@@ -93,8 +94,31 @@ final class BoardInputSourceTracker {
     }
 
     func selectInputSource(id: String) {
+        let tracing = PerformanceTrace.isEnabled
+        let previousSource = tracing ? currentInputSourceID() : nil
+        let match = previousSource.map { $0 == id ? "same" : "different" } ?? "unknown"
+        let startedAt = tracing ? ContinuousClock.now : nil
+        let interval = PerformanceTrace.beginInterval("BoardInputSourceTracker.selectInputSource")
+        var contextMilliseconds = 0.0
+        var carbonMilliseconds: Double?
+        defer {
+            let milliseconds = startedAt.map { $0.duration(to: .now) / .milliseconds(1) }
+            PerformanceTrace.endInterval("BoardInputSourceTracker.selectInputSource", interval)
+            if let milliseconds {
+                let carbon = carbonMilliseconds.map { String(format: "%.3f", $0) } ?? "none"
+                PerformanceTrace.mark(
+                    String(
+                        format: "match=%@ duration=%.3f context=%.3f carbon=%@",
+                        match, milliseconds, contextMilliseconds, carbon),
+                    category: "InputSource")
+            }
+        }
+        let contextStartedAt = tracing ? ContinuousClock.now : nil
         if let inputContext = NSTextInputContext.current {
             inputContext.selectedKeyboardInputSource = id
+        }
+        if let contextStartedAt {
+            contextMilliseconds = contextStartedAt.duration(to: .now) / .milliseconds(1)
         }
         guard let current = currentInputSourceID(), current != id else { return }
         let properties = [kTISPropertyInputSourceID: id as CFString] as CFDictionary
@@ -103,7 +127,11 @@ final class BoardInputSourceTracker {
         else {
             return
         }
+        let carbonStartedAt = tracing ? ContinuousClock.now : nil
         TISSelectInputSource(target)
+        if let carbonStartedAt {
+            carbonMilliseconds = carbonStartedAt.duration(to: .now) / .milliseconds(1)
+        }
     }
 
     func lastInputSource(for boardID: BoardID) -> String? {

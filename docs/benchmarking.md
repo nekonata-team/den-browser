@@ -4,17 +4,45 @@ Use these measurements to investigate startup time and resource use. They are
 diagnostic measurements, separate from the correctness checks in interaction
 tests.
 
+## Input source restoration timing
+
+Launch a development build with tracing enabled, then move between Boards
+with **Remember input method per Board** enabled:
+
+```sh
+just build
+".derived-data/Build/Products/Debug/Den Browser.app/Contents/MacOS/Den Browser" --benchmark > /tmp/den-input-source.log 2>&1
+```
+
+Aggregate the recorded calls without launching another app:
+
+```sh
+swift scripts/measure.swift --input-source-log /tmp/den-input-source.log
+```
+
+Results group calls by whether the current Carbon input source ID matched the
+requested ID before restoration (`same`, `different`, or `unknown`). Each group
+reports count, total, average, nearest-rank p95, and maximum elapsed milliseconds.
+`restore` covers the whole restoration, `context` covers acquiring the AppKit
+input context and setting its source, and `carbon` covers `TISSelectInputSource`
+when called. The stage times are included in `restore`; do not sum them with it.
+These are synchronous call durations on the main thread, including any OS waits,
+not isolated XPC wait times. Logging occurs after timing ends. Input source IDs
+are not written to the trace. Only completed calls produce a duration record;
+no measurements does not mean zero-cost restoration. Stop the traced app before
+relaunching it normally.
+
 ## Board facing capture timing
 
 Launch a development build with performance tracing enabled:
 
 ```sh
-rtk proxy just build
-rtk proxy sh -c '".derived-data/Build/Products/Debug/Den Browser.app/Contents/MacOS/Den Browser" --benchmark > /tmp/den-facing.log 2>&1'
+just build
+".derived-data/Build/Products/Debug/Den Browser.app/Contents/MacOS/Den Browser" --benchmark > /tmp/den-facing.log 2>&1
 ```
 
 Move focus until a Terminal or Web Board leaves the viewport. Inspect the log
-from another terminal with `rtk rg 'PERF:FACING' /tmp/den-facing.log`.
+from another terminal with `rg 'PERF:FACING' /tmp/den-facing.log`.
 Each attempted capture logs its Board ID and `duration` in milliseconds.
 Skipped captures produce no timing; successful captures suppress recapture of
 the same Board for 30 seconds.

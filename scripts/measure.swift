@@ -1,6 +1,68 @@
 import AppKit
 import Foundation
 
+if CommandLine.arguments.dropFirst().first == "--input-source-log" {
+    guard CommandLine.arguments.count == 3 else {
+        fputs("Usage: swift scripts/measure.swift --input-source-log <trace-file>\n", stderr)
+        exit(2)
+    }
+    try printInputSourceSummary(from: URL(fileURLWithPath: CommandLine.arguments[2]))
+    exit(0)
+}
+
+func printInputSourceSummary(from url: URL) throws {
+    struct Measurement {
+        let total: Double
+        let context: Double
+        let carbon: Double?
+    }
+    var groups: [String: [Measurement]] = [:]
+    let text = try String(contentsOf: url, encoding: .utf8)
+    for line in text.split(whereSeparator: \.isNewline) where line.contains("[PERF:INPUTSOURCE]") {
+        var fields: [String: String] = [:]
+        for token in line.split(separator: " ") {
+            let pair = token.split(separator: "=", maxSplits: 1)
+            if pair.count == 2 { fields[String(pair[0])] = String(pair[1]) }
+        }
+        guard let match = fields["match"], ["same", "different", "unknown"].contains(match),
+            let total = fields["duration"].flatMap(Double.init), total.isFinite, total >= 0,
+            let context = fields["context"].flatMap(Double.init), context.isFinite, context >= 0,
+            let rawCarbon = fields["carbon"],
+            rawCarbon == "none" || (Double(rawCarbon).map { $0.isFinite && $0 >= 0 } ?? false)
+        else {
+            throw NSError(
+                domain: "DenBenchmark", code: 4,
+                userInfo: [NSLocalizedDescriptionKey: "Invalid input-source measurement: \(line)"])
+        }
+        groups[match, default: []].append(Measurement(total: total, context: context, carbon: Double(rawCarbon)))
+    }
+    guard !groups.isEmpty else {
+        print(
+            "No input-source measurements found. Enable --benchmark and move between Boards before collecting the log.")
+        return
+    }
+    func printDurations(_ label: String, _ values: [Double]) {
+        guard !values.isEmpty else {
+            print("  \(label): calls=0")
+            return
+        }
+        let sorted = values.sorted()
+        let p95 = sorted[Int(ceil(Double(sorted.count) * 0.95)) - 1]
+        print(
+            String(
+                format: "  %@: calls=%d total=%.3fms avg=%.3fms p95=%.3fms max=%.3fms",
+                label, values.count, values.reduce(0, +), values.reduce(0, +) / Double(values.count), p95,
+                sorted[sorted.count - 1]))
+    }
+    for match in ["same", "different", "unknown"] {
+        guard let measurements = groups[match] else { continue }
+        print("Input source: \(match)")
+        printDurations("restore", measurements.map(\.total))
+        printDurations("context", measurements.map(\.context))
+        printDurations("carbon", measurements.compactMap(\.carbon))
+    }
+}
+
 let appBundlePath = ".derived-data/Build/Products/Debug/Den Browser.app"
 let appPath = "\(appBundlePath)/Contents/MacOS/Den Browser"
 
@@ -111,7 +173,7 @@ final class OutputCollector {
     }
 
     func all() -> [String] {
-        return events
+        events
     }
 
     func webKitPIDs() -> Set<Int32> {
