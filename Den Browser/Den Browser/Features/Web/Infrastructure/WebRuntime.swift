@@ -7,23 +7,7 @@ import WebKit
 
 final class RuntimeWKWebView: WKWebView {
     var isFocusAllowed: () -> Bool = { false }
-    var onUserInteraction: (() -> Void)?
     var onRejectedFocus: (() -> Void)?
-
-    override func mouseDown(with event: NSEvent) {
-        onUserInteraction?()
-        super.mouseDown(with: event)
-    }
-
-    override func otherMouseDown(with event: NSEvent) {
-        onUserInteraction?()
-        super.otherMouseDown(with: event)
-    }
-
-    override func rightMouseDown(with event: NSEvent) {
-        onUserInteraction?()
-        super.rightMouseDown(with: event)
-    }
 
     override func becomeFirstResponder() -> Bool {
         guard isFocusAllowed() else {
@@ -51,7 +35,6 @@ final class WebRuntime: BaseWebRuntime, ObservableObject {
         var onDownloadActivity: (DownloadActivityEvent) -> Void = { _ in }
         var onDownloadFinished: (String) -> Void = { _ in }
         var onDownloadFailed: (String) -> Void = { _ in }
-        var onFocus: () -> Void = {}
         var isFocused: () -> Bool = { false }
         var restoreFocusedFirstResponder: () -> Void = {}
     }
@@ -192,9 +175,6 @@ final class WebRuntime: BaseWebRuntime, ObservableObject {
             boardWebView.isFocusAllowed = { [weak self] in
                 self?.presentation == .drawer || (self?.events.isFocused() ?? false)
             }
-            boardWebView.onUserInteraction = { [weak self] in
-                self?.events.onFocus()
-            }
             boardWebView.onRejectedFocus = { [weak self] in
                 self?.events.restoreFocusedFirstResponder()
             }
@@ -287,9 +267,6 @@ final class WebRuntime: BaseWebRuntime, ObservableObject {
         if let boardWebView = webView as? RuntimeWKWebView {
             boardWebView.isFocusAllowed = { [weak self] in
                 self?.presentation == .drawer || (self?.events.isFocused() ?? false)
-            }
-            boardWebView.onUserInteraction = { [weak self] in
-                self?.events.onFocus()
             }
             boardWebView.onRejectedFocus = { [weak self] in
                 self?.events.restoreFocusedFirstResponder()

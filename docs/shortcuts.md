@@ -216,6 +216,7 @@ budget. Ordinary Profiles retain compressed snapshots across restarts in a separ
 ## Pointer Controls
 
 - **Sheets**:
+  - Release the primary mouse button after clicking or dragging on a Sheet to focus its Board.
   - Pinch in or out over a Web Board to adjust the Current Sheet's scale for that Board.
   - Pinch in or out over a Terminal Board to adjust its font size for that Board.
 - **Board Headers**:

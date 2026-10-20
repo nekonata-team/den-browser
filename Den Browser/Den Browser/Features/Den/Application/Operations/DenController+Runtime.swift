@@ -199,9 +199,6 @@ extension DenController {
             onDownloadFailed: { [weak self] message in
                 self?.reportFeedback("Download failed: \(message)", severity: .error)
             },
-            onFocus: { [weak self] in
-                self?.onWindowEffect?(.runtimeFocusedBoard(board.id))
-            },
             isFocused: { [weak self] in
                 self?.focusedDesk?.focusedBoardID == board.id
             },

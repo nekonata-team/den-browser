@@ -69,32 +69,4 @@ struct SurfaceFocusTests {
         _ = webView.becomeFirstResponder()
         #expect(rejectedCount == 1)
     }
-
-    @Test func boardWKWebViewNotifiesUserInteractionOnMouseDown() {
-        let webView = RuntimeWKWebView(
-            frame: NSRect(x: 0, y: 0, width: 100, height: 100),
-            configuration: WKWebViewConfiguration())
-        var interactionCount = 0
-        webView.onUserInteraction = { interactionCount += 1 }
-
-        let event = NSEvent.mouseEvent(
-            with: .leftMouseDown,
-            location: .zero,
-            modifierFlags: [],
-            timestamp: 0,
-            windowNumber: 0,
-            context: nil,
-            eventNumber: 0,
-            clickCount: 1,
-            pressure: 1.0
-        )!
-        webView.mouseDown(with: event)
-        #expect(interactionCount == 1)
-
-        webView.rightMouseDown(with: event)
-        #expect(interactionCount == 2)
-
-        webView.otherMouseDown(with: event)
-        #expect(interactionCount == 3)
-    }
 }
