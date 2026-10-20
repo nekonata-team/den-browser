@@ -1094,10 +1094,11 @@ struct BoardStrip: View {
         else { return nil }
 
         let boards = alignmentBoards
+        // Visibility must hold at the animation's destination, not just at its current frame.
         return BoardLayout.scrollTargetToRevealBoard(
             for: boardIndex,
             in: boardLayoutParameters(for: boards),
-            currentScrollX: scrollGeometry.offsetX,
+            currentScrollX: clampedScrollX(scrollPosition.x ?? scrollGeometry.offsetX),
             contentWidth: scrollGeometry.scrollableContentWidth,
             containerWidth: scrollGeometry.containerWidth
         )

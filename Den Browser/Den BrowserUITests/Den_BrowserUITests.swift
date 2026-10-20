@@ -569,6 +569,34 @@ final class Den_BrowserUITests: XCTestCase, BDD {
         }
     }
 
+    // Protects retargeting an in-flight SwiftUI ScrollView animation, which unit tests cannot observe.
+    @MainActor
+    func testRapidBoardFocusMovementAlignsTheLastFocusedBoard() throws {
+        let app = launchApp(fixture: .rapidBoardFocus, standardMotion: true)
+        let charlie = board(.charlie, in: app)
+        let bravo = board(.bravo, in: app)
+        let strip = app.descendants(matching: .any).matching(identifier: "board-strip").firstMatch
+        let bravoSurface = boardSurface(.bravo, in: app)
+
+        given("Charlie is visible on an overflowing Desk with animations enabled") {
+            XCTAssertTrue(charlie.wait(for: \.isHittable, toEqual: true, timeout: 5))
+            XCTAssertEqual(boardSurface(.charlie, in: app).frame.midX, strip.frame.midX, accuracy: 3)
+            enterDenMode(in: app)
+        }
+
+        when("wrapping to Alpha and moving to Bravo before the first animation finishes") {
+            app.typeText("ll")
+        }
+
+        then("the last focused Board is fully visible") {
+            XCTAssertTrue(bravo.wait(for: \.isSelected, toEqual: true, timeout: 5))
+            assertEventually("Bravo should remain fully visible after both focus changes") {
+                bravoSurface.frame.minX >= strip.frame.minX
+                    && bravoSurface.frame.maxX <= strip.frame.maxX
+            }
+        }
+    }
+
     // Protects SwiftUI ScrollView visibility callback ordering; a unit test cannot observe this native boundary.
     @MainActor
     func testOffscreenTerminalWaitsForInitialAlignmentAndDeskReturn() throws {
@@ -620,6 +648,7 @@ final class Den_BrowserUITests: XCTestCase, BDD {
         fixture: UITestFixture = .interactionBasics,
         boardCount: UITestBoardCount = .three,
         terminalBoard: Bool = false,
+        standardMotion: Bool = false,
         sheetNavigationEnabled: Bool = false,
         multipleDrawerItems: Bool = false,
         drawerSheetURL: URL? = nil,
@@ -652,6 +681,9 @@ final class Den_BrowserUITests: XCTestCase, BDD {
         ]
         if sheetNavigationEnabled {
             args.append("--enable-sheet-navigation")
+        }
+        if standardMotion {
+            args += ["-preferences.appearance.motion.mode", "standard"]
         }
         app.launchArguments = args
         defaultsSuiteNames.append(uiTestDefaultsSuiteName(runID: runID))

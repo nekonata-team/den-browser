@@ -57,6 +57,16 @@ enum UITestFixtureFactory {
             secondFocusedBoardID = nil
             mainFocusedBoardID = bravoID
             focusedDeskID = mainDeskID
+        case .rapidBoardFocus:
+            mainBoards = [
+                webBoard(alphaID, "Alpha", width: 1_200),
+                webBoard(bravoID, "Bravo", width: 400),
+                webBoard(charlieID, "Charlie", width: 400),
+            ]
+            secondBoards = []
+            secondFocusedBoardID = nil
+            mainFocusedBoardID = charlieID
+            focusedDeskID = mainDeskID
         case .focusedTerminalBeforeAlignment:
             let leadingBoard =
                 terminalBoard
@@ -128,10 +138,11 @@ enum UITestFixture: String {
     case interactionBasics = "interaction-basics"
     case overviewBoardPair = "overview-board-pair"
     case focusedTerminalBeforeAlignment = "focused-terminal-before-alignment"
+    case rapidBoardFocus = "rapid-board-focus"
 
     var initialBoard: FixtureBoard {
         switch self {
-        case .focusedTerminalBeforeAlignment: .charlie
+        case .focusedTerminalBeforeAlignment, .rapidBoardFocus: .charlie
         case .overviewBoardPair: .bravo
         default: .alpha
         }
