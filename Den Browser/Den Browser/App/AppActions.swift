@@ -51,6 +51,8 @@ enum EssentialsAction: Equatable {
 enum DeskAction: Equatable {
     case focusPrevious
     case focusNext
+    case movePrevious
+    case moveNext
     case returnToPrevious
     case focus(Int)
     case showNewPanel
@@ -81,8 +83,6 @@ enum BoardAction: Equatable {
     case resetSheetSize
     case toggleAnchor
     case jumpToAnchor
-    case moveToPreviousDesk
-    case moveToNextDesk
     case moveToDesk(Int)
     case showOpenPanel
     case openFromClipboard
@@ -237,6 +237,14 @@ enum AppActionHandler {
             switch action {
             case .focusPrevious: controller.focusPreviousDesk()
             case .focusNext: controller.focusNextDesk()
+            case .movePrevious:
+                if let deskID = controller.focusedDesk?.id {
+                    controller.moveDesk(deskID, by: -1)
+                }
+            case .moveNext:
+                if let deskID = controller.focusedDesk?.id {
+                    controller.moveDesk(deskID, by: 1)
+                }
             case .returnToPrevious: controller.returnToPreviousDesk()
             case .focus(let number): controller.focusDesk(number: number)
             case .showNewPanel: windowModel.showNewDeskPanel()
@@ -266,8 +274,6 @@ enum AppActionHandler {
             case .resetSheetSize: controller.resetFocusedSheetSize()
             case .toggleAnchor: controller.toggleAnchorBoard()
             case .jumpToAnchor: controller.jumpToAnchorBoard()
-            case .moveToPreviousDesk: controller.moveFocusedBoardToPreviousDesk()
-            case .moveToNextDesk: controller.moveFocusedBoardToNextDesk()
             case .moveToDesk(let number): controller.moveFocusedBoard(toDeskNumber: number)
             case .showOpenPanel: windowModel.showOpenBoardPanel()
             case .openFromClipboard: controller.openBoardFromClipboard(preferredWidth: windowModel.defaultBoardWidth)

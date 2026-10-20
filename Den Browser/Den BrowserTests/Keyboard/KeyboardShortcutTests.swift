@@ -380,6 +380,48 @@ struct KeyboardShortcutTests {
         )
     }
 
+    @Test(arguments: [false, true], [false, true])
+    func denModeShiftVerticalMovementReordersDesk(movesUp: Bool, arrow: Bool) throws {
+        // Arrange
+        let focused = board("Focused")
+        let first = DeskState(label: "First", boards: [])
+        let middle = DeskState(label: "Middle", boards: [focused], focusedBoardID: focused.id)
+        let last = DeskState(label: "Last", boards: [])
+        var savedState: DenState?
+        try withTestWindowModel(
+            desks: [first, middle, last],
+            onSave: {
+                savedState = $0
+                return true
+            },
+            body: { model, controller in
+                controller.focusDesk(middle.id)
+                model.isDenMode = true
+                let event =
+                    try arrow
+                    ? arrowEvent(movesUp ? .upArrow : .downArrow, modifiers: .shift)
+                    : keyEvent(
+                        characters: movesUp ? "K" : "J", charactersIgnoringModifiers: movesUp ? "k" : "j",
+                        modifiers: .shift, keyCode: movesUp ? 40 : 38)
+
+                // Act
+                let decision = KeyboardController.decision(for: event, controller: controller, windowModel: model)
+                let handled = KeyboardController.handle(event, controller: controller, windowModel: model)
+
+                // Assert
+                #expect(decision == .perform(.desk(movesUp ? .movePrevious : .moveNext)))
+                #expect(handled)
+                #expect(
+                    controller.state.desks.map(\.id)
+                        == (movesUp ? [middle.id, first.id, last.id] : [first.id, last.id, middle.id]))
+                #expect(controller.focusedDesk?.id == middle.id)
+                #expect(controller.focusedDesk?.boards == [focused])
+                #expect(controller.focusedBoard?.id == focused.id)
+                #expect(model.isDenMode)
+                #expect(savedState == controller.state)
+            })
+    }
+
     @Test func denModeShiftDigitMovesFocusedBoardToDesk() throws {
         let movedBoard = board("Moved")
         let firstDesk = DeskState(label: "First", boards: [], focusedBoardID: nil)

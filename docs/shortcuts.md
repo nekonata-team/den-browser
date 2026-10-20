@@ -65,7 +65,8 @@ Toggle with `Control` + `,`. Press `Escape` to exit to Sheet Input.
 | `Escape` | Exit Den Mode |
 | `Left` / `Right` or `h` / `l` | Focus previous / next Board |
 | `Up` / `Down` or `j` / `k` | Focus previous / next Desk |
-| `Shift` + movement key | Move Focused Board in that direction |
+| `Shift` + `Left` / `Right` or `H` / `L` | Move Focused Board left / right |
+| `Shift` + `Up` / `Down` or `K` / `J` | Move Focused Desk one position earlier / later |
 | `<` / `>` | Browse Boards without changing focus (`c` to re-center) |
 | `/` | Filter Boards in Focused Desk by label or URL |
 | `1`–`9`, `0` | Focus Desk 1–10 |
@@ -87,6 +88,8 @@ Toggle with `Control` + `,`. Press `Escape` to exit to Sheet Input.
 | `?` | Show Keyboard Shortcuts guide |
 | `z` | Toggle Zen View (hide titlebar and chrome) |
 | `Shift` + `F` | Toggle Focus Mode (blur other Boards) |
+
+Reordering a Desk preserves the focused Desk and Board and keeps Den Mode active. It stops at either end without wrapping. The new order is saved and changes the Desk positions used by number shortcuts. Use Shift + digit to move a Board to another Desk.
 
 ### Board Actions
 
