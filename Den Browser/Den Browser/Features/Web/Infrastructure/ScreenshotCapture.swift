@@ -1,4 +1,5 @@
 import AppKit
+import DenInfrastructure
 import GhosttyTerminal
 import UniformTypeIdentifiers
 import WebKit
@@ -63,7 +64,9 @@ enum ScreenshotCapture {
         }
 
         bitmap.size = bounds.size
+        let interval = PerformanceTrace.beginInterval("ScreenshotCapture.cacheDisplay")
         terminalView.cacheDisplay(in: bounds, to: bitmap)
+        PerformanceTrace.endInterval("ScreenshotCapture.cacheDisplay", interval)
 
         let image = NSImage(size: bounds.size)
         image.addRepresentation(bitmap)

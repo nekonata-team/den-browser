@@ -1,5 +1,6 @@
 import AppKit
 import DenDomain
+import DenInfrastructure
 import Foundation
 import GhosttyTerminal
 import WebKit
@@ -47,6 +48,13 @@ final class BoardFacingCapture {
         config.snapshotWidth = NSNumber(value: Double(captureWidth))
         config.afterScreenUpdates = false
 
+        let startedAt = PerformanceTrace.isEnabled ? ContinuousClock.now : nil
+        let interval = PerformanceTrace.beginInterval("BoardFacingCapture.web")
+        defer {
+            PerformanceTrace.endInterval("BoardFacingCapture.web", interval)
+            logCaptureDuration("web elapsed", boardID: boardID, startedAt: startedAt)
+        }
+
         do {
             let image = try await webView.takeSnapshot(configuration: config)
             guard !Task.isCancelled, webView.url == url, !webView.isLoading else { return }
@@ -59,6 +67,13 @@ final class BoardFacingCapture {
     func captureTerminal(boardID: BoardID, terminalView: AppTerminalView) {
         guard shouldCapture(boardID: boardID) else { return }
         guard terminalView.window != nil, !terminalView.isHiddenOrHasHiddenAncestor else { return }
+
+        let startedAt = PerformanceTrace.isEnabled ? ContinuousClock.now : nil
+        let interval = PerformanceTrace.beginInterval("BoardFacingCapture.terminal")
+        defer {
+            PerformanceTrace.endInterval("BoardFacingCapture.terminal", interval)
+            logCaptureDuration("terminal synchronous", boardID: boardID, startedAt: startedAt)
+        }
 
         guard
             let image = try? ScreenshotCapture.visibleCurrentSheet(
@@ -75,5 +90,17 @@ final class BoardFacingCapture {
             defer { cache.finishCapture(token, for: boardID) }
             cache.setCapturedFacing(image, for: boardID, token: token)
         }
+    }
+
+    private func logCaptureDuration(_ label: String, boardID: BoardID, startedAt: ContinuousClock.Instant?) {
+        guard let startedAt else { return }
+        let elapsed = startedAt.duration(to: .now)
+        let milliseconds =
+            Double(elapsed.components.seconds) * 1000
+            + Double(elapsed.components.attoseconds) / 1_000_000_000_000_000
+        PerformanceTrace.mark(
+            "\(label) board=\(boardID.rawValue) duration=\(String(format: "%.2f", milliseconds))ms",
+            category: "Facing"
+        )
     }
 }

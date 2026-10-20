@@ -4,6 +4,34 @@ Use these measurements to investigate startup time and resource use. They are
 diagnostic measurements, separate from the correctness checks in interaction
 tests.
 
+## Board facing capture timing
+
+Launch a development build with performance tracing enabled:
+
+```sh
+rtk proxy just build
+rtk proxy sh -c '".derived-data/Build/Products/Debug/Den Browser.app/Contents/MacOS/Den Browser" --benchmark > /tmp/den-facing.log 2>&1'
+```
+
+Move focus until a Terminal or Web Board leaves the viewport. Inspect the log
+from another terminal with `rtk rg 'PERF:FACING' /tmp/den-facing.log`.
+Each attempted capture logs its Board ID and `duration` in milliseconds.
+Skipped captures produce no timing; successful captures suppress recapture of
+the same Board for 30 seconds.
+
+`terminal synchronous` measures synchronous capture and scheduling of cache
+publication; it excludes the deferred cache publication itself. `web elapsed`
+measures the snapshot request through the asynchronous snapshot wait and
+cache publication, including failed or discarded snapshot results. Web elapsed
+time is not main-thread blocking time.
+
+In Instruments, use the Points of Interest track for subsystem
+`dev.nekonata.denbrowser`, category `Performance`. The intervals are
+`BoardFacingCapture.terminal`, `BoardFacingCapture.web`, and
+`ScreenshotCapture.cacheDisplay` (the synchronous Terminal drawing call).
+The last interval also covers explicit Terminal screenshots. Timing excludes
+diagnostic log output. Stop the traced app before relaunching it normally.
+
 ## XCTest launch metric
 
 The `Den_BrowserUIPerformanceTests` class measures launch with XCTest's
