@@ -5,6 +5,52 @@ import Testing
 @testable import Den_Browser
 
 struct DenIPCClientValidationTests {
+    @Test(arguments: [false, true], [false, true])
+    func deskCommandsForwardExplicitOptions(remove: Bool, enabled: Bool) async throws {
+        // Arrange
+        let deskID = UUID()
+        let socketPath = temporarySocketPath()
+        let expected: DenIPCOperation =
+            remove
+            ? .removeDesk(deskID: deskID, force: enabled) : .createDesk(label: "Work", focus: enabled)
+        let payload: DenIPCResultPayload =
+            remove
+            ? .removedDesk(id: deskID.uuidString) : .createdDesk(id: deskID.uuidString)
+        let server = DenSocketServer(socketPath: socketPath)
+        try server.start { data in
+            guard let request = try? JSONDecoder().decode(DenIPCRequest.self, from: data), request.operation == expected
+            else { return encodedResponse(.failure("Unexpected Desk operation")) }
+            return encodedResponse(.success(payload))
+        }
+        defer { server.stop() }
+        let arguments =
+            remove
+            ? ["desk", "remove", "--desk", deskID.uuidString] + (enabled ? ["--force"] : [])
+            : ["desk", "new", "Work"] + (enabled ? ["--focus"] : [])
+
+        // Act
+        let result = try await runCLI(arguments, socketPath: socketPath)
+        let object = try jsonResult(result.output)
+
+        // Assert
+        #expect(result.status == 0)
+        #expect(object[remove ? "removed_desk_id" : "desk_id"] as? String == deskID.uuidString)
+    }
+
+    @Test func deskRemovalRequiresExplicitTarget() async throws {
+        // Arrange
+        let socketPath = temporarySocketPath()
+        let server = DenSocketServer(socketPath: socketPath)
+        try server.start { _ in encodedResponse(.success()) }
+        defer { server.stop() }
+
+        // Act
+        let result = try await runCLI(["desk", "remove"], socketPath: socketPath)
+
+        // Assert
+        #expect(result.status != 0)
+    }
+
     @Test(arguments: ["web", "terminal", "list"], [false, true])
     func boardCommandsForwardDeskTarget(command: String, explicitDesk: Bool) async throws {
         // Arrange
@@ -76,6 +122,10 @@ struct DenIPCClientValidationTests {
     }
 
     @Test(arguments: [
+        MalformedCLIInvocation(
+            arguments: ["desk", "remove", "--desk", "bad-id"],
+            expectedError: "Invalid desk ID: bad-id"
+        ),
         MalformedCLIInvocation(
             arguments: ["board", "list", "--desk", "bad-id"],
             expectedError: "Invalid desk ID: bad-id"

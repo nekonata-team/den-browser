@@ -11,8 +11,13 @@ enum DeskReplacementResult: Equatable {
 }
 
 extension DenController {
-    func createDesk(label: String, preset: BuiltInDeskPreset) {
-        createDesk(label: label, boards: preset.boards, focusedBoardIndex: preset.focusedBoardIndex)
+    @discardableResult
+    func createDesk(
+        label: String, preset: BuiltInDeskPreset, after deskID: DeskID? = nil, focus: Bool = true
+    ) -> DeskState? {
+        createDesk(
+            label: label, boards: preset.boards, focusedBoardIndex: preset.focusedBoardIndex,
+            after: deskID, focus: focus)
     }
 
     func createDesk(label: String, personalPresetID: UUID) {
@@ -37,7 +42,8 @@ extension DenController {
 
     @discardableResult
     private func createDesk(
-        label: String, boards: [DeskPresetBoard], focusedBoardIndex: BoardIndex?, after deskID: DeskID? = nil
+        label: String, boards: [DeskPresetBoard], focusedBoardIndex: BoardIndex?, after deskID: DeskID? = nil,
+        focus: Bool = true
     ) -> DeskState? {
         guard
             let creation = DeskCreation.create(
@@ -45,9 +51,11 @@ extension DenController {
                 in: state.desks, presentedDeskID: deskID ?? presentedDeskID)
         else { return nil }
         storage.state.desks = creation.desks
-        setFocusedDesk(creation.createdDesk.id)
-        onWindowEffect?(.dismissTemporaryPresentation)
-        onWindowEffect?(.exitDenMode)
+        if focus {
+            setFocusedDesk(creation.createdDesk.id)
+            onWindowEffect?(.dismissTemporaryPresentation)
+            onWindowEffect?(.exitDenMode)
+        }
         save()
         dispatchDenOperationEvent(.deskCreated)
         return creation.createdDesk
@@ -152,14 +160,15 @@ extension DenController {
             disposeRuntime(for: board.id)
         }
 
-        if presentedDeskID == deskID {
+        let wasPresented = presentedDeskID == deskID
+        if wasPresented {
             setFocusedDesk(deletion.replacementDeskID, autoPIP: false)
         }
         storage.state.desks = deletion.desks
         anchorJumpOriginBoardIDByDesk.removeValue(forKey: deskID)
         invalidateReferences(toRemovedBoardIDs: Set(desk.boards.map(\.id)))
         invalidateReferences(toRemovedDeskID: deskID)
-        onWindowEffect?(.exitDenMode)
+        if wasPresented { onWindowEffect?(.exitDenMode) }
         save()
     }
 

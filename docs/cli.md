@@ -56,7 +56,7 @@ When a command is received with `DEN_BOARD_ID`:
 
 Board creation commands fall back to the active Desk when the ambient Board ID no longer exists, so a persistent Terminal session can still open a new Board after its original Board is removed.
 
-`den board web new` and `den board terminal new` accept `--desk <uuid>` to override the ambient Desk within the resolved Profile. Use `den desk list --json` to discover Desk IDs. Invalid or missing Desks fail without falling back. Creating a Board keeps the current Desk and focus unless `--focus` is supplied, which focuses the new Board on its destination Desk.
+`den board web new` and `den board terminal new` accept `--desk <uuid>` to override the ambient Desk within the resolved Profile. Use `den desk list --json` to discover Desk IDs. Invalid or missing Desks fail without falling back.
 
 For `den board web` operations on an existing Board, target Board resolution follows this priority:
 1. **Explicit Board ID**: Supplied via `--board <id>`. If specified, the target must be a valid UUID for an existing Board; invalid or non-existent IDs fail immediately (`exit 1`) with an error and never fall back to ambient candidates.
@@ -71,6 +71,10 @@ For `den board terminal` operations on an existing Board, the caller's Terminal 
 - `--json`: Force output as structured JSON. When standard output is redirected or piped (non-TTY), JSON output is enabled automatically.
 - `--socket <path>`: Override the Unix domain socket path. Resolution order is explicit `--socket`, `$DEN_SOCKET`, then `~/.den/den.sock`.
 - `--profile <uuid>`: Target specific Profile UUID (defaults to `$DEN_PROFILE` or ambient Profile). Fails immediately (`exit 1`) if invalid, not found, or has no active window.
+
+### Creation Focus
+
+`--focus` focuses the created Board or Desk (or reused Inspection Board), switching Desks when needed. It is available on `new` commands and `board web click --new-board`. Without it, the current Desk and Board remain focused.
 
 ### Board Targeting
 - `--board <id>`: Explicitly target a specific Board by its UUID. Available on existing-Board operations under `den board web`, `den board terminal`, and `den board inspection read`, plus `den board close` and `den board focus`; fails immediately if not found or invalid. Creation commands (`new`) do not accept `--board`.
@@ -148,7 +152,7 @@ Compact snapshots retain visible semantic ancestors of interactive elements, suc
 | `den board web query` | `<selector> [--visible] [--all] [--fields <list>]` | Return matching elements as structured JSON. Every result includes `ref` and `visible`; the default fields are `tag,role,name,text`. Use `value`, `checked`, `disabled`, `selected`, `expanded`, `class`, or `attr:<name>` for additional fields. `--visible` filters matches and `--all` returns every match instead of the first. | `den board web query "tr.zA" --visible --all --fields text,attr:data-email,class --json` |
 | `den board web get` | `<text\|value\|attr\|count\|box> ...` | Read text, a form value, an attribute, the number of elements matching a selector, or bounding box (`x, y, width, height`). | `den board web get box @e1 --json` |
 | `den board web is` | `<visible\|enabled\|checked> <target>` | Check one current boolean state for an element. | `den board web is checked @e3 --json` |
-| `den board web click` | `[<target>] [--role <role> --name <name>] [--exact] [--new-board] [--focus]` | Click by ref/selector or by an accessible role and name. Semantic matching requires both `--role` and `--name`; `--exact` requires an exact name match. Use `--new-board` to open a clicked link in a new Web Board, returning `board_id`; add `--focus` to focus the new Board. | `den board web click @e1 --new-board --json` |
+| `den board web click` | `[<target>] [--role <role> --name <name>] [--exact] [--new-board] [--focus]` | Click by ref/selector or by an accessible role and name. Semantic matching requires both `--role` and `--name`; `--exact` requires an exact name match. Use `--new-board` to open a clicked link in a new Web Board, returning `board_id`. | `den board web click @e1 --new-board --json` |
 | `den board web dblclick` | `<target>` | Double-click an element by reference or selector. | `den board web dblclick @e1 --json` |
 | `den board web focus` | `<target>` | Focus an element by reference or selector. | `den board web focus @e1 --json` |
 | `den board web fill` | `<target> <value>` | Fill an input, textarea, or editable element with text by reference or selector. An empty value is valid. | `den board web fill @e2 "search query"` |
@@ -190,7 +194,7 @@ Commands operating on a Terminal Board and the Terminal Session it presents.
 
 | Command | Arguments | Description | Example |
 |---|---|---|---|
-| `den board inspection new` | `--target <web-board-id> [--focus]` | Create or reuse the Inspection Board associated with the specified Web Board and return its Board ID. The target must be an existing Web Board; the target relationship is preserved in the Board Group. Focus stays unchanged by default; use `--focus` to focus the Inspection Board. | `den board inspection new --target 4F72344C-... --json` |
+| `den board inspection new` | `--target <web-board-id> [--focus]` | Create or reuse the Inspection Board associated with the specified Web Board and return its Board ID. The target must be an existing Web Board; the target relationship is preserved in the Board Group. | `den board inspection new --target 4F72344C-... --json` |
 | `den board inspection read` | `--board <inspection-board-id>` | Read the selected element and available page inspection context from the specified Inspection Board's target Web Board. This is read-only and requires an explicit Inspection Board ID. | `den board inspection read --board 4F72344C-... --json` |
 
 The JSON result contains an `inspection` object. Its shared data, freshness, optional fields, and use of current `@e…` references are specified in [Reading inspection context](inspection.md#reading-inspection-context-with-den).
@@ -202,6 +206,24 @@ Commands operating on Desks within the Den.
 | Command | Arguments | Description | Example |
 |---|---|---|---|
 | `den desk list` | None | List all Desks in the Den with ID, label, board count, and active status. | `den desk list` |
+| `den desk new` | `<label> [--focus]` | Create an empty Desk immediately after the ambient Desk and return its UUID. Trim surrounding whitespace from the label; empty labels and creation beyond the 10-Desk limit fail. | `den desk new "Research" --json` |
+| `den desk remove` | `--desk <uuid> [--force]` | Remove the explicitly specified Desk. A Desk containing Boards requires `--force`; otherwise the command reports its Board count and fails without showing a dialog. The last Desk cannot be removed, even with `--force`. | `den desk remove --desk <uuid> --force` |
+
+Desk creation and removal follow the common Profile resolution rules. For
+creation, the ambient Desk is the caller Board's current Desk, or the displayed
+Desk for an external shell. Labels do not need to be unique; removal always
+requires a UUID and never falls back to an ambient target.
+
+Removing a displayed Desk switches its window to an available Desk before it,
+or an available Desk after it when none is available before it. Removing a
+background Desk preserves the displayed Desk and Board. Removal fails if no
+replacement Desk is available to the target window. `--force` removes all
+contained Boards and disposes their live runtimes. Desk removal does not add
+its Boards to restoration history.
+
+JSON creation returns `{"ok":true,"desk_id":"<uuid>"}`; removal returns
+`{"ok":true,"removed_desk_id":"<uuid>"}`. Use the created UUID with
+`board web new --desk`, `board terminal new --desk`, or `board list --desk`.
 
 ### 3.7 `den drawer` (Drawer & Web Material)
 

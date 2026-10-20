@@ -186,8 +186,10 @@ enum DenIPCClient {
             break
         case .message(let message), .closedBoard(_, let message):
             print(message)
-        case .createdBoard(let id, _, _), .sheet(let id, _):
+        case .createdBoard(let id, _, _), .sheet(let id, _), .createdDesk(let id):
             print(id)
+        case .removedDesk(let id):
+            print("Removed Desk \(id)")
         case .board(let board):
             writeBoard(board, showBoardIDs: output.showBoardIDs)
         case .boards(let boards):
@@ -419,10 +421,14 @@ enum DenIPCClient {
 
     static func deskTarget(_ rawID: String?) throws -> DeskTarget {
         guard let rawID else { return .automatic }
+        return .explicit(try requiredDeskID(rawID))
+    }
+
+    static func requiredDeskID(_ rawID: String) throws -> UUID {
         guard let id = UUID(uuidString: rawID) else {
             throw DenIPCClientError.usage("Invalid desk ID: \(rawID)")
         }
-        return .explicit(id)
+        return id
     }
 
     static func requiredBoardID(_ rawID: String, invalidMessage: String? = nil) throws -> UUID {

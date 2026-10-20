@@ -42,6 +42,8 @@ public nonisolated enum DenIPCOperation: Codable, Equatable, Sendable {
     case createTerminalBoard(payload: DenBoardTerminalNewPayload, destination: DeskTarget)
     case createInspectionBoard(targetBoardID: UUID, payload: DenBoardInspectionNewPayload)
     case deskList(target: DeskTarget)
+    case createDesk(label: String, focus: Bool)
+    case removeDesk(deskID: UUID, force: Bool)
     case drawer(command: DenIPCCommand.Drawer, target: DeskTarget)
     case terminal(command: DenIPCCommand.Terminal, target: BoardTarget)
     case readInspection(boardID: UUID)

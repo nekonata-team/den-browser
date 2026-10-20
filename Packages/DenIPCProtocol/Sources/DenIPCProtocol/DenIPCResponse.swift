@@ -243,6 +243,8 @@ public nonisolated enum DenIPCResultPayload: Codable, Sendable {
     case board(DenBoardInfo)
     case boards([DenBoardInfo])
     case desks([DenDeskInfo])
+    case createdDesk(id: String)
+    case removedDesk(id: String)
     case drawerItems([DenDrawerItemInfo])
     case drawerItem(id: String, message: String)
     case profiles([DenProfileInfo])
@@ -377,6 +379,8 @@ public nonisolated struct DenIPCOperationResultJSON: Encodable, Sendable {
         case board
         case boards
         case desks
+        case deskID = "desk_id"
+        case removedDeskID = "removed_desk_id"
         case drawerItemId = "drawer_item_id"
         case drawerItems = "drawer_items"
         case profiles
@@ -433,6 +437,10 @@ public nonisolated struct DenIPCOperationResultJSON: Encodable, Sendable {
             try container.encode(boards, forKey: .boards)
         case .desks(let desks):
             try container.encode(desks, forKey: .desks)
+        case .createdDesk(let id):
+            try container.encode(id, forKey: .deskID)
+        case .removedDesk(let id):
+            try container.encode(id, forKey: .removedDeskID)
         case .drawerItems(let items):
             try container.encode(items, forKey: .drawerItems)
         case .drawerItem(let id, let message):

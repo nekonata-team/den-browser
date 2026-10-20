@@ -104,6 +104,14 @@ final class DenIPCService {
             ) { self.handleInspectionBoardNew(payload: payload, target: $0) }
         case .deskList(let target):
             return withDeskTarget(target, context: request.context) { self.handleDeskList(target: $0) }
+        case .createDesk(let label, let focus):
+            return withDeskTarget(.automatic, context: request.context) {
+                self.handleDeskNew(label: label, focus: focus, target: $0)
+            }
+        case .removeDesk(let deskID, let force):
+            return withDeskTarget(.explicit(deskID), context: request.context) {
+                self.handleDeskRemove(force: force, target: $0)
+            }
         case .drawer(let command, let target):
             return withDeskTarget(target, context: request.context) {
                 self.handleDrawerCommand(command, target: $0)
@@ -1043,6 +1051,35 @@ final class DenIPCService {
     }
 
     // MARK: - Desk Commands
+
+    private func handleDeskNew(label: String, focus: Bool, target resolved: ResolvedDeskTarget) -> DenIPCOperationResult
+    {
+        guard !label.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            return .failure("Desk label must not be empty")
+        }
+        guard resolved.controller.state.desks.count < DeskCreation.maximumDeskCount else {
+            return .failure("Cannot create more than \(DeskCreation.maximumDeskCount) Desks")
+        }
+        guard
+            let desk = resolved.controller.createDesk(
+                label: label, preset: .empty, after: resolved.desk.id, focus: focus)
+        else { return .failure("Could not create Desk") }
+        return .success(.createdDesk(id: desk.id.rawValue.uuidString))
+    }
+
+    private func handleDeskRemove(force: Bool, target resolved: ResolvedDeskTarget) -> DenIPCOperationResult {
+        let controller = resolved.controller
+        let desk = resolved.desk
+        guard controller.state.desks.count > 1 else { return .failure("The last Desk cannot be removed") }
+        guard force || desk.boards.isEmpty else {
+            return .failure("Desk is not empty (Boards: \(desk.boards.count)); use --force to remove it and its Boards")
+        }
+        controller.confirmDeskDeletion(desk.id)
+        guard !controller.state.desks.contains(where: { $0.id == desk.id }) else {
+            return .failure("Could not remove Desk: no available replacement Desk")
+        }
+        return .success(.removedDesk(id: desk.id.rawValue.uuidString))
+    }
 
     private func handleDeskList(target resolved: ResolvedDeskTarget) -> DenIPCOperationResult {
         let desks = resolved.controller.state.desks.map { desk in

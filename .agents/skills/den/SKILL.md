@@ -35,7 +35,17 @@ If readiness is uncertain, run `den health --json`; it does not target a Desk or
 
 When you need to discover Boards on the ambient Desk, use `den board list --json`; add `--desk <uuid>` to list another Desk in the resolved Profile without changing focus. Use `den board list -l` only when a person needs full Board IDs in TTY output.
 
-To create a Web or Terminal Board on another Desk, discover its UUID with `den desk list --json` and pass `--desk <uuid>` to `den board web new` or `den board terminal new`. The Desk must exist in the resolved Profile. Add `--focus` to focus the new Board on its destination Desk; otherwise creation keeps the current Desk and focus.
+To create a Web or Terminal Board on another Desk, discover its UUID with `den desk list --json` and pass `--desk <uuid>` to `den board web new` or `den board terminal new`. The Desk must exist in the resolved Profile.
+
+Board and Desk `new` commands preserve focus by default. Add `--focus` to focus the created target (or reused Inspection Board), switching Desks when needed.
+
+## Desk management
+
+Create an empty Desk with `den desk new <label> --json`; the response's
+`desk_id` can be passed to Board creation and listing commands with `--desk`.
+Remove a Desk with `den desk remove --desk <uuid> --json`. Removing a Desk containing Boards
+requires `--force`, which removes its Boards and disposes their live runtimes.
+The last Desk cannot be removed. Discover target UUIDs with `den desk list --json`.
 
 ## Web interaction
 

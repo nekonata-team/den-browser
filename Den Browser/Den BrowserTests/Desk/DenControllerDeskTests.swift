@@ -10,6 +10,40 @@ import Testing
 @MainActor
 @Suite(.serialized)
 struct DenControllerDeskTests {
+    @Test func backgroundDeskCreationPreservesPresentation() {
+        // Arrange
+        let first = desk("First")
+        let second = desk("Second")
+        withTestWindowModel(desks: [first, second]) { model, controller in
+            model.isDenMode = true
+
+            // Act
+            controller.createDesk(label: "New", preset: .empty, after: second.id, focus: false)
+
+            // Assert
+            #expect(controller.state.desks.map(\.label) == ["First", "Second", "New"])
+            #expect(controller.presentedDeskID == first.id)
+            #expect(model.isDenMode)
+        }
+    }
+
+    @Test func backgroundDeskDeletionPreservesDenMode() {
+        // Arrange
+        let first = desk("First")
+        let second = desk("Second")
+        withTestWindowModel(desks: [first, second]) { model, controller in
+            model.isDenMode = true
+
+            // Act
+            controller.confirmDeskDeletion(second.id)
+
+            // Assert
+            #expect(controller.state.desks.map(\.id) == [first.id])
+            #expect(controller.presentedDeskID == first.id)
+            #expect(model.isDenMode)
+        }
+    }
+
     @Test func createsEmptyDeskAfterFocusedDesk() {
         withTestWindowModel(desks: [desk("First"), desk("Second")]) { windowModel, controller in
             windowModel.isDenMode = true
