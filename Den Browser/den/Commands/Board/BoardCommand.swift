@@ -62,13 +62,14 @@ struct BoardInspectionNewCommand: ParsableCommand {
 struct BoardListCommand: ParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "list",
-        abstract: "List all Boards on the active Desk")
+        abstract: "List all Boards on the selected Desk")
 
     @OptionGroup var options: BoardListOptions
+    @Option(name: .customLong("desk"), help: "Target Desk UUID (defaults to the ambient Desk)") var deskID: String?
 
     func run() throws {
         try DenIPCClient.execute(
-            operation: .boardList(target: .automatic),
+            operation: .boardList(target: try DenIPCClient.deskTarget(deskID)),
             options: options.common,
             showBoardIDs: options.showBoardIDs)
     }
@@ -167,6 +168,7 @@ struct BoardWebNewCommand: ParsableCommand {
 
     @OptionGroup var options: CLIOptions
     @Argument(help: "URL or search query for the new board") var url: String
+    @Option(name: .customLong("desk"), help: "Destination Desk UUID (defaults to the ambient Desk)") var deskID: String?
     @Option(name: .long, help: "Initial Board width in points") var width: Double?
     @Flag(name: .long, help: "Focus the newly created Board")
     var focus: Bool = false
@@ -179,7 +181,7 @@ struct BoardWebNewCommand: ParsableCommand {
         try DenIPCClient.execute(
             operation: .createWebBoard(
                 payload: DenBoardWebNewPayload(url: url, focus: focus, width: width),
-                destination: .automatic
+                destination: try DenIPCClient.deskTarget(deskID)
             ),
             options: options
         )
@@ -207,6 +209,7 @@ struct BoardTerminalNewCommand: ParsableCommand {
 
     @OptionGroup var options: CLIOptions
     @Argument(help: "Working directory for the terminal board") var path: String?
+    @Option(name: .customLong("desk"), help: "Destination Desk UUID (defaults to the ambient Desk)") var deskID: String?
     @Option(name: .customLong("run"), help: "Initial command to run in the terminal") var runCommand: String?
     @Option(name: .long, help: "Initial Board width in points") var width: Double?
     @Flag(name: .long, help: "Focus the new terminal board") var focus = false
@@ -225,7 +228,7 @@ struct BoardTerminalNewCommand: ParsableCommand {
                     focus: focus,
                     width: width
                 ),
-                destination: .automatic
+                destination: try DenIPCClient.deskTarget(deskID)
             ),
             options: options
         )

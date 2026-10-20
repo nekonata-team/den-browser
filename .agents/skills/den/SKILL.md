@@ -33,7 +33,9 @@ Read JSON fields instead of parsing TTY text. Collections are under `.boards[]`,
 
 If readiness is uncertain, run `den health --json`; it does not target a Desk or Board. When running inside a Terminal Board, Den provides `DEN_BOARD_ID`, `DEN_PROFILE`, and `DEN_SOCKET`. Use ambient targeting by default. Use `--profile <uuid>` to target another Profile; it must have an active window. Use `--board <id>` on operations that target an existing Board when the target is newly created, ambiguous, or another Board. Web and Terminal operations require the corresponding Board kind; `new` creates a Board and does not accept `--board` or `--snapshot`.
 
-When you need to discover Boards on the active Desk, use `den board list --json`. Use `den board list -l` only when a person needs full Board IDs in TTY output.
+When you need to discover Boards on the ambient Desk, use `den board list --json`; add `--desk <uuid>` to list another Desk in the resolved Profile without changing focus. Use `den board list -l` only when a person needs full Board IDs in TTY output.
+
+To create a Web or Terminal Board on another Desk, discover its UUID with `den desk list --json` and pass `--desk <uuid>` to `den board web new` or `den board terminal new`. The Desk must exist in the resolved Profile. Add `--focus` to focus the new Board on its destination Desk; otherwise creation keeps the current Desk and focus.
 
 ## Web interaction
 

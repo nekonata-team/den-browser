@@ -56,6 +56,8 @@ When a command is received with `DEN_BOARD_ID`:
 
 Board creation commands fall back to the active Desk when the ambient Board ID no longer exists, so a persistent Terminal session can still open a new Board after its original Board is removed.
 
+`den board web new` and `den board terminal new` accept `--desk <uuid>` to override the ambient Desk within the resolved Profile. Use `den desk list --json` to discover Desk IDs. Invalid or missing Desks fail without falling back. Creating a Board keeps the current Desk and focus unless `--focus` is supplied, which focuses the new Board on its destination Desk.
+
 For `den board web` operations on an existing Board, target Board resolution follows this priority:
 1. **Explicit Board ID**: Supplied via `--board <id>`. If specified, the target must be a valid UUID for an existing Board; invalid or non-existent IDs fail immediately (`exit 1`) with an error and never fall back to ambient candidates.
 2. **Adjacent Web Board**: Resolved relative to `callerBoardID` on its current Desk.
@@ -102,11 +104,11 @@ On a TTY, it prints `healthy`. With `--json` or when piped, it returns:
 
 ### 3.2 `den board` (Board Surfaces & Layout)
 
-Commands for listing, focusing, creating, and managing Boards. Listing and creation use the active Desk; explicit Board IDs can target other Desks.
+Commands for listing, focusing, creating, and managing Boards. Listing and creation use the ambient Desk and can specify `--desk`; explicit Board IDs can target other Desks.
 
 | Command | Arguments | Description | Example |
 |---|---|---|---|
-| `den board list` | `[-l]` | List all Boards on the active Desk with type (`web`/`inspection`/`terminal`/`tutorial`), label, and type-specific secondary information. JSON Inspection Board entries include their `target_board_id`. Use `-l` to include full Board IDs in human-readable output. | `den board list -l` |
+| `den board list` | `[--desk <uuid>] [-l]` | List all Boards on the specified or ambient Desk with type (`web`/`inspection`/`terminal`/`tutorial`), label, and type-specific secondary information. `--desk` must identify an existing Desk in the resolved Profile; invalid or missing Desks fail without falling back. Listing does not change focus. JSON Inspection Board entries include their `target_board_id`. Use `-l` to include full Board IDs in human-readable output. | `den board list --desk <uuid> -l` |
 | `den board focused` | `[-l]` | Show the currently focused Board on the active Desk. Use `-l` to include full Board ID in human-readable output. | `den board focused -l` |
 | `den board focus` | `--board <id>` | Focus an existing Board of any kind in the resolved Profile, switching Desks when needed. Bring it into view even if already focused, dismiss temporary presentations, and enter Sheet Input. Does not activate the app or bring its window to the front. Returns the focused Board using the same JSON fields as `board focused`. | `den board focus --board 4F72344C-... --json` |
 | `den board close` | `[--board <id>]` | Close the specified Board or the target Web Board. Explicit IDs fail (`exit 1`) if invalid or not found. | `den board close --board 4F72344C-...` |
@@ -130,7 +132,7 @@ Compact snapshots retain visible semantic ancestors of interactive elements, suc
 
 | Command | Arguments | Description | Example |
 |---|---|---|---|
-| `den board web new` | `<url> [--width <points>] [--focus]` | Open a **new** Web Board with a supported URL, bare hostname, or search query on the active Desk, start its Web runtime immediately, and return its UUID. `--width` sets its initial width in positive points; it may exceed the manual resize limit. Invalid or unsupported URL schemes fail. Use `den board web wait` to wait for loaded content. | `den board web new https://example.com --width 800` |
+| `den board web new` | `<url> [--desk <uuid>] [--width <points>] [--focus]` | Open a **new** Web Board with a supported URL, bare hostname, or search query on the destination Desk, start its Web runtime immediately, and return its UUID. `--width` sets its initial width in positive points; it may exceed the manual resize limit. Invalid or unsupported URL schemes fail. Use `den board web wait` to wait for loaded content. | `den board web new https://example.com --desk <uuid> --width 800` |
 | `den board web navigate` | `<url>` | Navigate Current Sheet in the target Web Board to a supported URL, bare hostname, or search query. Invalid or unsupported URL schemes fail. | `den board web navigate https://example.com` |
 | `den board web url` | None | Print Current Sheet URL of the target Web Board. | `den board web url` |
 | `den board web status` | None | Print the main page's final HTTP status code, or `null` when unavailable. | `den board web status` |
@@ -178,7 +180,7 @@ Commands operating on a Terminal Board and the Terminal Session it presents.
 
 | Command | Arguments | Description | Example |
 |---|---|---|---|
-| `den board terminal new` | `[<path>] [--run <cmd>] [--width <points>] [--focus]` | Open a new Terminal Board, optionally running an initial command in an interactive shell. `--width` sets its initial width in positive points; it may exceed the manual resize limit. | `den board terminal new . --run "npm test" --width 800 --focus` |
+| `den board terminal new` | `[<path>] [--desk <uuid>] [--run <cmd>] [--width <points>] [--focus]` | Open a new Terminal Board on the destination Desk, optionally running an initial command in an interactive shell. `--width` sets its initial width in positive points; it may exceed the manual resize limit. | `den board terminal new . --desk <uuid> --run "npm test" --width 800 --focus` |
 | `den board terminal text` | `[--board <id>]` | Read visible terminal screen buffer as clean plain text. | `den board terminal text` |
 | `den board terminal send` | `<text> [--board <id>]` | Inject raw text or escape sequences into the Terminal Session without executing it. | `den board terminal send "git status"` |
 | `den board terminal run` | `<command> [--board <id>]` | Send a shell command and press Enter in the target Terminal Board. | `den board terminal run "git status"` |

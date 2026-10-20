@@ -5,8 +5,49 @@ import Testing
 @testable import Den_Browser
 
 struct DenIPCClientValidationTests {
+    @Test(arguments: ["web", "terminal", "list"], [false, true])
+    func boardCommandsForwardDeskTarget(command: String, explicitDesk: Bool) async throws {
+        // Arrange
+        let deskID = UUID()
+        let destination: DeskTarget = explicitDesk ? .explicit(deskID) : .automatic
+        let expected: DenIPCOperation
+        let arguments: [String]
+        switch command {
+        case "web":
+            expected = .createWebBoard(
+                payload: DenBoardWebNewPayload(url: "https://example.com/", focus: true),
+                destination: destination)
+            arguments = ["board", "web", "new", "https://example.com/", "--focus"]
+        case "terminal":
+            expected = .createTerminalBoard(
+                payload: DenBoardTerminalNewPayload(path: nil, runCommand: nil, focus: true),
+                destination: destination)
+            arguments = ["board", "terminal", "new", "--focus"]
+        default:
+            expected = .boardList(target: destination)
+            arguments = ["board", "list", "-l"]
+        }
+        let socketPath = temporarySocketPath()
+        let server = DenSocketServer(socketPath: socketPath)
+        try server.start { data in
+            guard let request = try? JSONDecoder().decode(DenIPCRequest.self, from: data) else {
+                return encodedResponse(.failure("Could not decode request"))
+            }
+            return encodedResponse(request.operation == expected ? .success() : .failure("Unexpected destination"))
+        }
+        defer { server.stop() }
+
+        // Act
+        let result = try await runCLI(
+            arguments + (explicitDesk ? ["--desk", deskID.uuidString] : []),
+            socketPath: socketPath)
+
+        // Assert
+        #expect(result.status == 0)
+    }
+
     @Test(arguments: [false, true])
-    func dialogSaveForwardsDestinationAndExplicitOverwrite(overwrite: Bool) throws {
+    func dialogSaveForwardsDestinationAndExplicitOverwrite(overwrite: Bool) async throws {
         // Arrange
         let id = UUID()
         let socketPath = temporarySocketPath()
@@ -25,7 +66,7 @@ struct DenIPCClientValidationTests {
         defer { server.stop() }
 
         // Act
-        let result = try runCLI(
+        let result = try await runCLI(
             ["board", "web", "dialog", "save", id.uuidString, "--path", "report.pdf"]
                 + (overwrite ? ["--overwrite"] : []),
             socketPath: socketPath)
@@ -35,6 +76,18 @@ struct DenIPCClientValidationTests {
     }
 
     @Test(arguments: [
+        MalformedCLIInvocation(
+            arguments: ["board", "list", "--desk", "bad-id"],
+            expectedError: "Invalid desk ID: bad-id"
+        ),
+        MalformedCLIInvocation(
+            arguments: ["board", "web", "new", "https://example.com/", "--desk", "bad-id"],
+            expectedError: "Invalid desk ID: bad-id"
+        ),
+        MalformedCLIInvocation(
+            arguments: ["board", "terminal", "new", "--desk", "bad-id"],
+            expectedError: "Invalid desk ID: bad-id"
+        ),
         MalformedCLIInvocation(
             arguments: ["board", "web", "url", "--board", "bad-id"],
             expectedError: "Invalid board ID: bad-id"
@@ -64,12 +117,12 @@ struct DenIPCClientValidationTests {
             expectedError: "Invalid profile ID: bad-id"
         ),
     ])
-    func malformedExplicitIDsReturnStructuredFailures(_ invocation: MalformedCLIInvocation) throws {
+    func malformedExplicitIDsReturnStructuredFailures(_ invocation: MalformedCLIInvocation) async throws {
         // Arrange
         let socketPath = temporarySocketPath()
 
         // Act
-        let result = try runCLI(invocation.arguments, socketPath: socketPath)
+        let result = try await runCLI(invocation.arguments, socketPath: socketPath)
         let operationResult = try jsonResult(result.output)
 
         // Assert
@@ -78,7 +131,7 @@ struct DenIPCClientValidationTests {
         #expect(operationResult["error"] as? String == invocation.expectedError)
     }
 
-    @Test func profileOpenUsesCLIProfileFallback() throws {
+    @Test func profileOpenUsesCLIProfileFallback() async throws {
         // Arrange
         let expectedProfileID = UUID()
         let socketPath = temporarySocketPath()
@@ -97,7 +150,7 @@ struct DenIPCClientValidationTests {
         defer { server.stop() }
 
         // Act
-        let result = try runCLI(
+        let result = try await runCLI(
             ["profile", "open", "--profile", expectedProfileID.uuidString],
             socketPath: socketPath
         )
@@ -109,7 +162,7 @@ struct DenIPCClientValidationTests {
     }
 
     @Test(arguments: [["profile", "list"], ["health"]])
-    func profileListAndHealthIgnoreUnusedInvalidScope(arguments: [String]) throws {
+    func profileListAndHealthIgnoreUnusedInvalidScope(arguments: [String]) async throws {
         // Arrange
         let socketPath = temporarySocketPath()
         let expectedOperation: DenIPCOperation = arguments == ["health"] ? .health : .profileList
@@ -129,7 +182,7 @@ struct DenIPCClientValidationTests {
         defer { server.stop() }
 
         // Act
-        let result = try runCLI(arguments + ["--profile", "bad-profile"], socketPath: socketPath)
+        let result = try await runCLI(arguments + ["--profile", "bad-profile"], socketPath: socketPath)
         let operationResult = try jsonResult(result.output)
 
         // Assert
@@ -137,12 +190,12 @@ struct DenIPCClientValidationTests {
         #expect(operationResult["message"] as? String == "unused scope ignored")
     }
 
-    @Test func malformedAmbientCallerIsReportedForAutomaticTarget() throws {
+    @Test func malformedAmbientCallerIsReportedForAutomaticTarget() async throws {
         // Arrange
         let socketPath = temporarySocketPath()
 
         // Act
-        let result = try runCLI(
+        let result = try await runCLI(
             ["board", "web", "url"],
             socketPath: socketPath,
             environmentOverrides: ["DEN_BOARD_ID": "bad-caller"]
@@ -154,7 +207,7 @@ struct DenIPCClientValidationTests {
         #expect(operationResult["error"] as? String == "No target Web Board found")
     }
 
-    @Test func malformedAmbientCallerIsIgnoredForExplicitTarget() throws {
+    @Test func malformedAmbientCallerIsIgnoredForExplicitTarget() async throws {
         // Arrange
         let explicitBoardID = UUID()
         let socketPath = temporarySocketPath()
@@ -174,7 +227,7 @@ struct DenIPCClientValidationTests {
         defer { server.stop() }
 
         // Act
-        let result = try runCLI(
+        let result = try await runCLI(
             ["board", "web", "url", "--board", explicitBoardID.uuidString],
             socketPath: socketPath,
             environmentOverrides: ["DEN_BOARD_ID": "bad-caller"]
@@ -186,7 +239,7 @@ struct DenIPCClientValidationTests {
         #expect(operationResult["message"] as? String == "caller ignored")
     }
 
-    @Test func resolvedTargetContextDoesNotLeakIntoCLIJSON() throws {
+    @Test func resolvedTargetContextDoesNotLeakIntoCLIJSON() async throws {
         // Arrange
         let profileID = UUID()
         let boardID = UUID()
@@ -206,7 +259,7 @@ struct DenIPCClientValidationTests {
         defer { server.stop() }
 
         // Act
-        let result = try runCLI(
+        let result = try await runCLI(
             ["board", "web", "url", "--board", boardID.uuidString],
             socketPath: socketPath
         )
@@ -245,7 +298,7 @@ private func runCLI(
     _ arguments: [String],
     socketPath: String,
     environmentOverrides: [String: String] = [:]
-) throws -> CLIResult {
+) async throws -> CLIResult {
     let process = Process()
     process.executableURL = Bundle.main.bundleURL.appendingPathComponent("Contents/MacOS/den")
     process.arguments = arguments + ["--json", "--socket", socketPath]
@@ -261,10 +314,17 @@ private func runCLI(
     process.standardOutput = output
     process.standardError = error
 
-    try process.run()
+    // Let the socket server's Tasks run while the CLI waits for its response.
+    try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, any Error>) in
+        process.terminationHandler = { _ in continuation.resume() }
+        do {
+            try process.run()
+        } catch {
+            continuation.resume(throwing: error)
+        }
+    }
     let outputData = output.fileHandleForReading.readDataToEndOfFile()
     _ = error.fileHandleForReading.readDataToEndOfFile()
-    process.waitUntilExit()
 
     return CLIResult(status: process.terminationStatus, output: outputData)
 }

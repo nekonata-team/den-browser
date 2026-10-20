@@ -417,6 +417,14 @@ enum DenIPCClient {
         return .explicit(try requiredBoardID(rawID))
     }
 
+    static func deskTarget(_ rawID: String?) throws -> DeskTarget {
+        guard let rawID else { return .automatic }
+        guard let id = UUID(uuidString: rawID) else {
+            throw DenIPCClientError.usage("Invalid desk ID: \(rawID)")
+        }
+        return .explicit(id)
+    }
+
     static func requiredBoardID(_ rawID: String, invalidMessage: String? = nil) throws -> UUID {
         guard let id = UUID(uuidString: rawID) else {
             if let invalidMessage {
