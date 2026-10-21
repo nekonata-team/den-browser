@@ -17,6 +17,7 @@ struct BoardCommand: ParsableCommand {
             BoardListCommand.self,
             BoardFocusedCommand.self,
             BoardFocusCommand.self,
+            BoardMoveCommand.self,
             BoardWebCommand.self,
             BoardTerminalCommand.self,
             BoardInspectionCommand.self,
@@ -247,5 +248,37 @@ struct BoardCloseCommand: ParsableCommand {
             operation: .boardClose(target: try DenIPCClient.boardTarget(options.boardID)),
             options: options.common
         )
+    }
+}
+
+struct BoardMoveCommand: ParsableCommand {
+    static let configuration = CommandConfiguration(
+        commandName: "move", abstract: "Move a Board Group beside another Board or to the end of a Desk")
+
+    @OptionGroup var common: CLIOptions
+    @Option(name: .customLong("board"), help: "Board ID to move") var boardID: String
+    @Option(name: .customLong("left-of"), help: "Place left of this Board Group") var leftOf: String?
+    @Option(name: .customLong("right-of"), help: "Place right of this Board Group") var rightOf: String?
+    @Option(name: .customLong("desk"), help: "Place at the end of this Desk") var deskID: String?
+
+    private func destination() throws -> DenBoardMoveDestination {
+        guard [leftOf, rightOf, deskID].compactMap({ $0 }).count == 1 else {
+            throw ValidationError("Specify exactly one of --left-of, --right-of, or --desk")
+        }
+        if let leftOf { return .leftOf(try DenIPCClient.requiredBoardID(leftOf)) }
+        if let rightOf { return .rightOf(try DenIPCClient.requiredBoardID(rightOf)) }
+        if let deskID { return .desk(try DenIPCClient.requiredDeskID(deskID)) }
+        throw ValidationError("Missing move destination")
+    }
+
+    func validate() throws {
+        _ = try DenIPCClient.requiredBoardID(boardID)
+        _ = try destination()
+    }
+
+    func run() throws {
+        try DenIPCClient.execute(
+            operation: .moveBoard(boardID: try DenIPCClient.requiredBoardID(boardID), destination: try destination()),
+            options: common)
     }
 }

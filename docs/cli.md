@@ -77,7 +77,7 @@ For `den board terminal` operations on an existing Board, the caller's Terminal 
 `--focus` focuses the created Board or Desk (or reused Inspection Board), switching Desks when needed. It is available on `new` commands and `board web click --new-board`. Without it, the current Desk and Board remain focused.
 
 ### Board Targeting
-- `--board <id>`: Explicitly target a specific Board by its UUID. Available on existing-Board operations under `den board web`, `den board terminal`, and `den board inspection read`, plus `den board close` and `den board focus`; fails immediately if not found or invalid. Creation commands (`new`) do not accept `--board`.
+- `--board <id>`: Explicitly target a specific Board by its UUID. Available on existing-Board operations under `den board web`, `den board terminal`, and `den board inspection read`, plus `den board close`, `den board focus`, and `den board move`; fails immediately if not found or invalid. Creation commands (`new`) do not accept `--board`.
 - `den board close --board <id>` accepts any Board kind, including Inspection and Tutorial Boards. Web and Terminal Board commands require their corresponding Board kind.
 - Inspection commands require an explicit Board ID. `den board inspection read --board <id>` requires an Inspection Board; it does not infer one from ambient focus or choose another Board.
 
@@ -115,7 +115,18 @@ Commands for listing, focusing, creating, and managing Boards. Listing and creat
 | `den board list` | `[--desk <uuid>] [-l]` | List all Boards on the specified or ambient Desk with type (`web`/`inspection`/`terminal`/`tutorial`), label, and type-specific secondary information. `--desk` must identify an existing Desk in the resolved Profile; invalid or missing Desks fail without falling back. Listing does not change focus. JSON Inspection Board entries include their `target_board_id`. Use `-l` to include full Board IDs in human-readable output. | `den board list --desk <uuid> -l` |
 | `den board focused` | `[-l]` | Show the currently focused Board on the active Desk. Use `-l` to include full Board ID in human-readable output. | `den board focused -l` |
 | `den board focus` | `--board <id>` | Focus an existing Board of any kind in the resolved Profile, switching Desks when needed. Bring it into view even if already focused, dismiss temporary presentations, and enter Sheet Input. Does not activate the app or bring its window to the front. Returns the focused Board using the same JSON fields as `board focused`. | `den board focus --board 4F72344C-... --json` |
+| `den board move` | `--board <id> (--left-of <board-id> \| --right-of <board-id> \| --desk <uuid>)` | Move the entire Board Group left/right of another Board Group, including across Desks, or to the end of a Desk. Exactly one destination is required. | `den board move --board <id> --right-of <board-id>` |
 | `den board close` | `[--board <id>]` | Close the specified Board or the target Web Board. Explicit IDs fail (`exit 1`) if invalid or not found. | `den board close --board 4F72344C-...` |
+
+`board move` requires explicit source and destination IDs within the same resolved Profile.
+Selecting a Side Board moves its entire Board Group; a Side Board destination identifies its whole group.
+Left/right placement within the source group succeeds without changes. `--desk` appends the group,
+including when it is already on that Desk. Invalid or missing targets fail without moving anything.
+The displayed Desk is preserved. Reordering preserves Board focus; transfer preserves destination focus
+(or selects the moved Board when the destination is empty) and reassigns source focus only if its focused
+Board moved. Live runtimes remain attached to their Boards. The resulting order is saved.
+Success returns the moved Board using the same JSON fields as `board focused`; use `board focus`
+separately to show the moved Board.
 
 ### 3.3 `den board web` (Web Board and Sheet Operations)
 Commands operating on the Current Sheet of the resolved Web Board.

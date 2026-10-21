@@ -169,6 +169,32 @@ extension DenController {
             at: index)
     }
 
+    func moveBoardGroup(_ boardID: BoardID, to deskID: DeskID, before anchorID: BoardID?) -> Bool {
+        guard activeDrag == nil,
+            let source = boardIndices(for: boardID),
+            let targetOffset = state.desks.firstIndex(where: { $0.id == deskID }),
+            let group = BoardGroup.containing(boardID, in: state.desks[source.deskOffset].boards)
+        else { return false }
+        let groupIDs = Set(group.boards.map(\.id))
+        if let anchorID, groupIDs.contains(anchorID) { return true }
+        let remaining = state.desks[targetOffset].boards.filter { !groupIDs.contains($0.id) }
+        let insertionIndex: Int
+        if let anchorID {
+            guard let index = remaining.firstIndex(where: { $0.id == anchorID }) else { return false }
+            insertionIndex = index
+        } else {
+            insertionIndex = remaining.endIndex
+        }
+        transferBoardGroup(
+            containing: boardID, from: source.desk, to: DeskIndex(rawValue: targetOffset),
+            at: BoardIndex(rawValue: insertionIndex))
+        if state.desks[targetOffset].focusedBoardID == nil {
+            storage.state.desks[targetOffset].focusedBoardID = boardID
+        }
+        save()
+        return true
+    }
+
     func beginBoardDrag(_ boardID: BoardID) -> Bool {
         guard
             activeDrag == nil,

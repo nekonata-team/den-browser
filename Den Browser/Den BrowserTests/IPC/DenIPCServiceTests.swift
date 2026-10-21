@@ -10,6 +10,89 @@ import Testing
 @Suite(.serialized)
 @MainActor
 struct DenIPCServiceTests {
+    @Test(arguments: ["left", "right", "desk"], [false, true])
+    func boardMovePlacesWholeGroupAtExplicitDestination(position: String, sameDesk: Bool) async throws {
+        // Arrange
+        let directory = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let defaults = makeTestDefaults()
+        let manager = ProfileManager(
+            directoryURL: directory,
+            sheetNavigation: SheetNavigationManager(defaults: defaults, scriptSource: ""),
+            preferences: AppPreferences(defaults: defaults), removeDataStore: { _ in },
+            websiteDataStore: { _ in .nonPersistent() })
+        let controller = try #require(manager.controller(for: manager.personalProfileID))
+        let sourceDeskID = controller.presentedDeskID
+        let moved = try #require(controller.createBoard(urlString: "https://example.com/moved"))
+        let side = try #require(controller.createInspectionBoard(targetBoardID: moved, focus: false))
+        if !sameDesk { controller.createDesk(label: "Target", preset: .empty) }
+        let targetDeskID = controller.presentedDeskID
+        let anchor = try #require(controller.createBoard(urlString: "https://example.com/anchor"))
+        let anchorSide = try #require(controller.createInspectionBoard(targetBoardID: anchor, focus: false))
+        let tail = try #require(controller.createBoard(urlString: "https://example.com/tail", focus: false))
+        controller.focusDesk(sourceDeskID)
+        let destination: DenBoardMoveDestination
+        switch position {
+        case "left": destination = .leftOf(anchorSide.rawValue)
+        case "right": destination = .rightOf(anchorSide.rawValue)
+        default: destination = .desk(targetDeskID.rawValue)
+        }
+        let service = DenIPCService(profileManager: manager)
+
+        // Act
+        let response = await service.handleResult(
+            ipcRequest(.moveBoard(boardID: side.rawValue, destination: destination)))
+
+        // Assert
+        #expect(response.isOk)
+        #expect(controller.presentedDeskID == sourceDeskID)
+        let target = try #require(controller.state.desks.first(where: { $0.id == targetDeskID }))
+        let groupIDs = [moved, side]
+        let anchorIDs = [anchor, anchorSide]
+        let expected =
+            position == "left"
+            ? groupIDs + anchorIDs + [tail]
+            : position == "right" ? anchorIDs + groupIDs + [tail] : anchorIDs + [tail] + groupIDs
+        #expect(target.boards.map(\.id) == expected)
+        #expect(target.focusedBoardID == anchor)
+    }
+
+    @Test(arguments: ["source", "desk", "left", "right", "same-group"])
+    func boardMoveDoesNotMutateStateForUnavailableTargetsOrItsOwnGroup(target: String) async throws {
+        // Arrange
+        let directory = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let defaults = makeTestDefaults()
+        let manager = ProfileManager(
+            directoryURL: directory,
+            sheetNavigation: SheetNavigationManager(defaults: defaults, scriptSource: ""),
+            preferences: AppPreferences(defaults: defaults), removeDataStore: { _ in },
+            websiteDataStore: { _ in .nonPersistent() })
+        let controller = try #require(manager.controller(for: manager.personalProfileID))
+        let boardID = try #require(controller.createBoard(urlString: "https://example.com/"))
+        let sideID = try #require(controller.createInspectionBoard(targetBoardID: boardID, focus: false))
+        let before = controller.state
+        let destination: DenBoardMoveDestination
+        switch target {
+        case "desk": destination = .desk(UUID())
+        case "left": destination = .leftOf(UUID())
+        case "right": destination = .rightOf(UUID())
+        case "same-group": destination = .rightOf(sideID.rawValue)
+        default: destination = .desk(controller.presentedDeskID.rawValue)
+        }
+        let service = DenIPCService(profileManager: manager)
+
+        // Act
+        let response = await service.handleResult(
+            ipcRequest(
+                .moveBoard(
+                    boardID: target == "source" ? UUID() : boardID.rawValue, destination: destination)))
+
+        // Assert
+        #expect(response.isOk == (target == "same-group"))
+        #expect(controller.state == before)
+    }
+
     @Test(arguments: [false, true])
     func cancellingSaveDialogRequiresItsOwningBoard(differentBoard: Bool) async throws {
         // Arrange

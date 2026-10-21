@@ -5,6 +5,58 @@ import Testing
 @testable import Den_Browser
 
 struct DenIPCClientValidationTests {
+    @Test(arguments: ["--left-of", "--right-of", "--desk"])
+    func boardMoveForwardsExplicitDestination(option: String) async throws {
+        // Arrange
+        let boardID = UUID()
+        let targetID = UUID()
+        let destination: DenBoardMoveDestination
+        switch option {
+        case "--left-of": destination = .leftOf(targetID)
+        case "--right-of": destination = .rightOf(targetID)
+        default: destination = .desk(targetID)
+        }
+        let expected = DenIPCOperation.moveBoard(boardID: boardID, destination: destination)
+        let socketPath = temporarySocketPath()
+        let server = DenSocketServer(socketPath: socketPath)
+        try server.start { data in
+            let request = try? JSONDecoder().decode(DenIPCRequest.self, from: data)
+            return encodedResponse(request?.operation == expected ? .success() : .failure("Unexpected move"))
+        }
+        defer { server.stop() }
+
+        // Act
+        let result = try await runCLI(
+            ["board", "move", "--board", boardID.uuidString, option, targetID.uuidString], socketPath: socketPath)
+
+        // Assert
+        #expect(result.status == 0)
+    }
+
+    @Test(arguments: [
+        [], ["--desk", UUID().uuidString], ["--board", UUID().uuidString],
+        ["--board", "invalid", "--desk", UUID().uuidString],
+        ["--board", UUID().uuidString, "--desk", "invalid"],
+        ["--board", UUID().uuidString, "--left-of", "invalid"],
+        ["--board", UUID().uuidString, "--right-of", "invalid"],
+        ["--board", UUID().uuidString, "--left-of", UUID().uuidString, "--right-of", UUID().uuidString],
+        ["--board", UUID().uuidString, "--desk", UUID().uuidString, "--left-of", UUID().uuidString],
+        ["--board", UUID().uuidString, "--desk", UUID().uuidString, "--right-of", UUID().uuidString],
+    ])
+    func boardMoveRejectsMissingConflictingOrInvalidTargets(arguments: [String]) async throws {
+        // Arrange
+        let socketPath = temporarySocketPath()
+        let server = DenSocketServer(socketPath: socketPath)
+        try server.start { _ in encodedResponse(.success()) }
+        defer { server.stop() }
+
+        // Act
+        let result = try await runCLI(["board", "move"] + arguments, socketPath: socketPath)
+
+        // Assert
+        #expect(result.status != 0)
+    }
+
     @Test(arguments: [false, true], [false, true])
     func deskCommandsForwardExplicitOptions(remove: Bool, enabled: Bool) async throws {
         // Arrange

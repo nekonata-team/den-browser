@@ -36,7 +36,7 @@ public struct BoardMovement {
             let removedIndex = sourceBoards.firstIndex { ids.contains($0.id) } ?? 0
             let sourceWasFocused = snapshot.den.desks[sourceIndex].focusedBoardID.map(ids.contains) ?? false
             snapshot.den.desks[sourceIndex].boards.removeAll { ids.contains($0.id) }
-            if sourceWasFocused {
+            if sourceWasFocused && sourceIndex != targetIndex {
                 let remaining = snapshot.den.desks[sourceIndex].boards
                 snapshot.den.desks[sourceIndex].focusedBoardID =
                     remaining.indices.contains(removedIndex)

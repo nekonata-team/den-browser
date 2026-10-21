@@ -351,6 +351,41 @@ struct DenIPCTargetResolverTests {
         #expect(resolved.controller === controller2)
     }
 
+    @Test(arguments: ["source", "desk", "left", "right"])
+    func boardMoveRejectsTargetsOutsideItsProfile(target: String) async throws {
+        // Arrange
+        let directory = temporaryProfileDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let manager = makeProfileManager(directory: directory)
+        let controller = try #require(manager.controller(for: manager.personalProfileID))
+        let boardID = try #require(controller.createBoard(urlString: "https://example.com/source"))
+        let otherProfile = try #require(manager.createProfile(name: "Work", color: .purple))
+        let otherController = try #require(manager.controller(for: otherProfile.id))
+        let otherBoardID = try #require(otherController.createBoard(urlString: "https://example.com/target"))
+        let before = controller.state
+        let otherBefore = otherController.state
+        let destination: DenBoardMoveDestination
+        switch target {
+        case "left": destination = .leftOf(otherBoardID.rawValue)
+        case "right": destination = .rightOf(otherBoardID.rawValue)
+        case "desk": destination = .desk(otherController.presentedDeskID.rawValue)
+        default: destination = .desk(controller.presentedDeskID.rawValue)
+        }
+        let request = DenIPCRequest(
+            operation: .moveBoard(
+                boardID: target == "source" ? otherBoardID.rawValue : boardID.rawValue, destination: destination),
+            context: DenIPCCallerContext(profileID: manager.personalProfileID.rawValue))
+        let service = DenIPCService(profileManager: manager)
+
+        // Act
+        let response = await service.handleRequest(request).result
+
+        // Assert
+        #expect(!response.isOk)
+        #expect(controller.state == before)
+        #expect(otherController.state == otherBefore)
+    }
+
     @Test func boardCloseWithProfileIDClosesBoardInTargetProfile() async throws {
         // Arrange
         let directory = temporaryProfileDirectory()

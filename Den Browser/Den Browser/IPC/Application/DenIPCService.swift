@@ -82,6 +82,10 @@ final class DenIPCService {
             return await withBoardTarget(.explicit(boardID), context: request.context, kind: .any) {
                 self.handleBoardFocus(target: $0)
             }
+        case .moveBoard(let boardID, let destination):
+            return await withBoardTarget(.explicit(boardID), context: request.context, kind: .any) {
+                self.handleBoardMove(destination: destination, target: $0)
+            }
         case .boardClose(let target):
             let kind: DenIPCTargetResolver.TargetKind = target == .automatic ? .web : .any
             return await withBoardTarget(target, context: request.context, kind: kind) {
@@ -988,6 +992,44 @@ final class DenIPCService {
             return .failure("Could not create an Inspection Board for \(resolved.board.id.rawValue.uuidString)")
         }
         return .success(.createdBoard(id: inspectionID.rawValue.uuidString, message: nil, url: nil))
+    }
+
+    private func handleBoardMove(
+        destination: DenBoardMoveDestination, target resolved: ResolvedBoardTarget
+    ) -> DenIPCOperationResult {
+        let controller = resolved.controller
+        let desk: DeskState
+        let anchorID: BoardID?
+        switch destination {
+        case .desk(let id):
+            guard let target = controller.state.desks.first(where: { $0.id == DeskID(id) }) else {
+                return .failure("Desk not found: \(id)")
+            }
+            desk = target
+            anchorID = nil
+        case .leftOf(let id), .rightOf(let id):
+            let boardID = BoardID(id)
+            guard let indices = controller.boardIndices(for: boardID),
+                let group = BoardGroup.containing(boardID, in: controller.state.desks[indices.deskOffset].boards)
+            else { return .failure("Board not found: \(id)") }
+            desk = controller.state.desks[indices.deskOffset]
+            if group.boards.contains(where: { $0.id == resolved.board.id }) {
+                return .success(.board(boardInfo(resolved.board, focusedBoardID: desk.focusedBoardID)))
+            }
+            if case .leftOf = destination {
+                anchorID = group.primaryBoard.id
+            } else {
+                guard let lastID = group.boards.last?.id,
+                    let lastIndex = desk.boards.firstIndex(where: { $0.id == lastID })
+                else { return .failure("Board Group not found") }
+                anchorID = desk.boards.dropFirst(lastIndex + 1).first?.id
+            }
+        }
+        guard controller.moveBoardGroup(resolved.board.id, to: desk.id, before: anchorID) else {
+            return .failure("Could not move Board while a drag is active or the destination is unavailable")
+        }
+        let focusedID = controller.state.desks.first(where: { $0.id == desk.id })?.focusedBoardID
+        return .success(.board(boardInfo(resolved.board, focusedBoardID: focusedID)))
     }
 
     private func handleBoardClose(target resolved: ResolvedBoardTarget) -> DenIPCOperationResult {

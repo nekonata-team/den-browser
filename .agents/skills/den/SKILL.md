@@ -39,6 +39,12 @@ To create a Web or Terminal Board on another Desk, discover its UUID with `den d
 
 Board and Desk `new` commands preserve focus by default. Add `--focus` to focus the created target (or reused Inspection Board), switching Desks when needed.
 
+Move an existing Board Group with `den board move --board <id>` and exactly one of
+`--left-of <board-id>`, `--right-of <board-id>`, or `--desk <uuid>`. Left/right placement
+can move across Desks; `--desk` appends to that Desk. Side Boards move with their primary
+Board. Movement preserves the displayed Desk; use `den board focus --board <id> --json`
+separately to show the moved Board.
+
 ## Desk management
 
 Create an empty Desk with `den desk new <label> --json`; the response's
