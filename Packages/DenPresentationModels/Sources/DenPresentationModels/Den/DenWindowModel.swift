@@ -1,3 +1,4 @@
+public import DenApplication
 import DenDomain
 import Foundation
 import Observation
@@ -59,9 +60,6 @@ public final class DenWindowModel {
     }
 
     public struct BoardActions {
-        public let adjustBoardWidth: (BoardID, Double) -> Void
-        public let adjustDeskBoardWidths: (DeskID, Double) -> Void
-        public let resizeDeskBoards: (DeskID, Double) -> Bool
         public let placeDrawerItem: (UUID, Double?) -> BoardID?
         public let focusBoard: (BoardID, Bool) -> Void
         public let centerFocusedBoard: () -> Void
@@ -69,18 +67,12 @@ public final class DenWindowModel {
         public let cancelDeskDrag: () -> Void
 
         public init(
-            adjustBoardWidth: @escaping (BoardID, Double) -> Void,
-            adjustDeskBoardWidths: @escaping (DeskID, Double) -> Void,
-            resizeDeskBoards: @escaping (DeskID, Double) -> Bool,
             placeDrawerItem: @escaping (UUID, Double?) -> BoardID?,
             focusBoard: @escaping (BoardID, Bool) -> Void,
             centerFocusedBoard: @escaping () -> Void,
             cancelBoardDrag: @escaping () -> Void,
             cancelDeskDrag: @escaping () -> Void
         ) {
-            self.adjustBoardWidth = adjustBoardWidth
-            self.adjustDeskBoardWidths = adjustDeskBoardWidths
-            self.resizeDeskBoards = resizeDeskBoards
             self.placeDrawerItem = placeDrawerItem
             self.focusBoard = focusBoard
             self.centerFocusedBoard = centerFocusedBoard
@@ -145,6 +137,7 @@ public final class DenWindowModel {
     @ObservationIgnored let onConfirmOperation: (DenConfirmationRequest) -> Bool
     @ObservationIgnored let inputs: Inputs
     @ObservationIgnored let windowActions: WindowActions
+    @ObservationIgnored let boardSizing: BoardSizing
     @ObservationIgnored let boardActions: BoardActions
     @ObservationIgnored public let deskPresetActions: DeskPresetActions
     @ObservationIgnored let zmxActions: ZmxActions
@@ -163,6 +156,7 @@ public final class DenWindowModel {
         onConfirmOperation: @escaping (DenConfirmationRequest) -> Bool,
         inputs: Inputs,
         windowActions: WindowActions,
+        boardSizing: BoardSizing,
         boardActions: BoardActions,
         zmxActions: ZmxActions,
         deskPresetActions: DeskPresetActions,
@@ -179,6 +173,7 @@ public final class DenWindowModel {
         self.onConfirmOperation = onConfirmOperation
         self.inputs = inputs
         self.windowActions = windowActions
+        self.boardSizing = boardSizing
         self.boardActions = boardActions
         self.zmxActions = zmxActions
         self.deskPresetActions = deskPresetActions

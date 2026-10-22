@@ -94,15 +94,36 @@ Popup, Side Board, duplication and Drawer placement also share its insertion pat
 Native Runtime ownership, async zmx cancellation and window presentation. `DrawerPlacement` keeps
 its create-before-discard sequence. Application has no Presentation dependency.
 
+`BoardRemoval` owns Board removal and restoration against the same Profile Store.
+Its planRemoval method and BoardRestoration provide the pure calculations, records bounded removal history,
+consumes history only after successful restoration, and preserves save-failure state. Each call
+supplies the presented Desk and a synchronous notification destination. App handles Native disposal,
+input-source cleanup, Overview/reference invalidation, Desk presentation and feedback. Background
+CLI animation/removal preparation precedes Store mutation; cleanup and reference invalidation finish
+before persistence. Overview composition and IPC close use the operation directly; remaining
+App callers use the Controller adapter. Runtime ownership and disposal implementation remain in App.
+
 Personal Desk Preset management uses `DeskPresetOperations` in DenApplication for validation,
 shared-state updates, and persistence. App supplies the persistence function; Controller translates
 outcomes into confirmation and feedback. The management and save panels receive Preset values and
 narrow actions from App composition, without a Controller reference. Presets remain in the Profile's
 existing state source; the native resource adapter exposes their collection read-only.
 
-`BoardMovement` owns group reordering, Desk-to-Desk transfer, and order restoration against the
-same Profile state source. Normal actions, Overview, and drag handling share this entry point.
-Controller retains window focus, scrolling, PiP, drag lifecycle, and persistence timing.
+`BoardMovement` owns group reordering, Desk-to-Desk transfer, Board drag state and order restoration
+against the same Profile state source. Normal actions, Overview, drag handling and IPC share it.
+Committed moves save only when no drag is active; preview and order restoration do not save.
+Overview drops clear drag before saving and preserve the destination focus. Window moves request
+centering or Desk presentation synchronously before saving; App handles PiP and window effects.
+
+`BoardSizing` owns manual and paired resize, Desk-wide adjustment and fit-width updates against
+that source. Manual previews do not save until committed; adjustments request deferred persistence
+only when widths change, with the existing immediate-save route when no deferrer is installed.
+Window Model holds the concrete sizing operation privately; its sizing actions no longer return
+through Controller. It retains layout metrics, maximization, panel state and centering requests.
+
+`BoardDuplication.resolve` returns a new Board value or a request for Native zmx session preparation.
+The App adapter inserts ordinary copies through BoardCreation. zmx queries, cancellation and client
+execution retain their existing App lifetime and use the same creation operation after preparation.
 
 Preference value types follow their meaning: `SearchEngine` and `ExternalLinkDestination` belong
 to Domain, while `DrawerStyle` belongs to DenPresentationModels. `AppPreferences` owns their

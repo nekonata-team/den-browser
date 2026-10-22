@@ -1712,49 +1712,6 @@ struct DenControllerBoardTests {
         }
     }
 
-    @Test func mouseResizeChangesTargetBoardWidthWithinBounds() {
-        let boards = [board("First"), board("Second")]
-        withController(desks: [desk("Desk", boards: boards)]) { controller in
-            controller.resizeBoard(boards[1].id, to: 760)
-            #expect(controller.focusedDesk?.boards.map(\.width) == [520, 760])
-
-            controller.resizeBoard(boards[1].id, to: 100)
-            #expect(controller.focusedDesk?.boards[1].width == 280)
-
-            controller.resizeBoard(boards[1].id, to: 2_000)
-            #expect(controller.focusedDesk?.boards[1].width == 1400)
-        }
-    }
-
-    @Test func pairedMouseResizeKeepsOuterEdgesFixed() {
-        let boards = [board("First", width: 520), board("Second", width: 760)]
-        withController(desks: [desk("Desk", boards: boards)]) { controller in
-            // Arrange
-            let totalWidth = boards.map(\.width).reduce(0, +)
-
-            // Act
-            controller.resizeBoardPair(boards[0].id, to: 700)
-
-            // Assert
-            #expect(controller.focusedDesk?.boards.map(\.width) == [700, 580])
-            #expect(controller.focusedDesk?.boards.map(\.width).reduce(0, +) == totalWidth)
-        }
-    }
-
-    @Test func pairedMouseResizeRespectsBothBoardMinimumWidths() {
-        let boards = [board("First", width: 520), board("Second", width: 760)]
-        withController(desks: [desk("Desk", boards: boards)]) { controller in
-            // Arrange
-            let expectedMinimumPairWidth = BoardState.minimumWidth
-
-            // Act
-            controller.resizeBoardPair(boards[0].id, to: 2_000)
-
-            // Assert
-            #expect(controller.focusedDesk?.boards.map(\.width) == [1_000, expectedMinimumPairWidth])
-        }
-    }
-
     @Test func adjustsEveryBoardInFocusedDeskWithinBounds() {
         let primary = board("Narrow", width: 280)
         let side = BoardState(label: "Inspection Board", width: 360, targetBoardID: primary.id)

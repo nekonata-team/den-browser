@@ -20,14 +20,23 @@ final class DenWindowComposition {
             },
             isDragging: { controller.activeDrag != nil },
             actions: OverviewModel.Actions(
-                removeBoard: { controller.removeBoard($0, focusNext: $1) },
-                restoreBoard: { controller.restoreRecentlyRemovedBoard(present: false) },
+                removeBoard: {
+                    controller.storage.boardRemoval.remove(
+                        $0, presentedDeskID: controller.presentedDeskID, focusNext: $1,
+                        notify: controller.boardRemovalNotifications())
+                },
+                restoreBoard: {
+                    let result = controller.storage.boardRemoval.restore(
+                        presentedDeskID: controller.presentedDeskID, present: false,
+                        notify: controller.boardRemovalNotifications())
+                    return controller.handleBoardRestorationResult(result, present: false)
+                },
                 enterSelection: { controller.enterOverviewSelection(deskID: $0, boardID: $1) },
-                beginDrag: { controller.beginOverviewBoardDrag($0) },
-                finishDrag: { controller.finishOverviewBoardDrag($0, toDeskID: $1, at: $2) },
-                cancelDrag: { controller.cancelOverviewBoardDrag() },
-                moveBoard: { controller.moveOverviewBoardGroup($0, by: $1) },
-                moveBoardToDesk: { controller.moveOverviewBoardGroupToDesk($0, by: $1) }))
+                beginDrag: { controller.storage.boardMovement.beginOverviewDrag($0) },
+                finishDrag: { controller.storage.boardMovement.finishOverviewDrag($0, to: $1, at: $2) },
+                cancelDrag: { controller.storage.boardMovement.cancelOverviewDrag() },
+                moveBoard: { controller.storage.boardMovement.shiftInOverview($0, by: $1) },
+                moveBoardToDesk: { controller.storage.boardMovement.transferInOverview($0, by: $1) }))
         let drawer = DrawerModel(
             items: { controller.state.drawerItems },
             isBottomStyle: { controller.preferences.drawerStyle == .bottom },
@@ -96,10 +105,8 @@ final class DenWindowComposition {
                 reportWarning: { controller.reportFeedback($0, severity: .warning) },
                 didEnterDenMode: { controller.dispatchDenOperationEvent(.denModeEntered) },
                 didShowKeyboardShortcuts: { controller.dispatchDenOperationEvent(.keyboardShortcutsShown) }),
+            boardSizing: controller.storage.boardSizing,
             boardActions: DenWindowModel.BoardActions(
-                adjustBoardWidth: { controller.adjustBoardWidth($0, by: $1) },
-                adjustDeskBoardWidths: { controller.adjustDeskBoardWidths($0, by: $1) },
-                resizeDeskBoards: { controller.resizeDeskBoards($0, to: $1) },
                 placeDrawerItem: { controller.placeDrawerItemAsBoard($0, preferredWidth: $1) },
                 focusBoard: { controller.focusBoard($0, exitsDenMode: $1) },
                 centerFocusedBoard: { controller.centerFocusedBoard() },

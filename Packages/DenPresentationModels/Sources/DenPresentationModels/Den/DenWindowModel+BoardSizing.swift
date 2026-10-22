@@ -1,3 +1,4 @@
+import DenApplication
 import DenDomain
 import Foundation
 
@@ -9,13 +10,13 @@ public extension DenWindowModel {
     func adjustFocusedBoardWidth(by delta: Double) {
         guard let boardID = inputs.focusedBoard()?.id else { return }
         maximizedBoardID = nil
-        boardActions.adjustBoardWidth(boardID, delta)
+        boardSizing.adjustBoard(boardID, by: delta)
     }
 
     func adjustFocusedDeskBoardWidths(by delta: Double) {
         guard let deskID = inputs.focusedDesk()?.id else { return }
         maximizedBoardID = nil
-        boardActions.adjustDeskBoardWidths(deskID, delta)
+        boardSizing.adjustDesk(deskID, by: delta)
     }
 
     func updateBoardLayout(availableWidth: Double, spacing: Double) {
@@ -50,7 +51,7 @@ public extension DenWindowModel {
             boardWidthPanelMessage = "\(count) Boards cannot fit at this window width"
             return false
         }
-        guard boardActions.resizeDeskBoards(deskID, width) else { return false }
+        guard boardSizing.resizeDesk(deskID, to: width) else { return false }
         maximizedBoardID = nil
         hideBoardWidthPanel()
         centerFocusedBoard()

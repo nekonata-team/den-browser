@@ -20,7 +20,7 @@ struct BoardIndices {
 final class DenController {
     static let maximumDeskCount = DeskCreation.maximumDeskCount
     static let maximumRecentItemCount = BoardCreation.maximumRecentItemCount
-    static let maximumRecentlyRemovedBoardCount = 10
+    static let maximumRecentlyRemovedBoardCount = BoardRemoval.maximumHistoryCount
     static let maximumRecentlyDiscardedDrawerItemCount = 10
 
     let storage: DenProfileResources

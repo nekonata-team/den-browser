@@ -1026,7 +1026,7 @@ final class DenIPCService {
                 anchorID = desk.boards.dropFirst(lastIndex + 1).first?.id
             }
         }
-        guard controller.moveBoardGroup(resolved.board.id, to: desk.id, before: anchorID) else {
+        guard controller.storage.boardMovement.place(resolved.board.id, in: desk.id, before: anchorID) else {
             return .failure("Could not move Board while a drag is active or the destination is unavailable")
         }
         let focusedID = controller.state.desks.first(where: { $0.id == desk.id })?.focusedBoardID
@@ -1034,7 +1034,9 @@ final class DenIPCService {
     }
 
     private func handleBoardClose(target resolved: ResolvedBoardTarget) -> DenIPCOperationResult {
-        resolved.controller.removeBoard(resolved.board.id, origin: .cli)
+        resolved.controller.storage.boardRemoval.remove(
+            resolved.board.id, presentedDeskID: resolved.controller.presentedDeskID, origin: .cli,
+            notify: resolved.controller.boardRemovalNotifications())
         return .success(
             .closedBoard(
                 id: resolved.board.id.rawValue.uuidString,

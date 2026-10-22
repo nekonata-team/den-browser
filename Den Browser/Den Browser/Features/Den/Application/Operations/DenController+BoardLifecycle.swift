@@ -311,121 +311,28 @@ extension DenController {
         focusNext: Bool = false,
         origin: BoardOperationOrigin = .interactive
     ) {
-        guard let indices = boardIndices(for: boardID) else { return }
-        let isCLIBackgroundRemoval =
-            origin == .cli
-            && state.desks[indices.deskOffset].id == presentedDeskID
-            && state.desks[indices.deskOffset].focusedBoardID != boardID
-        let remove = { [self] in
-            if isCLIBackgroundRemoval {
-                _ = prepareBoardRemoval(origin: origin)
-            }
-            let sourceDesk = state.desks[indices.deskOffset]
-            guard let removal = BoardRemoval.remove(boardID, from: sourceDesk, focusNext: focusNext) else { return }
-            let removedIDs = Set(removal.removedBoards.map(\.id))
-            storage.state.desks[indices.deskOffset] = removal.desk
-            if sourceDesk.anchorBoardID.map({ removedIDs.contains($0) }) == true
-                || anchorJumpOriginBoardIDByDesk[sourceDesk.id].map({ removedIDs.contains($0) }) == true
-            {
-                anchorJumpOriginBoardIDByDesk.removeValue(forKey: sourceDesk.id)
-            }
-            storage.recentlyRemovedBoards.insert(removal.historyEntry, at: 0)
-            if recentlyRemovedBoards.count > Self.maximumRecentlyRemovedBoardCount {
-                storage.recentlyRemovedBoards.removeLast()
-            }
-            for removedBoard in removal.removedBoards {
-                if removedBoard.isInspection, let targetBoardID = removedBoard.sideBoardTargetBoardID {
-                    webRuntimes[targetBoardID]?.stopInspection()
-                }
-                disposeRuntime(for: removedBoard.id)
-                inputSourceTracker.boardWillRemove(removedBoard.id)
-            }
-
-            onWindowEffect?(
-                .overviewBoardRemoved(
-                    boardID: boardID, deskID: sourceDesk.id, oldIndex: removal.historyEntry.sourceBoardIndex))
-            invalidateReferences(toRemovedBoardIDs: removedIDs)
-            save()
-        }
-        if isCLIBackgroundRemoval {
-            onWindowEffect?(.suppressBoardMutationAnimation)
-        }
-        remove()
+        storage.boardRemoval.remove(
+            boardID, presentedDeskID: presentedDeskID, focusNext: focusNext, origin: origin,
+            notify: boardRemovalNotifications())
     }
 
     @discardableResult
     func restoreRecentlyRemovedBoard(present: Bool = true) -> BoardID? {
-        guard let recentlyRemovedBoard = recentlyRemovedBoards.first else {
-            reportFeedback("No removed board to restore.", severity: .warning)
-            return nil
-        }
-
-        let deskIndex: DeskIndex
-        let restoredDesk: DeskState
-        switch BoardRestoration.restore(
-            recentlyRemovedBoard, in: state.desks, presentedDeskID: presentedDeskID)
-        {
-        case .restored(let destinationDeskIndex, let desk):
-            deskIndex = destinationDeskIndex
-            restoredDesk = desk
-        case .focusExistingTutorial(let boardID):
-            storage.recentlyRemovedBoards.removeFirst()
-            if present { focusBoard(boardID, exitsDenMode: true) }
-            reportFeedback("Tutorial Board is already open.", severity: .warning)
-            return boardID
-        case .rejected(let failure):
-            switch failure {
-            case .sideBoardAlreadyExists:
-                reportFeedback("A Side Board already exists for this Board.", severity: .warning)
-            case .targetBoardMissing:
-                reportFeedback("The target Board no longer exists.", severity: .warning)
-            case .destinationDeskMissing:
-                break
-            }
-            return nil
-        }
-
-        let board = recentlyRemovedBoard.board
-        storage.state.desks[deskIndex.rawValue] = restoredDesk
-        let deskID = state.desks[deskIndex.rawValue].id
-        let changedDesk = present && setFocusedDesk(deskID)
-        if !changedDesk && presentedDeskID == deskID {
-            markNotificationsRead(for: board.id)
-        }
-        storage.recentlyRemovedBoards.removeFirst()
-        save()
-        return board.id
+        let result = storage.boardRemoval.restore(
+            presentedDeskID: presentedDeskID, present: present, notify: boardRemovalNotifications())
+        return handleBoardRestorationResult(result, present: present)
     }
 
     func duplicateFocusedBoard() {
-        guard let source = focusedBoard, !source.isSideBoard, !source.isTutorial else { return }
-
-        if source.isZmx {
+        guard let source = focusedBoard else { return }
+        switch BoardDuplication.resolve(source) {
+        case .create(let board):
+            insertBoard(board, afterBoardID: source.id, focus: true, origin: .interactive)
+        case .zmxSession:
             presentZmxDuplicationPanel(for: source)
-            return
+        case .unavailable:
+            break
         }
-        if let workingDirectory = source.terminalWorkingDirectory {
-            let board = BoardState(
-                label: source.label,
-                width: source.width,
-                workingDirectory: workingDirectory,
-                customLabel: source.customLabel)
-            insertBoard(board, afterBoardID: source.id, focus: true, origin: .interactive)
-            return
-        }
-        if source.isZellij {
-            let board = BoardState(
-                label: source.label,
-                width: source.width,
-                zellijSessionName: source.zellijSessionName,
-                customLabel: source.customLabel)
-            insertBoard(board, afterBoardID: source.id, focus: true, origin: .interactive)
-            return
-        }
-        duplicateBoard(
-            source,
-            currentSheetURL: source.currentSheetURL
-        )
     }
 
     private func presentZmxDuplicationPanel(for source: BoardState) {
@@ -519,38 +426,15 @@ extension DenController {
     }
 
     func duplicateFocusedBoardFromFirstSheet() {
-        guard let source = focusedBoard, !source.isSideBoard else { return }
-
-        if source.isZmx {
+        guard let source = focusedBoard else { return }
+        switch BoardDuplication.resolve(source, fromFirstSheet: true) {
+        case .create(let board):
+            insertBoard(board, afterBoardID: source.id, focus: true, origin: .interactive)
+        case .zmxSession:
             duplicateFocusedZmxBoard(suffix: "")
-            return
+        case .unavailable:
+            break
         }
-        if source.isTerminal {
-            duplicateFocusedBoard()
-            return
-        }
-        guard let firstSheetURL = source.firstSheetURL else { return }
-        duplicateBoard(
-            source,
-            currentSheetURL: firstSheetURL,
-            firstSheetURL: firstSheetURL
-        )
-    }
-
-    private func duplicateBoard(
-        _ source: BoardState,
-        currentSheetURL: URL?,
-        firstSheetURL: URL? = nil
-    ) {
-        let board = BoardState(
-            label: source.label,
-            width: source.width,
-            currentSheetURL: currentSheetURL,
-            firstSheetURL: firstSheetURL,
-            customLabel: source.customLabel,
-            sheetNavigationPaused: source.sheetNavigationPaused
-        )
-        insertBoard(board, afterBoardID: source.id, focus: true, origin: .interactive)
     }
 
     func renameFocusedBoard(to newLabel: String) {

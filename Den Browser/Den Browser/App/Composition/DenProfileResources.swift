@@ -11,10 +11,10 @@ final class DenProfileResources {
     @ObservationIgnored private let writer: DenStateWriter
     @ObservationIgnored let notificationOperations: NotificationOperations
     @ObservationIgnored let boardCreation: BoardCreation
+    @ObservationIgnored let boardRemoval: BoardRemoval
+    @ObservationIgnored let boardSizing: BoardSizing
 
-    var boardMovement: BoardMovement {
-        BoardMovement(state: data, writer: writer)
-    }
+    @ObservationIgnored let boardMovement: BoardMovement
 
     var deskPresetOperations: DeskPresetOperations {
         DeskPresetOperations(state: data, writer: writer, persist: onDeskPresetsSave ?? { _ in false })
@@ -90,15 +90,25 @@ final class DenProfileResources {
     ) {
         let shared = DenStateStore.make(
             initialState: DenSharedState(den: state, deskPresets: deskPresets, recentItems: recentItems))
+        let persistState: ((DenState) -> Bool)? = onSave.map { persist in
+            { persist(DenController.normalizedPersistedState($0)) }
+        }
         boardRuntimes = DenBoardRuntimes { boardID in onRuntimeOwnerChange?(boardID, nil) }
         data = shared.store
         writer = shared.writer
         notificationOperations = NotificationOperations(store: shared.store, writer: shared.writer)
+        boardMovement = BoardMovement(
+            state: shared.store, writer: shared.writer,
+            persist: persistState)
+        boardSizing = BoardSizing(
+            store: shared.store, writer: shared.writer,
+            persist: persistState, deferredSave: onDeferredSave)
+        boardRemoval = BoardRemoval(
+            store: shared.store, writer: shared.writer,
+            persist: persistState)
         boardCreation = BoardCreation(
             store: shared.store, writer: shared.writer,
-            persist: onSave.map { persist in
-                { persist(DenController.normalizedPersistedState($0)) }
-            },
+            persist: persistState,
             persistRecent: onRecentItemsSave,
             directoryExists: { path in
                 var isDirectory: ObjCBool = false

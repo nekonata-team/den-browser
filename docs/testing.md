@@ -49,6 +49,8 @@ Shared Swift test helpers belong under `Support`; test resource files remain und
 Test Board opening decisions through `BoardOpening.resolve` and insertion/Recent/save ordering
 through `BoardCreation` in the Application package. Keep Native/window/persistence connections
 in app integration tests; test OpenBoardModel directly against the same concrete operation.
+Test removal/restoration, duplication, movement and sizing directly in the Application package;
+App tests retain Native cleanup, reference invalidation and window presentation coverage.
 Test migrated notification operations directly through `NotificationOperations`; test remaining application operations and persistence through `DenController`; test the shared-state source directly through `DenStateStore` and its write capability. Test window presentation
 transitions through `DenWindowModel` and context-local state through the corresponding Model,
 while asserting resulting domain changes on their shared Store when needed. Test delayed presentation
