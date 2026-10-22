@@ -10,6 +10,19 @@ final class DenWindowComposition {
 
     init(controller: DenController, feedbackDuration: Duration = .seconds(5)) {
         self.controller = controller
+        let boardEditing = BoardEditingModel(
+            state: controller.storage.data, updates: controller.storage.boardUpdates,
+            recents: controller.storage.recents, movement: controller.storage.boardMovement,
+            focusedBoard: { controller.focusedBoard }, essentials: { controller.essentials },
+            searchEngine: { controller.preferences.searchEngine },
+            finishEditing: {
+                controller.onWindowEffect?(.dismissTemporaryPresentation)
+                controller.onWindowEffect?(.exitDenMode)
+            },
+            loadURL: { controller.webRuntimes[$0]?.load($1) },
+            restoreInput: { controller.restoreFocusedFirstResponder() },
+            duplicateZmx: { controller.duplicateFocusedZmxBoard(suffix: $0) },
+            focus: { controller.focusBoard($0) }, center: { controller.centerFocusedBoard() })
         let overview = OverviewModel(
             desks: { controller.state.desks },
             presentedDeskID: { controller.presentedDeskID },
@@ -75,7 +88,30 @@ final class DenWindowComposition {
             state: controller.storage.data,
             operations: controller.storage.notificationOperations,
             openSource: controller.openNotificationSource)
+        let desks = DeskListModel(
+            state: controller.storage.data, lifecycle: controller.storage.deskLifecycle,
+            movement: controller.storage.deskMovement, updates: controller.storage.deskUpdates,
+            presentedDeskID: { controller.presentedDeskID },
+            isAvailable: { controller.canPresentDesk?($0) ?? true }, select: { controller.focusDesk($0) },
+            notify: controller.deskLifecycleNotifications(),
+            didDuplicate: { source, copy in
+                for (original, duplicate) in zip(source.boards.filter { !$0.isTutorial }, copy.boards) {
+                    if let image = controller.facingCache.image(for: original.id) {
+                        controller.facingCache.setFacing(image, for: duplicate.id, at: nil)
+                    }
+                }
+            },
+            requestDeletion: { controller.onWindowEffect?(.requestConfirmation(.deleteDesk($0))) },
+            warn: { controller.reportFeedback($0, severity: .warning) },
+            finishEditing: {
+                controller.onWindowEffect?(.dismissTemporaryPresentation)
+                controller.onWindowEffect?(.exitDenMode)
+            },
+            copyID: { controller.copyDeskID($0) }, exportLinks: { controller.exportDeskLinks(for: $0) },
+            copyLinks: { controller.copyDeskLinks(for: $0) })
         let model = DenWindowModel(
+            boardEditing: boardEditing,
+            desks: desks,
             overview: overview,
             drawer: drawer,
             openBoard: openBoard,

@@ -239,11 +239,11 @@ enum AppActionHandler {
             case .focusNext: controller.focusNextDesk()
             case .movePrevious:
                 if let deskID = controller.focusedDesk?.id {
-                    controller.moveDesk(deskID, by: -1)
+                    windowModel.desks.moveDesk(deskID, by: -1)
                 }
             case .moveNext:
                 if let deskID = controller.focusedDesk?.id {
-                    controller.moveDesk(deskID, by: 1)
+                    windowModel.desks.moveDesk(deskID, by: 1)
                 }
             case .returnToPrevious: controller.returnToPreviousDesk()
             case .focus(let number): controller.focusDesk(number: number)
@@ -252,7 +252,7 @@ enum AppActionHandler {
             case .showReplacePanel: windowModel.showReplaceDeskPanel()
             case .showPresetManager: windowModel.showDeskPresetManagement()
             case .showRenamePanel: windowModel.showRenameDeskPanel()
-            case .delete: controller.deleteFocusedDesk()
+            case .delete: windowModel.desks.deleteFocusedDesk()
             case .adjustBoardWidths(let amount): windowModel.adjustFocusedDeskBoardWidths(by: amount)
             case .resizeBoards(let count): windowModel.resizeFocusedDeskBoards(toFit: count)
             case .reloadSheets: controller.reloadFocusedDeskSheets()

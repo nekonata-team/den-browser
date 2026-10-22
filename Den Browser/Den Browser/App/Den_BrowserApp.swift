@@ -11,6 +11,13 @@ struct Den_BrowserApp: App {
     @NSApplicationDelegateAdaptor(DenApplicationDelegate.self) private var appDelegate
     private let updaterController = UpdaterControllerCoordinator()
     @State private var preferences: AppPreferences
+    @State private var sheetNavigationSettingsModel: SheetNavigationSettingsModel
+    @State private var profileSettingsModel: ProfileSettingsModel
+    @State private var inputMethodSettingsModel: InputMethodSettingsModel
+    @State private var terminalSettingsModel: TerminalSettingsModel
+    @State private var essentialsSettingsModel: EssentialsSettingsModel
+    @State private var appearanceModel: AppearanceModel
+    @State private var shortcutSettingsModel: ShortcutSettingsModel
     @State private var sheetNavigation: SheetNavigationManager
     @State private var profileManager: ProfileManager
     @State private var keyboardController = KeyboardController()
@@ -22,7 +29,17 @@ struct Den_BrowserApp: App {
         let preferences = AppPreferences(defaults: configuration.defaults)
         let sheetNavigation = SheetNavigationManager(defaults: configuration.defaults)
         _preferences = State(initialValue: preferences)
+        _inputMethodSettingsModel = State(
+            initialValue: InputMethodSettingsModel(
+                read: { preferences.rememberBoardInputMethod }, write: { preferences.setRememberBoardInputMethod($0) }))
+        _terminalSettingsModel = State(initialValue: TerminalSettingsModel(preferences: preferences))
+        _essentialsSettingsModel = State(
+            initialValue: EssentialsSettingsModel(
+                read: { preferences.essentials }, persist: { preferences.setEssentials($0) }))
+        _appearanceModel = State(initialValue: AppearanceModel(preferences: preferences))
+        _shortcutSettingsModel = State(initialValue: ShortcutSettingsModel(preferences: preferences))
         _sheetNavigation = State(initialValue: sheetNavigation)
+        _sheetNavigationSettingsModel = State(initialValue: SheetNavigationSettingsModel(manager: sheetNavigation))
         PerformanceTrace.mark("Preferences & Configuration initialized", category: "Launch")
         let manager = ProfileManager(
             directoryURL: configuration.profileDirectoryURL,
@@ -33,6 +50,7 @@ struct Den_BrowserApp: App {
             websiteDataStore: configuration.websiteDataStore,
             ipcSocketPath: configuration.ipcSocketPath)
         _profileManager = State(initialValue: manager)
+        _profileSettingsModel = State(initialValue: ProfileSettingsModel(manager: manager))
         appDelegate.profileManager = manager
         PerformanceTrace.mark("ProfileManager initialized", category: "Launch")
         DenIPCService.shared.start(profileManager: manager)
@@ -52,6 +70,8 @@ struct Den_BrowserApp: App {
             )
             .environment(profileManager)
             .environment(preferences)
+            .environment(appearanceModel)
+            .environment(shortcutSettingsModel)
             .environment(\.colorScheme, .dark)
             .containerBackground(.clear, for: .window)
             .background {
@@ -79,6 +99,13 @@ struct Den_BrowserApp: App {
             SettingsView()
                 .environment(profileManager)
                 .environment(preferences)
+                .environment(appearanceModel)
+                .environment(essentialsSettingsModel)
+                .environment(terminalSettingsModel)
+                .environment(profileSettingsModel)
+                .environment(inputMethodSettingsModel)
+                .environment(sheetNavigationSettingsModel)
+                .environment(shortcutSettingsModel)
                 .environment(sheetNavigation)
         }
     }

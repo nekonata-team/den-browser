@@ -1,17 +1,6 @@
+import DenDomain
 import Foundation
 import WebKit
-
-struct DownloadActivity: Equatable, Identifiable {
-    let id: UUID
-    let filename: String
-    var fractionCompleted: Double?
-
-    init(id: UUID = UUID(), filename: String, fractionCompleted: Double? = nil) {
-        self.id = id
-        self.filename = filename
-        self.fractionCompleted = fractionCompleted
-    }
-}
 
 enum DownloadActivityEvent: Equatable {
     case started(DownloadActivity)

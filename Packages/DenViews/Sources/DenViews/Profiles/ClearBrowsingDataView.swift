@@ -1,0 +1,100 @@
+import DenDomain
+import SwiftUI
+
+public struct ClearBrowsingDataView: View {
+    public let profile: ProfileState?
+    public let onClear: (Set<BrowsingDataCategory>) async -> Void
+    public let onDismiss: () -> Void
+
+    @State private var selectedCategories: Set<BrowsingDataCategory> = Set(BrowsingDataCategory.allCases)
+    @State private var isClearing = false
+
+    public init(
+        profile: ProfileState? = nil, onClear: @escaping (Set<BrowsingDataCategory>) async -> Void,
+        onDismiss: @escaping () -> Void
+    ) {
+        self.profile = profile
+        self.onClear = onClear
+        self.onDismiss = onDismiss
+    }
+
+    public var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            if let profile {
+                HStack(spacing: 8) {
+                    Circle()
+                        .fill(profileDisplayColor(for: profile.color))
+                        .frame(width: 12, height: 12)
+                    Text("Clear Browsing Data for \(profile.name)")
+                        .font(.headline)
+                }
+
+                Text("Select the types of browsing data you want to clear for this profile.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+
+                VStack(alignment: .leading, spacing: 12) {
+                    ForEach(BrowsingDataCategory.allCases) { category in
+                        Toggle(isOn: binding(for: category)) {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(browsingDataLabel(for: category))
+                                    .font(.body)
+                                Text(browsingDataDescription(for: category))
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                        .toggleStyle(.checkbox)
+                    }
+                }
+                .padding(.vertical, 4)
+
+                HStack {
+                    Spacer()
+                    Button("Cancel") {
+                        onDismiss()
+                    }
+                    .disabled(isClearing)
+
+                    Button("Clear Data", role: .destructive) {
+                        clearData()
+                    }
+                    .disabled(selectedCategories.isEmpty || isClearing)
+                }
+            } else {
+                Text("Profile not found")
+                    .font(.headline)
+                HStack {
+                    Spacer()
+                    Button("Close") {
+                        onDismiss()
+                    }
+                }
+            }
+        }
+        .padding()
+        .frame(width: 420)
+    }
+
+    private func binding(for category: BrowsingDataCategory) -> Binding<Bool> {
+        Binding(
+            get: { selectedCategories.contains(category) },
+            set: { isSelected in
+                if isSelected {
+                    selectedCategories.insert(category)
+                } else {
+                    selectedCategories.remove(category)
+                }
+            }
+        )
+    }
+
+    private func clearData() {
+        isClearing = true
+        Task {
+            await onClear(selectedCategories)
+            isClearing = false
+            onDismiss()
+        }
+    }
+}

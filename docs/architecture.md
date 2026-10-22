@@ -197,7 +197,8 @@ App adapters retain Profile lifecycle and native resources.
 
 `DenPresentationModels` depends on Foundation, Observation, `DenDomain`, and `DenApplication`.
 It contains Models and state/effect values, with no Views or shared visual components.
-Shared components and the Notification View belong to DenViews; other Feature Views still reside in App. Controller imports use the presentation value contracts.
+DenViews contains shared components, feature panels, Tutorial, Drawer lists, headers, and settings contents.
+App assembles their data and native callbacks; Views that directly connect Runtime or Facing still reside in App.
 Existing Models receive live data getters and only the operations they use. Models may also receive concrete
 Application operations through public construction initializers, retaining the Store and operations privately.
 Such initializers use `public import DenApplication`; View-facing properties and methods expose Domain
@@ -206,9 +207,13 @@ or native runtimes. The app's `App/Composition/DenWindowComposition` supplies
 the data and operations; [Window presentation model](#window-presentation-model) describes its lifecycle and effect connection.
 
 UDF uses two paths: shared-data changes invalidate reads; window effects request presentation changes.
-Unmigrated Views read through the read-only DenController facade; NotificationListView reads its Model.
+Feature Views read their Models; native presentation adapters still read through DenController.
 Views request operations instead of writing shared values.
-Getters forward to the observable source without copying authoritative data.
+Getters forward to the observable source without copying authoritative data. BoardEditingModel and DeskListModel
+retain concrete shared operations privately and are created once per DenWindowModel. The View tree, Commands,
+and Keyboard use that window instance. Settings Models read the existing AppPreferences or ProfileManager
+owner on each access; drafts remain local to their Views. Shortcut values live in the Model module,
+while AppKit key conversion and recording belong to Views.
 Native runtimes and persistence callbacks stay in the app adapter and do not enter `DenSharedState` or its serialization.
 
 State ownership:
@@ -253,7 +258,7 @@ implementations without constructing a screen Model. This boundary follows
 `M0BoundaryProbe` in App composition retains the native display construction probe.
 The real Notification Model/View replaced the initial Board order probes; API validation now
 checks NotificationListModel. `NativeSurfaceView` verifies the display connection.
-The product's `DenController` workflows, native integration, and Feature Views still remain in the app target.
+Native integration, Runtime/Facing Views, and Controller adapters remain in the app target.
 Their folder boundaries are not compiler-enforced. Layer import guards
 reject Presentation access to the mutable adapter. This boundary follows
 [ADR 0062](./adr/0062-profile-state-source-and-presentation-models.md).

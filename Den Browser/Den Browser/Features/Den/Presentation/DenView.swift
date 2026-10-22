@@ -4,22 +4,6 @@ import DenViews
 import SFSafeSymbols
 import SwiftUI
 
-private enum DenOverlayLayer {
-    static let activePanel: Double = 1
-    static let deskFilter: Double = 2
-    static let drawer: Double = 3
-    static let notificationDismissArea: Double = 4
-    static let notificationList: Double = 5
-    static let toast: Double = 10
-}
-
-private func dismissBlocker(onDismiss: @escaping () -> Void) -> some View {
-    Color.clear
-        .contentShape(Rectangle())
-        .onTapGesture(perform: onDismiss)
-        .accessibilityHidden(true)
-}
-
 struct DenView<Header: View>: View {
     private let profileName: String?
     private let profileColor: Color
@@ -96,7 +80,8 @@ struct DenView<Header: View>: View {
                 )
                 DenFeedbackOverlay(
                     profileColor: profileColor,
-                    shouldReduceMotion: shouldReduceMotion
+                    shouldReduceMotion: shouldReduceMotion,
+                    activities: controller.activeDownloads
                 )
                 .zIndex(DenOverlayLayer.toast)
             }
@@ -115,6 +100,8 @@ struct DenView<Header: View>: View {
             .animation(DenMotion.spatial(reduceMotion: shouldReduceMotion), value: windowModel.isDrawerOpen)
             .animation(DenMotion.spatial(reduceMotion: shouldReduceMotion), value: preferences.drawerStyle)
         }
+        .environment(windowModel.boardEditing)
+        .environment(windowModel.desks)
         .environment(windowModel.overview)
         .environment(windowModel.drawer)
         .environment(windowModel.openBoard)
@@ -189,6 +176,7 @@ struct DenView<Header: View>: View {
 
             if deskFilter.isPresented {
                 DeskFilterOverlay(profileColor: profileColor)
+                    .zIndex(DenOverlayLayer.deskFilter)
             }
 
             BoardStripIndicator(profileColor: profileColor)
@@ -254,279 +242,6 @@ extension DenView where Header == EmptyView {
     }
 }
 
-private struct DeskFilterOverlay: View {
-    @Environment(DeskFilterModel.self) private var deskFilter
-    @Environment(AppPreferences.self) private var preferences
-    @Environment(\.accessibilityDifferentiateWithoutColor) private var differentiateWithoutColor
-    @Environment(\.accessibilityReduceMotion) private var systemReduceMotion
-    let profileColor: Color
-    @FocusState private var isFocused: Bool
-
-    var body: some View {
-        HStack(spacing: 8) {
-            Image(systemSymbol: .magnifyingglass)
-                .foregroundStyle(deskFilter.isInputActive ? .primary : .secondary)
-                .accessibilityHidden(true)
-
-            TextField(
-                text: Binding(
-                    get: { deskFilter.query },
-                    set: { deskFilter.setQuery($0) }
-                ),
-                prompt: Text("Filter boards")
-            ) {
-                Text("Filter Boards")
-            }
-            .labelsHidden()
-            .textFieldStyle(.plain)
-            .focused($isFocused)
-            .disabled(!deskFilter.isInputActive)
-            .accessibilityIdentifier("desk-filter-input")
-
-            Text("\(deskFilter.filteredBoards.count)/\(deskFilter.totalBoardCount)")
-                .font(.caption.monospacedDigit())
-                .foregroundStyle(.secondary)
-        }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 8)
-        .frame(width: DenLayout.deskFilterWidth)
-        .glassEffect(in: RoundedRectangle(cornerRadius: DenRadius.medium, style: .continuous))
-        .overlay {
-            RoundedRectangle(cornerRadius: DenRadius.medium, style: .continuous)
-                .stroke(
-                    deskFilter.isInputActive
-                        ? (differentiateWithoutColor
-                            ? Color.primary : profileColor.opacity(DenSurfaceColors.emphasisOpacity))
-                        : Color.primary.opacity(0.16),
-                    lineWidth: deskFilter.isInputActive ? 1.5 : 1
-                )
-        }
-        .padding(.top, DenLayout.outerInset)
-        .transition(DenMotion.panelTransition(reduceMotion: shouldReduceMotion))
-        .zIndex(DenOverlayLayer.deskFilter)
-        .onTapGesture {
-            deskFilter.enter()
-        }
-        .onAppear {
-            DispatchQueue.main.async {
-                isFocused = deskFilter.isInputActive
-            }
-        }
-        .onChange(of: deskFilter.isInputActive) { _, isActive in
-            isFocused = isActive
-        }
-        .onChange(of: deskFilter.query) { _, newValue in
-            if isFocused {
-                TextInputComposition.syncActiveFieldEditor(to: newValue)
-            }
-        }
-        .accessibilityIdentifier("desk-filter")
-    }
-
-    private var shouldReduceMotion: Bool {
-        DenMotion.shouldReduceMotion(
-            preference: preferences.motionPreference,
-            systemReduceMotion: systemReduceMotion
-        )
-    }
-}
-
-#Preview {
-    let defaults = UserDefaults(suiteName: "dev.nekonata.denbrowser.preview") ?? .standard
-    let preferences = AppPreferences(defaults: defaults)
-    let sheetNavigation = SheetNavigationManager(defaults: defaults)
-    let controller = DenController(
-        state: .sample,
-        websiteDataStore: .nonPersistent(),
-        sheetNavigation: sheetNavigation,
-        preferences: preferences)
-    let composition = DenWindowComposition(controller: controller)
-    let windowModel = composition.model
-    DenView()
-        .environment(controller)
-        .environment(windowModel)
-        .environment(preferences)
-        .onAppear { composition.connect() }
-        .onDisappear { composition.disconnect() }
-}
-
-private struct BoardStripIndicator: View {
-    private static let dotHeight: CGFloat = 6
-    private static let sideDotHeight: CGFloat = 4
-    private static let groupSpacing: CGFloat = 8
-    private static let sideSpacing: CGFloat = 4
-
-    let profileColor: Color
-
-    @Environment(DenController.self) private var controller
-    @Environment(DenWindowModel.self) private var windowModel
-    @Environment(AppPreferences.self) private var preferences
-    @Environment(\.accessibilityReduceMotion) private var systemReduceMotion
-
-    var body: some View {
-        if shouldShowBoardIndicator {
-            content
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
-                .padding(.bottom, DenLayout.outerInset)
-                .allowsHitTesting(windowModel.temporaryContext == nil)
-                .accessibilityHidden(windowModel.temporaryContext != nil)
-                .transition(.opacity)
-        }
-    }
-
-    private var shouldShowBoardIndicator: Bool {
-        !windowModel.isZenViewPresented
-            && windowModel.temporaryContext == nil
-            && (controller.focusedDesk?.boards.count ?? 0) > 1
-    }
-
-    private var content: some View {
-        let deskFilter = windowModel.deskFilter
-        let boards =
-            deskFilter.isPresented
-            ? deskFilter.filteredBoards
-            : controller.focusedDesk?.boards ?? []
-        let focusedBoardID =
-            deskFilter.isPresented
-            ? deskFilter.selectionBoardID
-            : controller.focusedDesk?.focusedBoardID
-        let anchorBoardID = controller.focusedDesk?.anchorBoardID
-
-        return HStack(spacing: 0) {
-            ForEach(Array(boards.enumerated()), id: \.element.id) { index, board in
-                let isFocused = board.id == focusedBoardID
-                let isAnchor = board.id == anchorBoardID
-                let isAttachedSide =
-                    index > 0 && board.sideBoardTargetBoardID == boards[index - 1].id
-                let dotSize = board.isSideBoard ? Self.sideDotHeight : Self.dotHeight
-                let leadingGap: CGFloat =
-                    index == 0 ? 0 : (isAttachedSide ? Self.sideSpacing : Self.groupSpacing)
-                Button {
-                    controller.focusBoard(board.id)
-                } label: {
-                    Capsule()
-                        .fill(
-                            isAnchor
-                                ? profileColor.opacity(isFocused ? 1 : 0.72)
-                                : Color.primary.opacity(isFocused ? 1 : (board.isSideBoard ? 0.22 : 0.28))
-                        )
-                        .frame(width: isFocused ? (board.isSideBoard ? 14 : 18) : dotSize, height: dotSize)
-                        .frame(height: Self.dotHeight)
-                        .padding(.horizontal, isAttachedSide ? 1 : 2)
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .padding(.leading, leadingGap)
-                .help(board.isSideBoard ? "\(board.displayName) (Side Board)" : board.displayName)
-                .accessibilityLabel(
-                    [
-                        "\(board.displayName) Board",
-                        board.isSideBoard ? "Side Board" : nil,
-                        isAnchor ? "Anchor Board" : nil,
-                    ]
-                    .compactMap { $0 }
-                    .joined(separator: ", ")
-                )
-            }
-        }
-        .frame(height: Self.dotHeight)
-        .animation(DenMotion.spatial(reduceMotion: reduceMotion), value: focusedBoardID)
-        .animation(DenMotion.spatial(reduceMotion: reduceMotion), value: boards.map(\.id))
-        .accessibilityElement(children: .contain)
-        .accessibilityIdentifier("board-strip-indicator")
-    }
-
-    private var reduceMotion: Bool {
-        DenMotion.shouldReduceMotion(
-            preference: preferences.motionPreference,
-            systemReduceMotion: systemReduceMotion
-        )
-    }
-}
-
-private struct DenFeedbackOverlay: View {
-    let profileColor: Color
-    let shouldReduceMotion: Bool
-
-    @Environment(DenController.self) private var controller
-    @Environment(DenWindowModel.self) private var windowModel
-    @Environment(\.accessibilityReduceMotion) private var systemReduceMotion
-
-    var body: some View {
-        VStack(alignment: .trailing, spacing: 8) {
-            ForEach(controller.activeDownloads) { activity in
-                DownloadActivityView(activity: activity, tint: profileColor)
-                    .transition(feedbackTransition)
-            }
-
-            if let toast = windowModel.displayedFeedback {
-                ToastView(toast: toast) {
-                    windowModel.handleTap(on: toast)
-                }
-                .transition(feedbackTransition)
-            }
-        }
-        .padding(.trailing, 20)
-        .padding(.bottom, 20)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
-        .animation(
-            windowModel.displayedFeedback == nil ? .easeIn(duration: 0.15) : .easeOut(duration: 0.15),
-            value: windowModel.displayedFeedback?.id
-        )
-        .animation(
-            DenMotion.feedback(reduceMotion: shouldReduceMotion),
-            value: controller.activeDownloads.map(\.id)
-        )
-    }
-
-    private var feedbackTransition: AnyTransition {
-        systemReduceMotion
-            ? .opacity
-            : .move(edge: .bottom).combined(with: .opacity)
-    }
-}
-
-private struct DenNotificationOverlay: View {
-    let profileColor: Color
-    let shouldShowHeader: Bool
-
-    @Environment(DenWindowModel.self) private var windowModel
-    @Environment(AppPreferences.self) private var preferences
-    @Environment(\.accessibilityReduceMotion) private var systemReduceMotion
-
-    var body: some View {
-        if windowModel.isNotificationListPresented, windowModel.isZenViewPresented {
-            dismissBlocker(onDismiss: windowModel.closeNotificationList)
-                .zIndex(DenOverlayLayer.notificationDismissArea)
-
-            NotificationListView(
-                profileColor: profileColor
-            )
-            .glassEffect(
-                .regular,
-                in: RoundedRectangle(cornerRadius: DenRadius.large, style: .continuous)
-            )
-            .padding(
-                .top,
-                shouldShowHeader
-                    ? DenLayout.denHeaderHeight + DenLayout.panelGap
-                    : DenLayout.outerInset
-            )
-            .padding(.trailing, DenLayout.outerInset)
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
-            .transition(DenMotion.panelTransition(reduceMotion: shouldReduceMotion))
-            .zIndex(DenOverlayLayer.notificationList)
-        }
-    }
-
-    private var shouldReduceMotion: Bool {
-        DenMotion.shouldReduceMotion(
-            preference: preferences.motionPreference,
-            systemReduceMotion: systemReduceMotion
-        )
-    }
-}
-
 private struct DenDrawerOverlay: View {
     let size: CGSize
     let profileColor: Color
@@ -553,7 +268,9 @@ private struct DenDrawerOverlay: View {
                     isDenMode: { windowModel.isDenMode },
                     isDrawerOpen: { windowModel.isDrawerOpen },
                     motionPreference: preferences.motionPreference,
-                    drawerRuntime: { controller.drawerRuntime(for: $0) },
+                    peek: { item, isFocused in
+                        DrawerWebSurface(webView: controller.drawerRuntime(for: item).webView, isFocused: isFocused)
+                    },
                     placeFromContextMenu: { _ = controller.placeDrawerItemAsBoard($0) },
                     placeAsBoard: { _ = windowModel.placeDrawerItemAsBoard($0) }
                 )
@@ -584,6 +301,7 @@ private struct DenActivePanelOverlay: View {
     let profileColor: Color
     let shouldShowHeader: Bool
 
+    @Environment(\.openSettings) private var openSettings
     @Environment(DenController.self) private var controller
     @Environment(DenWindowModel.self) private var windowModel
     @Environment(ProfileManager.self) private var profileManager
@@ -608,7 +326,19 @@ private struct DenActivePanelOverlay: View {
     private func activePanel(newBoardWidth: CGFloat, boardHeight: CGFloat) -> some View {
         switch windowModel.temporaryContext {
         case .universalSearch:
-            panelOverlay(UniversalSearchPanel(profileName: profileName ?? "", profileColor: profileColor))
+            panelOverlay(
+                UniversalSearchPanel(
+                    profileColor: profileColor,
+                    sourceItems: UniversalSearchActions.items(
+                        controller: controller, profiles: profileManager.profiles, profileName: profileName ?? ""),
+                    recentItems: controller.recentItems, boards: controller.state.desks.flatMap(\.boards),
+                    perform: { target, inDrawer in
+                        UniversalSearchActions.perform(
+                            target, controller: controller, windowModel: windowModel, inDrawer: inDrawer,
+                            openProfile: { id in
+                                profileManager.profile(id: id) != nil && profileManager.openWindow(for: id)
+                            }, openSettings: { openSettings() })
+                    }, restoreInput: { controller.restoreFocusedFirstResponder() }))
         case .essentialsPrefix:
             panelOverlay(
                 EssentialsPrefixPanel(

@@ -100,6 +100,8 @@ public final class DenWindowModel {
         }
     }
 
+    public let boardEditing: BoardEditingModel
+    public let desks: DeskListModel
     public let overview: OverviewModel
     public let drawer: DrawerModel
     public let openBoard: OpenBoardModel
@@ -145,6 +147,8 @@ public final class DenWindowModel {
     @ObservationIgnored private var lastReceivedFeedbackID: UUID?
 
     public init(
+        boardEditing: BoardEditingModel,
+        desks: DeskListModel,
         overview: OverviewModel,
         drawer: DrawerModel,
         openBoard: OpenBoardModel,
@@ -162,6 +166,8 @@ public final class DenWindowModel {
         deskPresetActions: DeskPresetActions,
         feedbackDuration: Duration = .seconds(5)
     ) {
+        self.boardEditing = boardEditing
+        self.desks = desks
         self.overview = overview
         self.drawer = drawer
         self.openBoard = openBoard

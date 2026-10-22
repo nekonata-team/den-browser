@@ -1,27 +1,8 @@
 import CoreGraphics
 import DenDomain
+import DenPresentationModels
 import DenViews
 import Foundation
-
-enum BoardStripCoordinateSpace {
-    static let name = "board-strip"
-}
-
-enum FocusedBoardCentering: String, CaseIterable, Identifiable {
-    case never
-    case always
-    case onOverflow = "on-overflow"
-
-    var id: Self { self }
-
-    var label: String {
-        switch self {
-        case .never: "Never"
-        case .always: "Always"
-        case .onOverflow: "When Overflowing"
-        }
-    }
-}
 
 struct BoardLayout {
     struct Parameters {

@@ -1,5 +1,6 @@
 import DenDomain
 import DenPresentationModels
+import DenViews
 import SwiftUI
 
 struct ActivatedBoardView: View {

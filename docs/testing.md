@@ -163,7 +163,10 @@ Runtime disposal after the final window closes.
 SwiftPM suites, without App, WebKit, or Ghostty. The default unit recipe includes these suites.
 `NotificationListModelTests` protects shared Observation and per-window dispatch; the app's
 `NotificationWindowTests` protects clear confirmation, source focus, feedback/effect order, and
-window destinations. Keyboard tests retain the integration with the same window Model.
+window destinations. DeskFilterModelTests exercises filtering and selection without App construction;
+DeskFilterKeyboardTests retains routing, IME, and window-lifecycle integration. BoardEditingModelTests
+checks current targets and native notification order. PreferencesPresentationTests checks live settings
+Observation, and WindowFeatureModelsTests checks Commands and feature Models against one window target.
 
 Before merge, run `just check`, then only the focused UI tests admitted by the rule above, then code review. Add
 exploratory validation when warranted, such as for UI behavior changes or milestone acceptance. Turn

@@ -5,6 +5,11 @@ import DenViews
 import SFSafeSymbols
 import SwiftUI
 
+struct BoardFocusRequest: Equatable {
+    let deskID: DeskID
+    let boardID: BoardID
+}
+
 struct BoardStripLayoutKey: Equatable {
     let ids: [BoardID]
     let widths: [Double]

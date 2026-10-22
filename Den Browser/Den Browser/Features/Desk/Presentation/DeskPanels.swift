@@ -362,37 +362,3 @@ struct SaveDeskPresetPanel: View {
         }
     }
 }
-
-struct RenameDeskPanel: View {
-    @Environment(DenController.self) private var controller
-    @Environment(DenWindowModel.self) private var windowModel
-    @State private var text = ""
-    @FocusState private var isFocused: Bool
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: DenPanelLayout.contentSpacing) {
-            DenPanelHeader(systemSymbol: .pencil) {
-                TextField(
-                    text: $text,
-                    prompt: Text("Desk label")
-                ) {
-                    Text("Rename desk")
-                }
-                .denPanelHeaderField()
-                .focused($isFocused)
-                .onSubmit {
-                    TextInputComposition.performUnlessActive {
-                        controller.renameFocusedDesk(to: text)
-                    }
-                }
-            }
-            DenPanelHint("Press Return to confirm, Escape to cancel")
-        }
-        .denPanel()
-        .onAppear {
-            text = controller.focusedDesk?.label ?? ""
-            DispatchQueue.main.async { isFocused = true }
-        }
-        .onExitCommand { windowModel.hideRenameDeskPanel() }
-    }
-}
