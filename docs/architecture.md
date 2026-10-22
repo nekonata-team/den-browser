@@ -103,6 +103,26 @@ CLI animation/removal preparation precedes Store mutation; cleanup and reference
 before persistence. Overview composition and IPC close use the operation directly; remaining
 App callers use the Controller adapter. Runtime ownership and disposal implementation remain in App.
 
+`DeskLifecycle` reuses DeskCreation/DeskDeletion/DeskReplacement for creation, duplication,
+confirmed replacement and deletion. App supplies the calling window's
+presented Desk, insertion anchor, availability predicate and synchronous notification destination.
+Replacement/deletion preparation disposes native resources before the Store changes; reference
+invalidation finishes before saving. Confirmations remain window presentation state, and the
+confirmed operation revalidates its Desk target. Native Facing copies stay in App after duplication.
+
+Window assignment, PiP and input-source changes stay in the existing App presentation adapter.
+`DeskUpdates` records names, scroll offsets and the existing shared focusedDeskID.
+Only after App accepts a Desk switch does it ask DeskUpdates to record that selection;
+the operation never owns a window's presentedDeskID. `DeskMovement` owns Desk reordering and drag
+state; previews/order restoration do not persist, while drag completion clears drag before saving.
+
+`DenReset` preserves the existing sequence: prepare Profile/window/native cleanup, cancel drag,
+replace Den data, synchronize the invoking window's Desk/preferences, clear input and transient
+histories/notifications, clear window references, save, then finish presentation and feedback.
+It uses the same Store and retains Recents and personal Presets, as before. App keeps its existing
+Profile-window cleanup and native ownership callbacks. None of these operations retains a window,
+Model, Runtime, availability predicate or notification destination.
+
 Personal Desk Preset management uses `DeskPresetOperations` in DenApplication for validation,
 shared-state updates, and persistence. App supplies the persistence function; Controller translates
 outcomes into confirmation and feedback. The management and save panels receive Preset values and

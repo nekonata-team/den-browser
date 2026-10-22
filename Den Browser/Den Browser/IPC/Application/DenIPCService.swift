@@ -1106,8 +1106,11 @@ final class DenIPCService {
             return .failure("Cannot create more than \(DeskCreation.maximumDeskCount) Desks")
         }
         guard
-            let desk = resolved.controller.createDesk(
-                label: label, preset: .empty, after: resolved.desk.id, focus: focus)
+            let desk = resolved.controller.storage.deskLifecycle.create(
+                label: label, boards: BuiltInDeskPreset.empty.boards,
+                focusedBoardIndex: BuiltInDeskPreset.empty.focusedBoardIndex,
+                presentedDeskID: resolved.controller.presentedDeskID, after: resolved.desk.id, focus: focus,
+                notify: resolved.controller.deskLifecycleNotifications())
         else { return .failure("Could not create Desk") }
         return .success(.createdDesk(id: desk.id.rawValue.uuidString))
     }
@@ -1119,7 +1122,9 @@ final class DenIPCService {
         guard force || desk.boards.isEmpty else {
             return .failure("Desk is not empty (Boards: \(desk.boards.count)); use --force to remove it and its Boards")
         }
-        controller.confirmDeskDeletion(desk.id)
+        controller.storage.deskLifecycle.delete(
+            desk.id, presentedDeskID: controller.presentedDeskID,
+            isAvailable: { controller.canPresentDesk?($0) ?? true }, notify: controller.deskLifecycleNotifications())
         guard !controller.state.desks.contains(where: { $0.id == desk.id }) else {
             return .failure("Could not remove Desk: no available replacement Desk")
         }

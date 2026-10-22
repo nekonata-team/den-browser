@@ -13,6 +13,10 @@ final class DenProfileResources {
     @ObservationIgnored let boardCreation: BoardCreation
     @ObservationIgnored let boardRemoval: BoardRemoval
     @ObservationIgnored let boardSizing: BoardSizing
+    @ObservationIgnored let deskLifecycle: DeskLifecycle
+    @ObservationIgnored let deskUpdates: DeskUpdates
+    @ObservationIgnored let deskMovement: DeskMovement
+    @ObservationIgnored let denReset: DenReset
 
     @ObservationIgnored let boardMovement: BoardMovement
 
@@ -97,6 +101,10 @@ final class DenProfileResources {
         data = shared.store
         writer = shared.writer
         notificationOperations = NotificationOperations(store: shared.store, writer: shared.writer)
+        deskLifecycle = DeskLifecycle(store: shared.store, writer: shared.writer, persist: persistState)
+        deskUpdates = DeskUpdates(store: shared.store, writer: shared.writer, persist: persistState)
+        deskMovement = DeskMovement(store: shared.store, writer: shared.writer, persist: persistState)
+        denReset = DenReset(store: shared.store, writer: shared.writer, persist: persistState)
         boardMovement = BoardMovement(
             state: shared.store, writer: shared.writer,
             persist: persistState)

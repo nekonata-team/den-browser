@@ -26,14 +26,11 @@ extension DenController {
     }
 
     func duplicateDesk(_ deskID: DeskID) {
-        guard let source = state.desks.first(where: { $0.id == deskID }) else { return }
-        let preset = PersonalDeskPreset(label: source.label, desk: source)
         guard
-            let copy = createDesk(
-                label: source.label, boards: preset.boards, focusedBoardIndex: preset.focusedBoardIndex,
-                after: source.id)
+            let duplication = storage.deskLifecycle.duplicate(
+                deskID, presentedDeskID: presentedDeskID, notify: deskLifecycleNotifications())
         else { return }
-        for (original, duplicate) in zip(source.boards.filter { !$0.isTutorial }, copy.boards) {
+        for (original, duplicate) in zip(duplication.source.boards.filter { !$0.isTutorial }, duplication.copy.boards) {
             if let image = facingCache.image(for: original.id) {
                 facingCache.setFacing(image, for: duplicate.id, at: nil)
             }
@@ -45,20 +42,9 @@ extension DenController {
         label: String, boards: [DeskPresetBoard], focusedBoardIndex: BoardIndex?, after deskID: DeskID? = nil,
         focus: Bool = true
     ) -> DeskState? {
-        guard
-            let creation = DeskCreation.create(
-                label: label, presetBoards: boards, focusedBoardIndex: focusedBoardIndex,
-                in: state.desks, presentedDeskID: deskID ?? presentedDeskID)
-        else { return nil }
-        storage.state.desks = creation.desks
-        if focus {
-            setFocusedDesk(creation.createdDesk.id)
-            onWindowEffect?(.dismissTemporaryPresentation)
-            onWindowEffect?(.exitDenMode)
-        }
-        save()
-        dispatchDenOperationEvent(.deskCreated)
-        return creation.createdDesk
+        storage.deskLifecycle.create(
+            label: label, boards: boards, focusedBoardIndex: focusedBoardIndex,
+            presentedDeskID: presentedDeskID, after: deskID, focus: focus, notify: deskLifecycleNotifications())
     }
 
     func replaceFocusedDesk(label: String, preset: BuiltInDeskPreset) -> DeskReplacementResult {
@@ -113,22 +99,10 @@ extension DenController {
 
     private func applyDeskReplacement(_ replacement: PendingDeskReplacement) {
         guard
-            let result = DeskReplacement.replace(
-                replacement.deskID, label: replacement.label, presetBoards: replacement.boards,
-                focusedBoardIndex: replacement.focusedBoardIndex, in: state.desks)
+            storage.deskLifecycle.replace(
+                replacement.deskID, label: replacement.label, boards: replacement.boards,
+                focusedBoardIndex: replacement.focusedBoardIndex, notify: deskLifecycleNotifications())
         else { return }
-
-        onWindowEffect?(.suppressBoardMutationAnimation)
-        let removedBoardIDs = Set(result.removedBoards.map(\.id))
-        for board in result.removedBoards {
-            disposeRuntime(for: board.id)
-        }
-        storage.state.desks[result.deskIndex.rawValue] = result.desk
-        anchorJumpOriginBoardIDByDesk.removeValue(forKey: replacement.deskID)
-        invalidateReferences(toRemovedBoardIDs: removedBoardIDs)
-        onWindowEffect?(.dismissTemporaryPresentation)
-        onWindowEffect?(.exitDenMode)
-        save()
         reportFeedback("Replaced Desk with Preset.", severity: .success)
     }
 
@@ -149,38 +123,16 @@ extension DenController {
     func confirmDeskDeletion(_ deskID: DeskID) { deleteDesk(deskID) }
 
     private func deleteDesk(_ deskID: DeskID) {
-        guard
-            let deletion = DeskDeletion.delete(
-                deskID, from: state.desks,
-                isAvailable: { canPresentDesk?($0) ?? true })
-        else { return }
-        onWindowEffect?(.suppressBoardMutationAnimation)
-        let desk = deletion.removedDesk
-        for board in desk.boards {
-            disposeRuntime(for: board.id)
-        }
-
-        let wasPresented = presentedDeskID == deskID
-        if wasPresented {
-            setFocusedDesk(deletion.replacementDeskID, autoPIP: false)
-        }
-        storage.state.desks = deletion.desks
-        anchorJumpOriginBoardIDByDesk.removeValue(forKey: deskID)
-        invalidateReferences(toRemovedBoardIDs: Set(desk.boards.map(\.id)))
-        invalidateReferences(toRemovedDeskID: deskID)
-        if wasPresented { onWindowEffect?(.exitDenMode) }
-        save()
+        storage.deskLifecycle.delete(
+            deskID, presentedDeskID: presentedDeskID, isAvailable: { canPresentDesk?($0) ?? true },
+            notify: deskLifecycleNotifications())
     }
 
     func renameFocusedDesk(to newLabel: String) {
-        guard let deskIndex = focusedDeskIndex else { return }
-        let trimmed = newLabel.trimmingCharacters(in: .whitespacesAndNewlines)
-        if !trimmed.isEmpty {
-            storage.state.desks[deskIndex.rawValue].label = trimmed
+        storage.deskUpdates.rename(presentedDeskID, to: newLabel) {
+            onWindowEffect?(.dismissTemporaryPresentation)
+            onWindowEffect?(.exitDenMode)
         }
-        onWindowEffect?(.dismissTemporaryPresentation)
-        onWindowEffect?(.exitDenMode)
-        save()
     }
 
     func deskScrollOffset(for deskID: DeskID) -> CGFloat? {
@@ -189,12 +141,7 @@ extension DenController {
     }
 
     func saveDeskScrollOffset(_ offset: CGFloat?, for deskID: DeskID) {
-        guard let deskIndex = state.desks.firstIndex(where: { $0.id == deskID }) else { return }
-        let current = state.desks[deskIndex].scrollOffsetX
-        let newDouble = offset.map { Double($0) }
-        guard current != newDouble else { return }
-        storage.state.desks[deskIndex].scrollOffsetX = newDouble
-        save()
+        storage.deskUpdates.saveScrollOffset(offset.map(Double.init), for: deskID)
     }
 
     func copyDeskID(_ deskID: DeskID, pasteboard: NSPasteboard? = nil) {

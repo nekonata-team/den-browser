@@ -12,6 +12,43 @@ import WebKit
 @MainActor
 @Suite(.serialized)
 struct ProfileManagerTests {
+    @Test func resetClosesOtherWindowsInSameProfileAndPreservesOtherProfiles() throws {
+        // Arrange
+        let directory = temporaryProfileDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let manager = makeProfileManager(directory: directory)
+        let profileID = manager.personalProfileID
+        let sourceRoute = ProfileWindowRoute(windowID: profileID.rawValue, profileID: profileID)
+        let source = try #require(manager.controller(for: sourceRoute))
+        source.createDesk(label: "Detached", preset: .empty)
+        let route = try #require(
+            manager.routeForOpeningDesk(
+                source.presentedDeskID, profileID: profileID, sourceWindowID: sourceRoute.windowID))
+        let detached = try #require(manager.controller(for: route))
+        let shared = source.storage
+        let otherProfile = try #require(manager.createProfile(name: "Other", color: .blue))
+        let other = try #require(manager.controller(for: otherProfile.id))
+        other.createTerminalBoard(workingDirectory: "/tmp")
+        let otherState = other.state
+
+        // Act
+        source.resetDen()
+
+        // Assert
+        #expect(source.storage === shared)
+        #expect(detached.storage === shared)
+        #expect(manager.controllers(for: profileID).count == 1)
+        #expect(manager.controllers(for: profileID).first === source)
+        #expect(
+            !manager.isDeskPresentedInAnotherWindow(
+                detached.presentedDeskID, profileID: profileID, excludingWindowID: sourceRoute.windowID))
+        #expect(source.state.desks.count == 1)
+        #expect(source.presentedDeskID == source.state.desks[0].id)
+        #expect(source.state.desks[0].boards.isEmpty)
+        #expect(manager.controllers(for: otherProfile.id).first === other)
+        #expect(other.state == otherState)
+    }
+
     @Test func profileManagerCreatesPersonalProfileByDefault() throws {
         // Arrange
         let directory = temporaryProfileDirectory()

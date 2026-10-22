@@ -51,6 +51,9 @@ through `BoardCreation` in the Application package. Keep Native/window/persisten
 in app integration tests; test OpenBoardModel directly against the same concrete operation.
 Test removal/restoration, duplication, movement and sizing directly in the Application package;
 App tests retain Native cleanup, reference invalidation and window presentation coverage.
+Desk lifecycle, Desk movement, reset ordering and existing Preset calculations also run in the
+independent Application target; confirmation, Profile-window assignment and Native Facing remain
+in their existing App integration suites.
 Test migrated notification operations directly through `NotificationOperations`; test remaining application operations and persistence through `DenController`; test the shared-state source directly through `DenStateStore` and its write capability. Test window presentation
 transitions through `DenWindowModel` and context-local state through the corresponding Model,
 while asserting resulting domain changes on their shared Store when needed. Test delayed presentation

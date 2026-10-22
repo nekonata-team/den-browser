@@ -191,40 +191,19 @@ extension DenController {
     }
 
     func beginDeskDrag(_ deskID: DeskID) -> Bool {
-        guard
-            activeDrag == nil,
-            state.desks.contains(where: { $0.id == deskID })
-        else {
-            return false
-        }
-
-        storage.activeDrag = .desk(deskID)
-        return true
+        storage.deskMovement.beginDrag(deskID)
     }
 
     func previewDeskMove(_ deskID: DeskID, to targetIndex: DeskIndex) {
-        let targetOffset = targetIndex.rawValue
-        guard
-            let sourceIndex = state.desks.firstIndex(where: { $0.id == deskID }),
-            state.desks.indices.contains(targetOffset),
-            sourceIndex != targetOffset
-        else { return }
-
-        let desk = storage.state.desks.remove(at: sourceIndex)
-        storage.state.desks.insert(desk, at: targetOffset)
+        storage.deskMovement.preview(deskID, to: targetIndex)
     }
 
     func restoreDeskOrder(_ deskIDs: [DeskID]) {
-        let order = Dictionary(uniqueKeysWithValues: deskIDs.enumerated().map { ($1, $0) })
-        storage.state.desks.sort {
-            (order[$0.id] ?? Int.max) < (order[$1.id] ?? Int.max)
-        }
+        storage.deskMovement.restoreOrder(deskIDs)
     }
 
     func finishDeskDrag() {
-        guard case .desk? = activeDrag else { return }
-        storage.activeDrag = nil
-        save()
+        storage.deskMovement.finishDrag()
     }
 
     func requestDeskDragCancellation() {
@@ -233,14 +212,7 @@ extension DenController {
     }
 
     func moveDesk(_ deskID: DeskID, by delta: Int) {
-        guard
-            activeDrag == nil,
-            let deskIndex = state.desks.firstIndex(where: { $0.id == deskID }),
-            state.desks.indices.contains(deskIndex + delta)
-        else { return }
-
-        storage.state.desks.swapAt(deskIndex, deskIndex + delta)
-        save()
+        storage.deskMovement.move(deskID, by: delta)
     }
 
     private func moveDeskFocus(by delta: Int) {

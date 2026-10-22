@@ -176,12 +176,11 @@ final class DenController {
     }
 
     var canCreateDesk: Bool {
-        state.desks.count < Self.maximumDeskCount
+        storage.deskLifecycle.canCreate
     }
 
     var canDeleteFocusedDesk: Bool {
-        state.desks.count > 1
-            && state.desks.contains { $0.id != presentedDeskID && (canPresentDesk?($0.id) ?? true) }
+        storage.deskLifecycle.canDelete(presentedDeskID, isAvailable: { canPresentDesk?($0) ?? true })
     }
 
     init(
@@ -311,24 +310,29 @@ final class DenController {
     }
 
     func resetDen() {
-        onWillResetDen?()
-        releaseRuntimes()
-        releaseWindowResources()
-        if case .board? = activeDrag { onWindowEffect?(.cancelBoardDrag) }
-        if case .desk? = activeDrag { onWindowEffect?(.cancelDeskDrag) }
-        storage.state = .sample
-        presentedDeskID = state.focusedDeskID
-        preferences.setBoardRailPresented(false)
-        storage.activeDrag = nil
-        onWindowEffect?(.clearBoardInputRequests)
-        storage.recentlyRemovedBoards.removeAll()
-        storage.recentlyDiscardedDrawerItems.removeAll()
-        storage.notificationOperations.clearAll()
-        previousFocusedDeskID = nil
-        anchorJumpOriginBoardIDByDesk.removeAll()
-        save()
-        onWindowEffect?(.resetPresentation)
-        reportFeedback("Reset Den completed.", severity: .success)
+        storage.denReset.perform { notice in
+            switch notice {
+            case .prepare:
+                onWillResetDen?()
+                releaseRuntimes()
+                releaseWindowResources()
+            case .cancelDrag(.board):
+                onWindowEffect?(.cancelBoardDrag)
+            case .cancelDrag(.desk):
+                onWindowEffect?(.cancelDeskDrag)
+            case .stateReplaced(let deskID):
+                presentedDeskID = deskID
+                preferences.setBoardRailPresented(false)
+            case .clearInputRequests:
+                onWindowEffect?(.clearBoardInputRequests)
+            case .clearWindowReferences:
+                previousFocusedDeskID = nil
+                anchorJumpOriginBoardIDByDesk.removeAll()
+            case .finished:
+                onWindowEffect?(.resetPresentation)
+                reportFeedback("Reset Den completed.", severity: .success)
+            }
+        }
     }
 
     @discardableResult
@@ -439,7 +443,7 @@ final class DenController {
         }
         previousFocusedDeskID = presentedDeskID
         presentedDeskID = deskID
-        storage.state.focusedDeskID = deskID
+        storage.deskUpdates.recordPresentedDesk(deskID)
         onWindowEffect?(.clearBoardInputRequests)
         if let boardID = focusedDesk?.focusedBoardID {
             inputSourceTracker.boardDidFocus(boardID, isEnabled: preferences.rememberBoardInputMethod)
