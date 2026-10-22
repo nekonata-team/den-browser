@@ -44,25 +44,20 @@ final class DenWindowComposition {
                 kill: { try await client.killSession($0) })
         }
         let openBoard = OpenBoardModel(
-            openInDrawer: { controller.openInDrawer(input: $0) },
-            openBoard: { input, width, afterBoardID in
+            creation: controller.storage.boardCreation,
+            openingRequest: { input, width, afterBoardID in
                 let rootSessionName: String?
                 if case .session(let sessionName)? = BoardInputResolver.resolveZmxInput(input) {
                     rootSessionName = zmxSessions.rootSessionName(for: sessionName)
                 } else {
                     rootSessionName = nil
                 }
-                switch controller.requestOpenBoard(
-                    input: input,
-                    preferredWidth: width,
-                    afterBoardID: afterBoardID,
-                    opensFromOpenBoardPanel: true,
+                return controller.boardOpeningRequest(
+                    input: input, preferredWidth: width, afterBoardID: afterBoardID,
                     zmxRootSessionName: rootSessionName)
-                {
-                case .accepted: return nil
-                case .rejected(let message): return message
-                }
-            })
+            },
+            notify: controller.boardCreationNotifications(returnsToOpenBoard: true),
+            openInDrawer: { controller.openInDrawer(input: $0) })
         let deskFilter = DeskFilterModel(
             focusedDesk: { controller.focusedDesk },
             focusBoard: { controller.focusBoard($0, exitsDenMode: true) })

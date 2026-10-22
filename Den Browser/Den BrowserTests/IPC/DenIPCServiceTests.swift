@@ -216,6 +216,8 @@ struct DenIPCServiceTests {
                     payload: DenBoardTerminalNewPayload(path: nil, runCommand: nil, focus: false),
                     destination: .explicit(targetDeskID.rawValue)
                 )))
+        let presentedAfterBackgroundCreation = controller.presentedDeskID
+        let focusedAfterBackgroundCreation = controller.focusedBoard?.id
         let drawerResponse = await service.handleResult(
             ipcRequest(.drawer(command: .place(id: itemID.uuidString), target: .explicit(targetDeskID.rawValue))))
 
@@ -228,6 +230,8 @@ struct DenIPCServiceTests {
         #expect(controller.boardIndices(for: webBoardID)?.deskOffset == targetDeskIndex)
         #expect(controller.boardIndices(for: terminalBoardID)?.deskOffset == targetDeskIndex)
         #expect(controller.boardIndices(for: drawerBoardID)?.deskOffset == targetDeskIndex)
+        #expect(presentedAfterBackgroundCreation == visibleDeskID)
+        #expect(focusedAfterBackgroundCreation == visibleBoardID)
     }
 
     @Test func inspectionBoardCreationUsesExplicitTargetWithoutChangingFocus() async throws {

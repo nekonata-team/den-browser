@@ -965,14 +965,15 @@ final class DenIPCService {
         context: DenIPCCallerContext
     ) -> DenIPCOperationResult {
         guard
-            let boardID = resolved.controller.createBoard(
+            let boardID = resolved.controller.storage.boardCreation.createWeb(
                 urlString: payload.url,
-                preferredWidth: payload.width,
-                afterBoardID: newBoardInsertionAnchor(
-                    context: context, in: resolved.controller, deskID: resolved.desk.id),
-                focus: payload.focus,
-                origin: .cli,
-                deskID: resolved.desk.id
+                width: payload.width ?? resolved.controller.inheritedBoardWidth,
+                searchEngine: resolved.controller.preferences.searchEngine,
+                target: resolved.controller.boardCreationTarget(
+                    afterBoardID: newBoardInsertionAnchor(
+                        context: context, in: resolved.controller, deskID: resolved.desk.id),
+                    focus: payload.focus, origin: .cli, deskID: resolved.desk.id),
+                notify: resolved.controller.boardCreationNotifications()
             ), let board = resolved.controller.board(for: boardID)
         else {
             return .failure("Failed to open board with \(payload.url)")
@@ -1058,14 +1059,14 @@ final class DenIPCService {
         }
 
         guard
-            let boardID = resolved.controller.createTerminalBoard(
+            let boardID = resolved.controller.storage.boardCreation.createTerminal(
                 workingDirectory: resolvedDir,
-                preferredWidth: payload.width,
-                afterBoardID: newBoardInsertionAnchor(
-                    context: context, in: resolved.controller, deskID: resolved.desk.id),
-                focus: payload.focus,
-                origin: .cli,
-                deskID: resolved.desk.id
+                width: payload.width ?? resolved.controller.inheritedBoardWidth,
+                target: resolved.controller.boardCreationTarget(
+                    afterBoardID: newBoardInsertionAnchor(
+                        context: context, in: resolved.controller, deskID: resolved.desk.id),
+                    focus: payload.focus, origin: .cli, deskID: resolved.desk.id),
+                notify: resolved.controller.boardCreationNotifications()
             )
         else {
             return .failure("Failed to create terminal board")

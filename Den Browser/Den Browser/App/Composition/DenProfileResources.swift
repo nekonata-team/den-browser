@@ -10,6 +10,7 @@ final class DenProfileResources {
     let data: DenStateStore
     @ObservationIgnored private let writer: DenStateWriter
     @ObservationIgnored let notificationOperations: NotificationOperations
+    @ObservationIgnored let boardCreation: BoardCreation
 
     var boardMovement: BoardMovement {
         BoardMovement(state: data, writer: writer)
@@ -93,6 +94,16 @@ final class DenProfileResources {
         data = shared.store
         writer = shared.writer
         notificationOperations = NotificationOperations(store: shared.store, writer: shared.writer)
+        boardCreation = BoardCreation(
+            store: shared.store, writer: shared.writer,
+            persist: onSave.map { persist in
+                { persist(DenController.normalizedPersistedState($0)) }
+            },
+            persistRecent: onRecentItemsSave,
+            directoryExists: { path in
+                var isDirectory: ObjCBool = false
+                return FileManager.default.fileExists(atPath: path, isDirectory: &isDirectory) && isDirectory.boolValue
+            })
         self.onSave = onSave
         self.onDeferredSave = onDeferredSave
         self.onDeskPresetsSave = onDeskPresetsSave

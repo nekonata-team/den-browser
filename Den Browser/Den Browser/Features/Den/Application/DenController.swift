@@ -19,7 +19,7 @@ struct BoardIndices {
 @Observable
 final class DenController {
     static let maximumDeskCount = DeskCreation.maximumDeskCount
-    static let maximumRecentItemCount = 500
+    static let maximumRecentItemCount = BoardCreation.maximumRecentItemCount
     static let maximumRecentlyRemovedBoardCount = 10
     static let maximumRecentlyDiscardedDrawerItemCount = 10
 

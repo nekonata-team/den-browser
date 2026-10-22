@@ -46,8 +46,9 @@ placement: for example, `DenControllerBoardTests` belongs under `Board` because 
 Do not mechanically reproduce the source's `Domain`, `Application`, and `Infrastructure` folders.
 Shared Swift test helpers belong under `Support`; test resource files remain under `Fixtures`.
 
-Test Board opening decisions directly through `BoardOpening.resolve` in the Application package;
-keep insertion/Recent/persistence connections in app integration tests.
+Test Board opening decisions through `BoardOpening.resolve` and insertion/Recent/save ordering
+through `BoardCreation` in the Application package. Keep Native/window/persistence connections
+in app integration tests; test OpenBoardModel directly against the same concrete operation.
 Test migrated notification operations directly through `NotificationOperations`; test remaining application operations and persistence through `DenController`; test the shared-state source directly through `DenStateStore` and its write capability. Test window presentation
 transitions through `DenWindowModel` and context-local state through the corresponding Model,
 while asserting resulting domain changes on their shared Store when needed. Test delayed presentation

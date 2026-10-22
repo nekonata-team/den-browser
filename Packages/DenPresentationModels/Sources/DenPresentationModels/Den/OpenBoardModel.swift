@@ -1,3 +1,4 @@
+public import DenApplication
 import DenDomain
 import Foundation
 import Observation
@@ -5,7 +6,9 @@ import Observation
 @MainActor
 @Observable
 public final class OpenBoardModel {
-    @ObservationIgnored private let openBoard: (String, Double?, BoardID?) -> String?
+    @ObservationIgnored private let creation: BoardCreation
+    @ObservationIgnored private let openingRequest: (String, Double?, BoardID?) -> BoardCreation.OpenRequest
+    @ObservationIgnored private let notify: (BoardCreation.Notice) -> Void
 
     @ObservationIgnored private let openInDrawer: (String) -> String?
 
@@ -22,11 +25,15 @@ public final class OpenBoardModel {
     public var message: String?
 
     public init(
-        openInDrawer: @escaping (String) -> String?,
-        openBoard: @escaping (String, Double?, BoardID?) -> String?
+        creation: BoardCreation,
+        openingRequest: @escaping (String, Double?, BoardID?) -> BoardCreation.OpenRequest,
+        notify: @escaping (BoardCreation.Notice) -> Void,
+        openInDrawer: @escaping (String) -> String?
     ) {
+        self.creation = creation
+        self.openingRequest = openingRequest
+        self.notify = notify
         self.openInDrawer = openInDrawer
-        self.openBoard = openBoard
     }
 
     public func preparePresentation(initialURL: URL? = nil, afterBoardID: BoardID? = nil) {
@@ -69,6 +76,9 @@ public final class OpenBoardModel {
         preferredWidth: Double? = nil
     ) {
         message = nil
-        message = openBoard(input ?? self.input, preferredWidth, afterBoardID)
+        switch creation.open(openingRequest(input ?? self.input, preferredWidth, afterBoardID), notify: notify) {
+        case .accepted: break
+        case .rejected(let message): self.message = message
+        }
     }
 }

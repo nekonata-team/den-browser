@@ -3,6 +3,12 @@ import Foundation
 
 public nonisolated enum TerminalInputError: Error, Equatable {
     case missingDirectory(String)
+
+    public var message: String {
+        switch self {
+        case .missingDirectory(let path): "Terminal directory does not exist: \(path)"
+        }
+    }
 }
 
 public nonisolated enum ZellijInput: Equatable {

@@ -67,14 +67,32 @@ value through live getters. Its separate `DenStateWriter` is created together wi
 The App-target Controller adapter executes confirmed operations. The Application core has no
 Presentation dependency. Board operation origin and zmx operation outcomes are Domain values.
 
-`DenApplication` contains Board input interpretation, opening decisions, and pure Board/Desk
-state transformations. These functions return values and typed outcomes without owning window
-state or native resources. `DenController` coordinates their execution, applies results to the
-shared state source, and connects Runtime operations, persistence, and window effects.
-`BoardOpening.resolve` returns a Board creation decision with its optional Recent item,
-a Tutorial request, a session-picker request, or a validation failure. It does not call insertion,
-Recent, or Tutorial actions. Controller currently executes that decision in order.
-`DrawerPlacement` owns its create-before-discard sequence; App supplies the concrete operations. Application has no dependency on Presentation.
+`DenApplication` contains Board input interpretation, opening decisions, pure Board/Desk state
+transformations, and shared stateful operations. `BoardOpening.resolve` returns a Board creation
+decision with its optional Recent item, a Tutorial request, a session-picker request, or a validation
+failure. It does not invoke insertion, Recent, or Tutorial actions.
+
+One `BoardCreation` per Profile executes these decisions against the existing Store and private
+writer. It validates insertion, requests synchronous preparation, updates the Desk, requests window
+focus, saves, synchronizes Native metadata/Tutorial events, and records Recent in the established
+order. An insertion with Recent defers its save until Recent has been updated. Failed saves retain
+the created Board and restore the previous Recent collection; App keeps the existing persistence
+retry and recovery behavior. Recent title reuse, deduplication and the 500-item limit remain unchanged.
+
+Every call supplies a `BoardCreation.Target` and a synchronous `Notice` callback. The target contains
+the invoking window's presented Desk, optional destination Desk/anchor, focus and operation origin.
+The operation retains no window, callback, Runtime or Model. Notices describe only Board creation
+stages; App translates them into Native attachment and the invoking window's existing effects.
+Animation and link-focus preparation finish before the Store mutation. Runtime attachment precedes
+that preparation; post-insertion Runtime metadata and Tutorial events precede Recent recording.
+
+OpenBoardModel directly receives the concrete creation operation; Composition supplies current
+request values and notification delivery. Search, Essentials, Clipboard, Recent and native creation
+adapters delegate to the same operation. IPC Web/Terminal creation calls it directly, preserving
+transport validation, target resolution and response conversion without a screen Model.
+Popup, Side Board, duplication and Drawer placement also share its insertion path. App retains
+Native Runtime ownership, async zmx cancellation and window presentation. `DrawerPlacement` keeps
+its create-before-discard sequence. Application has no Presentation dependency.
 
 Personal Desk Preset management uses `DeskPresetOperations` in DenApplication for validation,
 shared-state updates, and persistence. App supplies the persistence function; Controller translates
@@ -217,7 +235,7 @@ and their order and updating input context before the next keyboard event.
 The callback is connected only for the mounted window lifetime, not during construction;
 disconnecting cancels presentation work. The App-target Controller emits Presentation-owned values
 without referencing the Model; the Application core remains independent of Presentation.
-CLI and IPC call Controller operations directly.
+CLI and IPC use shared Application operations and App native adapters without going through a screen Model.
 
 Animation requests precede the Board mutations they affect; Views apply SwiftUI transactions.
 Presentation Models and Application do not construct them. Tutorial progress and step ordering belong to Application and Domain.

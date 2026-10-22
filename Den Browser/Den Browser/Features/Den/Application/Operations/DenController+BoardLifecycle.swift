@@ -46,64 +46,19 @@ extension DenController {
         opensFromOpenBoardPanel: Bool = false,
         zmxRootSessionName: String? = nil
     ) -> BoardOpenResult {
-        let width = preferredWidth ?? inheritedBoardWidth
-        let decision = BoardOpening.resolve(
-            input: input,
-            width: width,
-            zmxRootSessionName: zmxRootSessionName,
-            configuration: BoardOpening.Configuration(
-                searchEngine: preferences.searchEngine,
-                zmxConfigured: zmxClient.isConfigured,
-                zellijConfigured: zellijClient.isConfigured,
-                homeDirectory: FileManager.default.homeDirectoryForCurrentUser),
-            directoryExists: { Self.directoryExists($0, fileManager: .default) })
-        switch decision {
-        case .createBoard(let board, let recentItem):
-            guard
-                insertBoard(
-                    board, afterBoardID: afterBoardID, focus: true, origin: .interactive,
-                    save: recentItem == nil)
-            else { return .rejected(nil) }
-            if let recentItem { saveRecentItem(recentItem) }
-            onWindowEffect?(.openBoardResult(nil))
-            return .accepted
-        case .openTutorial:
-            return openTutorialBoard(preferredWidth: width, afterBoardID: afterBoardID)
-                ? .accepted : .rejected(nil)
-        case .selectZmxSession:
-            onWindowEffect?(
-                .presentZmxSessions(returnsToOpenBoard: opensFromOpenBoardPanel, selectedSessionName: nil))
-            return .accepted
-        case .rejected(let failure):
-            switch failure {
-            case .zmxNotConfigured:
-                return .rejected("Set an absolute zmx executable path in Settings > Terminal.")
-            case .zellijNotConfigured:
-                return .rejected("Set an absolute Zellij executable path in Settings > Terminal.")
-            case .terminalDirectoryMissing(let path):
-                return .rejected(TerminalInputError.missingDirectory(path).message)
-            case .invalidInput:
-                return .rejected(nil)
-            }
-        }
+        storage.boardCreation.open(
+            boardOpeningRequest(
+                input: input, preferredWidth: preferredWidth, afterBoardID: afterBoardID,
+                zmxRootSessionName: zmxRootSessionName),
+            notify: boardCreationNotifications(returnsToOpenBoard: opensFromOpenBoardPanel))
     }
 
     @discardableResult
     func openTutorialBoard(preferredWidth: Double? = nil, afterBoardID: BoardID? = nil) -> Bool {
-        if let tutorialBoard = state.desks.lazy.flatMap(\.boards).first(where: \.isTutorial) {
-            focusBoard(tutorialBoard.id, exitsDenMode: true)
-            onWindowEffect?(.dismissTemporaryPresentation)
-            return true
-        }
-
-        let board = BoardState(
+        storage.boardCreation.openTutorial(
             width: preferredWidth ?? inheritedBoardWidth,
-            tutorial: TutorialBoardState())
-        return insertBoard(
-            board,
-            afterBoardID: afterBoardID,
-            focus: true,
-            origin: .interactive)
+            target: boardCreationTarget(afterBoardID: afterBoardID),
+            notify: boardCreationNotifications()) != nil
     }
 
     private func tutorialBoardIndices() -> BoardIndices? {
@@ -186,24 +141,12 @@ extension DenController {
         deskID: DeskID? = nil,
         existingRuntime: WebRuntime? = nil
     ) -> BoardID? {
-        guard let url = normalizedURL(from: urlString) else { return nil }
-        let label = url.host(percentEncoded: false) ?? url.absoluteString
-        let width = preferredWidth ?? inheritedBoardWidth
-        let board = BoardState(label: label, width: width, currentSheetURL: url)
-        guard
-            insertBoard(
-                board,
-                afterBoardID: afterBoardID,
-                focus: focus,
-                origin: origin,
-                deskID: deskID,
-                save: recentItem == nil,
-                existingRuntime: existingRuntime)
-        else { return nil }
-        if let recentItem {
-            saveRecentItem(recentItem)
-        }
-        return board.id
+        storage.boardCreation.createWeb(
+            urlString: urlString, width: preferredWidth ?? inheritedBoardWidth,
+            searchEngine: preferences.searchEngine,
+            target: boardCreationTarget(afterBoardID: afterBoardID, focus: focus, origin: origin, deskID: deskID),
+            recentItem: recentItem,
+            notify: boardCreationNotifications(existingRuntime: existingRuntime))
     }
 
     @discardableResult
@@ -316,24 +259,11 @@ extension DenController {
         recentItem: RecentItem? = nil,
         deskID: DeskID? = nil
     ) -> BoardID? {
-        let dir = workingDirectory ?? FileManager.default.homeDirectoryForCurrentUser.path
-        let board = BoardState(
+        storage.boardCreation.createTerminal(
+            workingDirectory: workingDirectory ?? FileManager.default.homeDirectoryForCurrentUser.path,
             width: preferredWidth ?? inheritedBoardWidth,
-            workingDirectory: dir
-        )
-        guard
-            insertBoard(
-                board,
-                afterBoardID: afterBoardID,
-                focus: focus,
-                origin: origin,
-                deskID: deskID,
-                save: recentItem == nil)
-        else { return nil }
-        if let recentItem {
-            saveRecentItem(recentItem)
-        }
-        return board.id
+            target: boardCreationTarget(afterBoardID: afterBoardID, focus: focus, origin: origin, deskID: deskID),
+            recentItem: recentItem, notify: boardCreationNotifications())
     }
 
     @discardableResult
@@ -342,54 +272,12 @@ extension DenController {
         afterBoardID: BoardID?,
         focus: Bool,
         origin: BoardOperationOrigin,
-        deskID: DeskID? = nil,
-        save: Bool = true,
-        existingRuntime: WebRuntime? = nil
+        deskID: DeskID? = nil
     ) -> Bool {
-        guard
-            let insertion = BoardInsertion.insert(
-                board, in: state.desks,
-                presentedDeskID: presentedDeskID,
-                deskID: deskID,
-                afterBoardID: afterBoardID, focus: focus)
-        else { return false }
-        if let existingRuntime {
-            if drawerPeekRuntime === existingRuntime { drawerPeekRuntime = nil }
-            attachWebRuntime(existingRuntime, to: board)
-        }
-        let deskIndex = insertion.deskIndex.rawValue
-        let insertionAfterBoardID = insertion.afterBoardID
-
-        if !focus, let afterBoardID = insertionAfterBoardID {
-            _ = prepareBoardLinkFocus(afterBoardID, origin: origin)
-        }
-        let isCLIBackgroundInsertion =
-            origin == .cli
-            && !focus
-            && insertionAfterBoardID != nil
-        let insert = { [self] in
-            storage.state.desks[deskIndex] = insertion.desk
-            if focus {
-                onWindowEffect?(.clearBoardInputRequests)
-                setFocusedDesk(state.desks[deskIndex].id)
-                onWindowEffect?(.dismissTemporaryPresentation)
-                onWindowEffect?(.exitDenMode)
-            }
-            if save { self.save() }
-        }
-        if state.desks[deskIndex].boards.isEmpty || isCLIBackgroundInsertion {
-            onWindowEffect?(.suppressBoardMutationAnimation)
-        }
-        insert()
-        if let existingRuntime {
-            updateBoard(boardID: board.id, url: existingRuntime.webView.url, title: existingRuntime.webView.title)
-        }
-        if board.isWeb {
-            dispatchDenOperationEvent(.webBoardOpened)
-        } else if board.isTerminal {
-            dispatchDenOperationEvent(.terminalBoardOpened)
-        }
-        return true
+        storage.boardCreation.insert(
+            board,
+            target: boardCreationTarget(afterBoardID: afterBoardID, focus: focus, origin: origin, deskID: deskID),
+            notify: boardCreationNotifications()) != nil
     }
 
     var inheritedBoardWidth: Double {
@@ -745,25 +633,5 @@ extension DenController {
 
     private func normalizedURL(from text: String) -> URL? {
         BoardInputResolver.normalizedURL(from: text, searchEngine: preferences.searchEngine)
-    }
-
-    private func saveRecentItem(_ item: RecentItem) {
-        let itemToSave: RecentItem
-        if case .url(let url, nil) = item,
-            let title = recentItems.first(where: { $0 == item })?.title
-        {
-            itemToSave = .url(url, title: title)
-        } else {
-            itemToSave = item
-        }
-        let original = recentItems
-        storage.recentItems.removeAll { $0 == itemToSave }
-        storage.recentItems.insert(itemToSave, at: 0)
-        if recentItems.count > Self.maximumRecentItemCount {
-            storage.recentItems.removeLast(recentItems.count - Self.maximumRecentItemCount)
-        }
-        if saveStateAndRecentItems() == false {
-            storage.recentItems = original
-        }
     }
 }

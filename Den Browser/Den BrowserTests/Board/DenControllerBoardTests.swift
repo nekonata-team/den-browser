@@ -32,7 +32,7 @@ struct DenControllerBoardTests {
         #expect(throws: TerminalInputError.self) { try missing?.get() }
     }
 
-    @Test func zellijBoardsPersistOptionalSessionNames() throws {
+    @Test func zellijBoardsOpenOptionalSessions() throws {
         let source = desk("Desk")
         try withTestController(desks: [source]) { controller in
             controller.preferences.setZellijPath("/opt/homebrew/bin/zellij")
@@ -42,33 +42,10 @@ struct DenControllerBoardTests {
             #expect(named.isTerminal)
             #expect(named.isZellij)
             #expect(named.zellijSessionName == "project-a")
-            #expect(
-                ZellijClient(executablePath: "/opt/homebrew/bin/zellij")
-                    .launchCommand(sessionName: named.zellijSessionName)
-                    == "'/opt/homebrew/bin/zellij' attach --create 'project-a'"
-            )
-            let restoredNamed = try JSONDecoder().decode(
-                BoardState.self,
-                from: JSONEncoder().encode(named))
-            #expect(
-                restoredNamed.kind
-                    == .terminal(.zellij(ZellijBoardState(sessionName: "project-a"))))
-
             controller.openBoard(input: ":zellij")
             let welcome = try #require(controller.focusedBoard)
             #expect(welcome.isZellij)
             #expect(welcome.zellijSessionName == nil)
-            #expect(
-                ZellijClient(executablePath: "/opt/homebrew/bin/zellij")
-                    .launchCommand(sessionName: welcome.zellijSessionName)
-                    == "'/opt/homebrew/bin/zellij' -l welcome"
-            )
-            let restoredWelcome = try JSONDecoder().decode(
-                BoardState.self,
-                from: JSONEncoder().encode(welcome))
-            #expect(
-                restoredWelcome.kind
-                    == .terminal(.zellij(ZellijBoardState(sessionName: nil))))
         }
     }
 
@@ -84,7 +61,7 @@ struct DenControllerBoardTests {
         }
     }
 
-    @Test func zmxBoardsPersistNamedSessionAndOpenSessionsList() async throws {
+    @Test func zmxBoardsOpenNamedSessionAndSessionsList() async throws {
         let source = desk("Desk")
         let runner = StubTerminalCommandRunner(responses: [
             ["list"]: TerminalCommandResult(terminationStatus: 0, standardOutput: "")
@@ -98,22 +75,6 @@ struct DenControllerBoardTests {
             #expect(board.isTerminal)
             #expect(board.isZmx)
             #expect(board.zmxSessionName == "project-a")
-            #expect(
-                ZmxClient(executablePath: "/opt/homebrew/bin/zmx")
-                    .launchCommand(sessionName: board.zmxSessionName ?? "")
-                    == "/usr/bin/env -u ZMX_SESSION '/opt/homebrew/bin/zmx' attach 'project-a'"
-            )
-            let restored = try JSONDecoder().decode(
-                BoardState.self,
-                from: JSONEncoder().encode(board))
-            #expect(
-                restored.kind
-                    == .terminal(
-                        .zmx(
-                            ZmxBoardState(
-                                sessionName: "project-a",
-                                workingDirectory: FileManager.default.homeDirectoryForCurrentUser.path))))
-
             controller.openBoard(input: ":zmx")
             await waitForZmxSessionLoad(windowModel)
             #expect(controller.focusedDesk?.boards.count == 1)
@@ -279,17 +240,6 @@ struct DenControllerBoardTests {
             #expect(firstChild.zmxSessionName == "den-vi")
             #expect(firstChild.zmxRootSessionName == "den")
             #expect(firstChild.terminalWorkingDirectory == "/tmp/project")
-            let restoredChild = try JSONDecoder().decode(
-                BoardState.self,
-                from: JSONEncoder().encode(firstChild))
-            #expect(
-                restoredChild.kind
-                    == .terminal(
-                        .zmx(
-                            ZmxBoardState(
-                                sessionName: "den-vi",
-                                workingDirectory: "/tmp/project",
-                                rootSessionName: "den"))))
 
             controller.duplicateFocusedBoard()
             await controller.waitForZmxCommand()
