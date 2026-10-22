@@ -1,21 +1,11 @@
 import AppKit
+import DenApplication
 import DenDomain
 import DenPresentationModels
 import UniformTypeIdentifiers
 
 @MainActor
-enum DeskLinkExport {
-    static func markdown(for desk: DeskState) -> String? {
-        let links = desk.boards.compactMap { board -> String? in
-            guard let url = board.currentSheetURL else { return nil }
-            let label = escapeMarkdownLabel(board.displayName)
-            return "- [\(label)](<\(url.absoluteString)>)"
-        }
-        guard !links.isEmpty else { return nil }
-
-        return (["# \(escapeMarkdownLabel(desk.label))", ""] + links + [""]).joined(separator: "\n")
-    }
-
+enum DeskLinkOutput {
     static func saveMarkdown(
         _ markdown: String,
         suggestedFilename: String,
@@ -40,13 +30,6 @@ enum DeskLinkExport {
         guard response == .OK, let destination = panel.url else { return nil }
         try Data(markdown.utf8).write(to: destination, options: .atomic)
         return destination
-    }
-
-    private static func escapeMarkdownLabel(_ label: String) -> String {
-        label
-            .replacingOccurrences(of: "\\", with: "\\\\")
-            .replacingOccurrences(of: "[", with: "\\[")
-            .replacingOccurrences(of: "]", with: "\\]")
     }
 }
 
@@ -91,7 +74,7 @@ extension DenController {
         Task { @MainActor [weak self] in
             guard let self else { return }
             do {
-                if let destination = try await DeskLinkExport.saveMarkdown(
+                if let destination = try await DeskLinkOutput.saveMarkdown(
                     markdown,
                     suggestedFilename: filename,
                     attachedTo: NSApp.keyWindow)

@@ -13,23 +13,40 @@ extension DenController {
     }
 
     func endZmxSession(_ sessionName: String) {
+        let operations = zmxBoards
         let client = zmxClient
+        let window = zmxWindowProvider()
+        let notify = zmxBoardNotifications()
         zmxCommandTask?.cancel()
-        zmxCommandTask = Task { [weak self, client] in
-            do {
-                try await client.killSession(sessionName)
-                guard !Task.isCancelled, let self else { return }
-                let boardIDs = self.state.desks.flatMap(\.boards)
-                    .filter { $0.zmxSessionName == sessionName }.map(\.id)
-                for boardID in boardIDs {
-                    self.removeBoard(boardID)
-                }
-            } catch is CancellationError {
-                return
-            } catch {
-                guard !Task.isCancelled else { return }
-                self?.reportFeedback(
-                    "Could not end zmx Session '\(sessionName)': \(error.localizedDescription)", severity: .error)
+        zmxCommandTask = Task {
+            await operations.end(sessionName, client: client, window: window, notify: notify)
+        }
+    }
+
+    var zmxBoards: ZmxBoards {
+        ZmxBoards(
+            state: storage.data, creation: storage.boardCreation, removal: storage.boardRemoval,
+            updates: storage.boardUpdates)
+    }
+
+    func zmxWindowProvider() -> () -> ZmxBoards.Window? {
+        { [weak self] in
+            guard let self else { return nil }
+            return .init(presentedDeskID: presentedDeskID, focusedBoardID: focusedBoard?.id)
+        }
+    }
+
+    func zmxBoardNotifications(returnsToOpenBoard: Bool = false) -> (ZmxBoards.Notice) -> Void {
+        { [weak self] notice in
+            guard let self else { return }
+            switch notice {
+            case .creation(let notice): boardCreationNotifications(returnsToOpenBoard: returnsToOpenBoard)(notice)
+            case .removal(let notice): boardRemovalNotifications()(notice)
+            case .duplicationPanel(let root): onWindowEffect?(.presentZmxDuplicationPanel(rootSessionName: root))
+            case .warning(let message): reportFeedback(message, severity: .warning)
+            case .error(let message): reportFeedback(message, severity: .error)
+            case .focusExisting(let id): focusBoard(id, exitsDenMode: true)
+            case .openFailure(let message): onWindowEffect?(.openBoardResult(message))
             }
         }
     }
@@ -48,18 +65,10 @@ extension DenController {
         rootSessionName: (String) -> String?,
         opensFromOpenBoardPanel: Bool
     ) -> ZmxSessionOpenResult {
-        if let board = state.desks.lazy.flatMap(\.boards).first(where: { $0.zmxSessionName == sessionName }) {
-            updateZmxRootSessionName(boardID: board.id, rootSessionName: rootSessionName(sessionName))
-            focusBoard(board.id, exitsDenMode: true)
-            return .focusedExistingBoard
-        }
-        let trimmed = sessionName.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return .rejected }
-        return openBoard(
-            input: ":zmx \(trimmed)",
-            preferredWidth: preferredWidth,
-            opensFromOpenBoardPanel: opensFromOpenBoardPanel,
-            zmxRootSessionName: rootSessionName(trimmed))
-            ? .openedBoard : .rejected
+        zmxBoards.open(
+            sessionName,
+            request: inputOpeningContext(preferredWidth: preferredWidth),
+            rootSessionName: rootSessionName,
+            notify: zmxBoardNotifications(returnsToOpenBoard: opensFromOpenBoardPanel))
     }
 }

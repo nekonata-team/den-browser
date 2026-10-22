@@ -14,7 +14,10 @@ struct OpenBoardModelTests {
         let shared = DenStateStore.make(
             initialState: DenSharedState(den: DenState(desks: [desk], focusedDeskID: desk.id)))
         let creation = BoardCreation(
-            store: shared.store, writer: shared.writer, directoryExists: { _ in directoryExists })
+            store: shared.store,
+            writer: shared.writer,
+            recents: Recents(store: shared.store, writer: shared.writer),
+            directoryExists: { _ in directoryExists })
         var focusedDesks: [DeskID] = []
         let model = OpenBoardModel(
             creation: creation,

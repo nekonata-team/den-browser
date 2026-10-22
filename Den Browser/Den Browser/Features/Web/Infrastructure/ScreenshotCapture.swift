@@ -76,6 +76,32 @@ enum ScreenshotCapture {
 
 @MainActor
 enum ScreenshotOutput {
+    enum Destination {
+        case save(window: NSWindow?)
+        case clipboard
+    }
+
+    static func captureAndOutput(
+        capture: @MainActor () async throws -> NSImage, destination: Destination
+    ) async throws -> String? {
+        let image = try await capture()
+        try Task.checkCancellation()
+        let message: String
+        switch destination {
+        case .save(let window):
+            let filename = suggestedFilename(scope: "Current Sheet Screenshot")
+            guard let url = try await savePNG(image, suggestedFilename: filename, attachedTo: window) else {
+                return nil
+            }
+            message = "Saved \(url.lastPathComponent)."
+        case .clipboard:
+            try copyPNG(image)
+            message = "Copied Current Sheet screenshot to clipboard."
+        }
+        try Task.checkCancellation()
+        return message
+    }
+
     enum OutputError: LocalizedError {
         case pngEncodingFailed
         case clipboardWriteFailed

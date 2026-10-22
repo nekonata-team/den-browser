@@ -3,8 +3,6 @@ import Foundation
 
 @MainActor
 public final class BoardCreation {
-    public static let maximumRecentItemCount = 500
-
     public struct Target {
         public let presentedDeskID: DeskID
         public let deskID: DeskID?
@@ -58,18 +56,18 @@ public final class BoardCreation {
     private let store: DenStateStore
     private let writer: DenStateWriter
     private let persist: ((DenState) -> Bool)?
-    private let persistRecent: (([RecentItem]) -> Bool)?
+    private let recents: Recents
     private let directoryExists: (String) -> Bool
 
     public init(
-        store: DenStateStore, writer: DenStateWriter,
-        persist: ((DenState) -> Bool)? = nil, persistRecent: (([RecentItem]) -> Bool)? = nil,
+        store: DenStateStore, writer: DenStateWriter, recents: Recents,
+        persist: ((DenState) -> Bool)? = nil,
         directoryExists: @escaping (String) -> Bool
     ) {
         self.store = store
         self.writer = writer
         self.persist = persist
-        self.persistRecent = persistRecent
+        self.recents = recents
         self.directoryExists = directoryExists
     }
 
@@ -160,31 +158,12 @@ public final class BoardCreation {
         if target.focus { notify(.focusInsertedBoard(insertion.desk.id)) }
         if recentItem == nil { _ = save() }
         notify(.didInsert(board))
-        if let recentItem { recordRecent(recentItem) }
+        if let recentItem { recents.record(recentItem) }
         return board.id
     }
 
     private func save() -> Bool {
         guard store.snapshot.activeDrag == nil else { return false }
         return persist?(store.snapshot.den) ?? false
-    }
-
-    private func recordRecent(_ item: RecentItem) {
-        let original = store.snapshot.recentItems
-        let itemToSave: RecentItem
-        if case .url(let url, nil) = item, let title = original.first(where: { $0 == item })?.title {
-            itemToSave = .url(url, title: title)
-        } else {
-            itemToSave = item
-        }
-        writer.update { snapshot in
-            snapshot.recentItems.removeAll { $0 == itemToSave }
-            snapshot.recentItems.insert(itemToSave, at: 0)
-            if snapshot.recentItems.count > Self.maximumRecentItemCount {
-                snapshot.recentItems.removeLast(snapshot.recentItems.count - Self.maximumRecentItemCount)
-            }
-        }
-        let saved = persist != nil ? save() : (persistRecent?(store.snapshot.recentItems) ?? true)
-        if !saved { writer.update { $0.recentItems = original } }
     }
 }

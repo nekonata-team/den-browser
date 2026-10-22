@@ -24,6 +24,19 @@ struct ScreenshotCaptureTests {
         #expect(data.prefix(8) == Data([137, 80, 78, 71, 13, 10, 26, 10]))
     }
 
+    @Test func cancellationAfterCaptureDoesNotReachOutput() async {
+        // Arrange
+        let task = Task { @MainActor in
+            try await ScreenshotOutput.captureAndOutput(
+                capture: {
+                    withUnsafeCurrentTask { $0?.cancel() }
+                    return NSImage(size: .init(width: 1, height: 1))
+                }, destination: .clipboard)
+        }
+        // Act / Assert
+        await #expect(throws: CancellationError.self) { try await task.value }
+    }
+
     private func image(width: CGFloat, height: CGFloat) -> NSImage {
         let size = CGSize(width: width, height: height)
         let image = NSImage(size: size)

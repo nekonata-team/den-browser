@@ -19,12 +19,14 @@ extension DenController {
         BoardCreation.OpenRequest(
             input: input, width: preferredWidth ?? inheritedBoardWidth,
             target: boardCreationTarget(afterBoardID: afterBoardID),
-            configuration: BoardOpening.Configuration(
-                searchEngine: preferences.searchEngine,
-                zmxConfigured: zmxClient.isConfigured,
-                zellijConfigured: zellijClient.isConfigured,
-                homeDirectory: FileManager.default.homeDirectoryForCurrentUser),
+            configuration: boardOpeningConfiguration,
             zmxRootSessionName: zmxRootSessionName)
+    }
+
+    var boardOpeningConfiguration: BoardOpening.Configuration {
+        .init(
+            searchEngine: preferences.searchEngine, zmxConfigured: zmxClient.isConfigured,
+            zellijConfigured: zellijClient.isConfigured, homeDirectory: FileManager.default.homeDirectoryForCurrentUser)
     }
 
     /// This callback is used only for the synchronous creation call; Profile operations do not retain it.
@@ -64,6 +66,22 @@ extension DenController {
                 onWindowEffect?(.openBoardResult(nil))
             case .selectZmxSession:
                 onWindowEffect?(.presentZmxSessions(returnsToOpenBoard: returnsToOpenBoard, selectedSessionName: nil))
+            }
+        }
+    }
+    func inputOpeningContext(preferredWidth: Double? = nil, afterBoardID: BoardID? = nil) -> InputOpening.Context {
+        .init(
+            width: preferredWidth ?? inheritedBoardWidth, target: boardCreationTarget(afterBoardID: afterBoardID),
+            configuration: boardOpeningConfiguration)
+    }
+
+    func inputOpeningNotifications() -> (InputOpening.Notice) -> Void {
+        { [self] notice in
+            switch notice {
+            case .willOpenBoard: onWindowEffect?(.openBoardResult(nil))
+            case .board(let notice): boardCreationNotifications()(notice)
+            case .drawer(let notice): drawerItemNotifications()(notice)
+            case .keptInDrawer: reportFeedback("Kept in Drawer.", severity: .success)
             }
         }
     }

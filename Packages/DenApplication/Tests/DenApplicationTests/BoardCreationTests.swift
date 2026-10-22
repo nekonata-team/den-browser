@@ -15,14 +15,18 @@ struct BoardCreationTests {
             initialState: DenSharedState(den: DenState(desks: [desk], focusedDeskID: desk.id)))
         let recent = RecentItem.terminal(workingDirectory: "/tmp")
         var events: [String] = []
+        let persist: (DenState) -> Bool = { state in
+            #expect(state.desks[0].boards.map(\.id) == [anchor.id, board.id])
+            #expect(shared.store.snapshot.recentItems == (recordsRecent ? [recent] : []))
+            events.append("save")
+            return true
+        }
         let creation = BoardCreation(
-            store: shared.store, writer: shared.writer,
-            persist: { state in
-                #expect(state.desks[0].boards.map(\.id) == [anchor.id, board.id])
-                #expect(shared.store.snapshot.recentItems == (recordsRecent ? [recent] : []))
-                events.append("save")
-                return true
-            }, directoryExists: { _ in true })
+            store: shared.store,
+            writer: shared.writer,
+            recents: Recents(store: shared.store, writer: shared.writer, persist: persist),
+            persist: persist,
+            directoryExists: { _ in true })
 
         // Act
         let result = creation.insert(
@@ -67,12 +71,15 @@ struct BoardCreationTests {
         let shared = DenStateStore.make(
             initialState: DenSharedState(den: DenState(desks: [desk], focusedDeskID: desk.id)))
         let original = shared.store.snapshot
+        let persist: (DenState) -> Bool = { _ in
+            Issue.record("Rejected insertion must not save")
+            return true
+        }
         let creation = BoardCreation(
-            store: shared.store, writer: shared.writer,
-            persist: { _ in
-                Issue.record("Rejected insertion must not save")
-                return true
-            },
+            store: shared.store,
+            writer: shared.writer,
+            recents: Recents(store: shared.store, writer: shared.writer, persist: persist),
+            persist: persist,
             directoryExists: { _ in true })
 
         // Act
@@ -98,12 +105,16 @@ struct BoardCreationTests {
             initialState: DenSharedState(
                 den: DenState(desks: [desk], focusedDeskID: desk.id), recentItems: original))
         var savedStates: [DenState] = []
+        let persist: (DenState) -> Bool = { state in
+            savedStates.append(state)
+            return false
+        }
         let creation = BoardCreation(
-            store: shared.store, writer: shared.writer,
-            persist: { state in
-                savedStates.append(state)
-                return false
-            }, directoryExists: { _ in true })
+            store: shared.store,
+            writer: shared.writer,
+            recents: Recents(store: shared.store, writer: shared.writer, persist: persist),
+            persist: persist,
+            directoryExists: { _ in true })
 
         // Act
         let boardID = creation.createTerminal(
@@ -126,12 +137,15 @@ struct BoardCreationTests {
             initialState: DenSharedState(den: DenState(desks: [desk], focusedDeskID: desk.id)))
         var savedRecent: [[RecentItem]] = []
         let recent = RecentItem.terminal(workingDirectory: "/tmp")
+        let persistRecent: ([RecentItem]) -> Bool = {
+            savedRecent.append($0)
+            return false
+        }
         let creation = BoardCreation(
-            store: shared.store, writer: shared.writer,
-            persistRecent: {
-                savedRecent.append($0)
-                return false
-            }, directoryExists: { _ in true })
+            store: shared.store,
+            writer: shared.writer,
+            recents: Recents(store: shared.store, writer: shared.writer, persistRecent: persistRecent),
+            directoryExists: { _ in true })
 
         // Act
         let boardID = creation.createTerminal(
@@ -152,7 +166,11 @@ struct BoardCreationTests {
             initialState: DenSharedState(
                 den: DenState(
                     desks: [first, second], focusedDeskID: first.id)))
-        let creation = BoardCreation(store: shared.store, writer: shared.writer, directoryExists: { _ in true })
+        let creation = BoardCreation(
+            store: shared.store,
+            writer: shared.writer,
+            recents: Recents(store: shared.store, writer: shared.writer),
+            directoryExists: { _ in true })
         var firstFocus: [DeskID] = []
         var secondFocus: [DeskID] = []
 
@@ -180,7 +198,11 @@ struct BoardCreationTests {
             initialState: DenSharedState(
                 den: DenState(
                     desks: [visible, hidden], focusedDeskID: visible.id)))
-        let creation = BoardCreation(store: shared.store, writer: shared.writer, directoryExists: { _ in true })
+        let creation = BoardCreation(
+            store: shared.store,
+            writer: shared.writer,
+            recents: Recents(store: shared.store, writer: shared.writer),
+            directoryExists: { _ in true })
 
         // Act
         let id = creation.createWeb(
@@ -202,7 +224,11 @@ struct BoardCreationTests {
         let shared = DenStateStore.make(
             initialState: DenSharedState(den: DenState(desks: [desk], focusedDeskID: desk.id)))
         let original = shared.store.snapshot
-        let creation = BoardCreation(store: shared.store, writer: shared.writer, directoryExists: { _ in true })
+        let creation = BoardCreation(
+            store: shared.store,
+            writer: shared.writer,
+            recents: Recents(store: shared.store, writer: shared.writer),
+            directoryExists: { _ in true })
         var focused: [BoardID] = []
 
         // Act

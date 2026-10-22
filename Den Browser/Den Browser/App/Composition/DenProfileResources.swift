@@ -10,7 +10,11 @@ final class DenProfileResources {
     let data: DenStateStore
     @ObservationIgnored private let writer: DenStateWriter
     @ObservationIgnored let notificationOperations: NotificationOperations
+    @ObservationIgnored let boardUpdates: BoardUpdates
     @ObservationIgnored let boardCreation: BoardCreation
+    @ObservationIgnored let inputOpening: InputOpening
+    @ObservationIgnored let tutorialProgress: TutorialProgress
+    @ObservationIgnored let recents: Recents
     @ObservationIgnored let boardRemoval: BoardRemoval
     @ObservationIgnored let boardSizing: BoardSizing
     @ObservationIgnored let deskLifecycle: DeskLifecycle
@@ -35,10 +39,7 @@ final class DenProfileResources {
         data.snapshot.deskPresets
     }
 
-    var recentItems: [RecentItem] {
-        get { data.snapshot.recentItems }
-        set { writer.update { $0.recentItems = newValue } }
-    }
+    var recentItems: [RecentItem] { data.snapshot.recentItems }
 
     var notifications: [DenNotification] {
         data.snapshot.notifications
@@ -116,16 +117,20 @@ final class DenProfileResources {
         boardRemoval = BoardRemoval(
             store: shared.store, writer: shared.writer,
             persist: persistState)
+        boardUpdates = BoardUpdates(store: shared.store, writer: shared.writer, persist: persistState)
+        recents = Recents(
+            store: shared.store, writer: shared.writer, persist: persistState, persistRecent: onRecentItemsSave)
         boardCreation = BoardCreation(
-            store: shared.store, writer: shared.writer,
+            store: shared.store, writer: shared.writer, recents: recents,
             persist: persistState,
-            persistRecent: onRecentItemsSave,
             directoryExists: { path in
                 var isDirectory: ObjCBool = false
                 return FileManager.default.fileExists(atPath: path, isDirectory: &isDirectory) && isDirectory.boolValue
             })
         drawerItems = DrawerItems(store: shared.store, writer: shared.writer, persist: persistState)
         drawerPlacement = DrawerPlacement(store: shared.store, creation: boardCreation, items: drawerItems)
+        inputOpening = InputOpening(creation: boardCreation, drawer: drawerItems)
+        tutorialProgress = TutorialProgress(store: shared.store, writer: shared.writer)
         self.onSave = onSave
         self.onDeferredSave = onDeferredSave
         self.onDeskPresetsSave = onDeskPresetsSave

@@ -50,6 +50,15 @@ Test Drawer Item/history mutations and concrete Board placement/save ordering in
 Application package. Keep WebRuntime identity, Peek release, download/navigation callbacks,
 window presentation repair and IPC routing in the App integration suite.
 
+Test EssentialEditing quick-save/confirmation revalidation, InputOpening routing, BoardUpdates,
+TutorialProgress and pure link formatting independently of Controller. FeedbackModel tests protect
+window-local feedback state; App integration tests retain zmx client/window cancellation, native
+Screenshot output cancellation and the existing launch/confirmation/clipboard contracts.
+
+Test Recent collection recording, removal, clearing, title completion and persistence rollback
+through `Recents` in the Application package. App tests retain opening/input revalidation,
+Runtime title delivery and window integration coverage.
+
 Test Board opening decisions through `BoardOpening.resolve` and insertion/Recent/save ordering
 through `BoardCreation` in the Application package. Keep Native/window/persistence connections
 in app integration tests; test OpenBoardModel directly against the same concrete operation.

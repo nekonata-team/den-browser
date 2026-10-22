@@ -6,13 +6,7 @@ import Foundation
 
 extension DenController {
     func updateZmxRootSessionName(boardID: BoardID, rootSessionName: String?) {
-        guard
-            let rootSessionName,
-            let indices = boardIndices(for: boardID),
-            state.desks[indices.deskOffset].boards[indices.boardOffset].zmxRootSessionName != rootSessionName
-        else { return }
-        storage.state.desks[indices.deskOffset].boards[indices.boardOffset].zmxRootSessionName = rootSessionName
-        save()
+        storage.boardUpdates.recordZmxRoot(rootSessionName, for: boardID)
     }
 
     @discardableResult
@@ -61,28 +55,9 @@ extension DenController {
             notify: boardCreationNotifications()) != nil
     }
 
-    private func tutorialBoardIndices() -> BoardIndices? {
-        for deskIndex in state.desks.indices {
-            if let boardIndex = state.desks[deskIndex].boards.firstIndex(where: \.isTutorial) {
-                return BoardIndices(desk: DeskIndex(rawValue: deskIndex), board: BoardIndex(rawValue: boardIndex))
-            }
-        }
-        return nil
-    }
-
     func dispatchDenOperationEvent(_ event: DenOperationEvent) {
-        advanceTutorial(for: event)
+        if let step = event.tutorialStep { storage.tutorialProgress.record(step) }
         storage.onDenOperationEvent(event)
-    }
-
-    private func advanceTutorial(for event: DenOperationEvent) {
-        guard let step = event.tutorialStep else { return }
-        guard let indices = tutorialBoardIndices(),
-            case .tutorial(var tutorial) = state.desks[indices.deskOffset].boards[indices.boardOffset].kind
-        else { return }
-
-        guard tutorial.record(step: step) else { return }
-        storage.state.desks[indices.deskOffset].boards[indices.boardOffset].kind = .tutorial(tutorial)
     }
 
     static func resolveTerminalInput(
@@ -113,21 +88,11 @@ extension DenController {
     }
 
     func removeRecentItem(_ item: RecentItem) {
-        guard recentItems.contains(item) else { return }
-        let original = recentItems
-        storage.recentItems.removeAll { $0 == item }
-        if saveStateAndRecentItems() == false {
-            storage.recentItems = original
-        }
+        storage.recents.remove(item)
     }
 
     func clearRecent() {
-        guard !recentItems.isEmpty else { return }
-        let original = recentItems
-        storage.recentItems = []
-        if saveStateAndRecentItems() == false {
-            storage.recentItems = original
-        }
+        storage.recents.clear()
     }
 
     @discardableResult
@@ -286,18 +251,15 @@ extension DenController {
 
     @discardableResult
     func navigateFocusedBoard(urlString: String) -> Bool {
-        guard
-            let url = normalizedURL(from: urlString),
-            let deskIndex = focusedDeskIndex,
-            let boardIndex = focusedBoardIndex(in: deskIndex)
+        guard let id = focusedBoard?.id,
+            let url = storage.boardUpdates.navigate(
+                id, to: urlString, searchEngine: preferences.searchEngine,
+                beforeSave: {
+                    onWindowEffect?(.dismissTemporaryPresentation)
+                    onWindowEffect?(.exitDenMode)
+                })
         else { return false }
-
-        let boardID = state.desks[deskIndex.rawValue].boards[boardIndex.rawValue].id
-        storage.state.desks[deskIndex.rawValue].boards[boardIndex.rawValue].currentSheetURL = url
-        onWindowEffect?(.dismissTemporaryPresentation)
-        onWindowEffect?(.exitDenMode)
-        save()
-        webRuntimes[boardID]?.load(url)
+        webRuntimes[id]?.load(url)
         return true
     }
 
@@ -336,19 +298,13 @@ extension DenController {
     }
 
     private func presentZmxDuplicationPanel(for source: BoardState) {
-        guard let sessionName = source.zmxSessionName else { return }
+        let operations = zmxBoards
         let client = zmxClient
+        let window = zmxWindowProvider()
+        let notify = zmxBoardNotifications()
         zmxCommandTask?.cancel()
-        zmxCommandTask = Task { [weak self, client] in
-            do {
-                let rootSessionName = try await client.resolvedRootSessionName(
-                    for: sessionName,
-                    savedRootSessionName: source.zmxRootSessionName)
-                guard !Task.isCancelled, let self, self.focusedBoard?.id == source.id else { return }
-                self.onWindowEffect?(.presentZmxDuplicationPanel(rootSessionName: rootSessionName))
-            } catch {
-                return
-            }
+        zmxCommandTask = Task {
+            await operations.prepareDuplication(source, client: client, window: window, notify: notify)
         }
     }
 
@@ -358,61 +314,18 @@ extension DenController {
     }
 
     private func createZmxBoard(from source: BoardState, suffix: String, asSideBoard: Bool, focus: Bool) {
-        guard let sessionName = source.zmxSessionName else { return }
-
+        guard source.zmxSessionName != nil else { return }
+        let request = ZmxBoards.Duplication(
+            source: source, suffix: suffix, asSideBoard: asSideBoard, focus: focus,
+            width: asSideBoard ? DenLayout.sideBoardInitialWidth : source.width,
+            workingDirectory: source.terminalWorkingDirectory ?? FileManager.default.homeDirectoryForCurrentUser.path)
+        let operations = zmxBoards
         let client = zmxClient
+        let window = zmxWindowProvider()
+        let notify = zmxBoardNotifications()
         zmxCommandTask?.cancel()
-        zmxCommandTask = Task { [weak self, client] in
-            do {
-                let context = try await client.duplicationContext(
-                    for: sessionName,
-                    savedRootSessionName: source.zmxRootSessionName)
-                guard !Task.isCancelled, let self else { return }
-                if asSideBoard {
-                    guard let indices = self.boardIndices(for: source.id),
-                        !self.state.desks[indices.deskOffset].boards.contains(where: {
-                            $0.sideBoardTargetBoardID == source.id
-                        })
-                    else { return }
-                } else {
-                    guard self.focusedBoard?.id == source.id else { return }
-                }
-
-                let denSessionNames = self.state.desks.flatMap { desk in
-                    desk.boards.compactMap(\.zmxSessionName)
-                }
-                let newSessionName = ZmxSessionNameGenerator.nextName(
-                    rootSessionName: context.rootSessionName,
-                    suffix: suffix,
-                    occupiedNames: context.activeSessionNames.union(denSessionNames))
-                let workingDirectory =
-                    source.terminalWorkingDirectory
-                    ?? FileManager.default.homeDirectoryForCurrentUser.path
-                var board = BoardState(
-                    label: asSideBoard ? "Terminal Side Board" : source.label,
-                    width: asSideBoard ? DenLayout.sideBoardInitialWidth : source.width,
-                    zmxSessionName: newSessionName,
-                    workingDirectory: workingDirectory,
-                    rootSessionName: context.rootSessionName,
-                    customLabel: asSideBoard ? nil : source.customLabel)
-                if asSideBoard { board.role = .sideBoard(targetBoardID: source.id) }
-                guard
-                    self.insertBoard(
-                        board,
-                        afterBoardID: source.id,
-                        focus: focus,
-                        origin: focus ? .interactive : .cli)
-                else { return }
-            } catch is CancellationError {
-                return
-            } catch {
-                guard !Task.isCancelled, let self,
-                    asSideBoard ? self.boardIndices(for: source.id) != nil : self.focusedBoard?.id == source.id
-                else { return }
-                self.reportFeedback(
-                    "Could not inspect active zmx sessions: \(error.localizedDescription)",
-                    severity: .warning)
-            }
+        zmxCommandTask = Task {
+            await operations.duplicate(request, client: client, window: window, notify: notify)
         }
     }
 
@@ -438,20 +351,11 @@ extension DenController {
     }
 
     func renameFocusedBoard(to newLabel: String) {
-        guard
-            let deskIndex = focusedDeskIndex,
-            let boardIndex = focusedBoardIndex(in: deskIndex)
-        else { return }
-
-        let trimmed = newLabel.trimmingCharacters(in: .whitespacesAndNewlines)
-        if trimmed.isEmpty {
-            storage.state.desks[deskIndex.rawValue].boards[boardIndex.rawValue].customLabel = nil
-        } else {
-            storage.state.desks[deskIndex.rawValue].boards[boardIndex.rawValue].customLabel = trimmed
+        guard let id = focusedBoard?.id else { return }
+        storage.boardUpdates.rename(id, to: newLabel) {
+            onWindowEffect?(.dismissTemporaryPresentation)
+            onWindowEffect?(.exitDenMode)
         }
-        onWindowEffect?(.dismissTemporaryPresentation)
-        onWindowEffect?(.exitDenMode)
-        save()
     }
 
     func goBackInFocusedBoard() {
@@ -513,9 +417,5 @@ extension DenController {
         for board in desk.boards where board.isWeb {
             webRuntime(for: board).reload()
         }
-    }
-
-    private func normalizedURL(from text: String) -> URL? {
-        BoardInputResolver.normalizedURL(from: text, searchEngine: preferences.searchEngine)
     }
 }

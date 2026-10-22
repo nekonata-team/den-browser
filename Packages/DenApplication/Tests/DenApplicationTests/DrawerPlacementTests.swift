@@ -17,7 +17,11 @@ struct DrawerPlacementTests {
         }
         let items = DrawerItems(store: shared.store, writer: shared.writer, persist: persist)
         let creation = BoardCreation(
-            store: shared.store, writer: shared.writer, persist: persist, directoryExists: { _ in true })
+            store: shared.store,
+            writer: shared.writer,
+            recents: Recents(store: shared.store, writer: shared.writer, persist: persist),
+            persist: persist,
+            directoryExists: { _ in true })
         let placement = DrawerPlacement(store: shared.store, creation: creation, items: items)
 
         let result = placement.place(
@@ -53,7 +57,11 @@ struct DrawerPlacementTests {
         }
         let items = DrawerItems(store: shared.store, writer: shared.writer, persist: persist)
         let creation = BoardCreation(
-            store: shared.store, writer: shared.writer, persist: persist, directoryExists: { _ in true })
+            store: shared.store,
+            writer: shared.writer,
+            recents: Recents(store: shared.store, writer: shared.writer, persist: persist),
+            persist: persist,
+            directoryExists: { _ in true })
         let placement = DrawerPlacement(store: shared.store, creation: creation, items: items)
 
         let result = try #require(

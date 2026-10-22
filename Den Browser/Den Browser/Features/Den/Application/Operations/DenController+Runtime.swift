@@ -356,26 +356,11 @@ extension DenController {
         if let title, !title.isEmpty, state.desks[indices.deskOffset].boards[indices.boardOffset].label != title {
             storage.state.desks[indices.deskOffset].boards[indices.boardOffset].label = title
         }
-        if let title = title?.trimmingCharacters(in: .whitespacesAndNewlines),
-            !title.isEmpty,
-            let firstSheetURL = board.firstSheetURL
-        {
-            updateRecentItemTitle(for: firstSheetURL, title: title)
+        if let title, let firstSheetURL = board.firstSheetURL {
+            storage.recents.updateTitle(for: firstSheetURL, title: title)
         }
         if changed {
             save()
-        }
-    }
-
-    private func updateRecentItemTitle(for url: URL, title: String) {
-        guard
-            let index = recentItems.firstIndex(of: .url(url)),
-            case .url(let recentURL, nil) = recentItems[index]
-        else { return }
-        let original = recentItems
-        storage.recentItems[index] = .url(recentURL, title: title)
-        if saveStateAndRecentItems() == false {
-            storage.recentItems = original
         }
     }
 

@@ -23,11 +23,6 @@ private enum FocusedScreenshotTarget {
     }
 }
 
-private enum ScreenshotDestination {
-    case save(window: NSWindow?)
-    case clipboard
-}
-
 extension DenController {
     func captureFocusedSheetScreenshot() {
         guard let target = focusedScreenshotTarget() else { return }
@@ -43,27 +38,15 @@ extension DenController {
 
     private func performSheetScreenshot(
         capture: @escaping @MainActor () async throws -> NSImage,
-        destination: ScreenshotDestination
+        destination: ScreenshotOutput.Destination
     ) {
         startScreenshotOperation { [weak self] in
             guard let self else { return }
             do {
-                let image = try await capture()
-                try Task.checkCancellation()
-                let message: String
-                switch destination {
-                case let .save(window):
-                    let filename = ScreenshotOutput.suggestedFilename(scope: "Current Sheet Screenshot")
-                    guard
-                        let url = try await ScreenshotOutput.savePNG(
-                            image, suggestedFilename: filename, attachedTo: window)
-                    else { return }
-                    message = "Saved \(url.lastPathComponent)."
-                case .clipboard:
-                    try ScreenshotOutput.copyPNG(image)
-                    message = "Copied Current Sheet screenshot to clipboard."
-                }
-                try Task.checkCancellation()
+                guard
+                    let message = try await ScreenshotOutput.captureAndOutput(
+                        capture: capture, destination: destination)
+                else { return }
                 reportFeedback(message, severity: .success)
             } catch is CancellationError {
                 return

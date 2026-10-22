@@ -19,7 +19,7 @@ struct BoardIndices {
 @Observable
 final class DenController {
     static let maximumDeskCount = DeskCreation.maximumDeskCount
-    static let maximumRecentItemCount = BoardCreation.maximumRecentItemCount
+    static let maximumRecentItemCount = Recents.maximumItemCount
     static let maximumRecentlyRemovedBoardCount = BoardRemoval.maximumHistoryCount
 
     let storage: DenProfileResources
@@ -32,7 +32,8 @@ final class DenController {
     }
     var essentials: [Essential] { preferences.essentials }
     private(set) var presentedDeskID: DeskID
-    private(set) var latestFeedback: DenFeedback?
+    let feedback = FeedbackModel()
+    var latestFeedback: DenFeedback? { feedback.latest }
     var activeDrag: ActiveDrag? { storage.activeDrag }
     var recentlyRemovedBoards: [RecentlyRemovedBoard] { storage.recentlyRemovedBoards }
     var recentlyDiscardedDrawerItems: [DrawerItem] { storage.recentlyDiscardedDrawerItems }
@@ -50,6 +51,7 @@ final class DenController {
     private(set) var activeDownloads: [DownloadActivity] = []
     let sheetNavigation: SheetNavigationManager
     let preferences: AppPreferences
+    let essentialEditing: EssentialEditing
     let pasteboard: NSPasteboard
     let websiteDataStore: WKWebsiteDataStore
     let profileID: ProfileID?
@@ -129,15 +131,12 @@ final class DenController {
     }
 
     func handleExternalURL(_ url: URL) {
-        switch preferences.externalLinkDestination {
-        case .drawerPeek:
-            keepInDrawer(url)
-        case .focusedBoard:
-            _ = createBoard(
-                urlString: url.absoluteString,
-                preferredWidth: focusedBoard?.width,
-                afterBoardID: focusedBoard?.id,
-                recentItem: .url(WebURLPolicy.canonicalSheetURL(url)))
+        let destination = preferences.externalLinkDestination
+        let accepted = storage.inputOpening.openExternalURL(
+            url, destination: destination, context: inputOpeningContext(afterBoardID: focusedBoard?.id),
+            notify: inputOpeningNotifications())
+        if !accepted, destination == .drawerPeek {
+            reportFeedback("Only HTTP, HTTPS, and local file URLs are supported.", severity: .warning)
         }
     }
 
@@ -215,6 +214,8 @@ final class DenController {
         self.ipcSocketPath = ipcSocketPath
         self.sheetNavigation = sheetNavigation
         self.preferences = preferences
+        essentialEditing = EssentialEditing(
+            read: { preferences.essentials }, persist: { preferences.setEssentials($0) })
         self.pasteboard = pasteboard
         self.terminalCommandRunner = terminalCommandRunner
         self.requestWebExtensionContext = requestWebExtensionContext
@@ -259,6 +260,8 @@ final class DenController {
         self.ipcSocketPath = ipcSocketPath
         self.sheetNavigation = sheetNavigation
         self.preferences = preferences
+        essentialEditing = EssentialEditing(
+            read: { preferences.essentials }, persist: { preferences.setEssentials($0) })
         self.pasteboard = pasteboard
         self.terminalCommandRunner = terminalCommandRunner
         self.requestWebExtensionContext = requestWebExtensionContext
@@ -377,14 +380,12 @@ final class DenController {
         severity: DenFeedback.Severity = .info,
         target: DenFeedback.Target? = nil
     ) {
-        guard title?.isEmpty == false || !body.isEmpty else { return }
-        latestFeedback = DenFeedback(title: title, body: body, severity: severity, target: target)
-        onWindowEffect?(.feedback(latestFeedback))
+        guard let value = feedback.publish(title: title, body: body, severity: severity, target: target) else { return }
+        onWindowEffect?(.feedback(value))
     }
 
     func clearLatestNotificationFeedback() {
-        guard let target = latestFeedback?.target, case .notification = target else { return }
-        latestFeedback = nil
+        guard feedback.clearNotification() else { return }
         onWindowEffect?(.feedback(nil))
     }
 
@@ -491,14 +492,6 @@ final class DenController {
         } else {
             _ = save()
         }
-    }
-
-    @discardableResult
-    func saveStateAndRecentItems() -> Bool {
-        if storage.onSave != nil {
-            return save()
-        }
-        return storage.onRecentItemsSave?(recentItems) ?? true
     }
 
     @discardableResult

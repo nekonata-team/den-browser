@@ -77,7 +77,12 @@ writer. It validates insertion, requests synchronous preparation, updates the De
 focus, saves, synchronizes Native metadata/Tutorial events, and records Recent in the established
 order. An insertion with Recent defers its save until Recent has been updated. Failed saves retain
 the created Board and restore the previous Recent collection; App keeps the existing persistence
-retry and recovery behavior. Recent title reuse, deduplication and the 500-item limit remain unchanged.
+retry and recovery behavior. `BoardCreation` delegates recording to the Profile's concrete `Recents`
+operation. The same operation handles removal, clearing and first-page-title completion against the
+existing Store; App's Recent collection accessor is read-only. Title reuse, deduplication and the
+500-item limit remain unchanged. Each failed persistence attempt restores only the prior Recent
+collection, including titles and order. Profile persistence takes precedence over the standalone
+Recent callback; its drag guard and the existing Recent-only fallback policy remain unchanged.
 
 Every call supplies a `BoardCreation.Target` and a synchronous `Notice` callback. The target contains
 the invoking window's presented Desk, optional destination Desk/anchor, focus and operation origin.
@@ -104,10 +109,32 @@ notification destinations. Neither operation retains a window, Model or Runtime.
 
 App keeps the invoking window's Peek until BoardCreation accepts insertion. Its existing attachment
 adapter then transfers that exact WebRuntime into the Profile's Board runtime map; Item removal
-subsequently releases other windows' Peeks and repairs their selections. M4 must preserve this order,
-instance identity, failed-placement retention and download/navigation callbacks when reorganizing
-DenWindowResources.drawerPeekRuntime, DenProfileResources.drawerPresentations, attachWebRuntime and
-releaseDrawerPeek. This step changes no native ownership or disposal implementation.
+subsequently releases other windows' Peeks and repairs their selections. This preserves Runtime
+identity and download/navigation callbacks after success; failed placement leaves every Peek
+untouched. DenWindowResources owns the window Peek, and DenProfileResources owns the weak
+presentation registry and shared Board runtime map.
+
+`InputOpening` handles Essentials, Clipboard and external-URL opening through the same BoardCreation
+and DrawerItems operations. App supplies explicit width, target and opening configuration; Clipboard
+reading, native notice delivery and feedback rendering remain App bindings. `EssentialEditing` reads
+and writes the existing AppPreferences collection through concrete bindings, normalizes quick-save
+input, returns replacement confirmation values, and revalidates identity/key after confirmation.
+It creates no preference copy or feature Store. `BoardUpdates` owns explicit Board rename/navigation
+and zmx-root metadata writes and their existing notification/save ordering.
+
+`TutorialProgress` records the first Tutorial's ordered steps in the Profile Store; operation events
+are forwarded only after that update. Tutorial state remains session-only. `DeskLinkExport` performs
+pure Markdown escaping/formatting in Application; App's existing save panel and NSPasteboard remain
+the output adapters. `ScreenshotOutput` now executes capture/output cancellation checks with the
+existing ScreenshotCapture implementation, while DenWindowResources retains the cancellable task.
+
+`ZmxBoards` is an App native-client workflow using the existing ZmxClient, BoardCreation, BoardRemoval
+and BoardUpdates. It re-reads shared state and weak window context after async inspection, keeps
+source-focus/side-Board validity and active-name collision checks, and ignores cancelled or closed-window
+results. Window task ownership remains in DenWindowResources; the operation retains no Controller.
+
+`FeedbackModel` holds latest feedback per window; DenWindowModel retains displayed-feedback expiry
+and tap presentation. App forwards effects and native target navigation.
 
 `BoardRemoval` owns Board removal and restoration against the same Profile Store.
 Its planRemoval method and BoardRestoration provide the pure calculations, records bounded removal history,
