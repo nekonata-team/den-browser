@@ -1,0 +1,11 @@
+id: views-imports
+valid:
+  - import SwiftUI
+  - import AppKit
+  - import DenPresentationModels
+  - import DenDomain
+invalid:
+  - import DenApplication
+  - public import DenApplication
+  - import Den_Browser
+  - import GhosttyTerminal

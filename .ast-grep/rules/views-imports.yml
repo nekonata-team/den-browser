@@ -1,0 +1,13 @@
+id: views-imports
+language: Swift
+severity: error
+message: Views may import presentation Models and Domain, plus drawing SDKs and libraries.
+files:
+  - "Packages/DenViews/Sources/**/*.swift"
+rule:
+  kind: import_declaration
+  has:
+    kind: identifier
+    not:
+      regex: '^(SwiftUI|AppKit|Foundation|DenPresentationModels|DenDomain|SFSafeSymbols)(\.|$)'
+    stopBy: end

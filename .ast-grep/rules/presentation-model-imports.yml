@@ -1,7 +1,7 @@
 id: presentation-model-imports
 language: Swift
 severity: error
-message: Presentation models depend only on Domain values and Observation, with operations supplied by composition.
+message: Pure presentation models may use Application and Domain, but not UI or native SDKs.
 files:
   - "Packages/DenPresentationModels/Sources/DenPresentationModels/**/*.swift"
 rule:
@@ -9,5 +9,5 @@ rule:
   has:
     kind: identifier
     not:
-      regex: '^(Foundation|Observation|DenDomain)(\.|$)'
+      regex: '^(Foundation|Observation|DenDomain|DenApplication)(\.|$)'
     stopBy: end

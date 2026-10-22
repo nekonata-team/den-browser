@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		6AC0A1E03000000000000001 /* DenViews in Frameworks */ = {isa = PBXBuildFile; productRef = 6AC0A1E03000000000000003 /* DenViews */; };
+		6AC0A1E03000000000000004 /* DenViews in Frameworks */ = {isa = PBXBuildFile; productRef = 6AC0A1E03000000000000003 /* DenViews */; };
 		531CEFA4304D48CF00C9C636 /* den in CopyFiles */ = {isa = PBXBuildFile; fileRef = 531CEF98304D46A100C9C636 /* den */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		531CEFB2304D500000C9C636 /* ArgumentParser in Frameworks */ = {isa = PBXBuildFile; productRef = 531CEFB1304D500000C9C636 /* ArgumentParser */; };
 		533B2064303A206F00B2A985 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = 533B2063303A206F00B2A985 /* Sparkle */; };
@@ -146,6 +148,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				6AC0A1E03000000000000001 /* DenViews in Frameworks */,
 				533B2064303A206F00B2A985 /* Sparkle in Frameworks */,
 				53A10001301A000000000001 /* GhosttyTerminal in Frameworks */,
 				53A10004301A000000000001 /* GhosttyTheme in Frameworks */,
@@ -164,6 +167,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				6AC0A1E03000000000000004 /* DenViews in Frameworks */,
 				58C0A1E03000000000000004 /* DenDomain in Frameworks */,
 				5DC0A1E03000000000000004 /* DenInfrastructure in Frameworks */,
 				5CC0A1E03000000000000004 /* DenPresentationModels in Frameworks */,
@@ -246,6 +250,7 @@
 			);
 			name = "Den Browser";
 			packageProductDependencies = (
+				6AC0A1E03000000000000003 /* DenViews */,
 				53A10003301A000000000001 /* GhosttyTerminal */,
 				53A10005301A000000000001 /* GhosttyTheme */,
 				533B2063303A206F00B2A985 /* Sparkle */,
@@ -280,6 +285,7 @@
 			);
 			name = "Den BrowserTests";
 			packageProductDependencies = (
+				6AC0A1E03000000000000003 /* DenViews */,
 				58C0A1E03000000000000003 /* DenDomain */,
 				5DC0A1E03000000000000003 /* DenInfrastructure */,
 				5CC0A1E03000000000000003 /* DenPresentationModels */,
@@ -373,6 +379,7 @@
 			mainGroup = 530E9DD22FFFFED90033427C;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
+				6AC0A1E03000000000000002 /* XCLocalSwiftPackageReference "DenViews" */,
 				53A10002301A000000000001 /* XCRemoteSwiftPackageReference "libghostty-spm" */,
 				533B2062303A206F00B2A985 /* XCRemoteSwiftPackageReference "Sparkle" */,
 				531CEFB0304D500000C9C636 /* XCRemoteSwiftPackageReference "swift-argument-parser" */,
@@ -880,6 +887,10 @@
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */
+		6AC0A1E03000000000000002 /* XCLocalSwiftPackageReference "DenViews" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ../Packages/DenViews;
+		};
 		58C0A1E03000000000000002 /* XCLocalSwiftPackageReference "DenDomain" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = ../Packages/DenDomain;
@@ -958,6 +969,11 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		6AC0A1E03000000000000003 /* DenViews */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 6AC0A1E03000000000000002 /* XCLocalSwiftPackageReference "DenViews" */;
+			productName = DenViews;
+		};
 		531CEFB1304D500000C9C636 /* ArgumentParser */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 531CEFB0304D500000C9C636 /* XCRemoteSwiftPackageReference "swift-argument-parser" */;

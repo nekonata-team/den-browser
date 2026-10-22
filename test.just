@@ -33,3 +33,9 @@ results result_path=unit_test_result:
 # Test architecture rule definitions against their fixtures.
 architecture:
     @{{ast_grep}} test --config sgconfig.yml --skip-snapshot-tests
+
+# Validate M0's independent Model test and module access boundaries.
+m0-boundaries:
+    swift test --package-path Packages/DenPresentationModels
+    swift build --package-path Packages/DenViews
+    python3 scripts/check-m0-boundaries.py

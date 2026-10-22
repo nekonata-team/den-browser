@@ -7,11 +7,11 @@ let package = Package(
     products: [
         .library(name: "DenPresentationModels", targets: ["DenPresentationModels"])
     ],
-    dependencies: [.package(path: "../DenDomain")],
+    dependencies: [.package(path: "../DenDomain"), .package(path: "../DenApplication")],
     targets: [
         .target(
             name: "DenPresentationModels",
-            dependencies: ["DenDomain"],
+            dependencies: ["DenDomain", "DenApplication"],
             swiftSettings: [
                 .defaultIsolation(MainActor.self),
                 .enableUpcomingFeature("MemberImportVisibility"),
@@ -19,7 +19,11 @@ let package = Package(
                 .enableUpcomingFeature("NonisolatedNonsendingByDefault"),
                 .enableUpcomingFeature("NonescapableTypes"),
             ]
-        )
+        ),
+        .testTarget(
+            name: "DenPresentationModelsTests",
+            dependencies: ["DenPresentationModels", "DenApplication", "DenDomain"]
+        ),
     ],
     swiftLanguageModes: [.v6]
 )

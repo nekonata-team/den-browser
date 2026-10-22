@@ -15,12 +15,16 @@ Arrows point from the importing module to its dependency. Only local packages ar
 flowchart TD
     App[App target] --> DenApplication
     App --> DenPresentationModels
+    App --> DenViews
     App --> DenInfrastructure
     App --> DenDomain
     App --> DenDesign
     App --> DenIPCProtocol
     DenApplication --> DenDomain
     DenPresentationModels --> DenDomain
+    DenPresentationModels --> DenApplication
+    DenViews --> DenPresentationModels
+    DenViews --> DenDomain
     DenInfrastructure --> DenDomain
 ```
 
@@ -29,6 +33,7 @@ flowchart TD
 | `DenDomain` | Domain values and product rules |
 | `DenApplication` | Shared state source, operation decisions, and state transformations |
 | `DenPresentationModels` | Observable presentation Models and window-local state/effects |
+| `DenViews` | View module boundary; currently contains the M0 connection probes |
 | `DenInfrastructure` | Profile persistence and performance diagnostics |
 | `DenDesign` | Shared visual tokens and controls |
 | `DenIPCProtocol` | CLI/app request and response types |
@@ -89,11 +94,14 @@ persisted selections.
 and `PerformanceTrace`. It depends only on DenDomain, Foundation, and OS diagnostics.
 App adapters retain Profile lifecycle and native resources.
 
-`DenPresentationModels` depends only on Foundation, Observation, and `DenDomain`.
+`DenPresentationModels` depends on Foundation, Observation, `DenDomain`, and `DenApplication`.
 It contains Models and state/effect values, with no Views or shared visual components.
 Shared components belong to DenDesign and Feature Views to the app target. Controller imports use these value contracts.
-Models receive live data getters and only the operations they use. They cannot import the app target, DenController,
-native runtimes, or `DenApplication`. The app's `App/Composition/DenWindowComposition` supplies
+Existing Models receive live data getters and only the operations they use. Models may also receive concrete
+Application operations through public construction initializers, retaining the Store and operations privately.
+Such initializers use `public import DenApplication`; View-facing properties and methods expose Domain
+or display values, never an operation or writer. Models cannot import the app target, DenController,
+or native runtimes. The app's `App/Composition/DenWindowComposition` supplies
 the data and operations; [Window presentation model](#window-presentation-model) describes its lifecycle and effect connection.
 
 UDF uses two paths: shared-data changes invalidate reads; window effects request presentation changes.
@@ -132,7 +140,17 @@ Web Boards and Drawer Peek allow HTTP content, including LAN and Tailscale IP ad
 The app's Info.plist sets `NSAllowsArbitraryLoadsInWebContent` to exempt `WKWebView`
 loads from ATS restrictions while retaining default ATS protections for `URLSession`.
 
-`DenController` workflows, native integration, and Views remain in the app target.
+`DenViews` directly depends on `DenPresentationModels` and Domain. There is one Model / VM target,
+which remains independent of display SDKs. App composition passes an existing `NSView` directly
+to the View adapter; attaching, displaying, and detaching native views belongs to the View boundary.
+The Profile registry retains Runtime creation and disposal. WebKit private declarations, Ghostty
+integration, and embedded JavaScript remain in the app target. IPC calls the common native
+implementations without constructing a screen Model. This boundary follows
+[ADR 0066](./adr/0066-separate-views-from-native-runtime-ownership.md).
+
+`M0BoundaryProbe` in App composition and `BoardOrderProbeModel` / `BoardOrderProbeView` are
+construction probes, not product entry points. `NativeSurfaceView` verifies the display connection.
+The product's `DenController` workflows, native integration, and Feature Views still remain in the app target.
 Their folder boundaries are not compiler-enforced. Layer import guards
 reject Presentation access to the mutable adapter. This boundary follows
 [ADR 0062](./adr/0062-profile-state-source-and-presentation-models.md).

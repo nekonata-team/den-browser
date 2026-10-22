@@ -123,6 +123,7 @@ just test ui
 just lint
 just format
 just check
+just test m0-boundaries
 ```
 
 `just lint` runs `just architecture-check`, Xcode-bundled `swift-format` in strict mode, and SwiftLint. `just format` applies the same formatting configuration. Builds treat compiler warnings as errors.
@@ -130,6 +131,14 @@ just check
 `just architecture-check` runs the import guards described in [the rule guide](../.ast-grep/README.md). Run `just test architecture` to test rule definitions against fixtures.
 Package dependencies are compiler-enforced; the scan does not prove isolation between app source groups.
 Runtime event routing and shared-state consistency require behavioral tests.
+
+`just test m0-boundaries` runs the pure Model package tests without launching the app, builds
+the real View package, and compiles positive and negative API probes with `MemberImportVisibility`.
+`M0BoundaryProbeTests` in the app test target mounts the existing WebKit and Ghostty views through
+App composition directly into the View module, verifies reuse after remount, and checks app-bundle JavaScript.
+These are hosted integration tests; the independent Model test executable does not link native SDKs.
+The existing `ProfileManagerTests` protect event delivery after the owner's window closes and
+Runtime disposal after the final window closes.
 
 Before merge, run `just check`, then only the focused UI tests admitted by the rule above, then code review. Add
 exploratory validation when warranted, such as for UI behavior changes or milestone acceptance. Turn
