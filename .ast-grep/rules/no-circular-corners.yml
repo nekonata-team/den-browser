@@ -4,7 +4,7 @@ severity: error
 message: Den corners use continuous curves. Omit style or specify .continuous.
 files:
   - "Den Browser/Den Browser/Features/**/*.swift"
-  - "Packages/DenDesign/Sources/**/*.swift"
+  - "Packages/DenViews/Sources/**/*.swift"
 rule:
   kind: call_expression
   all:

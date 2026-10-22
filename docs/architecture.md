@@ -18,7 +18,6 @@ flowchart TD
     App --> DenViews
     App --> DenInfrastructure
     App --> DenDomain
-    App --> DenDesign
     App --> DenIPCProtocol
     DenApplication --> DenDomain
     DenPresentationModels --> DenDomain
@@ -33,9 +32,8 @@ flowchart TD
 | `DenDomain` | Domain values and product rules |
 | `DenApplication` | Shared state source, operation decisions, and state transformations |
 | `DenPresentationModels` | Observable presentation Models and window-local state/effects |
-| `DenViews` | View module boundary; currently contains the M0 connection probes |
+| `DenViews` | Feature Views, native display adapters, and shared visual tokens and controls |
 | `DenInfrastructure` | Profile persistence and performance diagnostics |
-| `DenDesign` | Shared visual tokens and controls |
 | `DenIPCProtocol` | CLI/app request and response types |
 
 App-target folders:
@@ -96,7 +94,7 @@ App adapters retain Profile lifecycle and native resources.
 
 `DenPresentationModels` depends on Foundation, Observation, `DenDomain`, and `DenApplication`.
 It contains Models and state/effect values, with no Views or shared visual components.
-Shared components belong to DenDesign and Feature Views to the app target. Controller imports use these value contracts.
+Shared components and the Notification View belong to DenViews; other Feature Views still reside in App. Controller imports use the presentation value contracts.
 Existing Models receive live data getters and only the operations they use. Models may also receive concrete
 Application operations through public construction initializers, retaining the Store and operations privately.
 Such initializers use `public import DenApplication`; View-facing properties and methods expose Domain
@@ -105,7 +103,8 @@ or native runtimes. The app's `App/Composition/DenWindowComposition` supplies
 the data and operations; [Window presentation model](#window-presentation-model) describes its lifecycle and effect connection.
 
 UDF uses two paths: shared-data changes invalidate reads; window effects request presentation changes.
-Views read through the read-only DenController facade and request operations instead of writing shared values.
+Unmigrated Views read through the read-only DenController facade; NotificationListView reads its Model.
+Views request operations instead of writing shared values.
 Getters forward to the observable source without copying authoritative data.
 Native runtimes and persistence callbacks stay in the app adapter and do not enter `DenSharedState` or its serialization.
 
@@ -148,8 +147,9 @@ integration, and embedded JavaScript remain in the app target. IPC calls the com
 implementations without constructing a screen Model. This boundary follows
 [ADR 0066](./adr/0066-separate-views-from-native-runtime-ownership.md).
 
-`M0BoundaryProbe` in App composition and `BoardOrderProbeModel` / `BoardOrderProbeView` are
-construction probes, not product entry points. `NativeSurfaceView` verifies the display connection.
+`M0BoundaryProbe` in App composition retains the native display construction probe.
+The real Notification Model/View replaced the initial Board order probes; API validation now
+checks NotificationListModel. `NativeSurfaceView` verifies the display connection.
 The product's `DenController` workflows, native integration, and Feature Views still remain in the app target.
 Their folder boundaries are not compiler-enforced. Layer import guards
 reject Presentation access to the mutable adapter. This boundary follows
@@ -158,7 +158,7 @@ reject Presentation access to the mutable adapter. This boundary follows
 ## Dependency direction
 
 - `App` assembles scenes, windows, commands, and dependencies. It does not acquire feature behavior merely because multiple Features use it.
-- `DenDesign` provides shared visual presentation without depending on Feature models or operations. Motion preference storage remains in AppPreferences; its visual choice type belongs to DenDesign.
+- `DenViews/Shared` provides shared visual presentation. Motion preference storage remains in AppPreferences; its choice value belongs to DenPresentationModels so Models never depend on Views. The consolidation follows [ADR 0067](./adr/0067-consolidate-shared-ui-and-notifications-in-views.md).
 - `Domain` contains state and product rules. It does not depend on `DenController`, Application-owned operation events, SwiftUI, AppKit, WebKit, or live runtime objects. Domain groups may reference one another according to the product model: Den contains Desks, and Desks contain Boards.
 - `DenDomain` is the compiler-enforced module for the moved shared Domain values. It depends only on Foundation and keeps the app's Swift 6 MainActor isolation policy.
 - `Application` owns operation sequencing, application state, and runtime lifecycle coordination. `DenController` remains the app-target operation entry point.
@@ -253,7 +253,22 @@ BoardActivity owns the resource-usage screen in Presentation and process samplin
 
 Essentials owns the `Essential` model, the Prefix panel, and Essential settings. The collection remains app-wide in `AppPreferences`; the Settings scene assembles its feature-owned screen. Den coordinates Prefix presentation and opening an Essential as a Board.
 
-Notifications owns the `DenNotification` model, list UI, and list-local selection. Den composition maps notifications and their current source labels into display items. Notification data is Profile-shared, transient state in `DenStateStore`; `DenProfileResources` forwards access to that source. DenController records messages, marks them read, clears them, and resolves their originating Board across Desks. Window presentation follows the Model boundary above.
+Notifications owns the `DenNotification` value, list UI, and list-local selection. One
+`NotificationOperations` per Profile privately retains the Store's writer and performs recording,
+read-state updates, source resolution for opening, and clearing. NotificationListModel receives
+that concrete operation and the existing Store; it maps current Desk/Board labels directly without
+retaining a copy of the shared collection. Its View lives in DenViews and imports only the Model
+and Domain product modules.
+
+Composition injects a source-opening callback for the invoking window's existing Board navigation.
+Opening marks the message read before that synchronous call; a missing source reports a warning
+in that window. Clear confirmation stays in presentation: the list Model emits the count through
+`onRequestClearConfirmation`, and composition delivers it directly to DenWindowModel using a weak
+reference. Confirmation display does not return through Controller. Runtime notification entry points delegate to the same shared operation, then emit the
+existing notification-added effect and feedback in order. Confirmed clearing also uses the shared
+operation and clears the invoking window's notification feedback. The operation retains no window
+or Model. Composition keeps its existing weak window-effect connection, and Runtime owners keep
+their existing lifetime.
 
 ### Profiles
 

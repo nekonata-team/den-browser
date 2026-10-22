@@ -1,4 +1,4 @@
-import DenDesign
+import DenViews
 import SwiftUI
 
 struct SheetNavigationSettingsSection: View {

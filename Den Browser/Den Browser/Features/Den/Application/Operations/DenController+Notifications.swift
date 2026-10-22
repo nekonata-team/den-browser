@@ -5,59 +5,37 @@ import Foundation
 
 extension DenController {
     func unreadNotificationCount(for boardID: BoardID) -> Int {
-        notifications.lazy.filter { $0.boardID == boardID && !$0.isRead }.count
-    }
-
-    func requestNotificationClearConfirmation() {
-        guard !notifications.isEmpty else { return }
-        onWindowEffect?(.requestConfirmation(.clearNotifications(notifications.count)))
+        storage.notificationOperations.unreadCount(for: boardID)
     }
 
     func clearNotifications() {
-        storage.notifications.removeAll()
+        storage.notificationOperations.clearAll()
         clearLatestNotificationFeedback()
     }
 
     func recordNotification(title: String?, body: String, boardID: BoardID) {
-        guard title?.isEmpty == false || !body.isEmpty else { return }
-        let notification = DenNotification(title: title, body: body, boardID: boardID)
-        storage.notifications.insert(notification, at: 0)
-        if notifications.count > Self.maximumNotificationCount {
-            storage.notifications.removeLast(notifications.count - Self.maximumNotificationCount)
-        }
+        guard let notification = storage.notificationOperations.record(title: title, body: body, boardID: boardID)
+        else { return }
         onWindowEffect?(.notificationAdded(notification.id))
         reportFeedback(title: title, body: body, target: .notification(notification.id))
     }
 
-    func openNotification(_ notification: DenNotification) {
-        guard boardIndices(for: notification.boardID) != nil else {
-            markNotificationRead(notification.id)
+    func openNotificationSource(_ boardID: BoardID?) {
+        guard let boardID else {
             reportFeedback("Notification source Board no longer exists.", severity: .warning)
             return
         }
-        markNotificationRead(notification.id)
         onWindowEffect?(.dismissTemporaryPresentation)
         onWindowEffect?(.exitDenMode)
-        focusBoard(notification.boardID, exitsDenMode: true)
-        if focusedDesk?.focusedBoardID == notification.boardID { centerFocusedBoard() }
+        focusBoard(boardID, exitsDenMode: true)
+        if focusedDesk?.focusedBoardID == boardID { centerFocusedBoard() }
     }
 
     func markNotificationRead(_ notificationID: UUID) {
-        guard let index = notifications.firstIndex(where: { $0.id == notificationID }) else { return }
-        storage.notifications[index].isRead = true
+        storage.notificationOperations.markRead(notificationID)
     }
 
     func markNotificationsRead(for boardID: BoardID) {
-        for index in notifications.indices {
-            guard notifications[index].boardID == boardID, !notifications[index].isRead else { continue }
-            storage.notifications[index].isRead = true
-        }
-    }
-
-    func notificationSource(for notification: DenNotification) -> (deskLabel: String, boardLabel: String)? {
-        guard let indices = boardIndices(for: notification.boardID) else { return nil }
-        let desk = state.desks[indices.deskOffset]
-        let board = desk.boards[indices.boardOffset]
-        return (deskLabel: desk.label, boardLabel: board.label)
+        storage.notificationOperations.markAllRead(for: boardID)
     }
 }

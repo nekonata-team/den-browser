@@ -1,4 +1,5 @@
-import DenDomain
+public import DenApplication
+public import DenDomain
 import Foundation
 import Observation
 
@@ -27,27 +28,39 @@ public struct NotificationListItem: Identifiable {
 @MainActor
 @Observable
 public final class NotificationListModel {
-    @ObservationIgnored private let itemProvider: () -> [NotificationListItem]
-    @ObservationIgnored private let openNotification: (DenNotification) -> Void
-    @ObservationIgnored private let requestClearConfirmation: () -> Void
+    private let state: DenStateStore
+    private let operations: NotificationOperations
+    @ObservationIgnored private let openSource: (BoardID?) -> Void
     public var selectedNotificationID: UUID?
     @ObservationIgnored public var onClose: (() -> Void)?
+    @ObservationIgnored public var onRequestClearConfirmation: ((Int) -> Void)?
 
     public init(
-        items: @escaping () -> [NotificationListItem],
-        openNotification: @escaping (DenNotification) -> Void,
-        requestClearConfirmation: @escaping () -> Void
+        state: DenStateStore,
+        operations: NotificationOperations,
+        openSource: @escaping (BoardID?) -> Void
     ) {
-        itemProvider = items
-        self.openNotification = openNotification
-        self.requestClearConfirmation = requestClearConfirmation
+        self.state = state
+        self.operations = operations
+        self.openSource = openSource
     }
 
     public var items: [NotificationListItem] {
-        itemProvider()
+        let snapshot = state.snapshot
+        return snapshot.notifications.map { notification in
+            let desk = snapshot.den.desks.first { desk in
+                desk.boards.contains { $0.id == notification.boardID }
+            }
+            let board = desk?.boards.first { $0.id == notification.boardID }
+            return NotificationListItem(
+                notification: notification,
+                source: board.flatMap { board in
+                    desk.map { NotificationListItem.Source(deskLabel: $0.label, boardLabel: board.label) }
+                })
+        }
     }
 
-    public var unreadCount: Int { items.lazy.filter { !$0.notification.isRead }.count }
+    public var unreadCount: Int { operations.unreadCount() }
 
     public func selectFirstNotification() {
         selectedNotificationID = items.first?.id
@@ -73,11 +86,13 @@ public final class NotificationListModel {
     }
 
     public func open(_ notification: DenNotification) {
-        openNotification(notification)
+        openSource(operations.prepareOpen(notification))
     }
 
     public func requestClear() {
-        requestClearConfirmation()
+        let count = state.snapshot.notifications.count
+        guard count > 0 else { return }
+        onRequestClearConfirmation?(count)
     }
 
     public func close() {

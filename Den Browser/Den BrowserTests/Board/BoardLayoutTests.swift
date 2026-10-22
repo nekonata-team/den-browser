@@ -1,5 +1,5 @@
-import DenDesign
 import DenDomain
+import DenViews
 import Testing
 
 @testable import Den_Browser

@@ -20,7 +20,6 @@ struct BoardIndices {
 final class DenController {
     static let maximumDeskCount = DeskCreation.maximumDeskCount
     static let maximumRecentItemCount = 500
-    static let maximumNotificationCount = 200
     static let maximumRecentlyRemovedBoardCount = 10
     static let maximumRecentlyDiscardedDrawerItemCount = 10
 
@@ -30,7 +29,7 @@ final class DenController {
     var recentItems: [RecentItem] { storage.recentItems }
     var notifications: [DenNotification] { storage.notifications }
     var unreadNotificationCount: Int {
-        notifications.lazy.filter { !$0.isRead }.count
+        storage.notificationOperations.unreadCount()
     }
     var essentials: [Essential] { preferences.essentials }
     private(set) var presentedDeskID: DeskID
@@ -324,7 +323,7 @@ final class DenController {
         onWindowEffect?(.clearBoardInputRequests)
         storage.recentlyRemovedBoards.removeAll()
         storage.recentlyDiscardedDrawerItems.removeAll()
-        storage.notifications.removeAll()
+        storage.notificationOperations.clearAll()
         previousFocusedDeskID = nil
         anchorJumpOriginBoardIDByDesk.removeAll()
         save()

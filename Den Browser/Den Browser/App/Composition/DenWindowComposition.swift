@@ -67,17 +67,9 @@ final class DenWindowComposition {
             focusedDesk: { controller.focusedDesk },
             focusBoard: { controller.focusBoard($0, exitsDenMode: true) })
         let notificationList = NotificationListModel(
-            items: {
-                controller.notifications.map { notification in
-                    NotificationListItem(
-                        notification: notification,
-                        source: controller.notificationSource(for: notification).map {
-                            NotificationListItem.Source(deskLabel: $0.deskLabel, boardLabel: $0.boardLabel)
-                        })
-                }
-            },
-            openNotification: { controller.openNotification($0) },
-            requestClearConfirmation: { controller.requestNotificationClearConfirmation() })
+            state: controller.storage.data,
+            operations: controller.storage.notificationOperations,
+            openSource: controller.openNotificationSource)
         let model = DenWindowModel(
             overview: overview,
             drawer: drawer,
@@ -146,6 +138,9 @@ final class DenWindowComposition {
         drawer.onClose = { [weak model] in model?.closeDrawer() }
         deskFilter.onCenterFocusedBoard = { [weak model] in model?.centerFocusedBoardRequest &+= 1 }
         notificationList.onClose = { [weak model] in model?.closeNotificationList() }
+        notificationList.onRequestClearConfirmation = { [weak model] count in
+            model?.requestNotificationClearConfirmation(count: count)
+        }
     }
 
     func connect() {

@@ -1,6 +1,6 @@
 import CoreGraphics
-import DenDesign
 import DenDomain
+import DenViews
 import Foundation
 
 enum BoardStripCoordinateSpace {

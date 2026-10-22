@@ -4,7 +4,7 @@ severity: error
 message: Use DenRadius for app-owned corners; keep geometry-derived radii as expressions.
 files:
   - "Den Browser/Den Browser/Features/**/*.swift"
-  - "Packages/DenDesign/Sources/**/*.swift"
+  - "Packages/DenViews/Sources/**/*.swift"
 rule:
   kind: value_argument
   all:

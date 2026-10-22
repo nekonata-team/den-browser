@@ -1,16 +1,19 @@
-import DenDesign
 import DenDomain
 import DenPresentationModels
 import Foundation
 import SFSafeSymbols
-import SwiftUI
+public import SwiftUI
 
-struct NotificationListView: View {
-    let profileColor: Color
+public struct NotificationListView: View {
+    private let profileColor: Color
+
+    public init(profileColor: Color) {
+        self.profileColor = profileColor
+    }
 
     @Environment(NotificationListModel.self) private var model
 
-    var body: some View {
+    public var body: some View {
         let items = model.items
         let unreadCount = model.unreadCount
 

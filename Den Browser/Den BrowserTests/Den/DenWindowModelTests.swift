@@ -11,57 +11,6 @@ import WebKit
 @MainActor
 @Suite(.serialized)
 struct DenWindowModelTests {
-    enum NotificationUpdate: CaseIterable {
-        case added, read, sourceTitleChanged, sourceRemoved
-    }
-
-    @Test(arguments: NotificationUpdate.allCases)
-    func notificationListKeepsLiveDisplayInputsObservable(update: NotificationUpdate) throws {
-        // Arrange
-        let board = BoardState(label: "Board", width: 520, currentSheetURL: URL(string: "https://board.example/"))
-        let desk = DeskState(label: "Desk", boards: [board], focusedBoardID: board.id)
-        let controller = DenController(state: DenState(desks: [desk], focusedDeskID: desk.id))
-        controller.recordNotification(title: "Build", body: "Finished", boardID: board.id)
-        let notificationID = try #require(controller.notifications.first?.id)
-        let composition = DenWindowComposition(controller: controller)
-        let windowModel = composition.model
-        let changed = Mutex(false)
-        withObservationTracking {
-            _ = windowModel.notificationList.items
-            _ = windowModel.notificationList.unreadCount
-        } onChange: {
-            changed.withLock { $0 = true }
-        }
-
-        // Act
-        switch update {
-        case .added:
-            controller.recordNotification(title: "Another build", body: "Finished", boardID: board.id)
-        case .read:
-            controller.markNotificationRead(notificationID)
-        case .sourceTitleChanged:
-            controller.updateBoard(boardID: board.id, url: nil, title: "Updated title")
-        case .sourceRemoved:
-            controller.removeBoard(board.id)
-        }
-
-        // Assert
-        #expect(changed.withLock { $0 })
-        let items = windowModel.notificationList.items
-        switch update {
-        case .added:
-            #expect(items.count == 2)
-            #expect(windowModel.notificationList.unreadCount == 2)
-        case .read:
-            #expect(items.first?.notification.isRead == true)
-            #expect(windowModel.notificationList.unreadCount == 0)
-        case .sourceTitleChanged:
-            #expect(items.first?.source?.boardLabel == "Updated title")
-        case .sourceRemoved:
-            #expect(items.first?.source == nil)
-        }
-    }
-
     @Test(arguments: [false, true])
     func runtimeFocusSelectsWebBoardButDoesNotStealFocusForTerminal(isTerminal: Bool) {
         // Arrange

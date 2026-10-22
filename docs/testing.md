@@ -46,7 +46,7 @@ placement: for example, `DenControllerBoardTests` belongs under `Board` because 
 Do not mechanically reproduce the source's `Domain`, `Application`, and `Infrastructure` folders.
 Shared Swift test helpers belong under `Support`; test resource files remain under `Fixtures`.
 
-Test application operations and persistence directly through `DenController`; test the shared-state source directly through `DenStateStore` and its write capability. Test window presentation
+Test migrated notification operations directly through `NotificationOperations`; test remaining application operations and persistence through `DenController`; test the shared-state source directly through `DenStateStore` and its write capability. Test window presentation
 transitions through `DenWindowModel` and context-local state through the corresponding Model,
 while asserting resulting domain changes on their shared Store when needed. Test delayed presentation
 by its observable result rather than the Task object used to produce it. Presentation suites use Model names; moving UI state does not require routing unrelated
@@ -123,7 +123,7 @@ just test ui
 just lint
 just format
 just check
-just test m0-boundaries
+just test packages
 ```
 
 `just lint` runs `just architecture-check`, Xcode-bundled `swift-format` in strict mode, and SwiftLint. `just format` applies the same formatting configuration. Builds treat compiler warnings as errors.
@@ -132,13 +132,17 @@ just test m0-boundaries
 Package dependencies are compiler-enforced; the scan does not prove isolation between app source groups.
 Runtime event routing and shared-state consistency require behavioral tests.
 
-`just test m0-boundaries` runs the pure Model package tests without launching the app, builds
-the real View package, and compiles positive and negative API probes with `MemberImportVisibility`.
 `M0BoundaryProbeTests` in the app test target mounts the existing WebKit and Ghostty views through
 App composition directly into the View module, verifies reuse after remount, and checks app-bundle JavaScript.
 These are hosted integration tests; the independent Model test executable does not link native SDKs.
 The existing `ProfileManagerTests` protect event delivery after the owner's window closes and
 Runtime disposal after the final window closes.
+
+`just test packages` runs the complete Application and presentation Model test suites as independent
+SwiftPM suites, without App, WebKit, or Ghostty. The default unit recipe includes these suites.
+`NotificationListModelTests` protects shared Observation and per-window dispatch; the app's
+`NotificationWindowTests` protects clear confirmation, source focus, feedback/effect order, and
+window destinations. Keyboard tests retain the integration with the same window Model.
 
 Before merge, run `just check`, then only the focused UI tests admitted by the rule above, then code review. Add
 exploratory validation when warranted, such as for UI behavior changes or milestone acceptance. Turn

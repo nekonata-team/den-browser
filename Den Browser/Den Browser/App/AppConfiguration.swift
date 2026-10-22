@@ -1,6 +1,7 @@
-import DenDesign
 import DenDomain
 import DenInfrastructure
+import DenPresentationModels
+import DenViews
 import Foundation
 import WebKit
 

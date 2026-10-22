@@ -1,6 +1,6 @@
 import AppKit
-import DenApplication
 import DenDomain
+import DenPresentationModels
 import DenViews
 import SwiftUI
 import Testing
@@ -11,14 +11,13 @@ import WebKit
 @MainActor
 @Suite(.serialized)
 struct M0BoundaryProbeTests {
-    @Test func appConstructsViewWithConcreteOperation() {
+    @Test func appConstructsNotificationViewWithTheWindowModel() {
         // Arrange
-        let (state, writer) = DenStateStore.make(initialState: DenSharedState(den: .sample))
-        let movement = BoardMovement(state: state, writer: writer)
+        let controller = DenController(state: .sample)
+        let composition = DenWindowComposition(controller: controller)
 
         // Act
-        let view = M0BoundaryProbe.boardOrder(
-            state: state, movement: movement, deskID: state.snapshot.den.focusedDeskID)
+        let view = NotificationListView(profileColor: .blue).environment(composition.model.notificationList)
 
         // Assert
         #expect(NSHostingView(rootView: view).fittingSize.height >= 0)

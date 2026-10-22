@@ -9,6 +9,7 @@ import Observation
 final class DenProfileResources {
     let data: DenStateStore
     @ObservationIgnored private let writer: DenStateWriter
+    @ObservationIgnored let notificationOperations: NotificationOperations
 
     var boardMovement: BoardMovement {
         BoardMovement(state: data, writer: writer)
@@ -33,8 +34,7 @@ final class DenProfileResources {
     }
 
     var notifications: [DenNotification] {
-        get { data.snapshot.notifications }
-        set { writer.update { $0.notifications = newValue } }
+        data.snapshot.notifications
     }
 
     var activeDrag: ActiveDrag? {
@@ -92,6 +92,7 @@ final class DenProfileResources {
         boardRuntimes = DenBoardRuntimes { boardID in onRuntimeOwnerChange?(boardID, nil) }
         data = shared.store
         writer = shared.writer
+        notificationOperations = NotificationOperations(store: shared.store, writer: shared.writer)
         self.onSave = onSave
         self.onDeferredSave = onDeferredSave
         self.onDeskPresetsSave = onDeskPresetsSave

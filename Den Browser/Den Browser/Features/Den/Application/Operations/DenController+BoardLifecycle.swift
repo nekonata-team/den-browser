@@ -1,7 +1,7 @@
 import DenApplication
-import DenDesign
 import DenDomain
 import DenPresentationModels
+import DenViews
 import Foundation
 
 extension DenController {

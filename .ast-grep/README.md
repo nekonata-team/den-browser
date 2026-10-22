@@ -1,15 +1,15 @@
 # Swift source checks
 
 Run `just architecture-check` to scan the application and all
-package source roots: `DenDomain`, `DenDesign`, `DenIPCProtocol`, `DenApplication`, `DenPresentationModels`, `DenViews`, and `DenInfrastructure`.
+package source roots: `DenDomain`, `DenIPCProtocol`, `DenApplication`, `DenPresentationModels`, `DenViews`, and `DenInfrastructure`.
 Run `just test architecture` to test the rule definitions against their fixtures.
 `just lint` and `just check` also run `architecture-check`. The ast-grep version is pinned in
 `mise.toml` so parser changes are reviewed together with the rule fixtures.
 
 - Domain excludes SwiftUI, AppKit, WebKit, and GhosttyTerminal imports. This rule
   scans every source under `Packages/DenDomain/Sources`.
-- `DenDesign` sources are included in formatting and architecture scans; SwiftUI is
-  expected there because the package owns shared presentation components.
+- `DenViews` owns shared presentation components and migrated Feature Views; SwiftUI is
+  expected there. Pure Models cannot import Views or drawing SDKs.
 - `DenIPCProtocol` may import Foundation only. Its wire DTOs do not depend on app,
   Domain, or UI modules.
 - Application excludes SwiftUI imports. Native AppKit integration remains allowed.
@@ -24,7 +24,7 @@ between app source groups.
 No automatic fixes are configured.
 
 App-owned corners use `DenRadius` instead of literal `cornerRadius` arguments in
-Feature and DenDesign sources. Geometry-derived expressions remain allowed.
+Feature and DenViews sources. Geometry-derived expressions remain allowed.
 In the same sources, `RoundedRectangle` and `.rect` reject `style: .circular`;
 omit the style or use `.continuous`.
 

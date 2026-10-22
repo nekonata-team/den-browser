@@ -9,5 +9,5 @@ rule:
   has:
     kind: identifier
     not:
-      regex: '^(SwiftUI|AppKit|Foundation|DenPresentationModels|DenDomain|SFSafeSymbols)(\.|$)'
+      regex: '^(SwiftUI|AppKit|CoreGraphics|Foundation|DenPresentationModels|DenDomain|SFSafeSymbols)(\.|$)'
     stopBy: end

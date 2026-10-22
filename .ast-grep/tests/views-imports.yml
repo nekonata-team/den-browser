@@ -2,6 +2,8 @@ id: views-imports
 valid:
   - import SwiftUI
   - import AppKit
+  - import CoreGraphics
+  - public import DenPresentationModels
   - import DenPresentationModels
   - import DenDomain
 invalid:

@@ -14,7 +14,7 @@ ast_grep := 'COLORFGBG="15;0" ast-grep'
 
 # Run unit tests without code signing.
 [default]
-unit:
+unit: packages
     @rm -rf "{{unit_test_result}}"
     @rtk test "xcodebuild test -project '{{project}}' -scheme '{{unit_test_scheme}}' -destination 'platform=macOS,arch=arm64' -derivedDataPath '{{derived_data}}' -resultBundlePath '{{unit_test_result}}' -only-testing:'Den BrowserTests' -parallel-testing-enabled YES CODE_SIGNING_ALLOWED=NO" || { echo "✗ Unit tests failed."; echo '  Inspect: just test results'; exit 1; }
     echo "✓ Unit tests passed"
@@ -34,8 +34,8 @@ results result_path=unit_test_result:
 architecture:
     @{{ast_grep}} test --config sgconfig.yml --skip-snapshot-tests
 
-# Validate M0's independent Model test and module access boundaries.
-m0-boundaries:
-    swift test --package-path Packages/DenPresentationModels
-    swift build --package-path Packages/DenViews
-    python3 scripts/check-m0-boundaries.py
+# Run the independent Application and presentation Model package tests.
+packages:
+    @rtk test "swift test --package-path Packages/DenApplication"
+    @rtk test "swift test --package-path Packages/DenPresentationModels"
+    @echo "✓ Independent package tests passed"
