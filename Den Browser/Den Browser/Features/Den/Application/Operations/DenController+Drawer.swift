@@ -20,17 +20,15 @@ extension DenController {
         opensDrawer: Bool = true,
         selectsItem: Bool = true
     ) -> UUID? {
-        guard WebURLPolicy.isSupported(url) else {
+        guard
+            let itemID = storage.drawerItems.keep(
+                url, title: title, notify: drawerItemNotifications(opensDrawer: opensDrawer, selectsItem: selectsItem))
+        else {
             reportFeedback("Only HTTP, HTTPS, and local file URLs are supported.", severity: .warning)
             return nil
         }
-        if selectsItem { releaseDrawerPeek() }
-        let item = DrawerItem(url: url, title: title)
-        storage.state.drawerItems.insert(item, at: 0)
-        onWindowEffect?(.drawerItemKept(item.id, opensDrawer: opensDrawer, selectsItem: selectsItem))
-        save()
         reportFeedback("Kept in Drawer.", severity: .success)
-        return item.id
+        return itemID
     }
 
     @discardableResult
@@ -45,52 +43,12 @@ extension DenController {
 
     @discardableResult
     func discardDrawerItem(_ itemID: UUID, focusNext: Bool = true) -> Bool {
-        guard state.drawerItems.contains(where: { $0.id == itemID }) else { return false }
-        discardDrawerItem(itemID, advancesPeek: true, focusNext: focusNext)
-        return true
-    }
-
-    private func discardDrawerItem(
-        _ itemID: UUID,
-        advancesPeek: Bool,
-        focusNext: Bool = true,
-        recordsDiscardHistory: Bool = true
-    ) {
-        guard let index = state.drawerItems.firstIndex(where: { $0.id == itemID }) else { return }
-        let item = state.drawerItems[index]
-        let previousItems = state.drawerItems
-
-        if recordsDiscardHistory {
-            rememberDiscardedDrawerItems([item])
-        }
-        storage.state.drawerItems.remove(at: index)
-        for presentation in storage.drawerPresentations.allObjects {
-            if presentation.drawerPeekRuntime?.id == itemID { presentation.releaseDrawerPeek() }
-            presentation.onWindowEffect?(
-                .drawerItemRemoved(
-                    itemID, previousItems: previousItems, advancesPeek: advancesPeek, focusNext: focusNext))
-        }
-        save()
+        storage.drawerItems.discard(itemID, focusNext: focusNext, notify: drawerItemNotifications())
     }
 
     func restoreRecentlyDiscardedDrawerItem() {
-        guard let item = recentlyDiscardedDrawerItems.first else {
+        if storage.drawerItems.restore(notify: drawerItemNotifications()) == nil {
             reportFeedback("No discarded Drawer Item to restore.", severity: .warning)
-            return
-        }
-
-        releaseDrawerPeek()
-        storage.state.drawerItems.insert(item, at: 0)
-        storage.recentlyDiscardedDrawerItems.removeFirst()
-        onWindowEffect?(.drawerItemRestored(item.id))
-        save()
-    }
-
-    private func rememberDiscardedDrawerItems(_ items: [DrawerItem]) {
-        storage.recentlyDiscardedDrawerItems.insert(contentsOf: items, at: 0)
-        let overflow = recentlyDiscardedDrawerItems.count - Self.maximumRecentlyDiscardedDrawerItemCount
-        if overflow > 0 {
-            storage.recentlyDiscardedDrawerItems.removeLast(overflow)
         }
     }
 
@@ -106,20 +64,12 @@ extension DenController {
         deskID: DeskID? = nil
     ) -> BoardID? {
         guard
-            let boardID = DrawerPlacement.place(
-                itemID,
-                among: state.drawerItems,
-                createBoard: { [self] item in
-                    createBoard(
-                        urlString: item.url.absoluteString,
-                        preferredWidth: preferredWidth ?? focusedBoard?.width,
-                        recentItem: .url(WebURLPolicy.canonicalSheetURL(item.url)),
-                        deskID: deskID,
-                        existingRuntime: drawerPeekRuntime?.id == item.id ? drawerPeekRuntime : nil)
-                },
-                discardItem: { [self] itemID in
-                    discardDrawerItem(itemID, advancesPeek: false, recordsDiscardHistory: false)
-                })
+            let boardID = storage.drawerPlacement.place(
+                .init(
+                    itemID: itemID, width: preferredWidth ?? inheritedBoardWidth,
+                    searchEngine: preferences.searchEngine,
+                    target: boardCreationTarget(deskID: deskID)),
+                notifyBoard: drawerBoardCreationNotifications(itemID), notifyDrawer: drawerItemNotifications())
         else { return nil }
         onWindowEffect?(.dismissTemporaryPresentation)
         return boardID
@@ -191,28 +141,41 @@ extension DenController {
     }
 
     private func updateDrawerItem(itemID: UUID, url: URL?, title: String?) {
-        guard let index = state.drawerItems.firstIndex(where: { $0.id == itemID }) else { return }
-        var changed = false
-        if let url, WebURLPolicy.isSupported(url), state.drawerItems[index].url != url {
-            storage.state.drawerItems[index].url = url
-            changed = true
-        }
-        if let title, !title.isEmpty, state.drawerItems[index].title != title {
-            storage.state.drawerItems[index].title = title
-            changed = true
-        }
-        if changed {
-            save()
-        }
+        storage.drawerItems.update(itemID, url: url, title: title)
     }
 
     func clearDrawer() {
-        rememberDiscardedDrawerItems(state.drawerItems)
-        storage.state.drawerItems = []
-        for presentation in storage.drawerPresentations.allObjects {
-            presentation.releaseDrawerPeek()
-            presentation.onWindowEffect?(.drawerCleared)
+        storage.drawerItems.clear(notify: drawerItemNotifications())
+    }
+
+    func drawerBoardCreationNotifications(_ itemID: UUID) -> (BoardCreation.Notice) -> Void {
+        boardCreationNotifications(existingRuntime: drawerPeekRuntime?.id == itemID ? drawerPeekRuntime : nil)
+    }
+
+    func drawerItemNotifications(opensDrawer: Bool = true, selectsItem: Bool = true) -> (DrawerItems.Notice) -> Void {
+        { [self] notice in
+            switch notice {
+            case .willKeep:
+                if selectsItem { releaseDrawerPeek() }
+            case .didKeep(let id):
+                onWindowEffect?(.drawerItemKept(id, opensDrawer: opensDrawer, selectsItem: selectsItem))
+            case .willRestore:
+                releaseDrawerPeek()
+            case .didRestore(let id):
+                onWindowEffect?(.drawerItemRestored(id))
+            case .didDiscard(let id, let previousItems, let advancesPeek, let focusNext):
+                for presentation in storage.drawerPresentations.allObjects {
+                    if presentation.drawerPeekRuntime?.id == id { presentation.releaseDrawerPeek() }
+                    presentation.onWindowEffect?(
+                        .drawerItemRemoved(
+                            id, previousItems: previousItems, advancesPeek: advancesPeek, focusNext: focusNext))
+                }
+            case .didClear:
+                for presentation in storage.drawerPresentations.allObjects {
+                    presentation.releaseDrawerPeek()
+                    presentation.onWindowEffect?(.drawerCleared)
+                }
+            }
         }
-        save()
     }
 }

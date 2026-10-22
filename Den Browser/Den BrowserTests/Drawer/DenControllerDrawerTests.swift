@@ -1,4 +1,5 @@
 import AppKit
+import DenApplication
 import DenDomain
 import DenPresentationModels
 import Foundation
@@ -568,12 +569,12 @@ struct DenControllerDrawerTests {
         }
 
         #expect(controller.state.drawerItems.map(\.id) == [items[11].id])
-        #expect(controller.recentlyDiscardedDrawerItems.count == DenController.maximumRecentlyDiscardedDrawerItemCount)
+        #expect(controller.recentlyDiscardedDrawerItems.count == DrawerItems.maximumDiscardHistoryCount)
         #expect(
             controller.recentlyDiscardedDrawerItems.map(\.id)
                 == Array(items[1...10].reversed()).map(\.id))
 
-        for _ in 0..<DenController.maximumRecentlyDiscardedDrawerItemCount {
+        for _ in 0..<DrawerItems.maximumDiscardHistoryCount {
             controller.restoreRecentlyDiscardedDrawerItem()
         }
 

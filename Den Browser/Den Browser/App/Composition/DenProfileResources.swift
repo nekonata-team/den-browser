@@ -17,6 +17,8 @@ final class DenProfileResources {
     @ObservationIgnored let deskUpdates: DeskUpdates
     @ObservationIgnored let deskMovement: DeskMovement
     @ObservationIgnored let denReset: DenReset
+    @ObservationIgnored let drawerItems: DrawerItems
+    @ObservationIgnored let drawerPlacement: DrawerPlacement
 
     @ObservationIgnored let boardMovement: BoardMovement
 
@@ -122,6 +124,8 @@ final class DenProfileResources {
                 var isDirectory: ObjCBool = false
                 return FileManager.default.fileExists(atPath: path, isDirectory: &isDirectory) && isDirectory.boolValue
             })
+        drawerItems = DrawerItems(store: shared.store, writer: shared.writer, persist: persistState)
+        drawerPlacement = DrawerPlacement(store: shared.store, creation: boardCreation, items: drawerItems)
         self.onSave = onSave
         self.onDeferredSave = onDeferredSave
         self.onDeskPresetsSave = onDeskPresetsSave

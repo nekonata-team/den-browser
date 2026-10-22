@@ -21,7 +21,6 @@ final class DenController {
     static let maximumDeskCount = DeskCreation.maximumDeskCount
     static let maximumRecentItemCount = BoardCreation.maximumRecentItemCount
     static let maximumRecentlyRemovedBoardCount = BoardRemoval.maximumHistoryCount
-    static let maximumRecentlyDiscardedDrawerItemCount = 10
 
     let storage: DenProfileResources
     var state: DenState { storage.state }

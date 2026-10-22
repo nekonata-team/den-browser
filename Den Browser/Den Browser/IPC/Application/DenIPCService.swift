@@ -1177,7 +1177,11 @@ final class DenIPCService {
                 return .failure("Invalid or unsupported URL: \(payload.url)")
             }
             let canonicalURL = WebURLPolicy.canonicalSheetURL(url)
-            if let itemID = controller.keepInDrawerInBackground(canonicalURL, title: payload.title) {
+            if let itemID = controller.storage.drawerItems.keep(
+                canonicalURL, title: payload.title,
+                notify: controller.drawerItemNotifications(opensDrawer: false, selectsItem: false))
+            {
+                controller.reportFeedback("Kept in Drawer.", severity: .success)
                 return .success(
                     .drawerItem(
                         id: itemID.uuidString,
@@ -1192,9 +1196,16 @@ final class DenIPCService {
             guard let item = findDrawerItem(in: controller, matching: idString) else {
                 return .failure("Drawer Item not found: \(idString)")
             }
-            if let boardID = controller.placeDrawerItemAsBoard(item.id, deskID: desk.id),
+            if let boardID = controller.storage.drawerPlacement.place(
+                .init(
+                    itemID: item.id, width: controller.inheritedBoardWidth,
+                    searchEngine: controller.preferences.searchEngine,
+                    target: controller.boardCreationTarget(deskID: desk.id)),
+                notifyBoard: controller.drawerBoardCreationNotifications(item.id),
+                notifyDrawer: controller.drawerItemNotifications()),
                 let board = controller.board(for: boardID)
             {
+                controller.onWindowEffect?(.dismissTemporaryPresentation)
                 _ = controller.webRuntime(for: board)
                 return .success(
                     .createdBoard(
@@ -1211,7 +1222,7 @@ final class DenIPCService {
             guard let item = findDrawerItem(in: controller, matching: idString) else {
                 return .failure("Drawer Item not found: \(idString)")
             }
-            if controller.discardDrawerItem(item.id) {
+            if controller.storage.drawerItems.discard(item.id, notify: controller.drawerItemNotifications()) {
                 return .success(.message("Discarded Drawer Item: \(item.displayName)"))
             }
             return .failure("Failed to discard Drawer Item: \(idString)")

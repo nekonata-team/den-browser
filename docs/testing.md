@@ -46,6 +46,10 @@ placement: for example, `DenControllerBoardTests` belongs under `Board` because 
 Do not mechanically reproduce the source's `Domain`, `Application`, and `Infrastructure` folders.
 Shared Swift test helpers belong under `Support`; test resource files remain under `Fixtures`.
 
+Test Drawer Item/history mutations and concrete Board placement/save ordering in the independent
+Application package. Keep WebRuntime identity, Peek release, download/navigation callbacks,
+window presentation repair and IPC routing in the App integration suite.
+
 Test Board opening decisions through `BoardOpening.resolve` and insertion/Recent/save ordering
 through `BoardCreation` in the Application package. Keep Native/window/persistence connections
 in app integration tests; test OpenBoardModel directly against the same concrete operation.

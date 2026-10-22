@@ -42,7 +42,8 @@ final class DenWindowComposition {
             isBottomStyle: { controller.preferences.drawerStyle == .bottom },
             releasePeek: { controller.releaseDrawerPeek() },
             discardItem: { itemID, focusNext in
-                _ = controller.discardDrawerItem(itemID, focusNext: focusNext)
+                controller.storage.drawerItems.discard(
+                    itemID, focusNext: focusNext, notify: controller.drawerItemNotifications())
             },
             toggleStyle: { controller.preferences.toggleDrawerStyle() },
             requestClearConfirmation: { controller.requestDrawerClearConfirmation() })

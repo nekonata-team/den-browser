@@ -91,8 +91,23 @@ request values and notification delivery. Search, Essentials, Clipboard, Recent 
 adapters delegate to the same operation. IPC Web/Terminal creation calls it directly, preserving
 transport validation, target resolution and response conversion without a screen Model.
 Popup, Side Board, duplication and Drawer placement also share its insertion path. App retains
-Native Runtime ownership, async zmx cancellation and window presentation. `DrawerPlacement` keeps
-its create-before-discard sequence. Application has no Presentation dependency.
+Native Runtime ownership, async zmx cancellation and window presentation. Application has no
+Presentation dependency.
+
+`DrawerItems` records, discards, restores and updates Drawer Items and their bounded transient
+history through the same Profile writer. It validates supported URLs before preparing a Peek change,
+repairs window presentation after removal but before saving, and saves metadata only when changed.
+`DrawerPlacement` calls the concrete BoardCreation operation, then consumes the source Item without
+adding discard history or advancing the Peek. A failed creation leaves the Item and Peek untouched.
+UI/Keyboard adapters and IPC share these operations; each call supplies its target and synchronous
+notification destinations. Neither operation retains a window, Model or Runtime.
+
+App keeps the invoking window's Peek until BoardCreation accepts insertion. Its existing attachment
+adapter then transfers that exact WebRuntime into the Profile's Board runtime map; Item removal
+subsequently releases other windows' Peeks and repairs their selections. M4 must preserve this order,
+instance identity, failed-placement retention and download/navigation callbacks when reorganizing
+DenWindowResources.drawerPeekRuntime, DenProfileResources.drawerPresentations, attachWebRuntime and
+releaseDrawerPeek. This step changes no native ownership or disposal implementation.
 
 `BoardRemoval` owns Board removal and restoration against the same Profile Store.
 Its planRemoval method and BoardRestoration provide the pure calculations, records bounded removal history,
