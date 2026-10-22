@@ -76,7 +76,6 @@ final class DenProfileResources {
     @ObservationIgnored let presetFacingStore: PresetFacingStore
 
     @ObservationIgnored let drawerPresentations = NSHashTable<DenController>.weakObjects()
-    @ObservationIgnored let onRuntimeOwnerChange: ((BoardID, DenController?) -> Void)?
     @ObservationIgnored let onSave: ((DenState) -> Bool)?
     @ObservationIgnored let onDeferredSave: (() -> Void)?
     @ObservationIgnored let onDeskPresetsSave: (([PersonalDeskPreset]) -> Bool)?
@@ -92,15 +91,14 @@ final class DenProfileResources {
         onSave: ((DenState) -> Bool)? = nil,
         onDeferredSave: (() -> Void)? = nil,
         onDeskPresetsSave: (([PersonalDeskPreset]) -> Bool)? = nil,
-        onRecentItemsSave: (([RecentItem]) -> Bool)? = nil,
-        onRuntimeOwnerChange: ((BoardID, DenController?) -> Void)? = nil
+        onRecentItemsSave: (([RecentItem]) -> Bool)? = nil
     ) {
         let shared = DenStateStore.make(
             initialState: DenSharedState(den: state, deskPresets: deskPresets, recentItems: recentItems))
         let persistState: ((DenState) -> Bool)? = onSave.map { persist in
             { persist(DenController.normalizedPersistedState($0)) }
         }
-        boardRuntimes = DenBoardRuntimes { boardID in onRuntimeOwnerChange?(boardID, nil) }
+        boardRuntimes = DenBoardRuntimes()
         data = shared.store
         writer = shared.writer
         notificationOperations = NotificationOperations(store: shared.store, writer: shared.writer)
@@ -135,7 +133,6 @@ final class DenProfileResources {
         self.onDeferredSave = onDeferredSave
         self.onDeskPresetsSave = onDeskPresetsSave
         self.onRecentItemsSave = onRecentItemsSave
-        self.onRuntimeOwnerChange = onRuntimeOwnerChange
         let cache = BoardFacingCache(disk: facingDisk)
         facingCache = cache
         facingCapture = BoardFacingCapture(cache: cache)

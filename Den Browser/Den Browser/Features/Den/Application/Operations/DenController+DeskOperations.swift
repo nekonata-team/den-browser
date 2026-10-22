@@ -4,12 +4,6 @@ import DenDomain
 import DenPresentationModels
 import Foundation
 
-enum DeskReplacementResult: Equatable {
-    case applied
-    case confirmationPending
-    case unavailable
-}
-
 extension DenController {
     @discardableResult
     func createDesk(

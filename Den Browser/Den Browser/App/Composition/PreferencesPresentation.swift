@@ -89,3 +89,27 @@ extension DefaultBrowserSettingsModel {
             setDefault: { await DefaultBrowserSystem.makeDefault() })
     }
 }
+
+extension WebSettingsModel {
+    init(preferences: AppPreferences, manager: ProfileManager) {
+        self.init(
+            searchEngine: { preferences.searchEngine },
+            automaticPIPOnDeskSwitch: { preferences.automaticPIPOnDeskSwitch },
+            uBOLiteEnabled: { preferences.uBOLiteEnabled }, isInstalled: { manager.uboliteInstaller.isInstalled },
+            installedVersion: { manager.uboliteInstaller.installedVersion },
+            isBusy: { manager.uboliteInstaller.isBusy },
+            errorMessage: {
+                if case .error(let message) = manager.uboliteInstaller.state { return message }
+                return nil
+            },
+            setSearchEngine: { preferences.setSearchEngine($0) },
+            setAutomaticPIPOnDeskSwitch: { preferences.setAutomaticPIPOnDeskSwitch($0) },
+            setUBOLiteEnabled: { manager.setUBOLiteEnabled($0) }, openOptions: { manager.presentUBOLiteOptions() },
+            update: { await manager.updateUBOLite() },
+            install: { if await manager.uboliteInstaller.install() { manager.setUBOLiteEnabled(true) } },
+            uninstall: {
+                manager.setUBOLiteEnabled(false)
+                manager.uboliteInstaller.uninstall()
+            })
+    }
+}

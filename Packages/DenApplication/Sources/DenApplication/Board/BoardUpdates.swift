@@ -39,6 +39,42 @@ public struct BoardUpdates {
         return url
     }
 
+    public func updateWeb(_ id: BoardID, url: URL?, title: String?, recents: Recents, onURLChange: () -> Void) {
+        guard let location = indices(for: id) else { return }
+        let board = store.snapshot.den.desks[location.desk].boards[location.board]
+        var changed = false
+        if let url, WebURLPolicy.isSupported(url) {
+            let canonical = WebURLPolicy.canonicalSheetURL(url)
+            if board.currentSheetURL != canonical {
+                writer.update { $0.den.desks[location.desk].boards[location.board].currentSheetURL = canonical }
+                onURLChange()
+                changed = true
+            }
+        }
+        if let title, !title.isEmpty, board.label != title {
+            writer.update { $0.den.desks[location.desk].boards[location.board].label = title }
+        }
+        if let title, let firstURL = board.firstSheetURL { recents.updateTitle(for: firstURL, title: title) }
+        if changed { save() }
+    }
+
+    public func updateTerminal(_ id: BoardID, workingDirectory: String? = nil, title: String? = nil) {
+        guard let location = indices(for: id), store.snapshot.den.desks[location.desk].boards[location.board].isTerminal
+        else { return }
+        let board = store.snapshot.den.desks[location.desk].boards[location.board]
+        var changed = false
+        if let workingDirectory, !workingDirectory.isEmpty, board.terminalWorkingDirectory != workingDirectory {
+            writer.update {
+                $0.den.desks[location.desk].boards[location.board].terminalWorkingDirectory = workingDirectory
+            }
+            changed = true
+        }
+        if let title, !title.isEmpty, board.label != title {
+            writer.update { $0.den.desks[location.desk].boards[location.board].label = title }
+        }
+        if changed { save() }
+    }
+
     private func indices(for id: BoardID) -> (desk: Int, board: Int)? {
         for desk in store.snapshot.den.desks.indices {
             if let board = store.snapshot.den.desks[desk].boards.firstIndex(where: { $0.id == id }) {

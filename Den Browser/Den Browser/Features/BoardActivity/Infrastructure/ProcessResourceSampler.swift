@@ -1,11 +1,6 @@
 import Darwin
+import DenDomain
 import Foundation
-
-struct ProcessResourceUsage: Equatable, Sendable {
-    let cpuPercent: Double?
-    let memoryBytes: UInt64
-    let processCount: Int
-}
 
 struct ProcessResourceSample: Equatable, Sendable {
     let cpuTimeNanos: UInt64

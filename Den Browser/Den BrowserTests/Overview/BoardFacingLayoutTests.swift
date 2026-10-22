@@ -1,5 +1,6 @@
 import AppKit
 import DenDomain
+import DenViews
 import SwiftUI
 import Testing
 

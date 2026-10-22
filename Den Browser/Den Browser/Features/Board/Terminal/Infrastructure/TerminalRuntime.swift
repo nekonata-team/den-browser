@@ -234,6 +234,9 @@ final class TerminalRuntime: NSObject, ObservableObject {
         terminalView.delegate = nil
         terminalView.controller = nil
         controller = nil
+        events = .init(
+            onClose: {}, onFocus: {}, onWorkingDirectoryChange: { _ in }, onTitleChange: { _ in }, onOpenURL: { _ in },
+            onNotification: { _, _ in })
     }
 
     private func startHiddenTicking() {

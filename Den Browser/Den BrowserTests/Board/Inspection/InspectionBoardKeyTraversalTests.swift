@@ -1,6 +1,7 @@
 import AppKit
 import Testing
 
+@testable import DenViews
 @testable import Den_Browser
 
 @MainActor

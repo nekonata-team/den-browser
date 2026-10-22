@@ -105,6 +105,7 @@ final class DenController {
 
     let inputSourceTracker = BoardInputSourceTracker()
     @ObservationIgnored var onWindowEffect: ((DenWindowEffect) -> Void)?
+    @ObservationIgnored let runtimeConnection = RuntimeWindowConnection()
     @ObservationIgnored private let windowResources = DenWindowResources()
     var drawerPeekRuntime: WebRuntime? {
         get { windowResources.drawerPeek }
@@ -225,6 +226,7 @@ final class DenController {
         onDeskPresentationRequest = nil
         onWillResetDen = nil
         storage.drawerPresentations.add(self)
+        runtimeConnection.controller = self
         inputSourceTracker.isEnabled = { [weak self] in
             self?.preferences.rememberBoardInputMethod ?? false
         }
@@ -271,6 +273,7 @@ final class DenController {
         self.onDeskPresentationRequest = onDeskPresentationRequest
         self.onWillResetDen = onWillResetDen
         storage.drawerPresentations.add(self)
+        runtimeConnection.controller = self
         inputSourceTracker.isEnabled = { [weak self] in
             self?.preferences.rememberBoardInputMethod ?? false
         }

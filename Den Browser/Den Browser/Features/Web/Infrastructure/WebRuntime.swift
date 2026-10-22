@@ -345,6 +345,8 @@ final class WebRuntime: BaseWebRuntime, ObservableObject {
         fullscreenObservation = nil
 
         super.dispose()
+        events = .init(onChange: { _, _, _ in })
+        sheetNavigationActions = .init()
     }
 
     override func handleURLOrTitleChange(url: URL?, title: String?) {

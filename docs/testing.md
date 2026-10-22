@@ -157,7 +157,7 @@ Runtime event routing and shared-state consistency require behavioral tests.
 App composition directly into the View module, verifies reuse after remount, and checks app-bundle JavaScript.
 These are hosted integration tests; the independent Model test executable does not link native SDKs.
 The existing `ProfileManagerTests` protect event delivery after the owner's window closes and
-Runtime disposal after the final window closes.
+Runtime disposal after the final window closes. `BoardRuntimeReceiverTests` checks receiver release with an externally retained Runtime and background exit after window disconnection. Inspection Model tests reject child-load results after cancellation or page navigation.
 
 `just test packages` runs the complete Application and presentation Model test suites as independent
 SwiftPM suites, without App, WebKit, or Ghostty. The default unit recipe includes these suites.

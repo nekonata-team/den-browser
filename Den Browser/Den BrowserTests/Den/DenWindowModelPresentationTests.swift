@@ -2,6 +2,7 @@ import AppKit
 import DenApplication
 import DenDomain
 import DenPresentationModels
+import DenViews
 import Foundation
 import Observation
 import Synchronization

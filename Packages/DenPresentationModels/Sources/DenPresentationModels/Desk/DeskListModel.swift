@@ -22,6 +22,9 @@ public final class DeskListModel {
     @ObservationIgnored private let exportLinks: (DeskID) -> Void
     @ObservationIgnored private let copyLinks: (DeskID) -> Void
 
+    @ObservationIgnored private let create: (String, DeskPresetSelection) -> Void
+    @ObservationIgnored private let replace: (String, DeskPresetSelection) -> DeskReplacementResult?
+
     public init(
         state: DenStateStore, lifecycle: DeskLifecycle, movement: DeskMovement, updates: DeskUpdates,
         presentedDeskID: @escaping () -> DeskID, isAvailable: @escaping (DeskID) -> Bool,
@@ -29,8 +32,12 @@ public final class DeskListModel {
         didDuplicate: @escaping (DeskState, DeskState) -> Void,
         requestDeletion: @escaping (DeskState) -> Void, warn: @escaping (String) -> Void,
         finishEditing: @escaping () -> Void, copyID: @escaping (DeskID) -> Void,
-        exportLinks: @escaping (DeskID) -> Void, copyLinks: @escaping (DeskID) -> Void
+        exportLinks: @escaping (DeskID) -> Void, copyLinks: @escaping (DeskID) -> Void,
+        create: @escaping (String, DeskPresetSelection) -> Void,
+        replace: @escaping (String, DeskPresetSelection) -> DeskReplacementResult?
     ) {
+        self.create = create
+        self.replace = replace
         self.state = state
         self.lifecycle = lifecycle
         self.movement = movement
@@ -46,6 +53,12 @@ public final class DeskListModel {
         self.copyID = copyID
         self.exportLinks = exportLinks
         self.copyLinks = copyLinks
+    }
+
+    public var deskPresets: [PersonalDeskPreset] { state.snapshot.deskPresets }
+    public func createDesk(label: String, selection: DeskPresetSelection) { create(label, selection) }
+    public func replaceDesk(label: String, selection: DeskPresetSelection) -> DeskReplacementResult? {
+        replace(label, selection)
     }
 
     public var desks: [DeskState] { state.snapshot.den.desks }

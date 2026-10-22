@@ -1247,35 +1247,50 @@ struct ProfileManagerTests {
         let route1 = ProfileWindowRoute(windowID: UUID(), profileID: profileID)
         let window1 = NSWindow()
         let window2 = NSWindow()
-        var owner: DenController? = manager.controller(for: route1)
-        manager.register(window: window1, for: route1)
-        let firstDeskID = try #require(owner?.presentedDeskID)
-        owner?.createDesk(label: "SecondDesk", preset: .empty)
-        let secondDeskID = try #require(owner?.presentedDeskID)
-        let route2 = try #require(
-            manager.routeForOpeningDesk(
-                secondDeskID,
-                profileID: profileID,
-                sourceWindowID: route1.windowID))
-        let otherWindowController = try #require(manager.controller(for: route2))
-        manager.register(window: window2, for: route2)
-
         let targetBoard = BoardState(label: "Terminal", width: 520, workingDirectory: "/tmp")
-        let firstDeskIndex = try #require(owner?.state.desks.firstIndex { $0.id == firstDeskID })
-        owner?.storage.state.desks[firstDeskIndex].boards = [targetBoard]
-        owner?.storage.state.desks[firstDeskIndex].focusedBoardID = targetBoard.id
-        owner?.focusDesk(firstDeskID)
-        let runtime = try #require(owner?.terminalRuntime(for: targetBoard))
-        let storage = try #require(owner?.storage)
+        weak var weakOwner: DenController?
+        // Drain temporary AppKit bridge references while keeping the Profile and Runtime alive.
+        let (runtime, storage, otherWindowController, firstDeskID) = try autoreleasepool {
+            var owner: DenController? = manager.controller(for: route1)
+            manager.register(window: window1, for: route1)
+            let firstDeskID = try #require(owner?.presentedDeskID)
+            owner?.createDesk(label: "SecondDesk", preset: .empty)
+            let secondDeskID = try #require(owner?.presentedDeskID)
+            let route2 = try #require(
+                manager.routeForOpeningDesk(
+                    secondDeskID,
+                    profileID: profileID,
+                    sourceWindowID: route1.windowID))
+            let otherWindowController = try #require(manager.controller(for: route2))
+            manager.register(window: window2, for: route2)
 
-        // Act
-        manager.unregister(window: window1, for: route1)
-        owner = nil
+            let firstDeskIndex = try #require(owner?.state.desks.firstIndex { $0.id == firstDeskID })
+            owner?.storage.state.desks[firstDeskIndex].boards = [targetBoard]
+            owner?.storage.state.desks[firstDeskIndex].focusedBoardID = targetBoard.id
+            owner?.focusDesk(firstDeskID)
+            let runtime = try #require(owner?.terminalRuntime(for: targetBoard))
+            let storage = try #require(owner?.storage)
+
+            weakOwner = owner
+            var closedWindowEffects = 0
+            owner?.onWindowEffect = { _ in closedWindowEffects += 1 }
+
+            // Act
+            manager.unregister(window: window1, for: route1)
+            let effectsAtClose = closedWindowEffects
+            runtime.terminalDidRequestDesktopNotification(title: "After close", body: "Shared notification")
+            runtime.terminalDidChangeFocus(true)
+            #expect(closedWindowEffects == effectsAtClose)
+            owner = nil
+            return (runtime, storage, otherWindowController, firstDeskID)
+        }
         runtime.terminalDidChangeTitle("Updated after close")
 
         // Assert
         #expect(storage.state.desks.first { $0.id == firstDeskID }?.boards.first?.label == "Updated after close")
         #expect(otherWindowController.storage === storage)
+        #expect(weakOwner == nil)
+        #expect(storage.notifications.contains { $0.boardID == targetBoard.id && $0.body == "Shared notification" })
     }
 
     @Test func retainedStorageAndRuntimeDoNotKeepStoreAliveAfterProfileManagerDeallocates() throws {
@@ -1320,11 +1335,15 @@ struct ProfileManagerTests {
         controller.focusDesk(controller.state.desks[0].id)
         let runtime = controller.webRuntime(for: targetBoard)
 
+        weak let receiver = controller.storage.boardRuntimes.receivers[targetBoard.id]
+
         // Act
         manager.unregister(window: window, for: route)
 
         // Assert
         #expect(runtime.webView.navigationDelegate == nil)
+        #expect(receiver == nil)
+        #expect(controller.storage.boardRuntimes.receivers.isEmpty)
     }
 
     @Test func failedProfileDeletionPreservesProfileState() async throws {

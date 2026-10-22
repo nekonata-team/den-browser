@@ -108,7 +108,21 @@ final class DenWindowComposition {
                 controller.onWindowEffect?(.exitDenMode)
             },
             copyID: { controller.copyDeskID($0) }, exportLinks: { controller.exportDeskLinks(for: $0) },
-            copyLinks: { controller.copyDeskLinks(for: $0) })
+            copyLinks: { controller.copyDeskLinks(for: $0) },
+            create: { label, selection in
+                switch selection {
+                case .builtIn(let preset): controller.createDesk(label: label, preset: preset)
+                case .personal(let id): controller.createDesk(label: label, personalPresetID: id)
+                case .newDesk: controller.createDesk(label: label, preset: .empty)
+                }
+            },
+            replace: { label, selection in
+                switch selection {
+                case .builtIn(let preset): controller.replaceFocusedDesk(label: label, preset: preset)
+                case .personal(let id): controller.replaceFocusedDesk(label: label, personalPresetID: id)
+                case .newDesk: .unavailable
+                }
+            })
         let model = DenWindowModel(
             boardEditing: boardEditing,
             desks: desks,

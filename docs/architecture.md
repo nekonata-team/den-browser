@@ -232,8 +232,12 @@ For an active Web runtime, its Sheet Stack is authoritative and saved Board URL/
 updated projections; those saved fields supply initial state when restoring a runtime.
 
 `App/Composition/DenProfileResources` connects the shared state source, persistence callbacks,
-window event owners, and the native registry. `DenBoardRuntimes` owns Profile-shared Web and
-Terminal runtimes and their disposal; `DenWindowResources` owns the Drawer Peek and zmx command Task,
+window connections, and the native registry. `DenBoardRuntimes` owns Profile-shared Web and
+Terminal runtimes and their `BoardRuntimeReceiver`s. Receivers hold Profile resources weakly and update
+shared Application operations directly. Native callbacks retain only a window connection whose Controller
+reference is weak and explicitly disconnected on window close. Runtime disposal clears its callbacks and
+releases the receiver; an external Runtime reference does not retain a closed window or Profile resources.
+`DenWindowResources` owns the Drawer Peek and zmx command Task,
 and privately manages the screenshot operation Task. `ScreenshotCapture` returns an image; Controller selects the
 target Sheet, requests capture, and passes the image to `ScreenshotOutput` for save or clipboard
 output before reporting feedback. Closing the window cancels the operation.

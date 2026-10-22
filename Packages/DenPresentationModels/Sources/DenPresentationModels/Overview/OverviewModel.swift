@@ -63,6 +63,9 @@ public final class OverviewModel {
     @ObservationIgnored public var onDismiss: (() -> Void)?
     @ObservationIgnored public var boardMidXs: [BoardID: CGFloat] = [:]
 
+    public var allDesks: [DeskState] { desks() }
+    public func removeBoard(_ id: BoardID) { actions.removeBoard(id, false) }
+
     public var isFilterPresented: Bool { filterPhase != .inactive }
     public var isFilterInputActive: Bool { filterPhase == .filtering }
     public var isFilterSelecting: Bool { filterPhase == .selecting }

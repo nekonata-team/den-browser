@@ -32,3 +32,9 @@ public struct DeskPresetActions {
         self.requestDeletion = requestDeletion
     }
 }
+
+public enum DeskReplacementResult: Equatable {
+    case applied
+    case confirmationPending
+    case unavailable
+}

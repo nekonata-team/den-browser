@@ -8,15 +8,11 @@ import Observation
 final class DenBoardRuntimes {
     var web: [BoardID: WebRuntime] = [:]
     @ObservationIgnored var terminal: [BoardID: TerminalRuntime] = [:]
-    @ObservationIgnored private let onDispose: (BoardID) -> Void
-
-    init(onDispose: @escaping (BoardID) -> Void) {
-        self.onDispose = onDispose
-    }
+    @ObservationIgnored var receivers: [BoardID: BoardRuntimeReceiver] = [:]
 
     func releaseWeb() {
         for (boardID, runtime) in web {
-            onDispose(boardID)
+            receivers.removeValue(forKey: boardID)
             runtime.dispose()
         }
         web.removeAll()
@@ -24,14 +20,14 @@ final class DenBoardRuntimes {
 
     func releaseTerminal() {
         for (boardID, runtime) in terminal {
-            onDispose(boardID)
+            receivers.removeValue(forKey: boardID)
             runtime.dispose()
         }
         terminal.removeAll()
     }
 
     func dispose(_ boardID: BoardID) {
-        onDispose(boardID)
+        receivers.removeValue(forKey: boardID)
         web.removeValue(forKey: boardID)?.dispose()
         terminal.removeValue(forKey: boardID)?.dispose()
     }

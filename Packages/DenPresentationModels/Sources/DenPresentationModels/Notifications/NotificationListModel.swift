@@ -61,6 +61,7 @@ public final class NotificationListModel {
     }
 
     public var unreadCount: Int { operations.unreadCount() }
+    public func unreadCount(for id: BoardID) -> Int { operations.unreadCount(for: id) }
 
     public func selectFirstNotification() {
         selectedNotificationID = items.first?.id
