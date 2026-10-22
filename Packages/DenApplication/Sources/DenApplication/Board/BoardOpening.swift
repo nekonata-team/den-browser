@@ -9,12 +9,11 @@ public enum BoardOpening {
         case zellijNotConfigured
         case terminalDirectoryMissing(String)
         case invalidInput
-        case creationFailed
     }
 
-    public enum Outcome {
-        case openedBoard
-        case openedTutorial
+    public enum Decision {
+        case createBoard(BoardState, recentItem: RecentItem?)
+        case openTutorial
         case selectZmxSession
         case rejected(Failure)
     }
@@ -33,34 +32,15 @@ public enum BoardOpening {
         }
     }
 
-    public struct Actions {
-        public let openTutorial: (Double, BoardID?) -> Bool
-        /// Persist the insertion immediately only when no Recent write will follow.
-        public let insertBoard: (BoardState, BoardID?, Bool) -> Bool
-        public let recordRecent: (RecentItem) -> Void
-
-        public init(
-            openTutorial: @escaping (Double, BoardID?) -> Bool,
-            insertBoard: @escaping (BoardState, BoardID?, Bool) -> Bool,
-            recordRecent: @escaping (RecentItem) -> Void
-        ) {
-            self.openTutorial = openTutorial
-            self.insertBoard = insertBoard
-            self.recordRecent = recordRecent
-        }
-    }
-
-    public static func open(
+    public static func resolve(
         input: String,
         width: Double,
-        afterBoardID: BoardID? = nil,
         zmxRootSessionName: String? = nil,
         configuration: Configuration,
-        directoryExists: (String) -> Bool,
-        actions: Actions
-    ) -> Outcome {
+        directoryExists: (String) -> Bool
+    ) -> Decision {
         if input.trimmingCharacters(in: .whitespacesAndNewlines) == ":tutorial" {
-            return actions.openTutorial(width, afterBoardID) ? .openedTutorial : .rejected(.creationFailed)
+            return .openTutorial
         }
 
         let board: BoardState
@@ -108,11 +88,7 @@ public enum BoardOpening {
             recent = resolution.item
         }
 
-        let recordsRecent = input.count <= maximumPersistedRecentInputLength
-        guard actions.insertBoard(board, afterBoardID, !recordsRecent) else {
-            return .rejected(.creationFailed)
-        }
-        if recordsRecent { actions.recordRecent(recent) }
-        return .openedBoard
+        let recentItem = input.count <= maximumPersistedRecentInputLength ? recent : nil
+        return .createBoard(board, recentItem: recentItem)
     }
 }

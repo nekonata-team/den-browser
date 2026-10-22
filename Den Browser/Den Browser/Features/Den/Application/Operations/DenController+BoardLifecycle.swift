@@ -46,29 +46,30 @@ extension DenController {
         opensFromOpenBoardPanel: Bool = false,
         zmxRootSessionName: String? = nil
     ) -> BoardOpenResult {
-        let outcome = BoardOpening.open(
+        let width = preferredWidth ?? inheritedBoardWidth
+        let decision = BoardOpening.resolve(
             input: input,
-            width: preferredWidth ?? inheritedBoardWidth,
-            afterBoardID: afterBoardID,
+            width: width,
             zmxRootSessionName: zmxRootSessionName,
             configuration: BoardOpening.Configuration(
                 searchEngine: preferences.searchEngine,
                 zmxConfigured: zmxClient.isConfigured,
                 zellijConfigured: zellijClient.isConfigured,
                 homeDirectory: FileManager.default.homeDirectoryForCurrentUser),
-            directoryExists: { Self.directoryExists($0, fileManager: .default) },
-            actions: BoardOpening.Actions(
-                openTutorial: { [self] in openTutorialBoard(preferredWidth: $0, afterBoardID: $1) },
-                insertBoard: { [self] in
-                    insertBoard($0, afterBoardID: $1, focus: true, origin: .interactive, save: $2)
-                },
-                recordRecent: { [self] in saveRecentItem($0) }))
-        switch outcome {
-        case .openedBoard:
+            directoryExists: { Self.directoryExists($0, fileManager: .default) })
+        switch decision {
+        case .createBoard(let board, let recentItem):
+            guard
+                insertBoard(
+                    board, afterBoardID: afterBoardID, focus: true, origin: .interactive,
+                    save: recentItem == nil)
+            else { return .rejected(nil) }
+            if let recentItem { saveRecentItem(recentItem) }
             onWindowEffect?(.openBoardResult(nil))
             return .accepted
-        case .openedTutorial:
-            return .accepted
+        case .openTutorial:
+            return openTutorialBoard(preferredWidth: width, afterBoardID: afterBoardID)
+                ? .accepted : .rejected(nil)
         case .selectZmxSession:
             onWindowEffect?(
                 .presentZmxSessions(returnsToOpenBoard: opensFromOpenBoardPanel, selectedSessionName: nil))
@@ -81,7 +82,7 @@ extension DenController {
                 return .rejected("Set an absolute Zellij executable path in Settings > Terminal.")
             case .terminalDirectoryMissing(let path):
                 return .rejected(TerminalInputError.missingDirectory(path).message)
-            case .invalidInput, .creationFailed:
+            case .invalidInput:
                 return .rejected(nil)
             }
         }

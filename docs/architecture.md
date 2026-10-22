@@ -71,8 +71,10 @@ Presentation dependency. Board operation origin and zmx operation outcomes are D
 state transformations. These functions return values and typed outcomes without owning window
 state or native resources. `DenController` coordinates their execution, applies results to the
 shared state source, and connects Runtime operations, persistence, and window effects.
-`BoardOpening` and `DrawerPlacement` also own their create-before-record/discard sequences;
-App supplies the concrete operations. Application has no dependency on Presentation.
+`BoardOpening.resolve` returns a Board creation decision with its optional Recent item,
+a Tutorial request, a session-picker request, or a validation failure. It does not call insertion,
+Recent, or Tutorial actions. Controller currently executes that decision in order.
+`DrawerPlacement` owns its create-before-discard sequence; App supplies the concrete operations. Application has no dependency on Presentation.
 
 Personal Desk Preset management uses `DeskPresetOperations` in DenApplication for validation,
 shared-state updates, and persistence. App supplies the persistence function; Controller translates
